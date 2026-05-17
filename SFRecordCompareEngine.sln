@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SFRecordCompareEngine", "SF
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SFRecordCompareEngine.Core", "SFRecordCompareEngine.Core\SFRecordCompareEngine.Core.csproj", "{671EC731-3B04-4C40-A045-CADB54530A3D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SFRecordCompareEngine.UnitTests", "SFRecordCompareEngine.UnitTests\SFRecordCompareEngine.UnitTests.csproj", "{D2F2A957-DBDF-4083-944E-2374F95CA296}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{671EC731-3B04-4C40-A045-CADB54530A3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{671EC731-3B04-4C40-A045-CADB54530A3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{671EC731-3B04-4C40-A045-CADB54530A3D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2F2A957-DBDF-4083-944E-2374F95CA296}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2F2A957-DBDF-4083-944E-2374F95CA296}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2F2A957-DBDF-4083-944E-2374F95CA296}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2F2A957-DBDF-4083-944E-2374F95CA296}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

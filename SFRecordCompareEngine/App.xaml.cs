@@ -1,8 +1,7 @@
 using System.Windows;
 using Autofac;
 using Serilog;
-using SFRecordCompareEngine.Core.Services;
-using SFRecordCompareEngine.Core.Services.Interfaces;
+using SFRecordCompareEngine.Core;
 
 namespace SFRecordCompareEngine;
 
@@ -22,7 +21,7 @@ public partial class App
                 outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
             .CreateLogger();
 
-        Log.Information("Starting SFRecordCompareEngine.");
+        Log.Information("Starting SFRecordCompareEngine");
 
         base.OnStartup(e);
 
@@ -32,7 +31,7 @@ public partial class App
 
     protected override void OnExit(ExitEventArgs e)
     {
-        Log.Information("Exiting SFRecordCompareEngine.");
+        Log.Information("Exiting SFRecordCompareEngine");
         Container?.Dispose();
         Log.CloseAndFlush();
         base.OnExit(e);
@@ -41,8 +40,7 @@ public partial class App
     private static IContainer BuildContainer()
     {
         var builder = new ContainerBuilder();
-        builder.RegisterType<PluginService>().As<IPluginService>().SingleInstance();
-        builder.RegisterType<GameEngineService>().As<IGameEngineService>().SingleInstance();
+        builder.RegisterModule<CoreModule>();
         builder.RegisterInstance(Log.Logger).As<ILogger>().SingleInstance();
         builder.RegisterType<MainWindow>();
 

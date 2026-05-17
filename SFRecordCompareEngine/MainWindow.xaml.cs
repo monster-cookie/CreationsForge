@@ -1,5 +1,8 @@
 using System.Windows;
 using Serilog;
+using SFRecordCompareEngine.Core.Configuration;
+using SFRecordCompareEngine.Core.Configuration.Interfaces;
+using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Services.Interfaces;
 
 namespace SFRecordCompareEngine;
@@ -7,105 +10,93 @@ namespace SFRecordCompareEngine;
 public partial class MainWindow : Window
 {
     private readonly ILogger Logger = Log.ForContext<MainWindow>();
-    private readonly IGameEngineService GameEngineService;
+    private readonly IGameConfigurationStore GameConfigurationStore;
     private readonly IPluginService PluginService;
+    private string? LoadedPluginName;
 
-    public MainWindow(IGameEngineService gameEngineService, IPluginService pluginService)
+    public MainWindow(
+        IGameConfigurationStore gameConfigurationStore,
+        IPluginService pluginService)
     {
         InitializeComponent();
         
-        GameEngineService = gameEngineService;
-        if (!GameEngineService.ValidateStarfieldPluginHeaders(@"C:\Steam\steamapps\common\Starfield\Data"))
-        {
-            MessageBox.Show("One or more Starfield plugins have malformed headers. Please check the logs for details.", "Plugin Header Validation Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
-            Environment.Exit(1);
-        }
-
+        GameConfigurationStore = gameConfigurationStore;
         PluginService = pluginService;
-        LoadDatabases();
+
+        ClearLoadedPlugin();
     }
 
-    private void RefreshButton_Click(object sender, RoutedEventArgs e)
+    private void OpenMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        LoadDatabases();
-    }
-
-    private void LoadButton_Click(object sender, RoutedEventArgs e)
-    {
-        LoadPluginHeader();
-    }
-
-    private void LoadDatabases()
-    {
-        try
+        var dialog = new OpenGamePluginDialog(GameConfigurationStore, PluginService)
         {
-            Logger.Information("Loading databases.");
+            Owner = this
+        };
 
-            var databases = PluginService.GetDatabases();
-            DatabaseComboBox.ItemsSource = databases;
-            DatabaseComboBox.SelectedIndex = databases.Count > 0 ? 0 : -1;
-            StatusTextBlock.Text = databases.Count == 1
-                ? "Loaded 1 database."
-                : $"Loaded {databases.Count} databases.";
+        if (dialog.ShowDialog() != true) return;
+        if (string.IsNullOrWhiteSpace(dialog.SelectedGame) || string.IsNullOrWhiteSpace(dialog.SelectedPluginName)) return;
 
-            Logger.Information("Loaded {DatabaseCount} databases.", databases.Count);
+        LoadedGameTextBlock.Text = dialog.SelectedGame;
+        LoadedPluginTextBlock.Text = dialog.SelectedPluginName;
+        LoadedPluginName = dialog.SelectedPluginName;
+        StatusTextBlock.Text = $"Loaded {dialog.SelectedPluginName}.";
+        LoadRecordTree();
+
+        Logger.Information("Opened {PluginName} for {Game}", dialog.SelectedPluginName, dialog.SelectedGame);
+    }
+
+    private void RecordsTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+    {
+        switch (e.NewValue)
+        {
+            case RecordTypeTreeNode node:
+                RecordsDataGrid.ItemsSource = node.Records;
+                StatusTextBlock.Text = $"Loaded {node.Records.Count} {node.Name} records.";
+                break;
+            case RecordSummaryDTO record:
+                RecordsDataGrid.SelectedItem = record;
+                RecordsDataGrid.ScrollIntoView(record);
+                break;
         }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Unable to load databases.");
-            DatabaseComboBox.ItemsSource = null;
-            StatusTextBlock.Text = $"Unable to load databases: {ex.Message}";
-        }
     }
 
-    private void LoadPluginHeader()
+    private void ExitMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        var pluginName = DatabaseComboBox.Text?.Trim();
-        if (string.IsNullOrWhiteSpace(pluginName))
+        Close();
+    }
+
+    private void ClearLoadedPlugin()
+    {
+        LoadedPluginName = null;
+        LoadedGameTextBlock.Text = "None";
+        LoadedPluginTextBlock.Text = "None";
+        StatusTextBlock.Text = "Use File > Open to choose a game and plugin.";
+        RecordsDataGrid.ItemsSource = null;
+        RecordsTreeView.ItemsSource = null;
+    }
+
+    private void LoadRecordTree()
+    {
+        if (LoadedPluginName is null)
         {
-            ClearPluginHeader();
-            StatusTextBlock.Text = "Select a database before loading plugin header data.";
+            RecordsTreeView.ItemsSource = null;
+            RecordsDataGrid.ItemsSource = null;
             return;
         }
 
-        try
-        {
-            Logger.Information("Loading plugin header for {PluginName}.", pluginName);
-
-            var pluginHeader = PluginService.GetPluginHeader(pluginName);
-            if (pluginHeader is null)
+        var nodes = PluginService.GetRecordTypes()
+            .Select(recordType => new RecordTypeTreeNode
             {
-                ClearPluginHeader();
-                StatusTextBlock.Text = $"Unable to load plugin header for {pluginName}.";
-                Logger.Warning("Plugin header was not returned for {PluginName}.", pluginName);
-                return;
-            }
+                Name = recordType,
+                Records = PluginService.GetRecords(LoadedPluginName, recordType)
+            })
+            .Where(node => node.Records.Count > 0)
+            .ToList();
 
-            PluginNameTextBlock.Text = pluginHeader.Name;
-            PluginAuthorTextBlock.Text = pluginHeader.Author;
-            PluginVersionTextBlock.Text = pluginHeader.Version.ToString();
-            PluginDescriptionTextBlock.Text = pluginHeader.Description;
-            PluginMastersTextBlock.Text = pluginHeader.Masters.Count == 0
-                ? "None"
-                : string.Join(", ", pluginHeader.Masters.Select(master => master.String));
-            StatusTextBlock.Text = $"Loaded plugin header for {pluginName}.";
-
-            Logger.Information("Loaded plugin header for {PluginName}.", pluginName);
-        }
-        catch (Exception ex)
-        {
-            ClearPluginHeader();
-            Logger.Error(ex, "Unable to load plugin header for {PluginName}.", pluginName);
-            StatusTextBlock.Text = $"Unable to load plugin header for {pluginName}: {ex.Message}";
-        }
-    }
-
-    private void ClearPluginHeader()
-    {
-        PluginNameTextBlock.Text = string.Empty;
-        PluginAuthorTextBlock.Text = string.Empty;
-        PluginVersionTextBlock.Text = string.Empty;
-        PluginDescriptionTextBlock.Text = string.Empty;
-        PluginMastersTextBlock.Text = string.Empty;
+        RecordsTreeView.ItemsSource = nodes;
+        RecordsDataGrid.ItemsSource = null;
+        StatusTextBlock.Text = nodes.Count == 1
+            ? "Loaded 1 record type."
+            : $"Loaded {nodes.Count} record types.";
     }
 }
