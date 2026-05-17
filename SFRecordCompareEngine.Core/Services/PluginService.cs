@@ -34,7 +34,7 @@ public class PluginService : IPluginService
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Unable to load databases.");
+            Logger.Error(ex, "Unable to load databases");
             return new List<string>();
         }
     }
@@ -48,7 +48,7 @@ public class PluginService : IPluginService
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, $"Unable to load plugin header for {pluginName}.");
+            Logger.Error(ex, "Unable to load plugin header for {PluginName}.", pluginName);
             return null;
         }
     }

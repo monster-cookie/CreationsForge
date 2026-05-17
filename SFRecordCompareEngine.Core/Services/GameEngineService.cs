@@ -44,7 +44,7 @@ public class GameEngineService : IGameEngineService
             }
         }
         
-        Logger.Information("All plugins are valid.");
+        Logger.Information("All plugins are valid");
         return true;
     }
 }
