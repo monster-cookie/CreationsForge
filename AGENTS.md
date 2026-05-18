@@ -1,101 +1,114 @@
-﻿Repo: SFREcordCompareEngine (DotNet 10 WPF Desktop Application)
+﻿# Repo: SFRecordCompareEngine (.NET WPF Desktop Application)
 
-Enterprise-grade service that serves as the primary gateway API for the Vant4gePoint front end. Solution layout:
+Simple WPF desktop app that shows the record hierarchy of a given plugin in relation to its master plugins. 
 
-    /SFREcordCompareEngine (WPF Desktop Application)
-    /SFREcordCompareEngine.Core (Models, DTOs, Services, Repositories, Stores, and Factories)
-    /SFREcordCompareEngine.UnitTests (Unit Tests)
+## Project Layout
 
-HARD RULES
+- SFRecordCompareEngine (The WPF Presentation/UI Composition)
+- SFRecordCompareEngine.Core (The shared models, DTOs, services, repositories, stores, and factories)
+- SFRecordCompareEngine.UnitTests (The unit tests)
 
-    NEVER run git (init, add, commit, stash, merge, rebase, push, pull, fetch, tag, etc.).
-    NEVER modify repo history or open PRs.
-    READ/WRITE SCOPE: only within /SFREcordCompareEngine unless explicitly told otherwise.
-    ALWAYS show a PLAN first and wait for explicit approval before editing files.
-    KEEP CHANGES SURGICAL and consistent with existing patterns & naming.
-    NO breaking changes to existing services, factories, or stores without explicit approval (document migration impact and routing/versioning consequences in the PLAN).
+## HARD RULES
 
-PLAN → EXECUTE → VALIDATE
+- NEVER run git commands of any kind.
+- NEVER modify repo history or open PRs.
+- Allowed read/write scope by default:
+  - /SFRecordCompareEngine
+  - /SFRecordCompareEngine.Core
+  - /SFRecordCompareEngine.UnitTests
+- Do not edit files outside these projects unless explicitly approved in the PLAN.
+- ALWAYS show a PLAN first and wait for explicit approval before editing files.
+- Keep changes surgical and consistent with existing patterns and naming.
+- No breaking changes to existing services, factories, stores, repositories, view models, public interfaces, configuration, persistence formats, or UI workflows without explicit approval.
 
-    PLAN (required prior to any edits)
-        Include: scope, exact file paths, code-level checklist, data model/schema impacts, config/env changes, public HTTP API impact, logging additions, risks/rollbacks, and test plan.
-        Call out whether organization scoping is affected (see “Security & Access”).
-    EXECUTE (after approval only)
-        Make only the approved edits.
-        Show minimal diffs per file and keep edits focused.
-        Do not introduce new conventions or external deps unless approved in PLAN.
-    VALIDATE
-        dotnet build the solution with analyzers (warnings are errors).
-        Run unit tests in /SFREcordCompareEngine.UnitTests.
-        Summarize: build/test results, public API changes, config/migration notes, and any SemVer/compat considerations for clients.
+## ARCHITECTURE & CONVENTIONS
 
-ARCHITECTURE & CONVENTIONS
+- Contracts-first for service/core changes: define or update interfaces, DTOs, validators, and tests before implementation when applicable.
+- UI-only changes should avoid unnecessary interface, DTO, or validator churn.
+- Class-per-file. Primary constructors for services, factories, stores, and repositories where possible.
+- No statics for application services or mutable app state. Prefer DI; register singletons only when appropriate. Constants, generated framework code, and existing static patterns may remain unless explicitly approved for refactor.
+- No repeated code: Refactor existing methods as needed to avoid repeating code in new methods.
 
-    Contracts-first: define interfaces, DTOs, validators, and tests before implementation.
-    Class-per-file. Primary constructors for controllers, services, factories, stores, and repositories where possible.
-    Async: every public method is async IF it awaits anything. No sync-over-async. Accept CancellationToken on public async APIs.
-    No statics for app code. Prefer DI; register singletons only when appropriate.
-    Organization scoping: all requests that operate on resources containing an OrganizationID must be scoped/enforced.
-    Source layout (authoritative):
-        /SFREcordCompareEngine (WPF Desktop Application)
-        /SFREcordCompareEngine.Core (Stores, Services, Repositories, and Factories)
-        /SFREcordCompareEngine.UnitTests (xUnit + Moq + Shouldly)
-    No repeated code: Refactor existing methods as needed to avoid repeating code in new methods.
+## TECH CONSTRAINTS
 
-TECH CONSTRAINTS
+- Dependency injection: Use Autofac.
+- Database access: Use NPoco with parameterized SQL.
+- Logging and Observability: Use existing Serilog conventions.
+- Unit Tests: Use xUnit, Moq, and Shouldly.
 
-    Dependency injection: Use Autofac.
-    Observability: Use existing Serilog conventions.
+## WPF & UI CONVENTIONS
 
-LOGGING & DIAGNOSTICS
+- Follow existing MVVM patterns in the repo.
+- Keep code-behind minimal. Do not place business logic in views or code-behind.
+- View models should expose bindable state, commands, and UI coordination only.
+- Business logic belongs in services, factories, stores, or repositories as appropriate.
+- Long-running work must not block the UI thread.
+- Use async commands where existing patterns support them.
+- UI-bound collection updates must occur on the UI thread.
+- Do not call MessageBox, file pickers, dialogs, or window APIs from SFRecordCompareEngine.Core.
+- Preserve existing XAML resource, style, and binding conventions.
+- Avoid broad XAML rewrites unless explicitly approved in the PLAN.
 
-    Use existing logging conventions. Prefer Information level in services (over Debug).
-    No logs in repositories.
+## DEPENDENCY INJECTION
 
-CODE QUALITY
+- Use Autofac as the application composition container.
+- Prefer constructor injection.
+- Do not manually instantiate services, factories, stores, or repositories where DI is available.
+- Keep container resolution in the composition root only.
+- Register view models, services, factories, stores, and repositories according to existing patterns.
+- Use SingleInstance only for app-wide shared state, stateless infrastructure, or services already treated as singletons.
+- Avoid captive dependencies.
 
-    Analyzer warnings are treated as errors.
-    Follow existing conventions in the repo. Do not introduce new naming or patterns.
-    Curly braces on all conditionals and methods (no single-line omission).
+## LOGGING & DIAGNOSTICS
 
-TESTING
+- Do not log secrets, credentials, tokens, connection strings, or large record payloads.
+- Use existing logging conventions.
+- Use structured logging templates, not string interpolation.
+- No logs in repositories or stores.
+- Log exceptions with the exception object.
+- Prefer Information level in services (over Debug).
+- Use Warning for recoverable unexpected states.
+- Use Error for failures that prevent completion.
 
-    Unit tests live in /SFREcordCompareEngine.UnitTests (xUnit + Moq + Shouldly).
-    For new features/bugfixes, include tests in the PLAN and add them alongside code changes.
+## CODE QUALITY
 
-DATABASE & SCHEMA CHANGES
+- Analyzer warnings are treated as errors.
+- Follow existing conventions in the repo. Do not introduce new naming or patterns.
 
-    Use parameterized SQL everywhere.
+## TESTING
 
-SECURITY & ACCESS
+- Unit tests live in /SFRecordCompareEngine.UnitTests (xUnit + Moq + Shouldly).
+- For new features/bugfixes, include tests in the PLAN and add them alongside code changes.
 
-    All requests that operate on resources with OrganizationID must enforce organization scoping at the controller or service boundary.
-    Respect existing authorization policies; do not widen access without explicit approval.
-    Validate and sanitize all inbound parameters/filters.
+## PLAN → EXECUTE → VALIDATE
 
-OUTPUT STYLE (FOR THE AGENT)
+- For the plan use AGENT-PLAN-TEMPLATE.md as the template
 
-    First output a brief PLAN (use /.github/AGENT-PLAN-TEMPLATE.md).
-    Upon approval, provide file-by-file minimal diffs or full files when replacing/adding.
-    Keep changes minimal and consistent with existing naming and structure.
+### PLAN, required before edits
 
-OUT-OF-SCOPE (without explicit approval)
+- Scope
+- Exact file paths
+- Code-level checklist
+- UI/XAML impacts
+- Data model, persistence, or schema impacts
+- Config/environment changes
+- Autofac registration changes
+- Serilog logging additions/changes
+- Risks and rollback notes
+- Test plan
 
-    Adding third-party dependencies.
-    Introducing EF or changing data access technology.
-    New messaging/cache frameworks.
-    Any CI/CD or git actions.
+### EXECUTE, after approval only
 
-REVIEW CHECKLIST (Agent)
+- Make only the approved edits.
+- Keep edits focused.
+- Show minimal diffs per file or full files only when replacing/adding.
+- Do not introduce new conventions or dependencies unless approved in the PLAN.
 
-    PLAN approved; files & impact listed
-    Org scoping considered/enforced
-    DTO + validator added/updated
-    Service/repo interfaces updated first; implementation after
-    Logging at service layer; numeric parameter templates
-    No repository logs; parameterized SQL only
-    Timeouts & Polly applied to I/O paths
-    Tests added/updated and pass locally
-    Build passes with analyzers (warnings as errors)
-    Public HTTP API changes documented (and approved)
-    Schema and migrations documented (and approved)
+### VALIDATE
+
+- Run:
+  - dotnet restore ./SFRecordCompareEngine.sln
+  - dotnet build ./SFRecordCompareEngine.sln --no-restore
+  - dotnet test ./SFRecordCompareEngine.UnitTests/SFRecordCompareEngine.UnitTests.csproj --no-build
+- Summarize build/test results, public interface changes, config/persistence notes, and compatibility considerations.
+- If validation cannot run due to environment limitations, report the exact command and failure.

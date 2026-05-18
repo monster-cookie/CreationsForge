@@ -1,4 +1,7 @@
+using System.Data;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
 using Serilog;
 using SFRecordCompareEngine.Core.Configuration;
 using SFRecordCompareEngine.Core.Configuration.Interfaces;
@@ -50,12 +53,11 @@ public partial class MainWindow : Window
         switch (e.NewValue)
         {
             case RecordTypeTreeNode node:
-                RecordsDataGrid.ItemsSource = node.Records;
+                ShowRecordSummaries(node.Records);
                 StatusTextBlock.Text = $"Loaded {node.Records.Count} {node.Name} records.";
                 break;
             case RecordSummaryDTO record:
-                RecordsDataGrid.SelectedItem = record;
-                RecordsDataGrid.ScrollIntoView(record);
+                ShowRecordComparison(record);
                 break;
         }
     }
@@ -73,6 +75,7 @@ public partial class MainWindow : Window
         StatusTextBlock.Text = "Use File > Open to choose a game and plugin.";
         RecordsDataGrid.ItemsSource = null;
         RecordsTreeView.ItemsSource = null;
+        ConfigureSummaryGrid();
     }
 
     private void LoadRecordTree()
@@ -95,8 +98,91 @@ public partial class MainWindow : Window
 
         RecordsTreeView.ItemsSource = nodes;
         RecordsDataGrid.ItemsSource = null;
+        ConfigureSummaryGrid();
         StatusTextBlock.Text = nodes.Count == 1
             ? "Loaded 1 record type."
             : $"Loaded {nodes.Count} record types.";
+    }
+
+    private void ShowRecordSummaries(IList<RecordSummaryDTO> records)
+    {
+        ConfigureSummaryGrid();
+        RecordsDataGrid.ItemsSource = records;
+    }
+
+    private void ShowRecordComparison(RecordSummaryDTO record)
+    {
+        if (LoadedPluginName is null || string.IsNullOrWhiteSpace(record.RecordType) || string.IsNullOrWhiteSpace(record.FormID))
+        {
+            StatusTextBlock.Text = "Unable to load comparison for the selected record.";
+            return;
+        }
+
+        var comparison = PluginService.GetRecordComparison(LoadedPluginName, record.RecordType, record.FormID);
+        ConfigureComparisonGrid(comparison.Plugins.Select(plugin => plugin.PluginName).ToList());
+
+        var table = new DataTable();
+        table.Columns.Add("Field");
+        foreach (var plugin in comparison.Plugins)
+        {
+            table.Columns.Add(plugin.PluginName);
+        }
+
+        foreach (var field in comparison.Fields)
+        {
+            var row = table.NewRow();
+            row["Field"] = field.FieldName;
+            foreach (var plugin in comparison.Plugins)
+            {
+                row[plugin.PluginName] = field.ValuesByPlugin.TryGetValue(plugin.PluginName, out var value)
+                    ? value ?? string.Empty
+                    : string.Empty;
+            }
+
+            table.Rows.Add(row);
+        }
+
+        RecordsDataGrid.ItemsSource = table.DefaultView;
+        StatusTextBlock.Text = $"Loaded comparison for {record.EditorID ?? record.FormID}.";
+    }
+
+    private void ConfigureSummaryGrid()
+    {
+        RecordsDataGrid.AutoGenerateColumns = false;
+        RecordsDataGrid.Columns.Clear();
+        RecordsDataGrid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "FormID",
+            Binding = new Binding(nameof(RecordSummaryDTO.FormID)),
+            Width = new DataGridLength(180)
+        });
+        RecordsDataGrid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "EditorID",
+            Binding = new Binding(nameof(RecordSummaryDTO.EditorID)),
+            Width = new DataGridLength(1, DataGridLengthUnitType.Star)
+        });
+    }
+
+    private void ConfigureComparisonGrid(IList<string> pluginNames)
+    {
+        RecordsDataGrid.AutoGenerateColumns = false;
+        RecordsDataGrid.Columns.Clear();
+        RecordsDataGrid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "Field",
+            Binding = new Binding("[Field]"),
+            Width = new DataGridLength(240)
+        });
+
+        foreach (var pluginName in pluginNames)
+        {
+            RecordsDataGrid.Columns.Add(new DataGridTextColumn
+            {
+                Header = pluginName,
+                Binding = new Binding($"[{pluginName}]"),
+                Width = new DataGridLength(1, DataGridLengthUnitType.Star)
+            });
+        }
     }
 }

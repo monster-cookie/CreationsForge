@@ -31,4 +31,13 @@ public interface IPluginService
     /// <param name="recordType">The major record type to load.</param>
     /// <returns>Record summaries containing FormID and EditorID.</returns>
     IList<RecordSummaryDTO> GetRecords(string pluginName, string recordType);
+
+    /// <summary>
+    /// Get a side-by-side comparison for a record across the base plugin, editing masters, and the current plugin.
+    /// </summary>
+    /// <param name="pluginName">The current plugin to compare.</param>
+    /// <param name="recordType">The major record type to load.</param>
+    /// <param name="formKey">The selected record FormKey/FormID.</param>
+    /// <returns>The comparison plugin columns and field rows.</returns>
+    RecordComparisonDTO GetRecordComparison(string pluginName, string recordType, string formKey);
 }

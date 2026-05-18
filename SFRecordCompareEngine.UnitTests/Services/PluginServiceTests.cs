@@ -42,4 +42,29 @@ public class PluginServiceTests
 
         result.ShouldBeNull();
     }
+
+    [Fact]
+    public void GetRecordComparison_WhenFormKeyIsEmpty_ReturnsEmptyComparison()
+    {
+        var gameConfigurationStore = new Mock<IGameConfigurationStore>();
+        var sut = new PluginService(gameConfigurationStore.Object);
+
+        var result = sut.GetRecordComparison("Example.esm", "Npc", string.Empty);
+
+        result.Plugins.ShouldBeEmpty();
+        result.Fields.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void GetRecordComparison_WhenGameIsNotConfigured_ReturnsEmptyComparison()
+    {
+        var gameConfigurationStore = new Mock<IGameConfigurationStore>();
+        gameConfigurationStore.SetupGet(store => store.Game).Returns(null as Mutagen.Bethesda.Environments.IGameEnvironment);
+        var sut = new PluginService(gameConfigurationStore.Object);
+
+        var result = sut.GetRecordComparison("Example.esm", "Npc", "Example.esm|800");
+
+        result.Plugins.ShouldBeEmpty();
+        result.Fields.ShouldBeEmpty();
+    }
 }
