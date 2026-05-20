@@ -5,28 +5,28 @@ namespace SFRecordCompareEngine.Core.Configuration.Interfaces;
 public interface IGameConfigurationStore
 {
     /// <summary>
-    /// The active game environment.
+    ///     The active game environment.
     /// </summary>
     string? SelectedGame { get; set; }
-    
+
     /// <summary>
-    /// The game environment for the currently selected game.
+    ///     The game environment for the currently selected game.
     /// </summary>
     IGameEnvironment? Game { get; set; }
 
     /// <summary>
-    /// The Bethesda games we support currently.
+    ///     The Bethesda games we support currently.
     /// </summary>
     public string[] SupportedGames { get; set; }
-    
+
     /// <summary>
-    /// Select the game to use for the engine.
+    ///     Select the game to use for the engine.
     /// </summary>
     /// <param name="game">The selected game see </param>
     void SelectGame(string? game);
 
     /// <summary>
-    /// Clear the active game.
+    ///     Clear the active game.
     /// </summary>
     void ClearActiveGame();
 }

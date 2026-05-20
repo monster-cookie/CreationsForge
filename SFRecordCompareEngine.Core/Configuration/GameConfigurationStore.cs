@@ -9,14 +9,14 @@ namespace SFRecordCompareEngine.Core.Configuration;
 public class GameConfigurationStore : IGameConfigurationStore
 {
     private readonly ILogger Logger = Log.ForContext<GameConfigurationStore>();
-    
+
     /// <summary>
-    /// The currently selected game.
+    ///     The currently selected game.
     /// </summary>
     public string? SelectedGame { get; set; }
-    
+
     /// <summary>
-    /// The game environment for the currently selected game.
+    ///     The game environment for the currently selected game.
     /// </summary>
     public IGameEnvironment? Game { get; set; }
 

@@ -17,7 +17,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\SFRecordCompareEngine.Core\SFRecordCompareEngine.Core.csproj" />
+        <ProjectReference Include="..\SFRecordCompareEngine.Core\SFRecordCompareEngine.Core.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
