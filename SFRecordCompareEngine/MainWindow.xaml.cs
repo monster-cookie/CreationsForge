@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using Serilog;
 using SFRecordCompareEngine.Core.Configuration.Interfaces;
+using SFRecordCompareEngine.Core.DTOs.Cache;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Models.Records;
 using SFRecordCompareEngine.Core.Services.Interfaces;
@@ -11,6 +12,8 @@ namespace SFRecordCompareEngine;
 
 public partial class MainWindow : Window
 {
+    private const string BasePluginName = "Starfield.esm";
+    private readonly ICacheService CacheService;
     private readonly IGameConfigurationStore GameConfigurationStore;
     private readonly ILogger Logger = Log.ForContext<MainWindow>();
     private readonly IPluginService PluginService;
@@ -18,17 +21,19 @@ public partial class MainWindow : Window
 
     public MainWindow(
         IGameConfigurationStore gameConfigurationStore,
-        IPluginService pluginService)
+        IPluginService pluginService,
+        ICacheService cacheService)
     {
         InitializeComponent();
 
         GameConfigurationStore = gameConfigurationStore;
         PluginService = pluginService;
+        CacheService = cacheService;
 
         ClearLoadedPlugin();
     }
 
-    private void OpenMenuItem_Click(object sender, RoutedEventArgs e)
+    private async void OpenMenuItem_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenGamePluginDialog(GameConfigurationStore, PluginService)
         {
@@ -41,8 +46,23 @@ public partial class MainWindow : Window
         LoadedGameTextBlock.Text = dialog.SelectedGame;
         LoadedPluginTextBlock.Text = dialog.SelectedPluginName;
         LoadedPluginName = dialog.SelectedPluginName;
-        StatusTextBlock.Text = $"Loaded {dialog.SelectedPluginName}.";
-        LoadRecordTree();
+
+        try
+        {
+            ShowCacheProgress("Preparing reference cache...", 0, 0);
+            var progress = new Progress<CacheBuildProgressDTO>(UpdateCacheProgress);
+            await CacheService.BuildOrUpdateReferenceCacheAsync(
+                GetCachePluginNames(dialog.SelectedPluginName),
+                progress,
+                CancellationToken.None);
+
+            StatusTextBlock.Text = $"Loaded {dialog.SelectedPluginName}.";
+            LoadRecordTree();
+        }
+        finally
+        {
+            HideCacheProgress();
+        }
 
         Logger.Information("Opened {PluginName} for {Game}", dialog.SelectedPluginName, dialog.SelectedGame);
     }
@@ -183,6 +203,47 @@ public partial class MainWindow : Window
                 Width = new DataGridLength(1, DataGridLengthUnitType.Star)
             });
         }
+    }
+
+    private IList<string> GetCachePluginNames(string pluginName)
+    {
+        var pluginNames = new List<string> { BasePluginName };
+        var pluginHeader = PluginService.GetPluginHeader(pluginName);
+        if (pluginHeader is not null)
+        {
+            pluginNames.AddRange(pluginHeader.Masters
+                .Select(master => master.ToString())
+                .Where(masterName => !string.IsNullOrWhiteSpace(masterName)));
+        }
+
+        pluginNames.Add(pluginName);
+
+        return pluginNames
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private void UpdateCacheProgress(CacheBuildProgressDTO progress)
+    {
+        ShowCacheProgress(progress.Message, progress.ProcessedPlugins, progress.TotalPlugins);
+    }
+
+    private void ShowCacheProgress(string message, int processedPlugins, int totalPlugins)
+    {
+        CacheProgressOverlay.Visibility = Visibility.Visible;
+        CacheProgressTextBlock.Text = message;
+        CacheProgressBar.IsIndeterminate = totalPlugins <= 0;
+        if (totalPlugins <= 0) return;
+
+        CacheProgressBar.Maximum = totalPlugins;
+        CacheProgressBar.Value = Math.Min(processedPlugins, totalPlugins);
+    }
+
+    private void HideCacheProgress()
+    {
+        CacheProgressOverlay.Visibility = Visibility.Collapsed;
+        CacheProgressBar.IsIndeterminate = true;
+        CacheProgressBar.Value = 0;
     }
 
     private DataTemplate BuildComparisonCellTemplate(string pluginName)

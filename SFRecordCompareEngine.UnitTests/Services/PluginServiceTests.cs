@@ -6,6 +6,7 @@ using SFRecordCompareEngine.Core.Configuration.Interfaces;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Models.Records;
 using SFRecordCompareEngine.Core.Services;
+using SFRecordCompareEngine.Core.Services.Interfaces;
 using Shouldly;
 
 namespace SFRecordCompareEngine.UnitTests.Services;
@@ -17,7 +18,8 @@ public class PluginServiceTests
     {
         var gameConfigurationStore = new Mock<IGameConfigurationStore>();
         gameConfigurationStore.SetupGet(store => store.Game).Returns(null as IGameEnvironment);
-        var sut = new PluginService(gameConfigurationStore.Object);
+        var cacheService = new Mock<ICacheService>();
+        var sut = new PluginService(gameConfigurationStore.Object, cacheService.Object);
 
         var result = sut.GetPlugins();
 
@@ -29,7 +31,8 @@ public class PluginServiceTests
     {
         var gameConfigurationStore = new Mock<IGameConfigurationStore>();
         gameConfigurationStore.SetupGet(store => store.Game).Throws(new InvalidOperationException("Config failed."));
-        var sut = new PluginService(gameConfigurationStore.Object);
+        var cacheService = new Mock<ICacheService>();
+        var sut = new PluginService(gameConfigurationStore.Object, cacheService.Object);
 
         var result = sut.GetPlugins();
 
@@ -41,7 +44,8 @@ public class PluginServiceTests
     {
         var gameConfigurationStore = new Mock<IGameConfigurationStore>();
         gameConfigurationStore.SetupGet(store => store.Game).Returns(null as IGameEnvironment);
-        var sut = new PluginService(gameConfigurationStore.Object);
+        var cacheService = new Mock<ICacheService>();
+        var sut = new PluginService(gameConfigurationStore.Object, cacheService.Object);
 
         var result = sut.GetPluginHeader("Example.esm");
 
@@ -52,7 +56,8 @@ public class PluginServiceTests
     public void GetRecordComparison_WhenFormKeyIsEmpty_ReturnsEmptyComparison()
     {
         var gameConfigurationStore = new Mock<IGameConfigurationStore>();
-        var sut = new PluginService(gameConfigurationStore.Object);
+        var cacheService = new Mock<ICacheService>();
+        var sut = new PluginService(gameConfigurationStore.Object, cacheService.Object);
 
         var result = sut.GetRecordComparison("Example.esm", "Npc", string.Empty);
 
@@ -65,7 +70,8 @@ public class PluginServiceTests
     {
         var gameConfigurationStore = new Mock<IGameConfigurationStore>();
         gameConfigurationStore.SetupGet(store => store.Game).Returns(null as IGameEnvironment);
-        var sut = new PluginService(gameConfigurationStore.Object);
+        var cacheService = new Mock<ICacheService>();
+        var sut = new PluginService(gameConfigurationStore.Object, cacheService.Object);
 
         var result = sut.GetRecordComparison("Example.esm", "Npc", "Example.esm|800");
 
@@ -182,10 +188,9 @@ public class PluginServiceTests
     }
 
     [Fact]
-    public void ReferenceDisplayResolver_WhenDictionaryMisses_UsesDirectResolver()
+    public void ReferenceDisplayResolver_WhenCacheResolvesReference_ReturnsCachedDisplayValue()
     {
         var resolver = CreateReferenceDisplayResolver(
-            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
             referenceValue => referenceValue == "2F7C8:Starfield.esm" ? "ResolvedEditorId" : null);
 
         var result = ResolveReferenceDisplayValue(
@@ -196,11 +201,9 @@ public class PluginServiceTests
     }
 
     [Fact]
-    public void ReferenceDisplayResolver_WhenDirectResolverMisses_ReturnsNormalizedReference()
+    public void ReferenceDisplayResolver_WhenCacheMisses_ReturnsNormalizedReference()
     {
-        var resolver = CreateReferenceDisplayResolver(
-            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
-            _ => null);
+        var resolver = CreateReferenceDisplayResolver(_ => null);
 
         var result = ResolveReferenceDisplayValue(
             resolver,
@@ -232,9 +235,7 @@ public class PluginServiceTests
         return (string)method.Invoke(null, [referenceValue])!;
     }
 
-    private static object CreateReferenceDisplayResolver(
-        IDictionary<string, string> displayValues,
-        Func<string, string?> directResolver)
+    private static object CreateReferenceDisplayResolver(Func<string, string?> directResolver)
     {
         var resolverType = typeof(PluginService).GetNestedType(
             "RecordReferenceDisplayResolver",
@@ -244,7 +245,6 @@ public class PluginServiceTests
         return Activator.CreateInstance(
             resolverType,
             [
-                () => displayValues,
                 directResolver
             ])!;
     }

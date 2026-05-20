@@ -48,8 +48,9 @@
                                                     BooleanTemplate="{StaticResource ComparisonBooleanCellTemplate}"
                                                     TreeTemplate="{StaticResource ComparisonTreeCellTemplate}" />
     </Window.Resources>
-    <DockPanel>
-        <Menu DockPanel.Dock="Top">
+    <Grid>
+        <DockPanel>
+            <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
                 <MenuItem Header="_Open..."
                           Click="OpenMenuItem_Click">
@@ -62,28 +63,28 @@
                 <MenuItem Header="E_xit"
                           Click="ExitMenuItem_Click" />
             </MenuItem>
-        </Menu>
+            </Menu>
 
-        <ToolBarTray DockPanel.Dock="Top">
-            <ToolBar>
-                <Button Width="80"
-                        Height="28"
-                        Click="OpenMenuItem_Click">
-                    <StackPanel Orientation="Horizontal">
-                        <Path Style="{StaticResource OpenFolderIconPathStyle}"
-                              Margin="0,0,6,0"
-                              Data="M2,6 L7,6 L8.5,8 L14,8 L12.5,14 L2.5,14 Z M2,6 L2,4 L6.5,4 L8,6" />
-                        <TextBlock Text="Open" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
-            </ToolBar>
-        </ToolBarTray>
+            <ToolBarTray DockPanel.Dock="Top">
+                <ToolBar>
+                    <Button Width="80"
+                            Height="28"
+                            Click="OpenMenuItem_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Style="{StaticResource OpenFolderIconPathStyle}"
+                                  Margin="0,0,6,0"
+                                  Data="M2,6 L7,6 L8.5,8 L14,8 L12.5,14 L2.5,14 Z M2,6 L2,4 L6.5,4 L8,6" />
+                            <TextBlock Text="Open" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </ToolBar>
+            </ToolBarTray>
 
-        <Grid Margin="16">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+            <Grid Margin="16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
 
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -155,6 +156,32 @@
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>
-        </Grid>
-    </DockPanel>
+            </Grid>
+        </DockPanel>
+
+        <Border x:Name="CacheProgressOverlay"
+                Background="#CCFFFFFF"
+                Visibility="Collapsed">
+            <Grid Width="420"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center">
+                <Border BorderBrush="#CCC"
+                        BorderThickness="1"
+                        Background="White"
+                        Padding="20">
+                    <StackPanel>
+                        <TextBlock x:Name="CacheProgressTextBlock"
+                                   Text="Preparing cache..."
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,12" />
+                        <ProgressBar x:Name="CacheProgressBar"
+                                     Height="18"
+                                     Minimum="0"
+                                     Maximum="100"
+                                     IsIndeterminate="True" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
 </Window>
