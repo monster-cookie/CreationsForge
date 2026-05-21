@@ -125,16 +125,45 @@ public class PluginServiceTests
     }
 
     [Fact]
-    public void FlattenRecordFields_WhenRecordTypeHasNoOptions_KeepsFormKeyAsText()
+    public void FlattenRecordFields_WhenRecordTypeHasNoOptions_HidesDefaultFieldsAndKeepsFormKeyAsText()
     {
         var record = CreateFormListRecord();
 
         var result = FlattenRecordFields(record, RecordComparisonRecordTypeOptions.For("Keyword"));
 
+        result.Contains("FormVersion").ShouldBeFalse();
+        result.Contains("StarfieldMajorRecordFlags").ShouldBeFalse();
+        result.Contains("Version2").ShouldBeFalse();
+        result.Contains("VersionControl").ShouldBeFalse();
         result.Contains("FormKey").ShouldBeTrue();
         var formKey = result["FormKey"];
         formKey.ShouldNotBeNull();
         GetDisplayKind(formKey).ShouldBe(RecordComparisonFieldDisplayKind.Text);
+    }
+
+    [Fact]
+    public void FlattenRecordFields_WhenRecordTypeIsGameSetting_HidesDefaultFieldsAndXalg()
+    {
+        var record = new TestGameSettingRecord
+        {
+            FormKey = "Example.esm|900",
+            FormVersion = 1,
+            StarfieldMajorRecordFlags = "None",
+            Version2 = 2,
+            VersionControl = "Default",
+            XALG = "Ignored",
+            EditorID = "ExampleSetting"
+        };
+
+        var result = FlattenRecordFields(record, RecordComparisonRecordTypeOptions.For("GameSetting"));
+
+        result.Contains("FormVersion").ShouldBeFalse();
+        result.Contains("StarfieldMajorRecordFlags").ShouldBeFalse();
+        result.Contains("Version2").ShouldBeFalse();
+        result.Contains("VersionControl").ShouldBeFalse();
+        result.Contains("XALG").ShouldBeFalse();
+        result.Contains("FormKey").ShouldBeTrue();
+        result.Contains("EditorID").ShouldBeTrue();
     }
 
     [Fact]
@@ -337,5 +366,16 @@ public class PluginServiceTests
     private class TestReferencedRecord
     {
         public string? ReferencedRecord { get; set; }
+    }
+
+    private class TestGameSettingRecord
+    {
+        public string? FormKey { get; set; }
+        public int FormVersion { get; set; }
+        public string? StarfieldMajorRecordFlags { get; set; }
+        public int Version2 { get; set; }
+        public string? VersionControl { get; set; }
+        public string? XALG { get; set; }
+        public string? EditorID { get; set; }
     }
 }

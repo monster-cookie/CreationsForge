@@ -2,7 +2,17 @@
 
 public class RecordComparisonRecordTypeOptions
 {
-    private static readonly RecordComparisonRecordTypeOptions DefaultOptions = new();
+    private static readonly RecordComparisonRecordTypeOptions DefaultOptions = new()
+    {
+        HiddenFieldNames =
+        {
+            "FormVersion",
+            "FormKey",
+            "StarfieldMajorRecordFlags",
+            "Version2",
+            "VersionControl"
+        }
+    };
 
     private static readonly IDictionary<string, RecordComparisonRecordTypeOptions> OptionsByRecordType =
         new Dictionary<string, RecordComparisonRecordTypeOptions>(StringComparer.OrdinalIgnoreCase)
@@ -11,15 +21,18 @@ public class RecordComparisonRecordTypeOptions
             {
                 HiddenFieldNames =
                 {
-                    "FormKey",
-                    "FormVersion",
-                    "StarfieldMajorRecordFlags",
-                    "Version2",
-                    "VersionControl"
+                    "FormKey"
                 },
                 TreeFieldNames =
                 {
                     "Items"
+                }
+            },
+            ["GameSetting"] = new()
+            {
+                HiddenFieldNames =
+                {
+                    "XALG"
                 }
             }
         };
@@ -29,9 +42,23 @@ public class RecordComparisonRecordTypeOptions
 
     public static RecordComparisonRecordTypeOptions For(string recordType)
     {
-        return OptionsByRecordType.TryGetValue(recordType, out var options)
-            ? options
-            : DefaultOptions;
+        if (!OptionsByRecordType.TryGetValue(recordType, out var options))
+        {
+            return DefaultOptions;
+        }
+
+        var mergedOptions = new RecordComparisonRecordTypeOptions();
+        foreach (var hiddenFieldName in DefaultOptions.HiddenFieldNames.Concat(options.HiddenFieldNames))
+        {
+            mergedOptions.HiddenFieldNames.Add(hiddenFieldName);
+        }
+
+        foreach (var treeFieldName in options.TreeFieldNames)
+        {
+            mergedOptions.TreeFieldNames.Add(treeFieldName);
+        }
+
+        return mergedOptions;
     }
 
     public bool IsHidden(string fieldName)
