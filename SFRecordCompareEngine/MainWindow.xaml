@@ -1,6 +1,7 @@
 <Window x:Class="SFRecordCompareEngine.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:SFRecordCompareEngine"
         Title="SF Record Compare Engine"
         Height="300"
         Width="640"
@@ -19,9 +20,37 @@
             <Setter Property="Width" Value="16" />
             <Setter Property="Height" Value="16" />
         </Style>
+        <HierarchicalDataTemplate x:Key="ComparisonTreeNodeTemplate"
+                                  ItemsSource="{Binding Children}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding Name}" />
+                <TextBlock Text="{Binding Value, StringFormat=: {0}}" />
+            </StackPanel>
+        </HierarchicalDataTemplate>
+        <DataTemplate x:Key="ComparisonTextCellTemplate">
+            <TextBlock Text="{Binding TextValue}"
+                       TextWrapping="Wrap" />
+        </DataTemplate>
+        <DataTemplate x:Key="ComparisonBooleanCellTemplate">
+            <CheckBox IsChecked="{Binding BooleanValue}"
+                      IsHitTestVisible="False"
+                      Focusable="False"
+                      HorizontalAlignment="Center" />
+        </DataTemplate>
+        <DataTemplate x:Key="ComparisonTreeCellTemplate">
+            <TreeView ItemsSource="{Binding TreeNodes}"
+                      ItemTemplate="{StaticResource ComparisonTreeNodeTemplate}"
+                      BorderThickness="0"
+                      Padding="0" />
+        </DataTemplate>
+        <local:RecordComparisonCellTemplateSelector x:Key="ComparisonCellTemplateSelector"
+                                                    TextTemplate="{StaticResource ComparisonTextCellTemplate}"
+                                                    BooleanTemplate="{StaticResource ComparisonBooleanCellTemplate}"
+                                                    TreeTemplate="{StaticResource ComparisonTreeCellTemplate}" />
     </Window.Resources>
-    <DockPanel>
-        <Menu DockPanel.Dock="Top">
+    <Grid>
+        <DockPanel>
+            <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
                 <MenuItem Header="_Open..."
                           Click="OpenMenuItem_Click">
@@ -34,28 +63,28 @@
                 <MenuItem Header="E_xit"
                           Click="ExitMenuItem_Click" />
             </MenuItem>
-        </Menu>
+            </Menu>
 
-        <ToolBarTray DockPanel.Dock="Top">
-            <ToolBar>
-                <Button Width="80"
-                        Height="28"
-                        Click="OpenMenuItem_Click">
-                    <StackPanel Orientation="Horizontal">
-                        <Path Style="{StaticResource OpenFolderIconPathStyle}"
-                              Margin="0,0,6,0"
-                              Data="M2,6 L7,6 L8.5,8 L14,8 L12.5,14 L2.5,14 Z M2,6 L2,4 L6.5,4 L8,6" />
-                        <TextBlock Text="Open" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
-            </ToolBar>
-        </ToolBarTray>
+            <ToolBarTray DockPanel.Dock="Top">
+                <ToolBar>
+                    <Button Width="80"
+                            Height="28"
+                            Click="OpenMenuItem_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Style="{StaticResource OpenFolderIconPathStyle}"
+                                  Margin="0,0,6,0"
+                                  Data="M2,6 L7,6 L8.5,8 L14,8 L12.5,14 L2.5,14 Z M2,6 L2,4 L6.5,4 L8,6" />
+                            <TextBlock Text="Open" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </ToolBar>
+            </ToolBarTray>
 
-        <Grid Margin="16">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+            <Grid Margin="16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
 
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -67,14 +96,20 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" Text="Game" FontWeight="SemiBold" Margin="0,0,8,0" VerticalAlignment="Center" />
-                <TextBlock x:Name="LoadedGameTextBlock" Grid.Column="1" Margin="0,0,24,0" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="0" Text="Game" FontWeight="SemiBold" Margin="0,0,8,0"
+                           VerticalAlignment="Center" />
+                <TextBlock x:Name="LoadedGameTextBlock" Grid.Column="1" Margin="0,0,24,0"
+                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
 
-                <TextBlock Grid.Column="2" Text="Plugin" FontWeight="SemiBold" Margin="0,0,8,0" VerticalAlignment="Center" />
-                <TextBlock x:Name="LoadedPluginTextBlock" Grid.Column="3" Margin="0,0,24,0" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="Plugin" FontWeight="SemiBold" Margin="0,0,8,0"
+                           VerticalAlignment="Center" />
+                <TextBlock x:Name="LoadedPluginTextBlock" Grid.Column="3" Margin="0,0,24,0"
+                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
 
-                <TextBlock Grid.Column="4" Text="Status" FontWeight="SemiBold" Margin="0,0,8,0" VerticalAlignment="Center" />
-                <TextBlock x:Name="StatusTextBlock" Grid.Column="5" Foreground="#555" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="4" Text="Status" FontWeight="SemiBold" Margin="0,0,8,0"
+                           VerticalAlignment="Center" />
+                <TextBlock x:Name="StatusTextBlock" Grid.Column="5" Foreground="#555" TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center" />
             </Grid>
 
             <Grid Grid.Row="1" Margin="0,16,0,0">
@@ -121,6 +156,32 @@
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>
-        </Grid>
-    </DockPanel>
+            </Grid>
+        </DockPanel>
+
+        <Border x:Name="CacheProgressOverlay"
+                Background="#CCFFFFFF"
+                Visibility="Collapsed">
+            <Grid Width="420"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center">
+                <Border BorderBrush="#CCC"
+                        BorderThickness="1"
+                        Background="White"
+                        Padding="20">
+                    <StackPanel>
+                        <TextBlock x:Name="CacheProgressTextBlock"
+                                   Text="Preparing cache..."
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,12" />
+                        <ProgressBar x:Name="CacheProgressBar"
+                                     Height="18"
+                                     Minimum="0"
+                                     Maximum="100"
+                                     IsIndeterminate="True" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
 </Window>

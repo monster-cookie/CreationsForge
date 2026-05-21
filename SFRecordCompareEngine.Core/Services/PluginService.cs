@@ -1,3 +1,4 @@
+using System.Collections;
 using System.IO;
 using System.Reflection;
 using Mutagen.Bethesda;
@@ -8,6 +9,7 @@ using Serilog;
 using SFRecordCompareEngine.Core.Configuration.Interfaces;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.DTOs.Records;
+using SFRecordCompareEngine.Core.Models.Records;
 using SFRecordCompareEngine.Core.Services.Interfaces;
 
 namespace SFRecordCompareEngine.Core.Services;
@@ -32,12 +34,15 @@ public class PluginService : IPluginService
         "TranslationMask"
     };
 
-    private readonly ILogger Logger = Log.ForContext<PluginService>();
     private readonly IGameConfigurationStore GameConfigurationStore;
+    private readonly ICacheService CacheService;
 
-    public PluginService(IGameConfigurationStore gameConfigurationStore)
+    private readonly ILogger Logger = Log.ForContext<PluginService>();
+
+    public PluginService(IGameConfigurationStore gameConfigurationStore, ICacheService cacheService)
     {
         GameConfigurationStore = gameConfigurationStore;
+        CacheService = cacheService;
     }
 
     /// <inheritdoc />
@@ -68,7 +73,7 @@ public class PluginService : IPluginService
                 return new List<string>();
         }
     }
-    
+
     /// <inheritdoc />
     public IList<string> GetPlugins()
     {
@@ -98,6 +103,7 @@ public class PluginService : IPluginService
         }
     }
 
+    /// <inheritdoc />
     public PluginHeaderDTO? GetPluginHeader(string pluginName)
     {
         try
@@ -125,7 +131,7 @@ public class PluginService : IPluginService
                 return new List<RecordSummaryDTO>();
             }
 
-            return records
+            var filteredRecords = records
                 .Cast<object>()
                 .Select(record => new RecordSummaryDTO
                 {
@@ -134,6 +140,7 @@ public class PluginService : IPluginService
                     EditorID = GetStringValue(record, "EditorID")
                 })
                 .ToList();
+            return filteredRecords;
         }
         catch (Exception ex)
         {
@@ -174,11 +181,13 @@ public class PluginService : IPluginService
                 });
             }
 
+            var recordTypeOptions = RecordComparisonRecordTypeOptions.For(recordType);
+            var referenceDisplayResolver = new RecordReferenceDisplayResolver(CacheService.ResolveReferenceDisplayValue);
             var fieldsByPlugin = recordsByPlugin
                 .Where(item => item.Value is not null)
                 .ToDictionary(
                     item => item.Key,
-                    item => FlattenRecordFields(item.Value!),
+                    item => FlattenRecordFields(item.Value!, recordTypeOptions, referenceDisplayResolver.GetDisplayValue),
                     StringComparer.OrdinalIgnoreCase);
 
             var fieldNames = fieldsByPlugin
@@ -191,12 +200,28 @@ public class PluginService : IPluginService
                 .Select(fieldName => new RecordComparisonFieldDTO
                 {
                     FieldName = fieldName,
+                    DisplayKind = GetDisplayKind(fieldName, fieldsByPlugin.Values),
                     ValuesByPlugin = comparison.Plugins.ToDictionary(
                         plugin => plugin.PluginName,
                         plugin => fieldsByPlugin.TryGetValue(plugin.PluginName, out var fields)
                                   && fields.TryGetValue(fieldName, out var value)
-                            ? value
+                            ? value.TextValue
                             : null,
+                        StringComparer.OrdinalIgnoreCase),
+                    BooleanValuesByPlugin = comparison.Plugins.ToDictionary(
+                        plugin => plugin.PluginName,
+                        plugin => fieldsByPlugin.TryGetValue(plugin.PluginName, out var fields)
+                                  && fields.TryGetValue(fieldName, out var value)
+                            ? value.BooleanValue
+                            : null,
+                        StringComparer.OrdinalIgnoreCase),
+                    TreeValuesByPlugin = comparison.Plugins.ToDictionary(
+                        plugin => plugin.PluginName,
+                        plugin => fieldsByPlugin.TryGetValue(plugin.PluginName, out var fields)
+                                  && fields.TryGetValue(fieldName, out var value)
+                                  && value.TreeNodes is not null
+                            ? value.TreeNodes
+                            : new List<RecordComparisonFieldNodeDTO>(),
                         StringComparer.OrdinalIgnoreCase)
                 })
                 .ToList();
@@ -217,10 +242,15 @@ public class PluginService : IPluginService
         }
     }
 
+    /// <summary>
+    ///     Load a Starfield plugin from the selected game's data folder.
+    /// </summary>
+    /// <param name="pluginName">The plugin file name to load.</param>
+    /// <returns>The disposable Mutagen plugin getter.</returns>
     private IStarfieldModDisposableGetter LoadPlugin(string pluginName)
     {
         var gameEnvironment = GameConfigurationStore.Game
-            ?? throw new InvalidOperationException("No game environment is configured.");
+                              ?? throw new InvalidOperationException("No game environment is configured.");
         var pluginPath = Path.Combine(gameEnvironment.DataFolderPath.Path, pluginName);
         var modKey = ModKey.FromFileName(Path.GetFileName(pluginPath));
         var modPath = new ModPath(modKey, pluginPath);
@@ -232,6 +262,11 @@ public class PluginService : IPluginService
             .Construct();
     }
 
+    /// <summary>
+    ///     Get the base plugin, master plugins, and selected plugin used as comparison columns.
+    /// </summary>
+    /// <param name="pluginName">The selected plugin file name.</param>
+    /// <returns>The distinct plugin file names to compare.</returns>
     private IList<string> GetComparisonPluginNames(string pluginName)
     {
         using var plugin = LoadPlugin(pluginName);
@@ -249,6 +284,13 @@ public class PluginService : IPluginService
             .ToList();
     }
 
+    /// <summary>
+    ///     Load one record from a plugin by record type and FormKey/FormID value.
+    /// </summary>
+    /// <param name="pluginName">The plugin file name to inspect.</param>
+    /// <param name="recordType">The major record type to load.</param>
+    /// <param name="formKey">The FormKey or FormID to match.</param>
+    /// <returns>The matching record, or null when it cannot be found or loaded.</returns>
     private object? LoadRecord(string pluginName, string recordType, string formKey)
     {
         try
@@ -266,42 +308,80 @@ public class PluginService : IPluginService
         }
     }
 
+    /// <summary>
+    ///     Determine whether a record's FormKey or FormID equals the expected value.
+    /// </summary>
+    /// <param name="record">The record to inspect.</param>
+    /// <param name="formKey">The expected FormKey or FormID.</param>
+    /// <returns>True when either key property matches; otherwise false.</returns>
     private static bool RecordMatches(object record, string formKey)
     {
         return StringValueEquals(record, "FormKey", formKey)
                || StringValueEquals(record, "FormID", formKey);
     }
 
+    /// <summary>
+    ///     Read a public property value from an object and convert it to text.
+    /// </summary>
+    /// <param name="source">The object containing the property.</param>
+    /// <param name="propertyName">The public property name to read.</param>
+    /// <returns>The property value as text, or null when the property is missing or null.</returns>
     private static string? GetStringValue(object source, string propertyName)
     {
         var value = source.GetType().GetProperty(propertyName)?.GetValue(source);
         return value?.ToString();
     }
 
+    /// <summary>
+    ///     Compare a public property text value to an expected value using case-insensitive comparison.
+    /// </summary>
+    /// <param name="source">The object containing the property.</param>
+    /// <param name="propertyName">The public property name to read.</param>
+    /// <param name="expectedValue">The expected text value.</param>
+    /// <returns>True when the property exists and equals the expected value; otherwise false.</returns>
     private static bool StringValueEquals(object source, string propertyName, string expectedValue)
     {
         var value = GetStringValue(source, propertyName);
         return value is not null && value.Equals(expectedValue, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static IDictionary<string, string?> FlattenRecordFields(object record)
+    /// <summary>
+    ///     Flatten a record's public fields into comparison values suitable for grid display.
+    /// </summary>
+    /// <param name="record">The record to flatten.</param>
+    /// <param name="recordTypeOptions">Record-type-specific display options.</param>
+    /// <param name="displayValueResolver">Optional resolver for displaying referenced records.</param>
+    /// <returns>A field-name keyed map of comparison field values.</returns>
+    private static IDictionary<string, RecordComparisonFieldValue> FlattenRecordFields(
+        object record,
+        RecordComparisonRecordTypeOptions recordTypeOptions,
+        Func<object?, string?>? displayValueResolver = null)
     {
-        var fields = new SortedDictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-        FlattenObject(record, string.Empty, fields, 0, new HashSet<object>(ReferenceEqualityComparer.Instance));
+        var fields = new SortedDictionary<string, RecordComparisonFieldValue>(StringComparer.OrdinalIgnoreCase);
+        FlattenObject(record, string.Empty, fields, recordTypeOptions, displayValueResolver, 0, new HashSet<object>(ReferenceEqualityComparer.Instance));
         return fields;
     }
 
+    /// <summary>
+    ///     Recursively flatten an object's public properties into comparison field values.
+    /// </summary>
+    /// <param name="source">The object to flatten.</param>
+    /// <param name="prefix">The field-name prefix for nested values.</param>
+    /// <param name="fields">The target field-value map.</param>
+    /// <param name="recordTypeOptions">Record-type-specific display options.</param>
+    /// <param name="displayValueResolver">Optional resolver for displaying referenced records.</param>
+    /// <param name="depth">The current recursion depth.</param>
+    /// <param name="visited">The reference-equality set used to prevent cycles.</param>
     private static void FlattenObject(
         object source,
         string prefix,
-        IDictionary<string, string?> fields,
+        IDictionary<string, RecordComparisonFieldValue> fields,
+        RecordComparisonRecordTypeOptions recordTypeOptions,
+        Func<object?, string?>? displayValueResolver,
         int depth,
         ISet<object> visited)
     {
-        if (depth > MaxFieldDepth || !visited.Add(source))
-        {
-            return;
-        }
+        if (depth > MaxFieldDepth || !visited.Add(source)) return;
 
         foreach (var property in source.GetType()
                      .GetProperties(BindingFlags.Instance | BindingFlags.Public)
@@ -310,34 +390,200 @@ public class PluginService : IPluginService
                      .OrderBy(property => property.Name))
         {
             var fieldName = string.IsNullOrWhiteSpace(prefix) ? property.Name : $"{prefix}.{property.Name}";
-            if (!TryGetPropertyValue(source, property, out var value))
+            if (recordTypeOptions.IsHidden(fieldName)) continue;
+
+            if (!TryGetPropertyValue(source, property, out var value)) continue;
+
+            if (recordTypeOptions.IsTree(fieldName))
             {
+                fields[fieldName] = RecordComparisonFieldValue.ForTree(ToTreeNodes(value, displayValueResolver));
                 continue;
             }
 
             if (value is null)
             {
-                fields[fieldName] = null;
+                fields[fieldName] = RecordComparisonFieldValue.ForText(null);
                 continue;
             }
 
             var valueType = value.GetType();
+            if ((Nullable.GetUnderlyingType(valueType) ?? valueType) == typeof(bool))
+            {
+                fields[fieldName] = RecordComparisonFieldValue.ForBoolean((bool)value);
+                continue;
+            }
+
             if (IsDisplayValue(valueType))
             {
-                fields[fieldName] = value.ToString();
+                fields[fieldName] = RecordComparisonFieldValue.ForText(GetDisplayValue(value, displayValueResolver));
                 continue;
             }
 
-            if (value is System.Collections.IEnumerable enumerable && value is not string)
+            if (value is IEnumerable enumerable and not string)
             {
-                fields[fieldName] = FormatEnumerable(enumerable);
+                fields[fieldName] = RecordComparisonFieldValue.ForText(FormatEnumerable(enumerable, displayValueResolver));
                 continue;
             }
 
-            FlattenObject(value, fieldName, fields, depth + 1, visited);
+            FlattenObject(value, fieldName, fields, recordTypeOptions, displayValueResolver, depth + 1, visited);
         }
     }
 
+    /// <summary>
+    ///     Choose the field display kind based on the values available across plugins.
+    /// </summary>
+    /// <param name="fieldName">The comparison field name.</param>
+    /// <param name="fieldsByPlugin">The flattened field maps for each plugin.</param>
+    /// <returns>The display kind to use for the field.</returns>
+    private static RecordComparisonFieldDisplayKind GetDisplayKind(string fieldName, IEnumerable<IDictionary<string, RecordComparisonFieldValue>> fieldsByPlugin)
+    {
+        var values = fieldsByPlugin
+            .Where(fields => fields.TryGetValue(fieldName, out _))
+            .Select(fields => fields[fieldName])
+            .ToList();
+
+        if (values.Any(value => value.DisplayKind == RecordComparisonFieldDisplayKind.Tree))
+        {
+            return RecordComparisonFieldDisplayKind.Tree;
+        }
+
+        return values.Any(value => value.DisplayKind == RecordComparisonFieldDisplayKind.Boolean)
+            ? RecordComparisonFieldDisplayKind.Boolean
+            : RecordComparisonFieldDisplayKind.Text;
+    }
+
+    /// <summary>
+    ///     Convert a value into tree nodes for fields configured to render hierarchically.
+    /// </summary>
+    /// <param name="value">The value to convert.</param>
+    /// <param name="displayValueResolver">Optional resolver for displaying referenced records.</param>
+    /// <returns>The tree node list for display.</returns>
+    private static IList<RecordComparisonFieldNodeDTO> ToTreeNodes(
+        object? value,
+        Func<object?, string?>? displayValueResolver)
+    {
+        if (value is null)
+        {
+            return new List<RecordComparisonFieldNodeDTO>();
+        }
+
+        if (value is IEnumerable enumerable and not string)
+        {
+            return ToEnumerableTreeNodes(enumerable, displayValueResolver, 0, new HashSet<object>(ReferenceEqualityComparer.Instance));
+        }
+
+        return new List<RecordComparisonFieldNodeDTO>
+        {
+            ToTreeNode("Value", value, displayValueResolver, 0, new HashSet<object>(ReferenceEqualityComparer.Instance))
+        };
+    }
+
+    /// <summary>
+    ///     Convert an enumerable value into indexed child tree nodes.
+    /// </summary>
+    /// <param name="enumerable">The enumerable to convert.</param>
+    /// <param name="displayValueResolver">Optional resolver for displaying referenced records.</param>
+    /// <param name="depth">The current recursion depth.</param>
+    /// <param name="visited">The reference-equality set used to prevent cycles.</param>
+    /// <returns>The indexed tree nodes.</returns>
+    private static IList<RecordComparisonFieldNodeDTO> ToEnumerableTreeNodes(
+        IEnumerable enumerable,
+        Func<object?, string?>? displayValueResolver,
+        int depth,
+        ISet<object> visited)
+    {
+        return enumerable
+            .Cast<object?>()
+            .Select((value, index) => ToTreeNode($"[{index}]", value, displayValueResolver, depth, visited))
+            .ToList();
+    }
+
+    /// <summary>
+    ///     Convert one object or scalar value into a tree node.
+    /// </summary>
+    /// <param name="name">The tree node display name.</param>
+    /// <param name="value">The value to convert.</param>
+    /// <param name="displayValueResolver">Optional resolver for displaying referenced records.</param>
+    /// <param name="depth">The current recursion depth.</param>
+    /// <param name="visited">The reference-equality set used to prevent cycles.</param>
+    /// <returns>The converted tree node.</returns>
+    private static RecordComparisonFieldNodeDTO ToTreeNode(
+        string name,
+        object? value,
+        Func<object?, string?>? displayValueResolver,
+        int depth,
+        ISet<object> visited)
+    {
+        if (value is null)
+        {
+            return new RecordComparisonFieldNodeDTO
+            {
+                Name = name
+            };
+        }
+
+        var valueType = value.GetType();
+        if (IsDisplayValue(valueType) || depth >= MaxFieldDepth || !visited.Add(value))
+        {
+            return new RecordComparisonFieldNodeDTO
+            {
+                Name = name,
+                Value = GetDisplayValue(value, displayValueResolver)
+            };
+        }
+
+        if (value is IEnumerable enumerable and not string)
+        {
+            return new RecordComparisonFieldNodeDTO
+            {
+                Name = name,
+                Children = ToEnumerableTreeNodes(enumerable, displayValueResolver, depth + 1, visited)
+            };
+        }
+
+        var node = new RecordComparisonFieldNodeDTO
+        {
+            Name = name
+        };
+
+        foreach (var property in value.GetType()
+                     .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                     .Where(property => property.GetIndexParameters().Length == 0)
+                     .Where(property => !ExcludedFieldNames.Contains(property.Name))
+                     .OrderBy(property => property.Name))
+        {
+            if (TryGetPropertyValue(value, property, out var propertyValue))
+            {
+                node.Children.Add(ToTreeNode(property.Name, propertyValue, displayValueResolver, depth + 1, visited));
+            }
+        }
+
+        if (node.Children.Count == 0)
+        {
+            node.Value = GetDisplayValue(value, displayValueResolver);
+        }
+
+        return node;
+    }
+
+    /// <summary>
+    ///     Get the display text for a value, preferring the supplied reference resolver when available.
+    /// </summary>
+    /// <param name="value">The value to display.</param>
+    /// <param name="displayValueResolver">Optional resolver for displaying referenced records.</param>
+    /// <returns>The display value, or null when the input is null.</returns>
+    private static string? GetDisplayValue(object? value, Func<object?, string?>? displayValueResolver)
+    {
+        return displayValueResolver?.Invoke(value) ?? value?.ToString();
+    }
+
+    /// <summary>
+    ///     Safely read a property value, treating property getter failures as null values.
+    /// </summary>
+    /// <param name="source">The object containing the property.</param>
+    /// <param name="property">The property to read.</param>
+    /// <param name="value">The property value when read successfully; otherwise null.</param>
+    /// <returns>True when the property getter succeeds; otherwise false.</returns>
     private static bool TryGetPropertyValue(object source, PropertyInfo property, out object? value)
     {
         try
@@ -352,6 +598,11 @@ public class PluginService : IPluginService
         }
     }
 
+    /// <summary>
+    ///     Determine whether a type should be displayed directly instead of recursively flattened.
+    /// </summary>
+    /// <param name="valueType">The value type to classify.</param>
+    /// <returns>True when the type should be displayed as a scalar; otherwise false.</returns>
     private static bool IsDisplayValue(Type valueType)
     {
         var type = Nullable.GetUnderlyingType(valueType) ?? valueType;
@@ -365,12 +616,20 @@ public class PluginService : IPluginService
                || type.Namespace?.StartsWith("Mutagen.Bethesda.Plugins", StringComparison.Ordinal) == true;
     }
 
-    private static string FormatEnumerable(System.Collections.IEnumerable enumerable)
+    /// <summary>
+    ///     Format an enumerable as a comma-separated text value with a maximum item count.
+    /// </summary>
+    /// <param name="enumerable">The enumerable to format.</param>
+    /// <param name="displayValueResolver">Optional resolver for displaying referenced records.</param>
+    /// <returns>The formatted enumerable value.</returns>
+    private static string FormatEnumerable(
+        IEnumerable enumerable,
+        Func<object?, string?>? displayValueResolver)
     {
         var values = enumerable
             .Cast<object?>()
             .Take(MaxCollectionItems + 1)
-            .Select(value => value?.ToString())
+            .Select(value => GetDisplayValue(value, displayValueResolver))
             .ToList();
 
         if (values.Count == 0)
@@ -388,9 +647,13 @@ public class PluginService : IPluginService
         return hasMore ? $"{formattedValue}, ..." : formattedValue;
     }
 
-    private static System.Collections.IEnumerable? GetRecordsFromMutagenTypeOption(
-        IStarfieldModGetter plugin,
-        string recordType)
+    /// <summary>
+    ///     Try to enumerate records for a record type using Mutagen's generated type-option helpers.
+    /// </summary>
+    /// <param name="plugin">The plugin to inspect.</param>
+    /// <param name="recordType">The major record type name.</param>
+    /// <returns>An enumerable of records, or null when no helper method matches.</returns>
+    private static IEnumerable? GetRecordsFromMutagenTypeOption(IStarfieldModGetter plugin, string recordType)
     {
         var method = typeof(TypeOptionSolidifierMixIns)
             .GetMethods()
@@ -402,12 +665,16 @@ public class PluginService : IPluginService
                        && parameters[0].ParameterType.IsAssignableFrom(typeof(IEnumerable<IStarfieldModGetter>));
             });
 
-        return method?.Invoke(null, [new[] { plugin }]) as System.Collections.IEnumerable;
+        return method?.Invoke(null, [new[] { plugin }]) as IEnumerable;
     }
 
-    private static System.Collections.IEnumerable? GetRecordsFromPluginProperty(
-        IStarfieldModGetter plugin,
-        string recordType)
+    /// <summary>
+    ///     Try to enumerate records for a record type from a matching plugin property.
+    /// </summary>
+    /// <param name="plugin">The plugin to inspect.</param>
+    /// <param name="recordType">The major record type name.</param>
+    /// <returns>An enumerable of records, or null when no property matches.</returns>
+    private static IEnumerable? GetRecordsFromPluginProperty(IStarfieldModGetter plugin, string recordType)
     {
         var propertyNames = new[]
         {
@@ -421,12 +688,114 @@ public class PluginService : IPluginService
         foreach (var propertyName in propertyNames.Distinct(StringComparer.OrdinalIgnoreCase))
         {
             var property = plugin.GetType().GetProperty(propertyName);
-            if (property?.GetValue(plugin) is System.Collections.IEnumerable records)
-            {
-                return records;
-            }
+            if (property?.GetValue(plugin) is IEnumerable records) return records;
         }
 
         return null;
+    }
+
+    /// <summary>
+    ///     Normalize Mutagen reference strings by removing formid prefixes and trailing type display suffixes.
+    /// </summary>
+    /// <param name="referenceValue">The raw reference string.</param>
+    /// <returns>The normalized reference string.</returns>
+    private static string NormalizeReferenceValue(string referenceValue)
+    {
+        var normalizedReferenceValue = referenceValue.Trim();
+        if (normalizedReferenceValue.StartsWith("FormID:", StringComparison.OrdinalIgnoreCase))
+        {
+            normalizedReferenceValue = normalizedReferenceValue["FormID:".Length..].Trim();
+        }
+
+        var mutagenTypeSuffixIndex = normalizedReferenceValue.LastIndexOf('<');
+        if (mutagenTypeSuffixIndex > 0 && normalizedReferenceValue.EndsWith('>'))
+        {
+            normalizedReferenceValue = normalizedReferenceValue[..mutagenTypeSuffixIndex].Trim();
+        }
+
+        return normalizedReferenceValue;
+    }
+
+    internal sealed class RecordComparisonFieldValue
+    {
+        private RecordComparisonFieldValue(RecordComparisonFieldDisplayKind displayKind)
+        {
+            DisplayKind = displayKind;
+        }
+
+        public RecordComparisonFieldDisplayKind DisplayKind { get; }
+        public string? TextValue { get; private init; }
+        public bool? BooleanValue { get; private init; }
+        public IList<RecordComparisonFieldNodeDTO>? TreeNodes { get; private init; }
+
+        public static RecordComparisonFieldValue ForText(string? value)
+        {
+            return new RecordComparisonFieldValue(RecordComparisonFieldDisplayKind.Text)
+            {
+                TextValue = value
+            };
+        }
+
+        public static RecordComparisonFieldValue ForBoolean(bool value)
+        {
+            return new RecordComparisonFieldValue(RecordComparisonFieldDisplayKind.Boolean)
+            {
+                BooleanValue = value,
+                TextValue = value.ToString()
+            };
+        }
+
+        public static RecordComparisonFieldValue ForTree(IList<RecordComparisonFieldNodeDTO> nodes)
+        {
+            return new RecordComparisonFieldValue(RecordComparisonFieldDisplayKind.Tree)
+            {
+                TreeNodes = nodes,
+                TextValue = nodes.Count == 0 ? string.Empty : $"{nodes.Count} item(s)"
+            };
+        }
+    }
+
+    private sealed class RecordReferenceDisplayResolver
+    {
+        private readonly Func<string, string?> ResolveDisplayValue;
+
+        public RecordReferenceDisplayResolver(Func<string, string?> resolveDisplayValue)
+        {
+            ResolveDisplayValue = resolveDisplayValue;
+        }
+
+        /// <summary>
+        ///     Resolve a reference-like value to a cached display value, falling back to a normalized reference string.
+        /// </summary>
+        /// <param name="value">The value to resolve.</param>
+        /// <returns>The resolved display value or normalized reference text.</returns>
+        public string? GetDisplayValue(object? value)
+        {
+            var rawValue = value?.ToString();
+            if (string.IsNullOrWhiteSpace(rawValue) || !LooksLikeReference(value, rawValue))
+            {
+                return rawValue;
+            }
+
+            var normalizedValue = NormalizeReferenceValue(rawValue);
+            return ResolveDisplayValue(rawValue) ?? ResolveDisplayValue(normalizedValue) ?? normalizedValue;
+        }
+
+        /// <summary>
+        ///     Determine whether a value is likely to represent a plugin record reference.
+        /// </summary>
+        /// <param name="value">The original value object.</param>
+        /// <param name="rawValue">The value converted to text.</param>
+        /// <returns>True when the value appears to be a FormKey/FormLink or plugin reference string.</returns>
+        private static bool LooksLikeReference(object? value, string rawValue)
+        {
+            var typeName = value?.GetType().Name;
+            return typeName?.Contains("FormKey", StringComparison.OrdinalIgnoreCase) == true
+                   || typeName?.Contains("FormLink", StringComparison.OrdinalIgnoreCase) == true
+                   || rawValue.StartsWith("formid:", StringComparison.OrdinalIgnoreCase)
+                   || rawValue.Contains(".esm", StringComparison.OrdinalIgnoreCase)
+                   || rawValue.Contains(".esp", StringComparison.OrdinalIgnoreCase)
+                   || rawValue.Contains(".esl", StringComparison.OrdinalIgnoreCase);
+        }
     }
 }

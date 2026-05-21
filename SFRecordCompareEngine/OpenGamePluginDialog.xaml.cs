@@ -9,13 +9,9 @@ namespace SFRecordCompareEngine;
 
 public partial class OpenGamePluginDialog : Window
 {
-    private readonly ILogger Logger = Log.ForContext<OpenGamePluginDialog>();
     private readonly IGameConfigurationStore GameConfigurationStore;
+    private readonly ILogger Logger = Log.ForContext<OpenGamePluginDialog>();
     private readonly IPluginService PluginService;
-
-    public string? SelectedGame { get; private set; }
-    public string? SelectedPluginName { get; private set; }
-    public PluginHeaderDTO? SelectedPluginHeader { get; private set; }
 
     public OpenGamePluginDialog(IGameConfigurationStore gameConfigurationStore, IPluginService pluginService)
     {
@@ -26,6 +22,10 @@ public partial class OpenGamePluginDialog : Window
         GameComboBox.ItemsSource = gameConfigurationStore.SupportedGames;
         GameComboBox.SelectedIndex = 0;
     }
+
+    public string? SelectedGame { get; private set; }
+    public string? SelectedPluginName { get; private set; }
+    public PluginHeaderDTO? SelectedPluginHeader { get; private set; }
 
     private void GameComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -77,8 +77,8 @@ public partial class OpenGamePluginDialog : Window
             StatusTextBlock.Text = GameConfigurationStore.Game is null
                 ? $"{GameConfigurationStore.SelectedGame} is not configured yet."
                 : plugins.Count == 1
-                ? "Loaded 1 plugin."
-                : $"Loaded {plugins.Count} plugins.";
+                    ? "Loaded 1 plugin."
+                    : $"Loaded {plugins.Count} plugins.";
 
             Logger.Information("Loaded {PluginCount} plugins for {Game}", plugins.Count, GameConfigurationStore.SelectedGame);
         }

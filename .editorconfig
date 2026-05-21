@@ -1,0 +1,7 @@
+﻿root = true
+
+[*.cs]
+max_line_length = 160
+
+# Allow single-line control statements without braces
+csharp_prefer_braces = false:none

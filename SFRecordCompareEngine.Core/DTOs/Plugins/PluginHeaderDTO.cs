@@ -15,24 +15,24 @@ public class PluginHeaderDTO
     }
 
     /// <summary>
-    /// The name of the plugin, typically the file name with extension (e.g. "MyMod.esm")
+    ///     The name of the plugin, typically the file name with extension (e.g. "MyMod.esm")
     /// </summary>
     public string Name { get; set; }
-    
+
     /// <summary>
-    /// The author of the plugin
+    ///     The author of the plugin
     /// </summary>
     public string Author { get; set; }
-    
+
     /// <summary>
-    /// The version of the plugin
+    ///     The version of the plugin
     /// </summary>
     public int Version { get; set; }
-    
+
     /// <summary>
-    /// The description of the plugin
+    ///     The description of the plugin
     /// </summary>
     public string Description { get; set; }
-    
+
     public List<FileName> Masters { get; set; }
 }

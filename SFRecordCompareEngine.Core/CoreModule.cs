@@ -19,7 +19,7 @@ public class CoreModule : Module
             .Where(t => t.Name.EndsWith("Service", StringComparison.OrdinalIgnoreCase))
             .AsImplementedInterfaces()
             .SingleInstance();
-        
+
         // Register Factory
         builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly())
             .Where(t => t.Name.EndsWith("Factory"))
