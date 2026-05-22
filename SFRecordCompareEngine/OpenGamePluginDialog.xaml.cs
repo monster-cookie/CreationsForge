@@ -7,11 +7,12 @@ using SFRecordCompareEngine.Core.Services.Interfaces;
 
 namespace SFRecordCompareEngine;
 
-public partial class OpenGamePluginDialog : Window
+public partial class OpenGamePluginDialog
 {
     private readonly IGameConfigurationStore GameConfigurationStore;
     private readonly ILogger Logger = Log.ForContext<OpenGamePluginDialog>();
     private readonly IPluginService PluginService;
+    private bool IsUpdatingPluginItems;
 
     public OpenGamePluginDialog(IGameConfigurationStore gameConfigurationStore, IPluginService pluginService)
     {
@@ -25,7 +26,7 @@ public partial class OpenGamePluginDialog : Window
 
     public string? SelectedGame { get; private set; }
     public string? SelectedPluginName { get; private set; }
-    public PluginHeaderDTO? SelectedPluginHeader { get; private set; }
+    private PluginHeaderDTO? SelectedPluginHeader { get; set; }
 
     private void GameComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -36,7 +37,15 @@ public partial class OpenGamePluginDialog : Window
 
     private void PluginComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        ClearPluginHeader();
+        if (!IsUpdatingPluginItems)
+        {
+            ClearPluginHeader();
+        }
+    }
+
+    private void PluginComboBox_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        FilterPlugins(PluginComboBox.Text);
     }
 
     private void RefreshButton_Click(object sender, RoutedEventArgs e)
@@ -72,7 +81,7 @@ public partial class OpenGamePluginDialog : Window
             Logger.Information("Loading plugins for {Game}", GameConfigurationStore.SelectedGame);
 
             var plugins = PluginService.GetPlugins();
-            PluginComboBox.ItemsSource = plugins;
+            SetPluginItems(plugins);
             PluginComboBox.SelectedIndex = plugins.Count > 0 ? 0 : -1;
             StatusTextBlock.Text = GameConfigurationStore.Game is null
                 ? $"{GameConfigurationStore.SelectedGame} is not configured yet."
@@ -84,7 +93,7 @@ public partial class OpenGamePluginDialog : Window
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Unable to load plugins.");
+            Logger.Error(ex, "Unable to load plugins");
             PluginComboBox.ItemsSource = null;
             StatusTextBlock.Text = $"Unable to load plugins: {ex.Message}";
         }
@@ -102,14 +111,14 @@ public partial class OpenGamePluginDialog : Window
 
         try
         {
-            Logger.Information("Loading plugin header for {PluginName}.", pluginName);
+            Logger.Information("Loading plugin header for {PluginName}", pluginName);
 
             var pluginHeader = PluginService.GetPluginHeader(pluginName);
             if (pluginHeader is null)
             {
                 ClearPluginHeader();
                 StatusTextBlock.Text = $"Unable to load plugin header for {pluginName}.";
-                Logger.Warning("Plugin header was not returned for {PluginName}.", pluginName);
+                Logger.Warning("Plugin header was not returned for {PluginName}", pluginName);
                 return;
             }
 
@@ -121,9 +130,7 @@ public partial class OpenGamePluginDialog : Window
             PluginAuthorTextBlock.Text = pluginHeader.Author;
             PluginVersionTextBlock.Text = pluginHeader.Version.ToString();
             PluginDescriptionTextBlock.Text = pluginHeader.Description;
-            PluginMastersTextBlock.Text = pluginHeader.Masters.Count == 0
-                ? "None"
-                : string.Join(", ", pluginHeader.Masters.Select(master => master.String));
+            PluginMastersTextBlock.Text = pluginHeader.Masters.Count == 0 ? "None" : string.Join(", ", pluginHeader.Masters);
             StatusTextBlock.Text = $"Loaded plugin header for {pluginName}.";
             OpenButton.IsEnabled = true;
 
@@ -153,5 +160,31 @@ public partial class OpenGamePluginDialog : Window
     {
         var selectedGame = GameComboBox.SelectedItem as string;
         GameConfigurationStore.SelectGame(selectedGame);
+    }
+
+    private void FilterPlugins(string? searchText)
+    {
+        if (GameConfigurationStore.Game is null)
+        {
+            return;
+        }
+
+        var plugins = PluginService.SearchPlugins(searchText ?? string.Empty);
+        SetPluginItems(plugins);
+        PluginComboBox.Text = searchText ?? string.Empty;
+        PluginComboBox.IsDropDownOpen = plugins.Count > 0;
+    }
+
+    private void SetPluginItems(IList<string> plugins)
+    {
+        IsUpdatingPluginItems = true;
+        try
+        {
+            PluginComboBox.ItemsSource = plugins;
+        }
+        finally
+        {
+            IsUpdatingPluginItems = false;
+        }
     }
 }

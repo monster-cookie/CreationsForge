@@ -49,11 +49,12 @@
             <ComboBox x:Name="PluginComboBox"
                       Grid.Row="1"
                       IsEditable="True"
-                      IsTextSearchEnabled="True"
+                      IsTextSearchEnabled="False"
                       StaysOpenOnEdit="True"
                       MaxDropDownHeight="180"
                       Height="34"
                       VerticalContentAlignment="Center"
+                      KeyUp="PluginComboBox_KeyUp"
                       SelectionChanged="PluginComboBox_SelectionChanged" />
 
             <Button Grid.Row="1"

@@ -1,8 +1,12 @@
+using System.IO;
 using System.Windows;
 using Autofac;
 using Serilog;
 using SFRecordCompareEngine.Core;
+using SFRecordCompareEngine.Core.Configuration.Interfaces;
+using SFRecordCompareEngine.Core.Models.Database;
 using SFRecordCompareEngine.Core.Services.Interfaces;
+using SFRecordCompareEngine.Migrations;
 
 namespace SFRecordCompareEngine;
 
@@ -12,13 +16,14 @@ public partial class App
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        var databaseOptions = new SqliteDatabaseOptions();
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .Enrich.FromLogContext()
             .Enrich.WithMachineName()
-            .Enrich.WithEnvironmentUserName()            
+            .Enrich.WithEnvironmentUserName()
             .WriteTo.File(
-                @"C:\temp\SFRecordCompareEngine-Log.txt",
+                Path.Combine(databaseOptions.LogDirectory, "SFRecordCompareEngine.log"),
                 rollingInterval: RollingInterval.Day,
                 retainedFileTimeLimit: TimeSpan.FromDays(7),
                 fileSizeLimitBytes: 1024 * 1024 * 100, // 100 MB
@@ -31,14 +36,13 @@ public partial class App
         base.OnStartup(e);
 
         Container = BuildContainer();
-        Container.Resolve<ICacheService>().LoadFromDisk();
+        InitializePluginDatabase();
         Container.Resolve<MainWindow>().Show();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
         Log.Information("Exiting SFRecordCompareEngine");
-        Container?.Resolve<ICacheService>().SaveToDisk();
         Container?.Dispose();
         Log.CloseAndFlush();
         base.OnExit(e);
@@ -48,9 +52,39 @@ public partial class App
     {
         var builder = new ContainerBuilder();
         builder.RegisterModule<CoreModule>();
+        builder.RegisterModule<MigrationsModule>();
         builder.RegisterInstance(Log.Logger).As<ILogger>().SingleInstance();
         builder.RegisterType<MainWindow>();
 
         return builder.Build();
+    }
+
+    private void InitializePluginDatabase()
+    {
+        try
+        {
+            var container = Container ?? throw new InvalidOperationException("Application container has not been initialized.");
+            var gameConfigurationStore = container.Resolve<IGameConfigurationStore>();
+            gameConfigurationStore.SelectGame("Starfield");
+
+            var importResult = container.Resolve<IPluginImportService>()
+                .InitializeAndImportAsync(CancellationToken.None)
+                .GetAwaiter()
+                .GetResult();
+
+            Log.Information(
+                "Startup plugin database import completed at schema version {SchemaVersion} with {PluginCount} imported plugins",
+                importResult.SchemaVersion,
+                importResult.PluginsImported);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Unable to initialize the plugin database");
+            MessageBox.Show(
+                $"Unable to initialize the plugin database. Details were written to the log file.{Environment.NewLine}{ex.Message}",
+                "SF Record Compare Engine",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 }

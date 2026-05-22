@@ -19,6 +19,26 @@ public interface IPluginService
     IList<string> GetPlugins();
 
     /// <summary>
+    ///     Search the list of plugins for the game.
+    /// </summary>
+    /// <param name="searchText">The plugin file name or ModKey search text.</param>
+    /// <returns>The matching plugin file names or an empty list.</returns>
+    IList<string> SearchPlugins(string searchText);
+
+    /// <summary>
+    ///     Get the selected game's plugin load order.
+    /// </summary>
+    /// <returns>The plugin load-order entries.</returns>
+    IList<PluginLoadOrderEntryDTO> GetLoadOrder();
+
+    /// <summary>
+    ///     Read plugin header metadata from a plugin file.
+    /// </summary>
+    /// <param name="pluginPath">The plugin file path.</param>
+    /// <returns>The plugin header metadata.</returns>
+    PluginHeaderMetadataDTO ReadHeader(string pluginPath);
+
+    /// <summary>
     ///     Get the supported major record type names.
     /// </summary>
     /// <returns>The supported major record type names.</returns>

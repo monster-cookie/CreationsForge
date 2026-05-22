@@ -6,10 +6,12 @@ using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Records.Mapping;
 using Mutagen.Bethesda.Starfield;
 using Serilog;
+using SFRecordCompareEngine.Core.Database.Interfaces;
 using SFRecordCompareEngine.Core.Configuration.Interfaces;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Models.Records;
+using SFRecordCompareEngine.Core.Repositories.Interfaces;
 using SFRecordCompareEngine.Core.Services.Interfaces;
 
 namespace SFRecordCompareEngine.Core.Services;
@@ -35,14 +37,27 @@ public class PluginService : IPluginService
     };
 
     private readonly IGameConfigurationStore GameConfigurationStore;
-    private readonly ICacheService CacheService;
+    private readonly IRecordService RecordService;
+    private readonly ISqliteConnectionFactory SqliteConnectionFactory;
+    private readonly IPluginRepository PluginRepository;
 
     private readonly ILogger Logger = Log.ForContext<PluginService>();
 
-    public PluginService(IGameConfigurationStore gameConfigurationStore, ICacheService cacheService)
+    public PluginService(
+        IGameConfigurationStore gameConfigurationStore,
+        IRecordService recordService,
+        ISqliteConnectionFactory sqliteConnectionFactory,
+        IPluginRepository pluginRepository)
     {
         GameConfigurationStore = gameConfigurationStore;
-        CacheService = cacheService;
+        RecordService = recordService;
+        SqliteConnectionFactory = sqliteConnectionFactory;
+        PluginRepository = pluginRepository;
+    }
+
+    public PluginService(IGameConfigurationStore gameConfigurationStore, IRecordService recordService)
+        : this(gameConfigurationStore, recordService, null!, null!)
+    {
     }
 
     /// <inheritdoc />
@@ -79,28 +94,88 @@ public class PluginService : IPluginService
     {
         try
         {
-            var gameEnvironment = GameConfigurationStore.Game;
-            if (gameEnvironment is null)
-            {
-                Logger.Warning("Unable to load plugins because no game environment is configured");
-                return new List<string>();
-            }
-
-            var plugins = new List<string>();
-            foreach (var plugin in gameEnvironment.LoadOrder.ListedOrder)
-            {
-                // Exclude the base game database as all other records automatically compare to it.
-                if (plugin.FileName.Equals("Starfield.esm", StringComparison.CurrentCultureIgnoreCase)) continue;
-                plugins.Add(plugin.FileName);
-            }
-
-            return plugins;
+            using var database = SqliteConnectionFactory.OpenDatabase();
+            return PluginRepository.GetPlugins(database)
+                .Select(plugin => plugin.PluginFileName)
+                .ToList();
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Unable to load plugins");
+            Logger.Error(ex, "Unable to load plugins from SQLite database");
             return new List<string>();
         }
+    }
+
+    /// <inheritdoc />
+    public IList<string> SearchPlugins(string searchText)
+    {
+        try
+        {
+            using var database = SqliteConnectionFactory.OpenDatabase();
+            var plugins = string.IsNullOrWhiteSpace(searchText)
+                ? PluginRepository.GetPlugins(database)
+                : PluginRepository.SearchPlugins(database, searchText.Trim());
+
+            return plugins
+                .Select(plugin => plugin.PluginFileName)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Unable to search plugins from SQLite database");
+            return new List<string>();
+        }
+    }
+
+    /// <inheritdoc />
+    public IList<PluginLoadOrderEntryDTO> GetLoadOrder()
+    {
+        var gameEnvironment = GameConfigurationStore.Game
+                              ?? throw new InvalidOperationException("No game environment is configured.");
+
+        return gameEnvironment.LoadOrder.ListedOrder
+            .Select((plugin, index) =>
+            {
+                var pluginFileName = plugin.FileName.ToString();
+                var modKey = ModKey.FromFileName(pluginFileName).ToString();
+                return new PluginLoadOrderEntryDTO
+                {
+                    ModKey = modKey,
+                    PluginFileName = pluginFileName,
+                    PluginPath = Path.Combine(gameEnvironment.DataFolderPath.Path, pluginFileName),
+                    LoadOrderIndex = index,
+                    Enabled = true
+                };
+            })
+            .ToList();
+    }
+
+    /// <inheritdoc />
+    public PluginHeaderMetadataDTO ReadHeader(string pluginPath)
+    {
+        var modKey = ModKey.FromFileName(Path.GetFileName(pluginPath));
+        var modPath = new ModPath(modKey, pluginPath);
+
+        using var plugin = StarfieldMod.Create(StarfieldRelease.Starfield)
+            .FromPath(modPath)
+            .WithLoadOrderFromHeaderMasters()
+            .WithDataFolder(Path.GetDirectoryName(pluginPath) ?? string.Empty)
+            .Construct();
+
+        var header = plugin.ModHeader;
+        return new PluginHeaderMetadataDTO
+        {
+            ModKey = modKey.ToString(),
+            Author = header.Author,
+            FormVersion = header.Version,
+            HeaderFlags = GetNullableIntValue(header, "Flags"),
+            Branch = GetStringValue(header, "Branch"),
+            InteriorCellCount = GetNullableIntValue(header, "InteriorCellCount"),
+            MasterModKeys = header.MasterReferences
+                .Select(masterReference => masterReference.Master.FileName.ToString())
+                .Where(masterModKey => !string.IsNullOrWhiteSpace(masterModKey))
+                .ToList()
+        };
     }
 
     /// <inheritdoc />
@@ -108,12 +183,20 @@ public class PluginService : IPluginService
     {
         try
         {
-            var plugin = LoadPlugin(pluginName);
-            return new PluginHeaderDTO(pluginName, plugin.ModHeader);
+            using var database = SqliteConnectionFactory.OpenDatabase();
+            var plugin = PluginRepository.GetByModKey(database, pluginName);
+            if (plugin is null)
+            {
+                Logger.Warning("Plugin metadata was not found in SQLite database for {PluginName}", pluginName);
+                return null;
+            }
+
+            var masterReferences = PluginRepository.GetMasterReferences(database, pluginName);
+            return new PluginHeaderDTO(plugin, masterReferences);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Unable to load plugin header for {PluginName}", pluginName);
+            Logger.Error(ex, "Unable to load plugin header from SQLite database for {PluginName}", pluginName);
             return null;
         }
     }
@@ -182,7 +265,7 @@ public class PluginService : IPluginService
             }
 
             var recordTypeOptions = RecordComparisonRecordTypeOptions.For(recordType);
-            var referenceDisplayResolver = new RecordReferenceDisplayResolver(CacheService.ResolveReferenceDisplayValue);
+            var referenceDisplayResolver = new RecordReferenceDisplayResolver(RecordService.ResolveReferenceDisplayValue);
             var fieldsByPlugin = recordsByPlugin
                 .Where(item => item.Value is not null)
                 .ToDictionary(
@@ -269,6 +352,33 @@ public class PluginService : IPluginService
     /// <returns>The distinct plugin file names to compare.</returns>
     private IList<string> GetComparisonPluginNames(string pluginName)
     {
+        try
+        {
+            using var database = SqliteConnectionFactory.OpenDatabase();
+            var hierarchy = PluginRepository.GetResolutionHierarchy(database, pluginName);
+            foreach (var hierarchyPlugin in hierarchy.Where(plugin => plugin.HierarchyLoadOrderIndex is null))
+            {
+                Logger.Error(
+                    "Plugin hierarchy for {PluginName} contained null load-order for {HierarchyPlugin}",
+                    pluginName,
+                    hierarchyPlugin.HierarchyModKey);
+            }
+
+            var hierarchyPlugins = hierarchy
+                .Select(plugin => plugin.HierarchyModKey)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (hierarchyPlugins.Count > 0)
+            {
+                return hierarchyPlugins;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Warning(ex, "Unable to load plugin hierarchy from SQLite database for {PluginName}; falling back to header masters", pluginName);
+        }
+
         using var plugin = LoadPlugin(pluginName);
         var pluginNames = new List<string> { BasePluginName };
 
@@ -330,6 +440,21 @@ public class PluginService : IPluginService
     {
         var value = source.GetType().GetProperty(propertyName)?.GetValue(source);
         return value?.ToString();
+    }
+
+    private static int? GetNullableIntValue(object source, string propertyName)
+    {
+        var value = source.GetType().GetProperty(propertyName)?.GetValue(source);
+        if (value is null) return null;
+
+        try
+        {
+            return Convert.ToInt32(value);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>
@@ -694,28 +819,6 @@ public class PluginService : IPluginService
         return null;
     }
 
-    /// <summary>
-    ///     Normalize Mutagen reference strings by removing formid prefixes and trailing type display suffixes.
-    /// </summary>
-    /// <param name="referenceValue">The raw reference string.</param>
-    /// <returns>The normalized reference string.</returns>
-    private static string NormalizeReferenceValue(string referenceValue)
-    {
-        var normalizedReferenceValue = referenceValue.Trim();
-        if (normalizedReferenceValue.StartsWith("FormID:", StringComparison.OrdinalIgnoreCase))
-        {
-            normalizedReferenceValue = normalizedReferenceValue["FormID:".Length..].Trim();
-        }
-
-        var mutagenTypeSuffixIndex = normalizedReferenceValue.LastIndexOf('<');
-        if (mutagenTypeSuffixIndex > 0 && normalizedReferenceValue.EndsWith('>'))
-        {
-            normalizedReferenceValue = normalizedReferenceValue[..mutagenTypeSuffixIndex].Trim();
-        }
-
-        return normalizedReferenceValue;
-    }
-
     internal sealed class RecordComparisonFieldValue
     {
         private RecordComparisonFieldValue(RecordComparisonFieldDisplayKind displayKind)
@@ -777,7 +880,7 @@ public class PluginService : IPluginService
                 return rawValue;
             }
 
-            var normalizedValue = NormalizeReferenceValue(rawValue);
+            var normalizedValue = FormKeyTextNormalizer.NormalizeReferenceValue(rawValue);
             return ResolveDisplayValue(rawValue) ?? ResolveDisplayValue(normalizedValue) ?? normalizedValue;
         }
 

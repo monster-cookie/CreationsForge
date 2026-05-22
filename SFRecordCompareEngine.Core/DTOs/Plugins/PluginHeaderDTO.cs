@@ -1,5 +1,4 @@
-﻿using Mutagen.Bethesda.Starfield;
-using Noggog;
+using Mutagen.Bethesda.Starfield;
 
 namespace SFRecordCompareEngine.Core.DTOs.Plugins;
 
@@ -11,7 +10,19 @@ public class PluginHeaderDTO
         Author = pluginModHeader.Author ?? "Unknown";
         Version = pluginModHeader.Version;
         Description = pluginModHeader.Description ?? string.Empty;
-        Masters = pluginModHeader.MasterReferences.Select(masterRef => masterRef.Master.FileName).ToList();
+        Masters = pluginModHeader.MasterReferences.Select(masterRef => masterRef.Master.FileName.ToString()).ToList();
+    }
+
+    public PluginHeaderDTO(PluginMetadataDTO plugin, IList<PluginMasterReferenceDTO> masterReferences)
+    {
+        Name = plugin.PluginFileName;
+        Author = plugin.Author ?? "Unknown";
+        Version = plugin.FormVersion ?? 0;
+        Description = string.Empty;
+        Masters = masterReferences
+            .OrderBy(masterReference => masterReference.MasterReferenceIndex)
+            .Select(masterReference => masterReference.ParentModKey)
+            .ToList();
     }
 
     /// <summary>
@@ -34,5 +45,5 @@ public class PluginHeaderDTO
     /// </summary>
     public string Description { get; set; }
 
-    public List<FileName> Masters { get; set; }
+    public List<string> Masters { get; set; }
 }

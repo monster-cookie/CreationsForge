@@ -1,6 +1,6 @@
 ﻿# Repo: SFRecordCompareEngine (.NET WPF Desktop Application)
 
-Simple WPF desktop app that shows the record hierarchy of a given plugin in relation to its master plugins. 
+Simple WPF desktop app that shows the record hierarchy of a given plugin in relation to its master plugins.
 
 ## Project Layout
 
@@ -20,6 +20,14 @@ Simple WPF desktop app that shows the record hierarchy of a given plugin in rela
 - ALWAYS show a PLAN first and wait for explicit approval before editing files.
 - Keep changes surgical and consistent with existing patterns and naming.
 - No breaking changes to existing services, factories, stores, repositories, view models, public interfaces, configuration, persistence formats, or UI workflows without explicit approval.
+
+## REFERENCE & DOCUMENTATION
+
+Use these as primary documentation references:
+
+- [Mutagen Documentation](https://mutagen-modding.github.io/Mutagen/)
+- [Mutagen Code Repository](https://github.com/Mutagen-Modding/Mutagen)
+- [Spriggit Code Repository - Uses mutagen to export plugins as YAML](https://github.com/Mutagen-Modding/Spriggit)
 
 ## ARCHITECTURE & CONVENTIONS
 
@@ -69,6 +77,19 @@ Simple WPF desktop app that shows the record hierarchy of a given plugin in rela
 - Prefer Information level in services (over Debug).
 - Use Warning for recoverable unexpected states.
 - Use Error for failures that prevent completion.
+
+## DATABASE & PERSISTENCE
+
+- Use NPoco for application database access.
+- Use the ADO.NET SQLite provider as required by NPoco.
+- Do not introduce or replace database providers/packages without explicit approval in the PLAN.
+- Use parameterized SQL for all runtime values.
+- Keep schema creation/migration centralized in a dedicated initializer or migration service.
+- Enable SQLite foreign keys for every opened connection.
+- Do not place business logic in repositories.
+- Do not log from repositories or stores.
+- Repositories should not own UI behavior, import orchestration, or Serilog decisions.
+- Database path, schema changes, and persistence format changes must be called out in the PLAN.
 
 ## CODE QUALITY
 
