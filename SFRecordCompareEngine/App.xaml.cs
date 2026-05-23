@@ -7,6 +7,7 @@ using SFRecordCompareEngine.Core.Configuration.Interfaces;
 using SFRecordCompareEngine.Core.Models.Database;
 using SFRecordCompareEngine.Core.Services.Interfaces;
 using SFRecordCompareEngine.Migrations;
+using SFRecordCompareEngine.ViewModels;
 
 namespace SFRecordCompareEngine;
 
@@ -54,7 +55,10 @@ public partial class App
         builder.RegisterModule<CoreModule>();
         builder.RegisterModule<MigrationsModule>();
         builder.RegisterInstance(Log.Logger).As<ILogger>().SingleInstance();
+        builder.RegisterType<MainWindowViewModel>();
+        builder.RegisterType<OpenGamePluginDialogViewModel>();
         builder.RegisterType<MainWindow>();
+        builder.RegisterType<OpenGamePluginDialog>();
 
         return builder.Build();
     }

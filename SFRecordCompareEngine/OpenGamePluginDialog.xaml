@@ -26,7 +26,8 @@
                   Grid.Row="1"
                   Height="34"
                   VerticalContentAlignment="Center"
-                  SelectionChanged="GameComboBox_SelectionChanged" />
+                  ItemsSource="{Binding SupportedGames}"
+                  SelectedItem="{Binding SelectedGame, Mode=TwoWay}" />
 
         <Grid Grid.Row="2" Margin="0,18,0,0">
             <Grid.RowDefinitions>
@@ -54,8 +55,8 @@
                       MaxDropDownHeight="180"
                       Height="34"
                       VerticalContentAlignment="Center"
-                      KeyUp="PluginComboBox_KeyUp"
-                      SelectionChanged="PluginComboBox_SelectionChanged" />
+                      ItemsSource="{Binding PluginItems}"
+                      Text="{Binding PluginSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
             <Button Grid.Row="1"
                     Grid.Column="1"
@@ -63,7 +64,7 @@
                     Width="84"
                     Height="34"
                     Margin="12,0,0,0"
-                    Click="LoadButton_Click" />
+                    Command="{Binding LoadPluginHeaderCommand}" />
 
             <Button Grid.Row="1"
                     Grid.Column="2"
@@ -71,14 +72,15 @@
                     Width="84"
                     Height="34"
                     Margin="12,0,0,0"
-                    Click="RefreshButton_Click" />
+                    Command="{Binding RefreshPluginsCommand}" />
 
             <TextBlock x:Name="StatusTextBlock"
                        Grid.Row="2"
                        Grid.ColumnSpan="3"
                        Margin="0,12,0,0"
                        Foreground="#555"
-                       TextWrapping="Wrap" />
+                       TextWrapping="Wrap"
+                       Text="{Binding StatusText}" />
         </Grid>
 
         <Grid Grid.Row="3" Margin="0,20,0,0">
@@ -95,21 +97,26 @@
             </Grid.RowDefinitions>
 
             <TextBlock Grid.Row="0" Grid.Column="0" Text="Name" FontWeight="SemiBold" Margin="0,0,12,8" />
-            <TextBlock x:Name="PluginNameTextBlock" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" TextWrapping="Wrap" />
+            <TextBlock x:Name="PluginNameTextBlock" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" TextWrapping="Wrap"
+                       Text="{Binding PluginName}" />
 
             <TextBlock Grid.Row="1" Grid.Column="0" Text="Author" FontWeight="SemiBold" Margin="0,0,12,8" />
-            <TextBlock x:Name="PluginAuthorTextBlock" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" TextWrapping="Wrap" />
+            <TextBlock x:Name="PluginAuthorTextBlock" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" TextWrapping="Wrap"
+                       Text="{Binding PluginAuthor}" />
 
             <TextBlock Grid.Row="2" Grid.Column="0" Text="Version" FontWeight="SemiBold" Margin="0,0,12,8" />
             <TextBlock x:Name="PluginVersionTextBlock" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8"
-                       TextWrapping="Wrap" />
+                       TextWrapping="Wrap"
+                       Text="{Binding PluginVersion}" />
 
             <TextBlock Grid.Row="3" Grid.Column="0" Text="Description" FontWeight="SemiBold" Margin="0,0,12,8" />
             <TextBlock x:Name="PluginDescriptionTextBlock" Grid.Row="3" Grid.Column="1" Margin="0,0,0,8"
-                       TextWrapping="Wrap" />
+                       TextWrapping="Wrap"
+                       Text="{Binding PluginDescription}" />
 
             <TextBlock Grid.Row="4" Grid.Column="0" Text="Masters" FontWeight="SemiBold" Margin="0,0,12,0" />
-            <TextBlock x:Name="PluginMastersTextBlock" Grid.Row="4" Grid.Column="1" TextWrapping="Wrap" />
+            <TextBlock x:Name="PluginMastersTextBlock" Grid.Row="4" Grid.Column="1" TextWrapping="Wrap"
+                       Text="{Binding PluginMasters}" />
         </Grid>
 
         <StackPanel Grid.Row="4"
@@ -121,7 +128,7 @@
                     Width="84"
                     Height="34"
                     IsDefault="True"
-                    IsEnabled="False"
+                    IsEnabled="{Binding CanOpen}"
                     Click="OpenButton_Click" />
             <Button Content="Cancel"
                     Width="84"

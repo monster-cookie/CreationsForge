@@ -99,16 +99,19 @@
                 <TextBlock Grid.Column="0" Text="Game" FontWeight="SemiBold" Margin="0,0,8,0"
                            VerticalAlignment="Center" />
                 <TextBlock x:Name="LoadedGameTextBlock" Grid.Column="1" Margin="0,0,24,0"
+                           Text="{Binding LoadedGameText}"
                            TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
 
                 <TextBlock Grid.Column="2" Text="Plugin" FontWeight="SemiBold" Margin="0,0,8,0"
                            VerticalAlignment="Center" />
                 <TextBlock x:Name="LoadedPluginTextBlock" Grid.Column="3" Margin="0,0,24,0"
+                           Text="{Binding LoadedPluginText}"
                            TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
 
                 <TextBlock Grid.Column="4" Text="Status" FontWeight="SemiBold" Margin="0,0,8,0"
                            VerticalAlignment="Center" />
                 <TextBlock x:Name="StatusTextBlock" Grid.Column="5" Foreground="#555" TextTrimming="CharacterEllipsis"
+                           Text="{Binding StatusText}"
                            VerticalAlignment="Center" />
             </Grid>
 
@@ -123,6 +126,7 @@
                         BorderThickness="0,0,1,0"
                         Padding="0,0,12,0">
                     <TreeView x:Name="RecordsTreeView"
+                              ItemsSource="{Binding RecordTypeNodes}"
                               SelectedItemChanged="RecordsTreeView_SelectedItemChanged">
                         <TreeView.ItemTemplate>
                             <HierarchicalDataTemplate ItemsSource="{Binding Records}">
@@ -140,6 +144,7 @@
                 <DataGrid x:Name="RecordsDataGrid"
                           Grid.Column="1"
                           Margin="12,0,0,0"
+                          ItemsSource="{Binding RecordsGridItems}"
                           AutoGenerateColumns="False"
                           CanUserAddRows="False"
                           CanUserDeleteRows="False"
