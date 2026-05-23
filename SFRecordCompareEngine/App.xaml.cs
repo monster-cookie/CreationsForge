@@ -3,9 +3,7 @@ using System.Windows;
 using Autofac;
 using Serilog;
 using SFRecordCompareEngine.Core;
-using SFRecordCompareEngine.Core.Configuration.Interfaces;
 using SFRecordCompareEngine.Core.Models.Database;
-using SFRecordCompareEngine.Core.Services.Interfaces;
 using SFRecordCompareEngine.Migrations;
 using SFRecordCompareEngine.ViewModels;
 
@@ -37,7 +35,6 @@ public partial class App
         base.OnStartup(e);
 
         Container = BuildContainer();
-        InitializePluginDatabase();
         Container.Resolve<MainWindow>().Show();
     }
 
@@ -59,36 +56,9 @@ public partial class App
         builder.RegisterType<OpenGamePluginDialogViewModel>();
         builder.RegisterType<MainWindow>();
         builder.RegisterType<OpenGamePluginDialog>();
+        builder.RegisterType<DatabaseImportConfirmationDialog>();
 
         return builder.Build();
     }
 
-    private void InitializePluginDatabase()
-    {
-        try
-        {
-            var container = Container ?? throw new InvalidOperationException("Application container has not been initialized.");
-            var gameConfigurationStore = container.Resolve<IGameConfigurationStore>();
-            gameConfigurationStore.SelectGame("Starfield");
-
-            var importResult = container.Resolve<IPluginImportService>()
-                .InitializeAndImportAsync(CancellationToken.None)
-                .GetAwaiter()
-                .GetResult();
-
-            Log.Information(
-                "Startup plugin database import completed at schema version {SchemaVersion} with {PluginCount} imported plugins",
-                importResult.SchemaVersion,
-                importResult.PluginsImported);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Unable to initialize the plugin database");
-            MessageBox.Show(
-                $"Unable to initialize the plugin database. Details were written to the log file.{Environment.NewLine}{ex.Message}",
-                "SF Record Compare Engine",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
-    }
 }

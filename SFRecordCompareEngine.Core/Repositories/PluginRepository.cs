@@ -13,6 +13,11 @@ public class PluginRepository : IPluginRepository
             modKey);
     }
 
+    public IList<PluginMetadataDTO> GetAll(IDatabase database)
+    {
+        return database.Fetch<PluginMetadataDTO>("SELECT * FROM Plugins;");
+    }
+
     public IList<PluginMetadataDTO> GetPlugins(IDatabase database)
     {
         return database.Fetch<PluginMetadataDTO>(
@@ -203,7 +208,7 @@ public class PluginRepository : IPluginRepository
 
     public void MarkPluginsNotInLoadOrder(IDatabase database, ISet<string> currentModKeys, string checkedAtUtc)
     {
-        var plugins = database.Fetch<PluginMetadataDTO>("SELECT * FROM Plugins;");
+        var plugins = GetAll(database);
         var currentModKeysByCaseInsensitiveKey = currentModKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var plugin in plugins.Where(plugin => !currentModKeysByCaseInsensitiveKey.Contains(plugin.ModKey)))
         {

@@ -97,6 +97,19 @@ public class DatabaseSchemaInitializerTests : IDisposable
     }
 
     [Fact]
+    public void Initialize_WhenDatabaseDoesNotExist_CreatesGameSettingTable()
+    {
+        Sut.Initialize();
+
+        using var database = ConnectionFactory.OpenDatabase();
+        var count = database.ExecuteScalar<int>(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @0;",
+            "GameSetting");
+
+        count.ShouldBe(1);
+    }
+
+    [Fact]
     public void Initialize_WhenDatabaseDoesNotExist_CreatesDbUpJournalTable()
     {
         Sut.Initialize();
@@ -118,19 +131,6 @@ public class DatabaseSchemaInitializerTests : IDisposable
         var count = database.ExecuteScalar<int>(
             "SELECT COUNT(*) FROM SchemaVersions WHERE ScriptName LIKE @0;",
             "%001_CreatePluginSchema.sql");
-
-        count.ShouldBe(1);
-    }
-
-    [Fact]
-    public void Initialize_WhenDatabaseDoesNotExist_RecordsFormListMigration()
-    {
-        Sut.Initialize();
-
-        using var database = ConnectionFactory.OpenDatabase();
-        var count = database.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM SchemaVersions WHERE ScriptName LIKE @0;",
-            "%002_CreateRecordHeaderAndFormListSchema.sql");
 
         count.ShouldBe(1);
     }
@@ -241,5 +241,49 @@ public class DatabaseSchemaInitializerTests : IDisposable
 
         database.ExecuteScalar<int>("SELECT COUNT(*) FROM FormList;").ShouldBe(0);
         database.ExecuteScalar<int>("SELECT COUNT(*) FROM FormListItem;").ShouldBe(0);
+    }
+
+    [Fact]
+    public void RecordHeader_WhenDeleted_CascadesToGameSetting()
+    {
+        Sut.Initialize();
+
+        using var database = ConnectionFactory.OpenDatabase();
+        var importedAtUtc = DateTimeOffset.UtcNow.ToString("O");
+        database.Execute(
+            """
+            INSERT INTO Plugins (ModKey, GameRelease, LoadOrderIndex, PluginFileName, LastCheckedUtc)
+            VALUES (@0, @1, @2, @3, @4);
+            """,
+            "Example.esm",
+            "Starfield",
+            1,
+            "Example.esm",
+            importedAtUtc);
+        database.Execute(
+            """
+            INSERT INTO RecordHeader (ModKey, FormID, RecordType, FormKey, PluginFileName, ImportedAtUtc)
+            VALUES (@0, @1, @2, @3, @4, @5);
+            """,
+            "Example.esm",
+            "000001",
+            "GameSetting",
+            "000001:Example.esm",
+            "Example.esm",
+            importedAtUtc);
+        database.Execute(
+            """
+            INSERT INTO GameSetting (ModKey, FormID, SettingType, Data, ImportedAtUtc)
+            VALUES (@0, @1, @2, @3, @4);
+            """,
+            "Example.esm",
+            "000001",
+            "String",
+            "Value",
+            importedAtUtc);
+
+        database.Execute("DELETE FROM RecordHeader WHERE ModKey = @0 AND FormID = @1;", "Example.esm", "000001");
+
+        database.ExecuteScalar<int>("SELECT COUNT(*) FROM GameSetting;").ShouldBe(0);
     }
 }

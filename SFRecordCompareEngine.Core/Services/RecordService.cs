@@ -15,11 +15,11 @@ public class RecordService(
     {
         if (string.IsNullOrWhiteSpace(referenceValue)) return null;
 
-        var normalizedReferenceValue = FormKeyTextNormalizer.NormalizeReferenceValue(referenceValue);
-        try
-        {
-            using var database = connectionFactory.OpenDatabase();
-            var recordHeader = recordHeaderRepository.GetByFormKey(database, normalizedReferenceValue);
+            var normalizedReferenceValue = FormKeyTextNormalizer.NormalizeReferenceValue(referenceValue);
+            try
+            {
+                using var database = connectionFactory.OpenDatabase();
+            var recordHeader = recordHeaderRepository.GetCurrentByFormKey(database, normalizedReferenceValue);
             return string.IsNullOrWhiteSpace(recordHeader?.EditorID)
                 ? normalizedReferenceValue
                 : recordHeader.EditorID;

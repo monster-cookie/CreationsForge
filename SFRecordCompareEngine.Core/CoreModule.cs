@@ -2,6 +2,8 @@ using System.Reflection;
 using Autofac;
 using SFRecordCompareEngine.Core.Database;
 using SFRecordCompareEngine.Core.Models.Database;
+using SFRecordCompareEngine.Core.Services;
+using SFRecordCompareEngine.Core.Services.Interfaces;
 using Module = Autofac.Module;
 
 namespace SFRecordCompareEngine.Core;
@@ -22,6 +24,12 @@ public class CoreModule : Module
         builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly())
             .Where(t => t.Name.EndsWith("Service", StringComparison.OrdinalIgnoreCase))
             .AsImplementedInterfaces()
+            .SingleInstance();
+
+        builder.RegisterType<FormListRecordImporter>().SingleInstance();
+        builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly())
+            .AssignableTo<ITypedRecordDetailImporter>()
+            .As<ITypedRecordDetailImporter>()
             .SingleInstance();
 
         // Register Factory

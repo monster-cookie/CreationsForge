@@ -11,16 +11,14 @@ public class DatabaseSchemaInitializer(
 {
     private readonly ILogger Logger = Log.ForContext<DatabaseSchemaInitializer>();
 
-    public int Initialize()
+    public void Initialize()
     {
         Logger.Information("Initializing plugin database schema for {DatabasePath}", connectionFactory.DatabasePath);
 
         try
         {
-            var migrationSchemaVersion = databaseMigrationRunner.Migrate(connectionFactory.DatabasePath);
-            Logger.Information("Initialized plugin database schema for {DatabasePath} at schema version {SchemaVersion}", connectionFactory.DatabasePath, migrationSchemaVersion);
-
-            return migrationSchemaVersion;
+            databaseMigrationRunner.Migrate(connectionFactory.DatabasePath);
+            Logger.Information("Initialized plugin database schema for {DatabasePath}", connectionFactory.DatabasePath);
         }
         catch (Exception ex)
         {

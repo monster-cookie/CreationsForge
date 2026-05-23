@@ -9,6 +9,7 @@
         MinWidth="520"
         WindowState="Maximized">
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <Style x:Key="OpenFolderIconPathStyle" TargetType="Path">
             <Setter Property="Stroke" Value="#333" />
             <Setter Property="StrokeThickness" Value="1.6" />
@@ -53,6 +54,7 @@
             <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
                 <MenuItem Header="_Open..."
+                          IsEnabled="{Binding CanUseApplication, Mode=OneWay}"
                           Click="OpenMenuItem_Click">
                     <MenuItem.Icon>
                         <Path Style="{StaticResource OpenFolderIconPathStyle}"
@@ -69,6 +71,7 @@
                 <ToolBar>
                     <Button Width="80"
                             Height="28"
+                            IsEnabled="{Binding CanUseApplication, Mode=OneWay}"
                             Click="OpenMenuItem_Click">
                         <StackPanel Orientation="Horizontal">
                             <Path Style="{StaticResource OpenFolderIconPathStyle}"
@@ -166,7 +169,7 @@
 
         <Border x:Name="CacheProgressOverlay"
                 Background="#CCFFFFFF"
-                Visibility="Collapsed">
+                Visibility="{Binding IsDatabaseImportRunning, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Grid Width="420"
                   HorizontalAlignment="Center"
                   VerticalAlignment="Center">
@@ -176,14 +179,19 @@
                         Padding="20">
                     <StackPanel>
                         <TextBlock x:Name="CacheProgressTextBlock"
-                                   Text="Preparing cache..."
+                                   Text="{Binding DatabaseImportStatusText, Mode=OneWay}"
                                    FontWeight="SemiBold"
+                                   Margin="0,0,0,8" />
+                        <TextBlock Text="{Binding DatabaseImportCurrentPluginText, Mode=OneWay}"
+                                   Foreground="#555"
+                                   TextTrimming="CharacterEllipsis"
                                    Margin="0,0,0,12" />
                         <ProgressBar x:Name="CacheProgressBar"
                                      Height="18"
                                      Minimum="0"
-                                     Maximum="100"
-                                     IsIndeterminate="True" />
+                                     Maximum="{Binding DatabaseImportProgressMaximum, Mode=OneWay}"
+                                     Value="{Binding DatabaseImportProgressValue, Mode=OneWay}"
+                                     IsIndeterminate="{Binding IsDatabaseImportIndeterminate, Mode=OneWay}" />
                     </StackPanel>
                 </Border>
             </Grid>

@@ -1,5 +1,7 @@
 using Moq;
 using Serilog;
+using SFRecordCompareEngine.Core.Configuration.Interfaces;
+using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Models.Records;
 using SFRecordCompareEngine.Core.Services.Interfaces;
@@ -13,7 +15,7 @@ public class MainWindowViewModelTests
     [Fact]
     public void Constructor_SetsInitialEmptyState()
     {
-        var sut = new MainWindowViewModel(Mock.Of<IPluginService>(), Mock.Of<ILogger>());
+        var sut = CreateSut();
 
         sut.LoadedGameText.ShouldBe("None");
         sut.LoadedPluginText.ShouldBe("None");
@@ -21,6 +23,8 @@ public class MainWindowViewModelTests
         sut.RecordTypeNodes.ShouldBeEmpty();
         sut.RecordsGridItems.ShouldBeNull();
         sut.IsComparisonMode.ShouldBeFalse();
+        sut.CanUseApplication.ShouldBeTrue();
+        sut.IsDatabaseImportRunning.ShouldBeFalse();
     }
 
     [Fact]
@@ -38,7 +42,7 @@ public class MainWindowViewModelTests
                 }
             ]);
         pluginService.Setup(service => service.GetRecords("Example.esm", "Keyword")).Returns([]);
-        var sut = new MainWindowViewModel(pluginService.Object, Mock.Of<ILogger>());
+        var sut = CreateSut(pluginService.Object);
 
         sut.LoadPlugin("Starfield", "Example.esm");
 
@@ -62,7 +66,7 @@ public class MainWindowViewModelTests
                 EditorID = "ExampleList"
             }
         };
-        var sut = new MainWindowViewModel(Mock.Of<IPluginService>(), Mock.Of<ILogger>());
+        var sut = CreateSut();
 
         sut.SelectRecordTreeItem(new RecordTypeTreeNode
         {
@@ -117,7 +121,7 @@ public class MainWindowViewModelTests
                     }
                 ]
             });
-        var sut = new MainWindowViewModel(pluginService.Object, Mock.Of<ILogger>());
+        var sut = CreateSut(pluginService.Object);
         sut.LoadPlugin("Starfield", "Example.esm");
 
         sut.SelectRecordTreeItem(new RecordSummaryDTO
@@ -141,7 +145,7 @@ public class MainWindowViewModelTests
     [Fact]
     public void SelectRecordTreeItem_WhenRecordCannotBeLoaded_ReportsStatus()
     {
-        var sut = new MainWindowViewModel(Mock.Of<IPluginService>(), Mock.Of<ILogger>());
+        var sut = CreateSut();
 
         sut.SelectRecordTreeItem(new RecordSummaryDTO
         {
@@ -152,5 +156,71 @@ public class MainWindowViewModelTests
 
         sut.StatusText.ShouldBe("Unable to load comparison for the selected record.");
         sut.IsComparisonMode.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task InitializeDatabaseImportAsync_WhenImportSucceeds_ReportsProgressAndSelectsStarfield()
+    {
+        var gameConfigurationStore = new Mock<IGameConfigurationStore>();
+        var pluginImportService = new Mock<IPluginImportService>();
+        pluginImportService.Setup(service => service.InitializeAndImportAsync(
+                It.IsAny<IProgress<PluginImportProgressDTO>>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<IProgress<PluginImportProgressDTO>, CancellationToken>((progress, _) =>
+            {
+                progress.Report(new PluginImportProgressDTO
+                {
+                    CurrentPluginName = "Example.esm",
+                    CurrentModKey = "Example.esm",
+                    PluginIndex = 1,
+                    PluginCount = 2,
+                    StatusText = "Checking Example.esm (1 of 2)..."
+                });
+            })
+            .ReturnsAsync(new PluginImportResultDTO
+            {
+                PluginsImported = 2
+            });
+        var sut = CreateSut(pluginImportService: pluginImportService.Object, gameConfigurationStore: gameConfigurationStore.Object);
+
+        await sut.InitializeDatabaseImportAsync(CancellationToken.None);
+
+        gameConfigurationStore.Verify(store => store.SelectGame("Starfield"), Times.Once);
+        sut.IsDatabaseImportRunning.ShouldBeFalse();
+        sut.CanUseApplication.ShouldBeTrue();
+        sut.DatabaseImportStatusText.ShouldBe("Checking Example.esm (1 of 2)...");
+        sut.DatabaseImportCurrentPluginText.ShouldBe("Current plugin: Example.esm");
+        sut.DatabaseImportProgressMaximum.ShouldBe(2);
+        sut.DatabaseImportProgressValue.ShouldBe(1);
+        sut.StatusText.ShouldBe("Plugin database import completed. Imported 2 plugins.");
+    }
+
+    [Fact]
+    public async Task InitializeDatabaseImportAsync_WhenImportFails_ClearsRunningStateAndThrows()
+    {
+        var pluginImportService = new Mock<IPluginImportService>();
+        pluginImportService.Setup(service => service.InitializeAndImportAsync(
+                It.IsAny<IProgress<PluginImportProgressDTO>>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Import failed."));
+        var sut = CreateSut(pluginImportService: pluginImportService.Object);
+
+        await Should.ThrowAsync<InvalidOperationException>(() => sut.InitializeDatabaseImportAsync(CancellationToken.None));
+
+        sut.IsDatabaseImportRunning.ShouldBeFalse();
+        sut.CanUseApplication.ShouldBeTrue();
+        sut.StatusText.ShouldBe("Unable to initialize the plugin database.");
+    }
+
+    private static MainWindowViewModel CreateSut(
+        IPluginService? pluginService = null,
+        IPluginImportService? pluginImportService = null,
+        IGameConfigurationStore? gameConfigurationStore = null)
+    {
+        return new MainWindowViewModel(
+            pluginService ?? Mock.Of<IPluginService>(),
+            pluginImportService ?? Mock.Of<IPluginImportService>(),
+            gameConfigurationStore ?? Mock.Of<IGameConfigurationStore>(),
+            Mock.Of<ILogger>());
     }
 }

@@ -23,7 +23,10 @@ public class OpenGamePluginDialogViewModel : ViewModelBase
     private PluginHeaderDTO? _selectedPluginHeader;
     private string? _selectedPluginName;
     private string _statusText = string.Empty;
+    private IList<string> AllPluginItems = new List<string>();
     private bool IsLoadingPlugins;
+    private bool IsSelectingPluginSearchResult;
+    private bool IsUpdatingPluginItems;
 
     public OpenGamePluginDialogViewModel(
         IGameConfigurationStore gameConfigurationStore,
@@ -73,7 +76,7 @@ public class OpenGamePluginDialogViewModel : ViewModelBase
             }
 
             ClearPluginHeader();
-            if (!IsLoadingPlugins)
+            if (!IsLoadingPlugins && !IsUpdatingPluginItems && !IsSelectingPluginSearchResult)
             {
                 FilterPlugins();
             }
@@ -138,6 +141,27 @@ public class OpenGamePluginDialogViewModel : ViewModelBase
         return _selectedPluginHeader is not null;
     }
 
+    public void SelectPluginSearchResult(string pluginName)
+    {
+        if (string.IsNullOrWhiteSpace(pluginName))
+        {
+            return;
+        }
+
+        IsSelectingPluginSearchResult = true;
+        try
+        {
+            PluginSearchText = pluginName;
+        }
+        finally
+        {
+            IsSelectingPluginSearchResult = false;
+        }
+
+        ClearPluginHeader();
+        RaiseCommandStates();
+    }
+
     private void ApplySelectedGame()
     {
         GameConfigurationStore.SelectGame(SelectedGame);
@@ -150,6 +174,7 @@ public class OpenGamePluginDialogViewModel : ViewModelBase
             Logger.Information("Loading plugins for {Game}", GameConfigurationStore.SelectedGame);
 
             var plugins = PluginService.GetPlugins();
+            AllPluginItems = plugins.ToList();
             IsLoadingPlugins = true;
             try
             {
@@ -241,15 +266,30 @@ public class OpenGamePluginDialogViewModel : ViewModelBase
             return;
         }
 
-        SetPluginItems(PluginService.SearchPlugins(PluginSearchText));
+        var searchText = PluginSearchText.Trim();
+        var plugins = string.IsNullOrWhiteSpace(searchText)
+            ? AllPluginItems
+            : AllPluginItems
+                .Where(plugin => plugin.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+        SetPluginItems(plugins);
     }
 
     private void SetPluginItems(IList<string> plugins)
     {
-        PluginItems.Clear();
-        foreach (var plugin in plugins)
+        IsUpdatingPluginItems = true;
+        try
         {
-            PluginItems.Add(plugin);
+            PluginItems.Clear();
+            foreach (var plugin in plugins)
+            {
+                PluginItems.Add(plugin);
+            }
+        }
+        finally
+        {
+            IsUpdatingPluginItems = false;
         }
     }
 

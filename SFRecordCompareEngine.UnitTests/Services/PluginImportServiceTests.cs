@@ -16,7 +16,9 @@ public class PluginImportServiceTests : IDisposable
     private readonly string DatabaseDirectory = Path.Combine(Path.GetTempPath(), "SFRecordCompareEngineTests", Guid.NewGuid().ToString("N"));
     private readonly ISqliteConnectionFactory ConnectionFactory;
     private readonly PluginRepository PluginRepository = new();
+    private readonly RecordHeaderRepository RecordHeaderRepository = new();
     private readonly Mock<IPluginService> PluginService = new();
+    private readonly Mock<IRecordImportService> RecordImportService = new();
     private readonly DatabaseSchemaInitializer SchemaInitializer;
 
     public PluginImportServiceTests()
@@ -28,6 +30,15 @@ public class PluginImportServiceTests : IDisposable
 
         ConnectionFactory = new SqliteConnectionFactory(options);
         SchemaInitializer = new DatabaseSchemaInitializer(ConnectionFactory, new DatabaseMigrationRunner());
+        RecordImportService.Setup(service => service.ImportPluginRecords(
+                It.IsAny<NPoco.IDatabase>(),
+                It.IsAny<PluginMetadataDTO>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .Returns<NPoco.IDatabase, PluginMetadataDTO, string, CancellationToken>((_, plugin, _, _) => new SFRecordCompareEngine.Core.DTOs.Records.RecordImportResultDTO
+            {
+                ModKey = plugin.ModKey
+            });
     }
 
     public void Dispose()
@@ -60,6 +71,22 @@ public class PluginImportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task InitializeAndImportAsync_WhenProgressIsProvided_ReportsCurrentPlugin()
+    {
+        var pluginPath = CreatePluginFile("Example.esm", "plugin");
+        PluginService.Setup(service => service.GetLoadOrder()).Returns([CreateLoadOrderEntry("Example.esm", pluginPath, 0)]);
+        PluginService.Setup(service => service.ReadHeader(pluginPath)).Returns(CreateHeader("Example.esm"));
+        var progressUpdates = new List<PluginImportProgressDTO>();
+        var sut = CreateSut();
+
+        await sut.InitializeAndImportAsync(new Progress<PluginImportProgressDTO>(progressUpdates.Add), CancellationToken.None);
+
+        progressUpdates.ShouldContain(update => update.StatusText.Contains("Initializing plugin database schema", StringComparison.Ordinal));
+        progressUpdates.ShouldContain(update => update.CurrentPluginName == "Example.esm" && update.PluginIndex == 1 && update.PluginCount == 1);
+        progressUpdates.ShouldContain(update => update.StatusText.Contains("Plugin database import completed", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task InitializeAndImportAsync_WhenPluginFingerprintIsUnchanged_DoesNotReadHeaderAgainAndRefreshesLoadOrder()
     {
         var pluginPath = CreatePluginFile("Example.esm", "plugin");
@@ -71,6 +98,11 @@ public class PluginImportServiceTests : IDisposable
 
         result.PluginsUnchanged.ShouldBe(1);
         PluginService.Verify(service => service.ReadHeader(It.IsAny<string>()), Times.Never);
+        RecordImportService.Verify(service => service.ImportPluginRecords(
+            It.IsAny<NPoco.IDatabase>(),
+            It.IsAny<PluginMetadataDTO>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()), Times.Never);
         using var database = ConnectionFactory.OpenDatabase();
         PluginRepository.GetByModKey(database, "Example.esm")!.LoadOrderIndex.ShouldBe(9);
     }
@@ -92,6 +124,61 @@ public class PluginImportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task InitializeAndImportAsync_WhenPluginFileIsMissing_DeletesDerivedRecordRows()
+    {
+        var pluginPath = CreatePluginFile("Missing.esm", "plugin");
+        SeedImportedPlugin("Missing.esm", pluginPath, 1);
+        using (var database = ConnectionFactory.OpenDatabase())
+        {
+            RecordHeaderRepository.Upsert(database, new SFRecordCompareEngine.Core.DTOs.Records.RecordHeaderDTO
+            {
+                ModKey = "Missing.esm",
+                FormID = "000001",
+                RecordType = "Keyword",
+                FormKey = "000001:Missing.esm",
+                PluginFileName = "Missing.esm",
+                ImportedAtUtc = DateTimeOffset.UtcNow.ToString("O")
+            });
+        }
+
+        File.Delete(pluginPath);
+        PluginService.Setup(service => service.GetLoadOrder()).Returns([CreateLoadOrderEntry("Missing.esm", pluginPath, 1)]);
+        var sut = CreateSut();
+
+        await sut.InitializeAndImportAsync(CancellationToken.None);
+
+        using var resultDatabase = ConnectionFactory.OpenDatabase();
+        resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @0 COLLATE NOCASE;", "Missing.esm").ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task InitializeAndImportAsync_WhenPluginLeavesLoadOrder_DeletesDerivedRecordRows()
+    {
+        var pluginPath = CreatePluginFile("Removed.esm", "plugin");
+        SeedImportedPlugin("Removed.esm", pluginPath, 1);
+        using (var database = ConnectionFactory.OpenDatabase())
+        {
+            RecordHeaderRepository.Upsert(database, new SFRecordCompareEngine.Core.DTOs.Records.RecordHeaderDTO
+            {
+                ModKey = "Removed.esm",
+                FormID = "000001",
+                RecordType = "Keyword",
+                FormKey = "000001:Removed.esm",
+                PluginFileName = "Removed.esm",
+                ImportedAtUtc = DateTimeOffset.UtcNow.ToString("O")
+            });
+        }
+
+        PluginService.Setup(service => service.GetLoadOrder()).Returns([]);
+        var sut = CreateSut();
+
+        await sut.InitializeAndImportAsync(CancellationToken.None);
+
+        using var resultDatabase = ConnectionFactory.OpenDatabase();
+        resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @0 COLLATE NOCASE;", "Removed.esm").ShouldBe(0);
+    }
+
+    [Fact]
     public async Task InitializeAndImportAsync_WhenPluginFileSizeChanges_ReimportsPlugin()
     {
         var pluginPath = CreatePluginFile("Example.esm", "plugin");
@@ -108,13 +195,100 @@ public class PluginImportServiceTests : IDisposable
         PluginService.Verify(service => service.ReadHeader(pluginPath), Times.Once);
     }
 
+    [Fact]
+    public async Task InitializeAndImportAsync_WhenPluginFileSizeChanges_DeletesAndRebuildsRecordHeaders()
+    {
+        var pluginPath = CreatePluginFile("Example.esm", "plugin");
+        SeedImportedPlugin("Example.esm", pluginPath, 1);
+        using (var database = ConnectionFactory.OpenDatabase())
+        {
+            RecordHeaderRepository.Upsert(database, new SFRecordCompareEngine.Core.DTOs.Records.RecordHeaderDTO
+            {
+                ModKey = "Example.esm",
+                FormID = "000001",
+                RecordType = "Keyword",
+                FormKey = "000001:Example.esm",
+                PluginFileName = "Example.esm",
+                ImportedAtUtc = DateTimeOffset.UtcNow.ToString("O")
+            });
+        }
+
+        File.AppendAllText(pluginPath, "changed");
+        PluginService.Setup(service => service.GetLoadOrder()).Returns([CreateLoadOrderEntry("Example.esm", pluginPath, 1)]);
+        PluginService.Setup(service => service.ReadHeader(pluginPath)).Returns(CreateHeader("Example.esm"));
+        RecordImportService.Setup(service => service.ImportPluginRecords(
+                It.IsAny<NPoco.IDatabase>(),
+                It.IsAny<PluginMetadataDTO>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .Returns<NPoco.IDatabase, PluginMetadataDTO, string, CancellationToken>((database, plugin, importedAtUtc, _) =>
+            {
+                RecordHeaderRepository.Upsert(database, new SFRecordCompareEngine.Core.DTOs.Records.RecordHeaderDTO
+                {
+                    ModKey = plugin.ModKey,
+                    FormID = "000002",
+                    RecordType = "Keyword",
+                    FormKey = "000002:Example.esm",
+                    PluginFileName = plugin.PluginFileName,
+                    ImportedAtUtc = importedAtUtc
+                });
+
+                return new SFRecordCompareEngine.Core.DTOs.Records.RecordImportResultDTO
+                {
+                    ModKey = plugin.ModKey,
+                    RecordTypes =
+                    [
+                        new SFRecordCompareEngine.Core.DTOs.Records.RecordTypeImportResultDTO
+                        {
+                            RecordType = "Keyword",
+                            HeaderImportSupported = true,
+                            TypedDetailImportSupported = true,
+                            HeadersImported = 1,
+                            DetailRowsImported = 1
+                        }
+                    ]
+                };
+            });
+        var sut = CreateSut();
+
+        await sut.InitializeAndImportAsync(CancellationToken.None);
+
+        using var resultDatabase = ConnectionFactory.OpenDatabase();
+        resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @0 COLLATE NOCASE AND FormID = @1;", "Example.esm", "000001")
+            .ShouldBe(0);
+        resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @0 COLLATE NOCASE AND FormID = @1;", "Example.esm", "000002")
+            .ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task InitializeAndImportAsync_WhenRecordImportIsCanceled_DoesNotMarkPluginFailed()
+    {
+        var pluginPath = CreatePluginFile("Example.esm", "plugin");
+        PluginService.Setup(service => service.GetLoadOrder()).Returns([CreateLoadOrderEntry("Example.esm", pluginPath, 1)]);
+        PluginService.Setup(service => service.ReadHeader(pluginPath)).Returns(CreateHeader("Example.esm"));
+        RecordImportService.Setup(service => service.ImportPluginRecords(
+                It.IsAny<NPoco.IDatabase>(),
+                It.IsAny<PluginMetadataDTO>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .Throws(new OperationCanceledException());
+        var sut = CreateSut();
+
+        await Should.ThrowAsync<OperationCanceledException>(() => sut.InitializeAndImportAsync(CancellationToken.None));
+
+        using var database = ConnectionFactory.OpenDatabase();
+        PluginRepository.GetByModKey(database, "Example.esm")?.ImportState.ShouldNotBe(PluginImportState.Failed.ToString());
+    }
+
     private PluginImportService CreateSut()
     {
         return new PluginImportService(
             SchemaInitializer,
             ConnectionFactory,
             PluginRepository,
-            PluginService.Object);
+            PluginService.Object,
+            RecordHeaderRepository,
+            RecordImportService.Object);
     }
 
     private void SeedImportedPlugin(string modKey, string pluginPath, int loadOrderIndex)

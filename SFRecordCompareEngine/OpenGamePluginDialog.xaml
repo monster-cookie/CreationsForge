@@ -50,12 +50,13 @@
             <ComboBox x:Name="PluginComboBox"
                       Grid.Row="1"
                       IsEditable="True"
-                      IsTextSearchEnabled="False"
+                      IsTextSearchEnabled="True"
                       StaysOpenOnEdit="True"
                       MaxDropDownHeight="180"
                       Height="34"
                       VerticalContentAlignment="Center"
                       ItemsSource="{Binding PluginItems}"
+                      SelectionChanged="PluginComboBox_SelectionChanged"
                       Text="{Binding PluginSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
             <Button Grid.Row="1"

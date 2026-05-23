@@ -49,6 +49,29 @@ public class RecordServiceTests : IDisposable
         result.ShouldBe("ChargenPreset");
     }
 
+    [Fact]
+    public void ResolveReferenceDisplayValue_WhenMatchingRecordIsMissing_ReturnsNormalizedReference()
+    {
+        using var database = ConnectionFactory.OpenDatabase();
+        InsertRecordHeader(database, "02F7C8:Starfield.esm", "MissingEditorId", PluginImportState.Missing.ToString(), 0);
+
+        var result = Sut.ResolveReferenceDisplayValue("02F7C8:Starfield.esm");
+
+        result.ShouldBe("02F7C8:Starfield.esm");
+    }
+
+    [Fact]
+    public void ResolveReferenceDisplayValue_WhenMultipleCurrentRowsMatch_ReturnsHighestLoadOrderEditorId()
+    {
+        using var database = ConnectionFactory.OpenDatabase();
+        InsertRecordHeader(database, "02F7C8:Starfield.esm", "BaseEditorId", PluginImportState.Current.ToString(), 0, "Starfield.esm");
+        InsertRecordHeader(database, "02F7C8:Starfield.esm", "OverrideEditorId", PluginImportState.Current.ToString(), 10, "Example.esm");
+
+        var result = Sut.ResolveReferenceDisplayValue("02F7C8:Starfield.esm");
+
+        result.ShouldBe("OverrideEditorId");
+    }
+
     [Theory]
     [InlineData("formid:02F7C8:Starfield.esm", "ChargenPreset")]
     [InlineData("02F7C8:Starfield.esm <Starfield.IStarfieldMajorRecordGetter>", "ChargenPreset")]
@@ -92,26 +115,37 @@ public class RecordServiceTests : IDisposable
 
     private void InsertRecordHeader(NPoco.IDatabase database, string formKey, string? editorId)
     {
+        InsertRecordHeader(database, formKey, editorId, PluginImportState.Current.ToString(), 0);
+    }
+
+    private void InsertRecordHeader(
+        NPoco.IDatabase database,
+        string formKey,
+        string? editorId,
+        string importState,
+        int loadOrderIndex,
+        string modKey = "Starfield.esm")
+    {
         PluginRepository.UpsertPlugin(database, new PluginMetadataDTO
         {
-            ModKey = "Starfield.esm",
+            ModKey = modKey,
             GameRelease = "Starfield",
-            LoadOrderIndex = 0,
-            PluginFileName = "Starfield.esm",
+            LoadOrderIndex = loadOrderIndex,
+            PluginFileName = modKey,
             Enabled = true,
-            ExistsOnDisk = true,
-            ImportState = PluginImportState.Current.ToString(),
+            ExistsOnDisk = importState == PluginImportState.Current.ToString(),
+            ImportState = importState,
             LastCheckedUtc = DateTimeOffset.UtcNow.ToString("O")
         });
 
         RecordHeaderRepository.Upsert(database, new RecordHeaderDTO
         {
-            ModKey = "Starfield.esm",
+            ModKey = modKey,
             FormID = FormIdNormalizer.NormalizeFromFormKey(formKey),
             RecordType = "FormList",
             FormKey = formKey,
             EditorID = editorId,
-            PluginFileName = "Starfield.esm",
+            PluginFileName = modKey,
             ImportedAtUtc = DateTimeOffset.UtcNow.ToString("O")
         });
     }

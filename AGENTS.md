@@ -20,6 +20,8 @@ Simple WPF desktop app that shows the record hierarchy of a given plugin in rela
 - ALWAYS show a PLAN first and wait for explicit approval before editing files.
 - Keep changes surgical and consistent with existing patterns and naming.
 - No breaking changes to existing services, factories, stores, repositories, view models, public interfaces, configuration, persistence formats, or UI workflows without explicit approval.
+- NEVER edit AGENTS.md or AGENT-PLAN-TEMPLATE.md, if you have suggestions for changes, please propose them to the user.
+- DO NOT wrap lines of code or comments that are not currently wrapped. Follow existing formatting and line breaks in the repo.
 
 ## REFERENCE & DOCUMENTATION
 
@@ -91,6 +93,14 @@ Use these as primary documentation references:
 - Repositories should not own UI behavior, import orchestration, or Serilog decisions.
 - Database path, schema changes, and persistence format changes must be called out in the PLAN.
 
+### DbUp migration versioning
+
+- DbUp's `SchemaVersions` table is the only source of truth for database migration state.
+- Do not add hardcoded application schema-version constants such as `CurrentSchemaVersion`.
+- Do not return or log an app-defined schema version from migration runners or schema initializers.
+- To verify schema state, query DbUp `SchemaVersions` for applied migration script names.
+- New schema changes must be added as DbUp migrations and validated through `SchemaVersions`, not through numeric version fields.
+
 ## CODE QUALITY
 
 - Analyzer warnings are treated as errors.
@@ -112,6 +122,7 @@ Use these as primary documentation references:
 - Code-level checklist
 - UI/XAML impacts
 - Data model, persistence, or schema impacts
+- If database migration code is touched, the PLAN must state explicitly that DbUp `SchemaVersions` remains the migration source of truth and that no hardcoded schema-version constants are being added.
 - Config/environment changes
 - Autofac registration changes
 - Serilog logging additions/changes

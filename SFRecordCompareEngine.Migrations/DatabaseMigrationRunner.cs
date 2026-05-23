@@ -5,9 +5,7 @@ namespace SFRecordCompareEngine.Migrations;
 
 public class DatabaseMigrationRunner : IDatabaseMigrationRunner
 {
-    public const int CurrentSchemaVersion = 1;
-
-    public int Migrate(string databasePath)
+    public void Migrate(string databasePath)
     {
         SQLitePCL.Batteries.Init();
 
@@ -32,7 +30,5 @@ public class DatabaseMigrationRunner : IDatabaseMigrationRunner
         {
             throw new InvalidOperationException("Database migration failed.", result.Error);
         }
-
-        return CurrentSchemaVersion;
     }
 }

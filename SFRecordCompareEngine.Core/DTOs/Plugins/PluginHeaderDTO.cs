@@ -1,18 +1,7 @@
-using Mutagen.Bethesda.Starfield;
-
 namespace SFRecordCompareEngine.Core.DTOs.Plugins;
 
 public class PluginHeaderDTO
 {
-    public PluginHeaderDTO(string pluginName, IStarfieldModHeaderGetter pluginModHeader)
-    {
-        Name = pluginName;
-        Author = pluginModHeader.Author ?? "Unknown";
-        Version = pluginModHeader.Version;
-        Description = pluginModHeader.Description ?? string.Empty;
-        Masters = pluginModHeader.MasterReferences.Select(masterRef => masterRef.Master.FileName.ToString()).ToList();
-    }
-
     public PluginHeaderDTO(PluginMetadataDTO plugin, IList<PluginMasterReferenceDTO> masterReferences)
     {
         Name = plugin.PluginFileName;

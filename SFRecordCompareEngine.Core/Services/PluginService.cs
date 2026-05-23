@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using Mutagen.Bethesda;
@@ -40,6 +41,7 @@ public class PluginService : IPluginService
     private readonly IRecordService RecordService;
     private readonly ISqliteConnectionFactory SqliteConnectionFactory;
     private readonly IPluginRepository PluginRepository;
+    private readonly IGameSettingRepository GameSettingRepository;
 
     private readonly ILogger Logger = Log.ForContext<PluginService>();
 
@@ -47,16 +49,18 @@ public class PluginService : IPluginService
         IGameConfigurationStore gameConfigurationStore,
         IRecordService recordService,
         ISqliteConnectionFactory sqliteConnectionFactory,
-        IPluginRepository pluginRepository)
+        IPluginRepository pluginRepository,
+        IGameSettingRepository gameSettingRepository)
     {
         GameConfigurationStore = gameConfigurationStore;
         RecordService = recordService;
         SqliteConnectionFactory = sqliteConnectionFactory;
         PluginRepository = pluginRepository;
+        GameSettingRepository = gameSettingRepository;
     }
 
     public PluginService(IGameConfigurationStore gameConfigurationStore, IRecordService recordService)
-        : this(gameConfigurationStore, recordService, null!, null!)
+        : this(gameConfigurationStore, recordService, null!, null!, null!)
     {
     }
 
@@ -206,7 +210,13 @@ public class PluginService : IPluginService
     {
         try
         {
-            var plugin = LoadPlugin(pluginName);
+            if (recordType.Equals(RecordTypeImportCatalog.GameSettingRecordType, StringComparison.Ordinal))
+            {
+                using var database = SqliteConnectionFactory.OpenDatabase();
+                return GameSettingRepository.GetSummaries(database, pluginName);
+            }
+
+            using var plugin = LoadPlugin(pluginName);
             var records = GetRecordsFromMutagenTypeOption(plugin, recordType) ?? GetRecordsFromPluginProperty(plugin, recordType);
             if (records is null)
             {
@@ -244,6 +254,11 @@ public class PluginService : IPluginService
 
         try
         {
+            if (recordType.Equals(RecordTypeImportCatalog.GameSettingRecordType, StringComparison.Ordinal))
+            {
+                return GetGameSettingComparison(pluginName, formKey);
+            }
+
             var pluginNames = GetComparisonPluginNames(pluginName);
             var recordsByPlugin = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
 
@@ -323,6 +338,98 @@ public class PluginService : IPluginService
             Logger.Error(ex, "Unable to load comparison for {RecordType} {FormKey} in {PluginName}", recordType, formKey, pluginName);
             return new RecordComparisonDTO();
         }
+    }
+
+    private RecordComparisonDTO GetGameSettingComparison(string pluginName, string formKey)
+    {
+        using var database = SqliteConnectionFactory.OpenDatabase();
+        var formId = FormIdNormalizer.NormalizeFromFormKey(FormKeyTextNormalizer.NormalizeReferenceValue(formKey));
+        var rows = GameSettingRepository.GetByHierarchy(database, pluginName, formId);
+        var comparison = new RecordComparisonDTO
+        {
+            Plugins = rows
+                .Select(row => new RecordComparisonPluginDTO
+                {
+                    PluginName = row.PluginName,
+                    HasRecord = row.HasRecord
+                })
+                .ToList()
+        };
+
+        comparison.Fields = BuildGameSettingFields(comparison.Plugins, rows);
+
+        Logger.Information(
+            "Loaded GameSetting comparison for {FormKey} in {PluginName} across {PluginCount} plugins from SQLite",
+            formKey,
+            pluginName,
+            comparison.Plugins.Count);
+
+        return comparison;
+    }
+
+    private static IList<RecordComparisonFieldDTO> BuildGameSettingFields(
+        IList<RecordComparisonPluginDTO> plugins,
+        IList<GameSettingComparisonRowDTO> rows)
+    {
+        var rowByPlugin = rows.ToDictionary(row => row.PluginName, StringComparer.OrdinalIgnoreCase);
+        return
+        [
+            BuildTextField("SettingType", plugins, rowByPlugin, row => row.SettingType),
+            BuildTextField("TitleString", plugins, rowByPlugin, row => row.TitleString),
+            BuildTextField("Data", plugins, rowByPlugin, row => row.Data),
+            BuildTextField("RawData", plugins, rowByPlugin, row => row.RawData?.ToString(CultureInfo.InvariantCulture)),
+            BuildTextField("XALG", plugins, rowByPlugin, row => row.XALG?.ToString(CultureInfo.InvariantCulture)),
+            BuildBooleanField("IsCompressed", plugins, rowByPlugin, row => ToBoolean(row.IsCompressed)),
+            BuildBooleanField("IsDeleted", plugins, rowByPlugin, row => ToBoolean(row.IsDeleted))
+        ];
+    }
+
+    private static RecordComparisonFieldDTO BuildTextField(
+        string fieldName,
+        IList<RecordComparisonPluginDTO> plugins,
+        IDictionary<string, GameSettingComparisonRowDTO> rowByPlugin,
+        Func<GameSettingComparisonRowDTO, string?> getValue)
+    {
+        return new RecordComparisonFieldDTO
+        {
+            FieldName = fieldName,
+            DisplayKind = RecordComparisonFieldDisplayKind.Text,
+            ValuesByPlugin = plugins.ToDictionary(
+                plugin => plugin.PluginName,
+                plugin => rowByPlugin.TryGetValue(plugin.PluginName, out var row) && row.HasRecord ? getValue(row) : null,
+                StringComparer.OrdinalIgnoreCase)
+        };
+    }
+
+    private static RecordComparisonFieldDTO BuildBooleanField(
+        string fieldName,
+        IList<RecordComparisonPluginDTO> plugins,
+        IDictionary<string, GameSettingComparisonRowDTO> rowByPlugin,
+        Func<GameSettingComparisonRowDTO, bool?> getValue)
+    {
+        return new RecordComparisonFieldDTO
+        {
+            FieldName = fieldName,
+            DisplayKind = RecordComparisonFieldDisplayKind.Boolean,
+            ValuesByPlugin = plugins.ToDictionary(
+                plugin => plugin.PluginName,
+                plugin => rowByPlugin.TryGetValue(plugin.PluginName, out var row) && row.HasRecord ? getValue(row)?.ToString() : null,
+                StringComparer.OrdinalIgnoreCase),
+            BooleanValuesByPlugin = plugins.ToDictionary(
+                plugin => plugin.PluginName,
+                plugin => rowByPlugin.TryGetValue(plugin.PluginName, out var row) && row.HasRecord ? getValue(row) : null,
+                StringComparer.OrdinalIgnoreCase)
+        };
+    }
+
+    private static bool? ToBoolean(int? value)
+    {
+        return value switch
+        {
+            null => null,
+            0 => false,
+            _ => true
+        };
     }
 
     /// <summary>

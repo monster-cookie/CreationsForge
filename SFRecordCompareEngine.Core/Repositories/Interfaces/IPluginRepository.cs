@@ -6,6 +6,7 @@ namespace SFRecordCompareEngine.Core.Repositories.Interfaces;
 public interface IPluginRepository
 {
     PluginMetadataDTO? GetByModKey(IDatabase database, string modKey);
+    IList<PluginMetadataDTO> GetAll(IDatabase database);
     IList<PluginMetadataDTO> GetPlugins(IDatabase database);
     IList<PluginMetadataDTO> SearchPlugins(IDatabase database, string searchText);
     IList<PluginMasterReferenceDTO> GetMasterReferences(IDatabase database, string modKey);

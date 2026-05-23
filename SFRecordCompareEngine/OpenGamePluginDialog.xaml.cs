@@ -1,4 +1,5 @@
 using SFRecordCompareEngine.ViewModels;
+using System.Windows.Controls;
 
 namespace SFRecordCompareEngine;
 
@@ -19,6 +20,14 @@ public partial class OpenGamePluginDialog
         if (ViewModel.TryConfirmOpen())
         {
             DialogResult = true;
+        }
+    }
+
+    private void PluginComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (PluginComboBox.SelectedItem is string pluginName)
+        {
+            ViewModel.SelectPluginSearchResult(pluginName);
         }
     }
 }

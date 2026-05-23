@@ -2,5 +2,5 @@ namespace SFRecordCompareEngine.Migrations;
 
 public interface IDatabaseMigrationRunner
 {
-    int Migrate(string databasePath);
+    void Migrate(string databasePath);
 }
