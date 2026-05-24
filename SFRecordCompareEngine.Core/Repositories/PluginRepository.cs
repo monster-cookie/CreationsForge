@@ -34,6 +34,22 @@ public class PluginRepository : IPluginRepository
             "Starfield.esm");
     }
 
+    public IList<PluginMetadataDTO> GetOpenablePlugins(IDatabase database)
+    {
+        return database.Fetch<PluginMetadataDTO>(
+            """
+            SELECT *
+            FROM Plugins
+            WHERE ExistsOnDisk = 1
+              AND ImportState IN (@0, @1)
+              AND ModKey <> @2 COLLATE NOCASE
+            ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex ASC, PluginFileName COLLATE NOCASE ASC;
+            """,
+            PluginImportState.Current.ToString(),
+            PluginImportState.Failed.ToString(),
+            "Starfield.esm");
+    }
+
     public IList<PluginMetadataDTO> SearchPlugins(IDatabase database, string searchText)
     {
         var searchPattern = $"%{searchText}%";
@@ -49,6 +65,25 @@ public class PluginRepository : IPluginRepository
             ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex ASC, PluginFileName COLLATE NOCASE ASC;
             """,
             PluginImportState.Current.ToString(),
+            "Starfield.esm",
+            searchPattern);
+    }
+
+    public IList<PluginMetadataDTO> SearchOpenablePlugins(IDatabase database, string searchText)
+    {
+        var searchPattern = $"%{searchText}%";
+        return database.Fetch<PluginMetadataDTO>(
+            """
+            SELECT *
+            FROM Plugins
+            WHERE ExistsOnDisk = 1
+              AND ImportState IN (@0, @1)
+              AND ModKey <> @2 COLLATE NOCASE
+              AND (PluginFileName LIKE @3 COLLATE NOCASE OR ModKey LIKE @3 COLLATE NOCASE)
+            ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex ASC, PluginFileName COLLATE NOCASE ASC;
+            """,
+            PluginImportState.Current.ToString(),
+            PluginImportState.Failed.ToString(),
             "Starfield.esm",
             searchPattern);
     }

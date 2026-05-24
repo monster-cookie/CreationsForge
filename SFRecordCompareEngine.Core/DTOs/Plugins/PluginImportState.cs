@@ -5,5 +5,6 @@ public enum PluginImportState
     Current,
     Changed,
     Missing,
-    Failed
+    Failed,
+    Unsupported
 }

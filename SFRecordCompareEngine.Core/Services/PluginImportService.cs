@@ -92,7 +92,7 @@ public class PluginImportService(
         });
 
         Logger.Information(
-            "Plugin import completed: discovered {PluginsDiscovered}, unchanged {PluginsUnchanged}, changed {PluginsChanged}, invalidated {PluginsInvalidated}, imported {PluginsImported}, missing {PluginsMissing}, failed {PluginsFailed}, master references {MasterReferencesImported}, record headers {RecordHeadersImported}, typed detail rows {TypedRecordDetailRowsImported}, FormList items {FormListItemsImported}, record failures {RecordImportFailures}, unsupported record types {UnsupportedRecordTypes}",
+            "Plugin import completed: discovered {PluginsDiscovered}, unchanged {PluginsUnchanged}, changed {PluginsChanged}, invalidated {PluginsInvalidated}, imported {PluginsImported}, missing {PluginsMissing}, failed {PluginsFailed}, unsupported {PluginsUnsupported}, master references {MasterReferencesImported}, record headers {RecordHeadersImported}, typed detail rows {TypedRecordDetailRowsImported}, FormList items {FormListItemsImported}, record failures {RecordImportFailures}, unsupported record types {UnsupportedRecordTypes}",
             result.PluginsDiscovered,
             result.PluginsUnchanged,
             result.PluginsChanged,
@@ -100,6 +100,7 @@ public class PluginImportService(
             result.PluginsImported,
             result.PluginsMissing,
             result.PluginsFailed,
+            result.PluginsUnsupported,
             result.MasterReferencesImported,
             result.RecordHeadersImported,
             result.TypedRecordDetailRowsImported,
@@ -122,6 +123,36 @@ public class PluginImportService(
     {
         var existingPlugin = pluginRepository.GetByModKey(database, loadOrderEntry.ModKey);
         var fileInfo = new FileInfo(loadOrderEntry.PluginPath);
+
+        if (IsUnsupportedPlugin(loadOrderEntry))
+        {
+            result.PluginsUnsupported++;
+            recordHeaderRepository.DeleteByModKey(database, loadOrderEntry.ModKey);
+            Logger.Information("Skipping unsupported Starfield plugin {ModKey} from {PluginPath}", loadOrderEntry.ModKey, loadOrderEntry.PluginPath);
+
+            pluginRepository.UpsertPlugin(database, new PluginMetadataDTO
+            {
+                ModKey = loadOrderEntry.ModKey,
+                GameRelease = "Starfield",
+                LoadOrderIndex = loadOrderEntry.LoadOrderIndex,
+                PluginFileName = loadOrderEntry.PluginFileName,
+                PluginPath = loadOrderEntry.PluginPath,
+                Enabled = loadOrderEntry.Enabled,
+                ExistsOnDisk = fileInfo.Exists,
+                ImportState = PluginImportState.Unsupported.ToString(),
+                HeaderFlags = existingPlugin?.HeaderFlags,
+                FormVersion = existingPlugin?.FormVersion,
+                Author = existingPlugin?.Author,
+                Branch = existingPlugin?.Branch,
+                InteriorCellCount = existingPlugin?.InteriorCellCount,
+                SourceLastWriteUtcTicks = fileInfo.Exists ? fileInfo.LastWriteTimeUtc.Ticks : existingPlugin?.SourceLastWriteUtcTicks,
+                SourceFileSizeBytes = fileInfo.Exists ? fileInfo.Length : existingPlugin?.SourceFileSizeBytes,
+                LastCheckedUtc = checkedAtUtc,
+                LastImportedUtc = existingPlugin?.LastImportedUtc,
+                InvalidatedAtUtc = existingPlugin?.InvalidatedAtUtc
+            });
+            return;
+        }
 
         if (!fileInfo.Exists)
         {
@@ -154,6 +185,12 @@ public class PluginImportService(
         if (isUnchanged)
         {
             result.PluginsUnchanged++;
+            Logger.Information(
+                "Skipping unchanged plugin {ModKey}: source last write ticks {SourceLastWriteUtcTicks}, source file size {SourceFileSizeBytes}, import state {ImportState}",
+                loadOrderEntry.ModKey,
+                sourceLastWriteUtcTicks,
+                sourceFileSizeBytes,
+                existingPlugin!.ImportState);
             pluginRepository.UpsertPlugin(database, CopyWithLoadOrderRefresh(
                 existingPlugin!,
                 loadOrderEntry,
@@ -167,6 +204,14 @@ public class PluginImportService(
         {
             result.PluginsChanged++;
             result.PluginsInvalidated++;
+            Logger.Information(
+                "Plugin {ModKey} changed: stored last write ticks {StoredLastWriteUtcTicks}, current last write ticks {CurrentLastWriteUtcTicks}, stored file size {StoredFileSizeBytes}, current file size {CurrentFileSizeBytes}, stored import state {ImportState}",
+                loadOrderEntry.ModKey,
+                existingPlugin.SourceLastWriteUtcTicks,
+                sourceLastWriteUtcTicks,
+                existingPlugin.SourceFileSizeBytes,
+                sourceFileSizeBytes,
+                existingPlugin.ImportState);
         }
 
         var invalidatedAtUtc = existingPlugin is null ? null : checkedAtUtc;
@@ -251,8 +296,8 @@ public class PluginImportService(
                 Author = existingPlugin?.Author,
                 Branch = existingPlugin?.Branch,
                 InteriorCellCount = existingPlugin?.InteriorCellCount,
-                SourceLastWriteUtcTicks = existingPlugin?.SourceLastWriteUtcTicks,
-                SourceFileSizeBytes = existingPlugin?.SourceFileSizeBytes,
+                SourceLastWriteUtcTicks = sourceLastWriteUtcTicks,
+                SourceFileSizeBytes = sourceFileSizeBytes,
                 LastCheckedUtc = checkedAtUtc,
                 LastImportedUtc = existingPlugin?.LastImportedUtc,
                 InvalidatedAtUtc = invalidatedAtUtc
@@ -312,11 +357,24 @@ public class PluginImportService(
         existingPlugin.PluginPath = loadOrderEntry.PluginPath;
         existingPlugin.Enabled = loadOrderEntry.Enabled;
         existingPlugin.ExistsOnDisk = true;
-        existingPlugin.ImportState = PluginImportState.Current.ToString();
+        if (!string.Equals(existingPlugin.ImportState, PluginImportState.Failed.ToString(), StringComparison.OrdinalIgnoreCase))
+        {
+            existingPlugin.ImportState = PluginImportState.Current.ToString();
+        }
         existingPlugin.SourceLastWriteUtcTicks = sourceLastWriteUtcTicks;
         existingPlugin.SourceFileSizeBytes = sourceFileSizeBytes;
         existingPlugin.LastCheckedUtc = checkedAtUtc;
         return existingPlugin;
+    }
+
+    private static bool IsUnsupportedPlugin(PluginLoadOrderEntryDTO loadOrderEntry)
+    {
+        var pluginFileName = string.IsNullOrWhiteSpace(loadOrderEntry.PluginFileName)
+            ? loadOrderEntry.ModKey
+            : loadOrderEntry.PluginFileName;
+
+        return pluginFileName.StartsWith("BlueprintShips", StringComparison.OrdinalIgnoreCase)
+               && pluginFileName.EndsWith(".esm", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FormatUtc(DateTimeOffset dateTimeOffset)

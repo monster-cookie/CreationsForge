@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS Plugins (
 
     CHECK (Enabled IN (0, 1)),
     CHECK (ExistsOnDisk IN (0, 1)),
-    CHECK (ImportState IN ('Current', 'Changed', 'Missing', 'Failed'))
+    CHECK (ImportState IN ('Current', 'Changed', 'Missing', 'Failed', 'Unsupported'))
 );
 
 CREATE INDEX IF NOT EXISTS IX_Plugins_LoadOrderIndex
@@ -190,3 +190,128 @@ ON GameSetting(SettingType);
 
 CREATE INDEX IF NOT EXISTS IX_GameSetting_Data
 ON GameSetting(Data);
+
+CREATE TABLE IF NOT EXISTS Cell (
+    ModKey TEXT COLLATE NOCASE NOT NULL,
+    FormID TEXT NOT NULL,
+    Name TEXT NULL,
+    Flags TEXT NULL,
+    MajorFlags TEXT NULL,
+    LightingTemplateFormKey TEXT NULL,
+    ImageSpaceFormKey TEXT NULL,
+    LocationFormKey TEXT NULL,
+    WaterFormKey TEXT NULL,
+    WaterHeight TEXT NULL,
+    IsLinkedRefTransient INTEGER NULL,
+    ImportedAtUtc TEXT NOT NULL,
+
+    PRIMARY KEY (ModKey, FormID),
+
+    FOREIGN KEY (ModKey, FormID)
+        REFERENCES RecordHeader(ModKey, FormID)
+        ON DELETE CASCADE,
+
+    CHECK (length(FormID) = 6),
+    CHECK (FormID = upper(FormID)),
+    CHECK (IsLinkedRefTransient IS NULL OR IsLinkedRefTransient IN (0, 1))
+);
+
+CREATE INDEX IF NOT EXISTS IX_Cell_LocationFormKey
+ON Cell(LocationFormKey);
+
+CREATE TABLE IF NOT EXISTS CellGroupLocation (
+    ModKey TEXT COLLATE NOCASE NOT NULL,
+    CellFormID TEXT NOT NULL,
+    LocationIndex INTEGER NOT NULL,
+    LocationKind TEXT NOT NULL,
+    WorldspaceFormID TEXT NULL,
+    BlockNumber INTEGER NULL,
+    SubBlockNumber INTEGER NULL,
+    BlockX INTEGER NULL,
+    BlockY INTEGER NULL,
+    SubBlockX INTEGER NULL,
+    SubBlockY INTEGER NULL,
+    CellIndex INTEGER NULL,
+    BlockGroupType TEXT NULL,
+    SubBlockGroupType TEXT NULL,
+    BlockLastModified INTEGER NULL,
+    SubBlockLastModified INTEGER NULL,
+    BlockUnknown INTEGER NULL,
+    SubBlockUnknown INTEGER NULL,
+    ImportedAtUtc TEXT NOT NULL,
+
+    PRIMARY KEY (ModKey, CellFormID, LocationIndex),
+
+    FOREIGN KEY (ModKey, CellFormID)
+        REFERENCES Cell(ModKey, FormID)
+        ON DELETE CASCADE,
+
+    CHECK (length(CellFormID) = 6),
+    CHECK (CellFormID = upper(CellFormID)),
+    CHECK (LocationIndex >= 0),
+    CHECK (LocationKind IN ('InteriorCell', 'WorldspaceTopCell', 'WorldspaceSubCell')),
+    CHECK (CellIndex IS NULL OR CellIndex >= 0)
+);
+
+CREATE INDEX IF NOT EXISTS IX_CellGroupLocation_CellFormID
+ON CellGroupLocation(CellFormID);
+
+CREATE INDEX IF NOT EXISTS IX_CellGroupLocation_WorldspaceFormID
+ON CellGroupLocation(WorldspaceFormID);
+
+CREATE TABLE IF NOT EXISTS CellPlacedRecord (
+    ModKey TEXT COLLATE NOCASE NOT NULL,
+    CellFormID TEXT NOT NULL,
+    PlacementGroup TEXT NOT NULL,
+    ItemIndex INTEGER NOT NULL,
+    PlacedFormKey TEXT NULL,
+    BaseFormKey TEXT NULL,
+    EditorID TEXT NULL,
+    Position TEXT NULL,
+    Rotation TEXT NULL,
+    IsDeleted INTEGER NULL,
+    ImportedAtUtc TEXT NOT NULL,
+
+    PRIMARY KEY (ModKey, CellFormID, PlacementGroup, ItemIndex),
+
+    FOREIGN KEY (ModKey, CellFormID)
+        REFERENCES Cell(ModKey, FormID)
+        ON DELETE CASCADE,
+
+    CHECK (length(CellFormID) = 6),
+    CHECK (CellFormID = upper(CellFormID)),
+    CHECK (PlacementGroup IN ('Persistent', 'Temporary')),
+    CHECK (ItemIndex >= 0),
+    CHECK (IsDeleted IS NULL OR IsDeleted IN (0, 1))
+);
+
+CREATE INDEX IF NOT EXISTS IX_CellPlacedRecord_PlacedFormKey
+ON CellPlacedRecord(PlacedFormKey);
+
+CREATE INDEX IF NOT EXISTS IX_CellPlacedRecord_BaseFormKey
+ON CellPlacedRecord(BaseFormKey);
+
+CREATE TABLE IF NOT EXISTS Worldspace (
+    ModKey TEXT COLLATE NOCASE NOT NULL,
+    FormID TEXT NOT NULL,
+    Name TEXT NULL,
+    ParentWorldspaceFormKey TEXT NULL,
+    ClimateFormKey TEXT NULL,
+    WaterFormKey TEXT NULL,
+    TopCellFormKey TEXT NULL,
+    WorldMapCellOffset TEXT NULL,
+    WorldMapOffsetScale TEXT NULL,
+    ImportedAtUtc TEXT NOT NULL,
+
+    PRIMARY KEY (ModKey, FormID),
+
+    FOREIGN KEY (ModKey, FormID)
+        REFERENCES RecordHeader(ModKey, FormID)
+        ON DELETE CASCADE,
+
+    CHECK (length(FormID) = 6),
+    CHECK (FormID = upper(FormID))
+);
+
+CREATE INDEX IF NOT EXISTS IX_Worldspace_TopCellFormKey
+ON Worldspace(TopCellFormKey);

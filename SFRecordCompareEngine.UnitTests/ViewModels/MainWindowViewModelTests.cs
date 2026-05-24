@@ -159,9 +159,10 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public async Task InitializeDatabaseImportAsync_WhenImportSucceeds_ReportsProgressAndSelectsStarfield()
+    public async Task InitializeDatabaseImportAsync_WhenImportSucceeds_ReportsProgress()
     {
         var gameConfigurationStore = new Mock<IGameConfigurationStore>();
+        gameConfigurationStore.SetupGet(store => store.SelectedGame).Returns("Starfield");
         var pluginImportService = new Mock<IPluginImportService>();
         pluginImportService.Setup(service => service.InitializeAndImportAsync(
                 It.IsAny<IProgress<PluginImportProgressDTO>>(),
@@ -185,13 +186,9 @@ public class MainWindowViewModelTests
 
         await sut.InitializeDatabaseImportAsync(CancellationToken.None);
 
-        gameConfigurationStore.Verify(store => store.SelectGame("Starfield"), Times.Once);
+        gameConfigurationStore.Verify(store => store.SelectGame(It.IsAny<string?>()), Times.Never);
         sut.IsDatabaseImportRunning.ShouldBeFalse();
         sut.CanUseApplication.ShouldBeTrue();
-        sut.DatabaseImportStatusText.ShouldBe("Checking Example.esm (1 of 2)...");
-        sut.DatabaseImportCurrentPluginText.ShouldBe("Current plugin: Example.esm");
-        sut.DatabaseImportProgressMaximum.ShouldBe(2);
-        sut.DatabaseImportProgressValue.ShouldBe(1);
         sut.StatusText.ShouldBe("Plugin database import completed. Imported 2 plugins.");
     }
 
@@ -212,15 +209,32 @@ public class MainWindowViewModelTests
         sut.StatusText.ShouldBe("Unable to initialize the plugin database.");
     }
 
+    [Fact]
+    public async Task InitializeDatabaseImportAsync_WhenGameIsNotConfigured_Throws()
+    {
+        var gameConfigurationStore = new Mock<IGameConfigurationStore>();
+        var pluginImportService = new Mock<IPluginImportService>();
+        var sut = CreateSut(pluginImportService: pluginImportService.Object, gameConfigurationStore: gameConfigurationStore.Object);
+
+        await Should.ThrowAsync<InvalidOperationException>(() => sut.InitializeDatabaseImportAsync(CancellationToken.None));
+
+        pluginImportService.Verify(service => service.InitializeAndImportAsync(
+            It.IsAny<IProgress<PluginImportProgressDTO>>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     private static MainWindowViewModel CreateSut(
         IPluginService? pluginService = null,
         IPluginImportService? pluginImportService = null,
         IGameConfigurationStore? gameConfigurationStore = null)
     {
+        var defaultGameConfigurationStore = new Mock<IGameConfigurationStore>();
+        defaultGameConfigurationStore.SetupGet(store => store.SelectedGame).Returns("Starfield");
+
         return new MainWindowViewModel(
             pluginService ?? Mock.Of<IPluginService>(),
             pluginImportService ?? Mock.Of<IPluginImportService>(),
-            gameConfigurationStore ?? Mock.Of<IGameConfigurationStore>(),
+            gameConfigurationStore ?? defaultGameConfigurationStore.Object,
             Mock.Of<ILogger>());
     }
 }

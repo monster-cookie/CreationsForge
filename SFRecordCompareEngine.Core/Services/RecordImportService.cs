@@ -1,6 +1,5 @@
 using System.Collections;
 using System.IO;
-using System.Reflection;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
@@ -16,6 +15,7 @@ namespace SFRecordCompareEngine.Core.Services;
 public class RecordImportService(
     IGameConfigurationStore gameConfigurationStore,
     IRecordHeaderRepository recordHeaderRepository,
+    IRecordEnumerationService recordEnumerationService,
     IEnumerable<ITypedRecordDetailImporter> typedRecordDetailImporters,
     FormListRecordImporter formListRecordImporter) : IRecordImportService
 {
@@ -91,7 +91,7 @@ public class RecordImportService(
         };
         result.TypedDetailImportSupported = result.DetailTableName is not null;
 
-        var records = GetRecordsFromMutagenTypeOption(mod, recordType) ?? GetRecordsFromPluginProperty(mod, recordType);
+        var records = recordEnumerationService.GetRecords(mod, recordType);
         if (records is null)
         {
             result.HeaderImportSupported = false;
@@ -100,17 +100,17 @@ public class RecordImportService(
             return result;
         }
 
-        foreach (var record in records.Cast<object>())
+        foreach (var record in records)
         {
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                var header = RecordHeaderMapper.Map(plugin, recordType, record, importedAtUtc);
+                var header = RecordHeaderMapper.Map(plugin, recordType, record.Record, importedAtUtc);
                 recordHeaderRepository.Upsert(database, header);
 
                 if (RecordTypeImportCatalog.UsesExistingTypedDetailTable(recordType))
                 {
-                    result.FormListItemsImported += formListRecordImporter.Import(database, plugin.ModKey, header.FormID, record, importedAtUtc);
+                    result.FormListItemsImported += formListRecordImporter.Import(database, plugin.ModKey, header.FormID, record.Record, importedAtUtc);
                     result.DetailRowsImported++;
                 }
                 else if (TypedRecordDetailImporters.TryGetValue(recordType, out var typedRecordDetailImporter))
@@ -129,7 +129,7 @@ public class RecordImportService(
                     "Unable to import {RecordType} record for {ModKey} with FormKey {FormKey}",
                     recordType,
                     plugin.ModKey,
-                    RecordHeaderMapper.GetStringValue(record, "FormKey"));
+                    RecordHeaderMapper.GetFormKeyValue(record.Record));
             }
         }
 
@@ -150,37 +150,4 @@ public class RecordImportService(
             .Construct();
     }
 
-    private static IEnumerable? GetRecordsFromMutagenTypeOption(IStarfieldModGetter plugin, string recordType)
-    {
-        var method = typeof(TypeOptionSolidifierMixIns)
-            .GetMethods()
-            .Where(method => method.Name.Equals(recordType, StringComparison.Ordinal))
-            .FirstOrDefault(method =>
-            {
-                var parameters = method.GetParameters();
-                return parameters.Length == 1 && parameters[0].ParameterType.IsAssignableFrom(typeof(IEnumerable<IStarfieldModGetter>));
-            });
-
-        return method?.Invoke(null, [new[] { plugin }]) as IEnumerable;
-    }
-
-    private static IEnumerable? GetRecordsFromPluginProperty(IStarfieldModGetter plugin, string recordType)
-    {
-        var propertyNames = new[]
-        {
-            recordType,
-            $"{recordType}s",
-            recordType.EndsWith("y", StringComparison.OrdinalIgnoreCase)
-                ? $"{recordType[..^1]}ies"
-                : $"{recordType}s"
-        };
-
-        foreach (var propertyName in propertyNames.Distinct(StringComparer.OrdinalIgnoreCase))
-        {
-            var property = plugin.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
-            if (property?.GetValue(plugin) is IEnumerable records) return records;
-        }
-
-        return null;
-    }
 }

@@ -109,6 +109,23 @@ public class DatabaseSchemaInitializerTests : IDisposable
         count.ShouldBe(1);
     }
 
+    [Theory]
+    [InlineData("Cell")]
+    [InlineData("CellGroupLocation")]
+    [InlineData("CellPlacedRecord")]
+    [InlineData("Worldspace")]
+    public void Initialize_WhenDatabaseDoesNotExist_CreatesCellAndWorldspaceTables(string tableName)
+    {
+        Sut.Initialize();
+
+        using var database = ConnectionFactory.OpenDatabase();
+        var count = database.ExecuteScalar<int>(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @0;",
+            tableName);
+
+        count.ShouldBe(1);
+    }
+
     [Fact]
     public void Initialize_WhenDatabaseDoesNotExist_CreatesDbUpJournalTable()
     {
@@ -133,6 +150,93 @@ public class DatabaseSchemaInitializerTests : IDisposable
             "%001_CreatePluginSchema.sql");
 
         count.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Initialize_WhenDatabaseDoesNotExist_RecordsSimpleMajorRecordDetailMigration()
+    {
+        Sut.Initialize();
+
+        using var database = ConnectionFactory.OpenDatabase();
+        var count = database.ExecuteScalar<int>(
+            "SELECT COUNT(*) FROM SchemaVersions WHERE ScriptName LIKE @0;",
+            "%002_AddSimpleMajorRecordDetailTables.sql");
+
+        count.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Initialize_WhenDatabaseDoesNotExist_RecordsFactionDetailMigration()
+    {
+        Sut.Initialize();
+
+        using var database = ConnectionFactory.OpenDatabase();
+        var count = database.ExecuteScalar<int>(
+            "SELECT COUNT(*) FROM SchemaVersions WHERE ScriptName LIKE @0;",
+            "%003_ExtendFactionDetailFields.sql");
+
+        count.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Initialize_WhenDatabaseDoesNotExist_RecordsKeywordDetailMigration()
+    {
+        Sut.Initialize();
+
+        using var database = ConnectionFactory.OpenDatabase();
+        var count = database.ExecuteScalar<int>(
+            "SELECT COUNT(*) FROM SchemaVersions WHERE ScriptName LIKE @0;",
+            "%004_ExtendKeywordDetailFields.sql");
+
+        count.ShouldBe(1);
+    }
+
+    [Theory]
+    [InlineData("Keyword")]
+    [InlineData("Faction")]
+    [InlineData("FactionRelation")]
+    [InlineData("Message")]
+    [InlineData("GameplayOptionsGroup")]
+    [InlineData("Static")]
+    [InlineData("StaticCollection")]
+    [InlineData("Activator")]
+    [InlineData("ActivatorKeyword")]
+    [InlineData("MiscItem")]
+    [InlineData("MiscItemKeyword")]
+    [InlineData("GameplayOption")]
+    [InlineData("GameplayOptionKeyword")]
+    [InlineData("MagicEffect")]
+    [InlineData("MagicEffectKeyword")]
+    public void Initialize_WhenDatabaseDoesNotExist_CreatesSimpleMajorRecordDetailTables(string tableName)
+    {
+        Sut.Initialize();
+
+        using var database = ConnectionFactory.OpenDatabase();
+        var count = database.ExecuteScalar<int>(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @0;",
+            tableName);
+
+        count.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Plugins_WhenImportStateIsUnsupported_AllowsInsert()
+    {
+        Sut.Initialize();
+
+        using var database = ConnectionFactory.OpenDatabase();
+
+        Should.NotThrow(() => database.Execute(
+            """
+            INSERT INTO Plugins (ModKey, GameRelease, LoadOrderIndex, PluginFileName, ImportState, LastCheckedUtc)
+            VALUES (@0, @1, @2, @3, @4, @5);
+            """,
+            "BlueprintShips.esm",
+            "Starfield",
+            1,
+            "BlueprintShips.esm",
+            "Unsupported",
+            DateTimeOffset.UtcNow.ToString("O")));
     }
 
     [Fact]
@@ -285,5 +389,114 @@ public class DatabaseSchemaInitializerTests : IDisposable
         database.Execute("DELETE FROM RecordHeader WHERE ModKey = @0 AND FormID = @1;", "Example.esm", "000001");
 
         database.ExecuteScalar<int>("SELECT COUNT(*) FROM GameSetting;").ShouldBe(0);
+    }
+
+    [Fact]
+    public void RecordHeader_WhenDeleted_CascadesToSimpleDetailAndKeywordRows()
+    {
+        Sut.Initialize();
+
+        using var database = ConnectionFactory.OpenDatabase();
+        var importedAtUtc = DateTimeOffset.UtcNow.ToString("O");
+        database.Execute(
+            """
+            INSERT INTO Plugins (ModKey, GameRelease, LoadOrderIndex, PluginFileName, LastCheckedUtc)
+            VALUES (@0, @1, @2, @3, @4);
+            """,
+            "Example.esm",
+            "Starfield",
+            1,
+            "Example.esm",
+            importedAtUtc);
+        database.Execute(
+            """
+            INSERT INTO RecordHeader (ModKey, FormID, RecordType, FormKey, PluginFileName, ImportedAtUtc)
+            VALUES (@0, @1, @2, @3, @4, @5);
+            """,
+            "Example.esm",
+            "000001",
+            "Activator",
+            "000001:Example.esm",
+            "Example.esm",
+            importedAtUtc);
+        database.Execute(
+            """
+            INSERT INTO Activator (ModKey, FormID, Name, ImportedAtUtc)
+            VALUES (@0, @1, @2, @3);
+            """,
+            "Example.esm",
+            "000001",
+            "Example Activator",
+            importedAtUtc);
+        database.Execute(
+            """
+            INSERT INTO ActivatorKeyword (ModKey, FormID, ItemIndex, KeywordFormKey, ImportedAtUtc)
+            VALUES (@0, @1, @2, @3, @4);
+            """,
+            "Example.esm",
+            "000001",
+            0,
+            "000100:Example.esm",
+            importedAtUtc);
+
+        database.Execute("DELETE FROM RecordHeader WHERE ModKey = @0 AND FormID = @1;", "Example.esm", "000001");
+
+        database.ExecuteScalar<int>("SELECT COUNT(*) FROM Activator;").ShouldBe(0);
+        database.ExecuteScalar<int>("SELECT COUNT(*) FROM ActivatorKeyword;").ShouldBe(0);
+    }
+
+    [Fact]
+    public void RecordHeader_WhenDeleted_CascadesToFactionAndRelationRows()
+    {
+        Sut.Initialize();
+
+        using var database = ConnectionFactory.OpenDatabase();
+        var importedAtUtc = DateTimeOffset.UtcNow.ToString("O");
+        database.Execute(
+            """
+            INSERT INTO Plugins (ModKey, GameRelease, LoadOrderIndex, PluginFileName, LastCheckedUtc)
+            VALUES (@0, @1, @2, @3, @4);
+            """,
+            "Example.esm",
+            "Starfield",
+            1,
+            "Example.esm",
+            importedAtUtc);
+        database.Execute(
+            """
+            INSERT INTO RecordHeader (ModKey, FormID, RecordType, FormKey, PluginFileName, ImportedAtUtc)
+            VALUES (@0, @1, @2, @3, @4, @5);
+            """,
+            "Example.esm",
+            "000001",
+            "Faction",
+            "000001:Example.esm",
+            "Example.esm",
+            importedAtUtc);
+        database.Execute(
+            """
+            INSERT INTO Faction (ModKey, FormID, Name, ImportedAtUtc)
+            VALUES (@0, @1, @2, @3);
+            """,
+            "Example.esm",
+            "000001",
+            "Example Faction",
+            importedAtUtc);
+        database.Execute(
+            """
+            INSERT INTO FactionRelation (ModKey, FormID, ItemIndex, TargetFormKey, Reaction, ImportedAtUtc)
+            VALUES (@0, @1, @2, @3, @4, @5);
+            """,
+            "Example.esm",
+            "000001",
+            0,
+            "000100:Example.esm",
+            "Enemy",
+            importedAtUtc);
+
+        database.Execute("DELETE FROM RecordHeader WHERE ModKey = @0 AND FormID = @1;", "Example.esm", "000001");
+
+        database.ExecuteScalar<int>("SELECT COUNT(*) FROM Faction;").ShouldBe(0);
+        database.ExecuteScalar<int>("SELECT COUNT(*) FROM FactionRelation;").ShouldBe(0);
     }
 }

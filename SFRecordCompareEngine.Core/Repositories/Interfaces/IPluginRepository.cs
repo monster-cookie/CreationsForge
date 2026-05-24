@@ -8,7 +8,9 @@ public interface IPluginRepository
     PluginMetadataDTO? GetByModKey(IDatabase database, string modKey);
     IList<PluginMetadataDTO> GetAll(IDatabase database);
     IList<PluginMetadataDTO> GetPlugins(IDatabase database);
+    IList<PluginMetadataDTO> GetOpenablePlugins(IDatabase database);
     IList<PluginMetadataDTO> SearchPlugins(IDatabase database, string searchText);
+    IList<PluginMetadataDTO> SearchOpenablePlugins(IDatabase database, string searchText);
     IList<PluginMasterReferenceDTO> GetMasterReferences(IDatabase database, string modKey);
     IList<PluginResolutionHierarchyDTO> GetResolutionHierarchy(IDatabase database, string modKey);
     void UpsertPlugin(IDatabase database, PluginMetadataDTO plugin);

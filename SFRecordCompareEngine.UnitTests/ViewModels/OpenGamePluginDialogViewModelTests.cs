@@ -16,16 +16,15 @@ public class OpenGamePluginDialogViewModelTests
     {
         var gameConfigurationStore = CreateGameConfigurationStore();
         var pluginService = new Mock<IPluginService>();
-        pluginService.Setup(service => service.GetPlugins()).Returns(["First.esm", "Second.esm"]);
-        pluginService.Setup(service => service.SearchPlugins("First.esm")).Returns(["First.esm"]);
+        pluginService.Setup(service => service.GetPluginListItems()).Returns(CreatePluginItems("First.esm", "Second.esm"));
+        pluginService.Setup(service => service.SearchPluginListItems("First.esm")).Returns(CreatePluginItems("First.esm"));
 
         var sut = new OpenGamePluginDialogViewModel(gameConfigurationStore.Object, pluginService.Object, Mock.Of<ILogger>());
 
-        sut.SelectedGame.ShouldBe("Starfield");
         sut.PluginSearchText.ShouldBe("First.esm");
-        sut.PluginItems.ShouldBe(["First.esm", "Second.esm"]);
+        PluginNames(sut.PluginItems).ShouldBe(["First.esm", "Second.esm"]);
         sut.StatusText.ShouldBe("Loaded 2 plugins.");
-        gameConfigurationStore.Verify(store => store.SelectGame("Starfield"), Times.Once);
+        gameConfigurationStore.Verify(store => store.SelectGame(It.IsAny<string?>()), Times.Never);
     }
 
     [Fact]
@@ -33,14 +32,15 @@ public class OpenGamePluginDialogViewModelTests
     {
         var gameConfigurationStore = CreateGameConfigurationStore();
         var pluginService = new Mock<IPluginService>();
-        pluginService.Setup(service => service.GetPlugins()).Returns(["First.esm", "Second.esm"]);
+        pluginService.Setup(service => service.GetPluginListItems()).Returns(CreatePluginItems("First.esm", "Second.esm"));
+        pluginService.Setup(service => service.SearchPluginListItems("Sec")).Returns(CreatePluginItems("Second.esm"));
         var sut = new OpenGamePluginDialogViewModel(gameConfigurationStore.Object, pluginService.Object, Mock.Of<ILogger>());
 
         sut.PluginSearchText = "Sec";
 
-        sut.PluginItems.ShouldBe(["Second.esm"]);
+        PluginNames(sut.PluginItems).ShouldBe(["Second.esm"]);
         sut.CanOpen.ShouldBeFalse();
-        pluginService.Verify(service => service.SearchPlugins(It.IsAny<string>()), Times.Never);
+        pluginService.Verify(service => service.SearchPluginListItems("Sec"), Times.Once);
     }
 
     [Fact]
@@ -48,38 +48,70 @@ public class OpenGamePluginDialogViewModelTests
     {
         var gameConfigurationStore = CreateGameConfigurationStore();
         var pluginService = new Mock<IPluginService>();
-        pluginService.Setup(service => service.GetPlugins()).Returns([
+        pluginService.Setup(service => service.GetPluginListItems()).Returns(CreatePluginItems(
             "Venworks-MyExperiments.esm",
             "Venworks-encountersoverhaul.esm",
-            "Other.esm"
-        ]);
+            "Other.esm"));
+        pluginService.Setup(service => service.SearchPluginListItems("venworks")).Returns(CreatePluginItems(
+            "Venworks-MyExperiments.esm",
+            "Venworks-encountersoverhaul.esm"));
         var sut = new OpenGamePluginDialogViewModel(gameConfigurationStore.Object, pluginService.Object, Mock.Of<ILogger>());
 
         sut.PluginSearchText = "venworks";
 
-        sut.PluginItems.ShouldBe([
+        PluginNames(sut.PluginItems).ShouldBe([
             "Venworks-MyExperiments.esm",
             "Venworks-encountersoverhaul.esm"
         ]);
     }
 
     [Fact]
-    public void SelectPluginSearchResult_WhenFilteredPluginIsSelected_KeepsSelectedPluginTextAndFilteredList()
+    public void PluginSearchText_WhenSearchMatchesReportedVenworksPlugins_KeepsBothMatches()
     {
         var gameConfigurationStore = CreateGameConfigurationStore();
         var pluginService = new Mock<IPluginService>();
-        pluginService.Setup(service => service.GetPlugins()).Returns([
+        pluginService.Setup(service => service.GetPluginListItems()).Returns(CreatePluginItems(
+            "venworks-myexperiments.esm",
+            "starfield hd.esm",
+            "tn_textile_shatteredspace.esm",
+            "ws-vehicletweaks.esm",
+            "patch-novaskills-tntechrunner.esm",
+            "venworks-encountersoverhaul.esm"));
+        pluginService.Setup(service => service.SearchPluginListItems("venworks")).Returns([
+            CreatePluginItem("venworks-myexperiments.esm"),
+            CreatePluginItem("venworks-encountersoverhaul.esm", PluginImportState.Failed)
+        ]);
+        var sut = new OpenGamePluginDialogViewModel(gameConfigurationStore.Object, pluginService.Object, Mock.Of<ILogger>());
+
+        sut.PluginSearchText = "venworks";
+
+        sut.PluginSearchText.ShouldBe("venworks");
+        PluginNames(sut.PluginItems).ShouldBe([
+            "venworks-myexperiments.esm",
+            "venworks-encountersoverhaul.esm"
+        ]);
+        sut.PluginItems[1].IsFailed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void SelectedPluginItem_WhenFilteredPluginIsSelected_KeepsSelectedPluginTextAndFilteredList()
+    {
+        var gameConfigurationStore = CreateGameConfigurationStore();
+        var pluginService = new Mock<IPluginService>();
+        pluginService.Setup(service => service.GetPluginListItems()).Returns(CreatePluginItems(
             "Venworks-MyExperiments.esm",
             "Venworks-encountersoverhaul.esm",
-            "Other.esm"
-        ]);
+            "Other.esm"));
+        pluginService.Setup(service => service.SearchPluginListItems("venworks")).Returns(CreatePluginItems(
+            "Venworks-MyExperiments.esm",
+            "Venworks-encountersoverhaul.esm"));
         var sut = new OpenGamePluginDialogViewModel(gameConfigurationStore.Object, pluginService.Object, Mock.Of<ILogger>());
         sut.PluginSearchText = "venworks";
 
-        sut.SelectPluginSearchResult("Venworks-MyExperiments.esm");
+        sut.SelectedPluginItem = sut.PluginItems[0];
 
         sut.PluginSearchText.ShouldBe("Venworks-MyExperiments.esm");
-        sut.PluginItems.ShouldBe([
+        PluginNames(sut.PluginItems).ShouldBe([
             "Venworks-MyExperiments.esm",
             "Venworks-encountersoverhaul.esm"
         ]);
@@ -91,8 +123,8 @@ public class OpenGamePluginDialogViewModelTests
     {
         var gameConfigurationStore = CreateGameConfigurationStore();
         var pluginService = new Mock<IPluginService>();
-        pluginService.Setup(service => service.GetPlugins()).Returns(["Example.esm"]);
-        pluginService.Setup(service => service.SearchPlugins("Example.esm")).Returns(["Example.esm"]);
+        pluginService.Setup(service => service.GetPluginListItems()).Returns(CreatePluginItems("Example.esm"));
+        pluginService.Setup(service => service.SearchPluginListItems("Example.esm")).Returns(CreatePluginItems("Example.esm"));
         pluginService.Setup(service => service.GetPluginHeader("Example.esm")).Returns(CreatePluginHeader());
         var sut = new OpenGamePluginDialogViewModel(gameConfigurationStore.Object, pluginService.Object, Mock.Of<ILogger>());
 
@@ -113,8 +145,8 @@ public class OpenGamePluginDialogViewModelTests
     {
         var gameConfigurationStore = CreateGameConfigurationStore();
         var pluginService = new Mock<IPluginService>();
-        pluginService.Setup(service => service.GetPlugins()).Returns(["Example.esm"]);
-        pluginService.Setup(service => service.SearchPlugins("Example.esm")).Returns(["Example.esm"]);
+        pluginService.Setup(service => service.GetPluginListItems()).Returns(CreatePluginItems("Example.esm"));
+        pluginService.Setup(service => service.SearchPluginListItems("Example.esm")).Returns(CreatePluginItems("Example.esm"));
         pluginService.Setup(service => service.GetPluginHeader("Example.esm")).Returns(null as PluginHeaderDTO);
         var sut = new OpenGamePluginDialogViewModel(gameConfigurationStore.Object, pluginService.Object, Mock.Of<ILogger>());
 
@@ -129,11 +161,33 @@ public class OpenGamePluginDialogViewModelTests
     {
         var gameConfigurationStore = new Mock<IGameConfigurationStore>();
         gameConfigurationStore.SetupProperty(store => store.SelectedGame);
+        gameConfigurationStore.Object.SelectedGame = "Starfield";
         gameConfigurationStore.SetupGet(store => store.SupportedGames).Returns(["Starfield"]);
         gameConfigurationStore.SetupGet(store => store.Game).Returns(Mock.Of<IGameEnvironment>());
         gameConfigurationStore.Setup(store => store.SelectGame(It.IsAny<string?>()))
             .Callback<string?>(game => gameConfigurationStore.Object.SelectedGame = game);
         return gameConfigurationStore;
+    }
+
+    private static IList<string> PluginNames(IEnumerable<PluginListItemDTO> plugins)
+    {
+        return plugins.Select(plugin => plugin.PluginFileName).ToList();
+    }
+
+    private static IList<PluginListItemDTO> CreatePluginItems(params string[] pluginNames)
+    {
+        return pluginNames
+            .Select(pluginName => CreatePluginItem(pluginName))
+            .ToList();
+    }
+
+    private static PluginListItemDTO CreatePluginItem(string pluginName, PluginImportState importState = PluginImportState.Current)
+    {
+        return new PluginListItemDTO
+        {
+            PluginFileName = pluginName,
+            ImportState = importState.ToString()
+        };
     }
 
     private static PluginHeaderDTO CreatePluginHeader()

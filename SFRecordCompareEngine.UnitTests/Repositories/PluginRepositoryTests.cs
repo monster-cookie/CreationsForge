@@ -130,6 +130,62 @@ public class PluginRepositoryTests : IDisposable
     }
 
     [Fact]
+    public void SearchOpenablePlugins_WhenSearchMatchesCurrentAndFailedRows_ReturnsBoth()
+    {
+        using var database = ConnectionFactory.OpenDatabase();
+        Sut.UpsertPlugin(database, CreatePlugin("Venworks-MyExperiments.esm", 68));
+        var failedPlugin = CreatePlugin("Venworks-encountersoverhaul.esm", 110);
+        failedPlugin.ImportState = PluginImportState.Failed.ToString();
+        Sut.UpsertPlugin(database, failedPlugin);
+        Sut.UpsertPlugin(database, CreatePlugin("Other.esm", 111));
+
+        var result = Sut.SearchOpenablePlugins(database, "venworks");
+
+        result.Select(plugin => plugin.PluginFileName).ShouldBe([
+            "Venworks-MyExperiments.esm",
+            "Venworks-encountersoverhaul.esm"
+        ]);
+        result[1].ImportState.ShouldBe(PluginImportState.Failed.ToString());
+    }
+
+    [Fact]
+    public void SearchOpenablePlugins_WhenPluginIsMissingOrNotOnDisk_ExcludesPlugin()
+    {
+        using var database = ConnectionFactory.OpenDatabase();
+        var failedPlugin = CreatePlugin("Venworks-Failed.esm", 68);
+        failedPlugin.ImportState = PluginImportState.Failed.ToString();
+        Sut.UpsertPlugin(database, failedPlugin);
+        var missingPlugin = CreatePlugin("Venworks-Missing.esm", 69);
+        missingPlugin.ImportState = PluginImportState.Missing.ToString();
+        Sut.UpsertPlugin(database, missingPlugin);
+        var notOnDiskPlugin = CreatePlugin("Venworks-NotOnDisk.esm", 70);
+        notOnDiskPlugin.ExistsOnDisk = false;
+        Sut.UpsertPlugin(database, notOnDiskPlugin);
+
+        var result = Sut.SearchOpenablePlugins(database, "venworks");
+
+        result.Select(plugin => plugin.PluginFileName).ShouldBe([
+            "Venworks-Failed.esm"
+        ]);
+    }
+
+    [Fact]
+    public void SearchOpenablePlugins_WhenPluginIsUnsupported_ExcludesPlugin()
+    {
+        using var database = ConnectionFactory.OpenDatabase();
+        var unsupportedPlugin = CreatePlugin("BlueprintShips.esm", 68);
+        unsupportedPlugin.ImportState = PluginImportState.Unsupported.ToString();
+        Sut.UpsertPlugin(database, unsupportedPlugin);
+        Sut.UpsertPlugin(database, CreatePlugin("BlueprintShipsPatch.esm", 69));
+
+        var result = Sut.SearchOpenablePlugins(database, "BlueprintShips");
+
+        result.Select(plugin => plugin.PluginFileName).ShouldBe([
+            "BlueprintShipsPatch.esm"
+        ]);
+    }
+
+    [Fact]
     public void ReplaceMasterReferences_WhenPluginIsReimported_ReplacesOnlyThatPluginsRows()
     {
         using var database = ConnectionFactory.OpenDatabase();

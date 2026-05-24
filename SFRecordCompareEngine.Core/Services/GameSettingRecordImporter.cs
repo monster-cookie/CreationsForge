@@ -11,19 +11,20 @@ public class GameSettingRecordImporter(IGameSettingRepository gameSettingReposit
     public string RecordType => RecordTypeImportCatalog.GameSettingRecordType;
     public string TableName => RecordTypeImportCatalog.GameSettingRecordType;
 
-    public void Import(IDatabase database, string modKey, string formId, object record, string importedAtUtc)
+    public void Import(IDatabase database, string modKey, string formId, RecordEnumerationDTO record, string importedAtUtc)
     {
+        var source = record.Record;
         gameSettingRepository.Upsert(database, new GameSettingDTO
         {
             ModKey = modKey,
             FormID = formId,
-            SettingType = RecordHeaderMapper.GetStringValue(record, "SettingType"),
-            TitleString = RecordHeaderMapper.GetStringValue(record, "TitleString"),
-            Data = GetTextValue(record, "Data"),
-            RawData = GetDoubleValue(record, "RawData"),
-            XALG = RecordHeaderMapper.GetNullableIntValue(record, "XALG"),
-            IsCompressed = GetBooleanIntValue(record, "IsCompressed"),
-            IsDeleted = GetBooleanIntValue(record, "IsDeleted"),
+            SettingType = RecordHeaderMapper.GetStringValue(source, "SettingType"),
+            TitleString = RecordHeaderMapper.GetStringValue(source, "TitleString"),
+            Data = GetTextValue(source, "Data"),
+            RawData = GetDoubleValue(source, "RawData"),
+            XALG = RecordHeaderMapper.GetNullableIntValue(source, "XALG"),
+            IsCompressed = GetBooleanIntValue(source, "IsCompressed"),
+            IsDeleted = GetBooleanIntValue(source, "IsDeleted"),
             ImportedAtUtc = importedAtUtc
         });
     }

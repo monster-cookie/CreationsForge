@@ -19,13 +19,13 @@ public class OpenGamePluginDialogViewModel : ViewModelBase
     private string _pluginName = string.Empty;
     private string _pluginSearchText = string.Empty;
     private string _pluginVersion = string.Empty;
-    private string? _selectedGame;
+    private PluginListItemDTO? _selectedPluginItem;
     private PluginHeaderDTO? _selectedPluginHeader;
     private string? _selectedPluginName;
     private string _statusText = string.Empty;
-    private IList<string> AllPluginItems = new List<string>();
+    private IList<PluginListItemDTO> AllPluginItems = new List<PluginListItemDTO>();
     private bool IsLoadingPlugins;
-    private bool IsSelectingPluginSearchResult;
+    private bool IsSelectingPluginItem;
     private bool IsUpdatingPluginItems;
 
     public OpenGamePluginDialogViewModel(
@@ -37,33 +37,15 @@ public class OpenGamePluginDialogViewModel : ViewModelBase
         PluginService = pluginService;
         Logger = logger.ForContext<OpenGamePluginDialogViewModel>() ?? logger;
 
-        SupportedGames = gameConfigurationStore.SupportedGames;
         LoadPluginHeaderCommand = new RelayCommand(LoadPluginHeader, CanLoadPluginHeader);
         RefreshPluginsCommand = new RelayCommand(LoadPlugins);
 
-        SelectedGame = SupportedGames.FirstOrDefault();
+        LoadPlugins();
     }
 
-    public string[] SupportedGames { get; }
-    public ObservableCollection<string> PluginItems { get; } = new();
+    public ObservableCollection<PluginListItemDTO> PluginItems { get; } = new();
     public ICommand LoadPluginHeaderCommand { get; }
     public ICommand RefreshPluginsCommand { get; }
-
-    public string? SelectedGame
-    {
-        get => _selectedGame;
-        set
-        {
-            if (!SetProperty(ref _selectedGame, value))
-            {
-                return;
-            }
-
-            ApplySelectedGame();
-            ClearPluginHeader();
-            LoadPlugins();
-        }
-    }
 
     public string PluginSearchText
     {
@@ -76,7 +58,7 @@ public class OpenGamePluginDialogViewModel : ViewModelBase
             }
 
             ClearPluginHeader();
-            if (!IsLoadingPlugins && !IsUpdatingPluginItems && !IsSelectingPluginSearchResult)
+            if (!IsLoadingPlugins && !IsUpdatingPluginItems && !IsSelectingPluginItem)
             {
                 FilterPlugins();
             }
@@ -89,6 +71,20 @@ public class OpenGamePluginDialogViewModel : ViewModelBase
     {
         get => _selectedPluginName;
         private set => SetProperty(ref _selectedPluginName, value);
+    }
+
+    public PluginListItemDTO? SelectedPluginItem
+    {
+        get => _selectedPluginItem;
+        set
+        {
+            if (!SetProperty(ref _selectedPluginItem, value) || value is null)
+            {
+                return;
+            }
+
+            SelectPluginItem(value.PluginFileName);
+        }
     }
 
     public string PluginName
@@ -141,30 +137,25 @@ public class OpenGamePluginDialogViewModel : ViewModelBase
         return _selectedPluginHeader is not null;
     }
 
-    public void SelectPluginSearchResult(string pluginName)
+    private void SelectPluginItem(string pluginName)
     {
         if (string.IsNullOrWhiteSpace(pluginName))
         {
             return;
         }
 
-        IsSelectingPluginSearchResult = true;
+        IsSelectingPluginItem = true;
         try
         {
             PluginSearchText = pluginName;
         }
         finally
         {
-            IsSelectingPluginSearchResult = false;
+            IsSelectingPluginItem = false;
         }
 
         ClearPluginHeader();
         RaiseCommandStates();
-    }
-
-    private void ApplySelectedGame()
-    {
-        GameConfigurationStore.SelectGame(SelectedGame);
     }
 
     private void LoadPlugins()
@@ -173,13 +164,13 @@ public class OpenGamePluginDialogViewModel : ViewModelBase
         {
             Logger.Information("Loading plugins for {Game}", GameConfigurationStore.SelectedGame);
 
-            var plugins = PluginService.GetPlugins();
+            var plugins = PluginService.GetPluginListItems();
             AllPluginItems = plugins.ToList();
             IsLoadingPlugins = true;
             try
             {
                 SetPluginItems(plugins);
-                PluginSearchText = plugins.Count > 0 ? plugins[0] : string.Empty;
+                PluginSearchText = plugins.Count > 0 ? plugins[0].PluginFileName : string.Empty;
             }
             finally
             {
@@ -269,14 +260,12 @@ public class OpenGamePluginDialogViewModel : ViewModelBase
         var searchText = PluginSearchText.Trim();
         var plugins = string.IsNullOrWhiteSpace(searchText)
             ? AllPluginItems
-            : AllPluginItems
-                .Where(plugin => plugin.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-                .ToList();
+            : PluginService.SearchPluginListItems(searchText);
 
         SetPluginItems(plugins);
     }
 
-    private void SetPluginItems(IList<string> plugins)
+    private void SetPluginItems(IList<PluginListItemDTO> plugins)
     {
         IsUpdatingPluginItems = true;
         try

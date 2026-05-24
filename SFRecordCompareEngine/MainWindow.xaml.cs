@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using SFRecordCompareEngine.Core.Configuration.Interfaces;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.ViewModels;
 
@@ -10,6 +11,9 @@ public partial class MainWindow : Window
 {
     private readonly Func<OpenGamePluginDialog> OpenGamePluginDialogFactory;
     private readonly Func<DatabaseImportConfirmationDialog> DatabaseImportConfirmationDialogFactory;
+    private readonly Func<StartupConfigurationDialog> StartupConfigurationDialogFactory;
+    private readonly IApplicationConfigurationStore ApplicationConfigurationStore;
+    private readonly IGameConfigurationStore GameConfigurationStore;
     private readonly MainWindowViewModel ViewModel;
     private readonly CancellationTokenSource StartupImportCancellationTokenSource = new();
     private bool HasPromptedForDatabaseImport;
@@ -17,13 +21,19 @@ public partial class MainWindow : Window
     public MainWindow(
         MainWindowViewModel viewModel,
         Func<OpenGamePluginDialog> openGamePluginDialogFactory,
-        Func<DatabaseImportConfirmationDialog> databaseImportConfirmationDialogFactory)
+        Func<DatabaseImportConfirmationDialog> databaseImportConfirmationDialogFactory,
+        Func<StartupConfigurationDialog> startupConfigurationDialogFactory,
+        IApplicationConfigurationStore applicationConfigurationStore,
+        IGameConfigurationStore gameConfigurationStore)
     {
         InitializeComponent();
 
         ViewModel = viewModel;
         OpenGamePluginDialogFactory = openGamePluginDialogFactory;
         DatabaseImportConfirmationDialogFactory = databaseImportConfirmationDialogFactory;
+        StartupConfigurationDialogFactory = startupConfigurationDialogFactory;
+        ApplicationConfigurationStore = applicationConfigurationStore;
+        GameConfigurationStore = gameConfigurationStore;
         DataContext = ViewModel;
 
         ConfigureSummaryGrid();
@@ -35,6 +45,21 @@ public partial class MainWindow : Window
     {
         if (HasPromptedForDatabaseImport) return;
         HasPromptedForDatabaseImport = true;
+
+        if (ApplicationConfigurationStore.IsConfigurationRequired)
+        {
+            var configurationDialog = StartupConfigurationDialogFactory();
+            configurationDialog.Owner = this;
+            if (configurationDialog.ShowDialog() != true)
+            {
+                Close();
+                return;
+            }
+        }
+        else
+        {
+            GameConfigurationStore.SelectGame(ApplicationConfigurationStore.Current.SelectedGame);
+        }
 
         var dialog = DatabaseImportConfirmationDialogFactory();
         dialog.Owner = this;
@@ -78,10 +103,10 @@ public partial class MainWindow : Window
         dialog.Owner = this;
 
         if (dialog.ShowDialog() != true) return;
-        if (string.IsNullOrWhiteSpace(dialog.ViewModel.SelectedGame) ||
+        if (string.IsNullOrWhiteSpace(GameConfigurationStore.SelectedGame) ||
             string.IsNullOrWhiteSpace(dialog.ViewModel.SelectedPluginName)) return;
 
-        ViewModel.LoadPlugin(dialog.ViewModel.SelectedGame, dialog.ViewModel.SelectedPluginName);
+        ViewModel.LoadPlugin(GameConfigurationStore.SelectedGame, dialog.ViewModel.SelectedPluginName);
         ApplyGridColumns();
     }
 

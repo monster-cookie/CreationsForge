@@ -19,11 +19,24 @@ public interface IPluginService
     IList<string> GetPlugins();
 
     /// <summary>
+    ///     Get the list of plugins for the game including failed imports for UI diagnostics.
+    /// </summary>
+    /// <returns>The plugin list items or an empty list.</returns>
+    IList<PluginListItemDTO> GetPluginListItems();
+
+    /// <summary>
     ///     Search the list of plugins for the game.
     /// </summary>
     /// <param name="searchText">The plugin file name or ModKey search text.</param>
     /// <returns>The matching plugin file names or an empty list.</returns>
     IList<string> SearchPlugins(string searchText);
+
+    /// <summary>
+    ///     Search plugins for the game including failed imports for UI diagnostics.
+    /// </summary>
+    /// <param name="searchText">The plugin file name or ModKey search text.</param>
+    /// <returns>The matching plugin list items or an empty list.</returns>
+    IList<PluginListItemDTO> SearchPluginListItems(string searchText);
 
     /// <summary>
     ///     Get the selected game's plugin load order.

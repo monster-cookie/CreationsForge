@@ -1,6 +1,8 @@
 using System.Reflection;
 using Autofac;
 using SFRecordCompareEngine.Core.Database;
+using SFRecordCompareEngine.Core.Configuration;
+using SFRecordCompareEngine.Core.Configuration.Interfaces;
 using SFRecordCompareEngine.Core.Models.Database;
 using SFRecordCompareEngine.Core.Services;
 using SFRecordCompareEngine.Core.Services.Interfaces;
@@ -12,6 +14,9 @@ public class CoreModule : Module
 {
     protected override void Load(ContainerBuilder builder)
     {
+        builder.RegisterType<ApplicationConfigurationStore>()
+            .As<IApplicationConfigurationStore>()
+            .SingleInstance();
         builder.RegisterType<SqliteDatabaseOptions>().SingleInstance();
 
         // Register any stores

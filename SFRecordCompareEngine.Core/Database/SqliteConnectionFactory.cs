@@ -16,7 +16,7 @@ public class SqliteConnectionFactory(SqliteDatabaseOptions options) : ISqliteCon
 
         var connectionString = new SQLiteConnectionStringBuilder
         {
-            DataSource = options.DatabasePath,
+            DataSource = DatabasePath,
             ForeignKeys = true,
             JournalMode = SQLiteJournalModeEnum.Wal,
             Pooling = false

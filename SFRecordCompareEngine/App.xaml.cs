@@ -54,9 +54,11 @@ public partial class App
         builder.RegisterInstance(Log.Logger).As<ILogger>().SingleInstance();
         builder.RegisterType<MainWindowViewModel>();
         builder.RegisterType<OpenGamePluginDialogViewModel>();
+        builder.RegisterType<StartupConfigurationDialogViewModel>();
         builder.RegisterType<MainWindow>();
         builder.RegisterType<OpenGamePluginDialog>();
         builder.RegisterType<DatabaseImportConfirmationDialog>();
+        builder.RegisterType<StartupConfigurationDialog>();
 
         return builder.Build();
     }

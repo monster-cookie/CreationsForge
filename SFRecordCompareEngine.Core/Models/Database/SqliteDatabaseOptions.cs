@@ -1,10 +1,11 @@
-﻿using System.IO;
+using System.IO;
+using SFRecordCompareEngine.Core.Configuration;
 
 namespace SFRecordCompareEngine.Core.Models.Database;
 
 public class SqliteDatabaseOptions
 {
-    public string DatabaseDirectory { get; init; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SFRecordCompareEngine");
+    public string DatabaseDirectory { get; init; } = ApplicationConfigurationStore.DefaultApplicationDataDirectory;
 
     public string DatabaseFileName { get; init; } = "SFRecordCompareEngine.sqlite";
 

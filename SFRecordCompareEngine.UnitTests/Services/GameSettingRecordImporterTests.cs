@@ -44,7 +44,11 @@ public class GameSettingRecordImporterTests : IDisposable
         var sut = new GameSettingRecordImporter(new GameSettingRepository());
         var importedAtUtc = DateTimeOffset.UtcNow.ToString("O");
 
-        sut.Import(database, "Example.esm", "000001", new TestGameSettingRecord(), importedAtUtc);
+        sut.Import(database, "Example.esm", "000001", new RecordEnumerationDTO
+        {
+            RecordType = "GameSetting",
+            Record = new TestGameSettingRecord()
+        }, importedAtUtc);
 
         var result = database.First<GameSettingDTO>(
             "SELECT * FROM GameSetting WHERE ModKey = @0 COLLATE NOCASE AND FormID = @1;",

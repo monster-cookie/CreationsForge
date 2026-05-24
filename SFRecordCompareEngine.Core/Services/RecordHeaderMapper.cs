@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Reflection;
+using Mutagen.Bethesda.Plugins.Records;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.DTOs.Records;
 
@@ -9,7 +10,7 @@ public static class RecordHeaderMapper
 {
     public static RecordHeaderDTO Map(PluginMetadataDTO plugin, string recordType, object record, string importedAtUtc)
     {
-        var formKey = GetStringValue(record, "FormKey")
+        var formKey = GetFormKeyValue(record)
                       ?? throw new InvalidOperationException($"{recordType} record in {plugin.ModKey} did not expose FormKey.");
         formKey = FormKeyTextNormalizer.NormalizeReferenceValue(formKey);
 
@@ -37,6 +38,16 @@ public static class RecordHeaderMapper
     public static string? GetStringValue(object source, string propertyName)
     {
         return GetPropertyValue(source, propertyName)?.ToString();
+    }
+
+    public static string? GetFormKeyValue(object source)
+    {
+        if (source is IFormKeyGetter formKeyGetter)
+        {
+            return formKeyGetter.FormKey.ToString();
+        }
+
+        return GetStringValue(source, "FormKey");
     }
 
     public static int? GetNullableIntValue(object source, string propertyName)

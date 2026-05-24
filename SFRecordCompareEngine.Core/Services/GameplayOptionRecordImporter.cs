@@ -1,0 +1,25 @@
+using NPoco;
+using SFRecordCompareEngine.Core.DTOs.Records;
+using SFRecordCompareEngine.Core.Repositories.Interfaces;
+using SFRecordCompareEngine.Core.Services.Interfaces;
+
+namespace SFRecordCompareEngine.Core.Services;
+
+public class GameplayOptionRecordImporter(IGameplayOptionRepository gameplayOptionRepository) : ITypedRecordDetailImporter
+{
+    public string RecordType => "GameplayOption";
+    public string TableName => "GameplayOption";
+
+    public void Import(IDatabase database, string modKey, string formId, RecordEnumerationDTO record, string importedAtUtc)
+    {
+        gameplayOptionRepository.Upsert(database, new GameplayOptionDTO
+        {
+            ModKey = modKey,
+            FormID = formId,
+            Name = RecordDetailValueMapper.GetTextValue(record.Record, "Name"),
+            ImportedAtUtc = importedAtUtc
+        });
+
+        gameplayOptionRepository.ReplaceKeywords(database, modKey, formId, RecordDetailValueMapper.GetKeywords(record.Record, modKey, formId, importedAtUtc));
+    }
+}

@@ -113,6 +113,11 @@ public class MainWindowViewModel : ViewModelBase
 
     public async Task InitializeDatabaseImportAsync(CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(GameConfigurationStore.SelectedGame))
+        {
+            throw new InvalidOperationException("Select a game before initializing the plugin database.");
+        }
+
         IsDatabaseImportRunning = true;
         _databaseImportCompleted = false;
         IsDatabaseImportIndeterminate = true;
@@ -124,7 +129,6 @@ public class MainWindowViewModel : ViewModelBase
 
         try
         {
-            GameConfigurationStore.SelectGame("Starfield");
             var progress = new Progress<PluginImportProgressDTO>(UpdateDatabaseImportProgress);
             var importResult = await PluginImportService.InitializeAndImportAsync(progress, cancellationToken);
             _databaseImportCompleted = true;

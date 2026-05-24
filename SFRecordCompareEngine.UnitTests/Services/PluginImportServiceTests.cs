@@ -108,6 +108,28 @@ public class PluginImportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task InitializeAndImportAsync_WhenPluginIsImportedTwiceWithoutFileChanges_SecondRunSkipsImport()
+    {
+        var pluginPath = CreatePluginFile("Example.esm", "plugin");
+        PluginService.Setup(service => service.GetLoadOrder()).Returns([CreateLoadOrderEntry("Example.esm", pluginPath, 1)]);
+        PluginService.Setup(service => service.ReadHeader(pluginPath)).Returns(CreateHeader("Example.esm"));
+        var sut = CreateSut();
+
+        var firstResult = await sut.InitializeAndImportAsync(CancellationToken.None);
+        var secondResult = await sut.InitializeAndImportAsync(CancellationToken.None);
+
+        firstResult.PluginsImported.ShouldBe(1);
+        secondResult.PluginsUnchanged.ShouldBe(1);
+        secondResult.PluginsImported.ShouldBe(0);
+        PluginService.Verify(service => service.ReadHeader(pluginPath), Times.Once);
+        RecordImportService.Verify(service => service.ImportPluginRecords(
+            It.IsAny<NPoco.IDatabase>(),
+            It.IsAny<PluginMetadataDTO>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task InitializeAndImportAsync_WhenPluginFileIsMissing_MarksPluginMissing()
     {
         var missingPath = Path.Combine(DatabaseDirectory, "Missing.esm");
@@ -149,6 +171,59 @@ public class PluginImportServiceTests : IDisposable
 
         using var resultDatabase = ConnectionFactory.OpenDatabase();
         resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @0 COLLATE NOCASE;", "Missing.esm").ShouldBe(0);
+    }
+
+    [Theory]
+    [InlineData("BlueprintShips.esm")]
+    [InlineData("BlueprintShips-Starborn.esm")]
+    [InlineData("blueprintships-example.esm")]
+    public async Task InitializeAndImportAsync_WhenPluginIsBlueprintShips_MarksPluginUnsupportedAndDoesNotImport(string pluginName)
+    {
+        var pluginPath = CreatePluginFile(pluginName, "plugin");
+        PluginService.Setup(service => service.GetLoadOrder()).Returns([CreateLoadOrderEntry(pluginName, pluginPath, 1)]);
+        var sut = CreateSut();
+
+        var result = await sut.InitializeAndImportAsync(CancellationToken.None);
+
+        result.PluginsUnsupported.ShouldBe(1);
+        PluginService.Verify(service => service.ReadHeader(It.IsAny<string>()), Times.Never);
+        RecordImportService.Verify(service => service.ImportPluginRecords(
+            It.IsAny<NPoco.IDatabase>(),
+            It.IsAny<PluginMetadataDTO>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+        using var database = ConnectionFactory.OpenDatabase();
+        var plugin = PluginRepository.GetByModKey(database, pluginName);
+        plugin.ShouldNotBeNull();
+        plugin.ExistsOnDisk.ShouldBeTrue();
+        plugin.ImportState.ShouldBe(PluginImportState.Unsupported.ToString());
+    }
+
+    [Fact]
+    public async Task InitializeAndImportAsync_WhenBlueprintShipsHasStaleRows_DeletesDerivedRecordRows()
+    {
+        var pluginPath = CreatePluginFile("BlueprintShips.esm", "plugin");
+        SeedImportedPlugin("BlueprintShips.esm", pluginPath, 1);
+        using (var database = ConnectionFactory.OpenDatabase())
+        {
+            RecordHeaderRepository.Upsert(database, new SFRecordCompareEngine.Core.DTOs.Records.RecordHeaderDTO
+            {
+                ModKey = "BlueprintShips.esm",
+                FormID = "000001",
+                RecordType = "Keyword",
+                FormKey = "000001:BlueprintShips.esm",
+                PluginFileName = "BlueprintShips.esm",
+                ImportedAtUtc = DateTimeOffset.UtcNow.ToString("O")
+            });
+        }
+
+        PluginService.Setup(service => service.GetLoadOrder()).Returns([CreateLoadOrderEntry("BlueprintShips.esm", pluginPath, 1)]);
+        var sut = CreateSut();
+
+        await sut.InitializeAndImportAsync(CancellationToken.None);
+
+        using var resultDatabase = ConnectionFactory.OpenDatabase();
+        resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @0 COLLATE NOCASE;", "BlueprintShips.esm").ShouldBe(0);
     }
 
     [Fact]
@@ -196,22 +271,65 @@ public class PluginImportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task InitializeAndImportAsync_WhenFailedPluginFingerprintIsUnchanged_DoesNotRetryImportAndPreservesFailedState()
+    {
+        var pluginPath = CreatePluginFile("Example.esm", "plugin");
+        PluginService.Setup(service => service.GetLoadOrder()).Returns([CreateLoadOrderEntry("Example.esm", pluginPath, 1)]);
+        PluginService.Setup(service => service.ReadHeader(pluginPath)).Returns(CreateHeader("Example.esm"));
+        RecordImportService.Setup(service => service.ImportPluginRecords(
+                It.IsAny<NPoco.IDatabase>(),
+                It.IsAny<PluginMetadataDTO>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .Throws(new InvalidOperationException("Import failed."));
+        var sut = CreateSut();
+
+        var firstResult = await sut.InitializeAndImportAsync(CancellationToken.None);
+        var secondResult = await sut.InitializeAndImportAsync(CancellationToken.None);
+
+        firstResult.PluginsFailed.ShouldBe(1);
+        secondResult.PluginsUnchanged.ShouldBe(1);
+        secondResult.PluginsFailed.ShouldBe(0);
+        PluginService.Verify(service => service.ReadHeader(pluginPath), Times.Once);
+        RecordImportService.Verify(service => service.ImportPluginRecords(
+            It.IsAny<NPoco.IDatabase>(),
+            It.IsAny<PluginMetadataDTO>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+        using var database = ConnectionFactory.OpenDatabase();
+        var plugin = PluginRepository.GetByModKey(database, "Example.esm");
+        plugin.ShouldNotBeNull();
+        plugin.ImportState.ShouldBe(PluginImportState.Failed.ToString());
+        plugin.SourceLastWriteUtcTicks.ShouldNotBeNull();
+        plugin.SourceFileSizeBytes.ShouldNotBeNull();
+    }
+
+    [Fact]
     public async Task InitializeAndImportAsync_WhenPluginFileSizeChanges_DeletesAndRebuildsRecordHeaders()
     {
         var pluginPath = CreatePluginFile("Example.esm", "plugin");
         SeedImportedPlugin("Example.esm", pluginPath, 1);
         using (var database = ConnectionFactory.OpenDatabase())
         {
-            RecordHeaderRepository.Upsert(database, new SFRecordCompareEngine.Core.DTOs.Records.RecordHeaderDTO
-            {
-                ModKey = "Example.esm",
-                FormID = "000001",
-                RecordType = "Keyword",
+                RecordHeaderRepository.Upsert(database, new SFRecordCompareEngine.Core.DTOs.Records.RecordHeaderDTO
+                {
+                    ModKey = "Example.esm",
+                    FormID = "000001",
+                    RecordType = "Keyword",
                 FormKey = "000001:Example.esm",
-                PluginFileName = "Example.esm",
-                ImportedAtUtc = DateTimeOffset.UtcNow.ToString("O")
-            });
-        }
+                    PluginFileName = "Example.esm",
+                    ImportedAtUtc = DateTimeOffset.UtcNow.ToString("O")
+                });
+                database.Execute(
+                    """
+                    INSERT INTO Keyword (ModKey, FormID, Name, ImportedAtUtc)
+                    VALUES (@0, @1, @2, @3);
+                    """,
+                    "Example.esm",
+                    "000001",
+                    "Stale Keyword",
+                    DateTimeOffset.UtcNow.ToString("O"));
+            }
 
         File.AppendAllText(pluginPath, "changed");
         PluginService.Setup(service => service.GetLoadOrder()).Returns([CreateLoadOrderEntry("Example.esm", pluginPath, 1)]);
@@ -255,6 +373,8 @@ public class PluginImportServiceTests : IDisposable
 
         using var resultDatabase = ConnectionFactory.OpenDatabase();
         resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @0 COLLATE NOCASE AND FormID = @1;", "Example.esm", "000001")
+            .ShouldBe(0);
+        resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM Keyword WHERE ModKey = @0 COLLATE NOCASE AND FormID = @1;", "Example.esm", "000001")
             .ShouldBe(0);
         resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @0 COLLATE NOCASE AND FormID = @1;", "Example.esm", "000002")
             .ShouldBe(1);

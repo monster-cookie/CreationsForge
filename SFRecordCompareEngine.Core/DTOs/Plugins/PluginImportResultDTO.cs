@@ -8,6 +8,7 @@ public class PluginImportResultDTO
     public int PluginsImported { get; set; }
     public int PluginsMissing { get; set; }
     public int PluginsFailed { get; set; }
+    public int PluginsUnsupported { get; set; }
     public int PluginsInvalidated { get; set; }
     public int MasterReferencesImported { get; set; }
     public int RecordHeadersImported { get; set; }

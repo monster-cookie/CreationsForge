@@ -39,6 +39,7 @@ public class PluginService : IPluginService
 
     private readonly IGameConfigurationStore GameConfigurationStore;
     private readonly IRecordService RecordService;
+    private readonly IRecordEnumerationService RecordEnumerationService;
     private readonly ISqliteConnectionFactory SqliteConnectionFactory;
     private readonly IPluginRepository PluginRepository;
     private readonly IGameSettingRepository GameSettingRepository;
@@ -48,19 +49,21 @@ public class PluginService : IPluginService
     public PluginService(
         IGameConfigurationStore gameConfigurationStore,
         IRecordService recordService,
+        IRecordEnumerationService recordEnumerationService,
         ISqliteConnectionFactory sqliteConnectionFactory,
         IPluginRepository pluginRepository,
         IGameSettingRepository gameSettingRepository)
     {
         GameConfigurationStore = gameConfigurationStore;
         RecordService = recordService;
+        RecordEnumerationService = recordEnumerationService;
         SqliteConnectionFactory = sqliteConnectionFactory;
         PluginRepository = pluginRepository;
         GameSettingRepository = gameSettingRepository;
     }
 
     public PluginService(IGameConfigurationStore gameConfigurationStore, IRecordService recordService)
-        : this(gameConfigurationStore, recordService, null!, null!, null!)
+        : this(gameConfigurationStore, recordService, new RecordEnumerationService(), null!, null!, null!)
     {
     }
 
@@ -110,6 +113,22 @@ public class PluginService : IPluginService
         }
     }
 
+    public IList<PluginListItemDTO> GetPluginListItems()
+    {
+        try
+        {
+            using var database = SqliteConnectionFactory.OpenDatabase();
+            return PluginRepository.GetOpenablePlugins(database)
+                .Select(ToPluginListItem)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Unable to load plugin list items from SQLite database");
+            return new List<PluginListItemDTO>();
+        }
+    }
+
     /// <inheritdoc />
     public IList<string> SearchPlugins(string searchText)
     {
@@ -128,6 +147,26 @@ public class PluginService : IPluginService
         {
             Logger.Error(ex, "Unable to search plugins from SQLite database");
             return new List<string>();
+        }
+    }
+
+    public IList<PluginListItemDTO> SearchPluginListItems(string searchText)
+    {
+        try
+        {
+            using var database = SqliteConnectionFactory.OpenDatabase();
+            var plugins = string.IsNullOrWhiteSpace(searchText)
+                ? PluginRepository.GetOpenablePlugins(database)
+                : PluginRepository.SearchOpenablePlugins(database, searchText.Trim());
+
+            return plugins
+                .Select(ToPluginListItem)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Unable to search plugin list items from SQLite database");
+            return new List<PluginListItemDTO>();
         }
     }
 
@@ -217,7 +256,7 @@ public class PluginService : IPluginService
             }
 
             using var plugin = LoadPlugin(pluginName);
-            var records = GetRecordsFromMutagenTypeOption(plugin, recordType) ?? GetRecordsFromPluginProperty(plugin, recordType);
+            var records = RecordEnumerationService.GetRawRecords(plugin, recordType);
             if (records is null)
             {
                 Logger.Warning("Record type {RecordType} was not found for plugin {PluginName}", recordType, pluginName);
@@ -229,7 +268,7 @@ public class PluginService : IPluginService
                 .Select(record => new RecordSummaryDTO
                 {
                     RecordType = recordType,
-                    FormID = GetStringValue(record, "FormKey") ?? GetStringValue(record, "FormID"),
+                    FormID = RecordHeaderMapper.GetFormKeyValue(record) ?? GetStringValue(record, "FormID"),
                     EditorID = GetStringValue(record, "EditorID")
                 })
                 .ToList();
@@ -452,6 +491,15 @@ public class PluginService : IPluginService
             .Construct();
     }
 
+    private static PluginListItemDTO ToPluginListItem(PluginMetadataDTO plugin)
+    {
+        return new PluginListItemDTO
+        {
+            PluginFileName = plugin.PluginFileName,
+            ImportState = plugin.ImportState
+        };
+    }
+
     /// <summary>
     ///     Get the base plugin, master plugins, and selected plugin used as comparison columns.
     /// </summary>
@@ -513,7 +561,7 @@ public class PluginService : IPluginService
         try
         {
             using var plugin = LoadPlugin(pluginName);
-            var records = GetRecordsFromMutagenTypeOption(plugin, recordType) ?? GetRecordsFromPluginProperty(plugin, recordType);
+            var records = RecordEnumerationService.GetRawRecords(plugin, recordType);
             return records?
                 .Cast<object>()
                 .FirstOrDefault(record => RecordMatches(record, formKey));
@@ -533,7 +581,7 @@ public class PluginService : IPluginService
     /// <returns>True when either key property matches; otherwise false.</returns>
     private static bool RecordMatches(object record, string formKey)
     {
-        return StringValueEquals(record, "FormKey", formKey)
+        return (RecordHeaderMapper.GetFormKeyValue(record)?.Equals(formKey, StringComparison.OrdinalIgnoreCase) == true)
                || StringValueEquals(record, "FormID", formKey);
     }
 
