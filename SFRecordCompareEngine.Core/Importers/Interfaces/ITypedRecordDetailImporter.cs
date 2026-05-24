@@ -1,7 +1,7 @@
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Records;
 
-namespace SFRecordCompareEngine.Core.Services.Interfaces;
+namespace SFRecordCompareEngine.Core.Importers.Interfaces;
 
 public interface ITypedRecordDetailImporter
 {

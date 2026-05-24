@@ -3,9 +3,10 @@ using Mutagen.Bethesda.Plugins.Records;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Repositories.Interfaces;
+using SFRecordCompareEngine.Core.Services;
 using SFRecordCompareEngine.Core.Services.Interfaces;
 
-namespace SFRecordCompareEngine.Core.Services;
+namespace SFRecordCompareEngine.Core.Importers;
 
 public class WorldspaceRecordImporter(IWorldspaceRepository worldspaceRepository) : ITypedRecordDetailImporter
 {

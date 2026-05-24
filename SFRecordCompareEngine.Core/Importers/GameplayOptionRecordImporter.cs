@@ -1,5 +1,6 @@
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Records;
+using SFRecordCompareEngine.Core.Importers.Interfaces;
 using SFRecordCompareEngine.Core.Repositories.Interfaces;
 using SFRecordCompareEngine.Core.Services.Interfaces;
 

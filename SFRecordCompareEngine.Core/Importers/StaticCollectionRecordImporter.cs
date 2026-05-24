@@ -1,18 +1,19 @@
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Repositories.Interfaces;
+using SFRecordCompareEngine.Core.Services;
 using SFRecordCompareEngine.Core.Services.Interfaces;
 
-namespace SFRecordCompareEngine.Core.Services;
+namespace SFRecordCompareEngine.Core.Importers;
 
-public class StaticRecordImporter(IStaticRecordRepository staticRecordRepository) : ITypedRecordDetailImporter
+public class StaticCollectionRecordImporter(IStaticCollectionRepository staticCollectionRepository) : ITypedRecordDetailImporter
 {
-    public string RecordType => "Static";
-    public string TableName => "Static";
+    public string RecordType => "StaticCollection";
+    public string TableName => "StaticCollection";
 
     public void Import(IDatabase database, string modKey, string formId, RecordEnumerationDTO record, string importedAtUtc)
     {
-        staticRecordRepository.Upsert(database, new StaticRecordDTO
+        staticCollectionRepository.Upsert(database, new StaticCollectionDTO
         {
             ModKey = modKey,
             FormID = formId,
