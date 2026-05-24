@@ -93,12 +93,12 @@ public class SimpleMajorRecordRepositoryTests : IDisposable
         InsertHeader(database, "00000A", "MagicEffect");
         new MagicEffectRepository().Upsert(database, new MagicEffectDTO { ModKey = "Example.esm", FormID = "00000A", Name = name, ImportedAtUtc = importedAtUtc });
 
-        var keyword = database.First<KeywordDTO>("SELECT * FROM Keyword WHERE FormID = @0;", "000001");
+        var keyword = database.First<KeywordDTO>("SELECT * FROM Keyword WHERE FormID = @FormId;", new { FormId = "000001" });
         keyword.Name.ShouldBe(name);
         keyword.Color.ShouldBe("#00FFFFFF");
         keyword.KeywordType.ShouldBe("Faction");
         keyword.FNAM.ShouldBe("0x00000000");
-        var faction = database.First<FactionDTO>("SELECT * FROM Faction WHERE FormID = @0;", "000002");
+        var faction = database.First<FactionDTO>("SELECT * FROM Faction WHERE FormID = @FormId;", new { FormId = "000002" });
         faction.Name.ShouldBe(name);
         faction.KeywordFormKey.ShouldBe("000100:Example.esm");
         faction.Flags.ShouldBe("HiddenFromPC, TrackCrime");
@@ -109,14 +109,14 @@ public class SimpleMajorRecordRepositoryTests : IDisposable
         faction.VendorValuesEndHour.ShouldBe(24);
         faction.VendorValuesBuysStolenItems.ShouldBe(1);
         faction.VendorValuesBuysNonStolenItems.ShouldBe(1);
-        database.ExecuteScalar<string>("SELECT Name FROM Message WHERE FormID = @0;", "000003").ShouldBe(name);
-        database.ExecuteScalar<string>("SELECT Name FROM GameplayOptionsGroup WHERE FormID = @0;", "000004").ShouldBe(name);
-        database.ExecuteScalar<string>("SELECT Model FROM Static WHERE FormID = @0;", "000005").ShouldBe("Model");
-        database.ExecuteScalar<string>("SELECT Model FROM StaticCollection WHERE FormID = @0;", "000006").ShouldBe("Model");
-        database.ExecuteScalar<string>("SELECT Destructible FROM Activator WHERE FormID = @0;", "000007").ShouldBe("Destructible");
-        database.ExecuteScalar<string>("SELECT Destructible FROM MiscItem WHERE FormID = @0;", "000008").ShouldBe("Destructible");
-        database.ExecuteScalar<string>("SELECT Name FROM GameplayOption WHERE FormID = @0;", "000009").ShouldBe(name);
-        database.ExecuteScalar<string>("SELECT Name FROM MagicEffect WHERE FormID = @0;", "00000A").ShouldBe(name);
+        database.ExecuteScalar<string>("SELECT Name FROM Message WHERE FormID = @FormId;", new { FormId = "000003" }).ShouldBe(name);
+        database.ExecuteScalar<string>("SELECT Name FROM GameplayOptionsGroup WHERE FormID = @FormId;", new { FormId = "000004" }).ShouldBe(name);
+        database.ExecuteScalar<string>("SELECT Model FROM Static WHERE FormID = @FormId;", new { FormId = "000005" }).ShouldBe("Model");
+        database.ExecuteScalar<string>("SELECT Model FROM StaticCollection WHERE FormID = @FormId;", new { FormId = "000006" }).ShouldBe("Model");
+        database.ExecuteScalar<string>("SELECT Destructible FROM Activator WHERE FormID = @FormId;", new { FormId = "000007" }).ShouldBe("Destructible");
+        database.ExecuteScalar<string>("SELECT Destructible FROM MiscItem WHERE FormID = @FormId;", new { FormId = "000008" }).ShouldBe("Destructible");
+        database.ExecuteScalar<string>("SELECT Name FROM GameplayOption WHERE FormID = @FormId;", new { FormId = "000009" }).ShouldBe(name);
+        database.ExecuteScalar<string>("SELECT Name FROM MagicEffect WHERE FormID = @FormId;", new { FormId = "00000A" }).ShouldBe(name);
     }
 
     [Fact]
@@ -135,9 +135,9 @@ public class SimpleMajorRecordRepositoryTests : IDisposable
 
         sut.ReplaceKeywords(database, "Example.esm", "000001", [CreateKeyword("000001", 0, "000102:Example.esm")]);
 
-        database.ExecuteScalar<int>("SELECT COUNT(*) FROM ActivatorKeyword WHERE FormID = @0;", "000001").ShouldBe(1);
-        database.ExecuteScalar<string>("SELECT KeywordFormKey FROM ActivatorKeyword WHERE FormID = @0;", "000001").ShouldBe("000102:Example.esm");
-        database.ExecuteScalar<string>("SELECT KeywordFormKey FROM ActivatorKeyword WHERE FormID = @0;", "000002").ShouldBe("000200:Example.esm");
+        database.ExecuteScalar<int>("SELECT COUNT(*) FROM ActivatorKeyword WHERE FormID = @FormId;", new { FormId = "000001" }).ShouldBe(1);
+        database.ExecuteScalar<string>("SELECT KeywordFormKey FROM ActivatorKeyword WHERE FormID = @FormId;", new { FormId = "000001" }).ShouldBe("000102:Example.esm");
+        database.ExecuteScalar<string>("SELECT KeywordFormKey FROM ActivatorKeyword WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe("000200:Example.esm");
     }
 
     [Fact]
@@ -156,10 +156,10 @@ public class SimpleMajorRecordRepositoryTests : IDisposable
 
         sut.ReplaceRelations(database, "Example.esm", "000001", [CreateRelation("000001", 0, "000102:Example.esm", "Ally")]);
 
-        database.ExecuteScalar<int>("SELECT COUNT(*) FROM FactionRelation WHERE FormID = @0;", "000001").ShouldBe(1);
-        database.ExecuteScalar<string>("SELECT TargetFormKey FROM FactionRelation WHERE FormID = @0;", "000001").ShouldBe("000102:Example.esm");
-        database.ExecuteScalar<string>("SELECT Reaction FROM FactionRelation WHERE FormID = @0;", "000001").ShouldBe("Ally");
-        database.ExecuteScalar<string>("SELECT TargetFormKey FROM FactionRelation WHERE FormID = @0;", "000002").ShouldBe("000200:Example.esm");
+        database.ExecuteScalar<int>("SELECT COUNT(*) FROM FactionRelation WHERE FormID = @FormId;", new { FormId = "000001" }).ShouldBe(1);
+        database.ExecuteScalar<string>("SELECT TargetFormKey FROM FactionRelation WHERE FormID = @FormId;", new { FormId = "000001" }).ShouldBe("000102:Example.esm");
+        database.ExecuteScalar<string>("SELECT Reaction FROM FactionRelation WHERE FormID = @FormId;", new { FormId = "000001" }).ShouldBe("Ally");
+        database.ExecuteScalar<string>("SELECT TargetFormKey FROM FactionRelation WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe("000200:Example.esm");
     }
 
     private void InsertPlugin(NPoco.IDatabase database, string modKey)

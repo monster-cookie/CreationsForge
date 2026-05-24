@@ -1,12 +1,12 @@
-using System.Collections;
 using System.IO;
-using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
 using Serilog;
 using SFRecordCompareEngine.Core.Configuration.Interfaces;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.DTOs.Records;
+using SFRecordCompareEngine.Core.Importers;
+using SFRecordCompareEngine.Core.Importers.Interfaces;
 using SFRecordCompareEngine.Core.Repositories.Interfaces;
 using SFRecordCompareEngine.Core.Services.Interfaces;
 
@@ -20,8 +20,7 @@ public class RecordImportService(
     FormListRecordImporter formListRecordImporter) : IRecordImportService
 {
     private readonly ILogger Logger = Log.ForContext<RecordImportService>();
-    private readonly IReadOnlyDictionary<string, ITypedRecordDetailImporter> TypedRecordDetailImporters =
-        typedRecordDetailImporters.ToDictionary(importer => importer.RecordType, StringComparer.Ordinal);
+    private readonly Dictionary<string, ITypedRecordDetailImporter> TypedRecordDetailImporters = typedRecordDetailImporters.ToDictionary(importer => importer.RecordType, StringComparer.Ordinal);
 
     public RecordImportResultDTO ImportPluginRecords(NPoco.IDatabase database, PluginMetadataDTO plugin, string importedAtUtc, CancellationToken cancellationToken)
     {

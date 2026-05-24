@@ -97,11 +97,11 @@ public class CellRepositoryTests : IDisposable
             }
         ]);
 
-        database.ExecuteScalar<int>("SELECT COUNT(*) FROM CellGroupLocation WHERE ModKey = @0 COLLATE NOCASE AND CellFormID = @1;", "Example.esm", "000001")
+        database.ExecuteScalar<int>("SELECT COUNT(*) FROM CellGroupLocation WHERE ModKey = @ModKey COLLATE NOCASE AND CellFormID = @CellFormId;", new { ModKey = "Example.esm", CellFormId = "000001" })
             .ShouldBe(1);
-        database.ExecuteScalar<string>("SELECT LocationKind FROM CellGroupLocation WHERE ModKey = @0 COLLATE NOCASE AND CellFormID = @1;", "Example.esm", "000001")
+        database.ExecuteScalar<string>("SELECT LocationKind FROM CellGroupLocation WHERE ModKey = @ModKey COLLATE NOCASE AND CellFormID = @CellFormId;", new { ModKey = "Example.esm", CellFormId = "000001" })
             .ShouldBe("WorldspaceTopCell");
-        database.ExecuteScalar<string>("SELECT PlacedFormKey FROM CellPlacedRecord WHERE ModKey = @0 COLLATE NOCASE AND CellFormID = @1;", "Example.esm", "000001")
+        database.ExecuteScalar<string>("SELECT PlacedFormKey FROM CellPlacedRecord WHERE ModKey = @ModKey COLLATE NOCASE AND CellFormID = @CellFormId;", new { ModKey = "Example.esm", CellFormId = "000001" })
             .ShouldBe("000003:Example.esm");
     }
 

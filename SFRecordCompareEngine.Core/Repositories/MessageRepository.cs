@@ -11,15 +11,18 @@ public class MessageRepository : IMessageRepository
         database.Execute(
             """
             INSERT INTO Message (ModKey, FormID, Name, ImportedAtUtc)
-            VALUES (@0, @1, @2, @3)
+            VALUES (@ModKey, @FormID, @Name, @ImportedAtUtc)
             ON CONFLICT(ModKey, FormID) DO UPDATE SET
                 Name = excluded.Name,
                 ImportedAtUtc = excluded.ImportedAtUtc;
             """,
-            message.ModKey,
-            message.FormID,
-            DbValue(message.Name),
-            message.ImportedAtUtc);
+            new
+            {
+                message.ModKey,
+                message.FormID,
+                Name = DbValue(message.Name),
+                message.ImportedAtUtc
+            });
     }
 
     private static object DbValue(object? value)

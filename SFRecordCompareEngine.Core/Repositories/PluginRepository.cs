@@ -9,8 +9,8 @@ public class PluginRepository : IPluginRepository
     public PluginMetadataDTO? GetByModKey(IDatabase database, string modKey)
     {
         return database.FirstOrDefault<PluginMetadataDTO>(
-            "SELECT * FROM Plugins WHERE ModKey = @0 COLLATE NOCASE;",
-            modKey);
+            "SELECT * FROM Plugins WHERE ModKey = @ModKey COLLATE NOCASE;",
+            new { ModKey = modKey });
     }
 
     public IList<PluginMetadataDTO> GetAll(IDatabase database)
@@ -26,12 +26,11 @@ public class PluginRepository : IPluginRepository
             FROM Plugins
             WHERE Enabled = 1
               AND ExistsOnDisk = 1
-              AND ImportState = @0
-              AND ModKey <> @1 COLLATE NOCASE
+              AND ImportState = @ImportState
+              AND ModKey <> @BaseGameModKey COLLATE NOCASE
             ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex ASC, PluginFileName COLLATE NOCASE ASC;
             """,
-            PluginImportState.Current.ToString(),
-            "Starfield.esm");
+            new { ImportState = PluginImportState.Current.ToString(), BaseGameModKey = "Starfield.esm" });
     }
 
     public IList<PluginMetadataDTO> GetOpenablePlugins(IDatabase database)
@@ -41,13 +40,16 @@ public class PluginRepository : IPluginRepository
             SELECT *
             FROM Plugins
             WHERE ExistsOnDisk = 1
-              AND ImportState IN (@0, @1)
-              AND ModKey <> @2 COLLATE NOCASE
+              AND ImportState IN (@CurrentImportState, @FailedImportState)
+              AND ModKey <> @BaseGameModKey COLLATE NOCASE
             ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex ASC, PluginFileName COLLATE NOCASE ASC;
             """,
-            PluginImportState.Current.ToString(),
-            PluginImportState.Failed.ToString(),
-            "Starfield.esm");
+            new
+            {
+                CurrentImportState = PluginImportState.Current.ToString(),
+                FailedImportState = PluginImportState.Failed.ToString(),
+                BaseGameModKey = "Starfield.esm"
+            });
     }
 
     public IList<PluginMetadataDTO> SearchPlugins(IDatabase database, string searchText)
@@ -59,14 +61,17 @@ public class PluginRepository : IPluginRepository
             FROM Plugins
             WHERE Enabled = 1
               AND ExistsOnDisk = 1
-              AND ImportState = @0
-              AND ModKey <> @1 COLLATE NOCASE
-              AND (PluginFileName LIKE @2 COLLATE NOCASE OR ModKey LIKE @2 COLLATE NOCASE)
+              AND ImportState = @ImportState
+              AND ModKey <> @BaseGameModKey COLLATE NOCASE
+              AND (PluginFileName LIKE @SearchPattern COLLATE NOCASE OR ModKey LIKE @SearchPattern COLLATE NOCASE)
             ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex ASC, PluginFileName COLLATE NOCASE ASC;
             """,
-            PluginImportState.Current.ToString(),
-            "Starfield.esm",
-            searchPattern);
+            new
+            {
+                ImportState = PluginImportState.Current.ToString(),
+                BaseGameModKey = "Starfield.esm",
+                SearchPattern = searchPattern
+            });
     }
 
     public IList<PluginMetadataDTO> SearchOpenablePlugins(IDatabase database, string searchText)
@@ -77,15 +82,18 @@ public class PluginRepository : IPluginRepository
             SELECT *
             FROM Plugins
             WHERE ExistsOnDisk = 1
-              AND ImportState IN (@0, @1)
-              AND ModKey <> @2 COLLATE NOCASE
-              AND (PluginFileName LIKE @3 COLLATE NOCASE OR ModKey LIKE @3 COLLATE NOCASE)
+              AND ImportState IN (@CurrentImportState, @FailedImportState)
+              AND ModKey <> @BaseGameModKey COLLATE NOCASE
+              AND (PluginFileName LIKE @SearchPattern COLLATE NOCASE OR ModKey LIKE @SearchPattern COLLATE NOCASE)
             ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex ASC, PluginFileName COLLATE NOCASE ASC;
             """,
-            PluginImportState.Current.ToString(),
-            PluginImportState.Failed.ToString(),
-            "Starfield.esm",
-            searchPattern);
+            new
+            {
+                CurrentImportState = PluginImportState.Current.ToString(),
+                FailedImportState = PluginImportState.Failed.ToString(),
+                BaseGameModKey = "Starfield.esm",
+                SearchPattern = searchPattern
+            });
     }
 
     public IList<PluginMasterReferenceDTO> GetMasterReferences(IDatabase database, string modKey)
@@ -94,10 +102,10 @@ public class PluginRepository : IPluginRepository
             """
             SELECT *
             FROM PluginMasterReferences
-            WHERE ModKey = @0 COLLATE NOCASE
+            WHERE ModKey = @ModKey COLLATE NOCASE
             ORDER BY MasterReferenceIndex ASC;
             """,
-            modKey);
+            new { ModKey = modKey });
     }
 
     public IList<PluginResolutionHierarchyDTO> GetResolutionHierarchy(IDatabase database, string modKey)
@@ -106,13 +114,13 @@ public class PluginRepository : IPluginRepository
             """
             SELECT *
             FROM PluginResolutionHierarchy
-            WHERE ChildModKey = @0 COLLATE NOCASE
+            WHERE ChildModKey = @ModKey COLLATE NOCASE
             ORDER BY
                 HierarchyLoadOrderIndex IS NULL,
                 HierarchyLoadOrderIndex ASC,
                 IsChild ASC;
             """,
-            modKey);
+            new { ModKey = modKey });
     }
 
     public void UpsertPlugin(IDatabase database, PluginMetadataDTO plugin)
@@ -139,7 +147,7 @@ public class PluginRepository : IPluginRepository
                 LastImportedUtc,
                 InvalidatedAtUtc
             )
-            VALUES (@0, @1, @2, @3, @4, @5, @6, @7, @8, @9, @10, @11, @12, @13, @14, @15, @16, @17)
+            VALUES (@ModKey, @GameRelease, @LoadOrderIndex, @PluginFileName, @PluginPath, @Enabled, @ExistsOnDisk, @ImportState, @HeaderFlags, @FormVersion, @Author, @Branch, @InteriorCellCount, @SourceLastWriteUtcTicks, @SourceFileSizeBytes, @LastCheckedUtc, @LastImportedUtc, @InvalidatedAtUtc)
             ON CONFLICT(ModKey) DO UPDATE SET
                 GameRelease = excluded.GameRelease,
                 LoadOrderIndex = excluded.LoadOrderIndex,
@@ -159,24 +167,27 @@ public class PluginRepository : IPluginRepository
                 LastImportedUtc = excluded.LastImportedUtc,
                 InvalidatedAtUtc = excluded.InvalidatedAtUtc;
             """,
-            plugin.ModKey,
-            plugin.GameRelease,
-            DbValue(plugin.LoadOrderIndex),
-            plugin.PluginFileName,
-            DbValue(plugin.PluginPath),
-            plugin.Enabled ? 1 : 0,
-            plugin.ExistsOnDisk ? 1 : 0,
-            plugin.ImportState,
-            DbValue(plugin.HeaderFlags),
-            DbValue(plugin.FormVersion),
-            DbValue(plugin.Author),
-            DbValue(plugin.Branch),
-            DbValue(plugin.InteriorCellCount),
-            DbValue(plugin.SourceLastWriteUtcTicks),
-            DbValue(plugin.SourceFileSizeBytes),
-            plugin.LastCheckedUtc,
-            DbValue(plugin.LastImportedUtc),
-            DbValue(plugin.InvalidatedAtUtc));
+            new
+            {
+                plugin.ModKey,
+                plugin.GameRelease,
+                LoadOrderIndex = DbValue(plugin.LoadOrderIndex),
+                plugin.PluginFileName,
+                PluginPath = DbValue(plugin.PluginPath),
+                Enabled = plugin.Enabled ? 1 : 0,
+                ExistsOnDisk = plugin.ExistsOnDisk ? 1 : 0,
+                plugin.ImportState,
+                HeaderFlags = DbValue(plugin.HeaderFlags),
+                FormVersion = DbValue(plugin.FormVersion),
+                Author = DbValue(plugin.Author),
+                Branch = DbValue(plugin.Branch),
+                InteriorCellCount = DbValue(plugin.InteriorCellCount),
+                SourceLastWriteUtcTicks = DbValue(plugin.SourceLastWriteUtcTicks),
+                SourceFileSizeBytes = DbValue(plugin.SourceFileSizeBytes),
+                plugin.LastCheckedUtc,
+                LastImportedUtc = DbValue(plugin.LastImportedUtc),
+                InvalidatedAtUtc = DbValue(plugin.InvalidatedAtUtc)
+            });
     }
 
     public void UpsertMissingPlaceholder(IDatabase database, string modKey, string checkedAtUtc)
@@ -193,19 +204,22 @@ public class PluginRepository : IPluginRepository
                 ImportState,
                 LastCheckedUtc
             )
-            VALUES (@0, @1, NULL, @2, 0, 0, @3, @4)
+            VALUES (@ModKey, @GameRelease, NULL, @PluginFileName, 0, 0, @ImportState, @LastCheckedUtc)
             ON CONFLICT(ModKey) DO NOTHING;
             """,
-            modKey,
-            "Starfield",
-            modKey,
-            PluginImportState.Missing.ToString(),
-            checkedAtUtc);
+            new
+            {
+                ModKey = modKey,
+                GameRelease = "Starfield",
+                PluginFileName = modKey,
+                ImportState = PluginImportState.Missing.ToString(),
+                LastCheckedUtc = checkedAtUtc
+            });
     }
 
     public void ReplaceMasterReferences(IDatabase database, string modKey, IList<PluginMasterReferenceDTO> masterReferences)
     {
-        database.Execute("DELETE FROM PluginMasterReferences WHERE ModKey = @0 COLLATE NOCASE;", modKey);
+        database.Execute("DELETE FROM PluginMasterReferences WHERE ModKey = @ModKey COLLATE NOCASE;", new { ModKey = modKey });
 
         foreach (var masterReference in masterReferences)
         {
@@ -218,13 +232,16 @@ public class PluginRepository : IPluginRepository
                     ParentLoadOrderIndex,
                     ImportedAtUtc
                 )
-                VALUES (@0, @1, @2, @3, @4);
+                VALUES (@ModKey, @ParentModKey, @MasterReferenceIndex, @ParentLoadOrderIndex, @ImportedAtUtc);
                 """,
-                masterReference.ModKey,
-                masterReference.ParentModKey,
-                masterReference.MasterReferenceIndex,
-                DbValue(masterReference.ParentLoadOrderIndex),
-                masterReference.ImportedAtUtc);
+                new
+                {
+                    masterReference.ModKey,
+                    masterReference.ParentModKey,
+                    masterReference.MasterReferenceIndex,
+                    ParentLoadOrderIndex = DbValue(masterReference.ParentLoadOrderIndex),
+                    masterReference.ImportedAtUtc
+                });
         }
     }
 
@@ -252,13 +269,11 @@ public class PluginRepository : IPluginRepository
                 UPDATE Plugins
                 SET Enabled = 0,
                     ExistsOnDisk = 0,
-                    ImportState = @0,
-                    LastCheckedUtc = @1
-                WHERE ModKey = @2;
+                    ImportState = @ImportState,
+                    LastCheckedUtc = @LastCheckedUtc
+                WHERE ModKey = @ModKey;
                 """,
-                PluginImportState.Missing.ToString(),
-                checkedAtUtc,
-                plugin.ModKey);
+                new { ImportState = PluginImportState.Missing.ToString(), LastCheckedUtc = checkedAtUtc, plugin.ModKey });
         }
     }
 

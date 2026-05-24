@@ -2,9 +2,10 @@ using SFRecordCompareEngine.Core.Database;
 using SFRecordCompareEngine.Core.Database.Interfaces;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.DTOs.Records;
+using SFRecordCompareEngine.Core.Importers;
+using SFRecordCompareEngine.Core.Importers.Interfaces;
 using SFRecordCompareEngine.Core.Models.Database;
 using SFRecordCompareEngine.Core.Repositories;
-using SFRecordCompareEngine.Core.Services;
 using SFRecordCompareEngine.Migrations;
 using Shouldly;
 
@@ -50,12 +51,12 @@ public class SimpleMajorRecordImporterTests : IDisposable
         Import(database, "000005", "Static", new StaticRecordImporter(new StaticRecordRepository()), new TestObjectRecord("Example Static"), importedAtUtc);
         Import(database, "000006", "StaticCollection", new StaticCollectionRecordImporter(new StaticCollectionRepository()), new TestObjectRecord("Example Collection"), importedAtUtc);
 
-        var keyword = database.First<KeywordDTO>("SELECT * FROM Keyword WHERE FormID = @0;", "000001");
+        var keyword = database.First<KeywordDTO>("SELECT * FROM Keyword WHERE FormID = @FormId;", new { FormId = "000001" });
         keyword.Name.ShouldBe("Ecliptic");
         keyword.Color.ShouldBe("#00FFFFFF");
         keyword.KeywordType.ShouldBe("Faction");
         keyword.FNAM.ShouldBe("0x00000000");
-        var faction = database.First<FactionDTO>("SELECT * FROM Faction WHERE FormID = @0;", "000002");
+        var faction = database.First<FactionDTO>("SELECT * FROM Faction WHERE FormID = @FormId;", new { FormId = "000002" });
         faction.Name.ShouldBe("Crimson Fleet");
         faction.KeywordFormKey.ShouldBe("0546E0:Starfield.esm");
         faction.Flags.ShouldBe("HiddenFromPC, TrackCrime, IgnoreMurder");
@@ -71,12 +72,12 @@ public class SimpleMajorRecordImporterTests : IDisposable
         faction.VendorValuesEndHour.ShouldBe(24);
         faction.VendorValuesBuysStolenItems.ShouldBe(1);
         faction.VendorValuesBuysNonStolenItems.ShouldBe(1);
-        database.ExecuteScalar<int>("SELECT COUNT(*) FROM FactionRelation WHERE FormID = @0;", "000002").ShouldBe(3);
-        database.ExecuteScalar<string>("SELECT Reaction FROM FactionRelation WHERE FormID = @0 AND TargetFormKey = @1;", "000002", "15923E:Starfield.esm").ShouldBeNull();
-        database.ExecuteScalar<string>("SELECT Name FROM Message WHERE FormID = @0;", "000003").ShouldBe("Example Message");
-        database.ExecuteScalar<string>("SELECT Name FROM GameplayOptionsGroup WHERE FormID = @0;", "000004").ShouldBe("Example Group");
-        database.ExecuteScalar<string>("SELECT ObjectBounds FROM Static WHERE FormID = @0;", "000005").ShouldBe("Bounds");
-        database.ExecuteScalar<string>("SELECT Model FROM StaticCollection WHERE FormID = @0;", "000006").ShouldBe("Model");
+        database.ExecuteScalar<int>("SELECT COUNT(*) FROM FactionRelation WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe(3);
+        database.ExecuteScalar<string>("SELECT Reaction FROM FactionRelation WHERE FormID = @FormId AND TargetFormKey = @TargetFormKey;", new { FormId = "000002", TargetFormKey = "15923E:Starfield.esm" }).ShouldBeNull();
+        database.ExecuteScalar<string>("SELECT Name FROM Message WHERE FormID = @FormId;", new { FormId = "000003" }).ShouldBe("Example Message");
+        database.ExecuteScalar<string>("SELECT Name FROM GameplayOptionsGroup WHERE FormID = @FormId;", new { FormId = "000004" }).ShouldBe("Example Group");
+        database.ExecuteScalar<string>("SELECT ObjectBounds FROM Static WHERE FormID = @FormId;", new { FormId = "000005" }).ShouldBe("Bounds");
+        database.ExecuteScalar<string>("SELECT Model FROM StaticCollection WHERE FormID = @FormId;", new { FormId = "000006" }).ShouldBe("Model");
     }
 
     [Fact]
@@ -91,14 +92,14 @@ public class SimpleMajorRecordImporterTests : IDisposable
         Import(database, "000009", "GameplayOption", new GameplayOptionRecordImporter(new GameplayOptionRepository()), new TestKeywordNamedRecord("Example Option"), importedAtUtc);
         Import(database, "00000A", "MagicEffect", new MagicEffectRecordImporter(new MagicEffectRepository()), new TestKeywordNamedRecord("Example Effect"), importedAtUtc);
 
-        database.ExecuteScalar<string>("SELECT Destructible FROM Activator WHERE FormID = @0;", "000007").ShouldBe("Destructible");
-        database.ExecuteScalar<string>("SELECT Destructible FROM MiscItem WHERE FormID = @0;", "000008").ShouldBe("Destructible");
-        database.ExecuteScalar<string>("SELECT Name FROM GameplayOption WHERE FormID = @0;", "000009").ShouldBe("Example Option");
-        database.ExecuteScalar<string>("SELECT Name FROM MagicEffect WHERE FormID = @0;", "00000A").ShouldBe("Example Effect");
-        database.ExecuteScalar<int>("SELECT COUNT(*) FROM ActivatorKeyword WHERE FormID = @0;", "000007").ShouldBe(2);
-        database.ExecuteScalar<int>("SELECT COUNT(*) FROM MiscItemKeyword WHERE FormID = @0;", "000008").ShouldBe(2);
-        database.ExecuteScalar<int>("SELECT COUNT(*) FROM GameplayOptionKeyword WHERE FormID = @0;", "000009").ShouldBe(2);
-        database.ExecuteScalar<int>("SELECT COUNT(*) FROM MagicEffectKeyword WHERE FormID = @0;", "00000A").ShouldBe(2);
+        database.ExecuteScalar<string>("SELECT Destructible FROM Activator WHERE FormID = @FormId;", new { FormId = "000007" }).ShouldBe("Destructible");
+        database.ExecuteScalar<string>("SELECT Destructible FROM MiscItem WHERE FormID = @FormId;", new { FormId = "000008" }).ShouldBe("Destructible");
+        database.ExecuteScalar<string>("SELECT Name FROM GameplayOption WHERE FormID = @FormId;", new { FormId = "000009" }).ShouldBe("Example Option");
+        database.ExecuteScalar<string>("SELECT Name FROM MagicEffect WHERE FormID = @FormId;", new { FormId = "00000A" }).ShouldBe("Example Effect");
+        database.ExecuteScalar<int>("SELECT COUNT(*) FROM ActivatorKeyword WHERE FormID = @FormId;", new { FormId = "000007" }).ShouldBe(2);
+        database.ExecuteScalar<int>("SELECT COUNT(*) FROM MiscItemKeyword WHERE FormID = @FormId;", new { FormId = "000008" }).ShouldBe(2);
+        database.ExecuteScalar<int>("SELECT COUNT(*) FROM GameplayOptionKeyword WHERE FormID = @FormId;", new { FormId = "000009" }).ShouldBe(2);
+        database.ExecuteScalar<int>("SELECT COUNT(*) FROM MagicEffectKeyword WHERE FormID = @FormId;", new { FormId = "00000A" }).ShouldBe(2);
     }
 
     [Fact]
@@ -110,14 +111,14 @@ public class SimpleMajorRecordImporterTests : IDisposable
 
         Import(database, "00000B", "Keyword", new KeywordRecordImporter(new KeywordRepository()), new TestKeywordRecord(null, "None"), importedAtUtc);
 
-        var keyword = database.First<KeywordDTO>("SELECT * FROM Keyword WHERE FormID = @0;", "00000B");
+        var keyword = database.First<KeywordDTO>("SELECT * FROM Keyword WHERE FormID = @FormId;", new { FormId = "00000B" });
         keyword.Name.ShouldBeNull();
         keyword.Color.ShouldBe("#00FFFFFF");
         keyword.KeywordType.ShouldBe("None");
         keyword.FNAM.ShouldBe("0x00000000");
     }
 
-    private void Import(NPoco.IDatabase database, string formId, string recordType, SFRecordCompareEngine.Core.Services.Interfaces.ITypedRecordDetailImporter importer, object record, string importedAtUtc)
+    private void Import(NPoco.IDatabase database, string formId, string recordType, ITypedRecordDetailImporter importer, object record, string importedAtUtc)
     {
         InsertHeader(database, formId, recordType);
         importer.Import(database, "Example.esm", formId, new RecordEnumerationDTO

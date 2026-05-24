@@ -11,19 +11,22 @@ public class StaticCollectionRepository : IStaticCollectionRepository
         database.Execute(
             """
             INSERT INTO StaticCollection (ModKey, FormID, Name, ObjectBounds, Model, ImportedAtUtc)
-            VALUES (@0, @1, @2, @3, @4, @5)
+            VALUES (@ModKey, @FormID, @Name, @ObjectBounds, @Model, @ImportedAtUtc)
             ON CONFLICT(ModKey, FormID) DO UPDATE SET
                 Name = excluded.Name,
                 ObjectBounds = excluded.ObjectBounds,
                 Model = excluded.Model,
                 ImportedAtUtc = excluded.ImportedAtUtc;
             """,
-            staticCollection.ModKey,
-            staticCollection.FormID,
-            DbValue(staticCollection.Name),
-            DbValue(staticCollection.ObjectBounds),
-            DbValue(staticCollection.Model),
-            staticCollection.ImportedAtUtc);
+            new
+            {
+                staticCollection.ModKey,
+                staticCollection.FormID,
+                Name = DbValue(staticCollection.Name),
+                ObjectBounds = DbValue(staticCollection.ObjectBounds),
+                Model = DbValue(staticCollection.Model),
+                staticCollection.ImportedAtUtc
+            });
     }
 
     private static object DbValue(object? value)

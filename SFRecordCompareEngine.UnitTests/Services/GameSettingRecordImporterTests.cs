@@ -2,6 +2,7 @@ using SFRecordCompareEngine.Core.Database;
 using SFRecordCompareEngine.Core.Database.Interfaces;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.DTOs.Records;
+using SFRecordCompareEngine.Core.Importers;
 using SFRecordCompareEngine.Core.Models.Database;
 using SFRecordCompareEngine.Core.Repositories;
 using SFRecordCompareEngine.Core.Services;
@@ -51,9 +52,8 @@ public class GameSettingRecordImporterTests : IDisposable
         }, importedAtUtc);
 
         var result = database.First<GameSettingDTO>(
-            "SELECT * FROM GameSetting WHERE ModKey = @0 COLLATE NOCASE AND FormID = @1;",
-            "Example.esm",
-            "000001");
+            "SELECT * FROM GameSetting WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
+            new { ModKey = "Example.esm", FormId = "000001" });
         result.SettingType.ShouldBe("String");
         result.TitleString.ShouldBe("Example Title");
         result.Data.ShouldBe("Example Value");

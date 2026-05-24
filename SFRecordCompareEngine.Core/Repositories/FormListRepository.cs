@@ -17,23 +17,25 @@ public class FormListRepository : IFormListRepository
                 AddToListFormKey,
                 ImportedAtUtc
             )
-            VALUES (@0, @1, @2, @3)
+            VALUES (@ModKey, @FormID, @AddToListFormKey, @ImportedAtUtc)
             ON CONFLICT(ModKey, FormID) DO UPDATE SET
                 AddToListFormKey = excluded.AddToListFormKey,
                 ImportedAtUtc = excluded.ImportedAtUtc;
             """,
-            formList.ModKey,
-            formList.FormID,
-            DbValue(formList.AddToListFormKey),
-            formList.ImportedAtUtc);
+            new
+            {
+                formList.ModKey,
+                formList.FormID,
+                AddToListFormKey = DbValue(formList.AddToListFormKey),
+                formList.ImportedAtUtc
+            });
     }
 
     public void ReplaceItems(IDatabase database, string modKey, string formId, IList<FormListItemDTO> items)
     {
         database.Execute(
-            "DELETE FROM FormListItem WHERE ModKey = @0 COLLATE NOCASE AND FormID = @1;",
-            modKey,
-            formId);
+            "DELETE FROM FormListItem WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
+            new { ModKey = modKey, FormId = formId });
 
         foreach (var item in items)
         {
@@ -46,13 +48,9 @@ public class FormListRepository : IFormListRepository
                     ItemFormKey,
                     ImportedAtUtc
                 )
-                VALUES (@0, @1, @2, @3, @4);
+                VALUES (@ModKey, @FormID, @ItemIndex, @ItemFormKey, @ImportedAtUtc);
                 """,
-                item.ModKey,
-                item.FormID,
-                item.ItemIndex,
-                item.ItemFormKey,
-                item.ImportedAtUtc);
+                new { item.ModKey, item.FormID, item.ItemIndex, item.ItemFormKey, item.ImportedAtUtc });
         }
     }
 
@@ -71,12 +69,11 @@ public class FormListRepository : IFormListRepository
                AND rh.FormID = fl.FormID
             INNER JOIN Plugins p
                 ON p.ModKey = fl.ModKey COLLATE NOCASE
-            WHERE fl.ModKey = @0 COLLATE NOCASE
-              AND p.ImportState = @1
+            WHERE fl.ModKey = @ModKey COLLATE NOCASE
+              AND p.ImportState = @ImportState
             ORDER BY rh.FormID ASC;
             """,
-            modKey,
-            PluginImportState.Current.ToString());
+            new { ModKey = modKey, ImportState = PluginImportState.Current.ToString() });
 
         return HydrateRecords(database, records);
     }
@@ -96,13 +93,11 @@ public class FormListRepository : IFormListRepository
                AND rh.FormID = fl.FormID
             INNER JOIN Plugins p
                 ON p.ModKey = fl.ModKey COLLATE NOCASE
-            WHERE fl.ModKey = @0 COLLATE NOCASE
-              AND fl.FormID = @1
-              AND p.ImportState = @2;
+            WHERE fl.ModKey = @ModKey COLLATE NOCASE
+              AND fl.FormID = @FormId
+              AND p.ImportState = @ImportState;
             """,
-            modKey,
-            formId,
-            PluginImportState.Current.ToString());
+            new { ModKey = modKey, FormId = formId, ImportState = PluginImportState.Current.ToString() });
 
         return HydrateRecords(database, records).FirstOrDefault();
     }
@@ -142,20 +137,23 @@ public class FormListRepository : IFormListRepository
             INNER JOIN RecordHeader rh
                 ON rh.ModKey = fl.ModKey COLLATE NOCASE
                AND rh.FormID = fl.FormID
-            WHERE h.ChildModKey = @0 COLLATE NOCASE
-              AND p.ImportState = @1
-              AND (@2 IS NULL OR fl.FormID = @2)
-              AND (@3 IS NULL OR rh.EditorID LIKE @3 COLLATE NOCASE)
+            WHERE h.ChildModKey = @SelectedModKey COLLATE NOCASE
+              AND p.ImportState = @ImportState
+              AND (@FormId IS NULL OR fl.FormID = @FormId)
+              AND (@EditorIdPattern IS NULL OR rh.EditorID LIKE @EditorIdPattern COLLATE NOCASE)
             ORDER BY
                 h.HierarchyLoadOrderIndex IS NULL,
                 h.HierarchyLoadOrderIndex ASC,
                 h.IsChild ASC,
                 rh.FormID ASC;
             """,
-            selectedModKey,
-            PluginImportState.Current.ToString(),
-            DbValue(formId),
-            DbValue(editorIdPattern));
+            new
+            {
+                SelectedModKey = selectedModKey,
+                ImportState = PluginImportState.Current.ToString(),
+                FormId = DbValue(formId),
+                EditorIdPattern = DbValue(editorIdPattern)
+            });
     }
 
     private static IList<FormListRecordDTO> HydrateRecords(IDatabase database, IList<FormListJoinedRow> rows)
@@ -167,12 +165,11 @@ public class FormListRepository : IFormListRepository
                 """
                 SELECT *
                 FROM FormListItem
-                WHERE ModKey = @0 COLLATE NOCASE
-                  AND FormID = @1
+                WHERE ModKey = @ModKey COLLATE NOCASE
+                  AND FormID = @FormID
                 ORDER BY ItemIndex ASC;
                 """,
-                row.ModKey,
-                row.FormID);
+                new { row.ModKey, row.FormID });
 
             results.Add(new FormListRecordDTO
             {

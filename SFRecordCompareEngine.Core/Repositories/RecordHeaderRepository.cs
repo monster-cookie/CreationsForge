@@ -15,8 +15,8 @@ public class RecordHeaderRepository : IRecordHeaderRepository
             FROM RecordHeader rh
             INNER JOIN Plugins p
                 ON p.ModKey = rh.ModKey COLLATE NOCASE
-            WHERE rh.FormKey = @0 COLLATE NOCASE
-              AND p.ImportState = @1
+            WHERE rh.FormKey = @FormKey COLLATE NOCASE
+              AND p.ImportState = @ImportState
               AND p.Enabled = 1
               AND p.ExistsOnDisk = 1
             ORDER BY
@@ -24,8 +24,11 @@ public class RecordHeaderRepository : IRecordHeaderRepository
                 p.LoadOrderIndex DESC,
                 rh.PluginFileName COLLATE NOCASE DESC;
             """,
-            formKey,
-            PluginImportState.Current.ToString());
+            new
+            {
+                FormKey = formKey, 
+                ImportState = nameof(PluginImportState.Current)
+            });
     }
 
     public IList<RecordHeaderDTO> GetByHierarchy(IDatabase database, string selectedModKey, string? formId, string? editorId, string? recordType)
@@ -38,22 +41,25 @@ public class RecordHeaderRepository : IRecordHeaderRepository
                 ON p.ModKey = h.HierarchyModKey COLLATE NOCASE
             INNER JOIN RecordHeader rh
                 ON rh.ModKey = h.HierarchyModKey COLLATE NOCASE
-            WHERE h.ChildModKey = @0 COLLATE NOCASE
-              AND p.ImportState = @1
-              AND (@2 IS NULL OR rh.FormID = @2)
-              AND (@3 IS NULL OR rh.EditorID = @3 COLLATE NOCASE)
-              AND (@4 IS NULL OR rh.RecordType = @4)
+            WHERE h.ChildModKey = @SelectedModKey COLLATE NOCASE
+              AND p.ImportState = @ImportState
+              AND (@FormId IS NULL OR rh.FormID = @FormId)
+              AND (@EditorId IS NULL OR rh.EditorID = @EditorId COLLATE NOCASE)
+              AND (@RecordType IS NULL OR rh.RecordType = @RecordType)
             ORDER BY
                 h.HierarchyLoadOrderIndex IS NULL,
                 h.HierarchyLoadOrderIndex ASC,
                 h.IsChild ASC,
                 rh.FormID ASC;
             """,
-            selectedModKey,
-            PluginImportState.Current.ToString(),
-            DbValue(formId),
-            DbValue(editorId),
-            DbValue(recordType));
+            new
+            {
+                SelectedModKey = selectedModKey,
+                ImportState = nameof(PluginImportState.Current),
+                FormId = DbValue(formId),
+                EditorId = DbValue(editorId),
+                RecordType = DbValue(recordType)
+            });
     }
 
     public RecordHeaderDTO? GetWinningOverride(IDatabase database, string selectedModKey, string? formId, string? editorId, string? recordType)
@@ -78,7 +84,7 @@ public class RecordHeaderRepository : IRecordHeaderRepository
                 VersionControl,
                 ImportedAtUtc
             )
-            VALUES (@0, @1, @2, @3, @4, @5, @6, @7, @8, @9, @10)
+            VALUES (@ModKey, @FormID, @RecordType, @FormKey, @EditorID, @PluginFileName, @FormVersion, @StarfieldMajorRecordFlags, @Version2, @VersionControl, @ImportedAtUtc)
             ON CONFLICT(ModKey, FormID) DO UPDATE SET
                 RecordType = excluded.RecordType,
                 FormKey = excluded.FormKey,
@@ -90,17 +96,20 @@ public class RecordHeaderRepository : IRecordHeaderRepository
                 VersionControl = excluded.VersionControl,
                 ImportedAtUtc = excluded.ImportedAtUtc;
             """,
-            recordHeader.ModKey,
-            recordHeader.FormID,
-            recordHeader.RecordType,
-            recordHeader.FormKey,
-            DbValue(recordHeader.EditorID),
-            recordHeader.PluginFileName,
-            DbValue(recordHeader.FormVersion),
-            DbValue(recordHeader.StarfieldMajorRecordFlags),
-            DbValue(recordHeader.Version2),
-            DbValue(recordHeader.VersionControl),
-            recordHeader.ImportedAtUtc);
+            new
+            {
+                recordHeader.ModKey,
+                recordHeader.FormID,
+                recordHeader.RecordType,
+                recordHeader.FormKey,
+                EditorID = DbValue(recordHeader.EditorID),
+                recordHeader.PluginFileName,
+                FormVersion = DbValue(recordHeader.FormVersion),
+                StarfieldMajorRecordFlags = DbValue(recordHeader.StarfieldMajorRecordFlags),
+                Version2 = DbValue(recordHeader.Version2),
+                VersionControl = DbValue(recordHeader.VersionControl),
+                recordHeader.ImportedAtUtc
+            });
     }
 
     public void DeleteByModKey(IDatabase database, string modKey)
@@ -108,9 +117,9 @@ public class RecordHeaderRepository : IRecordHeaderRepository
         database.Execute(
             """
             DELETE FROM RecordHeader
-            WHERE ModKey = @0 COLLATE NOCASE;
+            WHERE ModKey = @ModKey COLLATE NOCASE;
             """,
-            modKey);
+            new { ModKey = modKey });
     }
 
     public void DeleteByModKeyAndRecordType(IDatabase database, string modKey, string recordType)
@@ -118,11 +127,14 @@ public class RecordHeaderRepository : IRecordHeaderRepository
         database.Execute(
             """
             DELETE FROM RecordHeader
-            WHERE ModKey = @0 COLLATE NOCASE
-              AND RecordType = @1;
+            WHERE ModKey = @ModKey COLLATE NOCASE
+              AND RecordType = @RecordType;
             """,
-            modKey,
-            recordType);
+            new
+            {
+                ModKey = modKey, 
+                RecordType = recordType
+            });
     }
 
     private static object DbValue(object? value)

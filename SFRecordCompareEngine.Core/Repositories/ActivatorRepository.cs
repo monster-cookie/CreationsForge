@@ -11,7 +11,7 @@ public class ActivatorRepository : IActivatorRepository
         database.Execute(
             """
             INSERT INTO Activator (ModKey, FormID, Name, ObjectBounds, Model, Destructible, ImportedAtUtc)
-            VALUES (@0, @1, @2, @3, @4, @5, @6)
+            VALUES (@ModKey, @FormID, @Name, @ObjectBounds, @Model, @Destructible, @ImportedAtUtc)
             ON CONFLICT(ModKey, FormID) DO UPDATE SET
                 Name = excluded.Name,
                 ObjectBounds = excluded.ObjectBounds,
@@ -19,13 +19,16 @@ public class ActivatorRepository : IActivatorRepository
                 Destructible = excluded.Destructible,
                 ImportedAtUtc = excluded.ImportedAtUtc;
             """,
-            activator.ModKey,
-            activator.FormID,
-            DbValue(activator.Name),
-            DbValue(activator.ObjectBounds),
-            DbValue(activator.Model),
-            DbValue(activator.Destructible),
-            activator.ImportedAtUtc);
+            new
+            {
+                activator.ModKey,
+                activator.FormID,
+                Name = DbValue(activator.Name),
+                ObjectBounds = DbValue(activator.ObjectBounds),
+                Model = DbValue(activator.Model),
+                Destructible = DbValue(activator.Destructible),
+                activator.ImportedAtUtc
+            });
     }
 
     public void ReplaceKeywords(IDatabase database, string modKey, string formId, IList<RecordKeywordDTO> keywords)
@@ -36,22 +39,17 @@ public class ActivatorRepository : IActivatorRepository
     private static void ReplaceKeywordRows(IDatabase database, string tableName, string modKey, string formId, IList<RecordKeywordDTO> keywords)
     {
         database.Execute(
-            $"DELETE FROM {tableName} WHERE ModKey = @0 COLLATE NOCASE AND FormID = @1;",
-            modKey,
-            formId);
+            $"DELETE FROM {tableName} WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
+            new { ModKey = modKey, FormId = formId });
 
         foreach (var keyword in keywords)
         {
             database.Execute(
                 $"""
                 INSERT INTO {tableName} (ModKey, FormID, ItemIndex, KeywordFormKey, ImportedAtUtc)
-                VALUES (@0, @1, @2, @3, @4);
+                VALUES (@ModKey, @FormID, @ItemIndex, @KeywordFormKey, @ImportedAtUtc);
                 """,
-                keyword.ModKey,
-                keyword.FormID,
-                keyword.ItemIndex,
-                keyword.KeywordFormKey,
-                keyword.ImportedAtUtc);
+                new { keyword.ModKey, keyword.FormID, keyword.ItemIndex, keyword.KeywordFormKey, keyword.ImportedAtUtc });
         }
     }
 

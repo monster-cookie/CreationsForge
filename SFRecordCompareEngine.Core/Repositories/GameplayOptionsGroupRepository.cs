@@ -11,15 +11,18 @@ public class GameplayOptionsGroupRepository : IGameplayOptionsGroupRepository
         database.Execute(
             """
             INSERT INTO GameplayOptionsGroup (ModKey, FormID, Name, ImportedAtUtc)
-            VALUES (@0, @1, @2, @3)
+            VALUES (@ModKey, @FormID, @Name, @ImportedAtUtc)
             ON CONFLICT(ModKey, FormID) DO UPDATE SET
                 Name = excluded.Name,
                 ImportedAtUtc = excluded.ImportedAtUtc;
             """,
-            gameplayOptionsGroup.ModKey,
-            gameplayOptionsGroup.FormID,
-            DbValue(gameplayOptionsGroup.Name),
-            gameplayOptionsGroup.ImportedAtUtc);
+            new
+            {
+                gameplayOptionsGroup.ModKey,
+                gameplayOptionsGroup.FormID,
+                Name = DbValue(gameplayOptionsGroup.Name),
+                gameplayOptionsGroup.ImportedAtUtc
+            });
     }
 
     private static object DbValue(object? value)

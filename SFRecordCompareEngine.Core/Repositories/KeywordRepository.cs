@@ -19,7 +19,7 @@ public class KeywordRepository : IKeywordRepository
                 FNAM,
                 ImportedAtUtc
             )
-            VALUES (@0, @1, @2, @3, @4, @5, @6)
+            VALUES (@ModKey, @FormID, @Name, @Color, @KeywordType, @FNAM, @ImportedAtUtc)
             ON CONFLICT(ModKey, FormID) DO UPDATE SET
                 Name = excluded.Name,
                 Color = excluded.Color,
@@ -27,13 +27,16 @@ public class KeywordRepository : IKeywordRepository
                 FNAM = excluded.FNAM,
                 ImportedAtUtc = excluded.ImportedAtUtc;
             """,
-            keyword.ModKey,
-            keyword.FormID,
-            DbValue(keyword.Name),
-            DbValue(keyword.Color),
-            DbValue(keyword.KeywordType),
-            DbValue(keyword.FNAM),
-            keyword.ImportedAtUtc);
+            new
+            {
+                keyword.ModKey,
+                keyword.FormID,
+                Name = DbValue(keyword.Name),
+                Color = DbValue(keyword.Color),
+                KeywordType = DbValue(keyword.KeywordType),
+                FNAM = DbValue(keyword.FNAM),
+                keyword.ImportedAtUtc
+            });
     }
 
     private static object DbValue(object? value)

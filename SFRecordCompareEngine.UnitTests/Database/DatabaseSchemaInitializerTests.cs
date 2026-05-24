@@ -38,8 +38,8 @@ public class DatabaseSchemaInitializerTests : IDisposable
 
         using var database = ConnectionFactory.OpenDatabase();
         var count = database.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @0;",
-            "Plugins");
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @TableName;",
+            new { TableName = "Plugins" });
 
         count.ShouldBe(1);
     }
@@ -51,8 +51,8 @@ public class DatabaseSchemaInitializerTests : IDisposable
 
         using var database = ConnectionFactory.OpenDatabase();
         var count = database.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @0;",
-            "PluginMasterReferences");
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @TableName;",
+            new { TableName = "PluginMasterReferences" });
 
         count.ShouldBe(1);
     }
@@ -64,8 +64,8 @@ public class DatabaseSchemaInitializerTests : IDisposable
 
         using var database = ConnectionFactory.OpenDatabase();
         var count = database.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @0;",
-            "RecordHeader");
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @TableName;",
+            new { TableName = "RecordHeader" });
 
         count.ShouldBe(1);
     }
@@ -77,8 +77,8 @@ public class DatabaseSchemaInitializerTests : IDisposable
 
         using var database = ConnectionFactory.OpenDatabase();
         var count = database.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @0;",
-            "FormList");
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @TableName;",
+            new { TableName = "FormList" });
 
         count.ShouldBe(1);
     }
@@ -90,8 +90,8 @@ public class DatabaseSchemaInitializerTests : IDisposable
 
         using var database = ConnectionFactory.OpenDatabase();
         var count = database.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @0;",
-            "FormListItem");
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @TableName;",
+            new { TableName = "FormListItem" });
 
         count.ShouldBe(1);
     }
@@ -103,8 +103,8 @@ public class DatabaseSchemaInitializerTests : IDisposable
 
         using var database = ConnectionFactory.OpenDatabase();
         var count = database.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @0;",
-            "GameSetting");
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @TableName;",
+            new { TableName = "GameSetting" });
 
         count.ShouldBe(1);
     }
@@ -120,8 +120,8 @@ public class DatabaseSchemaInitializerTests : IDisposable
 
         using var database = ConnectionFactory.OpenDatabase();
         var count = database.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @0;",
-            tableName);
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @TableName;",
+            new { TableName = tableName });
 
         count.ShouldBe(1);
     }
@@ -133,8 +133,8 @@ public class DatabaseSchemaInitializerTests : IDisposable
 
         using var database = ConnectionFactory.OpenDatabase();
         var count = database.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @0;",
-            "SchemaVersions");
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @TableName;",
+            new { TableName = "SchemaVersions" });
 
         count.ShouldBe(1);
     }
@@ -146,8 +146,8 @@ public class DatabaseSchemaInitializerTests : IDisposable
 
         using var database = ConnectionFactory.OpenDatabase();
         var count = database.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM SchemaVersions WHERE ScriptName LIKE @0;",
-            "%001_CreatePluginSchema.sql");
+            "SELECT COUNT(*) FROM SchemaVersions WHERE ScriptName LIKE @ScriptNamePattern;",
+            new { ScriptNamePattern = "%001_CreatePluginSchema.sql" });
 
         count.ShouldBe(1);
     }
@@ -159,8 +159,8 @@ public class DatabaseSchemaInitializerTests : IDisposable
 
         using var database = ConnectionFactory.OpenDatabase();
         var count = database.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM SchemaVersions WHERE ScriptName LIKE @0;",
-            "%002_AddSimpleMajorRecordDetailTables.sql");
+            "SELECT COUNT(*) FROM SchemaVersions WHERE ScriptName LIKE @ScriptNamePattern;",
+            new { ScriptNamePattern = "%002_AddSimpleMajorRecordDetailTables.sql" });
 
         count.ShouldBe(1);
     }
@@ -172,8 +172,8 @@ public class DatabaseSchemaInitializerTests : IDisposable
 
         using var database = ConnectionFactory.OpenDatabase();
         var count = database.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM SchemaVersions WHERE ScriptName LIKE @0;",
-            "%003_ExtendFactionDetailFields.sql");
+            "SELECT COUNT(*) FROM SchemaVersions WHERE ScriptName LIKE @ScriptNamePattern;",
+            new { ScriptNamePattern = "%003_ExtendFactionDetailFields.sql" });
 
         count.ShouldBe(1);
     }
@@ -185,8 +185,8 @@ public class DatabaseSchemaInitializerTests : IDisposable
 
         using var database = ConnectionFactory.OpenDatabase();
         var count = database.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM SchemaVersions WHERE ScriptName LIKE @0;",
-            "%004_ExtendKeywordDetailFields.sql");
+            "SELECT COUNT(*) FROM SchemaVersions WHERE ScriptName LIKE @ScriptNamePattern;",
+            new { ScriptNamePattern = "%004_ExtendKeywordDetailFields.sql" });
 
         count.ShouldBe(1);
     }
@@ -213,8 +213,8 @@ public class DatabaseSchemaInitializerTests : IDisposable
 
         using var database = ConnectionFactory.OpenDatabase();
         var count = database.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @0;",
-            tableName);
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = @TableName;",
+            new { TableName = tableName });
 
         count.ShouldBe(1);
     }
@@ -229,14 +229,17 @@ public class DatabaseSchemaInitializerTests : IDisposable
         Should.NotThrow(() => database.Execute(
             """
             INSERT INTO Plugins (ModKey, GameRelease, LoadOrderIndex, PluginFileName, ImportState, LastCheckedUtc)
-            VALUES (@0, @1, @2, @3, @4, @5);
+            VALUES (@ModKey, @GameRelease, @LoadOrderIndex, @PluginFileName, @ImportState, @LastCheckedUtc);
             """,
-            "BlueprintShips.esm",
-            "Starfield",
-            1,
-            "BlueprintShips.esm",
-            "Unsupported",
-            DateTimeOffset.UtcNow.ToString("O")));
+            new
+            {
+                ModKey = "BlueprintShips.esm",
+                GameRelease = "Starfield",
+                LoadOrderIndex = 1,
+                PluginFileName = "BlueprintShips.esm",
+                ImportState = "Unsupported",
+                LastCheckedUtc = DateTimeOffset.UtcNow.ToString("O")
+            }));
     }
 
     [Fact]
@@ -268,11 +271,14 @@ public class DatabaseSchemaInitializerTests : IDisposable
         Should.Throw<Exception>(() => database.Execute(
             """
             INSERT INTO FormList (ModKey, FormID, AddToListFormKey, ImportedAtUtc)
-            VALUES (@0, @1, NULL, @2);
+            VALUES (@ModKey, @FormID, NULL, @ImportedAtUtc);
             """,
-            "Example.esm",
-            "000001",
-            DateTimeOffset.UtcNow.ToString("O")));
+            new
+            {
+                ModKey = "Example.esm",
+                FormID = "000001",
+                ImportedAtUtc = DateTimeOffset.UtcNow.ToString("O")
+            }));
     }
 
     [Fact]
@@ -285,13 +291,16 @@ public class DatabaseSchemaInitializerTests : IDisposable
         Should.Throw<Exception>(() => database.Execute(
             """
             INSERT INTO FormListItem (ModKey, FormID, ItemIndex, ItemFormKey, ImportedAtUtc)
-            VALUES (@0, @1, @2, @3, @4);
+            VALUES (@ModKey, @FormID, @ItemIndex, @ItemFormKey, @ImportedAtUtc);
             """,
-            "Example.esm",
-            "000001",
-            0,
-            "000002:Example.esm",
-            DateTimeOffset.UtcNow.ToString("O")));
+            new
+            {
+                ModKey = "Example.esm",
+                FormID = "000001",
+                ItemIndex = 0,
+                ItemFormKey = "000002:Example.esm",
+                ImportedAtUtc = DateTimeOffset.UtcNow.ToString("O")
+            }));
     }
 
     [Fact]
@@ -304,44 +313,29 @@ public class DatabaseSchemaInitializerTests : IDisposable
         database.Execute(
             """
             INSERT INTO Plugins (ModKey, GameRelease, LoadOrderIndex, PluginFileName, LastCheckedUtc)
-            VALUES (@0, @1, @2, @3, @4);
+            VALUES (@ModKey, @GameRelease, @LoadOrderIndex, @PluginFileName, @LastCheckedUtc);
             """,
-            "Example.esm",
-            "Starfield",
-            1,
-            "Example.esm",
-            importedAtUtc);
+            new { ModKey = "Example.esm", GameRelease = "Starfield", LoadOrderIndex = 1, PluginFileName = "Example.esm", LastCheckedUtc = importedAtUtc });
         database.Execute(
             """
             INSERT INTO RecordHeader (ModKey, FormID, RecordType, FormKey, PluginFileName, ImportedAtUtc)
-            VALUES (@0, @1, @2, @3, @4, @5);
+            VALUES (@ModKey, @FormID, @RecordType, @FormKey, @PluginFileName, @ImportedAtUtc);
             """,
-            "Example.esm",
-            "000001",
-            "FormList",
-            "000001:Example.esm",
-            "Example.esm",
-            importedAtUtc);
+            new { ModKey = "Example.esm", FormID = "000001", RecordType = "FormList", FormKey = "000001:Example.esm", PluginFileName = "Example.esm", ImportedAtUtc = importedAtUtc });
         database.Execute(
             """
             INSERT INTO FormList (ModKey, FormID, AddToListFormKey, ImportedAtUtc)
-            VALUES (@0, @1, NULL, @2);
+            VALUES (@ModKey, @FormID, NULL, @ImportedAtUtc);
             """,
-            "Example.esm",
-            "000001",
-            importedAtUtc);
+            new { ModKey = "Example.esm", FormID = "000001", ImportedAtUtc = importedAtUtc });
         database.Execute(
             """
             INSERT INTO FormListItem (ModKey, FormID, ItemIndex, ItemFormKey, ImportedAtUtc)
-            VALUES (@0, @1, @2, @3, @4);
+            VALUES (@ModKey, @FormID, @ItemIndex, @ItemFormKey, @ImportedAtUtc);
             """,
-            "Example.esm",
-            "000001",
-            0,
-            "000002:Example.esm",
-            importedAtUtc);
+            new { ModKey = "Example.esm", FormID = "000001", ItemIndex = 0, ItemFormKey = "000002:Example.esm", ImportedAtUtc = importedAtUtc });
 
-        database.Execute("DELETE FROM RecordHeader WHERE ModKey = @0 AND FormID = @1;", "Example.esm", "000001");
+        database.Execute("DELETE FROM RecordHeader WHERE ModKey = @ModKey AND FormID = @FormID;", new { ModKey = "Example.esm", FormID = "000001" });
 
         database.ExecuteScalar<int>("SELECT COUNT(*) FROM FormList;").ShouldBe(0);
         database.ExecuteScalar<int>("SELECT COUNT(*) FROM FormListItem;").ShouldBe(0);
@@ -357,36 +351,23 @@ public class DatabaseSchemaInitializerTests : IDisposable
         database.Execute(
             """
             INSERT INTO Plugins (ModKey, GameRelease, LoadOrderIndex, PluginFileName, LastCheckedUtc)
-            VALUES (@0, @1, @2, @3, @4);
+            VALUES (@ModKey, @GameRelease, @LoadOrderIndex, @PluginFileName, @LastCheckedUtc);
             """,
-            "Example.esm",
-            "Starfield",
-            1,
-            "Example.esm",
-            importedAtUtc);
+            new { ModKey = "Example.esm", GameRelease = "Starfield", LoadOrderIndex = 1, PluginFileName = "Example.esm", LastCheckedUtc = importedAtUtc });
         database.Execute(
             """
             INSERT INTO RecordHeader (ModKey, FormID, RecordType, FormKey, PluginFileName, ImportedAtUtc)
-            VALUES (@0, @1, @2, @3, @4, @5);
+            VALUES (@ModKey, @FormID, @RecordType, @FormKey, @PluginFileName, @ImportedAtUtc);
             """,
-            "Example.esm",
-            "000001",
-            "GameSetting",
-            "000001:Example.esm",
-            "Example.esm",
-            importedAtUtc);
+            new { ModKey = "Example.esm", FormID = "000001", RecordType = "GameSetting", FormKey = "000001:Example.esm", PluginFileName = "Example.esm", ImportedAtUtc = importedAtUtc });
         database.Execute(
             """
             INSERT INTO GameSetting (ModKey, FormID, SettingType, Data, ImportedAtUtc)
-            VALUES (@0, @1, @2, @3, @4);
+            VALUES (@ModKey, @FormID, @SettingType, @Data, @ImportedAtUtc);
             """,
-            "Example.esm",
-            "000001",
-            "String",
-            "Value",
-            importedAtUtc);
+            new { ModKey = "Example.esm", FormID = "000001", SettingType = "String", Data = "Value", ImportedAtUtc = importedAtUtc });
 
-        database.Execute("DELETE FROM RecordHeader WHERE ModKey = @0 AND FormID = @1;", "Example.esm", "000001");
+        database.Execute("DELETE FROM RecordHeader WHERE ModKey = @ModKey AND FormID = @FormID;", new { ModKey = "Example.esm", FormID = "000001" });
 
         database.ExecuteScalar<int>("SELECT COUNT(*) FROM GameSetting;").ShouldBe(0);
     }
@@ -401,45 +382,29 @@ public class DatabaseSchemaInitializerTests : IDisposable
         database.Execute(
             """
             INSERT INTO Plugins (ModKey, GameRelease, LoadOrderIndex, PluginFileName, LastCheckedUtc)
-            VALUES (@0, @1, @2, @3, @4);
+            VALUES (@ModKey, @GameRelease, @LoadOrderIndex, @PluginFileName, @LastCheckedUtc);
             """,
-            "Example.esm",
-            "Starfield",
-            1,
-            "Example.esm",
-            importedAtUtc);
+            new { ModKey = "Example.esm", GameRelease = "Starfield", LoadOrderIndex = 1, PluginFileName = "Example.esm", LastCheckedUtc = importedAtUtc });
         database.Execute(
             """
             INSERT INTO RecordHeader (ModKey, FormID, RecordType, FormKey, PluginFileName, ImportedAtUtc)
-            VALUES (@0, @1, @2, @3, @4, @5);
+            VALUES (@ModKey, @FormID, @RecordType, @FormKey, @PluginFileName, @ImportedAtUtc);
             """,
-            "Example.esm",
-            "000001",
-            "Activator",
-            "000001:Example.esm",
-            "Example.esm",
-            importedAtUtc);
+            new { ModKey = "Example.esm", FormID = "000001", RecordType = "Activator", FormKey = "000001:Example.esm", PluginFileName = "Example.esm", ImportedAtUtc = importedAtUtc });
         database.Execute(
             """
             INSERT INTO Activator (ModKey, FormID, Name, ImportedAtUtc)
-            VALUES (@0, @1, @2, @3);
+            VALUES (@ModKey, @FormID, @Name, @ImportedAtUtc);
             """,
-            "Example.esm",
-            "000001",
-            "Example Activator",
-            importedAtUtc);
+            new { ModKey = "Example.esm", FormID = "000001", Name = "Example Activator", ImportedAtUtc = importedAtUtc });
         database.Execute(
             """
             INSERT INTO ActivatorKeyword (ModKey, FormID, ItemIndex, KeywordFormKey, ImportedAtUtc)
-            VALUES (@0, @1, @2, @3, @4);
+            VALUES (@ModKey, @FormID, @ItemIndex, @KeywordFormKey, @ImportedAtUtc);
             """,
-            "Example.esm",
-            "000001",
-            0,
-            "000100:Example.esm",
-            importedAtUtc);
+            new { ModKey = "Example.esm", FormID = "000001", ItemIndex = 0, KeywordFormKey = "000100:Example.esm", ImportedAtUtc = importedAtUtc });
 
-        database.Execute("DELETE FROM RecordHeader WHERE ModKey = @0 AND FormID = @1;", "Example.esm", "000001");
+        database.Execute("DELETE FROM RecordHeader WHERE ModKey = @ModKey AND FormID = @FormID;", new { ModKey = "Example.esm", FormID = "000001" });
 
         database.ExecuteScalar<int>("SELECT COUNT(*) FROM Activator;").ShouldBe(0);
         database.ExecuteScalar<int>("SELECT COUNT(*) FROM ActivatorKeyword;").ShouldBe(0);
@@ -455,46 +420,29 @@ public class DatabaseSchemaInitializerTests : IDisposable
         database.Execute(
             """
             INSERT INTO Plugins (ModKey, GameRelease, LoadOrderIndex, PluginFileName, LastCheckedUtc)
-            VALUES (@0, @1, @2, @3, @4);
+            VALUES (@ModKey, @GameRelease, @LoadOrderIndex, @PluginFileName, @LastCheckedUtc);
             """,
-            "Example.esm",
-            "Starfield",
-            1,
-            "Example.esm",
-            importedAtUtc);
+            new { ModKey = "Example.esm", GameRelease = "Starfield", LoadOrderIndex = 1, PluginFileName = "Example.esm", LastCheckedUtc = importedAtUtc });
         database.Execute(
             """
             INSERT INTO RecordHeader (ModKey, FormID, RecordType, FormKey, PluginFileName, ImportedAtUtc)
-            VALUES (@0, @1, @2, @3, @4, @5);
+            VALUES (@ModKey, @FormID, @RecordType, @FormKey, @PluginFileName, @ImportedAtUtc);
             """,
-            "Example.esm",
-            "000001",
-            "Faction",
-            "000001:Example.esm",
-            "Example.esm",
-            importedAtUtc);
+            new { ModKey = "Example.esm", FormID = "000001", RecordType = "Faction", FormKey = "000001:Example.esm", PluginFileName = "Example.esm", ImportedAtUtc = importedAtUtc });
         database.Execute(
             """
             INSERT INTO Faction (ModKey, FormID, Name, ImportedAtUtc)
-            VALUES (@0, @1, @2, @3);
+            VALUES (@ModKey, @FormID, @Name, @ImportedAtUtc);
             """,
-            "Example.esm",
-            "000001",
-            "Example Faction",
-            importedAtUtc);
+            new { ModKey = "Example.esm", FormID = "000001", Name = "Example Faction", ImportedAtUtc = importedAtUtc });
         database.Execute(
             """
             INSERT INTO FactionRelation (ModKey, FormID, ItemIndex, TargetFormKey, Reaction, ImportedAtUtc)
-            VALUES (@0, @1, @2, @3, @4, @5);
+            VALUES (@ModKey, @FormID, @ItemIndex, @TargetFormKey, @Reaction, @ImportedAtUtc);
             """,
-            "Example.esm",
-            "000001",
-            0,
-            "000100:Example.esm",
-            "Enemy",
-            importedAtUtc);
+            new { ModKey = "Example.esm", FormID = "000001", ItemIndex = 0, TargetFormKey = "000100:Example.esm", Reaction = "Enemy", ImportedAtUtc = importedAtUtc });
 
-        database.Execute("DELETE FROM RecordHeader WHERE ModKey = @0 AND FormID = @1;", "Example.esm", "000001");
+        database.Execute("DELETE FROM RecordHeader WHERE ModKey = @ModKey AND FormID = @FormID;", new { ModKey = "Example.esm", FormID = "000001" });
 
         database.ExecuteScalar<int>("SELECT COUNT(*) FROM Faction;").ShouldBe(0);
         database.ExecuteScalar<int>("SELECT COUNT(*) FROM FactionRelation;").ShouldBe(0);

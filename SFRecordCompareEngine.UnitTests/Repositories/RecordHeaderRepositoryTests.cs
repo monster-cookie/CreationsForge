@@ -77,7 +77,7 @@ public class RecordHeaderRepositoryTests : IDisposable
 
         Sut.DeleteByModKey(database, "Example.esm");
 
-        database.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @0 COLLATE NOCASE;", "Example.esm").ShouldBe(0);
+        database.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @ModKey COLLATE NOCASE;", new { ModKey = "Example.esm" }).ShouldBe(0);
     }
 
     private void InsertPluginAndHeader(NPoco.IDatabase database, string modKey, int loadOrderIndex, string formId, string recordType)

@@ -11,7 +11,7 @@ public class MiscItemRepository : IMiscItemRepository
         database.Execute(
             """
             INSERT INTO MiscItem (ModKey, FormID, Name, ObjectBounds, Model, Destructible, ImportedAtUtc)
-            VALUES (@0, @1, @2, @3, @4, @5, @6)
+            VALUES (@ModKey, @FormID, @Name, @ObjectBounds, @Model, @Destructible, @ImportedAtUtc)
             ON CONFLICT(ModKey, FormID) DO UPDATE SET
                 Name = excluded.Name,
                 ObjectBounds = excluded.ObjectBounds,
@@ -19,13 +19,16 @@ public class MiscItemRepository : IMiscItemRepository
                 Destructible = excluded.Destructible,
                 ImportedAtUtc = excluded.ImportedAtUtc;
             """,
-            miscItem.ModKey,
-            miscItem.FormID,
-            DbValue(miscItem.Name),
-            DbValue(miscItem.ObjectBounds),
-            DbValue(miscItem.Model),
-            DbValue(miscItem.Destructible),
-            miscItem.ImportedAtUtc);
+            new
+            {
+                miscItem.ModKey,
+                miscItem.FormID,
+                Name = DbValue(miscItem.Name),
+                ObjectBounds = DbValue(miscItem.ObjectBounds),
+                Model = DbValue(miscItem.Model),
+                Destructible = DbValue(miscItem.Destructible),
+                miscItem.ImportedAtUtc
+            });
     }
 
     public void ReplaceKeywords(IDatabase database, string modKey, string formId, IList<RecordKeywordDTO> keywords)
@@ -36,22 +39,17 @@ public class MiscItemRepository : IMiscItemRepository
     private static void ReplaceKeywordRows(IDatabase database, string tableName, string modKey, string formId, IList<RecordKeywordDTO> keywords)
     {
         database.Execute(
-            $"DELETE FROM {tableName} WHERE ModKey = @0 COLLATE NOCASE AND FormID = @1;",
-            modKey,
-            formId);
+            $"DELETE FROM {tableName} WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
+            new { ModKey = modKey, FormId = formId });
 
         foreach (var keyword in keywords)
         {
             database.Execute(
                 $"""
                 INSERT INTO {tableName} (ModKey, FormID, ItemIndex, KeywordFormKey, ImportedAtUtc)
-                VALUES (@0, @1, @2, @3, @4);
+                VALUES (@ModKey, @FormID, @ItemIndex, @KeywordFormKey, @ImportedAtUtc);
                 """,
-                keyword.ModKey,
-                keyword.FormID,
-                keyword.ItemIndex,
-                keyword.KeywordFormKey,
-                keyword.ImportedAtUtc);
+                new { keyword.ModKey, keyword.FormID, keyword.ItemIndex, keyword.KeywordFormKey, keyword.ImportedAtUtc });
         }
     }
 

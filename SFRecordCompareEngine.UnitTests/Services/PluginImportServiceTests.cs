@@ -170,7 +170,7 @@ public class PluginImportServiceTests : IDisposable
         await sut.InitializeAndImportAsync(CancellationToken.None);
 
         using var resultDatabase = ConnectionFactory.OpenDatabase();
-        resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @0 COLLATE NOCASE;", "Missing.esm").ShouldBe(0);
+        resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @ModKey COLLATE NOCASE;", new { ModKey = "Missing.esm" }).ShouldBe(0);
     }
 
     [Theory]
@@ -223,7 +223,7 @@ public class PluginImportServiceTests : IDisposable
         await sut.InitializeAndImportAsync(CancellationToken.None);
 
         using var resultDatabase = ConnectionFactory.OpenDatabase();
-        resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @0 COLLATE NOCASE;", "BlueprintShips.esm").ShouldBe(0);
+        resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @ModKey COLLATE NOCASE;", new { ModKey = "BlueprintShips.esm" }).ShouldBe(0);
     }
 
     [Fact]
@@ -250,7 +250,7 @@ public class PluginImportServiceTests : IDisposable
         await sut.InitializeAndImportAsync(CancellationToken.None);
 
         using var resultDatabase = ConnectionFactory.OpenDatabase();
-        resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @0 COLLATE NOCASE;", "Removed.esm").ShouldBe(0);
+        resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @ModKey COLLATE NOCASE;", new { ModKey = "Removed.esm" }).ShouldBe(0);
     }
 
     [Fact]
@@ -323,12 +323,15 @@ public class PluginImportServiceTests : IDisposable
                 database.Execute(
                     """
                     INSERT INTO Keyword (ModKey, FormID, Name, ImportedAtUtc)
-                    VALUES (@0, @1, @2, @3);
+                    VALUES (@ModKey, @FormID, @Name, @ImportedAtUtc);
                     """,
-                    "Example.esm",
-                    "000001",
-                    "Stale Keyword",
-                    DateTimeOffset.UtcNow.ToString("O"));
+                    new
+                    {
+                        ModKey = "Example.esm",
+                        FormID = "000001",
+                        Name = "Stale Keyword",
+                        ImportedAtUtc = DateTimeOffset.UtcNow.ToString("O")
+                    });
             }
 
         File.AppendAllText(pluginPath, "changed");
@@ -372,11 +375,11 @@ public class PluginImportServiceTests : IDisposable
         await sut.InitializeAndImportAsync(CancellationToken.None);
 
         using var resultDatabase = ConnectionFactory.OpenDatabase();
-        resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @0 COLLATE NOCASE AND FormID = @1;", "Example.esm", "000001")
+        resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;", new { ModKey = "Example.esm", FormId = "000001" })
             .ShouldBe(0);
-        resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM Keyword WHERE ModKey = @0 COLLATE NOCASE AND FormID = @1;", "Example.esm", "000001")
+        resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM Keyword WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;", new { ModKey = "Example.esm", FormId = "000001" })
             .ShouldBe(0);
-        resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @0 COLLATE NOCASE AND FormID = @1;", "Example.esm", "000002")
+        resultDatabase.ExecuteScalar<int>("SELECT COUNT(*) FROM RecordHeader WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;", new { ModKey = "Example.esm", FormId = "000002" })
             .ShouldBe(1);
     }
 

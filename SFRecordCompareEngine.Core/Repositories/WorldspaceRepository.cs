@@ -22,7 +22,7 @@ public class WorldspaceRepository : IWorldspaceRepository
                 WorldMapOffsetScale,
                 ImportedAtUtc
             )
-            VALUES (@0, @1, @2, @3, @4, @5, @6, @7, @8, @9)
+            VALUES (@ModKey, @FormID, @Name, @ParentWorldspaceFormKey, @ClimateFormKey, @WaterFormKey, @TopCellFormKey, @WorldMapCellOffset, @WorldMapOffsetScale, @ImportedAtUtc)
             ON CONFLICT(ModKey, FormID) DO UPDATE SET
                 Name = excluded.Name,
                 ParentWorldspaceFormKey = excluded.ParentWorldspaceFormKey,
@@ -33,16 +33,19 @@ public class WorldspaceRepository : IWorldspaceRepository
                 WorldMapOffsetScale = excluded.WorldMapOffsetScale,
                 ImportedAtUtc = excluded.ImportedAtUtc;
             """,
-            worldspace.ModKey,
-            worldspace.FormID,
-            DbValue(worldspace.Name),
-            DbValue(worldspace.ParentWorldspaceFormKey),
-            DbValue(worldspace.ClimateFormKey),
-            DbValue(worldspace.WaterFormKey),
-            DbValue(worldspace.TopCellFormKey),
-            DbValue(worldspace.WorldMapCellOffset),
-            DbValue(worldspace.WorldMapOffsetScale),
-            worldspace.ImportedAtUtc);
+            new
+            {
+                worldspace.ModKey,
+                worldspace.FormID,
+                Name = DbValue(worldspace.Name),
+                ParentWorldspaceFormKey = DbValue(worldspace.ParentWorldspaceFormKey),
+                ClimateFormKey = DbValue(worldspace.ClimateFormKey),
+                WaterFormKey = DbValue(worldspace.WaterFormKey),
+                TopCellFormKey = DbValue(worldspace.TopCellFormKey),
+                WorldMapCellOffset = DbValue(worldspace.WorldMapCellOffset),
+                WorldMapOffsetScale = DbValue(worldspace.WorldMapOffsetScale),
+                worldspace.ImportedAtUtc
+            });
     }
 
     private static object DbValue(object? value)

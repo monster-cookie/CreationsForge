@@ -57,9 +57,8 @@ public class GameSettingRepositoryTests : IDisposable
         });
 
         var result = database.First<GameSettingDTO>(
-            "SELECT * FROM GameSetting WHERE ModKey = @0 COLLATE NOCASE AND FormID = @1;",
-            "Example.esm",
-            "000001");
+            "SELECT * FROM GameSetting WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
+            new { ModKey = "Example.esm", FormId = "000001" });
         result.SettingType.ShouldBe("String");
         result.Data.ShouldBe("Value");
         result.RawData.ShouldBe(1.25);
@@ -75,13 +74,16 @@ public class GameSettingRepositoryTests : IDisposable
         database.Execute(
             """
             INSERT INTO PluginMasterReferences (ModKey, ParentModKey, MasterReferenceIndex, ParentLoadOrderIndex, ImportedAtUtc)
-            VALUES (@0, @1, @2, @3, @4);
+            VALUES (@ModKey, @ParentModKey, @MasterReferenceIndex, @ParentLoadOrderIndex, @ImportedAtUtc);
             """,
-            "Child.esm",
-            "Parent.esm",
-            0,
-            0,
-            DateTimeOffset.UtcNow.ToString("O"));
+            new
+            {
+                ModKey = "Child.esm",
+                ParentModKey = "Parent.esm",
+                MasterReferenceIndex = 0,
+                ParentLoadOrderIndex = 0,
+                ImportedAtUtc = DateTimeOffset.UtcNow.ToString("O")
+            });
         InsertHeader(database, "Parent.esm", "000001", "GameSetting");
         Sut.Upsert(database, new GameSettingDTO
         {

@@ -24,7 +24,7 @@ public class CellRepository : ICellRepository
                 IsLinkedRefTransient,
                 ImportedAtUtc
             )
-            VALUES (@0, @1, @2, @3, @4, @5, @6, @7, @8, @9, @10, @11)
+            VALUES (@ModKey, @FormID, @Name, @Flags, @MajorFlags, @LightingTemplateFormKey, @ImageSpaceFormKey, @LocationFormKey, @WaterFormKey, @WaterHeight, @IsLinkedRefTransient, @ImportedAtUtc)
             ON CONFLICT(ModKey, FormID) DO UPDATE SET
                 Name = excluded.Name,
                 Flags = excluded.Flags,
@@ -37,26 +37,28 @@ public class CellRepository : ICellRepository
                 IsLinkedRefTransient = excluded.IsLinkedRefTransient,
                 ImportedAtUtc = excluded.ImportedAtUtc;
             """,
-            cell.ModKey,
-            cell.FormID,
-            DbValue(cell.Name),
-            DbValue(cell.Flags),
-            DbValue(cell.MajorFlags),
-            DbValue(cell.LightingTemplateFormKey),
-            DbValue(cell.ImageSpaceFormKey),
-            DbValue(cell.LocationFormKey),
-            DbValue(cell.WaterFormKey),
-            DbValue(cell.WaterHeight),
-            DbValue(cell.IsLinkedRefTransient),
-            cell.ImportedAtUtc);
+            new
+            {
+                cell.ModKey,
+                cell.FormID,
+                Name = DbValue(cell.Name),
+                Flags = DbValue(cell.Flags),
+                MajorFlags = DbValue(cell.MajorFlags),
+                LightingTemplateFormKey = DbValue(cell.LightingTemplateFormKey),
+                ImageSpaceFormKey = DbValue(cell.ImageSpaceFormKey),
+                LocationFormKey = DbValue(cell.LocationFormKey),
+                WaterFormKey = DbValue(cell.WaterFormKey),
+                WaterHeight = DbValue(cell.WaterHeight),
+                IsLinkedRefTransient = DbValue(cell.IsLinkedRefTransient),
+                cell.ImportedAtUtc
+            });
     }
 
     public void ReplaceGroupLocations(IDatabase database, string modKey, string cellFormId, IList<CellGroupLocationDTO> locations)
     {
         database.Execute(
-            "DELETE FROM CellGroupLocation WHERE ModKey = @0 COLLATE NOCASE AND CellFormID = @1;",
-            modKey,
-            cellFormId);
+            "DELETE FROM CellGroupLocation WHERE ModKey = @ModKey COLLATE NOCASE AND CellFormID = @CellFormId;",
+            new { ModKey = modKey, CellFormId = cellFormId });
 
         foreach (var location in locations)
         {
@@ -83,36 +85,38 @@ public class CellRepository : ICellRepository
                     SubBlockUnknown,
                     ImportedAtUtc
                 )
-                VALUES (@0, @1, @2, @3, @4, @5, @6, @7, @8, @9, @10, @11, @12, @13, @14, @15, @16, @17, @18);
+                VALUES (@ModKey, @CellFormID, @LocationIndex, @LocationKind, @WorldspaceFormID, @BlockNumber, @SubBlockNumber, @BlockX, @BlockY, @SubBlockX, @SubBlockY, @CellIndex, @BlockGroupType, @SubBlockGroupType, @BlockLastModified, @SubBlockLastModified, @BlockUnknown, @SubBlockUnknown, @ImportedAtUtc);
                 """,
-                location.ModKey,
-                location.CellFormID,
-                location.LocationIndex,
-                location.LocationKind,
-                DbValue(location.WorldspaceFormID),
-                DbValue(location.BlockNumber),
-                DbValue(location.SubBlockNumber),
-                DbValue(location.BlockX),
-                DbValue(location.BlockY),
-                DbValue(location.SubBlockX),
-                DbValue(location.SubBlockY),
-                DbValue(location.CellIndex),
-                DbValue(location.BlockGroupType),
-                DbValue(location.SubBlockGroupType),
-                DbValue(location.BlockLastModified),
-                DbValue(location.SubBlockLastModified),
-                DbValue(location.BlockUnknown),
-                DbValue(location.SubBlockUnknown),
-                location.ImportedAtUtc);
+                new
+                {
+                    location.ModKey,
+                    location.CellFormID,
+                    location.LocationIndex,
+                    location.LocationKind,
+                    WorldspaceFormID = DbValue(location.WorldspaceFormID),
+                    BlockNumber = DbValue(location.BlockNumber),
+                    SubBlockNumber = DbValue(location.SubBlockNumber),
+                    BlockX = DbValue(location.BlockX),
+                    BlockY = DbValue(location.BlockY),
+                    SubBlockX = DbValue(location.SubBlockX),
+                    SubBlockY = DbValue(location.SubBlockY),
+                    CellIndex = DbValue(location.CellIndex),
+                    BlockGroupType = DbValue(location.BlockGroupType),
+                    SubBlockGroupType = DbValue(location.SubBlockGroupType),
+                    BlockLastModified = DbValue(location.BlockLastModified),
+                    SubBlockLastModified = DbValue(location.SubBlockLastModified),
+                    BlockUnknown = DbValue(location.BlockUnknown),
+                    SubBlockUnknown = DbValue(location.SubBlockUnknown),
+                    location.ImportedAtUtc
+                });
         }
     }
 
     public void ReplacePlacedRecords(IDatabase database, string modKey, string cellFormId, IList<CellPlacedRecordDTO> placedRecords)
     {
         database.Execute(
-            "DELETE FROM CellPlacedRecord WHERE ModKey = @0 COLLATE NOCASE AND CellFormID = @1;",
-            modKey,
-            cellFormId);
+            "DELETE FROM CellPlacedRecord WHERE ModKey = @ModKey COLLATE NOCASE AND CellFormID = @CellFormId;",
+            new { ModKey = modKey, CellFormId = cellFormId });
 
         foreach (var placedRecord in placedRecords)
         {
@@ -131,19 +135,22 @@ public class CellRepository : ICellRepository
                     IsDeleted,
                     ImportedAtUtc
                 )
-                VALUES (@0, @1, @2, @3, @4, @5, @6, @7, @8, @9, @10);
+                VALUES (@ModKey, @CellFormID, @PlacementGroup, @ItemIndex, @PlacedFormKey, @BaseFormKey, @EditorID, @Position, @Rotation, @IsDeleted, @ImportedAtUtc);
                 """,
-                placedRecord.ModKey,
-                placedRecord.CellFormID,
-                placedRecord.PlacementGroup,
-                placedRecord.ItemIndex,
-                DbValue(placedRecord.PlacedFormKey),
-                DbValue(placedRecord.BaseFormKey),
-                DbValue(placedRecord.EditorID),
-                DbValue(placedRecord.Position),
-                DbValue(placedRecord.Rotation),
-                DbValue(placedRecord.IsDeleted),
-                placedRecord.ImportedAtUtc);
+                new
+                {
+                    placedRecord.ModKey,
+                    placedRecord.CellFormID,
+                    placedRecord.PlacementGroup,
+                    placedRecord.ItemIndex,
+                    PlacedFormKey = DbValue(placedRecord.PlacedFormKey),
+                    BaseFormKey = DbValue(placedRecord.BaseFormKey),
+                    EditorID = DbValue(placedRecord.EditorID),
+                    Position = DbValue(placedRecord.Position),
+                    Rotation = DbValue(placedRecord.Rotation),
+                    IsDeleted = DbValue(placedRecord.IsDeleted),
+                    placedRecord.ImportedAtUtc
+                });
         }
     }
 

@@ -72,8 +72,8 @@ public class PluginRepositoryTests : IDisposable
         Sut.UpsertPlugin(database, updatedPlugin);
 
         var count = database.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM Plugins WHERE ModKey = @0 COLLATE NOCASE;",
-            "Starfield.esm");
+            "SELECT COUNT(*) FROM Plugins WHERE ModKey = @ModKey COLLATE NOCASE;",
+            new { ModKey = "Starfield.esm" });
         var result = Sut.GetByModKey(database, "Starfield.esm");
 
         count.ShouldBe(1);
@@ -91,8 +91,8 @@ public class PluginRepositoryTests : IDisposable
         Sut.UpsertMissingPlaceholder(database, "sfbgs004.esm", DateTimeOffset.UtcNow.ToString("O"));
 
         var count = database.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM Plugins WHERE ModKey = @0 COLLATE NOCASE;",
-            "SFBGS004.esm");
+            "SELECT COUNT(*) FROM Plugins WHERE ModKey = @ModKey COLLATE NOCASE;",
+            new { ModKey = "SFBGS004.esm" });
         var result = Sut.GetByModKey(database, "sfbgs004.esm");
 
         count.ShouldBe(1);

@@ -53,9 +53,8 @@ public class WorldspaceRepositoryTests : IDisposable
         });
 
         var result = database.First<WorldspaceDTO>(
-            "SELECT * FROM Worldspace WHERE ModKey = @0 COLLATE NOCASE AND FormID = @1;",
-            "Example.esm",
-            "000100");
+            "SELECT * FROM Worldspace WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
+            new { ModKey = "Example.esm", FormId = "000100" });
         result.Name.ShouldBe("Example Worldspace");
         result.TopCellFormKey.ShouldBe("000001:Example.esm");
     }

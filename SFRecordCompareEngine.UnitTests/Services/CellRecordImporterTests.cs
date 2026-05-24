@@ -2,6 +2,7 @@ using SFRecordCompareEngine.Core.Database;
 using SFRecordCompareEngine.Core.Database.Interfaces;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.DTOs.Records;
+using SFRecordCompareEngine.Core.Importers;
 using SFRecordCompareEngine.Core.Models.Database;
 using SFRecordCompareEngine.Core.Repositories;
 using SFRecordCompareEngine.Core.Services;
@@ -62,11 +63,11 @@ public class CellRecordImporterTests : IDisposable
             ]
         }, importedAtUtc);
 
-        database.ExecuteScalar<string>("SELECT Name FROM Cell WHERE ModKey = @0 COLLATE NOCASE AND FormID = @1;", "Example.esm", "000001")
+        database.ExecuteScalar<string>("SELECT Name FROM Cell WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;", new { ModKey = "Example.esm", FormId = "000001" })
             .ShouldBe("Example Cell");
-        database.ExecuteScalar<int>("SELECT SubBlockNumber FROM CellGroupLocation WHERE ModKey = @0 COLLATE NOCASE AND CellFormID = @1;", "Example.esm", "000001")
+        database.ExecuteScalar<int>("SELECT SubBlockNumber FROM CellGroupLocation WHERE ModKey = @ModKey COLLATE NOCASE AND CellFormID = @CellFormId;", new { ModKey = "Example.esm", CellFormId = "000001" })
             .ShouldBe(1);
-        database.ExecuteScalar<string>("SELECT PlacedFormKey FROM CellPlacedRecord WHERE ModKey = @0 COLLATE NOCASE AND CellFormID = @1;", "Example.esm", "000001")
+        database.ExecuteScalar<string>("SELECT PlacedFormKey FROM CellPlacedRecord WHERE ModKey = @ModKey COLLATE NOCASE AND CellFormID = @CellFormId;", new { ModKey = "Example.esm", CellFormId = "000001" })
             .ShouldBe("000002:Example.esm");
     }
 

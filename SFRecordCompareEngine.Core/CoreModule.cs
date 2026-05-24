@@ -3,6 +3,8 @@ using Autofac;
 using SFRecordCompareEngine.Core.Database;
 using SFRecordCompareEngine.Core.Configuration;
 using SFRecordCompareEngine.Core.Configuration.Interfaces;
+using SFRecordCompareEngine.Core.Importers;
+using SFRecordCompareEngine.Core.Importers.Interfaces;
 using SFRecordCompareEngine.Core.Models.Database;
 using SFRecordCompareEngine.Core.Services;
 using SFRecordCompareEngine.Core.Services.Interfaces;

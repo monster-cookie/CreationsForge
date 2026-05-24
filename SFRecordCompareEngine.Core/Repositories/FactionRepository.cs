@@ -31,7 +31,7 @@ public class FactionRepository : IFactionRepository
                 VendorValuesBuysNonStolenItems,
                 ImportedAtUtc
             )
-            VALUES (@0, @1, @2, @3, @4, @5, @6, @7, @8, @9, @10, @11, @12, @13, @14, @15, @16, @17, @18)
+            VALUES (@ModKey, @FormID, @Name, @KeywordFormKey, @Flags, @CrimeValuesArrest, @CrimeValuesMurder, @CrimeValuesAssault, @CrimeValuesTrespass, @CrimeValuesPickpocket, @CrimeValuesStealMultiplier, @CrimeValuesEscape, @CrimeValuesPiracy, @CrimeValuesSmuggleMultiplier, @VendorValuesStartHour, @VendorValuesEndHour, @VendorValuesBuysStolenItems, @VendorValuesBuysNonStolenItems, @ImportedAtUtc)
             ON CONFLICT(ModKey, FormID) DO UPDATE SET
                 Name = excluded.Name,
                 KeywordFormKey = excluded.KeywordFormKey,
@@ -51,33 +51,35 @@ public class FactionRepository : IFactionRepository
                 VendorValuesBuysNonStolenItems = excluded.VendorValuesBuysNonStolenItems,
                 ImportedAtUtc = excluded.ImportedAtUtc;
             """,
-            faction.ModKey,
-            faction.FormID,
-            DbValue(faction.Name),
-            DbValue(faction.KeywordFormKey),
-            DbValue(faction.Flags),
-            DbValue(faction.CrimeValuesArrest),
-            DbValue(faction.CrimeValuesMurder),
-            DbValue(faction.CrimeValuesAssault),
-            DbValue(faction.CrimeValuesTrespass),
-            DbValue(faction.CrimeValuesPickpocket),
-            DbValue(faction.CrimeValuesStealMultiplier),
-            DbValue(faction.CrimeValuesEscape),
-            DbValue(faction.CrimeValuesPiracy),
-            DbValue(faction.CrimeValuesSmuggleMultiplier),
-            DbValue(faction.VendorValuesStartHour),
-            DbValue(faction.VendorValuesEndHour),
-            DbValue(faction.VendorValuesBuysStolenItems),
-            DbValue(faction.VendorValuesBuysNonStolenItems),
-            faction.ImportedAtUtc);
+            new
+            {
+                faction.ModKey,
+                faction.FormID,
+                Name = DbValue(faction.Name),
+                KeywordFormKey = DbValue(faction.KeywordFormKey),
+                Flags = DbValue(faction.Flags),
+                CrimeValuesArrest = DbValue(faction.CrimeValuesArrest),
+                CrimeValuesMurder = DbValue(faction.CrimeValuesMurder),
+                CrimeValuesAssault = DbValue(faction.CrimeValuesAssault),
+                CrimeValuesTrespass = DbValue(faction.CrimeValuesTrespass),
+                CrimeValuesPickpocket = DbValue(faction.CrimeValuesPickpocket),
+                CrimeValuesStealMultiplier = DbValue(faction.CrimeValuesStealMultiplier),
+                CrimeValuesEscape = DbValue(faction.CrimeValuesEscape),
+                CrimeValuesPiracy = DbValue(faction.CrimeValuesPiracy),
+                CrimeValuesSmuggleMultiplier = DbValue(faction.CrimeValuesSmuggleMultiplier),
+                VendorValuesStartHour = DbValue(faction.VendorValuesStartHour),
+                VendorValuesEndHour = DbValue(faction.VendorValuesEndHour),
+                VendorValuesBuysStolenItems = DbValue(faction.VendorValuesBuysStolenItems),
+                VendorValuesBuysNonStolenItems = DbValue(faction.VendorValuesBuysNonStolenItems),
+                faction.ImportedAtUtc
+            });
     }
 
     public void ReplaceRelations(IDatabase database, string modKey, string formId, IList<FactionRelationDTO> relations)
     {
         database.Execute(
-            "DELETE FROM FactionRelation WHERE ModKey = @0 COLLATE NOCASE AND FormID = @1;",
-            modKey,
-            formId);
+            "DELETE FROM FactionRelation WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
+            new { ModKey = modKey, FormId = formId });
 
         foreach (var relation in relations)
         {
@@ -91,14 +93,17 @@ public class FactionRepository : IFactionRepository
                     Reaction,
                     ImportedAtUtc
                 )
-                VALUES (@0, @1, @2, @3, @4, @5);
+                VALUES (@ModKey, @FormID, @ItemIndex, @TargetFormKey, @Reaction, @ImportedAtUtc);
                 """,
-                relation.ModKey,
-                relation.FormID,
-                relation.ItemIndex,
-                relation.TargetFormKey,
-                DbValue(relation.Reaction),
-                relation.ImportedAtUtc);
+                new
+                {
+                    relation.ModKey,
+                    relation.FormID,
+                    relation.ItemIndex,
+                    relation.TargetFormKey,
+                    Reaction = DbValue(relation.Reaction),
+                    relation.ImportedAtUtc
+                });
         }
     }
 

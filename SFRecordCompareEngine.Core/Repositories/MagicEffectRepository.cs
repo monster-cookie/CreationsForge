@@ -11,15 +11,18 @@ public class MagicEffectRepository : IMagicEffectRepository
         database.Execute(
             """
             INSERT INTO MagicEffect (ModKey, FormID, Name, ImportedAtUtc)
-            VALUES (@0, @1, @2, @3)
+            VALUES (@ModKey, @FormID, @Name, @ImportedAtUtc)
             ON CONFLICT(ModKey, FormID) DO UPDATE SET
                 Name = excluded.Name,
                 ImportedAtUtc = excluded.ImportedAtUtc;
             """,
-            magicEffect.ModKey,
-            magicEffect.FormID,
-            DbValue(magicEffect.Name),
-            magicEffect.ImportedAtUtc);
+            new
+            {
+                magicEffect.ModKey,
+                magicEffect.FormID,
+                Name = DbValue(magicEffect.Name),
+                magicEffect.ImportedAtUtc
+            });
     }
 
     public void ReplaceKeywords(IDatabase database, string modKey, string formId, IList<RecordKeywordDTO> keywords)
@@ -30,22 +33,17 @@ public class MagicEffectRepository : IMagicEffectRepository
     private static void ReplaceKeywordRows(IDatabase database, string tableName, string modKey, string formId, IList<RecordKeywordDTO> keywords)
     {
         database.Execute(
-            $"DELETE FROM {tableName} WHERE ModKey = @0 COLLATE NOCASE AND FormID = @1;",
-            modKey,
-            formId);
+            $"DELETE FROM {tableName} WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
+            new { ModKey = modKey, FormId = formId });
 
         foreach (var keyword in keywords)
         {
             database.Execute(
                 $"""
                 INSERT INTO {tableName} (ModKey, FormID, ItemIndex, KeywordFormKey, ImportedAtUtc)
-                VALUES (@0, @1, @2, @3, @4);
+                VALUES (@ModKey, @FormID, @ItemIndex, @KeywordFormKey, @ImportedAtUtc);
                 """,
-                keyword.ModKey,
-                keyword.FormID,
-                keyword.ItemIndex,
-                keyword.KeywordFormKey,
-                keyword.ImportedAtUtc);
+                new { keyword.ModKey, keyword.FormID, keyword.ItemIndex, keyword.KeywordFormKey, keyword.ImportedAtUtc });
         }
     }
 
