@@ -1,12 +1,14 @@
+using Mutagen.Bethesda.Plugins;
+
 namespace SFRecordCompareEngine.Core.DTOs.Plugins;
 
 public class PluginHeaderDTO
 {
-    public PluginHeaderDTO(PluginMetadataDTO plugin, IList<PluginMasterReferenceDTO> masterReferences)
+    public PluginHeaderDTO(PluginDTO plugin, IList<PluginMasterReferenceDTO> masterReferences)
     {
         Name = plugin.PluginFileName;
         Author = plugin.Author ?? "Unknown";
-        Version = plugin.FormVersion ?? 0;
+        Version = plugin.FormVersion;
         Description = string.Empty;
         Masters = masterReferences
             .OrderBy(masterReference => masterReference.MasterReferenceIndex)
@@ -34,5 +36,5 @@ public class PluginHeaderDTO
     /// </summary>
     public string Description { get; set; }
 
-    public List<string> Masters { get; set; }
+    public List<ModKey> Masters { get; set; }
 }

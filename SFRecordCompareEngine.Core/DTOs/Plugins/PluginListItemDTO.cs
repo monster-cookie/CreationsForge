@@ -4,7 +4,7 @@ public class PluginListItemDTO
 {
     public required string PluginFileName { get; set; }
 
-    public string ImportState { get; set; } = PluginImportState.Current.ToString();
+    public string ImportState { get; set; } = nameof(PluginImportState.Current);
 
-    public bool IsFailed => string.Equals(ImportState, PluginImportState.Failed.ToString(), StringComparison.OrdinalIgnoreCase);
+    public bool IsFailed => string.Equals(ImportState, nameof(PluginImportState.Failed), StringComparison.OrdinalIgnoreCase);
 }

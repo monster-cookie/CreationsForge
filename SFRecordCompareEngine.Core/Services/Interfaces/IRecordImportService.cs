@@ -6,5 +6,5 @@ namespace SFRecordCompareEngine.Core.Services.Interfaces;
 
 public interface IRecordImportService
 {
-    RecordImportResultDTO ImportPluginRecords(IDatabase database, PluginMetadataDTO plugin, string importedAtUtc, CancellationToken cancellationToken);
+    RecordImportResultDTO ImportPluginRecords(IDatabase database, PluginDTO plugin, string importedAtUtc, CancellationToken cancellationToken);
 }

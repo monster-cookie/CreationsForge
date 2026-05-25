@@ -77,7 +77,7 @@ public class GameSettingRepository : IGameSettingRepository
             {
                 ModKey = modKey,
                 RecordType = RecordTypeImportCatalog.GameSettingRecordType,
-                ImportState = PluginImportState.Current.ToString()
+                ImportState = nameof(PluginImportState.Current)
             });
     }
 

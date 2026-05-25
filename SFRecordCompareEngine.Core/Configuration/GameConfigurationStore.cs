@@ -12,16 +12,16 @@ public class GameConfigurationStore : IGameConfigurationStore
 {
     private readonly ILogger Logger = Log.ForContext<GameConfigurationStore>();
 
-    /// <summary>
-    ///     The currently selected game.
-    /// </summary>
+    /// <inheritdoc />
     public string? SelectedGame { get; set; }
 
-    /// <summary>
-    ///     The game environment for the currently selected game.
-    /// </summary>
+    /// <inheritdoc />
     public IGameEnvironment? Game { get; set; }
 
+    /// <inheritdoc />
+    public GameRelease? Release { get; set; }
+
+    /// <inheritdoc />
     public string[] SupportedGames { get; set; } = ["None", "Starfield", "Skyrim", "Fallout 4"];
 
     public void SelectGame(string? game)
@@ -37,20 +37,24 @@ public class GameConfigurationStore : IGameConfigurationStore
             case "Starfield":
                 SelectedGame = "Starfield";
                 Game = GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield);
+                Release = StarfieldRelease.Starfield.ToGameRelease();
                 break;
             case "Skyrim":
                 Logger.Warning("Skyrim is not currently supported. Please select Starfield");
                 SelectedGame = "Skyrim";
                 Game = GameEnvironment.Typical.Skyrim(SkyrimRelease.SkyrimSE);
+                Release = SkyrimRelease.SkyrimSE.ToGameRelease();
                 break;
             case "Fallout 4":
                 Logger.Warning("Fallout 4 is not currently supported. Please select Starfield");
                 SelectedGame = "Fallout 4";
                 Game = GameEnvironment.Typical.Fallout4(Fallout4Release.Fallout4);
+                Release = Fallout4Release.Fallout4.ToGameRelease();
                 break;
             default:
                 SelectedGame = null;
                 Game = null;
+                Release = null;
                 Logger.Error("Game '{Game}' is not supported. Please select Starfield", game);
                 break;
         }
@@ -60,5 +64,6 @@ public class GameConfigurationStore : IGameConfigurationStore
     {
         SelectedGame = null;
         Game = null;
+        Release = null;
     }
 }

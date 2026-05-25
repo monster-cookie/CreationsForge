@@ -1,22 +1,55 @@
+using System.Collections.Generic;
 using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
+using SFRecordCompareEngine.Core.Models.Database;
 
 namespace SFRecordCompareEngine.Core.Repositories.Interfaces;
 
 public interface IPluginRepository
 {
-    PluginMetadataDTO? GetByModKey(IDatabase database, ModKey modKey);
-    IList<PluginMetadataDTO> GetAll(IDatabase database);
-    IList<PluginMetadataDTO> GetPlugins(IDatabase database);
-    IList<PluginMetadataDTO> GetOpenablePlugins(IDatabase database);
-    IList<PluginMetadataDTO> SearchPlugins(IDatabase database, string searchText);
-    IList<PluginMetadataDTO> SearchOpenablePlugins(IDatabase database, string searchText);
-    IList<PluginMasterReferenceDTO> GetMasterReferences(IDatabase database, string modKey);
-    IList<PluginResolutionHierarchyDTO> GetResolutionHierarchy(IDatabase database, string modKey);
-    void UpsertPlugin(IDatabase database, PluginMetadataDTO plugin);
-    void UpsertMissingPlaceholder(IDatabase database, string modKey, string checkedAtUtc);
-    void ReplaceMasterReferences(IDatabase database, ModKey modKey, IList<PluginMasterReferenceDTO> masterReferences);
-    void RefreshParentLoadOrderIndexes(IDatabase database);
-    void MarkPluginsNotInLoadOrder(IDatabase database, HashSet<ModKey> currentModKeys, string checkedAtUtc);
+    /// <summary>
+    /// Get the plugin by its mod key.
+    /// </summary>
+    /// <param name="modKey">The mod key to search for.</param>
+    /// <returns>The plugin if found, otherwise null.</returns>
+    PluginDTO? GetByModKey(ModKey modKey);
+    
+    /// <summary>
+    /// Get all plugins.
+    /// </summary>
+    /// <returns>The list of plugins or an empty list if none are found.</returns>
+    IList<PluginDTO> GetAll();
+
+    /// <summary>
+    /// Get all imported plugins.
+    /// </summary>
+    /// <returns>The list of plugins or an empty list if none are found.</returns>
+    IList<PluginDTO> GetImportedPlugins();
+    
+    /// <summary>
+    /// Get openable plugins.
+    /// </summary>
+    /// <returns>The list of plugins or an empty list if none are found.</returns>
+    IList<PluginDTO> GetOpenablePlugins();
+    
+    /// <summary>
+    /// Search plugins by filename.
+    /// </summary>
+    /// <param name="searchFilename">The filename pattern to search for.</param>
+    /// <returns>The list of matching plugins or an empty list if none are found.</returns>
+    IList<PluginDTO> SearchPluginsByFilename(string searchFilename);
+    
+    /// <summary>
+    /// Search openable plugins by filename.
+    /// </summary>
+    /// <param name="searchFilename">The filename pattern to search for.</param>
+    /// <returns>The list of matching plugins or an empty list if none are found.</returns>
+    IList<PluginDTO> SearchOpenablePluginsByFilename(string searchFilename);
+    
+    /// <summary>
+    /// Upsert a plugin.
+    /// </summary>
+    /// <param name="dto">The plugin to upsert.</param>
+    void UpsertPlugin(PluginDTO dto);
 }

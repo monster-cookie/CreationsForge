@@ -24,7 +24,7 @@ public class RecordImportService : IRecordImportService
         TypedRecordDetailImporters = typedRecordDetailImporters.ToDictionary(importer => importer.RecordType, StringComparer.Ordinal);
     }
     
-    public RecordImportResultDTO ImportPluginRecords(IDatabase database, PluginMetadataDTO plugin, string importedAtUtc, CancellationToken cancellationToken)
+    public RecordImportResultDTO ImportPluginRecords(IDatabase database, PluginDTO plugin, string importedAtUtc, CancellationToken cancellationToken)
     {
         // TODO: Implement record import logic using mutagen safe and multi-threaded.
         throw new NotImplementedException();
