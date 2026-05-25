@@ -1,3 +1,4 @@
+using System.Configuration;
 using Serilog;
 using SFRecordCompareEngine.Core.Configuration.Interfaces;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
@@ -11,17 +12,12 @@ public class MainWindowViewModel : ViewModelBase
     private readonly ILogger Logger;
     private readonly IGameConfigurationStore GameConfigurationStore;
     private readonly IPluginImportService PluginImportService;
-    private readonly IPluginService PluginService;
     private bool DatabaseImportCompleted;
-    private string? LoadedPluginName;
 
-    public MainWindowViewModel(
-        IPluginService pluginService,
-        IPluginImportService pluginImportService,
+    public MainWindowViewModel(IPluginImportService pluginImportService,
         IGameConfigurationStore gameConfigurationStore,
         ILogger logger)
     {
-        PluginService = pluginService;
         PluginImportService = pluginImportService;
         GameConfigurationStore = gameConfigurationStore;
         Logger = logger.ForContext<MainWindowViewModel>() ?? logger;
@@ -33,91 +29,63 @@ public class MainWindowViewModel : ViewModelBase
     public string LoadedGameText { get; private set; }
     public string LoadedPluginText { get; private set; }
 
-    private bool _canUseApplication = true;
     public bool CanUseApplication
     {
-        get => _canUseApplication;
-        private set => SetProperty(ref _canUseApplication, value);
-    }
+        get;
+        private set => SetProperty(ref field, value);
+    } = true;
 
-    private bool _isDatabaseImportRunning;
     public bool IsDatabaseImportRunning
     {
-        get => _isDatabaseImportRunning;
+        get;
         private set
         {
-            if (SetProperty(ref _isDatabaseImportRunning, value))
+            if (SetProperty(ref field, value))
             {
                 CanUseApplication = !value;
             }
         }
     }
 
-    private string _databaseImportStatusText = string.Empty;
     public string DatabaseImportStatusText
     {
-        get => _databaseImportStatusText;
-        private set => SetProperty(ref _databaseImportStatusText, value);
-    }
+        get;
+        private set => SetProperty(ref field, value);
+    } = string.Empty;
 
-    private string _databaseImportCurrentPluginText = string.Empty;
     public string DatabaseImportCurrentPluginText
     {
-        get => _databaseImportCurrentPluginText;
-        private set => SetProperty(ref _databaseImportCurrentPluginText, value);
-    }
+        get;
+        private set => SetProperty(ref field, value);
+    } = string.Empty;
 
-    private double _databaseImportProgressValue;
     public double DatabaseImportProgressValue
     {
-        get => _databaseImportProgressValue;
-        private set => SetProperty(ref _databaseImportProgressValue, value);
+        get;
+        private set => SetProperty(ref field, value);
     }
 
-    private double _databaseImportProgressMaximum = 100;
     public double DatabaseImportProgressMaximum
     {
-        get => _databaseImportProgressMaximum;
-        private set => SetProperty(ref _databaseImportProgressMaximum, value);
-    }
+        get;
+        private set => SetProperty(ref field, value);
+    } = 100;
 
-    private bool _isDatabaseImportIndeterminate = true;
     public bool IsDatabaseImportIndeterminate
     {
-        get => _isDatabaseImportIndeterminate;
-        private set => SetProperty(ref _isDatabaseImportIndeterminate, value);
-    }
+        get;
+        private set => SetProperty(ref field, value);
+    } = true;
 
-    private string _statusText = string.Empty;
     public string StatusText
     {
-        get => _statusText;
-        private set => SetProperty(ref _statusText, value);
+        get;
+        private set => SetProperty(ref field, value);
     }
-
-    private IList<RecordTypeTreeNode> _recordTypeNodes = new List<RecordTypeTreeNode>();
-    public IList<RecordTypeTreeNode> RecordTypeNodes
-    {
-        get => _recordTypeNodes;
-        private set => SetProperty(ref _recordTypeNodes, value);
-    }
-
-    private object? _recordsGridItems;
-    public object? RecordsGridItems
-    {
-        get => _recordsGridItems;
-        private set => SetProperty(ref _recordsGridItems, value);
-    }
-
-    public IList<string> ComparisonPluginNames { get; private set; } = new List<string>();
-    public bool IsComparisonMode { get; private set; }
 
     public async Task InitializeDatabaseImportAsync(CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(GameConfigurationStore.SelectedGame))
-        {
-            throw new InvalidOperationException("Select a game before initializing the plugin database.");
-        }
+        if (string.IsNullOrWhiteSpace(GameConfigurationStore.SelectedGame)) throw new ConfigurationErrorsException("Select a game before initializing the plugin database.");
 
         IsDatabaseImportRunning = true;
         DatabaseImportCompleted = false;
@@ -165,7 +133,6 @@ public class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(LoadedGameText));
         LoadedPluginText = selectedPluginName;
         OnPropertyChanged(nameof(LoadedPluginText));
-        LoadedPluginName = selectedPluginName;
         StatusText = $"Loaded {selectedPluginName}.";
 
         Logger.Information("Opened {PluginName} for {Game}", selectedPluginName, selectedGame);
@@ -176,14 +143,12 @@ public class MainWindowViewModel : ViewModelBase
         if (DatabaseImportCompleted) return;
 
         DatabaseImportStatusText = progress.StatusText;
-        DatabaseImportCurrentPluginText = string.IsNullOrWhiteSpace(progress.CurrentPluginName)
-            ? string.Empty
-            : $"Current plugin: {progress.CurrentPluginName}";
+        DatabaseImportCurrentPluginText = string.IsNullOrWhiteSpace(progress.CurrentPluginName) ? string.Empty : $"Current plugin: {progress.CurrentPluginName}";
         IsDatabaseImportIndeterminate = progress.IsIndeterminate || progress.PluginCount <= 0;
-        if (progress.PluginCount > 0)
-        {
-            DatabaseImportProgressMaximum = progress.PluginCount;
-            DatabaseImportProgressValue = progress.PluginIndex;
-        }
+        
+        if (progress.PluginCount <= 0) return;
+        
+        DatabaseImportProgressMaximum = progress.PluginCount;
+        DatabaseImportProgressValue = progress.PluginIndex;
     }
 }
