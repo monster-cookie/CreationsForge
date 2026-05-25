@@ -10,9 +10,9 @@ namespace SFRecordCompareEngine.ViewModels;
 
 public class OpenGamePluginDialogViewModel : ViewModelBase
 {
+    private readonly ILogger Logger = Log.ForContext<OpenGamePluginDialogViewModel>();
+    
     private readonly IGameConfigurationStore GameConfigurationStore;
-    private readonly ILogger Logger;
-    private readonly IPluginService PluginService;
     private string _pluginAuthor = string.Empty;
     private string _pluginDescription = string.Empty;
     private string _pluginMasters = string.Empty;
@@ -23,19 +23,13 @@ public class OpenGamePluginDialogViewModel : ViewModelBase
     private PluginHeaderDTO? _selectedPluginHeader;
     private string? _selectedPluginName;
     private string _statusText = string.Empty;
-    private IList<PluginListItemDTO> AllPluginItems = new List<PluginListItemDTO>();
     private bool IsLoadingPlugins;
     private bool IsSelectingPluginItem;
     private bool IsUpdatingPluginItems;
 
-    public OpenGamePluginDialogViewModel(
-        IGameConfigurationStore gameConfigurationStore,
-        IPluginService pluginService,
-        ILogger logger)
+    public OpenGamePluginDialogViewModel(IGameConfigurationStore gameConfigurationStore)
     {
         GameConfigurationStore = gameConfigurationStore;
-        PluginService = pluginService;
-        Logger = logger.ForContext<OpenGamePluginDialogViewModel>() ?? logger;
 
         LoadPluginHeaderCommand = new RelayCommand(LoadPluginHeader, CanLoadPluginHeader);
         RefreshPluginsCommand = new RelayCommand(LoadPlugins);
@@ -164,26 +158,28 @@ public class OpenGamePluginDialogViewModel : ViewModelBase
         {
             Logger.Information("Loading plugins for {Game}", GameConfigurationStore.SelectedGame);
 
-            var plugins = PluginService.GetPluginListItems();
-            AllPluginItems = plugins.ToList();
-            IsLoadingPlugins = true;
-            try
-            {
-                SetPluginItems(plugins);
-                PluginSearchText = plugins.Count > 0 ? plugins[0].PluginFileName : string.Empty;
-            }
-            finally
-            {
-                IsLoadingPlugins = false;
-            }
+            // TODO: Reimplement after mutagen safe import process setup
 
-            StatusText = GameConfigurationStore.Game is null
-                ? $"{GameConfigurationStore.SelectedGame} is not configured yet."
-                : plugins.Count == 1
-                    ? "Loaded 1 plugin."
-                    : $"Loaded {plugins.Count} plugins.";
-
-            Logger.Information("Loaded {PluginCount} plugins for {Game}", plugins.Count, GameConfigurationStore.SelectedGame);
+            // var plugins = PluginService.GetPluginListItems();
+            // AllPluginItems = plugins.ToList();
+            // IsLoadingPlugins = true;
+            // try
+            // {
+            //     SetPluginItems(plugins);
+            //     PluginSearchText = plugins.Count > 0 ? plugins[0].PluginFileName : string.Empty;
+            // }
+            // finally
+            // {
+            //     IsLoadingPlugins = false;
+            // }
+            //
+            // StatusText = GameConfigurationStore.Game is null
+            //     ? $"{GameConfigurationStore.SelectedGame} is not configured yet."
+            //     : plugins.Count == 1
+            //         ? "Loaded 1 plugin."
+            //         : $"Loaded {plugins.Count} plugins.";
+            //
+            // Logger.Information("Loaded {PluginCount} plugins for {Game}", plugins.Count, GameConfigurationStore.SelectedGame);
         }
         catch (Exception ex)
         {
@@ -207,27 +203,29 @@ public class OpenGamePluginDialogViewModel : ViewModelBase
         {
             Logger.Information("Loading plugin header for {PluginName}", pluginName);
 
-            var pluginHeader = PluginService.GetPluginHeader(pluginName);
-            if (pluginHeader is null)
-            {
-                ClearPluginHeader();
-                StatusText = $"Unable to load plugin header for {pluginName}.";
-                Logger.Warning("Plugin header was not returned for {PluginName}", pluginName);
-                return;
-            }
-
-            SelectedPluginName = pluginName;
-            _selectedPluginHeader = pluginHeader;
-            PluginName = pluginHeader.Name;
-            PluginAuthor = pluginHeader.Author;
-            PluginVersion = pluginHeader.Version.ToString();
-            PluginDescription = pluginHeader.Description;
-            PluginMasters = pluginHeader.Masters.Count == 0 ? "None" : string.Join(", ", pluginHeader.Masters);
-            StatusText = $"Loaded plugin header for {pluginName}.";
-            OnPropertyChanged(nameof(CanOpen));
-            RaiseCommandStates();
-
-            Logger.Information("Loaded plugin header for {PluginName}", pluginName);
+            // TODO: Reimplement after mutagen safe import process setup
+            
+            // var pluginHeader = PluginService.GetPluginHeader(pluginName);
+            // if (pluginHeader is null)
+            // {
+            //     ClearPluginHeader();
+            //     StatusText = $"Unable to load plugin header for {pluginName}.";
+            //     Logger.Warning("Plugin header was not returned for {PluginName}", pluginName);
+            //     return;
+            // }
+            //
+            // SelectedPluginName = pluginName;
+            // _selectedPluginHeader = pluginHeader;
+            // PluginName = pluginHeader.Name;
+            // PluginAuthor = pluginHeader.Author;
+            // PluginVersion = pluginHeader.Version.ToString();
+            // PluginDescription = pluginHeader.Description;
+            // PluginMasters = pluginHeader.Masters.Count == 0 ? "None" : string.Join(", ", pluginHeader.Masters);
+            // StatusText = $"Loaded plugin header for {pluginName}.";
+            // OnPropertyChanged(nameof(CanOpen));
+            // RaiseCommandStates();
+            //
+            // Logger.Information("Loaded plugin header for {PluginName}", pluginName);
         }
         catch (Exception ex)
         {
@@ -252,17 +250,14 @@ public class OpenGamePluginDialogViewModel : ViewModelBase
 
     private void FilterPlugins()
     {
-        if (GameConfigurationStore.Game is null)
-        {
-            return;
-        }
+        if (GameConfigurationStore.Game is null) return;
 
-        var searchText = PluginSearchText.Trim();
-        var plugins = string.IsNullOrWhiteSpace(searchText)
-            ? AllPluginItems
-            : PluginService.SearchPluginListItems(searchText);
-
-        SetPluginItems(plugins);
+        // TODO: Reimplement after mutagen safe import process setup
+        
+        // var searchText = PluginSearchText.Trim();
+        // var plugins = string.IsNullOrWhiteSpace(searchText) ? AllPluginItems : PluginService.SearchPluginListItems(searchText);
+        //
+        // SetPluginItems(plugins);
     }
 
     private void SetPluginItems(IList<PluginListItemDTO> plugins)

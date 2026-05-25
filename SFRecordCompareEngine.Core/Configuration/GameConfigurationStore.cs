@@ -1,5 +1,7 @@
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
+using Mutagen.Bethesda.Fallout4;
+using Mutagen.Bethesda.Skyrim;
 using Mutagen.Bethesda.Starfield;
 using Serilog;
 using SFRecordCompareEngine.Core.Configuration.Interfaces;
@@ -38,13 +40,13 @@ public class GameConfigurationStore : IGameConfigurationStore
                 break;
             case "Skyrim":
                 Logger.Warning("Skyrim is not currently supported. Please select Starfield");
-                SelectedGame = null;
-                Game = null;
+                SelectedGame = "Skyrim";
+                Game = GameEnvironment.Typical.Skyrim(SkyrimRelease.SkyrimSE);
                 break;
             case "Fallout 4":
                 Logger.Warning("Fallout 4 is not currently supported. Please select Starfield");
-                SelectedGame = null;
-                Game = null;
+                SelectedGame = "Fallout 4";
+                Game = GameEnvironment.Typical.Fallout4(Fallout4Release.Fallout4);
                 break;
             default:
                 SelectedGame = null;

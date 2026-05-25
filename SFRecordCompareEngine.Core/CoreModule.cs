@@ -16,11 +16,6 @@ public class CoreModule : Module
 {
     protected override void Load(ContainerBuilder builder)
     {
-        builder.RegisterType<ApplicationConfigurationStore>()
-            .As<IApplicationConfigurationStore>()
-            .SingleInstance();
-        builder.RegisterType<SqliteDatabaseOptions>().SingleInstance();
-
         // Register any stores
         builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly())
             .Where(t => t.Name.EndsWith("Store", StringComparison.OrdinalIgnoreCase))
@@ -33,18 +28,13 @@ public class CoreModule : Module
             .AsImplementedInterfaces()
             .SingleInstance();
 
-        builder.RegisterType<FormListRecordImporter>().SingleInstance();
-        builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly())
-            .AssignableTo<ITypedRecordDetailImporter>()
-            .As<ITypedRecordDetailImporter>()
-            .SingleInstance();
-
-        // Register Factory
+        // Register any factories
         builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly())
             .Where(t => t.Name.EndsWith("Factory"))
             .AsImplementedInterfaces();
 
         // Register database initializers and repositories
+        builder.RegisterType<SqliteDatabaseOptions>().SingleInstance();
         builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly())
             .Where(t => t.Name.EndsWith("Initializer", StringComparison.OrdinalIgnoreCase))
             .AsImplementedInterfaces()

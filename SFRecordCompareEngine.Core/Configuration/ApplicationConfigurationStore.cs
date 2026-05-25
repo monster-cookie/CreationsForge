@@ -15,7 +15,7 @@ public class ApplicationConfigurationStore : IApplicationConfigurationStore
 
     public static string DefaultApplicationDataDirectory { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SFRecordCompareEngine");
 
-    public ApplicationConfigurationStore()
+    public ApplicationConfigurationStore() 
         : this(Path.Combine(DefaultApplicationDataDirectory, "SFRecordCompareEngine.config.json"))
     {
     }

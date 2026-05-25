@@ -130,13 +130,13 @@ public class MainWindowViewModel : ViewModelBase
 
         try
         {
+            // TODO: Reimplement after mutagen safe import process setup
             var progress = new Progress<PluginImportProgressDTO>(UpdateDatabaseImportProgress);
             var importResult = await PluginImportService.InitializeAndImportAsync(progress, cancellationToken);
+            
             DatabaseImportCompleted = true;
             StatusText = $"Plugin database import completed. Imported {importResult.PluginsImported} plugins.";
-            Logger.Information(
-                "Plugin database import completed with {PluginCount} imported plugins",
-                importResult.PluginsImported);
+            Logger.Information("Plugin database import completed with {PluginCount} imported plugins", importResult.PluginsImported);
         }
         catch (OperationCanceledException)
         {
@@ -167,50 +167,8 @@ public class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(LoadedPluginText));
         LoadedPluginName = selectedPluginName;
         StatusText = $"Loaded {selectedPluginName}.";
-        LoadRecordTree();
 
         Logger.Information("Opened {PluginName} for {Game}", selectedPluginName, selectedGame);
-    }
-
-    public void SelectRecordTreeItem(object? selectedItem)
-    {
-        switch (selectedItem)
-        {
-            case RecordTypeTreeNode node:
-                ShowRecordSummaries(node.Records);
-                StatusText = $"Loaded {node.Records.Count} {node.Name} records.";
-                break;
-            case RecordSummaryDTO record:
-                ShowRecordComparison(record);
-                break;
-        }
-    }
-
-    private void LoadRecordTree()
-    {
-        if (LoadedPluginName is null)
-        {
-            RecordTypeNodes = new List<RecordTypeTreeNode>();
-            RecordsGridItems = null;
-            SetSummaryMode();
-            return;
-        }
-
-        var nodes = PluginService.GetRecordTypes()
-            .Select(recordType => new RecordTypeTreeNode
-            {
-                Name = recordType,
-                Records = PluginService.GetRecords(LoadedPluginName, recordType)
-            })
-            .Where(node => node.Records.Count > 0)
-            .ToList();
-
-        RecordTypeNodes = nodes;
-        RecordsGridItems = null;
-        SetSummaryMode();
-        StatusText = nodes.Count == 1
-            ? "Loaded 1 record type."
-            : $"Loaded {nodes.Count} record types.";
     }
 
     private void UpdateDatabaseImportProgress(PluginImportProgressDTO progress)
@@ -227,63 +185,5 @@ public class MainWindowViewModel : ViewModelBase
             DatabaseImportProgressMaximum = progress.PluginCount;
             DatabaseImportProgressValue = progress.PluginIndex;
         }
-    }
-
-    private void ShowRecordSummaries(IList<RecordSummaryDTO> records)
-    {
-        SetSummaryMode();
-        RecordsGridItems = records;
-    }
-
-    private void ShowRecordComparison(RecordSummaryDTO record)
-    {
-        if (LoadedPluginName is null || string.IsNullOrWhiteSpace(record.RecordType) || string.IsNullOrWhiteSpace(record.FormID))
-        {
-            StatusText = "Unable to load comparison for the selected record.";
-            return;
-        }
-
-        var comparison = PluginService.GetRecordComparison(LoadedPluginName, record.RecordType, record.FormID);
-        SetComparisonMode(comparison.Plugins.Select(plugin => plugin.PluginName).ToList());
-
-        RecordsGridItems = comparison.Fields
-            .Select(field => new RecordComparisonRowViewModel
-            {
-                FieldName = field.FieldName,
-                Cells = comparison.Plugins.ToDictionary(
-                    plugin => plugin.PluginName,
-                    plugin => new RecordComparisonCellViewModel
-                    {
-                        DisplayKind = field.DisplayKind,
-                        TextValue = field.ValuesByPlugin.TryGetValue(plugin.PluginName, out var textValue)
-                            ? textValue ?? string.Empty
-                            : string.Empty,
-                        BooleanValue = field.BooleanValuesByPlugin.TryGetValue(plugin.PluginName, out var booleanValue)
-                            ? booleanValue
-                            : null,
-                        TreeNodes = field.TreeValuesByPlugin.TryGetValue(plugin.PluginName, out var treeNodes)
-                            ? treeNodes
-                            : new List<RecordComparisonFieldNodeDTO>()
-                    },
-                    StringComparer.OrdinalIgnoreCase)
-            })
-            .ToList();
-        StatusText = $"Loaded comparison for {record.EditorID ?? record.FormID}.";
-    }
-
-    private void SetSummaryMode()
-    {
-        IsComparisonMode = false;
-        OnPropertyChanged(nameof(IsComparisonMode));
-        ComparisonPluginNames = new List<string>();
-        OnPropertyChanged(nameof(ComparisonPluginNames));
-    }
-
-    private void SetComparisonMode(IList<string> pluginNames)
-    {
-        IsComparisonMode = true;
-        OnPropertyChanged(nameof(IsComparisonMode));
-        ComparisonPluginNames = pluginNames;
-        OnPropertyChanged(nameof(ComparisonPluginNames));
     }
 }

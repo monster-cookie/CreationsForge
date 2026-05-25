@@ -1,10 +1,9 @@
-namespace SFRecordCompareEngine.Core.Services;
+﻿namespace SFRecordCompareEngine.Core.Helpers;
 
 public static class RecordTypeImportCatalog
 {
     public const string FormListRecordType = "FormList";
     public const string GameSettingRecordType = "GameSetting";
-    public const string AggregateRecordType = "StarfieldMajorRecord";
 
     public static readonly IReadOnlyList<string> SupportedRecordTypes =
     [
@@ -35,7 +34,7 @@ public static class RecordTypeImportCatalog
     [
         "ArmorModification", "ContainerModification", "FloraModification", "GameSettingBool", "GameSettingFloat", "GameSettingInt", "GameSettingString",
         "GameSettingUInt", "NpcModification", "PlacedArrow", "PlacedBarrier", "PlacedBeam", "PlacedCone", "PlacedFlame", "PlacedHazard", "PlacedMissile",
-        "PlacedTrap", "UnknownObjectModification", "WeaponModification", AggregateRecordType
+        "PlacedTrap", "UnknownObjectModification", "WeaponModification"
     ];
 
     public static readonly IReadOnlyList<string> KnownMajorRecordTypes = SupportedRecordTypes

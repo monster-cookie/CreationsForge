@@ -38,6 +38,8 @@ Use these as primary documentation references:
 - Class-per-file. Primary constructors for services, factories, stores, and repositories where possible.
 - No statics for application services or mutable app state. Prefer DI; register singletons only when appropriate. Constants, generated framework code, and existing static patterns may remain unless explicitly approved for refactor.
 - No repeated code: Refactor existing methods as needed to avoid repeating code in new methods.
+- Do not introduce new conventions or dependencies unless explicitly approved in the PLAN.
+- Do not use the new .NET 10 primary class constructors, only use the older style.
 
 ## TECH CONSTRAINTS
 
@@ -56,7 +58,6 @@ Use these as primary documentation references:
 - Use async commands where existing patterns support them.
 - UI-bound collection updates must occur on the UI thread.
 - Do not call MessageBox, file pickers, dialogs, or window APIs from SFRecordCompareEngine.Core.
-- Preserve existing XAML resource, style, and binding conventions.
 - Avoid broad XAML rewrites unless explicitly approved in the PLAN.
 
 ## DEPENDENCY INJECTION
@@ -110,6 +111,8 @@ Use these as primary documentation references:
 
 - Unit tests live in /SFRecordCompareEngine.UnitTests (xUnit + Moq + Shouldly).
 - For new features/bugfixes, include tests in the PLAN and add them alongside code changes.
+- Do not unit test database access or repository implementations.
+- Do not test UI-bound code.
 
 ## PLAN → EXECUTE → VALIDATE
 

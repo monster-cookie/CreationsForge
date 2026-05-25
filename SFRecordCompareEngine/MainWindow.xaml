@@ -9,7 +9,6 @@
         MinWidth="520"
         WindowState="Maximized">
     <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <Style x:Key="OpenFolderIconPathStyle" TargetType="Path">
             <Setter Property="Stroke" Value="#333" />
             <Setter Property="StrokeThickness" Value="1.6" />
@@ -21,61 +20,29 @@
             <Setter Property="Width" Value="16" />
             <Setter Property="Height" Value="16" />
         </Style>
-        <HierarchicalDataTemplate x:Key="ComparisonTreeNodeTemplate"
-                                  ItemsSource="{Binding Children}">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="{Binding Name}" />
-                <TextBlock Text="{Binding Value, StringFormat=: {0}}" />
-            </StackPanel>
-        </HierarchicalDataTemplate>
-        <DataTemplate x:Key="ComparisonTextCellTemplate">
-            <TextBlock Text="{Binding TextValue}"
-                       TextWrapping="Wrap" />
-        </DataTemplate>
-        <DataTemplate x:Key="ComparisonBooleanCellTemplate">
-            <CheckBox IsChecked="{Binding BooleanValue}"
-                      IsHitTestVisible="False"
-                      Focusable="False"
-                      HorizontalAlignment="Center" />
-        </DataTemplate>
-        <DataTemplate x:Key="ComparisonTreeCellTemplate">
-            <TreeView ItemsSource="{Binding TreeNodes}"
-                      ItemTemplate="{StaticResource ComparisonTreeNodeTemplate}"
-                      BorderThickness="0"
-                      Padding="0" />
-        </DataTemplate>
-        <local:RecordComparisonCellTemplateSelector x:Key="ComparisonCellTemplateSelector"
-                                                    TextTemplate="{StaticResource ComparisonTextCellTemplate}"
-                                                    BooleanTemplate="{StaticResource ComparisonBooleanCellTemplate}"
-                                                    TreeTemplate="{StaticResource ComparisonTreeCellTemplate}" />
     </Window.Resources>
     <Grid>
         <DockPanel>
             <Menu DockPanel.Dock="Top">
-            <MenuItem Header="_File">
-                <MenuItem Header="_Open..."
-                          IsEnabled="{Binding CanUseApplication, Mode=OneWay}"
-                          Click="OpenMenuItem_Click">
-                    <MenuItem.Icon>
-                        <Path Style="{StaticResource OpenFolderIconPathStyle}"
-                              Data="M2,6 L7,6 L8.5,8 L14,8 L12.5,14 L2.5,14 Z M2,6 L2,4 L6.5,4 L8,6" />
-                    </MenuItem.Icon>
+                <MenuItem Header="_File">
+                    <MenuItem Header="_Open..." IsEnabled="{Binding CanUseApplication, Mode=OneWay}"
+                              Click="OpenMenuItem_Click">
+                        <MenuItem.Icon>
+                            <Path Style="{StaticResource OpenFolderIconPathStyle}"
+                                  Data="M2,6 L7,6 L8.5,8 L14,8 L12.5,14 L2.5,14 Z M2,6 L2,4 L6.5,4 L8,6" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <Separator />
+                    <MenuItem Header="E_xit" Click="ExitMenuItem_Click" />
                 </MenuItem>
-                <Separator />
-                <MenuItem Header="E_xit"
-                          Click="ExitMenuItem_Click" />
-            </MenuItem>
             </Menu>
 
             <ToolBarTray DockPanel.Dock="Top">
                 <ToolBar>
-                    <Button Width="80"
-                            Height="28"
-                            IsEnabled="{Binding CanUseApplication, Mode=OneWay}"
+                    <Button Width="80" Height="28" IsEnabled="{Binding CanUseApplication, Mode=OneWay}"
                             Click="OpenMenuItem_Click">
                         <StackPanel Orientation="Horizontal">
-                            <Path Style="{StaticResource OpenFolderIconPathStyle}"
-                                  Margin="0,0,6,0"
+                            <Path Style="{StaticResource OpenFolderIconPathStyle}" Margin="0,0,6,0"
                                   Data="M2,6 L7,6 L8.5,8 L14,8 L12.5,14 L2.5,14 Z M2,6 L2,4 L6.5,4 L8,6" />
                             <TextBlock Text="Open" VerticalAlignment="Center" />
                         </StackPanel>
@@ -89,81 +56,33 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="220" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="280" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="220" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="280" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" Text="Game" FontWeight="SemiBold" Margin="0,0,8,0"
-                           VerticalAlignment="Center" />
-                <TextBlock x:Name="LoadedGameTextBlock" Grid.Column="1" Margin="0,0,24,0"
-                           Text="{Binding LoadedGameText}"
-                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="0" Text="Game" FontWeight="SemiBold" Margin="0,0,8,0"
+                               VerticalAlignment="Center" />
+                    <TextBlock x:Name="LoadedGameTextBlock" Grid.Column="1" Margin="0,0,24,0"
+                               Text="{Binding LoadedGameText}" TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center" />
 
-                <TextBlock Grid.Column="2" Text="Plugin" FontWeight="SemiBold" Margin="0,0,8,0"
-                           VerticalAlignment="Center" />
-                <TextBlock x:Name="LoadedPluginTextBlock" Grid.Column="3" Margin="0,0,24,0"
-                           Text="{Binding LoadedPluginText}"
-                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="Plugin" FontWeight="SemiBold" Margin="0,0,8,0"
+                               VerticalAlignment="Center" />
+                    <TextBlock x:Name="LoadedPluginTextBlock" Grid.Column="3" Margin="0,0,24,0"
+                               Text="{Binding LoadedPluginText}" TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center" />
 
-                <TextBlock Grid.Column="4" Text="Status" FontWeight="SemiBold" Margin="0,0,8,0"
-                           VerticalAlignment="Center" />
-                <TextBlock x:Name="StatusTextBlock" Grid.Column="5" Foreground="#555" TextTrimming="CharacterEllipsis"
-                           Text="{Binding StatusText}"
-                           VerticalAlignment="Center" />
-            </Grid>
-
-            <Grid Grid.Row="1" Margin="0,16,0,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="3*" />
-                </Grid.ColumnDefinitions>
-
-                <Border Grid.Column="0"
-                        BorderBrush="#DDD"
-                        BorderThickness="0,0,1,0"
-                        Padding="0,0,12,0">
-                    <TreeView x:Name="RecordsTreeView"
-                              ItemsSource="{Binding RecordTypeNodes}"
-                              SelectedItemChanged="RecordsTreeView_SelectedItemChanged">
-                        <TreeView.ItemTemplate>
-                            <HierarchicalDataTemplate ItemsSource="{Binding Records}">
-                                <TextBlock Text="{Binding Name}" />
-                                <HierarchicalDataTemplate.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding EditorID}" />
-                                    </DataTemplate>
-                                </HierarchicalDataTemplate.ItemTemplate>
-                            </HierarchicalDataTemplate>
-                        </TreeView.ItemTemplate>
-                    </TreeView>
-                </Border>
-
-                <DataGrid x:Name="RecordsDataGrid"
-                          Grid.Column="1"
-                          Margin="12,0,0,0"
-                          ItemsSource="{Binding RecordsGridItems}"
-                          AutoGenerateColumns="False"
-                          CanUserAddRows="False"
-                          CanUserDeleteRows="False"
-                          IsReadOnly="True"
-                          GridLinesVisibility="All"
-                          HeadersVisibility="Column">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="FormID"
-                                            Binding="{Binding FormID}"
-                                            Width="180" />
-                        <DataGridTextColumn Header="EditorID"
-                                            Binding="{Binding EditorID}"
-                                            Width="*" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </Grid>
+                    <TextBlock Grid.Column="4" Text="Status" FontWeight="SemiBold" Margin="0,0,8,0"
+                               VerticalAlignment="Center" />
+                    <TextBlock x:Name="StatusTextBlock" Grid.Column="5" Foreground="#555"
+                               TextTrimming="CharacterEllipsis" Text="{Binding StatusText}" VerticalAlignment="Center" />
+                </Grid>
             </Grid>
         </DockPanel>
 
