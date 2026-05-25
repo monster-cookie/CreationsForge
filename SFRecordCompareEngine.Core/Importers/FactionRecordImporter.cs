@@ -1,4 +1,5 @@
 using System.Collections;
+using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Importers.Interfaces;
@@ -12,7 +13,7 @@ public class FactionRecordImporter(IFactionRepository factionRepository) : IType
     public string RecordType => "Faction";
     public string TableName => "Faction";
 
-    public void Import(IDatabase database, string modKey, string formId, RecordEnumerationDTO record, string importedAtUtc)
+    public void Import(IDatabase database, ModKey modKey, string formId, RecordEnumerationDTO record, string importedAtUtc)
     {
         factionRepository.Upsert(database, new FactionDTO
         {
@@ -40,7 +41,7 @@ public class FactionRecordImporter(IFactionRepository factionRepository) : IType
         factionRepository.ReplaceRelations(database, modKey, formId, GetRelations(record.Record, modKey, formId, importedAtUtc));
     }
 
-    private static IList<FactionRelationDTO> GetRelations(object source, string modKey, string formId, string importedAtUtc)
+    private static IList<FactionRelationDTO> GetRelations(object source, ModKey modKey, string formId, string importedAtUtc)
     {
         if (RecordHeaderMapper.GetPropertyValue(source, "Relations") is not IEnumerable relations) return [];
 

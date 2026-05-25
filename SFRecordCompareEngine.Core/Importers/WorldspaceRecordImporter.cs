@@ -1,4 +1,5 @@
 using System.Globalization;
+using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Records;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Records;
@@ -13,7 +14,7 @@ public class WorldspaceRecordImporter(IWorldspaceRepository worldspaceRepository
     public string RecordType => "Worldspace";
     public string TableName => "Worldspace";
 
-    public void Import(IDatabase database, string modKey, string formId, RecordEnumerationDTO record, string importedAtUtc)
+    public void Import(IDatabase database, ModKey modKey, string formId, RecordEnumerationDTO record, string importedAtUtc)
     {
         var source = record.Record;
         worldspaceRepository.Upsert(database, new WorldspaceDTO

@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.IO;
+using Mutagen.Bethesda.Plugins;
 using Serilog;
-using SFRecordCompareEngine.Core.Database;
 using SFRecordCompareEngine.Core.Database.Interfaces;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.Repositories.Interfaces;
@@ -38,9 +38,7 @@ public class PluginImportService(
         });
 
         databaseSchemaInitializer.Initialize();
-        Logger.Information(
-            "Initialized plugin database {DatabasePath}",
-            connectionFactory.DatabasePath);
+        Logger.Information("Initialized plugin database {DatabasePath}", connectionFactory.DatabasePath);
 
         var result = new PluginImportResultDTO();
 
@@ -59,7 +57,7 @@ public class PluginImportService(
         var checkedAtUtc = FormatUtc(DateTimeOffset.UtcNow);
         var currentModKeys = loadOrderEntries
             .Select(entry => entry.ModKey)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            .ToHashSet();
 
         for (var index = 0; index < loadOrderEntries.Count; index++)
         {
@@ -68,7 +66,7 @@ public class PluginImportService(
             progress?.Report(new PluginImportProgressDTO
             {
                 CurrentPluginName = loadOrderEntry.PluginFileName,
-                CurrentModKey = loadOrderEntry.ModKey,
+                CurrentModKey = loadOrderEntry.ModKey.ToString(),
                 PluginIndex = index + 1,
                 PluginCount = loadOrderEntries.Count,
                 StatusText = $"Checking {loadOrderEntry.PluginFileName} ({index + 1} of {loadOrderEntries.Count})...",
@@ -139,7 +137,7 @@ public class PluginImportService(
                 PluginPath = loadOrderEntry.PluginPath,
                 Enabled = loadOrderEntry.Enabled,
                 ExistsOnDisk = fileInfo.Exists,
-                ImportState = PluginImportState.Unsupported.ToString(),
+                ImportState = nameof(PluginImportState.Unsupported),
                 HeaderFlags = existingPlugin?.HeaderFlags,
                 FormVersion = existingPlugin?.FormVersion,
                 Author = existingPlugin?.Author,
@@ -167,7 +165,7 @@ public class PluginImportService(
                 PluginPath = loadOrderEntry.PluginPath,
                 Enabled = loadOrderEntry.Enabled,
                 ExistsOnDisk = false,
-                ImportState = PluginImportState.Missing.ToString(),
+                ImportState = nameof(PluginImportState.Missing),
                 LastCheckedUtc = checkedAtUtc,
                 LastImportedUtc = existingPlugin?.LastImportedUtc,
                 SourceLastWriteUtcTicks = existingPlugin?.SourceLastWriteUtcTicks,
@@ -185,18 +183,8 @@ public class PluginImportService(
         if (isUnchanged)
         {
             result.PluginsUnchanged++;
-            Logger.Information(
-                "Skipping unchanged plugin {ModKey}: source last write ticks {SourceLastWriteUtcTicks}, source file size {SourceFileSizeBytes}, import state {ImportState}",
-                loadOrderEntry.ModKey,
-                sourceLastWriteUtcTicks,
-                sourceFileSizeBytes,
-                existingPlugin!.ImportState);
-            pluginRepository.UpsertPlugin(database, CopyWithLoadOrderRefresh(
-                existingPlugin!,
-                loadOrderEntry,
-                checkedAtUtc,
-                sourceLastWriteUtcTicks,
-                sourceFileSizeBytes));
+            Logger.Information("Skipping unchanged plugin {ModKey}: source last write ticks {SourceLastWriteUtcTicks}, source file size {SourceFileSizeBytes}, import state {ImportState}", loadOrderEntry.ModKey, sourceLastWriteUtcTicks, sourceFileSizeBytes, existingPlugin!.ImportState);
+            pluginRepository.UpsertPlugin(database, CopyWithLoadOrderRefresh(existingPlugin, loadOrderEntry, checkedAtUtc, sourceLastWriteUtcTicks, sourceFileSizeBytes));
             return;
         }
 
@@ -238,7 +226,7 @@ public class PluginImportService(
                 PluginPath = loadOrderEntry.PluginPath,
                 Enabled = loadOrderEntry.Enabled,
                 ExistsOnDisk = true,
-                ImportState = PluginImportState.Current.ToString(),
+                ImportState = nameof(PluginImportState.Current),
                 HeaderFlags = header.HeaderFlags,
                 FormVersion = header.FormVersion,
                 Author = header.Author,
@@ -290,7 +278,7 @@ public class PluginImportService(
                 PluginPath = loadOrderEntry.PluginPath,
                 Enabled = loadOrderEntry.Enabled,
                 ExistsOnDisk = true,
-                ImportState = PluginImportState.Failed.ToString(),
+                ImportState = nameof(PluginImportState.Failed),
                 HeaderFlags = existingPlugin?.HeaderFlags,
                 FormVersion = existingPlugin?.FormVersion,
                 Author = existingPlugin?.Author,
@@ -335,10 +323,10 @@ public class PluginImportService(
         return masterReferences;
     }
 
-    private void DeleteDerivedRowsForMissingPlugins(NPoco.IDatabase database, ISet<string> currentModKeys)
+    private void DeleteDerivedRowsForMissingPlugins(NPoco.IDatabase database, ISet<ModKey> currentModKeys)
     {
         var plugins = pluginRepository.GetAll(database);
-        var currentModKeysByCaseInsensitiveKey = currentModKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var currentModKeysByCaseInsensitiveKey = currentModKeys.ToHashSet();
         foreach (var plugin in plugins.Where(plugin => !currentModKeysByCaseInsensitiveKey.Contains(plugin.ModKey)))
         {
             recordHeaderRepository.DeleteByModKey(database, plugin.ModKey);
@@ -357,9 +345,9 @@ public class PluginImportService(
         existingPlugin.PluginPath = loadOrderEntry.PluginPath;
         existingPlugin.Enabled = loadOrderEntry.Enabled;
         existingPlugin.ExistsOnDisk = true;
-        if (!string.Equals(existingPlugin.ImportState, PluginImportState.Failed.ToString(), StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(existingPlugin.ImportState, nameof(PluginImportState.Failed), StringComparison.OrdinalIgnoreCase))
         {
-            existingPlugin.ImportState = PluginImportState.Current.ToString();
+            existingPlugin.ImportState = nameof(PluginImportState.Current);
         }
         existingPlugin.SourceLastWriteUtcTicks = sourceLastWriteUtcTicks;
         existingPlugin.SourceFileSizeBytes = sourceFileSizeBytes;
@@ -369,12 +357,8 @@ public class PluginImportService(
 
     private static bool IsUnsupportedPlugin(PluginLoadOrderEntryDTO loadOrderEntry)
     {
-        var pluginFileName = string.IsNullOrWhiteSpace(loadOrderEntry.PluginFileName)
-            ? loadOrderEntry.ModKey
-            : loadOrderEntry.PluginFileName;
-
-        return pluginFileName.StartsWith("BlueprintShips", StringComparison.OrdinalIgnoreCase)
-               && pluginFileName.EndsWith(".esm", StringComparison.OrdinalIgnoreCase);
+        var pluginFileName = string.IsNullOrWhiteSpace(loadOrderEntry.PluginFileName) ? loadOrderEntry.ModKey.ToString() : loadOrderEntry.PluginFileName;
+        return pluginFileName.StartsWith("BlueprintShips", StringComparison.OrdinalIgnoreCase) && pluginFileName.EndsWith(".esm", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FormatUtc(DateTimeOffset dateTimeOffset)

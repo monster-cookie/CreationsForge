@@ -173,22 +173,16 @@ public class PluginService : IPluginService
     /// <inheritdoc />
     public IList<PluginLoadOrderEntryDTO> GetLoadOrder()
     {
-        var gameEnvironment = GameConfigurationStore.Game
-                              ?? throw new InvalidOperationException("No game environment is configured.");
+        var gameEnvironment = GameConfigurationStore.Game ?? throw new InvalidOperationException("No game environment is configured.");
 
         return gameEnvironment.LoadOrder.ListedOrder
-            .Select((plugin, index) =>
+            .Select((plugin, index) => new PluginLoadOrderEntryDTO
             {
-                var pluginFileName = plugin.FileName.ToString();
-                var modKey = ModKey.FromFileName(pluginFileName).ToString();
-                return new PluginLoadOrderEntryDTO
-                {
-                    ModKey = modKey,
-                    PluginFileName = pluginFileName,
-                    PluginPath = Path.Combine(gameEnvironment.DataFolderPath.Path, pluginFileName),
-                    LoadOrderIndex = index,
-                    Enabled = true
-                };
+                ModKey = plugin.ModKey,
+                PluginFileName = plugin.FileName,
+                PluginPath = Path.Join(gameEnvironment.DataFolderPath, plugin.FileName),
+                LoadOrderIndex = index,
+                Enabled = plugin.Enabled
             })
             .ToList();
     }

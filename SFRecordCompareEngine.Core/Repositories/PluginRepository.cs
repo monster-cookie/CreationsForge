@@ -1,3 +1,4 @@
+using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.Repositories.Interfaces;
@@ -6,21 +7,25 @@ namespace SFRecordCompareEngine.Core.Repositories;
 
 public class PluginRepository : IPluginRepository
 {
-    public PluginMetadataDTO? GetByModKey(IDatabase database, string modKey)
+    public PluginMetadataDTO? GetByModKey(IDatabase database, ModKey modKey)
     {
-        return database.FirstOrDefault<PluginMetadataDTO>(
+        var row = database.FirstOrDefault<PluginMetadataRow>(
             "SELECT * FROM Plugins WHERE ModKey = @ModKey COLLATE NOCASE;",
-            new { ModKey = modKey });
+            new { ModKey = modKey.FileName });
+
+        return row is null ? null : MapPluginMetadata(row);
     }
 
     public IList<PluginMetadataDTO> GetAll(IDatabase database)
     {
-        return database.Fetch<PluginMetadataDTO>("SELECT * FROM Plugins;");
+        return database.Fetch<PluginMetadataRow>("SELECT * FROM Plugins;")
+            .Select(MapPluginMetadata)
+            .ToList();
     }
 
     public IList<PluginMetadataDTO> GetPlugins(IDatabase database)
     {
-        return database.Fetch<PluginMetadataDTO>(
+        return database.Fetch<PluginMetadataRow>(
             """
             SELECT *
             FROM Plugins
@@ -30,12 +35,14 @@ public class PluginRepository : IPluginRepository
               AND ModKey <> @BaseGameModKey COLLATE NOCASE
             ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex ASC, PluginFileName COLLATE NOCASE ASC;
             """,
-            new { ImportState = PluginImportState.Current.ToString(), BaseGameModKey = "Starfield.esm" });
+            new { ImportState = PluginImportState.Current.ToString(), BaseGameModKey = "Starfield.esm" })
+            .Select(MapPluginMetadata)
+            .ToList();
     }
 
     public IList<PluginMetadataDTO> GetOpenablePlugins(IDatabase database)
     {
-        return database.Fetch<PluginMetadataDTO>(
+        return database.Fetch<PluginMetadataRow>(
             """
             SELECT *
             FROM Plugins
@@ -49,13 +56,15 @@ public class PluginRepository : IPluginRepository
                 CurrentImportState = PluginImportState.Current.ToString(),
                 FailedImportState = PluginImportState.Failed.ToString(),
                 BaseGameModKey = "Starfield.esm"
-            });
+            })
+            .Select(MapPluginMetadata)
+            .ToList();
     }
 
     public IList<PluginMetadataDTO> SearchPlugins(IDatabase database, string searchText)
     {
         var searchPattern = $"%{searchText}%";
-        return database.Fetch<PluginMetadataDTO>(
+        return database.Fetch<PluginMetadataRow>(
             """
             SELECT *
             FROM Plugins
@@ -71,13 +80,15 @@ public class PluginRepository : IPluginRepository
                 ImportState = PluginImportState.Current.ToString(),
                 BaseGameModKey = "Starfield.esm",
                 SearchPattern = searchPattern
-            });
+            })
+            .Select(MapPluginMetadata)
+            .ToList();
     }
 
     public IList<PluginMetadataDTO> SearchOpenablePlugins(IDatabase database, string searchText)
     {
         var searchPattern = $"%{searchText}%";
-        return database.Fetch<PluginMetadataDTO>(
+        return database.Fetch<PluginMetadataRow>(
             """
             SELECT *
             FROM Plugins
@@ -93,19 +104,23 @@ public class PluginRepository : IPluginRepository
                 FailedImportState = PluginImportState.Failed.ToString(),
                 BaseGameModKey = "Starfield.esm",
                 SearchPattern = searchPattern
-            });
+            })
+            .Select(MapPluginMetadata)
+            .ToList();
     }
 
     public IList<PluginMasterReferenceDTO> GetMasterReferences(IDatabase database, string modKey)
     {
-        return database.Fetch<PluginMasterReferenceDTO>(
+        return database.Fetch<PluginMasterReferenceRow>(
             """
             SELECT *
             FROM PluginMasterReferences
             WHERE ModKey = @ModKey COLLATE NOCASE
             ORDER BY MasterReferenceIndex ASC;
             """,
-            new { ModKey = modKey });
+            new { ModKey = modKey })
+            .Select(MapPluginMasterReference)
+            .ToList();
     }
 
     public IList<PluginResolutionHierarchyDTO> GetResolutionHierarchy(IDatabase database, string modKey)
@@ -169,7 +184,7 @@ public class PluginRepository : IPluginRepository
             """,
             new
             {
-                plugin.ModKey,
+                ModKey = plugin.ModKey.FileName,
                 plugin.GameRelease,
                 LoadOrderIndex = DbValue(plugin.LoadOrderIndex),
                 plugin.PluginFileName,
@@ -217,9 +232,9 @@ public class PluginRepository : IPluginRepository
             });
     }
 
-    public void ReplaceMasterReferences(IDatabase database, string modKey, IList<PluginMasterReferenceDTO> masterReferences)
+    public void ReplaceMasterReferences(IDatabase database, ModKey modKey, IList<PluginMasterReferenceDTO> masterReferences)
     {
-        database.Execute("DELETE FROM PluginMasterReferences WHERE ModKey = @ModKey COLLATE NOCASE;", new { ModKey = modKey });
+        database.Execute("DELETE FROM PluginMasterReferences WHERE ModKey = @ModKey COLLATE NOCASE;", new { ModKey = modKey.FileName });
 
         foreach (var masterReference in masterReferences)
         {
@@ -236,7 +251,7 @@ public class PluginRepository : IPluginRepository
                 """,
                 new
                 {
-                    masterReference.ModKey,
+                    ModKey = masterReference.ModKey.FileName,
                     masterReference.ParentModKey,
                     masterReference.MasterReferenceIndex,
                     ParentLoadOrderIndex = DbValue(masterReference.ParentLoadOrderIndex),
@@ -258,10 +273,10 @@ public class PluginRepository : IPluginRepository
             """);
     }
 
-    public void MarkPluginsNotInLoadOrder(IDatabase database, ISet<string> currentModKeys, string checkedAtUtc)
+    public void MarkPluginsNotInLoadOrder(IDatabase database, HashSet<ModKey> currentModKeys, string checkedAtUtc)
     {
         var plugins = GetAll(database);
-        var currentModKeysByCaseInsensitiveKey = currentModKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var currentModKeysByCaseInsensitiveKey = currentModKeys.ToHashSet();
         foreach (var plugin in plugins.Where(plugin => !currentModKeysByCaseInsensitiveKey.Contains(plugin.ModKey)))
         {
             database.Execute(
@@ -273,12 +288,80 @@ public class PluginRepository : IPluginRepository
                     LastCheckedUtc = @LastCheckedUtc
                 WHERE ModKey = @ModKey;
                 """,
-                new { ImportState = PluginImportState.Missing.ToString(), LastCheckedUtc = checkedAtUtc, plugin.ModKey });
+                new { ImportState = PluginImportState.Missing.ToString(), LastCheckedUtc = checkedAtUtc, ModKey = plugin.ModKey.FileName });
         }
+    }
+
+    private static PluginMetadataDTO MapPluginMetadata(PluginMetadataRow row)
+    {
+        return new PluginMetadataDTO
+        {
+            ModKey = ModKey.FromFileName(row.ModKey),
+            GameRelease = row.GameRelease,
+            LoadOrderIndex = row.LoadOrderIndex,
+            PluginFileName = row.PluginFileName,
+            PluginPath = row.PluginPath,
+            Enabled = row.Enabled,
+            ExistsOnDisk = row.ExistsOnDisk,
+            ImportState = row.ImportState,
+            HeaderFlags = row.HeaderFlags,
+            FormVersion = row.FormVersion,
+            Author = row.Author,
+            Branch = row.Branch,
+            InteriorCellCount = row.InteriorCellCount,
+            SourceLastWriteUtcTicks = row.SourceLastWriteUtcTicks,
+            SourceFileSizeBytes = row.SourceFileSizeBytes,
+            LastCheckedUtc = row.LastCheckedUtc,
+            LastImportedUtc = row.LastImportedUtc,
+            InvalidatedAtUtc = row.InvalidatedAtUtc
+        };
+    }
+
+    private static PluginMasterReferenceDTO MapPluginMasterReference(PluginMasterReferenceRow row)
+    {
+        return new PluginMasterReferenceDTO
+        {
+            ModKey = ModKey.FromFileName(row.ModKey),
+            ParentModKey = row.ParentModKey,
+            MasterReferenceIndex = row.MasterReferenceIndex,
+            ParentLoadOrderIndex = row.ParentLoadOrderIndex,
+            ImportedAtUtc = row.ImportedAtUtc
+        };
     }
 
     private static object DbValue(object? value)
     {
         return value ?? DBNull.Value;
+    }
+
+    private sealed class PluginMetadataRow
+    {
+        public string ModKey { get; set; } = string.Empty;
+        public string GameRelease { get; set; } = string.Empty;
+        public int? LoadOrderIndex { get; set; }
+        public string PluginFileName { get; set; } = string.Empty;
+        public string? PluginPath { get; set; }
+        public bool Enabled { get; set; } = true;
+        public bool ExistsOnDisk { get; set; } = true;
+        public string ImportState { get; set; } = PluginImportState.Current.ToString();
+        public int? HeaderFlags { get; set; }
+        public int? FormVersion { get; set; }
+        public string? Author { get; set; }
+        public string? Branch { get; set; }
+        public int? InteriorCellCount { get; set; }
+        public long? SourceLastWriteUtcTicks { get; set; }
+        public long? SourceFileSizeBytes { get; set; }
+        public string LastCheckedUtc { get; set; } = string.Empty;
+        public string? LastImportedUtc { get; set; }
+        public string? InvalidatedAtUtc { get; set; }
+    }
+
+    private sealed class PluginMasterReferenceRow
+    {
+        public string ModKey { get; set; } = string.Empty;
+        public string ParentModKey { get; set; } = string.Empty;
+        public int MasterReferenceIndex { get; set; }
+        public int? ParentLoadOrderIndex { get; set; }
+        public string ImportedAtUtc { get; set; } = string.Empty;
     }
 }

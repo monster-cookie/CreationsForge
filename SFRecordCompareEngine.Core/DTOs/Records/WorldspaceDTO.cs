@@ -1,8 +1,10 @@
+using Mutagen.Bethesda.Plugins;
+
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
 public class WorldspaceDTO
 {
-    public required string ModKey { get; set; }
+    public required ModKey ModKey { get; set; }
     public required string FormID { get; set; }
     public string? Name { get; set; }
     public string? ParentWorldspaceFormKey { get; set; }

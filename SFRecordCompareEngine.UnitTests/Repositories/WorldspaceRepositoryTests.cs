@@ -52,11 +52,10 @@ public class WorldspaceRepositoryTests : IDisposable
             ImportedAtUtc = importedAtUtc
         });
 
-        var result = database.First<WorldspaceDTO>(
-            "SELECT * FROM Worldspace WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
-            new { ModKey = "Example.esm", FormId = "000100" });
-        result.Name.ShouldBe("Example Worldspace");
-        result.TopCellFormKey.ShouldBe("000001:Example.esm");
+        database.ExecuteScalar<string>(
+            "SELECT Name FROM Worldspace WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
+            new { ModKey = "Example.esm", FormId = "000100" }).ShouldBe("Example Worldspace");
+        database.ExecuteScalar<string>("SELECT TopCellFormKey FROM Worldspace WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;", new { ModKey = "Example.esm", FormId = "000100" }).ShouldBe("000001:Example.esm");
     }
 
     private void InsertPluginAndHeader(NPoco.IDatabase database, string modKey, string formId, string recordType)

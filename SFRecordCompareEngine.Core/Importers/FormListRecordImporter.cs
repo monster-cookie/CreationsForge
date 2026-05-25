@@ -1,4 +1,5 @@
 using System.Collections;
+using Mutagen.Bethesda.Plugins;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Repositories.Interfaces;
 using SFRecordCompareEngine.Core.Services;
@@ -7,7 +8,7 @@ namespace SFRecordCompareEngine.Core.Importers;
 
 public class FormListRecordImporter(IFormListRepository formListRepository)
 {
-    public int Import(NPoco.IDatabase database, string modKey, string formId, object record, string importedAtUtc)
+    public int Import(NPoco.IDatabase database, ModKey modKey, string formId, object record, string importedAtUtc)
     {
         formListRepository.UpsertFormList(database, new FormListDTO
         {
@@ -23,7 +24,7 @@ public class FormListRecordImporter(IFormListRepository formListRepository)
         return items.Count;
     }
 
-    private static IList<FormListItemDTO> GetItems(object record, string modKey, string formId, string importedAtUtc)
+    private static IList<FormListItemDTO> GetItems(object record, ModKey modKey, string formId, string importedAtUtc)
     {
         if (RecordHeaderMapper.GetPropertyValue(record, "Items") is not IEnumerable items)
         {

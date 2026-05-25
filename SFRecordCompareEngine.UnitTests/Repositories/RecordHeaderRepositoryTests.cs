@@ -36,39 +36,6 @@ public class RecordHeaderRepositoryTests : IDisposable
     }
 
     [Fact]
-    public void GetByHierarchy_WhenRowsExist_ReturnsRowsOrderedByLoadOrder()
-    {
-        using var database = ConnectionFactory.OpenDatabase();
-        InsertPluginAndHeader(database, "ParentA.esm", 1, "000001", "Keyword");
-        InsertPluginAndHeader(database, "ParentB.esm", 2, "000001", "Keyword");
-        InsertPluginAndHeader(database, "Child.esm", 3, "000001", "Keyword");
-        PluginRepository.ReplaceMasterReferences(database, "Child.esm", [
-            CreateMaster("Child.esm", "ParentB.esm", 0, 2),
-            CreateMaster("Child.esm", "ParentA.esm", 1, 1)
-        ]);
-
-        var result = Sut.GetByHierarchy(database, "Child.esm", "000001", null, "Keyword");
-
-        result.Select(record => record.ModKey).ShouldBe(["ParentA.esm", "ParentB.esm", "Child.esm"]);
-    }
-
-    [Fact]
-    public void GetWinningOverride_WhenRowsExist_ReturnsLastMatchingLoadOrderRecord()
-    {
-        using var database = ConnectionFactory.OpenDatabase();
-        InsertPluginAndHeader(database, "Parent.esm", 1, "000001", "Keyword");
-        InsertPluginAndHeader(database, "Child.esm", 2, "000001", "Keyword");
-        PluginRepository.ReplaceMasterReferences(database, "Child.esm", [
-            CreateMaster("Child.esm", "Parent.esm", 0, 1)
-        ]);
-
-        var result = Sut.GetWinningOverride(database, "Child.esm", "000001", null, "Keyword");
-
-        result.ShouldNotBeNull();
-        result.ModKey.ShouldBe("Child.esm");
-    }
-
-    [Fact]
     public void DeleteByModKey_WhenCalled_RemovesAllHeadersForModKey()
     {
         using var database = ConnectionFactory.OpenDatabase();
@@ -110,15 +77,4 @@ public class RecordHeaderRepositoryTests : IDisposable
         });
     }
 
-    private static PluginMasterReferenceDTO CreateMaster(string modKey, string parentModKey, int index, int parentLoadOrderIndex)
-    {
-        return new PluginMasterReferenceDTO
-        {
-            ModKey = modKey,
-            ParentModKey = parentModKey,
-            MasterReferenceIndex = index,
-            ParentLoadOrderIndex = parentLoadOrderIndex,
-            ImportedAtUtc = DateTimeOffset.UtcNow.ToString("O")
-        };
-    }
 }

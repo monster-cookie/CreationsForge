@@ -1,3 +1,4 @@
+using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Repositories.Interfaces;
@@ -39,7 +40,7 @@ public class CellRepository : ICellRepository
             """,
             new
             {
-                cell.ModKey,
+                ModKey = cell.ModKey.FileName,
                 cell.FormID,
                 Name = DbValue(cell.Name),
                 Flags = DbValue(cell.Flags),
@@ -54,11 +55,11 @@ public class CellRepository : ICellRepository
             });
     }
 
-    public void ReplaceGroupLocations(IDatabase database, string modKey, string cellFormId, IList<CellGroupLocationDTO> locations)
+    public void ReplaceGroupLocations(IDatabase database, ModKey modKey, string cellFormId, IList<CellGroupLocationDTO> locations)
     {
         database.Execute(
             "DELETE FROM CellGroupLocation WHERE ModKey = @ModKey COLLATE NOCASE AND CellFormID = @CellFormId;",
-            new { ModKey = modKey, CellFormId = cellFormId });
+            new { ModKey = modKey.FileName, CellFormId = cellFormId });
 
         foreach (var location in locations)
         {
@@ -89,7 +90,7 @@ public class CellRepository : ICellRepository
                 """,
                 new
                 {
-                    location.ModKey,
+                    ModKey = location.ModKey.FileName,
                     location.CellFormID,
                     location.LocationIndex,
                     location.LocationKind,
@@ -112,11 +113,11 @@ public class CellRepository : ICellRepository
         }
     }
 
-    public void ReplacePlacedRecords(IDatabase database, string modKey, string cellFormId, IList<CellPlacedRecordDTO> placedRecords)
+    public void ReplacePlacedRecords(IDatabase database, ModKey modKey, string cellFormId, IList<CellPlacedRecordDTO> placedRecords)
     {
         database.Execute(
             "DELETE FROM CellPlacedRecord WHERE ModKey = @ModKey COLLATE NOCASE AND CellFormID = @CellFormId;",
-            new { ModKey = modKey, CellFormId = cellFormId });
+            new { ModKey = modKey.FileName, CellFormId = cellFormId });
 
         foreach (var placedRecord in placedRecords)
         {
@@ -139,7 +140,7 @@ public class CellRepository : ICellRepository
                 """,
                 new
                 {
-                    placedRecord.ModKey,
+                    ModKey = placedRecord.ModKey.FileName,
                     placedRecord.CellFormID,
                     placedRecord.PlacementGroup,
                     placedRecord.ItemIndex,

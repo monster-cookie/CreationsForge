@@ -1,3 +1,4 @@
+using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Importers.Interfaces;
@@ -11,7 +12,7 @@ public class KeywordRecordImporter(IKeywordRepository keywordRepository) : IType
     public string RecordType => "Keyword";
     public string TableName => "Keyword";
 
-    public void Import(IDatabase database, string modKey, string formId, RecordEnumerationDTO record, string importedAtUtc)
+    public void Import(IDatabase database, ModKey modKey, string formId, RecordEnumerationDTO record, string importedAtUtc)
     {
         keywordRepository.Upsert(database, new KeywordDTO
         {

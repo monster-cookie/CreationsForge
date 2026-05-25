@@ -51,27 +51,25 @@ public class SimpleMajorRecordImporterTests : IDisposable
         Import(database, "000005", "Static", new StaticRecordImporter(new StaticRecordRepository()), new TestObjectRecord("Example Static"), importedAtUtc);
         Import(database, "000006", "StaticCollection", new StaticCollectionRecordImporter(new StaticCollectionRepository()), new TestObjectRecord("Example Collection"), importedAtUtc);
 
-        var keyword = database.First<KeywordDTO>("SELECT * FROM Keyword WHERE FormID = @FormId;", new { FormId = "000001" });
-        keyword.Name.ShouldBe("Ecliptic");
-        keyword.Color.ShouldBe("#00FFFFFF");
-        keyword.KeywordType.ShouldBe("Faction");
-        keyword.FNAM.ShouldBe("0x00000000");
-        var faction = database.First<FactionDTO>("SELECT * FROM Faction WHERE FormID = @FormId;", new { FormId = "000002" });
-        faction.Name.ShouldBe("Crimson Fleet");
-        faction.KeywordFormKey.ShouldBe("0546E0:Starfield.esm");
-        faction.Flags.ShouldBe("HiddenFromPC, TrackCrime, IgnoreMurder");
-        faction.CrimeValuesArrest.ShouldBe(1);
-        faction.CrimeValuesMurder.ShouldBe(15000);
-        faction.CrimeValuesAssault.ShouldBe(650);
-        faction.CrimeValuesTrespass.ShouldBe(350);
-        faction.CrimeValuesPickpocket.ShouldBe(500);
-        faction.CrimeValuesStealMultiplier.ShouldBe(0.5);
-        faction.CrimeValuesEscape.ShouldBe(1500);
-        faction.CrimeValuesPiracy.ShouldBe(1500);
-        faction.CrimeValuesSmuggleMultiplier.ShouldBe(999519420);
-        faction.VendorValuesEndHour.ShouldBe(24);
-        faction.VendorValuesBuysStolenItems.ShouldBe(1);
-        faction.VendorValuesBuysNonStolenItems.ShouldBe(1);
+        database.ExecuteScalar<string>("SELECT Name FROM Keyword WHERE FormID = @FormId;", new { FormId = "000001" }).ShouldBe("Ecliptic");
+        database.ExecuteScalar<string>("SELECT Color FROM Keyword WHERE FormID = @FormId;", new { FormId = "000001" }).ShouldBe("#00FFFFFF");
+        database.ExecuteScalar<string>("SELECT KeywordType FROM Keyword WHERE FormID = @FormId;", new { FormId = "000001" }).ShouldBe("Faction");
+        database.ExecuteScalar<string>("SELECT FNAM FROM Keyword WHERE FormID = @FormId;", new { FormId = "000001" }).ShouldBe("0x00000000");
+        database.ExecuteScalar<string>("SELECT Name FROM Faction WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe("Crimson Fleet");
+        database.ExecuteScalar<string>("SELECT KeywordFormKey FROM Faction WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe("0546E0:Starfield.esm");
+        database.ExecuteScalar<string>("SELECT Flags FROM Faction WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe("HiddenFromPC, TrackCrime, IgnoreMurder");
+        database.ExecuteScalar<int>("SELECT CrimeValuesArrest FROM Faction WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe(1);
+        database.ExecuteScalar<int>("SELECT CrimeValuesMurder FROM Faction WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe(15000);
+        database.ExecuteScalar<int>("SELECT CrimeValuesAssault FROM Faction WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe(650);
+        database.ExecuteScalar<int>("SELECT CrimeValuesTrespass FROM Faction WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe(350);
+        database.ExecuteScalar<int>("SELECT CrimeValuesPickpocket FROM Faction WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe(500);
+        database.ExecuteScalar<double>("SELECT CrimeValuesStealMultiplier FROM Faction WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe(0.5);
+        database.ExecuteScalar<int>("SELECT CrimeValuesEscape FROM Faction WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe(1500);
+        database.ExecuteScalar<int>("SELECT CrimeValuesPiracy FROM Faction WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe(1500);
+        database.ExecuteScalar<int>("SELECT CrimeValuesSmuggleMultiplier FROM Faction WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe(999519420);
+        database.ExecuteScalar<int>("SELECT VendorValuesEndHour FROM Faction WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe(24);
+        database.ExecuteScalar<int>("SELECT VendorValuesBuysStolenItems FROM Faction WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe(1);
+        database.ExecuteScalar<int>("SELECT VendorValuesBuysNonStolenItems FROM Faction WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe(1);
         database.ExecuteScalar<int>("SELECT COUNT(*) FROM FactionRelation WHERE FormID = @FormId;", new { FormId = "000002" }).ShouldBe(3);
         database.ExecuteScalar<string>("SELECT Reaction FROM FactionRelation WHERE FormID = @FormId AND TargetFormKey = @TargetFormKey;", new { FormId = "000002", TargetFormKey = "15923E:Starfield.esm" }).ShouldBeNull();
         database.ExecuteScalar<string>("SELECT Name FROM Message WHERE FormID = @FormId;", new { FormId = "000003" }).ShouldBe("Example Message");
@@ -111,11 +109,10 @@ public class SimpleMajorRecordImporterTests : IDisposable
 
         Import(database, "00000B", "Keyword", new KeywordRecordImporter(new KeywordRepository()), new TestKeywordRecord(null, "None"), importedAtUtc);
 
-        var keyword = database.First<KeywordDTO>("SELECT * FROM Keyword WHERE FormID = @FormId;", new { FormId = "00000B" });
-        keyword.Name.ShouldBeNull();
-        keyword.Color.ShouldBe("#00FFFFFF");
-        keyword.KeywordType.ShouldBe("None");
-        keyword.FNAM.ShouldBe("0x00000000");
+        database.ExecuteScalar<string>("SELECT Name FROM Keyword WHERE FormID = @FormId;", new { FormId = "00000B" }).ShouldBeNull();
+        database.ExecuteScalar<string>("SELECT Color FROM Keyword WHERE FormID = @FormId;", new { FormId = "00000B" }).ShouldBe("#00FFFFFF");
+        database.ExecuteScalar<string>("SELECT KeywordType FROM Keyword WHERE FormID = @FormId;", new { FormId = "00000B" }).ShouldBe("None");
+        database.ExecuteScalar<string>("SELECT FNAM FROM Keyword WHERE FormID = @FormId;", new { FormId = "00000B" }).ShouldBe("0x00000000");
     }
 
     private void Import(NPoco.IDatabase database, string formId, string recordType, ITypedRecordDetailImporter importer, object record, string importedAtUtc)

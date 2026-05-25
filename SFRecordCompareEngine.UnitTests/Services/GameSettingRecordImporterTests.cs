@@ -51,17 +51,16 @@ public class GameSettingRecordImporterTests : IDisposable
             Record = new TestGameSettingRecord()
         }, importedAtUtc);
 
-        var result = database.First<GameSettingDTO>(
-            "SELECT * FROM GameSetting WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
-            new { ModKey = "Example.esm", FormId = "000001" });
-        result.SettingType.ShouldBe("String");
-        result.TitleString.ShouldBe("Example Title");
-        result.Data.ShouldBe("Example Value");
-        result.RawData.ShouldBe(123.5);
-        result.XALG.ShouldBe(42);
-        result.IsCompressed.ShouldBe(1);
-        result.IsDeleted.ShouldBe(0);
-        result.ImportedAtUtc.ShouldBe(importedAtUtc);
+        database.ExecuteScalar<string>(
+            "SELECT SettingType FROM GameSetting WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
+            new { ModKey = "Example.esm", FormId = "000001" }).ShouldBe("String");
+        database.ExecuteScalar<string>("SELECT TitleString FROM GameSetting WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;", new { ModKey = "Example.esm", FormId = "000001" }).ShouldBe("Example Title");
+        database.ExecuteScalar<string>("SELECT Data FROM GameSetting WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;", new { ModKey = "Example.esm", FormId = "000001" }).ShouldBe("Example Value");
+        database.ExecuteScalar<double>("SELECT RawData FROM GameSetting WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;", new { ModKey = "Example.esm", FormId = "000001" }).ShouldBe(123.5);
+        database.ExecuteScalar<int>("SELECT XALG FROM GameSetting WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;", new { ModKey = "Example.esm", FormId = "000001" }).ShouldBe(42);
+        database.ExecuteScalar<int>("SELECT IsCompressed FROM GameSetting WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;", new { ModKey = "Example.esm", FormId = "000001" }).ShouldBe(1);
+        database.ExecuteScalar<int>("SELECT IsDeleted FROM GameSetting WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;", new { ModKey = "Example.esm", FormId = "000001" }).ShouldBe(0);
+        database.ExecuteScalar<string>("SELECT ImportedAtUtc FROM GameSetting WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;", new { ModKey = "Example.esm", FormId = "000001" }).ShouldBe(importedAtUtc);
     }
 
     private void InsertPluginAndHeader(NPoco.IDatabase database)

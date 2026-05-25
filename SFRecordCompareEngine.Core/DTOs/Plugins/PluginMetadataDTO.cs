@@ -1,8 +1,10 @@
+using Mutagen.Bethesda.Plugins;
+
 namespace SFRecordCompareEngine.Core.DTOs.Plugins;
 
 public class PluginMetadataDTO
 {
-    public required string ModKey { get; set; }
+    public required ModKey ModKey { get; set; }
     public required string GameRelease { get; set; }
     public int? LoadOrderIndex { get; set; }
     public required string PluginFileName { get; set; }

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Globalization;
+using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Records;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Records;
@@ -14,7 +15,7 @@ public class CellRecordImporter(ICellRepository cellRepository) : ITypedRecordDe
     public string RecordType => "Cell";
     public string TableName => "Cell";
 
-    public void Import(IDatabase database, string modKey, string formId, RecordEnumerationDTO record, string importedAtUtc)
+    public void Import(IDatabase database, ModKey modKey, string formId, RecordEnumerationDTO record, string importedAtUtc)
     {
         var source = record.Record;
         cellRepository.Upsert(database, new CellDTO
@@ -49,7 +50,7 @@ public class CellRecordImporter(ICellRepository cellRepository) : ITypedRecordDe
         cellRepository.ReplacePlacedRecords(database, modKey, formId, placedRecords);
     }
 
-    private static IList<CellPlacedRecordDTO> GetPlacedRecords(object source, string modKey, string formId, string importedAtUtc)
+    private static IList<CellPlacedRecordDTO> GetPlacedRecords(object source, ModKey modKey, string formId, string importedAtUtc)
     {
         var placedRecords = new List<CellPlacedRecordDTO>();
         AddPlacedRecords(placedRecords, source, modKey, formId, "Persistent", importedAtUtc);
@@ -57,7 +58,7 @@ public class CellRecordImporter(ICellRepository cellRepository) : ITypedRecordDe
         return placedRecords;
     }
 
-    private static void AddPlacedRecords(ICollection<CellPlacedRecordDTO> target, object source, string modKey, string formId, string placementGroup, string importedAtUtc)
+    private static void AddPlacedRecords(ICollection<CellPlacedRecordDTO> target, object source, ModKey modKey, string formId, string placementGroup, string importedAtUtc)
     {
         if (RecordHeaderMapper.GetPropertyValue(source, placementGroup) is not IEnumerable records) return;
 

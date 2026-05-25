@@ -1,5 +1,6 @@
 using Moq;
 using Mutagen.Bethesda.Environments;
+using Mutagen.Bethesda.Plugins;
 using Serilog;
 using SFRecordCompareEngine.Core.Configuration.Interfaces;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
@@ -195,7 +196,7 @@ public class OpenGamePluginDialogViewModelTests
         return new PluginHeaderDTO(
             new PluginMetadataDTO
             {
-                ModKey = "Example",
+                ModKey = new ModKey("Example.esm", ModType.Master),
                 GameRelease = "Starfield",
                 PluginFileName = "Example.esm",
                 FormVersion = 44,
@@ -205,7 +206,7 @@ public class OpenGamePluginDialogViewModelTests
             [
                 new PluginMasterReferenceDTO
                 {
-                    ModKey = "Example",
+                    ModKey = new ModKey("Example.esm", ModType.Master),
                     ParentModKey = "Starfield.esm",
                     MasterReferenceIndex = 0,
                     ImportedAtUtc = DateTime.UtcNow.ToString("O")

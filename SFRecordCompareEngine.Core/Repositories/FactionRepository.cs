@@ -1,3 +1,4 @@
+using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Repositories.Interfaces;
@@ -53,7 +54,7 @@ public class FactionRepository : IFactionRepository
             """,
             new
             {
-                faction.ModKey,
+                ModKey = faction.ModKey.FileName,
                 faction.FormID,
                 Name = DbValue(faction.Name),
                 KeywordFormKey = DbValue(faction.KeywordFormKey),
@@ -75,11 +76,11 @@ public class FactionRepository : IFactionRepository
             });
     }
 
-    public void ReplaceRelations(IDatabase database, string modKey, string formId, IList<FactionRelationDTO> relations)
+    public void ReplaceRelations(IDatabase database, ModKey modKey, string formId, IList<FactionRelationDTO> relations)
     {
         database.Execute(
             "DELETE FROM FactionRelation WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
-            new { ModKey = modKey, FormId = formId });
+            new { ModKey = modKey.FileName, FormId = formId });
 
         foreach (var relation in relations)
         {
@@ -97,7 +98,7 @@ public class FactionRepository : IFactionRepository
                 """,
                 new
                 {
-                    relation.ModKey,
+                    ModKey = relation.ModKey.FileName,
                     relation.FormID,
                     relation.ItemIndex,
                     relation.TargetFormKey,

@@ -12,17 +12,7 @@ public class MainWindowViewModel : ViewModelBase
     private readonly IGameConfigurationStore GameConfigurationStore;
     private readonly IPluginImportService PluginImportService;
     private readonly IPluginService PluginService;
-    private bool _canUseApplication = true;
-    private string _databaseImportCurrentPluginText = string.Empty;
-    private bool _databaseImportCompleted;
-    private double _databaseImportProgressMaximum = 100;
-    private double _databaseImportProgressValue;
-    private string _databaseImportStatusText = string.Empty;
-    private bool _isDatabaseImportIndeterminate = true;
-    private bool _isDatabaseImportRunning;
-    private object? _recordsGridItems;
-    private IList<RecordTypeTreeNode> _recordTypeNodes = new List<RecordTypeTreeNode>();
-    private string _statusText = string.Empty;
+    private bool DatabaseImportCompleted;
     private string? LoadedPluginName;
 
     public MainWindowViewModel(
@@ -42,12 +32,15 @@ public class MainWindowViewModel : ViewModelBase
 
     public string LoadedGameText { get; private set; }
     public string LoadedPluginText { get; private set; }
+
+    private bool _canUseApplication = true;
     public bool CanUseApplication
     {
         get => _canUseApplication;
         private set => SetProperty(ref _canUseApplication, value);
     }
 
+    private bool _isDatabaseImportRunning;
     public bool IsDatabaseImportRunning
     {
         get => _isDatabaseImportRunning;
@@ -60,48 +53,56 @@ public class MainWindowViewModel : ViewModelBase
         }
     }
 
+    private string _databaseImportStatusText = string.Empty;
     public string DatabaseImportStatusText
     {
         get => _databaseImportStatusText;
         private set => SetProperty(ref _databaseImportStatusText, value);
     }
 
+    private string _databaseImportCurrentPluginText = string.Empty;
     public string DatabaseImportCurrentPluginText
     {
         get => _databaseImportCurrentPluginText;
         private set => SetProperty(ref _databaseImportCurrentPluginText, value);
     }
 
+    private double _databaseImportProgressValue;
     public double DatabaseImportProgressValue
     {
         get => _databaseImportProgressValue;
         private set => SetProperty(ref _databaseImportProgressValue, value);
     }
 
+    private double _databaseImportProgressMaximum = 100;
     public double DatabaseImportProgressMaximum
     {
         get => _databaseImportProgressMaximum;
         private set => SetProperty(ref _databaseImportProgressMaximum, value);
     }
 
+    private bool _isDatabaseImportIndeterminate = true;
     public bool IsDatabaseImportIndeterminate
     {
         get => _isDatabaseImportIndeterminate;
         private set => SetProperty(ref _isDatabaseImportIndeterminate, value);
     }
 
+    private string _statusText = string.Empty;
     public string StatusText
     {
         get => _statusText;
         private set => SetProperty(ref _statusText, value);
     }
 
+    private IList<RecordTypeTreeNode> _recordTypeNodes = new List<RecordTypeTreeNode>();
     public IList<RecordTypeTreeNode> RecordTypeNodes
     {
         get => _recordTypeNodes;
         private set => SetProperty(ref _recordTypeNodes, value);
     }
 
+    private object? _recordsGridItems;
     public object? RecordsGridItems
     {
         get => _recordsGridItems;
@@ -119,7 +120,7 @@ public class MainWindowViewModel : ViewModelBase
         }
 
         IsDatabaseImportRunning = true;
-        _databaseImportCompleted = false;
+        DatabaseImportCompleted = false;
         IsDatabaseImportIndeterminate = true;
         DatabaseImportStatusText = "Preparing plugin database import...";
         DatabaseImportCurrentPluginText = string.Empty;
@@ -131,7 +132,7 @@ public class MainWindowViewModel : ViewModelBase
         {
             var progress = new Progress<PluginImportProgressDTO>(UpdateDatabaseImportProgress);
             var importResult = await PluginImportService.InitializeAndImportAsync(progress, cancellationToken);
-            _databaseImportCompleted = true;
+            DatabaseImportCompleted = true;
             StatusText = $"Plugin database import completed. Imported {importResult.PluginsImported} plugins.";
             Logger.Information(
                 "Plugin database import completed with {PluginCount} imported plugins",
@@ -139,14 +140,14 @@ public class MainWindowViewModel : ViewModelBase
         }
         catch (OperationCanceledException)
         {
-            _databaseImportCompleted = true;
+            DatabaseImportCompleted = true;
             StatusText = "Plugin database import was canceled.";
             Logger.Information("Plugin database import was canceled");
             throw;
         }
         catch (Exception ex)
         {
-            _databaseImportCompleted = true;
+            DatabaseImportCompleted = true;
             StatusText = "Unable to initialize the plugin database.";
             DatabaseImportStatusText = "Unable to initialize the plugin database.";
             Logger.Error(ex, "Unable to initialize the plugin database");
@@ -214,7 +215,7 @@ public class MainWindowViewModel : ViewModelBase
 
     private void UpdateDatabaseImportProgress(PluginImportProgressDTO progress)
     {
-        if (_databaseImportCompleted) return;
+        if (DatabaseImportCompleted) return;
 
         DatabaseImportStatusText = progress.StatusText;
         DatabaseImportCurrentPluginText = string.IsNullOrWhiteSpace(progress.CurrentPluginName)

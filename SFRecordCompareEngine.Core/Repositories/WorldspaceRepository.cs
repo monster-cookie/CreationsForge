@@ -35,7 +35,7 @@ public class WorldspaceRepository : IWorldspaceRepository
             """,
             new
             {
-                worldspace.ModKey,
+                ModKey = worldspace.ModKey.FileName,
                 worldspace.FormID,
                 Name = DbValue(worldspace.Name),
                 ParentWorldspaceFormKey = DbValue(worldspace.ParentWorldspaceFormKey),

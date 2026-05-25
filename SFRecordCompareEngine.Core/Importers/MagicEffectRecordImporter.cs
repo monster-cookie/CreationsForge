@@ -1,3 +1,4 @@
+using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Importers.Interfaces;
@@ -11,7 +12,7 @@ public class MagicEffectRecordImporter(IMagicEffectRepository magicEffectReposit
     public string RecordType => "MagicEffect";
     public string TableName => "MagicEffect";
 
-    public void Import(IDatabase database, string modKey, string formId, RecordEnumerationDTO record, string importedAtUtc)
+    public void Import(IDatabase database, ModKey modKey, string formId, RecordEnumerationDTO record, string importedAtUtc)
     {
         magicEffectRepository.Upsert(database, new MagicEffectDTO
         {

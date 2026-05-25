@@ -1,8 +1,10 @@
+using Mutagen.Bethesda.Plugins;
+
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
 public class CellGroupLocationDTO
 {
-    public required string ModKey { get; set; }
+    public required ModKey ModKey { get; set; }
     public required string CellFormID { get; set; }
     public int LocationIndex { get; set; }
     public required string LocationKind { get; set; }

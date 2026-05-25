@@ -1,3 +1,4 @@
+using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Repositories.Interfaces;
@@ -18,23 +19,31 @@ public class MagicEffectRepository : IMagicEffectRepository
             """,
             new
             {
-                magicEffect.ModKey,
+                ModKey = magicEffect.ModKey.FileName,
                 magicEffect.FormID,
                 Name = DbValue(magicEffect.Name),
                 magicEffect.ImportedAtUtc
             });
     }
 
-    public void ReplaceKeywords(IDatabase database, string modKey, string formId, IList<RecordKeywordDTO> keywords)
+    public void ReplaceKeywords(IDatabase database, ModKey modKey, string formId, IList<RecordKeywordDTO> keywords)
     {
         ReplaceKeywordRows(database, "MagicEffectKeyword", modKey, formId, keywords);
     }
 
-    private static void ReplaceKeywordRows(IDatabase database, string tableName, string modKey, string formId, IList<RecordKeywordDTO> keywords)
+    private static void ReplaceKeywordRows(IDatabase database, string tableName, ModKey modKey, string formId, IList<RecordKeywordDTO> keywords)
     {
         database.Execute(
-            $"DELETE FROM {tableName} WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
-            new { ModKey = modKey, FormId = formId });
+        $"""
+            DELETE FROM {tableName} 
+                   WHERE ModKey = @ModKey COLLATE NOCASE AND 
+                         FormID = @FormId;
+            """,
+            new
+            {
+                ModKey = modKey.FileName, 
+                FormId = formId
+            });
 
         foreach (var keyword in keywords)
         {
@@ -43,7 +52,14 @@ public class MagicEffectRepository : IMagicEffectRepository
                 INSERT INTO {tableName} (ModKey, FormID, ItemIndex, KeywordFormKey, ImportedAtUtc)
                 VALUES (@ModKey, @FormID, @ItemIndex, @KeywordFormKey, @ImportedAtUtc);
                 """,
-                new { keyword.ModKey, keyword.FormID, keyword.ItemIndex, keyword.KeywordFormKey, keyword.ImportedAtUtc });
+                new
+                {
+                    ModKey = keyword.ModKey.FileName, 
+                    keyword.FormID, 
+                    keyword.ItemIndex, 
+                    keyword.KeywordFormKey, 
+                    keyword.ImportedAtUtc
+                });
         }
     }
 

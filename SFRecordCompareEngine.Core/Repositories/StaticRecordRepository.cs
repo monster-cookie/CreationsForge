@@ -20,7 +20,7 @@ public class StaticRecordRepository : IStaticRecordRepository
             """,
             new
             {
-                staticRecord.ModKey,
+                ModKey = staticRecord.ModKey.FileName,
                 staticRecord.FormID,
                 Name = DbValue(staticRecord.Name),
                 ObjectBounds = DbValue(staticRecord.ObjectBounds),

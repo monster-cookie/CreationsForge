@@ -1,8 +1,10 @@
+using Mutagen.Bethesda.Plugins;
+
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
 public class RecordKeywordDTO
 {
-    public required string ModKey { get; set; }
+    public required ModKey ModKey { get; set; }
     public required string FormID { get; set; }
     public int ItemIndex { get; set; }
     public required string KeywordFormKey { get; set; }

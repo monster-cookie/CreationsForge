@@ -53,8 +53,8 @@ public class CellRecordImporterTests : IDisposable
             [
                 new CellGroupLocationDTO
                 {
-                    ModKey = string.Empty,
-                    CellFormID = string.Empty,
+                    ModKey = "Example.esm",
+                    CellFormID = "000001",
                     LocationKind = "InteriorCell",
                     BlockNumber = 0,
                     SubBlockNumber = 1,

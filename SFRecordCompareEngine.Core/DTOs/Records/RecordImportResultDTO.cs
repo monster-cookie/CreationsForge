@@ -1,8 +1,10 @@
+using Mutagen.Bethesda.Plugins;
+
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
 public class RecordImportResultDTO
 {
-    public required string ModKey { get; set; }
+    public required ModKey ModKey { get; set; }
     public IList<RecordTypeImportResultDTO> RecordTypes { get; set; } = new List<RecordTypeImportResultDTO>();
 
     public int HeadersImported => RecordTypes.Sum(recordType => recordType.HeadersImported);

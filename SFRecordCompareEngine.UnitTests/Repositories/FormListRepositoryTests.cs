@@ -48,11 +48,12 @@ public class FormListRepositoryTests : IDisposable
             CreateItem("Example.esm", "000001", 1, "000003:Example.esm")
         ]);
 
-        var result = Sut.GetByModKeyAndFormId(database, "Example.esm", "000001");
-
-        result.ShouldNotBeNull();
-        result.FormList.AddToListFormKey.ShouldBe("000100:Example.esm");
-        result.Items.Select(item => item.ItemFormKey).ShouldBe(["000002:Example.esm", "000003:Example.esm"]);
+        database.ExecuteScalar<string>(
+            "SELECT AddToListFormKey FROM FormList WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
+            new { ModKey = "Example.esm", FormId = "000001" }).ShouldBe("000100:Example.esm");
+        database.Fetch<string>(
+            "SELECT ItemFormKey FROM FormListItem WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId ORDER BY ItemIndex ASC;",
+            new { ModKey = "Example.esm", FormId = "000001" }).ShouldBe(["000002:Example.esm", "000003:Example.esm"]);
     }
 
     [Fact]
@@ -70,57 +71,9 @@ public class FormListRepositoryTests : IDisposable
             CreateItem("Example.esm", "000001", 0, "000003:Example.esm")
         ]);
 
-        var result = Sut.GetByModKeyAndFormId(database, "Example.esm", "000001");
-
-        result.ShouldNotBeNull();
-        result.Items.Single().ItemFormKey.ShouldBe("000003:Example.esm");
-    }
-
-    [Fact]
-    public void GetByHierarchyAndFormId_WhenRowsExist_ReturnsRowsOrderedByEffectiveLoadOrder()
-    {
-        using var database = ConnectionFactory.OpenDatabase();
-        InsertPluginAndHeader(database, "ParentA.esm", "000001", 1);
-        InsertPluginAndHeader(database, "ParentB.esm", "000001", 2);
-        InsertPluginAndHeader(database, "Child.esm", "000001", 3);
-        PluginRepository.ReplaceMasterReferences(database, "Child.esm", [
-            CreateMaster("Child.esm", "ParentB.esm", 0, 2),
-            CreateMaster("Child.esm", "ParentA.esm", 1, 1)
-        ]);
-        Sut.UpsertFormList(database, CreateFormList("ParentA.esm", "000001", null));
-        Sut.UpsertFormList(database, CreateFormList("ParentB.esm", "000001", null));
-        Sut.UpsertFormList(database, CreateFormList("Child.esm", "000001", null));
-
-        var result = Sut.GetByHierarchyAndFormId(database, "Child.esm", "000001");
-
-        result.Select(record => record.Header.ModKey).ShouldBe(["ParentA.esm", "ParentB.esm", "Child.esm"]);
-    }
-
-    [Fact]
-    public void GetByModKeyAndFormId_WhenPluginIsMissing_DoesNotReturnStaleRows()
-    {
-        using var database = ConnectionFactory.OpenDatabase();
-        var plugin = CreatePlugin("Example.esm", 1);
-        plugin.ImportState = PluginImportState.Missing.ToString();
-        PluginRepository.UpsertPlugin(database, plugin);
-        InsertHeader(database, "Example.esm", "000001");
-        Sut.UpsertFormList(database, CreateFormList("Example.esm", "000001", null));
-
-        var result = Sut.GetByModKeyAndFormId(database, "Example.esm", "000001");
-
-        result.ShouldBeNull();
-    }
-
-    [Fact]
-    public void DeleteByModKeyAndRecordType_WhenCalled_RemovesFormListRowsByCascade()
-    {
-        using var database = ConnectionFactory.OpenDatabase();
-        InsertPluginAndHeader(database, "Example.esm", "000001", 1);
-        Sut.UpsertFormList(database, CreateFormList("Example.esm", "000001", null));
-
-        RecordHeaderRepository.DeleteByModKeyAndRecordType(database, "Example.esm", "FormList");
-
-        database.ExecuteScalar<int>("SELECT COUNT(*) FROM FormList;").ShouldBe(0);
+        database.Fetch<string>(
+            "SELECT ItemFormKey FROM FormListItem WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId ORDER BY ItemIndex ASC;",
+            new { ModKey = "Example.esm", FormId = "000001" }).Single().ShouldBe("000003:Example.esm");
     }
 
     private void InsertPluginAndHeader(NPoco.IDatabase database, string modKey, string formId, int loadOrderIndex)
@@ -155,18 +108,6 @@ public class FormListRepositoryTests : IDisposable
             ExistsOnDisk = true,
             ImportState = PluginImportState.Current.ToString(),
             LastCheckedUtc = DateTimeOffset.UtcNow.ToString("O")
-        };
-    }
-
-    private static PluginMasterReferenceDTO CreateMaster(string modKey, string parentModKey, int index, int parentLoadOrderIndex)
-    {
-        return new PluginMasterReferenceDTO
-        {
-            ModKey = modKey,
-            ParentModKey = parentModKey,
-            MasterReferenceIndex = index,
-            ParentLoadOrderIndex = parentLoadOrderIndex,
-            ImportedAtUtc = DateTimeOffset.UtcNow.ToString("O")
         };
     }
 

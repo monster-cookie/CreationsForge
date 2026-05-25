@@ -1,4 +1,5 @@
 using System.Globalization;
+using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Importers.Interfaces;
@@ -12,7 +13,7 @@ public class GameSettingRecordImporter(IGameSettingRepository gameSettingReposit
     public string RecordType => RecordTypeImportCatalog.GameSettingRecordType;
     public string TableName => RecordTypeImportCatalog.GameSettingRecordType;
 
-    public void Import(IDatabase database, string modKey, string formId, RecordEnumerationDTO record, string importedAtUtc)
+    public void Import(IDatabase database, ModKey modKey, string formId, RecordEnumerationDTO record, string importedAtUtc)
     {
         var source = record.Record;
         gameSettingRepository.Upsert(database, new GameSettingDTO

@@ -1,3 +1,4 @@
+using Mutagen.Bethesda.Plugins;
 using SFRecordCompareEngine.Core.Database;
 using SFRecordCompareEngine.Core.Database.Interfaces;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
@@ -56,21 +57,20 @@ public class GameSettingRepositoryTests : IDisposable
             ImportedAtUtc = DateTimeOffset.UtcNow.ToString("O")
         });
 
-        var result = database.First<GameSettingDTO>(
-            "SELECT * FROM GameSetting WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
-            new { ModKey = "Example.esm", FormId = "000001" });
-        result.SettingType.ShouldBe("String");
-        result.Data.ShouldBe("Value");
-        result.RawData.ShouldBe(1.25);
-        result.IsDeleted.ShouldBe(1);
+        database.ExecuteScalar<string>(
+            "SELECT SettingType FROM GameSetting WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
+            new { ModKey = "Example.esm", FormId = "000001" }).ShouldBe("String");
+        database.ExecuteScalar<string>("SELECT Data FROM GameSetting WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;", new { ModKey = "Example.esm", FormId = "000001" }).ShouldBe("Value");
+        database.ExecuteScalar<double>("SELECT RawData FROM GameSetting WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;", new { ModKey = "Example.esm", FormId = "000001" }).ShouldBe(1.25);
+        database.ExecuteScalar<int>("SELECT IsDeleted FROM GameSetting WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;", new { ModKey = "Example.esm", FormId = "000001" }).ShouldBe(1);
     }
 
     [Fact]
     public void GetByHierarchy_ReturnsRowsInLoadOrderAndMarksMissingOverrides()
     {
         using var database = ConnectionFactory.OpenDatabase();
-        InsertPlugin(database, "Parent.esm", 0);
-        InsertPlugin(database, "Child.esm", 1);
+        InsertPlugin(database, ModKey.FromFileName("Parent.esm"), 0);
+        InsertPlugin(database, ModKey.FromFileName("Child.esm"), 1);
         database.Execute(
             """
             INSERT INTO PluginMasterReferences (ModKey, ParentModKey, MasterReferenceIndex, ParentLoadOrderIndex, ImportedAtUtc)
@@ -93,7 +93,7 @@ public class GameSettingRepositoryTests : IDisposable
             ImportedAtUtc = DateTimeOffset.UtcNow.ToString("O")
         });
 
-        var result = Sut.GetByHierarchy(database, "Child.esm", "000001");
+        var result = Sut.GetByHierarchy(database, ModKey.FromFileName("Child.esm"), "000001");
 
         result.Count.ShouldBe(2);
         result[0].PluginName.ShouldBe("Parent.esm");
@@ -109,17 +109,17 @@ public class GameSettingRepositoryTests : IDisposable
         InsertHeader(database, modKey, formId, recordType);
     }
 
-    private void InsertPlugin(NPoco.IDatabase database, string modKey, int loadOrderIndex)
+    private void InsertPlugin(NPoco.IDatabase database, ModKey modKey, int loadOrderIndex)
     {
         PluginRepository.UpsertPlugin(database, new PluginMetadataDTO
         {
             ModKey = modKey,
             GameRelease = "Starfield",
             LoadOrderIndex = loadOrderIndex,
-            PluginFileName = modKey,
+            PluginFileName = modKey.FileName,
             Enabled = true,
             ExistsOnDisk = true,
-            ImportState = PluginImportState.Current.ToString(),
+            ImportState = nameof(PluginImportState.Current),
             LastCheckedUtc = DateTimeOffset.UtcNow.ToString("O")
         });
     }

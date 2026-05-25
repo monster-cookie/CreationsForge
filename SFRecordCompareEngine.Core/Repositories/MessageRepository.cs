@@ -18,7 +18,7 @@ public class MessageRepository : IMessageRepository
             """,
             new
             {
-                message.ModKey,
+                ModKey = message.ModKey.FileName,
                 message.FormID,
                 Name = DbValue(message.Name),
                 message.ImportedAtUtc

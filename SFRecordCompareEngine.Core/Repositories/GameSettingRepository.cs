@@ -1,3 +1,4 @@
+using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.DTOs.Records;
@@ -37,7 +38,7 @@ public class GameSettingRepository : IGameSettingRepository
             """,
             new
             {
-                gameSetting.ModKey,
+                ModKey = gameSetting.ModKey.FileName,
                 gameSetting.FormID,
                 SettingType = DbValue(gameSetting.SettingType),
                 TitleString = DbValue(gameSetting.TitleString),
@@ -79,9 +80,9 @@ public class GameSettingRepository : IGameSettingRepository
             });
     }
 
-    public IList<GameSettingComparisonRowDTO> GetByHierarchy(IDatabase database, string selectedModKey, string formId)
+    public IList<GameSettingComparisonRowDTO> GetByHierarchy(IDatabase database, ModKey selectedModKey, string formId)
     {
-        return database.Fetch<GameSettingComparisonRowDTO>(
+        return database.Fetch<GameSettingComparisonRow>(
             """
             SELECT
                 h.HierarchyModKey AS ModKey,
@@ -120,15 +121,58 @@ public class GameSettingRepository : IGameSettingRepository
             """,
             new
             {
-                SelectedModKey = selectedModKey,
+                SelectedModKey = selectedModKey.FileName,
                 FormId = formId,
                 RecordType = RecordTypeImportCatalog.GameSettingRecordType,
-                ImportState = PluginImportState.Current.ToString()
-            });
+                ImportState = nameof(PluginImportState.Current)
+            })
+            .Select(MapGameSettingComparisonRow)
+            .ToList();
     }
 
     private static object DbValue(object? value)
     {
         return value ?? DBNull.Value;
+    }
+
+    private static GameSettingComparisonRowDTO MapGameSettingComparisonRow(GameSettingComparisonRow row)
+    {
+        return new GameSettingComparisonRowDTO
+        {
+            ModKey = ModKey.FromFileName(row.ModKey),
+            FormID = row.FormID,
+            PluginName = row.PluginName,
+            HierarchyLoadOrderIndex = row.HierarchyLoadOrderIndex,
+            FormKey = row.FormKey,
+            EditorID = row.EditorID,
+            SettingType = row.SettingType,
+            TitleString = row.TitleString,
+            Data = row.Data,
+            RawData = row.RawData,
+            XALG = row.XALG,
+            IsCompressed = row.IsCompressed,
+            IsDeleted = row.IsDeleted,
+            ImportedAtUtc = row.ImportedAtUtc,
+            HasRecord = row.HasRecord
+        };
+    }
+
+    private sealed class GameSettingComparisonRow
+    {
+        public string ModKey { get; set; } = string.Empty;
+        public string FormID { get; set; } = string.Empty;
+        public string PluginName { get; set; } = string.Empty;
+        public int? HierarchyLoadOrderIndex { get; set; }
+        public string? FormKey { get; set; }
+        public string? EditorID { get; set; }
+        public string? SettingType { get; set; }
+        public string? TitleString { get; set; }
+        public string? Data { get; set; }
+        public double? RawData { get; set; }
+        public int? XALG { get; set; }
+        public int? IsCompressed { get; set; }
+        public int? IsDeleted { get; set; }
+        public string ImportedAtUtc { get; set; } = string.Empty;
+        public bool HasRecord { get; set; }
     }
 }

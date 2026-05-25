@@ -1,3 +1,4 @@
+using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.DTOs.Records;
@@ -9,7 +10,7 @@ public class RecordHeaderRepository : IRecordHeaderRepository
 {
     public RecordHeaderDTO? GetCurrentByFormKey(IDatabase database, string formKey)
     {
-        return database.FirstOrDefault<RecordHeaderDTO>(
+        var row = database.FirstOrDefault<RecordHeaderRow>(
             """
             SELECT rh.*
             FROM RecordHeader rh
@@ -29,42 +30,8 @@ public class RecordHeaderRepository : IRecordHeaderRepository
                 FormKey = formKey, 
                 ImportState = nameof(PluginImportState.Current)
             });
-    }
 
-    public IList<RecordHeaderDTO> GetByHierarchy(IDatabase database, string selectedModKey, string? formId, string? editorId, string? recordType)
-    {
-        return database.Fetch<RecordHeaderDTO>(
-            """
-            SELECT rh.*
-            FROM PluginResolutionHierarchy h
-            INNER JOIN Plugins p
-                ON p.ModKey = h.HierarchyModKey COLLATE NOCASE
-            INNER JOIN RecordHeader rh
-                ON rh.ModKey = h.HierarchyModKey COLLATE NOCASE
-            WHERE h.ChildModKey = @SelectedModKey COLLATE NOCASE
-              AND p.ImportState = @ImportState
-              AND (@FormId IS NULL OR rh.FormID = @FormId)
-              AND (@EditorId IS NULL OR rh.EditorID = @EditorId COLLATE NOCASE)
-              AND (@RecordType IS NULL OR rh.RecordType = @RecordType)
-            ORDER BY
-                h.HierarchyLoadOrderIndex IS NULL,
-                h.HierarchyLoadOrderIndex ASC,
-                h.IsChild ASC,
-                rh.FormID ASC;
-            """,
-            new
-            {
-                SelectedModKey = selectedModKey,
-                ImportState = nameof(PluginImportState.Current),
-                FormId = DbValue(formId),
-                EditorId = DbValue(editorId),
-                RecordType = DbValue(recordType)
-            });
-    }
-
-    public RecordHeaderDTO? GetWinningOverride(IDatabase database, string selectedModKey, string? formId, string? editorId, string? recordType)
-    {
-        return GetByHierarchy(database, selectedModKey, formId, editorId, recordType).LastOrDefault();
+        return row is null ? null : MapRecordHeader(row);
     }
 
     public void Upsert(IDatabase database, RecordHeaderDTO recordHeader)
@@ -98,7 +65,7 @@ public class RecordHeaderRepository : IRecordHeaderRepository
             """,
             new
             {
-                recordHeader.ModKey,
+                ModKey = recordHeader.ModKey.FileName,
                 recordHeader.FormID,
                 recordHeader.RecordType,
                 recordHeader.FormKey,
@@ -112,33 +79,51 @@ public class RecordHeaderRepository : IRecordHeaderRepository
             });
     }
 
-    public void DeleteByModKey(IDatabase database, string modKey)
+    public void DeleteByModKey(IDatabase database, ModKey modKey)
     {
         database.Execute(
             """
             DELETE FROM RecordHeader
             WHERE ModKey = @ModKey COLLATE NOCASE;
             """,
-            new { ModKey = modKey });
-    }
-
-    public void DeleteByModKeyAndRecordType(IDatabase database, string modKey, string recordType)
-    {
-        database.Execute(
-            """
-            DELETE FROM RecordHeader
-            WHERE ModKey = @ModKey COLLATE NOCASE
-              AND RecordType = @RecordType;
-            """,
-            new
-            {
-                ModKey = modKey, 
-                RecordType = recordType
-            });
+            new { ModKey = modKey.FileName });
     }
 
     private static object DbValue(object? value)
     {
         return value ?? DBNull.Value;
+    }
+
+    private static RecordHeaderDTO MapRecordHeader(RecordHeaderRow row)
+    {
+        return new RecordHeaderDTO
+        {
+            ModKey = ModKey.FromFileName(row.ModKey),
+            FormID = row.FormID,
+            RecordType = row.RecordType,
+            FormKey = row.FormKey,
+            EditorID = row.EditorID,
+            PluginFileName = row.PluginFileName,
+            FormVersion = row.FormVersion,
+            StarfieldMajorRecordFlags = row.StarfieldMajorRecordFlags,
+            Version2 = row.Version2,
+            VersionControl = row.VersionControl,
+            ImportedAtUtc = row.ImportedAtUtc
+        };
+    }
+
+    private sealed class RecordHeaderRow
+    {
+        public string ModKey { get; set; } = string.Empty;
+        public string FormID { get; set; } = string.Empty;
+        public string RecordType { get; set; } = string.Empty;
+        public string FormKey { get; set; } = string.Empty;
+        public string? EditorID { get; set; }
+        public string PluginFileName { get; set; } = string.Empty;
+        public int? FormVersion { get; set; }
+        public int? StarfieldMajorRecordFlags { get; set; }
+        public int? Version2 { get; set; }
+        public string? VersionControl { get; set; }
+        public string ImportedAtUtc { get; set; } = string.Empty;
     }
 }

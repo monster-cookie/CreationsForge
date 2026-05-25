@@ -20,7 +20,7 @@ public class StaticCollectionRepository : IStaticCollectionRepository
             """,
             new
             {
-                staticCollection.ModKey,
+                ModKey = staticCollection.ModKey.FileName,
                 staticCollection.FormID,
                 Name = DbValue(staticCollection.Name),
                 ObjectBounds = DbValue(staticCollection.ObjectBounds),

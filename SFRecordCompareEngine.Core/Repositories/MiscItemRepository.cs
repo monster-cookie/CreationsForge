@@ -1,3 +1,4 @@
+using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Repositories.Interfaces;
@@ -21,7 +22,7 @@ public class MiscItemRepository : IMiscItemRepository
             """,
             new
             {
-                miscItem.ModKey,
+                ModKey = miscItem.ModKey.FileName,
                 miscItem.FormID,
                 Name = DbValue(miscItem.Name),
                 ObjectBounds = DbValue(miscItem.ObjectBounds),
@@ -31,16 +32,16 @@ public class MiscItemRepository : IMiscItemRepository
             });
     }
 
-    public void ReplaceKeywords(IDatabase database, string modKey, string formId, IList<RecordKeywordDTO> keywords)
+    public void ReplaceKeywords(IDatabase database, ModKey modKey, string formId, IList<RecordKeywordDTO> keywords)
     {
         ReplaceKeywordRows(database, "MiscItemKeyword", modKey, formId, keywords);
     }
 
-    private static void ReplaceKeywordRows(IDatabase database, string tableName, string modKey, string formId, IList<RecordKeywordDTO> keywords)
+    private static void ReplaceKeywordRows(IDatabase database, string tableName, ModKey modKey, string formId, IList<RecordKeywordDTO> keywords)
     {
         database.Execute(
             $"DELETE FROM {tableName} WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
-            new { ModKey = modKey, FormId = formId });
+            new { ModKey = modKey.FileName, FormId = formId });
 
         foreach (var keyword in keywords)
         {
@@ -49,7 +50,7 @@ public class MiscItemRepository : IMiscItemRepository
                 INSERT INTO {tableName} (ModKey, FormID, ItemIndex, KeywordFormKey, ImportedAtUtc)
                 VALUES (@ModKey, @FormID, @ItemIndex, @KeywordFormKey, @ImportedAtUtc);
                 """,
-                new { keyword.ModKey, keyword.FormID, keyword.ItemIndex, keyword.KeywordFormKey, keyword.ImportedAtUtc });
+                new { ModKey = keyword.ModKey.FileName, keyword.FormID, keyword.ItemIndex, keyword.KeywordFormKey, keyword.ImportedAtUtc });
         }
     }
 

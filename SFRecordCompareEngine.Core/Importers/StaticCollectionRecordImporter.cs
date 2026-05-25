@@ -1,3 +1,4 @@
+using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Importers.Interfaces;
@@ -11,7 +12,7 @@ public class StaticCollectionRecordImporter(IStaticCollectionRepository staticCo
     public string RecordType => "StaticCollection";
     public string TableName => "StaticCollection";
 
-    public void Import(IDatabase database, string modKey, string formId, RecordEnumerationDTO record, string importedAtUtc)
+    public void Import(IDatabase database, ModKey modKey, string formId, RecordEnumerationDTO record, string importedAtUtc)
     {
         staticCollectionRepository.Upsert(database, new StaticCollectionDTO
         {

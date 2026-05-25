@@ -29,7 +29,7 @@ public class KeywordRepository : IKeywordRepository
             """,
             new
             {
-                keyword.ModKey,
+                ModKey = keyword.ModKey.FileName,
                 keyword.FormID,
                 Name = DbValue(keyword.Name),
                 Color = DbValue(keyword.Color),

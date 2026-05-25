@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Globalization;
+using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Records;
 using SFRecordCompareEngine.Core.DTOs.Records;
 
@@ -16,12 +17,6 @@ internal static class RecordDetailValueMapper
             IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
             _ => value.ToString()
         };
-    }
-
-    public static string? GetNestedTextValue(object source, string propertyName, string nestedPropertyName)
-    {
-        var value = RecordHeaderMapper.GetPropertyValue(source, propertyName);
-        return value is null ? null : GetTextValue(value, nestedPropertyName);
     }
 
     public static int? GetNestedIntValue(object source, string propertyName, string nestedPropertyName)
@@ -54,7 +49,7 @@ internal static class RecordDetailValueMapper
         };
     }
 
-    public static IList<RecordKeywordDTO> GetKeywords(object source, string modKey, string formId, string importedAtUtc)
+    public static IList<RecordKeywordDTO> GetKeywords(object source, ModKey modKey, string formId, string importedAtUtc)
     {
         if (RecordHeaderMapper.GetPropertyValue(source, "Keywords") is not IEnumerable keywords) return [];
 

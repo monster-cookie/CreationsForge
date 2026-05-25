@@ -18,7 +18,7 @@ public class GameplayOptionsGroupRepository : IGameplayOptionsGroupRepository
             """,
             new
             {
-                gameplayOptionsGroup.ModKey,
+                ModKey = gameplayOptionsGroup.ModKey.FileName,
                 gameplayOptionsGroup.FormID,
                 Name = DbValue(gameplayOptionsGroup.Name),
                 gameplayOptionsGroup.ImportedAtUtc

@@ -1,8 +1,10 @@
+using Mutagen.Bethesda.Plugins;
+
 namespace SFRecordCompareEngine.Core.DTOs.Plugins;
 
 public class PluginMasterReferenceDTO
 {
-    public required string ModKey { get; set; }
+    public required ModKey ModKey { get; set; }
     public required string ParentModKey { get; set; }
     public int MasterReferenceIndex { get; set; }
     public int? ParentLoadOrderIndex { get; set; }

@@ -51,11 +51,10 @@ public class WorldspaceRecordImporterTests : IDisposable
             Record = new TestWorldspaceRecord()
         }, importedAtUtc);
 
-        var result = database.First<WorldspaceDTO>(
-            "SELECT * FROM Worldspace WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
-            new { ModKey = "Example.esm", FormId = "000100" });
-        result.Name.ShouldBe("Example Worldspace");
-        result.WorldMapOffsetScale.ShouldBe("1.25");
+        database.ExecuteScalar<string>(
+            "SELECT Name FROM Worldspace WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;",
+            new { ModKey = "Example.esm", FormId = "000100" }).ShouldBe("Example Worldspace");
+        database.ExecuteScalar<string>("SELECT WorldMapOffsetScale FROM Worldspace WHERE ModKey = @ModKey COLLATE NOCASE AND FormID = @FormId;", new { ModKey = "Example.esm", FormId = "000100" }).ShouldBe("1.25");
     }
 
     private void InsertPluginAndHeader(NPoco.IDatabase database, string modKey, string formId, string recordType)
