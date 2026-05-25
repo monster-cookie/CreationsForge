@@ -33,13 +33,13 @@ Use these as primary documentation references:
 
 ## ARCHITECTURE & CONVENTIONS
 
-- Contracts-first for service/core changes: define or update interfaces, DTOs, validators, and tests before implementation when applicable.
+- Contracts-first for service/core changes: define or update interfaces, DTOs, validators, and applicable tests before implementation. Do not add unit tests for database access, repository implementations, DbUp migration execution, or UI-bound code.
 - UI-only changes should avoid unnecessary interface, DTO, or validator churn.
-- Class-per-file. Primary constructors for services, factories, stores, and repositories where possible.
+- Do not use C# primary constructors for classes. Use traditional explicit constructors instead.
+- Use one class per file.
 - No statics for application services or mutable app state. Prefer DI; register singletons only when appropriate. Constants, generated framework code, and existing static patterns may remain unless explicitly approved for refactor.
 - No repeated code: Refactor existing methods as needed to avoid repeating code in new methods.
 - Do not introduce new conventions or dependencies unless explicitly approved in the PLAN.
-- Do not use the new .NET 10 primary class constructors, only use the older style.
 
 ## TECH CONSTRAINTS
 
@@ -53,7 +53,7 @@ Use these as primary documentation references:
 - Follow existing MVVM patterns in the repo.
 - Keep code-behind minimal. Do not place business logic in views or code-behind.
 - View models should expose bindable state, commands, and UI coordination only.
-- Business logic belongs in services, factories, stores, or repositories as appropriate.
+- Business logic belongs in services, factories, or stores as appropriate. Repositories should remain focused on persistence/data access.
 - Long-running work must not block the UI thread.
 - Use async commands where existing patterns support them.
 - UI-bound collection updates must occur on the UI thread.
@@ -110,9 +110,9 @@ Use these as primary documentation references:
 ## TESTING
 
 - Unit tests live in /SFRecordCompareEngine.UnitTests (xUnit + Moq + Shouldly).
-- For new features/bugfixes, include tests in the PLAN and add them alongside code changes.
-- Do not unit test database access or repository implementations.
-- Do not test UI-bound code.
+- For new features/bugfixes that affect testable service, factory, validator, DTO, or non-UI business logic, include tests in the PLAN and add them alongside code changes.
+- Do not unit test database access, repository implementations, DbUp migration execution, or UI-bound code.
+- When a change is limited to repositories, database access, migrations, or UI-bound code, the PLAN must explicitly state that no unit tests will be added and explain the validation approach.
 
 ## PLAN → EXECUTE → VALIDATE
 
