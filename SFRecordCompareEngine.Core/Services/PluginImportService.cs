@@ -1,5 +1,4 @@
 using System.Configuration;
-using System.Globalization;
 using System.IO;
 using Mutagen.Bethesda.Starfield;
 using NPoco;
@@ -22,19 +21,22 @@ public class PluginImportService : IPluginImportService
     private readonly IDatabase Database;
     private readonly IPluginService PluginService;
     private readonly IPluginRepository PluginRepository;
+    private readonly IPluginMasterReferencesRepository PluginMasterReferencesRepository;
 
     public PluginImportService(
         IDatabaseSchemaInitializer databaseSchemaInitializer, 
         IDatabase database, 
         IPluginService pluginService,
         IPluginRepository pluginRepository,
-        IGameConfigurationStore gameConfigurationStore
+        IGameConfigurationStore gameConfigurationStore,
+        IPluginMasterReferencesRepository pluginMasterReferencesRepository
     )
     {
         DatabaseSchemaInitializer = databaseSchemaInitializer;
         Database = database;
         PluginService = pluginService;
         PluginRepository = pluginRepository;
+        PluginMasterReferencesRepository = pluginMasterReferencesRepository;
         GameConfigurationStore = gameConfigurationStore;
     }
 
@@ -68,8 +70,6 @@ public class PluginImportService : IPluginImportService
         // Need a new connection because of the transaction scope and to ensure the connection is properly disposed after the transaction completes
         using var transaction = Database.GetTransaction();
 
-        var checkedAtUtc = FormatUtc(DateTimeOffset.UtcNow);
-
         foreach (var entry in loadOrderEntries)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -84,7 +84,7 @@ public class PluginImportService : IPluginImportService
                 IsIndeterminate = false
             });
             
-            ImportPlugin(transaction, entry, checkedAtUtc, result, progress, loadOrderEntries.Count, cancellationToken);
+            ImportPlugin(entry, result, progress, loadOrderEntries.Count, cancellationToken);
         }
         
         // Complete and close the transaction scope
@@ -98,7 +98,8 @@ public class PluginImportService : IPluginImportService
             IsIndeterminate = false
         });
 
-        Logger.Information("Plugin import completed: discovered {PluginsDiscovered}, unchanged {PluginsUnchanged}, changed {PluginsChanged}, invalidated {PluginsInvalidated}, imported {PluginsImported}, missing {PluginsMissing}, failed {PluginsFailed}, unsupported {PluginsUnsupported}, master references {MasterReferencesImported}, record headers {RecordHeadersImported}, typed detail rows {TypedRecordDetailRowsImported}, FormList items {FormListItemsImported}, record failures {RecordImportFailures}, unsupported record types {UnsupportedRecordTypes}",
+        Logger.Information(
+            "Plugin import completed: discovered {PluginsDiscovered}, unchanged {PluginsUnchanged}, changed {PluginsChanged}, invalidated {PluginsInvalidated}, imported {PluginsImported}, missing {PluginsMissing}, failed {PluginsFailed}, unsupported {PluginsUnsupported}, master references {MasterReferencesImported}, record headers {RecordHeadersImported}, typed detail rows {TypedRecordDetailRowsImported}, FormList items {FormListItemsImported}, record failures {RecordImportFailures}, unsupported record types {UnsupportedRecordTypes}",
             result.PluginsDiscovered,
             result.PluginsUnchanged,
             result.PluginsChanged,
@@ -112,12 +113,13 @@ public class PluginImportService : IPluginImportService
             result.TypedRecordDetailRowsImported,
             result.FormListItemsImported,
             result.RecordImportFailures,
-            result.UnsupportedRecordTypes);        
+            result.UnsupportedRecordTypes
+        );
         
         return result;
     }
 
-    private void ImportPlugin(ITransaction transaction, PluginLoadOrderEntryDTO entry, string checkedAtUtc, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
+    private void ImportPlugin(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
     {
         if (GameConfigurationStore.SelectedGame == null) throw new ConfigurationErrorsException("No game selected in configuration (SelectedGame is null)");
         if (GameConfigurationStore.Game == null) throw new ConfigurationErrorsException("No game selected in configuration (Game is null)");
@@ -126,21 +128,55 @@ public class PluginImportService : IPluginImportService
         switch (GameConfigurationStore.SelectedGame)
         {
             case "Skyrim":
-                ImportSkyrimPlugin(entry, checkedAtUtc, result, progress, totalPlugins, cancellationToken);
+                ImportSkyrimPlugin(entry, result, progress, totalPlugins, cancellationToken);
                 break;
             case "Starfield":
-                ImportStarfieldPlugin(entry, checkedAtUtc, result, progress, totalPlugins, cancellationToken);
+                ImportStarfieldPlugin(entry, result, progress, totalPlugins, cancellationToken);
                 break;
             case "Fallout4":
-                ImportFallout4Plugin(entry, checkedAtUtc, result, progress, totalPlugins, cancellationToken);
+                ImportFallout4Plugin(entry, result, progress, totalPlugins, cancellationToken);
                 break;
             default:
                 throw new ConfigurationErrorsException($"Unsupported game: {GameConfigurationStore.SelectedGame}");
         }
-
+        
+        // Before we can process all the master references, we need the plugin stubs filled out
+        switch (GameConfigurationStore.SelectedGame)
+        {
+            case "Skyrim":
+                ImportSkyrimPluginMasterReferences(entry, result, progress, totalPlugins, cancellationToken);
+                break;
+            case "Starfield":
+                ImportStarfieldPluginMasterReferences(entry, result, progress, totalPlugins, cancellationToken);
+                break;
+            case "Fallout4":
+                ImportFallout4PluginMasterReferences(entry, result, progress, totalPlugins, cancellationToken);
+                break;
+            default:
+                throw new ConfigurationErrorsException($"Unsupported game: {GameConfigurationStore.SelectedGame}");
+        }
+        
+            
+        // Finally, the long arduous part importing all the records
+        switch (GameConfigurationStore.SelectedGame)
+        {
+            case "Skyrim":
+                ImportSkyrimPluginRecords(entry, result, progress, totalPlugins, cancellationToken);
+                break;
+            case "Starfield":
+                ImportStarfieldPluginRecords(entry, result, progress, totalPlugins, cancellationToken);
+                break;
+            case "Fallout4":
+                ImportFallout4PluginRecords(entry, result, progress, totalPlugins, cancellationToken);
+                break;
+            default:
+                throw new ConfigurationErrorsException($"Unsupported game: {GameConfigurationStore.SelectedGame}");
+        }
     }
 
-    private void ImportStarfieldPlugin(PluginLoadOrderEntryDTO entry, string checkedAtUtc, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
+    #region Starfield Import Helpers
+
+    private void ImportStarfieldPlugin(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
     {
         if (GameConfigurationStore.SelectedGame == null) throw new ConfigurationErrorsException("No game selected in configuration (SelectedGame is null)");
         if (GameConfigurationStore.Game == null) throw new ConfigurationErrorsException("No game selected in configuration (Game is null)");
@@ -286,10 +322,6 @@ public class PluginImportService : IPluginImportService
             
             PluginRepository.UpsertPlugin(dto);
             result.PluginsImported++;
-
-            // TODO: Handle the master references
-            
-            // TODO: Handle importing of plugin major record types
         }
         catch (OperationCanceledException)
         {
@@ -332,27 +364,125 @@ public class PluginImportService : IPluginImportService
 
             PluginRepository.UpsertPlugin(erroredPluginDTO);
         }
+    }
+
+    private void ImportStarfieldPluginMasterReferences(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
+    {
+        if (GameConfigurationStore.SelectedGame == null) throw new ConfigurationErrorsException("No game selected in configuration (SelectedGame is null)");
+        if (GameConfigurationStore.Game == null) throw new ConfigurationErrorsException("No game selected in configuration (Game is null)");
+        if (GameConfigurationStore.Release == null) throw new ConfigurationErrorsException("No game selected in configuration (Release is null)");
+
+        var existingPlugin = PluginRepository.GetByModKey(entry.ModKey);
+        var fileInfo = new FileInfo(entry.PluginPath);
+        var mod = StarfieldMod.Create(StarfieldRelease.Starfield)
+            .FromPath(entry.PluginPath)
+            .WithLoadOrderFromHeaderMasters()
+            .WithDataFolder(GameConfigurationStore.Game.DataFolderPath)
+            .Construct();
+
+        if (!mod.MasterReferences.Any()) return;
         
+        Logger.Information("Importing master references for {Name} from {FileName}, found {Count} parent masters", entry.ModKey.Name, mod.ModKey.FileName, mod.MasterReferences.Count);
+        progress?.Report(new PluginImportProgressDTO
+        {
+            CurrentPluginName = entry.PluginFileName,
+            CurrentModKey = entry.ModKey,
+            PluginIndex = entry.LoadOrderIndex,
+            PluginCount = totalPlugins,
+            StatusText = $"Importing {mod.MasterReferences.Count} master references for {entry.PluginFileName} ({entry.LoadOrderIndex} of {totalPlugins})...",
+            IsIndeterminate = false
+        });
+
+        foreach (var master in mod.MasterReferences)
+        {
+            
+            var currentMaster = PluginRepository.GetByModKey(master.Master);
+            if (currentMaster is null) continue;
+
+            progress?.Report(new PluginImportProgressDTO
+            {
+                CurrentPluginName = entry.PluginFileName,
+                CurrentModKey = entry.ModKey,
+                PluginIndex = entry.LoadOrderIndex,
+                PluginCount = totalPlugins,
+                StatusText = $"Importing {currentMaster.ModKey} at load order {currentMaster.LoadOrderIndex} which is a child of {entry.PluginFileName} at load order {entry.LoadOrderIndex}...",
+                IsIndeterminate = false
+            });
+            
+            Logger.Debug("Found master reference {MasterName} for {PluginName}", currentMaster.ModKey.Name, entry.ModKey.Name);
+            var masterReferenceDTO = new PluginMasterReferenceDTO
+            {
+                ModKey = currentMaster.ModKey,
+                MasterReferenceIndex = currentMaster.LoadOrderIndex,
+                ParentModKey = entry.ModKey,
+                ParentLoadOrderIndex = entry.LoadOrderIndex,
+                ImportedAtUtc = DateTime.UtcNow
+            };
+            
+            PluginMasterReferencesRepository.UpsertPluginMasterReference(masterReferenceDTO);
+            result.MasterReferencesImported++;
+        }
+        Logger.Information("Finished importing master references for {Name} from {FileName}, found {Count} parent masters", entry.ModKey.Name, mod.ModKey.FileName, mod.MasterReferences.Count);
+        
+        progress?.Report(new PluginImportProgressDTO
+        {
+            CurrentPluginName = entry.PluginFileName,
+            CurrentModKey = entry.ModKey,
+            PluginIndex = entry.LoadOrderIndex,
+            PluginCount = totalPlugins,
+            StatusText = $"Finished importing master references for {entry.PluginFileName}, found {mod.MasterReferences.Count} parent masters...",
+            IsIndeterminate = false
+        });
     }
 
-    private void ImportFallout4Plugin(PluginLoadOrderEntryDTO entry, string checkedAtUtc, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
+    private void ImportStarfieldPluginRecords(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }
 
-    private void ImportSkyrimPlugin(PluginLoadOrderEntryDTO entry, string checkedAtUtc, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
+    #endregion
+
+    #region Fallout 4 Import Helpers
+
+    private void ImportFallout4Plugin(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+    
+    private void ImportFallout4PluginMasterReferences(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }
 
+    private void ImportFallout4PluginRecords(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    #endregion
+
+    #region Skyrim Import Helpers
+    
+    private void ImportSkyrimPlugin(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    private void ImportSkyrimPluginMasterReferences(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    private void ImportSkyrimPluginRecords(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    #endregion
+    
     private static bool IsUnsupportedPlugin(PluginLoadOrderEntryDTO loadOrderEntry)
     {
         var pluginFileName = string.IsNullOrWhiteSpace(loadOrderEntry.PluginFileName) ? loadOrderEntry.ModKey.FileName.ToString() : loadOrderEntry.PluginFileName;
         return pluginFileName.StartsWith("BlueprintShips", StringComparison.OrdinalIgnoreCase) && pluginFileName.EndsWith(".esm", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static string FormatUtc(DateTimeOffset dateTimeOffset)
-    {
-        return dateTimeOffset.UtcDateTime.ToString("O", CultureInfo.InvariantCulture);
     }
 }

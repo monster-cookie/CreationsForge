@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace SFRecordCompareEngine.Core.DTOs.Plugins;
 
 public class PluginHeaderMetadataDTO

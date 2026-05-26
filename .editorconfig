@@ -1,7 +1,10 @@
 ﻿root = true
 
 [*.cs]
-max_line_length = 160
+max_line_length = 320
 
 # Allow single-line control statements without braces
 csharp_prefer_braces = false:none
+
+# Disable use primary constructors
+dotnet_diagnostic.IDE0290.severity = none

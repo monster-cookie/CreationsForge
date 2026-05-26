@@ -2,7 +2,6 @@ using System.Configuration;
 using Serilog;
 using SFRecordCompareEngine.Core.Configuration.Interfaces;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
-using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Services.Interfaces;
 
 namespace SFRecordCompareEngine.ViewModels;

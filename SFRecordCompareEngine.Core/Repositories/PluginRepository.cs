@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Plugins;

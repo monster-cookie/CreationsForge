@@ -1,5 +1,3 @@
-using System;
-using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
 using SFRecordCompareEngine.Core.Models.Database;
@@ -8,15 +6,15 @@ namespace SFRecordCompareEngine.Core.DTOs.Plugins;
 
 public class PluginDTO
 {
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     public PluginDTO()
-    {}
+    { }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
     public PluginDTO(Plugin model)
     {
-        if (!Enum.IsDefined(typeof(ModType), model.ModKeyType))
-        {
-            throw new ArgumentOutOfRangeException(nameof(model.ModKeyType), model.ModKeyType, "Invalid mod type value.");
-        }
+        ArgumentNullException.ThrowIfNull(model);
+        if (!Enum.IsDefined(typeof(ModType), model.ModKeyType)) throw new ArgumentOutOfRangeException(nameof(model), $"model.ModKeyType is not a valid value, the value received was {model.ModKeyType}");
         
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
         GameRelease = model.GameRelease;
@@ -29,6 +27,7 @@ public class PluginDTO
         HeaderFlags = (StarfieldModHeader.HeaderFlag)model.HeaderFlags;
         FormVersion = model.FormVersion;
         Author = model.Author;
+        Branch = model.Branch;
     }
     
     public ModKey ModKey { get; set; }

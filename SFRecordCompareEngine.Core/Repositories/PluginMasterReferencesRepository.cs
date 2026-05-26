@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Mutagen.Bethesda.Plugins;
+﻿using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.Models.Database;
@@ -29,5 +27,12 @@ public class PluginMasterReferencesRepository : IPluginMasterReferencesRepositor
                 new { ModKeyName = modKey.Name, ModKeyType = (int)modKey.Type, ModKeyFileName = modKey.FileName })
             .Select(pluginMasterReference => new PluginMasterReferenceDTO(pluginMasterReference))
             .ToList();
+    }
+    
+    /// <inheritdoc />
+    public void UpsertPluginMasterReference(PluginMasterReferenceDTO dto)
+    {
+        var model = new PluginMasterReference(dto);
+        Database.Save(model);
     }
 }

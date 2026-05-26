@@ -1,4 +1,3 @@
-using System;
 using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
@@ -9,9 +8,11 @@ namespace SFRecordCompareEngine.Core.Models.Database;
 [PrimaryKey("ModKeyName, ModKeyFileName, ModKeyType", AutoIncrement = false)]
 public class Plugin
 {
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     public Plugin()
     { }
-    
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+
     public Plugin(PluginDTO dto)
     {
         ModKeyName = dto.ModKey.Name;
@@ -27,6 +28,7 @@ public class Plugin
         HeaderFlags = (int)dto.HeaderFlags;
         FormVersion = dto.FormVersion;
         Author = dto.Author;
+        Branch = dto.Branch;
     }
     
     [Column("ModKey_Name")]
@@ -48,7 +50,7 @@ public class Plugin
     public string PluginFileName { get; set; } = string.Empty;
 
     [Column("PluginPath")]
-    public string? PluginPath { get; set; }
+    public string PluginPath { get; set; }
 
     [Column("Enabled")]
     public bool Enabled { get; set; } = true;

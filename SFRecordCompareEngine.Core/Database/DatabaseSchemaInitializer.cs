@@ -1,6 +1,5 @@
 using Serilog;
 using SFRecordCompareEngine.Core.Database.Interfaces;
-using SFRecordCompareEngine.Core.Models.Database;
 using SFRecordCompareEngine.Migrations;
 
 namespace SFRecordCompareEngine.Core.Database;

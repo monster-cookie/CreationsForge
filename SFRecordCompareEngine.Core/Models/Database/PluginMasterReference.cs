@@ -1,4 +1,3 @@
-using System;
 using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Plugins;

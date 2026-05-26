@@ -1,20 +1,10 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using Mutagen.Bethesda;
-using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Records.Mapping;
-using Mutagen.Bethesda.Starfield;
 using Serilog;
 using SFRecordCompareEngine.Core.Database.Interfaces;
 using SFRecordCompareEngine.Core.Configuration.Interfaces;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
-using SFRecordCompareEngine.Core.DTOs.Records;
-using SFRecordCompareEngine.Core.Models.Records;
 using SFRecordCompareEngine.Core.Repositories.Interfaces;
 using SFRecordCompareEngine.Core.Services.Interfaces;
 

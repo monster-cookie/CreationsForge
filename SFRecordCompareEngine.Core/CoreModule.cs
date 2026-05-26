@@ -17,6 +17,12 @@ public class CoreModule : Module
             .AsImplementedInterfaces()
             .SingleInstance();
 
+        // Register any importers
+        builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly())
+            .Where(t => t.Name.EndsWith("Importer", StringComparison.OrdinalIgnoreCase))
+            .AsImplementedInterfaces()
+            .SingleInstance();
+
         // Register any services
         builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly())
             .Where(t => t.Name.EndsWith("Service", StringComparison.OrdinalIgnoreCase))
@@ -43,6 +49,5 @@ public class CoreModule : Module
             .Where(t => t.Name.EndsWith("Repository", StringComparison.OrdinalIgnoreCase))
             .AsImplementedInterfaces()
             .SingleInstance();
-        
     }
 }
