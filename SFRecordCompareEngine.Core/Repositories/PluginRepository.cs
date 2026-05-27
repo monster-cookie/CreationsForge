@@ -117,7 +117,7 @@ public class PluginRepository : IPluginRepository
     }
 
     /// <inheritdoc />
-    public void UpsertPlugin(PluginDTO dto)
+    public void Save(PluginDTO dto)
     {
         var model = new Plugin(dto);
         Database.Save(model);

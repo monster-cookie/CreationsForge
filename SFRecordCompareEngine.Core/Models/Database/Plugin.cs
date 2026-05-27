@@ -16,7 +16,6 @@ public class Plugin
         ModKeyName = dto.ModKey.Name;
         ModKeyFileName = dto.ModKey.FileName;
         ModKeyType = (int)dto.ModKey.Type;
-        GameRelease = dto.GameRelease;
         LoadOrderIndex = dto.LoadOrderIndex;
         Enabled = dto.Enabled;
         ExistsOnDisk = dto.ExistsOnDisk;
@@ -35,9 +34,6 @@ public class Plugin
     
     [Column("ModKey_Type")]
     public int ModKeyType { get; set; } = (int)ModType.Master;
-
-    [Column("GameRelease")]
-    public string GameRelease { get; set; } = string.Empty;
 
     [Column("LoadOrderIndex")]
     public int LoadOrderIndex { get; set; }

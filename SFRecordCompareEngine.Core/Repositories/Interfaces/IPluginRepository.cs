@@ -45,8 +45,8 @@ public interface IPluginRepository
     IList<PluginDTO> SearchOpenablePluginsByFilename(string searchFilename);
     
     /// <summary>
-    /// Upsert a plugin.
+    /// Save a plugin.
     /// </summary>
-    /// <param name="dto">The plugin to upsert.</param>
-    void UpsertPlugin(PluginDTO dto);
+    /// <param name="dto">The plugin to save.</param>
+    void Save(PluginDTO dto);
 }

@@ -9,16 +9,12 @@ namespace SFRecordCompareEngine.ViewModels;
 public class MainWindowViewModel : ViewModelBase
 {
     private readonly ILogger Logger;
-    private readonly IGameConfigurationStore GameConfigurationStore;
     private readonly IPluginImportService PluginImportService;
     private bool DatabaseImportCompleted;
 
-    public MainWindowViewModel(IPluginImportService pluginImportService,
-        IGameConfigurationStore gameConfigurationStore,
-        ILogger logger)
+    public MainWindowViewModel(IPluginImportService pluginImportService, ILogger logger)
     {
         PluginImportService = pluginImportService;
-        GameConfigurationStore = gameConfigurationStore;
         Logger = logger.ForContext<MainWindowViewModel>() ?? logger;
         LoadedGameText = "None";
         LoadedPluginText = "None";
@@ -84,8 +80,6 @@ public class MainWindowViewModel : ViewModelBase
 
     public async Task InitializeDatabaseImportAsync(CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(GameConfigurationStore.SelectedGame)) throw new ConfigurationErrorsException("Select a game before initializing the plugin database.");
-
         IsDatabaseImportRunning = true;
         DatabaseImportCompleted = false;
         IsDatabaseImportIndeterminate = true;

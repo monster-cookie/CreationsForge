@@ -13,8 +13,8 @@ public interface IPluginMasterReferencesRepository
     IList<PluginMasterReferenceDTO> GetMasterReferences(ModKey modKey);
     
     /// <summary>
-    /// Upserts a plugin master reference.
+    /// Save a plugin master reference.
     /// </summary>
-    /// <param name="dto">The DTO of master reference information to upsert</param>
-    void UpsertPluginMasterReference(PluginMasterReferenceDTO dto);
+    /// <param name="dto">The DTO of master reference information to save</param>
+    void Save(PluginMasterReferenceDTO dto);
 }

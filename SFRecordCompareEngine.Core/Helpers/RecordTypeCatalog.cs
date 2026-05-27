@@ -1,9 +1,20 @@
 ﻿namespace SFRecordCompareEngine.Core.Helpers;
 
-public static class RecordTypeImportCatalog
+public static class RecordTypeCatalog
 {
-    public const string FormListRecordType = "FormList";
-    public const string GameSettingRecordType = "GameSetting";
+    public static readonly RecordTypeData FormList = new()
+    {
+        TableName = "FormList",
+        RecordType = "FormList",
+        RecordID = "FLST"
+    };
+    
+    public static readonly RecordTypeData GameSetting = new()
+    {
+        TableName = "GameSetting",
+        RecordType = "GameSetting",
+        RecordID = "GMST"
+    };
 
     public static readonly IReadOnlyList<string> SupportedRecordTypes =
     [
@@ -42,9 +53,4 @@ public static class RecordTypeImportCatalog
         .Distinct(StringComparer.Ordinal)
         .OrderBy(recordType => recordType, StringComparer.Ordinal)
         .ToList();
-
-    public static bool UsesExistingTypedDetailTable(string recordType)
-    {
-        return recordType.Equals(FormListRecordType, StringComparison.Ordinal);
-    }
 }

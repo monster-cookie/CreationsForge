@@ -6,31 +6,23 @@ namespace SFRecordCompareEngine;
 
 public partial class MainWindow
 {
-    private readonly Func<OpenGamePluginDialog> OpenGamePluginDialogFactory;
     private readonly Func<DatabaseImportConfirmationDialog> DatabaseImportConfirmationDialogFactory;
-    private readonly Func<StartupConfigurationDialog> StartupConfigurationDialogFactory;
     private readonly IApplicationConfigurationStore ApplicationConfigurationStore;
-    private readonly IGameConfigurationStore GameConfigurationStore;
     private readonly MainWindowViewModel ViewModel;
     private readonly CancellationTokenSource StartupImportCancellationTokenSource = new();
     private bool HasPromptedForDatabaseImport;
 
     public MainWindow(
         MainWindowViewModel viewModel,
-        Func<OpenGamePluginDialog> openGamePluginDialogFactory,
         Func<DatabaseImportConfirmationDialog> databaseImportConfirmationDialogFactory,
-        Func<StartupConfigurationDialog> startupConfigurationDialogFactory,
-        IApplicationConfigurationStore applicationConfigurationStore,
-        IGameConfigurationStore gameConfigurationStore)
+        IApplicationConfigurationStore applicationConfigurationStore
+    )
     {
         InitializeComponent();
 
         ViewModel = viewModel;
-        OpenGamePluginDialogFactory = openGamePluginDialogFactory;
         DatabaseImportConfirmationDialogFactory = databaseImportConfirmationDialogFactory;
-        StartupConfigurationDialogFactory = startupConfigurationDialogFactory;
         ApplicationConfigurationStore = applicationConfigurationStore;
-        GameConfigurationStore = gameConfigurationStore;
         DataContext = ViewModel;
 
         Loaded += MainWindow_Loaded;
@@ -41,21 +33,6 @@ public partial class MainWindow
     {
         if (HasPromptedForDatabaseImport) return;
         HasPromptedForDatabaseImport = true;
-
-        if (ApplicationConfigurationStore.IsConfigurationRequired)
-        {
-            var configurationDialog = StartupConfigurationDialogFactory();
-            configurationDialog.Owner = this;
-            if (configurationDialog.ShowDialog() != true)
-            {
-                Close();
-                return;
-            }
-        }
-        else
-        {
-            GameConfigurationStore.SelectGame(ApplicationConfigurationStore.Current.SelectedGame);
-        }
 
         var dialog = DatabaseImportConfirmationDialogFactory();
         dialog.Owner = this;
@@ -93,16 +70,6 @@ public partial class MainWindow
 
     private void OpenMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (!ViewModel.CanUseApplication) return;
-
-        var dialog = OpenGamePluginDialogFactory();
-        dialog.Owner = this;
-
-        if (dialog.ShowDialog() != true) return;
-        if (string.IsNullOrWhiteSpace(GameConfigurationStore.SelectedGame) ||
-            string.IsNullOrWhiteSpace(dialog.ViewModel.SelectedPluginName)) return;
-
-        ViewModel.LoadPlugin(GameConfigurationStore.SelectedGame, dialog.ViewModel.SelectedPluginName);
     }
 
     private void ExitMenuItem_Click(object sender, RoutedEventArgs e)

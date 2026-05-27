@@ -30,7 +30,7 @@ public class PluginMasterReferencesRepository : IPluginMasterReferencesRepositor
     }
     
     /// <inheritdoc />
-    public void UpsertPluginMasterReference(PluginMasterReferenceDTO dto)
+    public void Save(PluginMasterReferenceDTO dto)
     {
         var model = new PluginMasterReference(dto);
         Database.Save(model);

@@ -16,7 +16,6 @@ public class PluginDTO
         if (!Enum.IsDefined(typeof(ModType), model.ModKeyType)) throw new ArgumentOutOfRangeException(nameof(model), $"model.ModKeyType is not a valid value, the value received was {model.ModKeyType}");
         
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
-        GameRelease = model.GameRelease;
         LoadOrderIndex = model.LoadOrderIndex;
         Enabled = model.Enabled;
         ExistsOnDisk = model.ExistsOnDisk;
@@ -28,7 +27,6 @@ public class PluginDTO
     }
     
     public ModKey ModKey { get; set; }
-    public string GameRelease { get; set; } = string.Empty;
     public int LoadOrderIndex { get; set; }
     public bool Enabled { get; set; } = true;
     public bool ExistsOnDisk { get; set; } = true;

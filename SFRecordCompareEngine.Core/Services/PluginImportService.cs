@@ -1,5 +1,7 @@
 using System.Configuration;
 using System.IO;
+using Mutagen.Bethesda;
+using Mutagen.Bethesda.Environments;
 using Mutagen.Bethesda.Starfield;
 using NPoco;
 using Serilog;
@@ -15,8 +17,6 @@ namespace SFRecordCompareEngine.Core.Services;
 public class PluginImportService : IPluginImportService
 {
     private readonly ILogger Logger = Log.ForContext<PluginImportService>();
-    
-    private readonly IGameConfigurationStore GameConfigurationStore;
 
     private readonly IDatabaseSchemaInitializer DatabaseSchemaInitializer;
     private readonly IDatabase Database;
@@ -29,7 +29,6 @@ public class PluginImportService : IPluginImportService
         IDatabase database, 
         IPluginService pluginService,
         IPluginRepository pluginRepository,
-        IGameConfigurationStore gameConfigurationStore,
         IPluginMasterReferencesRepository pluginMasterReferencesRepository
     )
     {
@@ -38,7 +37,6 @@ public class PluginImportService : IPluginImportService
         PluginService = pluginService;
         PluginRepository = pluginRepository;
         PluginMasterReferencesRepository = pluginMasterReferencesRepository;
-        GameConfigurationStore = gameConfigurationStore;
     }
 
     public Task<PluginImportResultDTO> InitializeAndImportAsync(IProgress<PluginImportProgressDTO>? progress, CancellationToken cancellationToken)
@@ -122,73 +120,26 @@ public class PluginImportService : IPluginImportService
 
     private void ImportPlugin(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
     {
-        if (GameConfigurationStore.SelectedGame == null) throw new ConfigurationErrorsException("No game selected in configuration (SelectedGame is null)");
-        if (GameConfigurationStore.Game == null) throw new ConfigurationErrorsException("No game selected in configuration (Game is null)");
-        if (GameConfigurationStore.Release == null) throw new ConfigurationErrorsException("No game selected in configuration (Release is null)");
-
-        switch (GameConfigurationStore.SelectedGame)
-        {
-            case "Skyrim":
-                ImportSkyrimPlugin(entry, result, progress, totalPlugins, cancellationToken);
-                break;
-            case "Starfield":
-                ImportStarfieldPlugin(entry, result, progress, totalPlugins, cancellationToken);
-                break;
-            case "Fallout4":
-                ImportFallout4Plugin(entry, result, progress, totalPlugins, cancellationToken);
-                break;
-            default:
-                throw new ConfigurationErrorsException($"Unsupported game: {GameConfigurationStore.SelectedGame}");
-        }
+        ImportStarfieldPlugin(entry, result, progress, totalPlugins, cancellationToken);
         
         // Before we can process all the master references, we need the plugin stubs filled out
-        switch (GameConfigurationStore.SelectedGame)
-        {
-            case "Skyrim":
-                ImportSkyrimPluginMasterReferences(entry, result, progress, totalPlugins, cancellationToken);
-                break;
-            case "Starfield":
-                ImportStarfieldPluginMasterReferences(entry, result, progress, totalPlugins, cancellationToken);
-                break;
-            case "Fallout4":
-                ImportFallout4PluginMasterReferences(entry, result, progress, totalPlugins, cancellationToken);
-                break;
-            default:
-                throw new ConfigurationErrorsException($"Unsupported game: {GameConfigurationStore.SelectedGame}");
-        }
+        ImportStarfieldPluginMasterReferences(entry, result, progress, totalPlugins, cancellationToken);
         
             
         // Finally, the long arduous part importing all the records
-        switch (GameConfigurationStore.SelectedGame)
-        {
-            case "Skyrim":
-                ImportSkyrimPluginRecords(entry, result, progress, totalPlugins, cancellationToken);
-                break;
-            case "Starfield":
-                ImportStarfieldPluginRecords(entry, result, progress, totalPlugins, cancellationToken);
-                break;
-            case "Fallout4":
-                ImportFallout4PluginRecords(entry, result, progress, totalPlugins, cancellationToken);
-                break;
-            default:
-                throw new ConfigurationErrorsException($"Unsupported game: {GameConfigurationStore.SelectedGame}");
-        }
+        ImportStarfieldPluginRecords(entry, result, progress, totalPlugins, cancellationToken);
     }
 
     #region Starfield Import Helpers
 
     private void ImportStarfieldPlugin(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
     {
-        if (GameConfigurationStore.SelectedGame == null) throw new ConfigurationErrorsException("No game selected in configuration (SelectedGame is null)");
-        if (GameConfigurationStore.Game == null) throw new ConfigurationErrorsException("No game selected in configuration (Game is null)");
-        if (GameConfigurationStore.Release == null) throw new ConfigurationErrorsException("No game selected in configuration (Release is null)");
-
         var existingPlugin = PluginRepository.GetByModKey(entry.ModKey);
         var fileInfo = new FileInfo(entry.PluginPath);
         var mod = StarfieldMod.Create(StarfieldRelease.Starfield)
             .FromPath(entry.PluginPath)
             .WithLoadOrderFromHeaderMasters()
-            .WithDataFolder(GameConfigurationStore.Game.DataFolderPath)
+            .WithDataFolder(GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield).DataFolderPath)
             .Construct();
         
         if (IsUnsupportedPlugin(entry))
@@ -199,7 +150,6 @@ public class PluginImportService : IPluginImportService
             var unsupportedPluginDTO = new PluginDTO
             {
                 ModKey = entry.ModKey,
-                GameRelease = GameConfigurationStore.SelectedGame ?? "None",
                 LoadOrderIndex = entry.LoadOrderIndex,
                 Enabled = entry.Enabled,
                 ExistsOnDisk = fileInfo.Exists,
@@ -210,7 +160,7 @@ public class PluginImportService : IPluginImportService
                 LastCheckedUtc = DateTime.UtcNow
             };
             
-            PluginRepository.UpsertPlugin(unsupportedPluginDTO);
+            PluginRepository.Save(unsupportedPluginDTO);
             return;
         }
         
@@ -221,7 +171,6 @@ public class PluginImportService : IPluginImportService
             var missingPluginDTO = new PluginDTO
             {
                 ModKey = entry.ModKey,
-                GameRelease = GameConfigurationStore.SelectedGame ?? "None",
                 LoadOrderIndex = entry.LoadOrderIndex,
                 Enabled = entry.Enabled,
                 ExistsOnDisk = fileInfo.Exists,
@@ -232,7 +181,7 @@ public class PluginImportService : IPluginImportService
                 LastCheckedUtc = DateTime.UtcNow
             };
             
-            PluginRepository.UpsertPlugin(missingPluginDTO);
+            PluginRepository.Save(missingPluginDTO);
             return;
         }
 
@@ -246,7 +195,7 @@ public class PluginImportService : IPluginImportService
             
             existingPlugin.LastCheckedUtc = DateTime.UtcNow;
             
-            PluginRepository.UpsertPlugin(existingPlugin);
+            PluginRepository.Save(existingPlugin);
             return;
         }
         
@@ -297,7 +246,6 @@ public class PluginImportService : IPluginImportService
                 dto = new PluginDTO
                 {
                     ModKey = entry.ModKey,
-                    GameRelease = GameConfigurationStore.SelectedGame ?? "None",
                     LoadOrderIndex = entry.LoadOrderIndex,
                     Enabled = entry.Enabled,
                     ExistsOnDisk = fileInfo.Exists,
@@ -313,7 +261,7 @@ public class PluginImportService : IPluginImportService
                 };
             }
             
-            PluginRepository.UpsertPlugin(dto);
+            PluginRepository.Save(dto);
             result.PluginsImported++;
         }
         catch (OperationCanceledException)
@@ -339,7 +287,6 @@ public class PluginImportService : IPluginImportService
                 erroredPluginDTO = new PluginDTO
                 {
                     ModKey = entry.ModKey,
-                    GameRelease = GameConfigurationStore.SelectedGame ?? "None",
                     LoadOrderIndex = entry.LoadOrderIndex,
                     Enabled = entry.Enabled,
                     ExistsOnDisk = fileInfo.Exists,
@@ -353,22 +300,16 @@ public class PluginImportService : IPluginImportService
                 };
             }
 
-            PluginRepository.UpsertPlugin(erroredPluginDTO);
+            PluginRepository.Save(erroredPluginDTO);
         }
     }
 
     private void ImportStarfieldPluginMasterReferences(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
     {
-        if (GameConfigurationStore.SelectedGame == null) throw new ConfigurationErrorsException("No game selected in configuration (SelectedGame is null)");
-        if (GameConfigurationStore.Game == null) throw new ConfigurationErrorsException("No game selected in configuration (Game is null)");
-        if (GameConfigurationStore.Release == null) throw new ConfigurationErrorsException("No game selected in configuration (Release is null)");
-
-        var existingPlugin = PluginRepository.GetByModKey(entry.ModKey);
-        var fileInfo = new FileInfo(entry.PluginPath);
         var mod = StarfieldMod.Create(StarfieldRelease.Starfield)
             .FromPath(entry.PluginPath)
             .WithLoadOrderFromHeaderMasters()
-            .WithDataFolder(GameConfigurationStore.Game.DataFolderPath)
+            .WithDataFolder(GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield).DataFolderPath)
             .Construct();
 
         if (!mod.MasterReferences.Any()) return;
@@ -410,7 +351,7 @@ public class PluginImportService : IPluginImportService
                 ImportedAtUtc = DateTime.UtcNow
             };
             
-            PluginMasterReferencesRepository.UpsertPluginMasterReference(masterReferenceDTO);
+            PluginMasterReferencesRepository.Save(masterReferenceDTO);
             result.MasterReferencesImported++;
         }
         Logger.Information("Finished importing master references for {Name} from {FileName}, found {Count} parent masters", entry.ModKey.Name, mod.ModKey.FileName, mod.MasterReferences.Count);
@@ -433,44 +374,6 @@ public class PluginImportService : IPluginImportService
 
     #endregion
 
-    #region Fallout 4 Import Helpers
-
-    private void ImportFallout4Plugin(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
-    }
-    
-    private void ImportFallout4PluginMasterReferences(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
-    }
-
-    private void ImportFallout4PluginRecords(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
-    }
-
-    #endregion
-
-    #region Skyrim Import Helpers
-    
-    private void ImportSkyrimPlugin(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
-    }
-
-    private void ImportSkyrimPluginMasterReferences(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
-    }
-
-    private void ImportSkyrimPluginRecords(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
-    }
-
-    #endregion
-    
     private static bool IsUnsupportedPlugin(PluginLoadOrderEntryDTO loadOrderEntry)
     {
         var pluginFileName = string.IsNullOrWhiteSpace(loadOrderEntry.PluginFileName) ? loadOrderEntry.ModKey.FileName.ToString() : loadOrderEntry.PluginFileName;
