@@ -1,5 +1,5 @@
 using SFRecordCompareEngine.Core.DTOs.Plugins;
-using SFRecordCompareEngine.Core.DTOs.Records;
+using SFRecordCompareEngine.Core.DTOs.Results;
 
 namespace SFRecordCompareEngine.Core.Services.Interfaces;
 

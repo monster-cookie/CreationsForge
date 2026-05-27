@@ -1,4 +1,4 @@
-namespace SFRecordCompareEngine.Core.DTOs.Records;
+namespace SFRecordCompareEngine.Core.DTOs.Results;
 
 public class RecordTypeImportResultDTO
 {

@@ -19,7 +19,7 @@ public class OpenGamePluginDialogViewModel : ViewModelBase
     private string _pluginSearchText = string.Empty;
     private string _pluginVersion = string.Empty;
     private PluginListItemDTO? _selectedPluginItem;
-    private PluginHeaderDTO? _selectedPluginHeader;
+    private PluginDTO? _selectedPluginHeader;
     private string? _selectedPluginName;
     private string _statusText = string.Empty;
     private bool IsLoadingPlugins;
@@ -116,8 +116,7 @@ public class OpenGamePluginDialogViewModel : ViewModelBase
         private set => SetProperty(ref _statusText, value);
     }
 
-    public bool CanOpen => _selectedPluginHeader is not null
-        && string.Equals(SelectedPluginName, PluginSearchText.Trim(), StringComparison.OrdinalIgnoreCase);
+    public bool CanOpen => _selectedPluginHeader is not null && string.Equals(SelectedPluginName, PluginSearchText.Trim(), StringComparison.OrdinalIgnoreCase);
 
     public bool TryConfirmOpen()
     {

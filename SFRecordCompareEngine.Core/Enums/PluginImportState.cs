@@ -1,4 +1,4 @@
-namespace SFRecordCompareEngine.Core.DTOs.Plugins;
+namespace SFRecordCompareEngine.Core.Enums;
 
 public enum PluginImportState
 {

@@ -20,9 +20,7 @@ public class StartupConfigurationDialogViewModel : ViewModelBase
         GameConfigurationStore = gameConfigurationStore;
 
         SupportedGames = gameConfigurationStore.SupportedGames;
-        _selectedGame = string.IsNullOrWhiteSpace(applicationConfigurationStore.Current.SelectedGame)
-            ? SupportedGames.FirstOrDefault(game => !string.Equals(game, "None", StringComparison.OrdinalIgnoreCase))
-            : applicationConfigurationStore.Current.SelectedGame;
+        _selectedGame = string.IsNullOrWhiteSpace(applicationConfigurationStore.Current.SelectedGame) ? SupportedGames.FirstOrDefault(game => !string.Equals(game, "None", StringComparison.OrdinalIgnoreCase)) : applicationConfigurationStore.Current.SelectedGame;
         ContinueCommand = new RelayCommand(() => { }, CanContinue);
     }
 

@@ -5,13 +5,11 @@ using SFRecordCompareEngine.Core.DTOs.Plugins;
 namespace SFRecordCompareEngine.Core.Models.Database;
 
 [TableName("Plugins")]
-[PrimaryKey("ModKeyName, ModKeyFileName, ModKeyType", AutoIncrement = false)]
+[PrimaryKey("ModKeyName, ModKeyType, ModKeyFileName", AutoIncrement = false)]
 public class Plugin
 {
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     public Plugin()
     { }
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
     public Plugin(PluginDTO dto)
     {
@@ -20,8 +18,6 @@ public class Plugin
         ModKeyType = (int)dto.ModKey.Type;
         GameRelease = dto.GameRelease;
         LoadOrderIndex = dto.LoadOrderIndex;
-        PluginFileName = dto.PluginFileName;
-        PluginPath = dto.PluginPath;
         Enabled = dto.Enabled;
         ExistsOnDisk = dto.ExistsOnDisk;
         ImportState = dto.ImportState;
@@ -46,12 +42,6 @@ public class Plugin
     [Column("LoadOrderIndex")]
     public int LoadOrderIndex { get; set; }
 
-    [Column("PluginFileName")]
-    public string PluginFileName { get; set; } = string.Empty;
-
-    [Column("PluginPath")]
-    public string PluginPath { get; set; }
-
     [Column("Enabled")]
     public bool Enabled { get; set; } = true;
 
@@ -68,10 +58,10 @@ public class Plugin
     public int FormVersion { get; set; }
 
     [Column("Author")]
-    public string Author { get; set; } = string.Empty;
+    public string Author { get; set; } = "UNKNOWN";
 
     [Column("Branch")]
-    public string Branch { get; set; } = string.Empty;
+    public string Branch { get; set; } = "UNKNOWN";
 
     [Column("InteriorCellCount")] public int InteriorCellCount { get; set; } = 0;
 

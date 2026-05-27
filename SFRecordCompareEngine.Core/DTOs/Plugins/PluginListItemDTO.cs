@@ -1,3 +1,5 @@
+using SFRecordCompareEngine.Core.Enums;
+
 namespace SFRecordCompareEngine.Core.DTOs.Plugins;
 
 public class PluginListItemDTO

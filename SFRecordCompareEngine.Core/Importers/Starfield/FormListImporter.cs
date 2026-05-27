@@ -1,5 +1,6 @@
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
+using SFRecordCompareEngine.Core.DTOs.Results;
 using SFRecordCompareEngine.Core.Importers.Interfaces;
 
 namespace SFRecordCompareEngine.Core.Importers.Starfield;
@@ -12,8 +13,9 @@ public class FormListImporter : ITypedRecordDetailImporter
 
     public string TableName => "FormList";
 
-    public void Import(ModKey modKey, FormKey formKey)
+    public void Import(ModKey modKey, FormKey formKey, RecordImportResultDTO resultDTO)
     {
+        var test = formKey.ID;
         // TODO: Need to handle the header row table
 
         // TODO: Need to handle the details data in the FormList table

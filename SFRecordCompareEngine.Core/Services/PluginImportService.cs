@@ -6,6 +6,7 @@ using Serilog;
 using SFRecordCompareEngine.Core.Configuration.Interfaces;
 using SFRecordCompareEngine.Core.Database.Interfaces;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
+using SFRecordCompareEngine.Core.Enums;
 using SFRecordCompareEngine.Core.Repositories.Interfaces;
 using SFRecordCompareEngine.Core.Services.Interfaces;
 
@@ -200,8 +201,6 @@ public class PluginImportService : IPluginImportService
                 ModKey = entry.ModKey,
                 GameRelease = GameConfigurationStore.SelectedGame ?? "None",
                 LoadOrderIndex = entry.LoadOrderIndex,
-                PluginFileName = entry.PluginFileName,
-                PluginPath = entry.PluginPath,
                 Enabled = entry.Enabled,
                 ExistsOnDisk = fileInfo.Exists,
                 ImportState = nameof(PluginImportState.Unsupported),
@@ -224,8 +223,6 @@ public class PluginImportService : IPluginImportService
                 ModKey = entry.ModKey,
                 GameRelease = GameConfigurationStore.SelectedGame ?? "None",
                 LoadOrderIndex = entry.LoadOrderIndex,
-                PluginFileName = entry.PluginFileName,
-                PluginPath = entry.PluginPath,
                 Enabled = entry.Enabled,
                 ExistsOnDisk = fileInfo.Exists,
                 ImportState = nameof(PluginImportState.Unsupported),
@@ -283,8 +280,6 @@ public class PluginImportService : IPluginImportService
             {
                 dto = existingPlugin;
                 dto.LoadOrderIndex = entry.LoadOrderIndex;
-                dto.PluginFileName = entry.PluginFileName;
-                dto.PluginPath = entry.PluginPath;
                 dto.Enabled = entry.Enabled;
                 dto.ExistsOnDisk = fileInfo.Exists;
                 dto.ImportState = nameof(PluginImportState.Current);
@@ -304,8 +299,6 @@ public class PluginImportService : IPluginImportService
                     ModKey = entry.ModKey,
                     GameRelease = GameConfigurationStore.SelectedGame ?? "None",
                     LoadOrderIndex = entry.LoadOrderIndex,
-                    PluginFileName = entry.PluginFileName,
-                    PluginPath = entry.PluginPath,
                     Enabled = entry.Enabled,
                     ExistsOnDisk = fileInfo.Exists,
                     ImportState = nameof(PluginImportState.Current),
@@ -348,8 +341,6 @@ public class PluginImportService : IPluginImportService
                     ModKey = entry.ModKey,
                     GameRelease = GameConfigurationStore.SelectedGame ?? "None",
                     LoadOrderIndex = entry.LoadOrderIndex,
-                    PluginFileName = entry.PluginFileName,
-                    PluginPath = entry.PluginPath,
                     Enabled = entry.Enabled,
                     ExistsOnDisk = fileInfo.Exists,
                     ImportState = nameof(PluginImportState.Failed),

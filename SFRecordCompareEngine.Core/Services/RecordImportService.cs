@@ -1,19 +1,18 @@
 using System.Configuration;
 using System.Data;
+using System.IO;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
-using Mutagen.Bethesda.Plugins.Records;
-using Mutagen.Bethesda.Plugins.Records.Mapping;
 using Mutagen.Bethesda.Starfield;
-using Mutagen.Bethesda.Starfield.Assets;
 using NPoco;
 using Serilog;
 using SFRecordCompareEngine.Core.Configuration.Interfaces;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
-using SFRecordCompareEngine.Core.DTOs.Records;
+using SFRecordCompareEngine.Core.DTOs.Results;
 using SFRecordCompareEngine.Core.Importers.Interfaces;
-using SFRecordCompareEngine.Core.Repositories.Interfaces;
 using SFRecordCompareEngine.Core.Services.Interfaces;
+
+using StarfieldGameEnvironment = Mutagen.Bethesda.Environments.IGameEnvironment<Mutagen.Bethesda.Starfield.IStarfieldMod, Mutagen.Bethesda.Starfield.IStarfieldModGetter>;
 
 namespace SFRecordCompareEngine.Core.Services;
 
@@ -23,20 +22,17 @@ public class RecordImportService : IRecordImportService
 
     private readonly IDatabase Database;
     private readonly IGameConfigurationStore GameConfigurationStore;
-    private readonly IRecordHeaderRepository RecordHeaderRepository;
 
     private readonly Dictionary<(GameRelease GameRelease, RecordType RecordType), ITypedRecordDetailImporter> TypedRecordDetailImporters;
 
     public RecordImportService(
         IGameConfigurationStore gameConfigurationStore,
         IDatabase database,
-        IRecordHeaderRepository recordHeaderRepository,
         IEnumerable<ITypedRecordDetailImporter> typedRecordDetailImporters
     )
     {
         GameConfigurationStore = gameConfigurationStore ?? throw new ArgumentNullException(nameof(gameConfigurationStore));
         Database = database ?? throw new ArgumentNullException(nameof(database));
-        RecordHeaderRepository = recordHeaderRepository ?? throw new ArgumentNullException(nameof(recordHeaderRepository));
 
         TypedRecordDetailImporters = typedRecordDetailImporters.ToDictionary(importer => (importer.GameRelease, importer.RecordType));
     }
@@ -75,8 +71,9 @@ public class RecordImportService : IRecordImportService
         if (GameConfigurationStore.Game == null) throw new ConfigurationErrorsException("No game selected in configuration (Game is null)");
         if (GameConfigurationStore.Release == null) throw new ConfigurationErrorsException("No game selected in configuration (Release is null)");
 
+        var gameEnvironmentStarfield = (StarfieldGameEnvironment)GameConfigurationStore.Game;
         var mod = StarfieldMod.Create(StarfieldRelease.Starfield)
-            .FromPath(plugin.PluginPath)
+            .FromPath(Path.Join(gameEnvironmentStarfield.DataFolderPath.Directory.ToString(), plugin.ModKey.FileName))
             .WithLoadOrderFromHeaderMasters()
             .WithDataFolder(GameConfigurationStore.Game.DataFolderPath)
             .Construct();
@@ -89,10 +86,9 @@ public class RecordImportService : IRecordImportService
             {
                 foreach (var formListEntry in mod.FormLists)
                 {
-                    importer.Import(mod.ModKey, formListEntry.FormKey);
+                    importer.Import(mod.ModKey, formListEntry.FormKey, resultDTO);
                 }
             }
-
         }
     }
 }

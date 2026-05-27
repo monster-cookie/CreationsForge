@@ -1,6 +1,7 @@
 using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
+using SFRecordCompareEngine.Core.Enums;
 using SFRecordCompareEngine.Core.Models.Database;
 using SFRecordCompareEngine.Core.Repositories.Interfaces;
 

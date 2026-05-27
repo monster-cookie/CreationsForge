@@ -1,5 +1,6 @@
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
+using SFRecordCompareEngine.Core.DTOs.Results;
 
 namespace SFRecordCompareEngine.Core.Importers.Interfaces;
 
@@ -27,5 +28,5 @@ public interface ITypedRecordDetailImporter
     /// </summary>
     /// <param name="modKey">The ModKey for the plugin the record is in</param>
     /// <param name="formKey">The FormKey of the record</param>
-    void Import(ModKey modKey, FormKey formKey);
+    void Import(ModKey modKey, FormKey formKey, RecordImportResultDTO resultDTO);
 }
