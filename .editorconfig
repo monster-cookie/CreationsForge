@@ -1,7 +1,21 @@
 ﻿root = true
 
+[*]
+indent_style = space
+indent_size = 4
+tab_width = 4
+
 [*.cs]
-max_line_length = 320
+indent_style = space
+indent_size = 4
+tab_width = 4
+max_line_length = 400
+
+[*.sql]
+indent_style = space
+indent_size = 4
+tab_width = 4
+max_line_length = 400
 
 # Allow single-line control statements without braces
 csharp_prefer_braces = false:none
