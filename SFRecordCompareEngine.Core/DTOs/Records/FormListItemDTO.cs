@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Mutagen.Bethesda.Plugins;
 using SFRecordCompareEngine.Core.Models.Database;
 
@@ -8,6 +9,7 @@ public class FormListItemDTO
     public FormListItemDTO() 
     { }
 
+    [SetsRequiredMembers]
     public FormListItemDTO(FormListItem model)
     {
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);

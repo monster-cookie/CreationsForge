@@ -13,3 +13,9 @@ The tool focuses on helping mod authors and developers inspect plugin record, re
 3. Editing/Copying/Creating all record types
 
 ∞ Bug Fixing and spawning new bugs
+
+## Required Development Environment
+
+1) Must have Starfield installed on your system
+2) Must have Visual Studio 2022 or later, VS Code, or JetBrains Rider (Preferred)
+3) Must have .NET 10 SDK installed

@@ -16,7 +16,6 @@ public class GameSettingImporter : ITypedRecordDetailImporter
 
     public void Import(ModKey modKey, FormKey formKey, RecordImportResultDTO resultDTO)
     {
-        var test = formKey.ID;
         // TODO: Need to handle the header row table
 
         // TODO: Need to handle the details data in the FormList table

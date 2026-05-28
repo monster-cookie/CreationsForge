@@ -1,13 +1,12 @@
 using Mutagen.Bethesda;
-using Mutagen.Bethesda.Environments;
 using Mutagen.Bethesda.Plugins;
-using Mutagen.Bethesda.Starfield;
 using Serilog;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.DTOs.Results;
 using SFRecordCompareEngine.Core.Helpers;
 using SFRecordCompareEngine.Core.Importers.Interfaces;
 using SFRecordCompareEngine.Core.Repositories.Interfaces;
+using SFRecordCompareEngine.Core.Services.Interfaces;
 
 namespace SFRecordCompareEngine.Core.Importers.Starfield;
 
@@ -18,6 +17,8 @@ public class FormListImporter : ITypedRecordDetailImporter
     private readonly IFormListRepository FormListRepository;
     
     private readonly IFormListItemRepository FormListItemRepository;
+
+    private readonly IStarfieldRecordReaderService StarfieldRecordReaderService;
     
     public GameRelease GameRelease => GameRelease.Starfield;
 
@@ -27,28 +28,18 @@ public class FormListImporter : ITypedRecordDetailImporter
 
     public FormListImporter(
         IFormListRepository formListRepository,
-        IFormListItemRepository formListItemRepository
+        IFormListItemRepository formListItemRepository,
+        IStarfieldRecordReaderService starfieldRecordReaderService
     )
     {
         FormListRepository = formListRepository;
         FormListItemRepository = formListItemRepository;
+        StarfieldRecordReaderService = starfieldRecordReaderService;
     }
     
     public void Import(ModKey modKey, FormKey formKey, RecordImportResultDTO resultDTO)
     {
-        var modPath = Path.Join(GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield).DataFolderPath, modKey.FileName);
-        var mod = StarfieldMod.Create(StarfieldRelease.Starfield)
-            .FromPath(modPath)
-            .WithLoadOrderFromHeaderMasters()
-            .WithDataFolder(GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield).DataFolderPath)
-            .Construct();
-        if (mod == null)
-        {
-            Logger.Error("Failed to load mod '{ModKey}' for FormList record with FormKey '{FormKey}' from path {Path}", modKey, formKey, modPath);
-            throw new FileNotFoundException($"Failed to load mod '{modKey}' for FormList record with FormKey '{formKey}' from path {modPath}");
-        }
-
-        mod.FormLists.TryGetValue(formKey, out var record);
+        var record = StarfieldRecordReaderService.GetFormList(modKey, formKey);
         if (record == null)
         {
             Logger.Error("Failed to load FormList record with FormKey '{FormKey}' from mod '{ModKey}'", formKey, modKey);
@@ -59,25 +50,24 @@ public class FormListImporter : ITypedRecordDetailImporter
         {
             ModKey = modKey,
             FormKey = record.FormKey,
-            EditorID = record.EditorID ?? string.Empty,
+            EditorID = record.EditorID,
             FormVersion = record.FormVersion,
             StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags,
             Version2 = record.Version2,
-            VersionControl = (int)record.VersionControl,
+            VersionControl = record.VersionControl,
             ImportedAtUTC = DateTime.UtcNow,
-            AddToListFormKey = record.AddToList.FormKey
+            AddToListFormKey = record.AddToListFormKey
         };
         FormListRepository.Save(formListDTO);
 
         foreach (var item in record.Items)
         {
-            item.TryGetModKey(out var itemModKey);
             var formListItemDTO = new FormListItemDTO
             {
                 ModKey = modKey,
                 FormKey = record.FormKey,
-                ItemModKey = itemModKey,
-                ItemFormKey = item.FormKey,
+                ItemModKey = item.ItemModKey,
+                ItemFormKey = item.ItemFormKey,
                 ImportedAtUTC = DateTime.UtcNow
             };
             FormListItemRepository.Save(formListItemDTO);
