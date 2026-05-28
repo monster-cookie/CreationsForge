@@ -1,6 +1,6 @@
 ﻿# Repo: SFRecordCompareEngine (.NET WPF Desktop Application)
 
-Simple WPF desktop app that shows the record hierarchy of a given plugin in relation to its master plugins. 
+Simple WPF desktop app that shows the record hierarchy of a given plugin in relation to its master plugins.
 
 ## Project Layout
 
@@ -15,19 +15,33 @@ Simple WPF desktop app that shows the record hierarchy of a given plugin in rela
 - Allowed read/write scope by default:
   - /SFRecordCompareEngine
   - /SFRecordCompareEngine.Core
+  - /SFRecordCompareEngine.Migrations
   - /SFRecordCompareEngine.UnitTests
 - Do not edit files outside these projects unless explicitly approved in the PLAN.
 - ALWAYS show a PLAN first and wait for explicit approval before editing files.
 - Keep changes surgical and consistent with existing patterns and naming.
 - No breaking changes to existing services, factories, stores, repositories, view models, public interfaces, configuration, persistence formats, or UI workflows without explicit approval.
+- NEVER edit AGENTS.md or AGENT-PLAN-TEMPLATE.md, if you have suggestions for changes, please propose them to the user.
+- DO NOT wrap lines of code or comments that are not currently wrapped. Follow existing formatting and line breaks in the repo.
+
+## REFERENCE & DOCUMENTATION
+
+Use these as primary documentation references:
+
+- [Mutagen Documentation](https://mutagen-modding.github.io/Mutagen/)
+- [Mutagen Code Repository](https://github.com/Mutagen-Modding/Mutagen)
+- [Spriggit Code Repository - Uses mutagen to export plugins as YAML](https://github.com/Mutagen-Modding/Spriggit)
 
 ## ARCHITECTURE & CONVENTIONS
 
-- Contracts-first for service/core changes: define or update interfaces, DTOs, validators, and tests before implementation when applicable.
+- Contracts-first for service/core changes: define or update interfaces, DTOs, validators, and applicable tests before implementation. Do not add unit tests for database access, repository implementations, DbUp migration execution, or UI-bound code.
+- Core stores must be UI-neutral. They must not expose bindable state, UI commands, UI-thread assumptions, dialog/navigation behavior, or presentation framework types.
 - UI-only changes should avoid unnecessary interface, DTO, or validator churn.
-- Class-per-file. Primary constructors for services, factories, stores, and repositories where possible.
+- Do not use C# primary constructors for classes. Use traditional explicit constructors instead.
+- Use one class per file.
 - No statics for application services or mutable app state. Prefer DI; register singletons only when appropriate. Constants, generated framework code, and existing static patterns may remain unless explicitly approved for refactor.
 - No repeated code: Refactor existing methods as needed to avoid repeating code in new methods.
+- Do not introduce new conventions or dependencies unless explicitly approved in the PLAN.
 
 ## TECH CONSTRAINTS
 
@@ -36,18 +50,28 @@ Simple WPF desktop app that shows the record hierarchy of a given plugin in rela
 - Logging and Observability: Use existing Serilog conventions.
 - Unit Tests: Use xUnit, Moq, and Shouldly.
 
-## WPF & UI CONVENTIONS
+## UI / MVVM BOUNDARIES
 
+- UI framework code must stay out of SFRecordCompareEngine.Core.
 - Follow existing MVVM patterns in the repo.
-- Keep code-behind minimal. Do not place business logic in views or code-behind.
-- View models should expose bindable state, commands, and UI coordination only.
-- Business logic belongs in services, factories, stores, or repositories as appropriate.
+- SFRecordCompareEngine.Core must not reference WPF, MAUI, WinUI, Avalonia, CommunityToolkit.Maui, or any UI framework package.
+- SFRecordCompareEngine.Core must not contain pages, windows, controls, views, view models, UI commands, dialog services, navigation services, or UI-specific binding helpers.
+- SFRecordCompareEngine.Core must not expose or depend on UI binding primitives such as INotifyPropertyChanged, ObservableCollection<T>, ICommand, Dispatcher, SynchronizationContext-based UI dispatching, or platform UI thread helpers.
+- Use plain DTOs, domain models, IReadOnlyList<T>, IEnumerable<T>, result objects, events, callbacks, or progress DTOs for Core-to-presentation communication.
+- MVVM presentation code belongs in SFRecordCompareEngine only, including:
+    - MAUI pages/views
+    - C# Markup UI classes
+    - View models
+    - Bindable UI state
+    - UI commands
+    - Dialog coordination
+    - Navigation coordination
+- Core services may expose async methods, DTOs, progress DTOs, domain models, and business results for presentation layers to consume.
+- If a UI workflow needs reusable orchestration, place the UI-neutral business portion in Core and keep the UI-specific coordination in the presentation project.
+- Do not move view models or UI command abstractions into Core without explicit approval in the PLAN.
 - Long-running work must not block the UI thread.
-- Use async commands where existing patterns support them.
+- Use async commands in the presentation project where existing patterns support them.
 - UI-bound collection updates must occur on the UI thread.
-- Do not call MessageBox, file pickers, dialogs, or window APIs from SFRecordCompareEngine.Core.
-- Preserve existing XAML resource, style, and binding conventions.
-- Avoid broad XAML rewrites unless explicitly approved in the PLAN.
 
 ## DEPENDENCY INJECTION
 
@@ -70,6 +94,27 @@ Simple WPF desktop app that shows the record hierarchy of a given plugin in rela
 - Use Warning for recoverable unexpected states.
 - Use Error for failures that prevent completion.
 
+## DATABASE & PERSISTENCE
+
+- Use NPoco for application database access.
+- Use the ADO.NET SQLite provider as required by NPoco.
+- Do not introduce or replace database providers/packages without explicit approval in the PLAN.
+- Use parameterized SQL for all runtime values.
+- Keep schema creation/migration centralized in a dedicated initializer or migration service.
+- Enable SQLite foreign keys for every opened connection.
+- Do not place business logic in repositories.
+- Do not log from repositories or stores.
+- Repositories should not own UI behavior, import orchestration, or Serilog decisions.
+- Database path, schema changes, and persistence format changes must be called out in the PLAN.
+
+### DbUp migration versioning
+
+- DbUp's `SchemaVersions` table is the only source of truth for database migration state.
+- Do not add hardcoded application schema-version constants such as `CurrentSchemaVersion`.
+- Do not return or log an app-defined schema version from migration runners or schema initializers.
+- To verify schema state, query DbUp `SchemaVersions` for applied migration script names.
+- New schema changes must be added as DbUp migrations and validated through `SchemaVersions`, not through numeric version fields.
+
 ## CODE QUALITY
 
 - Analyzer warnings are treated as errors.
@@ -78,7 +123,9 @@ Simple WPF desktop app that shows the record hierarchy of a given plugin in rela
 ## TESTING
 
 - Unit tests live in /SFRecordCompareEngine.UnitTests (xUnit + Moq + Shouldly).
-- For new features/bugfixes, include tests in the PLAN and add them alongside code changes.
+- For new features/bugfixes that affect testable service, factory, validator, DTO, or non-UI business logic, include tests in the PLAN and add them alongside code changes.
+- Do not unit test database access, repository implementations, DbUp migration execution, or UI-bound code.
+- When a change is limited to repositories, database access, migrations, or UI-bound code, the PLAN must explicitly state that no unit tests will be added and explain the validation approach.
 
 ## PLAN → EXECUTE → VALIDATE
 
@@ -91,6 +138,7 @@ Simple WPF desktop app that shows the record hierarchy of a given plugin in rela
 - Code-level checklist
 - UI/XAML impacts
 - Data model, persistence, or schema impacts
+- If database migration code is touched, the PLAN must state explicitly that DbUp `SchemaVersions` remains the migration source of truth and that no hardcoded schema-version constants are being added.
 - Config/environment changes
 - Autofac registration changes
 - Serilog logging additions/changes

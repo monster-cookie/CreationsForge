@@ -2,21 +2,38 @@
 
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
-        <TargetFramework>net10.0-windows</TargetFramework>
+        <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
         <Nullable>enable</Nullable>
-        <UseWPF>true</UseWPF>
+        <UseMaui>true</UseMaui>
         <ImplicitUsings>enable</ImplicitUsings>
+        <SingleProject>true</SingleProject>
+        <WindowsPackageType>None</WindowsPackageType>
+        <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+        <ApplicationTitle>Starfield Record Compare Engine</ApplicationTitle>
+        <ApplicationId>com.sfrecordcompareengine.app</ApplicationId>
+        <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+        <ApplicationVersion>1</ApplicationVersion>
+        <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+        <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\SFRecordCompareEngine.Core\SFRecordCompareEngine.Core.csproj"/>
+        <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#2F5D50" />
+        <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#2F5D50" BaseSize="128,128" />
+        <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Autofac" Version="9.1.0"/>
-        <PackageReference Include="Serilog" Version="4.3.1"/>
+        <ProjectReference Include="..\SFRecordCompareEngine.Core\SFRecordCompareEngine.Core.csproj" />
+        <ProjectReference Include="..\SFRecordCompareEngine.Migrations\SFRecordCompareEngine.Migrations.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Autofac" Version="9.1.0" />
+        <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.20" />
+        <PackageReference Include="Serilog" Version="4.3.1" />
         <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
-        <PackageReference Include="Serilog.Sinks.File" Version="7.0.0"/>
+        <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     </ItemGroup>
 
 </Project>
