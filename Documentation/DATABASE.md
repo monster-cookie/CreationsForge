@@ -112,8 +112,8 @@ Foreign key:
 
 ### GameSetting
 
-Stores planned `GMST` record detail fields. The table exists in the initial migration, but `GameSettingImporter` 
-is not implemented.
+Stores Starfield `GMST` record detail rows. Game settings use the same owning plugin key plus `FormKey_ID` primary key 
+shape as `FormList`.
 
 ## Repository Boundary
 

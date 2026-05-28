@@ -52,7 +52,7 @@ suffix conventions.
 - Runs work on a background task and honors cancellation tokens.
 
 `RecordImportService` maps typed record importers by `(GameRelease, RecordType)` and currently imports Starfield `FLST` 
-records when a matching `ITypedRecordDetailImporter` is registered.
+and `GMST` records when matching `ITypedRecordDetailImporter` instances are registered.
 
 ## Persistence Architecture
 

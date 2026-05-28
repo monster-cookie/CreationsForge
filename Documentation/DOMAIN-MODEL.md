@@ -50,14 +50,18 @@ names and includes table metadata for `FormList` and `GameSetting`.
 
 `RecordImportService` returns `RecordImportResultDTO` for a plugin. The result aggregates per-record-type counts from `RecordTypeImportResultDTO`.
 
-The active typed detail import path is Starfield `FLST`:
+The active typed detail import path includes Starfield `FLST`:
 
 - `StarfieldRecordReaderService.GetFormListFormKeys` reads form list keys from a plugin.
 - `FormListImporter` reads each `FormListDTO`.
 - `FormListRepository` saves the form list row.
 - `FormListItemRepository` saves each item row.
 
-`GameSettingDTO`, the `GameSetting` table, and `GameSettingImporter` exist, but `GameSettingImporter.Import` currently throws `NotImplementedException`.
+The active typed detail import path also includes Starfield `GMST`:
+
+- `StarfieldRecordReaderService.GetGameSettingFormKeys` reads game setting keys from a plugin.
+- `GameSettingImporter` reads each `GameSettingDTO`.
+- `GameSettingRepository` saves the game setting row.
 
 ## Form List Data
 
@@ -80,6 +84,21 @@ The active typed detail import path is Starfield `FLST`:
 - item plugin `ModKey`
 - item `FormKey`
 - imported timestamp
+
+## Game Setting Data
+
+`GameSettingDTO` represents a Starfield game setting record with common header fields and game-setting-specific data:
+
+- owning `ModKey`
+- record `FormKey`
+- editor ID
+- form version
+- Starfield major record flags
+- version fields
+- imported timestamp
+- setting type such as `GameSettingFloat`, `GameSettingInt`, `GameSettingUInt`, `GameSettingString`, or `GameSettingBool`
+- optional title string, data, raw data, and `XALG`
+- compression and deletion flags persisted as integer values
 
 ## Configuration
 

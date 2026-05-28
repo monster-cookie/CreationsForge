@@ -1,8 +1,13 @@
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
+using Mutagen.Bethesda.Starfield;
+using Moq;
+using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.DTOs.Results;
 using SFRecordCompareEngine.Core.Helpers;
 using SFRecordCompareEngine.Core.Importers.Starfield;
+using SFRecordCompareEngine.Core.Repositories.Interfaces;
+using SFRecordCompareEngine.Core.Services.Interfaces;
 using Shouldly;
 
 namespace SFRecordCompareEngine.UnitTests.Importers.Starfield;
@@ -12,7 +17,9 @@ public class GameSettingImporterTests
     [Fact]
     public void Properties_ReturnGameSettingMetadata()
     {
-        var sut = new GameSettingImporter();
+        var sut = new GameSettingImporter(
+            Mock.Of<IGameSettingRepository>(),
+            Mock.Of<IStarfieldRecordReaderService>());
 
         sut.GameRelease.ShouldBe(GameRelease.Starfield);
         sut.RecordType.ShouldBe(new RecordType(RecordTypeCatalog.GameSetting.RecordID));
@@ -20,13 +27,60 @@ public class GameSettingImporterTests
     }
 
     [Fact]
-    public void Import_ThrowsNotImplementedException()
+    public void Import_WhenGameSettingExists_SavesGameSetting()
     {
         var modKey = new ModKey("Example", ModType.Master);
         var formKey = new FormKey(modKey, 123);
-        var sut = new GameSettingImporter();
+        var repository = new Mock<IGameSettingRepository>();
+        var reader = new Mock<IStarfieldRecordReaderService>();
+        reader.Setup(x => x.GetGameSetting(modKey, formKey)).Returns(new GameSettingDTO
+        {
+            ModKey = modKey,
+            FormKey = formKey,
+            EditorID = "Editor",
+            FormVersion = 44,
+            StarfieldMajorRecordFlags = (StarfieldMajorRecord.StarfieldMajorRecordFlag)1,
+            Version2 = 2,
+            VersionControl = 3,
+            ImportedAtUTC = DateTime.UtcNow,
+            SettingType = "GameSettingInt",
+            Data = "60",
+            RawData = 60,
+            IsCompressed = 0,
+            IsDeleted = 0
+        });
+        var sut = new GameSettingImporter(repository.Object, reader.Object);
 
-        Should.Throw<NotImplementedException>(() => sut.Import(modKey, formKey, new RecordImportResultDTO
+        sut.Import(modKey, formKey, new RecordImportResultDTO
+        {
+            ModKey = modKey
+        });
+
+        repository.Verify(x => x.Save(It.Is<GameSettingDTO>(dto =>
+            dto.ModKey == modKey &&
+            dto.FormKey == formKey &&
+            dto.EditorID == "Editor" &&
+            dto.FormVersion == 44 &&
+            dto.StarfieldMajorRecordFlags == (StarfieldMajorRecord.StarfieldMajorRecordFlag)1 &&
+            dto.Version2 == 2 &&
+            dto.VersionControl == 3 &&
+            dto.SettingType == "GameSettingInt" &&
+            dto.Data == "60" &&
+            dto.RawData == 60)), Times.Once);
+    }
+
+    [Fact]
+    public void Import_WhenGameSettingIsMissing_ThrowsFileNotFoundException()
+    {
+        var modKey = new ModKey("Example", ModType.Master);
+        var formKey = new FormKey(modKey, 123);
+        var reader = new Mock<IStarfieldRecordReaderService>();
+        reader.Setup(x => x.GetGameSetting(modKey, formKey)).Returns((GameSettingDTO?)null);
+        var sut = new GameSettingImporter(
+            Mock.Of<IGameSettingRepository>(),
+            reader.Object);
+
+        Should.Throw<FileNotFoundException>(() => sut.Import(modKey, formKey, new RecordImportResultDTO
         {
             ModKey = modKey
         }));

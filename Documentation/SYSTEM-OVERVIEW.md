@@ -24,7 +24,7 @@ exist as MAUI UI placeholders for later workflows.
 4. `PluginImportService` initializes the database schema, discovers the Starfield load order, opens a database transaction, and processes each load order entry.
 5. Plugin metadata is read through Mutagen by `StarfieldPluginReaderService`.
 6. Plugin rows and master references are saved through repositories.
-7. Record details are imported through `RecordImportService` and typed record importers. The active record detail path currently imports `FormList` records through `FormListImporter`.
+7. Record details are imported through `RecordImportService` and typed record importers. The active record detail path currently imports `FormList` records through `FormListImporter` and `GameSetting` records through `GameSettingImporter`.
 8. Progress is reported to the startup page. On successful completion, the app navigates to `MainPage`.
 
 ## Current Capabilities
@@ -33,7 +33,7 @@ exist as MAUI UI placeholders for later workflows.
 - Reads plugin metadata including mod key, header flags, form version, author, interior cell count, and header master references.
 - Tracks plugin import state as `Current`, `Changed`, `Missing`, `Failed`, or `Unsupported`.
 - Skips unchanged plugins by comparing source last-write ticks and source file size.
-- Stores plugin metadata, master references, form lists, and form list items in SQLite.
+- Stores plugin metadata, master references, form lists, form list items, and game settings in SQLite.
 - Initializes and migrates the database with DbUp.
 - Logs app startup, shutdown, schema initialization, and import activity through Serilog.
 
@@ -41,8 +41,7 @@ exist as MAUI UI placeholders for later workflows.
 
 - The main record comparison workspace is a placeholder.
 - `OpenPluginDialogPage` is a placeholder dialog.
-- `RecordImportService` currently routes only Starfield `FLST` form lists to a typed importer.
-- `GameSettingImporter` and the `GameSetting` database table exist, but the importer is not implemented.
+- `RecordImportService` currently routes Starfield `FLST` form lists and `GMST` game settings to typed importers.
 - Unsupported `BlueprintShips*.esm` plugins are skipped during import.
 
 ## Framework Note
