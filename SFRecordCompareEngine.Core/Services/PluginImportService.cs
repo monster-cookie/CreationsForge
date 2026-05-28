@@ -348,7 +348,7 @@ public class PluginImportService : IPluginImportService
                 MasterReferenceIndex = currentMaster.LoadOrderIndex,
                 ParentModKey = entry.ModKey,
                 ParentLoadOrderIndex = entry.LoadOrderIndex,
-                ImportedAtUtc = DateTime.UtcNow
+                ImportedAtUTC = DateTime.UtcNow
             };
             
             PluginMasterReferencesRepository.Save(masterReferenceDTO);

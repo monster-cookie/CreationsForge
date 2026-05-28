@@ -13,5 +13,5 @@ public class GameSettingDTO
     public int? XALG { get; set; }
     public int? IsCompressed { get; set; }
     public int? IsDeleted { get; set; }
-    public required string ImportedAtUtc { get; set; }
+    public required string ImportedAtUTC { get; set; }
 }

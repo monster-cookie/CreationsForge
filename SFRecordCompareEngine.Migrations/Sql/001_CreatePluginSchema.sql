@@ -43,7 +43,7 @@ CREATE TABLE PluginMasterReferences (
     Parent_ModKey_FileName TEXT NOT NULL,
     MasterReferenceIndex INTEGER NOT NULL,
     ParentLoadOrderIndex INTEGER NOT NULL,
-    ImportedAtUtc TEXT NOT NULL,
+    ImportedAtUTC TEXT NOT NULL,
     PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, Parent_ModKey_Name, Parent_ModKey_Type, Parent_ModKey_FileName),
     FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName) REFERENCES Plugins (ModKey_Name, ModKey_Type, ModKey_FileName) ON DELETE CASCADE,
     FOREIGN KEY (Parent_ModKey_Name, Parent_ModKey_Type, Parent_ModKey_FileName) REFERENCES Plugins (ModKey_Name, ModKey_Type, ModKey_FileName) ON DELETE CASCADE,
@@ -70,7 +70,7 @@ CREATE TABLE FormList (
     StarfieldMajorRecordFlags INTEGER NOT NULL,
     Version2 INTEGER NOT NULL,
     VersionControl INTEGER NOT NULL,
-    ImportedAtUtc TEXT NOT NULL,
+    ImportedAtUTC TEXT NOT NULL,
     -- End Record Header --
     AddToListFormKey TEXT NULL,
     PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ID),
@@ -87,15 +87,16 @@ CREATE TABLE FormListItems (
     ModKey_Name TEXT NOT NULL, 
     ModKey_Type INTEGER NOT NULL, 
     ModKey_FileName TEXT NOT NULL, 
-    FormKey_ID INTEGER NOT NULL, 
-    Item_Index INTEGER NOT NULL, 
+    FormKey_ID INTEGER NOT NULL,
+    Item_ModKey_Name TEXT NOT NULL,
+    Item_ModKey_Type INTEGER NOT NULL,
+    Item_ModKey_FileName TEXT NOT NULL,
     Item_FormKey_ID INTEGER NOT NULL, 
-    ImportedAtUtc TEXT NOT NULL, 
-    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ID, Item_Index), 
-    FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ID) REFERENCES FormList (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ID) ON DELETE CASCADE, 
+    ImportedAtUTC TEXT NOT NULL, 
+    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, Item_ModKey_Name, Item_ModKey_Type, Item_ModKey_FileName, FormKey_ID), 
+    FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ID) REFERENCES FormList (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
     CHECK (FormKey_ID >= 0), 
-    CHECK (Item_FormKey_ID >= 0), 
-    CHECK (Item_Index >= 0)
+    CHECK (Item_FormKey_ID >= 0)
 );
 
 CREATE INDEX IX_FormListItems_Item_FormKey_ID_ModKey_FormKey_ID ON FormListItems (Item_FormKey_ID, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ID);
@@ -113,7 +114,7 @@ CREATE TABLE GameSetting (
     StarfieldMajorRecordFlags INTEGER NOT NULL,
     Version2 INTEGER NOT NULL,
     VersionControl INTEGER NOT NULL,
-    ImportedAtUtc TEXT NOT NULL,
+    ImportedAtUTC TEXT NOT NULL,
     -- End Record Header --
     SettingType TEXT NULL,
     TitleString TEXT NULL,

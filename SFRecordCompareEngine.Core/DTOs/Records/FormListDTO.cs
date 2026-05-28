@@ -12,7 +12,7 @@ public class FormListDTO
     public required StarfieldMajorRecord.StarfieldMajorRecordFlag StarfieldMajorRecordFlags  { get; set; }
     public required int Version2 { get; set; }
     public required int VersionControl { get; set; }
-    public required DateTime ImportedAtUtc { get; set; }
+    public required DateTime ImportedAtUTC { get; set; }
    
     // END HEADER
     

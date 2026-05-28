@@ -24,12 +24,12 @@ public class PluginMasterReferenceDTO
         ParentModKey = new ModKey(model.ParentModKeyName, (ModType)model.ParentModKeyType);
         MasterReferenceIndex = model.MasterReferenceIndex;
         ParentLoadOrderIndex = model.ParentLoadOrderIndex;
-        ImportedAtUtc = model.ImportedAtUtc;
+        ImportedAtUTC = model.ImportedAtUTC;
     }
 
     public ModKey ModKey { get; set; }
     public ModKey ParentModKey { get; set; }
     public int MasterReferenceIndex { get; set; }
     public int ParentLoadOrderIndex { get; set; }
-    public DateTime ImportedAtUtc { get; set; }
+    public DateTime ImportedAtUTC { get; set; }
 }

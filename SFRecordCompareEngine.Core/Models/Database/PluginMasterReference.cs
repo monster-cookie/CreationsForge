@@ -21,7 +21,7 @@ public class PluginMasterReference
         ParentModKeyFileName = dto.ParentModKey.FileName;
         MasterReferenceIndex = dto.MasterReferenceIndex;
         ParentLoadOrderIndex = dto.ParentLoadOrderIndex;
-        ImportedAtUtc = dto.ImportedAtUtc;
+        ImportedAtUTC = dto.ImportedAtUTC;
     }
 
     [Column("ModKey_Name")]
@@ -48,6 +48,6 @@ public class PluginMasterReference
     [Column("ParentLoadOrderIndex")]
     public int ParentLoadOrderIndex { get; set; }
 
-    [Column("ImportedAtUtc")]
-    public DateTime ImportedAtUtc { get; set; }
+    [Column("ImportedAtUTC")]
+    public DateTime ImportedAtUTC { get; set; }
 }

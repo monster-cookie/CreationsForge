@@ -22,7 +22,7 @@ public class FormList
         StarfieldMajorRecordFlags = (int)dto.StarfieldMajorRecordFlags;
         Version2 = dto.Version2;
         VersionControl = dto.VersionControl;
-        ImportedAtUtc = dto.ImportedAtUtc;
+        ImportedAtUTC = dto.ImportedAtUTC;
         AddToListFormKey = dto.AddToListFormKey?.ToString();
     }
 
@@ -53,8 +53,8 @@ public class FormList
     [Column("VersionControl")]
     public int VersionControl { get; set; }
 
-    [Column("ImportedAtUtc")]
-    public DateTime ImportedAtUtc { get; set; }
+    [Column("ImportedAtUTC")]
+    public DateTime ImportedAtUTC { get; set; }
 
     [Column("AddToListFormKey")]
     public string? AddToListFormKey { get; set; }

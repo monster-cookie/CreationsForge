@@ -1,11 +1,9 @@
-using System.Configuration;
 using System.IO;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
 using Serilog;
-using SFRecordCompareEngine.Core.Configuration.Interfaces;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.DTOs.Results;
 using SFRecordCompareEngine.Core.Helpers;
@@ -50,8 +48,7 @@ public class FormListImporter : ITypedRecordDetailImporter
             Logger.Error("Failed to load mod '{ModKey}' for FormList record with FormKey '{FormKey}' from path {Path}", modKey, formKey, modPath);
             throw new FileNotFoundException($"Failed to load mod '{modKey}' for FormList record with FormKey '{formKey}' from path {modPath}");
         }
-        var modHear = mod.ModHeader;
-        
+
         mod.FormLists.TryGetValue(formKey, out var record);
         if (record == null)
         {
@@ -68,10 +65,24 @@ public class FormListImporter : ITypedRecordDetailImporter
             StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags,
             Version2 = record.Version2,
             VersionControl = (int)record.VersionControl,
-            ImportedAtUtc = DateTime.UtcNow,
+            ImportedAtUTC = DateTime.UtcNow,
             AddToListFormKey = record.AddToList.FormKey
         };
         FormListRepository.Save(formListDTO);
+
+        foreach (var item in record.Items)
+        {
+            item.TryGetModKey(out var itemModKey);
+            var formListItemDTO = new FormListItemDTO
+            {
+                ModKey = modKey,
+                FormKey = record.FormKey,
+                ItemModKey = itemModKey,
+                ItemFormKey = item.FormKey,
+                ImportedAtUTC = DateTime.UtcNow
+            };
+            FormListItemRepository.Save(formListItemDTO);
+        }
         
     }
 }
