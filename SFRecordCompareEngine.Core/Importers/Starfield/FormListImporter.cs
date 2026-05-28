@@ -45,20 +45,9 @@ public class FormListImporter : ITypedRecordDetailImporter
             Logger.Error("Failed to load FormList record with FormKey '{FormKey}' from mod '{ModKey}'", formKey, modKey);
             throw new FileNotFoundException($"Failed to load FormList record with FormKey '{formKey}' from mod '{modKey}'");
         }
-
-        var formListDTO = new FormListDTO
-        {
-            ModKey = modKey,
-            FormKey = record.FormKey,
-            EditorID = record.EditorID,
-            FormVersion = record.FormVersion,
-            StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags,
-            Version2 = record.Version2,
-            VersionControl = record.VersionControl,
-            ImportedAtUTC = DateTime.UtcNow,
-            AddToListFormKey = record.AddToListFormKey
-        };
-        FormListRepository.Save(formListDTO);
+        record.ImportedAtUTC = DateTime.UtcNow;
+        
+        FormListRepository.Save(record);
 
         foreach (var item in record.Items)
         {

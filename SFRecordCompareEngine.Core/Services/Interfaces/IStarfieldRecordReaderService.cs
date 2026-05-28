@@ -7,5 +7,5 @@ namespace SFRecordCompareEngine.Core.Services.Interfaces;
 public interface IStarfieldRecordReaderService
 {
     IReadOnlyList<FormKey> GetFormListFormKeys(PluginDTO plugin);
-    FormListRecordDataDTO? GetFormList(ModKey modKey, FormKey formKey);
+    FormListDTO? GetFormList(ModKey modKey, FormKey formKey);
 }

@@ -38,14 +38,16 @@ public class FormListImporterTests
         var formListRepository = new Mock<IFormListRepository>();
         var formListItemRepository = new Mock<IFormListItemRepository>();
         var reader = new Mock<IStarfieldRecordReaderService>();
-        reader.Setup(x => x.GetFormList(modKey, formKey)).Returns(new FormListRecordDataDTO
+        reader.Setup(x => x.GetFormList(modKey, formKey)).Returns(new FormListDTO
         {
+            ModKey = modKey,
             FormKey = formKey,
             EditorID = "Editor",
             FormVersion = 44,
             StarfieldMajorRecordFlags = (StarfieldMajorRecord.StarfieldMajorRecordFlag)1,
             Version2 = 2,
             VersionControl = 3,
+            ImportedAtUTC = DateTime.UtcNow,
             AddToListFormKey = addToListFormKey,
             Items = new List<FormListItemDataDTO>
             {
@@ -85,7 +87,7 @@ public class FormListImporterTests
         var modKey = new ModKey("Example", ModType.Master);
         var formKey = new FormKey(modKey, 123);
         var reader = new Mock<IStarfieldRecordReaderService>();
-        reader.Setup(x => x.GetFormList(modKey, formKey)).Returns((FormListRecordDataDTO?)null);
+        reader.Setup(x => x.GetFormList(modKey, formKey)).Returns((FormListDTO?)null);
         var sut = new FormListImporter(
             Mock.Of<IFormListRepository>(),
             Mock.Of<IFormListItemRepository>(),

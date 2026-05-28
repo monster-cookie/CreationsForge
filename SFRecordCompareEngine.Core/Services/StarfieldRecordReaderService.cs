@@ -17,20 +17,22 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         return mod.FormLists.Select(formList => formList.FormKey).ToList();
     }
 
-    public FormListRecordDataDTO? GetFormList(ModKey modKey, FormKey formKey)
+    public FormListDTO? GetFormList(ModKey modKey, FormKey formKey)
     {
         var mod = LoadMod(modKey);
         mod.FormLists.TryGetValue(formKey, out var record);
         if (record == null) return null;
 
-        return new FormListRecordDataDTO
+        return new FormListDTO
         {
+            ModKey = modKey,
             FormKey = record.FormKey,
             EditorID = record.EditorID ?? string.Empty,
             FormVersion = record.FormVersion,
             StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags,
             Version2 = record.Version2,
             VersionControl = (int)record.VersionControl,
+            ImportedAtUTC = DateTime.UtcNow,
             AddToListFormKey = record.AddToList.FormKey,
             Items = record.Items.Select(item =>
             {
