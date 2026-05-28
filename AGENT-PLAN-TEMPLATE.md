@@ -10,6 +10,7 @@
 - Files to add/update/remove:
   - /SFRecordCompareEngine/...
   - /SFRecordCompareEngine.Core/...
+  - /SFRecordCompareEngine.Migrations/...
   - /SFRecordCompareEngine.UnitTests/...
 - Non-goals: <explicitly out-of-scope items>
 
@@ -30,7 +31,12 @@
 - Factories:
 - Stores:
 - Repositories/Data access:
-- WPF/UI:
+- UI/MVVM boundary:
+    - Core UI framework references added: No
+    - Core view models/UI commands/dialog/navigation abstractions added: No
+    - Presentation-only changes:
+    - UI-neutral Core changes:
+- MAUI/UI:
 - Autofac registrations:
 - Serilog observability:
 
@@ -53,6 +59,8 @@
 - Edge cases:
 - Data/fixture updates:
 - Manual validation:
+  - Verify SFRecordCompareEngine.Core has no UI framework package references and no project references to presentation/UI projects.
+  - Verify SFRecordCompareEngine.Core does not contain view models, UI commands, pages, views, dialog services, navigation services, or UI-specific binding helpers.
 
 ## 7 - Telemetry & Logging
 

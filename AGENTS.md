@@ -15,6 +15,7 @@ Simple WPF desktop app that shows the record hierarchy of a given plugin in rela
 - Allowed read/write scope by default:
   - /SFRecordCompareEngine
   - /SFRecordCompareEngine.Core
+  - /SFRecordCompareEngine.Migrations
   - /SFRecordCompareEngine.UnitTests
 - Do not edit files outside these projects unless explicitly approved in the PLAN.
 - ALWAYS show a PLAN first and wait for explicit approval before editing files.
@@ -34,6 +35,7 @@ Use these as primary documentation references:
 ## ARCHITECTURE & CONVENTIONS
 
 - Contracts-first for service/core changes: define or update interfaces, DTOs, validators, and applicable tests before implementation. Do not add unit tests for database access, repository implementations, DbUp migration execution, or UI-bound code.
+- Core stores must be UI-neutral. They must not expose bindable state, UI commands, UI-thread assumptions, dialog/navigation behavior, or presentation framework types.
 - UI-only changes should avoid unnecessary interface, DTO, or validator churn.
 - Do not use C# primary constructors for classes. Use traditional explicit constructors instead.
 - Use one class per file.
@@ -48,17 +50,28 @@ Use these as primary documentation references:
 - Logging and Observability: Use existing Serilog conventions.
 - Unit Tests: Use xUnit, Moq, and Shouldly.
 
-## WPF & UI CONVENTIONS
+## UI / MVVM BOUNDARIES
 
+- UI framework code must stay out of SFRecordCompareEngine.Core.
 - Follow existing MVVM patterns in the repo.
-- Keep code-behind minimal. Do not place business logic in views or code-behind.
-- View models should expose bindable state, commands, and UI coordination only.
-- Business logic belongs in services, factories, or stores as appropriate. Repositories should remain focused on persistence/data access.
+- SFRecordCompareEngine.Core must not reference WPF, MAUI, WinUI, Avalonia, CommunityToolkit.Maui, or any UI framework package.
+- SFRecordCompareEngine.Core must not contain pages, windows, controls, views, view models, UI commands, dialog services, navigation services, or UI-specific binding helpers.
+- SFRecordCompareEngine.Core must not expose or depend on UI binding primitives such as INotifyPropertyChanged, ObservableCollection<T>, ICommand, Dispatcher, SynchronizationContext-based UI dispatching, or platform UI thread helpers.
+- Use plain DTOs, domain models, IReadOnlyList<T>, IEnumerable<T>, result objects, events, callbacks, or progress DTOs for Core-to-presentation communication.
+- MVVM presentation code belongs in SFRecordCompareEngine only, including:
+    - MAUI pages/views
+    - C# Markup UI classes
+    - View models
+    - Bindable UI state
+    - UI commands
+    - Dialog coordination
+    - Navigation coordination
+- Core services may expose async methods, DTOs, progress DTOs, domain models, and business results for presentation layers to consume.
+- If a UI workflow needs reusable orchestration, place the UI-neutral business portion in Core and keep the UI-specific coordination in the presentation project.
+- Do not move view models or UI command abstractions into Core without explicit approval in the PLAN.
 - Long-running work must not block the UI thread.
-- Use async commands where existing patterns support them.
+- Use async commands in the presentation project where existing patterns support them.
 - UI-bound collection updates must occur on the UI thread.
-- Do not call MessageBox, file pickers, dialogs, or window APIs from SFRecordCompareEngine.Core.
-- Avoid broad XAML rewrites unless explicitly approved in the PLAN.
 
 ## DEPENDENCY INJECTION
 
