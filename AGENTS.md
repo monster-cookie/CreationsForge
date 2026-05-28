@@ -1,10 +1,10 @@
-﻿# Repo: SFRecordCompareEngine (.NET WPF Desktop Application)
+﻿# Repo: SFRecordCompareEngine (.NET MAUI Desktop Application)
 
-Simple WPF desktop app that shows the record hierarchy of a given plugin in relation to its master plugins.
+Simple MAUI desktop app that shows the record hierarchy of a given plugin in relation to its master plugins.
 
 ## Project Layout
 
-- SFRecordCompareEngine (The WPF Presentation/UI Composition)
+- SFRecordCompareEngine (The Presentation/UI Composition)
 - SFRecordCompareEngine.Core (The shared models, DTOs, services, repositories, stores, and factories)
 - SFRecordCompareEngine.UnitTests (The unit tests)
 
@@ -17,6 +17,7 @@ Simple WPF desktop app that shows the record hierarchy of a given plugin in rela
   - /SFRecordCompareEngine.Core
   - /SFRecordCompareEngine.Migrations
   - /SFRecordCompareEngine.UnitTests
+  - /Documentation
 - Do not edit files outside these projects unless explicitly approved in the PLAN.
 - ALWAYS show a PLAN first and wait for explicit approval before editing files.
 - Keep changes surgical and consistent with existing patterns and naming.
@@ -31,6 +32,44 @@ Use these as primary documentation references:
 - [Mutagen Documentation](https://mutagen-modding.github.io/Mutagen/)
 - [Mutagen Code Repository](https://github.com/Mutagen-Modding/Mutagen)
 - [Spriggit Code Repository - Uses mutagen to export plugins as YAML](https://github.com/Mutagen-Modding/Spriggit)
+
+## PROJECT KNOWLEDGE & DESIGN DOCUMENTATION
+
+Codex must treat repo documentation as durable project knowledge.
+
+Primary project knowledge files:
+
+- /Documentation/SYSTEM-OVERVIEW.md - Current system purpose, major workflows, project boundaries, and high-level architecture.
+- /Documentation/ARCHITECTURE.md - Layering rules, Core vs presentation responsibilities, dependency direction, DI composition, persistence boundaries, and logging conventions.
+- /Documentation/DESIGN-DECISIONS.md - Important design decisions, tradeoffs, rejected alternatives, and rationale.
+- /Documentation/DOMAIN-MODEL.md - Important domain concepts, record comparison terminology, Mutagen concepts used by the app, and project-specific naming.
+- /Documentation/DATABASE.md - SQLite, NPoco, DbUp migration behavior, schema ownership, and persistence conventions.
+- /Documentation/UI-MVVM.md - MVVM structure, view model responsibilities, UI-thread rules, commands, dialogs, and navigation conventions.
+
+Before planning a non-trivial change, Codex must read the relevant docs in /docs in addition to AGENTS.md.
+
+When a change adds, removes, or meaningfully changes architecture, domain behavior, database schema, persistence behavior, dependency injection, logging behavior, UI workflow, or public interfaces, the PLAN must include a Documentation impacts section.
+
+Documentation updates must be proposed in the PLAN and require approval before editing.
+
+Documentation updates should be concise and factual. Do not write speculative documentation. Document the final approved design and observed repo behavior, not guesses.
+
+When documenting design decisions, include:
+
+- Date
+- Status: Proposed, Accepted, Superseded, or Rejected
+- Context
+- Decision
+- Rationale
+- Alternatives considered
+- Consequences
+- Related files
+
+Do not duplicate large blocks of code in documentation. Reference file paths, classes, interfaces, services, migrations, and tests instead.
+
+If existing documentation conflicts with code, Codex must call out the conflict in the PLAN before editing either the code or the docs.
+
+If no documentation update is needed, the PLAN must explicitly state: Documentation impacts: None.
 
 ## ARCHITECTURE & CONVENTIONS
 
@@ -136,6 +175,7 @@ Use these as primary documentation references:
 - Scope
 - Exact file paths
 - Code-level checklist
+- Documentation impacts
 - UI/XAML impacts
 - Data model, persistence, or schema impacts
 - If database migration code is touched, the PLAN must state explicitly that DbUp `SchemaVersions` remains the migration source of truth and that no hardcoded schema-version constants are being added.
@@ -151,6 +191,8 @@ Use these as primary documentation references:
 - Keep edits focused.
 - Show minimal diffs per file or full files only when replacing/adding.
 - Do not introduce new conventions or dependencies unless approved in the PLAN.
+- If documentation updates were approved, update the relevant /Documentation files after code changes so the documentation reflects the implemented design.
+- Do not create new documentation files unless they were listed in the approved PLAN.
 
 ### VALIDATE
 

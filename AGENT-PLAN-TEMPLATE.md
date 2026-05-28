@@ -8,13 +8,63 @@
 ## 2 - Scope
 
 - Files to add/update/remove:
-  - /SFRecordCompareEngine/...
-  - /SFRecordCompareEngine.Core/...
-  - /SFRecordCompareEngine.Migrations/...
-  - /SFRecordCompareEngine.UnitTests/...
+
+    - /SFRecordCompareEngine/...
+    - /SFRecordCompareEngine.Core/...
+    - /SFRecordCompareEngine.Migrations/...
+    - /SFRecordCompareEngine.UnitTests/...
+    - /Documentation/...
+
+- Documentation files to read before implementation:
+
+    - [Mutagen Documentation](https://mutagen-modding.github.io/Mutagen/)
+    - /Documentation/SYSTEM-OVERVIEW.md
+    - /Documentation/ARCHITECTURE.md
+    - /Documentation/DESIGN-DECISIONS.md
+    - /Documentation/DOMAIN-MODEL.md
+    - /Documentation/DATABASE.md
+    - /Documentation/UI-MVVM.md
+
 - Non-goals: <explicitly out-of-scope items>
 
-## 3 - Data Model, Persistence & Config
+## 3 - Documentation & Project Knowledge
+
+- Documentation impact:
+    - None / Add / Update / Supersede
+
+- Documentation files affected:
+    - /Documentation/...
+
+- Design decision update required:
+    - Yes / No
+
+- Design decision entry:
+
+    - Date:
+    - Status: Proposed / Accepted / Superseded / Rejected
+    - Context:
+    - Decision:
+    - Rationale:
+    - Alternatives considered:
+    - Consequences:
+    - Related files:
+
+- System knowledge updates:
+
+    - Architecture/layering:
+    - Domain model/terminology:
+    - Database/persistence:
+    - UI/MVVM workflow:
+    - Dependency injection:
+    - Logging/observability:
+
+- Documentation/code conflicts found:
+    - None / <describe conflict and proposed resolution>
+
+- If no documentation update is needed, state exactly:
+    - Documentation impacts: None
+
+## 4 - Data Model, Persistence & Config
 
 - Models/DTOs affected:
 - Persistence/file format/schema impacts:
@@ -24,7 +74,7 @@
 - Hardcoded schema-version constants added: No
 - Migrations or rollback steps, if applicable:
 
-## 4 - Tech & Implementation
+## 5 - Tech & Implementation
 
 - Interfaces/DTOs first, if applicable:
 - Services:
@@ -40,13 +90,13 @@
 - Autofac registrations:
 - Serilog observability:
 
-## 5 - Risks & Rollback
+## 6 - Risks & Rollback
 
 - Risks:
 - Mitigations:
 - Rollback plan:
 
-## 6 - Test Plan
+## 7 - Test Plan
 
 - Unit tests (/SFRecordCompareEngine.UnitTests):
     - Add/update:
@@ -59,31 +109,36 @@
 - Edge cases:
 - Data/fixture updates:
 - Manual validation:
-  - Verify SFRecordCompareEngine.Core has no UI framework package references and no project references to presentation/UI projects.
-  - Verify SFRecordCompareEngine.Core does not contain view models, UI commands, pages, views, dialog services, navigation services, or UI-specific binding helpers.
+    - Verify SFRecordCompareEngine.Core has no UI framework package references and no project references to presentation/UI projects.
+    - Verify SFRecordCompareEngine.Core does not contain view models, UI commands, pages, views, dialog services, navigation services, or UI-specific binding helpers.
+    - Verify documentation updates, if any, reflect the implemented design and do not conflict with code.
 
-## 7 - Telemetry & Logging
+## 8 - Telemetry & Logging
 
 - Key logs:
 - Diagnostics to verify after running the app:
 
-## 8 - Acceptance Criteria
+## 9 - Acceptance Criteria
 
-- [ ] Criteria 1
-- [ ] Criteria 2
-- [ ] Criteria 3
+- [ ] Approved code changes are implemented.
+- [ ] Approved documentation updates are implemented, or Documentation impacts is explicitly listed as None.
+- [ ] Any design decision that changed architecture, persistence, dependency direction, public interfaces, or UI workflow is captured in /docs/DESIGN-DECISIONS.md.
+- [ ] Documentation reflects the final implemented behavior, not speculative or rejected design.
+- [ ] Restore, build, tests, and analyzer validation complete or exact environment failure is reported.
 
-## 9 - Execution Steps After Approval
+## 10 - Execution Steps After Approval
 
-1) Implement contracts, models, DTOs, validators, and applicable tests (excluding database access, repository implementations, DbUp migration execution, and UI-bound code)
-2) Implement services/factories/stores/repositories
-3) Wire Autofac registrations and configuration
-4) Update WPF UI/XAML/view models
-5) Add or adjust persistence/database scripts if applicable
-6) Validate: restore, build, tests, analyzer clean
-7) Summarize results and any public interface, config, persistence, or UI workflow impacts
+1. Read the relevant /docs files listed in this plan before editing code.
+2. Implement contracts, models, DTOs, validators, and applicable tests, excluding database access, repository implementations, DbUp migration execution, and UI-bound code.
+3. Implement services/factories/stores/repositories.
+4. Wire Autofac registrations and configuration.
+5. Update MAUI UI/view models.
+6. Add or adjust persistence/database scripts if applicable.
+7. Update approved documentation files so they reflect the implemented design.
+8. Validate: restore, build, tests, analyzer clean.
+9. Summarize results and any public interface, config, persistence, documentation, or UI workflow impacts.
 
-## 10 - Out-of-Scope / Follow-ups
+## 11 - Out-of-Scope / Follow-ups
 
 - <items intentionally not addressed here>
 
