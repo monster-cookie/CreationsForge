@@ -17,4 +17,5 @@ public class FormListDTO
     // END HEADER
     
     public FormKey? AddToListFormKey { get; set; }
+    public IReadOnlyList<FormListItemDataDTO> Items { get; set; } = new List<FormListItemDataDTO>();
 }

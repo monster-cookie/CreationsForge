@@ -2,6 +2,7 @@ using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.DTOs.Results;
+using SFRecordCompareEngine.Core.Helpers;
 using SFRecordCompareEngine.Core.Importers.Interfaces;
 using SFRecordCompareEngine.Core.Services.Interfaces;
 
@@ -34,13 +35,18 @@ public class RecordImportService : IRecordImportService
 
     private void ImportStarfieldPluginRecords(PluginDTO plugin, RecordImportResultDTO resultDTO, CancellationToken cancellationToken)
     {
-        var formListFormKeys = StarfieldRecordReaderService.GetFormListFormKeys(plugin);
-        if (!formListFormKeys.Any()) return;
+        ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.FormList.RecordID, StarfieldRecordReaderService.GetFormListFormKeys(plugin), cancellationToken);
+        ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.GameSetting.RecordID, StarfieldRecordReaderService.GetGameSettingFormKeys(plugin), cancellationToken);
+    }
 
-        var key = (GameRelease.Starfield, new RecordType("FLST"));
+    private void ImportStarfieldPluginRecordType(PluginDTO plugin, RecordImportResultDTO resultDTO, string recordID, IReadOnlyList<FormKey> formKeys, CancellationToken cancellationToken)
+    {
+        if (!formKeys.Any()) return;
+
+        var key = (GameRelease.Starfield, new RecordType(recordID));
         if (!TypedRecordDetailImporters.TryGetValue(key, out var importer) || importer == null) return;
 
-        foreach (var formKey in formListFormKeys)
+        foreach (var formKey in formKeys)
         {
             cancellationToken.ThrowIfCancellationRequested();
             importer.Import(plugin.ModKey, formKey, resultDTO);

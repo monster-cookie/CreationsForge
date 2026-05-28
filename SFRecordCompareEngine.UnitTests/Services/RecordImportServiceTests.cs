@@ -18,6 +18,7 @@ public class RecordImportServiceTests
         var plugin = CreatePluginDTO();
         var reader = new Mock<IStarfieldRecordReaderService>();
         reader.Setup(x => x.GetFormListFormKeys(plugin)).Returns(new List<FormKey>());
+        reader.Setup(x => x.GetGameSettingFormKeys(plugin)).Returns(new List<FormKey>());
         var sut = new RecordImportService(Array.Empty<ITypedRecordDetailImporter>(), reader.Object);
 
         var result = sut.ImportPluginRecords(plugin, CancellationToken.None);
@@ -33,6 +34,7 @@ public class RecordImportServiceTests
         var formKey = new FormKey(plugin.ModKey, 123);
         var reader = new Mock<IStarfieldRecordReaderService>();
         reader.Setup(x => x.GetFormListFormKeys(plugin)).Returns(new List<FormKey> { formKey });
+        reader.Setup(x => x.GetGameSettingFormKeys(plugin)).Returns(new List<FormKey>());
         var sut = new RecordImportService(Array.Empty<ITypedRecordDetailImporter>(), reader.Object);
 
         var result = sut.ImportPluginRecords(plugin, CancellationToken.None);
@@ -49,9 +51,30 @@ public class RecordImportServiceTests
         var secondFormKey = new FormKey(plugin.ModKey, 456);
         var reader = new Mock<IStarfieldRecordReaderService>();
         reader.Setup(x => x.GetFormListFormKeys(plugin)).Returns(new List<FormKey> { firstFormKey, secondFormKey });
+        reader.Setup(x => x.GetGameSettingFormKeys(plugin)).Returns(new List<FormKey>());
         var importer = new Mock<ITypedRecordDetailImporter>();
         importer.SetupGet(x => x.GameRelease).Returns(GameRelease.Starfield);
         importer.SetupGet(x => x.RecordType).Returns(new RecordType("FLST"));
+        var sut = new RecordImportService(new[] { importer.Object }, reader.Object);
+
+        var result = sut.ImportPluginRecords(plugin, CancellationToken.None);
+
+        importer.Verify(x => x.Import(plugin.ModKey, firstFormKey, result), Times.Once);
+        importer.Verify(x => x.Import(plugin.ModKey, secondFormKey, result), Times.Once);
+    }
+
+    [Fact]
+    public void ImportPluginRecords_WhenGameSettingImporterExists_ImportsEachGameSetting()
+    {
+        var plugin = CreatePluginDTO();
+        var firstFormKey = new FormKey(plugin.ModKey, 123);
+        var secondFormKey = new FormKey(plugin.ModKey, 456);
+        var reader = new Mock<IStarfieldRecordReaderService>();
+        reader.Setup(x => x.GetFormListFormKeys(plugin)).Returns(new List<FormKey>());
+        reader.Setup(x => x.GetGameSettingFormKeys(plugin)).Returns(new List<FormKey> { firstFormKey, secondFormKey });
+        var importer = new Mock<ITypedRecordDetailImporter>();
+        importer.SetupGet(x => x.GameRelease).Returns(GameRelease.Starfield);
+        importer.SetupGet(x => x.RecordType).Returns(new RecordType("GMST"));
         var sut = new RecordImportService(new[] { importer.Object }, reader.Object);
 
         var result = sut.ImportPluginRecords(plugin, CancellationToken.None);
