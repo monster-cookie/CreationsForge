@@ -23,7 +23,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\SFRecordCompareEngine\SFRecordCompareEngine.csproj" />
         <ProjectReference Include="..\SFRecordCompareEngine.Core\SFRecordCompareEngine.Core.csproj" />
         <ProjectReference Include="..\SFRecordCompareEngine.Migrations\SFRecordCompareEngine.Migrations.csproj" />
     </ItemGroup>

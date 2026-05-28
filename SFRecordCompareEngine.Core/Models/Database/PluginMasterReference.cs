@@ -5,7 +5,7 @@ using SFRecordCompareEngine.Core.DTOs.Plugins;
 namespace SFRecordCompareEngine.Core.Models.Database;
 
 [TableName("PluginMasterReferences")]
-[PrimaryKey("ModKeyName, ModKeyType, ModKeyFileName, ParentModKeyName, ParentModKeyType, ParentModKeyFileName", AutoIncrement = false)]
+[PrimaryKey("ModKey_Name, ModKey_Type, ModKey_FileName, Parent_ModKey_Name, Parent_ModKey_Type, Parent_ModKey_FileName", AutoIncrement = false)]
 public class PluginMasterReference
 {
     public PluginMasterReference()

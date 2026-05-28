@@ -157,7 +157,7 @@ public class PluginImportService : IPluginImportService
                 HeaderFlags = mod.ModHeader.Flags,
                 FormVersion = mod.ModHeader.FormVersion,
                 Author = mod.ModHeader.Author ?? "Unknown",
-                LastCheckedUtc = DateTime.UtcNow
+                LastCheckedUTC = DateTime.UtcNow
             };
             
             PluginRepository.Save(unsupportedPluginDTO);
@@ -178,22 +178,22 @@ public class PluginImportService : IPluginImportService
                 HeaderFlags = mod.ModHeader.Flags,
                 FormVersion = mod.ModHeader.FormVersion,
                 Author = mod.ModHeader.Author ?? "Unknown",
-                LastCheckedUtc = DateTime.UtcNow
+                LastCheckedUTC = DateTime.UtcNow
             };
             
             PluginRepository.Save(missingPluginDTO);
             return;
         }
 
-        var sourceLastWriteUtcTicks = fileInfo.LastWriteTimeUtc.Ticks;
+        var sourceLastWriteUTCTicks = fileInfo.LastWriteTimeUtc.Ticks;
         var sourceFileSizeBytes = fileInfo.Length;
-        var isUnchanged = existingPlugin is not null && existingPlugin.SourceLastWriteUtcTicks == sourceLastWriteUtcTicks && existingPlugin.SourceFileSizeBytes == sourceFileSizeBytes;
+        var isUnchanged = existingPlugin is not null && existingPlugin.SourceLastWriteUTCTicks == sourceLastWriteUTCTicks && existingPlugin.SourceFileSizeBytes == sourceFileSizeBytes;
         if (isUnchanged)
         {
             result.PluginsUnchanged++;
-            Logger.Information("Skipping unchanged plugin {ModKey}: source last write ticks {SourceLastWriteUtcTicks}, source file size {SourceFileSizeBytes}, import state {ImportState}", entry.ModKey, sourceLastWriteUtcTicks, sourceFileSizeBytes, existingPlugin!.ImportState);
+            Logger.Information("Skipping unchanged plugin {ModKey}: source last write ticks {SourceLastWriteUtcTicks}, source file size {SourceFileSizeBytes}, import state {ImportState}", entry.ModKey, sourceLastWriteUTCTicks, sourceFileSizeBytes, existingPlugin!.ImportState);
             
-            existingPlugin.LastCheckedUtc = DateTime.UtcNow;
+            existingPlugin.LastCheckedUTC = DateTime.UtcNow;
             
             PluginRepository.Save(existingPlugin);
             return;
@@ -205,8 +205,8 @@ public class PluginImportService : IPluginImportService
             result.PluginsInvalidated++;
             Logger.Information("Plugin {ModKey} changed: stored last write ticks {StoredLastWriteUtcTicks}, current last write ticks {CurrentLastWriteUtcTicks}, stored file size {StoredFileSizeBytes}, current file size {CurrentFileSizeBytes}, stored import state {ImportState}",
                 entry.ModKey,
-                existingPlugin.SourceLastWriteUtcTicks,
-                sourceLastWriteUtcTicks,
+                existingPlugin.SourceLastWriteUTCTicks,
+                sourceLastWriteUTCTicks,
                 existingPlugin.SourceFileSizeBytes,
                 sourceFileSizeBytes,
                 existingPlugin.ImportState);
@@ -235,10 +235,11 @@ public class PluginImportService : IPluginImportService
                 dto.HeaderFlags = mod.ModHeader.Flags;
                 dto.FormVersion = mod.ModHeader.FormVersion;
                 dto.Author = mod.ModHeader.Author ?? "Unknown";
-                dto.LastCheckedUtc = DateTime.UtcNow;
-                dto.LastImportedUtc = DateTime.UtcNow;
-                dto.InvalidatedAtUtc = null;
-                dto.SourceLastWriteUtcTicks = sourceLastWriteUtcTicks;
+                dto.InteriorCellCount = mod.ModHeader.InteriorCellCount;
+                dto.LastCheckedUTC = DateTime.UtcNow;
+                dto.LastImportedUTC = DateTime.UtcNow;
+                dto.InvalidatedAtUTC = null;
+                dto.SourceLastWriteUTCTicks = sourceLastWriteUTCTicks;
                 dto.SourceFileSizeBytes = sourceFileSizeBytes;
             }
             else
@@ -253,10 +254,11 @@ public class PluginImportService : IPluginImportService
                     HeaderFlags = mod.ModHeader.Flags,
                     FormVersion = mod.ModHeader.FormVersion,
                     Author = mod.ModHeader.Author ?? "Unknown",
-                    LastCheckedUtc = DateTime.UtcNow,
-                    LastImportedUtc = DateTime.UtcNow,
-                    InvalidatedAtUtc = null,
-                    SourceLastWriteUtcTicks = sourceLastWriteUtcTicks,
+                    InteriorCellCount = mod.ModHeader.InteriorCellCount,
+                    LastCheckedUTC = DateTime.UtcNow,
+                    LastImportedUTC = DateTime.UtcNow,
+                    InvalidatedAtUTC = null,
+                    SourceLastWriteUTCTicks = sourceLastWriteUTCTicks,
                     SourceFileSizeBytes = sourceFileSizeBytes
                 };
             }
@@ -278,9 +280,9 @@ public class PluginImportService : IPluginImportService
             {
                 erroredPluginDTO = existingPlugin;
                 erroredPluginDTO.ImportState = nameof(PluginImportState.Failed);
-                erroredPluginDTO.LastCheckedUtc = DateTime.UtcNow;
-                erroredPluginDTO.LastImportedUtc = existingPlugin?.LastImportedUtc;
-                erroredPluginDTO.InvalidatedAtUtc = DateTime.UtcNow;
+                erroredPluginDTO.LastCheckedUTC = DateTime.UtcNow;
+                erroredPluginDTO.LastImportedUTC = existingPlugin?.LastImportedUTC;
+                erroredPluginDTO.InvalidatedAtUTC = DateTime.UtcNow;
             }
             else
             {
@@ -294,9 +296,9 @@ public class PluginImportService : IPluginImportService
                     HeaderFlags = mod.ModHeader.Flags,
                     FormVersion = mod.ModHeader.FormVersion,
                     Author = mod.ModHeader.Author ?? "Unknown",
-                    LastCheckedUtc = DateTime.UtcNow,
-                    LastImportedUtc = existingPlugin?.LastImportedUtc,
-                    InvalidatedAtUtc = DateTime.UtcNow
+                    LastCheckedUTC = DateTime.UtcNow,
+                    LastImportedUTC = existingPlugin?.LastImportedUTC,
+                    InvalidatedAtUTC = DateTime.UtcNow
                 };
             }
 

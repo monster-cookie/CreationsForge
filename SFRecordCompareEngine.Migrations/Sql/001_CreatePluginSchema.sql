@@ -14,11 +14,11 @@ CREATE TABLE Plugins (
     Author TEXT NOT NULL,
     Branch TEXT NOT NULL,
     InteriorCellCount INTEGER NOT NULL,
-    SourceLastWriteUtcTicks INTEGER NOT NULL,
+    SourceLastWriteUTCTicks INTEGER NOT NULL,
     SourceFileSizeBytes INTEGER NOT NULL,
-    LastCheckedUtc TEXT NOT NULL,
-    LastImportedUtc TEXT NULL,
-    InvalidatedAtUtc TEXT NULL,
+    LastCheckedUTC TEXT NOT NULL,
+    LastImportedUTC TEXT NULL,
+    InvalidatedAtUTC TEXT NULL,
     PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName),
     CHECK (Enabled IN (0, 1)),
     CHECK (ExistsOnDisk IN (0, 1)),
@@ -29,7 +29,7 @@ CREATE INDEX IX_Plugins_LoadOrderIndex ON Plugins (LoadOrderIndex);
 
 CREATE INDEX IX_Plugins_ImportState ON Plugins (ImportState);
 
-CREATE INDEX IX_Plugins_SourceFingerprint ON Plugins (SourceLastWriteUtcTicks, SourceFileSizeBytes);
+CREATE INDEX IX_Plugins_SourceFingerprint ON Plugins (SourceLastWriteUTCTicks, SourceFileSizeBytes);
 
 /*
  * PluginMasterReferences table, with composite primary key (ModKey_Name,ModKey_Type,ModKey_FileName,Parent_ModKey_Name,Parent_ModKey_Type,Parent_ModKey_FileName)

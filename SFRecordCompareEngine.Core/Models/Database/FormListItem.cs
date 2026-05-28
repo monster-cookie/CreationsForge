@@ -5,7 +5,7 @@ using SFRecordCompareEngine.Core.DTOs.Records;
 namespace SFRecordCompareEngine.Core.Models.Database;
 
 [TableName("FormListItems")]
-[PrimaryKey("ModKeyName, ModKeyType, ModKeyFileName, FormKeyId, ItemIndex", AutoIncrement = false)]
+[PrimaryKey("ModKey_Name, ModKey_Type, ModKey_FileName, Item_ModKey_Name, Item_ModKey_Type, Item_ModKey_FileName, FormKey_ID", AutoIncrement = false)]
 public class FormListItem
 {
     public FormListItem()

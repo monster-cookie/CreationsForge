@@ -24,6 +24,12 @@ public class PluginDTO
         FormVersion = model.FormVersion;
         Author = model.Author;
         Branch = model.Branch;
+        InteriorCellCount = model.InteriorCellCount;
+        SourceLastWriteUTCTicks = model.SourceLastWriteUTCTicks ?? 0;
+        SourceFileSizeBytes = model.SourceFileSizeBytes ?? 0;
+        LastCheckedUTC = model.LastCheckedUTC;
+        LastImportedUTC = model.LastImportedUTC;
+        InvalidatedAtUTC = model.InvalidatedAtUTC;
     }
     
     public ModKey ModKey { get; set; }
@@ -35,10 +41,10 @@ public class PluginDTO
     public int FormVersion { get; set; }
     public string Author { get; set; } = "UNKNOWN";
     public string Branch { get; set; } = "UNKNOWN";
-    public int InteriorCellCount { get; set; }
-    public long SourceLastWriteUtcTicks { get; set; }
+    public int? InteriorCellCount { get; set; }
+    public long SourceLastWriteUTCTicks { get; set; }
     public long SourceFileSizeBytes { get; set; }
-    public DateTime LastCheckedUtc { get; set; }
-    public DateTime? LastImportedUtc { get; set; }
-    public DateTime? InvalidatedAtUtc { get; set; }
+    public DateTime LastCheckedUTC { get; set; }
+    public DateTime? LastImportedUTC { get; set; }
+    public DateTime? InvalidatedAtUTC { get; set; }
 }

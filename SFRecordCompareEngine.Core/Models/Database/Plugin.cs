@@ -5,7 +5,7 @@ using SFRecordCompareEngine.Core.DTOs.Plugins;
 namespace SFRecordCompareEngine.Core.Models.Database;
 
 [TableName("Plugins")]
-[PrimaryKey("ModKeyName, ModKeyType, ModKeyFileName", AutoIncrement = false)]
+[PrimaryKey("ModKey_Name, ModKey_Type, ModKey_FileName", AutoIncrement = false)]
 public class Plugin
 {
     public Plugin()
@@ -24,16 +24,22 @@ public class Plugin
         FormVersion = dto.FormVersion;
         Author = dto.Author;
         Branch = dto.Branch;
+        InteriorCellCount = dto.InteriorCellCount ?? 0;
+        SourceLastWriteUTCTicks = dto.SourceLastWriteUTCTicks;
+        SourceFileSizeBytes = dto.SourceFileSizeBytes;
+        LastCheckedUTC = dto.LastCheckedUTC;
+        LastImportedUTC = dto.LastImportedUTC;
+        InvalidatedAtUTC = dto.InvalidatedAtUTC;
     }
     
     [Column("ModKey_Name")]
     public string ModKeyName { get; set; } = string.Empty;
     
-    [Column("ModKey_FileName")]
-    public string ModKeyFileName { get; set; } = string.Empty;
-    
     [Column("ModKey_Type")]
     public int ModKeyType { get; set; } = (int)ModType.Master;
+    
+    [Column("ModKey_FileName")]
+    public string ModKeyFileName { get; set; } = string.Empty;
 
     [Column("LoadOrderIndex")]
     public int LoadOrderIndex { get; set; }
@@ -61,18 +67,18 @@ public class Plugin
 
     [Column("InteriorCellCount")] public int InteriorCellCount { get; set; } = 0;
 
-    [Column("SourceLastWriteUtcTicks")]
-    public long? SourceLastWriteUtcTicks { get; set; }
+    [Column("SourceLastWriteUTCTicks")]
+    public long? SourceLastWriteUTCTicks { get; set; }
 
     [Column("SourceFileSizeBytes")]
     public long? SourceFileSizeBytes { get; set; }
 
-    [Column("LastCheckedUtc")]
-    public DateTime LastCheckedUtc { get; set; }
+    [Column("LastCheckedUTC")]
+    public DateTime LastCheckedUTC { get; set; }
 
-    [Column("LastImportedUtc")]
-    public DateTime LastImportedUtc { get; set; }
+    [Column("LastImportedUTC")]
+    public DateTime? LastImportedUTC { get; set; }
 
-    [Column("InvalidatedAtUtc")]
-    public DateTime? InvalidatedAtUtc { get; set; }
+    [Column("InvalidatedAtUTC")]
+    public DateTime? InvalidatedAtUTC { get; set; }
 }
