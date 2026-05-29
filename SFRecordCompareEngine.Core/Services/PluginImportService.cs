@@ -362,7 +362,17 @@ public class PluginImportService : IPluginImportService
 
     private void ImportStarfieldPluginRecords(PluginDTO plugin, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
     {
-        var recordImportResult = RecordImportService.ImportPluginRecords(plugin, cancellationToken);
+        progress?.Report(new PluginImportProgressDTO
+        {
+            CurrentPluginName = plugin.ModKey.FileName.ToString(),
+            CurrentModKey = plugin.ModKey,
+            PluginIndex = plugin.LoadOrderIndex,
+            PluginCount = totalPlugins,
+            StatusText = $"Importing records for {plugin.ModKey.FileName} ({plugin.LoadOrderIndex} of {totalPlugins})...",
+            IsIndeterminate = false
+        });
+
+        var recordImportResult = RecordImportService.ImportPluginRecords(plugin, progress, plugin.LoadOrderIndex, totalPlugins, cancellationToken);
         result.RecordHeadersImported += recordImportResult.HeadersImported;
         result.TypedRecordDetailRowsImported += recordImportResult.DetailRowsImported;
         result.FormListItemsImported += recordImportResult.FormListItemsImported;

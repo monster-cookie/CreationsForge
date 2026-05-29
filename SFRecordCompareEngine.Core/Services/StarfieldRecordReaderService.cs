@@ -14,21 +14,12 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
 {
     #region FormList
     
-    public IReadOnlyList<FormKey> GetFormListFormKeys(PluginDTO plugin)
+    public IReadOnlyList<FormListDTO> GetFormLists(PluginDTO plugin)
     {
         var mod = LoadMod(plugin.ModKey);
-        return mod.FormLists.Select(formList => formList.FormKey).ToList();
-    }
-
-    public FormListDTO? GetFormList(ModKey modKey, FormKey formKey)
-    {
-        var mod = LoadMod(modKey);
-        mod.FormLists.TryGetValue(formKey, out var record);
-        if (record == null) return null;
-
-        return new FormListDTO
+        return mod.FormLists.Select(record => new FormListDTO
         {
-            ModKey = modKey,
+            ModKey = plugin.ModKey,
             FormKey = record.FormKey,
             EditorID = record.EditorID ?? string.Empty,
             FormVersion = record.FormVersion,
@@ -46,28 +37,19 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                     ItemFormKey = item.FormKey
                 };
             }).ToList()
-        };
+        }).ToList();
     }
     
     #endregion
 
     #region GameSettings
     
-    public IReadOnlyList<FormKey> GetGameSettingFormKeys(PluginDTO plugin)
+    public IReadOnlyList<GameSettingDTO> GetGameSettings(PluginDTO plugin)
     {
         var mod = LoadMod(plugin.ModKey);
-        return mod.GameSettings.Select(gameSetting => gameSetting.FormKey).ToList();
-    }
-
-    public GameSettingDTO? GetGameSetting(ModKey modKey, FormKey formKey)
-    {
-        var mod = LoadMod(modKey);
-        mod.GameSettings.TryGetValue(formKey, out var record);
-        if (record == null) return null;
-
-        return new GameSettingDTO
+        return mod.GameSettings.Select(record => new GameSettingDTO
         {
-            ModKey = modKey,
+            ModKey = plugin.ModKey,
             FormKey = record.FormKey,
             EditorID = record.EditorID ?? string.Empty,
             FormVersion = record.FormVersion,
@@ -80,7 +62,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             RawData = GetGameSettingRawData(record),
             IsCompressed = 0,
             IsDeleted = 0
-        };
+        }).ToList();
     }
 
     private static string GetGameSettingType(IGameSettingGetter record)

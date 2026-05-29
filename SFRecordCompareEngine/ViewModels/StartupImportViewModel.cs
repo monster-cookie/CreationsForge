@@ -130,7 +130,22 @@ public class StartupImportViewModel : ViewModelBase
         if (ImportCompleted) return;
 
         StatusText = progress.StatusText;
-        CurrentPluginText = string.IsNullOrWhiteSpace(progress.CurrentPluginName) ? string.Empty : $"Current plugin: {progress.CurrentPluginName}";
+        if (string.IsNullOrWhiteSpace(progress.CurrentPluginName))
+        {
+            CurrentPluginText = string.Empty;
+        }
+        else if (!string.IsNullOrWhiteSpace(progress.CurrentRecordType) && progress.RecordCount > 0)
+        {
+            CurrentPluginText = $"Current plugin: {progress.CurrentPluginName} - {progress.CurrentRecordType} {progress.RecordIndex} of {progress.RecordCount}";
+        }
+        else if (!string.IsNullOrWhiteSpace(progress.CurrentRecordType))
+        {
+            CurrentPluginText = $"Current plugin: {progress.CurrentPluginName} - {progress.CurrentRecordType}";
+        }
+        else
+        {
+            CurrentPluginText = $"Current plugin: {progress.CurrentPluginName}";
+        }
         IsIndeterminate = progress.IsIndeterminate || progress.PluginCount <= 0;
 
         if (progress.PluginCount <= 0) return;

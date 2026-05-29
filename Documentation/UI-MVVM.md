@@ -23,7 +23,7 @@ navigation services, and Windows-specific window behavior.
 
 ## Pages
 
-`StartupImportPage` displays startup import status, current plugin text, a progress bar, and an activity indicator. It 
+`StartupImportPage` displays startup import status, current plugin and record-type text, a progress bar, and an activity indicator. It 
 starts import from `OnAppearing` and cancels import from `OnDisappearing`.
 
 `MainPage` is the current application shell after startup import. It has a File menu, an Open toolbar item, a 

@@ -24,8 +24,8 @@ exist as MAUI UI placeholders for later workflows.
 4. `PluginImportService` initializes the database schema, discovers the Starfield load order, opens a database transaction, and processes each load order entry.
 5. Plugin metadata is read through Mutagen by `StarfieldPluginReaderService`.
 6. Plugin rows and master references are saved through repositories.
-7. Record details are imported through `RecordImportService` and typed record importers. The active record detail path currently imports `FormList` records through `FormListImporter` and `GameSetting` records through `GameSettingImporter`.
-8. Progress is reported to the startup page. On successful completion, the app navigates to `MainPage`.
+7. Record details are imported through `RecordImportService` and typed record importers. The active record detail path reads `FormList` and `GameSetting` DTOs in bulk from Mutagen, then persists them through `FormListImporter` and `GameSettingImporter`.
+8. Progress is reported to the startup page for plugin-level phases and supported record-type import phases. On successful completion, the app navigates to `MainPage`.
 
 ## Current Capabilities
 
@@ -35,7 +35,7 @@ exist as MAUI UI placeholders for later workflows.
 - Skips unchanged plugins by comparing source last-write ticks and source file size.
 - Stores plugin metadata, master references, form lists, form list items, and game settings in SQLite.
 - Initializes and migrates the database with DbUp.
-- Logs app startup, shutdown, schema initialization, and import activity through Serilog.
+- Logs app startup, shutdown, schema initialization, plugin import activity, and record-type import checkpoints through Serilog.
 
 ## Current Limitations
 

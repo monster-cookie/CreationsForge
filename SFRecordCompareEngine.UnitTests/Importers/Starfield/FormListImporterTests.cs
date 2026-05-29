@@ -19,8 +19,7 @@ public class FormListImporterTests
     {
         var sut = new FormListImporter(
             Mock.Of<IFormListRepository>(),
-            Mock.Of<IFormListItemRepository>(),
-            Mock.Of<IStarfieldRecordReaderService>());
+            Mock.Of<IFormListItemRepository>());
 
         sut.GameRelease.ShouldBe(GameRelease.Starfield);
         sut.RecordType.ShouldBe(new RecordType(RecordTypeCatalog.FormList.RecordID));
@@ -37,8 +36,7 @@ public class FormListImporterTests
         var addToListFormKey = new FormKey(modKey, 789);
         var formListRepository = new Mock<IFormListRepository>();
         var formListItemRepository = new Mock<IFormListItemRepository>();
-        var reader = new Mock<IStarfieldRecordReaderService>();
-        reader.Setup(x => x.GetFormList(modKey, formKey)).Returns(new FormListDTO
+        var record = new FormListDTO
         {
             ModKey = modKey,
             FormKey = formKey,
@@ -57,13 +55,17 @@ public class FormListImporterTests
                     ItemFormKey = itemFormKey
                 }
             }
-        });
-        var sut = new FormListImporter(formListRepository.Object, formListItemRepository.Object, reader.Object);
+        };
+        var sut = new FormListImporter(formListRepository.Object, formListItemRepository.Object);
 
-        sut.Import(modKey, formKey, new RecordImportResultDTO
+        var result = new RecordTypeImportResultDTO
         {
-            ModKey = modKey
-        });
+            RecordType = "FLST",
+            HeaderImportSupported = true,
+            TypedDetailImportSupported = true
+        };
+
+        sut.Import(record, result);
 
         formListRepository.Verify(x => x.Save(It.Is<FormListDTO>(dto =>
             dto.ModKey == modKey &&
@@ -79,23 +81,8 @@ public class FormListImporterTests
             dto.FormKey == formKey &&
             dto.ItemModKey == itemModKey &&
             dto.ItemFormKey == itemFormKey)), Times.Once);
+        result.DetailRowsImported.ShouldBe(1);
+        result.FormListItemsImported.ShouldBe(1);
     }
 
-    [Fact]
-    public void Import_WhenFormListIsMissing_ThrowsFileNotFoundException()
-    {
-        var modKey = new ModKey("Example", ModType.Master);
-        var formKey = new FormKey(modKey, 123);
-        var reader = new Mock<IStarfieldRecordReaderService>();
-        reader.Setup(x => x.GetFormList(modKey, formKey)).Returns((FormListDTO?)null);
-        var sut = new FormListImporter(
-            Mock.Of<IFormListRepository>(),
-            Mock.Of<IFormListItemRepository>(),
-            reader.Object);
-
-        Should.Throw<FileNotFoundException>(() => sut.Import(modKey, formKey, new RecordImportResultDTO
-        {
-            ModKey = modKey
-        }));
-    }
 }

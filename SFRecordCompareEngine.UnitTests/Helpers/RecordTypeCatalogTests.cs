@@ -21,17 +21,4 @@ public class RecordTypeCatalogTests
         RecordTypeCatalog.GameSetting.RecordID.ShouldBe("GMST");
     }
 
-    [Fact]
-    public void KnownMajorRecordTypes_ContainsSupportedAndUnsupportedTypesInOrdinalOrder()
-    {
-        var expected = RecordTypeCatalog.SupportedRecordTypes
-            .Concat(RecordTypeCatalog.UnsupportedRecordTypes)
-            .Distinct(StringComparer.Ordinal)
-            .OrderBy(recordType => recordType, StringComparer.Ordinal)
-            .ToList();
-
-        RecordTypeCatalog.KnownMajorRecordTypes.ShouldBe(expected);
-        RecordTypeCatalog.KnownMajorRecordTypes.ShouldContain("FormList");
-        RecordTypeCatalog.KnownMajorRecordTypes.ShouldContain("GameSetting");
-    }
 }

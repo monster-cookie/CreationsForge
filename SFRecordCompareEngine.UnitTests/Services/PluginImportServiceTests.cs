@@ -50,7 +50,7 @@ public class PluginImportServiceTests
         savedPlugin.ImportState.ShouldBe(nameof(PluginImportState.Unsupported));
         savedPlugin.SourceLastWriteUTCTicks.ShouldBe(123);
         savedPlugin.SourceFileSizeBytes.ShouldBe(456);
-        context.RecordImportService.Verify(x => x.ImportPluginRecords(It.IsAny<PluginDTO>(), It.IsAny<CancellationToken>()), Times.Never);
+        context.RecordImportService.Verify(x => x.ImportPluginRecords(It.IsAny<PluginDTO>(), It.IsAny<IProgress<PluginImportProgressDTO>?>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public class PluginImportServiceTests
         result.PluginsUnchanged.ShouldBe(1);
         existingPlugin.LastCheckedUTC.ShouldNotBe(default);
         context.PluginRepository.Verify(x => x.Save(existingPlugin), Times.Once);
-        context.RecordImportService.Verify(x => x.ImportPluginRecords(It.IsAny<PluginDTO>(), It.IsAny<CancellationToken>()), Times.Never);
+        context.RecordImportService.Verify(x => x.ImportPluginRecords(It.IsAny<PluginDTO>(), It.IsAny<IProgress<PluginImportProgressDTO>?>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public class PluginImportServiceTests
             FileSizeBytes = 456
         });
         context.PluginReader.Setup(x => x.GetMetadata(entry.PluginPath)).Returns(CreateMetadata(entry.ModKey));
-        context.RecordImportService.Setup(x => x.ImportPluginRecords(It.IsAny<PluginDTO>(), It.IsAny<CancellationToken>())).Returns(new RecordImportResultDTO
+        context.RecordImportService.Setup(x => x.ImportPluginRecords(It.IsAny<PluginDTO>(), It.IsAny<IProgress<PluginImportProgressDTO>?>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(new RecordImportResultDTO
         {
             ModKey = entry.ModKey,
             RecordTypes = new List<RecordTypeImportResultDTO>
@@ -125,6 +125,7 @@ public class PluginImportServiceTests
                 {
                     RecordType = "FLST",
                     HeaderImportSupported = true,
+                    TypedDetailImportSupported = true,
                     HeadersImported = 2,
                     DetailRowsImported = 3,
                     FormListItemsImported = 4,
@@ -223,7 +224,7 @@ public class PluginImportServiceTests
         var pluginMasterReferencesRepository = new Mock<IPluginMasterReferencesRepository>();
         var recordImportService = new Mock<IRecordImportService>();
         var pluginReader = new Mock<IStarfieldPluginReaderService>();
-        recordImportService.Setup(x => x.ImportPluginRecords(It.IsAny<PluginDTO>(), It.IsAny<CancellationToken>())).Returns<PluginDTO, CancellationToken>((plugin, _) => new RecordImportResultDTO
+        recordImportService.Setup(x => x.ImportPluginRecords(It.IsAny<PluginDTO>(), It.IsAny<IProgress<PluginImportProgressDTO>?>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns<PluginDTO, IProgress<PluginImportProgressDTO>?, int, int, CancellationToken>((plugin, _, _, _, _) => new RecordImportResultDTO
         {
             ModKey = plugin.ModKey
         });

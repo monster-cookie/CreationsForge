@@ -18,8 +18,7 @@ public class GameSettingImporterTests
     public void Properties_ReturnGameSettingMetadata()
     {
         var sut = new GameSettingImporter(
-            Mock.Of<IGameSettingRepository>(),
-            Mock.Of<IStarfieldRecordReaderService>());
+            Mock.Of<IGameSettingRepository>());
 
         sut.GameRelease.ShouldBe(GameRelease.Starfield);
         sut.RecordType.ShouldBe(new RecordType(RecordTypeCatalog.GameSetting.RecordID));
@@ -32,8 +31,7 @@ public class GameSettingImporterTests
         var modKey = new ModKey("Example", ModType.Master);
         var formKey = new FormKey(modKey, 123);
         var repository = new Mock<IGameSettingRepository>();
-        var reader = new Mock<IStarfieldRecordReaderService>();
-        reader.Setup(x => x.GetGameSetting(modKey, formKey)).Returns(new GameSettingDTO
+        var record = new GameSettingDTO
         {
             ModKey = modKey,
             FormKey = formKey,
@@ -48,13 +46,17 @@ public class GameSettingImporterTests
             RawData = 60,
             IsCompressed = 0,
             IsDeleted = 0
-        });
-        var sut = new GameSettingImporter(repository.Object, reader.Object);
+        };
+        var sut = new GameSettingImporter(repository.Object);
 
-        sut.Import(modKey, formKey, new RecordImportResultDTO
+        var result = new RecordTypeImportResultDTO
         {
-            ModKey = modKey
-        });
+            RecordType = "GMST",
+            HeaderImportSupported = true,
+            TypedDetailImportSupported = true
+        };
+
+        sut.Import(record, result);
 
         repository.Verify(x => x.Save(It.Is<GameSettingDTO>(dto =>
             dto.ModKey == modKey &&
@@ -67,22 +69,7 @@ public class GameSettingImporterTests
             dto.SettingType == "GameSettingInt" &&
             dto.Data == "60" &&
             dto.RawData == 60)), Times.Once);
+        result.DetailRowsImported.ShouldBe(1);
     }
 
-    [Fact]
-    public void Import_WhenGameSettingIsMissing_ThrowsFileNotFoundException()
-    {
-        var modKey = new ModKey("Example", ModType.Master);
-        var formKey = new FormKey(modKey, 123);
-        var reader = new Mock<IStarfieldRecordReaderService>();
-        reader.Setup(x => x.GetGameSetting(modKey, formKey)).Returns((GameSettingDTO?)null);
-        var sut = new GameSettingImporter(
-            Mock.Of<IGameSettingRepository>(),
-            reader.Object);
-
-        Should.Throw<FileNotFoundException>(() => sut.Import(modKey, formKey, new RecordImportResultDTO
-        {
-            ModKey = modKey
-        }));
-    }
 }

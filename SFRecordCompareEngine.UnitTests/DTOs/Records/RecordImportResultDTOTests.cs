@@ -32,6 +32,7 @@ public class RecordImportResultDTOTests
                 {
                     RecordType = "FLST",
                     HeaderImportSupported = true,
+                    TypedDetailImportSupported = true,
                     HeadersImported = 1,
                     DetailRowsImported = 2,
                     FormListItemsImported = 3,
@@ -40,7 +41,8 @@ public class RecordImportResultDTOTests
                 new()
                 {
                     RecordType = "GMST",
-                    HeaderImportSupported = false,
+                    HeaderImportSupported = true,
+                    TypedDetailImportSupported = false,
                     HeadersImported = 5,
                     DetailRowsImported = 6,
                     FormListItemsImported = 7,
