@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using SFRecordCompareEngine.Core.Configuration.Interfaces;
 using SFRecordCompareEngine.Core.Models.Configuration;
 
@@ -10,7 +11,8 @@ public class ApplicationConfigurationStore : IApplicationConfigurationStore
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
         PropertyNameCaseInsensitive = true,
-        WriteIndented = true
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() }
     };
 
     public static string DefaultApplicationDataDirectory { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SFRecordCompareEngine");

@@ -1,6 +1,6 @@
-﻿# Repo: SFRecordCompareEngine (.NET MAUI Desktop Application)
+﻿# Repo: SFRecordCompareEngine (.NET WinUI Desktop Application)
 
-Simple MAUI desktop app that shows the record hierarchy of a given plugin in relation to its master plugins.
+Simple WinUI desktop app that shows the record hierarchy of a given plugin in relation to its master plugins.
 
 ## Project Layout
 
@@ -101,7 +101,7 @@ If no documentation update is needed, the PLAN must explicitly state: Documentat
 - SFRecordCompareEngine.Core must not expose or depend on UI binding primitives such as INotifyPropertyChanged, ObservableCollection<T>, ICommand, Dispatcher, SynchronizationContext-based UI dispatching, or platform UI thread helpers.
 - Use plain DTOs, domain models, IReadOnlyList<T>, IEnumerable<T>, result objects, events, callbacks, or progress DTOs for Core-to-presentation communication.
 - MVVM presentation code belongs in SFRecordCompareEngine only, including:
-    - MAUI pages/views
+    - WinUI pages/views
     - C# Markup UI classes
     - View models
     - Bindable UI state

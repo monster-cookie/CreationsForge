@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="SFRecordCompareEngine.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Starfield Record Compare Engine">
+    <Grid x:Name="ShellRoot">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <MenuBar
+            x:Name="MainMenuBar"
+            Grid.Row="0"
+            Visibility="Collapsed">
+            <MenuBarItem Title="File">
+                <MenuFlyoutItem
+                    x:Name="OpenMenuItem"
+                    Text="Open" />
+                <MenuFlyoutItem
+                    x:Name="OptionsMenuItem"
+                    Text="Options" />
+                <MenuFlyoutSeparator />
+                <MenuFlyoutItem
+                    x:Name="ExitMenuItem"
+                    Text="Exit" />
+            </MenuBarItem>
+        </MenuBar>
+
+        <CommandBar
+            x:Name="MainCommandBar"
+            Grid.Row="1"
+            DefaultLabelPosition="Right"
+            HorizontalAlignment="Left"
+            IsOpen="False"
+            Visibility="Collapsed">
+            <CommandBar.PrimaryCommands>
+                <AppBarButton
+                    x:Name="OpenCommandButton"
+                    Label="Open" />
+                <AppBarButton
+                    x:Name="SettingsCommandButton"
+                    Label="Settings" />
+            </CommandBar.PrimaryCommands>
+        </CommandBar>
+
+        <Grid
+            x:Name="RootHost"
+            Grid.Row="2" />
+    </Grid>
+</Window>

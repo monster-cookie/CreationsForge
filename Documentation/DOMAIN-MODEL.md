@@ -325,5 +325,8 @@ Record types currently treated as known unsupported Mutagen types:
 
 ## Configuration
 
-`ApplicationConfiguration` currently stores the selected game name. `ApplicationConfigurationStore` loads and saves the 
-JSON configuration file and reports whether configuration is required when no selected game is present.
+`ApplicationConfiguration` stores the selected game name and application theme. The theme is represented by 
+`ApplicationThemeMode` and defaults to `Dark` when the configuration file is missing the theme value.
+
+`ApplicationConfigurationStore` loads and saves the JSON configuration file and reports whether configuration is
+required when no selected game is present.

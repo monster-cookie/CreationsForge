@@ -11,11 +11,13 @@ public class MainPageViewModel : ViewModelBase
     {
         ApplicationNavigationService = applicationNavigationService;
         OpenCommand = new AsyncRelayCommand(OpenAsync);
+        OptionsCommand = new AsyncRelayCommand(ShowOptionsAsync);
         ExitCommand = new RelayCommand(ApplicationNavigationService.Quit);
         StatusText = "Ready.";
     }
 
     public AsyncRelayCommand OpenCommand { get; }
+    public AsyncRelayCommand OptionsCommand { get; }
     public RelayCommand ExitCommand { get; }
 
     public string StatusText
@@ -27,5 +29,10 @@ public class MainPageViewModel : ViewModelBase
     private async Task OpenAsync()
     {
         await ApplicationNavigationService.ShowOpenDialogAsync();
+    }
+
+    private async Task ShowOptionsAsync()
+    {
+        await ApplicationNavigationService.ShowSettingsDialogAsync();
     }
 }

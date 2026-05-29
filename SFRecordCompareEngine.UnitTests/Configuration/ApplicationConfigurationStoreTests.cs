@@ -68,11 +68,13 @@ public class ApplicationConfigurationStoreTests : IDisposable
 
         sut.Save(new ApplicationConfiguration
         {
-            SelectedGame = "Starfield"
+            SelectedGame = "Starfield",
+            Theme = ApplicationThemeMode.Light
         });
 
         sut.IsConfigurationRequired.ShouldBeFalse();
         sut.Current.SelectedGame.ShouldBe("Starfield");
+        sut.Current.Theme.ShouldBe(ApplicationThemeMode.Light);
         File.Exists(ConfigurationPath).ShouldBeTrue();
     }
 
@@ -90,5 +92,22 @@ public class ApplicationConfigurationStoreTests : IDisposable
 
         sut.IsConfigurationRequired.ShouldBeFalse();
         sut.Current.SelectedGame.ShouldBe("Starfield");
+        sut.Current.Theme.ShouldBe(ApplicationThemeMode.Dark);
+    }
+
+    [Fact]
+    public void Constructor_WhenConfigurationFileIncludesTheme_LoadsTheme()
+    {
+        Directory.CreateDirectory(TestDirectory);
+        File.WriteAllText(ConfigurationPath, """
+            {
+              "SelectedGame": "Starfield",
+              "Theme": "Light"
+            }
+            """);
+
+        var sut = new ApplicationConfigurationStore(ConfigurationPath);
+
+        sut.Current.Theme.ShouldBe(ApplicationThemeMode.Light);
     }
 }

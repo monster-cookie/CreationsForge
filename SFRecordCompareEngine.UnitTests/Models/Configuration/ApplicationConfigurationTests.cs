@@ -14,6 +14,14 @@ public class ApplicationConfigurationTests
     }
 
     [Fact]
+    public void Constructor_DefaultsThemeToDark()
+    {
+        var sut = new ApplicationConfiguration();
+
+        sut.Theme.ShouldBe(ApplicationThemeMode.Dark);
+    }
+
+    [Fact]
     public void SelectedGame_CanBeAssigned()
     {
         var sut = new ApplicationConfiguration
@@ -22,5 +30,16 @@ public class ApplicationConfigurationTests
         };
 
         sut.SelectedGame.ShouldBe("Starfield");
+    }
+
+    [Fact]
+    public void Theme_CanBeAssigned()
+    {
+        var sut = new ApplicationConfiguration
+        {
+            Theme = ApplicationThemeMode.Light
+        };
+
+        sut.Theme.ShouldBe(ApplicationThemeMode.Light);
     }
 }
