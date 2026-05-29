@@ -24,5 +24,5 @@ public class RecordImportResultDTO
     
     public int RecordsFailed => RecordTypes.Sum(recordType => recordType.RecordsFailed);
     
-    public int UnsupportedRecordTypes => RecordTypes.Count(recordType => !recordType.HeaderImportSupported);
+    public int UnsupportedRecordTypes => RecordTypes.Count(recordType => !recordType.HeaderImportSupported || !recordType.TypedDetailImportSupported);
 }

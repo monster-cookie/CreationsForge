@@ -8,31 +8,42 @@ namespace SFRecordCompareEngine.UnitTests.Services;
 public class StarfieldRecordReaderServiceTests
 {
     [Fact]
-    public void GetFormListFormKeys_WhenStarfieldEsmExists_ReturnsFormListKeys()
+    public void GetFormLists_WhenStarfieldEsmExists_ReturnsFormLists()
     {
         var sut = new StarfieldRecordReaderService();
         var plugin = CreateStarfieldPluginDTO();
 
-        var result = sut.GetFormListFormKeys(plugin);
+        var result = sut.GetFormLists(plugin);
 
         result.ShouldNotBeEmpty();
-        result.ShouldAllBe(formKey => formKey.ModKey.FileName.String == "Starfield.esm");
+        result.ShouldAllBe(formList => formList.FormKey.ModKey.FileName.String == "Starfield.esm");
     }
 
     [Fact]
-    public void GetFormList_WhenStarfieldEsmContainsFormList_ReturnsFormListData()
+    public void GetFormLists_WhenStarfieldEsmContainsFormList_ReturnsFormListData()
     {
         var sut = new StarfieldRecordReaderService();
         var plugin = CreateStarfieldPluginDTO();
-        var formKey = sut.GetFormListFormKeys(plugin).First();
 
-        var result = sut.GetFormList(plugin.ModKey, formKey);
+        var result = sut.GetFormLists(plugin).First();
 
         result.ShouldNotBeNull();
-        result.FormKey.ShouldBe(formKey);
+        result.FormKey.ModKey.ShouldBe(plugin.ModKey);
         result.EditorID.ShouldNotBeNull();
         result.FormVersion.ShouldBeGreaterThanOrEqualTo(0);
         result.Items.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void GetGameSettings_WhenStarfieldEsmExists_ReturnsGameSettings()
+    {
+        var sut = new StarfieldRecordReaderService();
+        var plugin = CreateStarfieldPluginDTO();
+
+        var result = sut.GetGameSettings(plugin);
+
+        result.ShouldNotBeEmpty();
+        result.ShouldAllBe(gameSetting => gameSetting.FormKey.ModKey.FileName.String == "Starfield.esm");
     }
 
     private static PluginDTO CreateStarfieldPluginDTO()

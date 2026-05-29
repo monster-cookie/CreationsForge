@@ -1,8 +1,88 @@
 # Design Decisions
 
-## 2026-05-28 - Document Current .NET MAUI Architecture
+## 2026-05-29 - Revert Presentation Layer To WinUI
 
 Status: Accepted
+
+Context: The application is Windows-only and needs standard Windows desktop UI surfaces, including a menu bar, toolbar, 
+and future grid-based browsing workflows. The MAUI presentation layer failed to reliably render menu and toolbar 
+behavior after startup import navigation, and in-page workarounds behaved like normal page content instead of desktop 
+chrome.
+
+Decision: Replace the MAUI presentation layer with WinUI 3 and Windows App SDK while keeping 
+`SFRecordCompareEngine.Core` UI-neutral.
+
+Rationale: WinUI directly owns the Windows desktop controls and shell patterns the application needs. It avoids 
+cross-platform abstraction issues for a Windows-only tool and keeps standard controls such as `MenuBar`, `CommandBar`, 
+`ContentDialog`, and future grid controls in the native presentation framework.
+
+Alternatives considered:
+
+- Continue MAUI and add more page-level workarounds.
+- Embed WinUI controls around MAUI content.
+- Adopt Microsoft.UI.Reactor.
+- Move to Uno Platform.
+- Move to Avalonia.
+- Move to WPF.
+
+Consequences:
+
+- The presentation project uses WinUI XAML, `App`, `MainWindow`, views, and Windows App SDK services.
+- MAUI project settings, pages, and resources are removed from the active build.
+- Core remains independent from presentation UI framework references.
+- Documentation uses WinUI terminology for the implemented presentation framework.
+
+Related files:
+
+- `SFRecordCompareEngine/SFRecordCompareEngine.csproj`
+- `SFRecordCompareEngine/App.xaml`
+- `SFRecordCompareEngine/App.xaml.cs`
+- `SFRecordCompareEngine/MainWindow.xaml`
+- `SFRecordCompareEngine/MainWindow.xaml.cs`
+- `SFRecordCompareEngine/Views/StartupImportView.xaml`
+- `SFRecordCompareEngine/Views/MainView.xaml`
+- `SFRecordCompareEngine/Views/OpenPluginDialog.xaml`
+- `SFRecordCompareEngine/Services/ApplicationNavigationService.cs`
+- `SFRecordCompareEngine/Services/WindowsApplicationWindowService.cs`
+
+## 2026-05-29 - Persist Application Theme In Configuration
+
+Status: Accepted
+
+Context: The WinUI shell needs consistent light and dark theme behavior. Partial per-control brush overrides caused
+menu and toolbar visual states to become inconsistent.
+
+Decision: Store the selected theme in `ApplicationConfiguration` and apply it through the WinUI shell root. The default
+theme is `Dark`. The setting is edited through the Options dialog opened from `File -> Options` or the toolbar
+`Settings` command.
+
+Rationale: Theme is application state and should be handled through one persisted setting rather than scattered visual
+workarounds.
+
+Alternatives considered:
+
+- Force light mode only.
+- Keep per-control resource overrides.
+- Defer theme support until later.
+
+Consequences:
+
+- Application configuration JSON includes a `Theme` field.
+- Existing configuration files without a theme continue to load and default to `Dark`.
+- The presentation shell applies `ElementTheme.Dark` or `ElementTheme.Light` at runtime.
+
+Related files:
+
+- `SFRecordCompareEngine.Core/Models/Configuration/ApplicationConfiguration.cs`
+- `SFRecordCompareEngine.Core/Models/Configuration/ApplicationThemeMode.cs`
+- `SFRecordCompareEngine.Core/Configuration/ApplicationConfigurationStore.cs`
+- `SFRecordCompareEngine/ViewModels/SettingsViewModel.cs`
+- `SFRecordCompareEngine/Views/SettingsDialog.xaml`
+- `SFRecordCompareEngine/MainWindow.xaml`
+
+## 2026-05-28 - Document Current .NET MAUI Architecture
+
+Status: Superseded by `2026-05-29 - Revert Presentation Layer To WinUI`
 
 Context: The current presentation project uses .NET MAUI for Windows. The project file enables `UseMaui`, references 
 `Microsoft.Maui.Controls`, and the UI is implemented with MAUI `Application`, `Window`, `ContentPage`, and code-built 
@@ -101,8 +181,8 @@ Status: Accepted
 Context: Mutagen reads plugin files from the local Starfield installation. The application needs durable local data for 
 browsing and comparison workflows.
 
-Decision: Import plugin metadata, master references, and selected typed record details into a local SQLite database under 
-the application data directory.
+Decision: Import plugin metadata, master references, and selected typed record details into a local SQLite database 
+under the application data directory.
 
 Rationale: A local cache supports startup discovery, change detection, later browsing, and comparison workflows without 
 repeatedly parsing every plugin for every UI interaction.

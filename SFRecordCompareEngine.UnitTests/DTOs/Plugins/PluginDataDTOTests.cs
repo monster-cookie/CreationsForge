@@ -36,6 +36,9 @@ public class PluginDataDTOTests
             CurrentModKey = modKey,
             PluginIndex = 1,
             PluginCount = 2,
+            CurrentRecordType = "FLST",
+            RecordIndex = 3,
+            RecordCount = 4,
             StatusText = "Importing",
             IsIndeterminate = true
         };
@@ -44,6 +47,9 @@ public class PluginDataDTOTests
         sut.CurrentModKey.ShouldBe(modKey);
         sut.PluginIndex.ShouldBe(1);
         sut.PluginCount.ShouldBe(2);
+        sut.CurrentRecordType.ShouldBe("FLST");
+        sut.RecordIndex.ShouldBe(3);
+        sut.RecordCount.ShouldBe(4);
         sut.StatusText.ShouldBe("Importing");
         sut.IsIndeterminate.ShouldBeTrue();
     }

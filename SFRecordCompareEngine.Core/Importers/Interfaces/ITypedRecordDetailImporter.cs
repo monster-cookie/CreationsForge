@@ -26,7 +26,6 @@ public interface ITypedRecordDetailImporter
     /// <summary>
     /// The import handler
     /// </summary>
-    /// <param name="modKey">The ModKey for the plugin the record is in</param>
-    /// <param name="formKey">The FormKey of the record</param>
-    void Import(ModKey modKey, FormKey formKey, RecordImportResultDTO resultDTO);
+    /// <param name="recordDTO">The record DTO to import</param>
+    void Import(object recordDTO, RecordTypeImportResultDTO resultDTO);
 }

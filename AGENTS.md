@@ -1,6 +1,6 @@
-﻿# Repo: SFRecordCompareEngine (.NET MAUI Desktop Application)
+﻿# Repo: SFRecordCompareEngine (.NET WinUI Desktop Application)
 
-Simple MAUI desktop app that shows the record hierarchy of a given plugin in relation to its master plugins.
+Simple WinUI desktop app that shows the record hierarchy of a given plugin in relation to its master plugins.
 
 ## Project Layout
 
@@ -12,18 +12,21 @@ Simple MAUI desktop app that shows the record hierarchy of a given plugin in rel
 
 - NEVER run git commands of any kind.
 - NEVER modify repo history or open PRs.
-- Allowed read/write scope by default:
+- Default approved read/write scope after PLAN approval:
   - /SFRecordCompareEngine
   - /SFRecordCompareEngine.Core
   - /SFRecordCompareEngine.Migrations
   - /SFRecordCompareEngine.UnitTests
   - /Documentation
 - Do not edit files outside these projects unless explicitly approved in the PLAN.
-- ALWAYS show a PLAN first and wait for explicit approval before editing files.
+- ALWAYS show a PLAN first and wait for explicit approval before making the first repository edit for a task.
+- After the PLAN is approved, Codex may edit files within the approved scope without asking again for each file.
+- If new files, new projects, cross-cutting architecture changes, breaking changes, or edits outside the approved scope are needed, stop and ask for approval.
 - Keep changes surgical and consistent with existing patterns and naming.
 - No breaking changes to existing services, factories, stores, repositories, view models, public interfaces, configuration, persistence formats, or UI workflows without explicit approval.
-- NEVER edit AGENTS.md or AGENT-PLAN-TEMPLATE.md, if you have suggestions for changes, please propose them to the user.
+- NEVER edit AGENTS.md or AGENT-PLAN-TEMPLATE.md; if you have suggestions for changes, propose them to the user.
 - DO NOT wrap lines of code or comments that are not currently wrapped. Follow existing formatting and line breaks in the repo.
+- For documentation, use Markdown format and wrap lines at 120 characters.
 
 ## REFERENCE & DOCUMENTATION
 
@@ -98,7 +101,7 @@ If no documentation update is needed, the PLAN must explicitly state: Documentat
 - SFRecordCompareEngine.Core must not expose or depend on UI binding primitives such as INotifyPropertyChanged, ObservableCollection<T>, ICommand, Dispatcher, SynchronizationContext-based UI dispatching, or platform UI thread helpers.
 - Use plain DTOs, domain models, IReadOnlyList<T>, IEnumerable<T>, result objects, events, callbacks, or progress DTOs for Core-to-presentation communication.
 - MVVM presentation code belongs in SFRecordCompareEngine only, including:
-    - MAUI pages/views
+    - WinUI pages/views
     - C# Markup UI classes
     - View models
     - Bindable UI state

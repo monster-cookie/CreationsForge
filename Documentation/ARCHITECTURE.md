@@ -4,19 +4,19 @@
 
 The solution is split into presentation, core, migrations, and tests.
 
-`SFRecordCompareEngine` is the presentation layer. It references Core and Migrations and contains MAUI pages, view models, 
-commands, navigation services, dialog services, Windows window behavior, app startup, logging setup, and the Autofac 
-composition root.
+`SFRecordCompareEngine` is the presentation layer. It references Core and Migrations and contains WinUI views, view 
+models, commands, navigation services, dialog services, Windows window behavior, app startup, logging setup, and the 
+Autofac composition root.
 
-`SFRecordCompareEngine.Core` is UI-neutral. It contains DTOs, database models, configuration storage, database connection 
-factories, schema initialization orchestration, Mutagen readers, import services, typed importers, repositories, and 
-Core Autofac registrations.
+`SFRecordCompareEngine.Core` is UI-neutral. It contains DTOs, database models, configuration storage, database 
+connection factories, schema initialization orchestration, Mutagen readers, import services, typed importers, 
+repositories, and Core Autofac registrations.
 
-`SFRecordCompareEngine.Migrations` contains DbUp migration infrastructure and embedded SQL scripts. Core depends on this 
-project for `IDatabaseMigrationRunner`.
+`SFRecordCompareEngine.Migrations` contains DbUp migration infrastructure and embedded SQL scripts. Core depends on 
+this project for `IDatabaseMigrationRunner`.
 
 `SFRecordCompareEngine.UnitTests` tests Core behavior and model/DTO mapping without testing repository database access, 
-DbUp execution, or MAUI UI-bound behavior.
+DbUp execution, or WinUI UI-bound behavior.
 
 ## Dependency Direction
 
@@ -24,16 +24,18 @@ DbUp execution, or MAUI UI-bound behavior.
 - Core depends on Migrations for database migration execution.
 - Migrations does not depend on Presentation or Core.
 - UnitTests depend on Core and Migrations.
-- Core does not reference MAUI pages, view models, commands, dialog services, or navigation services.
+- Core does not reference WinUI views, view models, commands, dialog services, or navigation services.
 
 ## Composition
 
-`MauiProgram.BuildContainer` builds the Autofac container.
+`App.BuildContainer` builds the Autofac container.
 
-- `CoreModule` registers Core stores, importers, services, factories, initializers, repositories, `SqliteDatabaseOptions`, and NPoco `IDatabase`.
+- `CoreModule` registers Core stores, importers, services, factories, initializers, repositories,
+  `SqliteDatabaseOptions`, and NPoco `IDatabase`.
 - `MigrationsModule` registers `DatabaseMigrationRunner` as `IDatabaseMigrationRunner`.
-- The presentation project registers MAUI pages, view models, and presentation services.
-- `UserDialogService`, `ApplicationNavigationService`, and `WindowsApplicationWindowService` are registered as singletons.
+- The presentation project registers WinUI views, view models, `MainWindow`, and presentation services.
+- `UserDialogService`, `ApplicationNavigationService`, and `WindowsApplicationWindowService` are registered as
+  singletons.
 
 Most Core services, repositories, importers, stores, and initializers are registered by assembly scanning and interface 
 suffix conventions.
@@ -70,9 +72,11 @@ schema-version constant.
 
 ## Logging
 
-Serilog is configured in `MauiProgram.CreateMauiApp`. Logs are written under the app data log directory with daily rolling files and a seven-day retention window. Services log workflow-level events and failures. Repositories and stores should not own logging decisions.
+Serilog is configured in `App`. Logs are written under the app data log directory with daily rolling files and a 
+seven-day retention window. Services log workflow-level events and failures. Repositories and stores should not own 
+logging decisions.
 
 ## UI Framework Note
 
-The presentation layer is .NET MAUI for Windows. Any references describing the app as WPF are stale and should be 
+The presentation layer is WinUI 3 for Windows. Any references describing the app as WPF or MAUI are stale and should be 
 updated in repo instruction/template files when those files are intentionally revised.

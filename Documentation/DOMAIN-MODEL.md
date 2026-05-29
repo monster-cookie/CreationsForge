@@ -16,8 +16,9 @@ plugin key.
 Master reference: A relationship between a plugin and a master plugin declared in the plugin header. Represented by 
 `PluginMasterReferenceDTO` and persisted in `PluginMasterReferences`.
 
-Record type: A Starfield major record category. `RecordTypeCatalog` lists known supported and unsupported record type 
-names and includes table metadata for `FormList` and `GameSetting`.
+Record type: A Starfield major record category. `RecordTypeCatalog` contains only runtime metadata for record types the 
+current import path persists: `FormList` and `GameSetting`. Broader Mutagen record type reference data belongs in this 
+documentation, not executable code.
 
 ## Plugin Import States
 
@@ -48,20 +49,242 @@ names and includes table metadata for `FormList` and `GameSetting`.
 
 ## Record Import
 
-`RecordImportService` returns `RecordImportResultDTO` for a plugin. The result aggregates per-record-type counts from `RecordTypeImportResultDTO`.
+`RecordImportService` returns `RecordImportResultDTO` for a plugin. The result aggregates per-record-type counts from `RecordTypeImportResultDTO`, including discovered headers, typed detail rows, form list item rows, failed records, and unsupported typed detail import paths.
+
+Record import progress is reported through `PluginImportProgressDTO`. Plugin-level progress remains based on load-order position, while record-type fields identify the active record type and record index during long-running detail import phases.
 
 The active typed detail import path includes Starfield `FLST`:
 
-- `StarfieldRecordReaderService.GetFormListFormKeys` reads form list keys from a plugin.
-- `FormListImporter` reads each `FormListDTO`.
+- `StarfieldRecordReaderService.GetFormLists` reads form list DTOs from a plugin with one Mutagen mod load.
+- `FormListImporter` saves each `FormListDTO`.
 - `FormListRepository` saves the form list row.
 - `FormListItemRepository` saves each item row.
 
 The active typed detail import path also includes Starfield `GMST`:
 
-- `StarfieldRecordReaderService.GetGameSettingFormKeys` reads game setting keys from a plugin.
-- `GameSettingImporter` reads each `GameSettingDTO`.
+- `StarfieldRecordReaderService.GetGameSettings` reads game setting DTOs from a plugin with one Mutagen mod load.
+- `GameSettingImporter` saves each `GameSettingDTO`.
 - `GameSettingRepository` saves the game setting row.
+
+## Starfield Record Type Reference
+
+The following reference lists came from Mutagen record type names observed during implementation. They are documentation 
+only and do not define application import support.
+
+Record types currently treated as known supported Mutagen types:
+
+- AcousticSpace
+- ActionRecord
+- Activator
+- ActorValueInformation
+- ActorValueModulation
+- AddonNode
+- AffinityEvent
+- AimAssistModel
+- AimAssistPose
+- AimModel
+- AimOpticalSightMarker
+- AmbienceSet
+- Ammunition
+- AnimatedObject
+- AnimationSoundTagSet
+- AObjectModification
+- APlacedTrap
+- Armor
+- ArmorAddon
+- ArmorModification
+- ArtObject
+- AStoryManagerNode
+- Atmosphere
+- AttractionRule
+- AudioOcclusionPrimitive
+- BendableSpline
+- Biome
+- BiomeMarker
+- BodyPartData
+- BoneModifier
+- Book
+- CameraPath
+- CameraShot
+- Cell
+- Challenge
+- Class
+- Climate
+- Clouds
+- CollisionLayer
+- ColorRecord
+- CombatStyle
+- ConditionRecord
+- ConstructibleObject
+- Container
+- ContainerModification
+- Curve3D
+- CurveTable
+- DamageType
+- Debris
+- DefaultObject
+- DefaultObjectManager
+- DialogBranch
+- DialogResponses
+- DialogTopic
+- Door
+- EffectSequence
+- EffectShader
+- EquipType
+- Explosion
+- FacialExpression
+- Faction
+- Flora
+- FloraModification
+- FogVolume
+- Footstep
+- FootstepSet
+- ForceData
+- FormFolderKeywordList
+- FormList (FLST)
+- Furniture
+- GameplayOption
+- GameplayOptionsGroup
+- GameSetting (GMST)
+- GameSettingBool (GMST Child for Boolean Data)
+- GameSettingFloat (GMST Child for Float Data)
+- GameSettingInt (GMST Child for Integer Data)
+- GameSettingString (GMST Child for String Data)
+- GameSettingUInt (GMST Child for Unsigned Integer Data)
+- GenericBaseForm
+- GenericBaseFormTemplate
+- Global
+- Grass
+- GroundCover
+- Hazard
+- HeadPart
+- IdleAnimation
+- IdleMarker
+- ImageSpace
+- ImageSpaceAdapter
+- Impact
+- ImpactDataSet
+- Ingestible
+- InstanceNamingRules
+- Key
+- Keyword
+- LandscapeTexture
+- Layer
+- LayeredMaterialSwap
+- LegendaryItem
+- LensFlare
+- LeveledBaseForm
+- LeveledItem
+- LeveledNpc
+- LeveledPackIn
+- LeveledSpaceCell
+- Light
+- LightingTemplate
+- LoadScreen
+- Location
+- LocationReferenceType
+- MagicEffect
+- MaterialPath
+- MaterialType
+- MeleeAimAssistModel
+- Message
+- MiscItem
+- MorphableObject
+- MoveableStatic
+- MovementType
+- MusicTrack
+- MusicType
+- NavigationMesh
+- NavigationMeshInfoMap
+- NavigationMeshObstacleCoverManager
+- Note
+- Npc
+- NpcModification
+- ObjectEffect
+- ObjectModification
+- ObjectSwap
+- ObjectVisibilityManager
+- Outfit
+- Package
+- PackIn
+- ParticleSystemDefineCollision
+- Perk
+- PERS
+- PhotoModeFeature
+- PlacedArrow
+- PlacedBarrier
+- PlacedBeam
+- PlacedCone
+- PlacedFlame
+- PlacedHazard
+- PlacedMissile
+- PlacedNpc
+- PlacedObject
+- PlacedTrap
+- Planet
+- PlanetContentManagerBranchNode
+- PlanetContentManagerContentNode
+- PlanetContentManagerTree
+- ProjectedDecal
+- Projectile
+- Quest
+- Race
+- ReferenceGroup
+- Region
+- ResearchProject
+- Resource
+- ResourceGenerationData
+- ReverbParameters
+- Scene
+- SceneCollection
+- SecondaryDamageList
+- ShaderParticleGeometry
+- SnapTemplate
+- SnapTemplateBehavior
+- SnapTemplateNode
+- SoundEchoMarker
+- SoundKeywordMapping
+- SoundMarker
+- SpeechChallenge
+- Spell
+- Star
+- Static
+- StaticCollection
+- StoryManagerBranchNode
+- StoryManagerEventNode
+- StoryManagerQuestNode
+- SunPreset
+- SurfaceBlock
+- SurfacePattern
+- SurfacePatternConfig
+- SurfacePatternStyle
+- SurfaceTree
+- Terminal
+- TerminalMenu
+- TextureSet
+- TimeOfDayRecord
+- Transform
+- Traversal
+- UnknownObjectModification
+- VoiceType
+- VolumetricLighting
+- Water
+- Weapon
+- WeaponBarrelModel
+- WeaponModification
+- Weather
+- WeatherSetting
+- Worldspace
+- WWiseEventData
+- WWiseKeywordMapping
+- Zoom
+
+Record types currently treated as known unsupported Mutagen types:
+
+`ArmorModification`, `ContainerModification`, `FloraModification`, `GameSettingBool`, `GameSettingFloat`, 
+`GameSettingInt`, `GameSettingString`, `GameSettingUInt`, `NpcModification`, `PlacedArrow`, `PlacedBarrier`, 
+`PlacedBeam`, `PlacedCone`, `PlacedFlame`, `PlacedHazard`, `PlacedMissile`, `PlacedTrap`, `UnknownObjectModification`, 
+`WeaponModification`.
 
 ## Form List Data
 
@@ -102,5 +325,8 @@ The active typed detail import path also includes Starfield `GMST`:
 
 ## Configuration
 
-`ApplicationConfiguration` currently stores the selected game name. `ApplicationConfigurationStore` loads and saves the 
-JSON configuration file and reports whether configuration is required when no selected game is present.
+`ApplicationConfiguration` stores the selected game name and application theme. The theme is represented by 
+`ApplicationThemeMode` and defaults to `Dark` when the configuration file is missing the theme value.
+
+`ApplicationConfigurationStore` loads and saves the JSON configuration file and reports whether configuration is
+required when no selected game is present.

@@ -1,6 +1,7 @@
 using Autofac;
-using SFRecordCompareEngine.Pages;
 using SFRecordCompareEngine.Services.Interfaces;
+using SFRecordCompareEngine.ViewModels;
+using SFRecordCompareEngine.Views;
 
 namespace SFRecordCompareEngine.Services;
 
@@ -17,32 +18,33 @@ public class ApplicationNavigationService : IApplicationNavigationService
 
     public Task ShowMainPageAsync()
     {
-        var window = Application.Current?.Windows.FirstOrDefault();
-        if (window == null) return Task.CompletedTask;
+        var viewModel = LifetimeScope.Resolve<MainPageViewModel>();
+        var view = new MainView(viewModel);
 
-        window.Page = LifetimeScope.Resolve<MainPage>();
+        ApplicationWindowService.ShowMainCommandSurface(viewModel);
+        ApplicationWindowService.SetContent(view);
         ApplicationWindowService.MaximizeMainWindow();
         return Task.CompletedTask;
     }
 
     public async Task ShowOpenDialogAsync()
     {
-        var page = Application.Current?.Windows.FirstOrDefault()?.Page;
-        if (page == null) return;
-
-        await page.Navigation.PushModalAsync(LifetimeScope.Resolve<OpenPluginDialogPage>());
+        await ApplicationWindowService.ShowDialogAsync(LifetimeScope.Resolve<OpenPluginDialog>());
     }
 
-    public async Task CloseOpenDialogAsync()
+    public async Task ShowSettingsDialogAsync()
     {
-        var page = Application.Current?.Windows.FirstOrDefault()?.Page;
-        if (page == null) return;
+        await ApplicationWindowService.ShowDialogAsync(LifetimeScope.Resolve<SettingsDialog>());
+    }
 
-        await page.Navigation.PopModalAsync();
+    public Task CloseOpenDialogAsync()
+    {
+        ApplicationWindowService.CloseDialog();
+        return Task.CompletedTask;
     }
 
     public void Quit()
     {
-        Application.Current?.Quit();
+        ApplicationWindowService.Quit();
     }
 }

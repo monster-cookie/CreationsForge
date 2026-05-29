@@ -132,7 +132,7 @@
 2. Implement contracts, models, DTOs, validators, and applicable tests, excluding database access, repository implementations, DbUp migration execution, and UI-bound code.
 3. Implement services/factories/stores/repositories.
 4. Wire Autofac registrations and configuration.
-5. Update MAUI UI/view models.
+5. Update WinUI UI/view models.
 6. Add or adjust persistence/database scripts if applicable.
 7. Update approved documentation files so they reflect the implemented design.
 8. Validate: restore, build, tests, analyzer clean.
