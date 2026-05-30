@@ -16,6 +16,7 @@ public class FormListItemDTO
         FormKey = new FormKey(ModKey, (uint)model.FormKeyID);
         ItemModKey = new ModKey(model.ItemModKeyName, (ModType)model.ItemModKeyType);
         ItemFormKey = new FormKey(ItemModKey, (uint)model.ItemFormKeyID);
+        ItemIndex = model.ItemIndex;
         ImportedAtUTC = model.ImportedAtUTC;
     }
     
@@ -23,5 +24,6 @@ public class FormListItemDTO
     public required FormKey FormKey { get; set; }
     public required ModKey ItemModKey { get; set; }
     public required FormKey ItemFormKey { get; set; }
+    public required int ItemIndex { get; set; }
     public required DateTime ImportedAtUTC { get; set; }
 }

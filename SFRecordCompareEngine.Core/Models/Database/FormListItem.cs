@@ -21,6 +21,7 @@ public class FormListItem
         ItemModKeyType = (int)dto.ItemModKey.Type;
         ItemModKeyFileName = dto.ItemModKey.FileName;
         ItemFormKeyID = (int)dto.ItemFormKey.ID;
+        ItemIndex = dto.ItemIndex;
         ImportedAtUTC = dto.ImportedAtUTC;
     }
     
@@ -47,6 +48,9 @@ public class FormListItem
 
     [Column("Item_FormKey_ID")]
     public int ItemFormKeyID { get; set; }
+
+    [Column("Item_Index")]
+    public int ItemIndex { get; set; }
 
     [Column("ImportedAtUTC")]
     public DateTime ImportedAtUTC { get; set; }

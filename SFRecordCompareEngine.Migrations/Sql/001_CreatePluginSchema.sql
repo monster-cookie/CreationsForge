@@ -91,7 +91,8 @@ CREATE TABLE FormListItems (
     Item_ModKey_Name TEXT NOT NULL,
     Item_ModKey_Type INTEGER NOT NULL,
     Item_ModKey_FileName TEXT NOT NULL,
-    Item_FormKey_ID INTEGER NOT NULL, 
+    Item_FormKey_ID INTEGER NOT NULL,
+    Item_Index INTEGER NOT NULL,
     ImportedAtUTC TEXT NOT NULL, 
     PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, Item_ModKey_Name, Item_ModKey_Type, Item_ModKey_FileName, FormKey_ID), 
     FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ID) REFERENCES FormList (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
@@ -100,6 +101,7 @@ CREATE TABLE FormListItems (
 );
 
 CREATE INDEX IX_FormListItems_Item_FormKey_ID_ModKey_FormKey_ID ON FormListItems (Item_FormKey_ID, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ID);
+CREATE INDEX IX_FormListItems_Item_Index ON FormListItems (Item_Index);
 
 /*
  * GameSetting table, with composite primary key (ModKey_Name,ModKey_Type,ModKey_FileName,FormKey_ID)

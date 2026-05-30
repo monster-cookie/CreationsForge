@@ -21,6 +21,7 @@ public class FormListItemTests
             FormKey = formKey,
             ItemModKey = itemModKey,
             ItemFormKey = itemFormKey,
+            ItemIndex = 7,
             ImportedAtUTC = importedAtUTC
         };
 
@@ -34,6 +35,7 @@ public class FormListItemTests
         result.ItemModKeyType.ShouldBe((int)itemModKey.Type);
         result.ItemModKeyFileName.ShouldBe(itemModKey.FileName);
         result.ItemFormKeyID.ShouldBe((int)itemFormKey.ID);
+        result.ItemIndex.ShouldBe(7);
         result.ImportedAtUTC.ShouldBe(importedAtUTC);
     }
 }

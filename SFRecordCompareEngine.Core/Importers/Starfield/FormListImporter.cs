@@ -37,6 +37,7 @@ public class FormListImporter : ITypedRecordDetailImporter
         FormListRepository.Save(record);
         resultDTO.DetailRowsImported++;
 
+        var itemIndex = 0;
         foreach (var item in record.Items)
         {
             var formListItemDTO = new FormListItemDTO
@@ -45,10 +46,12 @@ public class FormListImporter : ITypedRecordDetailImporter
                 FormKey = record.FormKey,
                 ItemModKey = item.ItemModKey,
                 ItemFormKey = item.ItemFormKey,
+                ItemIndex = itemIndex,
                 ImportedAtUTC = DateTime.UtcNow
             };
             FormListItemRepository.Save(formListItemDTO);
             resultDTO.FormListItemsImported++;
+            itemIndex++;
         }
         
     }
