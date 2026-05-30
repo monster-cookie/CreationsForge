@@ -13,6 +13,10 @@ ModKey: Mutagen identifier for a plugin. The database stores it as name, type, a
 FormKey: Mutagen identifier for an individual record. Form list records persist the numeric form ID alongside the owning 
 plugin key.
 
+FormID: Plugin-context-relative record identifier shown in the main record tree. The presentation layer uses Mutagen's
+Starfield separated-master helpers to translate between stored `FormKey` values and displayed or filtered `FormID`
+values. Core service and repository boundaries continue to use `FormKey`.
+
 Master reference: A relationship between a plugin and a master plugin declared in the plugin header. Represented by 
 `PluginMasterReferenceDTO` and persisted in `PluginMasterReferences`.
 

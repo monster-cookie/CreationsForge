@@ -28,7 +28,9 @@ with `WindowsApplicationWindowService`, shows `StartupImportView`, and maximizes
 indicator. It starts import from `Loaded` and cancels import from `Unloaded`.
 
 `MainView` is the current application shell after startup import. It has a native WinUI `MenuBar`, a WinUI `CommandBar`,
-a placeholder workspace label, and a status area that shows the active plugin selection.
+a filterable left-side record tree, a placeholder right-side workspace label, and a status area that shows the active
+plugin selection. The tree groups persisted `FormList` and `GameSetting` records owned by the active plugin. The active
+plugin remains visible in the status area.
 
 `OpenPluginDialog` is a WinUI `ContentDialog` for selecting the active plugin. It provides an autocomplete plugin file
 name search backed by imported openable plugin rows, plus Load and Cancel actions.
@@ -44,8 +46,10 @@ theme and save the choice to application configuration.
 receives `PluginImportProgressDTO` updates, updates bindable status/progress properties, navigates to the main view on
 success, shows an error dialog on failure, and cancels through a `CancellationTokenSource`.
 
-`MainPageViewModel` exposes `OpenCommand`, `ExitCommand`, and status text. It listens to
-`IActivePluginSelectionService` and keeps the status text synchronized with the active plugin.
+`MainPageViewModel` exposes `OpenCommand`, `ExitCommand`, status text, FormID and EditorID filters, and the left-side
+record tree. It listens to `IActivePluginSelectionService`, keeps the status text synchronized with the active plugin,
+and rebuilds the tree when the active plugin changes. It keeps Core DTOs based on `FormKey` and uses Mutagen's
+Starfield separated-master helpers for presentation-only `FormID` display and filtering.
 
 `OpenPluginDialogViewModel` exposes plugin filename suggestions, selected-plugin status, `LoadCommand`, and
 `CancelCommand`. It searches openable plugins through `IPluginRepository` and sets the active plugin through
@@ -84,7 +88,10 @@ Startup import is invoked asynchronously from the view model. `PluginImportServi
 `Task.Run` to keep import work off the UI thread. Progress updates are reported through
 `IProgress<PluginImportProgressDTO>` and consumed by the view model for binding updates.
 
+Main record-tree construction runs on a background task after active-plugin selection. The view model applies the
+resulting bindable tree collection on the UI thread.
+
 ## Current UI Limitations
 
-- The main record comparison workspace is not implemented yet.
-- The main record tree is not implemented yet.
+- The right-side record comparison workspace is not implemented yet.
+- The main record tree currently shows only persisted `FormList` and `GameSetting` details.

@@ -44,13 +44,14 @@ placeholder for later workflows. The open-plugin dialog selects the active impor
 - Stores plugin metadata, master references, form lists, form list items, and game settings in SQLite.
 - Initializes and migrates the database with DbUp.
 - Lets users select an active imported plugin from an autocomplete open-plugin dialog.
+- Shows imported form lists and game settings owned by the active plugin in a filterable main-view record tree.
 - Logs app startup, shutdown, schema initialization, plugin import activity, and record-type import checkpoints through
   Serilog.
 
 ## Current Limitations
 
-- The main record comparison workspace is a placeholder.
-- The main record tree is not implemented yet.
+- The right-side record comparison workspace is a placeholder.
+- The main record tree currently shows only imported `FormList` and `GameSetting` details.
 - `RecordImportService` currently routes Starfield `FLST` form lists and `GMST` game settings to typed importers.
 - Unsupported `BlueprintShips*.esm` plugins are skipped during import.
 

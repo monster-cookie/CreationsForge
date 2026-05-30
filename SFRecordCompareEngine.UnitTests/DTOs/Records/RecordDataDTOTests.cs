@@ -91,4 +91,80 @@ public class RecordDataDTOTests
         sut.IsCompressed.ShouldBe(0);
         sut.IsDeleted.ShouldBe(1);
     }
+
+    [Fact]
+    public void FormListDTO_ConstructorMapsModel()
+    {
+        var importedAtUTC = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+        var model = new SFRecordCompareEngine.Core.Models.Database.FormList
+        {
+            ModKeyName = "Example",
+            ModKeyType = (int)ModType.Master,
+            ModKeyFileName = "Example.esm",
+            FormKeyId = 123,
+            EditorId = "Editor",
+            FormVersion = 44,
+            StarfieldMajorRecordFlags = 1,
+            Version2 = 2,
+            VersionControl = 3,
+            ImportedAtUTC = importedAtUTC,
+            AddToListFormKey = "0001C8:Example.esm"
+        };
+
+        var sut = new FormListDTO(model);
+
+        sut.ModKey.ShouldBe(new ModKey("Example", ModType.Master));
+        sut.FormKey.ShouldBe(new FormKey(sut.ModKey, 123));
+        sut.EditorID.ShouldBe("Editor");
+        sut.FormVersion.ShouldBe(44);
+        sut.StarfieldMajorRecordFlags.ShouldBe((StarfieldMajorRecord.StarfieldMajorRecordFlag)1);
+        sut.Version2.ShouldBe(2);
+        sut.VersionControl.ShouldBe(3);
+        sut.ImportedAtUTC.ShouldBe(importedAtUTC);
+        sut.AddToListFormKey.ShouldBe(new FormKey(sut.ModKey, 456));
+    }
+
+    [Fact]
+    public void GameSettingDTO_ConstructorMapsModel()
+    {
+        var importedAtUTC = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+        var model = new SFRecordCompareEngine.Core.Models.Database.GameSetting
+        {
+            ModKeyName = "Example",
+            ModKeyType = (int)ModType.Master,
+            ModKeyFileName = "Example.esm",
+            FormKeyId = 123,
+            EditorId = "Editor",
+            FormVersion = 44,
+            StarfieldMajorRecordFlags = 1,
+            Version2 = 2,
+            VersionControl = 3,
+            ImportedAtUTC = importedAtUTC,
+            SettingType = "String",
+            TitleString = "Title",
+            Data = "Data",
+            RawData = 1.5,
+            XALG = 2,
+            IsCompressed = 0,
+            IsDeleted = 1
+        };
+
+        var sut = new GameSettingDTO(model);
+
+        sut.ModKey.ShouldBe(new ModKey("Example", ModType.Master));
+        sut.FormKey.ShouldBe(new FormKey(sut.ModKey, 123));
+        sut.EditorID.ShouldBe("Editor");
+        sut.FormVersion.ShouldBe(44);
+        sut.StarfieldMajorRecordFlags.ShouldBe((StarfieldMajorRecord.StarfieldMajorRecordFlag)1);
+        sut.Version2.ShouldBe(2);
+        sut.VersionControl.ShouldBe(3);
+        sut.ImportedAtUTC.ShouldBe(importedAtUTC);
+        sut.SettingType.ShouldBe("String");
+        sut.TitleString.ShouldBe("Title");
+        sut.Data.ShouldBe("Data");
+        sut.RawData.ShouldBe(1.5);
+        sut.XALG.ShouldBe(2);
+        sut.IsCompressed.ShouldBe(0);
+        sut.IsDeleted.ShouldBe(1);
+    }
 }

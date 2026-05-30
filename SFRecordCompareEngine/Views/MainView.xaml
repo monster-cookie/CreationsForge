@@ -9,13 +9,102 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock
-            Grid.Row="0"
-            Margin="20"
-            FontSize="20"
-            FontWeight="SemiBold"
-            Foreground="{ThemeResource TextFillColorPrimaryBrush}"
-            Text="Record comparison workspace" />
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="620" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Grid
+                Grid.Column="0"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="0,0,1,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid
+                    Grid.Row="0"
+                    ColumnSpacing="8"
+                    Padding="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox
+                        Grid.Column="0"
+                        Header="FormID"
+                        PlaceholderText="Filter FormID"
+                        Text="{Binding FormIDFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBox
+                        Grid.Column="1"
+                        Header="EditorID"
+                        PlaceholderText="Filter EditorID"
+                        Text="{Binding EditorIDFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                </Grid>
+
+                <Grid
+                    Grid.Row="1"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="0,1"
+                    ColumnSpacing="8"
+                    Padding="8,4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="210" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock
+                        Grid.Column="0"
+                        FontWeight="SemiBold"
+                        Text="FormID" />
+                    <TextBlock
+                        Grid.Column="1"
+                        FontWeight="SemiBold"
+                        Text="EditorID" />
+                </Grid>
+
+                <TreeView
+                    Grid.Row="2"
+                    ItemsSource="{Binding RecordTreeItems}"
+                    ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                    ScrollViewer.HorizontalScrollMode="Enabled">
+                    <TreeView.ItemTemplate>
+                        <DataTemplate>
+                            <TreeViewItem ItemsSource="{Binding Children}">
+                                <Grid
+                                    Width="760"
+                                    ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="230" />
+                                        <ColumnDefinition Width="522" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock
+                                        Grid.Column="0"
+                                        Text="{Binding FormIDText}" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Text="{Binding EditorID}" />
+                                </Grid>
+                            </TreeViewItem>
+                        </DataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+            </Grid>
+
+            <TextBlock
+                Grid.Column="1"
+                Margin="20"
+                FontSize="20"
+                FontWeight="SemiBold"
+                Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                Text="Record comparison workspace" />
+        </Grid>
 
         <Border
             Grid.Row="1"

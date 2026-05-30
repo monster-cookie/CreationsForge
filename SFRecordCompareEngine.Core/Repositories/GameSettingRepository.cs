@@ -1,3 +1,4 @@
+using Mutagen.Bethesda.Plugins;
 using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Models.Database;
@@ -12,6 +13,21 @@ public class GameSettingRepository : IGameSettingRepository
     public GameSettingRepository(IDatabase database)
     {
         Database = database;
+    }
+
+    /// <inheritdoc/>
+    public IList<GameSettingDTO> GetByModKey(ModKey modKey)
+    {
+        return Database.Fetch<GameSetting>(
+                """
+                SELECT *
+                FROM GameSetting
+                WHERE ModKey_Name = @ModKeyName AND ModKey_Type = @ModKeyType AND ModKey_FileName = @ModKeyFileName COLLATE NOCASE
+                ORDER BY FormKey_ID;
+                """,
+                new { ModKeyName = modKey.Name, ModKeyType = (int)modKey.Type, ModKeyFileName = modKey.FileName })
+            .Select(gameSetting => new GameSettingDTO(gameSetting))
+            .ToList();
     }
 
     /// <inheritdoc/>

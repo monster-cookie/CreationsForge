@@ -70,6 +70,16 @@ Schema creation and migration are centralized through:
 DbUp's `SchemaVersions` table is the migration state source of truth. The application does not define a hardcoded 
 schema-version constant.
 
+## Main Record Tree
+
+The main-view record tree reads persisted `FormList` and `GameSetting` DTOs through their repositories. Repository
+queries remain keyed by the owning plugin `ModKey`, and record DTOs continue to expose Mutagen `FormKey` values.
+
+The presentation view model builds record-type and record-leaf nodes for records owned by the active plugin. It uses a
+Mutagen separated-master package for Starfield-aware conversion between stored `FormKey` values and
+plugin-context-relative `FormID` values. The active plugin's masters provide conversion context but are not displayed
+as tree nodes. FormID display and filtering stay in the presentation layer.
+
 ## Logging
 
 Serilog is configured in `App`. Logs are written under the app data log directory with daily rolling files and a 
