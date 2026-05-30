@@ -1,3 +1,6 @@
+using Mutagen.Bethesda;
+using Mutagen.Bethesda.Environments;
+using Mutagen.Bethesda.Starfield;
 using NPoco;
 using Serilog;
 using SFRecordCompareEngine.Core.Database.Interfaces;
@@ -75,11 +78,11 @@ public class PluginImportService : IPluginImportService
             
             progress?.Report(new PluginImportProgressDTO
             {
-                CurrentPluginName = entry.PluginFileName,
+                CurrentPluginName = entry.ModKey.FileName,
                 CurrentModKey = entry.ModKey,
                 PluginIndex = entry.LoadOrderIndex,
                 PluginCount = loadOrderEntries.Count,
-                StatusText = $"Checking {entry.PluginFileName} ({entry.LoadOrderIndex} of {loadOrderEntries.Count})...",
+                StatusText = $"Checking {entry.ModKey.FileName} ({entry.LoadOrderIndex} of {loadOrderEntries.Count})...",
                 IsIndeterminate = false
             });
             
@@ -135,12 +138,12 @@ public class PluginImportService : IPluginImportService
     private PluginDTO? ImportStarfieldPlugin(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
     {
         var existingPlugin = PluginRepository.GetByModKey(entry.ModKey);
-        var sourceInfo = StarfieldPluginReaderService.GetSourceInfo(entry.PluginPath);
+        var sourceInfo = StarfieldPluginReaderService.GetSourceInfo(entry.ModKey);
         
         if (IsUnsupportedPlugin(entry))
         {
             result.PluginsUnsupported++;
-            Logger.Information("Skipping unsupported Starfield plugin {ModKey} from {PluginPath}", entry.ModKey, entry.PluginPath);
+            Logger.Information("Skipping unsupported Starfield plugin {ModKey} from {PluginPath}", entry.ModKey, StarfieldPluginReaderService.GetDataFolderPath());
 
             var unsupportedPluginDTO = new PluginDTO
             {
@@ -207,14 +210,14 @@ public class PluginImportService : IPluginImportService
 
         try
         {
-            var metadata = StarfieldPluginReaderService.GetMetadata(entry.PluginPath);
+            var metadata = StarfieldPluginReaderService.GetMetadata(entry.ModKey);
             progress?.Report(new PluginImportProgressDTO
             {
-                CurrentPluginName = entry.PluginFileName,
+                CurrentPluginName = entry.ModKey.FileName,
                 CurrentModKey = entry.ModKey,
                 PluginIndex = entry.LoadOrderIndex,
                 PluginCount = totalPlugins,
-                StatusText = $"Importing changed or new plugin {entry.PluginFileName} ({entry.LoadOrderIndex} of {totalPlugins})...",
+                StatusText = $"Importing changed or new plugin {entry.ModKey.FileName} ({entry.LoadOrderIndex} of {totalPlugins})...",
                 IsIndeterminate = false
             });
 
@@ -268,7 +271,7 @@ public class PluginImportService : IPluginImportService
         catch (Exception ex)
         {
             result.PluginsFailed++;
-            Logger.Error(ex, "Unable to import plugin metadata for {ModKey} from {PluginPath}", entry.ModKey, entry.PluginPath);
+            Logger.Error(ex, "Unable to import plugin metadata for {ModKey} from {GetDataFolderPath}", entry.ModKey, StarfieldPluginReaderService.GetDataFolderPath());
 
             PluginDTO erroredPluginDTO;
             if (existingPlugin is not null)
@@ -303,18 +306,18 @@ public class PluginImportService : IPluginImportService
 
     private void ImportStarfieldPluginMasterReferences(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
     {
-        var metadata = StarfieldPluginReaderService.GetMetadata(entry.PluginPath);
+        var metadata = StarfieldPluginReaderService.GetMetadata(entry.ModKey);
 
         if (!metadata.MasterReferences.Any()) return;
         
         Logger.Information("Importing master references for {Name} from {FileName}, found {Count} parent masters", entry.ModKey.Name, metadata.ModKey.FileName, metadata.MasterReferences.Count);
         progress?.Report(new PluginImportProgressDTO
         {
-            CurrentPluginName = entry.PluginFileName,
+            CurrentPluginName = entry.ModKey.FileName,
             CurrentModKey = entry.ModKey,
             PluginIndex = entry.LoadOrderIndex,
             PluginCount = totalPlugins,
-            StatusText = $"Importing {metadata.MasterReferences.Count} master references for {entry.PluginFileName} ({entry.LoadOrderIndex} of {totalPlugins})...",
+            StatusText = $"Importing {metadata.MasterReferences.Count} master references for {entry.ModKey.FileName} ({entry.LoadOrderIndex} of {totalPlugins})...",
             IsIndeterminate = false
         });
 
@@ -326,11 +329,11 @@ public class PluginImportService : IPluginImportService
 
             progress?.Report(new PluginImportProgressDTO
             {
-                CurrentPluginName = entry.PluginFileName,
+                CurrentPluginName = entry.ModKey.FileName,
                 CurrentModKey = entry.ModKey,
                 PluginIndex = entry.LoadOrderIndex,
                 PluginCount = totalPlugins,
-                StatusText = $"Importing {currentMaster.ModKey} at load order {currentMaster.LoadOrderIndex} which is a child of {entry.PluginFileName} at load order {entry.LoadOrderIndex}...",
+                StatusText = $"Importing {currentMaster.ModKey} at load order {currentMaster.LoadOrderIndex} which is a child of {entry.ModKey.FileName} at load order {entry.LoadOrderIndex}...",
                 IsIndeterminate = false
             });
             
@@ -351,11 +354,11 @@ public class PluginImportService : IPluginImportService
         
         progress?.Report(new PluginImportProgressDTO
         {
-            CurrentPluginName = entry.PluginFileName,
+            CurrentPluginName = entry.ModKey.FileName,
             CurrentModKey = entry.ModKey,
             PluginIndex = entry.LoadOrderIndex,
             PluginCount = totalPlugins,
-            StatusText = $"Finished importing master references for {entry.PluginFileName}, found {metadata.MasterReferences.Count} parent masters...",
+            StatusText = $"Finished importing master references for {entry.ModKey.FileName}, found {metadata.MasterReferences.Count} parent masters...",
             IsIndeterminate = false
         });
     }
@@ -384,7 +387,6 @@ public class PluginImportService : IPluginImportService
 
     private static bool IsUnsupportedPlugin(PluginLoadOrderEntryDTO loadOrderEntry)
     {
-        var pluginFileName = string.IsNullOrWhiteSpace(loadOrderEntry.PluginFileName) ? loadOrderEntry.ModKey.FileName.ToString() : loadOrderEntry.PluginFileName;
-        return pluginFileName.StartsWith("BlueprintShips", StringComparison.OrdinalIgnoreCase) && pluginFileName.EndsWith(".esm", StringComparison.OrdinalIgnoreCase);
+        return loadOrderEntry.ModKey.FileName.ToString().StartsWith("BlueprintShips", StringComparison.OrdinalIgnoreCase) && loadOrderEntry.ModKey.FileName.ToString().EndsWith(".esm", StringComparison.OrdinalIgnoreCase);
     }
 }

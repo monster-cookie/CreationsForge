@@ -81,7 +81,7 @@ public class PluginRepository : IPluginRepository
             WHERE Enabled = 1
               AND ExistsOnDisk = 1
               AND ImportState = @ImportState
-              AND (PluginFileName LIKE @SearchPattern COLLATE NOCASE OR ModKey LIKE @SearchPattern COLLATE NOCASE)
+              AND ModKey_FileName LIKE @SearchPattern COLLATE NOCASE
             ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex;
             """,
             new
@@ -103,7 +103,7 @@ public class PluginRepository : IPluginRepository
             FROM Plugins
             WHERE ExistsOnDisk = 1
               AND ImportState IN (@CurrentImportState, @FailedImportState)
-              AND (PluginFileName LIKE @SearchPattern COLLATE NOCASE OR ModKey LIKE @SearchPattern COLLATE NOCASE)
+              AND ModKey_FileName LIKE @SearchPattern COLLATE NOCASE
             ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex;
             """,
             new

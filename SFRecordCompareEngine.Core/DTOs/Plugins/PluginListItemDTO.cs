@@ -1,10 +1,11 @@
+using Mutagen.Bethesda.Plugins;
 using SFRecordCompareEngine.Core.Enums;
 
 namespace SFRecordCompareEngine.Core.DTOs.Plugins;
 
 public class PluginListItemDTO
 {
-    public required string PluginFileName { get; set; }
+    public required ModKey ModKey { get; set; }
 
     public string ImportState { get; set; } = nameof(PluginImportState.Current);
 

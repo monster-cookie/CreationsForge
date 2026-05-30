@@ -1,3 +1,4 @@
+using SFRecordCompareEngine.Core.Configuration;
 using SFRecordCompareEngine.Core.Models.Configuration;
 using Shouldly;
 
@@ -5,14 +6,6 @@ namespace SFRecordCompareEngine.UnitTests.Models.Configuration;
 
 public class ApplicationConfigurationTests
 {
-    [Fact]
-    public void Constructor_DefaultsSelectedGameToNull()
-    {
-        var sut = new ApplicationConfiguration();
-
-        sut.SelectedGame.ShouldBeNull();
-    }
-
     [Fact]
     public void Constructor_DefaultsThemeToDark()
     {
@@ -22,24 +15,26 @@ public class ApplicationConfigurationTests
     }
 
     [Fact]
-    public void SelectedGame_CanBeAssigned()
+    public void Constructor_DefaultsApplicationDirectory()
     {
-        var sut = new ApplicationConfiguration
-        {
-            SelectedGame = "Starfield"
-        };
+        var sut = new ApplicationConfiguration();
 
-        sut.SelectedGame.ShouldBe("Starfield");
+        sut.ApplicationDataDirectory.ShouldBe(ApplicationConfigurationStore.DefaultApplicationDataDirectory);
     }
 
     [Fact]
-    public void Theme_CanBeAssigned()
+    public void Constructor_DefaultsDatabaseDirectory()
     {
-        var sut = new ApplicationConfiguration
-        {
-            Theme = ApplicationThemeMode.Light
-        };
+        var sut = new ApplicationConfiguration();
 
-        sut.Theme.ShouldBe(ApplicationThemeMode.Light);
+        sut.DatabaseDirectory.ShouldBe(ApplicationConfigurationStore.DefaultDatabaseDirectory);
+    }
+
+    [Fact]
+    public void Constructor_DefaultsLoggingDirectory()
+    {
+        var sut = new ApplicationConfiguration();
+
+        sut.LoggingDirectory.ShouldBe(ApplicationConfigurationStore.DefaultLoggingDirectory);
     }
 }

@@ -17,8 +17,6 @@ public class PluginServiceTests
             new()
             {
                 ModKey = new ModKey("Example", ModType.Master),
-                PluginFileName = "Example.esm",
-                PluginPath = "Example.esm",
                 LoadOrderIndex = 0,
                 Enabled = true
             }

@@ -14,14 +14,10 @@ public class PluginDataDTOTests
         var sut = new PluginLoadOrderEntryDTO
         {
             ModKey = modKey,
-            PluginFileName = "Example.esm",
-            PluginPath = "C:\\Data\\Example.esm",
             LoadOrderIndex = 3
         };
 
         sut.ModKey.ShouldBe(modKey);
-        sut.PluginFileName.ShouldBe("Example.esm");
-        sut.PluginPath.ShouldBe("C:\\Data\\Example.esm");
         sut.LoadOrderIndex.ShouldBe(3);
         sut.Enabled.ShouldBeTrue();
     }

@@ -1,3 +1,4 @@
+using Mutagen.Bethesda.Plugins;
 using SFRecordCompareEngine.Core.Services;
 using Shouldly;
 
@@ -18,7 +19,7 @@ public class StarfieldPluginReaderServiceTests : IDisposable
     [Fact]
     public void GetSourceInfo_WhenFileDoesNotExist_ReturnsMissingSourceInfo()
     {
-        var sut = new StarfieldPluginReaderService();
+        var sut = new TestStarfieldPluginReaderService(TestDirectory);
 
         var result = sut.GetSourceInfo(Path.Combine(TestDirectory, "Missing.esm"));
 
@@ -31,13 +32,14 @@ public class StarfieldPluginReaderServiceTests : IDisposable
     public void GetSourceInfo_WhenFileExists_ReturnsSourceInfo()
     {
         Directory.CreateDirectory(TestDirectory);
-        var pluginPath = Path.Combine(TestDirectory, "Example.esm");
+        var modKey = new ModKey("Example.esm", ModType.Master);
+        var pluginPath = Path.Combine(TestDirectory, modKey.FileName);
         File.WriteAllText(pluginPath, "example");
         var lastWriteUTC = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
         File.SetLastWriteTimeUtc(pluginPath, lastWriteUTC);
-        var sut = new StarfieldPluginReaderService();
+        var sut = new TestStarfieldPluginReaderService(TestDirectory);
 
-        var result = sut.GetSourceInfo(pluginPath);
+        var result = sut.GetSourceInfo(modKey);
 
         result.Exists.ShouldBeTrue();
         result.LastWriteUTCTicks.ShouldBe(File.GetLastWriteTimeUtc(pluginPath).Ticks);
@@ -52,11 +54,9 @@ public class StarfieldPluginReaderServiceTests : IDisposable
         var result = sut.GetLoadOrder();
 
         result.ShouldNotBeEmpty();
-        result.ShouldContain(entry => string.Equals(entry.PluginFileName, "Starfield.esm", StringComparison.OrdinalIgnoreCase));
+        result.ShouldContain(entry => string.Equals(entry.ModKey.FileName, "Starfield.esm", StringComparison.OrdinalIgnoreCase));
         result.ShouldAllBe(entry =>
             !string.IsNullOrWhiteSpace(entry.ModKey.FileName) &&
-            !string.IsNullOrWhiteSpace(entry.PluginFileName) &&
-            !string.IsNullOrWhiteSpace(entry.PluginPath) &&
             entry.LoadOrderIndex >= 0);
     }
 
@@ -66,7 +66,7 @@ public class StarfieldPluginReaderServiceTests : IDisposable
         var sut = new StarfieldPluginReaderService();
         var starfieldEntry = GetStarfieldEsmEntry(sut);
 
-        var result = sut.GetMetadata(starfieldEntry.PluginPath);
+        var result = sut.GetMetadata(starfieldEntry.ModKey);
 
         result.ModKey.FileName.String.ShouldBe("Starfield.esm");
         result.FormVersion.ShouldBeGreaterThan(0);
@@ -76,6 +76,21 @@ public class StarfieldPluginReaderServiceTests : IDisposable
 
     private static Core.DTOs.Plugins.PluginLoadOrderEntryDTO GetStarfieldEsmEntry(StarfieldPluginReaderService sut)
     {
-        return sut.GetLoadOrder().Single(entry => string.Equals(entry.PluginFileName, "Starfield.esm", StringComparison.OrdinalIgnoreCase));
+        return sut.GetLoadOrder().Single(entry => string.Equals(entry.ModKey.FileName, "Starfield.esm", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private sealed class TestStarfieldPluginReaderService : StarfieldPluginReaderService
+    {
+        private readonly string DataFolderPath;
+
+        public TestStarfieldPluginReaderService(string dataFolderPath)
+        {
+            DataFolderPath = dataFolderPath;
+        }
+
+        public override string GetDataFolderPath()
+        {
+            return DataFolderPath;
+        }
     }
 }

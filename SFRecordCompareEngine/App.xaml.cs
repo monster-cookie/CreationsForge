@@ -3,7 +3,6 @@ using Microsoft.UI.Xaml;
 using Serilog;
 using Serilog.Events;
 using SFRecordCompareEngine.Core;
-using SFRecordCompareEngine.Core.Configuration.Interfaces;
 using SFRecordCompareEngine.Core.Models.Database;
 using SFRecordCompareEngine.Migrations;
 using SFRecordCompareEngine.Services;
@@ -92,6 +91,7 @@ public partial class App : Application
         builder.RegisterType<SettingsDialog>();
 
         builder.RegisterType<UserDialogService>().As<IUserDialogService>().SingleInstance();
+        builder.RegisterType<ActivePluginSelectionService>().As<IActivePluginSelectionService>().SingleInstance();
         builder.RegisterType<ApplicationNavigationService>().As<IApplicationNavigationService>().SingleInstance();
         builder.RegisterType<WindowsApplicationWindowService>().As<IApplicationWindowService>().SingleInstance();
 

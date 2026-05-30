@@ -16,9 +16,12 @@ public class ApplicationConfigurationStore : IApplicationConfigurationStore
     };
 
     public static string DefaultApplicationDataDirectory { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SFRecordCompareEngine");
+    
+    public static string DefaultDatabaseDirectory { get; } = DefaultApplicationDataDirectory;
 
-    public ApplicationConfigurationStore() 
-        : this(Path.Combine(DefaultApplicationDataDirectory, "SFRecordCompareEngine.config.json"))
+    public static string DefaultLoggingDirectory { get; } =  Path.Combine(DefaultApplicationDataDirectory, "Logs");
+
+    public ApplicationConfigurationStore()  : this(Path.Combine(DefaultApplicationDataDirectory, "SFRecordCompareEngine.Config.json"))
     {
     }
 
@@ -32,8 +35,6 @@ public class ApplicationConfigurationStore : IApplicationConfigurationStore
 
     public ApplicationConfiguration Current { get; private set; } = new();
 
-    public bool IsConfigurationRequired => string.IsNullOrWhiteSpace(Current.SelectedGame);
-
     public void Load()
     {
         if (!File.Exists(ConfigurationPath))
@@ -46,6 +47,7 @@ public class ApplicationConfigurationStore : IApplicationConfigurationStore
         if (string.IsNullOrWhiteSpace(json))
         {
             Current = new ApplicationConfiguration();
+            Current.ApplicationDataDirectory = DefaultApplicationDataDirectory;
             return;
         }
 

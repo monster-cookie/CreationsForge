@@ -32,7 +32,6 @@ public class SettingsViewModel : ViewModelBase
     {
         var configuration = new ApplicationConfiguration
         {
-            SelectedGame = ApplicationConfigurationStore.Current.SelectedGame,
             Theme = SelectedTheme
         };
 

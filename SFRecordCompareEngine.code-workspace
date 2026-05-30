@@ -7,12 +7,16 @@
 	"settings": {
 		"cSpell.words": [
 			"Autofac",
+			"Avalonia",
 			"FLST",
 			"FNAM",
 			"GMST",
+			"MVVM",
 			"NOCASE",
 			"Serilog",
+			"Shouldly",
 			"Skyrim",
+			"Spriggit",
 			"Worldspace",
 			"XALG"
 		]

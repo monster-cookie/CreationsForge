@@ -28,9 +28,10 @@ with `WindowsApplicationWindowService`, shows `StartupImportView`, and maximizes
 indicator. It starts import from `Loaded` and cancels import from `Unloaded`.
 
 `MainView` is the current application shell after startup import. It has a native WinUI `MenuBar`, a WinUI `CommandBar`,
-a placeholder workspace label, and a status area.
+a placeholder workspace label, and a status area that shows the active plugin selection.
 
-`OpenPluginDialog` is a WinUI `ContentDialog` placeholder.
+`OpenPluginDialog` is a WinUI `ContentDialog` for selecting the active plugin. It provides an autocomplete plugin file
+name search backed by imported openable plugin rows, plus Load and Cancel actions.
 
 `SettingsDialog` is a WinUI `ContentDialog` for application options. It currently lets users select `Dark` or `Light`
 theme and save the choice to application configuration.
@@ -43,9 +44,12 @@ theme and save the choice to application configuration.
 receives `PluginImportProgressDTO` updates, updates bindable status/progress properties, navigates to the main view on
 success, shows an error dialog on failure, and cancels through a `CancellationTokenSource`.
 
-`MainPageViewModel` exposes `OpenCommand`, `ExitCommand`, and status text.
+`MainPageViewModel` exposes `OpenCommand`, `ExitCommand`, and status text. It listens to
+`IActivePluginSelectionService` and keeps the status text synchronized with the active plugin.
 
-`OpenPluginDialogViewModel` exposes `CloseCommand`.
+`OpenPluginDialogViewModel` exposes plugin filename suggestions, selected-plugin status, `LoadCommand`, and
+`CancelCommand`. It searches openable plugins through `IPluginRepository` and sets the active plugin through
+`IActivePluginSelectionService` when Load is clicked.
 
 `SettingsViewModel` exposes theme options, selected theme state, and saves the selected theme through
 `IApplicationConfigurationStore`.
@@ -71,6 +75,9 @@ Core does not expose UI command abstractions.
 `WindowsApplicationWindowService` stores the active `MainWindow`, swaps content, opens dialogs, closes dialogs, quits 
 the app, applies the configured theme, and uses Windows App SDK APIs to maximize the main window.
 
+`ActivePluginSelectionService` is presentation-layer shared state for the active plugin selected by the user. It stores
+the active `PluginDTO` and raises a change event consumed by main-page UI state.
+
 ## UI Thread And Long-Running Work
 
 Startup import is invoked asynchronously from the view model. `PluginImportService.InitializeAndImportAsync` uses
@@ -80,4 +87,4 @@ Startup import is invoked asynchronously from the view model. `PluginImportServi
 ## Current UI Limitations
 
 - The main record comparison workspace is not implemented yet.
-- The open plugin dialog is a placeholder.
+- The main record tree is not implemented yet.

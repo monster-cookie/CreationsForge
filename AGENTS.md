@@ -101,13 +101,13 @@ If no documentation update is needed, the PLAN must explicitly state: Documentat
 - SFRecordCompareEngine.Core must not expose or depend on UI binding primitives such as INotifyPropertyChanged, ObservableCollection<T>, ICommand, Dispatcher, SynchronizationContext-based UI dispatching, or platform UI thread helpers.
 - Use plain DTOs, domain models, IReadOnlyList<T>, IEnumerable<T>, result objects, events, callbacks, or progress DTOs for Core-to-presentation communication.
 - MVVM presentation code belongs in SFRecordCompareEngine only, including:
-    - WinUI pages/views
-    - C# Markup UI classes
-    - View models
-    - Bindable UI state
-    - UI commands
-    - Dialog coordination
-    - Navigation coordination
+  - WinUI pages/views
+  - C# Markup UI classes
+  - View models
+  - Bindable UI state
+  - UI commands
+  - Dialog coordination
+  - Navigation coordination
 - Core services may expose async methods, DTOs, progress DTOs, domain models, and business results for presentation layers to consume.
 - If a UI workflow needs reusable orchestration, place the UI-neutral business portion in Core and keep the UI-specific coordination in the presentation project.
 - Do not move view models or UI command abstractions into Core without explicit approval in the PLAN.

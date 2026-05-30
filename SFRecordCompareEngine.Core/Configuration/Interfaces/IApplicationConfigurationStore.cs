@@ -8,8 +8,6 @@ public interface IApplicationConfigurationStore
 
     ApplicationConfiguration Current { get; }
 
-    bool IsConfigurationRequired { get; }
-
     void Load();
 
     void Save(ApplicationConfiguration configuration);

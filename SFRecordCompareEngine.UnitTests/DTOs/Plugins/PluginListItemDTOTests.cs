@@ -14,7 +14,7 @@ public class PluginListItemDTOTests
     {
         var sut = new PluginListItemDTO
         {
-            PluginFileName = "Example.esm",
+            ModKey = "Example.esm",
             ImportState = importState
         };
 
@@ -26,7 +26,7 @@ public class PluginListItemDTOTests
     {
         var sut = new PluginListItemDTO
         {
-            PluginFileName = "Example.esm"
+            ModKey = "Example.esm"
         };
 
         sut.ImportState.ShouldBe(nameof(PluginImportState.Current));

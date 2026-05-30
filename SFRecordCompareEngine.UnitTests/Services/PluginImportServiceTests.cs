@@ -34,7 +34,7 @@ public class PluginImportServiceTests
         var context = CreateContext();
         var entry = CreateLoadOrderEntry("BlueprintShips-Starfield.esm");
         context.PluginService.Setup(x => x.GetLoadOrder()).Returns(new List<PluginLoadOrderEntryDTO> { entry });
-        context.PluginReader.Setup(x => x.GetSourceInfo(entry.PluginPath)).Returns(new PluginSourceInfoDTO
+        context.PluginReader.Setup(x => x.GetSourceInfo(entry.ModKey)).Returns(new PluginSourceInfoDTO
         {
             Exists = true,
             LastWriteUTCTicks = 123,
@@ -59,7 +59,7 @@ public class PluginImportServiceTests
         var context = CreateContext();
         var entry = CreateLoadOrderEntry("Example.esm");
         context.PluginService.Setup(x => x.GetLoadOrder()).Returns(new List<PluginLoadOrderEntryDTO> { entry });
-        context.PluginReader.Setup(x => x.GetSourceInfo(entry.PluginPath)).Returns(new PluginSourceInfoDTO
+        context.PluginReader.Setup(x => x.GetSourceInfo(entry.ModKey)).Returns(new PluginSourceInfoDTO
         {
             Exists = false
         });
@@ -72,7 +72,7 @@ public class PluginImportServiceTests
         savedPlugin.ShouldNotBeNull();
         savedPlugin.ImportState.ShouldBe(nameof(PluginImportState.Missing));
         savedPlugin.ExistsOnDisk.ShouldBeFalse();
-        context.PluginReader.Verify(x => x.GetMetadata(It.IsAny<string>()), Times.Never);
+        context.PluginReader.Verify(x => x.GetMetadata(It.IsAny<ModKey>()), Times.Never);
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public class PluginImportServiceTests
         };
         context.PluginService.Setup(x => x.GetLoadOrder()).Returns(new List<PluginLoadOrderEntryDTO> { entry });
         context.PluginRepository.Setup(x => x.GetByModKey(entry.ModKey)).Returns(existingPlugin);
-        context.PluginReader.Setup(x => x.GetSourceInfo(entry.PluginPath)).Returns(new PluginSourceInfoDTO
+        context.PluginReader.Setup(x => x.GetSourceInfo(entry.ModKey)).Returns(new PluginSourceInfoDTO
         {
             Exists = true,
             LastWriteUTCTicks = 123,
@@ -109,13 +109,13 @@ public class PluginImportServiceTests
         var context = CreateContext();
         var entry = CreateLoadOrderEntry("Example.esm");
         context.PluginService.Setup(x => x.GetLoadOrder()).Returns(new List<PluginLoadOrderEntryDTO> { entry });
-        context.PluginReader.Setup(x => x.GetSourceInfo(entry.PluginPath)).Returns(new PluginSourceInfoDTO
+        context.PluginReader.Setup(x => x.GetSourceInfo(entry.ModKey)).Returns(new PluginSourceInfoDTO
         {
             Exists = true,
             LastWriteUTCTicks = 123,
             FileSizeBytes = 456
         });
-        context.PluginReader.Setup(x => x.GetMetadata(entry.PluginPath)).Returns(CreateMetadata(entry.ModKey));
+        context.PluginReader.Setup(x => x.GetMetadata(entry.ModKey)).Returns(CreateMetadata(entry.ModKey));
         context.RecordImportService.Setup(x => x.ImportPluginRecords(It.IsAny<PluginDTO>(), It.IsAny<IProgress<PluginImportProgressDTO>?>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(new RecordImportResultDTO
         {
             ModKey = entry.ModKey,
@@ -168,13 +168,13 @@ public class PluginImportServiceTests
             SourceLastWriteUTCTicks = 1,
             SourceFileSizeBytes = 2
         });
-        context.PluginReader.Setup(x => x.GetSourceInfo(entry.PluginPath)).Returns(new PluginSourceInfoDTO
+        context.PluginReader.Setup(x => x.GetSourceInfo(entry.ModKey)).Returns(new PluginSourceInfoDTO
         {
             Exists = true,
             LastWriteUTCTicks = 123,
             FileSizeBytes = 456
         });
-        context.PluginReader.Setup(x => x.GetMetadata(entry.PluginPath)).Returns(CreateMetadata(entry.ModKey));
+        context.PluginReader.Setup(x => x.GetMetadata(entry.ModKey)).Returns(CreateMetadata(entry.ModKey));
 
         var result = await context.Sut.InitializeAndImportAsync(null, CancellationToken.None);
 
@@ -190,13 +190,13 @@ public class PluginImportServiceTests
         var entry = CreateLoadOrderEntry("Example.esm");
         var masterModKey = new ModKey("Master", ModType.Master);
         context.PluginService.Setup(x => x.GetLoadOrder()).Returns(new List<PluginLoadOrderEntryDTO> { entry });
-        context.PluginReader.Setup(x => x.GetSourceInfo(entry.PluginPath)).Returns(new PluginSourceInfoDTO
+        context.PluginReader.Setup(x => x.GetSourceInfo(entry.ModKey)).Returns(new PluginSourceInfoDTO
         {
             Exists = true,
             LastWriteUTCTicks = 123,
             FileSizeBytes = 456
         });
-        context.PluginReader.Setup(x => x.GetMetadata(entry.PluginPath)).Returns(CreateMetadata(entry.ModKey, masterModKey));
+        context.PluginReader.Setup(x => x.GetMetadata(entry.ModKey)).Returns(CreateMetadata(entry.ModKey, masterModKey));
         context.PluginRepository.Setup(x => x.GetByModKey(masterModKey)).Returns(new PluginDTO
         {
             ModKey = masterModKey,
@@ -254,8 +254,6 @@ public class PluginImportServiceTests
         return new PluginLoadOrderEntryDTO
         {
             ModKey = modKey,
-            PluginFileName = pluginFileName,
-            PluginPath = pluginFileName,
             LoadOrderIndex = 1,
             Enabled = true
         };

@@ -1,6 +1,7 @@
 using System.IO;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
+using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.Services.Interfaces;
@@ -9,6 +10,14 @@ namespace SFRecordCompareEngine.Core.Services;
 
 public class StarfieldPluginReaderService : IStarfieldPluginReaderService
 {
+    /// <inheritdoc/>
+    public virtual string GetDataFolderPath()
+    {
+        var environment = GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield);
+        return environment.DataFolderPath;
+    }
+    
+    /// <inheritdoc/>
     public IList<PluginLoadOrderEntryDTO> GetLoadOrder()
     {
         var environment = GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield);
@@ -16,17 +25,16 @@ public class StarfieldPluginReaderService : IStarfieldPluginReaderService
             .Select((plugin, index) => new PluginLoadOrderEntryDTO
             {
                 ModKey = plugin.ModKey,
-                PluginFileName = plugin.FileName,
-                PluginPath = Path.Join(environment.DataFolderPath, plugin.FileName),
                 LoadOrderIndex = index,
                 Enabled = plugin.Enabled
             })
             .ToList();
     }
 
-    public PluginSourceInfoDTO GetSourceInfo(string pluginPath)
+    /// <inheritdoc/>
+    public PluginSourceInfoDTO GetSourceInfo(ModKey modKey)
     {
-        var fileInfo = new FileInfo(pluginPath);
+        var fileInfo = new FileInfo(Path.Combine(GetDataFolderPath(), modKey.FileName));
         return new PluginSourceInfoDTO
         {
             Exists = fileInfo.Exists,
@@ -35,12 +43,13 @@ public class StarfieldPluginReaderService : IStarfieldPluginReaderService
         };
     }
 
-    public StarfieldPluginMetadataDTO GetMetadata(string pluginPath)
+    /// <inheritdoc/>
+    public StarfieldPluginMetadataDTO GetMetadata(ModKey modKey)
     {
         var mod = StarfieldMod.Create(StarfieldRelease.Starfield)
-            .FromPath(pluginPath)
+            .FromPath(Path.Combine(GetDataFolderPath(), modKey.FileName))
             .WithLoadOrderFromHeaderMasters()
-            .WithDataFolder(GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield).DataFolderPath)
+            .WithDataFolder(GetDataFolderPath())
             .Construct();
 
         return new StarfieldPluginMetadataDTO

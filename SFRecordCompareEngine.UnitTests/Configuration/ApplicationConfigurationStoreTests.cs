@@ -12,7 +12,7 @@ public class ApplicationConfigurationStoreTests : IDisposable
 
     public ApplicationConfigurationStoreTests()
     {
-        ConfigurationPath = Path.Combine(TestDirectory, "SFRecordCompareEngine.config.json");
+        ConfigurationPath = Path.Combine(TestDirectory, "SFRecordCompareEngine.Config.json");
     }
 
     public void Dispose()
@@ -24,20 +24,12 @@ public class ApplicationConfigurationStoreTests : IDisposable
     }
 
     [Fact]
-    public void Constructor_WhenConfigurationFileIsMissing_RequiresConfiguration()
-    {
-        var sut = new ApplicationConfigurationStore(ConfigurationPath);
-
-        sut.IsConfigurationRequired.ShouldBeTrue();
-        sut.Current.SelectedGame.ShouldBeNull();
-    }
-
-    [Fact]
     public void Constructor_UsesProgramDataConfigurationPath()
     {
         var sut = new ApplicationConfigurationStore();
 
-        sut.ConfigurationPath.ShouldBe(Path.Combine(ApplicationConfigurationStore.DefaultApplicationDataDirectory, "SFRecordCompareEngine.config.json"));
+        var expectedDirectory = Path.Combine(ApplicationConfigurationStore.DefaultApplicationDataDirectory, "SFRecordCompareEngine.Config.json");
+        sut.ConfigurationPath.ShouldBe(expectedDirectory);
     }
 
     [Fact]
@@ -51,31 +43,29 @@ public class ApplicationConfigurationStoreTests : IDisposable
     }
 
     [Fact]
-    public void Constructor_WhenConfigurationFileIsEmpty_RequiresConfiguration()
-    {
-        Directory.CreateDirectory(TestDirectory);
-        File.WriteAllText(ConfigurationPath, string.Empty);
-
-        var sut = new ApplicationConfigurationStore(ConfigurationPath);
-
-        sut.IsConfigurationRequired.ShouldBeTrue();
-    }
-
-    [Fact]
     public void Save_WritesConfigurationAndUpdatesCurrent()
     {
         var sut = new ApplicationConfigurationStore(ConfigurationPath);
 
         sut.Save(new ApplicationConfiguration
         {
-            SelectedGame = "Starfield",
-            Theme = ApplicationThemeMode.Light
+            Theme = ApplicationThemeMode.Light,
+            ApplicationDataDirectory = "C:\\Temp\\SFRecordCompareEngine",
+            DatabaseDirectory = "C:\\Temp\\SFRecordCompareEngine\\Database",
+            LoggingDirectory = "C:\\Temp\\SFRecordCompareEngine\\Logs"
         });
 
-        sut.IsConfigurationRequired.ShouldBeFalse();
-        sut.Current.SelectedGame.ShouldBe("Starfield");
         sut.Current.Theme.ShouldBe(ApplicationThemeMode.Light);
+        sut.Current.ApplicationDataDirectory.ShouldBe("C:\\Temp\\SFRecordCompareEngine");
+        sut.Current.DatabaseDirectory.ShouldBe("C:\\Temp\\SFRecordCompareEngine\\Database");
+        sut.Current.LoggingDirectory.ShouldBe("C:\\Temp\\SFRecordCompareEngine\\Logs");
         File.Exists(ConfigurationPath).ShouldBeTrue();
+
+        var reloaded = new ApplicationConfigurationStore(ConfigurationPath);
+        reloaded.Current.Theme.ShouldBe(ApplicationThemeMode.Light);
+        reloaded.Current.ApplicationDataDirectory.ShouldBe("C:\\Temp\\SFRecordCompareEngine");
+        reloaded.Current.DatabaseDirectory.ShouldBe("C:\\Temp\\SFRecordCompareEngine\\Database");
+        reloaded.Current.LoggingDirectory.ShouldBe("C:\\Temp\\SFRecordCompareEngine\\Logs");
     }
 
     [Fact]
@@ -84,15 +74,18 @@ public class ApplicationConfigurationStoreTests : IDisposable
         Directory.CreateDirectory(TestDirectory);
         File.WriteAllText(ConfigurationPath, """
             {
-              "SelectedGame": "Starfield"
+              "ApplicationDataDirectory": "C:\\Temp\\SFRecordCompareEngine",
+              "DatabaseDirectory": "C:\\Temp\\SFRecordCompareEngine\\Database",
+              "LoggingDirectory": "C:\\Temp\\SFRecordCompareEngine\\Logs"
             }
             """);
 
         var sut = new ApplicationConfigurationStore(ConfigurationPath);
 
-        sut.IsConfigurationRequired.ShouldBeFalse();
-        sut.Current.SelectedGame.ShouldBe("Starfield");
         sut.Current.Theme.ShouldBe(ApplicationThemeMode.Dark);
+        sut.Current.ApplicationDataDirectory.ShouldBe("C:\\Temp\\SFRecordCompareEngine");
+        sut.Current.DatabaseDirectory.ShouldBe("C:\\Temp\\SFRecordCompareEngine\\Database");
+        sut.Current.LoggingDirectory.ShouldBe("C:\\Temp\\SFRecordCompareEngine\\Logs");
     }
 
     [Fact]
@@ -101,7 +94,6 @@ public class ApplicationConfigurationStoreTests : IDisposable
         Directory.CreateDirectory(TestDirectory);
         File.WriteAllText(ConfigurationPath, """
             {
-              "SelectedGame": "Starfield",
               "Theme": "Light"
             }
             """);
