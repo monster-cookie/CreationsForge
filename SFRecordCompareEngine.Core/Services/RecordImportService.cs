@@ -2,7 +2,6 @@ using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Serilog;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
-using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.DTOs.Results;
 using SFRecordCompareEngine.Core.Helpers;
 using SFRecordCompareEngine.Core.Importers.Interfaces;
@@ -31,7 +30,7 @@ public class RecordImportService : IRecordImportService
         {
             ModKey = plugin.ModKey
         };
-        
+
         Logger.Information("Starting record import for {ModKey}", plugin.ModKey);
         ReportProgress(plugin, progress, pluginIndex, pluginCount, null, 0, 0, $"Starting record import for {plugin.ModKey.FileName}...");
         ImportStarfieldPluginRecords(plugin, importResult, progress, pluginIndex, pluginCount, cancellationToken);

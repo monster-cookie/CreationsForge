@@ -258,9 +258,9 @@ public class MainPageViewModel : ViewModelBase
         var maxItemCount = itemLookup.Count == 0 ? 0 : itemLookup.Max(pair => pair.Value.Count);
         var fields = new List<RecordComparisonFieldViewModel>
         {
-            new("Record Header"),
+            new("Record Header", false),
             new("EditorID"),
-            new("FormKey"),
+            new("FormKey", false),
             new("StarfieldMajorRecordFlags"),
             new("AddToListFormKey")
         };
@@ -296,9 +296,9 @@ public class MainPageViewModel : ViewModelBase
         var records = GameSettingService.GetByFormKeyID(formKeyID);
         var fields = new List<RecordComparisonFieldViewModel>
         {
-            new("Record Header"),
+            new("Record Header", false),
             new("EditorID"),
-            new("FormKey"),
+            new("FormKey", false),
             new("StarfieldMajorRecordFlags"),
             new("SettingType"),
             new("Data"),
@@ -353,18 +353,48 @@ public class MainPageViewModel : ViewModelBase
     {
         var activeModKey = ActivePluginSelectionService.ActivePlugin?.ModKey;
         var pluginLookup = PluginService.GetImportedPlugins().ToDictionary(plugin => plugin.ModKey);
-        foreach (var field in fields)
+        var fieldList = fields.ToList();
+        var columnList = columns
+            .Where(column => pluginLookup.ContainsKey(column.ModKey))
+            .OrderBy(column => pluginLookup[column.ModKey].LoadOrderIndex)
+            .ToList();
+        var states = GetRecordComparisonValueStates(fieldList, columnList);
+        foreach (var field in fieldList)
         {
             RecordComparisonFields.Add(field);
         }
 
-        foreach (var column in columns
-                     .Where(column => pluginLookup.ContainsKey(column.ModKey))
-                     .OrderBy(column => pluginLookup[column.ModKey].LoadOrderIndex))
+        for (var columnIndex = 0; columnIndex < columnList.Count; columnIndex++)
         {
+            var column = columnList[columnIndex];
             var plugin = pluginLookup[column.ModKey];
-            RecordComparisonColumns.Add(new RecordComparisonColumnViewModel(column.ModKey, plugin.LoadOrderIndex, column.ModKey == activeModKey, column.Values));
+            RecordComparisonColumns.Add(new RecordComparisonColumnViewModel(column.ModKey, plugin.LoadOrderIndex, column.ModKey == activeModKey, column.Values, states, columnIndex == columnList.Count - 1));
         }
+    }
+
+    private static IReadOnlyList<RecordComparisonValueState> GetRecordComparisonValueStates(
+        IReadOnlyList<RecordComparisonFieldViewModel> fields,
+        IReadOnlyList<(ModKey ModKey, IReadOnlyList<string> Values)> columns)
+    {
+        var states = new List<RecordComparisonValueState>();
+        for (var fieldIndex = 0; fieldIndex < fields.Count; fieldIndex++)
+        {
+            var state = RecordComparisonValueState.Neutral;
+            if (fields[fieldIndex].IsComparable && columns.Count > 1)
+            {
+                state = columns
+                    .Select(column => column.Values[fieldIndex])
+                    .Distinct(StringComparer.Ordinal)
+                    .Count() == 1
+                    ? RecordComparisonValueState.Identical
+                    : RecordComparisonValueState.Conflict;
+            }
+
+            fields[fieldIndex].State = state;
+            states.Add(state);
+        }
+
+        return states;
     }
 
     private void ClearRecordComparison()

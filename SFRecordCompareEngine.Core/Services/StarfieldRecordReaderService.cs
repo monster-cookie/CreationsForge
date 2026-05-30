@@ -1,4 +1,3 @@
-using System.IO;
 using System.Globalization;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
@@ -13,7 +12,7 @@ namespace SFRecordCompareEngine.Core.Services;
 public class StarfieldRecordReaderService : IStarfieldRecordReaderService
 {
     #region FormList
-    
+
     public IReadOnlyList<FormListDTO> GetFormLists(PluginDTO plugin)
     {
         var mod = LoadMod(plugin.ModKey);
@@ -39,11 +38,11 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             }).ToList()
         }).ToList();
     }
-    
+
     #endregion
 
     #region GameSettings
-    
+
     public IReadOnlyList<GameSettingDTO> GetGameSettings(PluginDTO plugin)
     {
         var mod = LoadMod(plugin.ModKey);
@@ -113,6 +112,6 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             .Construct();
         return mod;
     }
-    
+
     #endregion
 }

@@ -55,6 +55,10 @@ comparison data through typed Core services rather than repositories.
 
 Concrete tree-leaf selection also loads normalized field rows and load-order-sorted plugin columns for the right-side
 comparison workspace. Form list item rows remain ordered by persisted `Item_Index`, including duplicate references.
+Comparable rows are highlighted green when all visible plugin values match and red when any visible value differs.
+In conflicting rows, the far-right visible load-order winner is highlighted yellow. Informational identity rows and
+single-column comparisons remain neutral. A persistent legend above the status area explains the green, red, and
+yellow comparison states.
 
 `OpenPluginDialogViewModel` exposes plugin filename suggestions, selected-plugin status, `LoadCommand`, and
 `CancelCommand`. It searches openable plugins through `IPluginService` and sets the active plugin through

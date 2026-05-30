@@ -7,10 +7,12 @@
     xmlns:converters="using:SFRecordCompareEngine.Converters">
     <UserControl.Resources>
         <converters:ActivePluginColumnBorderBrushConverter x:Key="ActivePluginColumnBorderBrushConverter" />
+        <converters:RecordComparisonValueBackgroundBrushConverter x:Key="RecordComparisonValueBackgroundBrushConverter" />
     </UserControl.Resources>
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
@@ -136,6 +138,7 @@
                                     <DataTemplate>
                                         <Border
                                             Height="32"
+                                            Background="{Binding State, Converter={StaticResource RecordComparisonValueBackgroundBrushConverter}}"
                                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                             BorderThickness="0,0,0,1"
                                             Padding="8,4">
@@ -182,6 +185,7 @@
                                                     <DataTemplate>
                                                         <Border
                                                             Height="32"
+                                                            Background="{Binding State, Converter={StaticResource RecordComparisonValueBackgroundBrushConverter}}"
                                                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                                             BorderThickness="0,0,1,1"
                                                             Padding="8,4">
@@ -204,6 +208,45 @@
 
         <Border
             Grid.Row="1"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1,1,1,0"
+            Padding="12,6">
+            <StackPanel
+                Orientation="Horizontal"
+                Spacing="20">
+                <StackPanel
+                    Orientation="Horizontal"
+                    Spacing="6">
+                    <Border
+                        Width="16"
+                        Height="16"
+                        Background="#50008000" />
+                    <TextBlock Text="Green - No Conflict" />
+                </StackPanel>
+                <StackPanel
+                    Orientation="Horizontal"
+                    Spacing="6">
+                    <Border
+                        Width="16"
+                        Height="16"
+                        Background="#50C00000" />
+                    <TextBlock Text="Red - Conflict Detected" />
+                </StackPanel>
+                <StackPanel
+                    Orientation="Horizontal"
+                    Spacing="6">
+                    <Border
+                        Width="16"
+                        Height="16"
+                        Background="#50C0A000" />
+                    <TextBlock Text="Yellow - Winning Conflict" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border
+            Grid.Row="2"
             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
             BorderThickness="1"

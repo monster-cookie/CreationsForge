@@ -1,5 +1,44 @@
 # Design Decisions
 
+## 2026-05-30 - Highlight Conflicts Across Visible Comparison Columns
+
+Status: Accepted
+
+Context: The selected-record comparison workspace shows load-order-sorted plugin columns but does not visually
+distinguish identical values from conflicts. The current query returns every imported plugin containing the same typed
+record, which is broader than a strict recursive-master hierarchy.
+
+Decision: Highlight comparable rows green when all visible plugin values match and red when any visible value differs.
+Treat blank values as values so a missing form-list occurrence conflicts with a populated occurrence. Keep
+informational identity rows and single-column comparisons neutral. Highlight the far-right visible value yellow in a
+conflicting row because it is the winning override within the displayed load-order-sorted set.
+
+Rationale: Green, red, and yellow provide deterministic conflict detection for the implemented visible comparison set.
+Yellow distinguishes the effective displayed winner without implying recursive-master hierarchy filtering that the
+application does not yet calculate.
+
+Alternatives considered:
+
+- Add yellow highlighting to every lower load-order plugin.
+- Treat blank values as neutral.
+- Highlight identity rows such as `FormKey`.
+
+Consequences:
+
+- Comparison labels and cells share row-level conflict highlighting.
+- The far-right value in a conflicting row uses yellow winning-override highlighting.
+- A persistent legend above the status area explains the green, red, and yellow states.
+- The active plugin column retains its golden border.
+- A later hierarchy feature can narrow the displayed comparison set without changing the color meanings.
+
+Related files:
+
+- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
+- `SFRecordCompareEngine/ViewModels/RecordComparisonFieldViewModel.cs`
+- `SFRecordCompareEngine/ViewModels/RecordComparisonValueViewModel.cs`
+- `SFRecordCompareEngine/Converters/RecordComparisonValueBackgroundBrushConverter.cs`
+- `SFRecordCompareEngine/Views/MainView.xaml`
+
 ## 2026-05-30 - Keep Game Setting Comparison Focused On Mutagen-Backed Fields
 
 Status: Accepted
