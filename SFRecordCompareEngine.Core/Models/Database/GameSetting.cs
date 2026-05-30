@@ -24,7 +24,6 @@ public class GameSetting
         VersionControl = dto.VersionControl;
         ImportedAtUTC = dto.ImportedAtUTC;
         SettingType = dto.SettingType;
-        TitleString = dto.TitleString;
         Data = dto.Data;
         RawData = dto.RawData;
         XALG = dto.XALG;
@@ -32,54 +31,35 @@ public class GameSetting
         IsDeleted = dto.IsDeleted;
     }
 
-    [Column("ModKey_Name")]
-    public string ModKeyName { get; set; } = string.Empty;
+    [Column("ModKey_Name")] public string ModKeyName { get; set; } = string.Empty;
 
-    [Column("ModKey_Type")]
-    public int ModKeyType { get; set; } = (int)ModType.Master;
+    [Column("ModKey_Type")] public int ModKeyType { get; set; } = (int)ModType.Master;
 
-    [Column("ModKey_FileName")]
-    public string ModKeyFileName { get; set; } = string.Empty;
+    [Column("ModKey_FileName")] public string ModKeyFileName { get; set; } = string.Empty;
 
-    [Column("FormKey_ID")]
-    public int FormKeyId { get; set; }
+    [Column("FormKey_ID")] public int FormKeyId { get; set; }
 
-    [Column("EditorID")]
-    public string EditorId { get; set; } = string.Empty;
+    [Column("EditorID")] public string EditorId { get; set; } = string.Empty;
 
-    [Column("FormVersion")]
-    public int FormVersion { get; set; }
+    [Column("FormVersion")] public int FormVersion { get; set; }
 
-    [Column("StarfieldMajorRecordFlags")]
-    public int StarfieldMajorRecordFlags { get; set; }
+    [Column("StarfieldMajorRecordFlags")] public int StarfieldMajorRecordFlags { get; set; }
 
-    [Column("Version2")]
-    public int Version2 { get; set; }
+    [Column("Version2")] public int Version2 { get; set; }
 
-    [Column("VersionControl")]
-    public int VersionControl { get; set; }
+    [Column("VersionControl")] public int VersionControl { get; set; }
 
-    [Column("ImportedAtUTC")]
-    public DateTime ImportedAtUTC { get; set; }
+    [Column("ImportedAtUTC")] public DateTime ImportedAtUTC { get; set; }
 
-    [Column("SettingType")]
-    public string? SettingType { get; set; }
+    [Column("SettingType")] public string? SettingType { get; set; }
 
-    [Column("TitleString")]
-    public string? TitleString { get; set; }
+    [Column("Data")] public string? Data { get; set; }
 
-    [Column("Data")]
-    public string? Data { get; set; }
+    [Column("RawData")] public double? RawData { get; set; }
 
-    [Column("RawData")]
-    public double? RawData { get; set; }
+    [Column("XALG")] public int? XALG { get; set; }
 
-    [Column("XALG")]
-    public int? XALG { get; set; }
+    [Column("IsCompressed")] public int IsCompressed { get; set; }
 
-    [Column("IsCompressed")]
-    public int IsCompressed { get; set; }
-
-    [Column("IsDeleted")]
-    public int IsDeleted { get; set; }
+    [Column("IsDeleted")] public int IsDeleted { get; set; }
 }

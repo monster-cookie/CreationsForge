@@ -72,13 +72,27 @@ schema-version constant.
 
 ## Main Record Tree
 
-The main-view record tree reads persisted `FormList` and `GameSetting` DTOs through their repositories. Repository
-queries remain keyed by the owning plugin `ModKey`, and record DTOs continue to expose Mutagen `FormKey` values.
+The main-view record tree reads persisted `FormList` and `GameSetting` DTOs through typed Core services. The services
+delegate to repositories keyed by the owning plugin `ModKey`, and record DTOs continue to expose Mutagen `FormKey`
+values.
 
 The presentation view model builds record-type and record-leaf nodes for records owned by the active plugin. It uses a
 Mutagen separated-master package for Starfield-aware conversion between stored `FormKey` values and
 plugin-context-relative `FormID` values. The active plugin's masters provide conversion context but are not displayed
 as tree nodes. FormID display and filtering stay in the presentation layer.
+
+## Selected Record Comparison
+
+The main-view comparison workspace uses the selected concrete tree leaf's record type and `FormKey_ID` to query every
+imported plugin containing the same typed record. `FormListService` and `GameSettingService` provide typed read
+boundaries over repository queries. `PluginService` provides imported plugin metadata for load-order sorting. The
+presentation view model builds normalized field rows and plugin columns for WinUI binding.
+
+Form list item rows are read by owning plugin and form list key in `Item_Index` order. The persisted index represents
+source enumeration order and keeps duplicate item references as distinct occurrences.
+
+Presentation view models do not call Core repositories directly. Typed Core services own repository access and provide
+the location for record-specific transformations and business rules.
 
 ## Logging
 

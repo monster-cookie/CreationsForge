@@ -11,9 +11,9 @@ namespace SFRecordCompareEngine.Core.Importers.Starfield;
 public class FormListImporter : ITypedRecordDetailImporter
 {
     private readonly IFormListRepository FormListRepository;
-    
+
     private readonly IFormListItemRepository FormListItemRepository;
-    
+
     public GameRelease GameRelease => GameRelease.Starfield;
 
     public RecordType RecordType => new RecordType(RecordTypeCatalog.FormList.RecordID);
@@ -28,14 +28,15 @@ public class FormListImporter : ITypedRecordDetailImporter
         FormListRepository = formListRepository;
         FormListItemRepository = formListItemRepository;
     }
-    
+
     public void Import(object recordDTO, RecordTypeImportResultDTO resultDTO)
     {
         var record = (FormListDTO)recordDTO;
         record.ImportedAtUTC = DateTime.UtcNow;
-        
+
         FormListRepository.Save(record);
         resultDTO.DetailRowsImported++;
+        FormListItemRepository.DeleteByFormList(record.ModKey, record.FormKey);
 
         var itemIndex = 0;
         foreach (var item in record.Items)
@@ -53,6 +54,5 @@ public class FormListImporter : ITypedRecordDetailImporter
             resultDTO.FormListItemsImported++;
             itemIndex++;
         }
-        
     }
 }

@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.IO;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
 using Mutagen.Bethesda.Plugins;
@@ -7,11 +6,10 @@ using Mutagen.Bethesda.Plugins.Masters;
 using Mutagen.Bethesda.Plugins.Records;
 using Mutagen.Bethesda.Starfield;
 using Noggog;
-using SFRecordCompareEngine.Core.DTOs.Plugins;
-using SFRecordCompareEngine.Core.DTOs.Records;
-using SFRecordCompareEngine.Core.Helpers;
-using SFRecordCompareEngine.Core.Repositories.Interfaces;
 using SFRecordCompareEngine.Commands;
+using SFRecordCompareEngine.Core.DTOs.Plugins;
+using SFRecordCompareEngine.Core.Helpers;
+using SFRecordCompareEngine.Core.Services.Interfaces;
 using SFRecordCompareEngine.Services.Interfaces;
 
 namespace SFRecordCompareEngine.ViewModels;
@@ -20,21 +18,24 @@ public class MainPageViewModel : ViewModelBase
 {
     private readonly IApplicationNavigationService ApplicationNavigationService;
     private readonly IActivePluginSelectionService ActivePluginSelectionService;
-    private readonly IFormListRepository FormListRepository;
-    private readonly IGameSettingRepository GameSettingRepository;
+    private readonly IFormListService FormListService;
+    private readonly IGameSettingService GameSettingService;
+    private readonly IPluginService PluginService;
     private IList<RecordTreeItemViewModel> AllRecordTreeItems = new List<RecordTreeItemViewModel>();
     private IReadOnlySeparatedMasterPackage? MasterPackage;
 
     public MainPageViewModel(
         IApplicationNavigationService applicationNavigationService,
         IActivePluginSelectionService activePluginSelectionService,
-        IFormListRepository formListRepository,
-        IGameSettingRepository gameSettingRepository)
+        IFormListService formListService,
+        IGameSettingService gameSettingService,
+        IPluginService pluginService)
     {
         ApplicationNavigationService = applicationNavigationService;
         ActivePluginSelectionService = activePluginSelectionService;
-        FormListRepository = formListRepository;
-        GameSettingRepository = gameSettingRepository;
+        FormListService = formListService;
+        GameSettingService = gameSettingService;
+        PluginService = pluginService;
         OpenCommand = new AsyncRelayCommand(OpenAsync);
         OptionsCommand = new AsyncRelayCommand(ShowOptionsAsync);
         ExitCommand = new RelayCommand(ApplicationNavigationService.Quit);
@@ -47,6 +48,8 @@ public class MainPageViewModel : ViewModelBase
     public RelayCommand ExitCommand { get; }
 
     public ObservableCollection<RecordTreeItemViewModel> RecordTreeItems { get; } = new();
+    public ObservableCollection<RecordComparisonFieldViewModel> RecordComparisonFields { get; } = new();
+    public ObservableCollection<RecordComparisonColumnViewModel> RecordComparisonColumns { get; } = new();
 
     public string FormIDFilter
     {
@@ -87,7 +90,25 @@ public class MainPageViewModel : ViewModelBase
     private async void OnActivePluginChanged(object? sender, EventArgs e)
     {
         StatusText = GetStatusText();
+        ClearRecordComparison();
         await RefreshRecordTreeAsync();
+    }
+
+    public void SelectRecord(RecordTreeItemViewModel? item)
+    {
+        ClearRecordComparison();
+        if (item?.FormKey == null || item.RecordType == null) return;
+
+        if (item.RecordType == RecordTypeCatalog.FormList.RecordType)
+        {
+            LoadFormListComparison(item.FormKey.Value.ID);
+            return;
+        }
+
+        if (item.RecordType == RecordTypeCatalog.GameSetting.RecordType)
+        {
+            LoadGameSettingComparison(item.FormKey.Value.ID);
+        }
     }
 
     private string GetStatusText()
@@ -123,6 +144,7 @@ public class MainPageViewModel : ViewModelBase
         {
             masterFlagLookup.Add(LoadMod(masterReference.Master));
         }
+
         var masterPackage = SeparatedMasterPackage.Factory(
             GameRelease.Starfield,
             contextMod.ModKey,
@@ -133,20 +155,20 @@ public class MainPageViewModel : ViewModelBase
         AddRecordType(
             recordTreeItems,
             RecordTypeCatalog.FormList.RecordType,
-            FormListRepository.GetByModKey(activePlugin.ModKey)
-                .Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID)));
+            FormListService.GetByModKey(activePlugin.ModKey)
+                .Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.FormList.RecordType)));
         AddRecordType(
             recordTreeItems,
             RecordTypeCatalog.GameSetting.RecordType,
-            GameSettingRepository.GetByModKey(activePlugin.ModKey)
-                .Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID)));
+            GameSettingService.GetByModKey(activePlugin.ModKey)
+                .Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.GameSetting.RecordType)));
         return (masterPackage, recordTreeItems);
     }
 
-    private static RecordTreeItemViewModel CreateRecordTreeItem(IReadOnlySeparatedMasterPackage masterPackage, FormKey formKey, string editorID)
+    private static RecordTreeItemViewModel CreateRecordTreeItem(IReadOnlySeparatedMasterPackage masterPackage, FormKey formKey, string editorID, string recordType)
     {
         var formID = masterPackage.GetFormID(formKey);
-        return new RecordTreeItemViewModel(formID.ToString(), editorID, formKey);
+        return new RecordTreeItemViewModel(formID.ToString(), editorID, formKey, recordType);
     }
 
     private static void AddRecordType(
@@ -181,7 +203,7 @@ public class MainPageViewModel : ViewModelBase
 
     private RecordTreeItemViewModel? FilterItem(RecordTreeItemViewModel item)
     {
-        var filteredItem = new RecordTreeItemViewModel(item.FormIDText, item.EditorID, item.FormKey);
+        var filteredItem = new RecordTreeItemViewModel(item.FormIDText, item.EditorID, item.FormKey, item.RecordType);
         foreach (var child in item.Children)
         {
             var filteredChild = FilterItem(child);
@@ -225,6 +247,130 @@ public class MainPageViewModel : ViewModelBase
         }
 
         return item.FormIDText.Contains(filter, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void LoadFormListComparison(uint formKeyID)
+    {
+        var records = FormListService.GetByFormKeyID(formKeyID);
+        var itemLookup = records.ToDictionary(
+            record => record.ModKey,
+            record => FormListService.GetItems(record.ModKey, record.FormKey));
+        var maxItemCount = itemLookup.Count == 0 ? 0 : itemLookup.Max(pair => pair.Value.Count);
+        var fields = new List<RecordComparisonFieldViewModel>
+        {
+            new("Record Header"),
+            new("EditorID"),
+            new("FormKey"),
+            new("StarfieldMajorRecordFlags"),
+            new("AddToListFormKey")
+        };
+        for (var itemIndex = 0; itemIndex < maxItemCount; itemIndex++)
+        {
+            fields.Add(new RecordComparisonFieldViewModel($"Items[{itemIndex}]"));
+        }
+
+        SetRecordComparison(
+            fields,
+            records.Select(record =>
+            {
+                var values = new List<string>
+                {
+                    RecordTypeCatalog.FormList.RecordID,
+                    record.EditorID,
+                    record.FormKey.ToString(),
+                    FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags),
+                    record.AddToListFormKey?.ToString() ?? string.Empty
+                };
+                values.AddRange(itemLookup[record.ModKey].Select(item => item.ItemFormKey.ToString()));
+                while (values.Count < fields.Count)
+                {
+                    values.Add(string.Empty);
+                }
+
+                return (record.ModKey, Values: (IReadOnlyList<string>)values);
+            }));
+    }
+
+    private void LoadGameSettingComparison(uint formKeyID)
+    {
+        var records = GameSettingService.GetByFormKeyID(formKeyID);
+        var fields = new List<RecordComparisonFieldViewModel>
+        {
+            new("Record Header"),
+            new("EditorID"),
+            new("FormKey"),
+            new("StarfieldMajorRecordFlags"),
+            new("SettingType"),
+            new("Data"),
+            new("IsCompressed"),
+            new("IsDeleted")
+        };
+        SetRecordComparison(
+            fields,
+            records.Select(record => (
+                record.ModKey,
+                Values: (IReadOnlyList<string>)new List<string>
+                {
+                    RecordTypeCatalog.GameSetting.RecordID,
+                    record.EditorID,
+                    record.FormKey.ToString(),
+                    FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags),
+                    record.SettingType ?? string.Empty,
+                    record.Data ?? string.Empty,
+                    record.IsCompressed.ToString(),
+                    record.IsDeleted.ToString()
+                })));
+    }
+
+    private static string FormatStarfieldMajorRecordFlags(StarfieldMajorRecord.StarfieldMajorRecordFlag flags)
+    {
+        var value = Convert.ToUInt64(flags);
+        if (value == 0) return string.Empty;
+
+        var names = new List<string>();
+        var knownFlags = 0UL;
+        foreach (var flag in Enum.GetValues<StarfieldMajorRecord.StarfieldMajorRecordFlag>())
+        {
+            var flagValue = Convert.ToUInt64(flag);
+            if (flagValue == 0 || (flagValue & (flagValue - 1)) != 0 || (value & flagValue) == 0) continue;
+
+            names.Add(flag.ToString());
+            knownFlags |= flagValue;
+        }
+
+        var unknownFlags = value & ~knownFlags;
+        if (unknownFlags != 0)
+        {
+            names.Add($"0x{unknownFlags:X}");
+        }
+
+        return string.Join(", ", names);
+    }
+
+    private void SetRecordComparison(
+        IEnumerable<RecordComparisonFieldViewModel> fields,
+        IEnumerable<(ModKey ModKey, IReadOnlyList<string> Values)> columns)
+    {
+        var activeModKey = ActivePluginSelectionService.ActivePlugin?.ModKey;
+        var pluginLookup = PluginService.GetImportedPlugins().ToDictionary(plugin => plugin.ModKey);
+        foreach (var field in fields)
+        {
+            RecordComparisonFields.Add(field);
+        }
+
+        foreach (var column in columns
+                     .Where(column => pluginLookup.ContainsKey(column.ModKey))
+                     .OrderBy(column => pluginLookup[column.ModKey].LoadOrderIndex))
+        {
+            var plugin = pluginLookup[column.ModKey];
+            RecordComparisonColumns.Add(new RecordComparisonColumnViewModel(column.ModKey, plugin.LoadOrderIndex, column.ModKey == activeModKey, column.Values));
+        }
+    }
+
+    private void ClearRecordComparison()
+    {
+        RecordComparisonFields.Clear();
+        RecordComparisonColumns.Clear();
     }
 
     private static IStarfieldModGetter LoadMod(ModKey modKey)

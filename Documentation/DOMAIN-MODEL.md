@@ -23,8 +23,9 @@ FormID: Plugin-context-relative record identifier shown in the main record tree.
 Starfield separated-master helpers to translate between stored `FormKey` values and displayed or filtered `FormID`
 values. Core service and repository boundaries continue to use `FormKey`.
 
-Master reference: A relationship between a plugin and a master plugin declared in the plugin header. Represented by 
-`PluginMasterReferenceDTO` and persisted in `PluginMasterReferences`.
+Master reference: A relationship edge between a declaring plugin and a master plugin declared in its header.
+Represented by `PluginMasterReferenceDTO` and persisted in `PluginMasterReferences`. Load-order indexes are derived
+from the related `Plugins` rows instead of being duplicated on the relationship.
 
 Record type: A Starfield major record category. `RecordTypeCatalog` contains only runtime metadata for record types the 
 current import path persists: `FormList` and `GameSetting`. Broader Mutagen record type reference data belongs in this 
@@ -326,7 +327,11 @@ Record types currently treated as known unsupported Mutagen types:
 - owning form list `FormKey`
 - item plugin `ModKey`
 - item `FormKey`
+- item index preserving source enumeration and display order
 - imported timestamp
+
+Form list items are an ordered sequence. Duplicate item references are valid and remain separate occurrences through
+their `Item_Index` values.
 
 ## Game Setting Data
 
@@ -341,8 +346,11 @@ Record types currently treated as known unsupported Mutagen types:
 - imported timestamp
 - setting type such as `GameSettingFloat`, `GameSettingInt`, `GameSettingUInt`, `GameSettingString`, or
   `GameSettingBool`
-- optional title string, data, raw data, and `XALG`
+- optional data, raw data, and `XALG`
 - compression and deletion flags persisted as integer values
+
+`TitleString` is not persisted for game settings because Mutagen's Starfield game-setting records do not expose that
+field. The comparison workspace displays `Data` and hides raw diagnostic fields.
 
 ## Configuration
 

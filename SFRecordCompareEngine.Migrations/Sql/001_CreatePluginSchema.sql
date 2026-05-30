@@ -32,30 +32,24 @@ CREATE INDEX IX_Plugins_ImportState ON Plugins (ImportState);
 CREATE INDEX IX_Plugins_SourceFingerprint ON Plugins (SourceLastWriteUTCTicks, SourceFileSizeBytes);
 
 /*
- * PluginMasterReferences table, with composite primary key (ModKey_Name,ModKey_Type,ModKey_FileName,Parent_ModKey_Name,Parent_ModKey_Type,Parent_ModKey_FileName)
+ * PluginMasterReferences table, with composite primary key (Master_ModKey_Name,Master_ModKey_Type,Master_ModKey_FileName,Plugin_ModKey_Name,Plugin_ModKey_Type,Plugin_ModKey_FileName)
  */
 CREATE TABLE PluginMasterReferences (
-    ModKey_Name TEXT NOT NULL,
-    ModKey_Type INTEGER NOT NULL,
-    ModKey_FileName TEXT NOT NULL,
-    Parent_ModKey_Name TEXT NOT NULL,
-    Parent_ModKey_Type INTEGER NOT NULL,
-    Parent_ModKey_FileName TEXT NOT NULL,
-    MasterReferenceIndex INTEGER NOT NULL,
-    ParentLoadOrderIndex INTEGER NOT NULL,
+                                        Master_ModKey_Name     TEXT    NOT NULL,
+                                        Master_ModKey_Type     INTEGER NOT NULL,
+                                        Master_ModKey_FileName TEXT    NOT NULL,
+                                        Plugin_ModKey_Name     TEXT    NOT NULL,
+                                        Plugin_ModKey_Type     INTEGER NOT NULL,
+                                        Plugin_ModKey_FileName TEXT    NOT NULL,
     ImportedAtUTC TEXT NOT NULL,
-    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, Parent_ModKey_Name, Parent_ModKey_Type, Parent_ModKey_FileName),
-    FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName) REFERENCES Plugins (ModKey_Name, ModKey_Type, ModKey_FileName) ON DELETE CASCADE,
-    FOREIGN KEY (Parent_ModKey_Name, Parent_ModKey_Type, Parent_ModKey_FileName) REFERENCES Plugins (ModKey_Name, ModKey_Type, ModKey_FileName) ON DELETE CASCADE,
-    CHECK (MasterReferenceIndex >= 0),
-    CHECK (ParentLoadOrderIndex >= 0)
+                                        PRIMARY KEY (Master_ModKey_Name, Master_ModKey_Type, Master_ModKey_FileName, Plugin_ModKey_Name, Plugin_ModKey_Type, Plugin_ModKey_FileName),
+                                        FOREIGN KEY (Master_ModKey_Name, Master_ModKey_Type, Master_ModKey_FileName) REFERENCES Plugins (ModKey_Name, ModKey_Type, ModKey_FileName) ON DELETE CASCADE,
+                                        FOREIGN KEY (Plugin_ModKey_Name, Plugin_ModKey_Type, Plugin_ModKey_FileName) REFERENCES Plugins (ModKey_Name, ModKey_Type, ModKey_FileName) ON DELETE CASCADE
 );
 
-CREATE INDEX IX_PluginMasterReferences_ModKey_ParentLoadOrderIndex ON PluginMasterReferences (ModKey_Name, ModKey_Type, ModKey_FileName, ParentLoadOrderIndex);
+CREATE INDEX IX_PluginMasterReferences_MasterModKey ON PluginMasterReferences (Master_ModKey_Name, Master_ModKey_Type, Master_ModKey_FileName);
 
-CREATE INDEX IX_PluginMasterReferences_ParentModKey ON PluginMasterReferences (Parent_ModKey_Name, Parent_ModKey_Type, Parent_ModKey_FileName);
-
-CREATE UNIQUE INDEX UX_PluginMasterReferences_ModKey_MasterReferenceIndex ON PluginMasterReferences (ModKey_Name, ModKey_Type, ModKey_FileName, MasterReferenceIndex);
+CREATE INDEX IX_PluginMasterReferences_PluginModKey ON PluginMasterReferences (Plugin_ModKey_Name, Plugin_ModKey_Type, Plugin_ModKey_FileName);
 
 /*
  * FormList table, with composite primary key (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ID)
@@ -93,8 +87,8 @@ CREATE TABLE FormListItems (
     Item_ModKey_FileName TEXT NOT NULL,
     Item_FormKey_ID INTEGER NOT NULL,
     Item_Index INTEGER NOT NULL,
-    ImportedAtUTC TEXT NOT NULL, 
-    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, Item_ModKey_Name, Item_ModKey_Type, Item_ModKey_FileName, FormKey_ID), 
+    ImportedAtUTC TEXT NOT NULL,
+    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ID, Item_ModKey_Name, Item_ModKey_Type, Item_ModKey_FileName, Item_FormKey_ID, Item_Index), 
     FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ID) REFERENCES FormList (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
     CHECK (FormKey_ID >= 0), 
     CHECK (Item_FormKey_ID >= 0)
@@ -119,7 +113,6 @@ CREATE TABLE GameSetting (
     ImportedAtUTC TEXT NOT NULL,
     -- End Record Header --
     SettingType TEXT NULL,
-    TitleString TEXT NULL,
     Data TEXT NULL,
     RawData REAL NULL,
     XALG INTEGER NULL,

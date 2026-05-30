@@ -10,28 +10,24 @@ public class PluginMasterReferenceTests
     [Fact]
     public void Constructor_MapsDTO()
     {
-        var modKey = new ModKey("Child", ModType.Master);
-        var parentModKey = new ModKey("Parent", ModType.Master);
+        var masterModKey = new ModKey("Master", ModType.Master);
+        var pluginModKey = new ModKey("Plugin", ModType.Master);
         var importedAtUTC = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
         var dto = new PluginMasterReferenceDTO
         {
-            ModKey = modKey,
-            ParentModKey = parentModKey,
-            MasterReferenceIndex = 1,
-            ParentLoadOrderIndex = 2,
+            MasterModKey = masterModKey,
+            PluginModKey = pluginModKey,
             ImportedAtUTC = importedAtUTC
         };
 
         var result = new PluginMasterReference(dto);
 
-        result.ModKeyName.ShouldBe(modKey.Name);
-        result.ModKeyType.ShouldBe((int)modKey.Type);
-        result.ModKeyFileName.ShouldBe(modKey.FileName);
-        result.ParentModKeyName.ShouldBe(parentModKey.Name);
-        result.ParentModKeyType.ShouldBe((int)parentModKey.Type);
-        result.ParentModKeyFileName.ShouldBe(parentModKey.FileName);
-        result.MasterReferenceIndex.ShouldBe(1);
-        result.ParentLoadOrderIndex.ShouldBe(2);
+        result.MasterModKeyName.ShouldBe(masterModKey.Name);
+        result.MasterModKeyType.ShouldBe((int)masterModKey.Type);
+        result.MasterModKeyFileName.ShouldBe(masterModKey.FileName);
+        result.PluginModKeyName.ShouldBe(pluginModKey.Name);
+        result.PluginModKeyType.ShouldBe((int)pluginModKey.Type);
+        result.PluginModKeyFileName.ShouldBe(pluginModKey.FileName);
         result.ImportedAtUTC.ShouldBe(importedAtUTC);
     }
 }

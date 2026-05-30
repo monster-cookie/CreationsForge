@@ -28,9 +28,10 @@ with `WindowsApplicationWindowService`, shows `StartupImportView`, and maximizes
 indicator. It starts import from `Loaded` and cancels import from `Unloaded`.
 
 `MainView` is the current application shell after startup import. It has a native WinUI `MenuBar`, a WinUI `CommandBar`,
-a filterable left-side record tree, a placeholder right-side workspace label, and a status area that shows the active
-plugin selection. The tree groups persisted `FormList` and `GameSetting` records owned by the active plugin. The active
-plugin remains visible in the status area.
+a filterable left-side record tree, a horizontally scrollable right-side selected-record comparison workspace, and a
+status area that shows the active plugin selection. The tree groups persisted `FormList` and `GameSetting` records owned
+by the active plugin. The active plugin remains visible in the status area and its comparison column has a subtle
+yellow border.
 
 `OpenPluginDialog` is a WinUI `ContentDialog` for selecting the active plugin. It provides an autocomplete plugin file
 name search backed by imported openable plugin rows, plus Load and Cancel actions.
@@ -49,10 +50,14 @@ success, shows an error dialog on failure, and cancels through a `CancellationTo
 `MainPageViewModel` exposes `OpenCommand`, `ExitCommand`, status text, FormID and EditorID filters, and the left-side
 record tree. It listens to `IActivePluginSelectionService`, keeps the status text synchronized with the active plugin,
 and rebuilds the tree when the active plugin changes. It keeps Core DTOs based on `FormKey` and uses Mutagen's
-Starfield separated-master helpers for presentation-only `FormID` display and filtering.
+Starfield separated-master helpers for presentation-only `FormID` display and filtering. It loads records and
+comparison data through typed Core services rather than repositories.
+
+Concrete tree-leaf selection also loads normalized field rows and load-order-sorted plugin columns for the right-side
+comparison workspace. Form list item rows remain ordered by persisted `Item_Index`, including duplicate references.
 
 `OpenPluginDialogViewModel` exposes plugin filename suggestions, selected-plugin status, `LoadCommand`, and
-`CancelCommand`. It searches openable plugins through `IPluginRepository` and sets the active plugin through
+`CancelCommand`. It searches openable plugins through `IPluginService` and sets the active plugin through
 `IActivePluginSelectionService` when Load is clicked.
 
 `SettingsViewModel` exposes theme options, selected theme state, and saves the selected theme through
@@ -93,5 +98,4 @@ resulting bindable tree collection on the UI thread.
 
 ## Current UI Limitations
 
-- The right-side record comparison workspace is not implemented yet.
 - The main record tree currently shows only persisted `FormList` and `GameSetting` details.

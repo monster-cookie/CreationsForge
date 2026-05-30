@@ -1,13 +1,12 @@
+using Moq;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
-using Moq;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.DTOs.Results;
 using SFRecordCompareEngine.Core.Helpers;
 using SFRecordCompareEngine.Core.Importers.Starfield;
 using SFRecordCompareEngine.Core.Repositories.Interfaces;
-using SFRecordCompareEngine.Core.Services.Interfaces;
 using Shouldly;
 
 namespace SFRecordCompareEngine.UnitTests.Importers.Starfield;
@@ -76,13 +75,61 @@ public class FormListImporterTests
             dto.Version2 == 2 &&
             dto.VersionControl == 3 &&
             dto.AddToListFormKey == addToListFormKey)), Times.Once);
+        formListItemRepository.Verify(x => x.DeleteByFormList(modKey, formKey), Times.Once);
         formListItemRepository.Verify(x => x.Save(It.Is<FormListItemDTO>(dto =>
             dto.ModKey == modKey &&
             dto.FormKey == formKey &&
             dto.ItemModKey == itemModKey &&
-            dto.ItemFormKey == itemFormKey)), Times.Once);
+            dto.ItemFormKey == itemFormKey &&
+            dto.ItemIndex == 0)), Times.Once);
         result.DetailRowsImported.ShouldBe(1);
         result.FormListItemsImported.ShouldBe(1);
     }
 
+    [Fact]
+    public void Import_WhenFormListContainsDuplicateItems_SavesEachOccurrenceWithItsSourceIndex()
+    {
+        var modKey = new ModKey("Example", ModType.Master);
+        var formKey = new FormKey(modKey, 123);
+        var itemModKey = new ModKey("Item", ModType.Master);
+        var itemFormKey = new FormKey(itemModKey, 456);
+        var formListItemRepository = new Mock<IFormListItemRepository>();
+        var record = new FormListDTO
+        {
+            ModKey = modKey,
+            FormKey = formKey,
+            EditorID = "Editor",
+            FormVersion = 44,
+            StarfieldMajorRecordFlags = (StarfieldMajorRecord.StarfieldMajorRecordFlag)1,
+            Version2 = 2,
+            VersionControl = 3,
+            ImportedAtUTC = DateTime.UtcNow,
+            Items = new List<FormListItemDataDTO>
+            {
+                new()
+                {
+                    ItemModKey = itemModKey,
+                    ItemFormKey = itemFormKey
+                },
+                new()
+                {
+                    ItemModKey = itemModKey,
+                    ItemFormKey = itemFormKey
+                }
+            }
+        };
+        var sut = new FormListImporter(Mock.Of<IFormListRepository>(), formListItemRepository.Object);
+        var result = new RecordTypeImportResultDTO
+        {
+            RecordType = "FLST",
+            HeaderImportSupported = true,
+            TypedDetailImportSupported = true
+        };
+
+        sut.Import(record, result);
+
+        formListItemRepository.Verify(x => x.Save(It.Is<FormListItemDTO>(dto => dto.ItemIndex == 0)), Times.Once);
+        formListItemRepository.Verify(x => x.Save(It.Is<FormListItemDTO>(dto => dto.ItemIndex == 1)), Times.Once);
+        result.FormListItemsImported.ShouldBe(2);
+    }
 }

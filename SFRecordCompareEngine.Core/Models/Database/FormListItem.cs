@@ -5,12 +5,12 @@ using SFRecordCompareEngine.Core.DTOs.Records;
 namespace SFRecordCompareEngine.Core.Models.Database;
 
 [TableName("FormListItems")]
-[PrimaryKey("ModKey_Name, ModKey_Type, ModKey_FileName, Item_ModKey_Name, Item_ModKey_Type, Item_ModKey_FileName, FormKey_ID", AutoIncrement = false)]
+[PrimaryKey("ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ID, Item_ModKey_Name, Item_ModKey_Type, Item_ModKey_FileName, Item_FormKey_ID, Item_Index", AutoIncrement = false)]
 public class FormListItem
 {
     public FormListItem()
     { }
-    
+
     public FormListItem(FormListItemDTO dto)
     {
         ModKeyName = dto.ModKey.Name;
@@ -24,34 +24,24 @@ public class FormListItem
         ItemIndex = dto.ItemIndex;
         ImportedAtUTC = dto.ImportedAtUTC;
     }
-    
-    [Column("ModKey_Name")]
-    public string ModKeyName { get; set; } = string.Empty;
 
-    [Column("ModKey_Type")]
-    public int ModKeyType { get; set; } = (int)ModType.Master;
+    [Column("ModKey_Name")] public string ModKeyName { get; set; } = string.Empty;
 
-    [Column("ModKey_FileName")]
-    public string ModKeyFileName { get; set; } = string.Empty;
+    [Column("ModKey_Type")] public int ModKeyType { get; set; } = (int)ModType.Master;
 
-    [Column("FormKey_ID")]
-    public int FormKeyID { get; set; }
-    
-    [Column("Item_ModKey_Name")]
-    public string ItemModKeyName { get; set; } = string.Empty;
+    [Column("ModKey_FileName")] public string ModKeyFileName { get; set; } = string.Empty;
 
-    [Column("Item_ModKey_Type")]
-    public int ItemModKeyType { get; set; } = (int)ModType.Master;
+    [Column("FormKey_ID")] public int FormKeyID { get; set; }
 
-    [Column("Item_ModKey_FileName")]
-    public string ItemModKeyFileName { get; set; } = string.Empty;
+    [Column("Item_ModKey_Name")] public string ItemModKeyName { get; set; } = string.Empty;
 
-    [Column("Item_FormKey_ID")]
-    public int ItemFormKeyID { get; set; }
+    [Column("Item_ModKey_Type")] public int ItemModKeyType { get; set; } = (int)ModType.Master;
 
-    [Column("Item_Index")]
-    public int ItemIndex { get; set; }
+    [Column("Item_ModKey_FileName")] public string ItemModKeyFileName { get; set; } = string.Empty;
 
-    [Column("ImportedAtUTC")]
-    public DateTime ImportedAtUTC { get; set; }
+    [Column("Item_FormKey_ID")] public int ItemFormKeyID { get; set; }
+
+    [Column("Item_Index")] public int ItemIndex { get; set; }
+
+    [Column("ImportedAtUTC")] public DateTime ImportedAtUTC { get; set; }
 }

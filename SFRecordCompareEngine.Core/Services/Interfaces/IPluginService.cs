@@ -10,6 +10,12 @@ public interface IPluginService
     /// <returns>The plugin load-order entries.</returns>
     IList<PluginLoadOrderEntryDTO> GetLoadOrder();
 
+    IList<PluginDTO> GetImportedPlugins();
+
+    IList<PluginDTO> GetOpenablePlugins();
+
+    IList<PluginDTO> SearchOpenablePluginsByFilename(string searchFilename);
+
     /// <summary>
     /// Get the supported major record type names.
     /// </summary>

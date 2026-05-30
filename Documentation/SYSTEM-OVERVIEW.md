@@ -6,8 +6,8 @@ SFRecordCompareEngine is a WinUI 3 Windows desktop application for inspecting St
 app discovers the local Starfield load order, imports plugin metadata and selected record details into a local SQLite 
 database, and provides a presentation shell for record comparison workflows.
 
-The current implementation focuses on startup import and persistence. The comparison workspace exists as a WinUI
-placeholder for later workflows. The open-plugin dialog selects the active imported plugin for the main UI.
+The current implementation supports startup import, persistence, active-plugin browsing, and a selected-record
+comparison workspace. The open-plugin dialog selects the active imported plugin for the main UI.
 
 ## Projects
 
@@ -45,12 +45,13 @@ placeholder for later workflows. The open-plugin dialog selects the active impor
 - Initializes and migrates the database with DbUp.
 - Lets users select an active imported plugin from an autocomplete open-plugin dialog.
 - Shows imported form lists and game settings owned by the active plugin in a filterable main-view record tree.
+- Shows every imported plugin containing a selected form list or game setting in a load-order-sorted comparison grid.
+- Routes presentation browsing workflows through typed Core services instead of direct repository access.
 - Logs app startup, shutdown, schema initialization, plugin import activity, and record-type import checkpoints through
   Serilog.
 
 ## Current Limitations
 
-- The right-side record comparison workspace is a placeholder.
 - The main record tree currently shows only imported `FormList` and `GameSetting` details.
 - `RecordImportService` currently routes Starfield `FLST` form lists and `GMST` game settings to typed importers.
 - Unsupported `BlueprintShips*.esm` plugins are skipped during import.

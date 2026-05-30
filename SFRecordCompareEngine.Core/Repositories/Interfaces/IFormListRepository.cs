@@ -1,5 +1,4 @@
 using Mutagen.Bethesda.Plugins;
-using NPoco;
 using SFRecordCompareEngine.Core.DTOs.Records;
 
 namespace SFRecordCompareEngine.Core.Repositories.Interfaces;
@@ -12,6 +11,13 @@ public interface IFormListRepository
     /// <param name="modKey">The owning plugin key.</param>
     /// <returns>The matching form list records or an empty list if none are found.</returns>
     IList<FormListDTO> GetByModKey(ModKey modKey);
+
+    /// <summary>
+    /// Gets form list records with the given form key ID.
+    /// </summary>
+    /// <param name="formKeyID">The form key ID to search for.</param>
+    /// <returns>The matching form list records in plugin load order or an empty list if none are found.</returns>
+    IList<FormListDTO> GetByFormKeyID(uint formKeyID);
 
     /// <summary>
     /// Saves a FormListDTO to the database.

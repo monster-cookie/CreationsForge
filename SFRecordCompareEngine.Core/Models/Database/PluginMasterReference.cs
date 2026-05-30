@@ -5,7 +5,7 @@ using SFRecordCompareEngine.Core.DTOs.Plugins;
 namespace SFRecordCompareEngine.Core.Models.Database;
 
 [TableName("PluginMasterReferences")]
-[PrimaryKey("ModKey_Name, ModKey_Type, ModKey_FileName, Parent_ModKey_Name, Parent_ModKey_Type, Parent_ModKey_FileName", AutoIncrement = false)]
+[PrimaryKey("Master_ModKey_Name, Master_ModKey_Type, Master_ModKey_FileName, Plugin_ModKey_Name, Plugin_ModKey_Type, Plugin_ModKey_FileName", AutoIncrement = false)]
 public class PluginMasterReference
 {
     public PluginMasterReference()
@@ -13,41 +13,26 @@ public class PluginMasterReference
 
     public PluginMasterReference(PluginMasterReferenceDTO dto)
     {
-        ModKeyName = dto.ModKey.Name;
-        ModKeyType = (int)dto.ModKey.Type;
-        ModKeyFileName = dto.ModKey.FileName;
-        ParentModKeyName = dto.ParentModKey.Name;
-        ParentModKeyType = (int)dto.ParentModKey.Type;
-        ParentModKeyFileName = dto.ParentModKey.FileName;
-        MasterReferenceIndex = dto.MasterReferenceIndex;
-        ParentLoadOrderIndex = dto.ParentLoadOrderIndex;
+        MasterModKeyName = dto.MasterModKey.Name;
+        MasterModKeyType = (int)dto.MasterModKey.Type;
+        MasterModKeyFileName = dto.MasterModKey.FileName;
+        PluginModKeyName = dto.PluginModKey.Name;
+        PluginModKeyType = (int)dto.PluginModKey.Type;
+        PluginModKeyFileName = dto.PluginModKey.FileName;
         ImportedAtUTC = dto.ImportedAtUTC;
     }
 
-    [Column("ModKey_Name")]
-    public string ModKeyName { get; set; } = string.Empty;
+    [Column("Master_ModKey_Name")] public string MasterModKeyName { get; set; } = string.Empty;
 
-    [Column("ModKey_Type")]
-    public int ModKeyType { get; set; } = (int)ModType.Master;
+    [Column("Master_ModKey_Type")] public int MasterModKeyType { get; set; } = (int)ModType.Master;
 
-    [Column("ModKey_FileName")]
-    public string ModKeyFileName { get; set; } = string.Empty;
+    [Column("Master_ModKey_FileName")] public string MasterModKeyFileName { get; set; } = string.Empty;
 
-    [Column("Parent_ModKey_Name")]
-    public string ParentModKeyName { get; set; } = string.Empty;
+    [Column("Plugin_ModKey_Name")] public string PluginModKeyName { get; set; } = string.Empty;
 
-    [Column("Parent_ModKey_Type")]
-    public int ParentModKeyType { get; set; } = (int)ModType.Master;
+    [Column("Plugin_ModKey_Type")] public int PluginModKeyType { get; set; } = (int)ModType.Master;
 
-    [Column("Parent_ModKey_FileName")]
-    public string ParentModKeyFileName { get; set; } = string.Empty;
+    [Column("Plugin_ModKey_FileName")] public string PluginModKeyFileName { get; set; } = string.Empty;
 
-    [Column("MasterReferenceIndex")]
-    public int MasterReferenceIndex { get; set; }
-
-    [Column("ParentLoadOrderIndex")]
-    public int ParentLoadOrderIndex { get; set; }
-
-    [Column("ImportedAtUTC")]
-    public DateTime ImportedAtUTC { get; set; }
+    [Column("ImportedAtUTC")] public DateTime ImportedAtUTC { get; set; }
 }

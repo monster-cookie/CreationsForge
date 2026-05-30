@@ -1,6 +1,3 @@
-using Mutagen.Bethesda;
-using Mutagen.Bethesda.Environments;
-using Mutagen.Bethesda.Starfield;
 using NPoco;
 using Serilog;
 using SFRecordCompareEngine.Core.Database.Interfaces;
@@ -24,8 +21,8 @@ public class PluginImportService : IPluginImportService
     private readonly IStarfieldPluginReaderService StarfieldPluginReaderService;
 
     public PluginImportService(
-        IDatabaseSchemaInitializer databaseSchemaInitializer, 
-        IDatabase database, 
+        IDatabaseSchemaInitializer databaseSchemaInitializer,
+        IDatabase database,
         IPluginService pluginService,
         IPluginRepository pluginRepository,
         IPluginMasterReferencesRepository pluginMasterReferencesRepository,
@@ -54,12 +51,12 @@ public class PluginImportService : IPluginImportService
             StatusText = "Initializing plugin database schema...",
             IsIndeterminate = true
         });
-        
+
         DatabaseSchemaInitializer.Initialize();
         Logger.Information("Initialized SQLite database, starting import of plugins");
-        
+
         var result = new PluginImportResultDTO();
-        
+
         var loadOrderEntries = PluginService.GetLoadOrder();
         result.PluginsDiscovered = loadOrderEntries.Count;
         progress?.Report(new PluginImportProgressDTO
@@ -68,14 +65,14 @@ public class PluginImportService : IPluginImportService
             StatusText = $"Discovered {loadOrderEntries.Count} plugins.",
             IsIndeterminate = loadOrderEntries.Count == 0
         });
-        
+
         // Need a new connection because of the transaction scope and to ensure the connection is properly disposed after the transaction completes
         using var transaction = Database.GetTransaction();
 
         foreach (var entry in loadOrderEntries)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            
+
             progress?.Report(new PluginImportProgressDTO
             {
                 CurrentPluginName = entry.ModKey.FileName,
@@ -85,13 +82,13 @@ public class PluginImportService : IPluginImportService
                 StatusText = $"Checking {entry.ModKey.FileName} ({entry.LoadOrderIndex} of {loadOrderEntries.Count})...",
                 IsIndeterminate = false
             });
-            
+
             ImportPlugin(entry, result, progress, loadOrderEntries.Count, cancellationToken);
         }
-        
+
         // Complete and close the transaction scope
         transaction.Complete();
-        
+
         progress?.Report(new PluginImportProgressDTO
         {
             PluginIndex = loadOrderEntries.Count,
@@ -117,7 +114,7 @@ public class PluginImportService : IPluginImportService
             result.RecordImportFailures,
             result.UnsupportedRecordTypes
         );
-        
+
         return result;
     }
 
@@ -125,10 +122,10 @@ public class PluginImportService : IPluginImportService
     {
         var plugin = ImportStarfieldPlugin(entry, result, progress, totalPlugins, cancellationToken);
         if (plugin == null) return;
-        
+
         // Before we can process all the master references, we need the plugin stubs filled out
         ImportStarfieldPluginMasterReferences(entry, result, progress, totalPlugins, cancellationToken);
-        
+
         // Finally, the long arduous part importing all the records
         ImportStarfieldPluginRecords(plugin, result, progress, totalPlugins, cancellationToken);
     }
@@ -139,7 +136,7 @@ public class PluginImportService : IPluginImportService
     {
         var existingPlugin = PluginRepository.GetByModKey(entry.ModKey);
         var sourceInfo = StarfieldPluginReaderService.GetSourceInfo(entry.ModKey);
-        
+
         if (IsUnsupportedPlugin(entry))
         {
             result.PluginsUnsupported++;
@@ -156,11 +153,11 @@ public class PluginImportService : IPluginImportService
                 SourceLastWriteUTCTicks = sourceInfo.LastWriteUTCTicks,
                 SourceFileSizeBytes = sourceInfo.FileSizeBytes
             };
-            
+
             PluginRepository.Save(unsupportedPluginDTO);
             return null;
         }
-        
+
         if (!sourceInfo.Exists)
         {
             result.PluginsMissing++;
@@ -176,7 +173,7 @@ public class PluginImportService : IPluginImportService
                 SourceLastWriteUTCTicks = sourceInfo.LastWriteUTCTicks,
                 SourceFileSizeBytes = sourceInfo.FileSizeBytes
             };
-            
+
             PluginRepository.Save(missingPluginDTO);
             return null;
         }
@@ -188,13 +185,13 @@ public class PluginImportService : IPluginImportService
         {
             result.PluginsUnchanged++;
             Logger.Information("Skipping unchanged plugin {ModKey}: source last write ticks {SourceLastWriteUtcTicks}, source file size {SourceFileSizeBytes}, import state {ImportState}", entry.ModKey, sourceLastWriteUTCTicks, sourceFileSizeBytes, existingPlugin!.ImportState);
-            
+
             existingPlugin.LastCheckedUTC = DateTime.UtcNow;
-            
+
             PluginRepository.Save(existingPlugin);
             return null;
         }
-        
+
         if (existingPlugin is not null)
         {
             result.PluginsChanged++;
@@ -259,7 +256,7 @@ public class PluginImportService : IPluginImportService
                     SourceFileSizeBytes = sourceFileSizeBytes
                 };
             }
-            
+
             PluginRepository.Save(dto);
             result.PluginsImported++;
             return dto;
@@ -309,7 +306,7 @@ public class PluginImportService : IPluginImportService
         var metadata = StarfieldPluginReaderService.GetMetadata(entry.ModKey);
 
         if (!metadata.MasterReferences.Any()) return;
-        
+
         Logger.Information("Importing master references for {Name} from {FileName}, found {Count} parent masters", entry.ModKey.Name, metadata.ModKey.FileName, metadata.MasterReferences.Count);
         progress?.Report(new PluginImportProgressDTO
         {
@@ -323,7 +320,6 @@ public class PluginImportService : IPluginImportService
 
         foreach (var master in metadata.MasterReferences)
         {
-            
             var currentMaster = PluginRepository.GetByModKey(master);
             if (currentMaster is null) continue;
 
@@ -336,22 +332,21 @@ public class PluginImportService : IPluginImportService
                 StatusText = $"Importing {currentMaster.ModKey} at load order {currentMaster.LoadOrderIndex} which is a child of {entry.ModKey.FileName} at load order {entry.LoadOrderIndex}...",
                 IsIndeterminate = false
             });
-            
+
             Logger.Debug("Found master reference {MasterName} for {PluginName}", currentMaster.ModKey.Name, entry.ModKey.Name);
             var masterReferenceDTO = new PluginMasterReferenceDTO
             {
-                ModKey = currentMaster.ModKey,
-                MasterReferenceIndex = currentMaster.LoadOrderIndex,
-                ParentModKey = entry.ModKey,
-                ParentLoadOrderIndex = entry.LoadOrderIndex,
+                MasterModKey = currentMaster.ModKey,
+                PluginModKey = entry.ModKey,
                 ImportedAtUTC = DateTime.UtcNow
             };
-            
+
             PluginMasterReferencesRepository.Save(masterReferenceDTO);
             result.MasterReferencesImported++;
         }
+
         Logger.Information("Finished importing master references for {Name} from {FileName}, found {Count} parent masters", entry.ModKey.Name, metadata.ModKey.FileName, metadata.MasterReferences.Count);
-        
+
         progress?.Report(new PluginImportProgressDTO
         {
             CurrentPluginName = entry.ModKey.FileName,

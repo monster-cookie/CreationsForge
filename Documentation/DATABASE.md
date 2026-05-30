@@ -72,17 +72,17 @@ Indexes support load-order, import-state, and source-fingerprint lookups.
 
 ### PluginMasterReferences
 
-Stores relationships between plugins and their header masters.
+Stores relationships between plugins and the masters declared in their headers.
 
 Primary key:
 
-- child plugin key columns
-- parent plugin key columns
+- `Master_ModKey_Name`, `Master_ModKey_Type`, and `Master_ModKey_FileName`
+- `Plugin_ModKey_Name`, `Plugin_ModKey_Type`, and `Plugin_ModKey_FileName`
 
-Foreign keys reference `Plugins` for both child and parent plugins with cascade delete.
+Foreign keys reference `Plugins` for both the declared master and the declaring plugin with cascade delete.
 
-Indexes support parent lookup and ordering by parent load order. A unique index prevents duplicate master reference 
-indexes per plugin.
+The table stores only relationship edges. Master load-order sorting is derived from `Plugins.LoadOrderIndex` when
+relationships are read. The composite primary key prevents duplicate relationships.
 
 ### FormList
 
@@ -107,12 +107,17 @@ Stores item references inside form lists.
 Primary key:
 
 - owning plugin key columns
-- item plugin key columns
 - `FormKey_ID`
+- item plugin key columns
+- `Item_FormKey_ID`
+- `Item_Index`
 
 Foreign key:
 
 - owning plugin key plus `FormKey_ID` references `FormList` with cascade delete.
+
+`Item_Index` preserves source enumeration order and allows duplicate references to remain separate rows. Reads for a
+specific form list use `ORDER BY Item_Index`.
 
 ### GameSetting
 
@@ -121,6 +126,9 @@ shape as `FormList`.
 
 As with `FormList`, the plugin key columns identify the containing plugin and `FormKey_ID` supports cross-plugin record
 lookup.
+
+Game-setting rows do not include `TitleString` because Mutagen's Starfield game-setting records do not expose that
+field. `RawData` and `XALG` remain persisted as diagnostic fields but are not shown in the comparison workspace.
 
 ## Record Comparison Lookup
 

@@ -2,6 +2,8 @@ using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using Shouldly;
+using FormList = SFRecordCompareEngine.Core.Models.Database.FormList;
+using GameSetting = SFRecordCompareEngine.Core.Models.Database.GameSetting;
 
 namespace SFRecordCompareEngine.UnitTests.DTOs.Records;
 
@@ -67,7 +69,6 @@ public class RecordDataDTOTests
             VersionControl = 3,
             ImportedAtUTC = importedAtUTC,
             SettingType = "String",
-            TitleString = "Title",
             Data = "Data",
             RawData = 1.5,
             XALG = 2,
@@ -84,7 +85,6 @@ public class RecordDataDTOTests
         sut.VersionControl.ShouldBe(3);
         sut.ImportedAtUTC.ShouldBe(importedAtUTC);
         sut.SettingType.ShouldBe("String");
-        sut.TitleString.ShouldBe("Title");
         sut.Data.ShouldBe("Data");
         sut.RawData.ShouldBe(1.5);
         sut.XALG.ShouldBe(2);
@@ -96,7 +96,7 @@ public class RecordDataDTOTests
     public void FormListDTO_ConstructorMapsModel()
     {
         var importedAtUTC = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
-        var model = new SFRecordCompareEngine.Core.Models.Database.FormList
+        var model = new FormList
         {
             ModKeyName = "Example",
             ModKeyType = (int)ModType.Master,
@@ -128,7 +128,7 @@ public class RecordDataDTOTests
     public void GameSettingDTO_ConstructorMapsModel()
     {
         var importedAtUTC = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
-        var model = new SFRecordCompareEngine.Core.Models.Database.GameSetting
+        var model = new GameSetting
         {
             ModKeyName = "Example",
             ModKeyType = (int)ModType.Master,
@@ -141,7 +141,6 @@ public class RecordDataDTOTests
             VersionControl = 3,
             ImportedAtUTC = importedAtUTC,
             SettingType = "String",
-            TitleString = "Title",
             Data = "Data",
             RawData = 1.5,
             XALG = 2,
@@ -160,7 +159,6 @@ public class RecordDataDTOTests
         sut.VersionControl.ShouldBe(3);
         sut.ImportedAtUTC.ShouldBe(importedAtUTC);
         sut.SettingType.ShouldBe("String");
-        sut.TitleString.ShouldBe("Title");
         sut.Data.ShouldBe("Data");
         sut.RawData.ShouldBe(1.5);
         sut.XALG.ShouldBe(2);

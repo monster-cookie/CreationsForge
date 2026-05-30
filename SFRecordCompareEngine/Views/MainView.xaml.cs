@@ -15,4 +15,11 @@ public sealed partial class MainView : UserControl
     {
         DataContext = viewModel;
     }
+
+    private void RecordTree_SelectionChanged(TreeView sender, TreeViewSelectionChangedEventArgs args)
+    {
+        if (DataContext is not MainPageViewModel viewModel) return;
+
+        viewModel.SelectRecord(args.AddedItems.FirstOrDefault() as RecordTreeItemViewModel);
+    }
 }

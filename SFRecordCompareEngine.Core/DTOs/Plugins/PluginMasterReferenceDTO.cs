@@ -10,26 +10,22 @@ public class PluginMasterReferenceDTO
 
     public PluginMasterReferenceDTO(PluginMasterReference model)
     {
-        if (!Enum.IsDefined(typeof(ModType), model.ModKeyType))
+        if (!Enum.IsDefined(typeof(ModType), model.MasterModKeyType))
         {
-            throw new ArgumentOutOfRangeException(nameof(model.ModKeyType), model.ModKeyType, "Invalid mod type value.");
+            throw new ArgumentOutOfRangeException(nameof(model.MasterModKeyType), model.MasterModKeyType, "Invalid master mod type value.");
         }
 
-        if (!Enum.IsDefined(typeof(ModType), model.ParentModKeyType))
+        if (!Enum.IsDefined(typeof(ModType), model.PluginModKeyType))
         {
-            throw new ArgumentOutOfRangeException(nameof(model.ParentModKeyType), model.ParentModKeyType, "Invalid parent mod type value.");
+            throw new ArgumentOutOfRangeException(nameof(model.PluginModKeyType), model.PluginModKeyType, "Invalid plugin mod type value.");
         }
 
-        ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
-        ParentModKey = new ModKey(model.ParentModKeyName, (ModType)model.ParentModKeyType);
-        MasterReferenceIndex = model.MasterReferenceIndex;
-        ParentLoadOrderIndex = model.ParentLoadOrderIndex;
+        MasterModKey = new ModKey(model.MasterModKeyName, (ModType)model.MasterModKeyType);
+        PluginModKey = new ModKey(model.PluginModKeyName, (ModType)model.PluginModKeyType);
         ImportedAtUTC = model.ImportedAtUTC;
     }
 
-    public ModKey ModKey { get; set; }
-    public ModKey ParentModKey { get; set; }
-    public int MasterReferenceIndex { get; set; }
-    public int ParentLoadOrderIndex { get; set; }
+    public ModKey MasterModKey { get; set; }
+    public ModKey PluginModKey { get; set; }
     public DateTime ImportedAtUTC { get; set; }
 }

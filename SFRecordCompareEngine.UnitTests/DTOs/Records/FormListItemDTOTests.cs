@@ -21,6 +21,7 @@ public class FormListItemDTOTests
             ItemModKeyType = (int)ModType.Master,
             ItemModKeyFileName = "Item.esm",
             ItemFormKeyID = 456,
+            ItemIndex = 7,
             ImportedAtUTC = importedAtUTC
         };
 
@@ -32,6 +33,7 @@ public class FormListItemDTOTests
         result.ItemModKey.Name.ShouldBe("Item");
         result.ItemModKey.Type.ShouldBe(ModType.Master);
         result.ItemFormKey.ID.ShouldBe(456U);
+        result.ItemIndex.ShouldBe(7);
         result.ImportedAtUTC.ShouldBe(importedAtUTC);
     }
 }

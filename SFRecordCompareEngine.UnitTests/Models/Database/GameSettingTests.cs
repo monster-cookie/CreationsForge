@@ -2,6 +2,7 @@ using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using Shouldly;
+using GameSetting = SFRecordCompareEngine.Core.Models.Database.GameSetting;
 
 namespace SFRecordCompareEngine.UnitTests.Models.Database;
 
@@ -24,7 +25,6 @@ public class GameSettingTests
             VersionControl = 3,
             ImportedAtUTC = importedAtUTC,
             SettingType = "GameSettingFloat",
-            TitleString = "Title",
             Data = "1.5",
             RawData = 1.5,
             XALG = 4,
@@ -32,7 +32,7 @@ public class GameSettingTests
             IsDeleted = 1
         };
 
-        var result = new SFRecordCompareEngine.Core.Models.Database.GameSetting(dto);
+        var result = new GameSetting(dto);
 
         result.ModKeyName.ShouldBe(modKey.Name);
         result.ModKeyType.ShouldBe((int)modKey.Type);
@@ -45,7 +45,6 @@ public class GameSettingTests
         result.VersionControl.ShouldBe(3);
         result.ImportedAtUTC.ShouldBe(importedAtUTC);
         result.SettingType.ShouldBe("GameSettingFloat");
-        result.TitleString.ShouldBe("Title");
         result.Data.ShouldBe("1.5");
         result.RawData.ShouldBe(1.5);
         result.XALG.ShouldBe(4);

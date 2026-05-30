@@ -10,18 +10,18 @@ namespace SFRecordCompareEngine.Core.Repositories;
 public class PluginRepository : IPluginRepository
 {
     private readonly IDatabase Database;
-    
+
     public PluginRepository(IDatabase database)
     {
         Database = database;
     }
-    
+
     /// <inheritdoc />
     public PluginDTO? GetByModKey(ModKey modKey)
     {
         var plugin = Database.FirstOrDefault<Plugin>(
-            "SELECT * FROM Plugins WHERE ModKey_Name = @ModKeyName AND ModKey_Type = @ModKeyType AND ModKey_FileName = @ModKeyFileName COLLATE NOCASE;", 
-            new { ModKeyName = modKey.FileName, ModKeyType = (int)modKey.Type, ModKeyFileName = modKey.FileName });
+            "SELECT * FROM Plugins WHERE ModKey_Name = @ModKeyName AND ModKey_Type = @ModKeyType AND ModKey_FileName = @ModKeyFileName COLLATE NOCASE;",
+            new { ModKeyName = modKey.Name, ModKeyType = (int)modKey.Type, ModKeyFileName = modKey.FileName });
         return plugin == null ? null : new PluginDTO(plugin);
     }
 
@@ -37,15 +37,15 @@ public class PluginRepository : IPluginRepository
     public IList<PluginDTO> GetImportedPlugins()
     {
         return Database.Fetch<Plugin>(
-            """
-            SELECT *
-            FROM Plugins
-            WHERE Enabled = 1
-              AND ExistsOnDisk = 1
-              AND ImportState = @ImportState
-            ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex;
-            """,
-            new { ImportState = nameof(PluginImportState.Current) })
+                """
+                SELECT *
+                FROM Plugins
+                WHERE Enabled = 1
+                  AND ExistsOnDisk = 1
+                  AND ImportState = @ImportState
+                ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex;
+                """,
+                new { ImportState = nameof(PluginImportState.Current) })
             .Select(plugin => new PluginDTO(plugin))
             .ToList();
     }
@@ -54,18 +54,18 @@ public class PluginRepository : IPluginRepository
     public IList<PluginDTO> GetOpenablePlugins()
     {
         return Database.Fetch<Plugin>(
-            """
-            SELECT *
-            FROM Plugins
-            WHERE ExistsOnDisk = 1
-              AND ImportState IN (@CurrentImportState, @FailedImportState)
-            ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex;
-            """,
-            new
-            {
-                CurrentImportState = nameof(PluginImportState.Current),
-                FailedImportState = nameof(PluginImportState.Failed),
-            })
+                """
+                SELECT *
+                FROM Plugins
+                WHERE ExistsOnDisk = 1
+                  AND ImportState IN (@CurrentImportState, @FailedImportState)
+                ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex;
+                """,
+                new
+                {
+                    CurrentImportState = nameof(PluginImportState.Current),
+                    FailedImportState = nameof(PluginImportState.Failed),
+                })
             .Select(plugin => new PluginDTO(plugin))
             .ToList();
     }
@@ -75,20 +75,20 @@ public class PluginRepository : IPluginRepository
     {
         var searchPattern = $"%{searchFilename}%";
         return Database.Fetch<Plugin>(
-            """
-            SELECT *
-            FROM Plugins
-            WHERE Enabled = 1
-              AND ExistsOnDisk = 1
-              AND ImportState = @ImportState
-              AND ModKey_FileName LIKE @SearchPattern COLLATE NOCASE
-            ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex;
-            """,
-            new
-            {
-                ImportState = nameof(PluginImportState.Current),
-                SearchPattern = searchPattern
-            })
+                """
+                SELECT *
+                FROM Plugins
+                WHERE Enabled = 1
+                  AND ExistsOnDisk = 1
+                  AND ImportState = @ImportState
+                  AND ModKey_FileName LIKE @SearchPattern COLLATE NOCASE
+                ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex;
+                """,
+                new
+                {
+                    ImportState = nameof(PluginImportState.Current),
+                    SearchPattern = searchPattern
+                })
             .Select(plugin => new PluginDTO(plugin))
             .ToList();
     }
@@ -98,20 +98,20 @@ public class PluginRepository : IPluginRepository
     {
         var searchPattern = $"%{searchFilename}%";
         return Database.Fetch<Plugin>(
-            """
-            SELECT *
-            FROM Plugins
-            WHERE ExistsOnDisk = 1
-              AND ImportState IN (@CurrentImportState, @FailedImportState)
-              AND ModKey_FileName LIKE @SearchPattern COLLATE NOCASE
-            ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex;
-            """,
-            new
-            {
-                CurrentImportState = nameof(PluginImportState.Current),
-                FailedImportState = nameof(PluginImportState.Failed),
-                SearchPattern = searchPattern
-            })
+                """
+                SELECT *
+                FROM Plugins
+                WHERE ExistsOnDisk = 1
+                  AND ImportState IN (@CurrentImportState, @FailedImportState)
+                  AND ModKey_FileName LIKE @SearchPattern COLLATE NOCASE
+                ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex;
+                """,
+                new
+                {
+                    CurrentImportState = nameof(PluginImportState.Current),
+                    FailedImportState = nameof(PluginImportState.Failed),
+                    SearchPattern = searchPattern
+                })
             .Select(plugin => new PluginDTO(plugin))
             .ToList();
     }

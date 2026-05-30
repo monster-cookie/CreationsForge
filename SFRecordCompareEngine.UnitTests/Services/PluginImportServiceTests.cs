@@ -1,6 +1,6 @@
+using Moq;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
-using Moq;
 using NPoco;
 using SFRecordCompareEngine.Core.Database.Interfaces;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
@@ -207,10 +207,8 @@ public class PluginImportServiceTests
 
         result.MasterReferencesImported.ShouldBe(1);
         context.PluginMasterReferencesRepository.Verify(x => x.Save(It.Is<PluginMasterReferenceDTO>(dto =>
-            dto.ModKey == masterModKey &&
-            dto.ParentModKey == entry.ModKey &&
-            dto.MasterReferenceIndex == 2 &&
-            dto.ParentLoadOrderIndex == entry.LoadOrderIndex)), Times.Once);
+            dto.MasterModKey == masterModKey &&
+            dto.PluginModKey == entry.ModKey)), Times.Once);
     }
 
     private static PluginImportServiceTestContext CreateContext()

@@ -1,5 +1,142 @@
 # Design Decisions
 
+## 2026-05-30 - Keep Game Setting Comparison Focused On Mutagen-Backed Fields
+
+Status: Accepted
+
+Context: The game-setting schema included `TitleString`, but Mutagen's Starfield game-setting records do not expose or
+populate that field. The comparison workspace also displayed internal version fields and raw diagnostic fields that
+were not useful for routine record comparison.
+
+Decision: Remove `TitleString` from game-setting DTOs, database models, and the initial schema. Hide `FormVersion`,
+`Version2`, and `VersionControl` from all comparison views. Hide game-setting `RawData` and `XALG` from comparison
+views while retaining their persisted diagnostic values. Display named Starfield major-record flags instead of raw
+integers.
+
+Rationale: Comparison views should show meaningful record differences without presenting unsupported or redundant
+fields. Persisted diagnostics can remain available without adding noise to the main workflow.
+
+Alternatives considered:
+
+- Keep `TitleString` as an always-empty placeholder.
+- Remove all hidden diagnostic fields from persistence.
+- Continue displaying numeric record flags.
+
+Consequences:
+
+- Existing cache databases must be recreated because the initial schema changes.
+- Comparison grids are smaller and show named major-record flags.
+- `RawData` and `XALG` remain available in persistence for future diagnostics.
+
+Related files:
+
+- `SFRecordCompareEngine.Migrations/Sql/001_CreatePluginSchema.sql`
+- `SFRecordCompareEngine.Core/DTOs/Records/GameSettingDTO.cs`
+- `SFRecordCompareEngine.Core/Models/Database/GameSetting.cs`
+- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
+
+## 2026-05-30 - Store Plugin Master References As Relationship Edges
+
+Status: Accepted
+
+Context: `PluginMasterReferences` persisted load-order indexes for both the declared master and the declaring plugin.
+Those values duplicated `Plugins.LoadOrderIndex`. The table also used ambiguous child and parent naming and a unique
+index that rejected a master plugin referenced by multiple plugins.
+
+Decision: Persist only the declared-master and declaring-plugin `ModKey` tuples plus the import timestamp. Name the
+column groups `Master_ModKey_*` and `Plugin_ModKey_*`. Use the composite relationship primary key for uniqueness and
+derive master ordering from `Plugins.LoadOrderIndex` when reading.
+
+Rationale: The table models an edge in the plugin dependency graph. Storing load-order indexes on the relationship
+duplicates plugin metadata and can reject valid relationships or drift when load order changes.
+
+Alternatives considered:
+
+- Expand the unique index to include both plugin keys.
+- Rename and retain duplicated load-order columns.
+- Store a header master-list ordinal.
+
+Consequences:
+
+- A master plugin can be referenced by multiple declaring plugins.
+- Master-reference reads join `Plugins` to order results by the declared master's current load-order index.
+- The initial schema script must recreate local cache databases that already applied its previous shape.
+
+Related files:
+
+- `SFRecordCompareEngine.Migrations/Sql/001_CreatePluginSchema.sql`
+- `SFRecordCompareEngine.Core/Models/Database/PluginMasterReference.cs`
+- `SFRecordCompareEngine.Core/DTOs/Plugins/PluginMasterReferenceDTO.cs`
+- `SFRecordCompareEngine.Core/Repositories/PluginMasterReferencesRepository.cs`
+- `SFRecordCompareEngine.Core/Services/PluginImportService.cs`
+
+## 2026-05-30 - Route Presentation Browsing Through Typed Core Services
+
+Status: Accepted
+
+Context: Presentation view models need form list, game setting, and plugin data for the left tree, selected-record
+comparison workspace, and open-plugin dialog. Direct repository access from view models couples UI coordination to
+persistence boundaries and leaves no service layer for record-specific transformations or business rules.
+
+Decision: Add `FormListService` and `GameSettingService` as UI-neutral typed Core services. Extend `PluginService` with
+plugin browsing operations. Presentation view models call these services instead of repository interfaces.
+
+Rationale: Typed services preserve the existing record-type organization while establishing a stable boundary between
+MVVM code and persistence. Future record-specific transformations belong in the relevant service.
+
+Alternatives considered:
+
+- Keep direct repository access in view models.
+- Add a broad record-browser service.
+- Add presentation-layer repository wrappers.
+
+Consequences:
+
+- Presentation view models no longer depend on Core repository interfaces.
+- Typed services own repository access for browsing workflows.
+- New browsable record types should add corresponding typed services.
+
+Related files:
+
+- `SFRecordCompareEngine.Core/Services/FormListService.cs`
+- `SFRecordCompareEngine.Core/Services/GameSettingService.cs`
+- `SFRecordCompareEngine.Core/Services/PluginService.cs`
+- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
+- `SFRecordCompareEngine/ViewModels/OpenPluginDialogViewModel.cs`
+
+## 2026-05-30 - Preserve Form List Item Order And Duplicate Occurrences
+
+Status: Accepted
+
+Context: Starfield form lists are ordered sequences. Duplicate item references are valid, and the selected-record
+comparison workspace needs to display each occurrence in source order.
+
+Decision: Persist `FormListItems.Item_Index` from source enumeration order. Include the index in the row identity,
+delete existing item rows before rewriting a form list, and query item rows with `ORDER BY Item_Index`.
+
+Rationale: SQLite does not guarantee insertion-order reads without `ORDER BY`. A persisted occurrence index preserves
+deterministic display order, keeps valid duplicate references separate, and prevents stale trailing rows after a
+shorter list is reimported.
+
+Alternatives considered:
+
+- Depend on SQLite's observed insertion order without an explicit sort.
+- Deduplicate identical references.
+- Use only referenced form identity as the row key.
+
+Consequences:
+
+- Form list item rows remain ordered and duplicate-preserving.
+- Reimport replaces an owning form list's item sequence before saving its current entries.
+- Selected-record comparison can align list occurrences by index and leave missing values blank.
+
+Related files:
+
+- `SFRecordCompareEngine.Migrations/Sql/001_CreatePluginSchema.sql`
+- `SFRecordCompareEngine.Core/Models/Database/FormListItem.cs`
+- `SFRecordCompareEngine.Core/Importers/Starfield/FormListImporter.cs`
+- `SFRecordCompareEngine.Core/Repositories/FormListItemRepository.cs`
+
 ## 2026-05-30 - Use Existing Typed Record Identity For Cross-Plugin Comparison
 
 Status: Accepted

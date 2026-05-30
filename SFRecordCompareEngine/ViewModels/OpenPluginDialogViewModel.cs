@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
-using SFRecordCompareEngine.Core.DTOs.Plugins;
-using SFRecordCompareEngine.Core.Repositories.Interfaces;
 using SFRecordCompareEngine.Commands;
+using SFRecordCompareEngine.Core.DTOs.Plugins;
+using SFRecordCompareEngine.Core.Services.Interfaces;
 using SFRecordCompareEngine.Services.Interfaces;
 
 namespace SFRecordCompareEngine.ViewModels;
@@ -10,17 +10,17 @@ public class OpenPluginDialogViewModel : ViewModelBase
 {
     private readonly IApplicationNavigationService ApplicationNavigationService;
     private readonly IActivePluginSelectionService ActivePluginSelectionService;
-    private readonly IPluginRepository PluginRepository;
+    private readonly IPluginService PluginService;
     private IList<PluginDTO> MatchingPlugins = new List<PluginDTO>();
 
     public OpenPluginDialogViewModel(
         IApplicationNavigationService applicationNavigationService,
         IActivePluginSelectionService activePluginSelectionService,
-        IPluginRepository pluginRepository)
+        IPluginService pluginService)
     {
         ApplicationNavigationService = applicationNavigationService;
         ActivePluginSelectionService = activePluginSelectionService;
-        PluginRepository = pluginRepository;
+        PluginService = pluginService;
         LoadCommand = new AsyncRelayCommand(LoadAsync, CanLoad);
         CancelCommand = new AsyncRelayCommand(CancelAsync);
         RefreshSuggestions(string.Empty);
@@ -83,8 +83,8 @@ public class OpenPluginDialogViewModel : ViewModelBase
     private void RefreshSuggestions(string searchText)
     {
         MatchingPlugins = string.IsNullOrWhiteSpace(searchText)
-            ? PluginRepository.GetOpenablePlugins()
-            : PluginRepository.SearchOpenablePluginsByFilename(searchText);
+            ? PluginService.GetOpenablePlugins()
+            : PluginService.SearchOpenablePluginsByFilename(searchText);
 
         PluginSuggestions.Clear();
         foreach (var plugin in MatchingPlugins.Take(25))

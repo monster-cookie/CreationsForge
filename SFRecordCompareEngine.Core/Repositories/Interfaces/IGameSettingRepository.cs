@@ -13,6 +13,13 @@ public interface IGameSettingRepository
     IList<GameSettingDTO> GetByModKey(ModKey modKey);
 
     /// <summary>
+    /// Gets game setting records with the given form key ID.
+    /// </summary>
+    /// <param name="formKeyID">The form key ID to search for.</param>
+    /// <returns>The matching game setting records in plugin load order or an empty list if none are found.</returns>
+    IList<GameSettingDTO> GetByFormKeyID(uint formKeyID);
+
+    /// <summary>
     /// Saves a game setting record.
     /// </summary>
     void Save(GameSettingDTO dto);
