@@ -9,12 +9,13 @@
 - Full path: `<CommonApplicationData>/SFRecordCompareEngine/SFRecordCompareEngine.sqlite`
 - Log directory: `<CommonApplicationData>/SFRecordCompareEngine/Logs`
 
-`ApplicationConfigurationStore.DefaultApplicationDataDirectory` is based on `Environment.SpecialFolder.CommonApplicationData`.
+`ApplicationConfigurationStore.DefaultApplicationDataDirectory` is based on
+`Environment.SpecialFolder.CommonApplicationData`.
 
 ## Connection Behavior
 
-`SqliteConnectionFactory.OpenDatabase` creates the database directory, builds a SQLite connection string, and returns an 
-NPoco `IDatabase`.
+`SqliteConnectionFactory.OpenDatabase` creates the database directory, builds a SQLite connection string, and returns
+an NPoco `IDatabase`.
 
 Connection settings include:
 
@@ -96,6 +97,9 @@ Foreign key:
 
 - owning plugin key references `Plugins` with cascade delete.
 
+The plugin key columns identify the plugin containing the imported row. `FormKey_ID` identifies the record for
+cross-plugin lookup. Multiple plugins can therefore store rows with the same `FormKey_ID`.
+
 ### FormListItems
 
 Stores item references inside form lists.
@@ -115,9 +119,29 @@ Foreign key:
 Stores Starfield `GMST` record detail rows. Game settings use the same owning plugin key plus `FormKey_ID` primary key 
 shape as `FormList`.
 
+As with `FormList`, the plugin key columns identify the containing plugin and `FormKey_ID` supports cross-plugin record
+lookup.
+
+## Record Comparison Lookup
+
+The existing schema already supports locating typed rows for the same record across plugins. For example:
+
+```sql
+SELECT *
+FROM FormList
+WHERE FormKey_ID = 0x0003F551;
+```
+
+This can return rows from both `Starfield.esm` and `venworks-myexperiments.esm`. Each result keeps its containing
+plugin's `ModKey` columns, while the shared `FormKey_ID` identifies the record being compared.
+
+Comparison queries should filter typed tables by `FormKey_ID` and use plugin metadata for load-order sorting. Do not
+add additional origin-plugin columns or persist `FormKey` as a second `ModKey` tuple for this workflow.
+
 ## Repository Boundary
 
 Repositories use NPoco database models with `[TableName]`, `[PrimaryKey]`, and `[Column]` attributes. Repositories 
 translate DTOs to database models and should not own business workflow, UI behavior, or logging decisions.
 
-Runtime SQL values should be parameterized. Existing query methods in repositories use NPoco parameters for runtime values.
+Runtime SQL values should be parameterized. Existing query methods in repositories use NPoco parameters for runtime
+values.

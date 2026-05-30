@@ -1,5 +1,41 @@
 # Design Decisions
 
+## 2026-05-30 - Use Existing Typed Record Identity For Cross-Plugin Comparison
+
+Status: Accepted
+
+Context: The comparison workspace needs to locate every imported plugin containing a selected record. Typed record
+tables already store the containing plugin's `ModKey` columns and the record's numeric `FormKey_ID`. Multiple plugin
+rows can share the same `FormKey_ID`.
+
+Decision: Query typed record tables by `FormKey_ID` to find cross-plugin comparison rows. Use each result row's
+containing-plugin `ModKey` columns and plugin metadata to identify sources and order them by load order. Do not add
+origin-plugin columns or persist `FormKey` as a second `ModKey` tuple for this workflow.
+
+Rationale: The existing database shape already returns every containing plugin row needed for comparison. `ModKey`
+identifies a plugin file, while `FormKey_ID` identifies the record across those rows. Additional origin-plugin columns
+would duplicate concepts and add unnecessary migration and reimport work.
+
+Alternatives considered:
+
+- Add another persisted plugin-key tuple for `FormKey`.
+- Reimport typed rows after introducing origin-plugin columns.
+- Match records through display-only `FormID` values.
+
+Consequences:
+
+- No schema migration is required for cross-plugin typed-record comparison.
+- Comparison repository queries should filter by `FormKey_ID` and order results through plugin load-order metadata.
+- Presentation-only `FormID` conversion continues to use Mutagen helpers and active-plugin context.
+
+Related files:
+
+- `SFRecordCompareEngine.Migrations/Sql/001_CreatePluginSchema.sql`
+- `SFRecordCompareEngine.Core/Models/Database/FormList.cs`
+- `SFRecordCompareEngine.Core/Models/Database/GameSetting.cs`
+- `SFRecordCompareEngine.Core/DTOs/Records/FormListDTO.cs`
+- `SFRecordCompareEngine.Core/DTOs/Records/GameSettingDTO.cs`
+
 ## 2026-05-29 - Revert Presentation Layer To WinUI
 
 Status: Accepted

@@ -8,10 +8,16 @@ and persisted in the `Plugins` table.
 Load order entry: A discovered plugin plus its file name, path, load order index, and enabled state. Represented by 
 `PluginLoadOrderEntryDTO`.
 
-ModKey: Mutagen identifier for a plugin. The database stores it as name, type, and file name columns.
+ModKey: Mutagen identifier for a plugin file. The database stores it as name, type, and file name columns. On typed
+record tables, these columns identify the plugin file containing the imported record row.
 
-FormKey: Mutagen identifier for an individual record. Form list records persist the numeric form ID alongside the owning 
-plugin key.
+FormKey: Mutagen identifier for an individual record. Typed record tables persist its numeric record identifier as
+`FormKey_ID`. Multiple containing plugins can persist rows with the same `FormKey_ID`, which is how the current schema
+represents a record that appears in more than one plugin.
+
+The containing plugin's `ModKey` columns and the record's `FormKey_ID` serve different purposes. A comparison lookup
+finds matching typed rows by `FormKey_ID`, then uses each row's containing-plugin `ModKey` to identify and order the
+sources. `FormKey_ID` does not need an additional persisted `ModKey` tuple for this workflow.
 
 FormID: Plugin-context-relative record identifier shown in the main record tree. The presentation layer uses Mutagen's
 Starfield separated-master helpers to translate between stored `FormKey` values and displayed or filtered `FormID`
@@ -29,7 +35,8 @@ documentation, not executable code.
 `PluginImportState` contains:
 
 - `Current`: the plugin exists and was imported for the current source fingerprint.
-- `Changed`: the plugin source differs from the stored fingerprint. The current implementation counts changed plugins during import and saves successfully reimported plugins as `Current`.
+- `Changed`: the plugin source differs from the stored fingerprint. The current implementation counts changed plugins
+  during import and saves successfully reimported plugins as `Current`.
 - `Missing`: the plugin was present in load order data but the source file was not found on disk.
 - `Failed`: plugin metadata import failed.
 - `Unsupported`: the plugin is intentionally skipped. Current logic skips `BlueprintShips*.esm`.
@@ -49,13 +56,18 @@ documentation, not executable code.
 - source last-write ticks and source file size
 - checked, imported, and invalidated timestamps
 
-`StarfieldPluginReaderService` reads metadata from Mutagen using `StarfieldMod.Create(...).FromPath(...).WithLoadOrderFromHeaderMasters().WithDataFolder(...).Construct()`.
+`StarfieldPluginReaderService` reads metadata from Mutagen using
+`StarfieldMod.Create(...).FromPath(...).WithLoadOrderFromHeaderMasters().WithDataFolder(...).Construct()`.
 
 ## Record Import
 
-`RecordImportService` returns `RecordImportResultDTO` for a plugin. The result aggregates per-record-type counts from `RecordTypeImportResultDTO`, including discovered headers, typed detail rows, form list item rows, failed records, and unsupported typed detail import paths.
+`RecordImportService` returns `RecordImportResultDTO` for a plugin. The result aggregates per-record-type counts from
+`RecordTypeImportResultDTO`, including discovered headers, typed detail rows, form list item rows, failed records, and
+unsupported typed detail import paths.
 
-Record import progress is reported through `PluginImportProgressDTO`. Plugin-level progress remains based on load-order position, while record-type fields identify the active record type and record index during long-running detail import phases.
+Record import progress is reported through `PluginImportProgressDTO`. Plugin-level progress remains based on load-order
+position, while record-type fields identify the active record type and record index during long-running detail import
+phases.
 
 The active typed detail import path includes Starfield `FLST`:
 
@@ -70,9 +82,13 @@ The active typed detail import path also includes Starfield `GMST`:
 - `GameSettingImporter` saves each `GameSettingDTO`.
 - `GameSettingRepository` saves the game setting row.
 
+For record comparison, typed rows for the same record can be located across containing plugins by querying
+`FormKey_ID`. The containing-plugin columns remain available on each result for load-order sorting and display.
+
 ## Starfield Record Type Reference
 
-The following reference lists came from Mutagen record type names observed during implementation. They are documentation 
+The following reference lists came from Mutagen record type names observed during implementation. They are
+documentation
 only and do not define application import support.
 
 Record types currently treated as known supported Mutagen types:
@@ -323,7 +339,8 @@ Record types currently treated as known unsupported Mutagen types:
 - Starfield major record flags
 - version fields
 - imported timestamp
-- setting type such as `GameSettingFloat`, `GameSettingInt`, `GameSettingUInt`, `GameSettingString`, or `GameSettingBool`
+- setting type such as `GameSettingFloat`, `GameSettingInt`, `GameSettingUInt`, `GameSettingString`, or
+  `GameSettingBool`
 - optional title string, data, raw data, and `XALG`
 - compression and deletion flags persisted as integer values
 
