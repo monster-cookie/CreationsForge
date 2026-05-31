@@ -1,0 +1,73 @@
+[size=4][b][u]Overview[/u][/b][/size]
+Starfield Record Compare Engine is a Windows desktop application for inspecting and comparing records across Starfield plugins.
+
+The application discovers your local Starfield load order, imports supported plugin records into a local cache, and presents record differences in an easy-to-navigate comparison workspace. It is intended for mod authors and developers reviewing overrides, debugging compatibility issues, and inspecting plugin data.
+
+[quote]
+NOTE: This is an early release. Record-type support will expand over time.
+
+Starfield must be installed on the system so the application can discover the local load order and plugin files.
+[/quote]
+
+[size=4][b][u]Features[/u][/b][/size]
+[list]
+[*]Discovers the local Starfield plugin load order.[/*]
+[*]Imports plugin metadata and master references.[/*]
+[*]Browses records owned by a selected plugin in a filterable record tree.[/*]
+[*]Filters records by FormID and EditorID.[/*]
+[*]Compares matching records across imported plugins in load-order order.[/*]
+[*]Highlights matching values in green, conflicts in red, and the visible winning override in yellow.[/*]
+[*]Preserves form-list item order and duplicate entries during comparison.[/*]
+[*]Skips unchanged plugins during later imports for faster startup processing.[/*]
+[*]Supports light and dark application themes.[/*]
+[/list]
+
+[size=4][b][u]Currently Supported Record Types[/u][/b][/size]
+[list]
+[*]Form Lists (FLST)[/*]
+[*]Game Settings (GMST)[/*]
+[/list]
+
+[size=4][b][u]Planned Features[/u][/b][/size]
+[list]
+[*]Support additional Starfield record types.[/*]
+[*]Expand record inspection and comparison workflows.[/*]
+[*]Add patch creation and record editing workflows.[/*]
+[/list]
+
+[size=4][b][u]Usage[/u][/b][/size]
+[list=1]
+[*]Launch Starfield Record Compare Engine.[/*]
+[*]Wait for the startup import to discover and process your local load order.[/*]
+[*]Open a plugin from the application toolbar or File menu.[/*]
+[*]Use the record tree and filters to find a supported record.[/*]
+[*]Select a record to view its values across imported plugins.[/*]
+[/list]
+
+[size=4][b][u]Comparison Colors[/u][/b][/size]
+[list]
+[*][color=green]Green[/color]: all visible plugin values match.[/*]
+[*][color=red]Red[/color]: at least one visible plugin value differs.[/*]
+[*][color=yellow]Yellow[/color]: the far-right visible value is the winning override for a conflicting row.[/*]
+[/list]
+
+[size=4][b][u]Installation[/u][/b][/size]
+Download the current release archive, extract it to a folder of your choice, and run the application.
+
+This is a standalone Windows x64 desktop tool. Do not install it into your Starfield Data folder.
+
+[size=4][b][u]Current Limitations[/u][/b][/size]
+[list]
+[*]The record tree currently displays only Form Lists (FLST) and Game Settings (GMST).[/*]
+[*]BlueprintShips*.esm plugins are intentionally skipped during import.[/*]
+[/list]
+
+[size=4][b][u]Known Issues[/u][/b][/size]
+No known issues are currently documented.
+
+[size=4][b][u]Social Presence[/u][/b][/size]
+[list]
+[*]I can be found as Venpi hanging out in the Quarter Onion Games Discord server.[/*]
+[*]You can follow me on X as [url=https://x.com/monstercookiebd]@monstercookiebd[/url].[/*]
+[*]You can follow me on Threads as [url=https://www.threads.net/@monstercookiebd]@monstercookiebd[/url].[/*]
+[/list]

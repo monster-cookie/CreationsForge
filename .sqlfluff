@@ -1,0 +1,18 @@
+[sqlfluff]
+dialect = sqlite
+templater = raw
+max_line_length = 160
+exclude_rules = LT05
+
+[sqlfluff:indentation]
+indent_unit = space
+tab_space_size = 4
+
+[sqlfluff:layout:type:comma]
+line_position = trailing
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = upper
+
+[sqlfluff:rules:capitalisation.types]
+capitalisation_policy = upper

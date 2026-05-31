@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="SFRecordCompareEngine.Views.OpenPluginDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Open Plugin">
+    <StackPanel MinWidth="420" Spacing="16">
+        <AutoSuggestBox
+            x:Name="PluginSearchBox"
+            Header="Plugin file name"
+            ItemsSource="{Binding PluginSuggestions}"
+            PlaceholderText="Type a plugin file name"
+            QueryIcon="Find"
+            QuerySubmitted="PluginSearchBox_QuerySubmitted"
+            SuggestionChosen="PluginSearchBox_SuggestionChosen"
+            Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+            TextChanged="PluginSearchBox_TextChanged" />
+
+        <TextBlock
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Text="{Binding SelectionStatus}" />
+
+        <StackPanel
+            HorizontalAlignment="Right"
+            Orientation="Horizontal"
+            Spacing="8">
+            <Button
+                Command="{Binding CancelCommand}"
+                Content="Cancel" />
+            <Button
+                Command="{Binding LoadCommand}"
+                Content="Load"
+                Style="{StaticResource AccentButtonStyle}" />
+        </StackPanel>
+    </StackPanel>
+</ContentDialog>

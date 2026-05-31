@@ -3,13 +3,21 @@
     <PropertyGroup>
         <TargetFramework>net10.0-windows</TargetFramework>
         <Nullable>enable</Nullable>
-        <UseWPF>true</UseWPF>
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Mutagen.Bethesda.Starfield" Version="0.53.1" />
-      <PackageReference Include="Serilog" Version="4.3.1" />
+        <PackageReference Include="Autofac" Version="9.1.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.8" />
+        <PackageReference Include="Mutagen.Bethesda.Starfield" Version="0.54.0-alpha.89" />
+        <PackageReference Include="NPoco" Version="6.2.0" />
+        <PackageReference Include="Serilog" Version="4.3.1" />
+        <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
+        <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\SFRecordCompareEngine.Migrations\SFRecordCompareEngine.Migrations.csproj" />
     </ItemGroup>
 
 </Project>

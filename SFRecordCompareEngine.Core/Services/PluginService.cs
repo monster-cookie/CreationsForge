@@ -1,73 +1,55 @@
-﻿using System.IO;
 using Mutagen.Bethesda;
-using Mutagen.Bethesda.Environments;
-using Mutagen.Bethesda.Plugins;
-using Mutagen.Bethesda.Plugins.Exceptions;
-using Mutagen.Bethesda.Plugins.Records;
-using Mutagen.Bethesda.Starfield;
-using Serilog;
+using Mutagen.Bethesda.Plugins.Records.Mapping;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
+using SFRecordCompareEngine.Core.Repositories.Interfaces;
 using SFRecordCompareEngine.Core.Services.Interfaces;
 
 namespace SFRecordCompareEngine.Core.Services;
 
 public class PluginService : IPluginService
 {
-    private readonly ILogger Logger = Log.ForContext<PluginService>();
-    private readonly IGameEnvironment Starfield = GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield);
+    private readonly IStarfieldPluginReaderService StarfieldPluginReaderService;
+    private readonly IPluginRepository PluginRepository;
+
+    public PluginService(
+        IStarfieldPluginReaderService starfieldPluginReaderService,
+        IPluginRepository pluginRepository)
+    {
+        StarfieldPluginReaderService = starfieldPluginReaderService;
+        PluginRepository = pluginRepository;
+    }
 
     /// <inheritdoc />
-    public IList<string> GetDatabases()
+    public IList<string> GetRecordTypes()
     {
-        try
-        {
-            IList<string> databases = new List<string>();
-            foreach (var database in Starfield.LoadOrder.ListedOrder)
-            {
-                // Exclude the Starfield.esm database as all other records automatically compare to it
-                if (database.FileName.Equals("Starfield.esm", StringComparison.CurrentCultureIgnoreCase)) continue;
-                // Debating whether to exclude the DLC and free Bethesda plugins
-                databases.Add(database.FileName);
-            }
-
-            return databases;
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Unable to load databases");
-            return new List<string>();
-        }
+        return MajorRecordTypeEnumerator
+            .GetMajorRecordTypesFor(GameCategory.Starfield)
+            .OrderBy(x => x.ClassType.Name)
+            .Select(x => x.ClassType.Name)
+            .ToList();
     }
 
-    public PluginHeaderDTO? GetPluginHeader(string pluginName)
+    /// <inheritdoc />
+    public IList<PluginLoadOrderEntryDTO> GetLoadOrder()
     {
-        try
-        {
-            var plugin = LoadPlugin(pluginName);
-            return new PluginHeaderDTO(pluginName, plugin.ModHeader);
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Unable to load plugin header for {PluginName}.", pluginName);
-            return null;
-        }
-    }
-    
-    private IStarfieldModDisposableGetter LoadPlugin(string pluginName)
-    {
-        var pluginPath = Path.Combine(Starfield.DataFolderPath.Path, pluginName);
-        var modKey = ModKey.FromFileName(Path.GetFileName(pluginPath));
-        var modPath = new ModPath(modKey, pluginPath);
-
-        return StarfieldMod.Create(StarfieldRelease.Starfield)
-            .FromPath(modPath)
-            .WithLoadOrderFromHeaderMasters()
-            .WithDataFolder(Starfield.DataFolderPath.Path)
-            .Construct();
+        return StarfieldPluginReaderService.GetLoadOrder();
     }
 
-    private static string CleanRecordTypeName(string typeName)
+    /// <inheritdoc />
+    public IList<PluginDTO> GetImportedPlugins()
     {
-        return typeName.Replace("BinaryOverlay", "").Replace("Getter", "").Replace("Setter", "");
+        return PluginRepository.GetImportedPlugins();
+    }
+
+    /// <inheritdoc />
+    public IList<PluginDTO> GetOpenablePlugins()
+    {
+        return PluginRepository.GetOpenablePlugins();
+    }
+
+    /// <inheritdoc />
+    public IList<PluginDTO> SearchOpenablePluginsByFilename(string searchFilename)
+    {
+        return PluginRepository.SearchOpenablePluginsByFilename(searchFilename);
     }
 }

@@ -1,51 +1,108 @@
-using System.Windows;
 using Autofac;
+using Microsoft.UI.Xaml;
 using Serilog;
-using SFRecordCompareEngine.Core.Services;
-using SFRecordCompareEngine.Core.Services.Interfaces;
+using Serilog.Events;
+using SFRecordCompareEngine.Core;
+using SFRecordCompareEngine.Core.Models.Database;
+using SFRecordCompareEngine.Migrations;
+using SFRecordCompareEngine.Services;
+using SFRecordCompareEngine.Services.Interfaces;
+using SFRecordCompareEngine.ViewModels;
+using SFRecordCompareEngine.Views;
 
 namespace SFRecordCompareEngine;
 
-public partial class App
+public partial class App : Application
 {
-    private IContainer? Container;
+    private readonly IContainer Container;
+    private Window? Window;
 
-    protected override void OnStartup(StartupEventArgs e)
+    public App()
     {
+        InitializeComponent();
+        ConfigureLogging();
+        UnhandledException += OnUnhandledException;
+        Container = BuildContainer();
+    }
+
+    protected override void OnLaunched(LaunchActivatedEventArgs args)
+    {
+        try
+        {
+            Log.Information("Starting Starfield Record Compare Engine");
+
+            Window = Container.Resolve<MainWindow>();
+            Window.Activate();
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Unable to launch Starfield Record Compare Engine");
+            Log.CloseAndFlush();
+            throw;
+        }
+    }
+
+    private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+    {
+        Log.Fatal(e.Exception, "Unhandled WinUI exception");
+        Log.CloseAndFlush();
+    }
+
+    private static void ConfigureLogging()
+    {
+        var databaseOptions = new SqliteDatabaseOptions();
         Log.Logger = new LoggerConfiguration()
+#if DEBUG
             .MinimumLevel.Debug()
+#else
+            .MinimumLevel.Information()
+#endif
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+            .Enrich.FromLogContext()
+            .Enrich.WithMachineName()
+            .Enrich.WithEnvironmentUserName()
             .WriteTo.File(
-                @"C:\temp\SFRecordCompareEngine-Log.txt",
+                Path.Combine(databaseOptions.LogDirectory, "SFRecordCompareEngine.log"),
                 rollingInterval: RollingInterval.Day,
                 retainedFileTimeLimit: TimeSpan.FromDays(7),
+                fileSizeLimitBytes: 1024 * 1024 * 100,
                 shared: true,
                 outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
             .CreateLogger();
-
-        Log.Information("Starting SFRecordCompareEngine.");
-
-        base.OnStartup(e);
-
-        Container = BuildContainer();
-        Container.Resolve<MainWindow>().Show();
-    }
-
-    protected override void OnExit(ExitEventArgs e)
-    {
-        Log.Information("Exiting SFRecordCompareEngine.");
-        Container?.Dispose();
-        Log.CloseAndFlush();
-        base.OnExit(e);
     }
 
     private static IContainer BuildContainer()
     {
         var builder = new ContainerBuilder();
-        builder.RegisterType<PluginService>().As<IPluginService>().SingleInstance();
-        builder.RegisterType<GameEngineService>().As<IGameEngineService>().SingleInstance();
-        builder.RegisterInstance(Log.Logger).As<ILogger>().SingleInstance();
-        builder.RegisterType<MainWindow>();
+
+        builder.RegisterModule<CoreModule>();
+        builder.RegisterModule<MigrationsModule>();
+
+        builder.RegisterInstance(Log.Logger).As<Serilog.ILogger>().SingleInstance();
+
+        builder.RegisterType<StartupImportViewModel>();
+        builder.RegisterType<MainPageViewModel>();
+        builder.RegisterType<OpenPluginDialogViewModel>();
+        builder.RegisterType<SettingsViewModel>();
+        builder.RegisterType<MainWindow>().SingleInstance();
+        builder.RegisterType<StartupImportView>();
+        builder.RegisterType<MainView>();
+        builder.RegisterType<OpenPluginDialog>();
+        builder.RegisterType<SettingsDialog>();
+
+        builder.RegisterType<UserDialogService>().As<IUserDialogService>().SingleInstance();
+        builder.RegisterType<ActivePluginSelectionService>().As<IActivePluginSelectionService>().SingleInstance();
+        builder.RegisterType<ApplicationNavigationService>().As<IApplicationNavigationService>().SingleInstance();
+        builder.RegisterType<WindowsApplicationWindowService>().As<IApplicationWindowService>().SingleInstance();
 
         return builder.Build();
+    }
+
+    public void ShutDown()
+    {
+        Log.Information("Exiting Starfield Record Compare Engine");
+        Container.Dispose();
+        Log.CloseAndFlush();
+        Exit();
     }
 }

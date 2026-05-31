@@ -1,19 +1,24 @@
-﻿using SFRecordCompareEngine.Core.DTOs.Plugins;
+using SFRecordCompareEngine.Core.DTOs.Plugins;
 
 namespace SFRecordCompareEngine.Core.Services.Interfaces;
 
 public interface IPluginService
 {
     /// <summary>
-    /// Get the header for the specified plugin
+    /// Get the selected game's plugin load order.
     /// </summary>
-    /// <param name="pluginName">The plugin to get the header for</param>
-    /// <returns>The plugin header, or null if the plugin cannot be loaded or the header is malformed</returns>
-    PluginHeaderDTO? GetPluginHeader(string pluginName);
-    
+    /// <returns>The plugin load-order entries.</returns>
+    IList<PluginLoadOrderEntryDTO> GetLoadOrder();
+
+    IList<PluginDTO> GetImportedPlugins();
+
+    IList<PluginDTO> GetOpenablePlugins();
+
+    IList<PluginDTO> SearchOpenablePluginsByFilename(string searchFilename);
+
     /// <summary>
-    /// Get the list of ESM entries for the game
+    /// Get the supported major record type names.
     /// </summary>
-    /// <returns>The list of ESM file names or en empty list</returns>
-    IList<string> GetDatabases();
+    /// <returns>The supported major record type names.</returns>
+    IList<string> GetRecordTypes();
 }

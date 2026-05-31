@@ -2,20 +2,38 @@
 
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
-        <TargetFramework>net10.0-windows</TargetFramework>
+        <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
         <Nullable>enable</Nullable>
-        <UseWPF>true</UseWPF>
+        <UseWinUI>true</UseWinUI>
         <ImplicitUsings>enable</ImplicitUsings>
+        <WindowsPackageType>None</WindowsPackageType>
+        <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <ApplicationTitle>Starfield Record Compare Engine</ApplicationTitle>
+        <ApplicationId>com.sfrecordcompareengine.app</ApplicationId>
+        <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+        <ApplicationVersion>1</ApplicationVersion>
+        <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+        <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\SFRecordCompareEngine.Core\SFRecordCompareEngine.Core.csproj" />
+        <ProjectReference Include="..\SFRecordCompareEngine.Core\SFRecordCompareEngine.Core.csproj" />
+        <ProjectReference Include="..\SFRecordCompareEngine.Migrations\SFRecordCompareEngine.Migrations.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Autofac" Version="9.1.0" />
-      <PackageReference Include="Serilog" Version="4.3.1" />
-      <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+        <PackageReference Include="Autofac" Version="9.1.0" />
+        <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.251106002" />
+        <PackageReference Include="Serilog" Version="4.3.1" />
+        <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+        <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="Resources\AppIcon\sfrecordcompareengine.ico">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 
 </Project>
