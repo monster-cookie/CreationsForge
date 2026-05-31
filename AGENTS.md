@@ -161,6 +161,10 @@ If no documentation update is needed, the PLAN must explicitly state: Documentat
 
 - Analyzer warnings are treated as errors.
 - Follow existing conventions in the repo. Do not introduce new naming or patterns.
+- After editing C# or SQL files, run Rider code cleanup on only the files edited for the current task.
+- Use the repository-configured Rider cleanup profile when one exists. Do not apply solution-wide cleanup.
+- Review cleanup changes and keep them limited to the approved task scope. Do not introduce unrelated formatting churn.
+- Run cleanup before restore, build, and test validation.
 
 ## TESTING
 
