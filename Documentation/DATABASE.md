@@ -32,7 +32,6 @@ Schema migrations are executed by DbUp through `DatabaseMigrationRunner`. SQL sc
 Current migration script:
 
 - `001_CreatePluginSchema.sql`
-- `002_AddSupportedRecordTypes.sql`
 
 DbUp's `SchemaVersions` table is the migration state source of truth. The application does not define a hardcoded 
 schema-version constant.
