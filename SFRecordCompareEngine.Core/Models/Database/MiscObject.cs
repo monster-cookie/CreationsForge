@@ -4,14 +4,14 @@ using SFRecordCompareEngine.Core.DTOs.Records;
 
 namespace SFRecordCompareEngine.Core.Models.Database;
 
-[TableName("MiscObject")]
+[TableName("MiscItem")]
 [PrimaryKey("ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_Id", AutoIncrement = false)]
-public class MiscObject
+public class MiscItem
 {
-    public MiscObject()
+    public MiscItem()
     { }
 
-    public MiscObject(MiscObjectDTO dto)
+    public MiscItem(MiscItemDTO dto)
     {
         ModKeyName = dto.ModKey.Name; ModKeyType = (int)dto.ModKey.Type; ModKeyFileName = dto.ModKey.FileName; FormKeyId = (int)dto.FormKey.ID;
         EditorId = dto.EditorID; FormVersion = dto.FormVersion; StarfieldMajorRecordFlags = (int)dto.StarfieldMajorRecordFlags; Version2 = dto.Version2; VersionControl = dto.VersionControl; ImportedAtUTC = dto.ImportedAtUTC;

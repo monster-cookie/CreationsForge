@@ -144,7 +144,7 @@ public class RecordImportServiceTests
     private static void SetupEmptyAdditionalRecordTypes(Mock<IStarfieldRecordReaderService> reader, PluginDTO plugin)
     {
         reader.Setup(x => x.GetGlobals(plugin)).Returns(new List<GlobalDTO>());
-        reader.Setup(x => x.GetMiscObjects(plugin)).Returns(new List<MiscObjectDTO>());
+        reader.Setup(x => x.GetMiscItems(plugin)).Returns(new List<MiscItemDTO>());
         reader.Setup(x => x.GetKeywords(plugin)).Returns(new List<KeywordDTO>());
         reader.Setup(x => x.GetNPCs(plugin)).Returns(new List<NPCDTO>());
         reader.Setup(x => x.GetActorValueInformation(plugin)).Returns(new List<ActorValueInformationDTO>());

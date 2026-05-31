@@ -23,7 +23,7 @@ public class RecordTypeCatalogTests
 
     [Theory]
     [InlineData("Global", "Global", "GLOB")]
-    [InlineData("MiscObject", "MiscObject", "MISC")]
+    [InlineData("MiscItem", "MiscItem", "MISC")]
     [InlineData("Keyword", "Keyword", "KYWD")]
     [InlineData("NPC", "NPC", "NPC_")]
     [InlineData("ActorValueInformation", "ActorValueInformation", "AVIF")]

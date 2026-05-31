@@ -4,13 +4,13 @@ using Mutagen.Bethesda.Starfield;
 
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
-public class MiscObjectDTO
+public class MiscItemDTO
 {
-    public MiscObjectDTO()
+    public MiscItemDTO()
     { }
 
     [SetsRequiredMembers]
-    public MiscObjectDTO(Models.Database.MiscObject model)
+    public MiscItemDTO(Models.Database.MiscItem model)
     {
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
         FormKey = new FormKey(ModKey, (uint)model.FormKeyId);

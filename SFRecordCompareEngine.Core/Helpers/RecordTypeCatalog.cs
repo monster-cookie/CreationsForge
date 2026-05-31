@@ -23,10 +23,10 @@ public static class RecordTypeCatalog
         RecordID = "GLOB"
     };
 
-    public static readonly RecordTypeData MiscObject = new()
+    public static readonly RecordTypeData MiscItem = new()
     {
-        TableName = "MiscObject",
-        RecordType = "MiscObject",
+        TableName = "MiscItem",
+        RecordType = "MiscItem",
         RecordID = "MISC"
     };
 

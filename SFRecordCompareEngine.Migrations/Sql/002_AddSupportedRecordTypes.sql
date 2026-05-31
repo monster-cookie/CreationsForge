@@ -8,7 +8,7 @@ CREATE TABLE Global (
 );
 CREATE INDEX IX_Global_FormKey_ID ON Global (FormKey_ID);
 
-CREATE TABLE MiscObject (
+CREATE TABLE MiscItem (
     ModKey_Name TEXT NOT NULL, ModKey_Type INTEGER NOT NULL, ModKey_FileName TEXT NOT NULL, FormKey_ID INTEGER NOT NULL,
     EditorID TEXT NOT NULL, FormVersion INTEGER NOT NULL, StarfieldMajorRecordFlags INTEGER NOT NULL, Version2 INTEGER NOT NULL, VersionControl INTEGER NOT NULL, ImportedAtUTC TEXT NOT NULL,
     Name TEXT NULL, ShortName TEXT NULL, Value INTEGER NULL, Weight REAL NULL,
@@ -16,7 +16,7 @@ CREATE TABLE MiscObject (
     FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName) REFERENCES Plugins (ModKey_Name, ModKey_Type, ModKey_FileName) ON DELETE CASCADE,
     CHECK (FormKey_ID >= 0)
 );
-CREATE INDEX IX_MiscObject_FormKey_ID ON MiscObject (FormKey_ID);
+CREATE INDEX IX_MiscItem_FormKey_ID ON MiscItem (FormKey_ID);
 
 CREATE TABLE Keyword (
     ModKey_Name TEXT NOT NULL, ModKey_Type INTEGER NOT NULL, ModKey_FileName TEXT NOT NULL, FormKey_ID INTEGER NOT NULL,

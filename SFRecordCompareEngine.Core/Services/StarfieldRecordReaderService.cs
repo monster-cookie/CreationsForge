@@ -113,9 +113,9 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         }).ToList();
     }
 
-    public IReadOnlyList<MiscObjectDTO> GetMiscObjects(PluginDTO plugin)
+    public IReadOnlyList<MiscItemDTO> GetMiscItems(PluginDTO plugin)
     {
-        return LoadMod(plugin.ModKey).MiscItems.Select(record => new MiscObjectDTO
+        return LoadMod(plugin.ModKey).MiscItems.Select(record => new MiscItemDTO
         {
             ModKey = plugin.ModKey, FormKey = record.FormKey, EditorID = record.EditorID ?? string.Empty, FormVersion = record.FormVersion,
             StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags, Version2 = record.Version2, VersionControl = (int)record.VersionControl,

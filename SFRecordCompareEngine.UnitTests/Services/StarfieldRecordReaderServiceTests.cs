@@ -62,7 +62,7 @@ public class StarfieldRecordReaderServiceTests
         var count = recordID switch
         {
             "GLOB" => sut.GetGlobals(plugin).Count,
-            "MISC" => sut.GetMiscObjects(plugin).Count,
+            "MISC" => sut.GetMiscItems(plugin).Count,
             "KYWD" => sut.GetKeywords(plugin).Count,
             "NPC_" => sut.GetNPCs(plugin).Count,
             "AVIF" => sut.GetActorValueInformation(plugin).Count,

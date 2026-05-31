@@ -11,7 +11,7 @@ public class SupportedRecordImporterTests
 {
     [Theory]
     [InlineData(typeof(GlobalImporter), "GLOB", "Global")]
-    [InlineData(typeof(MiscObjectImporter), "MISC", "MiscObject")]
+    [InlineData(typeof(MiscItemImporter), "MISC", "MiscItem")]
     [InlineData(typeof(KeywordImporter), "KYWD", "Keyword")]
     [InlineData(typeof(NPCImporter), "NPC_", "NPC")]
     [InlineData(typeof(ActorValueInformationImporter), "AVIF", "ActorValueInformation")]

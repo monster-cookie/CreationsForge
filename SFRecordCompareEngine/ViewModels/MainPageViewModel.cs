@@ -24,7 +24,7 @@ public class MainPageViewModel : ViewModelBase
     private readonly IGlobalService GlobalService;
     private readonly IKeywordService KeywordService;
     private readonly IMagicEffectService MagicEffectService;
-    private readonly IMiscObjectService MiscObjectService;
+    private readonly IMiscItemService MiscItemService;
     private readonly INPCService NPCService;
     private readonly IPerkService PerkService;
     private readonly IPluginService PluginService;
@@ -40,7 +40,7 @@ public class MainPageViewModel : ViewModelBase
         IGlobalService globalService,
         IKeywordService keywordService,
         IMagicEffectService magicEffectService,
-        IMiscObjectService miscObjectService,
+        IMiscItemService miscItemService,
         INPCService npcService,
         IPerkService perkService,
         IPluginService pluginService)
@@ -53,7 +53,7 @@ public class MainPageViewModel : ViewModelBase
         GlobalService = globalService;
         KeywordService = keywordService;
         MagicEffectService = magicEffectService;
-        MiscObjectService = miscObjectService;
+        MiscItemService = miscItemService;
         NPCService = npcService;
         PerkService = perkService;
         PluginService = pluginService;
@@ -133,7 +133,7 @@ public class MainPageViewModel : ViewModelBase
         }
 
         if (item.RecordType == RecordTypeCatalog.Global.RecordType) LoadGlobalComparison(item.FormKey.Value.ID);
-        if (item.RecordType == RecordTypeCatalog.MiscObject.RecordType) LoadMiscObjectComparison(item.FormKey.Value.ID);
+        if (item.RecordType == RecordTypeCatalog.MiscItem.RecordType) LoadMiscItemComparison(item.FormKey.Value.ID);
         if (item.RecordType == RecordTypeCatalog.Keyword.RecordType) LoadKeywordComparison(item.FormKey.Value.ID);
         if (item.RecordType == RecordTypeCatalog.NPC.RecordType) LoadNPCComparison(item.FormKey.Value.ID);
         if (item.RecordType == RecordTypeCatalog.ActorValueInformation.RecordType) LoadActorValueInformationComparison(item.FormKey.Value.ID);
@@ -193,7 +193,7 @@ public class MainPageViewModel : ViewModelBase
             GameSettingService.GetByModKey(activePlugin.ModKey)
                 .Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.GameSetting.RecordType)));
         AddRecordType(recordTreeItems, RecordTypeCatalog.Global.RecordType, GlobalService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.Global.RecordType)));
-        AddRecordType(recordTreeItems, RecordTypeCatalog.MiscObject.RecordType, MiscObjectService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.MiscObject.RecordType)));
+        AddRecordType(recordTreeItems, RecordTypeCatalog.MiscItem.RecordType, MiscItemService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.MiscItem.RecordType)));
         AddRecordType(recordTreeItems, RecordTypeCatalog.Keyword.RecordType, KeywordService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.Keyword.RecordType)));
         AddRecordType(recordTreeItems, RecordTypeCatalog.NPC.RecordType, NPCService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.NPC.RecordType)));
         AddRecordType(recordTreeItems, RecordTypeCatalog.ActorValueInformation.RecordType, ActorValueInformationService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.ActorValueInformation.RecordType)));
@@ -366,11 +366,11 @@ public class MainPageViewModel : ViewModelBase
         SetRecordComparison(fields, records.Select(record => (record.ModKey, Values: (IReadOnlyList<string>)new List<string> { RecordTypeCatalog.Global.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Data?.ToString() ?? string.Empty })));
     }
 
-    private void LoadMiscObjectComparison(uint formKeyID)
+    private void LoadMiscItemComparison(uint formKeyID)
     {
-        var records = MiscObjectService.GetByFormKeyID(formKeyID);
+        var records = MiscItemService.GetByFormKeyID(formKeyID);
         var fields = CreateHeaderFields("Name", "ShortName", "Value", "Weight");
-        SetRecordComparison(fields, records.Select(record => (record.ModKey, Values: (IReadOnlyList<string>)new List<string> { RecordTypeCatalog.MiscObject.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.ShortName ?? string.Empty, record.Value?.ToString() ?? string.Empty, record.Weight?.ToString() ?? string.Empty })));
+        SetRecordComparison(fields, records.Select(record => (record.ModKey, Values: (IReadOnlyList<string>)new List<string> { RecordTypeCatalog.MiscItem.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.ShortName ?? string.Empty, record.Value?.ToString() ?? string.Empty, record.Weight?.ToString() ?? string.Empty })));
     }
 
     private void LoadKeywordComparison(uint formKeyID)
