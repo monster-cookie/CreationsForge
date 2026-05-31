@@ -22,3 +22,4 @@ These are the planned features for the project.
 
 - Open Source local LLM for automatic patch creation
 - Support for the other Bethesda games (Skyrim, Fallout 4, etc.)
+- Cross platform support
