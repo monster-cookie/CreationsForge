@@ -1,5 +1,5 @@
-using Microsoft.UI.Windowing;
 using Microsoft.UI;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SFRecordCompareEngine.Core.Models.Configuration;
@@ -11,11 +11,16 @@ namespace SFRecordCompareEngine.Services;
 
 public class WindowsApplicationWindowService : IApplicationWindowService
 {
+    private static readonly string ApplicationIconPath = Path.Combine(AppContext.BaseDirectory, "Resources", "AppIcon", "sfrecordcompareengine.ico");
+
     private MainWindow? MainWindow;
 
     public void RegisterMainWindow(MainWindow mainWindow)
     {
         MainWindow = mainWindow;
+
+        var appWindow = GetAppWindow(mainWindow);
+        appWindow.SetIcon(ApplicationIconPath);
     }
 
     public void SetContent(UIElement content)
@@ -49,8 +54,7 @@ public class WindowsApplicationWindowService : IApplicationWindowService
     {
         if (MainWindow == null) return;
 
-        var windowId = Win32Interop.GetWindowIdFromWindow(WindowNative.GetWindowHandle(MainWindow));
-        var appWindow = AppWindow.GetFromWindowId(windowId);
+        var appWindow = GetAppWindow(MainWindow);
 
         if (appWindow.Presenter is OverlappedPresenter presenter)
         {
@@ -64,5 +68,11 @@ public class WindowsApplicationWindowService : IApplicationWindowService
         {
             app.ShutDown();
         }
+    }
+
+    private static AppWindow GetAppWindow(MainWindow mainWindow)
+    {
+        var windowId = Win32Interop.GetWindowIdFromWindow(WindowNative.GetWindowHandle(mainWindow));
+        return AppWindow.GetFromWindowId(windowId);
     }
 }
