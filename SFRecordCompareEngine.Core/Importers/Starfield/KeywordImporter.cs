@@ -1,0 +1,31 @@
+using Mutagen.Bethesda;
+using Mutagen.Bethesda.Plugins;
+using SFRecordCompareEngine.Core.DTOs.Records;
+using SFRecordCompareEngine.Core.DTOs.Results;
+using SFRecordCompareEngine.Core.Helpers;
+using SFRecordCompareEngine.Core.Importers.Interfaces;
+using SFRecordCompareEngine.Core.Repositories.Interfaces;
+
+namespace SFRecordCompareEngine.Core.Importers.Starfield;
+
+public class KeywordImporter : ITypedRecordDetailImporter
+{
+    private readonly IKeywordRepository KeywordRepository;
+
+    public GameRelease GameRelease => GameRelease.Starfield;
+    public RecordType RecordType => new(RecordTypeCatalog.Keyword.RecordID);
+    public string TableName => RecordTypeCatalog.Keyword.TableName;
+
+    public KeywordImporter(IKeywordRepository keywordRepository)
+    {
+        KeywordRepository = keywordRepository;
+    }
+
+    public void Import(object recordDTO, RecordTypeImportResultDTO resultDTO)
+    {
+        var record = (KeywordDTO)recordDTO;
+        record.ImportedAtUTC = DateTime.UtcNow;
+        KeywordRepository.Save(record);
+        resultDTO.DetailRowsImported++;
+    }
+}
