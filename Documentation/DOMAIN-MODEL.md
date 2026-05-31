@@ -28,7 +28,8 @@ Represented by `PluginMasterReferenceDTO` and persisted in `PluginMasterReferenc
 from the related `Plugins` rows instead of being duplicated on the relationship.
 
 Record type: A Starfield major record category. `RecordTypeCatalog` contains only runtime metadata for record types the 
-current import path persists: `FormList` and `GameSetting`. Broader Mutagen record type reference data belongs in this 
+current import path persists: `FormList`, `GameSetting`, `Global`, `MiscObject`, `Keyword`, `NPC`,
+`ActorValueInformation`, `MagicEffect`, and `Perk`. Broader Mutagen record type reference data belongs in this
 documentation, not executable code.
 
 ## Plugin Import States
@@ -82,6 +83,14 @@ The active typed detail import path also includes Starfield `GMST`:
 - `StarfieldRecordReaderService.GetGameSettings` reads game setting DTOs from a plugin with one Mutagen mod load.
 - `GameSettingImporter` saves each `GameSettingDTO`.
 - `GameSettingRepository` saves the game setting row.
+
+The active typed detail import path also includes Starfield `GLOB`, `MISC`, `KYWD`, `NPC_`, `AVIF`, `MGEF`, and
+`PERK`. Each type has an explicit DTO, database model, repository, service, and importer. New record DTOs persist
+clearly understood scalar values and direct `FormKey` references. Complex nested child structures are deferred until
+they can be represented with normalized typed models.
+
+Localized record fields store only the resolved English text as nullable values. The database does not store
+translation catalogs or JSON payloads.
 
 For record comparison, typed rows for the same record can be located across containing plugins by querying
 `FormKey_ID`. The containing-plugin columns remain available on each result for load-order sorting and display.

@@ -1,0 +1,3 @@
+using Mutagen.Bethesda.Plugins; using SFRecordCompareEngine.Core.DTOs.Records; using SFRecordCompareEngine.Core.Repositories.Interfaces; using SFRecordCompareEngine.Core.Services.Interfaces;
+namespace SFRecordCompareEngine.Core.Services;
+public class MiscObjectService : IMiscObjectService { private readonly IMiscObjectRepository Repository; public MiscObjectService(IMiscObjectRepository repository) { Repository = repository; } public IList<MiscObjectDTO> GetByModKey(ModKey modKey) => Repository.GetByModKey(modKey); public IList<MiscObjectDTO> GetByFormKeyID(uint formKeyID) => Repository.GetByFormKeyID(formKeyID); }

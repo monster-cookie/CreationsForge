@@ -53,8 +53,9 @@ suffix conventions.
 - Reports progress through `IProgress<PluginImportProgressDTO>`.
 - Runs work on a background task and honors cancellation tokens.
 
-`RecordImportService` maps typed record importers by `(GameRelease, RecordType)` and currently imports Starfield `FLST` 
-and `GMST` records when matching `ITypedRecordDetailImporter` instances are registered.
+`RecordImportService` maps typed record importers by `(GameRelease, RecordType)` and imports Starfield `FLST`, `GMST`,
+`GLOB`, `MISC`, `KYWD`, `NPC_`, `AVIF`, `MGEF`, and `PERK` records when matching `ITypedRecordDetailImporter`
+instances are registered.
 
 ## Persistence Architecture
 
@@ -72,9 +73,8 @@ schema-version constant.
 
 ## Main Record Tree
 
-The main-view record tree reads persisted `FormList` and `GameSetting` DTOs through typed Core services. The services
-delegate to repositories keyed by the owning plugin `ModKey`, and record DTOs continue to expose Mutagen `FormKey`
-values.
+The main-view record tree reads persisted supported-record DTOs through typed Core services. The services delegate to
+repositories keyed by the owning plugin `ModKey`, and record DTOs continue to expose Mutagen `FormKey` values.
 
 The presentation view model builds record-type and record-leaf nodes for records owned by the active plugin. It uses a
 Mutagen separated-master package for Starfield-aware conversion between stored `FormKey` values and
@@ -84,9 +84,9 @@ as tree nodes. FormID display and filtering stay in the presentation layer.
 ## Selected Record Comparison
 
 The main-view comparison workspace uses the selected concrete tree leaf's record type and `FormKey_ID` to query every
-imported plugin containing the same typed record. `FormListService` and `GameSettingService` provide typed read
-boundaries over repository queries. `PluginService` provides imported plugin metadata for load-order sorting. The
-presentation view model builds normalized field rows and plugin columns for WinUI binding.
+imported plugin containing the same typed record. Explicit per-record services provide typed read boundaries over
+repository queries. `PluginService` provides imported plugin metadata for load-order sorting. The presentation view
+model builds normalized field rows and plugin columns for WinUI binding.
 
 Form list item rows are read by owning plugin and form list key in `Item_Index` order. The persisted index represents
 source enumeration order and keeps duplicate item references as distinct occurrences.

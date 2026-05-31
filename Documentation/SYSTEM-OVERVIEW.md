@@ -29,8 +29,7 @@ comparison workspace. The open-plugin dialog selects the active imported plugin 
 5. Plugin metadata is read through Mutagen by `StarfieldPluginReaderService`.
 6. Plugin rows and master references are saved through repositories.
 7. Record details are imported through `RecordImportService` and typed record importers. The active record detail path
-   reads `FormList` and `GameSetting` DTOs in bulk from Mutagen, then persists them through `FormListImporter` and
-   `GameSettingImporter`.
+   reads supported typed DTOs in bulk from Mutagen, then persists them through explicit per-record-type importers.
 8. Progress is reported to the startup view for plugin-level phases and supported record-type import phases. On
    successful completion, the app navigates to `MainView`.
 
@@ -41,19 +40,19 @@ comparison workspace. The open-plugin dialog selects the active imported plugin 
   references.
 - Tracks plugin import state as `Current`, `Changed`, `Missing`, `Failed`, or `Unsupported`.
 - Skips unchanged plugins by comparing source last-write ticks and source file size.
-- Stores plugin metadata, master references, form lists, form list items, and game settings in SQLite.
+- Stores plugin metadata, master references, and supported typed record details in SQLite.
 - Initializes and migrates the database with DbUp.
 - Lets users select an active imported plugin from an autocomplete open-plugin dialog.
-- Shows imported form lists and game settings owned by the active plugin in a filterable main-view record tree.
-- Shows every imported plugin containing a selected form list or game setting in a load-order-sorted comparison grid.
+- Shows imported supported records owned by the active plugin in a filterable main-view record tree.
+- Shows every imported plugin containing a selected supported record in a load-order-sorted comparison grid.
 - Routes presentation browsing workflows through typed Core services instead of direct repository access.
 - Logs app startup, shutdown, schema initialization, plugin import activity, and record-type import checkpoints through
   Serilog.
 
 ## Current Limitations
 
-- The main record tree currently shows only imported `FormList` and `GameSetting` details.
-- `RecordImportService` currently routes Starfield `FLST` form lists and `GMST` game settings to typed importers.
+- Nested child structures for newly supported records are intentionally deferred until they can be modeled with
+  normalized typed fields or child tables.
 - Unsupported `BlueprintShips*.esm` plugins are skipped during import.
 
 ## Framework Note

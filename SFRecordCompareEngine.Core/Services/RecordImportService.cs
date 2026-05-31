@@ -51,6 +51,13 @@ public class RecordImportService : IRecordImportService
     {
         ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.FormList.RecordID, RecordTypeCatalog.FormList.TableName, () => StarfieldRecordReaderService.GetFormLists(plugin), progress, pluginIndex, pluginCount, cancellationToken);
         ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.GameSetting.RecordID, RecordTypeCatalog.GameSetting.TableName, () => StarfieldRecordReaderService.GetGameSettings(plugin), progress, pluginIndex, pluginCount, cancellationToken);
+        ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.Global.RecordID, RecordTypeCatalog.Global.TableName, () => StarfieldRecordReaderService.GetGlobals(plugin), progress, pluginIndex, pluginCount, cancellationToken);
+        ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.MiscObject.RecordID, RecordTypeCatalog.MiscObject.TableName, () => StarfieldRecordReaderService.GetMiscObjects(plugin), progress, pluginIndex, pluginCount, cancellationToken);
+        ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.Keyword.RecordID, RecordTypeCatalog.Keyword.TableName, () => StarfieldRecordReaderService.GetKeywords(plugin), progress, pluginIndex, pluginCount, cancellationToken);
+        ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.NPC.RecordID, RecordTypeCatalog.NPC.TableName, () => StarfieldRecordReaderService.GetNPCs(plugin), progress, pluginIndex, pluginCount, cancellationToken);
+        ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.ActorValueInformation.RecordID, RecordTypeCatalog.ActorValueInformation.TableName, () => StarfieldRecordReaderService.GetActorValueInformation(plugin), progress, pluginIndex, pluginCount, cancellationToken);
+        ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.MagicEffect.RecordID, RecordTypeCatalog.MagicEffect.TableName, () => StarfieldRecordReaderService.GetMagicEffects(plugin), progress, pluginIndex, pluginCount, cancellationToken);
+        ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.Perk.RecordID, RecordTypeCatalog.Perk.TableName, () => StarfieldRecordReaderService.GetPerks(plugin), progress, pluginIndex, pluginCount, cancellationToken);
     }
 
     private void ImportStarfieldPluginRecordType<TRecordDTO>(PluginDTO plugin, RecordImportResultDTO resultDTO, string recordID, string tableName, Func<IReadOnlyList<TRecordDTO>> getRecords, IProgress<PluginImportProgressDTO>? progress, int pluginIndex, int pluginCount, CancellationToken cancellationToken)

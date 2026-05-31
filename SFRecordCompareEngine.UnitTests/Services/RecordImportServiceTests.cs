@@ -18,6 +18,7 @@ public class RecordImportServiceTests
     {
         var plugin = CreatePluginDTO();
         var reader = new Mock<IStarfieldRecordReaderService>();
+        SetupEmptyAdditionalRecordTypes(reader, plugin);
         reader.Setup(x => x.GetFormLists(plugin)).Returns(new List<FormListDTO>());
         reader.Setup(x => x.GetGameSettings(plugin)).Returns(new List<GameSettingDTO>());
         var sut = new RecordImportService(Array.Empty<ITypedRecordDetailImporter>(), reader.Object);
@@ -25,7 +26,7 @@ public class RecordImportServiceTests
         var result = sut.ImportPluginRecords(plugin, null, 1, 1, CancellationToken.None);
 
         result.ModKey.ShouldBe(plugin.ModKey);
-        result.RecordTypes.Count.ShouldBe(2);
+        result.RecordTypes.Count.ShouldBe(9);
         result.HeadersImported.ShouldBe(0);
     }
 
@@ -34,6 +35,7 @@ public class RecordImportServiceTests
     {
         var plugin = CreatePluginDTO();
         var reader = new Mock<IStarfieldRecordReaderService>();
+        SetupEmptyAdditionalRecordTypes(reader, plugin);
         reader.Setup(x => x.GetFormLists(plugin)).Returns(new List<FormListDTO> { CreateFormListDTO(plugin.ModKey, 123) });
         reader.Setup(x => x.GetGameSettings(plugin)).Returns(new List<GameSettingDTO>());
         var sut = new RecordImportService(Array.Empty<ITypedRecordDetailImporter>(), reader.Object);
@@ -41,8 +43,8 @@ public class RecordImportServiceTests
         var result = sut.ImportPluginRecords(plugin, null, 1, 1, CancellationToken.None);
 
         result.ModKey.ShouldBe(plugin.ModKey);
-        result.RecordTypes.Count.ShouldBe(2);
-        result.UnsupportedRecordTypes.ShouldBe(2);
+        result.RecordTypes.Count.ShouldBe(9);
+        result.UnsupportedRecordTypes.ShouldBe(9);
     }
 
     [Fact]
@@ -52,6 +54,7 @@ public class RecordImportServiceTests
         var firstFormList = CreateFormListDTO(plugin.ModKey, 123);
         var secondFormList = CreateFormListDTO(plugin.ModKey, 456);
         var reader = new Mock<IStarfieldRecordReaderService>();
+        SetupEmptyAdditionalRecordTypes(reader, plugin);
         reader.Setup(x => x.GetFormLists(plugin)).Returns(new List<FormListDTO> { firstFormList, secondFormList });
         reader.Setup(x => x.GetGameSettings(plugin)).Returns(new List<GameSettingDTO>());
         var importer = new Mock<ITypedRecordDetailImporter>();
@@ -74,6 +77,7 @@ public class RecordImportServiceTests
         var firstGameSetting = CreateGameSettingDTO(plugin.ModKey, 123);
         var secondGameSetting = CreateGameSettingDTO(plugin.ModKey, 456);
         var reader = new Mock<IStarfieldRecordReaderService>();
+        SetupEmptyAdditionalRecordTypes(reader, plugin);
         reader.Setup(x => x.GetFormLists(plugin)).Returns(new List<FormListDTO>());
         reader.Setup(x => x.GetGameSettings(plugin)).Returns(new List<GameSettingDTO> { firstGameSetting, secondGameSetting });
         var importer = new Mock<ITypedRecordDetailImporter>();
@@ -94,6 +98,7 @@ public class RecordImportServiceTests
     {
         var plugin = CreatePluginDTO();
         var reader = new Mock<IStarfieldRecordReaderService>();
+        SetupEmptyAdditionalRecordTypes(reader, plugin);
         reader.Setup(x => x.GetFormLists(plugin)).Returns(new List<FormListDTO> { CreateFormListDTO(plugin.ModKey, 123) });
         reader.Setup(x => x.GetGameSettings(plugin)).Returns(new List<GameSettingDTO>());
         var progress = new CapturingProgress();
@@ -106,12 +111,45 @@ public class RecordImportServiceTests
         progress.Reports.ShouldAllBe(x => x.PluginIndex == 2 && x.PluginCount == 5);
     }
 
+    [Fact]
+    public void ImportPluginRecords_WhenGlobalImporterExists_ImportsEachGlobal()
+    {
+        var plugin = CreatePluginDTO();
+        var reader = new Mock<IStarfieldRecordReaderService>();
+        SetupEmptyAdditionalRecordTypes(reader, plugin);
+        reader.Setup(x => x.GetFormLists(plugin)).Returns(new List<FormListDTO>());
+        reader.Setup(x => x.GetGameSettings(plugin)).Returns(new List<GameSettingDTO>());
+        var global = CreateGlobalDTO(plugin.ModKey, 123);
+        reader.Setup(x => x.GetGlobals(plugin)).Returns(new List<GlobalDTO> { global });
+        var importer = new Mock<ITypedRecordDetailImporter>();
+        importer.SetupGet(x => x.GameRelease).Returns(GameRelease.Starfield);
+        importer.SetupGet(x => x.RecordType).Returns(new RecordType("GLOB"));
+        var sut = new RecordImportService(new[] { importer.Object }, reader.Object);
+
+        var result = sut.ImportPluginRecords(plugin, null, 1, 1, CancellationToken.None);
+
+        var globalResult = result.RecordTypes.Single(x => x.RecordType == "GLOB");
+        importer.Verify(x => x.Import(global, globalResult), Times.Once);
+        globalResult.HeadersImported.ShouldBe(1);
+    }
+
     private static PluginDTO CreatePluginDTO()
     {
         return new PluginDTO
         {
             ModKey = new ModKey("Example", ModType.Master)
         };
+    }
+
+    private static void SetupEmptyAdditionalRecordTypes(Mock<IStarfieldRecordReaderService> reader, PluginDTO plugin)
+    {
+        reader.Setup(x => x.GetGlobals(plugin)).Returns(new List<GlobalDTO>());
+        reader.Setup(x => x.GetMiscObjects(plugin)).Returns(new List<MiscObjectDTO>());
+        reader.Setup(x => x.GetKeywords(plugin)).Returns(new List<KeywordDTO>());
+        reader.Setup(x => x.GetNPCs(plugin)).Returns(new List<NPCDTO>());
+        reader.Setup(x => x.GetActorValueInformation(plugin)).Returns(new List<ActorValueInformationDTO>());
+        reader.Setup(x => x.GetMagicEffects(plugin)).Returns(new List<MagicEffectDTO>());
+        reader.Setup(x => x.GetPerks(plugin)).Returns(new List<PerkDTO>());
     }
 
     private static FormListDTO CreateFormListDTO(ModKey modKey, uint formId)
@@ -132,6 +170,21 @@ public class RecordImportServiceTests
     private static GameSettingDTO CreateGameSettingDTO(ModKey modKey, uint formId)
     {
         return new GameSettingDTO
+        {
+            ModKey = modKey,
+            FormKey = new FormKey(modKey, formId),
+            EditorID = "Editor",
+            FormVersion = 44,
+            StarfieldMajorRecordFlags = 0,
+            Version2 = 0,
+            VersionControl = 0,
+            ImportedAtUTC = DateTime.UtcNow
+        };
+    }
+
+    private static GlobalDTO CreateGlobalDTO(ModKey modKey, uint formId)
+    {
+        return new GlobalDTO
         {
             ModKey = modKey,
             FormKey = new FormKey(modKey, formId),

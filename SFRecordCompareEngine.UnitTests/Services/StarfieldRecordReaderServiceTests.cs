@@ -46,6 +46,34 @@ public class StarfieldRecordReaderServiceTests
         result.ShouldAllBe(gameSetting => gameSetting.FormKey.ModKey.FileName.String == "Starfield.esm");
     }
 
+    [Theory]
+    [InlineData("GLOB")]
+    [InlineData("MISC")]
+    [InlineData("KYWD")]
+    [InlineData("NPC_")]
+    [InlineData("AVIF")]
+    [InlineData("MGEF")]
+    [InlineData("PERK")]
+    public void GetAddedRecords_WhenStarfieldEsmExists_ReturnsRecords(string recordID)
+    {
+        var sut = new StarfieldRecordReaderService();
+        var plugin = CreateStarfieldPluginDTO();
+
+        var count = recordID switch
+        {
+            "GLOB" => sut.GetGlobals(plugin).Count,
+            "MISC" => sut.GetMiscObjects(plugin).Count,
+            "KYWD" => sut.GetKeywords(plugin).Count,
+            "NPC_" => sut.GetNPCs(plugin).Count,
+            "AVIF" => sut.GetActorValueInformation(plugin).Count,
+            "MGEF" => sut.GetMagicEffects(plugin).Count,
+            "PERK" => sut.GetPerks(plugin).Count,
+            _ => 0
+        };
+
+        count.ShouldBeGreaterThan(0);
+    }
+
     private static PluginDTO CreateStarfieldPluginDTO()
     {
         return new PluginDTO

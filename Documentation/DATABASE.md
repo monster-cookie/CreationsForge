@@ -32,6 +32,7 @@ Schema migrations are executed by DbUp through `DatabaseMigrationRunner`. SQL sc
 Current migration script:
 
 - `001_CreatePluginSchema.sql`
+- `002_AddSupportedRecordTypes.sql`
 
 DbUp's `SchemaVersions` table is the migration state source of truth. The application does not define a hardcoded 
 schema-version constant.
@@ -129,6 +130,16 @@ lookup.
 
 Game-setting rows do not include `TitleString` because Mutagen's Starfield game-setting records do not expose that
 field. `RawData` and `XALG` remain persisted as diagnostic fields but are not shown in the comparison workspace.
+
+### Additional Supported Record Tables
+
+`Global`, `MiscObject`, `Keyword`, `NPC`, `ActorValueInformation`, `MagicEffect`, and `Perk` store Starfield `GLOB`,
+`MISC`, `KYWD`, `NPC_`, `AVIF`, `MGEF`, and `PERK` typed detail rows.
+
+Each table uses the same owning plugin key plus `FormKey_ID` primary key shape as `FormList` and `GameSetting`.
+`FormKey_ID` indexes support cross-plugin comparison lookup. Clearly understood scalar fields and direct `FormKey`
+references are stored as typed columns. English localized text is stored as nullable `TEXT`. Complex child objects are
+not stored as JSON and remain deferred for normalized modeling.
 
 ## Record Comparison Lookup
 
