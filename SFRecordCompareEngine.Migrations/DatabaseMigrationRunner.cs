@@ -1,5 +1,6 @@
 using System.Reflection;
 using DbUp;
+using SQLitePCL;
 
 namespace SFRecordCompareEngine.Migrations;
 
@@ -7,7 +8,7 @@ public class DatabaseMigrationRunner : IDatabaseMigrationRunner
 {
     public void Migrate(string databasePath)
     {
-        SQLitePCL.Batteries.Init();
+        Batteries.Init();
 
         var databaseDirectory = Path.GetDirectoryName(databasePath);
         if (!string.IsNullOrWhiteSpace(databaseDirectory))

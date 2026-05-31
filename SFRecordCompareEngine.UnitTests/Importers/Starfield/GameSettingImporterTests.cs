@@ -1,13 +1,12 @@
+using Moq;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
-using Moq;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.DTOs.Results;
 using SFRecordCompareEngine.Core.Helpers;
 using SFRecordCompareEngine.Core.Importers.Starfield;
 using SFRecordCompareEngine.Core.Repositories.Interfaces;
-using SFRecordCompareEngine.Core.Services.Interfaces;
 using Shouldly;
 
 namespace SFRecordCompareEngine.UnitTests.Importers.Starfield;
@@ -71,5 +70,4 @@ public class GameSettingImporterTests
             dto.RawData == 60)), Times.Once);
         result.DetailRowsImported.ShouldBe(1);
     }
-
 }

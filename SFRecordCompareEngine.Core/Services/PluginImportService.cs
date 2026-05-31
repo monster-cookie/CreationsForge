@@ -10,13 +10,13 @@ namespace SFRecordCompareEngine.Core.Services;
 
 public class PluginImportService : IPluginImportService
 {
-    private readonly ILogger Logger = Log.ForContext<PluginImportService>();
+    private readonly IDatabase Database;
 
     private readonly IDatabaseSchemaInitializer DatabaseSchemaInitializer;
-    private readonly IDatabase Database;
-    private readonly IPluginService PluginService;
-    private readonly IPluginRepository PluginRepository;
+    private readonly ILogger Logger = Log.ForContext<PluginImportService>();
     private readonly IPluginMasterReferencesRepository PluginMasterReferencesRepository;
+    private readonly IPluginRepository PluginRepository;
+    private readonly IPluginService PluginService;
     private readonly IRecordImportService RecordImportService;
     private readonly IStarfieldPluginReaderService StarfieldPluginReaderService;
 
@@ -121,13 +121,21 @@ public class PluginImportService : IPluginImportService
     private void ImportPlugin(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
     {
         var plugin = ImportStarfieldPlugin(entry, result, progress, totalPlugins, cancellationToken);
-        if (plugin == null) return;
+        if (plugin == null)
+        {
+            return;
+        }
 
         // Before we can process all the master references, we need the plugin stubs filled out
         ImportStarfieldPluginMasterReferences(entry, result, progress, totalPlugins, cancellationToken);
 
         // Finally, the long arduous part importing all the records
         ImportStarfieldPluginRecords(plugin, result, progress, totalPlugins, cancellationToken);
+    }
+
+    private static bool IsUnsupportedPlugin(PluginLoadOrderEntryDTO loadOrderEntry)
+    {
+        return loadOrderEntry.ModKey.FileName.ToString().StartsWith("BlueprintShips", StringComparison.OrdinalIgnoreCase) && loadOrderEntry.ModKey.FileName.ToString().EndsWith(".esm", StringComparison.OrdinalIgnoreCase);
     }
 
     #region Starfield Import Helpers
@@ -305,7 +313,10 @@ public class PluginImportService : IPluginImportService
     {
         var metadata = StarfieldPluginReaderService.GetMetadata(entry.ModKey);
 
-        if (!metadata.MasterReferences.Any()) return;
+        if (!metadata.MasterReferences.Any())
+        {
+            return;
+        }
 
         Logger.Information("Importing master references for {Name} from {FileName}, found {Count} parent masters", entry.ModKey.Name, metadata.ModKey.FileName, metadata.MasterReferences.Count);
         progress?.Report(new PluginImportProgressDTO
@@ -321,7 +332,10 @@ public class PluginImportService : IPluginImportService
         foreach (var master in metadata.MasterReferences)
         {
             var currentMaster = PluginRepository.GetByModKey(master);
-            if (currentMaster is null) continue;
+            if (currentMaster is null)
+            {
+                continue;
+            }
 
             progress?.Report(new PluginImportProgressDTO
             {
@@ -379,9 +393,4 @@ public class PluginImportService : IPluginImportService
     }
 
     #endregion
-
-    private static bool IsUnsupportedPlugin(PluginLoadOrderEntryDTO loadOrderEntry)
-    {
-        return loadOrderEntry.ModKey.FileName.ToString().StartsWith("BlueprintShips", StringComparison.OrdinalIgnoreCase) && loadOrderEntry.ModKey.FileName.ToString().EndsWith(".esm", StringComparison.OrdinalIgnoreCase);
-    }
 }

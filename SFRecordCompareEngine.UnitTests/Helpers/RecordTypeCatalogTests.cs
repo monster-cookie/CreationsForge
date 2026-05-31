@@ -21,4 +21,21 @@ public class RecordTypeCatalogTests
         RecordTypeCatalog.GameSetting.RecordID.ShouldBe("GMST");
     }
 
+    [Theory]
+    [InlineData("Global", "Global", "GLOB")]
+    [InlineData("MiscItem", "MiscItem", "MISC")]
+    [InlineData("Keyword", "Keyword", "KYWD")]
+    [InlineData("NPC", "NPC", "NPC_")]
+    [InlineData("ActorValueInformation", "ActorValueInformation", "AVIF")]
+    [InlineData("MagicEffect", "MagicEffect", "MGEF")]
+    [InlineData("Perk", "Perk", "PERK")]
+    public void AddedRecordType_ReturnsExpectedRecordTypeData(string propertyName, string expectedName, string expectedID)
+    {
+        var value = typeof(RecordTypeCatalog).GetField(propertyName)?.GetValue(null) as RecordTypeData;
+
+        value.ShouldNotBeNull();
+        value.TableName.ShouldBe(expectedName);
+        value.RecordType.ShouldBe(expectedName);
+        value.RecordID.ShouldBe(expectedID);
+    }
 }

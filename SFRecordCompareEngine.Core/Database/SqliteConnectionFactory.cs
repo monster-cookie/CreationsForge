@@ -1,7 +1,6 @@
+using System.Data.SQLite;
 using NPoco;
 using SFRecordCompareEngine.Core.Database.Interfaces;
-using System.IO;
-using System.Data.SQLite;
 using SFRecordCompareEngine.Core.Models.Database;
 
 namespace SFRecordCompareEngine.Core.Database;

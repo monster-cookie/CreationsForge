@@ -16,7 +16,7 @@ public class GameSettingRepository : IGameSettingRepository
         Database = database;
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public IList<GameSettingDTO> GetByModKey(ModKey modKey)
     {
         return Database.Fetch<GameSetting>(
@@ -31,7 +31,7 @@ public class GameSettingRepository : IGameSettingRepository
             .ToList();
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public IList<GameSettingDTO> GetByFormKeyID(uint formKeyID)
     {
         return Database.Fetch<GameSetting>(
@@ -53,7 +53,7 @@ public class GameSettingRepository : IGameSettingRepository
             .ToList();
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public void Save(GameSettingDTO dto)
     {
         var model = new GameSetting(dto);

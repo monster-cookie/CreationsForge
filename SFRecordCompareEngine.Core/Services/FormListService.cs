@@ -7,8 +7,8 @@ namespace SFRecordCompareEngine.Core.Services;
 
 public class FormListService : IFormListService
 {
-    private readonly IFormListRepository FormListRepository;
     private readonly IFormListItemRepository FormListItemRepository;
+    private readonly IFormListRepository FormListRepository;
 
     public FormListService(
         IFormListRepository formListRepository,

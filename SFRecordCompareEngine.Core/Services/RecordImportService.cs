@@ -12,9 +12,9 @@ namespace SFRecordCompareEngine.Core.Services;
 public class RecordImportService : IRecordImportService
 {
     private readonly ILogger Logger = Log.ForContext<RecordImportService>();
+    private readonly IStarfieldRecordReaderService StarfieldRecordReaderService;
 
     private readonly Dictionary<(GameRelease GameRelease, RecordType RecordType), ITypedRecordDetailImporter> TypedRecordDetailImporters;
-    private readonly IStarfieldRecordReaderService StarfieldRecordReaderService;
 
     public RecordImportService(
         IEnumerable<ITypedRecordDetailImporter> typedRecordDetailImporters,
@@ -51,6 +51,13 @@ public class RecordImportService : IRecordImportService
     {
         ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.FormList.RecordID, RecordTypeCatalog.FormList.TableName, () => StarfieldRecordReaderService.GetFormLists(plugin), progress, pluginIndex, pluginCount, cancellationToken);
         ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.GameSetting.RecordID, RecordTypeCatalog.GameSetting.TableName, () => StarfieldRecordReaderService.GetGameSettings(plugin), progress, pluginIndex, pluginCount, cancellationToken);
+        ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.Global.RecordID, RecordTypeCatalog.Global.TableName, () => StarfieldRecordReaderService.GetGlobals(plugin), progress, pluginIndex, pluginCount, cancellationToken);
+        ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.MiscItem.RecordID, RecordTypeCatalog.MiscItem.TableName, () => StarfieldRecordReaderService.GetMiscItems(plugin), progress, pluginIndex, pluginCount, cancellationToken);
+        ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.Keyword.RecordID, RecordTypeCatalog.Keyword.TableName, () => StarfieldRecordReaderService.GetKeywords(plugin), progress, pluginIndex, pluginCount, cancellationToken);
+        ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.NPC.RecordID, RecordTypeCatalog.NPC.TableName, () => StarfieldRecordReaderService.GetNPCs(plugin), progress, pluginIndex, pluginCount, cancellationToken);
+        ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.ActorValueInformation.RecordID, RecordTypeCatalog.ActorValueInformation.TableName, () => StarfieldRecordReaderService.GetActorValueInformation(plugin), progress, pluginIndex, pluginCount, cancellationToken);
+        ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.MagicEffect.RecordID, RecordTypeCatalog.MagicEffect.TableName, () => StarfieldRecordReaderService.GetMagicEffects(plugin), progress, pluginIndex, pluginCount, cancellationToken);
+        ImportStarfieldPluginRecordType(plugin, resultDTO, RecordTypeCatalog.Perk.RecordID, RecordTypeCatalog.Perk.TableName, () => StarfieldRecordReaderService.GetPerks(plugin), progress, pluginIndex, pluginCount, cancellationToken);
     }
 
     private void ImportStarfieldPluginRecordType<TRecordDTO>(PluginDTO plugin, RecordImportResultDTO resultDTO, string recordID, string tableName, Func<IReadOnlyList<TRecordDTO>> getRecords, IProgress<PluginImportProgressDTO>? progress, int pluginIndex, int pluginCount, CancellationToken cancellationToken)
@@ -82,7 +89,10 @@ public class RecordImportService : IRecordImportService
 
         Logger.Information("Discovered {RecordCount} {RecordType} records for {ModKey}", records.Count, recordID, plugin.ModKey);
         ReportProgress(plugin, progress, pluginIndex, pluginCount, recordID, 0, records.Count, $"Discovered {records.Count} {recordID} records for {plugin.ModKey.FileName}.");
-        if (!records.Any()) return;
+        if (!records.Any())
+        {
+            return;
+        }
 
         for (var index = 0; index < records.Count; index++)
         {

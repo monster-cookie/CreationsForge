@@ -29,9 +29,8 @@ indicator. It starts import from `Loaded` and cancels import from `Unloaded`.
 
 `MainView` is the current application shell after startup import. It has a native WinUI `MenuBar`, a WinUI `CommandBar`,
 a filterable left-side record tree, a horizontally scrollable right-side selected-record comparison workspace, and a
-status area that shows the active plugin selection. The tree groups persisted `FormList` and `GameSetting` records owned
-by the active plugin. The active plugin remains visible in the status area and its comparison column has a subtle
-yellow border.
+status area that shows the active plugin selection. The tree groups persisted supported records owned by the active
+plugin. The active plugin remains visible in the status area and its comparison column has a subtle yellow border.
 
 `OpenPluginDialog` is a WinUI `ContentDialog` for selecting the active plugin. It provides an autocomplete plugin file
 name search backed by imported openable plugin rows, plus Load and Cancel actions.
@@ -102,4 +101,5 @@ resulting bindable tree collection on the UI thread.
 
 ## Current UI Limitations
 
-- The main record tree currently shows only persisted `FormList` and `GameSetting` details.
+- Newly supported record types show modeled scalar fields and direct references. Deferred child objects are not yet
+  displayed.

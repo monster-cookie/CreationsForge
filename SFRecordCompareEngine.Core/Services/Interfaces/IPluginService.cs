@@ -5,7 +5,7 @@ namespace SFRecordCompareEngine.Core.Services.Interfaces;
 public interface IPluginService
 {
     /// <summary>
-    /// Get the selected game's plugin load order.
+    ///     Get the selected game's plugin load order.
     /// </summary>
     /// <returns>The plugin load-order entries.</returns>
     IList<PluginLoadOrderEntryDTO> GetLoadOrder();
@@ -17,7 +17,7 @@ public interface IPluginService
     IList<PluginDTO> SearchOpenablePluginsByFilename(string searchFilename);
 
     /// <summary>
-    /// Get the supported major record type names.
+    ///     Get the supported major record type names.
     /// </summary>
     /// <returns>The supported major record type names.</returns>
     IList<string> GetRecordTypes();

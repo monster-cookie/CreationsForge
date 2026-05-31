@@ -10,15 +10,8 @@ namespace SFRecordCompareEngine.Core.Importers.Starfield;
 
 public class FormListImporter : ITypedRecordDetailImporter
 {
-    private readonly IFormListRepository FormListRepository;
-
     private readonly IFormListItemRepository FormListItemRepository;
-
-    public GameRelease GameRelease => GameRelease.Starfield;
-
-    public RecordType RecordType => new RecordType(RecordTypeCatalog.FormList.RecordID);
-
-    public string TableName => RecordTypeCatalog.FormList.TableName;
+    private readonly IFormListRepository FormListRepository;
 
     public FormListImporter(
         IFormListRepository formListRepository,
@@ -28,6 +21,12 @@ public class FormListImporter : ITypedRecordDetailImporter
         FormListRepository = formListRepository;
         FormListItemRepository = formListItemRepository;
     }
+
+    public GameRelease GameRelease => GameRelease.Starfield;
+
+    public RecordType RecordType => new(RecordTypeCatalog.FormList.RecordID);
+
+    public string TableName => RecordTypeCatalog.FormList.TableName;
 
     public void Import(object recordDTO, RecordTypeImportResultDTO resultDTO)
     {

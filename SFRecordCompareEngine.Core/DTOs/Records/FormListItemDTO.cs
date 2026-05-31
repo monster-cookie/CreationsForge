@@ -6,7 +6,7 @@ namespace SFRecordCompareEngine.Core.DTOs.Records;
 
 public class FormListItemDTO
 {
-    public FormListItemDTO() 
+    public FormListItemDTO()
     { }
 
     [SetsRequiredMembers]
@@ -19,7 +19,7 @@ public class FormListItemDTO
         ItemIndex = model.ItemIndex;
         ImportedAtUTC = model.ImportedAtUTC;
     }
-    
+
     public required ModKey ModKey { get; set; }
     public required FormKey FormKey { get; set; }
     public required ModKey ItemModKey { get; set; }

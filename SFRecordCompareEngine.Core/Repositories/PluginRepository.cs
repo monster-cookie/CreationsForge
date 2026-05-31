@@ -64,7 +64,7 @@ public class PluginRepository : IPluginRepository
                 new
                 {
                     CurrentImportState = nameof(PluginImportState.Current),
-                    FailedImportState = nameof(PluginImportState.Failed),
+                    FailedImportState = nameof(PluginImportState.Failed)
                 })
             .Select(plugin => new PluginDTO(plugin))
             .ToList();

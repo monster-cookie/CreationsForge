@@ -7,8 +7,8 @@ namespace SFRecordCompareEngine.Services;
 
 public class ApplicationNavigationService : IApplicationNavigationService
 {
-    private readonly ILifetimeScope LifetimeScope;
     private readonly IApplicationWindowService ApplicationWindowService;
+    private readonly ILifetimeScope LifetimeScope;
 
     public ApplicationNavigationService(ILifetimeScope lifetimeScope, IApplicationWindowService applicationWindowService)
     {

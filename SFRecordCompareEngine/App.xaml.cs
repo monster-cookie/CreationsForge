@@ -9,6 +9,7 @@ using SFRecordCompareEngine.Services;
 using SFRecordCompareEngine.Services.Interfaces;
 using SFRecordCompareEngine.ViewModels;
 using SFRecordCompareEngine.Views;
+using UnhandledExceptionEventArgs = Microsoft.UI.Xaml.UnhandledExceptionEventArgs;
 
 namespace SFRecordCompareEngine;
 
@@ -42,7 +43,7 @@ public partial class App : Application
         }
     }
 
-    private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+    private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
         Log.Fatal(e.Exception, "Unhandled WinUI exception");
         Log.CloseAndFlush();
@@ -78,7 +79,7 @@ public partial class App : Application
         builder.RegisterModule<CoreModule>();
         builder.RegisterModule<MigrationsModule>();
 
-        builder.RegisterInstance(Log.Logger).As<Serilog.ILogger>().SingleInstance();
+        builder.RegisterInstance(Log.Logger).As<ILogger>().SingleInstance();
 
         builder.RegisterType<StartupImportViewModel>();
         builder.RegisterType<MainPageViewModel>();

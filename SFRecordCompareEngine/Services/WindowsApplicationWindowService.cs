@@ -40,7 +40,10 @@ public class WindowsApplicationWindowService : IApplicationWindowService
 
     public async Task ShowDialogAsync(ContentDialog dialog)
     {
-        if (MainWindow == null) return;
+        if (MainWindow == null)
+        {
+            return;
+        }
 
         await MainWindow.ShowDialogAsync(dialog);
     }
@@ -52,7 +55,10 @@ public class WindowsApplicationWindowService : IApplicationWindowService
 
     public void MaximizeMainWindow()
     {
-        if (MainWindow == null) return;
+        if (MainWindow == null)
+        {
+            return;
+        }
 
         var appWindow = GetAppWindow(MainWindow);
 

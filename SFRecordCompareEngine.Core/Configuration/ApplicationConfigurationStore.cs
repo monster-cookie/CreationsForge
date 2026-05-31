@@ -1,4 +1,3 @@
-using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using SFRecordCompareEngine.Core.Configuration.Interfaces;
@@ -15,21 +14,20 @@ public class ApplicationConfigurationStore : IApplicationConfigurationStore
         Converters = { new JsonStringEnumConverter() }
     };
 
-    public static string DefaultApplicationDataDirectory { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SFRecordCompareEngine");
-    
-    public static string DefaultDatabaseDirectory { get; } = DefaultApplicationDataDirectory;
-
-    public static string DefaultLoggingDirectory { get; } =  Path.Combine(DefaultApplicationDataDirectory, "Logs");
-
-    public ApplicationConfigurationStore()  : this(Path.Combine(DefaultApplicationDataDirectory, "SFRecordCompareEngine.Config.json"))
-    {
-    }
+    public ApplicationConfigurationStore() : this(Path.Combine(DefaultApplicationDataDirectory, "SFRecordCompareEngine.Config.json"))
+    { }
 
     public ApplicationConfigurationStore(string configurationPath)
     {
         ConfigurationPath = configurationPath;
         Load();
     }
+
+    public static string DefaultApplicationDataDirectory { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SFRecordCompareEngine");
+
+    public static string DefaultDatabaseDirectory { get; } = DefaultApplicationDataDirectory;
+
+    public static string DefaultLoggingDirectory { get; } = Path.Combine(DefaultApplicationDataDirectory, "Logs");
 
     public string ConfigurationPath { get; }
 

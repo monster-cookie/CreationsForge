@@ -12,16 +12,16 @@ public class GameSettingImporter : ITypedRecordDetailImporter
 {
     private readonly IGameSettingRepository GameSettingRepository;
 
-    public GameRelease GameRelease => GameRelease.Starfield;
-
-    public RecordType RecordType => new RecordType(RecordTypeCatalog.GameSetting.RecordID);
-
-    public string TableName => RecordTypeCatalog.GameSetting.TableName;
-
     public GameSettingImporter(IGameSettingRepository gameSettingRepository)
     {
         GameSettingRepository = gameSettingRepository;
     }
+
+    public GameRelease GameRelease => GameRelease.Starfield;
+
+    public RecordType RecordType => new(RecordTypeCatalog.GameSetting.RecordID);
+
+    public string TableName => RecordTypeCatalog.GameSetting.TableName;
 
     public void Import(object recordDTO, RecordTypeImportResultDTO resultDTO)
     {

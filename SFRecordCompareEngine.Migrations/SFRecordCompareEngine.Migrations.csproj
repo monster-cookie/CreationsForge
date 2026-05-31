@@ -8,9 +8,9 @@
 
     <ItemGroup>
         <PackageReference Include="Autofac" Version="9.1.0"/>
-        <PackageReference Include="dbup-core" Version="6.1.1" />
-        <PackageReference Include="dbup-sqlite" Version="6.0.4" />
-        <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+        <PackageReference Include="dbup-core" Version="6.1.1"/>
+        <PackageReference Include="dbup-sqlite" Version="6.0.4"/>
+        <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3"/>
     </ItemGroup>
 
     <ItemGroup>

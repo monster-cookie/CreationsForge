@@ -3,6 +3,7 @@ using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
+using Mutagen.Bethesda.Strings;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using SFRecordCompareEngine.Core.Services.Interfaces;
@@ -100,6 +101,90 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             IGameSettingUIntGetter gameSetting => gameSetting.Data,
             _ => null
         };
+    }
+
+    public IReadOnlyList<GlobalDTO> GetGlobals(PluginDTO plugin)
+    {
+        return LoadMod(plugin.ModKey).Globals.Select(record => new GlobalDTO
+        {
+            ModKey = plugin.ModKey, FormKey = record.FormKey, EditorID = record.EditorID ?? string.Empty, FormVersion = record.FormVersion,
+            StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags, Version2 = record.Version2, VersionControl = (int)record.VersionControl,
+            ImportedAtUTC = DateTime.UtcNow, Data = record.Data
+        }).ToList();
+    }
+
+    public IReadOnlyList<MiscItemDTO> GetMiscItems(PluginDTO plugin)
+    {
+        return LoadMod(plugin.ModKey).MiscItems.Select(record => new MiscItemDTO
+        {
+            ModKey = plugin.ModKey, FormKey = record.FormKey, EditorID = record.EditorID ?? string.Empty, FormVersion = record.FormVersion,
+            StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags, Version2 = record.Version2, VersionControl = (int)record.VersionControl,
+            ImportedAtUTC = DateTime.UtcNow, Name = record.Name?.Lookup(Language.English), ShortName = record.ShortName?.Lookup(Language.English), Value = record.Value, Weight = record.Weight
+        }).ToList();
+    }
+
+    public IReadOnlyList<KeywordDTO> GetKeywords(PluginDTO plugin)
+    {
+        return LoadMod(plugin.ModKey).Keywords.Select(record => new KeywordDTO
+        {
+            ModKey = plugin.ModKey, FormKey = record.FormKey, EditorID = record.EditorID ?? string.Empty, FormVersion = record.FormVersion,
+            StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags, Version2 = record.Version2, VersionControl = (int)record.VersionControl,
+            ImportedAtUTC = DateTime.UtcNow, Name = record.Name?.Lookup(Language.English), Color = record.Color.ToString() ?? string.Empty, Type = record.Type.ToString() ?? string.Empty,
+            Notes = record.Notes, FlashLinkageName = record.FlashLinkageName, AttractionRuleFormKey = record.AttractionRule.FormKey
+        }).ToList();
+    }
+
+    public IReadOnlyList<NPCDTO> GetNPCs(PluginDTO plugin)
+    {
+        return LoadMod(plugin.ModKey).Npcs.Select(record => new NPCDTO
+        {
+            ModKey = plugin.ModKey, FormKey = record.FormKey, EditorID = record.EditorID ?? string.Empty, FormVersion = record.FormVersion,
+            StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags, Version2 = record.Version2, VersionControl = (int)record.VersionControl,
+            ImportedAtUTC = DateTime.UtcNow, Name = record.Name?.Lookup(Language.English), ShortName = record.ShortName?.Lookup(Language.English), LongName = record.LongName?.Lookup(Language.English),
+            DispositionBase = record.DispositionBase, Aggression = record.Aggression.ToString(), Confidence = record.Confidence.ToString(),
+            EnergyLevel = record.EnergyLevel, Responsibility = record.Responsibility.ToString(), Assistance = record.Assistance.ToString(),
+            GearedUpWeapons = record.GearedUpWeapons, HeightMin = record.HeightMin, HeightMax = record.HeightMax, SkinToneIndex = record.SkinToneIndex,
+            Pronoun = record.Pronoun?.ToString(), VoiceFormKey = record.Voice.FormKey, RaceFormKey = record.Race.FormKey,
+            CombatOverridePackageListFormKey = record.CombatOverridePackageList.FormKey, CombatStyleFormKey = record.CombatStyle.FormKey,
+            DefaultPackageListFormKey = record.DefaultPackageList.FormKey, CrimeFactionFormKey = record.CrimeFaction.FormKey
+        }).ToList();
+    }
+
+    public IReadOnlyList<ActorValueInformationDTO> GetActorValueInformation(PluginDTO plugin)
+    {
+        return LoadMod(plugin.ModKey).ActorValueInformation.Select(record => new ActorValueInformationDTO
+        {
+            ModKey = plugin.ModKey, FormKey = record.FormKey, EditorID = record.EditorID ?? string.Empty, FormVersion = record.FormVersion,
+            StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags, Version2 = record.Version2, VersionControl = (int)record.VersionControl,
+            ImportedAtUTC = DateTime.UtcNow, Name = record.Name?.Lookup(Language.English), Abbreviation = record.Abbreviation?.Lookup(Language.English), ContextNotes = record.ContextNotes,
+            DefaultValue = record.DefaultValue, Flags = record.Flags.ToString(), Type = record.Type?.ToString(), Min = record.Min, Max = record.Max
+        }).ToList();
+    }
+
+    public IReadOnlyList<MagicEffectDTO> GetMagicEffects(PluginDTO plugin)
+    {
+        return LoadMod(plugin.ModKey).MagicEffects.Select(record => new MagicEffectDTO
+        {
+            ModKey = plugin.ModKey, FormKey = record.FormKey, EditorID = record.EditorID ?? string.Empty, FormVersion = record.FormVersion,
+            StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags, Version2 = record.Version2, VersionControl = (int)record.VersionControl,
+            ImportedAtUTC = DateTime.UtcNow, Name = record.Name?.Lookup(Language.English), Description = record.Description?.Lookup(Language.English), Flags = record.Flags.ToString(),
+            CastType = record.CastType.ToString(), TargetType = record.TargetType.ToString(), ActorValue2FormKey = record.ActorValue2.FormKey,
+            ResistValueFormKey = record.ResistValue.FormKey, PerkToApplyFormKey = record.PerkToApply.FormKey, EquipAbilityFormKey = record.EquipAbility.FormKey,
+            ExplosionFormKey = record.Explosion.FormKey, CastingArtFormKey = record.CastingArt.FormKey, HitEffectArtFormKey = record.HitEffectArt.FormKey,
+            HitShaderFormKey = record.HitShader.FormKey, ImageSpaceModifierFormKey = record.ImageSpaceModifier.FormKey,
+            ImpactDataFormKey = record.ImpactData.FormKey, ProjectileFormKey = record.Projectile.FormKey
+        }).ToList();
+    }
+
+    public IReadOnlyList<PerkDTO> GetPerks(PluginDTO plugin)
+    {
+        return LoadMod(plugin.ModKey).Perks.Select(record => new PerkDTO
+        {
+            ModKey = plugin.ModKey, FormKey = record.FormKey, EditorID = record.EditorID ?? string.Empty, FormVersion = record.FormVersion,
+            StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags, Version2 = record.Version2, VersionControl = (int)record.VersionControl,
+            ImportedAtUTC = DateTime.UtcNow, Name = record.Name?.Lookup(Language.English), Description = record.Description?.Lookup(Language.English), Flags = record.Flags.ToString(),
+            SkillGroup = record.SkillGroup.ToString(), CrewAssignment = record.CrewAssignment.ToString(), PerkIcon = record.PerkIcon
+        }).ToList();
     }
 
     private static IStarfieldModGetter LoadMod(ModKey modKey)
