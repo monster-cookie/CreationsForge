@@ -13,10 +13,36 @@ public class NPC
 
     public NPC(NPCDTO dto)
     {
-        ModKeyName = dto.ModKey.Name; ModKeyType = (int)dto.ModKey.Type; ModKeyFileName = dto.ModKey.FileName; FormKeyId = (int)dto.FormKey.ID;
-        EditorId = dto.EditorID; FormVersion = dto.FormVersion; StarfieldMajorRecordFlags = (int)dto.StarfieldMajorRecordFlags; Version2 = dto.Version2; VersionControl = dto.VersionControl; ImportedAtUTC = dto.ImportedAtUTC;
-        Name = dto.Name; ShortName = dto.ShortName; LongName = dto.LongName; DispositionBase = dto.DispositionBase; Aggression = dto.Aggression; Confidence = dto.Confidence; EnergyLevel = dto.EnergyLevel; Responsibility = dto.Responsibility; Assistance = dto.Assistance; GearedUpWeapons = dto.GearedUpWeapons; HeightMin = dto.HeightMin; HeightMax = dto.HeightMax; SkinToneIndex = dto.SkinToneIndex; Pronoun = dto.Pronoun;
-        VoiceFormKey = dto.VoiceFormKey?.ToString(); RaceFormKey = dto.RaceFormKey?.ToString(); CombatOverridePackageListFormKey = dto.CombatOverridePackageListFormKey?.ToString(); CombatStyleFormKey = dto.CombatStyleFormKey?.ToString(); DefaultPackageListFormKey = dto.DefaultPackageListFormKey?.ToString(); CrimeFactionFormKey = dto.CrimeFactionFormKey?.ToString();
+        ModKeyName = dto.ModKey.Name;
+        ModKeyType = (int)dto.ModKey.Type;
+        ModKeyFileName = dto.ModKey.FileName;
+        FormKeyId = (int)dto.FormKey.ID;
+        EditorId = dto.EditorID;
+        FormVersion = dto.FormVersion;
+        StarfieldMajorRecordFlags = (int)dto.StarfieldMajorRecordFlags;
+        Version2 = dto.Version2;
+        VersionControl = dto.VersionControl;
+        ImportedAtUTC = dto.ImportedAtUTC;
+        Name = dto.Name;
+        ShortName = dto.ShortName;
+        LongName = dto.LongName;
+        DispositionBase = dto.DispositionBase;
+        Aggression = dto.Aggression;
+        Confidence = dto.Confidence;
+        EnergyLevel = dto.EnergyLevel;
+        Responsibility = dto.Responsibility;
+        Assistance = dto.Assistance;
+        GearedUpWeapons = dto.GearedUpWeapons;
+        HeightMin = dto.HeightMin;
+        HeightMax = dto.HeightMax;
+        SkinToneIndex = dto.SkinToneIndex;
+        Pronoun = dto.Pronoun;
+        VoiceFormKey = dto.VoiceFormKey?.ToString();
+        RaceFormKey = dto.RaceFormKey?.ToString();
+        CombatOverridePackageListFormKey = dto.CombatOverridePackageListFormKey?.ToString();
+        CombatStyleFormKey = dto.CombatStyleFormKey?.ToString();
+        DefaultPackageListFormKey = dto.DefaultPackageListFormKey?.ToString();
+        CrimeFactionFormKey = dto.CrimeFactionFormKey?.ToString();
     }
 
     [Column("ModKey_Name")] public string ModKeyName { get; set; } = string.Empty;
@@ -45,7 +71,10 @@ public class NPC
     [Column("Pronoun")] public string? Pronoun { get; set; }
     [Column("VoiceFormKey")] public string? VoiceFormKey { get; set; }
     [Column("RaceFormKey")] public string? RaceFormKey { get; set; }
-    [Column("CombatOverridePackageListFormKey")] public string? CombatOverridePackageListFormKey { get; set; }
+
+    [Column("CombatOverridePackageListFormKey")]
+    public string? CombatOverridePackageListFormKey { get; set; }
+
     [Column("CombatStyleFormKey")] public string? CombatStyleFormKey { get; set; }
     [Column("DefaultPackageListFormKey")] public string? DefaultPackageListFormKey { get; set; }
     [Column("CrimeFactionFormKey")] public string? CrimeFactionFormKey { get; set; }

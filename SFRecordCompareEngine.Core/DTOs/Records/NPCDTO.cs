@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
+using SFRecordCompareEngine.Core.Models.Database;
 
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
@@ -10,7 +11,7 @@ public class NPCDTO
     { }
 
     [SetsRequiredMembers]
-    public NPCDTO(Models.Database.NPC model)
+    public NPCDTO(NPC model)
     {
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
         FormKey = new FormKey(ModKey, (uint)model.FormKeyId);

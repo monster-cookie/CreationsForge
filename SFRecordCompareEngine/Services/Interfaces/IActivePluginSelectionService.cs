@@ -4,9 +4,8 @@ namespace SFRecordCompareEngine.Services.Interfaces;
 
 public interface IActivePluginSelectionService
 {
-    event EventHandler? ActivePluginChanged;
-
     PluginDTO? ActivePlugin { get; }
+    event EventHandler? ActivePluginChanged;
 
     void SetActivePlugin(PluginDTO plugin);
 }

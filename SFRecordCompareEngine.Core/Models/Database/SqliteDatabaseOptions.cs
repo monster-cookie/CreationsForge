@@ -1,4 +1,3 @@
-using System.IO;
 using SFRecordCompareEngine.Core.Configuration;
 
 namespace SFRecordCompareEngine.Core.Models.Database;

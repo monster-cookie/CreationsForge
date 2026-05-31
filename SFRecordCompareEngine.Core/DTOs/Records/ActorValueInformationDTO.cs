@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
+using ActorValueInformation = SFRecordCompareEngine.Core.Models.Database.ActorValueInformation;
 
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
@@ -10,7 +11,7 @@ public class ActorValueInformationDTO
     { }
 
     [SetsRequiredMembers]
-    public ActorValueInformationDTO(Models.Database.ActorValueInformation model)
+    public ActorValueInformationDTO(ActorValueInformation model)
     {
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
         FormKey = new FormKey(ModKey, (uint)model.FormKeyId);

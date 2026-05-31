@@ -1,4 +1,3 @@
-using System.IO;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
 using Mutagen.Bethesda.Plugins;
@@ -10,14 +9,14 @@ namespace SFRecordCompareEngine.Core.Services;
 
 public class StarfieldPluginReaderService : IStarfieldPluginReaderService
 {
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public virtual string GetDataFolderPath()
     {
         var environment = GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield);
         return environment.DataFolderPath;
     }
-    
-    /// <inheritdoc/>
+
+    /// <inheritdoc />
     public IList<PluginLoadOrderEntryDTO> GetLoadOrder()
     {
         var environment = GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield);
@@ -31,7 +30,7 @@ public class StarfieldPluginReaderService : IStarfieldPluginReaderService
             .ToList();
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public PluginSourceInfoDTO GetSourceInfo(ModKey modKey)
     {
         var fileInfo = new FileInfo(Path.Combine(GetDataFolderPath(), modKey.FileName));
@@ -43,7 +42,7 @@ public class StarfieldPluginReaderService : IStarfieldPluginReaderService
         };
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public StarfieldPluginMetadataDTO GetMetadata(ModKey modKey)
     {
         var mod = StarfieldMod.Create(StarfieldRelease.Starfield)

@@ -15,7 +15,7 @@ public class FormListItemRepository : IFormListItemRepository
         Database = database;
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public IList<FormListItemDTO> GetByFormList(ModKey modKey, FormKey formKey)
     {
         return Database.Fetch<FormListItem>(
@@ -31,7 +31,7 @@ public class FormListItemRepository : IFormListItemRepository
             .ToList();
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public void DeleteByFormList(ModKey modKey, FormKey formKey)
     {
         Database.Delete<FormListItem>(
@@ -42,7 +42,7 @@ public class FormListItemRepository : IFormListItemRepository
             new { ModKeyName = modKey.Name, ModKeyType = (int)modKey.Type, ModKeyFileName = modKey.FileName, FormKeyID = formKey.ID });
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public void Save(FormListItemDTO dto)
     {
         var model = new FormListItem(dto);

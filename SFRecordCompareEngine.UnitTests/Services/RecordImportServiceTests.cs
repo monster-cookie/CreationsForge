@@ -1,9 +1,8 @@
+using Moq;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
-using Moq;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.DTOs.Records;
-using SFRecordCompareEngine.Core.DTOs.Results;
 using SFRecordCompareEngine.Core.Importers.Interfaces;
 using SFRecordCompareEngine.Core.Services;
 using SFRecordCompareEngine.Core.Services.Interfaces;

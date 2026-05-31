@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
+using Keyword = SFRecordCompareEngine.Core.Models.Database.Keyword;
 
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
@@ -10,7 +11,7 @@ public class KeywordDTO
     { }
 
     [SetsRequiredMembers]
-    public KeywordDTO(Models.Database.Keyword model)
+    public KeywordDTO(Keyword model)
     {
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
         FormKey = new FormKey(ModKey, (uint)model.FormKeyId);

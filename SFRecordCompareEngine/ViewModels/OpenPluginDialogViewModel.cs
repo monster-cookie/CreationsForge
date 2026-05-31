@@ -8,8 +8,8 @@ namespace SFRecordCompareEngine.ViewModels;
 
 public class OpenPluginDialogViewModel : ViewModelBase
 {
-    private readonly IApplicationNavigationService ApplicationNavigationService;
     private readonly IActivePluginSelectionService ActivePluginSelectionService;
+    private readonly IApplicationNavigationService ApplicationNavigationService;
     private readonly IPluginService PluginService;
     private IList<PluginDTO> MatchingPlugins = new List<PluginDTO>();
 
@@ -36,7 +36,11 @@ public class OpenPluginDialogViewModel : ViewModelBase
         get;
         private set
         {
-            if (!SetProperty(ref field, value)) return;
+            if (!SetProperty(ref field, value))
+            {
+                return;
+            }
+
             RefreshSuggestions(value);
         }
     } = string.Empty;
@@ -46,6 +50,21 @@ public class OpenPluginDialogViewModel : ViewModelBase
         get;
         private set => SetProperty(ref field, value);
     } = "Select a plugin to load.";
+
+    private PluginDTO? SelectedPlugin
+    {
+        get;
+        set
+        {
+            if (!SetProperty(ref field, value))
+            {
+                return;
+            }
+
+            SelectionStatus = value == null ? "Select a plugin to load." : $"Ready to load {value.ModKey.FileName}.";
+            LoadCommand.RaiseCanExecuteChanged();
+        }
+    }
 
     public void UpdateSearchText(string searchText)
     {
@@ -67,17 +86,6 @@ public class OpenPluginDialogViewModel : ViewModelBase
     private bool CanLoad()
     {
         return SelectedPlugin != null;
-    }
-
-    private PluginDTO? SelectedPlugin
-    {
-        get;
-        set
-        {
-            if (!SetProperty(ref field, value)) return;
-            SelectionStatus = value == null ? "Select a plugin to load." : $"Ready to load {value.ModKey.FileName}.";
-            LoadCommand.RaiseCanExecuteChanged();
-        }
     }
 
     private void RefreshSuggestions(string searchText)
@@ -104,7 +112,10 @@ public class OpenPluginDialogViewModel : ViewModelBase
 
     private async Task LoadAsync()
     {
-        if (SelectedPlugin == null) return;
+        if (SelectedPlugin == null)
+        {
+            return;
+        }
 
         ActivePluginSelectionService.SetActivePlugin(SelectedPlugin);
         await ApplicationNavigationService.CloseOpenDialogAsync();

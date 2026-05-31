@@ -6,11 +6,10 @@ namespace SFRecordCompareEngine.Core.Database;
 
 public class DatabaseSchemaInitializer : IDatabaseSchemaInitializer
 {
-    private readonly ILogger Logger = Log.ForContext<DatabaseSchemaInitializer>();
-
     private readonly ISqliteConnectionFactory ConnectionFactory;
     private readonly IDatabaseMigrationRunner DatabaseMigrationRunner;
-    
+    private readonly ILogger Logger = Log.ForContext<DatabaseSchemaInitializer>();
+
     public DatabaseSchemaInitializer(
         ISqliteConnectionFactory connectionFactory,
         IDatabaseMigrationRunner databaseMigrationRunner)
@@ -18,7 +17,7 @@ public class DatabaseSchemaInitializer : IDatabaseSchemaInitializer
         ConnectionFactory = connectionFactory;
         DatabaseMigrationRunner = databaseMigrationRunner;
     }
-    
+
     public void Initialize()
     {
         Logger.Information("Initializing plugin database schema for {DatabasePath}", ConnectionFactory.DatabasePath);

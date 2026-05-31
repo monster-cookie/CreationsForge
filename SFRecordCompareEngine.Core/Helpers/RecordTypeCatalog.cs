@@ -8,7 +8,7 @@ public static class RecordTypeCatalog
         RecordType = "FormList",
         RecordID = "FLST"
     };
-    
+
     public static readonly RecordTypeData GameSetting = new()
     {
         TableName = "GameSetting",

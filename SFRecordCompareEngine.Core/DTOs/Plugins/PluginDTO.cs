@@ -13,8 +13,11 @@ public class PluginDTO
     public PluginDTO(Plugin model)
     {
         ArgumentNullException.ThrowIfNull(model);
-        if (!Enum.IsDefined(typeof(ModType), model.ModKeyType)) throw new ArgumentOutOfRangeException(nameof(model), $"model.ModKeyType is not a valid value, the value received was {model.ModKeyType}");
-        
+        if (!Enum.IsDefined(typeof(ModType), model.ModKeyType))
+        {
+            throw new ArgumentOutOfRangeException(nameof(model), $"model.ModKeyType is not a valid value, the value received was {model.ModKeyType}");
+        }
+
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
         LoadOrderIndex = model.LoadOrderIndex;
         Enabled = model.Enabled;
@@ -31,7 +34,7 @@ public class PluginDTO
         LastImportedUTC = model.LastImportedUTC;
         InvalidatedAtUTC = model.InvalidatedAtUTC;
     }
-    
+
     public ModKey ModKey { get; set; }
     public int LoadOrderIndex { get; set; }
     public bool Enabled { get; set; } = true;

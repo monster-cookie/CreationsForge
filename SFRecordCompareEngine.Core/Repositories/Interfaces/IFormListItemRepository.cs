@@ -6,7 +6,7 @@ namespace SFRecordCompareEngine.Core.Repositories.Interfaces;
 public interface IFormListItemRepository
 {
     /// <summary>
-    /// Gets ordered item rows for the given form list.
+    ///     Gets ordered item rows for the given form list.
     /// </summary>
     /// <param name="modKey">The plugin containing the form list.</param>
     /// <param name="formKey">The form list key.</param>
@@ -14,14 +14,14 @@ public interface IFormListItemRepository
     IList<FormListItemDTO> GetByFormList(ModKey modKey, FormKey formKey);
 
     /// <summary>
-    /// Deletes item rows for the given form list.
+    ///     Deletes item rows for the given form list.
     /// </summary>
     /// <param name="modKey">The plugin containing the form list.</param>
     /// <param name="formKey">The form list key.</param>
     void DeleteByFormList(ModKey modKey, FormKey formKey);
 
     /// <summary>
-    /// Saves a FormListItemDTO to the database.
+    ///     Saves a FormListItemDTO to the database.
     /// </summary>
     /// <param name="formListItemDTO">The form list item data to be saved</param>
     void Save(FormListItemDTO formListItemDTO);

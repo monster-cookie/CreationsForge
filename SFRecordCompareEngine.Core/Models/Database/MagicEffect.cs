@@ -13,10 +13,32 @@ public class MagicEffect
 
     public MagicEffect(MagicEffectDTO dto)
     {
-        ModKeyName = dto.ModKey.Name; ModKeyType = (int)dto.ModKey.Type; ModKeyFileName = dto.ModKey.FileName; FormKeyId = (int)dto.FormKey.ID;
-        EditorId = dto.EditorID; FormVersion = dto.FormVersion; StarfieldMajorRecordFlags = (int)dto.StarfieldMajorRecordFlags; Version2 = dto.Version2; VersionControl = dto.VersionControl; ImportedAtUTC = dto.ImportedAtUTC;
-        Name = dto.Name; Description = dto.Description; Flags = dto.Flags; CastType = dto.CastType; TargetType = dto.TargetType;
-        ActorValue2FormKey = dto.ActorValue2FormKey?.ToString(); ResistValueFormKey = dto.ResistValueFormKey?.ToString(); PerkToApplyFormKey = dto.PerkToApplyFormKey?.ToString(); EquipAbilityFormKey = dto.EquipAbilityFormKey?.ToString(); ExplosionFormKey = dto.ExplosionFormKey?.ToString(); CastingArtFormKey = dto.CastingArtFormKey?.ToString(); HitEffectArtFormKey = dto.HitEffectArtFormKey?.ToString(); HitShaderFormKey = dto.HitShaderFormKey?.ToString(); ImageSpaceModifierFormKey = dto.ImageSpaceModifierFormKey?.ToString(); ImpactDataFormKey = dto.ImpactDataFormKey?.ToString(); ProjectileFormKey = dto.ProjectileFormKey?.ToString();
+        ModKeyName = dto.ModKey.Name;
+        ModKeyType = (int)dto.ModKey.Type;
+        ModKeyFileName = dto.ModKey.FileName;
+        FormKeyId = (int)dto.FormKey.ID;
+        EditorId = dto.EditorID;
+        FormVersion = dto.FormVersion;
+        StarfieldMajorRecordFlags = (int)dto.StarfieldMajorRecordFlags;
+        Version2 = dto.Version2;
+        VersionControl = dto.VersionControl;
+        ImportedAtUTC = dto.ImportedAtUTC;
+        Name = dto.Name;
+        Description = dto.Description;
+        Flags = dto.Flags;
+        CastType = dto.CastType;
+        TargetType = dto.TargetType;
+        ActorValue2FormKey = dto.ActorValue2FormKey?.ToString();
+        ResistValueFormKey = dto.ResistValueFormKey?.ToString();
+        PerkToApplyFormKey = dto.PerkToApplyFormKey?.ToString();
+        EquipAbilityFormKey = dto.EquipAbilityFormKey?.ToString();
+        ExplosionFormKey = dto.ExplosionFormKey?.ToString();
+        CastingArtFormKey = dto.CastingArtFormKey?.ToString();
+        HitEffectArtFormKey = dto.HitEffectArtFormKey?.ToString();
+        HitShaderFormKey = dto.HitShaderFormKey?.ToString();
+        ImageSpaceModifierFormKey = dto.ImageSpaceModifierFormKey?.ToString();
+        ImpactDataFormKey = dto.ImpactDataFormKey?.ToString();
+        ProjectileFormKey = dto.ProjectileFormKey?.ToString();
     }
 
     [Column("ModKey_Name")] public string ModKeyName { get; set; } = string.Empty;

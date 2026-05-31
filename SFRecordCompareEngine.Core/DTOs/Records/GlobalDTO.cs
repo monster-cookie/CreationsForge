@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
+using Global = SFRecordCompareEngine.Core.Models.Database.Global;
 
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
@@ -10,7 +11,7 @@ public class GlobalDTO
     { }
 
     [SetsRequiredMembers]
-    public GlobalDTO(Models.Database.Global model)
+    public GlobalDTO(Global model)
     {
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
         FormKey = new FormKey(ModKey, (uint)model.FormKeyId);

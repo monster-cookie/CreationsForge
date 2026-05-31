@@ -12,9 +12,9 @@ namespace SFRecordCompareEngine.Core.Services;
 public class RecordImportService : IRecordImportService
 {
     private readonly ILogger Logger = Log.ForContext<RecordImportService>();
+    private readonly IStarfieldRecordReaderService StarfieldRecordReaderService;
 
     private readonly Dictionary<(GameRelease GameRelease, RecordType RecordType), ITypedRecordDetailImporter> TypedRecordDetailImporters;
-    private readonly IStarfieldRecordReaderService StarfieldRecordReaderService;
 
     public RecordImportService(
         IEnumerable<ITypedRecordDetailImporter> typedRecordDetailImporters,
@@ -89,7 +89,10 @@ public class RecordImportService : IRecordImportService
 
         Logger.Information("Discovered {RecordCount} {RecordType} records for {ModKey}", records.Count, recordID, plugin.ModKey);
         ReportProgress(plugin, progress, pluginIndex, pluginCount, recordID, 0, records.Count, $"Discovered {records.Count} {recordID} records for {plugin.ModKey.FileName}.");
-        if (!records.Any()) return;
+        if (!records.Any())
+        {
+            return;
+        }
 
         for (var index = 0; index < records.Count; index++)
         {

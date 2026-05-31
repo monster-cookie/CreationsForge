@@ -13,9 +13,24 @@ public class ActorValueInformation
 
     public ActorValueInformation(ActorValueInformationDTO dto)
     {
-        ModKeyName = dto.ModKey.Name; ModKeyType = (int)dto.ModKey.Type; ModKeyFileName = dto.ModKey.FileName; FormKeyId = (int)dto.FormKey.ID;
-        EditorId = dto.EditorID; FormVersion = dto.FormVersion; StarfieldMajorRecordFlags = (int)dto.StarfieldMajorRecordFlags; Version2 = dto.Version2; VersionControl = dto.VersionControl; ImportedAtUTC = dto.ImportedAtUTC;
-        Name = dto.Name; Abbreviation = dto.Abbreviation; ContextNotes = dto.ContextNotes; DefaultValue = dto.DefaultValue; Flags = dto.Flags; Type = dto.Type; Min = dto.Min; Max = dto.Max;
+        ModKeyName = dto.ModKey.Name;
+        ModKeyType = (int)dto.ModKey.Type;
+        ModKeyFileName = dto.ModKey.FileName;
+        FormKeyId = (int)dto.FormKey.ID;
+        EditorId = dto.EditorID;
+        FormVersion = dto.FormVersion;
+        StarfieldMajorRecordFlags = (int)dto.StarfieldMajorRecordFlags;
+        Version2 = dto.Version2;
+        VersionControl = dto.VersionControl;
+        ImportedAtUTC = dto.ImportedAtUTC;
+        Name = dto.Name;
+        Abbreviation = dto.Abbreviation;
+        ContextNotes = dto.ContextNotes;
+        DefaultValue = dto.DefaultValue;
+        Flags = dto.Flags;
+        Type = dto.Type;
+        Min = dto.Min;
+        Max = dto.Max;
     }
 
     [Column("ModKey_Name")] public string ModKeyName { get; set; } = string.Empty;

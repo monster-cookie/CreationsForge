@@ -4,8 +4,8 @@ namespace SFRecordCompareEngine.Commands;
 
 public class RelayCommand : ICommand
 {
-    private readonly Action ExecuteAction;
     private readonly Func<bool>? CanExecuteAction;
+    private readonly Action ExecuteAction;
 
     public RelayCommand(Action execute, Func<bool>? canExecute = null)
     {

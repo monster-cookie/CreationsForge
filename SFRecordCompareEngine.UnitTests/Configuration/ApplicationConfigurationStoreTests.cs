@@ -7,8 +7,8 @@ namespace SFRecordCompareEngine.UnitTests.Configuration;
 
 public class ApplicationConfigurationStoreTests : IDisposable
 {
-    private readonly string TestDirectory = Path.Combine(Path.GetTempPath(), "SFRecordCompareEngineTests", Guid.NewGuid().ToString("N"));
     private readonly string ConfigurationPath;
+    private readonly string TestDirectory = Path.Combine(Path.GetTempPath(), "SFRecordCompareEngineTests", Guid.NewGuid().ToString("N"));
 
     public ApplicationConfigurationStoreTests()
     {
@@ -73,12 +73,12 @@ public class ApplicationConfigurationStoreTests : IDisposable
     {
         Directory.CreateDirectory(TestDirectory);
         File.WriteAllText(ConfigurationPath, """
-            {
-              "ApplicationDataDirectory": "C:\\Temp\\SFRecordCompareEngine",
-              "DatabaseDirectory": "C:\\Temp\\SFRecordCompareEngine\\Database",
-              "LoggingDirectory": "C:\\Temp\\SFRecordCompareEngine\\Logs"
-            }
-            """);
+                                             {
+                                               "ApplicationDataDirectory": "C:\\Temp\\SFRecordCompareEngine",
+                                               "DatabaseDirectory": "C:\\Temp\\SFRecordCompareEngine\\Database",
+                                               "LoggingDirectory": "C:\\Temp\\SFRecordCompareEngine\\Logs"
+                                             }
+                                             """);
 
         var sut = new ApplicationConfigurationStore(ConfigurationPath);
 
@@ -93,10 +93,10 @@ public class ApplicationConfigurationStoreTests : IDisposable
     {
         Directory.CreateDirectory(TestDirectory);
         File.WriteAllText(ConfigurationPath, """
-            {
-              "Theme": "Light"
-            }
-            """);
+                                             {
+                                               "Theme": "Light"
+                                             }
+                                             """);
 
         var sut = new ApplicationConfigurationStore(ConfigurationPath);
 

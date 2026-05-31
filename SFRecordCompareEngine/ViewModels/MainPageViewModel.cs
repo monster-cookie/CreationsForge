@@ -16,9 +16,9 @@ namespace SFRecordCompareEngine.ViewModels;
 
 public class MainPageViewModel : ViewModelBase
 {
-    private readonly IApplicationNavigationService ApplicationNavigationService;
     private readonly IActivePluginSelectionService ActivePluginSelectionService;
     private readonly IActorValueInformationService ActorValueInformationService;
+    private readonly IApplicationNavigationService ApplicationNavigationService;
     private readonly IFormListService FormListService;
     private readonly IGameSettingService GameSettingService;
     private readonly IGlobalService GlobalService;
@@ -77,7 +77,11 @@ public class MainPageViewModel : ViewModelBase
         get;
         private set
         {
-            if (!SetProperty(ref field, value)) return;
+            if (!SetProperty(ref field, value))
+            {
+                return;
+            }
+
             ApplyFilters();
         }
     } = string.Empty;
@@ -87,7 +91,11 @@ public class MainPageViewModel : ViewModelBase
         get;
         private set
         {
-            if (!SetProperty(ref field, value)) return;
+            if (!SetProperty(ref field, value))
+            {
+                return;
+            }
+
             ApplyFilters();
         }
     } = string.Empty;
@@ -118,7 +126,10 @@ public class MainPageViewModel : ViewModelBase
     public void SelectRecord(RecordTreeItemViewModel? item)
     {
         ClearRecordComparison();
-        if (item?.FormKey == null || item.RecordType == null) return;
+        if (item?.FormKey == null || item.RecordType == null)
+        {
+            return;
+        }
 
         if (item.RecordType == RecordTypeCatalog.FormList.RecordType)
         {
@@ -132,13 +143,40 @@ public class MainPageViewModel : ViewModelBase
             return;
         }
 
-        if (item.RecordType == RecordTypeCatalog.Global.RecordType) LoadGlobalComparison(item.FormKey.Value.ID);
-        if (item.RecordType == RecordTypeCatalog.MiscItem.RecordType) LoadMiscItemComparison(item.FormKey.Value.ID);
-        if (item.RecordType == RecordTypeCatalog.Keyword.RecordType) LoadKeywordComparison(item.FormKey.Value.ID);
-        if (item.RecordType == RecordTypeCatalog.NPC.RecordType) LoadNPCComparison(item.FormKey.Value.ID);
-        if (item.RecordType == RecordTypeCatalog.ActorValueInformation.RecordType) LoadActorValueInformationComparison(item.FormKey.Value.ID);
-        if (item.RecordType == RecordTypeCatalog.MagicEffect.RecordType) LoadMagicEffectComparison(item.FormKey.Value.ID);
-        if (item.RecordType == RecordTypeCatalog.Perk.RecordType) LoadPerkComparison(item.FormKey.Value.ID);
+        if (item.RecordType == RecordTypeCatalog.Global.RecordType)
+        {
+            LoadGlobalComparison(item.FormKey.Value.ID);
+        }
+
+        if (item.RecordType == RecordTypeCatalog.MiscItem.RecordType)
+        {
+            LoadMiscItemComparison(item.FormKey.Value.ID);
+        }
+
+        if (item.RecordType == RecordTypeCatalog.Keyword.RecordType)
+        {
+            LoadKeywordComparison(item.FormKey.Value.ID);
+        }
+
+        if (item.RecordType == RecordTypeCatalog.NPC.RecordType)
+        {
+            LoadNPCComparison(item.FormKey.Value.ID);
+        }
+
+        if (item.RecordType == RecordTypeCatalog.ActorValueInformation.RecordType)
+        {
+            LoadActorValueInformationComparison(item.FormKey.Value.ID);
+        }
+
+        if (item.RecordType == RecordTypeCatalog.MagicEffect.RecordType)
+        {
+            LoadMagicEffectComparison(item.FormKey.Value.ID);
+        }
+
+        if (item.RecordType == RecordTypeCatalog.Perk.RecordType)
+        {
+            LoadPerkComparison(item.FormKey.Value.ID);
+        }
     }
 
     private string GetStatusText()
@@ -252,7 +290,7 @@ public class MainPageViewModel : ViewModelBase
 
         if (item.FormKey == null)
         {
-            return filteredItem.Children.Count > 0 || string.IsNullOrWhiteSpace(FormIDFilter) && string.IsNullOrWhiteSpace(EditorIDFilter)
+            return filteredItem.Children.Count > 0 || (string.IsNullOrWhiteSpace(FormIDFilter) && string.IsNullOrWhiteSpace(EditorIDFilter))
                 ? filteredItem
                 : null;
         }
@@ -275,7 +313,7 @@ public class MainPageViewModel : ViewModelBase
         {
             try
             {
-                return item.FormKey == MasterPackage.GetFormKey(formID, reference: false);
+                return item.FormKey == MasterPackage.GetFormKey(formID, false);
             }
             catch (ArgumentException)
             {
@@ -370,42 +408,69 @@ public class MainPageViewModel : ViewModelBase
     {
         var records = MiscItemService.GetByFormKeyID(formKeyID);
         var fields = CreateHeaderFields("Name", "ShortName", "Value", "Weight");
-        SetRecordComparison(fields, records.Select(record => (record.ModKey, Values: (IReadOnlyList<string>)new List<string> { RecordTypeCatalog.MiscItem.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.ShortName ?? string.Empty, record.Value?.ToString() ?? string.Empty, record.Weight?.ToString() ?? string.Empty })));
+        SetRecordComparison(fields,
+            records.Select(record => (record.ModKey,
+                Values: (IReadOnlyList<string>)new List<string> { RecordTypeCatalog.MiscItem.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.ShortName ?? string.Empty, record.Value?.ToString() ?? string.Empty, record.Weight?.ToString() ?? string.Empty })));
     }
 
     private void LoadKeywordComparison(uint formKeyID)
     {
         var records = KeywordService.GetByFormKeyID(formKeyID);
         var fields = CreateHeaderFields("Name", "Color", "Type", "Notes", "FlashLinkageName", "AttractionRuleFormKey");
-        SetRecordComparison(fields, records.Select(record => (record.ModKey, Values: (IReadOnlyList<string>)new List<string> { RecordTypeCatalog.Keyword.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.Color, record.Type, record.Notes ?? string.Empty, record.FlashLinkageName ?? string.Empty, record.AttractionRuleFormKey?.ToString() ?? string.Empty })));
+        SetRecordComparison(fields,
+            records.Select(record => (record.ModKey,
+                Values: (IReadOnlyList<string>)new List<string>
+                    { RecordTypeCatalog.Keyword.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.Color, record.Type, record.Notes ?? string.Empty, record.FlashLinkageName ?? string.Empty, record.AttractionRuleFormKey?.ToString() ?? string.Empty })));
     }
 
     private void LoadNPCComparison(uint formKeyID)
     {
         var records = NPCService.GetByFormKeyID(formKeyID);
         var fields = CreateHeaderFields("Name", "ShortName", "LongName", "DispositionBase", "Aggression", "Confidence", "EnergyLevel", "Responsibility", "Assistance", "GearedUpWeapons", "HeightMin", "HeightMax", "SkinToneIndex", "Pronoun", "VoiceFormKey", "RaceFormKey", "CombatOverridePackageListFormKey", "CombatStyleFormKey", "DefaultPackageListFormKey", "CrimeFactionFormKey");
-        SetRecordComparison(fields, records.Select(record => (record.ModKey, Values: (IReadOnlyList<string>)new List<string> { RecordTypeCatalog.NPC.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.ShortName ?? string.Empty, record.LongName ?? string.Empty, record.DispositionBase.ToString(), record.Aggression, record.Confidence, record.EnergyLevel.ToString(), record.Responsibility, record.Assistance, record.GearedUpWeapons.ToString(), record.HeightMin.ToString(), record.HeightMax.ToString(), record.SkinToneIndex?.ToString() ?? string.Empty, record.Pronoun ?? string.Empty, record.VoiceFormKey?.ToString() ?? string.Empty, record.RaceFormKey?.ToString() ?? string.Empty, record.CombatOverridePackageListFormKey?.ToString() ?? string.Empty, record.CombatStyleFormKey?.ToString() ?? string.Empty, record.DefaultPackageListFormKey?.ToString() ?? string.Empty, record.CrimeFactionFormKey?.ToString() ?? string.Empty })));
+        SetRecordComparison(fields,
+            records.Select(record => (record.ModKey,
+                Values: (IReadOnlyList<string>)new List<string>
+                {
+                    RecordTypeCatalog.NPC.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.ShortName ?? string.Empty, record.LongName ?? string.Empty, record.DispositionBase.ToString(), record.Aggression, record.Confidence, record.EnergyLevel.ToString(), record.Responsibility,
+                    record.Assistance, record.GearedUpWeapons.ToString(), record.HeightMin.ToString(), record.HeightMax.ToString(), record.SkinToneIndex?.ToString() ?? string.Empty, record.Pronoun ?? string.Empty, record.VoiceFormKey?.ToString() ?? string.Empty, record.RaceFormKey?.ToString() ?? string.Empty, record.CombatOverridePackageListFormKey?.ToString() ?? string.Empty,
+                    record.CombatStyleFormKey?.ToString() ?? string.Empty, record.DefaultPackageListFormKey?.ToString() ?? string.Empty, record.CrimeFactionFormKey?.ToString() ?? string.Empty
+                })));
     }
 
     private void LoadActorValueInformationComparison(uint formKeyID)
     {
         var records = ActorValueInformationService.GetByFormKeyID(formKeyID);
         var fields = CreateHeaderFields("Name", "Abbreviation", "ContextNotes", "DefaultValue", "Flags", "Type", "Min", "Max");
-        SetRecordComparison(fields, records.Select(record => (record.ModKey, Values: (IReadOnlyList<string>)new List<string> { RecordTypeCatalog.ActorValueInformation.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.Abbreviation ?? string.Empty, record.ContextNotes ?? string.Empty, record.DefaultValue?.ToString() ?? string.Empty, record.Flags ?? string.Empty, record.Type ?? string.Empty, record.Min?.ToString() ?? string.Empty, record.Max?.ToString() ?? string.Empty })));
+        SetRecordComparison(fields,
+            records.Select(record => (record.ModKey,
+                Values: (IReadOnlyList<string>)new List<string>
+                {
+                    RecordTypeCatalog.ActorValueInformation.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.Abbreviation ?? string.Empty, record.ContextNotes ?? string.Empty, record.DefaultValue?.ToString() ?? string.Empty, record.Flags ?? string.Empty, record.Type ?? string.Empty,
+                    record.Min?.ToString() ?? string.Empty, record.Max?.ToString() ?? string.Empty
+                })));
     }
 
     private void LoadMagicEffectComparison(uint formKeyID)
     {
         var records = MagicEffectService.GetByFormKeyID(formKeyID);
         var fields = CreateHeaderFields("Name", "Description", "Flags", "CastType", "TargetType", "ActorValue2FormKey", "ResistValueFormKey", "PerkToApplyFormKey", "EquipAbilityFormKey", "ExplosionFormKey", "CastingArtFormKey", "HitEffectArtFormKey", "HitShaderFormKey", "ImageSpaceModifierFormKey", "ImpactDataFormKey", "ProjectileFormKey");
-        SetRecordComparison(fields, records.Select(record => (record.ModKey, Values: (IReadOnlyList<string>)new List<string> { RecordTypeCatalog.MagicEffect.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.Description ?? string.Empty, record.Flags, record.CastType ?? string.Empty, record.TargetType ?? string.Empty, record.ActorValue2FormKey?.ToString() ?? string.Empty, record.ResistValueFormKey?.ToString() ?? string.Empty, record.PerkToApplyFormKey?.ToString() ?? string.Empty, record.EquipAbilityFormKey?.ToString() ?? string.Empty, record.ExplosionFormKey?.ToString() ?? string.Empty, record.CastingArtFormKey?.ToString() ?? string.Empty, record.HitEffectArtFormKey?.ToString() ?? string.Empty, record.HitShaderFormKey?.ToString() ?? string.Empty, record.ImageSpaceModifierFormKey?.ToString() ?? string.Empty, record.ImpactDataFormKey?.ToString() ?? string.Empty, record.ProjectileFormKey?.ToString() ?? string.Empty })));
+        SetRecordComparison(fields,
+            records.Select(record => (record.ModKey,
+                Values: (IReadOnlyList<string>)new List<string>
+                {
+                    RecordTypeCatalog.MagicEffect.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.Description ?? string.Empty, record.Flags, record.CastType ?? string.Empty, record.TargetType ?? string.Empty, record.ActorValue2FormKey?.ToString() ?? string.Empty,
+                    record.ResistValueFormKey?.ToString() ?? string.Empty, record.PerkToApplyFormKey?.ToString() ?? string.Empty, record.EquipAbilityFormKey?.ToString() ?? string.Empty, record.ExplosionFormKey?.ToString() ?? string.Empty, record.CastingArtFormKey?.ToString() ?? string.Empty, record.HitEffectArtFormKey?.ToString() ?? string.Empty,
+                    record.HitShaderFormKey?.ToString() ?? string.Empty, record.ImageSpaceModifierFormKey?.ToString() ?? string.Empty, record.ImpactDataFormKey?.ToString() ?? string.Empty, record.ProjectileFormKey?.ToString() ?? string.Empty
+                })));
     }
 
     private void LoadPerkComparison(uint formKeyID)
     {
         var records = PerkService.GetByFormKeyID(formKeyID);
         var fields = CreateHeaderFields("Name", "Description", "Flags", "SkillGroup", "CrewAssignment", "PerkIcon");
-        SetRecordComparison(fields, records.Select(record => (record.ModKey, Values: (IReadOnlyList<string>)new List<string> { RecordTypeCatalog.Perk.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.Description ?? string.Empty, record.Flags, record.SkillGroup ?? string.Empty, record.CrewAssignment ?? string.Empty, record.PerkIcon ?? string.Empty })));
+        SetRecordComparison(fields,
+            records.Select(record => (record.ModKey,
+                Values: (IReadOnlyList<string>)new List<string> { RecordTypeCatalog.Perk.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.Description ?? string.Empty, record.Flags, record.SkillGroup ?? string.Empty, record.CrewAssignment ?? string.Empty, record.PerkIcon ?? string.Empty })));
     }
 
     private static List<RecordComparisonFieldViewModel> CreateHeaderFields(params string[] recordFields)
@@ -424,14 +489,20 @@ public class MainPageViewModel : ViewModelBase
     private static string FormatStarfieldMajorRecordFlags(StarfieldMajorRecord.StarfieldMajorRecordFlag flags)
     {
         var value = Convert.ToUInt64(flags);
-        if (value == 0) return string.Empty;
+        if (value == 0)
+        {
+            return string.Empty;
+        }
 
         var names = new List<string>();
         var knownFlags = 0UL;
         foreach (var flag in Enum.GetValues<StarfieldMajorRecord.StarfieldMajorRecordFlag>())
         {
             var flagValue = Convert.ToUInt64(flag);
-            if (flagValue == 0 || (flagValue & (flagValue - 1)) != 0 || (value & flagValue) == 0) continue;
+            if (flagValue == 0 || (flagValue & (flagValue - 1)) != 0 || (value & flagValue) == 0)
+            {
+                continue;
+            }
 
             names.Add(flag.ToString());
             knownFlags |= flagValue;

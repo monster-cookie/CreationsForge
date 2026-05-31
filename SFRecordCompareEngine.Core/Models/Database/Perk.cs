@@ -13,9 +13,22 @@ public class Perk
 
     public Perk(PerkDTO dto)
     {
-        ModKeyName = dto.ModKey.Name; ModKeyType = (int)dto.ModKey.Type; ModKeyFileName = dto.ModKey.FileName; FormKeyId = (int)dto.FormKey.ID;
-        EditorId = dto.EditorID; FormVersion = dto.FormVersion; StarfieldMajorRecordFlags = (int)dto.StarfieldMajorRecordFlags; Version2 = dto.Version2; VersionControl = dto.VersionControl; ImportedAtUTC = dto.ImportedAtUTC;
-        Name = dto.Name; Description = dto.Description; Flags = dto.Flags; SkillGroup = dto.SkillGroup; CrewAssignment = dto.CrewAssignment; PerkIcon = dto.PerkIcon;
+        ModKeyName = dto.ModKey.Name;
+        ModKeyType = (int)dto.ModKey.Type;
+        ModKeyFileName = dto.ModKey.FileName;
+        FormKeyId = (int)dto.FormKey.ID;
+        EditorId = dto.EditorID;
+        FormVersion = dto.FormVersion;
+        StarfieldMajorRecordFlags = (int)dto.StarfieldMajorRecordFlags;
+        Version2 = dto.Version2;
+        VersionControl = dto.VersionControl;
+        ImportedAtUTC = dto.ImportedAtUTC;
+        Name = dto.Name;
+        Description = dto.Description;
+        Flags = dto.Flags;
+        SkillGroup = dto.SkillGroup;
+        CrewAssignment = dto.CrewAssignment;
+        PerkIcon = dto.PerkIcon;
     }
 
     [Column("ModKey_Name")] public string ModKeyName { get; set; } = string.Empty;

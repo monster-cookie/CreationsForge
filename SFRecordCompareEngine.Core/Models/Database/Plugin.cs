@@ -31,54 +31,38 @@ public class Plugin
         LastImportedUTC = dto.LastImportedUTC;
         InvalidatedAtUTC = dto.InvalidatedAtUTC;
     }
-    
-    [Column("ModKey_Name")]
-    public string ModKeyName { get; set; } = string.Empty;
-    
-    [Column("ModKey_Type")]
-    public int ModKeyType { get; set; } = (int)ModType.Master;
-    
-    [Column("ModKey_FileName")]
-    public string ModKeyFileName { get; set; } = string.Empty;
 
-    [Column("LoadOrderIndex")]
-    public int LoadOrderIndex { get; set; }
+    [Column("ModKey_Name")] public string ModKeyName { get; set; } = string.Empty;
 
-    [Column("Enabled")]
-    public bool Enabled { get; set; } = true;
+    [Column("ModKey_Type")] public int ModKeyType { get; set; } = (int)ModType.Master;
 
-    [Column("ExistsOnDisk")]
-    public bool ExistsOnDisk { get; set; } = true;
+    [Column("ModKey_FileName")] public string ModKeyFileName { get; set; } = string.Empty;
 
-    [Column("ImportState")]
-    public string ImportState { get; set; } = "Current";
+    [Column("LoadOrderIndex")] public int LoadOrderIndex { get; set; }
 
-    [Column("HeaderFlags")]
-    public int HeaderFlags { get; set; }
+    [Column("Enabled")] public bool Enabled { get; set; } = true;
 
-    [Column("FormVersion")]
-    public int FormVersion { get; set; }
+    [Column("ExistsOnDisk")] public bool ExistsOnDisk { get; set; } = true;
 
-    [Column("Author")]
-    public string Author { get; set; } = "UNKNOWN";
+    [Column("ImportState")] public string ImportState { get; set; } = "Current";
 
-    [Column("Branch")]
-    public string Branch { get; set; } = "UNKNOWN";
+    [Column("HeaderFlags")] public int HeaderFlags { get; set; }
 
-    [Column("InteriorCellCount")] public int InteriorCellCount { get; set; } = 0;
+    [Column("FormVersion")] public int FormVersion { get; set; }
 
-    [Column("SourceLastWriteUTCTicks")]
-    public long? SourceLastWriteUTCTicks { get; set; }
+    [Column("Author")] public string Author { get; set; } = "UNKNOWN";
 
-    [Column("SourceFileSizeBytes")]
-    public long? SourceFileSizeBytes { get; set; }
+    [Column("Branch")] public string Branch { get; set; } = "UNKNOWN";
 
-    [Column("LastCheckedUTC")]
-    public DateTime LastCheckedUTC { get; set; }
+    [Column("InteriorCellCount")] public int InteriorCellCount { get; set; }
 
-    [Column("LastImportedUTC")]
-    public DateTime? LastImportedUTC { get; set; }
+    [Column("SourceLastWriteUTCTicks")] public long? SourceLastWriteUTCTicks { get; set; }
 
-    [Column("InvalidatedAtUTC")]
-    public DateTime? InvalidatedAtUTC { get; set; }
+    [Column("SourceFileSizeBytes")] public long? SourceFileSizeBytes { get; set; }
+
+    [Column("LastCheckedUTC")] public DateTime LastCheckedUTC { get; set; }
+
+    [Column("LastImportedUTC")] public DateTime? LastImportedUTC { get; set; }
+
+    [Column("InvalidatedAtUTC")] public DateTime? InvalidatedAtUTC { get; set; }
 }

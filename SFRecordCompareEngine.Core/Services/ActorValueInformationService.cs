@@ -1,3 +1,26 @@
-using Mutagen.Bethesda.Plugins; using SFRecordCompareEngine.Core.DTOs.Records; using SFRecordCompareEngine.Core.Repositories.Interfaces; using SFRecordCompareEngine.Core.Services.Interfaces;
+using Mutagen.Bethesda.Plugins;
+using SFRecordCompareEngine.Core.DTOs.Records;
+using SFRecordCompareEngine.Core.Repositories.Interfaces;
+using SFRecordCompareEngine.Core.Services.Interfaces;
+
 namespace SFRecordCompareEngine.Core.Services;
-public class ActorValueInformationService : IActorValueInformationService { private readonly IActorValueInformationRepository Repository; public ActorValueInformationService(IActorValueInformationRepository repository) { Repository = repository; } public IList<ActorValueInformationDTO> GetByModKey(ModKey modKey) => Repository.GetByModKey(modKey); public IList<ActorValueInformationDTO> GetByFormKeyID(uint formKeyID) => Repository.GetByFormKeyID(formKeyID); }
+
+public class ActorValueInformationService : IActorValueInformationService
+{
+    private readonly IActorValueInformationRepository Repository;
+
+    public ActorValueInformationService(IActorValueInformationRepository repository)
+    {
+        Repository = repository;
+    }
+
+    public IList<ActorValueInformationDTO> GetByModKey(ModKey modKey)
+    {
+        return Repository.GetByModKey(modKey);
+    }
+
+    public IList<ActorValueInformationDTO> GetByFormKeyID(uint formKeyID)
+    {
+        return Repository.GetByFormKeyID(formKeyID);
+    }
+}

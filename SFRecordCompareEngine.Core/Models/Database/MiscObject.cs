@@ -13,9 +13,20 @@ public class MiscItem
 
     public MiscItem(MiscItemDTO dto)
     {
-        ModKeyName = dto.ModKey.Name; ModKeyType = (int)dto.ModKey.Type; ModKeyFileName = dto.ModKey.FileName; FormKeyId = (int)dto.FormKey.ID;
-        EditorId = dto.EditorID; FormVersion = dto.FormVersion; StarfieldMajorRecordFlags = (int)dto.StarfieldMajorRecordFlags; Version2 = dto.Version2; VersionControl = dto.VersionControl; ImportedAtUTC = dto.ImportedAtUTC;
-        Name = dto.Name; ShortName = dto.ShortName; Value = dto.Value; Weight = dto.Weight;
+        ModKeyName = dto.ModKey.Name;
+        ModKeyType = (int)dto.ModKey.Type;
+        ModKeyFileName = dto.ModKey.FileName;
+        FormKeyId = (int)dto.FormKey.ID;
+        EditorId = dto.EditorID;
+        FormVersion = dto.FormVersion;
+        StarfieldMajorRecordFlags = (int)dto.StarfieldMajorRecordFlags;
+        Version2 = dto.Version2;
+        VersionControl = dto.VersionControl;
+        ImportedAtUTC = dto.ImportedAtUTC;
+        Name = dto.Name;
+        ShortName = dto.ShortName;
+        Value = dto.Value;
+        Weight = dto.Weight;
     }
 
     [Column("ModKey_Name")] public string ModKeyName { get; set; } = string.Empty;

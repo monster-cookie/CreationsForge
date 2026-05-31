@@ -1,4 +1,5 @@
 using Mutagen.Bethesda.Plugins;
+using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.Services;
 using Shouldly;
 
@@ -74,7 +75,7 @@ public class StarfieldPluginReaderServiceTests : IDisposable
         result.MasterReferences.ShouldNotBeNull();
     }
 
-    private static Core.DTOs.Plugins.PluginLoadOrderEntryDTO GetStarfieldEsmEntry(StarfieldPluginReaderService sut)
+    private static PluginLoadOrderEntryDTO GetStarfieldEsmEntry(StarfieldPluginReaderService sut)
     {
         return sut.GetLoadOrder().Single(entry => string.Equals(entry.ModKey.FileName, "Starfield.esm", StringComparison.OrdinalIgnoreCase));
     }

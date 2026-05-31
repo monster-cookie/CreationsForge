@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
+using Perk = SFRecordCompareEngine.Core.Models.Database.Perk;
 
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
@@ -10,7 +11,7 @@ public class PerkDTO
     { }
 
     [SetsRequiredMembers]
-    public PerkDTO(Models.Database.Perk model)
+    public PerkDTO(Perk model)
     {
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
         FormKey = new FormKey(ModKey, (uint)model.FormKeyId);

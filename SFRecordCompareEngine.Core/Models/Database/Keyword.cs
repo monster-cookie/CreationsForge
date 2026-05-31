@@ -13,9 +13,22 @@ public class Keyword
 
     public Keyword(KeywordDTO dto)
     {
-        ModKeyName = dto.ModKey.Name; ModKeyType = (int)dto.ModKey.Type; ModKeyFileName = dto.ModKey.FileName; FormKeyId = (int)dto.FormKey.ID;
-        EditorId = dto.EditorID; FormVersion = dto.FormVersion; StarfieldMajorRecordFlags = (int)dto.StarfieldMajorRecordFlags; Version2 = dto.Version2; VersionControl = dto.VersionControl; ImportedAtUTC = dto.ImportedAtUTC;
-        Name = dto.Name; Color = dto.Color; Type = dto.Type; Notes = dto.Notes; FlashLinkageName = dto.FlashLinkageName; AttractionRuleFormKey = dto.AttractionRuleFormKey?.ToString();
+        ModKeyName = dto.ModKey.Name;
+        ModKeyType = (int)dto.ModKey.Type;
+        ModKeyFileName = dto.ModKey.FileName;
+        FormKeyId = (int)dto.FormKey.ID;
+        EditorId = dto.EditorID;
+        FormVersion = dto.FormVersion;
+        StarfieldMajorRecordFlags = (int)dto.StarfieldMajorRecordFlags;
+        Version2 = dto.Version2;
+        VersionControl = dto.VersionControl;
+        ImportedAtUTC = dto.ImportedAtUTC;
+        Name = dto.Name;
+        Color = dto.Color;
+        Type = dto.Type;
+        Notes = dto.Notes;
+        FlashLinkageName = dto.FlashLinkageName;
+        AttractionRuleFormKey = dto.AttractionRuleFormKey?.ToString();
     }
 
     [Column("ModKey_Name")] public string ModKeyName { get; set; } = string.Empty;

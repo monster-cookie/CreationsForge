@@ -8,10 +8,10 @@ namespace SFRecordCompareEngine.ViewModels;
 public class StartupImportViewModel : ViewModelBase
 {
     private readonly IApplicationNavigationService ApplicationNavigationService;
-    private readonly IUserDialogService UserDialogService;
+    private readonly CancellationTokenSource CancellationTokenSource = new();
     private readonly ILogger Logger;
     private readonly IPluginImportService PluginImportService;
-    private readonly CancellationTokenSource CancellationTokenSource = new();
+    private readonly IUserDialogService UserDialogService;
     private bool ImportCompleted;
     private bool ImportStarted;
 
@@ -70,7 +70,10 @@ public class StartupImportViewModel : ViewModelBase
     {
         get
         {
-            if (ProgressMaximum <= 0) return 0;
+            if (ProgressMaximum <= 0)
+            {
+                return 0;
+            }
 
             return Math.Clamp(ProgressValue / ProgressMaximum, 0, 1);
         }
@@ -84,7 +87,10 @@ public class StartupImportViewModel : ViewModelBase
 
     public async Task StartImportAsync()
     {
-        if (ImportStarted) return;
+        if (ImportStarted)
+        {
+            return;
+        }
 
         ImportStarted = true;
         ImportCompleted = false;
@@ -127,7 +133,10 @@ public class StartupImportViewModel : ViewModelBase
 
     private void UpdateProgress(PluginImportProgressDTO progress)
     {
-        if (ImportCompleted) return;
+        if (ImportCompleted)
+        {
+            return;
+        }
 
         StatusText = progress.StatusText;
         if (string.IsNullOrWhiteSpace(progress.CurrentPluginName))
@@ -146,9 +155,13 @@ public class StartupImportViewModel : ViewModelBase
         {
             CurrentPluginText = $"Current plugin: {progress.CurrentPluginName}";
         }
+
         IsIndeterminate = progress.IsIndeterminate || progress.PluginCount <= 0;
 
-        if (progress.PluginCount <= 0) return;
+        if (progress.PluginCount <= 0)
+        {
+            return;
+        }
 
         ProgressMaximum = progress.PluginCount;
         ProgressValue = progress.PluginIndex;

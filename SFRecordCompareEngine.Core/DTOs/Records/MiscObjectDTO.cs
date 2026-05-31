@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
+using MiscItem = SFRecordCompareEngine.Core.Models.Database.MiscItem;
 
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
@@ -10,7 +11,7 @@ public class MiscItemDTO
     { }
 
     [SetsRequiredMembers]
-    public MiscItemDTO(Models.Database.MiscItem model)
+    public MiscItemDTO(MiscItem model)
     {
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
         FormKey = new FormKey(ModKey, (uint)model.FormKeyId);

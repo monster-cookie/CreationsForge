@@ -38,5 +38,4 @@ public class RecordTypeCatalogTests
         value.RecordType.ShouldBe(expectedName);
         value.RecordID.ShouldBe(expectedID);
     }
-
 }

@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
+using MagicEffect = SFRecordCompareEngine.Core.Models.Database.MagicEffect;
 
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
@@ -10,7 +11,7 @@ public class MagicEffectDTO
     { }
 
     [SetsRequiredMembers]
-    public MagicEffectDTO(Models.Database.MagicEffect model)
+    public MagicEffectDTO(MagicEffect model)
     {
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
         FormKey = new FormKey(ModKey, (uint)model.FormKeyId);

@@ -16,7 +16,7 @@ public class FormListRepository : IFormListRepository
         Database = database;
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public IList<FormListDTO> GetByModKey(ModKey modKey)
     {
         return Database.Fetch<FormList>(
@@ -31,7 +31,7 @@ public class FormListRepository : IFormListRepository
             .ToList();
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public IList<FormListDTO> GetByFormKeyID(uint formKeyID)
     {
         return Database.Fetch<FormList>(
@@ -53,7 +53,7 @@ public class FormListRepository : IFormListRepository
             .ToList();
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public void Save(FormListDTO dto)
     {
         var model = new FormList(dto);

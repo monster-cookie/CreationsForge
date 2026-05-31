@@ -1,8 +1,8 @@
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
 using SFRecordCompareEngine.Core.DTOs.Records;
-using SFRecordCompareEngine.Core.Models.Database;
 using Shouldly;
+using FormList = SFRecordCompareEngine.Core.Models.Database.FormList;
 
 namespace SFRecordCompareEngine.UnitTests.Models.Database;
 
@@ -28,7 +28,7 @@ public class FormListTests
             AddToListFormKey = addToListFormKey
         };
 
-        var result = new SFRecordCompareEngine.Core.Models.Database.FormList(dto);
+        var result = new FormList(dto);
 
         result.ModKeyName.ShouldBe(modKey.Name);
         result.ModKeyType.ShouldBe((int)modKey.Type);

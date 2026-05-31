@@ -8,8 +8,8 @@ namespace SFRecordCompareEngine.Core.Services;
 
 public class PluginService : IPluginService
 {
-    private readonly IStarfieldPluginReaderService StarfieldPluginReaderService;
     private readonly IPluginRepository PluginRepository;
+    private readonly IStarfieldPluginReaderService StarfieldPluginReaderService;
 
     public PluginService(
         IStarfieldPluginReaderService starfieldPluginReaderService,

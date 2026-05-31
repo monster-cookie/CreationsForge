@@ -1,6 +1,5 @@
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
-using SFRecordCompareEngine.Core.Helpers;
 using SFRecordCompareEngine.Core.Importers.Interfaces;
 using SFRecordCompareEngine.Core.Importers.Starfield;
 using Shouldly;

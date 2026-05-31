@@ -2,6 +2,7 @@ using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
 using SFRecordCompareEngine.Core.DTOs.Records;
 using Shouldly;
+using Keyword = SFRecordCompareEngine.Core.Models.Database.Keyword;
 
 namespace SFRecordCompareEngine.UnitTests.Models.Database;
 
@@ -31,7 +32,7 @@ public class KeywordTests
             AttractionRuleFormKey = attractionRuleFormKey
         };
 
-        var result = new SFRecordCompareEngine.Core.Models.Database.Keyword(dto);
+        var result = new Keyword(dto);
 
         result.Name.ShouldBe("Name");
         result.Color.ShouldBe("#00FFFFFF");

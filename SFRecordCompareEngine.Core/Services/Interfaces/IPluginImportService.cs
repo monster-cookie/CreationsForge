@@ -5,7 +5,7 @@ namespace SFRecordCompareEngine.Core.Services.Interfaces;
 public interface IPluginImportService
 {
     /// <summary>
-    /// Initialize the plugin import process.
+    ///     Initialize the plugin import process.
     /// </summary>
     /// <param name="progress">DTO for returning progress updates during the import process.</param>
     /// <param name="cancellationToken">Token to cancel the import operation.</param>

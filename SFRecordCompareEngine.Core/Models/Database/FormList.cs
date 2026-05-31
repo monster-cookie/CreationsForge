@@ -26,36 +26,25 @@ public class FormList
         AddToListFormKey = dto.AddToListFormKey?.ToString();
     }
 
-    [Column("ModKey_Name")]
-    public string ModKeyName { get; set; } = string.Empty;
+    [Column("ModKey_Name")] public string ModKeyName { get; set; } = string.Empty;
 
-    [Column("ModKey_Type")]
-    public int ModKeyType { get; set; } = (int)ModType.Master;
+    [Column("ModKey_Type")] public int ModKeyType { get; set; } = (int)ModType.Master;
 
-    [Column("ModKey_FileName")]
-    public string ModKeyFileName { get; set; } = string.Empty;
+    [Column("ModKey_FileName")] public string ModKeyFileName { get; set; } = string.Empty;
 
-    [Column("FormKey_ID")]
-    public int FormKeyId { get; set; }
+    [Column("FormKey_ID")] public int FormKeyId { get; set; }
 
-    [Column("EditorID")]
-    public string? EditorId { get; set; }
+    [Column("EditorID")] public string? EditorId { get; set; }
 
-    [Column("FormVersion")]
-    public int FormVersion { get; set; }
+    [Column("FormVersion")] public int FormVersion { get; set; }
 
-    [Column("StarfieldMajorRecordFlags")]
-    public int StarfieldMajorRecordFlags { get; set; }
+    [Column("StarfieldMajorRecordFlags")] public int StarfieldMajorRecordFlags { get; set; }
 
-    [Column("Version2")]
-    public int Version2 { get; set; }
+    [Column("Version2")] public int Version2 { get; set; }
 
-    [Column("VersionControl")]
-    public int VersionControl { get; set; }
+    [Column("VersionControl")] public int VersionControl { get; set; }
 
-    [Column("ImportedAtUTC")]
-    public DateTime ImportedAtUTC { get; set; }
+    [Column("ImportedAtUTC")] public DateTime ImportedAtUTC { get; set; }
 
-    [Column("AddToListFormKey")]
-    public string? AddToListFormKey { get; set; }
+    [Column("AddToListFormKey")] public string? AddToListFormKey { get; set; }
 }
