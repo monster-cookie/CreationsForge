@@ -6,11 +6,13 @@
 
 - Directory: `ApplicationConfigurationStore.DefaultApplicationDataDirectory`
 - File name: `SFRecordCompareEngine.sqlite`
-- Full path: `<CommonApplicationData>/SFRecordCompareEngine/SFRecordCompareEngine.sqlite`
-- Log directory: `<CommonApplicationData>/SFRecordCompareEngine/Logs`
+- Linux full path: `~/.SFRecordCompareEngine/SFRecordCompareEngine.sqlite`
+- Linux log directory: `~/.SFRecordCompareEngine/Logs`
+- Other platforms full path: `<CommonApplicationData>/SFRecordCompareEngine/SFRecordCompareEngine.sqlite`
+- Other platforms log directory: `<CommonApplicationData>/SFRecordCompareEngine/Logs`
 
-`ApplicationConfigurationStore.DefaultApplicationDataDirectory` is based on
-`Environment.SpecialFolder.CommonApplicationData`.
+`ApplicationConfigurationStore.DefaultApplicationDataDirectory` uses the current user's profile directory on Linux
+and `Environment.SpecialFolder.CommonApplicationData` on other platforms.
 
 ## Connection Behavior
 

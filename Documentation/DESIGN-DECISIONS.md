@@ -1,5 +1,38 @@
 # Design Decisions
 
+## 2026-06-01 - Use Per-User Linux Application Data
+
+Status: Accepted
+
+Context: The Debian package installs application binaries under `/opt`, but launches the application as the current
+desktop user. The existing default application-data location used `Environment.SpecialFolder.CommonApplicationData`,
+which resolves to a system-owned location on Linux and prevents an unprivileged user from creating the SQLite database,
+configuration file, and logs during startup.
+
+Decision: Use `~/.SFRecordCompareEngine` as the default application-data directory on Linux. Continue using
+`<CommonApplicationData>/SFRecordCompareEngine` on other platforms.
+
+Rationale: Linux desktop application state must be writable by the user launching the installed application. Keeping
+the existing non-Linux default avoids changing Windows persistence behavior.
+
+Alternatives considered:
+
+- Provision a world-writable shared directory from the Debian package.
+- Require users to launch the application with elevated permissions.
+- Use the existing common application-data path on every platform.
+
+Consequences:
+
+- Linux config JSON, SQLite database, and log files default to `~/.SFRecordCompareEngine`.
+- Windows config JSON, SQLite database, and log locations remain unchanged.
+- Explicitly configured paths remain supported.
+
+Related files:
+
+- `SFRecordCompareEngine.Core/Configuration/ApplicationConfigurationStore.cs`
+- `SFRecordCompareEngine.Core/Models/Database/SqliteDatabaseOptions.cs`
+- `Documentation/DATABASE.md`
+
 ## 2026-06-01 - Replace WinUI-Only Presentation With Uno Skia Desktop
 
 Status: Accepted
