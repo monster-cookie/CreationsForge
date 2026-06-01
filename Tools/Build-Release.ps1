@@ -1,7 +1,6 @@
 [CmdletBinding()]
 param(
     [string]$Configuration = "Release",
-    [string]$RuntimeIdentifier = "win-x64",
     [string]$OutputDirectory = (Join-Path ([Environment]::GetFolderPath("UserProfile")) "Downloads")
 )
 
@@ -18,7 +17,8 @@ if (-not $versionMatch.Success) {
 $version = "{0}.{1}.{2}" -f $versionMatch.Groups["Major"].Value, $versionMatch.Groups["Minor"].Value, ([int]$versionMatch.Groups["Patch"].Value + 1)
 Set-Content -LiteralPath $versionPath -Value $version
 
-& (Join-Path $PSScriptRoot "Package-Application.ps1") -Configuration $Configuration -RuntimeIdentifier $RuntimeIdentifier -OutputDirectory $OutputDirectory -Version $version
-& (Join-Path $PSScriptRoot "Build-Installer.ps1") -Configuration $Configuration -RuntimeIdentifier $RuntimeIdentifier -OutputDirectory $OutputDirectory -Version $version
+& (Join-Path $PSScriptRoot "Package-Application.ps1") -Configuration $Configuration -RuntimeIdentifier "win-x64" -OutputDirectory $OutputDirectory -Version $version
+& (Join-Path $PSScriptRoot "Build-Installer.ps1") -Configuration $Configuration -RuntimeIdentifier "win-x64" -OutputDirectory $OutputDirectory -Version $version
+& (Join-Path $PSScriptRoot "Package-Application.ps1") -Configuration $Configuration -RuntimeIdentifier "linux-x64" -OutputDirectory $OutputDirectory -Version $version
 
 Write-Host "Created release version: $version"

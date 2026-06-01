@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Starfield Record Compare Engine
+Comment=Inspect and compare Starfield plugin records
+Exec=/usr/bin/sfrecordcompareengine
+Icon=sfrecordcompareengine
+Terminal=false
+Categories=Development;Utility;

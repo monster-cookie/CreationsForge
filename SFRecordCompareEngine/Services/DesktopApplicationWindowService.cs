@@ -1,15 +1,13 @@
-using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SFRecordCompareEngine.Core.Models.Configuration;
 using SFRecordCompareEngine.Services.Interfaces;
 using SFRecordCompareEngine.ViewModels;
-using WinRT.Interop;
 
 namespace SFRecordCompareEngine.Services;
 
-public class WindowsApplicationWindowService : IApplicationWindowService
+public class DesktopApplicationWindowService : IApplicationWindowService
 {
     private static readonly string ApplicationIconPath = Path.Combine(AppContext.BaseDirectory, "Resources", "AppIcon", "sfrecordcompareengine.ico");
 
@@ -18,9 +16,7 @@ public class WindowsApplicationWindowService : IApplicationWindowService
     public void RegisterMainWindow(MainWindow mainWindow)
     {
         MainWindow = mainWindow;
-
-        var appWindow = GetAppWindow(mainWindow);
-        appWindow.SetIcon(ApplicationIconPath);
+        MainWindow.AppWindow.SetIcon(ApplicationIconPath);
     }
 
     public void SetContent(UIElement content)
@@ -55,14 +51,7 @@ public class WindowsApplicationWindowService : IApplicationWindowService
 
     public void MaximizeMainWindow()
     {
-        if (MainWindow == null)
-        {
-            return;
-        }
-
-        var appWindow = GetAppWindow(MainWindow);
-
-        if (appWindow.Presenter is OverlappedPresenter presenter)
+        if (MainWindow?.AppWindow.Presenter is OverlappedPresenter presenter)
         {
             presenter.Maximize();
         }
@@ -74,11 +63,5 @@ public class WindowsApplicationWindowService : IApplicationWindowService
         {
             app.ShutDown();
         }
-    }
-
-    private static AppWindow GetAppWindow(MainWindow mainWindow)
-    {
-        var windowId = Win32Interop.GetWindowIdFromWindow(WindowNative.GetWindowHandle(mainWindow));
-        return AppWindow.GetFromWindowId(windowId);
     }
 }

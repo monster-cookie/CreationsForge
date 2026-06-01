@@ -2,8 +2,8 @@
 
 ## UI Framework
 
-The presentation project is a WinUI 3 Windows application. UI is defined with WinUI XAML views and code-behind only for
-view lifecycle wiring.
+The presentation project is an Uno Platform Skia Desktop application. UI is defined with WinUI-compatible XAML views
+and code-behind only for view lifecycle wiring. The desktop host selects Win32 on Windows and X11 on Linux.
 
 Presentation code belongs in `SFRecordCompareEngine`, including views, view models, commands, dialog services, 
 navigation services, and Windows-specific window behavior.
@@ -12,7 +12,7 @@ navigation services, and Windows-specific window behavior.
 
 `App` configures:
 
-- WinUI app startup
+- Uno Skia Desktop app startup
 - Serilog logging
 - Autofac container construction
 - Core and migration modules
@@ -20,22 +20,22 @@ navigation services, and Windows-specific window behavior.
 - presentation service registrations
 
 `App.OnLaunched` logs startup and resolves `MainWindow`. `MainWindow` initializes the database schema, registers itself
-with `WindowsApplicationWindowService`, shows `StartupImportView`, and maximizes the window.
+with `DesktopApplicationWindowService`, shows `StartupImportView`, and maximizes the window.
 
 ## Views
 
 `StartupImportView` displays startup import status, current plugin and record-type text, a progress bar, and an activity
 indicator. It starts import from `Loaded` and cancels import from `Unloaded`.
 
-`MainView` is the current application shell after startup import. It has a native WinUI `MenuBar`, a WinUI `CommandBar`,
+`MainView` is the current application shell after startup import. It has a `MenuBar`, a `CommandBar`,
 a filterable left-side record tree, a horizontally scrollable right-side selected-record comparison workspace, and a
 status area that shows the active plugin selection. The tree groups persisted supported records owned by the active
 plugin. The active plugin remains visible in the status area and its comparison column has a subtle yellow border.
 
-`OpenPluginDialog` is a WinUI `ContentDialog` for selecting the active plugin. It provides an autocomplete plugin file
+`OpenPluginDialog` is a `ContentDialog` for selecting the active plugin. It provides an autocomplete plugin file
 name search backed by imported openable plugin rows, plus Load and Cancel actions.
 
-`SettingsDialog` is a WinUI `ContentDialog` for application options. It currently lets users select `Dark` or `Light`
+`SettingsDialog` is a `ContentDialog` for application options. It currently lets users select `Dark` or `Light`
 theme and save the choice to application configuration.
 
 ## View Models
@@ -82,10 +82,10 @@ Core does not expose UI command abstractions.
 - closes the active dialog
 - quits the WinUI app
 
-`UserDialogService` owns user-facing error alerts through WinUI `ContentDialog`.
+`UserDialogService` owns user-facing error alerts through `ContentDialog`.
 
-`WindowsApplicationWindowService` stores the active `MainWindow`, swaps content, opens dialogs, closes dialogs, quits 
-the app, applies the configured theme, and uses Windows App SDK APIs to maximize the main window.
+`DesktopApplicationWindowService` stores the active `MainWindow`, swaps content, opens dialogs, closes dialogs, quits
+the app, applies the configured theme, and uses Uno desktop `AppWindow` APIs to maximize the main window.
 
 `ActivePluginSelectionService` is presentation-layer shared state for the active plugin selected by the user. It stores
 the active `PluginDTO` and raises a change event consumed by main-page UI state.

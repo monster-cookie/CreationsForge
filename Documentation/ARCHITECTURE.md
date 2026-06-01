@@ -4,8 +4,9 @@
 
 The solution is split into presentation, core, migrations, and tests.
 
-`SFRecordCompareEngine` is the presentation layer. It references Core and Migrations and contains WinUI views, view 
-models, commands, navigation services, dialog services, Windows window behavior, app startup, logging setup, and the 
+`SFRecordCompareEngine` is the presentation layer. It references Core and Migrations and contains Uno Platform Skia
+Desktop views, view models, commands, navigation services, dialog services, desktop window behavior, app startup,
+logging setup, and the
 Autofac composition root.
 
 `SFRecordCompareEngine.Core` is UI-neutral. It contains DTOs, database models, configuration storage, database 
@@ -24,7 +25,7 @@ DbUp execution, or WinUI UI-bound behavior.
 - Core depends on Migrations for database migration execution.
 - Migrations does not depend on Presentation or Core.
 - UnitTests depend on Core and Migrations.
-- Core does not reference WinUI views, view models, commands, dialog services, or navigation services.
+- Core does not reference Uno or WinUI views, view models, commands, dialog services, or navigation services.
 
 ## Composition
 
@@ -33,8 +34,8 @@ DbUp execution, or WinUI UI-bound behavior.
 - `CoreModule` registers Core stores, importers, services, factories, initializers, repositories,
   `SqliteDatabaseOptions`, and NPoco `IDatabase`.
 - `MigrationsModule` registers `DatabaseMigrationRunner` as `IDatabaseMigrationRunner`.
-- The presentation project registers WinUI views, view models, `MainWindow`, and presentation services.
-- `UserDialogService`, `ApplicationNavigationService`, and `WindowsApplicationWindowService` are registered as
+- The presentation project registers Uno desktop views, view models, `MainWindow`, and presentation services.
+- `UserDialogService`, `ApplicationNavigationService`, and `DesktopApplicationWindowService` are registered as
   singletons.
 
 Most Core services, repositories, importers, stores, and initializers are registered by assembly scanning and interface 
@@ -102,5 +103,6 @@ logging decisions.
 
 ## UI Framework Note
 
-The presentation layer is WinUI 3 for Windows. Any references describing the app as WPF or MAUI are stale and should be 
-updated in repo instruction/template files when those files are intentionally revised.
+The presentation layer is Uno Platform Skia Desktop with WinUI-compatible XAML. The desktop host selects Win32 on
+Windows and X11 on Linux. Any references describing the app as WPF, MAUI, or WinUI-only are stale and should be updated
+in repo instruction/template files when those files are intentionally revised.

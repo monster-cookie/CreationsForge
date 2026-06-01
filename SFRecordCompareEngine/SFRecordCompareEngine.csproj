@@ -1,20 +1,20 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Uno.Sdk/6.5.36">
 
     <PropertyGroup>
-        <OutputType>WinExe</OutputType>
-        <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0-desktop</TargetFramework>
         <Nullable>enable</Nullable>
-        <UseWinUI>true</UseWinUI>
         <ImplicitUsings>enable</ImplicitUsings>
-        <WindowsPackageType>None</WindowsPackageType>
-        <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
-        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <UnoSingleProject>true</UnoSingleProject>
         <ApplicationTitle>Starfield Record Compare Engine</ApplicationTitle>
         <ApplicationId>com.sfrecordcompareengine.app</ApplicationId>
         <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
         <ApplicationVersion>1</ApplicationVersion>
-        <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
-        <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+        <ApplicationPublisher>Venpi</ApplicationPublisher>
+        <Description>Starfield plugin inspection and comparison tool.</Description>
+        <UnoFeatures>
+            SkiaRenderer;
+        </UnoFeatures>
     </PropertyGroup>
 
     <ItemGroup>
@@ -24,7 +24,6 @@
 
     <ItemGroup>
         <PackageReference Include="Autofac" Version="9.1.0"/>
-        <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.251106002"/>
         <PackageReference Include="Serilog" Version="4.3.1"/>
         <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1"/>
         <PackageReference Include="Serilog.Sinks.File" Version="7.0.0"/>

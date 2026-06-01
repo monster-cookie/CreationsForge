@@ -2,7 +2,7 @@
 
 ## Purpose
 
-SFRecordCompareEngine is a WinUI 3 Windows desktop application for inspecting Starfield plugin data with Mutagen. The 
+SFRecordCompareEngine is an Uno Platform Skia Desktop application for inspecting Starfield plugin data with Mutagen. The
 app discovers the local Starfield load order, imports plugin metadata and selected record details into a local SQLite 
 database, and provides a presentation shell for record comparison workflows.
 
@@ -11,7 +11,7 @@ comparison workspace. The open-plugin dialog selects the active imported plugin 
 
 ## Projects
 
-- `SFRecordCompareEngine` is the WinUI 3 Windows presentation project. It owns views, view models, commands,
+- `SFRecordCompareEngine` is the Uno Platform Skia Desktop presentation project. It owns views, view models, commands,
   navigation, dialogs, window behavior, Serilog setup, and Autofac composition.
 - `SFRecordCompareEngine.Core` owns UI-neutral domain DTOs, database models, configuration storage, database connection
   setup, import services, readers, importers, repositories, and Autofac core registrations.
@@ -57,6 +57,7 @@ comparison workspace. The open-plugin dialog selects the active imported plugin 
 
 ## Framework Note
 
-This application is currently implemented with WinUI 3 for Windows. Older repo instructions and templates may still 
-refer to WPF or MAUI; those references are stale and should be updated to WinUI terminology when those instruction 
-files are next revised.
+This application is implemented with Uno Platform Skia Desktop and WinUI-compatible XAML. The desktop host selects
+Win32 on Windows and X11 on Linux. Older repo instructions and templates may still refer to WPF, MAUI, or WinUI-only
+behavior; those references are stale and should be updated to Uno terminology when those instruction files are next
+revised.

@@ -1,5 +1,48 @@
 # Design Decisions
 
+## 2026-06-01 - Replace WinUI-Only Presentation With Uno Skia Desktop
+
+Status: Accepted
+
+Context: The application needs to continue running on Windows while adding a native Linux desktop distribution path
+for users running Starfield through Proton. The existing WinUI 3 presentation project is Windows-only.
+
+Decision: Replace the WinUI-only application host with Uno Platform Skia Desktop. Keep the existing WinUI-compatible
+XAML views during the platform migration. Configure the host for Win32 on Windows and X11 on Linux. Continue producing
+a Windows ZIP and Inno Setup installer, and add Linux ZIP and Debian packages. Generate release packages through
+GitHub Actions when a matching version tag is pushed from the current `master` HEAD.
+
+Rationale: Uno preserves the current XAML, MVVM structure, and control model while enabling a shared Windows and Linux
+desktop build. Keeping XAML during this phase separates platform migration issues from a later C# Markup refactor.
+
+Alternatives considered:
+
+- Continue distributing the WinUI build for Proton execution.
+- Replace WinUI with Avalonia.
+- Convert to Uno C# Markup during the platform migration.
+- Return to MAUI.
+
+Consequences:
+
+- The presentation project targets Uno Skia Desktop and selects Win32 or X11 at runtime.
+- Core, migrations, and unit tests target cross-platform .NET instead of Windows-specific TFMs.
+- Linux SQLite packaging, app-data permissions, and Proton-aware Starfield discovery still require Linux validation.
+- Matching `vmajor.minor.patch` tag pushes from the current `master` HEAD generate Windows ZIP, Inno Setup installer,
+  Linux ZIP, and Debian artifacts.
+- A later presentation-only change can migrate XAML views to Uno C# Markup incrementally.
+- The `2026-05-29 - Revert Presentation Layer To WinUI` decision is superseded.
+
+Related files:
+
+- `SFRecordCompareEngine/SFRecordCompareEngine.csproj`
+- `SFRecordCompareEngine/Platforms/Desktop/Program.cs`
+- `SFRecordCompareEngine/Services/DesktopApplicationWindowService.cs`
+- `Tools/Package-Application.ps1`
+- `Tools/Build-Release.ps1`
+- `Tools/Build-Installer.ps1`
+- `Tools/Build-DebianPackage.ps1`
+- `.github/workflows/package-release.yml`
+
 ## 2026-05-30 - Highlight Conflicts Across Visible Comparison Columns
 
 Status: Accepted
@@ -214,7 +257,7 @@ Related files:
 
 ## 2026-05-29 - Revert Presentation Layer To WinUI
 
-Status: Accepted
+Status: Superseded
 
 Context: The application is Windows-only and needs standard Windows desktop UI surfaces, including a menu bar, toolbar, 
 and future grid-based browsing workflows. The MAUI presentation layer failed to reliably render menu and toolbar 
