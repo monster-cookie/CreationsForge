@@ -10,6 +10,8 @@ The tool focuses on helping mod authors and developers inspect plugin records, r
 type, and compare matching records across plugins. It is intended to support debugging, validation, compatibility
 review, and general plugin analysis workflows.
 
+The Uno Platform desktop application supports Windows and Linux.
+
 ![Screen Shot of Record Comparison](./Documentation/Images/RecordCompare.png)
 
 ## Current Features
@@ -51,11 +53,25 @@ Long-term goals include local LLM-assisted patch creation and support for other 
    typed fields or child tables.
 3. `BlueprintShips*.esm` plugins are intentionally skipped during import.
 
+## Installation
+
+1. Windows users can download the x64 ZIP archive or installer.
+2. Linux users can download the x64 ZIP archive or Debian package.
+3. Do not install the application into your Starfield Data folder.
+4. Starfield must be installed and discoverable on your system, including Linux installations running through Proton.
+
+On Linux, the application stores user data under `~/.SFRecordCompareEngine`.
+
 ## Required Development Environment
 
 1. Must have Starfield installed on your system
 2. Must have Visual Studio 2022 or later, VS Code, or JetBrains Rider (Preferred)
 3. Must have .NET 10 SDK installed
+4. Must have Uno Platform 4.0 Community Edition installed (https://platform.uno/docs/articles/getting-started.html)
+
+## References
+
+- [Uno Control Gallery and Documentation](https://gallery.platform.uno/)
 
 ## Social Presence
 
