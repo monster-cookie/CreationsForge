@@ -5,6 +5,7 @@ using Shouldly;
 
 namespace SFRecordCompareEngine.UnitTests.Services;
 
+[Trait("Category", "RequiresStarfield")]
 public class StarfieldRecordReaderServiceTests
 {
     [Fact]

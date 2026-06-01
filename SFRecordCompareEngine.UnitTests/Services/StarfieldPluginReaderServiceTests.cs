@@ -48,6 +48,7 @@ public class StarfieldPluginReaderServiceTests : IDisposable
     }
 
     [Fact]
+    [Trait("Category", "RequiresStarfield")]
     public void GetLoadOrder_ReturnsStarfieldLoadOrder()
     {
         var sut = new StarfieldPluginReaderService();
@@ -62,6 +63,7 @@ public class StarfieldPluginReaderServiceTests : IDisposable
     }
 
     [Fact]
+    [Trait("Category", "RequiresStarfield")]
     public void GetMetadata_WhenStarfieldEsmExists_ReturnsMetadata()
     {
         var sut = new StarfieldPluginReaderService();

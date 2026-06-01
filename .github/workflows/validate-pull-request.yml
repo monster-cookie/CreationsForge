@@ -37,4 +37,4 @@ jobs:
 
       - name: Test
         shell: pwsh
-        run: dotnet test ./SFRecordCompareEngine.UnitTests/SFRecordCompareEngine.UnitTests.csproj --configuration Release --no-build
+        run: dotnet test ./SFRecordCompareEngine.UnitTests/SFRecordCompareEngine.UnitTests.csproj --configuration Release --no-build --filter "Category!=RequiresStarfield"
