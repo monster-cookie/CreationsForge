@@ -1,5 +1,41 @@
 # Design Decisions
 
+## 2026-06-01 - Use Release Tags As Package Version Source
+
+Status: Accepted
+
+Context: Release packages need a stable semantic version shared by ZIP files, installers, assembly metadata, and
+Debian package metadata. A tracked `Tools/Release-Version.txt` counter cannot be updated by a tag-triggered build
+without creating an additional commit.
+
+Decision: Use the pushed `vmajor.minor.patch` Git tag as the release version source of truth. Strip the leading `v`
+inside the GitHub Actions validation job and pass the resulting `major.minor.patch` value explicitly to every
+packaging script. Keep the packaged changelog, known-issues document, and roadmap.
+
+Rationale: Release tags are already unique, intentional release triggers. Using the same value for artifacts and
+embedded metadata avoids mutable build-time version files and keeps local packaging deterministic.
+
+Alternatives considered:
+
+- Commit and increment `Tools/Release-Version.txt`.
+- Use the GitHub Actions run number as the patch version.
+- Rewrite the changelog during CI.
+
+Consequences:
+
+- `Tools/Release-Version.txt` is removed.
+- Packaging scripts require an explicit semantic version.
+- A `v1.2.3` tag produces artifacts and package metadata with version `1.2.3`.
+- Repository release documents continue to be bundled with application packages.
+
+Related files:
+
+- `.github/workflows/package-release.yml`
+- `Tools/Package-Application.ps1`
+- `Tools/Build-Installer.ps1`
+- `Tools/Build-DebianPackage.ps1`
+- `Tools/Build-Release.ps1`
+
 ## 2026-06-01 - Reimport Plugin Cache After Schema Changes
 
 Status: Accepted

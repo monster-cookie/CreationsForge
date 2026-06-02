@@ -1,6 +1,6 @@
 ﻿# Change Log
 
-## Version 1.0.2 - 2026-06-01 [BETA]
+## Version 1.0.3 - 2026-06-01 [BETA]
 
 - Replaced the WinUI-only application host with Uno Platform Skia Desktop.
 - Changed the Linux application-data default to `~/.SFRecordCompareEngine` so Debian-installed launches can write

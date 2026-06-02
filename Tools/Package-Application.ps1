@@ -3,6 +3,7 @@ param(
     [string]$Configuration = "Release",
     [string]$RuntimeIdentifier = "win-x64",
     [string]$OutputDirectory = (Join-Path ([Environment]::GetFolderPath("UserProfile")) "Downloads"),
+    [Parameter(Mandatory = $true)]
     [string]$Version
 )
 
@@ -10,17 +11,12 @@ $ErrorActionPreference = "Stop"
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path (Join-Path $repositoryRoot "SFRecordCompareEngine") "SFRecordCompareEngine.csproj"
-$versionPath = Join-Path $PSScriptRoot "Release-Version.txt"
 $documentationDirectory = Join-Path $repositoryRoot "Documentation"
 $knownIssuesPath = Join-Path $documentationDirectory "KNOWN-ISSUES.md"
 $roadmapPath = Join-Path $documentationDirectory "ROADMAP.md"
 $changeLogPath = Join-Path $documentationDirectory "CHANGE-LOG.md"
 $temporaryDirectory = Join-Path ([System.IO.Path]::GetTempPath()) "SFRecordCompareEngine-$([Guid]::NewGuid())"
 $publishDirectory = Join-Path $temporaryDirectory "publish"
-
-if (-not $Version) {
-    $Version = (Get-Content -LiteralPath $versionPath -Raw).Trim()
-}
 
 if ($Version -notmatch "^\d+\.\d+\.\d+$") {
     throw "Release version '$Version' must use the major.minor.patch format."

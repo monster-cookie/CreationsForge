@@ -3,12 +3,12 @@ param(
     [string]$Configuration = "Release",
     [string]$RuntimeIdentifier = "win-x64",
     [string]$OutputDirectory = (Join-Path ([Environment]::GetFolderPath("UserProfile")) "Downloads"),
+    [Parameter(Mandatory = $true)]
     [string]$Version
 )
 
 $ErrorActionPreference = "Stop"
 
-$versionPath = Join-Path $PSScriptRoot "Release-Version.txt"
 $installerDefinitionPath = Join-Path $PSScriptRoot "SFRecordCompareEngine.iss"
 $temporaryDirectory = Join-Path ([System.IO.Path]::GetTempPath()) "SFRecordCompareEngine-Installer-$([Guid]::NewGuid())"
 $compilerCommand = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
@@ -20,10 +20,6 @@ $compilerPaths = @(
 )
 $compilerPath = $compilerPaths | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
 
-if (-not $Version) {
-    $Version = (Get-Content -LiteralPath $versionPath -Raw).Trim()
-}
-
 if ($Version -notmatch "^\d+\.\d+\.\d+$") {
     throw "Release version '$Version' must use the major.minor.patch format."
 }
@@ -32,8 +28,9 @@ if ($RuntimeIdentifier -ne "win-x64") {
     throw "The Inno Setup installer is supported only for the win-x64 runtime identifier."
 }
 
-$archivePath = Join-Path $OutputDirectory "SFRecordCompareEngine-$RuntimeIdentifier-$Version.zip"
-$installerPath = Join-Path $OutputDirectory "SFRecordCompareEngine-Setup-$Version.exe"
+$outputDirectoryPath = [System.IO.Path]::GetFullPath($OutputDirectory)
+$archivePath = Join-Path $outputDirectoryPath "SFRecordCompareEngine-$RuntimeIdentifier-$Version.zip"
+$installerPath = Join-Path $outputDirectoryPath "SFRecordCompareEngine-Setup-$Version.exe"
 
 if (-not $compilerPath) {
     throw "Inno Setup Compiler was not found. Install it with: winget install --id JRSoftware.InnoSetup --exact"
@@ -45,16 +42,20 @@ if (-not (Test-Path -LiteralPath $archivePath)) {
 
 try {
     New-Item -ItemType Directory -Path $temporaryDirectory -Force | Out-Null
-    New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
+    New-Item -ItemType Directory -Path $outputDirectoryPath -Force | Out-Null
     Expand-Archive -LiteralPath $archivePath -DestinationPath $temporaryDirectory
 
     if (Test-Path -LiteralPath $installerPath) {
         Remove-Item -LiteralPath $installerPath -Force
     }
 
-    & $compilerPath "/DSourceDirectory=$temporaryDirectory" "/DOutputDirectory=$OutputDirectory" "/DApplicationVersion=$Version" $installerDefinitionPath
+    & $compilerPath "/DSourceDirectory=$temporaryDirectory" "/DOutputDirectory=$outputDirectoryPath" "/DApplicationVersion=$Version" $installerDefinitionPath
     if ($LASTEXITCODE -ne 0) {
         throw "Inno Setup Compiler failed with exit code $LASTEXITCODE."
+    }
+
+    if (-not (Test-Path -LiteralPath $installerPath)) {
+        throw "Inno Setup Compiler completed without creating the expected installer at '$installerPath'."
     }
 
     Write-Host "Created application installer: $installerPath"

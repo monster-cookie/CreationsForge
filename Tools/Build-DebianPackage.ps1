@@ -2,6 +2,7 @@
 param(
     [string]$Configuration = "Release",
     [string]$OutputDirectory = (Join-Path ([Environment]::GetFolderPath("UserProfile")) "Downloads"),
+    [Parameter(Mandatory = $true)]
     [string]$Version
 )
 
@@ -9,7 +10,6 @@ $ErrorActionPreference = "Stop"
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path (Join-Path $repositoryRoot "SFRecordCompareEngine") "SFRecordCompareEngine.csproj"
-$versionPath = Join-Path $PSScriptRoot "Release-Version.txt"
 $desktopEntryPath = Join-Path (Join-Path $PSScriptRoot "Linux") "com.sfrecordcompareengine.app.desktop"
 $iconPath = Join-Path (Join-Path (Join-Path $repositoryRoot "SFRecordCompareEngine") "Resources\AppIcon") "appicon.svg"
 $documentationDirectory = Join-Path $repositoryRoot "Documentation"
@@ -26,10 +26,6 @@ $shareDirectory = Join-Path $usrDirectory "share"
 $launcherDirectory = Join-Path $usrDirectory "bin"
 $desktopEntryDirectory = Join-Path $shareDirectory "applications"
 $iconDirectory = Join-Path (Join-Path (Join-Path (Join-Path $shareDirectory "icons") "hicolor") "scalable") "apps"
-
-if (-not $Version) {
-    $Version = (Get-Content -LiteralPath $versionPath -Raw).Trim()
-}
 
 if ($Version -notmatch "^\d+\.\d+\.\d+$") {
     throw "Release version '$Version' must use the major.minor.patch format."
