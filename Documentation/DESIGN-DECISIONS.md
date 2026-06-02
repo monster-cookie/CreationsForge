@@ -104,7 +104,7 @@ Related files:
 
 - `SFRecordCompareEngine.Core/Configuration/ApplicationConfigurationStore.cs`
 - `SFRecordCompareEngine.Core/Models/Database/SqliteDatabaseOptions.cs`
-- `Documentation/DATABASE.md`
+- `Documentation/Database/DATABASE.md`
 
 ## 2026-06-01 - Replace WinUI-Only Presentation With Uno Skia Desktop
 
