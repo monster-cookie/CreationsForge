@@ -15,6 +15,16 @@ erDiagram
         INTEGER Enabled
         INTEGER ExistsOnDisk
         TEXT ImportState
+        INTEGER HeaderFlags
+        INTEGER FormVersion
+        TEXT Author
+        TEXT Branch
+        INTEGER InteriorCellCount
+        INTEGER SourceLastWriteUTCTicks
+        INTEGER SourceFileSizeBytes
+        TEXT LastCheckedUTC
+        TEXT LastImportedUTC
+        TEXT InvalidatedAtUTC
         INTEGER RecordCount
     }
 
@@ -25,6 +35,7 @@ erDiagram
         TEXT Plugin_ModKey_Name PK, FK
         INTEGER Plugin_ModKey_Type PK, FK
         TEXT Plugin_ModKey_FileName PK, FK
+        TEXT ImportedAtUTC
     }
 
     FormList {
@@ -32,6 +43,12 @@ erDiagram
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
         INTEGER FormKey_ID PK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER StarfieldMajorRecordFlags
+        INTEGER Version2
+        INTEGER VersionControl
+        TEXT ImportedAtUTC
         TEXT AddToListFormKey
     }
 
@@ -45,6 +62,7 @@ erDiagram
         TEXT Item_ModKey_FileName PK
         INTEGER Item_FormKey_ID PK
         INTEGER Item_Index PK
+        TEXT ImportedAtUTC
     }
 
     GameSetting {
@@ -52,6 +70,18 @@ erDiagram
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
         INTEGER FormKey_ID PK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER StarfieldMajorRecordFlags
+        INTEGER Version2
+        INTEGER VersionControl
+        TEXT ImportedAtUTC
+        TEXT SettingType
+        TEXT Data
+        REAL RawData
+        INTEGER XALG
+        INTEGER IsCompressed
+        INTEGER IsDeleted
     }
 
     Global {
@@ -59,6 +89,13 @@ erDiagram
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
         INTEGER FormKey_ID PK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER StarfieldMajorRecordFlags
+        INTEGER Version2
+        INTEGER VersionControl
+        TEXT ImportedAtUTC
+        REAL Data
     }
 
     MiscItem {
@@ -66,6 +103,16 @@ erDiagram
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
         INTEGER FormKey_ID PK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER StarfieldMajorRecordFlags
+        INTEGER Version2
+        INTEGER VersionControl
+        TEXT ImportedAtUTC
+        TEXT Name
+        TEXT ShortName
+        INTEGER Value
+        REAL Weight
     }
 
     Keyword {
@@ -73,6 +120,18 @@ erDiagram
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
         INTEGER FormKey_ID PK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER StarfieldMajorRecordFlags
+        INTEGER Version2
+        INTEGER VersionControl
+        TEXT ImportedAtUTC
+        TEXT Name
+        TEXT Color
+        TEXT Type
+        TEXT Notes
+        TEXT FlashLinkageName
+        TEXT AttractionRuleFormKey
     }
 
     NPC {
@@ -80,6 +139,32 @@ erDiagram
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
         INTEGER FormKey_ID PK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER StarfieldMajorRecordFlags
+        INTEGER Version2
+        INTEGER VersionControl
+        TEXT ImportedAtUTC
+        TEXT Name
+        TEXT ShortName
+        TEXT LongName
+        INTEGER DispositionBase
+        TEXT Aggression
+        TEXT Confidence
+        INTEGER EnergyLevel
+        TEXT Responsibility
+        TEXT Assistance
+        INTEGER GearedUpWeapons
+        REAL HeightMin
+        REAL HeightMax
+        INTEGER SkinToneIndex
+        TEXT Pronoun
+        TEXT VoiceFormKey
+        TEXT RaceFormKey
+        TEXT CombatOverridePackageListFormKey
+        TEXT CombatStyleFormKey
+        TEXT DefaultPackageListFormKey
+        TEXT CrimeFactionFormKey
     }
 
     ActorValueInformation {
@@ -87,6 +172,20 @@ erDiagram
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
         INTEGER FormKey_ID PK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER StarfieldMajorRecordFlags
+        INTEGER Version2
+        INTEGER VersionControl
+        TEXT ImportedAtUTC
+        TEXT Name
+        TEXT Abbreviation
+        TEXT ContextNotes
+        REAL DefaultValue
+        TEXT Flags
+        TEXT Type
+        REAL Min
+        REAL Max
     }
 
     MagicEffect {
@@ -94,6 +193,28 @@ erDiagram
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
         INTEGER FormKey_ID PK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER StarfieldMajorRecordFlags
+        INTEGER Version2
+        INTEGER VersionControl
+        TEXT ImportedAtUTC
+        TEXT Name
+        TEXT Description
+        TEXT Flags
+        TEXT CastType
+        TEXT TargetType
+        TEXT ActorValue2FormKey
+        TEXT ResistValueFormKey
+        TEXT PerkToApplyFormKey
+        TEXT EquipAbilityFormKey
+        TEXT ExplosionFormKey
+        TEXT CastingArtFormKey
+        TEXT HitEffectArtFormKey
+        TEXT HitShaderFormKey
+        TEXT ImageSpaceModifierFormKey
+        TEXT ImpactDataFormKey
+        TEXT ProjectileFormKey
     }
 
     Perk {
@@ -101,6 +222,18 @@ erDiagram
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
         INTEGER FormKey_ID PK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER StarfieldMajorRecordFlags
+        INTEGER Version2
+        INTEGER VersionControl
+        TEXT ImportedAtUTC
+        TEXT Name
+        TEXT Description
+        TEXT Flags
+        TEXT SkillGroup
+        TEXT CrewAssignment
+        TEXT PerkIcon
     }
 
     Plugins ||--o{ PluginMasterReferences : "is declared master"

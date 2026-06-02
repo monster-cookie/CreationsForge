@@ -76,14 +76,48 @@ Each typed record table declares:
 - `CHECK (FormKey_ID >= 0)`.
 - A non-unique `FormKey_ID` index for cross-plugin comparison lookup.
 
-The typed tables also store imported record headers, including `EditorID`, `FormVersion`, `StarfieldMajorRecordFlags`,
-`Version2`, `VersionControl`, and `ImportedAtUTC`.
+Every typed record table contains these common columns:
+
+- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key)
+- `EditorID` (`TEXT`, `NOT NULL`)
+- `FormVersion` (`INTEGER`, `NOT NULL`)
+- `StarfieldMajorRecordFlags` (`INTEGER`, `NOT NULL`)
+- `Version2` (`INTEGER`, `NOT NULL`)
+- `VersionControl` (`INTEGER`, `NOT NULL`)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+The table sections below list the additional record-specific columns. Together with this common list, they document
+the complete persisted shape of each typed record table.
 
 ## Tables
 
 ### Plugins
 
 Stores plugin metadata and import status.
+
+Columns:
+
+- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key)
+- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key)
+- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key)
+- `LoadOrderIndex` (`INTEGER`, `NOT NULL`)
+- `Enabled` (`INTEGER`, `NOT NULL`, defaults to `1`)
+- `ExistsOnDisk` (`INTEGER`, `NOT NULL`, defaults to `1`)
+- `ImportState` (`TEXT`, `NOT NULL`, defaults to `Current`)
+- `HeaderFlags` (`INTEGER`, `NOT NULL`)
+- `FormVersion` (`INTEGER`, `NOT NULL`)
+- `Author` (`TEXT`, `NOT NULL`)
+- `Branch` (`TEXT`, `NOT NULL`)
+- `InteriorCellCount` (`INTEGER`, `NOT NULL`)
+- `SourceLastWriteUTCTicks` (`INTEGER`, `NOT NULL`)
+- `SourceFileSizeBytes` (`INTEGER`, `NOT NULL`)
+- `LastCheckedUTC` (`TEXT`, `NOT NULL`)
+- `LastImportedUTC` (`TEXT`, nullable)
+- `InvalidatedAtUTC` (`TEXT`, nullable)
+- `RecordCount` (`INTEGER`, `NOT NULL`, defaults to `0`)
 
 Primary key:
 
@@ -106,6 +140,16 @@ Constraints:
 ### PluginMasterReferences
 
 Stores relationships between plugins and the masters declared in their headers.
+
+Columns:
+
+- `Master_ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `Master_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `Master_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `Plugin_ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `Plugin_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `Plugin_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
 Primary key:
 
@@ -136,13 +180,26 @@ Master load-order sorting is derived from `Plugins.LoadOrderIndex` when relation
 Stores Starfield `FLST` record detail rows. The common typed record key, foreign key, index, and non-negative
 `FormKey_ID` constraint apply.
 
-Record-specific column:
+Additional record-specific column:
 
-- `AddToListFormKey` is nullable text.
+- `AddToListFormKey` (`TEXT`, nullable)
 
 ### FormListItems
 
 Stores item references inside form lists.
+
+Columns:
+
+- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `Item_ModKey_Name` (`TEXT`, `NOT NULL`, primary key)
+- `Item_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key)
+- `Item_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key)
+- `Item_FormKey_ID` (`INTEGER`, `NOT NULL`, primary key)
+- `Item_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
 Primary key:
 
@@ -175,6 +232,15 @@ rows when they occur at different indexes.
 Stores Starfield `GMST` record detail rows. The common typed record key, foreign key, index, and non-negative
 `FormKey_ID` constraint apply.
 
+Additional record-specific columns:
+
+- `SettingType` (`TEXT`, nullable)
+- `Data` (`TEXT`, nullable)
+- `RawData` (`REAL`, nullable)
+- `XALG` (`INTEGER`, nullable)
+- `IsCompressed` (`INTEGER`, `NOT NULL`)
+- `IsDeleted` (`INTEGER`, `NOT NULL`)
+
 Record-specific constraints:
 
 - `IsCompressed` is `NOT NULL` and must be `0` or `1`.
@@ -187,35 +253,117 @@ Record-specific constraints:
 Stores Starfield `GLOB` record detail rows. The common typed record key, foreign key, index, and non-negative
 `FormKey_ID` constraint apply.
 
+Additional record-specific column:
+
+- `Data` (`REAL`, nullable)
+
 ### MiscItem
 
 Stores Starfield `MISC` record detail rows. The common typed record key, foreign key, index, and non-negative
 `FormKey_ID` constraint apply.
+
+Additional record-specific columns:
+
+- `Name` (`TEXT`, nullable)
+- `ShortName` (`TEXT`, nullable)
+- `Value` (`INTEGER`, nullable)
+- `Weight` (`REAL`, nullable)
 
 ### Keyword
 
 Stores Starfield `KYWD` record detail rows. The common typed record key, foreign key, index, and non-negative
 `FormKey_ID` constraint apply.
 
+Additional record-specific columns:
+
+- `Name` (`TEXT`, nullable)
+- `Color` (`TEXT`, `NOT NULL`)
+- `Type` (`TEXT`, `NOT NULL`)
+- `Notes` (`TEXT`, nullable)
+- `FlashLinkageName` (`TEXT`, nullable)
+- `AttractionRuleFormKey` (`TEXT`, nullable)
+
 ### NPC
 
 Stores Starfield `NPC_` record detail rows. The common typed record key, foreign key, index, and non-negative
 `FormKey_ID` constraint apply.
+
+Additional record-specific columns:
+
+- `Name` (`TEXT`, nullable)
+- `ShortName` (`TEXT`, nullable)
+- `LongName` (`TEXT`, nullable)
+- `DispositionBase` (`INTEGER`, `NOT NULL`)
+- `Aggression` (`TEXT`, `NOT NULL`)
+- `Confidence` (`TEXT`, `NOT NULL`)
+- `EnergyLevel` (`INTEGER`, `NOT NULL`)
+- `Responsibility` (`TEXT`, `NOT NULL`)
+- `Assistance` (`TEXT`, `NOT NULL`)
+- `GearedUpWeapons` (`INTEGER`, `NOT NULL`)
+- `HeightMin` (`REAL`, `NOT NULL`)
+- `HeightMax` (`REAL`, `NOT NULL`)
+- `SkinToneIndex` (`INTEGER`, nullable)
+- `Pronoun` (`TEXT`, nullable)
+- `VoiceFormKey` (`TEXT`, nullable)
+- `RaceFormKey` (`TEXT`, nullable)
+- `CombatOverridePackageListFormKey` (`TEXT`, nullable)
+- `CombatStyleFormKey` (`TEXT`, nullable)
+- `DefaultPackageListFormKey` (`TEXT`, nullable)
+- `CrimeFactionFormKey` (`TEXT`, nullable)
 
 ### ActorValueInformation
 
 Stores Starfield `AVIF` record detail rows. The common typed record key, foreign key, index, and non-negative
 `FormKey_ID` constraint apply.
 
+Additional record-specific columns:
+
+- `Name` (`TEXT`, nullable)
+- `Abbreviation` (`TEXT`, nullable)
+- `ContextNotes` (`TEXT`, nullable)
+- `DefaultValue` (`REAL`, nullable)
+- `Flags` (`TEXT`, nullable)
+- `Type` (`TEXT`, nullable)
+- `Min` (`REAL`, nullable)
+- `Max` (`REAL`, nullable)
+
 ### MagicEffect
 
 Stores Starfield `MGEF` record detail rows. The common typed record key, foreign key, index, and non-negative
 `FormKey_ID` constraint apply.
 
+Additional record-specific columns:
+
+- `Name` (`TEXT`, nullable)
+- `Description` (`TEXT`, nullable)
+- `Flags` (`TEXT`, `NOT NULL`)
+- `CastType` (`TEXT`, nullable)
+- `TargetType` (`TEXT`, nullable)
+- `ActorValue2FormKey` (`TEXT`, nullable)
+- `ResistValueFormKey` (`TEXT`, nullable)
+- `PerkToApplyFormKey` (`TEXT`, nullable)
+- `EquipAbilityFormKey` (`TEXT`, nullable)
+- `ExplosionFormKey` (`TEXT`, nullable)
+- `CastingArtFormKey` (`TEXT`, nullable)
+- `HitEffectArtFormKey` (`TEXT`, nullable)
+- `HitShaderFormKey` (`TEXT`, nullable)
+- `ImageSpaceModifierFormKey` (`TEXT`, nullable)
+- `ImpactDataFormKey` (`TEXT`, nullable)
+- `ProjectileFormKey` (`TEXT`, nullable)
+
 ### Perk
 
 Stores Starfield `PERK` record detail rows. The common typed record key, foreign key, index, and non-negative
 `FormKey_ID` constraint apply.
+
+Additional record-specific columns:
+
+- `Name` (`TEXT`, nullable)
+- `Description` (`TEXT`, nullable)
+- `Flags` (`TEXT`, `NOT NULL`)
+- `SkillGroup` (`TEXT`, nullable)
+- `CrewAssignment` (`TEXT`, nullable)
+- `PerkIcon` (`TEXT`, nullable)
 
 ## Inferred Relationships
 

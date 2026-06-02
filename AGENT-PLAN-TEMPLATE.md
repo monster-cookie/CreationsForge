@@ -70,6 +70,10 @@
 - Persistence/file format/schema impacts:
 - Config/AppSettings/environment impacts:
 - Database migrations:
+- Database documentation updates:
+  - /Documentation/Database/DATABASE.md:
+  - /Documentation/Database/ERD.md:
+  - Not updated because:
 - DbUp SchemaVersions source-of-truth statement, if migration code is touched:
 - Hardcoded schema-version constants added: No
 - Migrations or rollback steps, if applicable:
@@ -125,6 +129,9 @@
 - [ ] Any design decision that changed architecture, persistence, dependency direction, public interfaces, or UI workflow is captured in /docs/DESIGN-DECISIONS.md.
 - [ ] Documentation reflects the final implemented behavior, not speculative or rejected design.
 - [ ] Restore, build, tests, and analyzer validation complete or exact environment failure is reported.
+- [ ] If database schema changed, /Documentation/Database/DATABASE.md documents the complete final schema.
+- [ ] If database schema changed, /Documentation/Database/ERD.md includes every application-schema table column.
+- [ ] If database schema changed, ERD relationship lines still represent only declared SQLite foreign keys.
 
 ## 10 - Execution Steps After Approval
 

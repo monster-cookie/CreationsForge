@@ -46,7 +46,7 @@ Primary project knowledge files:
 - /Documentation/ARCHITECTURE.md - Layering rules, Core vs presentation responsibilities, dependency direction, DI composition, persistence boundaries, and logging conventions.
 - /Documentation/DESIGN-DECISIONS.md - Important design decisions, tradeoffs, rejected alternatives, and rationale.
 - /Documentation/DOMAIN-MODEL.md - Important domain concepts, record comparison terminology, Mutagen concepts used by the app, and project-specific naming.
-- /Documentation/DATABASE.md - SQLite, NPoco, DbUp migration behavior, schema ownership, and persistence conventions.
+- /Documentation/Database/DATABASE.md - SQLite, NPoco, DbUp migration behavior, schema ownership, and persistence conventions.
 - /Documentation/UI-MVVM.md - MVVM structure, view model responsibilities, UI-thread rules, commands, dialogs, and navigation conventions.
 
 Before planning a non-trivial change, Codex must read the relevant docs in /docs in addition to AGENTS.md.
@@ -73,6 +73,28 @@ Do not duplicate large blocks of code in documentation. Reference file paths, cl
 If existing documentation conflicts with code, Codex must call out the conflict in the PLAN before editing either the code or the docs.
 
 If no documentation update is needed, the PLAN must explicitly state: Documentation impacts: None.
+
+### Database documentation maintenance
+
+When a change adds, removes, renames, changes the type/nullability/default/constraint of, or changes the indexing or
+foreign-key behavior of any application database table or column, Codex must update the database documentation in the
+same approved task.
+
+Required database documentation updates:
+
+- `/Documentation/Database/DATABASE.md` must describe the complete current persisted schema shape.
+- `/Documentation/Database/ERD.md` must include every application-schema table column in the Mermaid entity blocks.
+- ERD relationship lines must show only declared SQLite foreign keys.
+- Inferred record-reference columns must remain documented separately from declared SQLite foreign keys.
+- DbUp-owned migration metadata tables, including `SchemaVersions`, must not be treated as application-schema tables
+  in the ERD.
+- `DATABASE.md` must continue to state that DbUp `SchemaVersions` is the migration-state source of truth.
+- If a migration adds a column in a later script, the docs must reflect the final migrated schema, not only the initial
+  create-table script.
+
+For database schema changes, the PLAN must explicitly list `/Documentation/Database/DATABASE.md` and
+`/Documentation/Database/ERD.md` under documentation impacts unless the change demonstrably does not affect persisted
+schema documentation.
 
 ## ARCHITECTURE & CONVENTIONS
 
