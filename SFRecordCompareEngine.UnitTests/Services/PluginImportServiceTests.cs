@@ -154,6 +154,38 @@ public class PluginImportServiceTests
         savedPlugin.SourceLastWriteUTCTicks.ShouldBe(123);
         savedPlugin.SourceFileSizeBytes.ShouldBe(456);
         savedPlugin.InteriorCellCount.ShouldBe(9);
+        savedPlugin.RecordCount.ShouldBe(10);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task InitializeAndImportAsync_WhenPluginIsUnchangedAndFullReimportIsRequired_ImportsPlugin(bool migrationsApplied, bool forceFullReimport)
+    {
+        var context = CreateContext();
+        var entry = CreateLoadOrderEntry("Example.esm");
+        context.DatabaseSchemaInitializer.Setup(x => x.Initialize()).Returns(migrationsApplied);
+        context.PluginService.Setup(x => x.GetLoadOrder()).Returns(new List<PluginLoadOrderEntryDTO> { entry });
+        context.PluginRepository.Setup(x => x.GetByModKey(entry.ModKey)).Returns(new PluginDTO
+        {
+            ModKey = entry.ModKey,
+            SourceLastWriteUTCTicks = 123,
+            SourceFileSizeBytes = 456
+        });
+        context.PluginReader.Setup(x => x.GetSourceInfo(entry.ModKey)).Returns(new PluginSourceInfoDTO
+        {
+            Exists = true,
+            LastWriteUTCTicks = 123,
+            FileSizeBytes = 456
+        });
+        context.PluginReader.Setup(x => x.GetMetadata(entry.ModKey)).Returns(CreateMetadata(entry.ModKey));
+
+        var result = await context.Sut.InitializeAndImportAsync(null, CancellationToken.None, forceFullReimport);
+
+        result.PluginsUnchanged.ShouldBe(0);
+        result.PluginsInvalidated.ShouldBe(1);
+        result.PluginsImported.ShouldBe(1);
+        context.RecordImportService.Verify(x => x.ImportPluginRecords(It.IsAny<PluginDTO>(), It.IsAny<IProgress<PluginImportProgressDTO>?>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -214,6 +246,7 @@ public class PluginImportServiceTests
     private static PluginImportServiceTestContext CreateContext()
     {
         var databaseSchemaInitializer = new Mock<IDatabaseSchemaInitializer>();
+        databaseSchemaInitializer.Setup(x => x.Initialize()).Returns(false);
         var database = new Mock<IDatabase>();
         var transaction = new Mock<ITransaction>();
         database.Setup(x => x.GetTransaction()).Returns(transaction.Object);
@@ -266,6 +299,7 @@ public class PluginImportServiceTests
             FormVersion = 44,
             Author = "Author",
             InteriorCellCount = 9,
+            RecordCount = 10,
             MasterReferences = masterReferences.ToList()
         };
     }

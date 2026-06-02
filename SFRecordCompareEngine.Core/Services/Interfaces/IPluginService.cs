@@ -12,6 +12,8 @@ public interface IPluginService
 
     IList<PluginDTO> GetImportedPlugins();
 
+    long GetImportedPluginRecordCount();
+
     IList<PluginDTO> GetOpenablePlugins();
 
     IList<PluginDTO> SearchOpenablePluginsByFilename(string searchFilename);

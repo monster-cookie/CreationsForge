@@ -6,7 +6,7 @@ namespace SFRecordCompareEngine.Migrations;
 
 public class DatabaseMigrationRunner : IDatabaseMigrationRunner
 {
-    public void Migrate(string databasePath)
+    public bool Migrate(string databasePath)
     {
         Batteries.Init();
 
@@ -26,10 +26,13 @@ public class DatabaseMigrationRunner : IDatabaseMigrationRunner
                 resourceName => resourceName.Contains(".Sql.", StringComparison.OrdinalIgnoreCase))
             .Build();
 
+        var migrationsApplied = upgradeEngine.GetScriptsToExecute().Any();
         var result = upgradeEngine.PerformUpgrade();
         if (!result.Successful)
         {
             throw new InvalidOperationException("Database migration failed.", result.Error);
         }
+
+        return migrationsApplied;
     }
 }

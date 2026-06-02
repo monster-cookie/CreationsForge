@@ -23,6 +23,7 @@ public class PluginDTOTests
             Author = "Author",
             Branch = "Branch",
             InteriorCellCount = 5,
+            RecordCount = 678,
             SourceLastWriteUTCTicks = 123,
             SourceFileSizeBytes = 456,
             LastCheckedUTC = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc),
@@ -44,6 +45,7 @@ public class PluginDTOTests
         model.Author.ShouldBe(dto.Author);
         model.Branch.ShouldBe(dto.Branch);
         model.InteriorCellCount.ShouldBe(dto.InteriorCellCount.Value);
+        model.RecordCount.ShouldBe(dto.RecordCount);
         model.SourceLastWriteUTCTicks.ShouldBe(dto.SourceLastWriteUTCTicks);
         model.SourceFileSizeBytes.ShouldBe(dto.SourceFileSizeBytes);
         model.LastCheckedUTC.ShouldBe(dto.LastCheckedUTC);
@@ -68,6 +70,7 @@ public class PluginDTOTests
             Author = "Author",
             Branch = "Branch",
             InteriorCellCount = 5,
+            RecordCount = 678,
             SourceLastWriteUTCTicks = 123,
             SourceFileSizeBytes = 456,
             LastCheckedUTC = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc),
@@ -89,6 +92,7 @@ public class PluginDTOTests
         dto.Author.ShouldBe(model.Author);
         dto.Branch.ShouldBe(model.Branch);
         dto.InteriorCellCount.ShouldBe(model.InteriorCellCount);
+        dto.RecordCount.ShouldBe(model.RecordCount);
         dto.SourceLastWriteUTCTicks.ShouldBe(model.SourceLastWriteUTCTicks.Value);
         dto.SourceFileSizeBytes.ShouldBe(model.SourceFileSizeBytes.Value);
         dto.LastCheckedUTC.ShouldBe(model.LastCheckedUTC);

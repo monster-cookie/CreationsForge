@@ -1,5 +1,42 @@
 # Design Decisions
 
+## 2026-06-01 - Reimport Plugin Cache After Schema Changes
+
+Status: Accepted
+
+Context: Plugin imports use source fingerprints to skip unchanged files. Additive cache schema migrations can require
+new metadata to be populated even when plugin files did not change. Users also need an explicit way to rebuild cached
+plugin metadata and supported record rows.
+
+Decision: Return whether DbUp applied scripts from `DatabaseMigrationRunner` through `DatabaseSchemaInitializer`.
+Consume that one-run result in `PluginImportService` and bypass source-fingerprint skips for the same import pass.
+Expose the same behavior through a File-menu and toolbar full-reimport command. Persist Mutagen header record counts and
+use the existing persisted header flags for status display.
+
+Rationale: A direct return value keeps the schema-triggered reimport deterministic and UI-neutral. It avoids persistent
+configuration state that could force repeated imports or be cleared before the importer consumes it.
+
+Alternatives considered:
+
+- Store a force-reimport flag in application configuration.
+- Raise a global migration event.
+- Require users to delete the cache manually after migrations.
+
+Consequences:
+
+- DbUp `SchemaVersions` remains the only migration-state source of truth.
+- Successfully applied migrations force the current plugin import pass to refresh unchanged files.
+- Users can force the same refresh from the main command surface.
+- The `Plugins` table stores header record count and uses existing header flags for plugin classification.
+
+Related files:
+
+- `SFRecordCompareEngine.Migrations/DatabaseMigrationRunner.cs`
+- `SFRecordCompareEngine.Migrations/Sql/002_AddPluginRecordCount.sql`
+- `SFRecordCompareEngine.Core/Database/DatabaseSchemaInitializer.cs`
+- `SFRecordCompareEngine.Core/Services/PluginImportService.cs`
+- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
+
 ## 2026-06-01 - Use Per-User Linux Application Data
 
 Status: Accepted

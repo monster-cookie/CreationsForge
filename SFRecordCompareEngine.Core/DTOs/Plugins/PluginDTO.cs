@@ -28,6 +28,7 @@ public class PluginDTO
         Author = model.Author;
         Branch = model.Branch;
         InteriorCellCount = model.InteriorCellCount;
+        RecordCount = model.RecordCount;
         SourceLastWriteUTCTicks = model.SourceLastWriteUTCTicks ?? 0;
         SourceFileSizeBytes = model.SourceFileSizeBytes ?? 0;
         LastCheckedUTC = model.LastCheckedUTC;
@@ -45,6 +46,7 @@ public class PluginDTO
     public string Author { get; set; } = "UNKNOWN";
     public string Branch { get; set; } = "UNKNOWN";
     public int? InteriorCellCount { get; set; }
+    public long RecordCount { get; set; }
     public long SourceLastWriteUTCTicks { get; set; }
     public long SourceFileSizeBytes { get; set; }
     public DateTime LastCheckedUTC { get; set; }

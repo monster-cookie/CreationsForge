@@ -51,6 +51,19 @@ public class PluginRepository : IPluginRepository
     }
 
     /// <inheritdoc />
+    public long GetImportedPluginRecordCount()
+    {
+        return Database.ExecuteScalar<long>(
+            """
+            SELECT COALESCE(SUM(RecordCount), 0)
+            FROM Plugins
+            WHERE ExistsOnDisk = 1
+              AND ImportState = @ImportState;
+            """,
+            new { ImportState = nameof(PluginImportState.Current) });
+    }
+
+    /// <inheritdoc />
     public IList<PluginDTO> GetOpenablePlugins()
     {
         return Database.Fetch<Plugin>(

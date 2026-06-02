@@ -58,6 +58,7 @@ public class StarfieldPluginReaderService : IStarfieldPluginReaderService
             FormVersion = mod.ModHeader.FormVersion,
             Author = mod.ModHeader.Author ?? "Unknown",
             InteriorCellCount = mod.ModHeader.InteriorCellCount,
+            RecordCount = mod.ModHeader.Stats.NumRecords,
             MasterReferences = mod.MasterReferences.Select(master => master.Master).ToList()
         };
     }

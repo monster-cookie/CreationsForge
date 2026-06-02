@@ -19,8 +19,9 @@ navigation services, and Windows-specific window behavior.
 - window, view, and view model registrations
 - presentation service registrations
 
-`App.OnLaunched` logs startup and resolves `MainWindow`. `MainWindow` initializes the database schema, registers itself
-with `DesktopApplicationWindowService`, shows `StartupImportView`, and maximizes the window.
+`App.OnLaunched` logs startup and resolves `MainWindow`. `MainWindow` registers itself with
+`DesktopApplicationWindowService`, shows `StartupImportView`, and maximizes the window. The startup import service
+initializes the database schema so it can force the same import pass when DbUp applies a migration.
 
 ## Views
 
@@ -29,8 +30,10 @@ indicator. It starts import from `Loaded` and cancels import from `Unloaded`.
 
 `MainView` is the current application shell after startup import. It has a `MenuBar`, a `CommandBar`,
 a filterable left-side record tree, a horizontally scrollable right-side selected-record comparison workspace, and a
-status area that shows the active plugin selection. The tree groups persisted supported records owned by the active
-plugin. The active plugin remains visible in the status area and its comparison column has a subtle yellow border.
+status area that shows the total imported plugin header record count and active plugin selection. For the active
+plugin, the status includes its plugin type and header record count. The tree groups persisted supported records owned
+by the active plugin. The active plugin remains visible in the status area and its comparison column has a subtle
+yellow border.
 
 `OpenPluginDialog` is a `ContentDialog` for selecting the active plugin. It provides an autocomplete plugin file
 name search backed by imported openable plugin rows, plus Load and Cancel actions.
@@ -45,6 +48,10 @@ theme and save the choice to application configuration.
 `StartupImportViewModel` coordinates startup import UI state. It calls `IPluginImportService.InitializeAndImportAsync`,
 receives `PluginImportProgressDTO` updates, updates bindable status/progress properties, navigates to the main view on
 success, shows an error dialog on failure, and cancels through a `CancellationTokenSource`.
+
+`MainPageViewModel` exposes a full-reimport command through the File menu and toolbar. The command clears the active
+plugin selection, hides the main command surface, and navigates to a fresh startup import view with source-fingerprint
+skips disabled for that import pass.
 
 `MainPageViewModel` exposes `OpenCommand`, `ExitCommand`, status text, FormID and EditorID filters, and the left-side
 record tree. It listens to `IActivePluginSelectionService`, keeps the status text synchronized with the active plugin,

@@ -34,12 +34,14 @@ Schema migrations are executed by DbUp through `DatabaseMigrationRunner`. SQL sc
 Current migration script:
 
 - `001_CreatePluginSchema.sql`
+- `002_AddPluginRecordCount.sql`
 
 DbUp's `SchemaVersions` table is the migration state source of truth. The application does not define a hardcoded 
 schema-version constant.
 
-`DatabaseSchemaInitializer.Initialize` logs schema initialization and delegates migration execution to 
-`IDatabaseMigrationRunner`.
+`DatabaseSchemaInitializer.Initialize` logs schema initialization, delegates migration execution to
+`IDatabaseMigrationRunner`, and reports whether DbUp applied scripts. The plugin import orchestrator uses that one-run
+result to force a full cache reimport after schema changes.
 
 ## Tables
 
@@ -64,6 +66,7 @@ Important columns:
 - `Author`
 - `Branch`
 - `InteriorCellCount`
+- `RecordCount`
 - `SourceLastWriteUTCTicks`
 - `SourceFileSizeBytes`
 - `LastCheckedUTC`

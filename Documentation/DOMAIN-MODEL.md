@@ -55,11 +55,14 @@ documentation, not executable code.
 - form version
 - author and branch
 - interior cell count
+- header record count
 - source last-write ticks and source file size
 - checked, imported, and invalidated timestamps
 
 `StarfieldPluginReaderService` reads metadata from Mutagen using
 `StarfieldMod.Create(...).FromPath(...).WithLoadOrderFromHeaderMasters().WithDataFolder(...).Construct()`.
+The persisted record count comes from `mod.ModHeader.Stats.NumRecords`. The persisted `HeaderFlags` value uses
+`StarfieldModHeader.HeaderFlag`, including `Master`, `Light`, `Medium`, and `Overlay`.
 
 ## Record Import
 

@@ -46,6 +46,7 @@ suffix conventions.
 `PluginImportService` is the main import orchestrator. It:
 
 - Initializes schema through `IDatabaseSchemaInitializer`.
+- Forces a full plugin reimport when schema initialization reports that DbUp applied one or more migrations.
 - Reads load order entries through `IPluginService`.
 - Uses source fingerprints to skip unchanged plugin files.
 - Saves plugin metadata through `IPluginRepository`.
@@ -71,6 +72,10 @@ Schema creation and migration are centralized through:
 
 DbUp's `SchemaVersions` table is the migration state source of truth. The application does not define a hardcoded 
 schema-version constant.
+
+`DatabaseMigrationRunner` reports whether DbUp applied pending scripts successfully. `PluginImportService` consumes
+that one-run result and bypasses source-fingerprint skips for the same import pass. The signal is not persisted as
+application configuration.
 
 ## Main Record Tree
 

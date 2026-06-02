@@ -42,6 +42,12 @@ public class PluginService : IPluginService
     }
 
     /// <inheritdoc />
+    public long GetImportedPluginRecordCount()
+    {
+        return PluginRepository.GetImportedPluginRecordCount();
+    }
+
+    /// <inheritdoc />
     public IList<PluginDTO> GetOpenablePlugins()
     {
         return PluginRepository.GetOpenablePlugins();

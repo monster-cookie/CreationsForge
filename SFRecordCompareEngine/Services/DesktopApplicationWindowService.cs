@@ -29,6 +29,11 @@ public class DesktopApplicationWindowService : IApplicationWindowService
         MainWindow?.ShowMainCommandSurface(viewModel);
     }
 
+    public void HideMainCommandSurface()
+    {
+        MainWindow?.HideMainCommandSurface();
+    }
+
     public void ApplyTheme(ApplicationThemeMode theme)
     {
         MainWindow?.ApplyTheme(theme);

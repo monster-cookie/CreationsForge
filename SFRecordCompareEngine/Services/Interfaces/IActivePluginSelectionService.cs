@@ -8,4 +8,5 @@ public interface IActivePluginSelectionService
     event EventHandler? ActivePluginChanged;
 
     void SetActivePlugin(PluginDTO plugin);
+    void ClearActivePlugin();
 }

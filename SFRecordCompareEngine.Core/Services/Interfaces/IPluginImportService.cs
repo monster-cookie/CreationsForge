@@ -9,6 +9,7 @@ public interface IPluginImportService
     /// </summary>
     /// <param name="progress">DTO for returning progress updates during the import process.</param>
     /// <param name="cancellationToken">Token to cancel the import operation.</param>
+    /// <param name="forceFullReimport">Whether unchanged plugin source fingerprints should be ignored.</param>
     /// <returns>Result of the plugin import operation.</returns>
-    Task<PluginImportResultDTO> InitializeAndImportAsync(IProgress<PluginImportProgressDTO>? progress, CancellationToken cancellationToken);
+    Task<PluginImportResultDTO> InitializeAndImportAsync(IProgress<PluginImportProgressDTO>? progress, CancellationToken cancellationToken, bool forceFullReimport = false);
 }

@@ -18,14 +18,15 @@ public class DatabaseSchemaInitializer : IDatabaseSchemaInitializer
         DatabaseMigrationRunner = databaseMigrationRunner;
     }
 
-    public void Initialize()
+    public bool Initialize()
     {
         Logger.Information("Initializing plugin database schema for {DatabasePath}", ConnectionFactory.DatabasePath);
 
         try
         {
-            DatabaseMigrationRunner.Migrate(ConnectionFactory.DatabasePath);
-            Logger.Information("Initialized plugin database schema for {DatabasePath}", ConnectionFactory.DatabasePath);
+            var migrationsApplied = DatabaseMigrationRunner.Migrate(ConnectionFactory.DatabasePath);
+            Logger.Information("Initialized plugin database schema for {DatabasePath}; migrations applied: {MigrationsApplied}", ConnectionFactory.DatabasePath, migrationsApplied);
+            return migrationsApplied;
         }
         catch (Exception ex)
         {

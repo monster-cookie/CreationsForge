@@ -9,6 +9,7 @@ public interface IApplicationWindowService
 {
     void RegisterMainWindow(MainWindow mainWindow);
     void ShowMainCommandSurface(MainPageViewModel viewModel);
+    void HideMainCommandSurface();
     void ApplyTheme(ApplicationThemeMode theme);
     void SetContent(UIElement content);
     Task ShowDialogAsync(ContentDialog dialog);

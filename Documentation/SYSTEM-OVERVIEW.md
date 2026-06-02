@@ -22,10 +22,10 @@ comparison workspace. The open-plugin dialog selects the active imported plugin 
 ## Runtime Flow
 
 1. `App` configures Serilog and the Autofac container.
-2. `MainWindow` initializes the database schema and opens `StartupImportView`.
+2. `MainWindow` opens `StartupImportView`.
 3. `StartupImportViewModel.StartImportAsync` starts `IPluginImportService.InitializeAndImportAsync`.
-4. `PluginImportService` initializes the database schema, discovers the Starfield load order, opens a database
-   transaction, and processes each load order entry.
+4. `PluginImportService` initializes the database schema, forces a full reimport when DbUp applies a migration,
+   discovers the Starfield load order, opens a database transaction, and processes each load order entry.
 5. Plugin metadata is read through Mutagen by `StarfieldPluginReaderService`.
 6. Plugin rows and master references are saved through repositories.
 7. Record details are imported through `RecordImportService` and typed record importers. The active record detail path
@@ -36,10 +36,12 @@ comparison workspace. The open-plugin dialog selects the active imported plugin 
 ## Current Capabilities
 
 - Discovers Starfield plugins from Mutagen's typical Starfield environment.
-- Reads plugin metadata including mod key, header flags, form version, author, interior cell count, and header master
-  references.
+- Reads plugin metadata including mod key, header flags, form version, author, interior cell count, header record count,
+  master style, and header master references.
 - Tracks plugin import state as `Current`, `Changed`, `Missing`, `Failed`, or `Unsupported`.
 - Skips unchanged plugins by comparing source last-write ticks and source file size.
+- Supports a manual full reimport from the File menu and toolbar.
+- Shows the total imported plugin header record count and active-plugin type and record count in the main status area.
 - Stores plugin metadata, master references, and supported typed record details in SQLite.
 - Initializes and migrates the database with DbUp.
 - Lets users select an active imported plugin from an autocomplete open-plugin dialog.

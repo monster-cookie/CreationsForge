@@ -1,7 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SFRecordCompareEngine.Core.Configuration.Interfaces;
-using SFRecordCompareEngine.Core.Database.Interfaces;
 using SFRecordCompareEngine.Core.Models.Configuration;
 using SFRecordCompareEngine.Services.Interfaces;
 using SFRecordCompareEngine.ViewModels;
@@ -15,13 +14,11 @@ public sealed partial class MainWindow : Window
 
     public MainWindow(
         StartupImportView startupImportView,
-        IDatabaseSchemaInitializer databaseSchemaInitializer,
         IApplicationConfigurationStore applicationConfigurationStore,
         IApplicationWindowService applicationWindowService)
     {
         InitializeComponent();
 
-        databaseSchemaInitializer.Initialize();
         applicationWindowService.RegisterMainWindow(this);
         ApplyTheme(applicationConfigurationStore.Current.Theme);
         SetContent(startupImportView);
@@ -39,10 +36,18 @@ public sealed partial class MainWindow : Window
         OpenMenuItem.Command = viewModel.OpenCommand;
         OptionsMenuItem.Command = viewModel.OptionsCommand;
         ExitMenuItem.Command = viewModel.ExitCommand;
+        ReimportAllPluginsMenuItem.Command = viewModel.ReimportAllPluginsCommand;
         OpenCommandButton.Command = viewModel.OpenCommand;
         SettingsCommandButton.Command = viewModel.OptionsCommand;
+        ReimportAllPluginsCommandButton.Command = viewModel.ReimportAllPluginsCommand;
         MainMenuBar.Visibility = Visibility.Visible;
         MainCommandBar.Visibility = Visibility.Visible;
+    }
+
+    public void HideMainCommandSurface()
+    {
+        MainMenuBar.Visibility = Visibility.Collapsed;
+        MainCommandBar.Visibility = Visibility.Collapsed;
     }
 
     public void ApplyTheme(ApplicationThemeMode theme)

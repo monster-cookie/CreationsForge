@@ -69,6 +69,18 @@ public class PluginServiceTests
     }
 
     [Fact]
+    public void GetImportedPluginRecordCount_DelegatesToPluginRepository()
+    {
+        var repository = new Mock<IPluginRepository>();
+        repository.Setup(x => x.GetImportedPluginRecordCount()).Returns(123);
+        var sut = new PluginService(Mock.Of<IStarfieldPluginReaderService>(), repository.Object);
+
+        var result = sut.GetImportedPluginRecordCount();
+
+        result.ShouldBe(123);
+    }
+
+    [Fact]
     public void SearchOpenablePluginsByFilename_DelegatesToPluginRepository()
     {
         var expected = new List<PluginDTO>();
