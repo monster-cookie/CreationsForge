@@ -23,7 +23,7 @@ public class ApplicationConfigurationStore : IApplicationConfigurationStore
         Load();
     }
 
-    public static string DefaultApplicationDataDirectory { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SFRecordCompareEngine");
+    public static string DefaultApplicationDataDirectory { get; } = GetDefaultApplicationDataDirectory();
 
     public static string DefaultDatabaseDirectory { get; } = DefaultApplicationDataDirectory;
 
@@ -32,6 +32,18 @@ public class ApplicationConfigurationStore : IApplicationConfigurationStore
     public string ConfigurationPath { get; }
 
     public ApplicationConfiguration Current { get; private set; } = new();
+
+    private static string GetDefaultApplicationDataDirectory()
+    {
+        var applicationDataRoot = OperatingSystem.IsLinux()
+            ? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+            : Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+        var applicationDirectoryName = OperatingSystem.IsLinux()
+            ? ".SFRecordCompareEngine"
+            : "SFRecordCompareEngine";
+
+        return Path.Combine(applicationDataRoot, applicationDirectoryName);
+    }
 
     public void Load()
     {

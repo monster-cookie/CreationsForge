@@ -6,11 +6,13 @@
 
 - Directory: `ApplicationConfigurationStore.DefaultApplicationDataDirectory`
 - File name: `SFRecordCompareEngine.sqlite`
-- Full path: `<CommonApplicationData>/SFRecordCompareEngine/SFRecordCompareEngine.sqlite`
-- Log directory: `<CommonApplicationData>/SFRecordCompareEngine/Logs`
+- Linux full path: `~/.SFRecordCompareEngine/SFRecordCompareEngine.sqlite`
+- Linux log directory: `~/.SFRecordCompareEngine/Logs`
+- Other platforms full path: `<CommonApplicationData>/SFRecordCompareEngine/SFRecordCompareEngine.sqlite`
+- Other platforms log directory: `<CommonApplicationData>/SFRecordCompareEngine/Logs`
 
-`ApplicationConfigurationStore.DefaultApplicationDataDirectory` is based on
-`Environment.SpecialFolder.CommonApplicationData`.
+`ApplicationConfigurationStore.DefaultApplicationDataDirectory` uses the current user's profile directory on Linux
+and `Environment.SpecialFolder.CommonApplicationData` on other platforms.
 
 ## Connection Behavior
 
@@ -32,12 +34,14 @@ Schema migrations are executed by DbUp through `DatabaseMigrationRunner`. SQL sc
 Current migration script:
 
 - `001_CreatePluginSchema.sql`
+- `002_AddPluginRecordCount.sql`
 
 DbUp's `SchemaVersions` table is the migration state source of truth. The application does not define a hardcoded 
 schema-version constant.
 
-`DatabaseSchemaInitializer.Initialize` logs schema initialization and delegates migration execution to 
-`IDatabaseMigrationRunner`.
+`DatabaseSchemaInitializer.Initialize` logs schema initialization, delegates migration execution to
+`IDatabaseMigrationRunner`, and reports whether DbUp applied scripts. The plugin import orchestrator uses that one-run
+result to force a full cache reimport after schema changes.
 
 ## Tables
 
@@ -62,6 +66,7 @@ Important columns:
 - `Author`
 - `Branch`
 - `InteriorCellCount`
+- `RecordCount`
 - `SourceLastWriteUTCTicks`
 - `SourceFileSizeBytes`
 - `LastCheckedUTC`

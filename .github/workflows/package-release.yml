@@ -1,0 +1,179 @@
+name: Package Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-tag-source:
+    name: Validate Tag Source
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.validate.outputs.version }}
+
+    steps:
+      - name: Verify tag and master HEAD
+        id: validate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_CREATED: ${{ github.event.created }}
+          TAG_NAME: ${{ github.ref_name }}
+          TAG_SHA: ${{ github.sha }}
+        run: |
+          if [ "$TAG_CREATED" != "true" ]; then
+            echo "Release tag '$TAG_NAME' was updated instead of newly created."
+            exit 1
+          fi
+
+          if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tag '$TAG_NAME' must use the vmajor.minor.patch format."
+            exit 1
+          fi
+
+          MASTER_SHA="$(gh api "repos/${{ github.repository }}/commits/master" --jq '.sha')"
+
+          if [ "$TAG_SHA" != "$MASTER_SHA" ]; then
+            echo "Tag is not on the current master HEAD."
+            echo "Tag SHA:    $TAG_SHA"
+            echo "Master SHA: $MASTER_SHA"
+            exit 1
+          fi
+
+          echo "version=${TAG_NAME#v}" >> "$GITHUB_OUTPUT"
+
+  validate-release:
+    name: Validate Release
+    needs: validate-tag-source
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        shell: pwsh
+        run: dotnet restore ./SFRecordCompareEngine.sln
+
+      - name: Build
+        shell: pwsh
+        run: dotnet build ./SFRecordCompareEngine.sln --configuration Release --no-restore
+
+      - name: Test
+        shell: pwsh
+        run: dotnet test ./SFRecordCompareEngine.UnitTests/SFRecordCompareEngine.UnitTests.csproj --configuration Release --no-build --filter "Category!=RequiresStarfield"
+
+  package-windows:
+    name: Package Windows
+    needs:
+      - validate-tag-source
+      - validate-release
+    runs-on: windows-latest
+    env:
+      PACKAGE_VERSION: ${{ needs.validate-tag-source.outputs.version }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        shell: pwsh
+        run: dotnet restore ./SFRecordCompareEngine.sln
+
+      - name: Build
+        shell: pwsh
+        run: dotnet build ./SFRecordCompareEngine.sln --configuration Release --no-restore
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: winget install --id JRSoftware.InnoSetup --exact --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity
+
+      - name: Package Windows ZIP
+        shell: pwsh
+        run: ./Tools/Package-Application.ps1 -Configuration Release -RuntimeIdentifier win-x64 -OutputDirectory ./artifacts -Version $env:PACKAGE_VERSION
+
+      - name: Package Windows installer
+        shell: pwsh
+        run: ./Tools/Build-Installer.ps1 -Configuration Release -RuntimeIdentifier win-x64 -OutputDirectory ./artifacts -Version $env:PACKAGE_VERSION
+
+      - name: Upload Windows ZIP
+        uses: actions/upload-artifact@v7
+        with:
+          name: SFRecordCompareEngine-win-x64-${{ env.PACKAGE_VERSION }}
+          path: artifacts/SFRecordCompareEngine-win-x64-${{ env.PACKAGE_VERSION }}.zip
+          if-no-files-found: error
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: SFRecordCompareEngine-Setup-${{ env.PACKAGE_VERSION }}
+          path: artifacts/SFRecordCompareEngine-Setup-${{ env.PACKAGE_VERSION }}.exe
+          if-no-files-found: error
+
+  package-linux:
+    name: Package Linux
+    needs:
+      - validate-tag-source
+      - validate-release
+    runs-on: ubuntu-latest
+    env:
+      PACKAGE_VERSION: ${{ needs.validate-tag-source.outputs.version }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install packaging tools
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes dpkg-dev zip
+
+      - name: Restore
+        shell: pwsh
+        run: dotnet restore ./SFRecordCompareEngine.sln
+
+      - name: Build
+        shell: pwsh
+        run: dotnet build ./SFRecordCompareEngine.sln --configuration Release --no-restore
+
+      - name: Package Linux ZIP
+        shell: pwsh
+        run: ./Tools/Package-Application.ps1 -Configuration Release -RuntimeIdentifier linux-x64 -OutputDirectory ./artifacts -Version $env:PACKAGE_VERSION
+
+      - name: Package Debian installer
+        shell: pwsh
+        run: ./Tools/Build-DebianPackage.ps1 -Configuration Release -OutputDirectory ./artifacts -Version $env:PACKAGE_VERSION
+
+      - name: Upload Linux ZIP
+        uses: actions/upload-artifact@v7
+        with:
+          name: SFRecordCompareEngine-linux-x64-${{ env.PACKAGE_VERSION }}
+          path: artifacts/SFRecordCompareEngine-linux-x64-${{ env.PACKAGE_VERSION }}.zip
+          if-no-files-found: error
+
+      - name: Upload Debian installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: SFRecordCompareEngine-${{ env.PACKAGE_VERSION }}-amd64-deb
+          path: artifacts/SFRecordCompareEngine_${{ env.PACKAGE_VERSION }}_amd64.deb
+          if-no-files-found: error

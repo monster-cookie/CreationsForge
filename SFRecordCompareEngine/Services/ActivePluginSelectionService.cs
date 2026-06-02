@@ -15,4 +15,10 @@ public class ActivePluginSelectionService : IActivePluginSelectionService
         ActivePlugin = plugin;
         ActivePluginChanged?.Invoke(this, EventArgs.Empty);
     }
+
+    public void ClearActivePlugin()
+    {
+        ActivePlugin = null;
+        ActivePluginChanged?.Invoke(this, EventArgs.Empty);
+    }
 }

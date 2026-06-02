@@ -1,0 +1,2 @@
+ALTER TABLE Plugins
+    ADD COLUMN RecordCount INTEGER NOT NULL DEFAULT 0 CHECK (RecordCount >= 0);

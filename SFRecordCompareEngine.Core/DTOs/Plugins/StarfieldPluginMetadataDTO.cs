@@ -10,5 +10,6 @@ public class StarfieldPluginMetadataDTO
     public int FormVersion { get; set; }
     public string Author { get; set; } = "Unknown";
     public int? InteriorCellCount { get; set; }
+    public long RecordCount { get; set; }
     public IReadOnlyList<ModKey> MasterReferences { get; set; } = new List<ModKey>();
 }

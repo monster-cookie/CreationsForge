@@ -39,12 +39,12 @@ public class PluginImportService : IPluginImportService
         StarfieldPluginReaderService = starfieldPluginReaderService;
     }
 
-    public Task<PluginImportResultDTO> InitializeAndImportAsync(IProgress<PluginImportProgressDTO>? progress, CancellationToken cancellationToken)
+    public Task<PluginImportResultDTO> InitializeAndImportAsync(IProgress<PluginImportProgressDTO>? progress, CancellationToken cancellationToken, bool forceFullReimport = false)
     {
-        return Task.Run(() => InitializeAndImport(progress, cancellationToken), cancellationToken);
+        return Task.Run(() => InitializeAndImport(progress, cancellationToken, forceFullReimport), cancellationToken);
     }
 
-    private PluginImportResultDTO InitializeAndImport(IProgress<PluginImportProgressDTO>? progress, CancellationToken cancellationToken)
+    private PluginImportResultDTO InitializeAndImport(IProgress<PluginImportProgressDTO>? progress, CancellationToken cancellationToken, bool forceFullReimport)
     {
         progress?.Report(new PluginImportProgressDTO
         {
@@ -52,8 +52,9 @@ public class PluginImportService : IPluginImportService
             IsIndeterminate = true
         });
 
-        DatabaseSchemaInitializer.Initialize();
-        Logger.Information("Initialized SQLite database, starting import of plugins");
+        var migrationsApplied = DatabaseSchemaInitializer.Initialize();
+        var shouldForceFullReimport = forceFullReimport || migrationsApplied;
+        Logger.Information("Initialized SQLite database, starting import of plugins; forced full reimport: {ForceFullReimport}, migrations applied: {MigrationsApplied}", shouldForceFullReimport, migrationsApplied);
 
         var result = new PluginImportResultDTO();
 
@@ -83,7 +84,7 @@ public class PluginImportService : IPluginImportService
                 IsIndeterminate = false
             });
 
-            ImportPlugin(entry, result, progress, loadOrderEntries.Count, cancellationToken);
+            ImportPlugin(entry, result, progress, loadOrderEntries.Count, cancellationToken, shouldForceFullReimport);
         }
 
         // Complete and close the transaction scope
@@ -118,9 +119,9 @@ public class PluginImportService : IPluginImportService
         return result;
     }
 
-    private void ImportPlugin(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
+    private void ImportPlugin(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken, bool forceFullReimport)
     {
-        var plugin = ImportStarfieldPlugin(entry, result, progress, totalPlugins, cancellationToken);
+        var plugin = ImportStarfieldPlugin(entry, result, progress, totalPlugins, cancellationToken, forceFullReimport);
         if (plugin == null)
         {
             return;
@@ -140,7 +141,7 @@ public class PluginImportService : IPluginImportService
 
     #region Starfield Import Helpers
 
-    private PluginDTO? ImportStarfieldPlugin(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken)
+    private PluginDTO? ImportStarfieldPlugin(PluginLoadOrderEntryDTO entry, PluginImportResultDTO result, IProgress<PluginImportProgressDTO>? progress, int totalPlugins, CancellationToken cancellationToken, bool forceFullReimport)
     {
         var existingPlugin = PluginRepository.GetByModKey(entry.ModKey);
         var sourceInfo = StarfieldPluginReaderService.GetSourceInfo(entry.ModKey);
@@ -189,7 +190,7 @@ public class PluginImportService : IPluginImportService
         var sourceLastWriteUTCTicks = sourceInfo.LastWriteUTCTicks;
         var sourceFileSizeBytes = sourceInfo.FileSizeBytes;
         var isUnchanged = existingPlugin is not null && existingPlugin.SourceLastWriteUTCTicks == sourceLastWriteUTCTicks && existingPlugin.SourceFileSizeBytes == sourceFileSizeBytes;
-        if (isUnchanged)
+        if (isUnchanged && !forceFullReimport)
         {
             result.PluginsUnchanged++;
             Logger.Information("Skipping unchanged plugin {ModKey}: source last write ticks {SourceLastWriteUtcTicks}, source file size {SourceFileSizeBytes}, import state {ImportState}", entry.ModKey, sourceLastWriteUTCTicks, sourceFileSizeBytes, existingPlugin!.ImportState);
@@ -200,7 +201,7 @@ public class PluginImportService : IPluginImportService
             return null;
         }
 
-        if (existingPlugin is not null)
+        if (existingPlugin is not null && !isUnchanged)
         {
             result.PluginsChanged++;
             result.PluginsInvalidated++;
@@ -212,6 +213,11 @@ public class PluginImportService : IPluginImportService
                 sourceFileSizeBytes,
                 existingPlugin.ImportState);
         }
+        else if (existingPlugin is not null)
+        {
+            result.PluginsInvalidated++;
+            Logger.Information("Forcing reimport of unchanged plugin {ModKey}", entry.ModKey);
+        }
 
         try
         {
@@ -222,7 +228,7 @@ public class PluginImportService : IPluginImportService
                 CurrentModKey = entry.ModKey,
                 PluginIndex = entry.LoadOrderIndex,
                 PluginCount = totalPlugins,
-                StatusText = $"Importing changed or new plugin {entry.ModKey.FileName} ({entry.LoadOrderIndex} of {totalPlugins})...",
+                StatusText = $"Importing plugin {entry.ModKey.FileName} ({entry.LoadOrderIndex} of {totalPlugins})...",
                 IsIndeterminate = false
             });
 
@@ -238,6 +244,7 @@ public class PluginImportService : IPluginImportService
                 dto.FormVersion = metadata.FormVersion;
                 dto.Author = metadata.Author;
                 dto.InteriorCellCount = metadata.InteriorCellCount;
+                dto.RecordCount = metadata.RecordCount;
                 dto.LastCheckedUTC = DateTime.UtcNow;
                 dto.LastImportedUTC = DateTime.UtcNow;
                 dto.InvalidatedAtUTC = null;
@@ -257,6 +264,7 @@ public class PluginImportService : IPluginImportService
                     FormVersion = metadata.FormVersion,
                     Author = metadata.Author,
                     InteriorCellCount = metadata.InteriorCellCount,
+                    RecordCount = metadata.RecordCount,
                     LastCheckedUTC = DateTime.UtcNow,
                     LastImportedUTC = DateTime.UtcNow,
                     InvalidatedAtUTC = null,

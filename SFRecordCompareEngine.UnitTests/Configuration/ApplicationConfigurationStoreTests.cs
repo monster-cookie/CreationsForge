@@ -33,6 +33,16 @@ public class ApplicationConfigurationStoreTests : IDisposable
     }
 
     [Fact]
+    public void DefaultApplicationDataDirectory_UsesPlatformSpecificDirectory()
+    {
+        var expectedDirectory = OperatingSystem.IsLinux()
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".SFRecordCompareEngine")
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SFRecordCompareEngine");
+
+        ApplicationConfigurationStore.DefaultApplicationDataDirectory.ShouldBe(expectedDirectory);
+    }
+
+    [Fact]
     public void SqliteDatabaseOptions_UsesDefaultApplicationConfigurationDirectory()
     {
         var sut = new SqliteDatabaseOptions();

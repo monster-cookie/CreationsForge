@@ -27,6 +27,18 @@ public class ApplicationNavigationService : IApplicationNavigationService
         return Task.CompletedTask;
     }
 
+    public Task ShowStartupImportAsync(bool forceFullReimport)
+    {
+        var viewModel = LifetimeScope.Resolve<StartupImportViewModel>();
+        viewModel.ForceFullReimport = forceFullReimport;
+        var view = new StartupImportView(viewModel);
+
+        ApplicationWindowService.HideMainCommandSurface();
+        ApplicationWindowService.SetContent(view);
+        ApplicationWindowService.MaximizeMainWindow();
+        return Task.CompletedTask;
+    }
+
     public async Task ShowOpenDialogAsync()
     {
         await ApplicationWindowService.ShowDialogAsync(LifetimeScope.Resolve<OpenPluginDialog>());

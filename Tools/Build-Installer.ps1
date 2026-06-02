@@ -28,6 +28,10 @@ if ($Version -notmatch "^\d+\.\d+\.\d+$") {
     throw "Release version '$Version' must use the major.minor.patch format."
 }
 
+if ($RuntimeIdentifier -ne "win-x64") {
+    throw "The Inno Setup installer is supported only for the win-x64 runtime identifier."
+}
+
 $archivePath = Join-Path $OutputDirectory "SFRecordCompareEngine-$RuntimeIdentifier-$Version.zip"
 $installerPath = Join-Path $OutputDirectory "SFRecordCompareEngine-Setup-$Version.exe"
 

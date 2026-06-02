@@ -25,6 +25,7 @@ public class Plugin
         Author = dto.Author;
         Branch = dto.Branch;
         InteriorCellCount = dto.InteriorCellCount ?? 0;
+        RecordCount = dto.RecordCount;
         SourceLastWriteUTCTicks = dto.SourceLastWriteUTCTicks;
         SourceFileSizeBytes = dto.SourceFileSizeBytes;
         LastCheckedUTC = dto.LastCheckedUTC;
@@ -55,6 +56,8 @@ public class Plugin
     [Column("Branch")] public string Branch { get; set; } = "UNKNOWN";
 
     [Column("InteriorCellCount")] public int InteriorCellCount { get; set; }
+
+    [Column("RecordCount")] public long RecordCount { get; set; }
 
     [Column("SourceLastWriteUTCTicks")] public long? SourceLastWriteUTCTicks { get; set; }
 

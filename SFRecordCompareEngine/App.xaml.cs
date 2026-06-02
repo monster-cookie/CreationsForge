@@ -45,7 +45,7 @@ public partial class App : Application
 
     private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
-        Log.Fatal(e.Exception, "Unhandled WinUI exception");
+            Log.Fatal(e.Exception, "Unhandled Uno desktop exception");
         Log.CloseAndFlush();
     }
 
@@ -94,7 +94,7 @@ public partial class App : Application
         builder.RegisterType<UserDialogService>().As<IUserDialogService>().SingleInstance();
         builder.RegisterType<ActivePluginSelectionService>().As<IActivePluginSelectionService>().SingleInstance();
         builder.RegisterType<ApplicationNavigationService>().As<IApplicationNavigationService>().SingleInstance();
-        builder.RegisterType<WindowsApplicationWindowService>().As<IApplicationWindowService>().SingleInstance();
+        builder.RegisterType<DesktopApplicationWindowService>().As<IApplicationWindowService>().SingleInstance();
 
         return builder.Build();
     }

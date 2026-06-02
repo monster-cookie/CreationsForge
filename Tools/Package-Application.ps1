@@ -9,11 +9,12 @@ param(
 $ErrorActionPreference = "Stop"
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
-$projectPath = Join-Path $repositoryRoot "SFRecordCompareEngine\SFRecordCompareEngine.csproj"
+$projectPath = Join-Path (Join-Path $repositoryRoot "SFRecordCompareEngine") "SFRecordCompareEngine.csproj"
 $versionPath = Join-Path $PSScriptRoot "Release-Version.txt"
-$knownIssuesPath = Join-Path $repositoryRoot "Documentation\KNOWN-ISSUES.md"
-$roadmapPath = Join-Path $repositoryRoot "Documentation\ROADMAP.md"
-$changeLogPath = Join-Path $repositoryRoot "Documentation\CHANGE-LOG.md"
+$documentationDirectory = Join-Path $repositoryRoot "Documentation"
+$knownIssuesPath = Join-Path $documentationDirectory "KNOWN-ISSUES.md"
+$roadmapPath = Join-Path $documentationDirectory "ROADMAP.md"
+$changeLogPath = Join-Path $documentationDirectory "CHANGE-LOG.md"
 $temporaryDirectory = Join-Path ([System.IO.Path]::GetTempPath()) "SFRecordCompareEngine-$([Guid]::NewGuid())"
 $publishDirectory = Join-Path $temporaryDirectory "publish"
 
@@ -25,7 +26,7 @@ if ($Version -notmatch "^\d+\.\d+\.\d+$") {
     throw "Release version '$Version' must use the major.minor.patch format."
 }
 
-$archivePath = Join-Path $OutputDirectory "SFRecordCompareEngine-$RuntimeIdentifier-$Version.zip"
+$archivePath = Join-Path ([System.IO.Path]::GetFullPath($OutputDirectory)) "SFRecordCompareEngine-$RuntimeIdentifier-$Version.zip"
 
 try {
     New-Item -ItemType Directory -Path $publishDirectory -Force | Out-Null
@@ -44,7 +45,22 @@ try {
         Remove-Item -LiteralPath $archivePath -Force
     }
 
-    Compress-Archive -Path (Join-Path $publishDirectory "*") -DestinationPath $archivePath
+    if ($IsLinux -and $RuntimeIdentifier.StartsWith("linux-", [StringComparison]::OrdinalIgnoreCase)) {
+        Push-Location $publishDirectory
+        try {
+            & zip -r $archivePath "."
+            if ($LASTEXITCODE -ne 0) {
+                throw "zip failed with exit code $LASTEXITCODE."
+            }
+        }
+        finally {
+            Pop-Location
+        }
+    }
+    else {
+        Compress-Archive -Path (Join-Path $publishDirectory "*") -DestinationPath $archivePath
+    }
+
     Write-Host "Created application package: $archivePath"
 }
 finally {

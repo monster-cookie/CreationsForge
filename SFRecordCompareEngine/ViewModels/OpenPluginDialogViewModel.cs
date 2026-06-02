@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using SFRecordCompareEngine.Commands;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.Services.Interfaces;
@@ -26,7 +25,11 @@ public class OpenPluginDialogViewModel : ViewModelBase
         RefreshSuggestions(string.Empty);
     }
 
-    public ObservableCollection<string> PluginSuggestions { get; } = new();
+    public IList<string> PluginSuggestions
+    {
+        get;
+        private set => SetProperty(ref field, value);
+    } = new List<string>();
 
     public AsyncRelayCommand LoadCommand { get; }
     public AsyncRelayCommand CancelCommand { get; }
@@ -94,11 +97,10 @@ public class OpenPluginDialogViewModel : ViewModelBase
             ? PluginService.GetOpenablePlugins()
             : PluginService.SearchOpenablePluginsByFilename(searchText);
 
-        PluginSuggestions.Clear();
-        foreach (var plugin in MatchingPlugins.Take(25))
-        {
-            PluginSuggestions.Add(plugin.ModKey.FileName.ToString());
-        }
+        PluginSuggestions = MatchingPlugins
+            .Take(25)
+            .Select(plugin => plugin.ModKey.FileName.ToString())
+            .ToList();
 
         SelectedPlugin = MatchingPlugins.FirstOrDefault(plugin =>
             string.Equals(plugin.ModKey.FileName.ToString(), searchText, StringComparison.OrdinalIgnoreCase));

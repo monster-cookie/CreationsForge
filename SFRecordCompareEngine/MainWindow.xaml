@@ -23,6 +23,9 @@
                 <MenuFlyoutItem
                     x:Name="OptionsMenuItem"
                     Text="Options" />
+                <MenuFlyoutItem
+                    x:Name="ReimportAllPluginsMenuItem"
+                    Text="Reimport All Plugins" />
                 <MenuFlyoutSeparator />
                 <MenuFlyoutItem
                     x:Name="ExitMenuItem"
@@ -44,6 +47,9 @@
                 <AppBarButton
                     x:Name="SettingsCommandButton"
                     Label="Settings" />
+                <AppBarButton
+                    x:Name="ReimportAllPluginsCommandButton"
+                    Label="Reimport All Plugins" />
             </CommandBar.PrimaryCommands>
         </CommandBar>
 

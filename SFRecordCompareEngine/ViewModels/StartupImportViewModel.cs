@@ -36,6 +36,8 @@ public class StartupImportViewModel : ViewModelBase
         private set => SetProperty(ref field, value);
     }
 
+    public bool ForceFullReimport { get; set; }
+
     public string CurrentPluginText
     {
         get;
@@ -103,7 +105,7 @@ public class StartupImportViewModel : ViewModelBase
         try
         {
             var progress = new Progress<PluginImportProgressDTO>(UpdateProgress);
-            var importResult = await PluginImportService.InitializeAndImportAsync(progress, CancellationTokenSource.Token);
+            var importResult = await PluginImportService.InitializeAndImportAsync(progress, CancellationTokenSource.Token, ForceFullReimport);
 
             ImportCompleted = true;
             StatusText = $"Plugin database import completed. Imported {importResult.PluginsImported} plugins.";

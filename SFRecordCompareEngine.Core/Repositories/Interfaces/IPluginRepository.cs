@@ -25,6 +25,12 @@ public interface IPluginRepository
     IList<PluginDTO> GetImportedPlugins();
 
     /// <summary>
+    ///     Get the total header record count for imported plugins.
+    /// </summary>
+    /// <returns>The total header record count.</returns>
+    long GetImportedPluginRecordCount();
+
+    /// <summary>
     ///     Get openable plugins.
     /// </summary>
     /// <returns>The list of plugins or an empty list if none are found.</returns>

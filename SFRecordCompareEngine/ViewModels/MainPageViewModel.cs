@@ -59,6 +59,7 @@ public class MainPageViewModel : ViewModelBase
         PluginService = pluginService;
         OpenCommand = new AsyncRelayCommand(OpenAsync);
         OptionsCommand = new AsyncRelayCommand(ShowOptionsAsync);
+        ReimportAllPluginsCommand = new AsyncRelayCommand(ReimportAllPluginsAsync);
         ExitCommand = new RelayCommand(ApplicationNavigationService.Quit);
         StatusText = GetStatusText();
         ActivePluginSelectionService.ActivePluginChanged += OnActivePluginChanged;
@@ -66,6 +67,7 @@ public class MainPageViewModel : ViewModelBase
 
     public AsyncRelayCommand OpenCommand { get; }
     public AsyncRelayCommand OptionsCommand { get; }
+    public AsyncRelayCommand ReimportAllPluginsCommand { get; }
     public RelayCommand ExitCommand { get; }
 
     public ObservableCollection<RecordTreeItemViewModel> RecordTreeItems { get; } = new();
@@ -114,6 +116,12 @@ public class MainPageViewModel : ViewModelBase
     private async Task ShowOptionsAsync()
     {
         await ApplicationNavigationService.ShowSettingsDialogAsync();
+    }
+
+    private async Task ReimportAllPluginsAsync()
+    {
+        ActivePluginSelectionService.ClearActivePlugin();
+        await ApplicationNavigationService.ShowStartupImportAsync(true);
     }
 
     private async void OnActivePluginChanged(object? sender, EventArgs e)
@@ -181,9 +189,49 @@ public class MainPageViewModel : ViewModelBase
 
     private string GetStatusText()
     {
-        return ActivePluginSelectionService.ActivePlugin == null
-            ? "No active plugin selected."
-            : $"Active plugin: {ActivePluginSelectionService.ActivePlugin.ModKey.FileName}";
+        var totalPluginRecords = PluginService.GetImportedPluginRecordCount();
+        var activePlugin = ActivePluginSelectionService.ActivePlugin;
+        return activePlugin == null
+            ? $"Total plugin records: {totalPluginRecords:N0}. No active plugin selected."
+            : $"Total plugin records: {totalPluginRecords:N0}. Active plugin: {activePlugin.ModKey.FileName} ({GetPluginType(activePlugin)}, {activePlugin.RecordCount:N0} records).";
+    }
+
+    private static string GetPluginType(PluginDTO plugin)
+    {
+        var pluginTypes = new List<string>();
+        if (plugin.HeaderFlags.HasFlag(StarfieldModHeader.HeaderFlag.Overlay))
+        {
+            pluginTypes.Add("overlay");
+        }
+
+        if (plugin.ModKey.FileName.String.EndsWith(".esp", StringComparison.OrdinalIgnoreCase))
+        {
+            pluginTypes.Add("ESP");
+            return string.Join(", ", pluginTypes);
+        }
+
+        if (plugin.ModKey.FileName.String.EndsWith(".esl", StringComparison.OrdinalIgnoreCase))
+        {
+            pluginTypes.Add("ESL");
+            return string.Join(", ", pluginTypes);
+        }
+
+        if (plugin.HeaderFlags.HasFlag(StarfieldModHeader.HeaderFlag.Light))
+        {
+            pluginTypes.Add("small master");
+            return string.Join(", ", pluginTypes);
+        }
+
+        if (plugin.HeaderFlags.HasFlag(StarfieldModHeader.HeaderFlag.Medium))
+        {
+            pluginTypes.Add("medium master");
+            return string.Join(", ", pluginTypes);
+        }
+
+        pluginTypes.Add(plugin.HeaderFlags.HasFlag(StarfieldModHeader.HeaderFlag.Master)
+            ? "full master"
+            : "plugin");
+        return string.Join(", ", pluginTypes);
     }
 
     private async Task RefreshRecordTreeAsync()

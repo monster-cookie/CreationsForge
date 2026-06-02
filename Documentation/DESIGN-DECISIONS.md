@@ -1,5 +1,118 @@
 # Design Decisions
 
+## 2026-06-01 - Reimport Plugin Cache After Schema Changes
+
+Status: Accepted
+
+Context: Plugin imports use source fingerprints to skip unchanged files. Additive cache schema migrations can require
+new metadata to be populated even when plugin files did not change. Users also need an explicit way to rebuild cached
+plugin metadata and supported record rows.
+
+Decision: Return whether DbUp applied scripts from `DatabaseMigrationRunner` through `DatabaseSchemaInitializer`.
+Consume that one-run result in `PluginImportService` and bypass source-fingerprint skips for the same import pass.
+Expose the same behavior through a File-menu and toolbar full-reimport command. Persist Mutagen header record counts and
+use the existing persisted header flags for status display.
+
+Rationale: A direct return value keeps the schema-triggered reimport deterministic and UI-neutral. It avoids persistent
+configuration state that could force repeated imports or be cleared before the importer consumes it.
+
+Alternatives considered:
+
+- Store a force-reimport flag in application configuration.
+- Raise a global migration event.
+- Require users to delete the cache manually after migrations.
+
+Consequences:
+
+- DbUp `SchemaVersions` remains the only migration-state source of truth.
+- Successfully applied migrations force the current plugin import pass to refresh unchanged files.
+- Users can force the same refresh from the main command surface.
+- The `Plugins` table stores header record count and uses existing header flags for plugin classification.
+
+Related files:
+
+- `SFRecordCompareEngine.Migrations/DatabaseMigrationRunner.cs`
+- `SFRecordCompareEngine.Migrations/Sql/002_AddPluginRecordCount.sql`
+- `SFRecordCompareEngine.Core/Database/DatabaseSchemaInitializer.cs`
+- `SFRecordCompareEngine.Core/Services/PluginImportService.cs`
+- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
+
+## 2026-06-01 - Use Per-User Linux Application Data
+
+Status: Accepted
+
+Context: The Debian package installs application binaries under `/opt`, but launches the application as the current
+desktop user. The existing default application-data location used `Environment.SpecialFolder.CommonApplicationData`,
+which resolves to a system-owned location on Linux and prevents an unprivileged user from creating the SQLite database,
+configuration file, and logs during startup.
+
+Decision: Use `~/.SFRecordCompareEngine` as the default application-data directory on Linux. Continue using
+`<CommonApplicationData>/SFRecordCompareEngine` on other platforms.
+
+Rationale: Linux desktop application state must be writable by the user launching the installed application. Keeping
+the existing non-Linux default avoids changing Windows persistence behavior.
+
+Alternatives considered:
+
+- Provision a world-writable shared directory from the Debian package.
+- Require users to launch the application with elevated permissions.
+- Use the existing common application-data path on every platform.
+
+Consequences:
+
+- Linux config JSON, SQLite database, and log files default to `~/.SFRecordCompareEngine`.
+- Windows config JSON, SQLite database, and log locations remain unchanged.
+- Explicitly configured paths remain supported.
+
+Related files:
+
+- `SFRecordCompareEngine.Core/Configuration/ApplicationConfigurationStore.cs`
+- `SFRecordCompareEngine.Core/Models/Database/SqliteDatabaseOptions.cs`
+- `Documentation/DATABASE.md`
+
+## 2026-06-01 - Replace WinUI-Only Presentation With Uno Skia Desktop
+
+Status: Accepted
+
+Context: The application needs to continue running on Windows while adding a native Linux desktop distribution path
+for users running Starfield through Proton. The existing WinUI 3 presentation project is Windows-only.
+
+Decision: Replace the WinUI-only application host with Uno Platform Skia Desktop. Keep the existing WinUI-compatible
+XAML views during the platform migration. Configure the host for Win32 on Windows and X11 on Linux. Continue producing
+a Windows ZIP and Inno Setup installer, and add Linux ZIP and Debian packages. Generate release packages through
+GitHub Actions when a matching version tag is pushed from the current `master` HEAD.
+
+Rationale: Uno preserves the current XAML, MVVM structure, and control model while enabling a shared Windows and Linux
+desktop build. Keeping XAML during this phase separates platform migration issues from a later C# Markup refactor.
+
+Alternatives considered:
+
+- Continue distributing the WinUI build for Proton execution.
+- Replace WinUI with Avalonia.
+- Convert to Uno C# Markup during the platform migration.
+- Return to MAUI.
+
+Consequences:
+
+- The presentation project targets Uno Skia Desktop and selects Win32 or X11 at runtime.
+- Core, migrations, and unit tests target cross-platform .NET instead of Windows-specific TFMs.
+- Linux SQLite packaging, app-data permissions, and Proton-aware Starfield discovery still require Linux validation.
+- Matching `vmajor.minor.patch` tag pushes from the current `master` HEAD generate Windows ZIP, Inno Setup installer,
+  Linux ZIP, and Debian artifacts.
+- A later presentation-only change can migrate XAML views to Uno C# Markup incrementally.
+- The `2026-05-29 - Revert Presentation Layer To WinUI` decision is superseded.
+
+Related files:
+
+- `SFRecordCompareEngine/SFRecordCompareEngine.csproj`
+- `SFRecordCompareEngine/Platforms/Desktop/Program.cs`
+- `SFRecordCompareEngine/Services/DesktopApplicationWindowService.cs`
+- `Tools/Package-Application.ps1`
+- `Tools/Build-Release.ps1`
+- `Tools/Build-Installer.ps1`
+- `Tools/Build-DebianPackage.ps1`
+- `.github/workflows/package-release.yml`
+
 ## 2026-05-30 - Highlight Conflicts Across Visible Comparison Columns
 
 Status: Accepted
@@ -214,7 +327,7 @@ Related files:
 
 ## 2026-05-29 - Revert Presentation Layer To WinUI
 
-Status: Accepted
+Status: Superseded
 
 Context: The application is Windows-only and needs standard Windows desktop UI surfaces, including a menu bar, toolbar, 
 and future grid-based browsing workflows. The MAUI presentation layer failed to reliably render menu and toolbar 
