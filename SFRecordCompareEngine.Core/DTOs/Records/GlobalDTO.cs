@@ -1,11 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
+using SFRecordCompareEngine.Core.DTOs.Records.Interfaces;
 using Global = SFRecordCompareEngine.Core.Models.Database.Global;
 
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
-public class GlobalDTO
+public class GlobalDTO : IHasScriptingAdaptersRecordDTO
 {
     public GlobalDTO()
     { }
@@ -33,4 +34,5 @@ public class GlobalDTO
     public required int VersionControl { get; set; }
     public required DateTime ImportedAtUTC { get; set; }
     public double? Data { get; set; }
+    public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 }

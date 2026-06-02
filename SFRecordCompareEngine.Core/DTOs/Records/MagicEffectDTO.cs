@@ -1,11 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
+using SFRecordCompareEngine.Core.DTOs.Records.Interfaces;
 using MagicEffect = SFRecordCompareEngine.Core.Models.Database.MagicEffect;
 
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
-public class MagicEffectDTO
+public class MagicEffectDTO : IHasScriptingAdaptersRecordDTO
 {
     public MagicEffectDTO()
     { }
@@ -63,6 +64,7 @@ public class MagicEffectDTO
     public FormKey? ImageSpaceModifierFormKey { get; set; }
     public FormKey? ImpactDataFormKey { get; set; }
     public FormKey? ProjectileFormKey { get; set; }
+    public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 
     private static FormKey? ParseFormKey(string? value)
     {

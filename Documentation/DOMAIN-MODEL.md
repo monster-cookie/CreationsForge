@@ -92,6 +92,38 @@ The active typed detail import path also includes Starfield `GLOB`, `MISC`, `KYW
 clearly understood scalar values and direct `FormKey` references. Complex nested child structures are deferred until
 they can be represented with normalized typed models.
 
+The current typed detail import path also persists supported VMAD scripting data for the supported record types that
+expose `VirtualMachineAdapter` through Mutagen: `Global`, `MiscItem`, `Keyword`, `NPC`, `ActorValueInformation`,
+`MagicEffect`, and `Perk`.
+
+`ScriptingAdapterDTO` represents one attached VMAD script:
+
+- owning plugin `ModKey`
+- owning record type name
+- owning record `FormKey`
+- script name
+- script order index
+- imported timestamp
+
+`ScriptingAdapterPropertyDTO` represents one VMAD property attached to a script:
+
+- parent script identity
+- property order index
+- property name
+- `MutagenObjectType`
+- supported scalar data fields
+- supported object reference fields
+- zero or more list items for supported list property shapes
+
+`ScriptingAdapterPropertyListItemDTO` represents one ordered item inside a supported VMAD list property.
+
+Unsupported VMAD property families remain deferred:
+
+- `ScriptStructProperty`
+- `ScriptStructListProperty`
+- `ScriptVariableProperty`
+- `ScriptVariableListProperty`
+
 Localized record fields store only the resolved English text as nullable values. The database does not store
 translation catalogs or JSON payloads.
 

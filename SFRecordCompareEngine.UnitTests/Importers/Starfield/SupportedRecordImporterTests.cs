@@ -18,7 +18,7 @@ public class SupportedRecordImporterTests
     [InlineData(typeof(PerkImporter), "PERK", "Perk")]
     public void Properties_ReturnExpectedMetadata(Type importerType, string expectedRecordID, string expectedTableName)
     {
-        var sut = (ITypedRecordDetailImporter)Activator.CreateInstance(importerType, new object?[] { null })!;
+        var sut = (ITypedRecordDetailImporter)Activator.CreateInstance(importerType, new object?[] { null, null })!;
 
         sut.GameRelease.ShouldBe(GameRelease.Starfield);
         sut.RecordType.ShouldBe(new RecordType(expectedRecordID));

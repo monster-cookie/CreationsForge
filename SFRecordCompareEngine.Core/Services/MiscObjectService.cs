@@ -8,19 +8,21 @@ namespace SFRecordCompareEngine.Core.Services;
 public class MiscItemService : IMiscItemService
 {
     private readonly IMiscItemRepository Repository;
+    private readonly IScriptingAdapterHydrationService ScriptingAdapterHydrationService;
 
-    public MiscItemService(IMiscItemRepository repository)
+    public MiscItemService(IMiscItemRepository repository, IScriptingAdapterHydrationService scriptingAdapterHydrationService)
     {
         Repository = repository;
+        ScriptingAdapterHydrationService = scriptingAdapterHydrationService;
     }
 
     public IList<MiscItemDTO> GetByModKey(ModKey modKey)
     {
-        return Repository.GetByModKey(modKey);
+        return ScriptingAdapterHydrationService.Hydrate(Repository.GetByModKey(modKey), Helpers.RecordTypeCatalog.MiscItem.RecordType);
     }
 
     public IList<MiscItemDTO> GetByFormKeyID(uint formKeyID)
     {
-        return Repository.GetByFormKeyID(formKeyID);
+        return ScriptingAdapterHydrationService.Hydrate(Repository.GetByFormKeyID(formKeyID), Helpers.RecordTypeCatalog.MiscItem.RecordType);
     }
 }

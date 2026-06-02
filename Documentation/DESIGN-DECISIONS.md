@@ -1,5 +1,43 @@
 # Design Decisions
 
+## 2026-06-02 - Normalize Supported VMAD Script Data In Shared Child Tables
+
+Status: Accepted
+
+Context: Already-supported Starfield record imports need to persist Mutagen `VirtualMachineAdapter` script data.
+Multiple typed record tables can expose VMAD, but the current cache schema has no shared child-table design for that
+data.
+
+Decision: Persist supported VMAD script data in three shared tables: `ScriptingAdapters`,
+`ScriptingAdapterProperties`, and `ScriptingAdapterPropertyListItems`. Key the shared rows by plugin `ModKey`,
+typed-parent `RecordType`, parent `FormKey_ID`, and the child identity needed for script, property, and list-item
+ordering.
+
+Rationale: This keeps the cache normalized, avoids JSON blobs, preserves script/property/list ordering, and fits the
+existing explicit DTO, repository, service, and importer pattern.
+
+Alternatives considered:
+
+- Store VMAD payloads as JSON.
+- Create one VMAD table set per supported parent record type.
+- Flatten list items into the property table.
+
+Consequences:
+
+- Supported records now hydrate persisted VMAD scripting data through Core services.
+- The comparison workspace can display VMAD scripts, properties, and supported list items.
+- `RecordType` is required on the shared VMAD tables because `FormKey_ID` is not unique across all typed record
+  tables.
+- Struct and variable VMAD property families remain out of scope until a deeper normalized schema is approved.
+
+Related files:
+
+- `SFRecordCompareEngine.Migrations/Sql/003_AddScriptingAdapterSchema.sql`
+- `SFRecordCompareEngine.Core/Services/StarfieldRecordReaderService.cs`
+- `SFRecordCompareEngine.Core/Services/ScriptingAdapterImportService.cs`
+- `SFRecordCompareEngine.Core/Services/ScriptingAdapterHydrationService.cs`
+- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
+
 ## 2026-06-01 - Use Release Tags As Package Version Source
 
 Status: Accepted

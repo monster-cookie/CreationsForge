@@ -1,11 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
+using SFRecordCompareEngine.Core.DTOs.Records.Interfaces;
 using ActorValueInformation = SFRecordCompareEngine.Core.Models.Database.ActorValueInformation;
 
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
-public class ActorValueInformationDTO
+public class ActorValueInformationDTO : IHasScriptingAdaptersRecordDTO
 {
     public ActorValueInformationDTO()
     { }
@@ -47,4 +48,5 @@ public class ActorValueInformationDTO
     public string? Type { get; set; }
     public double? Min { get; set; }
     public double? Max { get; set; }
+    public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 }

@@ -11,7 +11,7 @@ The application uses a local SQLite cache. The schema is defined by embedded DbU
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains 12 tables:
+The application schema contains 15 tables:
 
 - `Plugins`
 - `PluginMasterReferences`
@@ -25,6 +25,9 @@ The application schema contains 12 tables:
 - `ActorValueInformation`
 - `MagicEffect`
 - `Perk`
+- `ScriptingAdapters`
+- `ScriptingAdapterProperties`
+- `ScriptingAdapterPropertyListItems`
 
 See [ERD.md](ERD.md) for the relationship diagram.
 
@@ -365,6 +368,165 @@ Additional record-specific columns:
 - `CrewAssignment` (`TEXT`, nullable)
 - `PerkIcon` (`TEXT`, nullable)
 
+### ScriptingAdapters
+
+Stores one VMAD script row attached to an already-supported typed record.
+
+Columns:
+
+- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `RecordType` (`TEXT`, `NOT NULL`, primary key)
+- `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key)
+- `Name` (`TEXT`, `NOT NULL`, primary key)
+- `Script_Index` (`INTEGER`, `NOT NULL`)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Primary key:
+
+- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ID`, and `Name`
+
+Foreign keys:
+
+- `ModKey_Name`, `ModKey_Type`, and `ModKey_FileName` reference the `Plugins` primary key with
+  `ON DELETE CASCADE`.
+
+Indexes:
+
+- `IX_ScriptingAdapters_RecordLookup` on `RecordType` and `FormKey_ID`
+- `IX_ScriptingAdapters_ScriptIndex` on `Script_Index`
+
+Constraints:
+
+- All columns are `NOT NULL`.
+- `FormKey_ID` must be greater than or equal to `0`.
+- `Script_Index` must be greater than or equal to `0`.
+
+`RecordType` is required because the shared VMAD child tables serve multiple typed parent tables. `FormKey_ID` is not
+globally unique across those tables.
+
+### ScriptingAdapterProperties
+
+Stores one VMAD property row for a script attached to an already-supported typed record.
+
+Columns:
+
+- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `RecordType` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `ScriptingAdapter_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `Property_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `Name` (`TEXT`, `NOT NULL`)
+- `MutagenObjectType` (`TEXT`, `NOT NULL`)
+- `Data_Bool` (`INTEGER`, nullable)
+- `Data_Int` (`INTEGER`, nullable)
+- `Data_Float` (`REAL`, nullable)
+- `Data_String` (`TEXT`, nullable)
+- `Object_ModKey_Name` (`TEXT`, nullable)
+- `Object_ModKey_Type` (`INTEGER`, nullable)
+- `Object_ModKey_FileName` (`TEXT`, nullable)
+- `Object_FormKey_ID` (`INTEGER`, nullable)
+- `Object_Alias` (`INTEGER`, nullable)
+- `Object_Unused` (`INTEGER`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Primary key:
+
+- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ID`, `ScriptingAdapter_Name`,
+  and `Property_Index`
+
+Foreign keys:
+
+- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ID`, and `ScriptingAdapter_Name`
+  reference the `ScriptingAdapters` primary key with `ON DELETE CASCADE`.
+
+Indexes:
+
+- `IX_ScriptingAdapterProperties_RecordLookup` on `RecordType` and `FormKey_ID`
+- `IX_ScriptingAdapterProperties_PropertyIndex` on `Property_Index`
+- `IX_ScriptingAdapterProperties_ObjectLookup` on `Object_FormKey_ID`
+
+Constraints:
+
+- `FormKey_ID` must be greater than or equal to `0`.
+- `Property_Index` must be greater than or equal to `0`.
+- `Data_Bool` must be `0`, `1`, or `NULL`.
+- `Object_FormKey_ID` must be `NULL` or greater than or equal to `0`.
+
+Supported property shapes in this table are:
+
+- `ScriptProperty`
+- `ScriptBoolProperty`
+- `ScriptIntProperty`
+- `ScriptFloatProperty`
+- `ScriptStringProperty`
+- `ScriptObjectProperty`
+- list-property parents for the supported VMAD list types
+
+List values are stored in `ScriptingAdapterPropertyListItems`, not as JSON.
+
+### ScriptingAdapterPropertyListItems
+
+Stores one VMAD list element row for a supported list-type script property.
+
+Columns:
+
+- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `RecordType` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `ScriptingAdapter_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `Property_Index` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `ListItem_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `MutagenObjectType` (`TEXT`, `NOT NULL`)
+- `Data_Bool` (`INTEGER`, nullable)
+- `Data_Int` (`INTEGER`, nullable)
+- `Data_Float` (`REAL`, nullable)
+- `Data_String` (`TEXT`, nullable)
+- `Object_ModKey_Name` (`TEXT`, nullable)
+- `Object_ModKey_Type` (`INTEGER`, nullable)
+- `Object_ModKey_FileName` (`TEXT`, nullable)
+- `Object_FormKey_ID` (`INTEGER`, nullable)
+- `Object_Alias` (`INTEGER`, nullable)
+- `Object_Unused` (`INTEGER`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Primary key:
+
+- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ID`, `ScriptingAdapter_Name`,
+  `Property_Index`, and `ListItem_Index`
+
+Foreign keys:
+
+- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ID`, `ScriptingAdapter_Name`,
+  and `Property_Index` reference the `ScriptingAdapterProperties` primary key with `ON DELETE CASCADE`.
+
+Indexes:
+
+- `IX_ScriptingAdapterPropertyListItems_RecordLookup` on `RecordType` and `FormKey_ID`
+- `IX_ScriptingAdapterPropertyListItems_ListItemIndex` on `ListItem_Index`
+- `IX_ScriptingAdapterPropertyListItems_ObjectLookup` on `Object_FormKey_ID`
+
+Constraints:
+
+- `FormKey_ID` must be greater than or equal to `0`.
+- `Property_Index` must be greater than or equal to `0`.
+- `ListItem_Index` must be greater than or equal to `0`.
+- `Data_Bool` must be `0`, `1`, or `NULL`.
+- `Object_FormKey_ID` must be `NULL` or greater than or equal to `0`.
+
+Supported list item shapes are:
+
+- `ScriptBoolListProperty`
+- `ScriptIntListProperty`
+- `ScriptFloatListProperty`
+- `ScriptStringListProperty`
+- `ScriptObjectListProperty`
+
 ## Inferred Relationships
 
 The following columns carry record-reference data but do not declare SQLite foreign keys:
@@ -377,6 +539,12 @@ The following columns carry record-reference data but do not declare SQLite fore
 - `MagicEffect.ActorValue2FormKey`, `ResistValueFormKey`, `PerkToApplyFormKey`, `EquipAbilityFormKey`,
   `ExplosionFormKey`, `CastingArtFormKey`, `HitEffectArtFormKey`, `HitShaderFormKey`, `ImageSpaceModifierFormKey`,
   `ImpactDataFormKey`, and `ProjectileFormKey`
+- `ScriptingAdapters.RecordType` and `FormKey_ID` identify the owning typed record table row but do not declare a
+  SQLite foreign key to a specific typed record table
+- `ScriptingAdapterProperties.Object_ModKey_Name`, `Object_ModKey_Type`, `Object_ModKey_FileName`,
+  and `Object_FormKey_ID`
+- `ScriptingAdapterPropertyListItems.Object_ModKey_Name`, `Object_ModKey_Type`, `Object_ModKey_FileName`,
+  and `Object_FormKey_ID`
 
 These references are intentionally not shown as Mermaid relationship lines in the ERD.
 

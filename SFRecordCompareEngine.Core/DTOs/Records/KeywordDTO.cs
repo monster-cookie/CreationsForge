@@ -1,11 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
+using SFRecordCompareEngine.Core.DTOs.Records.Interfaces;
 using Keyword = SFRecordCompareEngine.Core.Models.Database.Keyword;
 
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
-public class KeywordDTO
+public class KeywordDTO : IHasScriptingAdaptersRecordDTO
 {
     public KeywordDTO()
     { }
@@ -43,4 +44,5 @@ public class KeywordDTO
     public string? Notes { get; set; }
     public string? FlashLinkageName { get; set; }
     public FormKey? AttractionRuleFormKey { get; set; }
+    public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 }

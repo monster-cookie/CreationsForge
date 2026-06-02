@@ -1,11 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
+using SFRecordCompareEngine.Core.DTOs.Records.Interfaces;
 using SFRecordCompareEngine.Core.Models.Database;
 
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
-public class NPCDTO
+public class NPCDTO : IHasScriptingAdaptersRecordDTO
 {
     public NPCDTO()
     { }
@@ -71,6 +72,7 @@ public class NPCDTO
     public FormKey? CombatStyleFormKey { get; set; }
     public FormKey? DefaultPackageListFormKey { get; set; }
     public FormKey? CrimeFactionFormKey { get; set; }
+    public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 
     private static FormKey? ParseFormKey(string? value)
     {

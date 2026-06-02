@@ -236,6 +236,63 @@ erDiagram
         TEXT PerkIcon
     }
 
+    ScriptingAdapters {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT RecordType PK
+        INTEGER FormKey_ID PK
+        TEXT Name PK
+        INTEGER Script_Index
+        TEXT ImportedAtUTC
+    }
+
+    ScriptingAdapterProperties {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT RecordType PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT ScriptingAdapter_Name PK, FK
+        INTEGER Property_Index PK
+        TEXT Name
+        TEXT MutagenObjectType
+        INTEGER Data_Bool
+        INTEGER Data_Int
+        REAL Data_Float
+        TEXT Data_String
+        TEXT Object_ModKey_Name
+        INTEGER Object_ModKey_Type
+        TEXT Object_ModKey_FileName
+        INTEGER Object_FormKey_ID
+        INTEGER Object_Alias
+        INTEGER Object_Unused
+        TEXT ImportedAtUTC
+    }
+
+    ScriptingAdapterPropertyListItems {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT RecordType PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT ScriptingAdapter_Name PK, FK
+        INTEGER Property_Index PK, FK
+        INTEGER ListItem_Index PK
+        TEXT MutagenObjectType
+        INTEGER Data_Bool
+        INTEGER Data_Int
+        REAL Data_Float
+        TEXT Data_String
+        TEXT Object_ModKey_Name
+        INTEGER Object_ModKey_Type
+        TEXT Object_ModKey_FileName
+        INTEGER Object_FormKey_ID
+        INTEGER Object_Alias
+        INTEGER Object_Unused
+        TEXT ImportedAtUTC
+    }
+
     Plugins ||--o{ PluginMasterReferences : "is declared master"
     Plugins ||--o{ PluginMasterReferences : "declares masters"
     Plugins ||--o{ FormList : contains
@@ -248,6 +305,9 @@ erDiagram
     Plugins ||--o{ ActorValueInformation : contains
     Plugins ||--o{ MagicEffect : contains
     Plugins ||--o{ Perk : contains
+    Plugins ||--o{ ScriptingAdapters : contains
+    ScriptingAdapters ||--o{ ScriptingAdapterProperties : contains
+    ScriptingAdapterProperties ||--o{ ScriptingAdapterPropertyListItems : contains
 ```
 
 ## Important Indexes
@@ -258,6 +318,10 @@ The schema has no separately declared unique indexes. Composite primary keys pro
 - `PluginMasterReferences`: indexes on the declared-master key and declaring-plugin key.
 - `FormListItems`: indexes on referenced item ID plus owning form-list key, and on `Item_Index`.
 - Each typed record table: a non-unique index on `FormKey_ID` for cross-plugin comparison lookup.
+- `ScriptingAdapters`: indexes on `RecordType` plus `FormKey_ID`, and on `Script_Index`.
+- `ScriptingAdapterProperties`: indexes on `RecordType` plus `FormKey_ID`, `Property_Index`, and `Object_FormKey_ID`.
+- `ScriptingAdapterPropertyListItems`: indexes on `RecordType` plus `FormKey_ID`, `ListItem_Index`, and
+  `Object_FormKey_ID`.
 
 ## Important Constraints
 
@@ -280,3 +344,8 @@ from the Mermaid relationship lines:
 - `MagicEffect.ActorValue2FormKey`, `ResistValueFormKey`, `PerkToApplyFormKey`, `EquipAbilityFormKey`,
   `ExplosionFormKey`, `CastingArtFormKey`, `HitEffectArtFormKey`, `HitShaderFormKey`, `ImageSpaceModifierFormKey`,
   `ImpactDataFormKey`, and `ProjectileFormKey`
+- `ScriptingAdapters.RecordType` and `FormKey_ID`
+- `ScriptingAdapterProperties.Object_ModKey_Name`, `Object_ModKey_Type`, `Object_ModKey_FileName`,
+  and `Object_FormKey_ID`
+- `ScriptingAdapterPropertyListItems.Object_ModKey_Name`, `Object_ModKey_Type`, `Object_ModKey_FileName`,
+  and `Object_FormKey_ID`
