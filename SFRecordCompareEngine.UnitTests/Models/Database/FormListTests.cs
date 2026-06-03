@@ -12,7 +12,8 @@ public class FormListTests
     public void Constructor_MapsDTO()
     {
         var modKey = new ModKey("Example", ModType.Master);
-        var formKey = new FormKey(modKey, 123);
+        var originModKey = new ModKey("Origin", ModType.Master);
+        var formKey = new FormKey(originModKey, 123);
         var addToListFormKey = new FormKey(modKey, 456);
         var importedAtUTC = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
         var dto = new FormListDTO
@@ -33,6 +34,9 @@ public class FormListTests
         result.ModKeyName.ShouldBe(modKey.Name);
         result.ModKeyType.ShouldBe((int)modKey.Type);
         result.ModKeyFileName.ShouldBe(modKey.FileName);
+        result.FormKeyModKeyName.ShouldBe(originModKey.Name);
+        result.FormKeyModKeyType.ShouldBe((int)originModKey.Type);
+        result.FormKeyModKeyFileName.ShouldBe(originModKey.FileName);
         result.FormKeyId.ShouldBe((int)formKey.ID);
         result.EditorId.ShouldBe("Editor");
         result.FormVersion.ShouldBe(44);

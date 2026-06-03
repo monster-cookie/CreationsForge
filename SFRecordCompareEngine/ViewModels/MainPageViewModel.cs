@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Microsoft.UI.Xaml;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
 using Mutagen.Bethesda.Plugins;
@@ -8,6 +9,8 @@ using Mutagen.Bethesda.Starfield;
 using Noggog;
 using SFRecordCompareEngine.Commands;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
+using SFRecordCompareEngine.Core.DTOs.Records;
+using SFRecordCompareEngine.Core.DTOs.Records.Interfaces;
 using SFRecordCompareEngine.Core.Helpers;
 using SFRecordCompareEngine.Core.Services.Interfaces;
 using SFRecordCompareEngine.Services.Interfaces;
@@ -61,7 +64,10 @@ public class MainPageViewModel : ViewModelBase
         OptionsCommand = new AsyncRelayCommand(ShowOptionsAsync);
         ReimportAllPluginsCommand = new AsyncRelayCommand(ReimportAllPluginsAsync);
         ExitCommand = new RelayCommand(ApplicationNavigationService.Quit);
-        StatusText = GetStatusText();
+        CollapseAllScriptsCommand = new RelayCommand(CollapseAllScripts);
+        ExpandChangedScriptsCommand = new RelayCommand(ExpandChangedScripts);
+        ToggleChangedOnlyScriptsCommand = new RelayCommand(ToggleChangedOnlyScripts);
+        UpdateStatusBar(null);
         ActivePluginSelectionService.ActivePluginChanged += OnActivePluginChanged;
     }
 
@@ -69,10 +75,14 @@ public class MainPageViewModel : ViewModelBase
     public AsyncRelayCommand OptionsCommand { get; }
     public AsyncRelayCommand ReimportAllPluginsCommand { get; }
     public RelayCommand ExitCommand { get; }
+    public RelayCommand CollapseAllScriptsCommand { get; }
+    public RelayCommand ExpandChangedScriptsCommand { get; }
+    public RelayCommand ToggleChangedOnlyScriptsCommand { get; }
 
     public ObservableCollection<RecordTreeItemViewModel> RecordTreeItems { get; } = new();
     public ObservableCollection<RecordComparisonFieldViewModel> RecordComparisonFields { get; } = new();
     public ObservableCollection<RecordComparisonColumnViewModel> RecordComparisonColumns { get; } = new();
+    public ObservableCollection<RecordComparisonScriptViewModel> RecordComparisonScripts { get; } = new();
 
     public string FormIDFilter
     {
@@ -106,7 +116,108 @@ public class MainPageViewModel : ViewModelBase
     {
         get;
         private set => SetProperty(ref field, value);
+    } = string.Empty;
+
+    public string ImportedRecordCountText
+    {
+        get;
+        private set => SetProperty(ref field, value);
+    } = string.Empty;
+
+    public string SelectedRecordContextText
+    {
+        get;
+        private set => SetProperty(ref field, value);
+    } = string.Empty;
+
+    public Visibility SelectedRecordContextVisibility
+    {
+        get;
+        private set => SetProperty(ref field, value);
+    } = Visibility.Collapsed;
+
+    public string ActivePluginText
+    {
+        get;
+        private set => SetProperty(ref field, value);
+    } = string.Empty;
+
+    public string ActiveRecordCountText
+    {
+        get;
+        private set => SetProperty(ref field, value);
+    } = string.Empty;
+
+    public string ScriptingAdapterSectionHeader
+    {
+        get;
+        private set => SetProperty(ref field, value);
+    } = "Scripts";
+
+    public bool HasRecordComparison
+    {
+        get;
+        private set
+        {
+            if (!SetProperty(ref field, value))
+            {
+                return;
+            }
+
+            RecordComparisonVisibility = value ? Visibility.Visible : Visibility.Collapsed;
+        }
     }
+
+    public Visibility RecordComparisonVisibility
+    {
+        get;
+        private set => SetProperty(ref field, value);
+    } = Visibility.Collapsed;
+
+    public bool HasRecordComparisonScripts
+    {
+        get;
+        private set
+        {
+            if (!SetProperty(ref field, value))
+            {
+                return;
+            }
+
+            RecordComparisonScriptsVisibility = value ? Visibility.Visible : Visibility.Collapsed;
+        }
+    }
+
+    public Visibility RecordComparisonScriptsVisibility
+    {
+        get;
+        private set => SetProperty(ref field, value);
+    } = Visibility.Collapsed;
+
+    public bool ShowChangedOnlyScripts
+    {
+        get;
+        private set
+        {
+            if (!SetProperty(ref field, value))
+            {
+                return;
+            }
+
+            foreach (var script in RecordComparisonScripts)
+            {
+                script.SetShowChangedOnly(value);
+            }
+
+            ChangedOnlyScriptsButtonText = value ? "Show all" : "Changed only";
+        }
+    }
+
+    public string ChangedOnlyScriptsButtonText
+    {
+        get;
+        private set => SetProperty(ref field, value);
+    } = "Changed only";
 
     private async Task OpenAsync()
     {
@@ -126,7 +237,7 @@ public class MainPageViewModel : ViewModelBase
 
     private async void OnActivePluginChanged(object? sender, EventArgs e)
     {
-        StatusText = GetStatusText();
+        UpdateStatusBar(null);
         ClearRecordComparison();
         await RefreshRecordTreeAsync();
     }
@@ -136,54 +247,59 @@ public class MainPageViewModel : ViewModelBase
         ClearRecordComparison();
         if (item?.FormKey == null || item.RecordType == null)
         {
+            UpdateStatusBar(null);
             return;
         }
 
+        UpdateStatusBar(item);
+
+        var formKey = item.FormKey.Value;
+
         if (item.RecordType == RecordTypeCatalog.FormList.RecordType)
         {
-            LoadFormListComparison(item.FormKey.Value.ID);
+            LoadFormListComparison(formKey);
             return;
         }
 
         if (item.RecordType == RecordTypeCatalog.GameSetting.RecordType)
         {
-            LoadGameSettingComparison(item.FormKey.Value.ID);
+            LoadGameSettingComparison(formKey);
             return;
         }
 
         if (item.RecordType == RecordTypeCatalog.Global.RecordType)
         {
-            LoadGlobalComparison(item.FormKey.Value.ID);
+            LoadGlobalComparison(formKey);
         }
 
         if (item.RecordType == RecordTypeCatalog.MiscItem.RecordType)
         {
-            LoadMiscItemComparison(item.FormKey.Value.ID);
+            LoadMiscItemComparison(formKey);
         }
 
         if (item.RecordType == RecordTypeCatalog.Keyword.RecordType)
         {
-            LoadKeywordComparison(item.FormKey.Value.ID);
+            LoadKeywordComparison(formKey);
         }
 
         if (item.RecordType == RecordTypeCatalog.NPC.RecordType)
         {
-            LoadNPCComparison(item.FormKey.Value.ID);
+            LoadNPCComparison(formKey);
         }
 
         if (item.RecordType == RecordTypeCatalog.ActorValueInformation.RecordType)
         {
-            LoadActorValueInformationComparison(item.FormKey.Value.ID);
+            LoadActorValueInformationComparison(formKey);
         }
 
         if (item.RecordType == RecordTypeCatalog.MagicEffect.RecordType)
         {
-            LoadMagicEffectComparison(item.FormKey.Value.ID);
+            LoadMagicEffectComparison(formKey);
         }
 
         if (item.RecordType == RecordTypeCatalog.Perk.RecordType)
         {
-            LoadPerkComparison(item.FormKey.Value.ID);
+            LoadPerkComparison(formKey);
         }
     }
 
@@ -271,20 +387,20 @@ public class MainPageViewModel : ViewModelBase
         AddRecordType(
             recordTreeItems,
             RecordTypeCatalog.FormList.RecordType,
-            FormListService.GetByModKey(activePlugin.ModKey)
+            FormListService.GetRecordTreeEntriesByModKey(activePlugin.ModKey)
                 .Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.FormList.RecordType)));
         AddRecordType(
             recordTreeItems,
             RecordTypeCatalog.GameSetting.RecordType,
-            GameSettingService.GetByModKey(activePlugin.ModKey)
+            GameSettingService.GetRecordTreeEntriesByModKey(activePlugin.ModKey)
                 .Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.GameSetting.RecordType)));
-        AddRecordType(recordTreeItems, RecordTypeCatalog.Global.RecordType, GlobalService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.Global.RecordType)));
-        AddRecordType(recordTreeItems, RecordTypeCatalog.MiscItem.RecordType, MiscItemService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.MiscItem.RecordType)));
-        AddRecordType(recordTreeItems, RecordTypeCatalog.Keyword.RecordType, KeywordService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.Keyword.RecordType)));
-        AddRecordType(recordTreeItems, RecordTypeCatalog.NPC.RecordType, NPCService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.NPC.RecordType)));
-        AddRecordType(recordTreeItems, RecordTypeCatalog.ActorValueInformation.RecordType, ActorValueInformationService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.ActorValueInformation.RecordType)));
-        AddRecordType(recordTreeItems, RecordTypeCatalog.MagicEffect.RecordType, MagicEffectService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.MagicEffect.RecordType)));
-        AddRecordType(recordTreeItems, RecordTypeCatalog.Perk.RecordType, PerkService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.Perk.RecordType)));
+        AddRecordType(recordTreeItems, RecordTypeCatalog.Global.RecordType, GlobalService.GetRecordTreeEntriesByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.Global.RecordType)));
+        AddRecordType(recordTreeItems, RecordTypeCatalog.MiscItem.RecordType, MiscItemService.GetRecordTreeEntriesByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.MiscItem.RecordType)));
+        AddRecordType(recordTreeItems, RecordTypeCatalog.Keyword.RecordType, KeywordService.GetRecordTreeEntriesByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.Keyword.RecordType)));
+        AddRecordType(recordTreeItems, RecordTypeCatalog.NPC.RecordType, NPCService.GetRecordTreeEntriesByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.NPC.RecordType)));
+        AddRecordType(recordTreeItems, RecordTypeCatalog.ActorValueInformation.RecordType, ActorValueInformationService.GetRecordTreeEntriesByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.ActorValueInformation.RecordType)));
+        AddRecordType(recordTreeItems, RecordTypeCatalog.MagicEffect.RecordType, MagicEffectService.GetRecordTreeEntriesByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.MagicEffect.RecordType)));
+        AddRecordType(recordTreeItems, RecordTypeCatalog.Perk.RecordType, PerkService.GetRecordTreeEntriesByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.Perk.RecordType)));
         return (masterPackage, recordTreeItems);
     }
 
@@ -372,9 +488,9 @@ public class MainPageViewModel : ViewModelBase
         return item.FormIDText.Contains(filter, StringComparison.OrdinalIgnoreCase);
     }
 
-    private void LoadFormListComparison(uint formKeyID)
+    private void LoadFormListComparison(FormKey formKey)
     {
-        var records = FormListService.GetByFormKeyID(formKeyID);
+        var records = FormListService.GetByFormKey(formKey);
         var itemLookup = records.ToDictionary(
             record => record.ModKey,
             record => FormListService.GetItems(record.ModKey, record.FormKey));
@@ -414,9 +530,9 @@ public class MainPageViewModel : ViewModelBase
             }));
     }
 
-    private void LoadGameSettingComparison(uint formKeyID)
+    private void LoadGameSettingComparison(FormKey formKey)
     {
-        var records = GameSettingService.GetByFormKeyID(formKeyID);
+        var records = GameSettingService.GetByFormKey(formKey);
         var fields = new List<RecordComparisonFieldViewModel>
         {
             new("Record Header", false),
@@ -445,80 +561,74 @@ public class MainPageViewModel : ViewModelBase
                 })));
     }
 
-    private void LoadGlobalComparison(uint formKeyID)
+    private void LoadGlobalComparison(FormKey formKey)
     {
-        var records = GlobalService.GetByFormKeyID(formKeyID);
+        var records = GlobalService.GetByFormKey(formKey);
         var fields = CreateHeaderFields("Data");
-        SetRecordComparison(fields, records.Select(record => (record.ModKey, Values: (IReadOnlyList<string>)new List<string> { RecordTypeCatalog.Global.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Data?.ToString() ?? string.Empty })));
+        SetRecordComparisonWithScripting(fields, records, record => new List<string> { RecordTypeCatalog.Global.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Data?.ToString() ?? string.Empty });
     }
 
-    private void LoadMiscItemComparison(uint formKeyID)
+    private void LoadMiscItemComparison(FormKey formKey)
     {
-        var records = MiscItemService.GetByFormKeyID(formKeyID);
+        var records = MiscItemService.GetByFormKey(formKey);
         var fields = CreateHeaderFields("Name", "ShortName", "Value", "Weight");
-        SetRecordComparison(fields,
-            records.Select(record => (record.ModKey,
-                Values: (IReadOnlyList<string>)new List<string> { RecordTypeCatalog.MiscItem.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.ShortName ?? string.Empty, record.Value?.ToString() ?? string.Empty, record.Weight?.ToString() ?? string.Empty })));
+        SetRecordComparisonWithScripting(fields, records,
+            record => new List<string> { RecordTypeCatalog.MiscItem.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.ShortName ?? string.Empty, record.Value?.ToString() ?? string.Empty, record.Weight?.ToString() ?? string.Empty });
     }
 
-    private void LoadKeywordComparison(uint formKeyID)
+    private void LoadKeywordComparison(FormKey formKey)
     {
-        var records = KeywordService.GetByFormKeyID(formKeyID);
+        var records = KeywordService.GetByFormKey(formKey);
         var fields = CreateHeaderFields("Name", "Color", "Type", "Notes", "FlashLinkageName", "AttractionRuleFormKey");
-        SetRecordComparison(fields,
-            records.Select(record => (record.ModKey,
-                Values: (IReadOnlyList<string>)new List<string>
-                    { RecordTypeCatalog.Keyword.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.Color, record.Type, record.Notes ?? string.Empty, record.FlashLinkageName ?? string.Empty, record.AttractionRuleFormKey?.ToString() ?? string.Empty })));
+        SetRecordComparisonWithScripting(fields, records,
+            record => new List<string>
+                { RecordTypeCatalog.Keyword.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.Color, record.Type, record.Notes ?? string.Empty, record.FlashLinkageName ?? string.Empty, record.AttractionRuleFormKey?.ToString() ?? string.Empty });
     }
 
-    private void LoadNPCComparison(uint formKeyID)
+    private void LoadNPCComparison(FormKey formKey)
     {
-        var records = NPCService.GetByFormKeyID(formKeyID);
+        var records = NPCService.GetByFormKey(formKey);
         var fields = CreateHeaderFields("Name", "ShortName", "LongName", "DispositionBase", "Aggression", "Confidence", "EnergyLevel", "Responsibility", "Assistance", "GearedUpWeapons", "HeightMin", "HeightMax", "SkinToneIndex", "Pronoun", "VoiceFormKey", "RaceFormKey", "CombatOverridePackageListFormKey", "CombatStyleFormKey", "DefaultPackageListFormKey", "CrimeFactionFormKey");
-        SetRecordComparison(fields,
-            records.Select(record => (record.ModKey,
-                Values: (IReadOnlyList<string>)new List<string>
-                {
-                    RecordTypeCatalog.NPC.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.ShortName ?? string.Empty, record.LongName ?? string.Empty, record.DispositionBase.ToString(), record.Aggression, record.Confidence, record.EnergyLevel.ToString(), record.Responsibility,
-                    record.Assistance, record.GearedUpWeapons.ToString(), record.HeightMin.ToString(), record.HeightMax.ToString(), record.SkinToneIndex?.ToString() ?? string.Empty, record.Pronoun ?? string.Empty, record.VoiceFormKey?.ToString() ?? string.Empty, record.RaceFormKey?.ToString() ?? string.Empty, record.CombatOverridePackageListFormKey?.ToString() ?? string.Empty,
-                    record.CombatStyleFormKey?.ToString() ?? string.Empty, record.DefaultPackageListFormKey?.ToString() ?? string.Empty, record.CrimeFactionFormKey?.ToString() ?? string.Empty
-                })));
+        SetRecordComparisonWithScripting(fields, records,
+            record => new List<string>
+            {
+                RecordTypeCatalog.NPC.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.ShortName ?? string.Empty, record.LongName ?? string.Empty, record.DispositionBase.ToString(), record.Aggression, record.Confidence, record.EnergyLevel.ToString(), record.Responsibility,
+                record.Assistance, record.GearedUpWeapons.ToString(), record.HeightMin.ToString(), record.HeightMax.ToString(), record.SkinToneIndex?.ToString() ?? string.Empty, record.Pronoun ?? string.Empty, record.VoiceFormKey?.ToString() ?? string.Empty, record.RaceFormKey?.ToString() ?? string.Empty, record.CombatOverridePackageListFormKey?.ToString() ?? string.Empty,
+                record.CombatStyleFormKey?.ToString() ?? string.Empty, record.DefaultPackageListFormKey?.ToString() ?? string.Empty, record.CrimeFactionFormKey?.ToString() ?? string.Empty
+            });
     }
 
-    private void LoadActorValueInformationComparison(uint formKeyID)
+    private void LoadActorValueInformationComparison(FormKey formKey)
     {
-        var records = ActorValueInformationService.GetByFormKeyID(formKeyID);
+        var records = ActorValueInformationService.GetByFormKey(formKey);
         var fields = CreateHeaderFields("Name", "Abbreviation", "ContextNotes", "DefaultValue", "Flags", "Type", "Min", "Max");
-        SetRecordComparison(fields,
-            records.Select(record => (record.ModKey,
-                Values: (IReadOnlyList<string>)new List<string>
-                {
-                    RecordTypeCatalog.ActorValueInformation.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.Abbreviation ?? string.Empty, record.ContextNotes ?? string.Empty, record.DefaultValue?.ToString() ?? string.Empty, record.Flags ?? string.Empty, record.Type ?? string.Empty,
-                    record.Min?.ToString() ?? string.Empty, record.Max?.ToString() ?? string.Empty
-                })));
+        SetRecordComparisonWithScripting(fields, records,
+            record => new List<string>
+            {
+                RecordTypeCatalog.ActorValueInformation.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.Abbreviation ?? string.Empty, record.ContextNotes ?? string.Empty, record.DefaultValue?.ToString() ?? string.Empty, record.Flags ?? string.Empty, record.Type ?? string.Empty,
+                record.Min?.ToString() ?? string.Empty, record.Max?.ToString() ?? string.Empty
+            });
     }
 
-    private void LoadMagicEffectComparison(uint formKeyID)
+    private void LoadMagicEffectComparison(FormKey formKey)
     {
-        var records = MagicEffectService.GetByFormKeyID(formKeyID);
+        var records = MagicEffectService.GetByFormKey(formKey);
         var fields = CreateHeaderFields("Name", "Description", "Flags", "CastType", "TargetType", "ActorValue2FormKey", "ResistValueFormKey", "PerkToApplyFormKey", "EquipAbilityFormKey", "ExplosionFormKey", "CastingArtFormKey", "HitEffectArtFormKey", "HitShaderFormKey", "ImageSpaceModifierFormKey", "ImpactDataFormKey", "ProjectileFormKey");
-        SetRecordComparison(fields,
-            records.Select(record => (record.ModKey,
-                Values: (IReadOnlyList<string>)new List<string>
-                {
-                    RecordTypeCatalog.MagicEffect.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.Description ?? string.Empty, record.Flags, record.CastType ?? string.Empty, record.TargetType ?? string.Empty, record.ActorValue2FormKey?.ToString() ?? string.Empty,
-                    record.ResistValueFormKey?.ToString() ?? string.Empty, record.PerkToApplyFormKey?.ToString() ?? string.Empty, record.EquipAbilityFormKey?.ToString() ?? string.Empty, record.ExplosionFormKey?.ToString() ?? string.Empty, record.CastingArtFormKey?.ToString() ?? string.Empty, record.HitEffectArtFormKey?.ToString() ?? string.Empty,
-                    record.HitShaderFormKey?.ToString() ?? string.Empty, record.ImageSpaceModifierFormKey?.ToString() ?? string.Empty, record.ImpactDataFormKey?.ToString() ?? string.Empty, record.ProjectileFormKey?.ToString() ?? string.Empty
-                })));
+        SetRecordComparisonWithScripting(fields, records,
+            record => new List<string>
+            {
+                RecordTypeCatalog.MagicEffect.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.Description ?? string.Empty, record.Flags, record.CastType ?? string.Empty, record.TargetType ?? string.Empty, record.ActorValue2FormKey?.ToString() ?? string.Empty,
+                record.ResistValueFormKey?.ToString() ?? string.Empty, record.PerkToApplyFormKey?.ToString() ?? string.Empty, record.EquipAbilityFormKey?.ToString() ?? string.Empty, record.ExplosionFormKey?.ToString() ?? string.Empty, record.CastingArtFormKey?.ToString() ?? string.Empty, record.HitEffectArtFormKey?.ToString() ?? string.Empty,
+                record.HitShaderFormKey?.ToString() ?? string.Empty, record.ImageSpaceModifierFormKey?.ToString() ?? string.Empty, record.ImpactDataFormKey?.ToString() ?? string.Empty, record.ProjectileFormKey?.ToString() ?? string.Empty
+            });
     }
 
-    private void LoadPerkComparison(uint formKeyID)
+    private void LoadPerkComparison(FormKey formKey)
     {
-        var records = PerkService.GetByFormKeyID(formKeyID);
+        var records = PerkService.GetByFormKey(formKey);
         var fields = CreateHeaderFields("Name", "Description", "Flags", "SkillGroup", "CrewAssignment", "PerkIcon");
-        SetRecordComparison(fields,
-            records.Select(record => (record.ModKey,
-                Values: (IReadOnlyList<string>)new List<string> { RecordTypeCatalog.Perk.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.Description ?? string.Empty, record.Flags, record.SkillGroup ?? string.Empty, record.CrewAssignment ?? string.Empty, record.PerkIcon ?? string.Empty })));
+        SetRecordComparisonWithScripting(fields, records,
+            record => new List<string> { RecordTypeCatalog.Perk.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.Description ?? string.Empty, record.Flags, record.SkillGroup ?? string.Empty, record.CrewAssignment ?? string.Empty, record.PerkIcon ?? string.Empty });
     }
 
     private static List<RecordComparisonFieldViewModel> CreateHeaderFields(params string[] recordFields)
@@ -532,6 +642,220 @@ public class MainPageViewModel : ViewModelBase
         };
         fields.AddRange(recordFields.Select(field => new RecordComparisonFieldViewModel(field)));
         return fields;
+    }
+
+    private void SetRecordComparisonWithScripting<TRecord>(List<RecordComparisonFieldViewModel> fields, IList<TRecord> records, Func<TRecord, List<string>> baseValueFactory)
+        where TRecord : IHasScriptingAdaptersRecordDTO
+    {
+        var valuesByModKey = records.ToDictionary(record => record.ModKey, baseValueFactory);
+        SetRecordComparison(fields, records.Select(record => (record.ModKey, Values: (IReadOnlyList<string>)valuesByModKey[record.ModKey])));
+        SetScriptingAdapterComparison(records);
+    }
+
+    private void SetScriptingAdapterComparison<TRecord>(IList<TRecord> records)
+        where TRecord : IHasScriptingAdaptersRecordDTO
+    {
+        var orderedModKeys = RecordComparisonColumns.Select(column => column.ModKey).ToList();
+        if (orderedModKeys.Count == 0 || records.Count == 0)
+        {
+            return;
+        }
+
+        var recordLookup = records.ToDictionary(record => record.ModKey);
+        var maxScriptCount = records.Max(record => record.ScriptingAdapters.Count);
+        for (var scriptIndex = 0; scriptIndex < maxScriptCount; scriptIndex++)
+        {
+            var scriptNames = orderedModKeys
+                .Select(modKey => GetScriptingAdapter(recordLookup, modKey, scriptIndex)?.Name ?? string.Empty)
+                .ToList();
+            var scriptName = scriptNames.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? "Missing script";
+            var scriptState = GetComparisonValueState(scriptNames, true);
+            var scriptProperties = CreateScriptingAdapterPropertyRows(recordLookup, orderedModKeys, scriptIndex);
+            var script = new RecordComparisonScriptViewModel(
+                scriptIndex,
+                scriptName,
+                RecordComparisonColumns.ToList(),
+                CreateComparisonValues(scriptNames, scriptState),
+                scriptProperties,
+                scriptState);
+            script.SetShowChangedOnly(ShowChangedOnlyScripts);
+            RecordComparisonScripts.Add(script);
+        }
+
+        HasRecordComparisonScripts = RecordComparisonScripts.Count > 0;
+        ScriptingAdapterSectionHeader = HasRecordComparisonScripts
+            ? $"Scripts ({RecordComparisonScripts.Count})"
+            : "Scripts";
+    }
+
+    private static IReadOnlyList<RecordComparisonScriptPropertyViewModel> CreateScriptingAdapterPropertyRows<TRecord>(
+        IReadOnlyDictionary<ModKey, TRecord> recordLookup,
+        IReadOnlyList<ModKey> orderedModKeys,
+        int scriptIndex)
+        where TRecord : IHasScriptingAdaptersRecordDTO
+    {
+        var properties = new List<RecordComparisonScriptPropertyViewModel>();
+        var maxPropertyCount = recordLookup.Values
+            .Select(record => record.ScriptingAdapters.ElementAtOrDefault(scriptIndex)?.Properties.Count ?? 0)
+            .DefaultIfEmpty(0)
+            .Max();
+
+        for (var propertyIndex = 0; propertyIndex < maxPropertyCount; propertyIndex++)
+        {
+            var propertyValues = orderedModKeys
+                .Select(modKey => GetScriptingAdapterProperty(recordLookup, modKey, scriptIndex, propertyIndex))
+                .ToList();
+            var propertyName = propertyValues.FirstOrDefault(property => !string.IsNullOrWhiteSpace(property?.Name))?.Name ?? "Missing property";
+            var propertyType = propertyValues.FirstOrDefault(property => !string.IsNullOrWhiteSpace(property?.MutagenObjectType))?.MutagenObjectType ?? string.Empty;
+            var displayValues = propertyValues.Select(FormatScriptingAdapterPropertyValue).ToList();
+            var comparisonValues = propertyValues
+                .Select(property => property == null ? string.Empty : $"{property.Name}|{property.MutagenObjectType}|{FormatScriptingAdapterPropertyValue(property)}|{property.ListItems.Count}")
+                .ToList();
+            var state = GetComparisonValueState(comparisonValues, true);
+            var listCountText = GetListCountText(propertyValues);
+            properties.Add(new RecordComparisonScriptPropertyViewModel(
+                $"Property {propertyIndex} - {propertyName}",
+                propertyType,
+                listCountText,
+                CreateComparisonValues(displayValues, state),
+                state));
+
+            var maxListItemCount = propertyValues
+                .Select(property => property?.ListItems.Count ?? 0)
+                .DefaultIfEmpty(0)
+                .Max();
+
+            for (var listItemIndex = 0; listItemIndex < maxListItemCount; listItemIndex++)
+            {
+                var listItems = propertyValues
+                    .Select(property => property?.ListItems.ElementAtOrDefault(listItemIndex))
+                    .ToList();
+                var listItemType = listItems.FirstOrDefault(listItem => !string.IsNullOrWhiteSpace(listItem?.MutagenObjectType))?.MutagenObjectType ?? string.Empty;
+                var listItemValues = listItems.Select(FormatScriptingAdapterListItemValue).ToList();
+                var listItemState = GetComparisonValueState(listItemValues, true);
+                properties.Add(new RecordComparisonScriptPropertyViewModel(
+                    $"List item {listItemIndex}",
+                    listItemType,
+                    string.Empty,
+                    CreateComparisonValues(listItemValues, listItemState),
+                    listItemState));
+            }
+        }
+
+        return properties;
+    }
+
+    private static ScriptingAdapterDTO? GetScriptingAdapter<TRecord>(
+        IReadOnlyDictionary<ModKey, TRecord> recordLookup,
+        ModKey modKey,
+        int scriptIndex)
+        where TRecord : IHasScriptingAdaptersRecordDTO
+    {
+        return recordLookup.TryGetValue(modKey, out var record)
+            ? record.ScriptingAdapters.ElementAtOrDefault(scriptIndex)
+            : null;
+    }
+
+    private static ScriptingAdapterPropertyDTO? GetScriptingAdapterProperty<TRecord>(
+        IReadOnlyDictionary<ModKey, TRecord> recordLookup,
+        ModKey modKey,
+        int scriptIndex,
+        int propertyIndex)
+        where TRecord : IHasScriptingAdaptersRecordDTO
+    {
+        return GetScriptingAdapter(recordLookup, modKey, scriptIndex)?.Properties.ElementAtOrDefault(propertyIndex);
+    }
+
+    private static string GetListCountText(IEnumerable<ScriptingAdapterPropertyDTO?> properties)
+    {
+        var counts = properties
+            .Select(property => property?.ListItems.Count)
+            .Where(count => count.HasValue)
+            .Select(count => count!.Value)
+            .Distinct()
+            .OrderBy(count => count)
+            .ToList();
+
+        return counts.Count == 0 ? string.Empty : string.Join("/", counts);
+    }
+
+    private static RecordComparisonValueState GetComparisonValueState(IReadOnlyList<string> values, bool isComparable)
+    {
+        if (!isComparable || values.Count <= 1)
+        {
+            return RecordComparisonValueState.Neutral;
+        }
+
+        return values.Distinct(StringComparer.Ordinal).Count() == 1
+            ? RecordComparisonValueState.Identical
+            : RecordComparisonValueState.Conflict;
+    }
+
+    private static IReadOnlyList<RecordComparisonValueViewModel> CreateComparisonValues(IReadOnlyList<string> values, RecordComparisonValueState state)
+    {
+        return values
+            .Select((value, index) => new RecordComparisonValueViewModel(value, state == RecordComparisonValueState.Conflict && index == values.Count - 1 ? RecordComparisonValueState.WinningOverride : state))
+            .ToList();
+    }
+
+    private static string FormatScriptingAdapterPropertyValue(ScriptingAdapterPropertyDTO? property)
+    {
+        if (property == null)
+        {
+            return string.Empty;
+        }
+
+        if (property.ObjectFormKey != null)
+        {
+            return $"{property.ObjectFormKey} | Alias={property.ObjectAlias?.ToString() ?? string.Empty} | Unused={property.ObjectUnused?.ToString() ?? string.Empty}";
+        }
+
+        if (property.DataBool.HasValue)
+        {
+            return property.DataBool.Value.ToString();
+        }
+
+        if (property.DataInt.HasValue)
+        {
+            return property.DataInt.Value.ToString();
+        }
+
+        if (property.DataFloat.HasValue)
+        {
+            return property.DataFloat.Value.ToString();
+        }
+
+        return property.DataString ?? string.Empty;
+    }
+
+    private static string FormatScriptingAdapterListItemValue(ScriptingAdapterPropertyListItemDTO? listItem)
+    {
+        if (listItem == null)
+        {
+            return string.Empty;
+        }
+
+        if (listItem.ObjectFormKey != null)
+        {
+            return $"{listItem.ObjectFormKey} | Alias={listItem.ObjectAlias?.ToString() ?? string.Empty} | Unused={listItem.ObjectUnused?.ToString() ?? string.Empty}";
+        }
+
+        if (listItem.DataBool.HasValue)
+        {
+            return listItem.DataBool.Value.ToString();
+        }
+
+        if (listItem.DataInt.HasValue)
+        {
+            return listItem.DataInt.Value.ToString();
+        }
+
+        if (listItem.DataFloat.HasValue)
+        {
+            return listItem.DataFloat.Value.ToString();
+        }
+
+        return listItem.DataString ?? string.Empty;
     }
 
     private static string FormatStarfieldMajorRecordFlags(StarfieldMajorRecord.StarfieldMajorRecordFlag flags)
@@ -588,6 +912,8 @@ public class MainPageViewModel : ViewModelBase
             var plugin = pluginLookup[column.ModKey];
             RecordComparisonColumns.Add(new RecordComparisonColumnViewModel(column.ModKey, plugin.LoadOrderIndex, column.ModKey == activeModKey, column.Values, states, columnIndex == columnList.Count - 1));
         }
+
+        HasRecordComparison = RecordComparisonFields.Count > 0 && RecordComparisonColumns.Count > 0;
     }
 
     private static IReadOnlyList<RecordComparisonValueState> GetRecordComparisonValueStates(
@@ -619,6 +945,51 @@ public class MainPageViewModel : ViewModelBase
     {
         RecordComparisonFields.Clear();
         RecordComparisonColumns.Clear();
+        RecordComparisonScripts.Clear();
+        HasRecordComparison = false;
+        HasRecordComparisonScripts = false;
+        ScriptingAdapterSectionHeader = "Scripts";
+    }
+
+    private void CollapseAllScripts()
+    {
+        foreach (var script in RecordComparisonScripts)
+        {
+            script.IsExpanded = false;
+        }
+    }
+
+    private void UpdateStatusBar(RecordTreeItemViewModel? selectedRecord)
+    {
+        var totalPluginRecords = PluginService.GetImportedPluginRecordCount();
+        var activePlugin = ActivePluginSelectionService.ActivePlugin;
+        ImportedRecordCountText = $"Imported records: {totalPluginRecords:N0}";
+        ActivePluginText = activePlugin == null
+            ? "Active plugin: None"
+            : $"Active plugin: {activePlugin.ModKey.FileName}";
+        ActiveRecordCountText = activePlugin == null
+            ? "Active records: 0"
+            : $"Active records: {activePlugin.RecordCount:N0}";
+        SelectedRecordContextText = selectedRecord == null
+            ? string.Empty
+            : string.IsNullOrWhiteSpace(selectedRecord.EditorID)
+                ? $"{selectedRecord.RecordType} {selectedRecord.FormIDText}"
+                : $"{selectedRecord.RecordType} {selectedRecord.EditorID} ({selectedRecord.FormIDText})";
+        SelectedRecordContextVisibility = selectedRecord == null ? Visibility.Collapsed : Visibility.Visible;
+        StatusText = GetStatusText();
+    }
+
+    private void ExpandChangedScripts()
+    {
+        foreach (var script in RecordComparisonScripts)
+        {
+            script.IsExpanded = script.HasChanges;
+        }
+    }
+
+    private void ToggleChangedOnlyScripts()
+    {
+        ShowChangedOnlyScripts = !ShowChangedOnlyScripts;
     }
 
     private static IStarfieldModGetter LoadMod(ModKey modKey)

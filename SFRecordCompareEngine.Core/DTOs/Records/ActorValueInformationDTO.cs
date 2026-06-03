@@ -1,11 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
+using SFRecordCompareEngine.Core.DTOs.Records.Interfaces;
 using ActorValueInformation = SFRecordCompareEngine.Core.Models.Database.ActorValueInformation;
 
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
-public class ActorValueInformationDTO
+public class ActorValueInformationDTO : IHasScriptingAdaptersRecordDTO
 {
     public ActorValueInformationDTO()
     { }
@@ -14,7 +15,8 @@ public class ActorValueInformationDTO
     public ActorValueInformationDTO(ActorValueInformation model)
     {
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
-        FormKey = new FormKey(ModKey, (uint)model.FormKeyId);
+        var formKeyModKey = new ModKey(model.FormKeyModKeyName, (ModType)model.FormKeyModKeyType);
+        FormKey = new FormKey(formKeyModKey, (uint)model.FormKeyId);
         EditorID = model.EditorId;
         FormVersion = model.FormVersion;
         StarfieldMajorRecordFlags = (StarfieldMajorRecord.StarfieldMajorRecordFlag)model.StarfieldMajorRecordFlags;
@@ -47,4 +49,5 @@ public class ActorValueInformationDTO
     public string? Type { get; set; }
     public double? Min { get; set; }
     public double? Max { get; set; }
+    public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 }

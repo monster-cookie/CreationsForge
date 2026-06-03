@@ -8,19 +8,26 @@ namespace SFRecordCompareEngine.Core.Services;
 public class KeywordService : IKeywordService
 {
     private readonly IKeywordRepository Repository;
+    private readonly IScriptingAdapterHydrationService ScriptingAdapterHydrationService;
 
-    public KeywordService(IKeywordRepository repository)
+    public KeywordService(IKeywordRepository repository, IScriptingAdapterHydrationService scriptingAdapterHydrationService)
     {
         Repository = repository;
+        ScriptingAdapterHydrationService = scriptingAdapterHydrationService;
     }
 
     public IList<KeywordDTO> GetByModKey(ModKey modKey)
     {
-        return Repository.GetByModKey(modKey);
+        return ScriptingAdapterHydrationService.Hydrate(Repository.GetByModKey(modKey), Helpers.RecordTypeCatalog.Keyword.RecordType);
     }
 
-    public IList<KeywordDTO> GetByFormKeyID(uint formKeyID)
+    public IList<RecordTreeEntryDTO> GetRecordTreeEntriesByModKey(ModKey modKey)
     {
-        return Repository.GetByFormKeyID(formKeyID);
+        return Repository.GetRecordTreeEntriesByModKey(modKey);
+    }
+
+    public IList<KeywordDTO> GetByFormKey(FormKey formKey)
+    {
+        return ScriptingAdapterHydrationService.Hydrate(Repository.GetByFormKey(formKey), Helpers.RecordTypeCatalog.Keyword.RecordType);
     }
 }

@@ -46,7 +46,8 @@ comparison workspace. The open-plugin dialog selects the active imported plugin 
 - Initializes and migrates the database with DbUp.
 - Lets users select an active imported plugin from an autocomplete open-plugin dialog.
 - Shows imported supported records owned by the active plugin in a filterable main-view record tree.
-- Shows every imported plugin containing a selected supported record in a load-order-sorted comparison grid.
+- Shows every imported plugin containing the selected supported record's full origin `FormKey` in a
+  load-order-sorted comparison grid.
 - Routes presentation browsing workflows through typed Core services instead of direct repository access.
 - Logs app startup, shutdown, schema initialization, plugin import activity, and record-type import checkpoints through
   Serilog.

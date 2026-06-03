@@ -101,6 +101,9 @@ public class RecordDataDTOTests
             ModKeyName = "Example",
             ModKeyType = (int)ModType.Master,
             ModKeyFileName = "Example.esm",
+            FormKeyModKeyName = "Origin",
+            FormKeyModKeyType = (int)ModType.Master,
+            FormKeyModKeyFileName = "Origin.esm",
             FormKeyId = 123,
             EditorId = "Editor",
             FormVersion = 44,
@@ -114,7 +117,7 @@ public class RecordDataDTOTests
         var sut = new FormListDTO(model);
 
         sut.ModKey.ShouldBe(new ModKey("Example", ModType.Master));
-        sut.FormKey.ShouldBe(new FormKey(sut.ModKey, 123));
+        sut.FormKey.ShouldBe(new FormKey(new ModKey("Origin", ModType.Master), 123));
         sut.EditorID.ShouldBe("Editor");
         sut.FormVersion.ShouldBe(44);
         sut.StarfieldMajorRecordFlags.ShouldBe((StarfieldMajorRecord.StarfieldMajorRecordFlag)1);
@@ -133,6 +136,9 @@ public class RecordDataDTOTests
             ModKeyName = "Example",
             ModKeyType = (int)ModType.Master,
             ModKeyFileName = "Example.esm",
+            FormKeyModKeyName = "Origin",
+            FormKeyModKeyType = (int)ModType.Master,
+            FormKeyModKeyFileName = "Origin.esm",
             FormKeyId = 123,
             EditorId = "Editor",
             FormVersion = 44,
@@ -151,7 +157,7 @@ public class RecordDataDTOTests
         var sut = new GameSettingDTO(model);
 
         sut.ModKey.ShouldBe(new ModKey("Example", ModType.Master));
-        sut.FormKey.ShouldBe(new FormKey(sut.ModKey, 123));
+        sut.FormKey.ShouldBe(new FormKey(new ModKey("Origin", ModType.Master), 123));
         sut.EditorID.ShouldBe("Editor");
         sut.FormVersion.ShouldBe(44);
         sut.StarfieldMajorRecordFlags.ShouldBe((StarfieldMajorRecord.StarfieldMajorRecordFlag)1);

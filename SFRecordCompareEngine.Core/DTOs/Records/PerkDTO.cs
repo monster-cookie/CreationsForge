@@ -1,11 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
+using SFRecordCompareEngine.Core.DTOs.Records.Interfaces;
 using Perk = SFRecordCompareEngine.Core.Models.Database.Perk;
 
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
-public class PerkDTO
+public class PerkDTO : IHasScriptingAdaptersRecordDTO
 {
     public PerkDTO()
     { }
@@ -14,7 +15,8 @@ public class PerkDTO
     public PerkDTO(Perk model)
     {
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
-        FormKey = new FormKey(ModKey, (uint)model.FormKeyId);
+        var formKeyModKey = new ModKey(model.FormKeyModKeyName, (ModType)model.FormKeyModKeyType);
+        FormKey = new FormKey(formKeyModKey, (uint)model.FormKeyId);
         EditorID = model.EditorId;
         FormVersion = model.FormVersion;
         StarfieldMajorRecordFlags = (StarfieldMajorRecord.StarfieldMajorRecordFlag)model.StarfieldMajorRecordFlags;
@@ -43,4 +45,5 @@ public class PerkDTO
     public string? SkillGroup { get; set; }
     public string? CrewAssignment { get; set; }
     public string? PerkIcon { get; set; }
+    public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 }

@@ -6,6 +6,7 @@ namespace SFRecordCompareEngine.Core.Repositories.Interfaces;
 public interface IMagicEffectRepository
 {
     IList<MagicEffectDTO> GetByModKey(ModKey modKey);
-    IList<MagicEffectDTO> GetByFormKeyID(uint formKeyID);
+    IList<RecordTreeEntryDTO> GetRecordTreeEntriesByModKey(ModKey modKey);
+    IList<MagicEffectDTO> GetByFormKey(FormKey formKey);
     void Save(MagicEffectDTO dto);
 }

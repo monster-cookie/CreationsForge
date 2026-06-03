@@ -24,14 +24,15 @@ public class FormListServiceTests
     }
 
     [Fact]
-    public void GetByFormKeyID_DelegatesToFormListRepository()
+    public void GetByFormKey_DelegatesToFormListRepository()
     {
+        var formKey = new FormKey(new ModKey("Origin", ModType.Master), 123);
         var expected = new List<FormListDTO>();
         var repository = new Mock<IFormListRepository>();
-        repository.Setup(x => x.GetByFormKeyID(123)).Returns(expected);
+        repository.Setup(x => x.GetByFormKey(formKey)).Returns(expected);
         var sut = new FormListService(repository.Object, Mock.Of<IFormListItemRepository>());
 
-        var result = sut.GetByFormKeyID(123);
+        var result = sut.GetByFormKey(formKey);
 
         result.ShouldBeSameAs(expected);
     }

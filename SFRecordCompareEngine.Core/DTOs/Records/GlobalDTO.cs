@@ -1,11 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
+using SFRecordCompareEngine.Core.DTOs.Records.Interfaces;
 using Global = SFRecordCompareEngine.Core.Models.Database.Global;
 
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
-public class GlobalDTO
+public class GlobalDTO : IHasScriptingAdaptersRecordDTO
 {
     public GlobalDTO()
     { }
@@ -14,7 +15,8 @@ public class GlobalDTO
     public GlobalDTO(Global model)
     {
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
-        FormKey = new FormKey(ModKey, (uint)model.FormKeyId);
+        var formKeyModKey = new ModKey(model.FormKeyModKeyName, (ModType)model.FormKeyModKeyType);
+        FormKey = new FormKey(formKeyModKey, (uint)model.FormKeyId);
         EditorID = model.EditorId;
         FormVersion = model.FormVersion;
         StarfieldMajorRecordFlags = (StarfieldMajorRecord.StarfieldMajorRecordFlag)model.StarfieldMajorRecordFlags;
@@ -33,4 +35,5 @@ public class GlobalDTO
     public required int VersionControl { get; set; }
     public required DateTime ImportedAtUTC { get; set; }
     public double? Data { get; set; }
+    public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 }

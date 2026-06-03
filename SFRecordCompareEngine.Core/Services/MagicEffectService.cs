@@ -8,19 +8,26 @@ namespace SFRecordCompareEngine.Core.Services;
 public class MagicEffectService : IMagicEffectService
 {
     private readonly IMagicEffectRepository Repository;
+    private readonly IScriptingAdapterHydrationService ScriptingAdapterHydrationService;
 
-    public MagicEffectService(IMagicEffectRepository repository)
+    public MagicEffectService(IMagicEffectRepository repository, IScriptingAdapterHydrationService scriptingAdapterHydrationService)
     {
         Repository = repository;
+        ScriptingAdapterHydrationService = scriptingAdapterHydrationService;
     }
 
     public IList<MagicEffectDTO> GetByModKey(ModKey modKey)
     {
-        return Repository.GetByModKey(modKey);
+        return ScriptingAdapterHydrationService.Hydrate(Repository.GetByModKey(modKey), Helpers.RecordTypeCatalog.MagicEffect.RecordType);
     }
 
-    public IList<MagicEffectDTO> GetByFormKeyID(uint formKeyID)
+    public IList<RecordTreeEntryDTO> GetRecordTreeEntriesByModKey(ModKey modKey)
     {
-        return Repository.GetByFormKeyID(formKeyID);
+        return Repository.GetRecordTreeEntriesByModKey(modKey);
+    }
+
+    public IList<MagicEffectDTO> GetByFormKey(FormKey formKey)
+    {
+        return ScriptingAdapterHydrationService.Hydrate(Repository.GetByFormKey(formKey), Helpers.RecordTypeCatalog.MagicEffect.RecordType);
     }
 }

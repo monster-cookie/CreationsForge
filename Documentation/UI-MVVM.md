@@ -56,8 +56,9 @@ skips disabled for that import pass.
 `MainPageViewModel` exposes `OpenCommand`, `ExitCommand`, status text, FormID and EditorID filters, and the left-side
 record tree. It listens to `IActivePluginSelectionService`, keeps the status text synchronized with the active plugin,
 and rebuilds the tree when the active plugin changes. It keeps Core DTOs based on `FormKey` and uses Mutagen's
-Starfield separated-master helpers for presentation-only `FormID` display and filtering. It loads records and
-comparison data through typed Core services rather than repositories.
+Starfield separated-master helpers for presentation-only `FormID` display and filtering. The tree uses lightweight
+typed Core service methods that return only `FormKey` and `EditorID`; selected-record comparison data uses the full
+typed service detail methods.
 
 Concrete tree-leaf selection also loads normalized field rows and load-order-sorted plugin columns for the right-side
 comparison workspace. Form list item rows remain ordered by persisted `Item_Index`, including duplicate references.
@@ -65,6 +66,12 @@ Comparable rows are highlighted green when all visible plugin values match and r
 In conflicting rows, the far-right visible load-order winner is highlighted yellow. Informational identity rows and
 single-column comparisons remain neutral. A persistent legend above the status area explains the green, red, and
 yellow comparison states.
+
+For records with supported VMAD data, the selected-record comparison workspace keeps scalar fields in the standard
+comparison grid and renders VMAD separately in a `Virtual Machine Adapter` section. VMAD scripts are shown as
+collapsible script sections with load-order-sorted plugin value cells. The VMAD section can collapse all scripts,
+expand changed scripts, and filter script properties to changed rows only. VMAD comparison rows reuse the existing
+green, red, and yellow comparison state colors.
 
 `OpenPluginDialogViewModel` exposes plugin filename suggestions, selected-plugin status, `LoadCommand`, and
 `CancelCommand`. It searches openable plugins through `IPluginService` and sets the active plugin through

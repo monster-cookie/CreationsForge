@@ -5,7 +5,7 @@ using SFRecordCompareEngine.Core.DTOs.Records;
 namespace SFRecordCompareEngine.Core.Models.Database;
 
 [TableName("FormListItems")]
-[PrimaryKey("ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ID, Item_ModKey_Name, Item_ModKey_Type, Item_ModKey_FileName, Item_FormKey_ID, Item_Index", AutoIncrement = false)]
+[PrimaryKey("ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Item_ModKey_Name, Item_ModKey_Type, Item_ModKey_FileName, Item_FormKey_ID, Item_Index", AutoIncrement = false)]
 public class FormListItem
 {
     public FormListItem()
@@ -16,6 +16,9 @@ public class FormListItem
         ModKeyName = dto.ModKey.Name;
         ModKeyType = (int)dto.ModKey.Type;
         ModKeyFileName = dto.ModKey.FileName;
+        FormKeyModKeyName = dto.FormKey.ModKey.Name;
+        FormKeyModKeyType = (int)dto.FormKey.ModKey.Type;
+        FormKeyModKeyFileName = dto.FormKey.ModKey.FileName;
         FormKeyID = (int)dto.FormKey.ID;
         ItemModKeyName = dto.ItemModKey.Name;
         ItemModKeyType = (int)dto.ItemModKey.Type;
@@ -30,6 +33,12 @@ public class FormListItem
     [Column("ModKey_Type")] public int ModKeyType { get; set; } = (int)ModType.Master;
 
     [Column("ModKey_FileName")] public string ModKeyFileName { get; set; } = string.Empty;
+
+    [Column("FormKey_ModKey_Name")] public string FormKeyModKeyName { get; set; } = string.Empty;
+
+    [Column("FormKey_ModKey_Type")] public int FormKeyModKeyType { get; set; } = (int)ModType.Master;
+
+    [Column("FormKey_ModKey_FileName")] public string FormKeyModKeyFileName { get; set; } = string.Empty;
 
     [Column("FormKey_ID")] public int FormKeyID { get; set; }
 

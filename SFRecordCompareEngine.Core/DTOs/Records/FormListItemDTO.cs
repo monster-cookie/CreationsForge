@@ -13,7 +13,8 @@ public class FormListItemDTO
     public FormListItemDTO(FormListItem model)
     {
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
-        FormKey = new FormKey(ModKey, (uint)model.FormKeyID);
+        var formKeyModKey = new ModKey(model.FormKeyModKeyName, (ModType)model.FormKeyModKeyType);
+        FormKey = new FormKey(formKeyModKey, (uint)model.FormKeyID);
         ItemModKey = new ModKey(model.ItemModKeyName, (ModType)model.ItemModKeyType);
         ItemFormKey = new FormKey(ItemModKey, (uint)model.ItemFormKeyID);
         ItemIndex = model.ItemIndex;

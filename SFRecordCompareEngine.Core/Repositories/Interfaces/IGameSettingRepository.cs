@@ -12,12 +12,14 @@ public interface IGameSettingRepository
     /// <returns>The matching game setting records or an empty list if none are found.</returns>
     IList<GameSettingDTO> GetByModKey(ModKey modKey);
 
+    IList<RecordTreeEntryDTO> GetRecordTreeEntriesByModKey(ModKey modKey);
+
     /// <summary>
-    ///     Gets game setting records with the given form key ID.
+    ///     Gets game setting records with the given form key.
     /// </summary>
-    /// <param name="formKeyID">The form key ID to search for.</param>
+    /// <param name="formKey">The origin form key to search for.</param>
     /// <returns>The matching game setting records in plugin load order or an empty list if none are found.</returns>
-    IList<GameSettingDTO> GetByFormKeyID(uint formKeyID);
+    IList<GameSettingDTO> GetByFormKey(FormKey formKey);
 
     /// <summary>
     ///     Saves a game setting record.

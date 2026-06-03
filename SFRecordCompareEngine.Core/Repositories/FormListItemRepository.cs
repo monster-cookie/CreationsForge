@@ -23,10 +23,13 @@ public class FormListItemRepository : IFormListItemRepository
                 SELECT *
                 FROM FormListItems
                 WHERE ModKey_Name = @ModKeyName AND ModKey_Type = @ModKeyType AND ModKey_FileName = @ModKeyFileName COLLATE NOCASE
+                  AND FormKey_ModKey_Name = @FormKeyModKeyName
+                  AND FormKey_ModKey_Type = @FormKeyModKeyType
+                  AND FormKey_ModKey_FileName = @FormKeyModKeyFileName
                   AND FormKey_ID = @FormKeyID
                 ORDER BY Item_Index;
                 """,
-                new { ModKeyName = modKey.Name, ModKeyType = (int)modKey.Type, ModKeyFileName = modKey.FileName, FormKeyID = formKey.ID })
+                new { ModKeyName = modKey.Name, ModKeyType = (int)modKey.Type, ModKeyFileName = modKey.FileName, FormKeyModKeyName = formKey.ModKey.Name, FormKeyModKeyType = (int)formKey.ModKey.Type, FormKeyModKeyFileName = formKey.ModKey.FileName, FormKeyID = formKey.ID })
             .Select(formListItem => new FormListItemDTO(formListItem))
             .ToList();
     }
@@ -37,9 +40,12 @@ public class FormListItemRepository : IFormListItemRepository
         Database.Delete<FormListItem>(
             """
             WHERE ModKey_Name = @ModKeyName AND ModKey_Type = @ModKeyType AND ModKey_FileName = @ModKeyFileName COLLATE NOCASE
+              AND FormKey_ModKey_Name = @FormKeyModKeyName
+              AND FormKey_ModKey_Type = @FormKeyModKeyType
+              AND FormKey_ModKey_FileName = @FormKeyModKeyFileName
               AND FormKey_ID = @FormKeyID
             """,
-            new { ModKeyName = modKey.Name, ModKeyType = (int)modKey.Type, ModKeyFileName = modKey.FileName, FormKeyID = formKey.ID });
+            new { ModKeyName = modKey.Name, ModKeyType = (int)modKey.Type, ModKeyFileName = modKey.FileName, FormKeyModKeyName = formKey.ModKey.Name, FormKeyModKeyType = (int)formKey.ModKey.Type, FormKeyModKeyFileName = formKey.ModKey.FileName, FormKeyID = formKey.ID });
     }
 
     /// <inheritdoc />

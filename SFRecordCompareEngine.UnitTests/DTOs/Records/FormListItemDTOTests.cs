@@ -16,6 +16,9 @@ public class FormListItemDTOTests
             ModKeyName = "Example",
             ModKeyType = (int)ModType.Master,
             ModKeyFileName = "Example.esm",
+            FormKeyModKeyName = "Origin",
+            FormKeyModKeyType = (int)ModType.Master,
+            FormKeyModKeyFileName = "Origin.esm",
             FormKeyID = 123,
             ItemModKeyName = "Item",
             ItemModKeyType = (int)ModType.Master,
@@ -29,6 +32,8 @@ public class FormListItemDTOTests
 
         result.ModKey.Name.ShouldBe("Example");
         result.ModKey.Type.ShouldBe(ModType.Master);
+        result.FormKey.ModKey.Name.ShouldBe("Origin");
+        result.FormKey.ModKey.Type.ShouldBe(ModType.Master);
         result.FormKey.ID.ShouldBe(123U);
         result.ItemModKey.Name.ShouldBe("Item");
         result.ItemModKey.Type.ShouldBe(ModType.Master);

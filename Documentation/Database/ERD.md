@@ -42,6 +42,9 @@ erDiagram
         TEXT ModKey_Name PK, FK
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK
+        INTEGER FormKey_ModKey_Type PK
+        TEXT FormKey_ModKey_FileName PK
         INTEGER FormKey_ID PK
         TEXT EditorID
         INTEGER FormVersion
@@ -56,6 +59,9 @@ erDiagram
         TEXT ModKey_Name PK, FK
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
         INTEGER FormKey_ID PK, FK
         TEXT Item_ModKey_Name PK
         INTEGER Item_ModKey_Type PK
@@ -69,6 +75,9 @@ erDiagram
         TEXT ModKey_Name PK, FK
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK
+        INTEGER FormKey_ModKey_Type PK
+        TEXT FormKey_ModKey_FileName PK
         INTEGER FormKey_ID PK
         TEXT EditorID
         INTEGER FormVersion
@@ -88,6 +97,9 @@ erDiagram
         TEXT ModKey_Name PK, FK
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK
+        INTEGER FormKey_ModKey_Type PK
+        TEXT FormKey_ModKey_FileName PK
         INTEGER FormKey_ID PK
         TEXT EditorID
         INTEGER FormVersion
@@ -102,6 +114,9 @@ erDiagram
         TEXT ModKey_Name PK, FK
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK
+        INTEGER FormKey_ModKey_Type PK
+        TEXT FormKey_ModKey_FileName PK
         INTEGER FormKey_ID PK
         TEXT EditorID
         INTEGER FormVersion
@@ -119,6 +134,9 @@ erDiagram
         TEXT ModKey_Name PK, FK
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK
+        INTEGER FormKey_ModKey_Type PK
+        TEXT FormKey_ModKey_FileName PK
         INTEGER FormKey_ID PK
         TEXT EditorID
         INTEGER FormVersion
@@ -138,6 +156,9 @@ erDiagram
         TEXT ModKey_Name PK, FK
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK
+        INTEGER FormKey_ModKey_Type PK
+        TEXT FormKey_ModKey_FileName PK
         INTEGER FormKey_ID PK
         TEXT EditorID
         INTEGER FormVersion
@@ -171,6 +192,9 @@ erDiagram
         TEXT ModKey_Name PK, FK
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK
+        INTEGER FormKey_ModKey_Type PK
+        TEXT FormKey_ModKey_FileName PK
         INTEGER FormKey_ID PK
         TEXT EditorID
         INTEGER FormVersion
@@ -192,6 +216,9 @@ erDiagram
         TEXT ModKey_Name PK, FK
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK
+        INTEGER FormKey_ModKey_Type PK
+        TEXT FormKey_ModKey_FileName PK
         INTEGER FormKey_ID PK
         TEXT EditorID
         INTEGER FormVersion
@@ -221,6 +248,9 @@ erDiagram
         TEXT ModKey_Name PK, FK
         INTEGER ModKey_Type PK, FK
         TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK
+        INTEGER FormKey_ModKey_Type PK
+        TEXT FormKey_ModKey_FileName PK
         INTEGER FormKey_ID PK
         TEXT EditorID
         INTEGER FormVersion
@@ -236,6 +266,72 @@ erDiagram
         TEXT PerkIcon
     }
 
+    ScriptingAdapters {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT RecordType PK
+        TEXT FormKey_ModKey_Name PK
+        INTEGER FormKey_ModKey_Type PK
+        TEXT FormKey_ModKey_FileName PK
+        INTEGER FormKey_ID PK
+        TEXT Name PK
+        INTEGER Script_Index
+        TEXT ImportedAtUTC
+    }
+
+    ScriptingAdapterProperties {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT RecordType PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT ScriptingAdapter_Name PK, FK
+        INTEGER Property_Index PK
+        TEXT Name
+        TEXT MutagenObjectType
+        INTEGER Data_Bool
+        INTEGER Data_Int
+        REAL Data_Float
+        TEXT Data_String
+        TEXT Object_ModKey_Name
+        INTEGER Object_ModKey_Type
+        TEXT Object_ModKey_FileName
+        INTEGER Object_FormKey_ID
+        INTEGER Object_Alias
+        INTEGER Object_Unused
+        TEXT ImportedAtUTC
+    }
+
+    ScriptingAdapterPropertyListItems {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT RecordType PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT ScriptingAdapter_Name PK, FK
+        INTEGER Property_Index PK, FK
+        INTEGER ListItem_Index PK
+        TEXT MutagenObjectType
+        INTEGER Data_Bool
+        INTEGER Data_Int
+        REAL Data_Float
+        TEXT Data_String
+        TEXT Object_ModKey_Name
+        INTEGER Object_ModKey_Type
+        TEXT Object_ModKey_FileName
+        INTEGER Object_FormKey_ID
+        INTEGER Object_Alias
+        INTEGER Object_Unused
+        TEXT ImportedAtUTC
+    }
+
     Plugins ||--o{ PluginMasterReferences : "is declared master"
     Plugins ||--o{ PluginMasterReferences : "declares masters"
     Plugins ||--o{ FormList : contains
@@ -248,6 +344,9 @@ erDiagram
     Plugins ||--o{ ActorValueInformation : contains
     Plugins ||--o{ MagicEffect : contains
     Plugins ||--o{ Perk : contains
+    Plugins ||--o{ ScriptingAdapters : contains
+    ScriptingAdapters ||--o{ ScriptingAdapterProperties : contains
+    ScriptingAdapterProperties ||--o{ ScriptingAdapterPropertyListItems : contains
 ```
 
 ## Important Indexes
@@ -256,8 +355,13 @@ The schema has no separately declared unique indexes. Composite primary keys pro
 
 - `Plugins`: indexes on `LoadOrderIndex`, `ImportState`, and the source fingerprint columns.
 - `PluginMasterReferences`: indexes on the declared-master key and declaring-plugin key.
-- `FormListItems`: indexes on referenced item ID plus owning form-list key, and on `Item_Index`.
-- Each typed record table: a non-unique index on `FormKey_ID` for cross-plugin comparison lookup.
+- `FormListItems`: indexes on the owning form-list key, the item `FormKey` columns, and `Item_Index`.
+- Each typed record table: a non-unique index on the full origin `FormKey` for cross-plugin comparison lookup.
+- `ScriptingAdapters`: indexes on `RecordType` plus the origin `FormKey` columns, and on `Script_Index`.
+- `ScriptingAdapterProperties`: indexes on `RecordType` plus the origin `FormKey` columns, `Property_Index`, and the
+  object `FormKey` columns.
+- `ScriptingAdapterPropertyListItems`: indexes on `RecordType` plus the origin `FormKey` columns, `ListItem_Index`,
+  and the object `FormKey` columns.
 
 ## Important Constraints
 
@@ -280,3 +384,11 @@ from the Mermaid relationship lines:
 - `MagicEffect.ActorValue2FormKey`, `ResistValueFormKey`, `PerkToApplyFormKey`, `EquipAbilityFormKey`,
   `ExplosionFormKey`, `CastingArtFormKey`, `HitEffectArtFormKey`, `HitShaderFormKey`, `ImageSpaceModifierFormKey`,
   `ImpactDataFormKey`, and `ProjectileFormKey`
+- Typed-record and VMAD `FormKey_ModKey_Name`, `FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, and `FormKey_ID`
+  persist origin `FormKey` identity but are not declared SQLite foreign keys to `Plugins`
+- `ScriptingAdapters.RecordType` and the origin `FormKey` columns
+- `ScriptingAdapterProperties.Object_ModKey_Name`, `Object_ModKey_Type`, `Object_ModKey_FileName`,
+  and `Object_FormKey_ID`
+- `ScriptingAdapterPropertyListItems.Object_ModKey_Name`, `Object_ModKey_Type`, `Object_ModKey_FileName`,
+  and `Object_FormKey_ID`
+

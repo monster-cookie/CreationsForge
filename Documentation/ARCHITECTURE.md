@@ -79,20 +79,24 @@ application configuration.
 
 ## Main Record Tree
 
-The main-view record tree reads persisted supported-record DTOs through typed Core services. The services delegate to
-repositories keyed by the owning plugin `ModKey`, and record DTOs continue to expose Mutagen `FormKey` values.
+The main-view record tree reads lightweight persisted supported-record entries through typed Core services. The tree
+path uses `GetRecordTreeEntriesByModKey` methods on the existing typed services and repositories so it only loads each
+record's origin `FormKey` and `EditorID`.
 
 The presentation view model builds record-type and record-leaf nodes for records owned by the active plugin. It uses a
 Mutagen separated-master package for Starfield-aware conversion between stored `FormKey` values and
 plugin-context-relative `FormID` values. The active plugin's masters provide conversion context but are not displayed
 as tree nodes. FormID display and filtering stay in the presentation layer.
 
+Typed services still expose full DTO reads for selected-record detail and comparison workflows. VMAD scripting child
+data is hydrated on those detail paths rather than during tree construction.
+
 ## Selected Record Comparison
 
-The main-view comparison workspace uses the selected concrete tree leaf's record type and `FormKey_ID` to query every
-imported plugin containing the same typed record. Explicit per-record services provide typed read boundaries over
-repository queries. `PluginService` provides imported plugin metadata for load-order sorting. The presentation view
-model builds normalized field rows and plugin columns for WinUI binding.
+The main-view comparison workspace uses the selected concrete tree leaf's record type and full origin `FormKey` to
+query every imported plugin containing the same typed record. Explicit per-record services provide typed read
+boundaries over repository queries. `PluginService` provides imported plugin metadata for load-order sorting. The
+presentation view model builds normalized field rows and plugin columns for WinUI binding.
 
 Form list item rows are read by owning plugin and form list key in `Item_Index` order. The persisted index represents
 source enumeration order and keeps duplicate item references as distinct occurrences.

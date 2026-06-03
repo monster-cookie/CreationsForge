@@ -1,11 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
+using SFRecordCompareEngine.Core.DTOs.Records.Interfaces;
 using MiscItem = SFRecordCompareEngine.Core.Models.Database.MiscItem;
 
 namespace SFRecordCompareEngine.Core.DTOs.Records;
 
-public class MiscItemDTO
+public class MiscItemDTO : IHasScriptingAdaptersRecordDTO
 {
     public MiscItemDTO()
     { }
@@ -14,7 +15,8 @@ public class MiscItemDTO
     public MiscItemDTO(MiscItem model)
     {
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
-        FormKey = new FormKey(ModKey, (uint)model.FormKeyId);
+        var formKeyModKey = new ModKey(model.FormKeyModKeyName, (ModType)model.FormKeyModKeyType);
+        FormKey = new FormKey(formKeyModKey, (uint)model.FormKeyId);
         EditorID = model.EditorId;
         FormVersion = model.FormVersion;
         StarfieldMajorRecordFlags = (StarfieldMajorRecord.StarfieldMajorRecordFlag)model.StarfieldMajorRecordFlags;
@@ -39,4 +41,5 @@ public class MiscItemDTO
     public string? ShortName { get; set; }
     public int? Value { get; set; }
     public double? Weight { get; set; }
+    public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 }

@@ -6,6 +6,7 @@ namespace SFRecordCompareEngine.Core.Repositories.Interfaces;
 public interface IGlobalRepository
 {
     IList<GlobalDTO> GetByModKey(ModKey modKey);
-    IList<GlobalDTO> GetByFormKeyID(uint formKeyID);
+    IList<RecordTreeEntryDTO> GetRecordTreeEntriesByModKey(ModKey modKey);
+    IList<GlobalDTO> GetByFormKey(FormKey formKey);
     void Save(GlobalDTO dto);
 }
