@@ -73,6 +73,12 @@ collapsible script sections with load-order-sorted plugin value cells. The VMAD 
 expand changed scripts, and filter script properties to changed rows only. VMAD comparison rows reuse the existing
 green, red, and yellow comparison state colors.
 
+For Perk records with imported rank data, the selected-record comparison workspace keeps scalar Perk fields in the
+standard comparison grid and renders ranks separately in a `Perk Ranks` section. Perk ranks are shown as collapsible
+rank sections with load-order-sorted plugin value cells. The Perk rank section can collapse all ranks, expand changed
+ranks, and filter rank rows to changed rows only. Perk rank comparison rows reuse the existing green, red, and yellow
+comparison state colors.
+
 `OpenPluginDialogViewModel` exposes plugin filename suggestions, selected-plugin status, `LoadCommand`, and
 `CancelCommand`. It searches openable plugins through `IPluginService` and sets the active plugin through
 `IActivePluginSelectionService` when Load is clicked.

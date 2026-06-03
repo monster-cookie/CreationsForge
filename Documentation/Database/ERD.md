@@ -264,6 +264,75 @@ erDiagram
         TEXT SkillGroup
         TEXT CrewAssignment
         TEXT PerkIcon
+        TEXT Category
+        TEXT Restriction_ModKey_Name
+        INTEGER Restriction_ModKey_Type
+        TEXT Restriction_ModKey_FileName
+        INTEGER Restriction_FormKey_ID
+        TEXT Training_ModKey_Name
+        INTEGER Training_ModKey_Type
+        TEXT Training_ModKey_FileName
+        INTEGER Training_FormKey_ID
+        TEXT MajorFlags
+    }
+
+    PerkRanks {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Rank_Index PK
+        TEXT Description
+        TEXT UnknownStatic_ModKey_Name
+        INTEGER UnknownStatic_ModKey_Type
+        TEXT UnknownStatic_ModKey_FileName
+        INTEGER UnknownStatic_FormKey_ID
+        INTEGER ConditionCount
+        INTEGER ActivityCount
+        TEXT ImportedAtUTC
+    }
+
+    PerkRankEffects {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Rank_Index PK, FK
+        INTEGER Effect_Index PK
+        TEXT MutagenObjectType
+        INTEGER Rank
+        INTEGER Priority
+        INTEGER PerkEntryID
+        TEXT Flags
+        TEXT ButtonLabel
+        INTEGER ConditionCount
+        TEXT EntryPoint
+        INTEGER PerkConditionTabCount
+        TEXT Modification
+        REAL Value
+        TEXT ImportedAtUTC
+    }
+
+    PerkBackgroundSkills {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT Skill_ModKey_Name
+        INTEGER Skill_ModKey_Type
+        TEXT Skill_ModKey_FileName
+        INTEGER Skill_FormKey_ID
+        INTEGER Skill_Index PK
+        TEXT ImportedAtUTC
     }
 
     ScriptingAdapters {
@@ -344,6 +413,9 @@ erDiagram
     Plugins ||--o{ ActorValueInformation : contains
     Plugins ||--o{ MagicEffect : contains
     Plugins ||--o{ Perk : contains
+    Perk ||--o{ PerkRanks : contains
+    PerkRanks ||--o{ PerkRankEffects : contains
+    Perk ||--o{ PerkBackgroundSkills : contains
     Plugins ||--o{ ScriptingAdapters : contains
     ScriptingAdapters ||--o{ ScriptingAdapterProperties : contains
     ScriptingAdapterProperties ||--o{ ScriptingAdapterPropertyListItems : contains
@@ -357,6 +429,10 @@ The schema has no separately declared unique indexes. Composite primary keys pro
 - `PluginMasterReferences`: indexes on the declared-master key and declaring-plugin key.
 - `FormListItems`: indexes on the owning form-list key, the item `FormKey` columns, and `Item_Index`.
 - Each typed record table: a non-unique index on the full origin `FormKey` for cross-plugin comparison lookup.
+- `PerkRanks`: indexes on the owning Perk key columns and `Rank_Index`.
+- `PerkRankEffects`: indexes on the owning Perk rank key columns and `Effect_Index`.
+- `PerkBackgroundSkills`: indexes on the owning Perk key columns, referenced skill `FormKey` columns, and
+  `Skill_Index`.
 - `ScriptingAdapters`: indexes on `RecordType` plus the origin `FormKey` columns, and on `Script_Index`.
 - `ScriptingAdapterProperties`: indexes on `RecordType` plus the origin `FormKey` columns, `Property_Index`, and the
   object `FormKey` columns.
@@ -370,6 +446,10 @@ The schema has no separately declared unique indexes. Composite primary keys pro
 - `Plugins.ImportState` must be `Current`, `Changed`, `Missing`, `Failed`, or `Unsupported`.
 - `Plugins.RecordCount`, every typed-record `FormKey_ID`, and `FormListItems.Item_FormKey_ID` must be non-negative.
 - `GameSetting.IsCompressed` and `GameSetting.IsDeleted` must be `0` or `1`.
+- `PerkRanks.Rank_Index`, `ConditionCount`, and `ActivityCount` must be non-negative.
+- `PerkRankEffects.Rank_Index`, `Effect_Index`, `Rank`, `Priority`, and `ConditionCount` must be non-negative.
+- `PerkRankEffects.PerkEntryID` and `PerkConditionTabCount` must be `NULL` or non-negative.
+- `PerkBackgroundSkills.Skill_FormKey_ID` and `Skill_Index` must be non-negative.
 
 ## Inferred Relationships
 
@@ -384,6 +464,12 @@ from the Mermaid relationship lines:
 - `MagicEffect.ActorValue2FormKey`, `ResistValueFormKey`, `PerkToApplyFormKey`, `EquipAbilityFormKey`,
   `ExplosionFormKey`, `CastingArtFormKey`, `HitEffectArtFormKey`, `HitShaderFormKey`, `ImageSpaceModifierFormKey`,
   `ImpactDataFormKey`, and `ProjectileFormKey`
+- `Perk.Restriction_ModKey_Name`, `Restriction_ModKey_Type`, `Restriction_ModKey_FileName`, and
+  `Restriction_FormKey_ID`
+- `Perk.Training_ModKey_Name`, `Training_ModKey_Type`, `Training_ModKey_FileName`, and `Training_FormKey_ID`
+- `PerkRanks.UnknownStatic_ModKey_Name`, `UnknownStatic_ModKey_Type`, `UnknownStatic_ModKey_FileName`, and
+  `UnknownStatic_FormKey_ID`
+- `PerkBackgroundSkills.Skill_ModKey_Name`, `Skill_ModKey_Type`, `Skill_ModKey_FileName`, and `Skill_FormKey_ID`
 - Typed-record and VMAD `FormKey_ModKey_Name`, `FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, and `FormKey_ID`
   persist origin `FormKey` identity but are not declared SQLite foreign keys to `Plugins`
 - `ScriptingAdapters.RecordType` and the origin `FormKey` columns

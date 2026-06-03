@@ -10,7 +10,7 @@ The application uses a local SQLite cache. The schema is defined by embedded DbU
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains 15 tables:
+The application schema contains 18 tables:
 
 - `Plugins`
 - `PluginMasterReferences`
@@ -24,6 +24,9 @@ The application schema contains 15 tables:
 - `ActorValueInformation`
 - `MagicEffect`
 - `Perk`
+- `PerkRanks`
+- `PerkRankEffects`
+- `PerkBackgroundSkills`
 - `ScriptingAdapters`
 - `ScriptingAdapterProperties`
 - `ScriptingAdapterPropertyListItems`
@@ -74,6 +77,11 @@ The typed record tables `FormList`, `GameSetting`, `Global`, `MiscItem`, `Keywor
 The `ModKey_*` columns identify the plugin containing the imported record row. The `FormKey_ModKey_*` columns plus
 `FormKey_ID` identify the record's origin `FormKey`. This lets comparison queries group true overrides while keeping
 unrelated records with the same local numeric ID separate.
+
+Application schema columns must store `ModKey` and `FormKey` values as primitive component columns. `ModKey` values
+must use `*_ModKey_Name`, `*_ModKey_Type`, and `*_ModKey_FileName`. `FormKey` values must use those same referenced
+`ModKey` components plus `*_FormKey_ID`. Raw string storage of `FormKey` or `ModKey` is not an allowed schema pattern
+for new application-schema columns. Inferred references remain documented separately from declared SQLite foreign keys.
 
 Each typed record table declares:
 
@@ -378,6 +386,165 @@ Additional record-specific columns:
 - `SkillGroup` (`TEXT`, nullable)
 - `CrewAssignment` (`TEXT`, nullable)
 - `PerkIcon` (`TEXT`, nullable)
+- `Category` (`TEXT`, nullable)
+- `Restriction_ModKey_Name` (`TEXT`, nullable)
+- `Restriction_ModKey_Type` (`INTEGER`, nullable)
+- `Restriction_ModKey_FileName` (`TEXT`, nullable)
+- `Restriction_FormKey_ID` (`INTEGER`, nullable)
+- `Training_ModKey_Name` (`TEXT`, nullable)
+- `Training_ModKey_Type` (`INTEGER`, nullable)
+- `Training_ModKey_FileName` (`TEXT`, nullable)
+- `Training_FormKey_ID` (`INTEGER`, nullable)
+- `MajorFlags` (`TEXT`, nullable)
+
+`Category` maps Mutagen's generated `Categroy` Perk property. The restriction and training columns are direct Perk
+references, not declared SQLite foreign keys. Each nullable reference tuple must be either fully populated or fully
+`NULL`. `MajorFlags` is a direct Perk field, not a record reference.
+
+### PerkRanks
+
+Stores ordered rank rows inside Starfield `PERK` records.
+
+Columns:
+
+- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `Rank_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `Description` (`TEXT`, nullable)
+- `UnknownStatic_ModKey_Name` (`TEXT`, nullable)
+- `UnknownStatic_ModKey_Type` (`INTEGER`, nullable)
+- `UnknownStatic_ModKey_FileName` (`TEXT`, nullable)
+- `UnknownStatic_FormKey_ID` (`INTEGER`, nullable)
+- `ConditionCount` (`INTEGER`, `NOT NULL`)
+- `ActivityCount` (`INTEGER`, `NOT NULL`)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Primary key:
+
+- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `FormKey_ModKey_Name`, `FormKey_ModKey_Type`,
+  `FormKey_ModKey_FileName`, `FormKey_ID`, and `Rank_Index`
+
+Foreign key:
+
+- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `FormKey_ModKey_Name`, `FormKey_ModKey_Type`,
+  `FormKey_ModKey_FileName`, and `FormKey_ID` reference the `Perk` primary key with `ON DELETE CASCADE`.
+
+Indexes:
+
+- `IX_PerkRanks_Perk` on the owning Perk key columns
+- `IX_PerkRanks_RankIndex` on `Rank_Index`
+
+Constraints:
+
+- All columns are `NOT NULL` except `Description` and the nullable unknown-static reference tuple.
+- `FormKey_ID`, `Rank_Index`, `ConditionCount`, and `ActivityCount` must be greater than or equal to `0`.
+- The unknown-static reference tuple must be either fully populated or fully `NULL`.
+- `UnknownStatic_FormKey_ID` must be `NULL` or greater than or equal to `0`.
+
+`Rank_Index` preserves source rank order. `ConditionCount` and `ActivityCount` preserve summary counts for nested rank
+data that is not otherwise normalized in this schema.
+
+### PerkRankEffects
+
+Stores ordered supported effect fields inside Perk ranks.
+
+Columns:
+
+- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `Rank_Index` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `Effect_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `MutagenObjectType` (`TEXT`, `NOT NULL`)
+- `Rank` (`INTEGER`, `NOT NULL`)
+- `Priority` (`INTEGER`, `NOT NULL`)
+- `PerkEntryID` (`INTEGER`, nullable)
+- `Flags` (`TEXT`, nullable)
+- `ButtonLabel` (`TEXT`, nullable)
+- `ConditionCount` (`INTEGER`, `NOT NULL`)
+- `EntryPoint` (`TEXT`, nullable)
+- `PerkConditionTabCount` (`INTEGER`, nullable)
+- `Modification` (`TEXT`, nullable)
+- `Value` (`REAL`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Primary key:
+
+- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `FormKey_ModKey_Name`, `FormKey_ModKey_Type`,
+  `FormKey_ModKey_FileName`, `FormKey_ID`, `Rank_Index`, and `Effect_Index`
+
+Foreign key:
+
+- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `FormKey_ModKey_Name`, `FormKey_ModKey_Type`,
+  `FormKey_ModKey_FileName`, `FormKey_ID`, and `Rank_Index` reference the `PerkRanks` primary key with
+  `ON DELETE CASCADE`.
+
+Indexes:
+
+- `IX_PerkRankEffects_PerkRank` on the owning Perk rank key columns
+- `IX_PerkRankEffects_EffectIndex` on `Effect_Index`
+
+Constraints:
+
+- `FormKey_ID`, `Rank_Index`, `Effect_Index`, `Rank`, `Priority`, and `ConditionCount` must be greater than or
+  equal to `0`.
+- `PerkEntryID` and `PerkConditionTabCount` must be `NULL` or greater than or equal to `0`.
+
+Supported effect fields include common Perk effect fields and entry-point modify-value fields. Deeper effect-specific
+payloads and nested conditions are not normalized in this schema.
+
+### PerkBackgroundSkills
+
+Stores ordered background skill references inside Starfield `PERK` records.
+
+Columns:
+
+- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `Skill_ModKey_Name` (`TEXT`, `NOT NULL`)
+- `Skill_ModKey_Type` (`INTEGER`, `NOT NULL`)
+- `Skill_ModKey_FileName` (`TEXT`, `NOT NULL`)
+- `Skill_FormKey_ID` (`INTEGER`, `NOT NULL`)
+- `Skill_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Primary key:
+
+- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `FormKey_ModKey_Name`, `FormKey_ModKey_Type`,
+  `FormKey_ModKey_FileName`, `FormKey_ID`, and `Skill_Index`
+
+Foreign key:
+
+- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `FormKey_ModKey_Name`, `FormKey_ModKey_Type`,
+  `FormKey_ModKey_FileName`, and `FormKey_ID` reference the `Perk` primary key with `ON DELETE CASCADE`.
+
+Indexes:
+
+- `IX_PerkBackgroundSkills_Perk` on the owning Perk key columns
+- `IX_PerkBackgroundSkills_Skill_FormKey` on the referenced skill `FormKey` columns
+- `IX_PerkBackgroundSkills_SkillIndex` on `Skill_Index`
+
+Constraints:
+
+- All columns are `NOT NULL`.
+- `FormKey_ID`, `Skill_FormKey_ID`, and `Skill_Index` must be greater than or equal to `0`.
+
+`Skill_Index` preserves source background skill order. The referenced skill columns contain inferred Perk references,
+not declared SQLite foreign keys.
 
 ### ScriptingAdapters
 
@@ -564,6 +731,12 @@ The following columns carry record-reference data but do not declare SQLite fore
 - `MagicEffect.ActorValue2FormKey`, `ResistValueFormKey`, `PerkToApplyFormKey`, `EquipAbilityFormKey`,
   `ExplosionFormKey`, `CastingArtFormKey`, `HitEffectArtFormKey`, `HitShaderFormKey`, `ImageSpaceModifierFormKey`,
   `ImpactDataFormKey`, and `ProjectileFormKey`
+- `Perk.Restriction_ModKey_Name`, `Restriction_ModKey_Type`, `Restriction_ModKey_FileName`, and
+  `Restriction_FormKey_ID`
+- `Perk.Training_ModKey_Name`, `Training_ModKey_Type`, `Training_ModKey_FileName`, and `Training_FormKey_ID`
+- `PerkRanks.UnknownStatic_ModKey_Name`, `UnknownStatic_ModKey_Type`, `UnknownStatic_ModKey_FileName`, and
+  `UnknownStatic_FormKey_ID`
+- `PerkBackgroundSkills.Skill_ModKey_Name`, `Skill_ModKey_Type`, `Skill_ModKey_FileName`, and `Skill_FormKey_ID`
 - Typed-record and VMAD `FormKey_ModKey_Name`, `FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, and `FormKey_ID`
   persist origin `FormKey` identity but do not declare a SQLite foreign key to `Plugins`
 - `ScriptingAdapters.RecordType` and the origin `FormKey` columns identify the owning typed record table row but do

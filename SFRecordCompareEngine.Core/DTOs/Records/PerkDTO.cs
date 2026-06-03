@@ -29,10 +29,12 @@ public class PerkDTO : IHasScriptingAdaptersRecordDTO
         SkillGroup = model.SkillGroup;
         CrewAssignment = model.CrewAssignment;
         PerkIcon = model.PerkIcon;
+        Category = model.Category;
+        RestrictionFormKey = CreateNullableFormKey(model.RestrictionModKeyName, model.RestrictionModKeyType, model.RestrictionFormKeyId);
+        TrainingFormKey = CreateNullableFormKey(model.TrainingModKeyName, model.TrainingModKeyType, model.TrainingFormKeyId);
+        MajorFlags = model.MajorFlags;
     }
 
-    public required ModKey ModKey { get; set; }
-    public required FormKey FormKey { get; set; }
     public required string EditorID { get; set; }
     public required int FormVersion { get; set; }
     public required StarfieldMajorRecord.StarfieldMajorRecordFlag StarfieldMajorRecordFlags { get; set; }
@@ -45,5 +47,21 @@ public class PerkDTO : IHasScriptingAdaptersRecordDTO
     public string? SkillGroup { get; set; }
     public string? CrewAssignment { get; set; }
     public string? PerkIcon { get; set; }
+    public string? Category { get; set; }
+    public FormKey? RestrictionFormKey { get; set; }
+    public FormKey? TrainingFormKey { get; set; }
+    public string? MajorFlags { get; set; }
+    public IList<PerkRankDTO> Ranks { get; set; } = new List<PerkRankDTO>();
+    public IList<PerkBackgroundSkillDTO> BackgroundSkills { get; set; } = new List<PerkBackgroundSkillDTO>();
+
+    public required ModKey ModKey { get; set; }
+    public required FormKey FormKey { get; set; }
     public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
+
+    private static FormKey? CreateNullableFormKey(string? modKeyName, int? modKeyType, int? formKeyId)
+    {
+        return modKeyName == null || !modKeyType.HasValue || !formKeyId.HasValue
+            ? null
+            : new FormKey(new ModKey(modKeyName, (ModType)modKeyType.Value), (uint)formKeyId.Value);
+    }
 }
