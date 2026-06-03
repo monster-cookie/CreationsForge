@@ -21,6 +21,11 @@ public class MagicEffectService : IMagicEffectService
         return ScriptingAdapterHydrationService.Hydrate(Repository.GetByModKey(modKey), Helpers.RecordTypeCatalog.MagicEffect.RecordType);
     }
 
+    public IList<RecordTreeEntryDTO> GetRecordTreeEntriesByModKey(ModKey modKey)
+    {
+        return Repository.GetRecordTreeEntriesByModKey(modKey);
+    }
+
     public IList<MagicEffectDTO> GetByFormKey(FormKey formKey)
     {
         return ScriptingAdapterHydrationService.Hydrate(Repository.GetByFormKey(formKey), Helpers.RecordTypeCatalog.MagicEffect.RecordType);

@@ -6,5 +6,6 @@ namespace SFRecordCompareEngine.Core.Services.Interfaces;
 public interface IActorValueInformationService
 {
     IList<ActorValueInformationDTO> GetByModKey(ModKey modKey);
+    IList<RecordTreeEntryDTO> GetRecordTreeEntriesByModKey(ModKey modKey);
     IList<ActorValueInformationDTO> GetByFormKey(FormKey formKey);
 }

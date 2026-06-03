@@ -23,6 +23,11 @@ public class FormListService : IFormListService
         return FormListRepository.GetByModKey(modKey);
     }
 
+    public IList<RecordTreeEntryDTO> GetRecordTreeEntriesByModKey(ModKey modKey)
+    {
+        return FormListRepository.GetRecordTreeEntriesByModKey(modKey);
+    }
+
     public IList<FormListDTO> GetByFormKey(FormKey formKey)
     {
         return FormListRepository.GetByFormKey(formKey);

@@ -12,6 +12,8 @@ public interface IGameSettingRepository
     /// <returns>The matching game setting records or an empty list if none are found.</returns>
     IList<GameSettingDTO> GetByModKey(ModKey modKey);
 
+    IList<RecordTreeEntryDTO> GetRecordTreeEntriesByModKey(ModKey modKey);
+
     /// <summary>
     ///     Gets game setting records with the given form key.
     /// </summary>

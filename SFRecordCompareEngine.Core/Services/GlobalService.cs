@@ -21,6 +21,11 @@ public class GlobalService : IGlobalService
         return ScriptingAdapterHydrationService.Hydrate(Repository.GetByModKey(modKey), Helpers.RecordTypeCatalog.Global.RecordType);
     }
 
+    public IList<RecordTreeEntryDTO> GetRecordTreeEntriesByModKey(ModKey modKey)
+    {
+        return Repository.GetRecordTreeEntriesByModKey(modKey);
+    }
+
     public IList<GlobalDTO> GetByFormKey(FormKey formKey)
     {
         return ScriptingAdapterHydrationService.Hydrate(Repository.GetByFormKey(formKey), Helpers.RecordTypeCatalog.Global.RecordType);

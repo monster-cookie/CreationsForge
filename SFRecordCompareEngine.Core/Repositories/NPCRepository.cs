@@ -21,6 +21,17 @@ public class NPCRepository : INPCRepository
         return Database.Fetch<NPC>("SELECT * FROM NPC WHERE ModKey_Name = @ModKeyName AND ModKey_Type = @ModKeyType AND ModKey_FileName = @ModKeyFileName COLLATE NOCASE ORDER BY FormKey_ID;", new { ModKeyName = modKey.Name, ModKeyType = (int)modKey.Type, ModKeyFileName = modKey.FileName }).Select(x => new NPCDTO(x)).ToList();
     }
 
+    public IList<RecordTreeEntryDTO> GetRecordTreeEntriesByModKey(ModKey modKey)
+    {
+        return Database.Fetch<NPC>("SELECT FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, EditorID FROM NPC WHERE ModKey_Name = @ModKeyName AND ModKey_Type = @ModKeyType AND ModKey_FileName = @ModKeyFileName COLLATE NOCASE ORDER BY FormKey_ID;", new { ModKeyName = modKey.Name, ModKeyType = (int)modKey.Type, ModKeyFileName = modKey.FileName })
+            .Select(x => new RecordTreeEntryDTO
+            {
+                FormKey = new FormKey(new ModKey(x.FormKeyModKeyName, (ModType)x.FormKeyModKeyType), (uint)x.FormKeyId),
+                EditorID = x.EditorId
+            })
+            .ToList();
+    }
+
     public IList<NPCDTO> GetByFormKey(FormKey formKey)
     {
         return Database.Fetch<NPC>("SELECT NPC.* FROM NPC INNER JOIN Plugins ON Plugins.ModKey_Name = NPC.ModKey_Name AND Plugins.ModKey_Type = NPC.ModKey_Type AND Plugins.ModKey_FileName = NPC.ModKey_FileName WHERE NPC.FormKey_ModKey_Name = @FormKeyModKeyName AND NPC.FormKey_ModKey_Type = @FormKeyModKeyType AND NPC.FormKey_ModKey_FileName = @FormKeyModKeyFileName AND NPC.FormKey_ID = @FormKeyID AND Plugins.Enabled = 1 AND Plugins.ExistsOnDisk = 1 AND Plugins.ImportState = @ImportState ORDER BY Plugins.LoadOrderIndex;",

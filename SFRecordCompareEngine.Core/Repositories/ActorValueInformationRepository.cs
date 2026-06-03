@@ -21,6 +21,17 @@ public class ActorValueInformationRepository : IActorValueInformationRepository
         return Database.Fetch<ActorValueInformation>("SELECT * FROM ActorValueInformation WHERE ModKey_Name = @ModKeyName AND ModKey_Type = @ModKeyType AND ModKey_FileName = @ModKeyFileName COLLATE NOCASE ORDER BY FormKey_ID;", new { ModKeyName = modKey.Name, ModKeyType = (int)modKey.Type, ModKeyFileName = modKey.FileName }).Select(x => new ActorValueInformationDTO(x)).ToList();
     }
 
+    public IList<RecordTreeEntryDTO> GetRecordTreeEntriesByModKey(ModKey modKey)
+    {
+        return Database.Fetch<ActorValueInformation>("SELECT FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, EditorID FROM ActorValueInformation WHERE ModKey_Name = @ModKeyName AND ModKey_Type = @ModKeyType AND ModKey_FileName = @ModKeyFileName COLLATE NOCASE ORDER BY FormKey_ID;", new { ModKeyName = modKey.Name, ModKeyType = (int)modKey.Type, ModKeyFileName = modKey.FileName })
+            .Select(x => new RecordTreeEntryDTO
+            {
+                FormKey = new FormKey(new ModKey(x.FormKeyModKeyName, (ModType)x.FormKeyModKeyType), (uint)x.FormKeyId),
+                EditorID = x.EditorId
+            })
+            .ToList();
+    }
+
     public IList<ActorValueInformationDTO> GetByFormKey(FormKey formKey)
     {
         return Database.Fetch<ActorValueInformation>(

@@ -12,6 +12,8 @@ public interface IFormListRepository
     /// <returns>The matching form list records or an empty list if none are found.</returns>
     IList<FormListDTO> GetByModKey(ModKey modKey);
 
+    IList<RecordTreeEntryDTO> GetRecordTreeEntriesByModKey(ModKey modKey);
+
     /// <summary>
     ///     Gets form list records with the given form key.
     /// </summary>

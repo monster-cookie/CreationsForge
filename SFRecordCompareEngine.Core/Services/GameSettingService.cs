@@ -19,6 +19,11 @@ public class GameSettingService : IGameSettingService
         return GameSettingRepository.GetByModKey(modKey);
     }
 
+    public IList<RecordTreeEntryDTO> GetRecordTreeEntriesByModKey(ModKey modKey)
+    {
+        return GameSettingRepository.GetRecordTreeEntriesByModKey(modKey);
+    }
+
     public IList<GameSettingDTO> GetByFormKey(FormKey formKey)
     {
         return GameSettingRepository.GetByFormKey(formKey);

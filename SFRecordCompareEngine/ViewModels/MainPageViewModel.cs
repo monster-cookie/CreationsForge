@@ -387,20 +387,20 @@ public class MainPageViewModel : ViewModelBase
         AddRecordType(
             recordTreeItems,
             RecordTypeCatalog.FormList.RecordType,
-            FormListService.GetByModKey(activePlugin.ModKey)
+            FormListService.GetRecordTreeEntriesByModKey(activePlugin.ModKey)
                 .Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.FormList.RecordType)));
         AddRecordType(
             recordTreeItems,
             RecordTypeCatalog.GameSetting.RecordType,
-            GameSettingService.GetByModKey(activePlugin.ModKey)
+            GameSettingService.GetRecordTreeEntriesByModKey(activePlugin.ModKey)
                 .Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.GameSetting.RecordType)));
-        AddRecordType(recordTreeItems, RecordTypeCatalog.Global.RecordType, GlobalService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.Global.RecordType)));
-        AddRecordType(recordTreeItems, RecordTypeCatalog.MiscItem.RecordType, MiscItemService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.MiscItem.RecordType)));
-        AddRecordType(recordTreeItems, RecordTypeCatalog.Keyword.RecordType, KeywordService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.Keyword.RecordType)));
-        AddRecordType(recordTreeItems, RecordTypeCatalog.NPC.RecordType, NPCService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.NPC.RecordType)));
-        AddRecordType(recordTreeItems, RecordTypeCatalog.ActorValueInformation.RecordType, ActorValueInformationService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.ActorValueInformation.RecordType)));
-        AddRecordType(recordTreeItems, RecordTypeCatalog.MagicEffect.RecordType, MagicEffectService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.MagicEffect.RecordType)));
-        AddRecordType(recordTreeItems, RecordTypeCatalog.Perk.RecordType, PerkService.GetByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.Perk.RecordType)));
+        AddRecordType(recordTreeItems, RecordTypeCatalog.Global.RecordType, GlobalService.GetRecordTreeEntriesByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.Global.RecordType)));
+        AddRecordType(recordTreeItems, RecordTypeCatalog.MiscItem.RecordType, MiscItemService.GetRecordTreeEntriesByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.MiscItem.RecordType)));
+        AddRecordType(recordTreeItems, RecordTypeCatalog.Keyword.RecordType, KeywordService.GetRecordTreeEntriesByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.Keyword.RecordType)));
+        AddRecordType(recordTreeItems, RecordTypeCatalog.NPC.RecordType, NPCService.GetRecordTreeEntriesByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.NPC.RecordType)));
+        AddRecordType(recordTreeItems, RecordTypeCatalog.ActorValueInformation.RecordType, ActorValueInformationService.GetRecordTreeEntriesByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.ActorValueInformation.RecordType)));
+        AddRecordType(recordTreeItems, RecordTypeCatalog.MagicEffect.RecordType, MagicEffectService.GetRecordTreeEntriesByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.MagicEffect.RecordType)));
+        AddRecordType(recordTreeItems, RecordTypeCatalog.Perk.RecordType, PerkService.GetRecordTreeEntriesByModKey(activePlugin.ModKey).Select(record => CreateRecordTreeItem(masterPackage, record.FormKey, record.EditorID, RecordTypeCatalog.Perk.RecordType)));
         return (masterPackage, recordTreeItems);
     }
 

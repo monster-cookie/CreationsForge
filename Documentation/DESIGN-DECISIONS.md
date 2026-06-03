@@ -1,5 +1,43 @@
 # Design Decisions
 
+## 2026-06-03 - Use Lightweight Typed Service Reads For Main Record Tree
+
+Status: Accepted
+
+Context: Main record-tree construction needs only each record's origin `FormKey` and `EditorID`, but some typed
+`GetByModKey` service methods hydrate VMAD scripting child data. Hydrating script adapters, properties, and list items
+for every record in the active plugin adds unnecessary database work before the tree can render.
+
+Decision: Add `GetRecordTreeEntriesByModKey` methods to the existing typed service and repository contracts. These
+methods return lightweight `RecordTreeEntryDTO` values and query only the origin `FormKey` columns and `EditorID`.
+`MainPageViewModel.BuildRecordTree` uses these methods for the left-side tree. Existing typed `GetByModKey` and
+`GetByFormKey` methods keep their existing full DTO behavior.
+
+Rationale: This keeps presentation code routed through typed Core services, avoids a broad tree-only service, and
+preserves VMAD hydration for selected-record detail workflows where child data is actually displayed.
+
+Alternatives considered:
+
+- Add a new tree-specific service and repository.
+- Make existing typed `GetByModKey` methods unhydrated.
+- Add optional hydration flags to existing typed service methods.
+- Query repositories directly from `MainPageViewModel`.
+
+Consequences:
+
+- The main tree no longer hydrates VMAD child tables during active-plugin tree construction.
+- Existing typed service and repository interfaces have a new lightweight read method.
+- Selected-record comparison keeps using hydrated detail reads.
+- Core continues to expose Mutagen `FormKey`; presentation continues converting to displayed `FormID`.
+
+Related files:
+
+- `SFRecordCompareEngine.Core/DTOs/Records/RecordTreeEntryDTO.cs`
+- `SFRecordCompareEngine.Core/Services/Interfaces/IFormListService.cs`
+- `SFRecordCompareEngine.Core/Repositories/Interfaces/IFormListRepository.cs`
+- `SFRecordCompareEngine.Core/Repositories/GlobalRepository.cs`
+- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
+
 ## 2026-06-03 - Persist Full Origin FormKey For Record Comparison
 
 Status: Accepted

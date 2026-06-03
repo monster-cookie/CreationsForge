@@ -6,5 +6,6 @@ namespace SFRecordCompareEngine.Core.Services.Interfaces;
 public interface IMiscItemService
 {
     IList<MiscItemDTO> GetByModKey(ModKey modKey);
+    IList<RecordTreeEntryDTO> GetRecordTreeEntriesByModKey(ModKey modKey);
     IList<MiscItemDTO> GetByFormKey(FormKey formKey);
 }

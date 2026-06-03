@@ -21,6 +21,11 @@ public class PerkService : IPerkService
         return ScriptingAdapterHydrationService.Hydrate(Repository.GetByModKey(modKey), Helpers.RecordTypeCatalog.Perk.RecordType);
     }
 
+    public IList<RecordTreeEntryDTO> GetRecordTreeEntriesByModKey(ModKey modKey)
+    {
+        return Repository.GetRecordTreeEntriesByModKey(modKey);
+    }
+
     public IList<PerkDTO> GetByFormKey(FormKey formKey)
     {
         return ScriptingAdapterHydrationService.Hydrate(Repository.GetByFormKey(formKey), Helpers.RecordTypeCatalog.Perk.RecordType);

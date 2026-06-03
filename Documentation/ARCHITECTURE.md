@@ -79,13 +79,17 @@ application configuration.
 
 ## Main Record Tree
 
-The main-view record tree reads persisted supported-record DTOs through typed Core services. The services delegate to
-repositories keyed by the owning plugin `ModKey`, and record DTOs continue to expose Mutagen `FormKey` values.
+The main-view record tree reads lightweight persisted supported-record entries through typed Core services. The tree
+path uses `GetRecordTreeEntriesByModKey` methods on the existing typed services and repositories so it only loads each
+record's origin `FormKey` and `EditorID`.
 
 The presentation view model builds record-type and record-leaf nodes for records owned by the active plugin. It uses a
 Mutagen separated-master package for Starfield-aware conversion between stored `FormKey` values and
 plugin-context-relative `FormID` values. The active plugin's masters provide conversion context but are not displayed
 as tree nodes. FormID display and filtering stay in the presentation layer.
+
+Typed services still expose full DTO reads for selected-record detail and comparison workflows. VMAD scripting child
+data is hydrated on those detail paths rather than during tree construction.
 
 ## Selected Record Comparison
 

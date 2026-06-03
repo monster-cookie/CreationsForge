@@ -56,8 +56,9 @@ skips disabled for that import pass.
 `MainPageViewModel` exposes `OpenCommand`, `ExitCommand`, status text, FormID and EditorID filters, and the left-side
 record tree. It listens to `IActivePluginSelectionService`, keeps the status text synchronized with the active plugin,
 and rebuilds the tree when the active plugin changes. It keeps Core DTOs based on `FormKey` and uses Mutagen's
-Starfield separated-master helpers for presentation-only `FormID` display and filtering. It loads records and
-comparison data through typed Core services rather than repositories.
+Starfield separated-master helpers for presentation-only `FormID` display and filtering. The tree uses lightweight
+typed Core service methods that return only `FormKey` and `EditorID`; selected-record comparison data uses the full
+typed service detail methods.
 
 Concrete tree-leaf selection also loads normalized field rows and load-order-sorted plugin columns for the right-side
 comparison workspace. Form list item rows remain ordered by persisted `Item_Index`, including duplicate references.

@@ -32,6 +32,25 @@ public class GameSettingRepository : IGameSettingRepository
     }
 
     /// <inheritdoc />
+    public IList<RecordTreeEntryDTO> GetRecordTreeEntriesByModKey(ModKey modKey)
+    {
+        return Database.Fetch<GameSetting>(
+                """
+                SELECT FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, EditorID
+                FROM GameSetting
+                WHERE ModKey_Name = @ModKeyName AND ModKey_Type = @ModKeyType AND ModKey_FileName = @ModKeyFileName COLLATE NOCASE
+                ORDER BY FormKey_ID;
+                """,
+                new { ModKeyName = modKey.Name, ModKeyType = (int)modKey.Type, ModKeyFileName = modKey.FileName })
+            .Select(gameSetting => new RecordTreeEntryDTO
+            {
+                FormKey = new FormKey(new ModKey(gameSetting.FormKeyModKeyName, (ModType)gameSetting.FormKeyModKeyType), (uint)gameSetting.FormKeyId),
+                EditorID = gameSetting.EditorId
+            })
+            .ToList();
+    }
+
+    /// <inheritdoc />
     public IList<GameSettingDTO> GetByFormKey(FormKey formKey)
     {
         return Database.Fetch<GameSetting>(

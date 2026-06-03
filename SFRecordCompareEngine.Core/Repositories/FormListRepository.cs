@@ -32,6 +32,25 @@ public class FormListRepository : IFormListRepository
     }
 
     /// <inheritdoc />
+    public IList<RecordTreeEntryDTO> GetRecordTreeEntriesByModKey(ModKey modKey)
+    {
+        return Database.Fetch<FormList>(
+                """
+                SELECT FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, EditorID
+                FROM FormList
+                WHERE ModKey_Name = @ModKeyName AND ModKey_Type = @ModKeyType AND ModKey_FileName = @ModKeyFileName COLLATE NOCASE
+                ORDER BY FormKey_ID;
+                """,
+                new { ModKeyName = modKey.Name, ModKeyType = (int)modKey.Type, ModKeyFileName = modKey.FileName })
+            .Select(formList => new RecordTreeEntryDTO
+            {
+                FormKey = new FormKey(new ModKey(formList.FormKeyModKeyName, (ModType)formList.FormKeyModKeyType), (uint)formList.FormKeyId),
+                EditorID = formList.EditorId ?? string.Empty
+            })
+            .ToList();
+    }
+
+    /// <inheritdoc />
     public IList<FormListDTO> GetByFormKey(FormKey formKey)
     {
         return Database.Fetch<FormList>(
