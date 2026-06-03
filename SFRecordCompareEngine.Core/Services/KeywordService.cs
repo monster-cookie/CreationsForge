@@ -21,8 +21,8 @@ public class KeywordService : IKeywordService
         return ScriptingAdapterHydrationService.Hydrate(Repository.GetByModKey(modKey), Helpers.RecordTypeCatalog.Keyword.RecordType);
     }
 
-    public IList<KeywordDTO> GetByFormKeyID(uint formKeyID)
+    public IList<KeywordDTO> GetByFormKey(FormKey formKey)
     {
-        return ScriptingAdapterHydrationService.Hydrate(Repository.GetByFormKeyID(formKeyID), Helpers.RecordTypeCatalog.Keyword.RecordType);
+        return ScriptingAdapterHydrationService.Hydrate(Repository.GetByFormKey(formKey), Helpers.RecordTypeCatalog.Keyword.RecordType);
     }
 }

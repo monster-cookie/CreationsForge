@@ -15,7 +15,8 @@ public class ActorValueInformationDTO : IHasScriptingAdaptersRecordDTO
     public ActorValueInformationDTO(ActorValueInformation model)
     {
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
-        FormKey = new FormKey(ModKey, (uint)model.FormKeyId);
+        var formKeyModKey = new ModKey(model.FormKeyModKeyName, (ModType)model.FormKeyModKeyType);
+        FormKey = new FormKey(formKeyModKey, (uint)model.FormKeyId);
         EditorID = model.EditorId;
         FormVersion = model.FormVersion;
         StarfieldMajorRecordFlags = (StarfieldMajorRecord.StarfieldMajorRecordFlag)model.StarfieldMajorRecordFlags;

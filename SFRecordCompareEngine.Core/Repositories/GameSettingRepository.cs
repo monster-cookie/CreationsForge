@@ -32,7 +32,7 @@ public class GameSettingRepository : IGameSettingRepository
     }
 
     /// <inheritdoc />
-    public IList<GameSettingDTO> GetByFormKeyID(uint formKeyID)
+    public IList<GameSettingDTO> GetByFormKey(FormKey formKey)
     {
         return Database.Fetch<GameSetting>(
                 """
@@ -42,13 +42,13 @@ public class GameSettingRepository : IGameSettingRepository
                     ON Plugins.ModKey_Name = GameSetting.ModKey_Name
                     AND Plugins.ModKey_Type = GameSetting.ModKey_Type
                     AND Plugins.ModKey_FileName = GameSetting.ModKey_FileName
-                WHERE GameSetting.FormKey_ID = @FormKeyID
+                WHERE GameSetting.FormKey_ModKey_Name = @FormKeyModKeyName AND GameSetting.FormKey_ModKey_Type = @FormKeyModKeyType AND GameSetting.FormKey_ModKey_FileName = @FormKeyModKeyFileName AND GameSetting.FormKey_ID = @FormKeyID
                   AND Plugins.Enabled = 1
                   AND Plugins.ExistsOnDisk = 1
                   AND Plugins.ImportState = @ImportState
                 ORDER BY Plugins.LoadOrderIndex;
                 """,
-                new { FormKeyID = formKeyID, ImportState = nameof(PluginImportState.Current) })
+                new { FormKeyModKeyName = formKey.ModKey.Name, FormKeyModKeyType = (int)formKey.ModKey.Type, FormKeyModKeyFileName = formKey.ModKey.FileName, FormKeyID = formKey.ID, ImportState = nameof(PluginImportState.Current) })
             .Select(gameSetting => new GameSettingDTO(gameSetting))
             .ToList();
     }

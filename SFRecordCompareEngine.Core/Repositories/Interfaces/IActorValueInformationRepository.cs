@@ -6,6 +6,6 @@ namespace SFRecordCompareEngine.Core.Repositories.Interfaces;
 public interface IActorValueInformationRepository
 {
     IList<ActorValueInformationDTO> GetByModKey(ModKey modKey);
-    IList<ActorValueInformationDTO> GetByFormKeyID(uint formKeyID);
+    IList<ActorValueInformationDTO> GetByFormKey(FormKey formKey);
     void Save(ActorValueInformationDTO dto);
 }

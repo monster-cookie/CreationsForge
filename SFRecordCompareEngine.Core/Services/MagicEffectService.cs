@@ -21,8 +21,8 @@ public class MagicEffectService : IMagicEffectService
         return ScriptingAdapterHydrationService.Hydrate(Repository.GetByModKey(modKey), Helpers.RecordTypeCatalog.MagicEffect.RecordType);
     }
 
-    public IList<MagicEffectDTO> GetByFormKeyID(uint formKeyID)
+    public IList<MagicEffectDTO> GetByFormKey(FormKey formKey)
     {
-        return ScriptingAdapterHydrationService.Hydrate(Repository.GetByFormKeyID(formKeyID), Helpers.RecordTypeCatalog.MagicEffect.RecordType);
+        return ScriptingAdapterHydrationService.Hydrate(Repository.GetByFormKey(formKey), Helpers.RecordTypeCatalog.MagicEffect.RecordType);
     }
 }

@@ -21,8 +21,8 @@ public class NPCService : INPCService
         return ScriptingAdapterHydrationService.Hydrate(Repository.GetByModKey(modKey), Helpers.RecordTypeCatalog.NPC.RecordType);
     }
 
-    public IList<NPCDTO> GetByFormKeyID(uint formKeyID)
+    public IList<NPCDTO> GetByFormKey(FormKey formKey)
     {
-        return ScriptingAdapterHydrationService.Hydrate(Repository.GetByFormKeyID(formKeyID), Helpers.RecordTypeCatalog.NPC.RecordType);
+        return ScriptingAdapterHydrationService.Hydrate(Repository.GetByFormKey(formKey), Helpers.RecordTypeCatalog.NPC.RecordType);
     }
 }

@@ -6,5 +6,5 @@ namespace SFRecordCompareEngine.Core.Services.Interfaces;
 public interface IGameSettingService
 {
     IList<GameSettingDTO> GetByModKey(ModKey modKey);
-    IList<GameSettingDTO> GetByFormKeyID(uint formKeyID);
+    IList<GameSettingDTO> GetByFormKey(FormKey formKey);
 }

@@ -66,6 +66,12 @@ In conflicting rows, the far-right visible load-order winner is highlighted yell
 single-column comparisons remain neutral. A persistent legend above the status area explains the green, red, and
 yellow comparison states.
 
+For records with supported VMAD data, the selected-record comparison workspace keeps scalar fields in the standard
+comparison grid and renders VMAD separately in a `Virtual Machine Adapter` section. VMAD scripts are shown as
+collapsible script sections with load-order-sorted plugin value cells. The VMAD section can collapse all scripts,
+expand changed scripts, and filter script properties to changed rows only. VMAD comparison rows reuse the existing
+green, red, and yellow comparison state colors.
+
 `OpenPluginDialogViewModel` exposes plugin filename suggestions, selected-plugin status, `LoadCommand`, and
 `CancelCommand`. It searches openable plugins through `IPluginService` and sets the active plugin through
 `IActivePluginSelectionService` when Load is clicked.

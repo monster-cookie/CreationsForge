@@ -1,5 +1,12 @@
 ﻿# Change Log
 
+## Unreleased
+
+- Added support for Virtual Machine Adapters aka Scripts.
+- Revamped the status bar to look more modern and speced out.
+- Fixed record comparison identity to use the full origin FormKey instead of the numeric FormID portion alone.
+- Squashed the SQLite cache schema back into the initial DbUp migration so rebuilt databases use the corrected keys.
+
 ## Version 1.0.3 - 2026-06-01 [BETA]
 
 - Replaced the WinUI-only application host with Uno Platform Skia Desktop.

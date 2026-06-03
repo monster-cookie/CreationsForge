@@ -6,5 +6,5 @@ namespace SFRecordCompareEngine.Core.Services.Interfaces;
 public interface IGlobalService
 {
     IList<GlobalDTO> GetByModKey(ModKey modKey);
-    IList<GlobalDTO> GetByFormKeyID(uint formKeyID);
+    IList<GlobalDTO> GetByFormKey(FormKey formKey);
 }

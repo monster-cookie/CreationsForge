@@ -89,10 +89,10 @@ as tree nodes. FormID display and filtering stay in the presentation layer.
 
 ## Selected Record Comparison
 
-The main-view comparison workspace uses the selected concrete tree leaf's record type and `FormKey_ID` to query every
-imported plugin containing the same typed record. Explicit per-record services provide typed read boundaries over
-repository queries. `PluginService` provides imported plugin metadata for load-order sorting. The presentation view
-model builds normalized field rows and plugin columns for WinUI binding.
+The main-view comparison workspace uses the selected concrete tree leaf's record type and full origin `FormKey` to
+query every imported plugin containing the same typed record. Explicit per-record services provide typed read
+boundaries over repository queries. `PluginService` provides imported plugin metadata for load-order sorting. The
+presentation view model builds normalized field rows and plugin columns for WinUI binding.
 
 Form list item rows are read by owning plugin and form list key in `Item_Index` order. The persisted index represents
 source enumeration order and keeps duplicate item references as distinct occurrences.

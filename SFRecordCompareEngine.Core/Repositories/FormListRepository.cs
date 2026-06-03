@@ -32,7 +32,7 @@ public class FormListRepository : IFormListRepository
     }
 
     /// <inheritdoc />
-    public IList<FormListDTO> GetByFormKeyID(uint formKeyID)
+    public IList<FormListDTO> GetByFormKey(FormKey formKey)
     {
         return Database.Fetch<FormList>(
                 """
@@ -42,13 +42,13 @@ public class FormListRepository : IFormListRepository
                     ON Plugins.ModKey_Name = FormList.ModKey_Name
                     AND Plugins.ModKey_Type = FormList.ModKey_Type
                     AND Plugins.ModKey_FileName = FormList.ModKey_FileName
-                WHERE FormList.FormKey_ID = @FormKeyID
+                WHERE FormList.FormKey_ModKey_Name = @FormKeyModKeyName AND FormList.FormKey_ModKey_Type = @FormKeyModKeyType AND FormList.FormKey_ModKey_FileName = @FormKeyModKeyFileName AND FormList.FormKey_ID = @FormKeyID
                   AND Plugins.Enabled = 1
                   AND Plugins.ExistsOnDisk = 1
                   AND Plugins.ImportState = @ImportState
                 ORDER BY Plugins.LoadOrderIndex;
                 """,
-                new { FormKeyID = formKeyID, ImportState = nameof(PluginImportState.Current) })
+                new { FormKeyModKeyName = formKey.ModKey.Name, FormKeyModKeyType = (int)formKey.ModKey.Type, FormKeyModKeyFileName = formKey.ModKey.FileName, FormKeyID = formKey.ID, ImportState = nameof(PluginImportState.Current) })
             .Select(formList => new FormListDTO(formList))
             .ToList();
     }

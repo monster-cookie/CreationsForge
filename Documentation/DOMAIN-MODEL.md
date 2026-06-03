@@ -9,15 +9,14 @@ Load order entry: A discovered plugin plus its file name, path, load order index
 `PluginLoadOrderEntryDTO`.
 
 ModKey: Mutagen identifier for a plugin file. The database stores it as name, type, and file name columns. On typed
-record tables, these columns identify the plugin file containing the imported record row.
+record tables, `ModKey_*` columns identify the plugin file containing the imported record row.
 
-FormKey: Mutagen identifier for an individual record. Typed record tables persist its numeric record identifier as
-`FormKey_ID`. Multiple containing plugins can persist rows with the same `FormKey_ID`, which is how the current schema
-represents a record that appears in more than one plugin.
+FormKey: Mutagen identifier for an individual record. Typed record tables persist the origin `FormKey` as
+`FormKey_ModKey_Name`, `FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, and `FormKey_ID`.
 
-The containing plugin's `ModKey` columns and the record's `FormKey_ID` serve different purposes. A comparison lookup
-finds matching typed rows by `FormKey_ID`, then uses each row's containing-plugin `ModKey` to identify and order the
-sources. `FormKey_ID` does not need an additional persisted `ModKey` tuple for this workflow.
+The containing plugin's `ModKey` columns and the record's origin `FormKey` serve different purposes. A comparison
+lookup finds matching typed rows by the full origin `FormKey`, then uses each row's containing-plugin `ModKey` to
+identify and order the sources.
 
 FormID: Plugin-context-relative record identifier shown in the main record tree. The presentation layer uses Mutagen's
 Starfield separated-master helpers to translate between stored `FormKey` values and displayed or filtered `FormID`
@@ -127,8 +126,8 @@ Unsupported VMAD property families remain deferred:
 Localized record fields store only the resolved English text as nullable values. The database does not store
 translation catalogs or JSON payloads.
 
-For record comparison, typed rows for the same record can be located across containing plugins by querying
-`FormKey_ID`. The containing-plugin columns remain available on each result for load-order sorting and display.
+For record comparison, typed rows for the same record can be located across containing plugins by querying the full
+origin `FormKey`. The containing-plugin columns remain available on each result for load-order sorting and display.
 
 ## Starfield Record Type Reference
 

@@ -6,6 +6,6 @@ namespace SFRecordCompareEngine.Core.Repositories.Interfaces;
 public interface IMiscItemRepository
 {
     IList<MiscItemDTO> GetByModKey(ModKey modKey);
-    IList<MiscItemDTO> GetByFormKeyID(uint formKeyID);
+    IList<MiscItemDTO> GetByFormKey(FormKey formKey);
     void Save(MiscItemDTO dto);
 }

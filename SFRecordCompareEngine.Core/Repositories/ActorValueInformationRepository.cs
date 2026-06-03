@@ -21,11 +21,11 @@ public class ActorValueInformationRepository : IActorValueInformationRepository
         return Database.Fetch<ActorValueInformation>("SELECT * FROM ActorValueInformation WHERE ModKey_Name = @ModKeyName AND ModKey_Type = @ModKeyType AND ModKey_FileName = @ModKeyFileName COLLATE NOCASE ORDER BY FormKey_ID;", new { ModKeyName = modKey.Name, ModKeyType = (int)modKey.Type, ModKeyFileName = modKey.FileName }).Select(x => new ActorValueInformationDTO(x)).ToList();
     }
 
-    public IList<ActorValueInformationDTO> GetByFormKeyID(uint formKeyID)
+    public IList<ActorValueInformationDTO> GetByFormKey(FormKey formKey)
     {
         return Database.Fetch<ActorValueInformation>(
-            "SELECT ActorValueInformation.* FROM ActorValueInformation INNER JOIN Plugins ON Plugins.ModKey_Name = ActorValueInformation.ModKey_Name AND Plugins.ModKey_Type = ActorValueInformation.ModKey_Type AND Plugins.ModKey_FileName = ActorValueInformation.ModKey_FileName WHERE ActorValueInformation.FormKey_ID = @FormKeyID AND Plugins.Enabled = 1 AND Plugins.ExistsOnDisk = 1 AND Plugins.ImportState = @ImportState ORDER BY Plugins.LoadOrderIndex;",
-            new { FormKeyID = formKeyID, ImportState = nameof(PluginImportState.Current) }).Select(x => new ActorValueInformationDTO(x)).ToList();
+            "SELECT ActorValueInformation.* FROM ActorValueInformation INNER JOIN Plugins ON Plugins.ModKey_Name = ActorValueInformation.ModKey_Name AND Plugins.ModKey_Type = ActorValueInformation.ModKey_Type AND Plugins.ModKey_FileName = ActorValueInformation.ModKey_FileName WHERE ActorValueInformation.FormKey_ModKey_Name = @FormKeyModKeyName AND ActorValueInformation.FormKey_ModKey_Type = @FormKeyModKeyType AND ActorValueInformation.FormKey_ModKey_FileName = @FormKeyModKeyFileName AND ActorValueInformation.FormKey_ID = @FormKeyID AND Plugins.Enabled = 1 AND Plugins.ExistsOnDisk = 1 AND Plugins.ImportState = @ImportState ORDER BY Plugins.LoadOrderIndex;",
+            new { FormKeyModKeyName = formKey.ModKey.Name, FormKeyModKeyType = (int)formKey.ModKey.Type, FormKeyModKeyFileName = formKey.ModKey.FileName, FormKeyID = formKey.ID, ImportState = nameof(PluginImportState.Current) }).Select(x => new ActorValueInformationDTO(x)).ToList();
     }
 
     public void Save(ActorValueInformationDTO dto)

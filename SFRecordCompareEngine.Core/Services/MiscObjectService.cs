@@ -21,8 +21,8 @@ public class MiscItemService : IMiscItemService
         return ScriptingAdapterHydrationService.Hydrate(Repository.GetByModKey(modKey), Helpers.RecordTypeCatalog.MiscItem.RecordType);
     }
 
-    public IList<MiscItemDTO> GetByFormKeyID(uint formKeyID)
+    public IList<MiscItemDTO> GetByFormKey(FormKey formKey)
     {
-        return ScriptingAdapterHydrationService.Hydrate(Repository.GetByFormKeyID(formKeyID), Helpers.RecordTypeCatalog.MiscItem.RecordType);
+        return ScriptingAdapterHydrationService.Hydrate(Repository.GetByFormKey(formKey), Helpers.RecordTypeCatalog.MiscItem.RecordType);
     }
 }

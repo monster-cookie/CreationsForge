@@ -23,9 +23,9 @@ public class FormListService : IFormListService
         return FormListRepository.GetByModKey(modKey);
     }
 
-    public IList<FormListDTO> GetByFormKeyID(uint formKeyID)
+    public IList<FormListDTO> GetByFormKey(FormKey formKey)
     {
-        return FormListRepository.GetByFormKeyID(formKeyID);
+        return FormListRepository.GetByFormKey(formKey);
     }
 
     public IList<FormListItemDTO> GetItems(ModKey modKey, FormKey formKey)

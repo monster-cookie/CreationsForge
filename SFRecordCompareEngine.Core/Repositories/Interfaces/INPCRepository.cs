@@ -6,6 +6,6 @@ namespace SFRecordCompareEngine.Core.Repositories.Interfaces;
 public interface INPCRepository
 {
     IList<NPCDTO> GetByModKey(ModKey modKey);
-    IList<NPCDTO> GetByFormKeyID(uint formKeyID);
+    IList<NPCDTO> GetByFormKey(FormKey formKey);
     void Save(NPCDTO dto);
 }

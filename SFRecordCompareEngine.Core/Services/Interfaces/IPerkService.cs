@@ -6,5 +6,5 @@ namespace SFRecordCompareEngine.Core.Services.Interfaces;
 public interface IPerkService
 {
     IList<PerkDTO> GetByModKey(ModKey modKey);
-    IList<PerkDTO> GetByFormKeyID(uint formKeyID);
+    IList<PerkDTO> GetByFormKey(FormKey formKey);
 }

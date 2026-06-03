@@ -21,8 +21,8 @@ public class ActorValueInformationService : IActorValueInformationService
         return ScriptingAdapterHydrationService.Hydrate(Repository.GetByModKey(modKey), Helpers.RecordTypeCatalog.ActorValueInformation.RecordType);
     }
 
-    public IList<ActorValueInformationDTO> GetByFormKeyID(uint formKeyID)
+    public IList<ActorValueInformationDTO> GetByFormKey(FormKey formKey)
     {
-        return ScriptingAdapterHydrationService.Hydrate(Repository.GetByFormKeyID(formKeyID), Helpers.RecordTypeCatalog.ActorValueInformation.RecordType);
+        return ScriptingAdapterHydrationService.Hydrate(Repository.GetByFormKey(formKey), Helpers.RecordTypeCatalog.ActorValueInformation.RecordType);
     }
 }

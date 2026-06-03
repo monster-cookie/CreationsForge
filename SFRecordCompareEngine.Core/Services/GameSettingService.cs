@@ -19,8 +19,8 @@ public class GameSettingService : IGameSettingService
         return GameSettingRepository.GetByModKey(modKey);
     }
 
-    public IList<GameSettingDTO> GetByFormKeyID(uint formKeyID)
+    public IList<GameSettingDTO> GetByFormKey(FormKey formKey)
     {
-        return GameSettingRepository.GetByFormKeyID(formKeyID);
+        return GameSettingRepository.GetByFormKey(formKey);
     }
 }

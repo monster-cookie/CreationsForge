@@ -5,7 +5,7 @@ using SFRecordCompareEngine.Core.DTOs.Records;
 namespace SFRecordCompareEngine.Core.Models.Database;
 
 [TableName("ScriptingAdapterPropertyListItems")]
-[PrimaryKey("ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ID, ScriptingAdapter_Name, Property_Index, ListItem_Index", AutoIncrement = false)]
+[PrimaryKey("ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, ScriptingAdapter_Name, Property_Index, ListItem_Index", AutoIncrement = false)]
 public class ScriptingAdapterPropertyListItem
 {
     public ScriptingAdapterPropertyListItem()
@@ -17,6 +17,9 @@ public class ScriptingAdapterPropertyListItem
         ModKeyType = (int)dto.ModKey.Type;
         ModKeyFileName = dto.ModKey.FileName;
         RecordType = dto.RecordType;
+        FormKeyModKeyName = dto.FormKey.ModKey.Name;
+        FormKeyModKeyType = (int)dto.FormKey.ModKey.Type;
+        FormKeyModKeyFileName = dto.FormKey.ModKey.FileName;
         FormKeyId = (int)dto.FormKey.ID;
         ScriptingAdapterName = dto.ScriptingAdapterName;
         PropertyIndex = dto.PropertyIndex;
@@ -39,6 +42,9 @@ public class ScriptingAdapterPropertyListItem
     [Column("ModKey_Type")] public int ModKeyType { get; set; } = (int)ModType.Master;
     [Column("ModKey_FileName")] public string ModKeyFileName { get; set; } = string.Empty;
     [Column("RecordType")] public string RecordType { get; set; } = string.Empty;
+    [Column("FormKey_ModKey_Name")] public string FormKeyModKeyName { get; set; } = string.Empty;
+    [Column("FormKey_ModKey_Type")] public int FormKeyModKeyType { get; set; } = (int)ModType.Master;
+    [Column("FormKey_ModKey_FileName")] public string FormKeyModKeyFileName { get; set; } = string.Empty;
     [Column("FormKey_ID")] public int FormKeyId { get; set; }
     [Column("ScriptingAdapter_Name")] public string ScriptingAdapterName { get; set; } = string.Empty;
     [Column("Property_Index")] public int PropertyIndex { get; set; }

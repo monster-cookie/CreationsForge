@@ -1,5 +1,84 @@
 # Design Decisions
 
+## 2026-06-03 - Persist Full Origin FormKey For Record Comparison
+
+Status: Accepted
+
+Context: Typed record tables stored the containing plugin `ModKey` and numeric `FormKey_ID`. That incorrectly grouped
+unrelated records when different origin plugins used the same local numeric ID. True override comparison needs the
+origin `FormKey` from Mutagen and the containing plugin row identity as separate concepts.
+
+Decision: Persist the full origin `FormKey` on typed record and VMAD child tables as `FormKey_ModKey_Name`,
+`FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, and `FormKey_ID`. Keep containing-plugin `ModKey_*` columns for row
+ownership, display, delete cascades, and load-order sorting. Compare selected records by record type plus the full
+origin `FormKey`, not by numeric `FormKey_ID` alone. Squash the SQLite schema back into `001_CreatePluginSchema.sql`
+and purge the local cache database so imports rebuild from the corrected schema.
+
+Rationale: Mutagen `FormKey` carries both origin mod identity and local record ID. Persisting only the local ID loses
+the distinction between true overrides and unrelated records. Keeping containing and origin identity separate lets a
+plugin override a master's record legitimately while preventing false comparison groups.
+
+Alternatives considered:
+
+- Continue querying by `FormKey_ID` alone.
+- Derive origin identity from the containing plugin `ModKey`.
+- Add an incremental migration and preserve existing cached rows.
+
+Consequences:
+
+- Existing cache databases must be rebuilt because the primary keys and lookup indexes changed.
+- DbUp `SchemaVersions` remains the migration-state source of truth.
+- No hardcoded application schema-version constants are added.
+- Comparison repositories filter by full origin `FormKey` and still sort/display by containing plugin metadata.
+- VMAD and form-list child rows include the parent origin `FormKey` columns in their parent keys.
+
+Related files:
+
+- `SFRecordCompareEngine.Migrations/Sql/001_CreatePluginSchema.sql`
+- `SFRecordCompareEngine.Core/Models/Database/FormList.cs`
+- `SFRecordCompareEngine.Core/Models/Database/ScriptingAdapter.cs`
+- `SFRecordCompareEngine.Core/Repositories/FormListRepository.cs`
+- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
+- `Documentation/Database/DATABASE.md`
+- `Documentation/Database/ERD.md`
+
+## 2026-06-03 - Display VMAD Scripts In Collapsible Comparison Sections
+
+Status: Accepted
+
+Context: Supported VMAD data is hierarchical, but the original selected-record comparison UI flattened scripts,
+properties, and list items into long field labels. Records with several attached scripts become difficult to read in a
+flat scalar row grid.
+
+Decision: Keep scalar record fields in the existing selected-record comparison grid and display supported VMAD data in
+a dedicated `Virtual Machine Adapter` section. Render each script as a collapsible presentation-layer section with
+property rows and load-order-sorted plugin value cells.
+
+Rationale: Script grouping matches the structure of the data without cloning xEdit's full tree UI. It keeps the scalar
+comparison stable, gives VMAD its own expand/collapse workflow, and uses the existing Uno/WinUI control surface instead
+of adding a new toolkit dependency.
+
+Alternatives considered:
+
+- Keep VMAD flattened into scalar comparison rows.
+- Clone xEdit's full hierarchical tree table.
+- Move VMAD details into a separate dialog.
+- Add an explicit Uno Toolkit package before confirming the existing Uno/WinUI controls are sufficient.
+
+Consequences:
+
+- VMAD comparison state is presentation-specific and lives in the presentation project.
+- Scalar comparison rows no longer include VMAD script/property/list-item labels.
+- VMAD script sections can be collapsed, expanded for changed scripts, and filtered to changed properties.
+- The same green, red, and yellow comparison state colors remain available for VMAD property values.
+
+Related files:
+
+- `SFRecordCompareEngine/Views/MainView.xaml`
+- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
+- `SFRecordCompareEngine/ViewModels/RecordComparisonScriptViewModel.cs`
+- `SFRecordCompareEngine/ViewModels/RecordComparisonScriptPropertyViewModel.cs`
+
 ## 2026-06-02 - Normalize Supported VMAD Script Data In Shared Child Tables
 
 Status: Accepted
@@ -26,13 +105,13 @@ Consequences:
 
 - Supported records now hydrate persisted VMAD scripting data through Core services.
 - The comparison workspace can display VMAD scripts, properties, and supported list items.
-- `RecordType` is required on the shared VMAD tables because `FormKey_ID` is not unique across all typed record
-  tables.
+- `RecordType` and full origin `FormKey` identity are required on the shared VMAD tables because numeric
+  `FormKey_ID` is not globally unique across typed record tables or origin plugins.
 - Struct and variable VMAD property families remain out of scope until a deeper normalized schema is approved.
 
 Related files:
 
-- `SFRecordCompareEngine.Migrations/Sql/003_AddScriptingAdapterSchema.sql`
+- `SFRecordCompareEngine.Migrations/Sql/001_CreatePluginSchema.sql`
 - `SFRecordCompareEngine.Core/Services/StarfieldRecordReaderService.cs`
 - `SFRecordCompareEngine.Core/Services/ScriptingAdapterImportService.cs`
 - `SFRecordCompareEngine.Core/Services/ScriptingAdapterHydrationService.cs`
@@ -106,7 +185,7 @@ Consequences:
 Related files:
 
 - `SFRecordCompareEngine.Migrations/DatabaseMigrationRunner.cs`
-- `SFRecordCompareEngine.Migrations/Sql/002_AddPluginRecordCount.sql`
+- `SFRecordCompareEngine.Migrations/Sql/001_CreatePluginSchema.sql`
 - `SFRecordCompareEngine.Core/Database/DatabaseSchemaInitializer.cs`
 - `SFRecordCompareEngine.Core/Services/PluginImportService.cs`
 - `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
@@ -365,7 +444,9 @@ Related files:
 
 ## 2026-05-30 - Use Existing Typed Record Identity For Cross-Plugin Comparison
 
-Status: Accepted
+Status: Superseded by `2026-06-03 - Persist Full Origin FormKey For Record Comparison`
+
+Supersession note: This decision is historical and no longer describes the implemented comparison identity rule.
 
 Context: The comparison workspace needs to locate every imported plugin containing a selected record. Typed record
 tables already store the containing plugin's `ModKey` columns and the record's numeric `FormKey_ID`. Multiple plugin
@@ -604,3 +685,4 @@ Related files:
 - `SFRecordCompareEngine.Core/Repositories/PluginRepository.cs`
 - `SFRecordCompareEngine.Core/Repositories/FormListRepository.cs`
 - `SFRecordCompareEngine.Core/Models/Database/SqliteDatabaseOptions.cs`
+

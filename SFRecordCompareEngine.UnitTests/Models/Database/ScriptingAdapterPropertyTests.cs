@@ -11,7 +11,8 @@ public class ScriptingAdapterPropertyTests
     public void Constructor_MapsDTO()
     {
         var modKey = new ModKey("Example", ModType.Master);
-        var formKey = new FormKey(modKey, 123);
+        var originModKey = new ModKey("Origin", ModType.Master);
+        var formKey = new FormKey(originModKey, 123);
         var objectFormKey = new FormKey(new ModKey("ObjectPlugin", ModType.Plugin), 456);
         var importedAtUtc = new DateTime(2026, 6, 2, 12, 30, 0, DateTimeKind.Utc);
         var dto = new ScriptingAdapterPropertyDTO
@@ -35,6 +36,9 @@ public class ScriptingAdapterPropertyTests
         result.ModKeyType.ShouldBe((int)modKey.Type);
         result.ModKeyFileName.ShouldBe(modKey.FileName);
         result.RecordType.ShouldBe("NPC");
+        result.FormKeyModKeyName.ShouldBe(originModKey.Name);
+        result.FormKeyModKeyType.ShouldBe((int)originModKey.Type);
+        result.FormKeyModKeyFileName.ShouldBe(originModKey.FileName);
         result.FormKeyId.ShouldBe((int)formKey.ID);
         result.ScriptingAdapterName.ShouldBe("ScriptName");
         result.PropertyIndex.ShouldBe(2);

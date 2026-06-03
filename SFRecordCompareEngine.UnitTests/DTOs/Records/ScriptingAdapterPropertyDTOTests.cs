@@ -17,6 +17,9 @@ public class ScriptingAdapterPropertyDTOTests
             ModKeyType = (int)ModType.Master,
             ModKeyFileName = "Example.esm",
             RecordType = "Perk",
+            FormKeyModKeyName = "Origin",
+            FormKeyModKeyType = (int)ModType.Master,
+            FormKeyModKeyFileName = "Origin.esm",
             FormKeyId = 321,
             ScriptingAdapterName = "ExampleScript",
             PropertyIndex = 4,
@@ -30,6 +33,8 @@ public class ScriptingAdapterPropertyDTOTests
 
         result.ModKey.Name.ShouldBe("Example");
         result.ModKey.Type.ShouldBe(ModType.Master);
+        result.FormKey.ModKey.Name.ShouldBe("Origin");
+        result.FormKey.ModKey.Type.ShouldBe(ModType.Master);
         result.FormKey.ID.ShouldBe(321U);
         result.RecordType.ShouldBe("Perk");
         result.ScriptingAdapterName.ShouldBe("ExampleScript");

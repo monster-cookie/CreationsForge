@@ -6,5 +6,5 @@ namespace SFRecordCompareEngine.Core.Services.Interfaces;
 public interface INPCService
 {
     IList<NPCDTO> GetByModKey(ModKey modKey);
-    IList<NPCDTO> GetByFormKeyID(uint formKeyID);
+    IList<NPCDTO> GetByFormKey(FormKey formKey);
 }

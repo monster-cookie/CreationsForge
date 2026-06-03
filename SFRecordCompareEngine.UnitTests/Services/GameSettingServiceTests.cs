@@ -24,14 +24,15 @@ public class GameSettingServiceTests
     }
 
     [Fact]
-    public void GetByFormKeyID_DelegatesToGameSettingRepository()
+    public void GetByFormKey_DelegatesToGameSettingRepository()
     {
+        var formKey = new FormKey(new ModKey("Origin", ModType.Master), 123);
         var expected = new List<GameSettingDTO>();
         var repository = new Mock<IGameSettingRepository>();
-        repository.Setup(x => x.GetByFormKeyID(123)).Returns(expected);
+        repository.Setup(x => x.GetByFormKey(formKey)).Returns(expected);
         var sut = new GameSettingService(repository.Object);
 
-        var result = sut.GetByFormKeyID(123);
+        var result = sut.GetByFormKey(formKey);
 
         result.ShouldBeSameAs(expected);
     }

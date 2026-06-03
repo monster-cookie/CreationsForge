@@ -21,11 +21,11 @@ public class MiscItemRepository : IMiscItemRepository
         return Database.Fetch<MiscItem>("SELECT * FROM MiscItem WHERE ModKey_Name = @ModKeyName AND ModKey_Type = @ModKeyType AND ModKey_FileName = @ModKeyFileName COLLATE NOCASE ORDER BY FormKey_ID;", new { ModKeyName = modKey.Name, ModKeyType = (int)modKey.Type, ModKeyFileName = modKey.FileName }).Select(x => new MiscItemDTO(x)).ToList();
     }
 
-    public IList<MiscItemDTO> GetByFormKeyID(uint formKeyID)
+    public IList<MiscItemDTO> GetByFormKey(FormKey formKey)
     {
         return Database
-            .Fetch<MiscItem>("SELECT MiscItem.* FROM MiscItem INNER JOIN Plugins ON Plugins.ModKey_Name = MiscItem.ModKey_Name AND Plugins.ModKey_Type = MiscItem.ModKey_Type AND Plugins.ModKey_FileName = MiscItem.ModKey_FileName WHERE MiscItem.FormKey_ID = @FormKeyID AND Plugins.Enabled = 1 AND Plugins.ExistsOnDisk = 1 AND Plugins.ImportState = @ImportState ORDER BY Plugins.LoadOrderIndex;",
-                new { FormKeyID = formKeyID, ImportState = nameof(PluginImportState.Current) }).Select(x => new MiscItemDTO(x)).ToList();
+            .Fetch<MiscItem>("SELECT MiscItem.* FROM MiscItem INNER JOIN Plugins ON Plugins.ModKey_Name = MiscItem.ModKey_Name AND Plugins.ModKey_Type = MiscItem.ModKey_Type AND Plugins.ModKey_FileName = MiscItem.ModKey_FileName WHERE MiscItem.FormKey_ModKey_Name = @FormKeyModKeyName AND MiscItem.FormKey_ModKey_Type = @FormKeyModKeyType AND MiscItem.FormKey_ModKey_FileName = @FormKeyModKeyFileName AND MiscItem.FormKey_ID = @FormKeyID AND Plugins.Enabled = 1 AND Plugins.ExistsOnDisk = 1 AND Plugins.ImportState = @ImportState ORDER BY Plugins.LoadOrderIndex;",
+                new { FormKeyModKeyName = formKey.ModKey.Name, FormKeyModKeyType = (int)formKey.ModKey.Type, FormKeyModKeyFileName = formKey.ModKey.FileName, FormKeyID = formKey.ID, ImportState = nameof(PluginImportState.Current) }).Select(x => new MiscItemDTO(x)).ToList();
     }
 
     public void Save(MiscItemDTO dto)

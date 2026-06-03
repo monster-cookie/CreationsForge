@@ -5,8 +5,7 @@
 The application uses a local SQLite cache. The schema is defined by embedded DbUp scripts in
 `SFRecordCompareEngine.Migrations/Sql`:
 
-- `001_CreatePluginSchema.sql` creates the application tables, keys, indexes, and initial constraints.
-- `002_AddPluginRecordCount.sql` adds `Plugins.RecordCount`.
+- `001_CreatePluginSchema.sql` creates the application tables, keys, indexes, and constraints.
 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration state source of
 truth. The application does not define a hardcoded schema-version constant.
@@ -67,23 +66,30 @@ The typed record tables `FormList`, `GameSetting`, `Global`, `MiscItem`, `Keywor
 - `ModKey_Name`
 - `ModKey_Type`
 - `ModKey_FileName`
+- `FormKey_ModKey_Name`
+- `FormKey_ModKey_Type`
+- `FormKey_ModKey_FileName`
 - `FormKey_ID`
 
-The `ModKey_*` columns identify the plugin containing the imported record. `FormKey_ID` identifies the record for
-cross-plugin lookup. Multiple plugins can therefore store rows with the same `FormKey_ID`.
+The `ModKey_*` columns identify the plugin containing the imported record row. The `FormKey_ModKey_*` columns plus
+`FormKey_ID` identify the record's origin `FormKey`. This lets comparison queries group true overrides while keeping
+unrelated records with the same local numeric ID separate.
 
 Each typed record table declares:
 
 - A foreign key from `ModKey_Name`, `ModKey_Type`, and `ModKey_FileName` to the `Plugins` primary key.
 - `ON DELETE CASCADE` for its `Plugins` foreign key.
 - `CHECK (FormKey_ID >= 0)`.
-- A non-unique `FormKey_ID` index for cross-plugin comparison lookup.
+- A non-unique full-origin `FormKey` index for cross-plugin comparison lookup.
 
 Every typed record table contains these common columns:
 
 - `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
 - `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
 - `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_Name` (`TEXT`, `NOT NULL`, primary key)
+- `FormKey_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key)
+- `FormKey_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key)
 - `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key)
 - `EditorID` (`TEXT`, `NOT NULL`)
 - `FormVersion` (`INTEGER`, `NOT NULL`)
@@ -138,7 +144,7 @@ Constraints:
 - `Enabled` defaults to `1` and must be `0` or `1`.
 - `ExistsOnDisk` defaults to `1` and must be `0` or `1`.
 - `ImportState` defaults to `Current` and must be `Current`, `Changed`, `Missing`, `Failed`, or `Unsupported`.
-- `RecordCount` was added by `002_AddPluginRecordCount.sql`, defaults to `0`, and must be greater than or equal to `0`.
+- `RecordCount` is created by `001_CreatePluginSchema.sql`, defaults to `0`, and must be greater than or equal to `0`.
 
 ### PluginMasterReferences
 
@@ -196,6 +202,9 @@ Columns:
 - `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
 - `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
 - `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
 - `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key, foreign key)
 - `Item_ModKey_Name` (`TEXT`, `NOT NULL`, primary key)
 - `Item_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key)
@@ -206,19 +215,20 @@ Columns:
 
 Primary key:
 
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, and `FormKey_ID`
+- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `FormKey_ModKey_Name`, `FormKey_ModKey_Type`,
+  `FormKey_ModKey_FileName`, and `FormKey_ID`
 - `Item_ModKey_Name`, `Item_ModKey_Type`, `Item_ModKey_FileName`, and `Item_FormKey_ID`
 - `Item_Index`
 
 Foreign key:
 
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, and `FormKey_ID` reference the `FormList` primary key with
-  `ON DELETE CASCADE`.
+- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `FormKey_ModKey_Name`, `FormKey_ModKey_Type`,
+  `FormKey_ModKey_FileName`, and `FormKey_ID` reference the `FormList` primary key with `ON DELETE CASCADE`.
 
 Indexes:
 
-- `IX_FormListItems_Item_FormKey_ID_ModKey_FormKey_ID` on `Item_FormKey_ID`, the owning plugin key columns, and
-  `FormKey_ID`
+- `IX_FormListItems_FormList` on the owning plugin key columns plus the parent origin `FormKey` columns
+- `IX_FormListItems_Item_FormKey` on the item `ModKey` columns plus `Item_FormKey_ID`
 - `IX_FormListItems_Item_Index` on `Item_Index`
 
 Constraints:
@@ -226,6 +236,7 @@ Constraints:
 - All columns are `NOT NULL`.
 - `FormKey_ID` must be greater than or equal to `0`.
 - `Item_FormKey_ID` must be greater than or equal to `0`.
+- `Item_Index` must be greater than or equal to `0`.
 
 `Item_Index` preserves source enumeration order. The primary key allows duplicate item references to remain separate
 rows when they occur at different indexes.
@@ -378,6 +389,9 @@ Columns:
 - `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
 - `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
 - `RecordType` (`TEXT`, `NOT NULL`, primary key)
+- `FormKey_ModKey_Name` (`TEXT`, `NOT NULL`, primary key)
+- `FormKey_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key)
+- `FormKey_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key)
 - `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key)
 - `Name` (`TEXT`, `NOT NULL`, primary key)
 - `Script_Index` (`INTEGER`, `NOT NULL`)
@@ -385,7 +399,8 @@ Columns:
 
 Primary key:
 
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ID`, and `Name`
+- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ModKey_Name`,
+  `FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, `FormKey_ID`, and `Name`
 
 Foreign keys:
 
@@ -394,7 +409,7 @@ Foreign keys:
 
 Indexes:
 
-- `IX_ScriptingAdapters_RecordLookup` on `RecordType` and `FormKey_ID`
+- `IX_ScriptingAdapters_RecordLookup` on `RecordType` plus the origin `FormKey` columns
 - `IX_ScriptingAdapters_ScriptIndex` on `Script_Index`
 
 Constraints:
@@ -403,8 +418,8 @@ Constraints:
 - `FormKey_ID` must be greater than or equal to `0`.
 - `Script_Index` must be greater than or equal to `0`.
 
-`RecordType` is required because the shared VMAD child tables serve multiple typed parent tables. `FormKey_ID` is not
-globally unique across those tables.
+`RecordType` is required because the shared VMAD child tables serve multiple typed parent tables. The full origin
+`FormKey` is required because `FormKey_ID` is not globally unique across origin plugins.
 
 ### ScriptingAdapterProperties
 
@@ -416,6 +431,9 @@ Columns:
 - `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
 - `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
 - `RecordType` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
 - `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key, foreign key)
 - `ScriptingAdapter_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
 - `Property_Index` (`INTEGER`, `NOT NULL`, primary key)
@@ -435,19 +453,21 @@ Columns:
 
 Primary key:
 
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ID`, `ScriptingAdapter_Name`,
-  and `Property_Index`
+- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ModKey_Name`,
+  `FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, `FormKey_ID`, `ScriptingAdapter_Name`, and
+  `Property_Index`
 
 Foreign keys:
 
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ID`, and `ScriptingAdapter_Name`
-  reference the `ScriptingAdapters` primary key with `ON DELETE CASCADE`.
+- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ModKey_Name`,
+  `FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, `FormKey_ID`, and `ScriptingAdapter_Name` reference the
+  `ScriptingAdapters` primary key with `ON DELETE CASCADE`.
 
 Indexes:
 
-- `IX_ScriptingAdapterProperties_RecordLookup` on `RecordType` and `FormKey_ID`
+- `IX_ScriptingAdapterProperties_RecordLookup` on `RecordType` plus the origin `FormKey` columns
 - `IX_ScriptingAdapterProperties_PropertyIndex` on `Property_Index`
-- `IX_ScriptingAdapterProperties_ObjectLookup` on `Object_FormKey_ID`
+- `IX_ScriptingAdapterProperties_ObjectLookup` on the object `ModKey` columns plus `Object_FormKey_ID`
 
 Constraints:
 
@@ -478,6 +498,9 @@ Columns:
 - `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
 - `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
 - `RecordType` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `FormKey_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
 - `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key, foreign key)
 - `ScriptingAdapter_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
 - `Property_Index` (`INTEGER`, `NOT NULL`, primary key, foreign key)
@@ -497,19 +520,21 @@ Columns:
 
 Primary key:
 
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ID`, `ScriptingAdapter_Name`,
-  `Property_Index`, and `ListItem_Index`
+- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ModKey_Name`,
+  `FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, `FormKey_ID`, `ScriptingAdapter_Name`, `Property_Index`, and
+  `ListItem_Index`
 
 Foreign keys:
 
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ID`, `ScriptingAdapter_Name`,
-  and `Property_Index` reference the `ScriptingAdapterProperties` primary key with `ON DELETE CASCADE`.
+- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ModKey_Name`,
+  `FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, `FormKey_ID`, `ScriptingAdapter_Name`, and `Property_Index`
+  reference the `ScriptingAdapterProperties` primary key with `ON DELETE CASCADE`.
 
 Indexes:
 
-- `IX_ScriptingAdapterPropertyListItems_RecordLookup` on `RecordType` and `FormKey_ID`
+- `IX_ScriptingAdapterPropertyListItems_RecordLookup` on `RecordType` plus the origin `FormKey` columns
 - `IX_ScriptingAdapterPropertyListItems_ListItemIndex` on `ListItem_Index`
-- `IX_ScriptingAdapterPropertyListItems_ObjectLookup` on `Object_FormKey_ID`
+- `IX_ScriptingAdapterPropertyListItems_ObjectLookup` on the object `ModKey` columns plus `Object_FormKey_ID`
 
 Constraints:
 
@@ -539,8 +564,10 @@ The following columns carry record-reference data but do not declare SQLite fore
 - `MagicEffect.ActorValue2FormKey`, `ResistValueFormKey`, `PerkToApplyFormKey`, `EquipAbilityFormKey`,
   `ExplosionFormKey`, `CastingArtFormKey`, `HitEffectArtFormKey`, `HitShaderFormKey`, `ImageSpaceModifierFormKey`,
   `ImpactDataFormKey`, and `ProjectileFormKey`
-- `ScriptingAdapters.RecordType` and `FormKey_ID` identify the owning typed record table row but do not declare a
-  SQLite foreign key to a specific typed record table
+- Typed-record and VMAD `FormKey_ModKey_Name`, `FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, and `FormKey_ID`
+  persist origin `FormKey` identity but do not declare a SQLite foreign key to `Plugins`
+- `ScriptingAdapters.RecordType` and the origin `FormKey` columns identify the owning typed record table row but do
+  not declare a SQLite foreign key to a specific typed record table
 - `ScriptingAdapterProperties.Object_ModKey_Name`, `Object_ModKey_Type`, `Object_ModKey_FileName`,
   and `Object_FormKey_ID`
 - `ScriptingAdapterPropertyListItems.Object_ModKey_Name`, `Object_ModKey_Type`, `Object_ModKey_FileName`,
@@ -555,14 +582,17 @@ The schema supports locating typed rows for the same record across plugins. For 
 ```sql
 SELECT *
 FROM FormList
-WHERE FormKey_ID = 0x0003F551;
+WHERE FormKey_ModKey_Name = 'BasePlugin'
+  AND FormKey_ModKey_Type = 1
+  AND FormKey_ModKey_FileName = 'BasePlugin.esm'
+  AND FormKey_ID = 0x0003F551;
 ```
 
-This can return rows from multiple plugins. Each result keeps its containing plugin's `ModKey` columns, while the
-shared `FormKey_ID` identifies the record being compared.
+This can return rows from multiple containing plugins when those plugins override the same origin record. Each result
+keeps its containing plugin's `ModKey` columns for display and load-order sorting.
 
-Comparison queries should filter typed tables by `FormKey_ID` and use plugin metadata for load-order sorting. Do not
-add additional origin-plugin columns or persist `FormKey` as a second `ModKey` tuple for this workflow.
+Comparison queries must filter typed tables by the full origin `FormKey` tuple. Filtering by `FormKey_ID` alone can
+incorrectly group unrelated records from different origin plugins that happen to share the same local numeric ID.
 
 ## Repository Boundary
 

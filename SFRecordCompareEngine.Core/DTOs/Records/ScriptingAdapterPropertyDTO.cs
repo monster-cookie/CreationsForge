@@ -14,7 +14,8 @@ public class ScriptingAdapterPropertyDTO
     {
         ModKey = new ModKey(model.ModKeyName, (ModType)model.ModKeyType);
         RecordType = model.RecordType;
-        FormKey = new FormKey(ModKey, (uint)model.FormKeyId);
+        var formKeyModKey = new ModKey(model.FormKeyModKeyName, (ModType)model.FormKeyModKeyType);
+        FormKey = new FormKey(formKeyModKey, (uint)model.FormKeyId);
         ScriptingAdapterName = model.ScriptingAdapterName;
         PropertyIndex = model.PropertyIndex;
         Name = model.Name;
