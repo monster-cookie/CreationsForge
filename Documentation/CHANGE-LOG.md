@@ -5,7 +5,7 @@
 - Added support for Virtual Machine Adapters aka Scripts.
 - Revamped the status bar to look more modern and speced out.
 - Fixed record comparison identity to use the full origin FormKey instead of the numeric FormID portion alone.
-- Squashed the SQLite cache schema back into the initial DbUp migration so rebuilt databases use the corrected keys.
+- The previous item is a major bug that requires purging the database and reimporting all records. (Sorry)
 
 ## Version 1.0.3 - 2026-06-01 [BETA]
 

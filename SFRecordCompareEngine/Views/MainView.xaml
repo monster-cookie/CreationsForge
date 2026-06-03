@@ -231,15 +231,6 @@
                                         FontSize="16"
                                         FontWeight="SemiBold"
                                         Text="{Binding ScriptingAdapterSectionHeader}" />
-                                    <Border
-                                        Background="#303A6A86"
-                                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                                        BorderThickness="1"
-                                        Padding="8,2">
-                                        <TextBlock
-                                            FontSize="12"
-                                            Text="VMAD" />
-                                    </Border>
                                 </StackPanel>
 
                                 <StackPanel
@@ -481,8 +472,15 @@
                         <TextBlock
                             VerticalAlignment="Center"
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Text="{Binding SelectedRecordContextText}"
-                            Visibility="{Binding SelectedRecordContextVisibility}" />
+                            Text="{Binding ActiveRecordCountText}" />
+                        <Rectangle
+                            Width="1"
+                            Height="22"
+                            Fill="{ThemeResource CardStrokeColorDefaultBrush}" />
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="{Binding ActivePluginText}" />
                         <Rectangle
                             Width="1"
                             Height="22"
@@ -491,15 +489,8 @@
                         <TextBlock
                             VerticalAlignment="Center"
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Text="{Binding ActivePluginText}" />
-                        <Rectangle
-                            Width="1"
-                            Height="22"
-                            Fill="{ThemeResource CardStrokeColorDefaultBrush}" />
-                        <TextBlock
-                            VerticalAlignment="Center"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Text="{Binding ActiveRecordCountText}" />
+                            Text="{Binding SelectedRecordContextText}"
+                            Visibility="{Binding SelectedRecordContextVisibility}" />
                     </StackPanel>
 
                     <StackPanel

@@ -972,7 +972,9 @@ public class MainPageViewModel : ViewModelBase
             : $"Active records: {activePlugin.RecordCount:N0}";
         SelectedRecordContextText = selectedRecord == null
             ? string.Empty
-            : $"{selectedRecord.RecordType} {selectedRecord.FormIDText}";
+            : string.IsNullOrWhiteSpace(selectedRecord.EditorID)
+                ? $"{selectedRecord.RecordType} {selectedRecord.FormIDText}"
+                : $"{selectedRecord.RecordType} {selectedRecord.EditorID} ({selectedRecord.FormIDText})";
         SelectedRecordContextVisibility = selectedRecord == null ? Visibility.Collapsed : Visibility.Visible;
         StatusText = GetStatusText();
     }
