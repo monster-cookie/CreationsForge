@@ -435,6 +435,219 @@
                             </ItemsControl>
                         </StackPanel>
                     </Border>
+
+                    <Border
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        Padding="12">
+                        <Border.Visibility>
+                            <Binding Path="RecordComparisonPerkRanksVisibility" />
+                        </Border.Visibility>
+                        <StackPanel Spacing="10">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock
+                                    Grid.Column="0"
+                                    VerticalAlignment="Center"
+                                    FontSize="16"
+                                    FontWeight="SemiBold"
+                                    Text="{Binding PerkRankSectionHeader}" />
+
+                                <StackPanel
+                                    Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    Spacing="8">
+                                    <Button
+                                        Command="{Binding CollapseAllPerkRanksCommand}"
+                                        Content="Collapse all" />
+                                    <Button
+                                        Command="{Binding ExpandChangedPerkRanksCommand}"
+                                        Content="Expand changed" />
+                                    <Button
+                                        Command="{Binding ToggleChangedOnlyPerkRanksCommand}"
+                                        Content="{Binding ChangedOnlyPerkRanksButtonText}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <ItemsControl ItemsSource="{Binding RecordComparisonPerkRanks}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Expander
+                                            Margin="0,0,0,8"
+                                            IsExpanded="{Binding IsExpanded, Mode=TwoWay}">
+                                            <Expander.Header>
+                                                <Grid
+                                                    ColumnSpacing="10"
+                                                    Padding="4">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <TextBlock
+                                                        Grid.Column="0"
+                                                        VerticalAlignment="Center"
+                                                        FontWeight="SemiBold"
+                                                        Text="{Binding HeaderText}"
+                                                        TextTrimming="CharacterEllipsis" />
+                                                    <Border
+                                                        Grid.Column="1"
+                                                        Background="#302D7D46"
+                                                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                                        BorderThickness="1"
+                                                        Padding="8,2">
+                                                        <TextBlock
+                                                            FontSize="12"
+                                                            Text="{Binding RowCountText}" />
+                                                    </Border>
+                                                    <Border
+                                                        Grid.Column="2"
+                                                        Background="{Binding State, Converter={StaticResource RecordComparisonValueBackgroundBrushConverter}}"
+                                                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                                        BorderThickness="1"
+                                                        Padding="8,2">
+                                                        <TextBlock
+                                                            FontSize="12"
+                                                            Text="{Binding ChangeStatusText}" />
+                                                    </Border>
+                                                </Grid>
+                                            </Expander.Header>
+                                            <StackPanel Spacing="8">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="410" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <Grid
+                                                        Grid.Column="0"
+                                                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                                        BorderThickness="1,1,0,1">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="160" />
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <TextBlock
+                                                            Grid.Column="0"
+                                                            Padding="8,6"
+                                                            FontWeight="SemiBold"
+                                                            Text="Row" />
+                                                        <TextBlock
+                                                            Grid.Column="1"
+                                                            Padding="8,6"
+                                                            FontWeight="SemiBold"
+                                                            Text="Type" />
+                                                    </Grid>
+
+                                                    <ScrollViewer
+                                                        Grid.Column="1"
+                                                        HorizontalScrollBarVisibility="Auto"
+                                                        HorizontalScrollMode="Enabled"
+                                                        VerticalScrollMode="Disabled">
+                                                        <ItemsControl ItemsSource="{Binding PluginColumns}">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <StackPanel Orientation="Horizontal" />
+                                                                </ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Border
+                                                                        Width="280"
+                                                                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                                                        BorderBrush="{Binding IsActive, Converter={StaticResource ActivePluginColumnBorderBrushConverter}}"
+                                                                        BorderThickness="1">
+                                                                        <TextBlock
+                                                                            Padding="8,6"
+                                                                            FontWeight="SemiBold"
+                                                                            Text="{Binding HeaderText}"
+                                                                            TextTrimming="CharacterEllipsis" />
+                                                                    </Border>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </ScrollViewer>
+                                                </Grid>
+
+                                                <ItemsControl ItemsSource="{Binding Rows}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="410" />
+                                                                    <ColumnDefinition Width="*" />
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <Grid
+                                                                    Grid.Column="0"
+                                                                    Height="34"
+                                                                    Background="{Binding State, Converter={StaticResource RecordComparisonValueBackgroundBrushConverter}}"
+                                                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                                                    BorderThickness="1,0,0,1">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="*" />
+                                                                        <ColumnDefinition Width="160" />
+                                                                    </Grid.ColumnDefinitions>
+
+                                                                    <TextBlock
+                                                                        Grid.Column="0"
+                                                                        Padding="8,5"
+                                                                        Text="{Binding Label}"
+                                                                        TextTrimming="CharacterEllipsis" />
+                                                                    <TextBlock
+                                                                        Grid.Column="1"
+                                                                        Padding="8,5"
+                                                                        Text="{Binding Type}"
+                                                                        TextTrimming="CharacterEllipsis" />
+                                                                </Grid>
+
+                                                                <ScrollViewer
+                                                                    Grid.Column="1"
+                                                                    HorizontalScrollBarVisibility="Auto"
+                                                                    HorizontalScrollMode="Enabled"
+                                                                    VerticalScrollMode="Disabled">
+                                                                    <ItemsControl ItemsSource="{Binding Values}">
+                                                                        <ItemsControl.ItemsPanel>
+                                                                            <ItemsPanelTemplate>
+                                                                                <StackPanel Orientation="Horizontal" />
+                                                                            </ItemsPanelTemplate>
+                                                                        </ItemsControl.ItemsPanel>
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate>
+                                                                                <Border
+                                                                                    Width="280"
+                                                                                    Height="34"
+                                                                                    Background="{Binding State, Converter={StaticResource RecordComparisonValueBackgroundBrushConverter}}"
+                                                                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                                                                    BorderThickness="0,0,1,1"
+                                                                                    Padding="8,5">
+                                                                                    <TextBlock
+                                                                                        Text="{Binding Value}"
+                                                                                        TextTrimming="CharacterEllipsis" />
+                                                                                </Border>
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
+                                                                </ScrollViewer>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </Expander>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </ScrollViewer>
         </Grid>

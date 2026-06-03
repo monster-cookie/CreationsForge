@@ -3,7 +3,6 @@ using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Starfield;
-using Mutagen.Bethesda.Plugins.Aspects;
 using Mutagen.Bethesda.Strings;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.DTOs.Records;
@@ -173,7 +172,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         {
             ModKey = plugin.ModKey, FormKey = record.FormKey, EditorID = record.EditorID ?? string.Empty, FormVersion = record.FormVersion,
             StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags, Version2 = record.Version2, VersionControl = (int)record.VersionControl,
-            ImportedAtUTC = DateTime.UtcNow, Name = record.Name?.Lookup(Language.English), Description = record.Description?.Lookup(Language.English), Flags = record.Flags.ToString(),
+            ImportedAtUTC = DateTime.UtcNow, Name = GetLocalizedEnglishText(() => record.Name), Description = GetLocalizedEnglishText(() => record.Description), Flags = record.Flags.ToString(),
             CastType = record.CastType.ToString(), TargetType = record.TargetType.ToString(), ActorValue2FormKey = record.ActorValue2.FormKey,
             ResistValueFormKey = record.ResistValue.FormKey, PerkToApplyFormKey = record.PerkToApply.FormKey, EquipAbilityFormKey = record.EquipAbility.FormKey,
             ExplosionFormKey = record.Explosion.FormKey, CastingArtFormKey = record.CastingArt.FormKey, HitEffectArtFormKey = record.HitEffectArt.FormKey,
@@ -191,8 +190,95 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags, Version2 = record.Version2, VersionControl = (int)record.VersionControl,
             ImportedAtUTC = DateTime.UtcNow, Name = record.Name?.Lookup(Language.English), Description = record.Description?.Lookup(Language.English), Flags = record.Flags.ToString(),
             SkillGroup = record.SkillGroup.ToString(), CrewAssignment = record.CrewAssignment.ToString(), PerkIcon = record.PerkIcon,
+            Category = record.Categroy.ToString(), RestrictionFormKey = record.Restriction.FormKey, TrainingFormKey = record.Training.FormKey, MajorFlags = record.MajorFlags.ToString(),
+            Ranks = GetPerkRanks(plugin, record),
+            BackgroundSkills = GetPerkBackgroundSkills(plugin, record),
             ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Perk.RecordType, record)
         }).ToList();
+    }
+
+    private static List<PerkRankDTO> GetPerkRanks(PluginDTO plugin, IPerkGetter record)
+    {
+        var importedAtUtc = DateTime.UtcNow;
+        return record.Ranks
+            .Select((rank, rankIndex) => new PerkRankDTO
+            {
+                ModKey = plugin.ModKey,
+                FormKey = record.FormKey,
+                RankIndex = rankIndex,
+                Description = GetLocalizedEnglishText(() => rank.Description),
+                UnknownStaticFormKey = rank.UnknownStatic?.FormKey,
+                ConditionCount = rank.Conditions?.Count ?? 0,
+                ActivityCount = rank.Activities?.Count ?? 0,
+                ImportedAtUTC = importedAtUtc,
+                Effects = GetPerkRankEffects(plugin, record.FormKey, rank, rankIndex, importedAtUtc)
+            })
+            .ToList();
+    }
+
+    private static List<PerkRankEffectDTO> GetPerkRankEffects(PluginDTO plugin, FormKey formKey, IPerkRankGetter rank, int rankIndex, DateTime importedAtUtc)
+    {
+        return rank.Effects
+            .Select((effect, effectIndex) =>
+            {
+                var dto = new PerkRankEffectDTO
+                {
+                    ModKey = plugin.ModKey,
+                    FormKey = formKey,
+                    RankIndex = rankIndex,
+                    EffectIndex = effectIndex,
+                    MutagenObjectType = effect.GetType().Name,
+                    Rank = effect.Rank,
+                    Priority = effect.Priority,
+                    PerkEntryId = effect.PerkEntryID,
+                    Flags = effect.Flags?.ToString(),
+                    ButtonLabel = GetLocalizedEnglishText(() => effect.ButtonLabel),
+                    ConditionCount = effect.Conditions.Count,
+                    ImportedAtUTC = importedAtUtc
+                };
+
+                if (effect is IAPerkEntryPointEffectGetter entryPointEffect)
+                {
+                    dto.EntryPoint = entryPointEffect.EntryPoint.ToString();
+                    dto.PerkConditionTabCount = entryPointEffect.PerkConditionTabCount;
+                }
+
+                if (effect is IPerkEntryPointModifyValueGetter modifyValueEffect)
+                {
+                    dto.Modification = modifyValueEffect.Modification.ToString();
+                    dto.Value = modifyValueEffect.Value;
+                }
+
+                return dto;
+            })
+            .ToList();
+    }
+
+    private static List<PerkBackgroundSkillDTO> GetPerkBackgroundSkills(PluginDTO plugin, IPerkGetter record)
+    {
+        var importedAtUtc = DateTime.UtcNow;
+        return record.BackgroundSkills
+            .Select((skill, skillIndex) => new PerkBackgroundSkillDTO
+            {
+                ModKey = plugin.ModKey,
+                FormKey = record.FormKey,
+                SkillFormKey = skill.FormKey,
+                SkillIndex = skillIndex,
+                ImportedAtUTC = importedAtUtc
+            })
+            .ToList();
+    }
+
+    private static string? GetLocalizedEnglishText(Func<ITranslatedStringGetter?> valueFactory)
+    {
+        try
+        {
+            return valueFactory()?.Lookup(Language.English);
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
     }
 
     private static List<ScriptingAdapterDTO> GetScriptingAdapters(PluginDTO plugin, string recordType, IHaveVirtualMachineAdapterGetter record)

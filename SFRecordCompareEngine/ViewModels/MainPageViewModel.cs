@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using Microsoft.UI.Xaml;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
 using Mutagen.Bethesda.Plugins;
@@ -67,6 +66,9 @@ public class MainPageViewModel : ViewModelBase
         CollapseAllScriptsCommand = new RelayCommand(CollapseAllScripts);
         ExpandChangedScriptsCommand = new RelayCommand(ExpandChangedScripts);
         ToggleChangedOnlyScriptsCommand = new RelayCommand(ToggleChangedOnlyScripts);
+        CollapseAllPerkRanksCommand = new RelayCommand(CollapseAllPerkRanks);
+        ExpandChangedPerkRanksCommand = new RelayCommand(ExpandChangedPerkRanks);
+        ToggleChangedOnlyPerkRanksCommand = new RelayCommand(ToggleChangedOnlyPerkRanks);
         UpdateStatusBar(null);
         ActivePluginSelectionService.ActivePluginChanged += OnActivePluginChanged;
     }
@@ -78,11 +80,15 @@ public class MainPageViewModel : ViewModelBase
     public RelayCommand CollapseAllScriptsCommand { get; }
     public RelayCommand ExpandChangedScriptsCommand { get; }
     public RelayCommand ToggleChangedOnlyScriptsCommand { get; }
+    public RelayCommand CollapseAllPerkRanksCommand { get; }
+    public RelayCommand ExpandChangedPerkRanksCommand { get; }
+    public RelayCommand ToggleChangedOnlyPerkRanksCommand { get; }
 
     public ObservableCollection<RecordTreeItemViewModel> RecordTreeItems { get; } = new();
     public ObservableCollection<RecordComparisonFieldViewModel> RecordComparisonFields { get; } = new();
     public ObservableCollection<RecordComparisonColumnViewModel> RecordComparisonColumns { get; } = new();
     public ObservableCollection<RecordComparisonScriptViewModel> RecordComparisonScripts { get; } = new();
+    public ObservableCollection<RecordComparisonPerkRankViewModel> RecordComparisonPerkRanks { get; } = new();
 
     public string FormIDFilter
     {
@@ -154,6 +160,12 @@ public class MainPageViewModel : ViewModelBase
         private set => SetProperty(ref field, value);
     } = "Scripts";
 
+    public string PerkRankSectionHeader
+    {
+        get;
+        private set => SetProperty(ref field, value);
+    } = "Perk Ranks";
+
     public bool HasRecordComparison
     {
         get;
@@ -194,6 +206,26 @@ public class MainPageViewModel : ViewModelBase
         private set => SetProperty(ref field, value);
     } = Visibility.Collapsed;
 
+    public bool HasRecordComparisonPerkRanks
+    {
+        get;
+        private set
+        {
+            if (!SetProperty(ref field, value))
+            {
+                return;
+            }
+
+            RecordComparisonPerkRanksVisibility = value ? Visibility.Visible : Visibility.Collapsed;
+        }
+    }
+
+    public Visibility RecordComparisonPerkRanksVisibility
+    {
+        get;
+        private set => SetProperty(ref field, value);
+    } = Visibility.Collapsed;
+
     public bool ShowChangedOnlyScripts
     {
         get;
@@ -214,6 +246,31 @@ public class MainPageViewModel : ViewModelBase
     }
 
     public string ChangedOnlyScriptsButtonText
+    {
+        get;
+        private set => SetProperty(ref field, value);
+    } = "Changed only";
+
+    public bool ShowChangedOnlyPerkRanks
+    {
+        get;
+        private set
+        {
+            if (!SetProperty(ref field, value))
+            {
+                return;
+            }
+
+            foreach (var rank in RecordComparisonPerkRanks)
+            {
+                rank.SetShowChangedOnly(value);
+            }
+
+            ChangedOnlyPerkRanksButtonText = value ? "Show all" : "Changed only";
+        }
+    }
+
+    public string ChangedOnlyPerkRanksButtonText
     {
         get;
         private set => SetProperty(ref field, value);
@@ -626,9 +683,30 @@ public class MainPageViewModel : ViewModelBase
     private void LoadPerkComparison(FormKey formKey)
     {
         var records = PerkService.GetByFormKey(formKey);
-        var fields = CreateHeaderFields("Name", "Description", "Flags", "SkillGroup", "CrewAssignment", "PerkIcon");
+        var maxBackgroundSkillCount = records.Count == 0 ? 0 : records.Max(record => record.BackgroundSkills.Count);
+        var fields = CreateHeaderFields("Name", "Description", "Flags", "SkillGroup", "CrewAssignment", "PerkIcon", "Category", "RestrictionFormKey", "TrainingFormKey", "MajorFlags");
+        for (var skillIndex = 0; skillIndex < maxBackgroundSkillCount; skillIndex++)
+        {
+            fields.Add(new RecordComparisonFieldViewModel($"BackgroundSkills[{skillIndex}]"));
+        }
+
         SetRecordComparisonWithScripting(fields, records,
-            record => new List<string> { RecordTypeCatalog.Perk.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.Description ?? string.Empty, record.Flags, record.SkillGroup ?? string.Empty, record.CrewAssignment ?? string.Empty, record.PerkIcon ?? string.Empty });
+            record =>
+            {
+                var values = new List<string>
+                {
+                    RecordTypeCatalog.Perk.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.Description ?? string.Empty, record.Flags, record.SkillGroup ?? string.Empty, record.CrewAssignment ?? string.Empty, record.PerkIcon ?? string.Empty,
+                    record.Category ?? string.Empty, record.RestrictionFormKey?.ToString() ?? string.Empty, record.TrainingFormKey?.ToString() ?? string.Empty, record.MajorFlags ?? string.Empty
+                };
+                values.AddRange(record.BackgroundSkills.Select(skill => skill.SkillFormKey.ToString()));
+                while (values.Count < fields.Count)
+                {
+                    values.Add(string.Empty);
+                }
+
+                return values;
+            });
+        SetPerkRankComparison(records);
     }
 
     private static List<RecordComparisonFieldViewModel> CreateHeaderFields(params string[] recordFields)
@@ -764,6 +842,141 @@ public class MainPageViewModel : ViewModelBase
         where TRecord : IHasScriptingAdaptersRecordDTO
     {
         return GetScriptingAdapter(recordLookup, modKey, scriptIndex)?.Properties.ElementAtOrDefault(propertyIndex);
+    }
+
+    private void SetPerkRankComparison(IList<PerkDTO> records)
+    {
+        var orderedModKeys = RecordComparisonColumns.Select(column => column.ModKey).ToList();
+        if (orderedModKeys.Count == 0 || records.Count == 0)
+        {
+            return;
+        }
+
+        var recordLookup = records.ToDictionary(record => record.ModKey);
+        var maxRankCount = records.Max(record => record.Ranks.Count);
+        for (var rankIndex = 0; rankIndex < maxRankCount; rankIndex++)
+        {
+            var rankValues = orderedModKeys
+                .Select(modKey => GetPerkRank(recordLookup, modKey, rankIndex))
+                .ToList();
+            var rankState = GetComparisonValueState(rankValues.Select(FormatPerkRankIdentity).ToList(), true);
+            var rows = CreatePerkRankRows(recordLookup, orderedModKeys, rankIndex);
+            var rank = new RecordComparisonPerkRankViewModel(
+                rankIndex,
+                RecordComparisonColumns.ToList(),
+                rows,
+                rankState);
+            rank.SetShowChangedOnly(ShowChangedOnlyPerkRanks);
+            RecordComparisonPerkRanks.Add(rank);
+        }
+
+        HasRecordComparisonPerkRanks = RecordComparisonPerkRanks.Count > 0;
+        PerkRankSectionHeader = HasRecordComparisonPerkRanks
+            ? $"Perk Ranks ({RecordComparisonPerkRanks.Count})"
+            : "Perk Ranks";
+    }
+
+    private static IReadOnlyList<RecordComparisonPerkRankEffectViewModel> CreatePerkRankRows(
+        IReadOnlyDictionary<ModKey, PerkDTO> recordLookup,
+        IReadOnlyList<ModKey> orderedModKeys,
+        int rankIndex)
+    {
+        var rows = new List<RecordComparisonPerkRankEffectViewModel>();
+        AddPerkRankFieldRow(rows, recordLookup, orderedModKeys, rankIndex, "Description", rank => rank?.Description ?? string.Empty);
+        AddPerkRankFieldRow(rows, recordLookup, orderedModKeys, rankIndex, "UnknownStaticFormKey", rank => rank?.UnknownStaticFormKey?.ToString() ?? string.Empty);
+        AddPerkRankFieldRow(rows, recordLookup, orderedModKeys, rankIndex, "ConditionCount", rank => rank?.ConditionCount.ToString() ?? string.Empty);
+        AddPerkRankFieldRow(rows, recordLookup, orderedModKeys, rankIndex, "ActivityCount", rank => rank?.ActivityCount.ToString() ?? string.Empty);
+
+        var maxEffectCount = recordLookup.Values
+            .Select(record => record.Ranks.ElementAtOrDefault(rankIndex)?.Effects.Count ?? 0)
+            .DefaultIfEmpty(0)
+            .Max();
+        for (var effectIndex = 0; effectIndex < maxEffectCount; effectIndex++)
+        {
+            var effectValues = orderedModKeys
+                .Select(modKey => GetPerkRankEffect(recordLookup, modKey, rankIndex, effectIndex))
+                .ToList();
+            var effectType = effectValues.FirstOrDefault(effect => !string.IsNullOrWhiteSpace(effect?.MutagenObjectType))?.MutagenObjectType ?? string.Empty;
+            AddPerkRankEffectRow(rows, effectValues, $"Effect {effectIndex}", effectType, FormatPerkRankEffectValue);
+        }
+
+        return rows;
+    }
+
+    private static void AddPerkRankFieldRow(
+        ICollection<RecordComparisonPerkRankEffectViewModel> rows,
+        IReadOnlyDictionary<ModKey, PerkDTO> recordLookup,
+        IReadOnlyList<ModKey> orderedModKeys,
+        int rankIndex,
+        string label,
+        Func<PerkRankDTO?, string> valueFactory)
+    {
+        var values = orderedModKeys
+            .Select(modKey => valueFactory(GetPerkRank(recordLookup, modKey, rankIndex)))
+            .ToList();
+        var state = GetComparisonValueState(values, true);
+        rows.Add(new RecordComparisonPerkRankEffectViewModel(label, "Rank", CreateComparisonValues(values, state), state));
+    }
+
+    private static void AddPerkRankEffectRow(
+        ICollection<RecordComparisonPerkRankEffectViewModel> rows,
+        IReadOnlyList<PerkRankEffectDTO?> effects,
+        string label,
+        string type,
+        Func<PerkRankEffectDTO?, string> valueFactory)
+    {
+        var values = effects.Select(valueFactory).ToList();
+        var state = GetComparisonValueState(values, true);
+        rows.Add(new RecordComparisonPerkRankEffectViewModel(label, type, CreateComparisonValues(values, state), state));
+    }
+
+    private static PerkRankDTO? GetPerkRank(
+        IReadOnlyDictionary<ModKey, PerkDTO> recordLookup,
+        ModKey modKey,
+        int rankIndex)
+    {
+        return recordLookup.TryGetValue(modKey, out var record)
+            ? record.Ranks.ElementAtOrDefault(rankIndex)
+            : null;
+    }
+
+    private static PerkRankEffectDTO? GetPerkRankEffect(
+        IReadOnlyDictionary<ModKey, PerkDTO> recordLookup,
+        ModKey modKey,
+        int rankIndex,
+        int effectIndex)
+    {
+        return GetPerkRank(recordLookup, modKey, rankIndex)?.Effects.ElementAtOrDefault(effectIndex);
+    }
+
+    private static string FormatPerkRankIdentity(PerkRankDTO? rank)
+    {
+        return rank == null
+            ? string.Empty
+            : $"{rank.Description}|{rank.UnknownStaticFormKey}|{rank.ConditionCount}|{rank.ActivityCount}|{rank.Effects.Count}";
+    }
+
+    private static string FormatPerkRankEffectValue(PerkRankEffectDTO? effect)
+    {
+        if (effect == null)
+        {
+            return string.Empty;
+        }
+
+        return string.Join(" | ", new[]
+        {
+            effect.MutagenObjectType,
+            $"Rank={effect.Rank}",
+            $"Priority={effect.Priority}",
+            $"PerkEntryID={effect.PerkEntryId?.ToString() ?? string.Empty}",
+            $"Flags={effect.Flags ?? string.Empty}",
+            $"Button={effect.ButtonLabel ?? string.Empty}",
+            $"Conditions={effect.ConditionCount}",
+            $"EntryPoint={effect.EntryPoint ?? string.Empty}",
+            $"Tabs={effect.PerkConditionTabCount?.ToString() ?? string.Empty}",
+            $"Modification={effect.Modification ?? string.Empty}",
+            $"Value={effect.Value?.ToString() ?? string.Empty}"
+        });
     }
 
     private static string GetListCountText(IEnumerable<ScriptingAdapterPropertyDTO?> properties)
@@ -946,9 +1159,12 @@ public class MainPageViewModel : ViewModelBase
         RecordComparisonFields.Clear();
         RecordComparisonColumns.Clear();
         RecordComparisonScripts.Clear();
+        RecordComparisonPerkRanks.Clear();
         HasRecordComparison = false;
         HasRecordComparisonScripts = false;
+        HasRecordComparisonPerkRanks = false;
         ScriptingAdapterSectionHeader = "Scripts";
+        PerkRankSectionHeader = "Perk Ranks";
     }
 
     private void CollapseAllScripts()
@@ -956,6 +1172,14 @@ public class MainPageViewModel : ViewModelBase
         foreach (var script in RecordComparisonScripts)
         {
             script.IsExpanded = false;
+        }
+    }
+
+    private void CollapseAllPerkRanks()
+    {
+        foreach (var rank in RecordComparisonPerkRanks)
+        {
+            rank.IsExpanded = false;
         }
     }
 
@@ -987,9 +1211,22 @@ public class MainPageViewModel : ViewModelBase
         }
     }
 
+    private void ExpandChangedPerkRanks()
+    {
+        foreach (var rank in RecordComparisonPerkRanks)
+        {
+            rank.IsExpanded = rank.HasChanges;
+        }
+    }
+
     private void ToggleChangedOnlyScripts()
     {
         ShowChangedOnlyScripts = !ShowChangedOnlyScripts;
+    }
+
+    private void ToggleChangedOnlyPerkRanks()
+    {
+        ShowChangedOnlyPerkRanks = !ShowChangedOnlyPerkRanks;
     }
 
     private static IStarfieldModGetter LoadMod(ModKey modKey)

@@ -334,12 +334,124 @@ CREATE TABLE Perk
     SkillGroup                TEXT    NULL,
     CrewAssignment            TEXT    NULL,
     PerkIcon                  TEXT    NULL,
+    Category                  TEXT    NULL,
+    Restriction_ModKey_Name   TEXT    NULL,
+    Restriction_ModKey_Type   INTEGER NULL,
+    Restriction_ModKey_FileName TEXT  NULL,
+    Restriction_FormKey_ID    INTEGER NULL,
+    Training_ModKey_Name      TEXT    NULL,
+    Training_ModKey_Type      INTEGER NULL,
+    Training_ModKey_FileName  TEXT    NULL,
+    Training_FormKey_ID       INTEGER NULL,
+    MajorFlags                TEXT    NULL,
     PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID),
     FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName) REFERENCES Plugins (ModKey_Name, ModKey_Type, ModKey_FileName) ON DELETE CASCADE,
-    CHECK (FormKey_ID >= 0)
+    CHECK (FormKey_ID >= 0),
+    CHECK ((Restriction_ModKey_Name IS NULL AND Restriction_ModKey_Type IS NULL AND Restriction_ModKey_FileName IS NULL AND Restriction_FormKey_ID IS NULL) OR (Restriction_ModKey_Name IS NOT NULL AND Restriction_ModKey_Type IS NOT NULL AND Restriction_ModKey_FileName IS NOT NULL AND Restriction_FormKey_ID IS NOT NULL)),
+    CHECK ((Training_ModKey_Name IS NULL AND Training_ModKey_Type IS NULL AND Training_ModKey_FileName IS NULL AND Training_FormKey_ID IS NULL) OR (Training_ModKey_Name IS NOT NULL AND Training_ModKey_Type IS NOT NULL AND Training_ModKey_FileName IS NOT NULL AND Training_FormKey_ID IS NOT NULL)),
+    CHECK (Restriction_FormKey_ID IS NULL OR Restriction_FormKey_ID >= 0),
+    CHECK (Training_FormKey_ID IS NULL OR Training_FormKey_ID >= 0)
 );
 
 CREATE INDEX IX_Perk_FormKey ON Perk (FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
+
+CREATE TABLE PerkRanks
+(
+    ModKey_Name             TEXT    NOT NULL,
+    ModKey_Type             INTEGER NOT NULL,
+    ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ModKey_Name     TEXT    NOT NULL,
+    FormKey_ModKey_Type     INTEGER NOT NULL,
+    FormKey_ModKey_FileName TEXT    NOT NULL,
+    FormKey_ID              INTEGER NOT NULL,
+    Rank_Index              INTEGER NOT NULL,
+    Description             TEXT    NULL,
+    UnknownStatic_ModKey_Name TEXT  NULL,
+    UnknownStatic_ModKey_Type INTEGER NULL,
+    UnknownStatic_ModKey_FileName TEXT NULL,
+    UnknownStatic_FormKey_ID INTEGER NULL,
+    ConditionCount          INTEGER NOT NULL,
+    ActivityCount           INTEGER NOT NULL,
+    ImportedAtUTC           TEXT    NOT NULL,
+    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Rank_Index),
+    FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES Perk (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Rank_Index >= 0),
+    CHECK ((UnknownStatic_ModKey_Name IS NULL AND UnknownStatic_ModKey_Type IS NULL AND UnknownStatic_ModKey_FileName IS NULL AND UnknownStatic_FormKey_ID IS NULL) OR (UnknownStatic_ModKey_Name IS NOT NULL AND UnknownStatic_ModKey_Type IS NOT NULL AND UnknownStatic_ModKey_FileName IS NOT NULL AND UnknownStatic_FormKey_ID IS NOT NULL)),
+    CHECK (UnknownStatic_FormKey_ID IS NULL OR UnknownStatic_FormKey_ID >= 0),
+    CHECK (ConditionCount >= 0),
+    CHECK (ActivityCount >= 0)
+);
+
+CREATE INDEX IX_PerkRanks_Perk ON PerkRanks (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
+CREATE INDEX IX_PerkRanks_RankIndex ON PerkRanks (Rank_Index);
+
+CREATE TABLE PerkRankEffects
+(
+    ModKey_Name             TEXT    NOT NULL,
+    ModKey_Type             INTEGER NOT NULL,
+    ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ModKey_Name     TEXT    NOT NULL,
+    FormKey_ModKey_Type     INTEGER NOT NULL,
+    FormKey_ModKey_FileName TEXT    NOT NULL,
+    FormKey_ID              INTEGER NOT NULL,
+    Rank_Index              INTEGER NOT NULL,
+    Effect_Index            INTEGER NOT NULL,
+    MutagenObjectType       TEXT    NOT NULL,
+    Rank                    INTEGER NOT NULL,
+    Priority                INTEGER NOT NULL,
+    PerkEntryID             INTEGER NULL,
+    Flags                   TEXT    NULL,
+    ButtonLabel             TEXT    NULL,
+    ConditionCount          INTEGER NOT NULL,
+    EntryPoint              TEXT    NULL,
+    PerkConditionTabCount   INTEGER NULL,
+    Modification            TEXT    NULL,
+    Value                   REAL    NULL,
+    ImportedAtUTC           TEXT    NOT NULL,
+    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Rank_Index, Effect_Index),
+    FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Rank_Index)
+        REFERENCES PerkRanks (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Rank_Index) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Rank_Index >= 0),
+    CHECK (Effect_Index >= 0),
+    CHECK (Rank >= 0),
+    CHECK (Priority >= 0),
+    CHECK (PerkEntryID IS NULL OR PerkEntryID >= 0),
+    CHECK (ConditionCount >= 0),
+    CHECK (PerkConditionTabCount IS NULL OR PerkConditionTabCount >= 0)
+);
+
+CREATE INDEX IX_PerkRankEffects_PerkRank ON PerkRankEffects (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Rank_Index);
+CREATE INDEX IX_PerkRankEffects_EffectIndex ON PerkRankEffects (Effect_Index);
+
+CREATE TABLE PerkBackgroundSkills
+(
+    ModKey_Name             TEXT    NOT NULL,
+    ModKey_Type             INTEGER NOT NULL,
+    ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ModKey_Name     TEXT    NOT NULL,
+    FormKey_ModKey_Type     INTEGER NOT NULL,
+    FormKey_ModKey_FileName TEXT    NOT NULL,
+    FormKey_ID              INTEGER NOT NULL,
+    Skill_ModKey_Name       TEXT    NOT NULL,
+    Skill_ModKey_Type       INTEGER NOT NULL,
+    Skill_ModKey_FileName   TEXT    NOT NULL,
+    Skill_FormKey_ID        INTEGER NOT NULL,
+    Skill_Index             INTEGER NOT NULL,
+    ImportedAtUTC           TEXT    NOT NULL,
+    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Skill_Index),
+    FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES Perk (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Skill_FormKey_ID >= 0),
+    CHECK (Skill_Index >= 0)
+);
+
+CREATE INDEX IX_PerkBackgroundSkills_Perk ON PerkBackgroundSkills (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
+CREATE INDEX IX_PerkBackgroundSkills_Skill_FormKey ON PerkBackgroundSkills (Skill_ModKey_Name, Skill_ModKey_Type, Skill_ModKey_FileName, Skill_FormKey_ID);
+CREATE INDEX IX_PerkBackgroundSkills_SkillIndex ON PerkBackgroundSkills (Skill_Index);
 
 CREATE TABLE ScriptingAdapters
 (

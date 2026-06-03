@@ -32,6 +32,24 @@ public class Perk
         SkillGroup = dto.SkillGroup;
         CrewAssignment = dto.CrewAssignment;
         PerkIcon = dto.PerkIcon;
+        Category = dto.Category;
+        if (dto.RestrictionFormKey.HasValue)
+        {
+            RestrictionModKeyName = dto.RestrictionFormKey.Value.ModKey.Name;
+            RestrictionModKeyType = (int)dto.RestrictionFormKey.Value.ModKey.Type;
+            RestrictionModKeyFileName = dto.RestrictionFormKey.Value.ModKey.FileName;
+            RestrictionFormKeyId = (int)dto.RestrictionFormKey.Value.ID;
+        }
+
+        if (dto.TrainingFormKey.HasValue)
+        {
+            TrainingModKeyName = dto.TrainingFormKey.Value.ModKey.Name;
+            TrainingModKeyType = (int)dto.TrainingFormKey.Value.ModKey.Type;
+            TrainingModKeyFileName = dto.TrainingFormKey.Value.ModKey.FileName;
+            TrainingFormKeyId = (int)dto.TrainingFormKey.Value.ID;
+        }
+
+        MajorFlags = dto.MajorFlags;
     }
 
     [Column("ModKey_Name")] public string ModKeyName { get; set; } = string.Empty;
@@ -53,4 +71,14 @@ public class Perk
     [Column("SkillGroup")] public string? SkillGroup { get; set; }
     [Column("CrewAssignment")] public string? CrewAssignment { get; set; }
     [Column("PerkIcon")] public string? PerkIcon { get; set; }
+    [Column("Category")] public string? Category { get; set; }
+    [Column("Restriction_ModKey_Name")] public string? RestrictionModKeyName { get; set; }
+    [Column("Restriction_ModKey_Type")] public int? RestrictionModKeyType { get; set; }
+    [Column("Restriction_ModKey_FileName")] public string? RestrictionModKeyFileName { get; set; }
+    [Column("Restriction_FormKey_ID")] public int? RestrictionFormKeyId { get; set; }
+    [Column("Training_ModKey_Name")] public string? TrainingModKeyName { get; set; }
+    [Column("Training_ModKey_Type")] public int? TrainingModKeyType { get; set; }
+    [Column("Training_ModKey_FileName")] public string? TrainingModKeyFileName { get; set; }
+    [Column("Training_FormKey_ID")] public int? TrainingFormKeyId { get; set; }
+    [Column("MajorFlags")] public string? MajorFlags { get; set; }
 }

@@ -4,9 +4,12 @@
 
 - Added support for Virtual Machine Adapters aka Scripts.
 - Revamped the status bar to look more modern and speced out.
+- Fixed a performance issues with the tree view loading.
+- Added missing child schemas for Perks (Ranks, Skills, etc.)
+
+### BREAKING CHANGE/BUG
 - Fixed record comparison identity to use the full origin FormKey instead of the numeric FormID portion alone.
 - The previous item is a major bug that requires purging the database and reimporting all records. (Sorry)
-- Fixed a performance issues with the tree view loading.
 
 ## Version 1.0.3 - 2026-06-01 [BETA]
 

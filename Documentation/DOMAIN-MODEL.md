@@ -14,6 +14,11 @@ record tables, `ModKey_*` columns identify the plugin file containing the import
 FormKey: Mutagen identifier for an individual record. Typed record tables persist the origin `FormKey` as
 `FormKey_ModKey_Name`, `FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, and `FormKey_ID`.
 
+Core DTOs and services may expose Mutagen `ModKey` and `FormKey` values, but database models decompose those values
+into primitive component columns for persistence. The containing plugin `ModKey`, origin record `FormKey`, and
+referenced record `FormKey` are distinct concepts and should be named accordingly. Raw string storage of `FormKey` or
+`ModKey` is not an allowed schema pattern for new application-schema columns.
+
 The containing plugin's `ModKey` columns and the record's origin `FormKey` serve different purposes. A comparison
 lookup finds matching typed rows by the full origin `FormKey`, then uses each row's containing-plugin `ModKey` to
 identify and order the sources.
@@ -90,6 +95,11 @@ The active typed detail import path also includes Starfield `GLOB`, `MISC`, `KYW
 `PERK`. Each type has an explicit DTO, database model, repository, service, and importer. New record DTOs persist
 clearly understood scalar values and direct `FormKey` references. Complex nested child structures are deferred until
 they can be represented with normalized typed models.
+
+Perk detail import persists the parent `PERK` scalar fields, top-level direct references, background skill references,
+ordered ranks, and supported rank effect fields. Perk ranks are ordered child data keyed by source rank index. Rank
+effects are ordered child data keyed by rank index and source effect index. Rank conditions, rank activities, and deeper
+effect-specific payloads remain deferred.
 
 The current typed detail import path also persists supported VMAD scripting data for the supported record types that
 expose `VirtualMachineAdapter` through Mutagen: `Global`, `MiscItem`, `Keyword`, `NPC`, `ActorValueInformation`,
