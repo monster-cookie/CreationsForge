@@ -21,5 +21,3 @@
     imported.
   - MagicEffect (MGEF) currently imports selected scalar fields and direct references only. Conditions, keywords,
     sounds, components, archetype data, and some direct references are not imported.
-  - Perk (PERK) imports modeled scalar fields, direct references, background skills, ranks, supported rank effect
-    fields, and VMAD data. Rank conditions, rank activities, and deeper effect-specific payloads are not imported.
