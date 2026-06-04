@@ -290,6 +290,37 @@ Additional record-specific columns:
 - `ShortName` (`TEXT`, nullable)
 - `Value` (`INTEGER`, nullable)
 - `Weight` (`REAL`, nullable)
+- `DirtinessScale` (`REAL`, nullable)
+- decomposed nullable `FeaturedItemMessage` `FormKey` columns
+- `FLAG` (`TEXT`, nullable)
+
+Optional cohesive MiscItem structures are stored in one-to-one child tables: `MiscItemObjectBounds`,
+`MiscItemObjectPaletteDefaults`, `MiscItemTransforms`, `MiscItemModels`, and `MiscItemDestructibles`.
+
+Ordered or typed nested data is stored in `MiscItemModelMaterialSwaps`, `MiscItemSounds`, `MiscItemKeywords`,
+`MiscItemDestructibleResistances`, `MiscItemDestructionStages`, and `MiscItemDestructionStageMaterialSwaps`.
+
+All MiscItem child tables use the complete containing-plugin and origin-`FormKey` parent identity. Declared child
+foreign keys use `ON DELETE CASCADE`. Ordered rows use zero-based source indexes.
+
+Child-specific columns:
+
+- `MiscItemObjectBounds`: first and second XYZ coordinates and `ImportedAtUTC`.
+- `MiscItemObjectPaletteDefaults`: flags, sink and offset values, footprint size, scale, angle, slope, density,
+  frequency, water-distance values, and `ImportedAtUTC`.
+- `MiscItemTransforms`: inventory-icon, outpost, ship, preview, inventory, workbench, and main-game-UI transform
+  references, plus `ImportedAtUTC`.
+- `MiscItemModels`: file, texture-file hashes, light layer, flags, color-remapping index, vestigial flags, and
+  `ImportedAtUTC`.
+- `MiscItemModelMaterialSwaps`: material-swap reference, `MaterialSwap_Index`, and `ImportedAtUTC`.
+- `MiscItemSounds`: sound type, start and stop GUIDs, condition and event-mapping references, and `ImportedAtUTC`.
+- `MiscItemKeywords`: keyword reference, `Keyword_Index`, and `ImportedAtUTC`.
+- `MiscItemDestructibles`: health, stage count, flags, and `ImportedAtUTC`.
+- `MiscItemDestructibleResistances`: damage-type reference, value, `Resistance_Index`, and `ImportedAtUTC`.
+- `MiscItemDestructionStages`: stage index, understood stage scalar fields and references, nested model fields, and
+  `ImportedAtUTC`.
+- `MiscItemDestructionStageMaterialSwaps`: stage index, material-swap reference, `MaterialSwap_Index`, and
+  `ImportedAtUTC`.
 
 ### Keyword
 

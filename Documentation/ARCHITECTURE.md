@@ -59,6 +59,9 @@ suffix conventions.
 `GLOB`, `MISC`, `KYWD`, `NPC_`, `AVIF`, `MGEF`, and `PERK` records when matching `ITypedRecordDetailImporter`
 instances are registered.
 
+MiscItem full-detail repository reads hydrate normalized optional and ordered child tables. The lightweight MiscItem
+record-tree read continues to select only origin `FormKey` and `EditorID`.
+
 ## Persistence Architecture
 
 NPoco is used for application database access. Repository classes translate between DTOs and NPoco database models and 
@@ -109,6 +112,10 @@ the location for record-specific transformations and business rules.
 Serilog is configured in `App`. Logs are written under the app data log directory with daily rolling files and a 
 seven-day retention window. Services log workflow-level events and failures. Repositories and stores should not own 
 logging decisions.
+
+Mutagen plugin construction failures are enriched with the requested `ModKey`. Failures while mapping a Mutagen major
+record are enriched with its originating `ModKey`, `FormKey`, EditorID, and Mutagen record type before reaching
+workflow-level exception handling and logging.
 
 ## UI Framework Note
 

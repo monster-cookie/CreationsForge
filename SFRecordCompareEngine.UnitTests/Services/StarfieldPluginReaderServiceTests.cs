@@ -1,4 +1,5 @@
 using Mutagen.Bethesda.Plugins;
+using Mutagen.Bethesda.Plugins.Exceptions;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.Services;
 using Shouldly;
@@ -11,10 +12,7 @@ public class StarfieldPluginReaderServiceTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(TestDirectory))
-        {
-            Directory.Delete(TestDirectory, true);
-        }
+        if (Directory.Exists(TestDirectory)) Directory.Delete(TestDirectory, true);
     }
 
     [Fact]
@@ -75,6 +73,17 @@ public class StarfieldPluginReaderServiceTests : IDisposable
         result.FormVersion.ShouldBeGreaterThan(0);
         result.Author.ShouldNotBeNullOrWhiteSpace();
         result.MasterReferences.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void GetMetadata_WhenPluginDoesNotExist_ThrowsEnrichedRecordException()
+    {
+        var sut = new TestStarfieldPluginReaderService(TestDirectory);
+        var modKey = new ModKey("Missing.esm", ModType.Master);
+
+        var exception = Should.Throw<RecordException>(() => sut.GetMetadata(modKey));
+
+        exception.ModKey.ShouldBe(modKey);
     }
 
     private static PluginLoadOrderEntryDTO GetStarfieldEsmEntry(StarfieldPluginReaderService sut)

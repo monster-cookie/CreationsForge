@@ -1,6 +1,7 @@
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
 using Mutagen.Bethesda.Plugins;
+using Mutagen.Bethesda.Plugins.Exceptions;
 using Mutagen.Bethesda.Starfield;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.Services.Interfaces;
@@ -45,21 +46,33 @@ public class StarfieldPluginReaderService : IStarfieldPluginReaderService
     /// <inheritdoc />
     public StarfieldPluginMetadataDTO GetMetadata(ModKey modKey)
     {
-        var mod = StarfieldMod.Create(StarfieldRelease.Starfield)
-            .FromPath(Path.Combine(GetDataFolderPath(), modKey.FileName))
-            .WithLoadOrderFromHeaderMasters()
-            .WithDataFolder(GetDataFolderPath())
-            .Construct();
-
-        return new StarfieldPluginMetadataDTO
+        try
         {
-            ModKey = mod.ModKey,
-            HeaderFlags = mod.ModHeader.Flags,
-            FormVersion = mod.ModHeader.FormVersion,
-            Author = mod.ModHeader.Author ?? "Unknown",
-            InteriorCellCount = mod.ModHeader.InteriorCellCount,
-            RecordCount = mod.ModHeader.Stats.NumRecords,
-            MasterReferences = mod.MasterReferences.Select(master => master.Master).ToList()
-        };
+            var mod = StarfieldMod.Create(StarfieldRelease.Starfield)
+                .FromPath(Path.Combine(GetDataFolderPath(), modKey.FileName))
+                .WithLoadOrderFromHeaderMasters()
+                .WithDataFolder(GetDataFolderPath())
+                .Construct();
+
+            return new StarfieldPluginMetadataDTO
+            {
+                ModKey = mod.ModKey,
+                HeaderFlags = mod.ModHeader.Flags,
+                FormVersion = mod.ModHeader.FormVersion,
+                Author = mod.ModHeader.Author ?? "Unknown",
+                InteriorCellCount = mod.ModHeader.InteriorCellCount,
+                RecordCount = mod.ModHeader.Stats.NumRecords,
+                MasterReferences = mod.MasterReferences.Select(master => master.Master).ToList()
+            };
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            RecordException.EnrichAndThrow(ex, modKey);
+            throw;
+        }
     }
 }

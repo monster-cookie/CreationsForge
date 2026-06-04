@@ -6,6 +6,7 @@
 - Revamped the status bar to look more modern and speced out.
 - Fixed a performance issues with the tree view loading.
 - Added missing child schemas for Perks (Ranks, Skills, etc.)
+- Added missing child schemas for MiscItems (Transforms, models, sounds).
 
 ### BREAKING CHANGE/BUG
 - Fixed record comparison identity to use the full origin FormKey instead of the numeric FormID portion alone.

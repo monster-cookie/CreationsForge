@@ -79,6 +79,11 @@ rank sections with load-order-sorted plugin value cells. The Perk rank section c
 ranks, and filter rank rows to changed rows only. Perk rank comparison rows reuse the existing green, red, and yellow
 comparison state colors.
 
+MiscItem comparison keeps parent scalar fields in the standard comparison grid. All supported nested structures are
+shown in expandable structured comparison groups with one labeled row per nested property or ordered item. The groups
+include object bounds, object palette defaults, transforms, model data, sounds, ordered keywords, and destructible
+data. The grouped rows reuse the existing green, red, and yellow comparison state colors.
+
 `OpenPluginDialogViewModel` exposes plugin filename suggestions, selected-plugin status, `LoadCommand`, and
 `CancelCommand`. It searches openable plugins through `IPluginService` and sets the active plugin through
 `IActivePluginSelectionService` when Load is clicked.
