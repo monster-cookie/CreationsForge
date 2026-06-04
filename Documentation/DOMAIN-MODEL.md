@@ -96,6 +96,11 @@ The active typed detail import path also includes Starfield `GLOB`, `MISC`, `KYW
 clearly understood scalar values and direct `FormKey` references. Complex nested child structures are deferred until
 they can be represented with normalized typed models.
 
+MiscItem detail import persists understood nested object bounds, object palette defaults, transforms, model data,
+crafting/pickup/dropdown sound references, ordered keyword references, and destructible data. Optional cohesive
+structures use one-to-one child rows; ordered material swaps, keywords, resistances, and destruction stages use
+ordered child rows. Components, resources, `XALG`, and unknown nested fields remain deferred.
+
 Perk detail import persists the parent `PERK` scalar fields, top-level direct references, background skill references,
 ordered ranks, and supported rank effect fields. Perk ranks are ordered child data keyed by source rank index. Rank
 effects are ordered child data keyed by rank index and source effect index. Rank conditions, rank activities, and deeper

@@ -15,9 +15,10 @@
 - Some supported record types have partial detail coverage. The current implementation intentionally persists clearly
   understood scalar fields and direct `FormKey` references first. The following omitted child structures are
   representative examples, not an exhaustive list:
-  - MiscItem (MISC) does not import nested object bounds, model, destructible, or keyword.
+  - MiscItem (MISC), resource mappings are deferred until Resource records are supported.
   - NPC (NPC_) currently imports selected scalar fields and direct references only. Inventory, abilities, perks,
     factions, keywords, AI packages, appearance data, object templates, and other nested structures are not
     imported.
   - MagicEffect (MGEF) currently imports selected scalar fields and direct references only. Conditions, keywords,
     sounds, components, archetype data, and some direct references are not imported.
+  - FormKey and ModKey lists are showing raw information instead of the more helpful EditorID.

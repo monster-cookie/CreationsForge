@@ -30,6 +30,15 @@ public class MiscItem
         ShortName = dto.ShortName;
         Value = dto.Value;
         Weight = dto.Weight;
+        DirtinessScale = dto.DirtinessScale;
+        Flag = dto.Flag;
+        if (dto.FeaturedItemMessageFormKey.HasValue)
+        {
+            FeaturedItemMessageModKeyName = dto.FeaturedItemMessageFormKey.Value.ModKey.Name;
+            FeaturedItemMessageModKeyType = (int)dto.FeaturedItemMessageFormKey.Value.ModKey.Type;
+            FeaturedItemMessageModKeyFileName = dto.FeaturedItemMessageFormKey.Value.ModKey.FileName;
+            FeaturedItemMessageFormKeyId = (int)dto.FeaturedItemMessageFormKey.Value.ID;
+        }
     }
 
     [Column("ModKey_Name")] public string ModKeyName { get; set; } = string.Empty;
@@ -49,4 +58,10 @@ public class MiscItem
     [Column("ShortName")] public string? ShortName { get; set; }
     [Column("Value")] public int? Value { get; set; }
     [Column("Weight")] public double? Weight { get; set; }
+    [Column("DirtinessScale")] public float? DirtinessScale { get; set; }
+    [Column("FeaturedItemMessage_ModKey_Name")] public string? FeaturedItemMessageModKeyName { get; set; }
+    [Column("FeaturedItemMessage_ModKey_Type")] public int? FeaturedItemMessageModKeyType { get; set; }
+    [Column("FeaturedItemMessage_ModKey_FileName")] public string? FeaturedItemMessageModKeyFileName { get; set; }
+    [Column("FeaturedItemMessage_FormKey_ID")] public int? FeaturedItemMessageFormKeyId { get; set; }
+    [Column("FLAG")] public string? Flag { get; set; }
 }

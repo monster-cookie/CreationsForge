@@ -2,6 +2,8 @@ using System.Globalization;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
 using Mutagen.Bethesda.Plugins;
+using Mutagen.Bethesda.Plugins.Exceptions;
+using Mutagen.Bethesda.Plugins.Records;
 using Mutagen.Bethesda.Starfield;
 using Mutagen.Bethesda.Strings;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
@@ -18,7 +20,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
     public IReadOnlyList<FormListDTO> GetFormLists(PluginDTO plugin)
     {
         var mod = LoadMod(plugin.ModKey);
-        return mod.FormLists.Select(record => new FormListDTO
+        return MapRecords(plugin, mod.FormLists, record => new FormListDTO
         {
             ModKey = plugin.ModKey,
             FormKey = record.FormKey,
@@ -38,7 +40,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                     ItemFormKey = item.FormKey
                 };
             }).ToList()
-        }).ToList();
+        });
     }
 
     #endregion
@@ -48,7 +50,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
     public IReadOnlyList<GameSettingDTO> GetGameSettings(PluginDTO plugin)
     {
         var mod = LoadMod(plugin.ModKey);
-        return mod.GameSettings.Select(record => new GameSettingDTO
+        return MapRecords(plugin, mod.GameSettings, record => new GameSettingDTO
         {
             ModKey = plugin.ModKey,
             FormKey = record.FormKey,
@@ -63,7 +65,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             RawData = GetGameSettingRawData(record),
             IsCompressed = 0,
             IsDeleted = 0
-        }).ToList();
+        });
     }
 
     private static string GetGameSettingType(IGameSettingGetter record)
@@ -106,40 +108,176 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
 
     public IReadOnlyList<GlobalDTO> GetGlobals(PluginDTO plugin)
     {
-        return LoadMod(plugin.ModKey).Globals.Select(record => new GlobalDTO
+        return MapRecords(plugin, LoadMod(plugin.ModKey).Globals, record => new GlobalDTO
         {
             ModKey = plugin.ModKey, FormKey = record.FormKey, EditorID = record.EditorID ?? string.Empty, FormVersion = record.FormVersion,
             StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags, Version2 = record.Version2, VersionControl = (int)record.VersionControl,
             ImportedAtUTC = DateTime.UtcNow, Data = record.Data, ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Global.RecordType, record)
-        }).ToList();
+        });
     }
 
     public IReadOnlyList<MiscItemDTO> GetMiscItems(PluginDTO plugin)
     {
-        return LoadMod(plugin.ModKey).MiscItems.Select(record => new MiscItemDTO
+        return MapRecords(plugin, LoadMod(plugin.ModKey).MiscItems, record => new MiscItemDTO
         {
             ModKey = plugin.ModKey, FormKey = record.FormKey, EditorID = record.EditorID ?? string.Empty, FormVersion = record.FormVersion,
             StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags, Version2 = record.Version2, VersionControl = (int)record.VersionControl,
             ImportedAtUTC = DateTime.UtcNow, Name = record.Name?.Lookup(Language.English), ShortName = record.ShortName?.Lookup(Language.English), Value = record.Value, Weight = record.Weight,
+            DirtinessScale = (float)record.DirtinessScale,
+            FeaturedItemMessageFormKey = record.FeaturedItemMessage.FormKey,
+            Flag = record.FLAG == null ? null : Convert.ToHexString(record.FLAG.Value.ToArray()),
+            ObjectBounds = GetMiscItemObjectBounds(record.ObjectBounds),
+            ObjectPaletteDefaults = GetMiscItemObjectPaletteDefaults(record.ObjectPaletteDefaults),
+            Transforms = GetMiscItemTransforms(record.Transforms),
+            Model = GetMiscItemModel(record.Model),
+            CraftingSound = GetMiscItemSound(record.CraftingSound),
+            PickupSound = GetMiscItemSound(record.PickupSound),
+            DropdownSound = GetMiscItemSound(record.DropdownSound),
+            Keywords = record.Keywords?.Select(keyword => keyword.FormKey).ToList() ?? new List<FormKey>(),
+            Destructible = GetMiscItemDestructible(record.Destructible),
             ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MiscItem.RecordType, record)
-        }).ToList();
+        });
+    }
+
+    private static MiscItemObjectBoundsDTO? GetMiscItemObjectBounds(IObjectBoundsGetter value)
+    {
+        if (value.First.X == 0 && value.First.Y == 0 && value.First.Z == 0 && value.Second.X == 0 && value.Second.Y == 0 && value.Second.Z == 0) return null;
+
+        return new MiscItemObjectBoundsDTO
+        {
+            FirstX = value.First.X,
+            FirstY = value.First.Y,
+            FirstZ = value.First.Z,
+            SecondX = value.Second.X,
+            SecondY = value.Second.Y,
+            SecondZ = value.Second.Z
+        };
+    }
+
+    private static MiscItemObjectPaletteDefaultsDTO? GetMiscItemObjectPaletteDefaults(IObjectPaletteDefaultsGetter? value)
+    {
+        return value == null
+            ? null
+            : new MiscItemObjectPaletteDefaultsDTO
+            {
+                Flags = value.Flags.ToString(),
+                SinkMeters = value.SinkMeters,
+                SinkVariance = value.SinkVariance,
+                XYOffsetVariance = value.XYOffsetVariance,
+                FootprintSize = value.FootprintSize.ToString(),
+                ScalePercent = value.ScalePercent,
+                ScaleVariance = value.ScaleVariance,
+                AngleXDegrees = value.AngleXDegrees,
+                AngleXVariance = value.AngleXVariance,
+                AngleYDegrees = value.AngleYDegrees,
+                AngleYVariance = value.AngleYVariance,
+                AngleZDegrees = value.AngleZDegrees,
+                AngleZVariance = value.AngleZVariance,
+                SlopePercent = value.SlopePercent,
+                SlopePercentVariance = value.SlopePercentVariance,
+                Density = value.Density,
+                FrequencyPercent = value.FrequencyPercent,
+                SlopeLimit = value.SlopeLimit,
+                DistanceBelowWater = value.DistanceBelowWater,
+                DistanceAboveWater = value.DistanceAboveWater
+            };
+    }
+
+    private static MiscItemTransformsDTO? GetMiscItemTransforms(ITransformsGetter? value)
+    {
+        return value == null
+            ? null
+            : new MiscItemTransformsDTO
+            {
+                InventoryIconFormKey = value.InventoryIcon.FormKey,
+                OutpostFormKey = value.Outpost.FormKey,
+                ShipFormKey = value.Ship.FormKey,
+                PreviewFormKey = value.Preview.FormKey,
+                InventoryFormKey = value.Inventory.FormKey,
+                WorkbenchFormKey = value.Workbench.FormKey,
+                MainGameUIFormKey = value.MainGameUI.FormKey
+            };
+    }
+
+    private static MiscItemModelDTO? GetMiscItemModel(IModelGetter? value)
+    {
+        return value == null
+            ? null
+            : new MiscItemModelDTO
+            {
+                File = value.File?.ToString(),
+                TextureFileHashes = value.TextureFileHashes == null ? null : Convert.ToHexString(value.TextureFileHashes.Value.ToArray()),
+                LightLayer = value.LightLayer,
+                Flags = value.Flags.ToString(),
+                ColorRemappingIndex = value.ColorRemappingIndex,
+                FlagsVestigial = value.FlagsVestigial.ToString(),
+                MaterialSwaps = value.MaterialSwaps?.Select(materialSwap => materialSwap.FormKey).ToList() ?? new List<FormKey>()
+            };
+    }
+
+    private static MiscItemSoundDTO? GetMiscItemSound(ISoundReferenceGetter? value)
+    {
+        return value == null
+            ? null
+            : new MiscItemSoundDTO
+            {
+                Start = value.Start == Guid.Empty ? null : value.Start.ToString(),
+                Stop = value.Stop == Guid.Empty ? null : value.Stop.ToString(),
+                ConditionFormKey = value.Condition.FormKey,
+                EventMappingFormKey = value.EventMapping.FormKey
+            };
+    }
+
+    private static MiscItemDestructibleDTO? GetMiscItemDestructible(IDestructibleGetter? value)
+    {
+        if (value == null) return null;
+
+        return new MiscItemDestructibleDTO
+        {
+            Health = value.Data?.Health,
+            Count = value.Data?.DESTCount,
+            Flags = value.Data?.Flags.ToString(),
+            Resistances = value.Resistances?.Select((resistance, resistanceIndex) => new MiscItemDestructibleResistanceDTO
+            {
+                DamageTypeFormKey = resistance.DamageType.FormKey,
+                Value = resistance.Value,
+                ResistanceIndex = resistanceIndex
+            }).ToList() ?? new List<MiscItemDestructibleResistanceDTO>(),
+            Stages = value.Stages.Select((stage, stageIndex) => new MiscItemDestructionStageDTO
+            {
+                StageIndex = stageIndex,
+                HealthPercent = stage.HealthPercent,
+                Index = stage.Index,
+                ModelDamageStage = stage.ModelDamageStage,
+                Flags = stage.Flags.ToString(),
+                SelfDamagePerSecond = stage.SelfDamagePerSecond,
+                ExplosionFormKey = stage.Explosion.FormKey,
+                DebrisFormKey = stage.Debris.FormKey,
+                DebrisCount = stage.DebrisCount,
+                SequenceName = stage.SequenceName,
+                ModelFile = stage.Model?.File?.ToString(),
+                ModelLightLayer = stage.Model?.LightLayer,
+                ModelFlags = stage.Model?.Flags.ToString(),
+                ModelMaterialSwaps = stage.Model?.MaterialSwaps?.Select(materialSwap => materialSwap.FormKey).ToList() ?? new List<FormKey>()
+            }).ToList()
+        };
     }
 
     public IReadOnlyList<KeywordDTO> GetKeywords(PluginDTO plugin)
     {
-        return LoadMod(plugin.ModKey).Keywords.Select(record => new KeywordDTO
+        return MapRecords(plugin, LoadMod(plugin.ModKey).Keywords, record => new KeywordDTO
         {
             ModKey = plugin.ModKey, FormKey = record.FormKey, EditorID = record.EditorID ?? string.Empty, FormVersion = record.FormVersion,
             StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags, Version2 = record.Version2, VersionControl = (int)record.VersionControl,
             ImportedAtUTC = DateTime.UtcNow, Name = record.Name?.Lookup(Language.English), Color = record.Color.ToString() ?? string.Empty, Type = record.Type.ToString() ?? string.Empty,
             Notes = record.Notes, FlashLinkageName = record.FlashLinkageName, AttractionRuleFormKey = record.AttractionRule.FormKey,
             ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Keyword.RecordType, record)
-        }).ToList();
+        });
     }
 
     public IReadOnlyList<NPCDTO> GetNPCs(PluginDTO plugin)
     {
-        return LoadMod(plugin.ModKey).Npcs.Select(record => new NPCDTO
+        return MapRecords(plugin, LoadMod(plugin.ModKey).Npcs, record => new NPCDTO
         {
             ModKey = plugin.ModKey, FormKey = record.FormKey, EditorID = record.EditorID ?? string.Empty, FormVersion = record.FormVersion,
             StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags, Version2 = record.Version2, VersionControl = (int)record.VersionControl,
@@ -151,24 +289,24 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             CombatOverridePackageListFormKey = record.CombatOverridePackageList.FormKey, CombatStyleFormKey = record.CombatStyle.FormKey,
             DefaultPackageListFormKey = record.DefaultPackageList.FormKey, CrimeFactionFormKey = record.CrimeFaction.FormKey,
             ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.NPC.RecordType, record)
-        }).ToList();
+        });
     }
 
     public IReadOnlyList<ActorValueInformationDTO> GetActorValueInformation(PluginDTO plugin)
     {
-        return LoadMod(plugin.ModKey).ActorValueInformation.Select(record => new ActorValueInformationDTO
+        return MapRecords(plugin, LoadMod(plugin.ModKey).ActorValueInformation, record => new ActorValueInformationDTO
         {
             ModKey = plugin.ModKey, FormKey = record.FormKey, EditorID = record.EditorID ?? string.Empty, FormVersion = record.FormVersion,
             StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags, Version2 = record.Version2, VersionControl = (int)record.VersionControl,
             ImportedAtUTC = DateTime.UtcNow, Name = record.Name?.Lookup(Language.English), Abbreviation = record.Abbreviation?.Lookup(Language.English), ContextNotes = record.ContextNotes,
             DefaultValue = record.DefaultValue, Flags = record.Flags.ToString(), Type = record.Type?.ToString(), Min = record.Min, Max = record.Max,
             ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ActorValueInformation.RecordType, record)
-        }).ToList();
+        });
     }
 
     public IReadOnlyList<MagicEffectDTO> GetMagicEffects(PluginDTO plugin)
     {
-        return LoadMod(plugin.ModKey).MagicEffects.Select(record => new MagicEffectDTO
+        return MapRecords(plugin, LoadMod(plugin.ModKey).MagicEffects, record => new MagicEffectDTO
         {
             ModKey = plugin.ModKey, FormKey = record.FormKey, EditorID = record.EditorID ?? string.Empty, FormVersion = record.FormVersion,
             StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags, Version2 = record.Version2, VersionControl = (int)record.VersionControl,
@@ -179,12 +317,12 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             HitShaderFormKey = record.HitShader.FormKey, ImageSpaceModifierFormKey = record.ImageSpaceModifier.FormKey,
             ImpactDataFormKey = record.ImpactData.FormKey, ProjectileFormKey = record.Projectile.FormKey,
             ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MagicEffect.RecordType, record)
-        }).ToList();
+        });
     }
 
     public IReadOnlyList<PerkDTO> GetPerks(PluginDTO plugin)
     {
-        return LoadMod(plugin.ModKey).Perks.Select(record => new PerkDTO
+        return MapRecords(plugin, LoadMod(plugin.ModKey).Perks, record => new PerkDTO
         {
             ModKey = plugin.ModKey, FormKey = record.FormKey, EditorID = record.EditorID ?? string.Empty, FormVersion = record.FormVersion,
             StarfieldMajorRecordFlags = record.StarfieldMajorRecordFlags, Version2 = record.Version2, VersionControl = (int)record.VersionControl,
@@ -194,7 +332,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             Ranks = GetPerkRanks(plugin, record),
             BackgroundSkills = GetPerkBackgroundSkills(plugin, record),
             ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Perk.RecordType, record)
-        }).ToList();
+        });
     }
 
     private static List<PerkRankDTO> GetPerkRanks(PluginDTO plugin, IPerkGetter record)
@@ -283,10 +421,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
 
     private static List<ScriptingAdapterDTO> GetScriptingAdapters(PluginDTO plugin, string recordType, IHaveVirtualMachineAdapterGetter record)
     {
-        if (record.VirtualMachineAdapter == null)
-        {
-            return new List<ScriptingAdapterDTO>();
-        }
+        if (record.VirtualMachineAdapter == null) return new List<ScriptingAdapterDTO>();
 
         var importedAtUtc = DateTime.UtcNow;
         return record.VirtualMachineAdapter.Scripts
@@ -426,13 +561,48 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
 
     private static IStarfieldModGetter LoadMod(ModKey modKey)
     {
-        var environment = GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield);
-        var mod = StarfieldMod.Create(StarfieldRelease.Starfield)
-            .FromPath(Path.Join(environment.DataFolderPath, modKey.FileName))
-            .WithLoadOrderFromHeaderMasters()
-            .WithDataFolder(environment.DataFolderPath)
-            .Construct();
-        return mod;
+        try
+        {
+            var environment = GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield);
+            return StarfieldMod.Create(StarfieldRelease.Starfield)
+                .FromPath(Path.Join(environment.DataFolderPath, modKey.FileName))
+                .WithLoadOrderFromHeaderMasters()
+                .WithDataFolder(environment.DataFolderPath)
+                .Construct();
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            RecordException.EnrichAndThrow(ex, modKey);
+            throw;
+        }
+    }
+
+    private static IReadOnlyList<TDTO> MapRecords<TRecord, TDTO>(PluginDTO plugin, IEnumerable<TRecord> records, Func<TRecord, TDTO> mapRecord)
+        where TRecord : IMajorRecordGetter
+    {
+        return records.Select(record => MapRecord(plugin, record, mapRecord)).ToList();
+    }
+
+    private static TDTO MapRecord<TRecord, TDTO>(PluginDTO plugin, TRecord record, Func<TRecord, TDTO> mapRecord)
+        where TRecord : IMajorRecordGetter
+    {
+        try
+        {
+            return mapRecord(record);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            RecordException.EnrichAndThrow(ex, plugin.ModKey, record);
+            throw;
+        }
     }
 
     #endregion

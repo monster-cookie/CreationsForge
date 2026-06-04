@@ -1,5 +1,77 @@
 # Design Decisions
 
+## 2026-06-04 - Display MiscItem Nested Values In Structured Comparison Groups
+
+Status: Accepted
+
+Context: MiscItem transforms, model data, and sounds were formatted as pipe-separated scalar values in the selected
+record comparison grid. Ordered keywords and model material swaps were displayed as separate indexed scalar rows.
+These representations obscured nested property labels and made long values difficult to compare.
+
+Decision: Keep MiscItem scalar fields and destructible data in the standard comparison grid. Display transforms,
+model data, sounds, and ordered keywords in reusable presentation-layer expandable groups with one labeled comparison
+row per nested property or ordered item.
+
+Rationale: Structured groups preserve the existing load-order comparison workflow while making nested values readable
+and allowing each property to receive its own identical, conflict, or winning-override state.
+
+Alternatives considered:
+
+- Continue displaying pipe-separated scalar summaries.
+- Display all nested properties as indexed scalar rows in the standard grid.
+- Move nested values into a separate detail dialog.
+
+Consequences:
+
+- MiscItem transforms, model data, sounds, and keywords are no longer flattened into the scalar comparison grid.
+- Groups expand automatically when a contained row differs and remain manually collapsible.
+- Grouped comparison state remains presentation-specific and does not change Core DTOs, services, or persistence.
+
+Related files:
+
+- `SFRecordCompareEngine/Views/MainView.xaml`
+- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
+- `SFRecordCompareEngine/ViewModels/RecordComparisonGroupViewModel.cs`
+- `SFRecordCompareEngine/ViewModels/RecordComparisonGroupRowViewModel.cs`
+- `Documentation/UI-MVVM.md`
+
+## 2026-06-04 - Normalize Supported MiscItem Nested Data
+
+Status: Accepted
+
+Context: MiscItem imports persisted only parent scalar fields and VMAD. Spriggit inspection showed commonly populated
+object bounds, transforms, model, item sounds, keywords, palette defaults, and less frequent destructible data.
+
+Decision: Persist understood optional MiscItem structures in one-to-one child tables and ordered nested collections in
+child tables. Keep simple parent fields on `MiscItem`. Update the initial migration because the cache database is
+already being cleared for a major design correction. Defer components, resources, `XALG`, and unknown fields.
+
+Rationale: Child structures preserve source ownership, avoid an excessively wide parent DTO/table, and allow absent
+structures to be represented by no row. Resource mappings are not useful until Resource records are supported.
+
+Alternatives considered:
+
+- Flatten every nested field onto `MiscItem`.
+- Store nested structures as JSON.
+- Persist Resource mappings before Resource record support.
+- Add a new incremental migration.
+
+Consequences:
+
+- Full MiscItem detail reads hydrate child rows; lightweight tree reads remain unchanged.
+- Existing cache databases must be recreated.
+- DbUp `SchemaVersions` remains the migration-state source of truth.
+- No hardcoded schema-version constants are added.
+
+Related files:
+
+- `SFRecordCompareEngine.Migrations/Sql/001_CreatePluginSchema.sql`
+- `SFRecordCompareEngine.Core/DTOs/Records/MiscObjectDTO.cs`
+- `SFRecordCompareEngine.Core/Repositories/MiscObjectRepository.cs`
+- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
+- `Documentation/Database/DATABASE.md`
+- `Documentation/Database/ERD.md`
+
 ## 2026-06-03 - Use Lightweight Typed Service Reads For Main Record Tree
 
 Status: Accepted

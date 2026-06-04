@@ -168,12 +168,120 @@ CREATE TABLE MiscItem
     ShortName                 TEXT    NULL,
     Value                     INTEGER NULL,
     Weight                    REAL    NULL,
+    DirtinessScale            REAL    NULL,
+    FeaturedItemMessage_ModKey_Name TEXT NULL,
+    FeaturedItemMessage_ModKey_Type INTEGER NULL,
+    FeaturedItemMessage_ModKey_FileName TEXT NULL,
+    FeaturedItemMessage_FormKey_ID INTEGER NULL,
+    FLAG                      TEXT    NULL,
     PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID),
     FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName) REFERENCES Plugins (ModKey_Name, ModKey_Type, ModKey_FileName) ON DELETE CASCADE,
     CHECK (FormKey_ID >= 0)
 );
 
 CREATE INDEX IX_MiscItem_FormKey ON MiscItem (FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
+
+CREATE TABLE MiscItemObjectBounds
+(
+    ModKey_Name TEXT NOT NULL, ModKey_Type INTEGER NOT NULL, ModKey_FileName TEXT NOT NULL,
+    FormKey_ModKey_Name TEXT NOT NULL, FormKey_ModKey_Type INTEGER NOT NULL, FormKey_ModKey_FileName TEXT NOT NULL, FormKey_ID INTEGER NOT NULL,
+    First_X REAL NOT NULL, First_Y REAL NOT NULL, First_Z REAL NOT NULL, Second_X REAL NOT NULL, Second_Y REAL NOT NULL, Second_Z REAL NOT NULL, ImportedAtUTC TEXT NOT NULL,
+    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID),
+    FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) REFERENCES MiscItem ON DELETE CASCADE
+);
+
+CREATE TABLE MiscItemObjectPaletteDefaults
+(
+    ModKey_Name TEXT NOT NULL, ModKey_Type INTEGER NOT NULL, ModKey_FileName TEXT NOT NULL,
+    FormKey_ModKey_Name TEXT NOT NULL, FormKey_ModKey_Type INTEGER NOT NULL, FormKey_ModKey_FileName TEXT NOT NULL, FormKey_ID INTEGER NOT NULL,
+    Flags TEXT NULL, SinkMeters REAL NULL, SinkVariance REAL NULL, XYOffsetVariance REAL NULL, FootprintSize TEXT NULL, ScalePercent REAL NULL, ScaleVariance REAL NULL,
+    AngleXDegrees REAL NULL, AngleXVariance REAL NULL, AngleYDegrees REAL NULL, AngleYVariance REAL NULL, AngleZDegrees REAL NULL, AngleZVariance REAL NULL,
+    SlopePercent REAL NULL, SlopePercentVariance REAL NULL, Density REAL NULL, FrequencyPercent REAL NULL, SlopeLimit REAL NULL, DistanceBelowWater REAL NULL, DistanceAboveWater REAL NULL, ImportedAtUTC TEXT NOT NULL,
+    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID),
+    FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) REFERENCES MiscItem ON DELETE CASCADE
+);
+
+CREATE TABLE MiscItemTransforms
+(
+    ModKey_Name TEXT NOT NULL, ModKey_Type INTEGER NOT NULL, ModKey_FileName TEXT NOT NULL,
+    FormKey_ModKey_Name TEXT NOT NULL, FormKey_ModKey_Type INTEGER NOT NULL, FormKey_ModKey_FileName TEXT NOT NULL, FormKey_ID INTEGER NOT NULL,
+    InventoryIcon_FormKey TEXT NULL, Outpost_FormKey TEXT NULL, Ship_FormKey TEXT NULL, Preview_FormKey TEXT NULL, Inventory_FormKey TEXT NULL, Workbench_FormKey TEXT NULL, MainGameUI_FormKey TEXT NULL, ImportedAtUTC TEXT NOT NULL,
+    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID),
+    FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) REFERENCES MiscItem ON DELETE CASCADE
+);
+
+CREATE TABLE MiscItemModels
+(
+    ModKey_Name TEXT NOT NULL, ModKey_Type INTEGER NOT NULL, ModKey_FileName TEXT NOT NULL,
+    FormKey_ModKey_Name TEXT NOT NULL, FormKey_ModKey_Type INTEGER NOT NULL, FormKey_ModKey_FileName TEXT NOT NULL, FormKey_ID INTEGER NOT NULL,
+    File TEXT NULL, TextureFileHashes TEXT NULL, LightLayer INTEGER NULL, Flags TEXT NULL, ColorRemappingIndex REAL NULL, FlagsVestigial TEXT NULL, ImportedAtUTC TEXT NOT NULL,
+    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID),
+    FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) REFERENCES MiscItem ON DELETE CASCADE
+);
+
+CREATE TABLE MiscItemModelMaterialSwaps
+(
+    ModKey_Name TEXT NOT NULL, ModKey_Type INTEGER NOT NULL, ModKey_FileName TEXT NOT NULL,
+    FormKey_ModKey_Name TEXT NOT NULL, FormKey_ModKey_Type INTEGER NOT NULL, FormKey_ModKey_FileName TEXT NOT NULL, FormKey_ID INTEGER NOT NULL,
+    MaterialSwap_FormKey TEXT NOT NULL, MaterialSwap_Index INTEGER NOT NULL, ImportedAtUTC TEXT NOT NULL,
+    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, MaterialSwap_Index),
+    FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) REFERENCES MiscItemModels ON DELETE CASCADE
+);
+
+CREATE TABLE MiscItemSounds
+(
+    ModKey_Name TEXT NOT NULL, ModKey_Type INTEGER NOT NULL, ModKey_FileName TEXT NOT NULL,
+    FormKey_ModKey_Name TEXT NOT NULL, FormKey_ModKey_Type INTEGER NOT NULL, FormKey_ModKey_FileName TEXT NOT NULL, FormKey_ID INTEGER NOT NULL,
+    SoundType TEXT NOT NULL, Start TEXT NULL, Stop TEXT NULL, Condition_FormKey TEXT NULL, EventMapping_FormKey TEXT NULL, ImportedAtUTC TEXT NOT NULL,
+    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, SoundType),
+    FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) REFERENCES MiscItem ON DELETE CASCADE
+);
+
+CREATE TABLE MiscItemKeywords
+(
+    ModKey_Name TEXT NOT NULL, ModKey_Type INTEGER NOT NULL, ModKey_FileName TEXT NOT NULL,
+    FormKey_ModKey_Name TEXT NOT NULL, FormKey_ModKey_Type INTEGER NOT NULL, FormKey_ModKey_FileName TEXT NOT NULL, FormKey_ID INTEGER NOT NULL,
+    Keyword_FormKey TEXT NOT NULL, Keyword_Index INTEGER NOT NULL, ImportedAtUTC TEXT NOT NULL,
+    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Keyword_Index),
+    FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) REFERENCES MiscItem ON DELETE CASCADE
+);
+
+CREATE TABLE MiscItemDestructibles
+(
+    ModKey_Name TEXT NOT NULL, ModKey_Type INTEGER NOT NULL, ModKey_FileName TEXT NOT NULL,
+    FormKey_ModKey_Name TEXT NOT NULL, FormKey_ModKey_Type INTEGER NOT NULL, FormKey_ModKey_FileName TEXT NOT NULL, FormKey_ID INTEGER NOT NULL,
+    Health INTEGER NULL, StageCount INTEGER NULL, Flags TEXT NULL, ImportedAtUTC TEXT NOT NULL,
+    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID),
+    FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) REFERENCES MiscItem ON DELETE CASCADE
+);
+
+CREATE TABLE MiscItemDestructibleResistances
+(
+    ModKey_Name TEXT NOT NULL, ModKey_Type INTEGER NOT NULL, ModKey_FileName TEXT NOT NULL,
+    FormKey_ModKey_Name TEXT NOT NULL, FormKey_ModKey_Type INTEGER NOT NULL, FormKey_ModKey_FileName TEXT NOT NULL, FormKey_ID INTEGER NOT NULL,
+    DamageType_FormKey TEXT NOT NULL, Value INTEGER NOT NULL, Resistance_Index INTEGER NOT NULL, ImportedAtUTC TEXT NOT NULL,
+    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Resistance_Index),
+    FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) REFERENCES MiscItemDestructibles ON DELETE CASCADE
+);
+
+CREATE TABLE MiscItemDestructionStages
+(
+    ModKey_Name TEXT NOT NULL, ModKey_Type INTEGER NOT NULL, ModKey_FileName TEXT NOT NULL,
+    FormKey_ModKey_Name TEXT NOT NULL, FormKey_ModKey_Type INTEGER NOT NULL, FormKey_ModKey_FileName TEXT NOT NULL, FormKey_ID INTEGER NOT NULL,
+    Stage_Index INTEGER NOT NULL, HealthPercent INTEGER NULL, SourceIndex INTEGER NULL, ModelDamageStage INTEGER NULL, Flags TEXT NULL, SelfDamagePerSecond INTEGER NULL,
+    Explosion_FormKey TEXT NULL, Debris_FormKey TEXT NULL, DebrisCount INTEGER NULL, SequenceName TEXT NULL, Model_File TEXT NULL, Model_LightLayer INTEGER NULL, Model_Flags TEXT NULL, ImportedAtUTC TEXT NOT NULL,
+    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Stage_Index),
+    FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) REFERENCES MiscItemDestructibles ON DELETE CASCADE
+);
+
+CREATE TABLE MiscItemDestructionStageMaterialSwaps
+(
+    ModKey_Name TEXT NOT NULL, ModKey_Type INTEGER NOT NULL, ModKey_FileName TEXT NOT NULL,
+    FormKey_ModKey_Name TEXT NOT NULL, FormKey_ModKey_Type INTEGER NOT NULL, FormKey_ModKey_FileName TEXT NOT NULL, FormKey_ID INTEGER NOT NULL,
+    Stage_Index INTEGER NOT NULL, MaterialSwap_FormKey TEXT NOT NULL, MaterialSwap_Index INTEGER NOT NULL, ImportedAtUTC TEXT NOT NULL,
+    PRIMARY KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Stage_Index, MaterialSwap_Index),
+    FOREIGN KEY (ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Stage_Index) REFERENCES MiscItemDestructionStages ON DELETE CASCADE
+);
 
 CREATE TABLE Keyword
 (

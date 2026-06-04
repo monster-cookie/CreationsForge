@@ -1,4 +1,5 @@
 using Mutagen.Bethesda.Plugins;
+using Mutagen.Bethesda.Plugins.Exceptions;
 using SFRecordCompareEngine.Core.DTOs.Plugins;
 using SFRecordCompareEngine.Core.Services;
 using Shouldly;
@@ -73,6 +74,36 @@ public class StarfieldRecordReaderServiceTests
         };
 
         count.ShouldBeGreaterThan(0);
+    }
+
+    [Fact]
+    public void GetMiscItems_WhenStarfieldEsmExists_ReturnsNestedData()
+    {
+        var sut = new StarfieldRecordReaderService();
+        var plugin = CreateStarfieldPluginDTO();
+
+        var result = sut.GetMiscItems(plugin);
+
+        result.ShouldContain(record => record.Model != null);
+        result.ShouldContain(record => record.ObjectBounds != null);
+        result.ShouldContain(record => record.Transforms != null);
+        result.ShouldContain(record => record.Keywords.Count > 0);
+        result.ShouldContain(record => record.PickupSound != null);
+        result.ShouldContain(record => record.Destructible != null);
+    }
+
+    [Fact]
+    public void GetFormLists_WhenPluginDoesNotExist_ThrowsEnrichedRecordException()
+    {
+        var sut = new StarfieldRecordReaderService();
+        var plugin = new PluginDTO
+        {
+            ModKey = new ModKey("Missing.esm", ModType.Master)
+        };
+
+        var exception = Should.Throw<RecordException>(() => sut.GetFormLists(plugin));
+
+        exception.ModKey.ShouldBe(plugin.ModKey);
     }
 
     private static PluginDTO CreateStarfieldPluginDTO()

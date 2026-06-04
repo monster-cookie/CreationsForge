@@ -128,6 +128,203 @@ erDiagram
         TEXT ShortName
         INTEGER Value
         REAL Weight
+        REAL DirtinessScale
+        TEXT FeaturedItemMessage_ModKey_Name
+        INTEGER FeaturedItemMessage_ModKey_Type
+        TEXT FeaturedItemMessage_ModKey_FileName
+        INTEGER FeaturedItemMessage_FormKey_ID
+        TEXT FLAG
+    }
+
+    MiscItemObjectBounds {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        REAL First_X
+        REAL First_Y
+        REAL First_Z
+        REAL Second_X
+        REAL Second_Y
+        REAL Second_Z
+        TEXT ImportedAtUTC
+    }
+
+    MiscItemObjectPaletteDefaults {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT Flags
+        REAL SinkMeters
+        REAL SinkVariance
+        REAL XYOffsetVariance
+        TEXT FootprintSize
+        REAL ScalePercent
+        REAL ScaleVariance
+        REAL AngleXDegrees
+        REAL AngleXVariance
+        REAL AngleYDegrees
+        REAL AngleYVariance
+        REAL AngleZDegrees
+        REAL AngleZVariance
+        REAL SlopePercent
+        REAL SlopePercentVariance
+        REAL Density
+        REAL FrequencyPercent
+        REAL SlopeLimit
+        REAL DistanceBelowWater
+        REAL DistanceAboveWater
+        TEXT ImportedAtUTC
+    }
+
+    MiscItemTransforms {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT InventoryIcon_FormKey
+        TEXT Outpost_FormKey
+        TEXT Ship_FormKey
+        TEXT Preview_FormKey
+        TEXT Inventory_FormKey
+        TEXT Workbench_FormKey
+        TEXT MainGameUI_FormKey
+        TEXT ImportedAtUTC
+    }
+
+    MiscItemModels {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT File
+        TEXT TextureFileHashes
+        INTEGER LightLayer
+        TEXT Flags
+        REAL ColorRemappingIndex
+        TEXT FlagsVestigial
+        TEXT ImportedAtUTC
+    }
+
+    MiscItemModelMaterialSwaps {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT MaterialSwap_FormKey
+        INTEGER MaterialSwap_Index PK
+        TEXT ImportedAtUTC
+    }
+
+    MiscItemSounds {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT SoundType PK
+        TEXT Start
+        TEXT Stop
+        TEXT Condition_FormKey
+        TEXT EventMapping_FormKey
+        TEXT ImportedAtUTC
+    }
+
+    MiscItemKeywords {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT Keyword_FormKey
+        INTEGER Keyword_Index PK
+        TEXT ImportedAtUTC
+    }
+
+    MiscItemDestructibles {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Health
+        INTEGER StageCount
+        TEXT Flags
+        TEXT ImportedAtUTC
+    }
+
+    MiscItemDestructibleResistances {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT DamageType_FormKey
+        INTEGER Value
+        INTEGER Resistance_Index PK
+        TEXT ImportedAtUTC
+    }
+
+    MiscItemDestructionStages {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Stage_Index PK
+        INTEGER HealthPercent
+        INTEGER SourceIndex
+        INTEGER ModelDamageStage
+        TEXT Flags
+        INTEGER SelfDamagePerSecond
+        TEXT Explosion_FormKey
+        TEXT Debris_FormKey
+        INTEGER DebrisCount
+        TEXT SequenceName
+        TEXT Model_File
+        INTEGER Model_LightLayer
+        TEXT Model_Flags
+        TEXT ImportedAtUTC
+    }
+
+    MiscItemDestructionStageMaterialSwaps {
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Stage_Index PK, FK
+        TEXT MaterialSwap_FormKey
+        INTEGER MaterialSwap_Index PK
+        TEXT ImportedAtUTC
     }
 
     Keyword {
@@ -408,6 +605,17 @@ erDiagram
     Plugins ||--o{ GameSetting : contains
     Plugins ||--o{ Global : contains
     Plugins ||--o{ MiscItem : contains
+    MiscItem ||--o| MiscItemObjectBounds : contains
+    MiscItem ||--o| MiscItemObjectPaletteDefaults : contains
+    MiscItem ||--o| MiscItemTransforms : contains
+    MiscItem ||--o| MiscItemModels : contains
+    MiscItemModels ||--o{ MiscItemModelMaterialSwaps : contains
+    MiscItem ||--o{ MiscItemSounds : contains
+    MiscItem ||--o{ MiscItemKeywords : contains
+    MiscItem ||--o| MiscItemDestructibles : contains
+    MiscItemDestructibles ||--o{ MiscItemDestructibleResistances : contains
+    MiscItemDestructibles ||--o{ MiscItemDestructionStages : contains
+    MiscItemDestructionStages ||--o{ MiscItemDestructionStageMaterialSwaps : contains
     Plugins ||--o{ Keyword : contains
     Plugins ||--o{ NPC : contains
     Plugins ||--o{ ActorValueInformation : contains
