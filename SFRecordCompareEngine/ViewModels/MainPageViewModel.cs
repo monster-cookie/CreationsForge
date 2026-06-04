@@ -568,57 +568,59 @@ public class MainPageViewModel : ViewModelBase
     private void LoadMiscItemComparison(FormKey formKey)
     {
         var records = MiscItemService.GetByFormKey(formKey);
-        var maxResistanceCount = records.Select(record => record.Destructible?.Resistances.Count ?? 0).DefaultIfEmpty(0).Max();
-        var maxStageCount = records.Select(record => record.Destructible?.Stages.Count ?? 0).DefaultIfEmpty(0).Max();
-        var fields = CreateHeaderFields("Name", "ShortName", "Value", "Weight", "DirtinessScale", "FeaturedItemMessageFormKey", "FLAG", "ObjectBounds", "ObjectPaletteDefaults", "Destructible");
-        fields.AddRange(Enumerable.Range(0, maxResistanceCount).Select(index => new RecordComparisonFieldViewModel($"Destructible.Resistances[{index}]")));
-        fields.AddRange(Enumerable.Range(0, maxStageCount).Select(index => new RecordComparisonFieldViewModel($"Destructible.Stages[{index}]")));
+        var fields = CreateHeaderFields("Name", "ShortName", "Value", "Weight", "DirtinessScale", "FeaturedItemMessageFormKey", "FLAG");
         SetRecordComparisonWithScripting(fields, records,
             record =>
             {
-                var values = new List<string>
+                return new List<string>
                 {
                     RecordTypeCatalog.MiscItem.RecordID, record.EditorID, record.FormKey.ToString(), FormatStarfieldMajorRecordFlags(record.StarfieldMajorRecordFlags), record.Name ?? string.Empty, record.ShortName ?? string.Empty, record.Value?.ToString() ?? string.Empty, record.Weight?.ToString() ?? string.Empty, record.DirtinessScale?.ToString() ?? string.Empty,
-                    record.FeaturedItemMessageFormKey?.ToString() ?? string.Empty, record.Flag ?? string.Empty, FormatMiscItemObjectBounds(record.ObjectBounds), FormatMiscItemObjectPaletteDefaults(record.ObjectPaletteDefaults), FormatMiscItemDestructible(record.Destructible)
+                    record.FeaturedItemMessageFormKey?.ToString() ?? string.Empty, record.Flag ?? string.Empty
                 };
-                values.AddRange(record.Destructible?.Resistances.Select(FormatMiscItemDestructibleResistance) ?? Enumerable.Empty<string>());
-                values.AddRange(Enumerable.Repeat(string.Empty, maxResistanceCount - (record.Destructible?.Resistances.Count ?? 0)));
-                values.AddRange(record.Destructible?.Stages.Select(FormatMiscItemDestructionStage) ?? Enumerable.Empty<string>());
-                values.AddRange(Enumerable.Repeat(string.Empty, maxStageCount - (record.Destructible?.Stages.Count ?? 0)));
-                return values;
             });
         SetMiscItemGroupComparison(records);
-    }
-
-    private static string FormatMiscItemObjectBounds(MiscItemObjectBoundsDTO? value)
-    {
-        return value == null ? string.Empty : $"{value.FirstX}, {value.FirstY}, {value.FirstZ} | {value.SecondX}, {value.SecondY}, {value.SecondZ}";
-    }
-
-    private static string FormatMiscItemObjectPaletteDefaults(MiscItemObjectPaletteDefaultsDTO? value)
-    {
-        return value == null ? string.Empty : $"Flags={value.Flags} | Footprint={value.FootprintSize} | Scale={value.ScalePercent} | ScaleVariance={value.ScaleVariance} | Density={value.Density} | Frequency={value.FrequencyPercent} | Slope={value.SlopePercent} | Sink={value.SinkMeters}";
-    }
-
-    private static string FormatMiscItemDestructible(MiscItemDestructibleDTO? value)
-    {
-        return value == null ? string.Empty : $"Health={value.Health} | Count={value.Count} | Flags={value.Flags}";
-    }
-
-    private static string FormatMiscItemDestructibleResistance(MiscItemDestructibleResistanceDTO value)
-    {
-        return $"{value.DamageTypeFormKey} | Value={value.Value}";
-    }
-
-    private static string FormatMiscItemDestructionStage(MiscItemDestructionStageDTO value)
-    {
-        return $"Health={value.HealthPercent} | Index={value.Index} | ModelDamageStage={value.ModelDamageStage} | Flags={value.Flags} | SelfDamage={value.SelfDamagePerSecond} | Explosion={value.ExplosionFormKey} | Debris={value.DebrisFormKey} | DebrisCount={value.DebrisCount} | Sequence={value.SequenceName} | Model={value.ModelFile}";
     }
 
     private void SetMiscItemGroupComparison(IList<MiscItemDTO> records)
     {
         var orderedModKeys = RecordComparisonColumns.Select(column => column.ModKey).ToList();
         var recordLookup = records.ToDictionary(record => record.ModKey);
+
+        if (records.Any(record => record.ObjectBounds != null))
+            AddRecordComparisonGroup("Object Bounds", orderedModKeys, new[]
+            {
+                ("First X", (Func<MiscItemDTO, string>)(record => record.ObjectBounds?.FirstX.ToString() ?? string.Empty)),
+                ("First Y", record => record.ObjectBounds?.FirstY.ToString() ?? string.Empty),
+                ("First Z", record => record.ObjectBounds?.FirstZ.ToString() ?? string.Empty),
+                ("Second X", record => record.ObjectBounds?.SecondX.ToString() ?? string.Empty),
+                ("Second Y", record => record.ObjectBounds?.SecondY.ToString() ?? string.Empty),
+                ("Second Z", record => record.ObjectBounds?.SecondZ.ToString() ?? string.Empty)
+            }, recordLookup);
+
+        if (records.Any(record => record.ObjectPaletteDefaults != null))
+            AddRecordComparisonGroup("Object Palette Defaults", orderedModKeys, new[]
+            {
+                ("Flags", (Func<MiscItemDTO, string>)(record => record.ObjectPaletteDefaults?.Flags ?? string.Empty)),
+                ("Sink Meters", record => record.ObjectPaletteDefaults?.SinkMeters?.ToString() ?? string.Empty),
+                ("Sink Variance", record => record.ObjectPaletteDefaults?.SinkVariance?.ToString() ?? string.Empty),
+                ("XY Offset Variance", record => record.ObjectPaletteDefaults?.XYOffsetVariance?.ToString() ?? string.Empty),
+                ("Footprint Size", record => record.ObjectPaletteDefaults?.FootprintSize ?? string.Empty),
+                ("Scale Percent", record => record.ObjectPaletteDefaults?.ScalePercent?.ToString() ?? string.Empty),
+                ("Scale Variance", record => record.ObjectPaletteDefaults?.ScaleVariance?.ToString() ?? string.Empty),
+                ("Angle X Degrees", record => record.ObjectPaletteDefaults?.AngleXDegrees?.ToString() ?? string.Empty),
+                ("Angle X Variance", record => record.ObjectPaletteDefaults?.AngleXVariance?.ToString() ?? string.Empty),
+                ("Angle Y Degrees", record => record.ObjectPaletteDefaults?.AngleYDegrees?.ToString() ?? string.Empty),
+                ("Angle Y Variance", record => record.ObjectPaletteDefaults?.AngleYVariance?.ToString() ?? string.Empty),
+                ("Angle Z Degrees", record => record.ObjectPaletteDefaults?.AngleZDegrees?.ToString() ?? string.Empty),
+                ("Angle Z Variance", record => record.ObjectPaletteDefaults?.AngleZVariance?.ToString() ?? string.Empty),
+                ("Slope Percent", record => record.ObjectPaletteDefaults?.SlopePercent?.ToString() ?? string.Empty),
+                ("Slope Percent Variance", record => record.ObjectPaletteDefaults?.SlopePercentVariance?.ToString() ?? string.Empty),
+                ("Density", record => record.ObjectPaletteDefaults?.Density?.ToString() ?? string.Empty),
+                ("Frequency Percent", record => record.ObjectPaletteDefaults?.FrequencyPercent?.ToString() ?? string.Empty),
+                ("Slope Limit", record => record.ObjectPaletteDefaults?.SlopeLimit?.ToString() ?? string.Empty),
+                ("Distance Below Water", record => record.ObjectPaletteDefaults?.DistanceBelowWater?.ToString() ?? string.Empty),
+                ("Distance Above Water", record => record.ObjectPaletteDefaults?.DistanceAboveWater?.ToString() ?? string.Empty)
+            }, recordLookup);
 
         if (records.Any(record => record.Transforms != null))
             AddRecordComparisonGroup("Transforms", orderedModKeys, new[]
@@ -679,7 +681,92 @@ public class MainPageViewModel : ViewModelBase
         }
 
         AddRecordComparisonGroup("Keywords", orderedModKeys, keywordRows, recordLookup);
+
+        if (records.Any(record => record.Destructible != null))
+        {
+            var destructibleRows = new List<(string Label, Func<MiscItemDTO, string> ValueFactory)>
+            {
+                ("Health", record => record.Destructible?.Health?.ToString() ?? string.Empty),
+                ("Count", record => record.Destructible?.Count?.ToString() ?? string.Empty),
+                ("Flags", record => record.Destructible?.Flags ?? string.Empty)
+            };
+            AddMiscItemDestructibleResistanceRows(records, destructibleRows);
+            AddMiscItemDestructionStageRows(records, destructibleRows);
+            AddRecordComparisonGroup("Destructible", orderedModKeys, destructibleRows, recordLookup);
+        }
+
         HasRecordComparisonGroups = RecordComparisonGroups.Count > 0;
+    }
+
+    private static void AddMiscItemDestructibleResistanceRows(
+        IEnumerable<MiscItemDTO> records,
+        ICollection<(string Label, Func<MiscItemDTO, string> ValueFactory)> rows)
+    {
+        var maxResistanceCount = records.Select(record => record.Destructible?.Resistances.Count ?? 0).DefaultIfEmpty(0).Max();
+        for (var index = 0; index < maxResistanceCount; index++)
+        {
+            var resistanceIndex = index;
+            rows.Add(($"Resistance {index} - Resistance Index", record => GetMiscItemDestructibleResistance(record, resistanceIndex)?.ResistanceIndex.ToString() ?? string.Empty));
+            rows.Add(($"Resistance {index} - Damage Type", record => GetMiscItemDestructibleResistance(record, resistanceIndex)?.DamageTypeFormKey.ToString() ?? string.Empty));
+            rows.Add(($"Resistance {index} - Value", record => GetMiscItemDestructibleResistance(record, resistanceIndex)?.Value.ToString() ?? string.Empty));
+        }
+    }
+
+    private static void AddMiscItemDestructionStageRows(
+        IEnumerable<MiscItemDTO> records,
+        ICollection<(string Label, Func<MiscItemDTO, string> ValueFactory)> rows)
+    {
+        var recordList = records.ToList();
+        var maxStageCount = recordList.Select(record => record.Destructible?.Stages.Count ?? 0).DefaultIfEmpty(0).Max();
+        for (var index = 0; index < maxStageCount; index++)
+        {
+            var stageIndex = index;
+            rows.Add(($"Stage {index} - Stage Index", record => GetMiscItemDestructionStage(record, stageIndex)?.StageIndex.ToString() ?? string.Empty));
+            rows.Add(($"Stage {index} - Health Percent", record => GetMiscItemDestructionStage(record, stageIndex)?.HealthPercent?.ToString() ?? string.Empty));
+            rows.Add(($"Stage {index} - Source Index", record => GetMiscItemDestructionStage(record, stageIndex)?.Index?.ToString() ?? string.Empty));
+            rows.Add(($"Stage {index} - Model Damage Stage", record => GetMiscItemDestructionStage(record, stageIndex)?.ModelDamageStage?.ToString() ?? string.Empty));
+            rows.Add(($"Stage {index} - Flags", record => GetMiscItemDestructionStage(record, stageIndex)?.Flags ?? string.Empty));
+            rows.Add(($"Stage {index} - Self Damage Per Second", record => GetMiscItemDestructionStage(record, stageIndex)?.SelfDamagePerSecond?.ToString() ?? string.Empty));
+            rows.Add(($"Stage {index} - Explosion", record => GetMiscItemDestructionStage(record, stageIndex)?.ExplosionFormKey?.ToString() ?? string.Empty));
+            rows.Add(($"Stage {index} - Debris", record => GetMiscItemDestructionStage(record, stageIndex)?.DebrisFormKey?.ToString() ?? string.Empty));
+            rows.Add(($"Stage {index} - Debris Count", record => GetMiscItemDestructionStage(record, stageIndex)?.DebrisCount?.ToString() ?? string.Empty));
+            rows.Add(($"Stage {index} - Sequence Name", record => GetMiscItemDestructionStage(record, stageIndex)?.SequenceName ?? string.Empty));
+            rows.Add(($"Stage {index} - Model File", record => GetMiscItemDestructionStage(record, stageIndex)?.ModelFile ?? string.Empty));
+            rows.Add(($"Stage {index} - Model Light Layer", record => GetMiscItemDestructionStage(record, stageIndex)?.ModelLightLayer?.ToString() ?? string.Empty));
+            rows.Add(($"Stage {index} - Model Flags", record => GetMiscItemDestructionStage(record, stageIndex)?.ModelFlags ?? string.Empty));
+
+            var maxMaterialSwapCount = recordList
+                .Select(record => GetMiscItemDestructionStage(record, stageIndex)?.ModelMaterialSwaps.Count ?? 0)
+                .DefaultIfEmpty(0)
+                .Max();
+            for (var materialSwapIndex = 0; materialSwapIndex < maxMaterialSwapCount; materialSwapIndex++)
+            {
+                var capturedMaterialSwapIndex = materialSwapIndex;
+                rows.Add(($"Stage {index} - Model Material Swap {materialSwapIndex}", record => GetMiscItemDestructionStageMaterialSwap(record, stageIndex, capturedMaterialSwapIndex)));
+            }
+        }
+    }
+
+    private static MiscItemDestructibleResistanceDTO? GetMiscItemDestructibleResistance(MiscItemDTO record, int resistanceIndex)
+    {
+        return record.Destructible != null && record.Destructible.Resistances.Count > resistanceIndex
+            ? record.Destructible.Resistances[resistanceIndex]
+            : null;
+    }
+
+    private static MiscItemDestructionStageDTO? GetMiscItemDestructionStage(MiscItemDTO record, int stageIndex)
+    {
+        return record.Destructible != null && record.Destructible.Stages.Count > stageIndex
+            ? record.Destructible.Stages[stageIndex]
+            : null;
+    }
+
+    private static string GetMiscItemDestructionStageMaterialSwap(MiscItemDTO record, int stageIndex, int materialSwapIndex)
+    {
+        var stage = GetMiscItemDestructionStage(record, stageIndex);
+        return stage != null && stage.ModelMaterialSwaps.Count > materialSwapIndex
+            ? stage.ModelMaterialSwaps[materialSwapIndex].ToString()
+            : string.Empty;
     }
 
     private void AddRecordComparisonGroup(

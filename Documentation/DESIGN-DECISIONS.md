@@ -4,13 +4,15 @@
 
 Status: Accepted
 
-Context: MiscItem transforms, model data, and sounds were formatted as pipe-separated scalar values in the selected
-record comparison grid. Ordered keywords and model material swaps were displayed as separate indexed scalar rows.
-These representations obscured nested property labels and made long values difficult to compare.
+Context: MiscItem nested structures were formatted as pipe-separated scalar values in the selected record comparison
+grid. Ordered child values were displayed as separate indexed scalar rows. These representations obscured nested
+property labels, made long values difficult to compare, and could incorrectly mark overrides as identical when a
+persisted nested property was omitted from its formatter.
 
-Decision: Keep MiscItem scalar fields and destructible data in the standard comparison grid. Display transforms,
-model data, sounds, and ordered keywords in reusable presentation-layer expandable groups with one labeled comparison
-row per nested property or ordered item.
+Decision: Keep MiscItem parent scalar fields in the standard comparison grid. Display all supported nested structures
+in reusable presentation-layer expandable groups with one labeled comparison row per nested property or ordered item.
+This includes object bounds, object palette defaults, transforms, model data, sounds, ordered keywords, and
+destructible data.
 
 Rationale: Structured groups preserve the existing load-order comparison workflow while making nested values readable
 and allowing each property to receive its own identical, conflict, or winning-override state.
@@ -23,7 +25,7 @@ Alternatives considered:
 
 Consequences:
 
-- MiscItem transforms, model data, sounds, and keywords are no longer flattened into the scalar comparison grid.
+- Supported MiscItem nested structures are no longer flattened into the scalar comparison grid.
 - Groups expand automatically when a contained row differs and remain manually collapsible.
 - Grouped comparison state remains presentation-specific and does not change Core DTOs, services, or persistence.
 
