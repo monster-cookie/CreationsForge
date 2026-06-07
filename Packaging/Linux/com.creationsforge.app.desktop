@@ -3,5 +3,6 @@ Type=Application
 Name=Creations Forge
 Comment=Import and compare Bethesda plugin records
 Exec=/usr/bin/creationsforge
+Icon=creationsforge
 Terminal=false
 Categories=Development;Utility;

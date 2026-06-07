@@ -275,12 +275,14 @@ jobs:
           control_dir="$package_root/DEBIAN"
           launcher_dir="$package_root/usr/bin"
           desktop_entry_dir="$package_root/usr/share/applications"
+          icon_dir="$package_root/usr/share/icons/hicolor/scalable/apps"
 
           mkdir -p "$desktop_app"
           mkdir -p "$cli_app"
           mkdir -p "$control_dir"
           mkdir -p "$launcher_dir"
           mkdir -p "$desktop_entry_dir"
+          mkdir -p "$icon_dir"
 
           cp -r ./artifacts/publish/linux/desktop/. "$desktop_app/"
           cp -r ./artifacts/publish/linux/cli/. "$cli_app/"
@@ -288,6 +290,7 @@ jobs:
           cp ./Documentation/ROADMAP.md "$app_root/"
           cp ./Documentation/CHANGE-LOG.md "$app_root/"
           cp ./Packaging/Linux/com.creationsforge.app.desktop "$desktop_entry_dir/"
+          cp ./Packaging/Linux/creationsforge.svg "$icon_dir/"
 
           cat > "$launcher_dir/creationsforge" <<'EOF'
           #!/usr/bin/env bash
@@ -393,11 +396,13 @@ jobs:
           cli_app="$app_root/Cli"
           launcher_dir="$package_root/usr/bin"
           desktop_entry_dir="$package_root/usr/share/applications"
+          icon_dir="$package_root/usr/share/icons/hicolor/scalable/apps"
 
           mkdir -p "$desktop_app"
           mkdir -p "$cli_app"
           mkdir -p "$launcher_dir"
           mkdir -p "$desktop_entry_dir"
+          mkdir -p "$icon_dir"
 
           cp -r ./artifacts/publish/arch/desktop/. "$desktop_app/"
           cp -r ./artifacts/publish/arch/cli/. "$cli_app/"
@@ -405,6 +410,7 @@ jobs:
           cp ./Documentation/ROADMAP.md "$app_root/"
           cp ./Documentation/CHANGE-LOG.md "$app_root/"
           cp ./Packaging/Linux/com.creationsforge.app.desktop "$desktop_entry_dir/"
+          cp ./Packaging/Linux/creationsforge.svg "$icon_dir/"
           cp ./Packaging/Arch/PKGBUILD "$build_dir/PKGBUILD"
 
           cat > "$launcher_dir/creationsforge" <<'EOF'

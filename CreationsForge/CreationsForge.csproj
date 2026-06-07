@@ -11,6 +11,7 @@
         <ApplicationVersion>1</ApplicationVersion>
         <ApplicationPublisher>Venpi</ApplicationPublisher>
         <Description>Multi-game Bethesda plugin import and record comparison prototype.</Description>
+        <ApplicationIcon>Resources\AppIcon\CreationsForge.ico</ApplicationIcon>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     </PropertyGroup>
 
