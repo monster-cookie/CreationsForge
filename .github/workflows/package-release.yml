@@ -338,3 +338,107 @@ jobs:
           name: CreationsForge-${{ env.PACKAGE_VERSION }}-amd64-deb
           path: artifacts/CreationsForge_${{ env.PACKAGE_VERSION }}_amd64.deb
           if-no-files-found: error
+
+  package-arch:
+    name: Package Arch Linux
+    needs:
+      - validate-tag-source
+      - validate-release
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    env:
+      PACKAGE_VERSION: ${{ needs.validate-tag-source.outputs.version }}
+
+    steps:
+      - name: Install build tools
+        shell: bash
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm dotnet-sdk git zstd zip
+
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Publish Arch Linux applications
+        shell: bash
+        run: |
+          mkdir -p ./artifacts/publish/arch/desktop
+          mkdir -p ./artifacts/publish/arch/cli
+
+          dotnet publish ./CreationsForge/CreationsForge.csproj \
+            --configuration Release \
+            --runtime linux-x64 \
+            --self-contained true \
+            --output ./artifacts/publish/arch/desktop \
+            -p:Version="$PACKAGE_VERSION" \
+            -p:AssemblyVersion="$PACKAGE_VERSION" \
+            -p:FileVersion="$PACKAGE_VERSION"
+
+          dotnet publish ./CreationsForge.Console/CreationsForge.Console.csproj \
+            --configuration Release \
+            --runtime linux-x64 \
+            --self-contained true \
+            --output ./artifacts/publish/arch/cli \
+            -p:Version="$PACKAGE_VERSION" \
+            -p:AssemblyVersion="$PACKAGE_VERSION" \
+            -p:FileVersion="$PACKAGE_VERSION"
+
+      - name: Stage Arch package files
+        shell: bash
+        run: |
+          build_dir="./artifacts/arch/build"
+          package_root="$build_dir/package-root"
+          app_root="$package_root/opt/CreationsForge"
+          desktop_app="$app_root/Desktop"
+          cli_app="$app_root/Cli"
+          launcher_dir="$package_root/usr/bin"
+          desktop_entry_dir="$package_root/usr/share/applications"
+
+          mkdir -p "$desktop_app"
+          mkdir -p "$cli_app"
+          mkdir -p "$launcher_dir"
+          mkdir -p "$desktop_entry_dir"
+
+          cp -r ./artifacts/publish/arch/desktop/. "$desktop_app/"
+          cp -r ./artifacts/publish/arch/cli/. "$cli_app/"
+          cp ./Documentation/KNOWN-ISSUES.md "$app_root/"
+          cp ./Documentation/ROADMAP.md "$app_root/"
+          cp ./Documentation/CHANGE-LOG.md "$app_root/"
+          cp ./Packaging/Linux/com.creationsforge.app.desktop "$desktop_entry_dir/"
+          cp ./Packaging/Arch/PKGBUILD "$build_dir/PKGBUILD"
+
+          cat > "$launcher_dir/creationsforge" <<'EOF'
+          #!/usr/bin/env bash
+          exec /opt/CreationsForge/Desktop/CreationsForge "$@"
+          EOF
+
+          cat > "$launcher_dir/creationsforge-cli" <<'EOF'
+          #!/usr/bin/env bash
+          exec /opt/CreationsForge/Cli/CreationsForge.Console "$@"
+          EOF
+
+          chmod +x "$launcher_dir/creationsforge"
+          chmod +x "$launcher_dir/creationsforge-cli"
+          chmod +x "$desktop_app/CreationsForge"
+          chmod +x "$cli_app/CreationsForge.Console"
+
+          sed -i "s/^pkgver=.*/pkgver=$PACKAGE_VERSION/" "$build_dir/PKGBUILD"
+          sed -i "s|^url=.*|url='https://github.com/${GITHUB_REPOSITORY}'|" "$build_dir/PKGBUILD"
+          tar -C "$build_dir" -czf "$build_dir/package-root.tar.gz" package-root
+
+      - name: Build Arch package
+        shell: bash
+        run: |
+          useradd --create-home builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+          cd ./artifacts/arch/build
+          runuser -u builder -- makepkg --noconfirm --force
+          mkdir -p "$GITHUB_WORKSPACE/artifacts"
+          cp ./*.pkg.tar.zst "$GITHUB_WORKSPACE/artifacts/"
+
+      - name: Upload Arch Linux package
+        uses: actions/upload-artifact@v7
+        with:
+          name: creationsforge-${{ env.PACKAGE_VERSION }}-1-x86_64-pkg
+          path: artifacts/creationsforge-${{ env.PACKAGE_VERSION }}-1-x86_64.pkg.tar.zst
+          if-no-files-found: error
