@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Creations Forge
+Comment=Import and compare Bethesda plugin records
+Exec=/usr/bin/creationsforge
+Terminal=false
+Categories=Development;Utility;

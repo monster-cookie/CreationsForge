@@ -29,12 +29,12 @@ jobs:
 
       - name: Restore
         shell: pwsh
-        run: dotnet restore ./SFRecordCompareEngine.sln
+        run: dotnet restore ./CreationsForge.sln
 
       - name: Build
         shell: pwsh
-        run: dotnet build ./SFRecordCompareEngine.sln --configuration Release --no-restore
+        run: dotnet build ./CreationsForge.sln --configuration Release --no-restore
 
       - name: Test
         shell: pwsh
-        run: dotnet test ./SFRecordCompareEngine.UnitTests/SFRecordCompareEngine.UnitTests.csproj --configuration Release --no-build --filter "Category!=RequiresStarfield"
+        run: dotnet test ./CreationsForge.UnitTests/CreationsForge.UnitTests.csproj --configuration Release --no-build --filter "Category!=RequiresStarfield"

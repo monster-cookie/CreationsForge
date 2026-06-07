@@ -8,6 +8,12 @@ on:
 permissions:
   contents: read
 
+env:
+  DOTNET_VERSION: ${{ vars.DOTNET_VERSION || '10.0.x' }}
+  APPLICATION_DISPLAY_NAME: ${{ vars.APPLICATION_DISPLAY_NAME || 'Creations Forge' }}
+  APPLICATION_PUBLISHER: ${{ vars.APPLICATION_PUBLISHER || 'Venpi' }}
+  LINUX_PACKAGE_NAME: ${{ vars.LINUX_PACKAGE_NAME || 'creationsforge' }}
+
 jobs:
   validate-tag-source:
     name: Validate Tag Source
@@ -31,7 +37,7 @@ jobs:
           fi
 
           if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Release tag '$TAG_NAME' must use the vmajor.minor.patch format."
+            echo "Release tag '$TAG_NAME' must use the v<major>.<minor>.<patch> format."
             exit 1
           fi
 
@@ -58,19 +64,19 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Restore
         shell: pwsh
-        run: dotnet restore ./SFRecordCompareEngine.sln
+        run: dotnet restore ./CreationsForge.sln
 
       - name: Build
         shell: pwsh
-        run: dotnet build ./SFRecordCompareEngine.sln --configuration Release --no-restore
+        run: dotnet build ./CreationsForge.sln --configuration Release --no-restore
 
       - name: Test
         shell: pwsh
-        run: dotnet test ./SFRecordCompareEngine.UnitTests/SFRecordCompareEngine.UnitTests.csproj --configuration Release --no-build --filter "Category!=RequiresStarfield"
+        run: dotnet test ./CreationsForge.UnitTests/CreationsForge.UnitTests.csproj --configuration Release --no-build --filter "Category!=RequiresStarfield"
 
   package-windows:
     name: Package Windows
@@ -88,40 +94,106 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Restore
         shell: pwsh
-        run: dotnet restore ./SFRecordCompareEngine.sln
+        run: dotnet restore ./CreationsForge.sln
 
       - name: Build
         shell: pwsh
-        run: dotnet build ./SFRecordCompareEngine.sln --configuration Release --no-restore
+        run: dotnet build ./CreationsForge.sln --configuration Release --no-restore
+
+      - name: Publish Windows applications
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path ./artifacts/publish/windows/desktop -Force | Out-Null
+          New-Item -ItemType Directory -Path ./artifacts/publish/windows/cli -Force | Out-Null
+
+          dotnet publish ./CreationsForge/CreationsForge.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            --output ./artifacts/publish/windows/desktop `
+            -p:Version=$env:PACKAGE_VERSION `
+            -p:AssemblyVersion=$env:PACKAGE_VERSION `
+            -p:FileVersion=$env:PACKAGE_VERSION
+
+          dotnet publish ./CreationsForge.Console/CreationsForge.Console.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            --output ./artifacts/publish/windows/cli `
+            -p:Version=$env:PACKAGE_VERSION `
+            -p:AssemblyVersion=$env:PACKAGE_VERSION `
+            -p:FileVersion=$env:PACKAGE_VERSION
+
+      - name: Package Windows ZIPs
+        shell: pwsh
+        run: |
+          Copy-Item -LiteralPath ./Documentation/KNOWN-ISSUES.md -Destination ./artifacts/publish/windows/desktop
+          Copy-Item -LiteralPath ./Documentation/ROADMAP.md -Destination ./artifacts/publish/windows/desktop
+          Copy-Item -LiteralPath ./Documentation/CHANGE-LOG.md -Destination ./artifacts/publish/windows/desktop
+          Copy-Item -LiteralPath ./Documentation/KNOWN-ISSUES.md -Destination ./artifacts/publish/windows/cli
+          Copy-Item -LiteralPath ./Documentation/ROADMAP.md -Destination ./artifacts/publish/windows/cli
+          Copy-Item -LiteralPath ./Documentation/CHANGE-LOG.md -Destination ./artifacts/publish/windows/cli
+
+          Compress-Archive `
+            -Path ./artifacts/publish/windows/desktop/* `
+            -DestinationPath ./artifacts/CreationsForge-Desktop-win-x64-$env:PACKAGE_VERSION.zip `
+            -Force
+          Compress-Archive `
+            -Path ./artifacts/publish/windows/cli/* `
+            -DestinationPath ./artifacts/CreationsForge-Cli-win-x64-$env:PACKAGE_VERSION.zip `
+            -Force
 
       - name: Install Inno Setup
         shell: pwsh
         run: winget install --id JRSoftware.InnoSetup --exact --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity
 
-      - name: Package Windows ZIP
-        shell: pwsh
-        run: ./Tools/Package-Application.ps1 -Configuration Release -RuntimeIdentifier win-x64 -OutputDirectory ./artifacts -Version $env:PACKAGE_VERSION
-
       - name: Package Windows installer
         shell: pwsh
-        run: ./Tools/Build-Installer.ps1 -Configuration Release -RuntimeIdentifier win-x64 -OutputDirectory ./artifacts -Version $env:PACKAGE_VERSION
+        run: |
+          $compilerCommand = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
+          $compilerPaths = @(
+              $(if ($compilerCommand) { $compilerCommand.Source }),
+              (Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"),
+              (Join-Path $env:ProgramFiles "Inno Setup 6\ISCC.exe"),
+              (Join-Path $env:LOCALAPPDATA "Programs\Inno Setup 6\ISCC.exe")
+          )
+          $compilerPath = $compilerPaths | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
+          if (-not $compilerPath) {
+              throw "Inno Setup Compiler was not found."
+          }
 
-      - name: Upload Windows ZIP
+          & $compilerPath `
+            "/DDesktopSourceDirectory=$((Resolve-Path ./artifacts/publish/windows/desktop).Path)" `
+            "/DCliSourceDirectory=$((Resolve-Path ./artifacts/publish/windows/cli).Path)" `
+            "/DOutputDirectory=$((Resolve-Path ./artifacts).Path)" `
+            "/DApplicationName=$env:APPLICATION_DISPLAY_NAME" `
+            "/DApplicationPublisher=$env:APPLICATION_PUBLISHER" `
+            "/DApplicationVersion=$env:PACKAGE_VERSION" `
+            ./Packaging/Windows/CreationsForge.iss
+
+      - name: Upload Windows desktop ZIP
         uses: actions/upload-artifact@v7
         with:
-          name: SFRecordCompareEngine-win-x64-${{ env.PACKAGE_VERSION }}
-          path: artifacts/SFRecordCompareEngine-win-x64-${{ env.PACKAGE_VERSION }}.zip
+          name: CreationsForge-Desktop-win-x64-${{ env.PACKAGE_VERSION }}
+          path: artifacts/CreationsForge-Desktop-win-x64-${{ env.PACKAGE_VERSION }}.zip
+          if-no-files-found: error
+
+      - name: Upload Windows CLI ZIP
+        uses: actions/upload-artifact@v7
+        with:
+          name: CreationsForge-Cli-win-x64-${{ env.PACKAGE_VERSION }}
+          path: artifacts/CreationsForge-Cli-win-x64-${{ env.PACKAGE_VERSION }}.zip
           if-no-files-found: error
 
       - name: Upload Windows installer
         uses: actions/upload-artifact@v7
         with:
-          name: SFRecordCompareEngine-Setup-${{ env.PACKAGE_VERSION }}
-          path: artifacts/SFRecordCompareEngine-Setup-${{ env.PACKAGE_VERSION }}.exe
+          name: CreationsForge-Setup-${{ env.PACKAGE_VERSION }}
+          path: artifacts/CreationsForge-Setup-${{ env.PACKAGE_VERSION }}.exe
           if-no-files-found: error
 
   package-linux:
@@ -140,7 +212,7 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Install packaging tools
         shell: bash
@@ -150,30 +222,119 @@ jobs:
 
       - name: Restore
         shell: pwsh
-        run: dotnet restore ./SFRecordCompareEngine.sln
+        run: dotnet restore ./CreationsForge.sln
 
       - name: Build
         shell: pwsh
-        run: dotnet build ./SFRecordCompareEngine.sln --configuration Release --no-restore
+        run: dotnet build ./CreationsForge.sln --configuration Release --no-restore
 
-      - name: Package Linux ZIP
-        shell: pwsh
-        run: ./Tools/Package-Application.ps1 -Configuration Release -RuntimeIdentifier linux-x64 -OutputDirectory ./artifacts -Version $env:PACKAGE_VERSION
+      - name: Publish Linux applications
+        shell: bash
+        run: |
+          mkdir -p ./artifacts/publish/linux/desktop
+          mkdir -p ./artifacts/publish/linux/cli
+
+          dotnet publish ./CreationsForge/CreationsForge.csproj \
+            --configuration Release \
+            --runtime linux-x64 \
+            --self-contained true \
+            --output ./artifacts/publish/linux/desktop \
+            -p:Version="$PACKAGE_VERSION" \
+            -p:AssemblyVersion="$PACKAGE_VERSION" \
+            -p:FileVersion="$PACKAGE_VERSION"
+
+          dotnet publish ./CreationsForge.Console/CreationsForge.Console.csproj \
+            --configuration Release \
+            --runtime linux-x64 \
+            --self-contained true \
+            --output ./artifacts/publish/linux/cli \
+            -p:Version="$PACKAGE_VERSION" \
+            -p:AssemblyVersion="$PACKAGE_VERSION" \
+            -p:FileVersion="$PACKAGE_VERSION"
+
+      - name: Package Linux ZIPs
+        shell: bash
+        run: |
+          cp ./Documentation/KNOWN-ISSUES.md ./artifacts/publish/linux/desktop/
+          cp ./Documentation/ROADMAP.md ./artifacts/publish/linux/desktop/
+          cp ./Documentation/CHANGE-LOG.md ./artifacts/publish/linux/desktop/
+          cp ./Documentation/KNOWN-ISSUES.md ./artifacts/publish/linux/cli/
+          cp ./Documentation/ROADMAP.md ./artifacts/publish/linux/cli/
+          cp ./Documentation/CHANGE-LOG.md ./artifacts/publish/linux/cli/
+
+          (cd ./artifacts/publish/linux/desktop && zip -r ../../../CreationsForge-Desktop-linux-x64-"$PACKAGE_VERSION".zip .)
+          (cd ./artifacts/publish/linux/cli && zip -r ../../../CreationsForge-Cli-linux-x64-"$PACKAGE_VERSION".zip .)
 
       - name: Package Debian installer
-        shell: pwsh
-        run: ./Tools/Build-DebianPackage.ps1 -Configuration Release -OutputDirectory ./artifacts -Version $env:PACKAGE_VERSION
+        shell: bash
+        run: |
+          package_root="./artifacts/debian/package"
+          app_root="$package_root/opt/CreationsForge"
+          desktop_app="$app_root/Desktop"
+          cli_app="$app_root/Cli"
+          control_dir="$package_root/DEBIAN"
+          launcher_dir="$package_root/usr/bin"
+          desktop_entry_dir="$package_root/usr/share/applications"
 
-      - name: Upload Linux ZIP
+          mkdir -p "$desktop_app"
+          mkdir -p "$cli_app"
+          mkdir -p "$control_dir"
+          mkdir -p "$launcher_dir"
+          mkdir -p "$desktop_entry_dir"
+
+          cp -r ./artifacts/publish/linux/desktop/. "$desktop_app/"
+          cp -r ./artifacts/publish/linux/cli/. "$cli_app/"
+          cp ./Documentation/KNOWN-ISSUES.md "$app_root/"
+          cp ./Documentation/ROADMAP.md "$app_root/"
+          cp ./Documentation/CHANGE-LOG.md "$app_root/"
+          cp ./Packaging/Linux/com.creationsforge.app.desktop "$desktop_entry_dir/"
+
+          cat > "$launcher_dir/creationsforge" <<'EOF'
+          #!/usr/bin/env bash
+          exec /opt/CreationsForge/Desktop/CreationsForge "$@"
+          EOF
+
+          cat > "$launcher_dir/creationsforge-cli" <<'EOF'
+          #!/usr/bin/env bash
+          exec /opt/CreationsForge/Cli/CreationsForge.Console "$@"
+          EOF
+
+          chmod +x "$launcher_dir/creationsforge"
+          chmod +x "$launcher_dir/creationsforge-cli"
+          chmod +x "$desktop_app/CreationsForge"
+          chmod +x "$cli_app/CreationsForge.Console"
+
+          cat > "$control_dir/control" <<EOF
+          Package: $LINUX_PACKAGE_NAME
+          Version: $PACKAGE_VERSION
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Depends: libgl1, dbus, libfontconfig1, libxrandr2, libxi6
+          Maintainer: $APPLICATION_PUBLISHER
+          Description: Multi-game Bethesda plugin import and comparison tool
+           $APPLICATION_DISPLAY_NAME imports and compares selected Bethesda plugin records.
+          EOF
+
+          dpkg-deb --build --root-owner-group "$package_root" "./artifacts/CreationsForge_${PACKAGE_VERSION}_amd64.deb"
+
+      - name: Upload Linux desktop ZIP
         uses: actions/upload-artifact@v7
         with:
-          name: SFRecordCompareEngine-linux-x64-${{ env.PACKAGE_VERSION }}
-          path: artifacts/SFRecordCompareEngine-linux-x64-${{ env.PACKAGE_VERSION }}.zip
+          name: CreationsForge-Desktop-linux-x64-${{ env.PACKAGE_VERSION }}
+          path: artifacts/CreationsForge-Desktop-linux-x64-${{ env.PACKAGE_VERSION }}.zip
+          if-no-files-found: error
+
+      - name: Upload Linux CLI ZIP
+        uses: actions/upload-artifact@v7
+        with:
+          name: CreationsForge-Cli-linux-x64-${{ env.PACKAGE_VERSION }}
+          path: artifacts/CreationsForge-Cli-linux-x64-${{ env.PACKAGE_VERSION }}.zip
           if-no-files-found: error
 
       - name: Upload Debian installer
         uses: actions/upload-artifact@v7
         with:
-          name: SFRecordCompareEngine-${{ env.PACKAGE_VERSION }}-amd64-deb
-          path: artifacts/SFRecordCompareEngine_${{ env.PACKAGE_VERSION }}_amd64.deb
+          name: CreationsForge-${{ env.PACKAGE_VERSION }}-amd64-deb
+          path: artifacts/CreationsForge_${{ env.PACKAGE_VERSION }}_amd64.deb
           if-no-files-found: error
