@@ -1,153 +1,63 @@
 # PLAN: <Concise Title>
 
-## 1 - Context & Goal
+Task type: Simple / Standard / Database / Architecture / Documentation-only
 
-- Problem / Motivation: <why this change is needed>
-- Outcome: <what success looks like>
+## Goal
 
-## 2 - Scope
+- <1-3 bullets describing the problem and intended outcome>
 
-- Files to add/update/remove:
+## Approved Scope
 
-    - /SFRecordCompareEngine/...
-    - /SFRecordCompareEngine.Core/...
-    - /SFRecordCompareEngine.Migrations/...
-    - /SFRecordCompareEngine.UnitTests/...
-    - /Documentation/...
+Files to add/update/remove:
 
-- Documentation files to read before implementation:
+- <exact path>
+- <exact path>
 
-    - [Mutagen Documentation](https://mutagen-modding.github.io/Mutagen/)
-    - /Documentation/SYSTEM-OVERVIEW.md
-    - /Documentation/ARCHITECTURE.md
-    - /Documentation/DESIGN-DECISIONS.md
-    - /Documentation/DOMAIN-MODEL.md
-    - /Documentation/DATABASE.md
-    - /Documentation/UI-MVVM.md
+Out of scope:
 
-- Non-goals: <explicitly out-of-scope items>
+- <anything intentionally not touched>
 
-## 3 - Documentation & Project Knowledge
+## Implementation Checklist
 
-- Documentation impact:
-    - None / Add / Update / Supersede
+1. <specific code/doc step>
+2. <specific code/doc step>
+3. <specific code/doc step>
 
-- Documentation files affected:
-    - /Documentation/...
+## Impact Summary
 
-- Design decision update required:
-    - Yes / No
+Documentation impacts: None / Add / Update
+Database/schema impacts: None / Add / Update
+Config/environment impacts: None / Add / Update
+Autofac/DI impacts: None / Add / Update
+Serilog/logging impacts: None / Add / Update
+Public interface/workflow impacts: None / Add / Update
 
-- Design decision entry:
+## Tests & Validation
 
-    - Date:
-    - Status: Proposed / Accepted / Superseded / Rejected
-    - Context:
-    - Decision:
-    - Rationale:
-    - Alternatives considered:
-    - Consequences:
-    - Related files:
+Automated validation:
 
-- System knowledge updates:
+- dotnet restore ./CreationsForge.sln
+- dotnet build ./CreationsForge.sln --no-restore
+- dotnet test ./CreationsForge.UnitTests/CreationsForge.UnitTests.csproj --no-build
 
-    - Architecture/layering:
-    - Domain model/terminology:
-    - Database/persistence:
-    - UI/MVVM workflow:
-    - Dependency injection:
-    - Logging/observability:
+Unit tests:
 
-- Documentation/code conflicts found:
-    - None / <describe conflict and proposed resolution>
+- Add/update: <paths or None>
+- Not added because: <only if applicable>
 
-- If no documentation update is needed, state exactly:
-    - Documentation impacts: None
+Manual validation:
 
-## 4 - Data Model, Persistence & Config
+- <manual checks, if any>
 
-- Models/DTOs affected:
-- Persistence/file format/schema impacts:
-- Config/AppSettings/environment impacts:
-- Database migrations:
-- Database documentation updates:
-  - /Documentation/Database/DATABASE.md:
-  - /Documentation/Database/ERD.md:
-  - Not updated because:
-- DbUp SchemaVersions source-of-truth statement, if migration code is touched:
-- Hardcoded schema-version constants added: No
-- Migrations or rollback steps, if applicable:
+## Risks & Rollback
 
-## 5 - Tech & Implementation
+Risks:
 
-- Interfaces/DTOs first, if applicable:
-- Services:
-- Factories:
-- Stores:
-- Repositories/Data access:
-- UI/MVVM boundary:
-    - Core UI framework references added: No
-    - Core view models/UI commands/dialog/navigation abstractions added: No
-    - Presentation-only changes:
-    - UI-neutral Core changes:
-- MAUI/UI:
-- Autofac registrations:
-- Serilog observability:
+- <real risks only>
 
-## 6 - Risks & Rollback
+Rollback:
 
-- Risks:
-- Mitigations:
-- Rollback plan:
-
-## 7 - Test Plan
-
-- Unit tests (/SFRecordCompareEngine.UnitTests):
-    - Add/update:
-    - Not added because:
-- Excluded test areas:
-    - Database access:
-    - Repository implementations:
-    - DbUp migration execution:
-    - UI-bound code:
-- Edge cases:
-- Data/fixture updates:
-- Manual validation:
-    - Verify SFRecordCompareEngine.Core has no UI framework package references and no project references to presentation/UI projects.
-    - Verify SFRecordCompareEngine.Core does not contain view models, UI commands, pages, views, dialog services, navigation services, or UI-specific binding helpers.
-    - Verify documentation updates, if any, reflect the implemented design and do not conflict with code.
-
-## 8 - Telemetry & Logging
-
-- Key logs:
-- Diagnostics to verify after running the app:
-
-## 9 - Acceptance Criteria
-
-- [ ] Approved code changes are implemented.
-- [ ] Approved documentation updates are implemented, or Documentation impacts is explicitly listed as None.
-- [ ] Any design decision that changed architecture, persistence, dependency direction, public interfaces, or UI workflow is captured in /docs/DESIGN-DECISIONS.md.
-- [ ] Documentation reflects the final implemented behavior, not speculative or rejected design.
-- [ ] Restore, build, tests, and analyzer validation complete or exact environment failure is reported.
-- [ ] If database schema changed, /Documentation/Database/DATABASE.md documents the complete final schema.
-- [ ] If database schema changed, /Documentation/Database/ERD.md includes every application-schema table column.
-- [ ] If database schema changed, ERD relationship lines still represent only declared SQLite foreign keys.
-
-## 10 - Execution Steps After Approval
-
-1. Read the relevant /docs files listed in this plan before editing code.
-2. Implement contracts, models, DTOs, validators, and applicable tests, excluding database access, repository implementations, DbUp migration execution, and UI-bound code.
-3. Implement services/factories/stores/repositories.
-4. Wire Autofac registrations and configuration.
-5. Update WinUI UI/view models.
-6. Add or adjust persistence/database scripts if applicable.
-7. Update approved documentation files so they reflect the implemented design.
-8. Validate: restore, build, tests, analyzer clean.
-9. Summarize results and any public interface, config, persistence, documentation, or UI workflow impacts.
-
-## 11 - Out-of-Scope / Follow-ups
-
-- <items intentionally not addressed here>
+- Revert the approved file changes from this plan.
 
 Approval required before EXECUTE: Yes
 No files will be edited until this plan is approved.

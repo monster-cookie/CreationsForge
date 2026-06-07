@@ -1,3 +1,5 @@
 {
-    "sqlfluff.dialect": "sqlite",
+  "sqlfluff.config": "${fileWorkspaceFolder}/.sqlfluff",
+  "sqlfluff.dialect": "sqlite",
+  "sqlfluff.ignoreLocalConfig": false
 }

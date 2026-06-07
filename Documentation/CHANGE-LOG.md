@@ -2,15 +2,16 @@
 
 ## Unreleased
 
+- Due to supporting all BGS games technically, it has been rebranded to Creations Forge
+- Full multi game support (immplemented currently Skyrim, Fallout 4, and Starfield)
+- Converted to Avalonia UI after major issues with UNO and WinUI compatibility
 - Added support for Virtual Machine Adapters aka Scripts.
 - Revamped the status bar to look more modern and speced out.
-- Fixed a performance issues with the tree view loading.
 - Added missing child schemas for Perks (Ranks, Skills, etc.)
 - Added missing child schemas for MiscItems (Transforms, models, sounds).
 
 ### BREAKING CHANGE/BUG
-- Fixed record comparison identity to use the full origin FormKey instead of the numeric FormID portion alone.
-- The previous item is a major bug that requires purging the database and reimporting all records. (Sorry)
+- This is a completely new appllication and data model. You should uninstall/remove the old SFRecordComparisonEngine version.
 
 ## Version 1.0.3 - 2026-06-01 [BETA]
 

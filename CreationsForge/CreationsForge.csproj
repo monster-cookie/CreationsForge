@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <ApplicationTitle>CreationsForge</ApplicationTitle>
+        <ApplicationId>com.creationsforge.app</ApplicationId>
+        <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+        <ApplicationVersion>1</ApplicationVersion>
+        <ApplicationPublisher>Venpi</ApplicationPublisher>
+        <Description>Multi-game Bethesda plugin import and record comparison prototype.</Description>
+        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\CreationsForge.Bootstrap\CreationsForge.Bootstrap.csproj" />
+        <ProjectReference Include="..\CreationsForge.Core\CreationsForge.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Avalonia" Version="12.0.4" />
+        <PackageReference Include="Avalonia.Controls.DataGrid" Version="12.0.0" />
+        <PackageReference Include="Avalonia.Controls.TreeDataGrid" Version="12.0.0" />
+        <PackageReference Include="Avalonia.Desktop" Version="12.0.4" />
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.4" />
+        <PackageReference Include="Avalonia.Markup.Declarative" Version="12.0.1" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.4" />
+        <PackageReference Include="Autofac" Version="9.1.0" />
+        <PackageReference Include="Semi.Avalonia" Version="12.0.1" />
+        <PackageReference Include="Semi.Avalonia.DataGrid" Version="12.0.0" />
+        <PackageReference Include="Serilog" Version="4.3.1" />
+        <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+        <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(AVALONIA_UI_LICENSE_KEY)' != ''">
+        <AvaloniaUILicenseKey Include="$(AVALONIA_UI_LICENSE_KEY)" />
+    </ItemGroup>
+
+</Project>

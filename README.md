@@ -1,4 +1,4 @@
-# Starfield Record Compare Engine
+# Creations Forge
 
 ![Starfield Record Compare Engine](./MarketingSites/Images/SFRecordCompareEngine-Header.png)
 
@@ -10,7 +10,7 @@ The tool focuses on helping mod authors and developers inspect plugin records, r
 type, and compare matching records across plugins. It is intended to support debugging, validation, compatibility
 review, and general plugin analysis workflows.
 
-The Uno Platform desktop application supports Windows and Linux.
+The Avalonia desktop application supports Windows, MacOS, and Linux.
 
 ![Screen Shot of Record Comparison](./Documentation/Images/RecordCompare.png)
 
@@ -44,7 +44,7 @@ The Uno Platform desktop application supports Windows and Linux.
 3. Validate supported record types against Spriggit and xEdit
 4. Add record editing, plugin saving, plugin creation, and patch creation workflows
 
-Long-term goals include local LLM-assisted patch creation and support for other Bethesda games.
+Long-term goals include local LLM-assisted patch creation.
 
 ## Current Limitations
 

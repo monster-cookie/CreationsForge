@@ -1,0 +1,501 @@
+using CreationsForge.Core.DTOs.Games;
+using CreationsForge.Core.DTOs.Plugins;
+using CreationsForge.Core.DTOs.Records;
+using CreationsForge.Core.DTOs.Results;
+using CreationsForge.Core.Enums;
+using CreationsForge.Core.Importers;
+using CreationsForge.Core.Importers.Interfaces;
+using CreationsForge.Core.Repositories.Interfaces;
+using CreationsForge.Core.Services.Interfaces;
+using Shouldly;
+
+namespace CreationsForge.UnitTests.Importers;
+
+public class GameImporterTests
+{
+    [Fact]
+    public void Import_SavesGameBeforePlugin()
+    {
+        var events = new List<string>();
+        var plugin = CreatePlugin(SupportedGame.Starfield);
+        var importer = CreateImporter(
+            plugin,
+            new TestGameRepository(events),
+            new TestPluginRepository(events),
+            new TestPluginMasterReferenceRepository(),
+            [],
+            new TestRecordImportService());
+
+        importer.Import();
+
+        events.ShouldBe(["game", "base-plugin"]);
+    }
+
+    [Fact]
+    public void Import_WithMatchingPluginExtensionImporter_ImportsExtensionAfterBasePlugin()
+    {
+        var events = new List<string>();
+        var plugin = CreatePlugin(SupportedGame.Starfield);
+        var importer = CreateImporter(
+            plugin,
+            new TestGameRepository(),
+            new TestPluginRepository(events),
+            new TestPluginMasterReferenceRepository(),
+            [new TestPluginExtensionImporter(events, true)],
+            new TestRecordImportService());
+
+        importer.Import();
+
+        events.ShouldBe(["base-plugin", "extension-plugin"]);
+    }
+
+    [Fact]
+    public void Import_WithNonMatchingPluginExtensionImporter_DoesNotImportExtension()
+    {
+        var events = new List<string>();
+        var plugin = CreatePlugin(SupportedGame.Starfield);
+        var extensionImporter = new TestPluginExtensionImporter(events, false);
+        var importer = CreateImporter(
+            plugin,
+            new TestGameRepository(),
+            new TestPluginRepository(events),
+            new TestPluginMasterReferenceRepository(),
+            [extensionImporter],
+            new TestRecordImportService());
+
+        importer.Import();
+
+        events.ShouldBe(["base-plugin"]);
+        extensionImporter.ImportWasCalled.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Import_WithMasterReferences_SavesMasterReferencesAndIncrementsCount()
+    {
+        var plugin = CreatePlugin(SupportedGame.Starfield);
+        var masterPlugin = CreatePlugin(SupportedGame.Starfield, "Master", "Master.esm");
+        var masterReference = new PluginMasterReferenceDTO
+        {
+            Game = plugin.Game,
+            MasterModKey = masterPlugin.ModKey,
+            PluginModKey = plugin.ModKey,
+            ImportedAtUTC = DateTime.UtcNow
+        };
+        var masterReferenceRepository = new TestPluginMasterReferenceRepository();
+        var pluginRepository = new TestPluginRepository(existingPlugins: [masterPlugin]);
+        var importer = CreateImporter(
+            plugin,
+            new TestGameRepository(),
+            pluginRepository,
+            masterReferenceRepository,
+            [],
+            new TestRecordImportService(),
+            [masterReference]);
+
+        var result = importer.Import();
+
+        masterReferenceRepository.Saved.ShouldBe([masterReference]);
+        result.MasterReferencesImported.ShouldBe(1);
+        masterReferenceRepository.StaleCleanupRequests.ShouldBe([(plugin.Game, plugin.ModKey)]);
+    }
+
+    [Fact]
+    public void Import_WithMasterReferenceDifferentCasing_SavesMasterReference()
+    {
+        var plugin = CreatePlugin(SupportedGame.Starfield);
+        var masterPlugin = CreatePlugin(SupportedGame.Starfield, "Starfield", "Starfield.esm");
+        var masterReference = new PluginMasterReferenceDTO
+        {
+            Game = plugin.Game,
+            MasterModKey = new ModKeyDTO
+            {
+                Name = "starfield",
+                Type = masterPlugin.ModKey.Type,
+                FileName = "starfield.esm"
+            },
+            PluginModKey = plugin.ModKey,
+            ImportedAtUTC = DateTime.UtcNow
+        };
+        var masterReferenceRepository = new TestPluginMasterReferenceRepository();
+        var pluginRepository = new TestPluginRepository(existingPlugins: [masterPlugin]);
+        var importer = CreateImporter(
+            plugin,
+            new TestGameRepository(),
+            pluginRepository,
+            masterReferenceRepository,
+            [],
+            new TestRecordImportService(),
+            [masterReference]);
+
+        var result = importer.Import();
+
+        masterReferenceRepository.Saved.Count.ShouldBe(1);
+        masterReferenceRepository.Saved[0].MasterModKey.ShouldBe(masterPlugin.ModKey);
+        masterReferenceRepository.Saved[0].PluginModKey.ShouldBe(plugin.ModKey);
+        result.MasterReferencesImported.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Import_WithMissingMasterReference_SkipsMasterReference()
+    {
+        var plugin = CreatePlugin(SupportedGame.Starfield);
+        var masterReference = new PluginMasterReferenceDTO
+        {
+            Game = plugin.Game,
+            MasterModKey = new ModKeyDTO
+            {
+                Name = "Missing",
+                Type = 0,
+                FileName = "Missing.esm"
+            },
+            PluginModKey = plugin.ModKey,
+            ImportedAtUTC = DateTime.UtcNow
+        };
+        var masterReferenceRepository = new TestPluginMasterReferenceRepository();
+        var importer = CreateImporter(
+            plugin,
+            new TestGameRepository(),
+            new TestPluginRepository(),
+            masterReferenceRepository,
+            [],
+            new TestRecordImportService(),
+            [masterReference]);
+
+        var result = importer.Import();
+
+        masterReferenceRepository.Saved.ShouldBeEmpty();
+        result.MasterReferencesImported.ShouldBe(0);
+    }
+
+    [Fact]
+    public void Import_WithUnchangedPlugin_SkipsMetadataMasterReferencesAndRecords()
+    {
+        var plugin = CreatePlugin(SupportedGame.Skyrim);
+        var recordImportService = new TestRecordImportService();
+        var pluginReader = new TestGamePluginReader(plugin);
+        var importer = new GameImporter(
+            pluginReader,
+            new TestGameRecordReader(plugin.Game),
+            new TestGameRepository(),
+            new TestPluginRepository(existingPlugins: [plugin]),
+            new TestPluginMasterReferenceRepository(),
+            [],
+            recordImportService);
+
+        var result = importer.Import();
+
+        result.PluginsUnchanged.ShouldBe(1);
+        result.PluginsImported.ShouldBe(0);
+        pluginReader.ReadPluginMetadataWasCalled.ShouldBeFalse();
+        recordImportService.ImportWasCalled.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Import_InvokesRecordImportService()
+    {
+        var plugin = CreatePlugin(SupportedGame.Skyrim);
+        var recordImportService = new TestRecordImportService();
+        var importer = CreateImporter(
+            plugin,
+            new TestGameRepository(),
+            new TestPluginRepository(),
+            new TestPluginMasterReferenceRepository(),
+            [],
+            recordImportService);
+
+        var result = importer.Import();
+
+        recordImportService.ImportedPlugin.ShouldBe(plugin);
+        recordImportService.ImportWasCalled.ShouldBeTrue();
+        result.Records.GlobalsImported.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Import_WhenPluginReaderAndRecordReaderGamesDoNotMatch_Throws()
+    {
+        var plugin = CreatePlugin(SupportedGame.Starfield);
+        var importer = new GameImporter(
+            new TestGamePluginReader(plugin),
+            new TestGameRecordReader(SupportedGame.Fallout4),
+            new TestGameRepository(),
+            new TestPluginRepository(),
+            new TestPluginMasterReferenceRepository(),
+            [],
+            new TestRecordImportService());
+
+        Should.Throw<InvalidOperationException>(() => importer.Import())
+            .Message.ShouldContain("does not match");
+    }
+
+    private static GameImporter CreateImporter(
+        PluginDTO plugin,
+        IGameRepository gameRepository,
+        IPluginRepository pluginRepository,
+        IPluginMasterReferenceRepository pluginMasterReferenceRepository,
+        IEnumerable<IPluginExtensionImporter> pluginExtensionImporters,
+        IRecordImportService recordImportService,
+        IReadOnlyList<PluginMasterReferenceDTO>? masterReferences = null)
+    {
+        return new GameImporter(
+            new TestGamePluginReader(plugin, masterReferences ?? []),
+            new TestGameRecordReader(plugin.Game),
+            gameRepository,
+            pluginRepository,
+            pluginMasterReferenceRepository,
+            pluginExtensionImporters,
+            recordImportService);
+    }
+
+    private static PluginDTO CreatePlugin(SupportedGame game, string name = "Test", string fileName = "Test.esm")
+    {
+        return new PluginDTO
+        {
+            Game = game,
+            ModKey = new ModKeyDTO
+            {
+                Name = name,
+                Type = 0,
+                FileName = fileName
+            },
+            LoadOrderIndex = 0,
+            Enabled = true,
+            ExistsOnDisk = true,
+            ImportState = PluginImportState.Current,
+            HeaderFlags = 0,
+            FormVersion = 1,
+            RecordCount = 0,
+            SourceLastWriteUTCTicks = 0,
+            SourceFileSizeBytes = 0,
+            LastCheckedUTC = DateTime.UtcNow
+        };
+    }
+
+    private sealed class TestGamePluginReader : IGamePluginReader
+    {
+        private readonly PluginDTO Plugin;
+        private readonly IReadOnlyList<PluginMasterReferenceDTO> MasterReferences;
+
+        public TestGamePluginReader(PluginDTO plugin, IReadOnlyList<PluginMasterReferenceDTO>? masterReferences = null)
+        {
+            Plugin = plugin;
+            MasterReferences = masterReferences ?? [];
+        }
+
+        public SupportedGame Game => Plugin.Game;
+
+        public bool ReadPluginMetadataWasCalled { get; private set; }
+
+        public GameDTO ReadGame()
+        {
+            return new GameDTO
+            {
+                Game = Game,
+                DisplayName = Game.ToString()
+            };
+        }
+
+        public IReadOnlyList<PluginLoadOrderEntryDTO> ReadLoadOrder()
+        {
+            return
+            [
+                new PluginLoadOrderEntryDTO
+                {
+                    Game = Game,
+                    ModKey = Plugin.ModKey,
+                    LoadOrderIndex = Plugin.LoadOrderIndex,
+                    Enabled = Plugin.Enabled
+                }
+            ];
+        }
+
+        public PluginSourceInfoDTO ReadSourceInfo(ModKeyDTO modKey)
+        {
+            return new PluginSourceInfoDTO
+            {
+                Exists = Plugin.ExistsOnDisk,
+                LastWriteUTCTicks = Plugin.SourceLastWriteUTCTicks,
+                FileSizeBytes = Plugin.SourceFileSizeBytes
+            };
+        }
+
+        public bool IsUnsupported(PluginLoadOrderEntryDTO loadOrderEntry)
+        {
+            return Plugin.ImportState == PluginImportState.Unsupported;
+        }
+
+        public PluginDTO ReadPluginMetadata(PluginLoadOrderEntryDTO loadOrderEntry, PluginSourceInfoDTO sourceInfo)
+        {
+            ReadPluginMetadataWasCalled = true;
+            return Plugin;
+        }
+
+        public IReadOnlyList<PluginDTO> ReadPlugins()
+        {
+            return [Plugin];
+        }
+
+        public IReadOnlyList<PluginMasterReferenceDTO> ReadMasterReferences(PluginDTO plugin)
+        {
+            return MasterReferences;
+        }
+    }
+
+    private sealed class TestGameRecordReader : IGameRecordReader
+    {
+        public TestGameRecordReader(SupportedGame game)
+        {
+            Game = game;
+        }
+
+        public SupportedGame Game { get; }
+
+        public PluginRecordSetDTO ReadPluginRecords(PluginDTO plugin, CancellationToken cancellationToken = default)
+        {
+            return new PluginRecordSetDTO();
+        }
+    }
+
+    private sealed class TestGameRepository : IGameRepository
+    {
+        private readonly IList<string>? Events;
+
+        public TestGameRepository(IList<string>? events = null)
+        {
+            Events = events;
+        }
+
+        public void Save(GameDTO dto)
+        {
+            Events?.Add("game");
+        }
+    }
+
+    private sealed class TestPluginRepository : IPluginRepository
+    {
+        private readonly IList<string>? Events;
+        private readonly IList<PluginDTO> ExistingPlugins;
+
+        public TestPluginRepository(IList<string>? events = null, IList<PluginDTO>? existingPlugins = null)
+        {
+            Events = events;
+            ExistingPlugins = existingPlugins ?? new List<PluginDTO>();
+        }
+
+        public PluginDTO? GetByModKey(SupportedGame game, ModKeyDTO modKey)
+        {
+            return ExistingPlugins.FirstOrDefault(plugin =>
+                plugin.Game == game
+                && plugin.ModKey.Type == modKey.Type
+                && string.Equals(plugin.ModKey.FileName, modKey.FileName, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(plugin.ModKey.Name, modKey.Name, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public int CountByGame(SupportedGame game)
+        {
+            return ExistingPlugins.Count(plugin => plugin.Game == game);
+        }
+
+        public long GetImportedRecordCountByGame(SupportedGame game)
+        {
+            return ExistingPlugins
+                .Where(plugin => plugin.Game == game && plugin.ExistsOnDisk && plugin.ImportState == PluginImportState.Current)
+                .Sum(plugin => plugin.RecordCount);
+        }
+
+        public IReadOnlyList<PluginDTO> GetOpenablePlugins(SupportedGame game)
+        {
+            return ExistingPlugins
+                .Where(plugin => plugin.Game == game && plugin.ExistsOnDisk)
+                .ToList();
+        }
+
+        public IReadOnlyList<PluginDTO> SearchOpenablePluginsByFilename(SupportedGame game, string searchFilename)
+        {
+            return ExistingPlugins
+                .Where(plugin => plugin.Game == game &&
+                    plugin.ExistsOnDisk &&
+                    plugin.ModKey.FileName.Contains(searchFilename, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        public void Save(PluginDTO dto)
+        {
+            Events?.Add("base-plugin");
+            ExistingPlugins.Add(dto);
+        }
+    }
+
+    private sealed class TestPluginMasterReferenceRepository : IPluginMasterReferenceRepository
+    {
+        public IList<PluginMasterReferenceDTO> Saved { get; } = new List<PluginMasterReferenceDTO>();
+
+        public IList<(SupportedGame Game, ModKeyDTO PluginModKey)> StaleCleanupRequests { get; } = new List<(SupportedGame Game, ModKeyDTO PluginModKey)>();
+
+        public void Save(PluginMasterReferenceDTO dto)
+        {
+            Saved.Add(dto);
+        }
+
+        public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO pluginModKey, DateTime importedAtUTC)
+        {
+            StaleCleanupRequests.Add((game, pluginModKey));
+        }
+    }
+
+    private sealed class TestRecordImportService : IRecordImportService
+    {
+        public bool ImportWasCalled { get; private set; }
+
+        public PluginDTO? ImportedPlugin { get; private set; }
+
+        public RecordImportResultDTO ImportPluginRecords(
+            PluginDTO plugin,
+            IGameRecordReader recordReader,
+            IProgress<GameImportProgressDTO>? progress = null,
+            int pluginIndex = 0,
+            int pluginCount = 0,
+            CancellationToken cancellationToken = default)
+        {
+            ImportWasCalled = true;
+            ImportedPlugin = plugin;
+            return new RecordImportResultDTO
+            {
+                RecordTypes =
+                [
+                    new RecordTypeImportResultDTO
+                    {
+                        RecordType = "GLOB",
+                        HeaderImportSupported = true,
+                        TypedDetailImportSupported = true,
+                        DetailRowsImported = 1
+                    }
+                ]
+            };
+        }
+    }
+
+    private sealed class TestPluginExtensionImporter : IPluginExtensionImporter
+    {
+        private readonly IList<string> Events;
+        private readonly bool CanImportPlugin;
+
+        public TestPluginExtensionImporter(IList<string> events, bool canImportPlugin)
+        {
+            Events = events;
+            CanImportPlugin = canImportPlugin;
+        }
+
+        public bool ImportWasCalled { get; private set; }
+
+        public bool CanImport(PluginDTO plugin)
+        {
+            return CanImportPlugin;
+        }
+
+        public void Import(PluginDTO plugin)
+        {
+            ImportWasCalled = true;
+            Events.Add("extension-plugin");
+        }
+    }
+}

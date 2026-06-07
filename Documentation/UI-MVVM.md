@@ -2,98 +2,112 @@
 
 ## UI Framework
 
-The presentation project is an Uno Platform Skia Desktop application. UI is defined with WinUI-compatible XAML views
-and code-behind only for view lifecycle wiring. The desktop host selects Win32 on Windows and X11 on Linux.
+The presentation project is an Avalonia desktop application in `CreationsForge`. UI is built in C# with Avalonia
+controls, Avalonia compiled bindings enabled by the project, and theme resources configured at application startup.
+The project references Avalonia `DataGrid`, Avalonia `TreeDataGrid`, Fluent styling, Semi.Avalonia styling, and the
+Inter font package.
 
-Presentation code belongs in `SFRecordCompareEngine`, including views, view models, commands, dialog services, 
-navigation services, and Windows-specific window behavior.
+Presentation code belongs in `CreationsForge`, including windows, views, view models, presentation commands, dialog
+coordination, navigation coordination, and UI-specific state. Presentation code consumes `CreationsForge.Core`
+contracts, DTOs, result objects, and workflow services. It must not call Mutagen directly or depend on game-specific
+reader services.
+
+Core does not own Avalonia types, `INotifyPropertyChanged`, `ObservableCollection<T>`, `ICommand`, UI controls,
+windowing behavior, dialog coordination, or navigation coordination.
 
 ## App Startup
 
+`Program` starts the Avalonia desktop lifetime and delegates application behavior to `App`.
+
 `App` configures:
 
-- Uno Skia Desktop app startup
-- Serilog logging
-- Autofac container construction
-- Core and migration modules
-- window, view, and view model registrations
-- presentation service registrations
+- Serilog file logging through Bootstrap logging helpers
+- Autofac container construction through Bootstrap composition helpers
+- Core, migration, and game adapter module registration through Bootstrap
+- presentation windows, views, view models, services, and command infrastructure
+- Avalonia theme family and theme mode resources
+- Avalonia Fluent, Semi.Avalonia, `DataGrid`, and `TreeDataGrid` styles
 
-`App.OnLaunched` logs startup and resolves `MainWindow`. `MainWindow` registers itself with
-`DesktopApplicationWindowService`, shows `StartupImportView`, and maximizes the window. The startup import service
-initializes the database schema so it can force the same import pass when DbUp applies a migration.
+`App.OnFrameworkInitializationCompleted` logs UI startup, initializes the database schema through
+`IDatabaseSchemaInitializer`, resolves `MainWindow`, and assigns it to the Avalonia desktop lifetime. Shutdown disposes
+the Autofac container and flushes Serilog.
+
+`MainWindow` registers itself with `IApplicationWindowService`, starts maximized, and asks
+`IApplicationNavigationService` to show `MainView`. The first main-view navigation requests the configured active game
+import flow when an active game is already saved.
 
 ## Views
 
-`StartupImportView` displays startup import status, current plugin and record-type text, a progress bar, and an activity
-indicator. It starts import from `Loaded` and cancels import from `Unloaded`.
+`MainView` is the primary application workspace. It owns the active-game selector, active-plugin selector, toolbar
+commands, record-tree pane, selected-record comparison workspace, and status area. The active-game selector is backed
+by Core game selection services. The active-plugin selector is populated from imported openable plugins for the active
+game.
 
-`MainView` is the current application shell after startup import. It has a `MenuBar`, a `CommandBar`,
-a filterable left-side record tree, a horizontally scrollable right-side selected-record comparison workspace, and a
-status area that shows the total imported plugin header record count and active plugin selection. For the active
-plugin, the status includes its plugin type and header record count. The tree groups persisted supported records owned
-by the active plugin. The active plugin remains visible in the status area and its comparison column has a subtle
-yellow border.
+The left record browser groups persisted records by record type. Leaf rows display FormID text, EditorID text, and
+plugin usage counts where available. FormID and EditorID filters are presentation-level filters over the already loaded
+tree items.
 
-`OpenPluginDialog` is a `ContentDialog` for selecting the active plugin. It provides an autocomplete plugin file
-name search backed by imported openable plugin rows, plus Load and Cancel actions.
+The selected-record comparison workspace uses Avalonia `TreeDataGrid` rows and plugin columns returned by Core
+comparison services. The active plugin column receives a subtle border. Core assigns comparison value states for
+neutral, identical, conflicting, and winning override values; presentation maps those states to transparent, green,
+red, and yellow row/cell backgrounds.
 
-`SettingsDialog` is a `ContentDialog` for application options. It currently lets users select `Dark` or `Light`
-theme and save the choice to application configuration.
+`ImportProgressView` displays the running import status, detail text, progress state, and cancel command. It is used
+for a selected-game import, a selected-game full reimport, and Reset & Import All.
+
+`ActivePluginLoadView` is shown before returning to the main workspace when the selected plugin is large enough that
+building its record browser should not happen inline in the main view.
+
+`SettingsView` lets users choose the active game, theme family, and theme mode. Saving settings persists the selected
+configuration through Core services, applies the selected Avalonia theme immediately, and returns to the main view.
 
 ## View Models
 
 `ViewModelBase` implements `INotifyPropertyChanged` and `SetProperty`.
 
-`StartupImportViewModel` coordinates startup import UI state. It calls `IPluginImportService.InitializeAndImportAsync`,
-receives `PluginImportProgressDTO` updates, updates bindable status/progress properties, navigates to the main view on
-success, shows an error dialog on failure, and cancels through a `CancellationTokenSource`.
+`MainViewModel` coordinates the main workspace. It uses `IGameSelectionService` to list and persist supported games,
+`IGameImportReadinessService` to decide whether selection should warn before import, `IPluginSelectionService` to
+search openable imported plugins, `IRecordTreeService` to load record browser rows, and `IRecordComparisonService` to
+load selected-record comparison data. It exposes bindable selector text, suggestion lists, status text, record tree
+items, comparison columns, comparison rows, and Avalonia `HierarchicalTreeDataGridSource` state.
 
-`MainPageViewModel` exposes a full-reimport command through the File menu and toolbar. The command clears the active
-plugin selection, hides the main command surface, and navigates to a fresh startup import view with source-fingerprint
-skips disabled for that import pass.
+When the user selects a new active game, `MainViewModel` clears the active plugin, refreshes plugin suggestions, and
+routes through the guarded import flow when needed. `ReimportSelectedGameCommand` forces a full import for the active
+game. `ResetAndImportAllCommand` warns the user and then runs the all-games reset/import workflow.
 
-`MainPageViewModel` exposes `OpenCommand`, `ExitCommand`, status text, FormID and EditorID filters, and the left-side
-record tree. It listens to `IActivePluginSelectionService`, keeps the status text synchronized with the active plugin,
-and rebuilds the tree when the active plugin changes. It keeps Core DTOs based on `FormKey` and uses Mutagen's
-Starfield separated-master helpers for presentation-only `FormID` display and filtering. The tree uses lightweight
-typed Core service methods that return only `FormKey` and `EditorID`; selected-record comparison data uses the full
-typed service detail methods.
+When the user selects an active plugin, `MainViewModel` either loads the record tree directly or navigates to
+`ActivePluginLoadView` for plugins above the large-plugin threshold. Direct record-tree loading uses a request version
+guard so stale async work does not overwrite a newer selection. The view model builds grouped
+`RecordTreeItemViewModel` rows and applies FormID and EditorID filters in memory.
 
-Concrete tree-leaf selection also loads normalized field rows and load-order-sorted plugin columns for the right-side
-comparison workspace. Form list item rows remain ordered by persisted `Item_Index`, including duplicate references.
-Comparable rows are highlighted green when all visible plugin values match and red when any visible value differs.
-In conflicting rows, the far-right visible load-order winner is highlighted yellow. Informational identity rows and
-single-column comparisons remain neutral. A persistent legend above the status area explains the green, red, and
-yellow comparison states.
+Concrete record selection calls `IRecordComparisonService.GetRecordComparison`, rebuilds comparison plugin columns,
+and rebuilds hierarchical comparison rows. The comparison grid stays DTO-driven and does not query repositories,
+database tables, or Mutagen from presentation code.
 
-For records with supported VMAD data, the selected-record comparison workspace keeps scalar fields in the standard
-comparison grid and renders VMAD separately in a `Virtual Machine Adapter` section. VMAD scripts are shown as
-collapsible script sections with load-order-sorted plugin value cells. The VMAD section can collapse all scripts,
-expand changed scripts, and filter script properties to changed rows only. VMAD comparison rows reuse the existing
-green, red, and yellow comparison state colors.
+`ImportProgressViewModel` coordinates import progress UI state. It calls `IGameImportWorkflowService.ImportAsync` for
+selected-game imports or `IAllGamesImportWorkflowService.ImportAllAsync` for Reset & Import All. Progress is reported
+as Core `GameImportProgressDTO` values and mapped into bindable status, detail, progress value, maximum, and
+indeterminate state. Cancellation flows through a `CancellationTokenSource`. Success, cancellation, and failure all
+navigate back to the main view, with failures shown through `IUserDialogService`.
 
-For Perk records with imported rank data, the selected-record comparison workspace keeps scalar Perk fields in the
-standard comparison grid and renders ranks separately in a `Perk Ranks` section. Perk ranks are shown as collapsible
-rank sections with load-order-sorted plugin value cells. The Perk rank section can collapse all ranks, expand changed
-ranks, and filter rank rows to changed rows only. Perk rank comparison rows reuse the existing green, red, and yellow
-comparison state colors.
+`ActivePluginLoadViewModel` builds large active-plugin record trees off the UI thread. It creates a child Autofac
+lifetime scope on the worker path, resolves `IRecordTreeService` inside that scope, builds grouped record tree items,
+and returns to `MainView` with the selected plugin plus the prebuilt tree. This keeps database-backed services scoped
+to the background load instead of reusing the main view's scoped connection.
 
-MiscItem comparison keeps parent scalar fields in the standard comparison grid. All supported nested structures are
-shown in expandable structured comparison groups with one labeled row per nested property or ordered item. The groups
-include object bounds, object palette defaults, transforms, model data, sounds, ordered keywords, and destructible
-data. The grouped rows reuse the existing green, red, and yellow comparison state colors.
+`SettingsViewModel` exposes supported game options, theme family options, theme mode options, and Save/Cancel
+commands. Save persists the selected active game and theme through Core services, applies the theme through
+`IApplicationWindowService`, and returns to `MainView`. Cancel returns to `MainView` without changing settings.
 
-`OpenPluginDialogViewModel` exposes plugin filename suggestions, selected-plugin status, `LoadCommand`, and
-`CancelCommand`. It searches openable plugins through `IPluginService` and sets the active plugin through
-`IActivePluginSelectionService` when Load is clicked.
-
-`SettingsViewModel` exposes theme options, selected theme state, and saves the selected theme through
-`IApplicationConfigurationStore`.
+`RecordTreeItemViewModel`, `RecordComparisonColumnViewModel`, and `RecordComparisonRowViewModel` are presentation
+models used by the record browser and comparison workspace. They wrap Core DTO data into Avalonia-friendly state
+without moving UI binding primitives into Core.
 
 ## Commands
 
-`RelayCommand` and `AsyncRelayCommand` live in the presentation project. View models use these commands for UI actions.
+`RelayCommand` and `AsyncRelayCommand` live in the presentation project. View models expose `ICommand` values for UI
+actions such as settings navigation, selected-game reimport, Reset & Import All, record-tree pane toggling, saving
+settings, canceling settings, and canceling imports.
 
 Core does not expose UI command abstractions.
 
@@ -101,30 +115,37 @@ Core does not expose UI command abstractions.
 
 `ApplicationNavigationService` owns view transitions:
 
-- replaces the main window content with `MainView`
-- opens `OpenPluginDialog` as a WinUI `ContentDialog`
-- opens `SettingsDialog` as a WinUI `ContentDialog`
-- closes the active dialog
-- quits the WinUI app
+- shows `MainView`
+- shows `SettingsView`
+- shows `ActivePluginLoadView`
+- shows selected-game import progress
+- shows Reset & Import All progress
+- quits the application
 
-`UserDialogService` owns user-facing error alerts through `ContentDialog`.
+Each displayed view is resolved from a new Autofac child lifetime scope. The previous view scope is disposed before the
+new view replaces the main window content. This keeps scoped database-backed services short-lived and lets the Reset &
+Import All flow release main-workspace database connections before database files are deleted.
 
-`DesktopApplicationWindowService` stores the active `MainWindow`, swaps content, opens dialogs, closes dialogs, quits
-the app, applies the configured theme, and uses Uno desktop `AppWindow` APIs to maximize the main window.
+`ApplicationWindowService` stores the active `MainWindow`, swaps the window content, applies configured theme changes,
+shows Avalonia modal `Window` dialogs against the main window, and shuts down the Avalonia desktop lifetime.
 
-`ActivePluginSelectionService` is presentation-layer shared state for the active plugin selected by the user. It stores
-the active `PluginDTO` and raises a change event consumed by main-page UI state.
+`UserDialogService` owns user-facing warning and error dialogs. It is used for long import warnings, Reset & Import
+All confirmation, and import/load failure alerts.
 
 ## UI Thread And Long-Running Work
 
-Startup import is invoked asynchronously from the view model. `PluginImportService.InitializeAndImportAsync` uses
-`Task.Run` to keep import work off the UI thread. Progress updates are reported through
-`IProgress<PluginImportProgressDTO>` and consumed by the view model for binding updates.
+Import workflows are invoked asynchronously from `ImportProgressViewModel`. Progress updates flow through
+`IProgress<GameImportProgressDTO>` and are consumed by bindable view-model properties.
 
-Main record-tree construction runs on a background task after active-plugin selection. The view model applies the
-resulting bindable tree collection on the UI thread.
+Large active-plugin record browser loading runs on a background task in `ActivePluginLoadViewModel`. It resolves
+database-backed services from a worker child lifetime scope, then returns prebuilt view-model rows to the main view.
+
+Main-view active-plugin record loading also uses async flow and request-version checks to avoid stale results updating
+the UI after the selected plugin changes. UI-bound collections are updated from the active view model path after the
+background work returns.
 
 ## Current UI Limitations
 
-- Newly supported record types show modeled scalar fields and direct references. Deferred child objects are not yet
-  displayed.
+- The UI currently browses imported persisted records and scalar comparison rows for the approved record types.
+- Deep child comparison sections, patch generation, and conflict resolution workflows are deferred.
+- Oblivion is not implemented.

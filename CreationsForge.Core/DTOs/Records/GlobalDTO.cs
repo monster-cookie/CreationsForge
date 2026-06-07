@@ -1,0 +1,10 @@
+using CreationsForge.Core.DTOs.Records.Interfaces;
+
+namespace CreationsForge.Core.DTOs.Records;
+
+public class GlobalDTO : RecordDTO, IHasScriptingAdaptersRecordDTO
+{
+    public double? Data { get; set; }
+
+    public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
+}

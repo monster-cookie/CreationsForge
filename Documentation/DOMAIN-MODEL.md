@@ -2,418 +2,157 @@
 
 ## Core Concepts
 
-Plugin: A Starfield plugin file discovered from the local load order. Plugins are identified by Mutagen `ModKey` values 
-and persisted in the `Plugins` table.
+Game: A supported Bethesda game identity. The current supported values are `Starfield`, `Fallout4`, and `Skyrim`.
 
-Load order entry: A discovered plugin plus its file name, path, load order index, and enabled state. Represented by 
-`PluginLoadOrderEntryDTO`.
+Plugin: A Bethesda plugin file within a game. Plugins are identified in persistence by `Game` plus a decomposed Mutagen
+ModKey tuple.
 
-ModKey: Mutagen identifier for a plugin file. The database stores it as name, type, and file name columns. On typed
-record tables, `ModKey_*` columns identify the plugin file containing the imported record row.
+ModKey: A Mutagen plugin identifier. Application-schema columns store ModKey values as primitive components:
+`*_ModKey_Name`, `*_ModKey_Type`, and `*_ModKey_FileName`.
 
-FormKey: Mutagen identifier for an individual record. Typed record tables persist the origin `FormKey` as
-`FormKey_ModKey_Name`, `FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, and `FormKey_ID`.
+ModKey name and filename comparisons are case-insensitive for lookup. Bethesda load-order files, plugin headers, and
+Mutagen-provided master references can disagree on casing for the same plugin, especially in Starfield load orders.
+Persisted casing remains source/display metadata, not a case-sensitive identity boundary.
+When a case-insensitive lookup resolves a persisted plugin row, dependent rows use that persisted ModKey tuple so
+declared SQLite foreign keys continue to reference the exact stored parent key.
 
-Core DTOs and services may expose Mutagen `ModKey` and `FormKey` values, but database models decompose those values
-into primitive component columns for persistence. The containing plugin `ModKey`, origin record `FormKey`, and
-referenced record `FormKey` are distinct concepts and should be named accordingly. Raw string storage of `FormKey` or
-`ModKey` is not an allowed schema pattern for new application-schema columns.
+FormKey: A Mutagen record identifier. Application-schema columns store FormKey values as referenced ModKey components
+plus a numeric ID: `*_ModKey_Name`, `*_ModKey_Type`, `*_ModKey_FileName`, and `*_FormKey_ID`.
 
-The containing plugin's `ModKey` columns and the record's origin `FormKey` serve different purposes. A comparison
-lookup finds matching typed rows by the full origin `FormKey`, then uses each row's containing-plugin `ModKey` to
-identify and order the sources.
+Containing plugin identity: The `Game` plus `ModKey_*` columns on typed record tables identify the plugin containing
+the imported row.
 
-FormID: Plugin-context-relative record identifier shown in the main record tree. The presentation layer uses Mutagen's
-Starfield separated-master helpers to translate between stored `FormKey` values and displayed or filtered `FormID`
-values. Core service and repository boundaries continue to use `FormKey`.
+Origin record identity: The `FormKey_ModKey_*` columns plus `FormKey_ID` identify the record's origin FormKey. This is
+the identity needed to group true overrides for comparison while avoiding collisions on local numeric FormKey IDs.
 
-Master reference: A relationship edge between a declaring plugin and a master plugin declared in its header.
-Represented by `PluginMasterReferenceDTO` and persisted in `PluginMasterReferences`. Load-order indexes are derived
-from the related `Plugins` rows instead of being duplicated on the relationship.
+Record instance: A persisted imported override identity combining the containing game/plugin, record type ID, and
+origin record identity. `RecordInstances` is the database parent for typed detail rows and scripting adapters.
 
-Record type: A Starfield major record category. `RecordTypeCatalog` contains only runtime metadata for record types the 
-current import path persists: `FormList`, `GameSetting`, `Global`, `MiscObject`, `Keyword`, `NPC`,
-`ActorValueInformation`, `MagicEffect`, and `Perk`. Broader Mutagen record type reference data belongs in this
-documentation, not executable code.
+Master reference: A relationship edge from a declaring plugin to a declared master plugin in the same game.
 
-## Plugin Import States
+Record type: A Bethesda major-record type identified by a four-character record ID. The current cross-game shared
+record import workflow includes FormLists (`FLST`), GameSettings (`GMST`), and Globals (`GLOB`). Starfield also
+imports typed parent rows for MiscObjects (`MISC`), Keywords (`KYWD`), ActorValueInformation (`AVIF`), NPCs (`NPC_`),
+MagicEffects (`MGEF`), and Perks (`PERK`).
 
-`PluginImportState` contains:
+Starfield master references require special construction through Mutagen's separated-master-aware load-order paths.
+The Starfield reader prefers the full Mutagen environment load order's mod objects so split masters, medium masters,
+and overlays retain their master-style data for FormID translation. Header-master construction remains a fallback when
+environment mod objects are unavailable. Fallout 4 and Skyrim master references use normal plugin construction unless
+a future Mutagen or game-specific requirement proves otherwise.
 
-- `Current`: the plugin exists and was imported for the current source fingerprint.
-- `Changed`: the plugin source differs from the stored fingerprint. The current implementation counts changed plugins
-  during import and saves successfully reimported plugins as `Current`.
-- `Missing`: the plugin was present in load order data but the source file was not found on disk.
-- `Failed`: plugin metadata import failed.
-- `Unsupported`: the plugin is intentionally skipped. Current logic skips `BlueprintShips*.esm`.
+## Shared And Game-Specific Boundaries
 
-## Plugin Metadata
+Core DTOs and repositories are shared only for the current approved schema: games, plugin metadata, plugin master
+references, FormLists, FormListItems, GameSettings, Globals, Starfield typed parent rows, shared model rows, shared
+sound rows, and shared scripting adapter rows. Shared keyword rows are persisted for approved Starfield record types
+that expose indexed keyword lists.
 
-`PluginDTO` carries:
+Game-specific projects own Mutagen package references and should own any mapping that depends on a specific game's
+record interfaces, header flags, version fields, or available payload fields.
 
-- `ModKey`
-- load order index
-- enabled and exists-on-disk flags
-- import state
-- Starfield header flags
-- form version
-- author and branch
-- interior cell count
-- header record count
-- source last-write ticks and source file size
-- checked, imported, and invalidated timestamps
+Game adapter plugin and record reads use Mutagen environment data folders, such as
+`GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield).DataFolderPath`, as the read-path source of truth.
+Persisted game folder metadata remains informational and is not used as the authority for Mutagen plugin construction.
 
-`StarfieldPluginReaderService` reads metadata from Mutagen using
-`StarfieldMod.Create(...).FromPath(...).WithLoadOrderFromHeaderMasters().WithDataFolder(...).Construct()`.
-The persisted record count comes from `mod.ModHeader.Stats.NumRecords`. The persisted `HeaderFlags` value uses
-`StarfieldModHeader.HeaderFlag`, including `Master`, `Light`, `Medium`, and `Overlay`.
+## Active Game Configuration
 
-## Record Import
+`ApplicationConfiguration` stores the active game as a string matching `SupportedGame`. Passing a game argument updates
+the stored active game. Running without a game argument uses the stored active game when available.
 
-`RecordImportService` returns `RecordImportResultDTO` for a plugin. The result aggregates per-record-type counts from
-`RecordTypeImportResultDTO`, including discovered headers, typed detail rows, form list item rows, failed records, and
-unsupported typed detail import paths.
+The UI uses the same active-game configuration through `IGameSelectionService`. Supported-game display labels are
+presentation-safe Core DTOs and do not expose Mutagen types.
 
-Record import progress is reported through `PluginImportProgressDTO`. Plugin-level progress remains based on load-order
-position, while record-type fields identify the active record type and record index during long-running detail import
-phases.
+The main-window active-game autocomplete defaults to no selection unless a valid active game is stored in the
+configuration file. A configured or newly selected active game triggers the shared import workflow and refreshes the
+active-plugin choices for that game after import completes.
 
-The active typed detail import path includes Starfield `FLST`:
+## Active Plugin Selection
 
-- `StarfieldRecordReaderService.GetFormLists` reads form list DTOs from a plugin with one Mutagen mod load.
-- `FormListImporter` saves each `FormListDTO`.
-- `FormListRepository` saves the form list row.
-- `FormListItemRepository` saves each item row.
+An active plugin is a presentation selection from the active game's imported/openable plugin rows. Plugin choices are
+listed by filename from Core DTOs and are scoped to the active game. Selecting an active plugin updates the status bar
+with active game, plugin, and record-count context; it does not perform direct Mutagen reads in the presentation layer.
 
-The active typed detail import path also includes Starfield `GMST`:
+## Imported Record Tree
 
-- `StarfieldRecordReaderService.GetGameSettings` reads game setting DTOs from a plugin with one Mutagen mod load.
-- `GameSettingImporter` saves each `GameSettingDTO`.
-- `GameSettingRepository` saves the game setting row.
+The main workspace includes a left-side imported-record tree for the active plugin. The current tree includes the
+approved persisted record types: `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`. Tree
+entries are read from Core repository data through `IRecordTreeService` and grouped by record ID. Each record-type
+group shows its visible record count, and each record row shows how many imported plugins in the active game contain
+that same origin FormKey.
 
-The active typed detail import path also includes Starfield `GLOB`, `MISC`, `KYWD`, `NPC_`, `AVIF`, `MGEF`, and
-`PERK`. Each type has an explicit DTO, database model, repository, service, and importer. New record DTOs persist
-clearly understood scalar values and direct `FormKey` references. Complex nested child structures are deferred until
-they can be represented with normalized typed models.
+The tree displays a FormID-style value from the persisted `FormKeyDTO.Id` and the imported `EditorID`. It does not use
+presentation-layer Mutagen APIs or Starfield separated-master translation. Exact game-specific display FormID
+translation can be added later through Core/game-adapter services if needed.
 
-MiscItem detail import persists understood nested object bounds, object palette defaults, transforms, model data,
-crafting/pickup/dropdown sound references, ordered keyword references, and destructible data. Optional cohesive
-structures use one-to-one child rows; ordered material swaps, keywords, resistances, and destruction stages use
-ordered child rows. Components, resources, `XALG`, and unknown nested fields remain deferred.
+## Record Comparison
 
-Perk detail import persists the parent `PERK` scalar fields, top-level direct references, background skill references,
-ordered ranks, and supported rank effect fields. Perk ranks are ordered child data keyed by source rank index. Rank
-effects are ordered child data keyed by rank index and source effect index. Rank conditions, rank activities, and deeper
-effect-specific payloads remain deferred.
+Record comparison groups persisted records by origin FormKey across imported plugins in the active game. Comparison
+columns represent plugin overrides, and comparison rows represent fields exposed by Core DTOs.
 
-The current typed detail import path also persists supported VMAD scripting data for the supported record types that
-expose `VirtualMachineAdapter` through Mutagen: `Global`, `MiscItem`, `Keyword`, `NPC`, `ActorValueInformation`,
-`MagicEffect`, and `Perk`.
+The first comparison slice displays common fields (`EditorID`, `FormVersion`, and `MajorRecordFlags`) for all approved
+records. FormLists also display `AddToListFormKey` and indexed `Items[n]` rows. GameSettings display `SettingType` and
+the generic `Data` value. Globals display `Data`. Starfield `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`
+comparisons display their currently persisted scalar parent fields and record-reference fields. Starfield `MISC`,
+`NPC_`, and `MGEF` comparisons display shared keyword rows. Starfield `MISC` comparison also displays persisted shared
+model rows and scripting adapter rows. Starfield `MISC` and `MGEF` comparisons display shared sound rows. MGEF DATA
+follows Mutagen/Spriggit's flattened record shape and displays as flat rows. Child comparison data such as keyword
+lists, MISC models, MISC/MGEF sounds, and MISC scripts is represented as hierarchical rows in the comparison
+TreeDataGrid instead of flattened dotted field names.
 
-`ScriptingAdapterDTO` represents one attached VMAD script:
+Comparable comparison rows are highlighted green when all visible plugin values match and red when any visible plugin
+value differs. Blank values count as values. Single-column comparisons and non-comparable informational rows remain
+neutral. In a conflicting row, the far-right visible plugin value is highlighted yellow as the winning override within
+the displayed load-order-sorted comparison set.
 
-- owning plugin `ModKey`
-- owning record type name
-- owning record `FormKey`
-- script name
-- script order index
-- imported timestamp
+The UI renders comparison DTOs from `IRecordComparisonService` and does not call repositories, database tables, or
+Mutagen APIs directly. Deep child sections beyond the current MISC model and scripting adapter rows, such as perk
+ranks, conflict resolution state, patch generation, and exact display FormID translation remain follow-up work.
 
-`ScriptingAdapterPropertyDTO` represents one VMAD property attached to a script:
+## Current Import Data
 
-- parent script identity
-- property order index
-- property name
-- `MutagenObjectType`
-- supported scalar data fields
-- supported object reference fields
-- zero or more list items for supported list property shapes
+The current readers save the selected game row, discover load-order plugins, read plugin source fingerprints, persist
+plugin metadata, persist declared master references, and run shared record import orchestration for approved record
+types. Starfield, Fallout 4, and Skyrim map FormList, GameSetting, and Global records to the shared DTO shape.
+Starfield also maps `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK` parent rows. Additional shared record types and
+deeper game-specific typed record fields remain follow-up work.
+Typed record repositories persist a shared record instance before saving type-specific detail rows.
 
-`ScriptingAdapterPropertyListItemDTO` represents one ordered item inside a supported VMAD list property.
+## Presentation Boundary
 
-Unsupported VMAD property families remain deferred:
+The UI can select games, trigger imports, and display summaries of imported plugin and record counts. It does not own
+Bethesda plugin parsing concepts and does not call Mutagen directly. Game-specific Mutagen record and header mapping
+remains in the game adapter projects, and Core exposes only approved DTOs, enums, result objects, and primitive
+identity shapes to presentation code.
 
-- `ScriptStructProperty`
-- `ScriptStructListProperty`
-- `ScriptVariableProperty`
-- `ScriptVariableListProperty`
+## Starfield Scripted Records
 
-Localized record fields store only the resolved English text as nullable values. The database does not store
-translation catalogs or JSON payloads.
+Starfield-specific typed records currently include `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK` in addition to
+the shared `FLST`, `GMST`, and `GLOB` records. Core exposes these through CreationsForge DTOs and primitive
+`FormKeyDTO`/`ModKeyDTO` identity shapes; direct Mutagen mapping remains in `CreationsForge.Starfield`.
 
-For record comparison, typed rows for the same record can be located across containing plugins by querying the full
-origin `FormKey`. The containing-plugin columns remain available on each result for load-order sorting and display.
+Scripting adapters represent virtual-machine script attachments exposed by Mutagen. They are persisted for Starfield
+`GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`. `FLST` and `GMST` do not persist scripting adapters.
+Scripting adapters are linked to their owning `RecordInstances` row, not directly to the containing plugin.
 
-## Starfield Record Type Reference
+Models represent Mutagen `IModelGetter` payloads for records that expose model data. Shared model rows are linked to
+their owning `RecordInstances` row and are further identified by `ModelSlot` and `ModelGender`. The first populated
+slot is Starfield `MISC` with `ModelSlot = Model` and an empty `ModelGender`.
 
-The following reference lists came from Mutagen record type names observed during implementation. They are
-documentation
-only and do not define application import support.
+Keyword lists represent indexed keyword FormKey payloads for records that expose keyword data. Shared keyword rows are
+linked to their owning `RecordInstances` row by record type and parent FormKey. Starfield `MISC`, `NPC_`, and `MGEF`
+currently populate this shared keyword shape.
 
-Record types currently treated as known supported Mutagen types:
+Sounds represent Spriggit-style sound payloads. Shared sound rows are linked to their owning `RecordInstances` row by
+record type and parent FormKey. Starfield `MISC` currently maps named scalar sounds such as `CraftingSound`,
+`PickupSound`, and `DropdownSound`; Starfield `MGEF` maps indexed typed sound entries such as `OnHit`, `Release`, and
+`Charge`.
 
-- AcousticSpace
-- ActionRecord
-- Activator
-- ActorValueInformation
-- ActorValueModulation
-- AddonNode
-- AffinityEvent
-- AimAssistModel
-- AimAssistPose
-- AimModel
-- AimOpticalSightMarker
-- AmbienceSet
-- Ammunition
-- AnimatedObject
-- AnimationSoundTagSet
-- AObjectModification
-- APlacedTrap
-- Armor
-- ArmorAddon
-- ArmorModification
-- ArtObject
-- AStoryManagerNode
-- Atmosphere
-- AttractionRule
-- AudioOcclusionPrimitive
-- BendableSpline
-- Biome
-- BiomeMarker
-- BodyPartData
-- BoneModifier
-- Book
-- CameraPath
-- CameraShot
-- Cell
-- Challenge
-- Class
-- Climate
-- Clouds
-- CollisionLayer
-- ColorRecord
-- CombatStyle
-- ConditionRecord
-- ConstructibleObject
-- Container
-- ContainerModification
-- Curve3D
-- CurveTable
-- DamageType
-- Debris
-- DefaultObject
-- DefaultObjectManager
-- DialogBranch
-- DialogResponses
-- DialogTopic
-- Door
-- EffectSequence
-- EffectShader
-- EquipType
-- Explosion
-- FacialExpression
-- Faction
-- Flora
-- FloraModification
-- FogVolume
-- Footstep
-- FootstepSet
-- ForceData
-- FormFolderKeywordList
-- FormList (FLST)
-- Furniture
-- GameplayOption
-- GameplayOptionsGroup
-- GameSetting (GMST)
-- GameSettingBool (GMST Child for Boolean Data)
-- GameSettingFloat (GMST Child for Float Data)
-- GameSettingInt (GMST Child for Integer Data)
-- GameSettingString (GMST Child for String Data)
-- GameSettingUInt (GMST Child for Unsigned Integer Data)
-- GenericBaseForm
-- GenericBaseFormTemplate
-- Global
-- Grass
-- GroundCover
-- Hazard
-- HeadPart
-- IdleAnimation
-- IdleMarker
-- ImageSpace
-- ImageSpaceAdapter
-- Impact
-- ImpactDataSet
-- Ingestible
-- InstanceNamingRules
-- Key
-- Keyword
-- LandscapeTexture
-- Layer
-- LayeredMaterialSwap
-- LegendaryItem
-- LensFlare
-- LeveledBaseForm
-- LeveledItem
-- LeveledNpc
-- LeveledPackIn
-- LeveledSpaceCell
-- Light
-- LightingTemplate
-- LoadScreen
-- Location
-- LocationReferenceType
-- MagicEffect
-- MaterialPath
-- MaterialType
-- MeleeAimAssistModel
-- Message
-- MiscItem
-- MorphableObject
-- MoveableStatic
-- MovementType
-- MusicTrack
-- MusicType
-- NavigationMesh
-- NavigationMeshInfoMap
-- NavigationMeshObstacleCoverManager
-- Note
-- Npc
-- NpcModification
-- ObjectEffect
-- ObjectModification
-- ObjectSwap
-- ObjectVisibilityManager
-- Outfit
-- Package
-- PackIn
-- ParticleSystemDefineCollision
-- Perk
-- PERS
-- PhotoModeFeature
-- PlacedArrow
-- PlacedBarrier
-- PlacedBeam
-- PlacedCone
-- PlacedFlame
-- PlacedHazard
-- PlacedMissile
-- PlacedNpc
-- PlacedObject
-- PlacedTrap
-- Planet
-- PlanetContentManagerBranchNode
-- PlanetContentManagerContentNode
-- PlanetContentManagerTree
-- ProjectedDecal
-- Projectile
-- Quest
-- Race
-- ReferenceGroup
-- Region
-- ResearchProject
-- Resource
-- ResourceGenerationData
-- ReverbParameters
-- Scene
-- SceneCollection
-- SecondaryDamageList
-- ShaderParticleGeometry
-- SnapTemplate
-- SnapTemplateBehavior
-- SnapTemplateNode
-- SoundEchoMarker
-- SoundKeywordMapping
-- SoundMarker
-- SpeechChallenge
-- Spell
-- Star
-- Static
-- StaticCollection
-- StoryManagerBranchNode
-- StoryManagerEventNode
-- StoryManagerQuestNode
-- SunPreset
-- SurfaceBlock
-- SurfacePattern
-- SurfacePatternConfig
-- SurfacePatternStyle
-- SurfaceTree
-- Terminal
-- TerminalMenu
-- TextureSet
-- TimeOfDayRecord
-- Transform
-- Traversal
-- UnknownObjectModification
-- VoiceType
-- VolumetricLighting
-- Water
-- Weapon
-- WeaponBarrelModel
-- WeaponModification
-- Weather
-- WeatherSetting
-- Worldspace
-- WWiseEventData
-- WWiseKeywordMapping
-- Zoom
+Magic Effect DATA represents flattened Starfield `MGEF` properties exposed by Mutagen/Spriggit. Those fields are
+persisted directly on `MagicEffects` and displayed as flat comparison rows.
 
-Record types currently treated as known unsupported Mutagen types:
-
-`ArmorModification`, `ContainerModification`, `FloraModification`, `GameSettingBool`, `GameSettingFloat`, 
-`GameSettingInt`, `GameSettingString`, `GameSettingUInt`, `NpcModification`, `PlacedArrow`, `PlacedBarrier`, 
-`PlacedBeam`, `PlacedCone`, `PlacedFlame`, `PlacedHazard`, `PlacedMissile`, `PlacedTrap`, `UnknownObjectModification`, 
-`WeaponModification`.
-
-## Form List Data
-
-`FormListDTO` represents a Starfield form list record with common header fields and form-list-specific data:
-
-- owning `ModKey`
-- record `FormKey`
-- editor ID
-- form version
-- Starfield major record flags
-- version fields
-- imported timestamp
-- optional `AddToListFormKey`
-- item references
-
-`FormListItemDTO` represents an item reference inside a form list:
-
-- owning plugin `ModKey`
-- owning form list `FormKey`
-- item plugin `ModKey`
-- item `FormKey`
-- item index preserving source enumeration and display order
-- imported timestamp
-
-Form list items are an ordered sequence. Duplicate item references are valid and remain separate occurrences through
-their `Item_Index` values.
-
-## Game Setting Data
-
-`GameSettingDTO` represents a Starfield game setting record with common header fields and game-setting-specific data:
-
-- owning `ModKey`
-- record `FormKey`
-- editor ID
-- form version
-- Starfield major record flags
-- version fields
-- imported timestamp
-- setting type such as `GameSettingFloat`, `GameSettingInt`, `GameSettingUInt`, `GameSettingString`, or
-  `GameSettingBool`
-- optional data, raw data, and `XALG`
-- compression and deletion flags persisted as integer values
-
-`TitleString` is not persisted for game settings because Mutagen's Starfield game-setting records do not expose that
-field. The comparison workspace displays `Data` and hides raw diagnostic fields.
-
-## Configuration
-
-`ApplicationConfiguration` stores the selected game name and application theme. The theme is represented by 
-`ApplicationThemeMode` and defaults to `Dark` when the configuration file is missing the theme value.
-
-`ApplicationConfigurationStore` loads and saves the JSON configuration file and reports whether configuration is
-required when no selected game is present.
+Starfield `MiscItem`, `Static`, `Book`, `Door`, `Container`, and `Terminal` expose a direct `Model : IModelGetter`.
+`Terminal.MarkerModel` is not part of the shared model payload. Starfield armor and armor addon model data is wrapped
+by gendered world and first-person model structures, and weapon data combines direct model data with first-person and
+other custom model-related fields. Those records should map their model slots deliberately when their typed records are
+implemented.
