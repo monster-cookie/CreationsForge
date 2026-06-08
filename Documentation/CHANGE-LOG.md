@@ -1,6 +1,10 @@
 ﻿# Change Log
 
-## Version 1.1.0 - Unreleased [Beta]
+## Unreleased
+
+- No notes yet :)
+
+## Version 1.1.1 - 2026-06-07 [Beta]
 
 - Due to supporting all BGS games technically, it has been rebranded to Creations Forge
 - Full multi game support (implemented currently Skyrim, Fallout 4, and Starfield)
@@ -9,7 +13,7 @@
 - Added missing child schemas for Perks (Ranks, Skills, etc.)
 - Added missing child schemas for MiscItems (Transforms, models, sounds).
 
-### BREAKING CHANGE/BUG
+### BREAKING CHANGES
 
 - This is a completely new application and data model. You should uninstall/remove the old SFRecordComparisonEngine version.
 
