@@ -1,6 +1,6 @@
 ﻿# Change Log
 
-## Unreleased
+## Version 1.1.2 - 2026-06-08
 
 - Added Fallout 4 and Skyrim import support for the same approved typed record categories Starfield currently imports:
   MiscObjects, Keywords, ActorValueInformation, NPCs, MagicEffects, and Perks.
