@@ -4,6 +4,9 @@
 #ifndef ApplicationPublisher
 #define ApplicationPublisher "Venpi"
 #endif
+#ifndef InstallerIconFile
+#define InstallerIconFile "..\..\CreationsForge\Resources\AppIcon\CreationsForge.ico"
+#endif
 #define DesktopExecutable "CreationsForge.exe"
 #define CliExecutable "CreationsForge.Console.exe"
 
@@ -17,8 +20,8 @@ DefaultGroupName={#ApplicationName}
 DisableProgramGroupPage=yes
 OutputDir={#OutputDirectory}
 OutputBaseFilename=CreationsForge-Setup-{#ApplicationVersion}
-SetupIconFile={#DesktopSourceDirectory}\Resources\AppIcon\CreationsForge.ico
-UninstallDisplayIcon={app}\Desktop\Resources\AppIcon\CreationsForge.ico
+SetupIconFile={#InstallerIconFile}
+UninstallDisplayIcon={app}\Desktop\{#DesktopExecutable}
 Compression=lzma2
 SolidCompression=yes
 PrivilegesRequired=lowest

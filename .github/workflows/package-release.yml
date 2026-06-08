@@ -171,6 +171,7 @@ jobs:
             "/DDesktopSourceDirectory=$((Resolve-Path ./artifacts/publish/windows/desktop).Path)" `
             "/DCliSourceDirectory=$((Resolve-Path ./artifacts/publish/windows/cli).Path)" `
             "/DOutputDirectory=$((Resolve-Path ./artifacts).Path)" `
+            "/DInstallerIconFile=$((Resolve-Path ./CreationsForge/Resources/AppIcon/CreationsForge.ico).Path)" `
             "/DApplicationName=$env:APPLICATION_DISPLAY_NAME" `
             "/DApplicationPublisher=$env:APPLICATION_PUBLISHER" `
             "/DApplicationVersion=$env:PACKAGE_VERSION" `
@@ -358,7 +359,7 @@ jobs:
         shell: bash
         run: |
           pacman -Syu --noconfirm
-          pacman -S --noconfirm dotnet-sdk git zstd zip
+          pacman -S --noconfirm dotnet-sdk git zstd zip fontconfig libglvnd dbus libxrandr libxi
 
       - name: Check out repository
         uses: actions/checkout@v6
