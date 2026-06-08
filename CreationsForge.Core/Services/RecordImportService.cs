@@ -39,15 +39,12 @@ public class RecordImportService : IRecordImportService
         ImportPluginRecordType(plugin, result, RecordTypeCatalog.FormList, recordSet.FormLists, progress, pluginIndex, pluginCount, cancellationToken);
         ImportPluginRecordType(plugin, result, RecordTypeCatalog.GameSetting, recordSet.GameSettings, progress, pluginIndex, pluginCount, cancellationToken);
         ImportPluginRecordType(plugin, result, RecordTypeCatalog.Global, recordSet.Globals, progress, pluginIndex, pluginCount, cancellationToken);
-        if (plugin.Game == Enums.SupportedGame.Starfield)
-        {
-            ImportPluginRecordType(plugin, result, RecordTypeCatalog.MiscObject, recordSet.MiscObjects, progress, pluginIndex, pluginCount, cancellationToken);
-            ImportPluginRecordType(plugin, result, RecordTypeCatalog.Keyword, recordSet.Keywords, progress, pluginIndex, pluginCount, cancellationToken);
-            ImportPluginRecordType(plugin, result, RecordTypeCatalog.ActorValueInformation, recordSet.ActorValueInformation, progress, pluginIndex, pluginCount, cancellationToken);
-            ImportPluginRecordType(plugin, result, RecordTypeCatalog.NPC, recordSet.NPCs, progress, pluginIndex, pluginCount, cancellationToken);
-            ImportPluginRecordType(plugin, result, RecordTypeCatalog.MagicEffect, recordSet.MagicEffects, progress, pluginIndex, pluginCount, cancellationToken);
-            ImportPluginRecordType(plugin, result, RecordTypeCatalog.Perk, recordSet.Perks, progress, pluginIndex, pluginCount, cancellationToken);
-        }
+        ImportPluginRecordType(plugin, result, RecordTypeCatalog.MiscObject, recordSet.MiscObjects, progress, pluginIndex, pluginCount, cancellationToken);
+        ImportPluginRecordType(plugin, result, RecordTypeCatalog.Keyword, recordSet.Keywords, progress, pluginIndex, pluginCount, cancellationToken);
+        ImportPluginRecordType(plugin, result, RecordTypeCatalog.ActorValueInformation, recordSet.ActorValueInformation, progress, pluginIndex, pluginCount, cancellationToken);
+        ImportPluginRecordType(plugin, result, RecordTypeCatalog.NPC, recordSet.NPCs, progress, pluginIndex, pluginCount, cancellationToken);
+        ImportPluginRecordType(plugin, result, RecordTypeCatalog.MagicEffect, recordSet.MagicEffects, progress, pluginIndex, pluginCount, cancellationToken);
+        ImportPluginRecordType(plugin, result, RecordTypeCatalog.Perk, recordSet.Perks, progress, pluginIndex, pluginCount, cancellationToken);
         Logger.Information(
             "Finished record import for {ModKey} for {Game}: headers {HeadersImported}, details {DetailRowsImported}, FormList items {FormListItemsImported}, record failures {RecordsFailed}, unsupported record types {UnsupportedRecordTypes}",
             plugin.ModKey.FileName,

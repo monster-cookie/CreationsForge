@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- No notes yet :)
+- Added Fallout 4 and Skyrim import support for the same approved typed record categories Starfield currently imports:
+  MiscObjects, Keywords, ActorValueInformation, NPCs, MagicEffects, and Perks.
 
 ## Version 1.1.1 - 2026-06-07 [Beta]
 
@@ -15,7 +16,8 @@
 
 ### BREAKING CHANGES
 
-- This is a completely new application and data model. You should uninstall/remove the old SFRecordComparisonEngine version.
+- This is a completely new application and data model. You should uninstall/remove the old SFRecordComparisonEngine
+  version.
 
 ## Version 1.0.3 - 2026-06-01 [BETA]
 

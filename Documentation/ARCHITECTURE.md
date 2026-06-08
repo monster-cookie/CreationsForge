@@ -81,10 +81,9 @@ masters to shared `PluginMasterReferenceDTO` rows.
 types from a bundled `PluginRecordSetDTO`, creates per-record-type results, resolves registered typed detail importers
 by `SupportedGame` and record type ID, tracks unsupported typed detail importers, and logs per-record failures without
 aborting the full plugin import. The current cross-game shared record types are FormLists (`FLST`), GameSettings
-(`GMST`), and Globals (`GLOB`). Starfield also imports typed parent rows for MiscObjects (`MISC`), Keywords (`KYWD`),
-ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), and Perks (`PERK`). Starfield, Fallout 4, and
-Skyrim map approved shared records inside their game adapters after loading the Mutagen plugin once for the
-Core-facing record-read call.
+(`GMST`), Globals (`GLOB`), MiscObjects (`MISC`), Keywords (`KYWD`), ActorValueInformation (`AVIF`), NPCs (`NPC_`),
+MagicEffects (`MGEF`), and Perks (`PERK`). Starfield, Fallout 4, and Skyrim map approved shared records inside their
+game adapters after loading the Mutagen plugin once for the Core-facing record-read call.
 
 Starfield plugin metadata, master-reference, and record reads use a Starfield-only construction helper. The helper
 prefers the full Mutagen environment load order's mod objects with the Starfield environment data folder from
@@ -118,7 +117,7 @@ dispose the main workspace database connection before the reset workflow deletes
 The main view owns active-game and active-plugin selector state. `IPluginSelectionService` exposes UI-neutral
 queries for openable plugins and imported record totals by game. Selecting an active plugin updates presentation
 status and loads left-side record-type sections through `IRecordTreeService`. Each section is rendered as an expander
-with a grid populated from persisted shared record rows for `FLST`, `GMST`, and `GLOB`; the grids show per-record
+with a grid populated from persisted shared record rows for the approved typed record set; the grids show per-record
 plugin usage counts and do not call Mutagen directly from presentation code. Plugins with large header record counts
 use a dedicated active-plugin loading screen before returning to the main view with a prebuilt record browser tree.
 That loading screen creates a child Autofac lifetime scope on the worker path so database-backed record tree
@@ -181,32 +180,32 @@ configured application-data `Logs` directory. CLI logs are written to the consol
 `Logs` directory. Logs include machine-name enrichment but do not include environment username enrichment by default.
 Services log workflow-level progress and failures. Repositories do not log.
 
-## Starfield Scripted Record Extension
+## Shared Scripted Record Extension
 
-Starfield-only typed records for `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK` follow the same Core-facing import
-contract as shared records: the Starfield adapter maps Mutagen records into Core DTOs, `RecordImportService` dispatches
-by supported game and record type ID, and repositories persist DTO data with named SQL parameters. The UI continues to
-consume Core DTOs and record-tree services only.
+Typed records for `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK` follow the same Core-facing import contract as
+shared records: the game adapters map Mutagen records into Core DTOs, `RecordImportService` dispatches by supported
+game and record type ID, and repositories persist DTO data with named SQL parameters. The UI continues to consume Core
+DTOs and record-tree services only.
 
 Scripting adapter persistence is shared in Core through `IScriptingAdapterImportService` and scripting adapter
-repositories. Starfield importers call that service for record types that expose virtual-machine adapters. The `MISC`
-slice currently persists parent scalar fields, keyword rows, model rows, and scripts; the old single-game app's deeper
-MiscObject child-detail tables are still a separate follow-up.
+repositories. Game adapters populate scripting adapter DTOs for record types that expose virtual-machine adapters.
+The `MISC` slice currently persists parent scalar fields, keyword rows, model rows, and scripts; the old single-game
+app's deeper MiscObject child-detail tables are still a separate follow-up.
 Scripting adapters are persisted against the shared `RecordInstances` parent using record type IDs such as `GLOB`,
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`.
 
-Keyword-list persistence is shared in Core through `IRecordKeywordImportService` and `RecordKeywords`. Starfield
-`MISC`, `NPC_`, and `MGEF` currently populate that shared table. Magic Effect DATA fields are persisted directly on
-`MagicEffects` because Mutagen/Spriggit expose them as flattened MGEF properties.
+Keyword-list persistence is shared in Core through `IRecordKeywordImportService` and `RecordKeywords`. `MISC`, `NPC_`,
+and `MGEF` populate that shared table when the source game exposes keyword lists. Magic Effect DATA fields are
+persisted directly on `MagicEffects` because Mutagen/Spriggit expose them as flattened MGEF properties.
 
 Model persistence is shared in Core through `IModelImportService` and model repositories. `Models` and
 `ModelMaterialSwaps` reference `RecordInstances` and include `ModelSlot` plus `ModelGender` so future record types can
 map direct, slotted, or gendered `IModelGetter` data into one table family. The first populated model slice is
 Starfield `MISC`, which uses `ModelSlot = Model` and an empty `ModelGender`.
 
-Sound persistence is shared in Core through `IRecordSoundImportService` and `RecordSounds`. Starfield `MISC` maps
-named scalar sounds such as crafting, pickup, and dropdown sounds, while Starfield `MGEF` maps indexed typed sound
-entries such as OnHit, Release, and Charge into the same table shape.
+Sound persistence is shared in Core through `IRecordSoundImportService` and `RecordSounds`. `MISC` maps named scalar
+sounds such as crafting, pickup, putdown, and dropdown sounds when present, while `MGEF` maps indexed typed sound
+entries such as OnHit, Release, and Charge into the same table shape when present.
 
 Starfield `MiscItem`, `Static`, `Book`, `Door`, `Container`, and `Terminal` expose a direct `Model : IModelGetter`
 shape. `Terminal.MarkerModel` is a separate terminal-specific scalar. Starfield armor, armor addon, and weapon model

@@ -31,7 +31,7 @@ public class MiscObjectImporterTests
 
         importer.RecordType.ShouldBe("MISC");
         importer.TableName.ShouldBe("MiscObjects");
-        importer.SupportedGames.ShouldBe([SupportedGame.Starfield]);
+        importer.SupportedGames.ShouldBe([SupportedGame.Starfield, SupportedGame.Fallout4, SupportedGame.Skyrim], ignoreOrder: true);
         repository.Saved.ShouldBe([miscObject]);
         recordKeywordImportService.ReplaceRequests.ShouldBe([(miscObject, RecordTypeCatalog.MiscObject.RecordID)]);
         modelImportService.ReplaceRequests.ShouldBe([(miscObject, RecordTypeCatalog.MiscObject.RecordID)]);

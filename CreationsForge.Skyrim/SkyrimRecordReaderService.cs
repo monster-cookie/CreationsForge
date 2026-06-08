@@ -1,13 +1,16 @@
 using System.Globalization;
+using System.Collections;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
+using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Utilities;
 using CreationsForge.Skyrim.Interfaces;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Skyrim;
+using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Skyrim;
 
@@ -30,12 +33,30 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         var gameSettings = MapGameSettings(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
         var globals = MapGlobals(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
+        var miscObjects = MapMiscObjects(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
+        var keywords = MapKeywords(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
+        var actorValueInformation = MapActorValueInformation(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
+        var npcs = MapNPCs(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
+        var magicEffects = MapMagicEffects(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
+        var perks = MapPerks(plugin, mod);
 
         return new PluginRecordSetDTO
         {
             FormLists = formLists,
             GameSettings = gameSettings,
-            Globals = globals
+            Globals = globals,
+            MiscObjects = miscObjects,
+            Keywords = keywords,
+            ActorValueInformation = actorValueInformation,
+            NPCs = npcs,
+            MagicEffects = magicEffects,
+            Perks = perks
         };
     }
 
@@ -120,6 +141,532 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             .ToList();
     }
 
+    private static IReadOnlyList<KeywordDTO> MapKeywords(PluginDTO plugin, ISkyrimModGetter mod)
+    {
+        return GetRecordCollection(mod, "Keywords")
+            .Select(record => new KeywordDTO
+            {
+                Game = SupportedGame.Skyrim,
+                ModKey = plugin.ModKey,
+                FormKey = GetRequiredFormKey(record),
+                EditorID = GetPropertyString(record, "EditorID"),
+                FormVersion = GetPropertyInt(record, "FormVersion"),
+                MajorRecordFlags = GetPropertyInt(record, "SkyrimMajorRecordFlags"),
+                ImportedAtUTC = DateTime.UtcNow,
+                Name = GetLocalizedEnglishText(record, "Name"),
+                Color = GetPropertyString(record, "Color"),
+                Type = GetPropertyString(record, "Type"),
+                Notes = GetPropertyStringOrNull(record, "Notes"),
+                FlashLinkageName = GetPropertyStringOrNull(record, "FlashLinkageName"),
+                AttractionRuleFormKey = GetLinkedFormKey(record, "AttractionRule"),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Keyword.RecordType, record)
+            })
+            .ToList();
+    }
+
+    private static IReadOnlyList<MiscObjectDTO> MapMiscObjects(PluginDTO plugin, ISkyrimModGetter mod)
+    {
+        return GetRecordCollection(mod, "MiscItems", "MiscObjects")
+            .Select(record => new MiscObjectDTO
+            {
+                Game = SupportedGame.Skyrim,
+                ModKey = plugin.ModKey,
+                FormKey = GetRequiredFormKey(record),
+                EditorID = GetPropertyString(record, "EditorID"),
+                FormVersion = GetPropertyInt(record, "FormVersion"),
+                MajorRecordFlags = GetPropertyInt(record, "SkyrimMajorRecordFlags"),
+                ImportedAtUTC = DateTime.UtcNow,
+                Name = GetLocalizedEnglishText(record, "Name"),
+                ShortName = GetLocalizedEnglishText(record, "ShortName"),
+                Value = GetPropertyNullableInt(record, "Value"),
+                Weight = GetPropertyNullableFloat(record, "Weight"),
+                DirtinessScale = GetPropertyNullableFloat(record, "DirtinessScale"),
+                FeaturedItemMessageFormKey = GetLinkedFormKey(record, "FeaturedItemMessage"),
+                Flag = FormatHexValue(GetPropertyValue(record, "FLAG")),
+                Models = GetModels(plugin, RecordTypeCatalog.MiscObject.RecordType, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model")),
+                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.MiscObject.RecordType, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
+                Sounds = GetNamedSounds(plugin, RecordTypeCatalog.MiscObject.RecordType, GetRequiredRawFormKey(record), record, "CraftingSound", "PickupSound", "PutdownSound", "DropdownSound"),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MiscObject.RecordType, record)
+            })
+            .ToList();
+    }
+
+    private static IReadOnlyList<ActorValueInformationDTO> MapActorValueInformation(PluginDTO plugin, ISkyrimModGetter mod)
+    {
+        return GetRecordCollection(mod, "ActorValueInformation", "ActorValues")
+            .Select(record => new ActorValueInformationDTO
+            {
+                Game = SupportedGame.Skyrim,
+                ModKey = plugin.ModKey,
+                FormKey = GetRequiredFormKey(record),
+                EditorID = GetPropertyString(record, "EditorID"),
+                FormVersion = GetPropertyInt(record, "FormVersion"),
+                MajorRecordFlags = GetPropertyInt(record, "SkyrimMajorRecordFlags"),
+                ImportedAtUTC = DateTime.UtcNow,
+                Name = GetLocalizedEnglishText(record, "Name"),
+                Abbreviation = GetLocalizedEnglishText(record, "Abbreviation"),
+                ContextNotes = GetPropertyStringOrNull(record, "ContextNotes"),
+                DefaultValue = GetPropertyNullableDouble(record, "DefaultValue"),
+                Flags = GetPropertyStringOrNull(record, "Flags"),
+                Type = GetPropertyStringOrNull(record, "Type"),
+                Min = GetPropertyNullableDouble(record, "Min"),
+                Max = GetPropertyNullableDouble(record, "Max"),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ActorValueInformation.RecordType, record)
+            })
+            .ToList();
+    }
+
+    private static IReadOnlyList<NPCDTO> MapNPCs(PluginDTO plugin, ISkyrimModGetter mod)
+    {
+        return GetRecordCollection(mod, "Npcs", "NPCs")
+            .Select(record => new NPCDTO
+            {
+                Game = SupportedGame.Skyrim,
+                ModKey = plugin.ModKey,
+                FormKey = GetRequiredFormKey(record),
+                EditorID = GetPropertyString(record, "EditorID"),
+                FormVersion = GetPropertyInt(record, "FormVersion"),
+                MajorRecordFlags = GetPropertyInt(record, "SkyrimMajorRecordFlags"),
+                ImportedAtUTC = DateTime.UtcNow,
+                Name = GetLocalizedEnglishText(record, "Name"),
+                ShortName = GetLocalizedEnglishText(record, "ShortName"),
+                LongName = GetLocalizedEnglishText(record, "LongName"),
+                DispositionBase = GetPropertyInt(record, "DispositionBase"),
+                Aggression = GetPropertyString(record, "Aggression"),
+                Confidence = GetPropertyString(record, "Confidence"),
+                EnergyLevel = GetPropertyInt(record, "EnergyLevel"),
+                Responsibility = GetPropertyString(record, "Responsibility"),
+                Assistance = GetPropertyString(record, "Assistance"),
+                GearedUpWeapons = GetPropertyInt(record, "GearedUpWeapons"),
+                HeightMin = GetPropertyDouble(record, "HeightMin"),
+                HeightMax = GetPropertyDouble(record, "HeightMax"),
+                SkinToneIndex = GetPropertyNullableInt(record, "SkinToneIndex"),
+                Pronoun = GetPropertyStringOrNull(record, "Pronoun"),
+                VoiceFormKey = GetLinkedFormKey(record, "Voice"),
+                RaceFormKey = GetLinkedFormKey(record, "Race"),
+                CombatOverridePackageListFormKey = GetLinkedFormKey(record, "CombatOverridePackageList"),
+                CombatStyleFormKey = GetLinkedFormKey(record, "CombatStyle"),
+                DefaultPackageListFormKey = GetLinkedFormKey(record, "DefaultPackageList"),
+                CrimeFactionFormKey = GetLinkedFormKey(record, "CrimeFaction"),
+                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.NPC.RecordType, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.NPC.RecordType, record)
+            })
+            .ToList();
+    }
+
+    private static IReadOnlyList<MagicEffectDTO> MapMagicEffects(PluginDTO plugin, ISkyrimModGetter mod)
+    {
+        return GetRecordCollection(mod, "MagicEffects")
+            .Select(record => new MagicEffectDTO
+            {
+                Game = SupportedGame.Skyrim,
+                ModKey = plugin.ModKey,
+                FormKey = GetRequiredFormKey(record),
+                EditorID = GetPropertyString(record, "EditorID"),
+                FormVersion = GetPropertyInt(record, "FormVersion"),
+                MajorRecordFlags = GetPropertyInt(record, "SkyrimMajorRecordFlags"),
+                ImportedAtUTC = DateTime.UtcNow,
+                Name = GetLocalizedEnglishText(record, "Name"),
+                Description = GetLocalizedEnglishText(record, "Description"),
+                Flags = GetPropertyString(record, "Flags"),
+                CastType = GetPropertyStringOrNull(record, "CastType"),
+                TargetType = GetPropertyStringOrNull(record, "TargetType"),
+                ActorValue2FormKey = GetLinkedFormKey(record, "ActorValue2"),
+                ResistValueFormKey = GetLinkedFormKey(record, "ResistValue"),
+                PerkToApplyFormKey = GetLinkedFormKey(record, "PerkToApply"),
+                EquipAbilityFormKey = GetLinkedFormKey(record, "EquipAbility"),
+                ExplosionFormKey = GetLinkedFormKey(record, "Explosion"),
+                CastingArtFormKey = GetLinkedFormKey(record, "CastingArt"),
+                HitEffectArtFormKey = GetLinkedFormKey(record, "HitEffectArt"),
+                HitShaderFormKey = GetLinkedFormKey(record, "HitShader"),
+                ImageSpaceModifierFormKey = GetLinkedFormKey(record, "ImageSpaceModifier"),
+                ImpactDataFormKey = GetLinkedFormKey(record, "ImpactData"),
+                ProjectileFormKey = GetLinkedFormKey(record, "Projectile"),
+                Archetype = GetMagicEffectArchetype(record),
+                UnknownFloat3 = GetPropertyNullableFloat(record, "UnknownFloat3"),
+                UnknownInt2 = GetPropertyNullableInt(record, "UnknownInt2"),
+                Unknown = FormatHexValue(GetPropertyValue(record, "Unknown")),
+                Unknown2 = FormatHexValue(GetPropertyValue(record, "Unknown2")),
+                DataTypeState = GetPropertyStringOrNull(record, "DATADataTypeState"),
+                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.MagicEffect.RecordType, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
+                Sounds = GetIndexedSounds(plugin, RecordTypeCatalog.MagicEffect.RecordType, GetRequiredRawFormKey(record), record),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MagicEffect.RecordType, record)
+            })
+            .ToList();
+    }
+
+    private static IReadOnlyList<PerkDTO> MapPerks(PluginDTO plugin, ISkyrimModGetter mod)
+    {
+        return GetRecordCollection(mod, "Perks")
+            .Select(record => new PerkDTO
+            {
+                Game = SupportedGame.Skyrim,
+                ModKey = plugin.ModKey,
+                FormKey = GetRequiredFormKey(record),
+                EditorID = GetPropertyString(record, "EditorID"),
+                FormVersion = GetPropertyInt(record, "FormVersion"),
+                MajorRecordFlags = GetPropertyInt(record, "SkyrimMajorRecordFlags"),
+                ImportedAtUTC = DateTime.UtcNow,
+                Name = GetLocalizedEnglishText(record, "Name"),
+                Description = GetLocalizedEnglishText(record, "Description"),
+                Flags = GetPropertyString(record, "Flags"),
+                SkillGroup = GetPropertyStringOrNull(record, "SkillGroup"),
+                CrewAssignment = GetPropertyStringOrNull(record, "CrewAssignment"),
+                PerkIcon = GetPropertyStringOrNull(record, "PerkIcon"),
+                Category = GetPropertyStringOrNull(record, "Categroy") ?? GetPropertyStringOrNull(record, "Category"),
+                RestrictionFormKey = GetLinkedFormKey(record, "Restriction"),
+                TrainingFormKey = GetLinkedFormKey(record, "Training"),
+                MajorFlags = GetPropertyStringOrNull(record, "MajorFlags"),
+                Ranks = GetPerkRanks(record),
+                BackgroundSkills = GetPerkBackgroundSkills(record),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Perk.RecordType, record)
+            })
+            .ToList();
+    }
+
+    private static List<PerkRankDTO> GetPerkRanks(object record)
+    {
+        var ranks = GetPropertyValue(record, "Ranks") as IEnumerable;
+        if (ranks == null) return new List<PerkRankDTO>();
+
+        var formKey = GetRequiredRawFormKey(record);
+        var importedAtUTC = DateTime.UtcNow;
+        return ranks
+            .Cast<object>()
+            .Select((rank, rankIndex) => new PerkRankDTO
+            {
+                FormKey = MapFormKey(formKey),
+                RankIndex = rankIndex,
+                Description = GetLocalizedEnglishText(rank, "Description"),
+                UnknownStaticFormKey = GetLinkedFormKey(rank, "UnknownStatic"),
+                ConditionCount = GetEnumerableCount(GetPropertyValue(rank, "Conditions")),
+                ActivityCount = GetEnumerableCount(GetPropertyValue(rank, "Activities")),
+                ImportedAtUTC = importedAtUTC,
+                Effects = GetPerkRankEffects(formKey, rank, rankIndex, importedAtUTC)
+            })
+            .ToList();
+    }
+
+    private static List<PerkRankEffectDTO> GetPerkRankEffects(FormKey formKey, object rank, int rankIndex, DateTime importedAtUTC)
+    {
+        return (GetPropertyValue(rank, "Effects") as IEnumerable)?.Cast<object>()
+            .Select((effect, effectIndex) => new PerkRankEffectDTO
+            {
+                FormKey = MapFormKey(formKey),
+                RankIndex = rankIndex,
+                EffectIndex = effectIndex,
+                MutagenObjectType = effect.GetType().Name,
+                Rank = GetPropertyInt(effect, "Rank"),
+                Priority = GetPropertyInt(effect, "Priority"),
+                PerkEntryId = GetPropertyNullableInt(effect, "PerkEntryID"),
+                Flags = GetPropertyStringOrNull(effect, "Flags"),
+                ButtonLabel = GetLocalizedEnglishText(effect, "ButtonLabel"),
+                ConditionCount = GetEnumerableCount(GetPropertyValue(effect, "Conditions")),
+                EntryPoint = GetPropertyStringOrNull(effect, "EntryPoint"),
+                PerkConditionTabCount = GetPropertyNullableInt(effect, "PerkConditionTabCount"),
+                Modification = GetPropertyStringOrNull(effect, "Modification"),
+                Value = GetPropertyNullableDouble(effect, "Value"),
+                ImportedAtUTC = importedAtUTC
+            })
+            .ToList() ?? new List<PerkRankEffectDTO>();
+    }
+
+    private static List<PerkBackgroundSkillDTO> GetPerkBackgroundSkills(object record)
+    {
+        var backgroundSkills = GetPropertyValue(record, "BackgroundSkills") as IEnumerable;
+        if (backgroundSkills == null) return new List<PerkBackgroundSkillDTO>();
+
+        var formKey = GetRequiredRawFormKey(record);
+        var importedAtUTC = DateTime.UtcNow;
+        return backgroundSkills
+            .Cast<object>()
+            .Select((skill, skillIndex) => GetFormKeyFromObject(skill) is { } skillFormKey
+                ? new PerkBackgroundSkillDTO
+                {
+                    FormKey = MapFormKey(formKey),
+                    SkillFormKey = skillFormKey,
+                    SkillIndex = skillIndex,
+                    ImportedAtUTC = importedAtUTC
+                }
+                : null)
+            .Where(skill => skill != null)
+            .Cast<PerkBackgroundSkillDTO>()
+            .ToList();
+    }
+
+    private static List<ModelDTO> GetModels(PluginDTO plugin, string recordType, FormKey formKey, object? model)
+    {
+        if (model == null) return new List<ModelDTO>();
+
+        var importedAtUTC = DateTime.UtcNow;
+        return new List<ModelDTO>
+        {
+            new ModelDTO
+            {
+                Game = SupportedGame.Skyrim,
+                ModKey = plugin.ModKey,
+                RecordType = recordType,
+                FormKey = MapFormKey(formKey),
+                ModelSlot = "Model",
+                ModelGender = string.Empty,
+                File = GetPropertyStringOrNull(model, "File"),
+                TextureFileHashes = FormatHexValue(GetPropertyValue(model, "TextureFileHashes")),
+                LightLayer = GetPropertyNullableUInt(model, "LightLayer"),
+                Flags = GetPropertyStringOrNull(model, "Flags"),
+                ColorRemappingIndex = GetPropertyNullableFloat(model, "ColorRemappingIndex"),
+                FlagsVestigial = GetPropertyStringOrNull(model, "FlagsVestigial"),
+                ImportedAtUTC = importedAtUTC,
+                MaterialSwaps = GetModelMaterialSwaps(plugin, recordType, formKey, model, importedAtUTC)
+            }
+        };
+    }
+
+    private static List<ModelMaterialSwapDTO> GetModelMaterialSwaps(PluginDTO plugin, string recordType, FormKey formKey, object model, DateTime importedAtUTC)
+    {
+        return (GetPropertyValue(model, "MaterialSwaps") as IEnumerable)?.Cast<object>()
+            .Select((materialSwap, materialSwapIndex) => GetFormKeyFromObject(materialSwap) is { } materialSwapFormKey
+                ? new ModelMaterialSwapDTO
+                {
+                    Game = SupportedGame.Skyrim,
+                    ModKey = plugin.ModKey,
+                    RecordType = recordType,
+                    FormKey = MapFormKey(formKey),
+                    ModelSlot = "Model",
+                    ModelGender = string.Empty,
+                    MaterialSwapFormKey = materialSwapFormKey,
+                    MaterialSwapIndex = materialSwapIndex,
+                    ImportedAtUTC = importedAtUTC
+                }
+                : null)
+            .Where(materialSwap => materialSwap != null)
+            .Cast<ModelMaterialSwapDTO>()
+            .ToList() ?? new List<ModelMaterialSwapDTO>();
+    }
+
+    private static List<RecordKeywordDTO> GetRecordKeywords(PluginDTO plugin, string recordType, FormKey formKey, object? keywords)
+    {
+        if (keywords is not IEnumerable enumerable) return new List<RecordKeywordDTO>();
+
+        var importedAtUTC = DateTime.UtcNow;
+        return enumerable
+            .Cast<object>()
+            .Select((keyword, keywordIndex) => GetFormKeyFromObject(keyword) is { } keywordFormKey
+                ? new RecordKeywordDTO
+                {
+                    Game = SupportedGame.Skyrim,
+                    ModKey = plugin.ModKey,
+                    RecordType = recordType,
+                    FormKey = MapFormKey(formKey),
+                    KeywordFormKey = keywordFormKey,
+                    KeywordIndex = keywordIndex,
+                    ImportedAtUTC = importedAtUTC
+                }
+                : null)
+            .Where(keyword => keyword != null)
+            .Cast<RecordKeywordDTO>()
+            .ToList();
+    }
+
+    private static List<RecordSoundDTO> GetNamedSounds(PluginDTO plugin, string recordType, FormKey formKey, object record, params string[] soundSlots)
+    {
+        var importedAtUTC = DateTime.UtcNow;
+        return soundSlots
+            .Select((soundSlot, soundIndex) => CreateRecordSound(plugin, recordType, formKey, soundSlot, soundIndex, GetPropertyValue(record, soundSlot), importedAtUTC))
+            .Where(sound => sound != null)
+            .Cast<RecordSoundDTO>()
+            .ToList();
+    }
+
+    private static List<RecordSoundDTO> GetIndexedSounds(PluginDTO plugin, string recordType, FormKey formKey, object record)
+    {
+        var sounds = GetPropertyValue(record, "Sounds") as IEnumerable;
+        if (sounds == null) return new List<RecordSoundDTO>();
+
+        var importedAtUTC = DateTime.UtcNow;
+        return sounds
+            .Cast<object>()
+            .Select((sound, soundIndex) => CreateRecordSound(plugin, recordType, formKey, GetPropertyValue(sound, "Type")?.ToString() ?? $"Sound [{soundIndex}]", soundIndex, sound, importedAtUTC))
+            .Where(sound => sound != null)
+            .Cast<RecordSoundDTO>()
+            .ToList();
+    }
+
+    private static RecordSoundDTO? CreateRecordSound(PluginDTO plugin, string recordType, FormKey formKey, string soundSlot, int soundIndex, object? soundSource, DateTime importedAtUTC)
+    {
+        if (soundSource == null) return null;
+
+        var start = GetSoundStart(soundSource);
+        if (string.IsNullOrWhiteSpace(start)) return null;
+
+        return new RecordSoundDTO
+        {
+            Game = SupportedGame.Skyrim,
+            ModKey = plugin.ModKey,
+            RecordType = recordType,
+            FormKey = MapFormKey(formKey),
+            SoundSlot = soundSlot,
+            SoundIndex = soundIndex,
+            Start = start,
+            Versioning = FormatEnumerable(GetPropertyValue(soundSource, "Versioning")),
+            Unknown = FormatHexValue(GetPropertyValue(soundSource, "Unknown")),
+            ImportedAtUTC = importedAtUTC
+        };
+    }
+
+    private static string? GetSoundStart(object soundSource)
+    {
+        var directStart = GetPropertyValue(soundSource, "Start")?.ToString();
+        if (!string.IsNullOrWhiteSpace(directStart)) return directStart;
+
+        var sound = GetPropertyValue(soundSource, "Sound");
+        return sound == null ? null : GetPropertyValue(sound, "Start")?.ToString();
+    }
+
+    private static List<ScriptingAdapterDTO> GetScriptingAdapters(PluginDTO plugin, string recordType, object record)
+    {
+        var virtualMachineAdapter = GetPropertyValue(record, "VirtualMachineAdapter");
+        var scripts = GetPropertyValue(virtualMachineAdapter, "Scripts") as IEnumerable;
+        if (scripts == null) return new List<ScriptingAdapterDTO>();
+
+        var formKey = GetRequiredRawFormKey(record);
+        var importedAtUTC = DateTime.UtcNow;
+        return scripts
+            .Cast<object>()
+            .Select((script, scriptIndex) => new ScriptingAdapterDTO
+            {
+                Game = SupportedGame.Skyrim,
+                ModKey = plugin.ModKey,
+                RecordType = recordType,
+                FormKey = MapFormKey(formKey),
+                Name = GetPropertyString(script, "Name"),
+                ScriptIndex = scriptIndex,
+                ImportedAtUTC = importedAtUTC,
+                Properties = GetScriptingAdapterProperties(plugin, recordType, formKey, script, importedAtUTC)
+            })
+            .ToList();
+    }
+
+    private static List<ScriptingAdapterPropertyDTO> GetScriptingAdapterProperties(PluginDTO plugin, string recordType, FormKey formKey, object script, DateTime importedAtUTC)
+    {
+        return (GetPropertyValue(script, "Properties") as IEnumerable)?.Cast<object>()
+            .Select((property, propertyIndex) => CreateScriptingAdapterProperty(plugin, recordType, formKey, GetPropertyString(script, "Name"), property, propertyIndex, importedAtUTC))
+            .Where(property => property != null)
+            .Cast<ScriptingAdapterPropertyDTO>()
+            .ToList() ?? new List<ScriptingAdapterPropertyDTO>();
+    }
+
+    private static ScriptingAdapterPropertyDTO? CreateScriptingAdapterProperty(PluginDTO plugin, string recordType, FormKey formKey, string scriptName, object property, int propertyIndex, DateTime importedAtUTC)
+    {
+        var dto = new ScriptingAdapterPropertyDTO
+        {
+            Game = SupportedGame.Skyrim,
+            ModKey = plugin.ModKey,
+            RecordType = recordType,
+            FormKey = MapFormKey(formKey),
+            ScriptingAdapterName = scriptName,
+            PropertyIndex = propertyIndex,
+            Name = GetPropertyString(property, "Name"),
+            MutagenObjectType = property.GetType().Name,
+            ImportedAtUTC = importedAtUTC
+        };
+
+        var typeName = property.GetType().Name;
+        if (typeName.Contains("BoolList", StringComparison.OrdinalIgnoreCase))
+        {
+            dto.ListItems = GetScriptingAdapterPropertyListItems(plugin, recordType, formKey, scriptName, propertyIndex, property, importedAtUTC, nameof(Boolean));
+            return dto;
+        }
+
+        if (typeName.Contains("IntList", StringComparison.OrdinalIgnoreCase))
+        {
+            dto.ListItems = GetScriptingAdapterPropertyListItems(plugin, recordType, formKey, scriptName, propertyIndex, property, importedAtUTC, nameof(Int32));
+            return dto;
+        }
+
+        if (typeName.Contains("FloatList", StringComparison.OrdinalIgnoreCase))
+        {
+            dto.ListItems = GetScriptingAdapterPropertyListItems(plugin, recordType, formKey, scriptName, propertyIndex, property, importedAtUTC, nameof(Single));
+            return dto;
+        }
+
+        if (typeName.Contains("StringList", StringComparison.OrdinalIgnoreCase))
+        {
+            dto.ListItems = GetScriptingAdapterPropertyListItems(plugin, recordType, formKey, scriptName, propertyIndex, property, importedAtUTC, nameof(String));
+            return dto;
+        }
+
+        if (typeName.Contains("ObjectList", StringComparison.OrdinalIgnoreCase))
+        {
+            dto.ListItems = GetScriptingAdapterObjectPropertyListItems(plugin, recordType, formKey, scriptName, propertyIndex, property, importedAtUTC);
+            return dto;
+        }
+
+        if (typeName.Contains("Bool", StringComparison.OrdinalIgnoreCase)) dto.DataBool = GetPropertyValue(property, "Data") as bool?;
+        else if (typeName.Contains("Int", StringComparison.OrdinalIgnoreCase)) dto.DataInt = GetPropertyNullableInt(property, "Data");
+        else if (typeName.Contains("Float", StringComparison.OrdinalIgnoreCase)) dto.DataFloat = GetPropertyNullableDouble(property, "Data");
+        else if (typeName.Contains("String", StringComparison.OrdinalIgnoreCase)) dto.DataString = GetPropertyStringOrNull(property, "Data");
+        else if (typeName.Contains("Object", StringComparison.OrdinalIgnoreCase))
+        {
+            var objectValue = GetPropertyValue(property, "Object");
+            dto.ObjectFormKey = GetFormKeyFromObject(objectValue);
+            dto.ObjectAlias = GetPropertyNullableShort(property, "Alias");
+            dto.ObjectUnused = GetPropertyNullableUShort(property, "Unused");
+        }
+
+        return dto;
+    }
+
+    private static List<ScriptingAdapterPropertyListItemDTO> GetScriptingAdapterPropertyListItems(PluginDTO plugin, string recordType, FormKey formKey, string scriptName, int propertyIndex, object property, DateTime importedAtUTC, string mutagenObjectType)
+    {
+        var data = GetPropertyValue(property, "Data") as IEnumerable;
+        if (data == null) return new List<ScriptingAdapterPropertyListItemDTO>();
+
+        return data
+            .Cast<object>()
+            .Select((value, listItemIndex) => new ScriptingAdapterPropertyListItemDTO
+            {
+                Game = SupportedGame.Skyrim,
+                ModKey = plugin.ModKey,
+                RecordType = recordType,
+                FormKey = MapFormKey(formKey),
+                ScriptingAdapterName = scriptName,
+                PropertyIndex = propertyIndex,
+                ListItemIndex = listItemIndex,
+                MutagenObjectType = mutagenObjectType,
+                DataBool = value is bool boolValue ? boolValue : null,
+                DataInt = value is int intValue ? intValue : null,
+                DataFloat = value is float or double or decimal ? Convert.ToDouble(value, CultureInfo.InvariantCulture) : null,
+                DataString = value is string stringValue ? stringValue : null,
+                ImportedAtUTC = importedAtUTC
+            })
+            .ToList();
+    }
+
+    private static List<ScriptingAdapterPropertyListItemDTO> GetScriptingAdapterObjectPropertyListItems(PluginDTO plugin, string recordType, FormKey formKey, string scriptName, int propertyIndex, object property, DateTime importedAtUTC)
+    {
+        var objects = GetPropertyValue(property, "Objects") as IEnumerable;
+        if (objects == null) return new List<ScriptingAdapterPropertyListItemDTO>();
+
+        return objects
+            .Cast<object>()
+            .Select((value, listItemIndex) => new ScriptingAdapterPropertyListItemDTO
+            {
+                Game = SupportedGame.Skyrim,
+                ModKey = plugin.ModKey,
+                RecordType = recordType,
+                FormKey = MapFormKey(formKey),
+                ScriptingAdapterName = scriptName,
+                PropertyIndex = propertyIndex,
+                ListItemIndex = listItemIndex,
+                MutagenObjectType = value.GetType().Name,
+                ObjectFormKey = GetFormKeyFromObject(GetPropertyValue(value, "Object")),
+                ObjectAlias = GetPropertyNullableShort(value, "Alias"),
+                ObjectUnused = GetPropertyNullableUShort(value, "Unused"),
+                ImportedAtUTC = importedAtUTC
+            })
+            .ToList();
+    }
+
     protected virtual ISkyrimModGetter LoadMod(PluginDTO plugin)
     {
         var dataFolderPath = GetDataFolderPath();
@@ -142,6 +689,164 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             ModKey = ModKeyDTOMapper.FromModKey(formKey.ModKey),
             Id = formKey.ID
         };
+    }
+
+    private static FormKey GetRequiredRawFormKey(object record)
+    {
+        return GetPropertyValue(record, "FormKey") is FormKey formKey
+            ? formKey
+            : throw new InvalidOperationException($"Record type {record.GetType().Name} did not expose a FormKey.");
+    }
+
+    private static FormKeyDTO GetRequiredFormKey(object record)
+    {
+        return MapFormKey(GetRequiredRawFormKey(record));
+    }
+
+    private static FormKeyDTO? GetLinkedFormKey(object source, string propertyName)
+    {
+        return GetFormKeyFromObject(GetPropertyValue(source, propertyName));
+    }
+
+    private static FormKeyDTO? GetFormKeyFromObject(object? value)
+    {
+        if (value == null) return null;
+        if (value is FormKey formKey) return MapFormKey(formKey);
+        if (GetPropertyValue(value, "IsNull") is bool isNull && isNull) return null;
+        if (GetPropertyValue(value, "FormKey") is FormKey linkedFormKey) return MapFormKey(linkedFormKey);
+        if (GetPropertyValue(value, "FormKeyNullable") is FormKey nullableFormKey) return MapFormKey(nullableFormKey);
+        return null;
+    }
+
+    private static IEnumerable<object> GetRecordCollection(object mod, params string[] propertyNames)
+    {
+        foreach (var propertyName in propertyNames)
+        {
+            if (GetPropertyValue(mod, propertyName) is IEnumerable records)
+            {
+                return records.Cast<object>();
+            }
+        }
+
+        return Enumerable.Empty<object>();
+    }
+
+    private static object? GetPropertyValue(object? source, string propertyName)
+    {
+        return source?.GetType().GetProperty(propertyName)?.GetValue(source);
+    }
+
+    private static string GetPropertyString(object source, string propertyName)
+    {
+        return GetPropertyValue(source, propertyName)?.ToString() ?? string.Empty;
+    }
+
+    private static string? GetPropertyStringOrNull(object source, string propertyName)
+    {
+        return GetPropertyValue(source, propertyName)?.ToString();
+    }
+
+    private static int GetPropertyInt(object source, string propertyName)
+    {
+        var value = GetPropertyValue(source, propertyName);
+        return value == null ? 0 : Convert.ToInt32(value, CultureInfo.InvariantCulture);
+    }
+
+    private static int? GetPropertyNullableInt(object source, string propertyName)
+    {
+        var value = GetPropertyValue(source, propertyName);
+        return value == null ? null : Convert.ToInt32(value, CultureInfo.InvariantCulture);
+    }
+
+    private static short? GetPropertyNullableShort(object source, string propertyName)
+    {
+        var value = GetPropertyValue(source, propertyName);
+        return value == null ? null : Convert.ToInt16(value, CultureInfo.InvariantCulture);
+    }
+
+    private static ushort? GetPropertyNullableUShort(object source, string propertyName)
+    {
+        var value = GetPropertyValue(source, propertyName);
+        return value == null ? null : Convert.ToUInt16(value, CultureInfo.InvariantCulture);
+    }
+
+    private static uint? GetPropertyNullableUInt(object source, string propertyName)
+    {
+        var value = GetPropertyValue(source, propertyName);
+        return value == null ? null : Convert.ToUInt32(value, CultureInfo.InvariantCulture);
+    }
+
+    private static double GetPropertyDouble(object source, string propertyName)
+    {
+        var value = GetPropertyValue(source, propertyName);
+        return value == null ? 0 : Convert.ToDouble(value, CultureInfo.InvariantCulture);
+    }
+
+    private static double? GetPropertyNullableDouble(object source, string propertyName)
+    {
+        var value = GetPropertyValue(source, propertyName);
+        return value == null ? null : Convert.ToDouble(value, CultureInfo.InvariantCulture);
+    }
+
+    private static float? GetPropertyNullableFloat(object source, string propertyName)
+    {
+        var value = GetPropertyValue(source, propertyName);
+        return value == null ? null : Convert.ToSingle(value, CultureInfo.InvariantCulture);
+    }
+
+    private static int GetEnumerableCount(object? value)
+    {
+        return value is IEnumerable enumerable ? enumerable.Cast<object>().Count() : 0;
+    }
+
+    private static string? GetLocalizedEnglishText(object source, string propertyName)
+    {
+        var value = GetPropertyValue(source, propertyName);
+        if (value == null) return null;
+
+        try
+        {
+            var lookup = value.GetType().GetMethod("Lookup", new[] { typeof(Language) });
+            return lookup?.Invoke(value, new object[] { Language.English })?.ToString() ?? value.ToString();
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+        catch (System.Reflection.TargetInvocationException)
+        {
+            return null;
+        }
+    }
+
+    private static string? GetMagicEffectArchetype(object record)
+    {
+        var archetype = GetPropertyValue(record, "Archetype");
+        var type = GetPropertyValue(archetype, "Type");
+        return type == null ? null : Convert.ToInt64(type, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture);
+    }
+
+    private static string? FormatEnumerable(object? value)
+    {
+        if (value is string text) return text;
+        return value is IEnumerable enumerable
+            ? string.Join(", ", enumerable.Cast<object>().Select(item => item.ToString()))
+            : value?.ToString();
+    }
+
+    private static string? FormatHexValue(object? value)
+    {
+        if (value == null) return null;
+        if (value is string text) return text;
+        if (value is byte[] bytes) return Convert.ToHexString(bytes);
+
+        var toArray = value.GetType().GetMethod("ToArray", Type.EmptyTypes);
+        if (toArray?.Invoke(value, null) is byte[] arrayBytes)
+        {
+            return Convert.ToHexString(arrayBytes);
+        }
+
+        return value.ToString();
     }
 
     private static string GetGameSettingType(IGameSettingGetter record)

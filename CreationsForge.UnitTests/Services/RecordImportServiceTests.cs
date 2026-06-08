@@ -79,10 +79,16 @@ public class RecordImportServiceTests
 
         result.FormListsImported.ShouldBe(1);
         result.GameSettingsImported.ShouldBe(0);
-        result.UnsupportedRecordTypes.ShouldBe(2);
+        result.UnsupportedRecordTypes.ShouldBe(8);
         result.RecordTypes.Single(recordType => recordType.RecordType == "GMST").TypedDetailImportSupported.ShouldBeFalse();
         result.RecordTypes.Single(recordType => recordType.RecordType == "GMST").UnsupportedReason.ShouldNotBeNull().ShouldContain("No typed detail importer");
         result.RecordTypes.Single(recordType => recordType.RecordType == "GLOB").TypedDetailImportSupported.ShouldBeFalse();
+        result.RecordTypes.Single(recordType => recordType.RecordType == "MISC").TypedDetailImportSupported.ShouldBeFalse();
+        result.RecordTypes.Single(recordType => recordType.RecordType == "KYWD").TypedDetailImportSupported.ShouldBeFalse();
+        result.RecordTypes.Single(recordType => recordType.RecordType == "AVIF").TypedDetailImportSupported.ShouldBeFalse();
+        result.RecordTypes.Single(recordType => recordType.RecordType == "NPC_").TypedDetailImportSupported.ShouldBeFalse();
+        result.RecordTypes.Single(recordType => recordType.RecordType == "MGEF").TypedDetailImportSupported.ShouldBeFalse();
+        result.RecordTypes.Single(recordType => recordType.RecordType == "PERK").TypedDetailImportSupported.ShouldBeFalse();
     }
 
     [Fact]

@@ -26,7 +26,7 @@ public class ActorValueInformationImporter : ITypedRecordImporter
 
     public string TableName => RecordTypeCatalog.ActorValueInformation.TableName;
 
-    public IReadOnlySet<SupportedGame> SupportedGames { get; } = new HashSet<SupportedGame> { SupportedGame.Starfield };
+    public IReadOnlySet<SupportedGame> SupportedGames { get; } = new HashSet<SupportedGame> { SupportedGame.Starfield, SupportedGame.Fallout4, SupportedGame.Skyrim };
 
     public void Import(object recordDTO, RecordTypeImportResultDTO result, DateTime importedAtUTC)
     {
