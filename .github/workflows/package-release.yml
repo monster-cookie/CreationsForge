@@ -13,6 +13,7 @@ env:
   APPLICATION_DISPLAY_NAME: ${{ vars.APPLICATION_DISPLAY_NAME || 'Creations Forge' }}
   APPLICATION_PUBLISHER: ${{ vars.APPLICATION_PUBLISHER || 'Venpi' }}
   LINUX_PACKAGE_NAME: ${{ vars.LINUX_PACKAGE_NAME || 'creationsforge' }}
+  AVALONIA_UI_LICENSE_KEY: ${{ secrets.AVALONIA_UI_LICENSE_KEY }}
 
 jobs:
   validate-tag-source:

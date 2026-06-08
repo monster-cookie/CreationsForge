@@ -13,6 +13,9 @@ on:
 permissions:
   contents: read
 
+env:
+  AVALONIA_UI_LICENSE_KEY: ${{ secrets.AVALONIA_UI_LICENSE_KEY }}
+
 jobs:
   unit-tests:
     name: Unit Tests
