@@ -1,5 +1,50 @@
 # Design Decisions
 
+## 2026-06-08 - Keep Shared Typed Record Support Synchronized Across Games
+
+Status: Accepted
+
+Context: CreationsForge supports Starfield, Fallout 4, and Skyrim as current first-class games. The approved shared
+typed record set had drifted: Starfield imported `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`, while Fallout 4
+and Skyrim still imported only `FLST`, `GMST`, and `GLOB`. That made the UI and persisted record comparison surface
+look inconsistent across games even when the Core schema and DTOs could represent the same record categories.
+
+Decision: Treat the approved typed record set as synchronized across Starfield, Fallout 4, and Skyrim by default.
+Fallout 4 and Skyrim now map `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK` into the existing Core DTOs and shared
+typed importers. Future shared typed record import, comparison, persistence, or UI browsing changes must update all
+three games in the same task unless the plan explicitly documents the behavior as game-specific.
+
+Rationale: Keeping shared record support in sync makes the multi-game UI predictable and prevents one game adapter
+from silently falling behind when Core adds a shared DTO, repository, comparison row, or browser category. Game-specific
+adapters still own Mutagen mapping details, so unavailable fields can remain null or empty without changing the shared
+database schema.
+
+Alternatives considered:
+
+- Leave Fallout 4 and Skyrim on the smaller `FLST`, `GMST`, and `GLOB` subset.
+- Move game-specific mapping into Core to remove repeated adapter code.
+- Add separate schemas for Fallout 4 and Skyrim variants of the newly synchronized record types.
+
+Consequences:
+
+- Fallout 4 and Skyrim active plugins can display the same approved record categories as Starfield after reimport.
+- Core typed importers for `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK` now support all current games.
+- Game adapters may conservatively map unavailable Mutagen fields to null, empty lists, or compatible string values.
+- New shared typed record work carries an explicit all-current-games implementation expectation.
+
+Related files:
+
+- `AGENTS.md`
+- `CreationsForge.Fallout4/Fallout4RecordReaderService.cs`
+- `CreationsForge.Skyrim/SkyrimRecordReaderService.cs`
+- `CreationsForge.Core/Importers/MiscObjectImporter.cs`
+- `CreationsForge.Core/Importers/KeywordImporter.cs`
+- `CreationsForge.Core/Importers/ActorValueInformationImporter.cs`
+- `CreationsForge.Core/Importers/NPCImporter.cs`
+- `CreationsForge.Core/Importers/MagicEffectImporter.cs`
+- `CreationsForge.Core/Importers/PerkImporter.cs`
+- `CreationsForge.UnitTests/Importers/TypedRecordImporterSupportedGamesTests.cs`
+
 ## 2026-06-07 - Persist Shared IModelGetter Data By Record Instance
 
 Status: Accepted

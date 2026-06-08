@@ -17,10 +17,9 @@ selected game installation metadata, load-order plugins, source fingerprints, he
 declared plugin master references. Thin game plugin readers expose the shared Core import contract over those services.
 Plugin metadata import avoids typed record enumeration; record counts are read from header stats. Game-specific plugin
 extension importers persist audited scalar plugin header fields into extension tables. Starfield, Fallout 4, and
-Skyrim map the currently approved cross-game typed records: FormLists, GameSettings, and Globals. Starfield also maps
-MiscObjects, Keywords, ActorValueInformation, NPCs, MagicEffects, and Perks. Imports currently create/update the
-selected `Games`, `Plugins`, `PluginMasterReferences`, game-specific plugin extension rows, and approved typed record
-rows.
+Skyrim map the currently approved cross-game typed records: FormLists, GameSettings, Globals, MiscObjects, Keywords,
+ActorValueInformation, NPCs, MagicEffects, and Perks. Imports currently create/update the selected `Games`, `Plugins`,
+`PluginMasterReferences`, game-specific plugin extension rows, and approved typed record rows.
 
 ## Projects
 
@@ -89,7 +88,8 @@ imported-record tree for the current persisted record types.
 - Creates and migrates a SQLite database through DbUp.
 - Uses DbUp `SchemaVersions` as the migration-state source of truth.
 - Creates a multi-game application schema for `Games`, `Plugins`, `PluginMasterReferences`, `FormLists`,
-  `FormListItems`, `GameSettings`, `Globals`, shared model data, and shared scripting adapter data.
+  `FormListItems`, `GameSettings`, `Globals`, `MiscObjects`, `Keywords`, `ActorValueInformation`, `NPCs`,
+  `MagicEffects`, `Perks`, shared model data, shared keyword lists, shared sounds, and shared scripting adapter data.
 - Preserves plugin source-fingerprint behavior for unchanged, changed, missing, failed, and unsupported plugin states.
 - Preserves record import accounting for the approved typed record types.
 - Provides an initial Uno UI with active game and active plugin autocomplete, warning before long first/full imports,
@@ -101,22 +101,21 @@ imported-record tree for the current persisted record types.
 
 - Game-specific reader services currently return selected game metadata, load-order plugin metadata, header-stat
   record counts, declared master references, and audited scalar game-specific plugin header fields.
-- Starfield, Fallout 4, and Skyrim share `FLST`, `GMST`, and `GLOB` typed-record mapping. Starfield additionally maps
-  `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK` parent rows. Additional typed record types and deeper
-  game-specific fields are follow-up work.
+- Starfield, Fallout 4, and Skyrim share `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`
+  typed-record mapping. Additional typed record types and deeper game-specific fields are follow-up work.
 - Shared plugin, plugin-master-reference, and typed-record repositories use NPoco database models for save behavior.
   Repository delete/query SQL remains parameterized where explicit SQL is used.
 - Oblivion is not implemented.
 - The UI shows imported records in a tree and scalar comparison rows for approved persisted record types. Deep child
   comparison sections, patch generation, and conflict resolution behavior do not exist yet.
 
-## Starfield Scripted Record Import
+## Shared Scripted Record Import
 
-Starfield now imports additional typed record parent rows for MiscObjects (`MISC`), Keywords (`KYWD`),
+Starfield, Fallout 4, and Skyrim import typed record parent rows for MiscObjects (`MISC`), Keywords (`KYWD`),
 ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), and Perks (`PERK`). These records are mapped in
-`CreationsForge.Starfield` and persisted through Core DTOs, repositories, and typed importers. Scripting adapters are
-persisted for Starfield `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`; `FLST` and `GMST` remain flat
-records without scripting adapter persistence.
+their game adapter projects and persisted through Core DTOs, repositories, and typed importers. Scripting adapters are
+persisted for `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK` when the source record exposes virtual-machine
+adapter data; `FLST` and `GMST` remain flat records without scripting adapter persistence.
 
 The current `MISC` implementation persists the parent scalar row, shared model rows, and scripting adapters. The
 deeper MiscObject child-detail tables from the old single-game app remain follow-up work.

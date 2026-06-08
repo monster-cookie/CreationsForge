@@ -34,6 +34,9 @@ Multi-game Bethesda plugin import and record persistence prototype. The current 
 - After the PLAN is approved, Codex may edit files within the approved scope without asking again for each file.
 - If new files, new projects, cross-cutting architecture changes, breaking changes, or edits outside the approved scope are needed, stop and ask for approval.
 - Keep changes surgical and consistent with existing patterns and naming.
+- Shared/Core workflow code must not branch on a specific supported game such as `plugin.Game == SupportedGame.Starfield`
+  unless the PLAN explicitly documents why the behavior is truly game-specific. Prefer game adapter implementations,
+  registered capability/support sets, or polymorphic services over hardcoded game checks.
 - No breaking changes to existing services, factories, stores, repositories, view models, public interfaces, configuration, persistence formats, or workflows without explicit approval.
 - NEVER edit AGENTS.md, AGENT-PLAN-TEMPLATE.md, or any `*.code-workspace` file; if you have suggestions for changes, propose them to the user.
 - DO NOT wrap lines of code or comments that are not currently wrapped. Follow existing formatting and line breaks in the repo.
@@ -225,6 +228,12 @@ schema documentation.
 - For new features/bugfixes that affect testable service, factory, validator, DTO, or business logic, include tests in the PLAN and add them alongside code changes.
 - Do not unit test database access, repository implementations, or DbUp migration execution.
 - When a change is limited to repositories, database access, migrations, or workflows, the PLAN must explicitly state that no unit tests will be added and explain the validation approach.
+
+## Multi-game typed record support
+
+When adding, removing, or changing a shared typed record import, comparison, persistence, or UI browsing capability,
+Codex must update Starfield, Fallout 4, and Skyrim in the same approved task unless the PLAN explicitly identifies the
+record type or behavior as game-specific and documents why it cannot apply to all three supported games.
 
 ## GIT BOUNDARIES
 
