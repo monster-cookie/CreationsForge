@@ -2,50 +2,66 @@
 
 ## Schema Source
 
-The application uses a local SQLite cache. The schema is defined by embedded DbUp scripts in
-`SFRecordCompareEngine.Migrations/Sql`:
+The application uses a local SQLite database. The schema is defined by embedded DbUp scripts in
+`CreationsForge.Migrations/Sql`:
 
-- `001_CreatePluginSchema.sql` creates the application tables, keys, indexes, and constraints.
+- `001_CreateMultiGameImportSchema.sql` creates the application tables, keys, indexes, constraints, and views.
 
-DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration state source of
+DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains 18 tables:
+The application schema contains twenty-seven tables:
 
+- `Games`
 - `Plugins`
+- `StarfieldPlugins`
+- `Fallout4Plugins`
+- `SkyrimPlugins`
 - `PluginMasterReferences`
-- `FormList`
+- `RecordInstances`
+- `FormLists`
 - `FormListItems`
-- `GameSetting`
-- `Global`
-- `MiscItem`
-- `Keyword`
-- `NPC`
+- `GameSettings`
+- `Globals`
+- `MiscObjects`
+- `Keywords`
 - `ActorValueInformation`
-- `MagicEffect`
-- `Perk`
+- `NPCs`
+- `MagicEffects`
+- `Perks`
+- `RecordKeywords`
 - `PerkRanks`
 - `PerkRankEffects`
 - `PerkBackgroundSkills`
+- `Models`
+- `ModelMaterialSwaps`
+- `RecordSounds`
 - `ScriptingAdapters`
 - `ScriptingAdapterProperties`
 - `ScriptingAdapterPropertyListItems`
+
+The application schema also contains these read views:
+
+- `StarfieldPluginDetails`
+- `Fallout4PluginDetails`
+- `SkyrimPluginDetails`
 
 See [ERD.md](ERD.md) for the relationship diagram.
 
 ## Database Location
 
-`SqliteDatabaseOptions` defines the default database location:
+`ApplicationConfigurationStore` defines the default application-data location:
 
-- Directory: `ApplicationConfigurationStore.DefaultApplicationDataDirectory`
-- File name: `SFRecordCompareEngine.sqlite`
-- Linux full path: `~/.SFRecordCompareEngine/SFRecordCompareEngine.sqlite`
-- Linux log directory: `~/.SFRecordCompareEngine/Logs`
-- Other platforms full path: `<CommonApplicationData>/SFRecordCompareEngine/SFRecordCompareEngine.sqlite`
-- Other platforms log directory: `<CommonApplicationData>/SFRecordCompareEngine/Logs`
+- Linux directory: `~/.CreationsForge`
+- Other platforms directory: `<CommonApplicationData>/CreationsForge`
+- Database file: `CreationsForge.sqlite`
+- Log directory: `<ApplicationDataDirectory>/Logs`
 
-`ApplicationConfigurationStore.DefaultApplicationDataDirectory` uses the current user's profile directory on Linux
-and `Environment.SpecialFolder.CommonApplicationData` on other platforms.
+`ApplicationConfiguration` can store custom application data, database, and logging directories.
+
+The Reset & Import All workflow deletes the configured `CreationsForge.sqlite` database file and SQLite sidecar files
+with `-wal` and `-shm` suffixes before running DbUp migrations and full imports for every supported game. This changes
+database contents but does not change the application schema shape.
 
 ## Connection Behavior
 
@@ -59,13 +75,33 @@ Connection settings include:
 - Pooling disabled.
 - `PRAGMA foreign_keys = ON` executed after opening the NPoco database.
 
-`DatabaseMigrationRunner` also disables pooling while DbUp applies migrations.
+`DatabaseMigrationRunner` also disables pooling while DbUp applies migrations. Migration connection strings are built
+with a connection-string builder so configured database paths are treated as data-source values.
+
+## Import Transaction Behavior
+
+The shared game import workflow wraps database writes in one NPoco transaction. The transaction covers game row,
+plugin row, plugin extension, master-reference, typed-record, and stale-cleanup writes for the import run. The
+transaction is completed only after the shared import workflow finishes successfully.
+
+This keeps large imports from paying SQLite autocommit cost for every saved row. If an uncaught exception or
+cancellation escapes the import workflow, the transaction is disposed without completion.
+
+## Runtime SQL Parameterization
+
+Application runtime SQL must use named parameterized queries. Repository and service SQL must pass runtime values with
+named parameter objects such as anonymous objects or typed parameter DTOs. Positional NPoco placeholders such as `@0`,
+`@1`, and `@2` are not used for application runtime SQL because they are harder to review and easier to bind
+incorrectly during query maintenance.
+
+This rule applies to runtime SQL executed by the application. Embedded DbUp migration scripts are schema scripts and
+do not bind runtime values.
 
 ## Common Typed Record Shape
 
-The typed record tables `FormList`, `GameSetting`, `Global`, `MiscItem`, `Keyword`, `NPC`, `ActorValueInformation`,
-`MagicEffect`, and `Perk` store imported Starfield record details. Each uses this composite primary key:
+Typed record parent tables use this composite primary key:
 
+- `Game`
 - `ModKey_Name`
 - `ModKey_Type`
 - `ModKey_FileName`
@@ -74,92 +110,142 @@ The typed record tables `FormList`, `GameSetting`, `Global`, `MiscItem`, `Keywor
 - `FormKey_ModKey_FileName`
 - `FormKey_ID`
 
-The `ModKey_*` columns identify the plugin containing the imported record row. The `FormKey_ModKey_*` columns plus
-`FormKey_ID` identify the record's origin `FormKey`. This lets comparison queries group true overrides while keeping
-unrelated records with the same local numeric ID separate.
+The `Game` plus `ModKey_*` columns identify the plugin containing the imported record row. The
+`FormKey_ModKey_*` columns plus `FormKey_ID` identify the record's origin FormKey.
 
-Application schema columns must store `ModKey` and `FormKey` values as primitive component columns. `ModKey` values
-must use `*_ModKey_Name`, `*_ModKey_Type`, and `*_ModKey_FileName`. `FormKey` values must use those same referenced
-`ModKey` components plus `*_FormKey_ID`. Raw string storage of `FormKey` or `ModKey` is not an allowed schema pattern
-for new application-schema columns. Inferred references remain documented separately from declared SQLite foreign keys.
+Application-schema columns store ModKey and FormKey values as primitive component columns. Raw string storage of
+FormKey or ModKey is not used by this schema.
 
-Each typed record table declares:
+Runtime ModKey lookups compare `*_ModKey_Name` and `*_ModKey_FileName` case-insensitively. The stored casing is
+preserved, but casing is not part of plugin identity for lookup because load-order entries, plugin headers, and master
+references can differ by case for the same file.
+Rows with declared foreign keys to `Plugins` use the resolved persisted plugin ModKey tuple when saving dependent
+relationships.
 
-- A foreign key from `ModKey_Name`, `ModKey_Type`, and `ModKey_FileName` to the `Plugins` primary key.
-- `ON DELETE CASCADE` for its `Plugins` foreign key.
-- `CHECK (FormKey_ID >= 0)`.
-- A non-unique full-origin `FormKey` index for cross-plugin comparison lookup.
-
-Every typed record table contains these common columns:
-
-- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
-- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_Name` (`TEXT`, `NOT NULL`, primary key)
-- `FormKey_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key)
-- `FormKey_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key)
-- `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key)
-- `EditorID` (`TEXT`, `NOT NULL`)
-- `FormVersion` (`INTEGER`, `NOT NULL`)
-- `StarfieldMajorRecordFlags` (`INTEGER`, `NOT NULL`)
-- `Version2` (`INTEGER`, `NOT NULL`)
-- `VersionControl` (`INTEGER`, `NOT NULL`)
-- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
-
-The table sections below list the additional record-specific columns. Together with this common list, they document
-the complete persisted shape of each typed record table.
+`RecordInstances` is the shared persisted parent identity for imported record overrides. Typed record parent tables
+reference `RecordInstances` by game, containing plugin ModKey, and origin FormKey. `ScriptingAdapters` references the
+full `RecordInstances` key including `RecordType`, so scripting adapters remain record-owned without needing one
+adapter table per record type.
+`Models` also references the full `RecordInstances` key including `RecordType`, plus a model slot and model gender so
+direct, slotted, and gendered model payloads can share one table family.
+`RecordKeywords` references the full `RecordInstances` key including `RecordType`, so keyword lists can be shared by
+record types that expose the same indexed keyword payload.
+`RecordSounds` references the full `RecordInstances` key including `RecordType`, so named and indexed sound payloads
+can be shared by record types that expose the same Spriggit-style sound data.
 
 ## Tables
 
-### Plugins
-
-Stores plugin metadata and import status.
+### Games
 
 Columns:
 
+- `Game` (`TEXT`, `NOT NULL`, primary key)
+- `DisplayName` (`TEXT`, `NOT NULL`)
+- `InstallationFolder` (`TEXT`, nullable)
+- `DataFolder` (`TEXT`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Constraints:
+
+- `Game` must be `Starfield`, `Fallout4`, or `Skyrim`.
+
+### Plugins
+
+Columns:
+
+- `Game` (`TEXT`, `NOT NULL`, primary key, foreign key)
 - `ModKey_Name` (`TEXT`, `NOT NULL`, primary key)
 - `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key)
 - `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key)
 - `LoadOrderIndex` (`INTEGER`, `NOT NULL`)
-- `Enabled` (`INTEGER`, `NOT NULL`, defaults to `1`)
-- `ExistsOnDisk` (`INTEGER`, `NOT NULL`, defaults to `1`)
-- `ImportState` (`TEXT`, `NOT NULL`, defaults to `Current`)
+- `Enabled` (`INTEGER`, `NOT NULL`, default `1`)
+- `ExistsOnDisk` (`INTEGER`, `NOT NULL`, default `1`)
+- `ImportState` (`TEXT`, `NOT NULL`, default `Current`)
 - `HeaderFlags` (`INTEGER`, `NOT NULL`)
 - `FormVersion` (`INTEGER`, `NOT NULL`)
-- `Author` (`TEXT`, `NOT NULL`)
-- `Branch` (`TEXT`, `NOT NULL`)
-- `InteriorCellCount` (`INTEGER`, `NOT NULL`)
+- `Author` (`TEXT`, nullable)
+- `Description` (`TEXT`, nullable)
+- `RecordCount` (`INTEGER`, `NOT NULL`, default `0`)
 - `SourceLastWriteUTCTicks` (`INTEGER`, `NOT NULL`)
 - `SourceFileSizeBytes` (`INTEGER`, `NOT NULL`)
 - `LastCheckedUTC` (`TEXT`, `NOT NULL`)
 - `LastImportedUTC` (`TEXT`, nullable)
 - `InvalidatedAtUTC` (`TEXT`, nullable)
-- `RecordCount` (`INTEGER`, `NOT NULL`, defaults to `0`)
 
-Primary key:
+Foreign keys:
 
-- `ModKey_Name`, `ModKey_Type`, and `ModKey_FileName`
+- `Game` references `Games.Game` with `ON DELETE CASCADE`.
 
 Indexes:
 
-- `IX_Plugins_LoadOrderIndex` on `LoadOrderIndex`
-- `IX_Plugins_ImportState` on `ImportState`
-- `IX_Plugins_SourceFingerprint` on `SourceLastWriteUTCTicks` and `SourceFileSizeBytes`
+- `IX_Plugins_Game_LoadOrderIndex` on `Game` and `LoadOrderIndex`
+- `IX_Plugins_Game_ImportState` on `Game` and `ImportState`
 
-Constraints:
-
-- All columns are `NOT NULL` except `LastImportedUTC` and `InvalidatedAtUTC`.
-- `Enabled` defaults to `1` and must be `0` or `1`.
-- `ExistsOnDisk` defaults to `1` and must be `0` or `1`.
-- `ImportState` defaults to `Current` and must be `Current`, `Changed`, `Missing`, `Failed`, or `Unsupported`.
-- `RecordCount` is created by `001_CreatePluginSchema.sql`, defaults to `0`, and must be greater than or equal to `0`.
-
-### PluginMasterReferences
-
-Stores relationships between plugins and the masters declared in their headers.
+### StarfieldPlugins
 
 Columns:
 
+- `Game` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `Branch` (`TEXT`, `NOT NULL`)
+- `InteriorCellCount` (`INTEGER`, nullable)
+- `Intv` (`INTEGER`, nullable)
+
+Foreign keys:
+
+- `Game` plus `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `Game` must be `Starfield`.
+- `InteriorCellCount` must be null or greater than or equal to zero.
+
+### Fallout4Plugins
+
+Columns:
+
+- `Game` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `Incc` (`INTEGER`, nullable)
+
+Foreign keys:
+
+- `Game` plus `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `Game` must be `Fallout4`.
+- `Incc` must be null or greater than or equal to zero.
+
+### SkyrimPlugins
+
+Columns:
+
+- `Game` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `Incc` (`INTEGER`, nullable)
+- `Intv` (`INTEGER`, nullable)
+
+Foreign keys:
+
+- `Game` plus `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `Game` must be `Skyrim`.
+- `Incc` must be null or greater than or equal to zero.
+
+### PluginMasterReferences
+
+Columns:
+
+- `Game` (`TEXT`, `NOT NULL`, primary key, foreign key)
 - `Master_ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
 - `Master_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
 - `Master_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
@@ -168,52 +254,69 @@ Columns:
 - `Plugin_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
-Primary key:
-
-- `Master_ModKey_Name`, `Master_ModKey_Type`, and `Master_ModKey_FileName`
-- `Plugin_ModKey_Name`, `Plugin_ModKey_Type`, and `Plugin_ModKey_FileName`
-
 Foreign keys:
 
-- `Master_ModKey_Name`, `Master_ModKey_Type`, and `Master_ModKey_FileName` reference the `Plugins` primary key with
-  `ON DELETE CASCADE`.
-- `Plugin_ModKey_Name`, `Plugin_ModKey_Type`, and `Plugin_ModKey_FileName` reference the `Plugins` primary key with
-  `ON DELETE CASCADE`.
+- `Game` plus `Master_ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
+- `Game` plus `Plugin_ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
 
-Indexes:
+Persistence behavior:
 
-- `IX_PluginMasterReferences_MasterModKey` on the master-plugin key columns
-- `IX_PluginMasterReferences_PluginModKey` on the declaring-plugin key columns
+- Current imported rows are upserted.
+- Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful master-reference
+  import batch are deleted as stale.
 
-Constraints:
-
-- All columns are `NOT NULL`.
-- The composite primary key prevents duplicate relationship edges.
-
-Master load-order sorting is derived from `Plugins.LoadOrderIndex` when relationships are read.
-
-### FormList
-
-Stores Starfield `FLST` record detail rows. The common typed record key, foreign key, index, and non-negative
-`FormKey_ID` constraint apply.
-
-Additional record-specific column:
-
-- `AddToListFormKey` (`TEXT`, nullable)
-
-### FormListItems
-
-Stores item references inside form lists.
+### RecordInstances
 
 Columns:
 
-- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
-- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- Common typed record key and metadata columns listed above
+- `RecordType` (`TEXT`, `NOT NULL`, primary key)
+
+Foreign keys:
+
+- `Game` plus containing `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- Full common typed record key plus `RecordType` is the primary key.
+- Full common typed record key without `RecordType` is unique so typed detail tables can reference the shared record
+  identity without duplicating a constant `RecordType` column in every typed table.
+
+Persistence behavior:
+
+- Current imported rows are upserted before typed detail rows and scripting adapters.
+- Rows for the same game/plugin/record type whose `ImportedAtUTC` was not refreshed by the current successful
+  typed-record import batch are deleted as stale after stale typed detail rows are removed.
+
+### FormLists
+
+Columns:
+
+- Common typed record key and metadata columns listed above
+- `AddToList_ModKey_Name` (`TEXT`, nullable)
+- `AddToList_ModKey_Type` (`INTEGER`, nullable)
+- `AddToList_ModKey_FileName` (`TEXT`, nullable)
+- `AddToList_FormKey_ID` (`INTEGER`, nullable)
+
+Foreign keys:
+
+- `Game` plus containing `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
+- Full common typed record key references `RecordInstances` with `ON DELETE CASCADE`.
+
+Persistence behavior:
+
+- Current imported rows are upserted.
+- Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful FormList import
+  batch are deleted as stale.
+- Stale parent FormList deletion cascades to child `FormListItems` rows through the declared foreign key.
+
+### FormListItems
+
+Columns:
+
+- `Game` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- containing `ModKey_*` columns (`NOT NULL`, primary key, foreign key)
+- parent `FormKey_ModKey_*` plus `FormKey_ID` (`NOT NULL`, primary key, foreign key)
 - `Item_ModKey_Name` (`TEXT`, `NOT NULL`, primary key)
 - `Item_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key)
 - `Item_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key)
@@ -221,155 +324,87 @@ Columns:
 - `Item_Index` (`INTEGER`, `NOT NULL`, primary key)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
-Primary key:
+Foreign keys:
 
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `FormKey_ModKey_Name`, `FormKey_ModKey_Type`,
-  `FormKey_ModKey_FileName`, and `FormKey_ID`
-- `Item_ModKey_Name`, `Item_ModKey_Type`, `Item_ModKey_FileName`, and `Item_FormKey_ID`
-- `Item_Index`
+- Full parent key references `FormLists` with `ON DELETE CASCADE`.
 
-Foreign key:
+Persistence behavior:
 
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `FormKey_ModKey_Name`, `FormKey_ModKey_Type`,
-  `FormKey_ModKey_FileName`, and `FormKey_ID` reference the `FormList` primary key with `ON DELETE CASCADE`.
+- Current imported rows are upserted.
+- Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful FormList import
+  batch are deleted as stale.
 
-Indexes:
+### GameSettings
 
-- `IX_FormListItems_FormList` on the owning plugin key columns plus the parent origin `FormKey` columns
-- `IX_FormListItems_Item_FormKey` on the item `ModKey` columns plus `Item_FormKey_ID`
-- `IX_FormListItems_Item_Index` on `Item_Index`
+Columns:
 
-Constraints:
-
-- All columns are `NOT NULL`.
-- `FormKey_ID` must be greater than or equal to `0`.
-- `Item_FormKey_ID` must be greater than or equal to `0`.
-- `Item_Index` must be greater than or equal to `0`.
-
-`Item_Index` preserves source enumeration order. The primary key allows duplicate item references to remain separate
-rows when they occur at different indexes.
-
-### GameSetting
-
-Stores Starfield `GMST` record detail rows. The common typed record key, foreign key, index, and non-negative
-`FormKey_ID` constraint apply.
-
-Additional record-specific columns:
-
+- Common typed record key and metadata columns listed above
 - `SettingType` (`TEXT`, nullable)
 - `Data` (`TEXT`, nullable)
-- `RawData` (`REAL`, nullable)
-- `XALG` (`INTEGER`, nullable)
-- `IsCompressed` (`INTEGER`, `NOT NULL`)
-- `IsDeleted` (`INTEGER`, `NOT NULL`)
+- `NumericData` (`REAL`, nullable)
+- `IntegerData` (`INTEGER`, nullable)
+- `BooleanData` (`INTEGER`, nullable)
 
-Record-specific constraints:
+Foreign keys:
 
-- `IsCompressed` is `NOT NULL` and must be `0` or `1`.
-- `IsDeleted` is `NOT NULL` and must be `0` or `1`.
+- `Game` plus containing `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
+- Full common typed record key references `RecordInstances` with `ON DELETE CASCADE`.
 
-`RawData` and `XALG` remain persisted as diagnostic fields but are not shown in the comparison workspace.
+Persistence behavior:
 
-### Global
+- Current imported rows are upserted.
+- Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful GameSetting import
+  batch are deleted as stale.
 
-Stores Starfield `GLOB` record detail rows. The common typed record key, foreign key, index, and non-negative
-`FormKey_ID` constraint apply.
+### Globals
 
-Additional record-specific column:
+Columns:
 
+- Common typed record key and metadata columns listed above
 - `Data` (`REAL`, nullable)
 
-### MiscItem
+Foreign keys:
 
-Stores Starfield `MISC` record detail rows. The common typed record key, foreign key, index, and non-negative
-`FormKey_ID` constraint apply.
+- `Game` plus containing `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
+- Full common typed record key references `RecordInstances` with `ON DELETE CASCADE`.
 
-Additional record-specific columns:
+Persistence behavior:
+
+- Current imported rows are upserted.
+- Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful Global import batch
+  are deleted as stale.
+
+### Starfield scripted parent records
+
+`MiscObjects`, `Keywords`, `ActorValueInformation`, `NPCs`, `MagicEffects`, and `Perks` use the common typed record
+key and metadata columns. They are currently populated only by the Starfield record reader.
+
+`MiscObjects` additional columns:
 
 - `Name` (`TEXT`, nullable)
 - `ShortName` (`TEXT`, nullable)
 - `Value` (`INTEGER`, nullable)
 - `Weight` (`REAL`, nullable)
 - `DirtinessScale` (`REAL`, nullable)
-- decomposed nullable `FeaturedItemMessage` `FormKey` columns
+- `FeaturedItemMessage_ModKey_Name` (`TEXT`, nullable)
+- `FeaturedItemMessage_ModKey_Type` (`INTEGER`, nullable)
+- `FeaturedItemMessage_ModKey_FileName` (`TEXT`, nullable)
+- `FeaturedItemMessage_FormKey_ID` (`INTEGER`, nullable)
 - `FLAG` (`TEXT`, nullable)
 
-Optional cohesive MiscItem structures are stored in one-to-one child tables: `MiscItemObjectBounds`,
-`MiscItemObjectPaletteDefaults`, `MiscItemTransforms`, `MiscItemModels`, and `MiscItemDestructibles`.
-
-Ordered or typed nested data is stored in `MiscItemModelMaterialSwaps`, `MiscItemSounds`, `MiscItemKeywords`,
-`MiscItemDestructibleResistances`, `MiscItemDestructionStages`, and `MiscItemDestructionStageMaterialSwaps`.
-
-All MiscItem child tables use the complete containing-plugin and origin-`FormKey` parent identity. Declared child
-foreign keys use `ON DELETE CASCADE`. Ordered rows use zero-based source indexes.
-
-Child-specific columns:
-
-- `MiscItemObjectBounds`: first and second XYZ coordinates and `ImportedAtUTC`.
-- `MiscItemObjectPaletteDefaults`: flags, sink and offset values, footprint size, scale, angle, slope, density,
-  frequency, water-distance values, and `ImportedAtUTC`.
-- `MiscItemTransforms`: inventory-icon, outpost, ship, preview, inventory, workbench, and main-game-UI transform
-  references, plus `ImportedAtUTC`.
-- `MiscItemModels`: file, texture-file hashes, light layer, flags, color-remapping index, vestigial flags, and
-  `ImportedAtUTC`.
-- `MiscItemModelMaterialSwaps`: material-swap reference, `MaterialSwap_Index`, and `ImportedAtUTC`.
-- `MiscItemSounds`: sound type, start and stop GUIDs, condition and event-mapping references, and `ImportedAtUTC`.
-- `MiscItemKeywords`: keyword reference, `Keyword_Index`, and `ImportedAtUTC`.
-- `MiscItemDestructibles`: health, stage count, flags, and `ImportedAtUTC`.
-- `MiscItemDestructibleResistances`: damage-type reference, value, `Resistance_Index`, and `ImportedAtUTC`.
-- `MiscItemDestructionStages`: stage index, understood stage scalar fields and references, nested model fields, and
-  `ImportedAtUTC`.
-- `MiscItemDestructionStageMaterialSwaps`: stage index, material-swap reference, `MaterialSwap_Index`, and
-  `ImportedAtUTC`.
-
-### Keyword
-
-Stores Starfield `KYWD` record detail rows. The common typed record key, foreign key, index, and non-negative
-`FormKey_ID` constraint apply.
-
-Additional record-specific columns:
+`Keywords` additional columns:
 
 - `Name` (`TEXT`, nullable)
 - `Color` (`TEXT`, `NOT NULL`)
 - `Type` (`TEXT`, `NOT NULL`)
 - `Notes` (`TEXT`, nullable)
 - `FlashLinkageName` (`TEXT`, nullable)
-- `AttractionRuleFormKey` (`TEXT`, nullable)
+- `AttractionRule_ModKey_Name` (`TEXT`, nullable)
+- `AttractionRule_ModKey_Type` (`INTEGER`, nullable)
+- `AttractionRule_ModKey_FileName` (`TEXT`, nullable)
+- `AttractionRule_FormKey_ID` (`INTEGER`, nullable)
 
-### NPC
-
-Stores Starfield `NPC_` record detail rows. The common typed record key, foreign key, index, and non-negative
-`FormKey_ID` constraint apply.
-
-Additional record-specific columns:
-
-- `Name` (`TEXT`, nullable)
-- `ShortName` (`TEXT`, nullable)
-- `LongName` (`TEXT`, nullable)
-- `DispositionBase` (`INTEGER`, `NOT NULL`)
-- `Aggression` (`TEXT`, `NOT NULL`)
-- `Confidence` (`TEXT`, `NOT NULL`)
-- `EnergyLevel` (`INTEGER`, `NOT NULL`)
-- `Responsibility` (`TEXT`, `NOT NULL`)
-- `Assistance` (`TEXT`, `NOT NULL`)
-- `GearedUpWeapons` (`INTEGER`, `NOT NULL`)
-- `HeightMin` (`REAL`, `NOT NULL`)
-- `HeightMax` (`REAL`, `NOT NULL`)
-- `SkinToneIndex` (`INTEGER`, nullable)
-- `Pronoun` (`TEXT`, nullable)
-- `VoiceFormKey` (`TEXT`, nullable)
-- `RaceFormKey` (`TEXT`, nullable)
-- `CombatOverridePackageListFormKey` (`TEXT`, nullable)
-- `CombatStyleFormKey` (`TEXT`, nullable)
-- `DefaultPackageListFormKey` (`TEXT`, nullable)
-- `CrimeFactionFormKey` (`TEXT`, nullable)
-
-### ActorValueInformation
-
-Stores Starfield `AVIF` record detail rows. The common typed record key, foreign key, index, and non-negative
-`FormKey_ID` constraint apply.
-
-Additional record-specific columns:
+`ActorValueInformation` additional columns:
 
 - `Name` (`TEXT`, nullable)
 - `Abbreviation` (`TEXT`, nullable)
@@ -380,260 +415,202 @@ Additional record-specific columns:
 - `Min` (`REAL`, nullable)
 - `Max` (`REAL`, nullable)
 
-### MagicEffect
+`NPCs` additional columns:
 
-Stores Starfield `MGEF` record detail rows. The common typed record key, foreign key, index, and non-negative
-`FormKey_ID` constraint apply.
+- `Name`, `ShortName`, `LongName`, and `Pronoun` (`TEXT`, nullable)
+- `DispositionBase`, `EnergyLevel`, and `GearedUpWeapons` (`INTEGER`, `NOT NULL`)
+- `Aggression`, `Confidence`, `Responsibility`, and `Assistance` (`TEXT`, `NOT NULL`)
+- `HeightMin` and `HeightMax` (`REAL`, `NOT NULL`)
+- `SkinToneIndex` (`INTEGER`, nullable)
+- nullable decomposed FormKey columns for `Voice`, `Race`, `CombatOverridePackageList`, `CombatStyle`,
+  `DefaultPackageList`, and `CrimeFaction`
 
-Additional record-specific columns:
+`MagicEffects` additional columns:
 
-- `Name` (`TEXT`, nullable)
-- `Description` (`TEXT`, nullable)
+- `Name`, `Description`, `CastType`, and `TargetType` (`TEXT`, nullable)
 - `Flags` (`TEXT`, `NOT NULL`)
-- `CastType` (`TEXT`, nullable)
-- `TargetType` (`TEXT`, nullable)
-- `ActorValue2FormKey` (`TEXT`, nullable)
-- `ResistValueFormKey` (`TEXT`, nullable)
-- `PerkToApplyFormKey` (`TEXT`, nullable)
-- `EquipAbilityFormKey` (`TEXT`, nullable)
-- `ExplosionFormKey` (`TEXT`, nullable)
-- `CastingArtFormKey` (`TEXT`, nullable)
-- `HitEffectArtFormKey` (`TEXT`, nullable)
-- `HitShaderFormKey` (`TEXT`, nullable)
-- `ImageSpaceModifierFormKey` (`TEXT`, nullable)
-- `ImpactDataFormKey` (`TEXT`, nullable)
-- `ProjectileFormKey` (`TEXT`, nullable)
+- nullable decomposed FormKey columns for `ActorValue2`, `ResistValue`, `PerkToApply`, `EquipAbility`,
+  `Explosion`, `CastingArt`, `HitEffectArt`, `HitShader`, `ImageSpaceModifier`, `ImpactData`, and `Projectile`
+- `Archetype` (`TEXT`, nullable)
+- `UnknownFloat3` (`REAL`, nullable)
+- `UnknownInt2` (`INTEGER`, nullable)
+- `Unknown` (`TEXT`, nullable)
+- `Unknown2` (`TEXT`, nullable)
+- `DataTypeState` (`TEXT`, nullable)
 
-### Perk
+`Perks` additional columns:
 
-Stores Starfield `PERK` record detail rows. The common typed record key, foreign key, index, and non-negative
-`FormKey_ID` constraint apply.
-
-Additional record-specific columns:
-
-- `Name` (`TEXT`, nullable)
-- `Description` (`TEXT`, nullable)
+- `Name`, `Description`, `SkillGroup`, `CrewAssignment`, `PerkIcon`, `Category`, and `MajorFlags`
+  (`TEXT`, nullable)
 - `Flags` (`TEXT`, `NOT NULL`)
-- `SkillGroup` (`TEXT`, nullable)
-- `CrewAssignment` (`TEXT`, nullable)
-- `PerkIcon` (`TEXT`, nullable)
-- `Category` (`TEXT`, nullable)
-- `Restriction_ModKey_Name` (`TEXT`, nullable)
-- `Restriction_ModKey_Type` (`INTEGER`, nullable)
-- `Restriction_ModKey_FileName` (`TEXT`, nullable)
-- `Restriction_FormKey_ID` (`INTEGER`, nullable)
-- `Training_ModKey_Name` (`TEXT`, nullable)
-- `Training_ModKey_Type` (`INTEGER`, nullable)
-- `Training_ModKey_FileName` (`TEXT`, nullable)
-- `Training_FormKey_ID` (`INTEGER`, nullable)
-- `MajorFlags` (`TEXT`, nullable)
+- nullable decomposed FormKey columns for `Restriction` and `Training`
 
-`Category` maps Mutagen's generated `Categroy` Perk property. The restriction and training columns are direct Perk
-references, not declared SQLite foreign keys. Each nullable reference tuple must be either fully populated or fully
-`NULL`. `MajorFlags` is a direct Perk field, not a record reference.
+Foreign keys:
 
-### PerkRanks
+- `Game` plus containing `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
+- Full common typed record key references `RecordInstances` with `ON DELETE CASCADE`.
 
-Stores ordered rank rows inside Starfield `PERK` records.
+Persistence behavior:
+
+- Current imported rows are upserted.
+- Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful typed-record import
+  batch are deleted as stale.
+- `MiscObjects` currently persists the parent scalar row, shared keyword rows, shared model rows, and scripting
+  adapters. `NPCs` and `MagicEffects` persist shared keyword rows. `MiscObjects` and `MagicEffects` persist shared
+  sound rows. `MagicEffects` persists Spriggit-flattened DATA fields directly on the parent row.
+
+### RecordKeywords
 
 Columns:
 
-- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
-- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- Common containing plugin key columns listed above
+- `RecordType` (`TEXT`, `NOT NULL`, primary key)
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- decomposed `Keyword_*` FormKey columns (`NOT NULL`)
+- `Keyword_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key plus `RecordType` references `RecordInstances` with `ON DELETE CASCADE`.
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning typed record row is saved.
+- Existing keyword rows for the same record are deleted before replacement so removed keyword slots do not remain
+  stale.
+- Stale typed-record deletion removes keyword rows through the declared `RecordInstances` cascade.
+
+### Perk child tables
+
+`PerkRanks`, `PerkRankEffects`, and `PerkBackgroundSkills` use the same containing plugin and parent FormKey columns
+as `Perks`.
+
+`PerkRanks` additional columns:
+
 - `Rank_Index` (`INTEGER`, `NOT NULL`, primary key)
 - `Description` (`TEXT`, nullable)
-- `UnknownStatic_ModKey_Name` (`TEXT`, nullable)
-- `UnknownStatic_ModKey_Type` (`INTEGER`, nullable)
-- `UnknownStatic_ModKey_FileName` (`TEXT`, nullable)
-- `UnknownStatic_FormKey_ID` (`INTEGER`, nullable)
+- nullable decomposed FormKey columns for `UnknownStatic`
 - `ConditionCount` (`INTEGER`, `NOT NULL`)
 - `ActivityCount` (`INTEGER`, `NOT NULL`)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
-Primary key:
+`PerkRankEffects` additional columns:
 
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `FormKey_ModKey_Name`, `FormKey_ModKey_Type`,
-  `FormKey_ModKey_FileName`, `FormKey_ID`, and `Rank_Index`
-
-Foreign key:
-
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `FormKey_ModKey_Name`, `FormKey_ModKey_Type`,
-  `FormKey_ModKey_FileName`, and `FormKey_ID` reference the `Perk` primary key with `ON DELETE CASCADE`.
-
-Indexes:
-
-- `IX_PerkRanks_Perk` on the owning Perk key columns
-- `IX_PerkRanks_RankIndex` on `Rank_Index`
-
-Constraints:
-
-- All columns are `NOT NULL` except `Description` and the nullable unknown-static reference tuple.
-- `FormKey_ID`, `Rank_Index`, `ConditionCount`, and `ActivityCount` must be greater than or equal to `0`.
-- The unknown-static reference tuple must be either fully populated or fully `NULL`.
-- `UnknownStatic_FormKey_ID` must be `NULL` or greater than or equal to `0`.
-
-`Rank_Index` preserves source rank order. `ConditionCount` and `ActivityCount` preserve summary counts for nested rank
-data that is not otherwise normalized in this schema.
-
-### PerkRankEffects
-
-Stores ordered supported effect fields inside Perk ranks.
-
-Columns:
-
-- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
-- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key, foreign key)
 - `Rank_Index` (`INTEGER`, `NOT NULL`, primary key, foreign key)
 - `Effect_Index` (`INTEGER`, `NOT NULL`, primary key)
 - `MutagenObjectType` (`TEXT`, `NOT NULL`)
 - `Rank` (`INTEGER`, `NOT NULL`)
 - `Priority` (`INTEGER`, `NOT NULL`)
 - `PerkEntryID` (`INTEGER`, nullable)
-- `Flags` (`TEXT`, nullable)
-- `ButtonLabel` (`TEXT`, nullable)
+- `Flags`, `ButtonLabel`, `EntryPoint`, and `Modification` (`TEXT`, nullable)
 - `ConditionCount` (`INTEGER`, `NOT NULL`)
-- `EntryPoint` (`TEXT`, nullable)
 - `PerkConditionTabCount` (`INTEGER`, nullable)
-- `Modification` (`TEXT`, nullable)
 - `Value` (`REAL`, nullable)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
-Primary key:
+`PerkBackgroundSkills` additional columns:
 
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `FormKey_ModKey_Name`, `FormKey_ModKey_Type`,
-  `FormKey_ModKey_FileName`, `FormKey_ID`, `Rank_Index`, and `Effect_Index`
-
-Foreign key:
-
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `FormKey_ModKey_Name`, `FormKey_ModKey_Type`,
-  `FormKey_ModKey_FileName`, `FormKey_ID`, and `Rank_Index` reference the `PerkRanks` primary key with
-  `ON DELETE CASCADE`.
-
-Indexes:
-
-- `IX_PerkRankEffects_PerkRank` on the owning Perk rank key columns
-- `IX_PerkRankEffects_EffectIndex` on `Effect_Index`
-
-Constraints:
-
-- `FormKey_ID`, `Rank_Index`, `Effect_Index`, `Rank`, `Priority`, and `ConditionCount` must be greater than or
-  equal to `0`.
-- `PerkEntryID` and `PerkConditionTabCount` must be `NULL` or greater than or equal to `0`.
-
-Supported effect fields include common Perk effect fields and entry-point modify-value fields. Deeper effect-specific
-payloads and nested conditions are not normalized in this schema.
-
-### PerkBackgroundSkills
-
-Stores ordered background skill references inside Starfield `PERK` records.
-
-Columns:
-
-- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
-- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key, foreign key)
-- `Skill_ModKey_Name` (`TEXT`, `NOT NULL`)
-- `Skill_ModKey_Type` (`INTEGER`, `NOT NULL`)
-- `Skill_ModKey_FileName` (`TEXT`, `NOT NULL`)
-- `Skill_FormKey_ID` (`INTEGER`, `NOT NULL`)
+- decomposed `Skill_*` FormKey columns (`NOT NULL`)
 - `Skill_Index` (`INTEGER`, `NOT NULL`, primary key)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
-Primary key:
+Foreign keys:
 
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `FormKey_ModKey_Name`, `FormKey_ModKey_Type`,
-  `FormKey_ModKey_FileName`, `FormKey_ID`, and `Skill_Index`
+- `PerkRanks` references `Perks` with `ON DELETE CASCADE`.
+- `PerkRankEffects` references `PerkRanks` with `ON DELETE CASCADE`.
+- `PerkBackgroundSkills` references `Perks` with `ON DELETE CASCADE`.
 
-Foreign key:
-
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `FormKey_ModKey_Name`, `FormKey_ModKey_Type`,
-  `FormKey_ModKey_FileName`, and `FormKey_ID` reference the `Perk` primary key with `ON DELETE CASCADE`.
-
-Indexes:
-
-- `IX_PerkBackgroundSkills_Perk` on the owning Perk key columns
-- `IX_PerkBackgroundSkills_Skill_FormKey` on the referenced skill `FormKey` columns
-- `IX_PerkBackgroundSkills_SkillIndex` on `Skill_Index`
-
-Constraints:
-
-- All columns are `NOT NULL`.
-- `FormKey_ID`, `Skill_FormKey_ID`, and `Skill_Index` must be greater than or equal to `0`.
-
-`Skill_Index` preserves source background skill order. The referenced skill columns contain inferred Perk references,
-not declared SQLite foreign keys.
-
-### ScriptingAdapters
-
-Stores one VMAD script row attached to an already-supported typed record.
+### Models
 
 Columns:
 
-- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
-- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- Common containing plugin key columns listed above
 - `RecordType` (`TEXT`, `NOT NULL`, primary key)
-- `FormKey_ModKey_Name` (`TEXT`, `NOT NULL`, primary key)
-- `FormKey_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key)
-- `FormKey_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key)
-- `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key)
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `ModelSlot` (`TEXT`, `NOT NULL`, primary key)
+- `ModelGender` (`TEXT`, `NOT NULL`, primary key)
+- `File` (`TEXT`, nullable)
+- `TextureFileHashes` (`TEXT`, nullable)
+- `LightLayer` (`INTEGER`, nullable)
+- `Flags` (`TEXT`, nullable)
+- `ColorRemappingIndex` (`REAL`, nullable)
+- `FlagsVestigial` (`TEXT`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key plus `RecordType` references `RecordInstances` with `ON DELETE CASCADE`.
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning typed record row is saved.
+- Existing model rows for the same record are deleted before replacement so removed model slots do not remain stale.
+- Stale typed-record deletion removes model rows through the declared `RecordInstances` cascade.
+
+### ModelMaterialSwaps
+
+Columns:
+
+- Full parent model key columns listed above
+- decomposed `MaterialSwap_*` FormKey columns (`NOT NULL`)
+- `MaterialSwap_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full parent key references `Models` with `ON DELETE CASCADE`.
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning `Models` row is saved.
+- Existing material-swap rows for a replaced model are deleted through the parent `Models` row replacement/delete
+  behavior.
+
+### RecordSounds
+
+Columns:
+
+- Common containing plugin key columns listed above
+- `RecordType` (`TEXT`, `NOT NULL`, primary key)
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `SoundSlot` (`TEXT`, `NOT NULL`, primary key)
+- `Sound_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `Start` (`TEXT`, nullable)
+- `Versioning` (`TEXT`, nullable)
+- `Unknown` (`TEXT`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key plus `RecordType` references `RecordInstances` with `ON DELETE CASCADE`.
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning typed record row is saved.
+- Existing sound rows for the same record are deleted before replacement so removed sound slots do not remain stale.
+- Stale typed-record deletion removes sound rows through the declared `RecordInstances` cascade.
+
+### ScriptingAdapters
+
+Columns:
+
+- Common containing plugin key columns listed above
+- `RecordType` (`TEXT`, `NOT NULL`, primary key)
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
 - `Name` (`TEXT`, `NOT NULL`, primary key)
 - `Script_Index` (`INTEGER`, `NOT NULL`)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
-Primary key:
-
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ModKey_Name`,
-  `FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, `FormKey_ID`, and `Name`
-
 Foreign keys:
 
-- `ModKey_Name`, `ModKey_Type`, and `ModKey_FileName` reference the `Plugins` primary key with
-  `ON DELETE CASCADE`.
-
-Indexes:
-
-- `IX_ScriptingAdapters_RecordLookup` on `RecordType` plus the origin `FormKey` columns
-- `IX_ScriptingAdapters_ScriptIndex` on `Script_Index`
-
-Constraints:
-
-- All columns are `NOT NULL`.
-- `FormKey_ID` must be greater than or equal to `0`.
-- `Script_Index` must be greater than or equal to `0`.
-
-`RecordType` is required because the shared VMAD child tables serve multiple typed parent tables. The full origin
-`FormKey` is required because `FormKey_ID` is not globally unique across origin plugins.
+- Full common typed record key plus `RecordType` references `RecordInstances` with `ON DELETE CASCADE`.
 
 ### ScriptingAdapterProperties
 
-Stores one VMAD property row for a script attached to an already-supported typed record.
-
 Columns:
 
-- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
-- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `RecordType` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key, foreign key)
-- `ScriptingAdapter_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- Full parent scripting adapter key columns listed above
 - `Property_Index` (`INTEGER`, `NOT NULL`, primary key)
 - `Name` (`TEXT`, `NOT NULL`)
 - `MutagenObjectType` (`TEXT`, `NOT NULL`)
@@ -641,167 +618,50 @@ Columns:
 - `Data_Int` (`INTEGER`, nullable)
 - `Data_Float` (`REAL`, nullable)
 - `Data_String` (`TEXT`, nullable)
-- `Object_ModKey_Name` (`TEXT`, nullable)
-- `Object_ModKey_Type` (`INTEGER`, nullable)
-- `Object_ModKey_FileName` (`TEXT`, nullable)
-- `Object_FormKey_ID` (`INTEGER`, nullable)
+- nullable decomposed `Object_*` FormKey columns
 - `Object_Alias` (`INTEGER`, nullable)
 - `Object_Unused` (`INTEGER`, nullable)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
-Primary key:
-
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ModKey_Name`,
-  `FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, `FormKey_ID`, `ScriptingAdapter_Name`, and
-  `Property_Index`
-
 Foreign keys:
 
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ModKey_Name`,
-  `FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, `FormKey_ID`, and `ScriptingAdapter_Name` reference the
-  `ScriptingAdapters` primary key with `ON DELETE CASCADE`.
-
-Indexes:
-
-- `IX_ScriptingAdapterProperties_RecordLookup` on `RecordType` plus the origin `FormKey` columns
-- `IX_ScriptingAdapterProperties_PropertyIndex` on `Property_Index`
-- `IX_ScriptingAdapterProperties_ObjectLookup` on the object `ModKey` columns plus `Object_FormKey_ID`
-
-Constraints:
-
-- `FormKey_ID` must be greater than or equal to `0`.
-- `Property_Index` must be greater than or equal to `0`.
-- `Data_Bool` must be `0`, `1`, or `NULL`.
-- `Object_FormKey_ID` must be `NULL` or greater than or equal to `0`.
-
-Supported property shapes in this table are:
-
-- `ScriptProperty`
-- `ScriptBoolProperty`
-- `ScriptIntProperty`
-- `ScriptFloatProperty`
-- `ScriptStringProperty`
-- `ScriptObjectProperty`
-- list-property parents for the supported VMAD list types
-
-List values are stored in `ScriptingAdapterPropertyListItems`, not as JSON.
+- Full parent key references `ScriptingAdapters` with `ON DELETE CASCADE`.
 
 ### ScriptingAdapterPropertyListItems
 
-Stores one VMAD list element row for a supported list-type script property.
-
 Columns:
 
-- `ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
-- `ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `RecordType` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_Type` (`INTEGER`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ModKey_FileName` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `FormKey_ID` (`INTEGER`, `NOT NULL`, primary key, foreign key)
-- `ScriptingAdapter_Name` (`TEXT`, `NOT NULL`, primary key, foreign key)
-- `Property_Index` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- Full parent scripting adapter property key columns listed above
 - `ListItem_Index` (`INTEGER`, `NOT NULL`, primary key)
 - `MutagenObjectType` (`TEXT`, `NOT NULL`)
 - `Data_Bool` (`INTEGER`, nullable)
 - `Data_Int` (`INTEGER`, nullable)
 - `Data_Float` (`REAL`, nullable)
 - `Data_String` (`TEXT`, nullable)
-- `Object_ModKey_Name` (`TEXT`, nullable)
-- `Object_ModKey_Type` (`INTEGER`, nullable)
-- `Object_ModKey_FileName` (`TEXT`, nullable)
-- `Object_FormKey_ID` (`INTEGER`, nullable)
+- nullable decomposed `Object_*` FormKey columns
 - `Object_Alias` (`INTEGER`, nullable)
 - `Object_Unused` (`INTEGER`, nullable)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
-Primary key:
-
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ModKey_Name`,
-  `FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, `FormKey_ID`, `ScriptingAdapter_Name`, `Property_Index`, and
-  `ListItem_Index`
-
 Foreign keys:
 
-- `ModKey_Name`, `ModKey_Type`, `ModKey_FileName`, `RecordType`, `FormKey_ModKey_Name`,
-  `FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, `FormKey_ID`, `ScriptingAdapter_Name`, and `Property_Index`
-  reference the `ScriptingAdapterProperties` primary key with `ON DELETE CASCADE`.
+- Full parent key references `ScriptingAdapterProperties` with `ON DELETE CASCADE`.
 
-Indexes:
+## Views
 
-- `IX_ScriptingAdapterPropertyListItems_RecordLookup` on `RecordType` plus the origin `FormKey` columns
-- `IX_ScriptingAdapterPropertyListItems_ListItemIndex` on `ListItem_Index`
-- `IX_ScriptingAdapterPropertyListItems_ObjectLookup` on the object `ModKey` columns plus `Object_FormKey_ID`
-
-Constraints:
-
-- `FormKey_ID` must be greater than or equal to `0`.
-- `Property_Index` must be greater than or equal to `0`.
-- `ListItem_Index` must be greater than or equal to `0`.
-- `Data_Bool` must be `0`, `1`, or `NULL`.
-- `Object_FormKey_ID` must be `NULL` or greater than or equal to `0`.
-
-Supported list item shapes are:
-
-- `ScriptBoolListProperty`
-- `ScriptIntListProperty`
-- `ScriptFloatListProperty`
-- `ScriptStringListProperty`
-- `ScriptObjectListProperty`
+`StarfieldPluginDetails`, `Fallout4PluginDetails`, and `SkyrimPluginDetails` join `Plugins` to their corresponding
+game-specific plugin extension table on `Game` plus `ModKey_*`. Each view filters to its game and exposes the shared
+plugin columns plus the scalar game-specific extension columns.
 
 ## Inferred Relationships
 
-The following columns carry record-reference data but do not declare SQLite foreign keys:
+These columns carry record-reference identity but do not declare SQLite foreign keys:
 
-- `FormList.AddToListFormKey`
+- `FormLists.AddToList_ModKey_Name`, `AddToList_ModKey_Type`, `AddToList_ModKey_FileName`,
+  and `AddToList_FormKey_ID`
 - `FormListItems.Item_ModKey_Name`, `Item_ModKey_Type`, `Item_ModKey_FileName`, and `Item_FormKey_ID`
-- `Keyword.AttractionRuleFormKey`
-- `NPC.VoiceFormKey`, `RaceFormKey`, `CombatOverridePackageListFormKey`, `CombatStyleFormKey`,
-  `DefaultPackageListFormKey`, and `CrimeFactionFormKey`
-- `MagicEffect.ActorValue2FormKey`, `ResistValueFormKey`, `PerkToApplyFormKey`, `EquipAbilityFormKey`,
-  `ExplosionFormKey`, `CastingArtFormKey`, `HitEffectArtFormKey`, `HitShaderFormKey`, `ImageSpaceModifierFormKey`,
-  `ImpactDataFormKey`, and `ProjectileFormKey`
-- `Perk.Restriction_ModKey_Name`, `Restriction_ModKey_Type`, `Restriction_ModKey_FileName`, and
-  `Restriction_FormKey_ID`
-- `Perk.Training_ModKey_Name`, `Training_ModKey_Type`, `Training_ModKey_FileName`, and `Training_FormKey_ID`
-- `PerkRanks.UnknownStatic_ModKey_Name`, `UnknownStatic_ModKey_Type`, `UnknownStatic_ModKey_FileName`, and
-  `UnknownStatic_FormKey_ID`
-- `PerkBackgroundSkills.Skill_ModKey_Name`, `Skill_ModKey_Type`, `Skill_ModKey_FileName`, and `Skill_FormKey_ID`
-- Typed-record and VMAD `FormKey_ModKey_Name`, `FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, and `FormKey_ID`
-  persist origin `FormKey` identity but do not declare a SQLite foreign key to `Plugins`
-- `ScriptingAdapters.RecordType` and the origin `FormKey` columns identify the owning typed record table row but do
-  not declare a SQLite foreign key to a specific typed record table
-- `ScriptingAdapterProperties.Object_ModKey_Name`, `Object_ModKey_Type`, `Object_ModKey_FileName`,
-  and `Object_FormKey_ID`
-- `ScriptingAdapterPropertyListItems.Object_ModKey_Name`, `Object_ModKey_Type`, `Object_ModKey_FileName`,
-  and `Object_FormKey_ID`
+- `ModelMaterialSwaps.MaterialSwap_ModKey_Name`, `MaterialSwap_ModKey_Type`, `MaterialSwap_ModKey_FileName`,
+  and `MaterialSwap_FormKey_ID`
+- `RecordKeywords.Keyword_ModKey_Name`, `Keyword_ModKey_Type`, `Keyword_ModKey_FileName`, and `Keyword_FormKey_ID`
 
-These references are intentionally not shown as Mermaid relationship lines in the ERD.
-
-## Record Comparison Lookup
-
-The schema supports locating typed rows for the same record across plugins. For example:
-
-```sql
-SELECT *
-FROM FormList
-WHERE FormKey_ModKey_Name = 'BasePlugin'
-  AND FormKey_ModKey_Type = 1
-  AND FormKey_ModKey_FileName = 'BasePlugin.esm'
-  AND FormKey_ID = 0x0003F551;
-```
-
-This can return rows from multiple containing plugins when those plugins override the same origin record. Each result
-keeps its containing plugin's `ModKey` columns for display and load-order sorting.
-
-Comparison queries must filter typed tables by the full origin `FormKey` tuple. Filtering by `FormKey_ID` alone can
-incorrectly group unrelated records from different origin plugins that happen to share the same local numeric ID.
-
-## Repository Boundary
-
-Repositories use NPoco database models with `[TableName]`, `[PrimaryKey]`, and `[Column]` attributes. Repositories
-translate DTOs to database models and should not own business workflow, UI behavior, or logging decisions.
-
-Runtime SQL values should be parameterized. Existing query methods in repositories use NPoco parameters for runtime
-values.
+These inferred references are intentionally not shown as Mermaid relationship lines in the ERD.

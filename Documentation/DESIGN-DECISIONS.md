@@ -1,800 +1,1082 @@
 # Design Decisions
 
-## 2026-06-04 - Display MiscItem Nested Values In Structured Comparison Groups
+## 2026-06-07 - Persist Shared IModelGetter Data By Record Instance
 
 Status: Accepted
 
-Context: MiscItem nested structures were formatted as pipe-separated scalar values in the selected record comparison
-grid. Ordered child values were displayed as separate indexed scalar rows. These representations obscured nested
-property labels, made long values difficult to compare, and could incorrectly mark overrides as identical when a
-persisted nested property was omitted from its formatter.
+Context: Starfield `MISC` records expose model data through Mutagen's `IModelGetter`. The Creation Kit presents
+similar model fields on several major records, but some records wrap those model fields in custom slot or gender
+containers.
 
-Decision: Keep MiscItem parent scalar fields in the standard comparison grid. Display all supported nested structures
-in reusable presentation-layer expandable groups with one labeled comparison row per nested property or ordered item.
-This includes object bounds, object palette defaults, transforms, model data, sounds, ordered keywords, and
-destructible data.
+Decision: Add shared `Models` and `ModelMaterialSwaps` tables keyed to `RecordInstances` plus `ModelSlot` and
+`ModelGender`. The first populated record type is Starfield `MISC`, using `ModelSlot = Model` and an empty
+`ModelGender`. The shared model payload stores `IModelGetter` fields: file, texture file hashes, light layer, flags,
+color remapping index, vestigial flags, and material swaps.
 
-Rationale: Structured groups preserve the existing load-order comparison workflow while making nested values readable
-and allowing each property to receive its own identical, conflict, or winning-override state.
+Rationale: `MiscItem`, `Static`, `Book`, `Door`, `Container`, and `Terminal` expose a direct `Model : IModelGetter`
+shape, so one shared table family avoids one model table per record type. `Terminal.MarkerModel` is a separate
+terminal-specific scalar and does not belong in the shared model table.
 
 Alternatives considered:
 
-- Continue displaying pipe-separated scalar summaries.
-- Display all nested properties as indexed scalar rows in the standard grid.
-- Move nested values into a separate detail dialog.
+- Keep model data in one `MiscItemModels` table.
+- Add one model table per record type.
+- Delay model persistence until every model-bearing record type is implemented.
 
 Consequences:
 
-- Supported MiscItem nested structures are no longer flattened into the scalar comparison grid.
-- Groups expand automatically when a contained row differs and remain manually collapsible.
-- Grouped comparison state remains presentation-specific and does not change Core DTOs, services, or persistence.
+- Shared model persistence can be reused by future direct `IModelGetter` record types such as `STAT`, `BOOK`, `DOOR`,
+  `CONT`, and `TERM`.
+- Starfield `ARMO` and `ARMA` need custom mapping because armor uses gendered world and first-person model wrappers.
+- Starfield `WEAP` needs custom mapping because weapons have a direct `Model` plus additional first-person/custom
+  model data.
+- Future armor, armor-addon, and weapon import work should map their custom slots into `ModelSlot` and `ModelGender`
+  deliberately rather than assuming the direct `Model` slot is enough.
 
 Related files:
 
-- `SFRecordCompareEngine/Views/MainView.xaml`
-- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
-- `SFRecordCompareEngine/ViewModels/RecordComparisonGroupViewModel.cs`
-- `SFRecordCompareEngine/ViewModels/RecordComparisonGroupRowViewModel.cs`
-- `Documentation/UI-MVVM.md`
+- `CreationsForge.Migrations/Sql/001_CreateMultiGameImportSchema.sql`
+- `CreationsForge.Core/DTOs/Records/ModelDTO.cs`
+- `CreationsForge.Core/Services/ModelImportService.cs`
+- `CreationsForge.Starfield/StarfieldRecordReaderService.cs`
 
-## 2026-06-04 - Normalize Supported MiscItem Nested Data
+## 2026-06-07 - Highlight Shared Comparison Value States
 
 Status: Accepted
 
-Context: MiscItem imports persisted only parent scalar fields and VMAD. Spriggit inspection showed commonly populated
-object bounds, transforms, model, item sounds, keywords, palette defaults, and less frequent destructible data.
+Context: CreationsForge now renders shared record comparisons in the Avalonia UI, but the initial TreeDataGrid view
+did not preserve the predecessor app's visible comparison states or legend.
 
-Decision: Persist understood optional MiscItem structures in one-to-one child tables and ordered nested collections in
-child tables. Keep simple parent fields on `MiscItem`. Update the initial migration because the cache database is
-already being cleared for a major design correction. Defer components, resources, `XALG`, and unknown fields.
+Decision: Add `RecordComparisonValueState` to Core comparison DTOs and calculate neutral, identical, conflict, and
+winning-override states in `RecordComparisonService`. Comparable rows are identical when all visible values match and
+conflicting when any visible value differs. Blank values count as values. Single-column comparisons and non-comparable
+informational rows stay neutral. The far-right visible value in a conflicting row is treated as the displayed winning
+override. The presentation layer maps states to green, red, and yellow cell backgrounds, gives the active plugin
+column a gold border, and shows a persistent legend in the status area.
 
-Rationale: Child structures preserve source ownership, avoid an excessively wide parent DTO/table, and allow absent
-structures to be represented by no row. Resource mappings are not useful until Resource records are supported.
+Rationale: Keeping state calculation in Core makes comparison semantics reusable and testable while keeping Avalonia
+brushes and layout in the presentation project. The far-right displayed winner matches the predecessor behavior
+without implying recursive master-resolution logic that CreationsForge does not yet calculate.
 
 Alternatives considered:
 
-- Flatten every nested field onto `MiscItem`.
-- Store nested structures as JSON.
-- Persist Resource mappings before Resource record support.
-- Add a new incremental migration.
+- Keep all color state as presentation-only logic.
+- Treat blank values as neutral.
+- Highlight all later load-order values as winning overrides.
+- Wait for full conflict-resolution workflows before adding comparison colors.
 
 Consequences:
 
-- Full MiscItem detail reads hydrate child rows; lightweight tree reads remain unchanged.
-- Existing cache databases must be recreated.
-- DbUp `SchemaVersions` remains the migration-state source of truth.
-- No hardcoded schema-version constants are added.
+- Shared comparison rows now carry deterministic value states.
+- The UI visually distinguishes identical, conflicting, and displayed winning-override values.
+- Game-specific comparison sections and true conflict-resolution workflows remain follow-up work.
 
 Related files:
 
-- `SFRecordCompareEngine.Migrations/Sql/001_CreatePluginSchema.sql`
-- `SFRecordCompareEngine.Core/DTOs/Records/MiscObjectDTO.cs`
-- `SFRecordCompareEngine.Core/Repositories/MiscObjectRepository.cs`
-- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
-- `Documentation/Database/DATABASE.md`
-- `Documentation/Database/ERD.md`
+- `CreationsForge.Core/DTOs/Records/RecordComparisonValueState.cs`
+- `CreationsForge.Core/DTOs/Records/RecordComparisonFieldDTO.cs`
+- `CreationsForge.Core/DTOs/Records/RecordComparisonValueDTO.cs`
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge/Views/MainView.cs`
+- `CreationsForge/ViewModels/MainViewModel.cs`
 
-## 2026-06-03 - Use Lightweight Typed Service Reads For Main Record Tree
+## 2026-06-07 - Add Initial Shared Record Comparison Contract
 
 Status: Accepted
 
-Context: Main record-tree construction needs only each record's origin `FormKey` and `EditorID`, but some typed
-`GetByModKey` service methods hydrate VMAD scripting child data. Hydrating script adapters, properties, and list items
-for every record in the active plugin adds unnecessary database work before the tree can render.
+Context: The predecessor Starfield-only app rendered a broad record comparison view directly from presentation view
+models and Starfield-specific DTOs. CreationsForge needs a multi-game comparison path that preserves the UI boundary
+and starts from the shared typed records already persisted for Starfield, Fallout 4, and Skyrim.
 
-Decision: Add `GetRecordTreeEntriesByModKey` methods to the existing typed service and repository contracts. These
-methods return lightweight `RecordTreeEntryDTO` values and query only the origin `FormKey` columns and `EditorID`.
-`MainPageViewModel.BuildRecordTree` uses these methods for the left-side tree. Existing typed `GetByModKey` and
-`GetByFormKey` methods keep their existing full DTO behavior.
+Decision: Add `IRecordComparisonService` in Core with DTOs for comparison columns, field rows, and values. Shared
+repositories expose query methods that fetch all persisted overrides for a selected origin FormKey. The service builds
+the first comparison slice for FormLists (`FLST`), GameSettings (`GMST`), and Globals (`GLOB`). The Avalonia UI renders
+the comparison DTOs in a `TreeDataGrid` with one field per row and one plugin override per dynamic column.
 
-Rationale: This keeps presentation code routed through typed Core services, avoids a broad tree-only service, and
-preserves VMAD hydration for selected-record detail workflows where child data is actually displayed.
+Rationale: This ports the useful comparison shape without moving Mutagen or database access into the presentation
+project. Starting with a simple field/column table keeps the UI focused while leaving richer grouping as future options
+after the comparison contract proves useful.
 
 Alternatives considered:
 
-- Add a new tree-specific service and repository.
-- Make existing typed `GetByModKey` methods unhydrated.
-- Add optional hydration flags to existing typed service methods.
-- Query repositories directly from `MainPageViewModel`.
+- Port the Starfield-only comparison view wholesale.
+- Add TreeDataGrid before validating the shared comparison DTO shape.
+- Query repositories directly from the Avalonia view model.
+- Wait for patch generation before showing any comparison UI.
 
 Consequences:
 
-- The main tree no longer hydrates VMAD child tables during active-plugin tree construction.
-- Existing typed service and repository interfaces have a new lightweight read method.
-- Selected-record comparison keeps using hydrated detail reads.
-- Core continues to expose Mutagen `FormKey`; presentation continues converting to displayed `FormID`.
+- Selecting an imported record leaf can load a first shared comparison view.
+- Core owns comparison query and row-building behavior.
+- The initial UI compares only approved shared DTO fields.
+- Starfield-only sections, conflict-resolution state, winning override calculation, and patch generation remain
+  deferred.
 
 Related files:
 
-- `SFRecordCompareEngine.Core/DTOs/Records/RecordTreeEntryDTO.cs`
-- `SFRecordCompareEngine.Core/Services/Interfaces/IFormListService.cs`
-- `SFRecordCompareEngine.Core/Repositories/Interfaces/IFormListRepository.cs`
-- `SFRecordCompareEngine.Core/Repositories/GlobalRepository.cs`
-- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
+- `CreationsForge.Core/Services/Interfaces/IRecordComparisonService.cs`
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Core/DTOs/Records/RecordComparisonDTO.cs`
+- `CreationsForge.Core/Repositories/FormListRepository.cs`
+- `CreationsForge.Core/Repositories/GameSettingRepository.cs`
+- `CreationsForge.Core/Repositories/GlobalRepository.cs`
+- `CreationsForge/ViewModels/MainViewModel.cs`
+- `CreationsForge/Views/MainView.cs`
 
-## 2026-06-03 - Persist Full Origin FormKey For Record Comparison
+## 2026-06-06 - Expose Import Control And Progress Through Core Contracts
 
 Status: Accepted
 
-Context: Typed record tables stored the containing plugin `ModKey` and numeric `FormKey_ID`. That incorrectly grouped
-unrelated records when different origin plugins used the same local numeric ID. True override comparison needs the
-origin `FormKey` from Mutagen and the containing plugin row identity as separate concepts.
+Context: The UI can start first imports and full imports, and the CLI remains useful for headless refreshes. The
+shared importer previously had cancellation support, but progress was mostly stage-level and the CLI could not request
+a forced full reimport through a first-class parser result.
 
-Decision: Persist the full origin `FormKey` on typed record and VMAD child tables as `FormKey_ModKey_Name`,
-`FormKey_ModKey_Type`, `FormKey_ModKey_FileName`, and `FormKey_ID`. Keep containing-plugin `ModKey_*` columns for row
-ownership, display, delete cascades, and load-order sorting. Compare selected records by record type plus the full
-origin `FormKey`, not by numeric `FormKey_ID` alone. Squash the SQLite schema back into `001_CreatePluginSchema.sql`
-and purge the local cache database so imports rebuild from the corrected schema.
+Decision: Thread force-full-reimport and progress through the Core import contracts. `GameArgumentParser` accepts
+`--force` and `--full`, `GameImportDispatcher` and `IGameImporter` accept the force flag, and the shared import
+workflow reports `GameImportProgressDTO` snapshots for load-order, plugin, master-reference, record-type, and
+record-detail work.
 
-Rationale: Mutagen `FormKey` carries both origin mod identity and local record ID. Persisting only the local ID loses
-the distinction between true overrides and unrelated records. Keeping containing and origin identity separate lets a
-plugin override a master's record legitimately while preventing false comparison groups.
+Rationale: This gives both app surfaces the same import control model without moving UI concepts into Core. Progress
+remains DTO-based and can be consumed by the Uno UI, CLI output, tests, or future automation.
 
 Alternatives considered:
 
-- Continue querying by `FormKey_ID` alone.
-- Derive origin identity from the containing plugin `ModKey`.
-- Add an incremental migration and preserve existing cached rows.
+- Keep force import as a UI-only concept.
+- Add UI binding primitives to Core progress objects.
+- Leave progress stage-only until the comparison UI exists.
 
 Consequences:
 
-- Existing cache databases must be rebuilt because the primary keys and lookup indexes changed.
+- CLI callers can request a full reimport with `--force` or `--full`.
+- UI callers can render richer import progress without direct importer access.
+- Core import contracts changed, so importer fakes in tests must implement the progress-aware signature.
+
+Related files:
+
+- `CreationsForge.Console/CommandLine/GameArgumentParser.cs`
+- `CreationsForge.Console/CommandLine/GameArgumentParseResult.cs`
+- `CreationsForge.Console/Program.cs`
+- `CreationsForge.Core/DTOs/Results/GameImportProgressDTO.cs`
+- `CreationsForge.Core/Importers/GameImportDispatcher.cs`
+- `CreationsForge.Core/Importers/GameImporter.cs`
+- `CreationsForge.Core/Importers/Interfaces/IGameImporter.cs`
+- `CreationsForge.Core/Services/RecordImportService.cs`
+- `CreationsForge.Core/Services/GameImportWorkflowService.cs`
+
+## 2026-06-06 - Use Environment Mod Object Load Order For Starfield Reads
+
+Status: Accepted
+
+Context: Starfield imports still failed for `aurie_terranarmadadelayed.esm` and `looterbot_dlc1.esm` with
+`MissingModException sfbgs00d.esm` even though metadata and record reads used `WithLoadOrderFromHeaderMasters()` and
+the Starfield environment data folder. Mutagen's separated-master guidance recommends providing a load order with mod
+objects when master-style data is needed for Starfield FormID translation.
+
+Decision: Centralize Starfield mod construction in `StarfieldModConstruction`. The helper prefers the full Mutagen
+environment load order's mod objects and passes the Starfield environment data folder. If no environment mod objects
+are available, it falls back to `WithLoadOrderFromHeaderMasters()` with the same data folder.
+
+Rationale: Environment mod objects carry master-style information that a header-master-only load order can miss. This
+keeps Starfield split-master handling inside the Starfield adapter and avoids unsafe `WithNoLoadOrder()` construction.
+
+Alternatives considered:
+
+- Continue using only `WithLoadOrderFromHeaderMasters()`.
+- Use `WithNoLoadOrder()` for failing plugins.
+- Move Mutagen construction helpers into Core.
+
+Consequences:
+
+- Starfield metadata, master-reference, and record reads use one centralized construction helper.
+- Starfield reads prefer separated-master-safe environment mod-object load order construction.
+- Core and presentation projects remain free of game-specific Mutagen APIs.
+
+Related files:
+
+- `CreationsForge.Starfield/StarfieldModConstruction.cs`
+- `CreationsForge.Starfield/StarfieldPluginReaderService.cs`
+- `CreationsForge.Starfield/StarfieldRecordReaderService.cs`
+
+## 2026-06-06 - Wrap Shared Imports In One Database Transaction
+
+Status: Accepted
+
+Context: SFRecordCompareEngine wrapped the full plugin import in an NPoco transaction. CreationsForge initially saved
+plugins, master references, and typed record rows without an equivalent transaction, which made large imports pay
+SQLite write overhead for many small `Save` calls. FLST imports were especially affected because large plugins can
+contain thousands of child item rows.
+
+Decision: Wrap the shared `GameImporter` write workflow in one NPoco transaction. Register database-backed
+repositories, importers, and workflow services per lifetime scope so they share the same scoped `IDatabase` and avoid
+capturing database connections in application-wide singletons.
+
+Rationale: This ports the proven SFRecordCompareEngine performance behavior without adding bulk-insert APIs or schema
+changes. It keeps repository code simple while giving SQLite a single transaction for the import write batch.
+
+Alternatives considered:
+
+- Add bulk insert APIs for individual tables before restoring transaction behavior.
+- Keep singleton repositories and rely on WAL mode alone.
+- Wrap each plugin in its own transaction.
+
+Consequences:
+
+- Successful imports call `Complete()` on the NPoco transaction after all shared phases finish.
+- Uncaught exceptions and cancellation dispose the transaction without completion.
+- Database-backed Core repositories, Core importers/services, and game-specific plugin extension repositories are
+  lifetime-scoped rather than singletons.
+
+Related files:
+
+- `CreationsForge.Core/Importers/GameImporter.cs`
+- `CreationsForge.Core/CoreModule.cs`
+- `CreationsForge.Starfield/StarfieldModule.cs`
+- `CreationsForge.Fallout4/Fallout4Module.cs`
+- `CreationsForge.Skyrim/SkyrimModule.cs`
+
+## 2026-06-06 - Use Case-Insensitive ModKey Name And Filename Lookup
+
+Status: Accepted
+
+Context: Starfield imports logged missing master references for plugins that existed in the load order, including
+official masters with casing differences such as `starfield.esm` versus `Starfield.esm` and `sfbgs00d.esm` versus
+`SFBGS00D.esm`. SFRecordCompareEngine had already established that Bethesda load-order data, plugin headers, and
+Mutagen master references can disagree on casing for the same plugin identity.
+
+Decision: Preserve source casing when storing ModKey components, but treat ModKey name and filename comparisons as
+case-insensitive for runtime plugin lookup. When lookup resolves a persisted plugin row, dependent rows use the
+persisted ModKey tuple so SQLite foreign keys reference the exact stored parent key. `ModKey_Type` remains exact in
+this pass.
+
+Rationale: Casing differences should not cause valid master references to be skipped as missing. Keeping persisted
+casing avoids destructive normalization while making lookup behavior match the domain.
+
+Alternatives considered:
+
+- Normalize ModKey names and filenames before persistence.
+- Keep filename lookup case-insensitive but leave ModKey name lookup case-sensitive.
+- Ignore `ModKey_Type` during lookup.
+
+Consequences:
+
+- `PluginRepository.GetByModKey` compares both `ModKey_Name` and `ModKey_FileName` with SQLite `COLLATE NOCASE`.
+- Master-reference persistence uses the resolved master plugin ModKey casing after lookup.
+- Persisted plugin identity still includes `ModKey_Type`.
+- A future pass may add a scoped fallback if Starfield master references also disagree on `ModKey_Type`.
+
+Related files:
+
+- `CreationsForge.Core/Repositories/PluginRepository.cs`
+- `CreationsForge.Core/Importers/GameImporter.cs`
+- `CreationsForge.UnitTests/Importers/GameImporterTests.cs`
+
+## 2026-06-06 - Refresh Plugin Import Batches With Stale Row Cleanup
+
+Status: Accepted
+
+Context: Changed and forced plugin imports upserted current master-reference and typed-record rows, but rows removed
+from the source plugin could remain in the database. Record import also loaded the same Mutagen plugin once for each
+approved record type, and UI cancellation did not reach the expensive import loops.
+
+Decision: Keep the existing schema and add import-batch cleanup behavior. Master references and each typed record type
+use a single `ImportedAtUTC` batch timestamp for the current plugin import. After a successful refresh, stale rows for
+the same game/plugin whose timestamp was not refreshed are deleted. Typed record cleanup runs only when that record
+type has no per-record import failures. Game adapter record readers now return one bundled `PluginRecordSetDTO` for
+the approved shared record types so the Core-facing path loads each Mutagen plugin once. Import dispatch, importer
+loops, record reads, and record-detail loops accept cancellation tokens.
+
+Rationale: This keeps persisted comparison inputs aligned with the current plugin contents without weakening foreign
+keys or adding schema. Guarding typed cleanup on per-record success avoids deleting previously valid data after a
+partial import failure. Bundled record reads remove repeated Mutagen construction work while preserving the game
+adapter boundary.
+
+Alternatives considered:
+
+- Keep upsert-only behavior and tolerate stale rows.
+- Delete all typed rows for a plugin before importing current rows.
+- Add new import batch tables or schema version fields.
+- Keep one Core record-reader method per record type and accept repeated Mutagen loads.
+
+Consequences:
+
+- Changed and forced imports remove stale master references and approved shared typed rows after successful refreshes.
+- Partial typed record failures can leave existing rows in place for that record type until the next successful import.
+- `IGameRecordReader` now returns bundled approved records instead of exposing one method per record type.
+- UI cancellation can stop between plugins, master references, record-type phases, and record-detail rows.
+- Log enrichment no longer includes environment usernames by default.
+
+Related files:
+
+- `CreationsForge.Core/Importers/GameImporter.cs`
+- `CreationsForge.Core/Services/RecordImportService.cs`
+- `CreationsForge.Core/DTOs/Records/PluginRecordSetDTO.cs`
+- `CreationsForge.Core/Importers/Interfaces/IGameRecordReader.cs`
+- `CreationsForge.Core/Repositories/PluginMasterReferenceRepository.cs`
+- `CreationsForge.Core/Repositories/FormListRepository.cs`
+- `CreationsForge.Core/Repositories/GameSettingRepository.cs`
+- `CreationsForge.Core/Repositories/GlobalRepository.cs`
+- `CreationsForge.Starfield/StarfieldRecordReaderService.cs`
+- `CreationsForge.Fallout4/Fallout4RecordReaderService.cs`
+- `CreationsForge.Skyrim/SkyrimRecordReaderService.cs`
+
+## 2026-06-06 - Run FormList Item Cleanup Once Per Plugin Batch
+
+Status: Accepted
+
+Context: The initial safe FormList item stale cleanup avoided SQLite expression-depth failures by deleting stale items
+with an import-batch timestamp, but it still ran a cleanup statement after every imported FormList. Large plugins with
+many FormLists paid that cleanup cost repeatedly and imported much slower than SFRecordCompareEngine.
+
+Decision: Keep the import-batch timestamp strategy, but run FormList item stale cleanup once per successful plugin
+FormList batch. Individual FormList imports upsert current parent and child rows only. After the FLST record type
+finishes without per-record failures, stale FormListItems and stale FormLists for the same game/plugin are deleted by
+batch timestamp.
+
+Rationale: This preserves removed-item cleanup and the partial-failure safety rule while removing repeated per-record
+SQLite cleanup work.
+
+Alternatives considered:
+
+- Keep per-FormList cleanup and add another index.
+- Delete all FormListItems before importing current rows.
+- Add staging tables for current FormList item identities.
+
+Consequences:
+
+- FormList item stale cleanup runs once after a successful plugin FLST import.
+- Partial FLST failures leave previous stale rows in place until the next successful import, matching typed record
+  cleanup safety behavior.
+- No schema changes are required.
+
+Related files:
+
+- `CreationsForge.Core/Importers/FormListImporter.cs`
+- `CreationsForge.Core/Repositories/FormListItemRepository.cs`
+- `CreationsForge.Core/Repositories/FormListRepository.cs`
+
+## 2026-06-06 - Keep Mutagen Out Of UI And MVVM
+
+Status: Accepted
+
+Context: The predecessor Starfield-only UI called Mutagen directly from presentation and MVVM code. CreationsForge
+must support Starfield, Fallout 4, and Skyrim without making the UI depend on one game's Mutagen APIs or record shapes.
+
+Decision: `CreationsForge` owns presentation concerns only. UI and MVVM code consume Core DTOs, result objects, enums,
+and UI-neutral application services. `CreationsForge.Core` may use shared Mutagen primitives internally for
+game-agnostic mapping, but game-specific Mutagen API usage remains in `CreationsForge.Starfield`,
+`CreationsForge.Fallout4`, and `CreationsForge.Skyrim`.
+
+Rationale: This keeps the presentation layer multi-game, testable, and insulated from game-specific Mutagen package
+references. It also keeps game-specific mapping close to the packages and APIs that define each game's record
+behavior.
+
+Alternatives considered:
+
+- Port the Starfield UI directly and generalize later.
+- Move all Mutagen usage into Core.
+
+Consequences:
+
+- UI features may require additional Core DTOs or workflow/query services before they can be displayed.
+- Game-specific adapters remain responsible for mapping Mutagen records into approved shared DTOs.
+- The first UI phase displays import workflow status and summaries while deeper comparison contracts are designed.
+
+Related files:
+
+- `CreationsForge/App.xaml.cs`
+- `CreationsForge/ViewModels/MainViewModel.cs`
+- `CreationsForge.Core/Services/Interfaces/IGameSelectionService.cs`
+- `CreationsForge.Core/Services/Interfaces/IGameImportWorkflowService.cs`
+- `CreationsForge.Starfield/StarfieldRecordReaderService.cs`
+- `CreationsForge.Fallout4/Fallout4RecordReaderService.cs`
+- `CreationsForge.Skyrim/SkyrimRecordReaderService.cs`
+
+## 2026-06-06 - Keep UI And CLI As Separate App Surfaces
+
+Status: Accepted
+
+Context: CreationsForge needs a cross-platform UI, but a long-term CLI remains useful for scripted imports, CI
+validation, batch refreshes, diagnostics, and headless workflows. Sharing startup code by making the CLI reference the
+UI project would pull Uno and presentation dependencies into the headless app.
+
+Decision: Keep `CreationsForge` and `CreationsForge.Console` as separate app surfaces. Add `CreationsForge.Bootstrap`
+for shared Autofac module registration and Serilog setup. The UI adds only presentation registrations on top of
+Bootstrap, and the CLI adds only command-line registrations on top of Bootstrap.
+
+Rationale: This preserves clean dependency direction while removing duplicated composition and logging setup. It also
+keeps UI/MVVM code out of the CLI and command-line parsing out of the UI.
+
+Alternatives considered:
+
+- Remove the console app after adding the UI.
+- Make `CreationsForge.Console` reference the Uno UI project to reuse startup helpers.
+- Keep duplicated composition and logging code in both app surfaces.
+
+Consequences:
+
+- Bootstrap references Core, Migrations, and game adapter projects.
+- UI and CLI no longer duplicate shared Autofac module registration or Serilog file logging configuration.
+- UI-only types remain in `CreationsForge`; CLI-only types remain in `CreationsForge.Console`.
+
+Related files:
+
+- `CreationsForge.Bootstrap/Composition/AutofacConfigurator.cs`
+- `CreationsForge.Bootstrap/Logging/SerilogConfigurator.cs`
+- `CreationsForge/App.xaml.cs`
+- `CreationsForge.Console/Program.cs`
+- `CreationsForge.sln`
+
+## 2026-06-06 - Use Guarded Startup And Import Progress Flow
+
+Status: Superseded by "Use Direct Main Window And Guarded Import Progress Flow"
+
+Context: First and full imports can take 5-15 minutes depending on load-order size. A main-window-only import button
+makes that operation too easy to start casually and does not handle first-run state well. The predecessor UI used a
+startup game/import flow and progress screen before the Starfield-only main workspace.
+
+Decision: `CreationsForge` starts with a startup flow that asks for a game when no active game is configured, checks
+whether the selected game has imported plugin data, warns before first or full imports, and shows an import progress
+view. The main window keeps game selection and import actions, but those actions reuse the same warning/progress flow
+instead of importing directly from the main view model.
+
+Rationale: This makes long-running imports explicit while still allowing users to switch games without restarting the
+app. It also keeps the UI multi-game and routes all import work through Core workflow services.
+
+Alternatives considered:
+
+- Keep only the main-window import buttons.
+- Force users to restart the app to switch games.
+- Port the Starfield-only startup flow without adapting it for multiple games.
+
+Consequences:
+
+- The UI has presentation-only navigation, window, and dialog services.
+- Core exposes stage-level import progress and import-readiness services.
+- Rich per-plugin progress remains future work because the current shared import workflow does not yet expose
+  per-plugin progress events.
+
+Related files:
+
+- `CreationsForge/ViewModels/StartupFlowViewModel.cs`
+- `CreationsForge/ViewModels/ImportProgressViewModel.cs`
+- `CreationsForge/ViewModels/MainViewModel.cs`
+- `CreationsForge/Views/StartupFlowView.xaml`
+- `CreationsForge/Views/ImportProgressView.xaml`
+- `CreationsForge.Core/Services/Interfaces/IGameImportReadinessService.cs`
+- `CreationsForge.Core/Services/Interfaces/IGameImportWorkflowService.cs`
+
+## 2026-06-06 - Use Direct Main Window And Guarded Import Progress Flow
+
+Status: Accepted
+
+Context: The initial guarded startup flow protected long-running imports, but it delayed access to the main window and
+kept game selection in a pre-main experience. The UI now needs active game and active plugin controls in the main
+workspace command bar while still ensuring that imports do not run inline in the main workspace.
+
+Decision: `CreationsForge` starts directly in the main view and initializes the database schema during GUI startup
+before view-model database queries run. The main view owns active-game and active-plugin autocomplete controls. If a
+valid active game is configured, or if the user selects a different active game, the UI navigates to the import
+progress view for the import and returns to the main view afterward. New and full imports continue to show the
+long-running import warning before the progress view. Active plugin choices are refreshed from imported/openable
+plugin rows for the active game after import completes.
+
+Rationale: This keeps the main workspace immediately visible while preserving the explicit long-running import
+experience. It also gives active plugin selection a persistent home in the main command bar and keeps all import work
+routed through Core workflow services.
+
+Alternatives considered:
+
+- Keep the startup flow and add plugin selection only after startup completes.
+- Run imports inline inside the main view while updating status text.
+- Make active plugin selection a modal dialog instead of a command-bar autocomplete.
+
+Consequences:
+
+- The startup flow view and view model are removed.
+- GUI startup initializes the database schema before main-window content is resolved.
+- Active game selection can trigger navigation away from the main workspace to the import progress view.
+- Active plugin selection is presentation state backed by Core plugin-query services.
+
+Related files:
+
+- `CreationsForge/App.xaml.cs`
+- `CreationsForge/MainWindow.xaml.cs`
+- `CreationsForge/ViewModels/MainViewModel.cs`
+- `CreationsForge/ViewModels/ImportProgressViewModel.cs`
+- `CreationsForge/Views/MainView.xaml`
+- `CreationsForge/Views/ImportProgressView.xaml`
+- `CreationsForge.Core/Services/Interfaces/IPluginSelectionService.cs`
+- `CreationsForge.Core/Services/Interfaces/IGameImportReadinessService.cs`
+- `CreationsForge.Core/Services/Interfaces/IGameImportWorkflowService.cs`
+
+## 2026-06-06 - Use Mutagen Environment Data Folders For Reads
+
+Status: Accepted
+
+Context: A Starfield load order imported successfully in SFRecordCompareEngine but failed in CreationsForge with
+missing header-master errors such as `sfbgs00d.esm`. The Starfield builder chain already used
+`WithLoadOrderFromHeaderMasters()` and `WithDataFolder(...)`, but CreationsForge used persisted `GameDTO.DataFolder`
+values as the read-path authority while the predecessor used `GameEnvironment.Typical.*(...).DataFolderPath`.
+
+Decision: Game adapter plugin and record reads use Mutagen environment data folder paths directly. Persisted game
+folder metadata can still be saved and displayed, but it is not the source of truth for Mutagen plugin construction.
+
+Rationale: Mutagen environment resolution matches the proven predecessor behavior and keeps load-order, data folder,
+and game-release assumptions together inside each game adapter.
+
+Alternatives considered:
+
+- Continue using persisted `GameDTO.DataFolder` for reads.
+- Add fallback logic only for Starfield.
+- Upgrade Mutagen packages before fixing path authority.
+
+Consequences:
+
+- Starfield reads use `GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield).DataFolderPath`.
+- Fallout 4 and Skyrim readers also use their corresponding Mutagen environment data folders.
+- Persisted installation and data-folder metadata remains informational.
+
+Related files:
+
+- `CreationsForge.Starfield/StarfieldPluginReaderService.cs`
+- `CreationsForge.Starfield/StarfieldRecordReaderService.cs`
+- `CreationsForge.Fallout4/Fallout4PluginReaderService.cs`
+- `CreationsForge.Fallout4/Fallout4RecordReaderService.cs`
+- `CreationsForge.Skyrim/SkyrimPluginReaderService.cs`
+- `CreationsForge.Skyrim/SkyrimRecordReaderService.cs`
+
+## 2026-06-05 - Use Shared Core Only For Proven Shared Import Shape
+
+Status: Accepted
+
+Context: CreationsForge needs to evaluate multi-game import feasibility without assuming that every Bethesda
+game has identical record headers, flags, fields, or Mutagen APIs. The initial plan overreached by implying all
+database models and repositories could live in Core.
+
+Decision: Keep Core responsible for configuration, DI-independent orchestration contracts, database initialization,
+shared key DTOs, shared Mutagen primitive mapping, and repositories for the explicitly approved shared schema. Core may
+reference shared Mutagen packages such as `Mutagen.Bethesda.Core`, but game-specific Mutagen reader and mapping code
+stays in the Starfield, Fallout4, and Skyrim projects. At the time, the console app remained the composition root.
+
+Rationale: This preserves a real game-agnostic center without forcing false sameness onto game-specific record
+details. The current schema proves the multi-game key shape while leaving room for game-specific persistence if later
+record fields diverge.
+
+Alternatives considered:
+
+- Put all record database models and repositories in Core.
+- Duplicate the entire importer and repository stack per game immediately.
+- Store raw ModKey and FormKey strings to avoid shared component modeling.
+
+Consequences:
+
+- Core repositories are limited to the approved shared application schema.
+- Core may map shared Mutagen primitives such as `ModKey`.
+- Game projects are the home for Mutagen API differences and future divergent mapping.
+- `Game` is part of plugin and record primary keys.
+- New application-schema columns store ModKey and FormKey values as primitive components.
 - DbUp `SchemaVersions` remains the migration-state source of truth.
 - No hardcoded application schema-version constants are added.
-- Comparison repositories filter by full origin `FormKey` and still sort/display by containing plugin metadata.
-- VMAD and form-list child rows include the parent origin `FormKey` columns in their parent keys.
 
 Related files:
 
-- `SFRecordCompareEngine.Migrations/Sql/001_CreatePluginSchema.sql`
-- `SFRecordCompareEngine.Core/Models/Database/FormList.cs`
-- `SFRecordCompareEngine.Core/Models/Database/ScriptingAdapter.cs`
-- `SFRecordCompareEngine.Core/Repositories/FormListRepository.cs`
-- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
-- `Documentation/Database/DATABASE.md`
-- `Documentation/Database/ERD.md`
+- `CreationsForge.Console/Program.cs`
+- `CreationsForge.Core/CoreModule.cs`
+- `CreationsForge.Core/Configuration/ApplicationConfigurationStore.cs`
+- `CreationsForge.Core/Importers/GameImporter.cs`
+- `CreationsForge.Migrations/Sql/001_CreateMultiGameImportSchema.sql`
+- `CreationsForge.Starfield/StarfieldModule.cs`
+- `CreationsForge.Fallout4/Fallout4Module.cs`
+- `CreationsForge.Skyrim/SkyrimModule.cs`
 
-## 2026-06-03 - Display VMAD Scripts In Collapsible Comparison Sections
+## 2026-06-05 - Keep Game Metadata Discovery In Game Adapters
 
 Status: Accepted
 
-Context: Supported VMAD data is hierarchical, but the original selected-record comparison UI flattened scripts,
-properties, and list items into long field labels. Records with several attached scripts become difficult to read in a
-flat scalar row grid.
+Context: Core contained a `GameMetadataService` that returned hardcoded display names and left installation metadata
+partial. Real game installation metadata depends on Mutagen APIs and game-specific package references, which are owned
+by the Starfield, Fallout4, and Skyrim adapter projects.
 
-Decision: Keep scalar record fields in the existing selected-record comparison grid and display supported VMAD data in
-a dedicated `Virtual Machine Adapter` section. Render each script as a collapsible presentation-layer section with
-property rows and load-order-sorted plugin value cells.
+Decision: Keep the shared `IGameMetadataService` contract and `GameDTO` shape in Core, but implement metadata
+discovery in each game adapter project. Plugin readers use their local metadata service before returning the selected
+`GameDTO` to the shared importer. The implemented Mutagen package version exposes installation and data folder lookup
+through `GameLocations`, so the adapters use that API for persisted folder metadata.
 
-Rationale: Script grouping matches the structure of the data without cloning xEdit's full tree UI. It keeps the scalar
-comparison stable, gives VMAD its own expand/collapse workflow, and uses the existing Uno/WinUI control surface instead
-of adding a new toolkit dependency.
-
-Alternatives considered:
-
-- Keep VMAD flattened into scalar comparison rows.
-- Clone xEdit's full hierarchical tree table.
-- Move VMAD details into a separate dialog.
-- Add an explicit Uno Toolkit package before confirming the existing Uno/WinUI controls are sufficient.
-
-Consequences:
-
-- VMAD comparison state is presentation-specific and lives in the presentation project.
-- Scalar comparison rows no longer include VMAD script/property/list-item labels.
-- VMAD script sections can be collapsed, expanded for changed scripts, and filtered to changed properties.
-- The same green, red, and yellow comparison state colors remain available for VMAD property values.
-
-Related files:
-
-- `SFRecordCompareEngine/Views/MainView.xaml`
-- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
-- `SFRecordCompareEngine/ViewModels/RecordComparisonScriptViewModel.cs`
-- `SFRecordCompareEngine/ViewModels/RecordComparisonScriptPropertyViewModel.cs`
-
-## 2026-06-02 - Normalize Supported VMAD Script Data In Shared Child Tables
-
-Status: Accepted
-
-Context: Already-supported Starfield record imports need to persist Mutagen `VirtualMachineAdapter` script data.
-Multiple typed record tables can expose VMAD, but the current cache schema has no shared child-table design for that
-data.
-
-Decision: Persist supported VMAD script data in three shared tables: `ScriptingAdapters`,
-`ScriptingAdapterProperties`, and `ScriptingAdapterPropertyListItems`. Key the shared rows by plugin `ModKey`,
-typed-parent `RecordType`, parent `FormKey_ID`, and the child identity needed for script, property, and list-item
-ordering.
-
-Rationale: This keeps the cache normalized, avoids JSON blobs, preserves script/property/list ordering, and fits the
-existing explicit DTO, repository, service, and importer pattern.
+Rationale: This keeps Core as a loose shared wrapper and prevents it from inventing partial game data. It also
+preserves the existing dependency direction: game projects can reference Mutagen game packages, while Core remains
+free of game-specific Mutagen dependencies.
 
 Alternatives considered:
 
-- Store VMAD payloads as JSON.
-- Create one VMAD table set per supported parent record type.
-- Flatten list items into the property table.
+- Keep hardcoded Core metadata and leave folder fields null.
+- Add game-specific Mutagen package references to Core.
+- Put metadata discovery directly in each plugin reader without a dedicated service.
 
 Consequences:
 
-- Supported records now hydrate persisted VMAD scripting data through Core services.
-- The comparison workspace can display VMAD scripts, properties, and supported list items.
-- `RecordType` and full origin `FormKey` identity are required on the shared VMAD tables because numeric
-  `FormKey_ID` is not globally unique across typed record tables or origin plugins.
-- Struct and variable VMAD property families remain out of scope until a deeper normalized schema is approved.
+- Core no longer contains a concrete metadata service.
+- Game adapters own Mutagen-backed game metadata discovery.
+- `Games.InstallationFolder` and `Games.DataFolder` can now be populated from Mutagen location lookup.
+- DbUp `SchemaVersions` remains the migration-state source of truth.
+- No hardcoded application schema-version constants are added.
 
 Related files:
 
-- `SFRecordCompareEngine.Migrations/Sql/001_CreatePluginSchema.sql`
-- `SFRecordCompareEngine.Core/Services/StarfieldRecordReaderService.cs`
-- `SFRecordCompareEngine.Core/Services/ScriptingAdapterImportService.cs`
-- `SFRecordCompareEngine.Core/Services/ScriptingAdapterHydrationService.cs`
-- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
-
-## 2026-06-01 - Use Release Tags As Package Version Source
-
-Status: Accepted
-
-Context: Release packages need a stable semantic version shared by ZIP files, installers, assembly metadata, and
-Debian package metadata. A tracked `Tools/Release-Version.txt` counter cannot be updated by a tag-triggered build
-without creating an additional commit.
-
-Decision: Use the pushed `vmajor.minor.patch` Git tag as the release version source of truth. Strip the leading `v`
-inside the GitHub Actions validation job and pass the resulting `major.minor.patch` value explicitly to every
-packaging script. Keep the packaged changelog, known-issues document, and roadmap.
-
-Rationale: Release tags are already unique, intentional release triggers. Using the same value for artifacts and
-embedded metadata avoids mutable build-time version files and keeps local packaging deterministic.
-
-Alternatives considered:
-
-- Commit and increment `Tools/Release-Version.txt`.
-- Use the GitHub Actions run number as the patch version.
-- Rewrite the changelog during CI.
-
-Consequences:
-
-- `Tools/Release-Version.txt` is removed.
-- Packaging scripts require an explicit semantic version.
-- A `v1.2.3` tag produces artifacts and package metadata with version `1.2.3`.
-- Repository release documents continue to be bundled with application packages.
-
-Related files:
-
-- `.github/workflows/package-release.yml`
-- `Tools/Package-Application.ps1`
-- `Tools/Build-Installer.ps1`
-- `Tools/Build-DebianPackage.ps1`
-- `Tools/Build-Release.ps1`
-
-## 2026-06-01 - Reimport Plugin Cache After Schema Changes
-
-Status: Accepted
-
-Context: Plugin imports use source fingerprints to skip unchanged files. Additive cache schema migrations can require
-new metadata to be populated even when plugin files did not change. Users also need an explicit way to rebuild cached
-plugin metadata and supported record rows.
-
-Decision: Return whether DbUp applied scripts from `DatabaseMigrationRunner` through `DatabaseSchemaInitializer`.
-Consume that one-run result in `PluginImportService` and bypass source-fingerprint skips for the same import pass.
-Expose the same behavior through a File-menu and toolbar full-reimport command. Persist Mutagen header record counts and
-use the existing persisted header flags for status display.
-
-Rationale: A direct return value keeps the schema-triggered reimport deterministic and UI-neutral. It avoids persistent
-configuration state that could force repeated imports or be cleared before the importer consumes it.
-
-Alternatives considered:
-
-- Store a force-reimport flag in application configuration.
-- Raise a global migration event.
-- Require users to delete the cache manually after migrations.
-
-Consequences:
-
-- DbUp `SchemaVersions` remains the only migration-state source of truth.
-- Successfully applied migrations force the current plugin import pass to refresh unchanged files.
-- Users can force the same refresh from the main command surface.
-- The `Plugins` table stores header record count and uses existing header flags for plugin classification.
-
-Related files:
-
-- `SFRecordCompareEngine.Migrations/DatabaseMigrationRunner.cs`
-- `SFRecordCompareEngine.Migrations/Sql/001_CreatePluginSchema.sql`
-- `SFRecordCompareEngine.Core/Database/DatabaseSchemaInitializer.cs`
-- `SFRecordCompareEngine.Core/Services/PluginImportService.cs`
-- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
-
-## 2026-06-01 - Use Per-User Linux Application Data
-
-Status: Accepted
-
-Context: The Debian package installs application binaries under `/opt`, but launches the application as the current
-desktop user. The existing default application-data location used `Environment.SpecialFolder.CommonApplicationData`,
-which resolves to a system-owned location on Linux and prevents an unprivileged user from creating the SQLite database,
-configuration file, and logs during startup.
-
-Decision: Use `~/.SFRecordCompareEngine` as the default application-data directory on Linux. Continue using
-`<CommonApplicationData>/SFRecordCompareEngine` on other platforms.
-
-Rationale: Linux desktop application state must be writable by the user launching the installed application. Keeping
-the existing non-Linux default avoids changing Windows persistence behavior.
-
-Alternatives considered:
-
-- Provision a world-writable shared directory from the Debian package.
-- Require users to launch the application with elevated permissions.
-- Use the existing common application-data path on every platform.
-
-Consequences:
-
-- Linux config JSON, SQLite database, and log files default to `~/.SFRecordCompareEngine`.
-- Windows config JSON, SQLite database, and log locations remain unchanged.
-- Explicitly configured paths remain supported.
-
-Related files:
-
-- `SFRecordCompareEngine.Core/Configuration/ApplicationConfigurationStore.cs`
-- `SFRecordCompareEngine.Core/Models/Database/SqliteDatabaseOptions.cs`
-- `Documentation/Database/DATABASE.md`
-
-## 2026-06-01 - Replace WinUI-Only Presentation With Uno Skia Desktop
-
-Status: Accepted
-
-Context: The application needs to continue running on Windows while adding a native Linux desktop distribution path
-for users running Starfield through Proton. The existing WinUI 3 presentation project is Windows-only.
-
-Decision: Replace the WinUI-only application host with Uno Platform Skia Desktop. Keep the existing WinUI-compatible
-XAML views during the platform migration. Configure the host for Win32 on Windows and X11 on Linux. Continue producing
-a Windows ZIP and Inno Setup installer, and add Linux ZIP and Debian packages. Generate release packages through
-GitHub Actions when a matching version tag is pushed from the current `master` HEAD.
-
-Rationale: Uno preserves the current XAML, MVVM structure, and control model while enabling a shared Windows and Linux
-desktop build. Keeping XAML during this phase separates platform migration issues from a later C# Markup refactor.
-
-Alternatives considered:
-
-- Continue distributing the WinUI build for Proton execution.
-- Replace WinUI with Avalonia.
-- Convert to Uno C# Markup during the platform migration.
-- Return to MAUI.
-
-Consequences:
-
-- The presentation project targets Uno Skia Desktop and selects Win32 or X11 at runtime.
-- Core, migrations, and unit tests target cross-platform .NET instead of Windows-specific TFMs.
-- Linux SQLite packaging, app-data permissions, and Proton-aware Starfield discovery still require Linux validation.
-- Matching `vmajor.minor.patch` tag pushes from the current `master` HEAD generate Windows ZIP, Inno Setup installer,
-  Linux ZIP, and Debian artifacts.
-- A later presentation-only change can migrate XAML views to Uno C# Markup incrementally.
-- The `2026-05-29 - Revert Presentation Layer To WinUI` decision is superseded.
-
-Related files:
-
-- `SFRecordCompareEngine/SFRecordCompareEngine.csproj`
-- `SFRecordCompareEngine/Platforms/Desktop/Program.cs`
-- `SFRecordCompareEngine/Services/DesktopApplicationWindowService.cs`
-- `Tools/Package-Application.ps1`
-- `Tools/Build-Release.ps1`
-- `Tools/Build-Installer.ps1`
-- `Tools/Build-DebianPackage.ps1`
-- `.github/workflows/package-release.yml`
-
-## 2026-05-30 - Highlight Conflicts Across Visible Comparison Columns
-
-Status: Accepted
-
-Context: The selected-record comparison workspace shows load-order-sorted plugin columns but does not visually
-distinguish identical values from conflicts. The current query returns every imported plugin containing the same typed
-record, which is broader than a strict recursive-master hierarchy.
-
-Decision: Highlight comparable rows green when all visible plugin values match and red when any visible value differs.
-Treat blank values as values so a missing form-list occurrence conflicts with a populated occurrence. Keep
-informational identity rows and single-column comparisons neutral. Highlight the far-right visible value yellow in a
-conflicting row because it is the winning override within the displayed load-order-sorted set.
-
-Rationale: Green, red, and yellow provide deterministic conflict detection for the implemented visible comparison set.
-Yellow distinguishes the effective displayed winner without implying recursive-master hierarchy filtering that the
-application does not yet calculate.
-
-Alternatives considered:
-
-- Add yellow highlighting to every lower load-order plugin.
-- Treat blank values as neutral.
-- Highlight identity rows such as `FormKey`.
-
-Consequences:
-
-- Comparison labels and cells share row-level conflict highlighting.
-- The far-right value in a conflicting row uses yellow winning-override highlighting.
-- A persistent legend above the status area explains the green, red, and yellow states.
-- The active plugin column retains its golden border.
-- A later hierarchy feature can narrow the displayed comparison set without changing the color meanings.
-
-Related files:
-
-- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
-- `SFRecordCompareEngine/ViewModels/RecordComparisonFieldViewModel.cs`
-- `SFRecordCompareEngine/ViewModels/RecordComparisonValueViewModel.cs`
-- `SFRecordCompareEngine/Converters/RecordComparisonValueBackgroundBrushConverter.cs`
-- `SFRecordCompareEngine/Views/MainView.xaml`
-
-## 2026-05-30 - Keep Game Setting Comparison Focused On Mutagen-Backed Fields
-
-Status: Accepted
-
-Context: The game-setting schema included `TitleString`, but Mutagen's Starfield game-setting records do not expose or
-populate that field. The comparison workspace also displayed internal version fields and raw diagnostic fields that
-were not useful for routine record comparison.
-
-Decision: Remove `TitleString` from game-setting DTOs, database models, and the initial schema. Hide `FormVersion`,
-`Version2`, and `VersionControl` from all comparison views. Hide game-setting `RawData` and `XALG` from comparison
-views while retaining their persisted diagnostic values. Display named Starfield major-record flags instead of raw
-integers.
-
-Rationale: Comparison views should show meaningful record differences without presenting unsupported or redundant
-fields. Persisted diagnostics can remain available without adding noise to the main workflow.
-
-Alternatives considered:
-
-- Keep `TitleString` as an always-empty placeholder.
-- Remove all hidden diagnostic fields from persistence.
-- Continue displaying numeric record flags.
-
-Consequences:
-
-- Existing cache databases must be recreated because the initial schema changes.
-- Comparison grids are smaller and show named major-record flags.
-- `RawData` and `XALG` remain available in persistence for future diagnostics.
-
-Related files:
-
-- `SFRecordCompareEngine.Migrations/Sql/001_CreatePluginSchema.sql`
-- `SFRecordCompareEngine.Core/DTOs/Records/GameSettingDTO.cs`
-- `SFRecordCompareEngine.Core/Models/Database/GameSetting.cs`
-- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
-
-## 2026-05-30 - Store Plugin Master References As Relationship Edges
-
-Status: Accepted
-
-Context: `PluginMasterReferences` persisted load-order indexes for both the declared master and the declaring plugin.
-Those values duplicated `Plugins.LoadOrderIndex`. The table also used ambiguous child and parent naming and a unique
-index that rejected a master plugin referenced by multiple plugins.
-
-Decision: Persist only the declared-master and declaring-plugin `ModKey` tuples plus the import timestamp. Name the
-column groups `Master_ModKey_*` and `Plugin_ModKey_*`. Use the composite relationship primary key for uniqueness and
-derive master ordering from `Plugins.LoadOrderIndex` when reading.
-
-Rationale: The table models an edge in the plugin dependency graph. Storing load-order indexes on the relationship
-duplicates plugin metadata and can reject valid relationships or drift when load order changes.
-
-Alternatives considered:
-
-- Expand the unique index to include both plugin keys.
-- Rename and retain duplicated load-order columns.
-- Store a header master-list ordinal.
-
-Consequences:
-
-- A master plugin can be referenced by multiple declaring plugins.
-- Master-reference reads join `Plugins` to order results by the declared master's current load-order index.
-- The initial schema script must recreate local cache databases that already applied its previous shape.
-
-Related files:
-
-- `SFRecordCompareEngine.Migrations/Sql/001_CreatePluginSchema.sql`
-- `SFRecordCompareEngine.Core/Models/Database/PluginMasterReference.cs`
-- `SFRecordCompareEngine.Core/DTOs/Plugins/PluginMasterReferenceDTO.cs`
-- `SFRecordCompareEngine.Core/Repositories/PluginMasterReferencesRepository.cs`
-- `SFRecordCompareEngine.Core/Services/PluginImportService.cs`
-
-## 2026-05-30 - Route Presentation Browsing Through Typed Core Services
-
-Status: Accepted
-
-Context: Presentation view models need form list, game setting, and plugin data for the left tree, selected-record
-comparison workspace, and open-plugin dialog. Direct repository access from view models couples UI coordination to
-persistence boundaries and leaves no service layer for record-specific transformations or business rules.
-
-Decision: Add `FormListService` and `GameSettingService` as UI-neutral typed Core services. Extend `PluginService` with
-plugin browsing operations. Presentation view models call these services instead of repository interfaces.
-
-Rationale: Typed services preserve the existing record-type organization while establishing a stable boundary between
-MVVM code and persistence. Future record-specific transformations belong in the relevant service.
-
-Alternatives considered:
-
-- Keep direct repository access in view models.
-- Add a broad record-browser service.
-- Add presentation-layer repository wrappers.
-
-Consequences:
-
-- Presentation view models no longer depend on Core repository interfaces.
-- Typed services own repository access for browsing workflows.
-- New browsable record types should add corresponding typed services.
-
-Related files:
-
-- `SFRecordCompareEngine.Core/Services/FormListService.cs`
-- `SFRecordCompareEngine.Core/Services/GameSettingService.cs`
-- `SFRecordCompareEngine.Core/Services/PluginService.cs`
-- `SFRecordCompareEngine/ViewModels/MainPageViewModel.cs`
-- `SFRecordCompareEngine/ViewModels/OpenPluginDialogViewModel.cs`
-
-## 2026-05-30 - Preserve Form List Item Order And Duplicate Occurrences
-
-Status: Accepted
-
-Context: Starfield form lists are ordered sequences. Duplicate item references are valid, and the selected-record
-comparison workspace needs to display each occurrence in source order.
-
-Decision: Persist `FormListItems.Item_Index` from source enumeration order. Include the index in the row identity,
-delete existing item rows before rewriting a form list, and query item rows with `ORDER BY Item_Index`.
-
-Rationale: SQLite does not guarantee insertion-order reads without `ORDER BY`. A persisted occurrence index preserves
-deterministic display order, keeps valid duplicate references separate, and prevents stale trailing rows after a
-shorter list is reimported.
-
-Alternatives considered:
-
-- Depend on SQLite's observed insertion order without an explicit sort.
-- Deduplicate identical references.
-- Use only referenced form identity as the row key.
-
-Consequences:
-
-- Form list item rows remain ordered and duplicate-preserving.
-- Reimport replaces an owning form list's item sequence before saving its current entries.
-- Selected-record comparison can align list occurrences by index and leave missing values blank.
-
-Related files:
-
-- `SFRecordCompareEngine.Migrations/Sql/001_CreatePluginSchema.sql`
-- `SFRecordCompareEngine.Core/Models/Database/FormListItem.cs`
-- `SFRecordCompareEngine.Core/Importers/Starfield/FormListImporter.cs`
-- `SFRecordCompareEngine.Core/Repositories/FormListItemRepository.cs`
-
-## 2026-05-30 - Use Existing Typed Record Identity For Cross-Plugin Comparison
-
-Status: Superseded by `2026-06-03 - Persist Full Origin FormKey For Record Comparison`
-
-Supersession note: This decision is historical and no longer describes the implemented comparison identity rule.
-
-Context: The comparison workspace needs to locate every imported plugin containing a selected record. Typed record
-tables already store the containing plugin's `ModKey` columns and the record's numeric `FormKey_ID`. Multiple plugin
-rows can share the same `FormKey_ID`.
-
-Decision: Query typed record tables by `FormKey_ID` to find cross-plugin comparison rows. Use each result row's
-containing-plugin `ModKey` columns and plugin metadata to identify sources and order them by load order. Do not add
-origin-plugin columns or persist `FormKey` as a second `ModKey` tuple for this workflow.
-
-Rationale: The existing database shape already returns every containing plugin row needed for comparison. `ModKey`
-identifies a plugin file, while `FormKey_ID` identifies the record across those rows. Additional origin-plugin columns
-would duplicate concepts and add unnecessary migration and reimport work.
-
-Alternatives considered:
-
-- Add another persisted plugin-key tuple for `FormKey`.
-- Reimport typed rows after introducing origin-plugin columns.
-- Match records through display-only `FormID` values.
-
-Consequences:
-
-- No schema migration is required for cross-plugin typed-record comparison.
-- Comparison repository queries should filter by `FormKey_ID` and order results through plugin load-order metadata.
-- Presentation-only `FormID` conversion continues to use Mutagen helpers and active-plugin context.
-
-Related files:
-
-- `SFRecordCompareEngine.Migrations/Sql/001_CreatePluginSchema.sql`
-- `SFRecordCompareEngine.Core/Models/Database/FormList.cs`
-- `SFRecordCompareEngine.Core/Models/Database/GameSetting.cs`
-- `SFRecordCompareEngine.Core/DTOs/Records/FormListDTO.cs`
-- `SFRecordCompareEngine.Core/DTOs/Records/GameSettingDTO.cs`
-
-## 2026-05-29 - Revert Presentation Layer To WinUI
+- `CreationsForge.Core/Services/Interfaces/IGameMetadataService.cs`
+- `CreationsForge.Starfield/StarfieldGameMetadataService.cs`
+- `CreationsForge.Fallout4/Fallout4GameMetadataService.cs`
+- `CreationsForge.Skyrim/SkyrimGameMetadataService.cs`
+- `CreationsForge.Starfield/StarfieldPluginReader.cs`
+- `CreationsForge.Fallout4/Fallout4PluginReader.cs`
+- `CreationsForge.Skyrim/SkyrimPluginReader.cs`
+
+## 2026-06-05 - Preserve Starfield Header-Master Construction
 
 Status: Superseded
 
-Context: The application is Windows-only and needs standard Windows desktop UI surfaces, including a menu bar, toolbar, 
-and future grid-based browsing workflows. The MAUI presentation layer failed to reliably render menu and toolbar 
-behavior after startup import navigation, and in-page workarounds behaved like normal page content instead of desktop 
-chrome.
+Context: Starfield plugin metadata and master-reference reads must account for Starfield-specific master behavior,
+including split masters, medium masters, and overlays. Mutagen exposes `WithLoadOrderFromHeaderMasters()` for the
+Starfield binary read builder, and this construction path is required to resolve those header masters correctly.
+Fallout 4 and Skyrim do not expose the same builder path in the Mutagen package version used by this project, and
+their current master-reference behavior does not require it.
 
-Decision: Replace the MAUI presentation layer with WinUI 3 and Windows App SDK while keeping 
-`SFRecordCompareEngine.Core` UI-neutral.
+Decision: Starfield plugin metadata and master-reference reads must use `WithLoadOrderFromHeaderMasters()`. Fallout 4
+and Skyrim readers use their normal construction paths unless future Mutagen or game-specific behavior requires a
+different game-specific path.
 
-Rationale: WinUI directly owns the Windows desktop controls and shell patterns the application needs. It avoids 
-cross-platform abstraction issues for a Windows-only tool and keeps standard controls such as `MenuBar`, `CommandBar`, 
-`ContentDialog`, and future grid controls in the native presentation framework.
+Rationale: Treating Starfield like the older games can corrupt or omit master-reference information. The Starfield
+reader is intentionally different so future refactors do not replace the required header-master construction with a
+generic construction path.
 
 Alternatives considered:
 
-- Continue MAUI and add more page-level workarounds.
-- Embed WinUI controls around MAUI content.
-- Adopt Microsoft.UI.Reactor.
-- Move to Uno Platform.
-- Move to Avalonia.
-- Move to WPF.
+- Use generic construction for all games.
+- Use load-order import for Starfield metadata and master-reference reads.
+- Force the same header-master builder pattern onto Fallout 4 and Skyrim.
 
 Consequences:
 
-- The presentation project uses WinUI XAML, `App`, `MainWindow`, views, and Windows App SDK services.
-- MAUI project settings, pages, and resources are removed from the active build.
-- Core remains independent from presentation UI framework references.
-- Documentation uses WinUI terminology for the implemented presentation framework.
+- Starfield plugin reads remain intentionally game-specific.
+- Future refactors must preserve `WithLoadOrderFromHeaderMasters()` in Starfield metadata and master-reference reads.
+- Fallout 4 and Skyrim remain on normal construction paths unless a concrete game-specific need appears.
+- DbUp `SchemaVersions` remains the migration-state source of truth.
+- No hardcoded application schema-version constants are added.
+- Superseded by the later environment mod-object load-order decision for Starfield reads.
 
 Related files:
 
-- `SFRecordCompareEngine/SFRecordCompareEngine.csproj`
-- `SFRecordCompareEngine/App.xaml`
-- `SFRecordCompareEngine/App.xaml.cs`
-- `SFRecordCompareEngine/MainWindow.xaml`
-- `SFRecordCompareEngine/MainWindow.xaml.cs`
-- `SFRecordCompareEngine/Views/StartupImportView.xaml`
-- `SFRecordCompareEngine/Views/MainView.xaml`
-- `SFRecordCompareEngine/Views/OpenPluginDialog.xaml`
-- `SFRecordCompareEngine/Services/ApplicationNavigationService.cs`
-- `SFRecordCompareEngine/Services/WindowsApplicationWindowService.cs`
+- `CreationsForge.Starfield/StarfieldPluginReader.cs`
+- `CreationsForge.Fallout4/Fallout4PluginReader.cs`
+- `CreationsForge.Skyrim/SkyrimPluginReader.cs`
 
-## 2026-05-29 - Persist Application Theme In Configuration
+## 2026-06-05 - Read Plugins In Game Adapter Projects
 
 Status: Accepted
 
-Context: The WinUI shell needs consistent light and dark theme behavior. Partial per-control brush overrides caused
-menu and toolbar visual states to become inconsistent.
+Context: The game plugin readers returned empty plugin lists, so imports saved the selected game row but never
+persisted the installed game's plugin load order. Plugin discovery depends on Mutagen game packages and local
+installed-game state.
 
-Decision: Store the selected theme in `ApplicationConfiguration` and apply it through the WinUI shell root. The default
-theme is `Dark`. The setting is edited through the Options dialog opened from `File -> Options` or the toolbar
-`Settings` command.
+Decision: Implement plugin discovery in the Starfield, Fallout4, and Skyrim adapter projects with Mutagen
+`LoadOrder.Import<TModGetter>()`. Each adapter maps discovered load-order entries to the shared `PluginDTO` shape and
+uses existing Core repositories through the shared importer.
 
-Rationale: Theme is application state and should be handled through one persisted setting rather than scattered visual
-workarounds.
-
-Alternatives considered:
-
-- Force light mode only.
-- Keep per-control resource overrides.
-- Defer theme support until later.
-
-Consequences:
-
-- Application configuration JSON includes a `Theme` field.
-- Existing configuration files without a theme continue to load and default to `Dark`.
-- The presentation shell applies `ElementTheme.Dark` or `ElementTheme.Light` at runtime.
-
-Related files:
-
-- `SFRecordCompareEngine.Core/Models/Configuration/ApplicationConfiguration.cs`
-- `SFRecordCompareEngine.Core/Models/Configuration/ApplicationThemeMode.cs`
-- `SFRecordCompareEngine.Core/Configuration/ApplicationConfigurationStore.cs`
-- `SFRecordCompareEngine/ViewModels/SettingsViewModel.cs`
-- `SFRecordCompareEngine/Views/SettingsDialog.xaml`
-- `SFRecordCompareEngine/MainWindow.xaml`
-
-## 2026-05-28 - Document Current .NET MAUI Architecture
-
-Status: Superseded by `2026-05-29 - Revert Presentation Layer To WinUI`
-
-Context: The current presentation project uses .NET MAUI for Windows. The project file enables `UseMaui`, references 
-`Microsoft.Maui.Controls`, and the UI is implemented with MAUI `Application`, `Window`, `ContentPage`, and code-built 
-MAUI controls. Some repo instruction text still refers to a WPF application.
-
-Decision: Treat .NET MAUI Windows as the current presentation framework in project documentation. Stale WPF wording 
-should be replaced with .NET MAUI wording when instruction and template files are explicitly approved for editing.
-
-Rationale: Durable project documentation must describe the implemented system instead of older framework terminology.
+Rationale: Core remains a loose shared wrapper and does not need game-specific Mutagen package references. The game
+adapter projects own Mutagen load-order and header access while Core continues to orchestrate shared persistence and
+map shared Mutagen primitives.
 
 Alternatives considered:
 
-- Preserve WPF wording for consistency with existing instructions.
-- Describe the app as both WPF and MAUI.
+- Keep plugin readers as empty placeholders.
+- Move load-order discovery into Core.
+- Add a new shared Mutagen helper project before the repeated adapter mapping proves stable.
 
 Consequences:
 
-- New documentation uses .NET MAUI terminology.
-- Future planning should treat MAUI pages, view models, commands, and services as the presentation boundary.
-- Instruction/template files that still say WPF remain known stale references until explicitly edited.
+- `Plugins` rows can now be populated for each supported game.
+- Shared Mutagen primitive mapping can live in Core without adding game-specific package references.
+- Master-reference and typed-record imports remain follow-up work.
+- DbUp `SchemaVersions` remains the migration-state source of truth.
+- No hardcoded application schema-version constants are added.
 
 Related files:
 
-- `SFRecordCompareEngine/SFRecordCompareEngine.csproj`
-- `SFRecordCompareEngine/App.cs`
-- `SFRecordCompareEngine/MauiProgram.cs`
-- `SFRecordCompareEngine/Pages/StartupImportPage.cs`
-- `SFRecordCompareEngine/Pages/MainPage.cs`
-- `SFRecordCompareEngine/Pages/OpenPluginDialogPage.cs`
+- `CreationsForge.Core/DTOs/Plugins/PluginDTO.cs`
+- `CreationsForge.Core/Utilities/ModKeyDTOMapper.cs`
+- `CreationsForge.Core/Importers/GameImporter.cs`
+- `CreationsForge.Starfield/StarfieldPluginReader.cs`
+- `CreationsForge.Fallout4/Fallout4PluginReader.cs`
+- `CreationsForge.Skyrim/SkyrimPluginReader.cs`
 
-## 2026-05-28 - Keep Core UI-Neutral
+## 2026-06-05 - Persist Game-Specific Plugin Header Extensions
 
 Status: Accepted
 
-Context: The solution separates the MAUI presentation project from `SFRecordCompareEngine.Core`. Core contains import, 
-persistence, Mutagen, DTO, and repository logic.
+Context: The shared `Plugins` table captures common load-order and plugin header metadata, but Mutagen exposes scalar
+header fields that differ by game. Starfield exposes `Branch`, `InteriorCellCount`, and scalar `INTV`; Fallout 4
+exposes scalar `INCC`; Skyrim exposes scalar `INCC` and scalar `INTV`. Some additional fields are binary slices or
+lists and need a separate persistence decision before they are stored.
 
-Decision: Keep MAUI pages, view models, commands, navigation, dialogs, and platform window behavior in 
-`SFRecordCompareEngine`. Keep Core focused on UI-neutral services, DTOs, models, repositories, importers, and database 
-support.
+Decision: Keep `Plugins` as the shared base table and add game-specific plugin extension tables for audited scalar
+header fields. `GameImporter` remains the shared workflow and calls optional `IPluginExtensionImporter`
+implementations after saving the base plugin row. Game-specific read views join `Plugins` to the extension tables for
+query convenience.
 
-Rationale: This preserves testability and keeps business and persistence behavior independent from the presentation 
-framework.
+Rationale: This preserves a relational base-plus-extension model without duplicating the import workflow. It also
+keeps game-specific Mutagen package usage and field mapping in the adapter projects while allowing Core to coordinate
+extension persistence through a game-agnostic interface.
 
 Alternatives considered:
 
-- Move reusable UI orchestration into Core.
-- Let Core expose bindable state or command abstractions.
+- Add nullable game-specific columns directly to `Plugins`.
+- Duplicate the entire importer workflow per game.
+- Store all game-specific header values in JSON or binary columns immediately.
 
 Consequences:
 
-- Presentation-specific services coordinate navigation and dialogs.
-- Core services communicate through DTOs, result objects, progress DTOs, and async methods.
-- Core must not reference MAUI or other UI framework packages.
+- Plugin imports now save base rows before optional game-specific extension rows.
+- `StarfieldPlugins`, `Fallout4Plugins`, and `SkyrimPlugins` are keyed to `Plugins` with cascading deletes.
+- Binary/list header fields are audited but not persisted in this slice.
+- DbUp `SchemaVersions` remains the migration-state source of truth.
+- No hardcoded application schema-version constants are added.
 
 Related files:
 
-- `SFRecordCompareEngine.Core/CoreModule.cs`
-- `SFRecordCompareEngine/MauiProgram.cs`
-- `SFRecordCompareEngine/ViewModels/StartupImportViewModel.cs`
-- `SFRecordCompareEngine/Services/ApplicationNavigationService.cs`
+- `CreationsForge.Core/Importers/Interfaces/IPluginExtensionImporter.cs`
+- `CreationsForge.Core/Importers/GameImporter.cs`
+- `CreationsForge.Migrations/Sql/002_AddGameSpecificPluginExtensions.sql`
+- `CreationsForge.Starfield/DTOs/StarfieldPluginDTO.cs`
+- `CreationsForge.Fallout4/DTOs/Fallout4PluginDTO.cs`
+- `CreationsForge.Skyrim/DTOs/SkyrimPluginDTO.cs`
 
-## 2026-05-28 - Use DbUp Migrations For SQLite Schema State
+## 2026-06-05 - Align Plugin Import Flow With SFRecordCompareEngine
 
 Status: Accepted
 
-Context: SQLite schema is created through embedded SQL scripts executed by DbUp. DbUp maintains its migration history 
-in `SchemaVersions`.
+Context: CreationsForge was intended to generalize the proven SFRecordCompareEngine import behavior across
+Starfield, Fallout 4, and Skyrim, but the initial multi-game implementation drifted into a simpler workflow. It saved
+each plugin, immediately saved that plugin's master references, and then invoked record importers. That ordering could
+violate `PluginMasterReferences` foreign keys when a master plugin row was not yet saved. The workflow also did not
+preserve the SFRecordCompareEngine source-fingerprint behavior for unchanged, changed, missing, failed, and
+unsupported plugins, and the plugin repositories hand-wrote upsert SQL instead of using NPoco database models.
 
-Decision: Use DbUp `SchemaVersions` as the migration state source of truth. Do not add application-defined 
-schema-version constants.
+Decision: Keep the multi-game project split, but align the plugin import workflow with SFRecordCompareEngine. Game
+plugin readers now expose load-order entries, source fingerprints, header-level metadata, and declared master
+references separately. `GameImporter` saves all eligible plugin rows before importing master references, skips missing
+master endpoints, and runs typed record importers last. Plugin source fingerprints are used to skip unchanged plugins
+unless a forced reimport is requested. Missing, unsupported, and failed plugins are persisted with their import states
+and skipped for later expensive phases. Core `Plugins` and `PluginMasterReferences` persistence now uses NPoco database
+models with `Database.Save`.
 
-Rationale: A single migration-state mechanism avoids drift between code constants and applied SQL scripts.
+Rationale: This restores the working behavior from SFRecordCompareEngine while preserving the multi-game boundaries.
+Separating source-info reads from metadata reads avoids unnecessary metadata and record work for unchanged or missing
+plugins. Saving all plugin rows before master references satisfies the declared SQLite foreign keys without weakening
+the schema.
 
 Alternatives considered:
 
-- Track a separate numeric schema version in application code.
-- Create tables directly in repository or initializer code.
+- Keep the per-plugin save/master-reference/record sequence and remove master-reference foreign keys.
+- Continue using explicit SQL upserts for plugin repositories.
+- Port all typed record import behavior in the same change.
 
 Consequences:
 
-- New schema changes belong in `SFRecordCompareEngine.Migrations/Sql`.
-- Schema state should be verified through DbUp migration history.
-- `DatabaseSchemaInitializer` delegates migration execution to `IDatabaseMigrationRunner`.
+- `GameImporter` has richer plugin-state behavior and result counts.
+- Game plugin readers expose more granular import operations.
+- `IPluginRepository` now supports ModKey lookup by game.
+- Plugin and master-reference save behavior is model-backed through NPoco.
+- Typed record import remains a follow-up; the current typed record readers still return empty lists.
+- DbUp `SchemaVersions` remains the migration-state source of truth.
+- No hardcoded application schema-version constants are added.
 
 Related files:
 
-- `SFRecordCompareEngine.Core/Database/DatabaseSchemaInitializer.cs`
-- `SFRecordCompareEngine.Migrations/DatabaseMigrationRunner.cs`
-- `SFRecordCompareEngine.Migrations/Sql/001_CreatePluginSchema.sql`
+- `CreationsForge.Core/Importers/GameImporter.cs`
+- `CreationsForge.Core/Importers/Interfaces/IGamePluginReader.cs`
+- `CreationsForge.Core/Repositories/PluginRepository.cs`
+- `CreationsForge.Core/Repositories/PluginMasterReferenceRepository.cs`
+- `CreationsForge.Core/Models/Database/Plugin.cs`
+- `CreationsForge.Core/Models/Database/PluginMasterReference.cs`
+- `CreationsForge.Starfield/StarfieldPluginReader.cs`
+- `CreationsForge.Fallout4/Fallout4PluginReader.cs`
+- `CreationsForge.Skyrim/SkyrimPluginReader.cs`
 
-## 2026-05-28 - Import Plugin Data Into Local SQLite Cache
+## 2026-06-05 - Split Game Plugin Readers Into Reader Services
 
 Status: Accepted
 
-Context: Mutagen reads plugin files from the local Starfield installation. The application needs durable local data for 
-browsing and comparison workflows.
+Context: The game plugin readers were overloaded with multiple responsibilities: installed-game metadata access,
+load-order discovery, source fingerprint reads, unsupported-plugin policy, header-level plugin metadata construction,
+and declared master-reference reads. SFRecordCompareEngine already uses a reader-service pattern for Starfield that
+keeps these Mutagen and file-system operations in a focused service.
 
-Decision: Import plugin metadata, master references, and selected typed record details into a local SQLite database 
-under the application data directory.
+Decision: Keep `IGamePluginReader` as the Core-facing importer contract, but make each concrete game plugin reader a
+thin facade over a game-specific plugin reader service. The services own load-order, source-info, header-metadata,
+unsupported-policy, and master-reference behavior inside their game adapter projects. Starfield service reads preserve
+`WithLoadOrderFromHeaderMasters()` for metadata and master-reference construction. Fallout 4 and Skyrim services keep
+their normal construction paths.
 
-Rationale: A local cache supports startup discovery, change detection, later browsing, and comparison workflows without 
-repeatedly parsing every plugin for every UI interaction.
+Rationale: This ports the proven SFRecordCompareEngine shape without moving game-specific Mutagen dependencies into
+Core or changing the shared import workflow. It also creates smaller seams for testing source-info behavior and
+game-specific unsupported-plugin policy.
 
 Alternatives considered:
 
-- Read all plugin data directly from files on demand.
-- Store imported data in JSON files.
+- Leave all behavior inside the existing overloaded plugin reader classes.
+- Split the Core contract into separate load-order, source-info, metadata, and master-reference interfaces.
+- Move game-specific reader services into Core like the original Starfield-only reference project.
 
 Consequences:
 
-- Plugin source fingerprints are used to skip unchanged imports.
-- Repository methods own data access but not business decisions.
-- Database schema changes require migrations.
+- Core importer contracts remain stable.
+- Game plugin readers now delegate to game-specific services.
+- Autofac modules register both the service and the Core-facing reader facade for each game.
+- Starfield-specific header-master construction remains explicit and protected from generic refactors.
+- DbUp `SchemaVersions` remains the migration-state source of truth.
+- No hardcoded application schema-version constants are added.
 
 Related files:
 
-- `SFRecordCompareEngine.Core/Services/PluginImportService.cs`
-- `SFRecordCompareEngine.Core/Services/RecordImportService.cs`
-- `SFRecordCompareEngine.Core/Repositories/PluginRepository.cs`
-- `SFRecordCompareEngine.Core/Repositories/FormListRepository.cs`
-- `SFRecordCompareEngine.Core/Models/Database/SqliteDatabaseOptions.cs`
+- `CreationsForge.Core/Importers/Interfaces/IGamePluginReader.cs`
+- `CreationsForge.Starfield/Interfaces/IStarfieldPluginReaderService.cs`
+- `CreationsForge.Starfield/StarfieldPluginReaderService.cs`
+- `CreationsForge.Starfield/StarfieldPluginReader.cs`
+- `CreationsForge.Fallout4/Interfaces/IFallout4PluginReaderService.cs`
+- `CreationsForge.Fallout4/Fallout4PluginReaderService.cs`
+- `CreationsForge.Fallout4/Fallout4PluginReader.cs`
+- `CreationsForge.Skyrim/Interfaces/ISkyrimPluginReaderService.cs`
+- `CreationsForge.Skyrim/SkyrimPluginReaderService.cs`
+- `CreationsForge.Skyrim/SkyrimPluginReader.cs`
 
+## 2026-06-05 - Add Game-Aware Record Import Service
+
+Status: Accepted
+
+Context: `GameImporter` directly invoked each typed record importer for each imported plugin. That preserved the
+basic phase ordering but did not match SFRecordCompareEngine's record import workflow for per-record-type discovery,
+typed detail importer lookup, unsupported detail importer accounting, or per-record failure isolation.
+
+Decision: Add a Core `RecordImportService` that runs after plugin and master-reference phases. The service discovers
+only the approved shared record types, resolves typed detail importers by supported game and record type ID, records
+unsupported typed detail importers, and catches per-record failures while continuing the import. The initial approved
+record types are FormLists (`FLST`), GameSettings (`GMST`), and Globals (`GLOB`).
+
+Rationale: This ports the proven SFRecordCompareEngine import shape while preserving CreationsForge's multi-game
+adapter boundary. Core orchestrates shared DTO import; game-specific Mutagen record mapping remains in the game
+adapter projects.
+
+Alternatives considered:
+
+- Keep the direct typed importer loop in `GameImporter`.
+- Port every SFRecordCompareEngine record type immediately.
+- Move Mutagen record discovery into Core.
+- Add progress and cancellation plumbing before the console app has a consumer for it.
+
+Consequences:
+
+- `GameImporter` delegates typed record import to `IRecordImportService`.
+- Record import results include per-record-type details and aggregate counters.
+- Existing shared typed importers now import one record DTO at a time as typed detail importers.
+- Game-specific record readers still return empty typed-record lists until real Mutagen mapping is implemented.
+- DbUp `SchemaVersions` remains the migration-state source of truth.
+- No hardcoded application schema-version constants are added.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordImportService.cs`
+- `CreationsForge.Core/Services/Interfaces/IRecordImportService.cs`
+- `CreationsForge.Core/DTOs/Results/RecordImportResultDTO.cs`
+- `CreationsForge.Core/DTOs/Results/RecordTypeImportResultDTO.cs`
+- `CreationsForge.Core/Helpers/RecordTypeCatalog.cs`
+- `CreationsForge.Core/Importers/GameImporter.cs`
+- `CreationsForge.Core/Importers/FormListImporter.cs`
+- `CreationsForge.Core/Importers/GameSettingImporter.cs`
+- `CreationsForge.Core/Importers/GlobalImporter.cs`
+
+## 2026-06-05 - Implement Starfield Shared Typed Record Readers
+
+Status: Accepted
+
+Context: `RecordImportService` can import approved shared typed records, but Starfield record reads still returned
+empty lists. SFRecordCompareEngine already maps Starfield FormLists, GameSettings, and Globals through Mutagen, but it
+also stores Starfield-only fields that CreationsForge has not approved in its schema.
+
+Decision: Implement Starfield typed record reading in the Starfield adapter for only the current shared record types:
+FormLists (`FLST`), GameSettings (`GMST`), and Globals (`GLOB`). The mapping uses Mutagen inside
+`CreationsForge.Starfield` and populates only the fields already present in Core DTOs and the current database
+schema.
+
+Rationale: This activates the shared record import pipeline for Starfield without expanding persistence scope or
+moving game-specific Mutagen mapping into Core.
+
+Alternatives considered:
+
+- Keep Starfield typed record readers empty.
+- Port all SFRecordCompareEngine Starfield fields and schema.
+- Move typed record mapping into Core.
+
+Consequences:
+
+- Starfield imports can now produce FormList, FormListItem, GameSetting, and Global rows.
+- Extra Starfield-only fields remain out of scope.
+- Fallout 4 and Skyrim typed record readers remain placeholders.
+- DbUp `SchemaVersions` remains the migration-state source of truth.
+- No hardcoded application schema-version constants are added.
+
+Related files:
+
+- `CreationsForge.Starfield/Interfaces/IStarfieldRecordReaderService.cs`
+- `CreationsForge.Starfield/StarfieldRecordReaderService.cs`
+- `CreationsForge.Starfield/StarfieldRecordReader.cs`
+- `CreationsForge.Core/DTOs/Records/FormListDTO.cs`
+- `CreationsForge.Core/DTOs/Records/FormListItemDTO.cs`
+- `CreationsForge.Core/DTOs/Records/GameSettingDTO.cs`
+- `CreationsForge.Core/DTOs/Records/GlobalDTO.cs`
+
+## 2026-06-05 - Sync FormList Items Without Full Child Wipe
+
+Status: Accepted
+
+Context: FormList item import followed SFRecordCompareEngine's delete-all-then-save pattern. That behavior was
+correct, but it deleted every existing child row before reinserting current rows even when most items were unchanged.
+
+Decision: FormList item import now saves the parent FormList, assigns current item indexes, upserts current
+FormListItems, and then deletes only stale FormListItems for the same parent whose full item identity is no longer
+present.
+
+Rationale: The sync keeps removed items from remaining stale while reducing unnecessary delete/reinsert churn. The
+existing composite key already includes the parent FormList identity, item FormKey identity, and `Item_Index`, so no
+schema change is needed.
+
+Alternatives considered:
+
+- Keep deleting all FormListItems before saving current items.
+- Delete stale rows before upserting current rows.
+- Add a staging table or import batch marker.
+
+Consequences:
+
+- Current FormListItems are upserted through NPoco save behavior.
+- Removed and reordered items are cleaned up by a targeted stale delete.
+- SQLite foreign keys and composite keys remain unchanged.
+- DbUp `SchemaVersions` remains the migration-state source of truth.
+- No hardcoded application schema-version constants are added.
+
+Related files:
+
+- `CreationsForge.Core/Importers/FormListImporter.cs`
+- `CreationsForge.Core/Repositories/Interfaces/IFormListItemRepository.cs`
+- `CreationsForge.Core/Repositories/FormListItemRepository.cs`
+
+## 2026-06-05 - Implement Skyrim Shared Typed Record Readers
+
+Status: Accepted
+
+Context: `RecordImportService` can import approved shared typed records and Skyrim plugin metadata/master-reference
+import validates on the normal Mutagen construction path, but the Skyrim record reader still returned empty lists.
+
+Decision: Implement Skyrim typed record reading in the Skyrim adapter for only the current shared record types:
+FormLists (`FLST`), GameSettings (`GMST`), and Globals (`GLOB`). The mapping uses Mutagen inside
+`CreationsForge.Skyrim` and populates only the fields already present in Core DTOs and the current database
+schema.
+
+Rationale: This activates the shared record import pipeline for Skyrim without expanding persistence scope or moving
+game-specific Mutagen mapping into Core.
+
+Alternatives considered:
+
+- Keep Skyrim typed record readers empty.
+- Add new Skyrim-only schema fields while implementing the reader.
+- Move typed record mapping into Core.
+
+Consequences:
+
+- Skyrim imports can now produce FormList, FormListItem, GameSetting, and Global rows.
+- Extra Skyrim-only fields remain out of scope.
+- Fallout 4 typed record readers remain placeholders.
+- DbUp `SchemaVersions` remains the migration-state source of truth.
+- No hardcoded application schema-version constants are added.
+
+Related files:
+
+- `CreationsForge.Skyrim/Interfaces/ISkyrimRecordReaderService.cs`
+- `CreationsForge.Skyrim/SkyrimRecordReaderService.cs`
+- `CreationsForge.Skyrim/SkyrimRecordReader.cs`
+- `CreationsForge.Core/DTOs/Records/FormListDTO.cs`
+- `CreationsForge.Core/DTOs/Records/FormListItemDTO.cs`
+- `CreationsForge.Core/DTOs/Records/GameSettingDTO.cs`
+- `CreationsForge.Core/DTOs/Records/GlobalDTO.cs`
+
+## 2026-06-05 - Implement Fallout 4 Shared Typed Record Readers
+
+Status: Accepted
+
+Context: `RecordImportService` can import approved shared typed records and Fallout 4 plugin metadata/master-reference
+import validates on the normal Mutagen construction path, but the Fallout 4 record reader still returned empty lists.
+
+Decision: Implement Fallout 4 typed record reading in the Fallout 4 adapter for only the current shared record types:
+FormLists (`FLST`), GameSettings (`GMST`), and Globals (`GLOB`). The mapping uses Mutagen inside
+`CreationsForge.Fallout4` and populates only the fields already present in Core DTOs and the current database
+schema.
+
+Rationale: This activates the shared record import pipeline for Fallout 4 without expanding persistence scope or
+moving game-specific Mutagen mapping into Core.
+
+Alternatives considered:
+
+- Keep Fallout 4 typed record readers empty.
+- Add new Fallout 4-only schema fields while implementing the reader.
+- Move typed record mapping into Core.
+
+Consequences:
+
+- Fallout 4 imports can now produce FormList, FormListItem, GameSetting, and Global rows.
+- Extra Fallout 4-only fields remain out of scope.
+- All currently supported games now map the approved shared typed record set.
+- DbUp `SchemaVersions` remains the migration-state source of truth.
+- No hardcoded application schema-version constants are added.
+
+Related files:
+
+- `CreationsForge.Fallout4/Interfaces/IFallout4RecordReaderService.cs`
+- `CreationsForge.Fallout4/Fallout4RecordReaderService.cs`
+- `CreationsForge.Fallout4/Fallout4RecordReader.cs`
+- `CreationsForge.Core/DTOs/Records/FormListDTO.cs`
+- `CreationsForge.Core/DTOs/Records/FormListItemDTO.cs`
+- `CreationsForge.Core/DTOs/Records/GameSettingDTO.cs`
+- `CreationsForge.Core/DTOs/Records/GlobalDTO.cs`
+
+## 2026-06-05 - Reserve CreationsForge For The Future UI Project
+
+Status: Superseded
+
+Context: The project is moving away from console-only validation toward a cross-platform UI. The current console
+application still provides a useful command-line import harness, but the top-level `CreationsForge` project name
+needs to remain available for the future UI project.
+
+Decision: Rename the current console project to `CreationsForge.Console` and reserve `CreationsForge` for the future
+cross-platform UI project. The console remained the composition root until a UI composition root was added.
+
+Rationale: Keeping the console as a separate harness preserves fast runtime validation while avoiding a name collision
+with the planned UI project.
+
+Alternatives considered:
+
+- Delete the console app immediately.
+- Keep the console project named `CreationsForge`.
+- Add the UI under a different product-level project name.
+
+Consequences:
+
+- Console validation commands use `CreationsForge.Console/CreationsForge.Console.csproj`.
+- The solution later added a new `CreationsForge` UI project without moving the console again.
+- App data, database, and log identity remain `CreationsForge`.
+- DbUp `SchemaVersions` remains the migration-state source of truth.
+- No hardcoded application schema-version constants are added.
+
+Related files:
+
+- `CreationsForge.Console/CreationsForge.Console.csproj`
+- `CreationsForge.Console/Program.cs`
+- `CreationsForge.sln`
+- `CreationsForge.UnitTests/CreationsForge.UnitTests.csproj`

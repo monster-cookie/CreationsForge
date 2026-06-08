@@ -1,30 +1,41 @@
-﻿# Repo: SFRecordCompareEngine (.NET WinUI Desktop Application)
+﻿# Repo: CreationsForge
 
-Simple WinUI desktop app that shows the record hierarchy of a given plugin in relation to its master plugins.
+Multi-game Bethesda plugin import and record persistence prototype. The current console harness is
+`CreationsForge.Console`; the `CreationsForge` project name is reserved for the future cross-platform UI.
 
 ## Project Layout
 
-- SFRecordCompareEngine (The Presentation/UI Composition)
-- SFRecordCompareEngine.Core (The shared models, DTOs, services, repositories, stores, and factories)
-- SFRecordCompareEngine.UnitTests (The unit tests)
+- CreationsForge (Cross-platform, Uno Platform Skia Desktop Application)
+- CreationsForge.Console (Temporary command-line import/validation harness)
+- CreationsForge.Core (Game-agnostic wrapper models, DTOs, services, repositories, configuration stores, and factories)
+- CreationsForge.Starfield (Starfield game-specific models, DTOs, services, and repositories)
+- CreationsForge.Fallout4 (Fallout 4 game-specific models, DTOs, services, and repositories)
+- CreationsForge.Skyrim (Skyrim game-specific models, DTOs, services, and repositories)
+- CreationsForge.Migrations (DbUp migrations)
+- CreationsForge.UnitTests (Unit tests)
 
 ## HARD RULES
 
-- NEVER run git commands of any kind.
+- Codex may run read-only git inspection commands listed in GIT BOUNDARIES. Codex must not run git commands that mutate
+  repository state unless explicitly approved in a task-specific PLAN.
 - NEVER modify repo history or open PRs.
 - Default approved read/write scope after PLAN approval:
-  - /SFRecordCompareEngine
-  - /SFRecordCompareEngine.Core
-  - /SFRecordCompareEngine.Migrations
-  - /SFRecordCompareEngine.UnitTests
-  - /Documentation
+  - /CreationsForge/**/*
+  - /CreationsForge.Console/**/*
+  - /CreationsForge.Core/**/*
+  - /CreationsForge.Starfield/**/*
+  - /CreationsForge.Fallout4/**/*
+  - /CreationsForge.Skyrim/**/*
+  - /CreationsForge.Migrations/**/*
+  - /CreationsForge.UnitTests/**/*
+  - /Documentation/**/*
 - Do not edit files outside these projects unless explicitly approved in the PLAN.
 - ALWAYS show a PLAN first and wait for explicit approval before making the first repository edit for a task.
 - After the PLAN is approved, Codex may edit files within the approved scope without asking again for each file.
 - If new files, new projects, cross-cutting architecture changes, breaking changes, or edits outside the approved scope are needed, stop and ask for approval.
 - Keep changes surgical and consistent with existing patterns and naming.
-- No breaking changes to existing services, factories, stores, repositories, view models, public interfaces, configuration, persistence formats, or UI workflows without explicit approval.
-- NEVER edit AGENTS.md or AGENT-PLAN-TEMPLATE.md; if you have suggestions for changes, propose them to the user.
+- No breaking changes to existing services, factories, stores, repositories, view models, public interfaces, configuration, persistence formats, or workflows without explicit approval.
+- NEVER edit AGENTS.md, AGENT-PLAN-TEMPLATE.md, or any `*.code-workspace` file; if you have suggestions for changes, propose them to the user.
 - DO NOT wrap lines of code or comments that are not currently wrapped. Follow existing formatting and line breaks in the repo.
 - For documentation, use Markdown format and wrap lines at 120 characters.
 
@@ -47,11 +58,11 @@ Primary project knowledge files:
 - /Documentation/DESIGN-DECISIONS.md - Important design decisions, tradeoffs, rejected alternatives, and rationale.
 - /Documentation/DOMAIN-MODEL.md - Important domain concepts, record comparison terminology, Mutagen concepts used by the app, and project-specific naming.
 - /Documentation/Database/DATABASE.md - SQLite, NPoco, DbUp migration behavior, schema ownership, and persistence conventions.
-- /Documentation/UI-MVVM.md - MVVM structure, view model responsibilities, UI-thread rules, commands, dialogs, and navigation conventions.
+- /Documentation/Database/ERD.md - Entity-Relationship Diagram (ERD) of the database schema, including tables, relationships, and constraints.
 
-Before planning a non-trivial change, Codex must read the relevant docs in /docs in addition to AGENTS.md.
+Before planning a non-trivial change, Codex must read the relevant docs in /Documentation in addition to AGENTS.md.
 
-When a change adds, removes, or meaningfully changes architecture, domain behavior, database schema, persistence behavior, dependency injection, logging behavior, UI workflow, or public interfaces, the PLAN must include a Documentation impacts section.
+When a change adds, removes, or meaningfully changes architecture, domain behavior, database schema, persistence behavior, dependency injection, logging behavior, workflow, or public interfaces, the PLAN must include a Documentation impacts section.
 
 Documentation updates must be proposed in the PLAN and require approval before editing.
 
@@ -98,14 +109,12 @@ schema documentation.
 
 ## ARCHITECTURE & CONVENTIONS
 
-- Contracts-first for service/core changes: define or update interfaces, DTOs, validators, and applicable tests before implementation. Do not add unit tests for database access, repository implementations, DbUp migration execution, or UI-bound code.
-- Core stores must be UI-neutral. They must not expose bindable state, UI commands, UI-thread assumptions, dialog/navigation behavior, or presentation framework types.
-- UI-only changes should avoid unnecessary interface, DTO, or validator churn.
+- Contracts-first for service/core changes: define or update interfaces, DTOs, validators, and applicable tests before implementation. Do not add unit tests for database access, repository implementations, or DbUp migration execution.
 - Do not use C# primary constructors for classes. Use traditional explicit constructors instead.
 - Use one class per file.
 - No statics for application services or mutable app state. Prefer DI; register singletons only when appropriate. Constants, generated framework code, and existing static patterns may remain unless explicitly approved for refactor.
 - No repeated code: Refactor existing methods as needed to avoid repeating code in new methods.
-- Do not introduce new conventions or dependencies unless explicitly approved in the PLAN.
+- Do not introduce new conventions or dependencies unless explicitly approved in the PLAN. But feel free to stop and suggest them if the new convention may improve code clarity, maintainability, or adhere to best practices.
 
 ## TECH CONSTRAINTS
 
@@ -116,13 +125,13 @@ schema documentation.
 
 ## UI / MVVM BOUNDARIES
 
-- UI framework code must stay out of SFRecordCompareEngine.Core.
-- Follow existing MVVM patterns in the repo.
-- SFRecordCompareEngine.Core must not reference WPF, MAUI, WinUI, Avalonia, CommunityToolkit.Maui, or any UI framework package.
-- SFRecordCompareEngine.Core must not contain pages, windows, controls, views, view models, UI commands, dialog services, navigation services, or UI-specific binding helpers.
-- SFRecordCompareEngine.Core must not expose or depend on UI binding primitives such as INotifyPropertyChanged, ObservableCollection<T>, ICommand, Dispatcher, SynchronizationContext-based UI dispatching, or platform UI thread helpers.
+- UI framework code must stay out of CreationsForge.Core.
+- Follow existing MVVM patterns in the repo when present; otherwise establish patterns in the PLAN before adding UI/MVVM code.
+- CreationsForge.Core must not reference Uno Platform, WPF, MAUI, WinUI, Avalonia, CommunityToolkit.Maui, or any UI framework package.
+- CreationsForge.Core must not contain pages, windows, controls, views, view models, UI commands, dialog services, navigation services, or UI-specific binding helpers.
+- CreationsForge.Core must not expose or depend on UI binding primitives such as INotifyPropertyChanged, ObservableCollection<T>, ICommand, Dispatcher, SynchronizationContext-based UI dispatching, or platform UI thread helpers.
 - Use plain DTOs, domain models, IReadOnlyList<T>, IEnumerable<T>, result objects, events, callbacks, or progress DTOs for Core-to-presentation communication.
-- MVVM presentation code belongs in SFRecordCompareEngine only, including:
+- MVVM presentation code belongs in CreationsForge only, including:
   - WinUI pages/views
   - C# Markup UI classes
   - View models
@@ -130,12 +139,37 @@ schema documentation.
   - UI commands
   - Dialog coordination
   - Navigation coordination
-- Core services may expose async methods, DTOs, progress DTOs, domain models, and business results for presentation layers to consume.
+- Core services may expose async methods, CancellationToken parameters, DTOs, progress DTOs, domain models, and business results for presentation layers to consume.
 - If a UI workflow needs reusable orchestration, place the UI-neutral business portion in Core and keep the UI-specific coordination in the presentation project.
 - Do not move view models or UI command abstractions into Core without explicit approval in the PLAN.
 - Long-running work must not block the UI thread.
 - Use async commands in the presentation project where existing patterns support them.
 - UI-bound collection updates must occur on the UI thread.
+
+### Avalonia cross-platform UI conventions
+
+- Prefer Avalonia property bindings for UI state: Text, SelectedItem, ItemsSource, IsVisible, Command.
+- Prefer ICommand over Click += for user actions.
+- Use GetObservable(...) for code-built reactions to Avalonia property changes.
+- Avoid platform-specific launch/output assumptions; launch GUI with dotnet run --project ./CreationsForge/CreationsForge.csproj or the generated .exe on Windows.
+- Avoid large fixed window sizes; prefer MinWidth/MinHeight, responsive layout, and WindowState.Maximized.
+- Keep lifecycle hooks like OnAttachedToVisualTree only for view lifecycle/startup behavior, not ordinary input handling.
+
+## MUTAGEN BOUNDARIES
+
+- `CreationsForge` must remain a presentation/UI project and must not contain direct Mutagen calls or package references.
+- `CreationsForge` and any future presentation projects must not reference Mutagen packages or Mutagen types directly.
+- UI/MVVM code must interact with plugins, records, load order, imports, and comparison data only through `CreationsForge.Core` contracts,
+  DTOs, view-model models, and application services.
+- `CreationsForge.Core` may reference shared/game-agnostic Mutagen packages such as `Mutagen.Bethesda.Core` only for
+  shared primitive mapping and game-agnostic abstractions.
+- `CreationsForge.Core` may use shared Mutagen primitives internally, but UI-facing `CreationsForge.Core` contracts should prefer CreationsForge DTOs and primitive identity shapes over Mutagen types.
+- `CreationsForge.Core` must not reference game-specific Mutagen packages such as Starfield, Fallout 4, or Skyrim
+  Mutagen packages.
+- Game-specific projects own all direct use of game-specific Mutagen APIs, records, headers, load-order behavior, and
+  mapping from Mutagen types into approved `CreationsForge.Core` DTOs.
+- Public contracts crossing from game projects into `CreationsForge.Core` or UI must use `CreationsForge.Core` DTOs, primitives, enums, or interfaces,
+  not Mutagen game-specific types.
 
 ## DEPENDENCY INJECTION
 
@@ -163,13 +197,14 @@ schema documentation.
 - Use NPoco for application database access.
 - Use the ADO.NET SQLite provider as required by NPoco.
 - Do not introduce or replace database providers/packages without explicit approval in the PLAN.
-- Use parameterized SQL for all runtime values.
 - Keep schema creation/migration centralized in a dedicated initializer or migration service.
 - Enable SQLite foreign keys for every opened connection.
 - Do not place business logic in repositories.
 - Do not log from repositories or stores.
-- Repositories should not own UI behavior, import orchestration, or Serilog decisions.
 - Database path, schema changes, and persistence format changes must be called out in the PLAN.
+- Runtime SQL must use named parameterized queries, such as `@Game`, `@ModKeyName`, and `@ImportedAtUTC`.
+- Do not use positional NPoco SQL placeholders such as `@0`, `@1`, or `@2` in application runtime SQL.
+- Pass SQL parameter values with anonymous objects, typed parameter objects, or equivalent named parameter APIs.
 
 ### DbUp migration versioning
 
@@ -183,36 +218,90 @@ schema documentation.
 
 - Analyzer warnings are treated as errors.
 - Follow existing conventions in the repo. Do not introduce new naming or patterns.
-- After editing C# or SQL files, run Rider code cleanup on only the files edited for the current task.
-- Use the repository-configured Rider cleanup profile when one exists. Do not apply solution-wide cleanup.
-- Review cleanup changes and keep them limited to the approved task scope. Do not introduce unrelated formatting churn.
-- Run cleanup before restore, build, and test validation.
 
 ## TESTING
 
-- Unit tests live in /SFRecordCompareEngine.UnitTests (xUnit + Moq + Shouldly).
-- For new features/bugfixes that affect testable service, factory, validator, DTO, or non-UI business logic, include tests in the PLAN and add them alongside code changes.
-- Do not unit test database access, repository implementations, DbUp migration execution, or UI-bound code.
-- When a change is limited to repositories, database access, migrations, or UI-bound code, the PLAN must explicitly state that no unit tests will be added and explain the validation approach.
+- Unit tests live in /CreationsForge.UnitTests (xUnit + Moq + Shouldly).
+- For new features/bugfixes that affect testable service, factory, validator, DTO, or business logic, include tests in the PLAN and add them alongside code changes.
+- Do not unit test database access, repository implementations, or DbUp migration execution.
+- When a change is limited to repositories, database access, migrations, or workflows, the PLAN must explicitly state that no unit tests will be added and explain the validation approach.
+
+## GIT BOUNDARIES
+
+- Read-only git commands are allowed for inspection and context, including common read-only arguments:
+  - `git status`
+  - `git diff`
+  - `git log`
+  - `git show`
+  - `git blame`
+  - `git ls-files`
+- Codex may use read-only git commands to understand current changes, inspect history, avoid overwriting user work,
+  and summarize diffs.
+- Codex must NEVER run git commands that create, modify, delete, publish, or rewrite repository state unless explicitly
+  approved in a task-specific PLAN.
+- Always prohibited unless the user explicitly requests them:
+  - `git add`
+  - `git commit`
+  - `git branch`
+  - `git checkout`
+  - `git switch`
+  - `git restore`
+  - `git reset`
+  - `git merge`
+  - `git rebase`
+  - `git cherry-pick`
+  - `git stash`
+  - `git tag`
+  - `git push`
+  - `git pull`
+  - `git fetch`
+  - `gh pr create`
+  - opening PRs, creating branches, rebasing, squashing, amending commits, or modifying repo history
+- If a git command is not clearly read-only, Codex must ask before running it.
+
+## LOCAL INSPECTION COMMANDS
+
+- Codex may run read-only local inspection commands without a PLAN when they do not modify files:
+  - `rg`
+  - `rg --files`
+  - `Get-Content`
+  - `Get-ChildItem`
+  - `Select-String`
+  - `Test-Path`
+  - `Resolve-Path`
+  - `Get-Command`
+  - `Get-Process`
+  - `Get-CimInstance Win32_Process`
+- Prefer `rg` and `rg --files` for search and file inventory.
+- Exclude `bin`, `obj`, `.git`, and generated output directories from recursive scans.
 
 ## PLAN → EXECUTE → VALIDATE
 
-- For the plan use AGENT-PLAN-TEMPLATE.md as the template
+- For the plan, use AGENT-PLAN-TEMPLATE.md as the compact approval template. Expand only the sections that are relevant to the task.
 
-### PLAN, required before edits
+### Plan size and conditional detail
 
-- Scope
-- Exact file paths
-- Code-level checklist
-- Documentation impacts
-- UI/XAML impacts
-- Data model, persistence, or schema impacts
-- If database migration code is touched, the PLAN must state explicitly that DbUp `SchemaVersions` remains the migration source of truth and that no hardcoded schema-version constants are being added.
-- Config/environment changes
-- Autofac registration changes
-- Serilog logging additions/changes
-- Risks and rollback notes
-- Test plan
+Plans must be concise and task-specific. Do not paste the full project rules, validation policy, documentation policy,
+or database policy into every plan.
+
+Use the compact AGENT-PLAN-TEMPLATE.md by default.
+
+Only include expanded detail when it applies to the task:
+
+- Include database details only when schema, migrations, persistence behavior, repository behavior, or database docs are affected.
+- Include design-decision details only when architecture, dependency direction, public interfaces, workflows, or persistence strategy changes.
+- Include documentation details only when documentation will be added, updated, or intentionally left unchanged for a relevant reason.
+- Include logging details only when new or changed logging is part of the implementation.
+- Include Autofac details only when DI registrations or lifetimes change.
+- Include config/environment details only when settings, paths, arguments, or environment variables change.
+
+For unaffected areas, use one-line impact statements such as:
+
+- Database/schema impacts: None
+- Documentation impacts: None
+- Autofac/DI impacts: None
+
+Do not include empty scaffolding sections, placeholder text, or repeated policy text.
 
 ### EXECUTE, after approval only
 
@@ -226,8 +315,12 @@ schema documentation.
 ### VALIDATE
 
 - Run:
-  - dotnet restore ./SFRecordCompareEngine.sln
-  - dotnet build ./SFRecordCompareEngine.sln --no-restore
-  - dotnet test ./SFRecordCompareEngine.UnitTests/SFRecordCompareEngine.UnitTests.csproj --no-build
+  - dotnet restore ./CreationsForge.sln
+  - dotnet build ./CreationsForge.sln --no-restore
+  - dotnet test ./CreationsForge.UnitTests/CreationsForge.UnitTests.csproj --no-build
+- Runtime validation, when relevant:
+  - dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --game Starfield
+  - dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --game Fallout4
+  - dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --game Skyrim
 - Summarize build/test results, public interface changes, config/persistence notes, and compatibility considerations.
 - If validation cannot run due to environment limitations, report the exact command and failure.

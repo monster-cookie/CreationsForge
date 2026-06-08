@@ -1,0 +1,28 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"cSpell.words": [
+			"Autofac",
+			"Avalonia",
+			"Configurator",
+			"Incc",
+			"Intv",
+			"MVVM",
+			"noqa",
+			"rebranded",
+			"Serilog",
+			"Shouldly",
+			"Skia",
+			"Skyrim",
+			"Spriggit",
+			"upserted"
+		],
+		"sqlfluff.excludeRules": [
+			""
+		]
+	}
+}

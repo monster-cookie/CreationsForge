@@ -1,0 +1,14 @@
+pkgname=creationsforge
+pkgver=0.0.0
+pkgrel=1
+pkgdesc='Creations Forge imports and compares selected Bethesda plugin records.'
+arch=('x86_64')
+url='https://github.com/Venpi/CreationsForge'
+license=('custom')
+depends=('glibc' 'fontconfig' 'libgl' 'dbus' 'libxrandr' 'libxi')
+source=('package-root.tar.gz')
+sha256sums=('SKIP')
+
+package() {
+    cp -a "$srcdir/package-root/." "$pkgdir/"
+}

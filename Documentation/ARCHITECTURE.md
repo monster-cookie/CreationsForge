@@ -2,123 +2,213 @@
 
 ## Layering
 
-The solution is split into presentation, core, migrations, and tests.
+The solution is split into UI, console, core, game adapter, migrations, and tests.
 
-`SFRecordCompareEngine` is the presentation layer. It references Core and Migrations and contains Uno Platform Skia
-Desktop views, view models, commands, navigation services, dialog services, desktop window behavior, app startup,
-logging setup, and the
-Autofac composition root.
+`CreationsForge` is the cross-platform Uno Platform Skia Desktop presentation project. It owns views, view models,
+presentation commands, and UI-specific coordination. It references Bootstrap and Core, but UI and MVVM code must
+consume Core contracts and DTOs instead of Mutagen APIs or game-specific reader services directly.
 
-`SFRecordCompareEngine.Core` is UI-neutral. It contains DTOs, database models, configuration storage, database 
-connection factories, schema initialization orchestration, Mutagen readers, import services, typed importers, 
-repositories, and Core Autofac registrations.
+`CreationsForge.Console` is the command-line harness. It references Bootstrap and Core. It owns command-line parsing,
+terminal output, exit codes, and console-only registrations.
 
-`SFRecordCompareEngine.Migrations` contains DbUp migration infrastructure and embedded SQL scripts. Core depends on 
-this project for `IDatabaseMigrationRunner`.
+`CreationsForge.Bootstrap` owns shared app startup helpers for UI and CLI surfaces. It references Core, Migrations,
+and the game projects so app surfaces can share common Autofac module registration and Serilog logging setup without
+depending on each other.
 
-`SFRecordCompareEngine.UnitTests` tests Core behavior and model/DTO mapping without testing repository database access, 
-DbUp execution, or WinUI UI-bound behavior.
+`CreationsForge.Core` is game-agnostic only where the implemented behavior is truly shared. Core owns
+configuration, database connection setup, schema initialization, common DTO identity shapes, importer contracts,
+shared import orchestration, shared Mutagen primitive mapping, and repositories for the approved shared schema. Core
+may reference shared Mutagen packages such as `Mutagen.Bethesda.Core`, but it must not reference game-specific Mutagen
+packages.
+
+`CreationsForge.Starfield`, `CreationsForge.Fallout4`, and `CreationsForge.Skyrim` isolate
+game-specific Mutagen packages, Autofac modules, reader services, and reader facade implementations. These projects
+are the intended home for game-specific record mapping when Mutagen APIs or record/header fields diverge.
+They also own game installation metadata discovery through Mutagen so Core does not return hardcoded or partial
+game metadata. Mutagen plugin and record reads use `GameEnvironment.Typical.*(...).DataFolderPath` inside the game
+adapter projects rather than persisted game metadata paths.
+
+`CreationsForge.Migrations` contains DbUp infrastructure and embedded SQL scripts.
+
+`CreationsForge.UnitTests` tests non-database logic only.
 
 ## Dependency Direction
 
-- Presentation depends on Core and Migrations.
-- Core depends on Migrations for database migration execution.
-- Migrations does not depend on Presentation or Core.
-- UnitTests depend on Core and Migrations.
-- Core does not reference Uno or WinUI views, view models, commands, dialog services, or navigation services.
+- CreationsForge depends on Bootstrap and Core.
+- Console depends on Bootstrap and Core.
+- Bootstrap depends on Core, Migrations, Starfield, Fallout4, and Skyrim.
+- Core depends on Migrations for migration execution and shared Mutagen core primitives for game-agnostic DTO mapping.
+- Game projects depend on Core.
+- Migrations does not depend on Core or game projects.
+- UnitTests depend on Core and the console project for parser tests.
 
 ## Composition
 
-`App.BuildContainer` builds the Autofac container.
+`CreationsForge.Bootstrap` provides shared Autofac module registration.
 
-- `CoreModule` registers Core stores, importers, services, factories, initializers, repositories,
-  `SqliteDatabaseOptions`, and NPoco `IDatabase`.
-- `MigrationsModule` registers `DatabaseMigrationRunner` as `IDatabaseMigrationRunner`.
-- The presentation project registers Uno desktop views, view models, `MainWindow`, and presentation services.
-- `UserDialogService`, `ApplicationNavigationService`, and `DesktopApplicationWindowService` are registered as
-  singletons.
+- `CoreModule` registers configuration, SQLite options, connection factory, NPoco `IDatabase`, schema initializer,
+  shared services, UI-neutral workflow services, shared typed importers, and shared repositories.
+- `MigrationsModule` registers `DatabaseMigrationRunner`.
+- Each game module registers that game's plugin reader service, plugin reader facade, record reader, and one
+  `IGameImporter` wired to those readers.
 
-Most Core services, repositories, importers, stores, and initializers are registered by assembly scanning and interface 
-suffix conventions.
+`CreationsForge` builds a presentation container in `App` by calling Bootstrap and then registering presentation-only
+windows, views, and view models. `CreationsForge.Console` builds a CLI container in `Program` by calling Bootstrap and
+then registering `GameArgumentParser`.
 
 ## Import Architecture
 
-`PluginImportService` is the main import orchestrator. It:
+`GameImportDispatcher` selects an `IGameImporter` by `SupportedGame`.
 
-- Initializes schema through `IDatabaseSchemaInitializer`.
-- Forces a full plugin reimport when schema initialization reports that DbUp applied one or more migrations.
-- Reads load order entries through `IPluginService`.
-- Uses source fingerprints to skip unchanged plugin files.
-- Saves plugin metadata through `IPluginRepository`.
-- Saves master relationships through `IPluginMasterReferencesRepository`.
-- Delegates record details to `IRecordImportService`.
-- Reports progress through `IProgress<PluginImportProgressDTO>`.
-- Runs work on a background task and honors cancellation tokens.
+`GameImporter` is a shared plugin import workflow. It saves the selected game row, reads the selected game's load
+order, evaluates source fingerprints and plugin import state, persists all current plugin rows before master-reference
+rows, removes stale master-reference rows after a successful master-reference refresh, and delegates typed record
+import to `RecordImportService` last. Import dispatch, plugin loops, master-reference loops, and record-detail loops
+accept cancellation and report Core `GameImportProgressDTO` snapshots so UI and CLI callers can observe long-running
+work without depending on UI binding primitives. The importer wraps the database write workflow in one NPoco
+transaction so large imports do not pay per-row SQLite autocommit cost.
 
-`RecordImportService` maps typed record importers by `(GameRelease, RecordType)` and imports Starfield `FLST`, `GMST`,
-`GLOB`, `MISC`, `KYWD`, `NPC_`, `AVIF`, `MGEF`, and `PERK` records when matching `ITypedRecordDetailImporter`
-instances are registered.
+The game plugin readers are thin Core-contract facades over game-specific plugin reader services. The services ask
+their game-specific metadata services for installed game metadata before returning the selected `GameDTO`. They expose
+load-order entries, source fingerprints, header-level plugin metadata, and declared master references separately so
+the importer can skip unchanged, missing, unsupported, or failed plugins before expensive metadata or record work.
+Plugin metadata mapping uses header-level metadata, including header-stat record counts, and must not enumerate typed
+records during plugin import. Optional `IPluginExtensionImporter` implementations persist game-specific scalar plugin
+header fields into extension tables after the base `Plugins` row is saved. The game services map declared plugin
+masters to shared `PluginMasterReferenceDTO` rows.
 
-MiscItem full-detail repository reads hydrate normalized optional and ordered child tables. The lightweight MiscItem
-record-tree read continues to select only origin `FormKey` and `EditorID`.
+`RecordImportService` is the shared typed record import workflow. It discovers the currently approved shared record
+types from a bundled `PluginRecordSetDTO`, creates per-record-type results, resolves registered typed detail importers
+by `SupportedGame` and record type ID, tracks unsupported typed detail importers, and logs per-record failures without
+aborting the full plugin import. The current cross-game shared record types are FormLists (`FLST`), GameSettings
+(`GMST`), and Globals (`GLOB`). Starfield also imports typed parent rows for MiscObjects (`MISC`), Keywords (`KYWD`),
+ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), and Perks (`PERK`). Starfield, Fallout 4, and
+Skyrim map approved shared records inside their game adapters after loading the Mutagen plugin once for the
+Core-facing record-read call.
+
+Starfield plugin metadata, master-reference, and record reads use a Starfield-only construction helper. The helper
+prefers the full Mutagen environment load order's mod objects with the Starfield environment data folder from
+`GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield).DataFolderPath`. This preserves Starfield split-master,
+medium-master, and overlay master-style data for FormID translation. If no environment mod objects are available, the
+helper falls back to `WithLoadOrderFromHeaderMasters()` plus the same data folder. Fallout 4 and Skyrim currently use
+their normal construction paths because their current master behavior does not require the Starfield separated-master
+path.
+
+## UI Architecture
+
+The presentation layer owns `INotifyPropertyChanged`, `ObservableCollection<T>`, `ICommand`, XAML views, and
+presentation commands. Core does not expose UI binding primitives or UI framework types.
+
+`IGameSelectionService` exposes the supported game list and active-game persistence through Core DTOs and
+`SupportedGame`. `IGameImportReadinessService` checks whether a selected game has imported plugin data.
+`IGameImportWorkflowService` initializes the schema, persists the selected game, reports progress, and dispatches the
+existing import workflow asynchronously for UI callers. Progress includes stage text plus current plugin and record
+type counters. These services are UI-neutral and do not expose Mutagen types.
+`IAllGamesImportWorkflowService` optionally resets the database, initializes schema, and dispatches full imports for
+all supported games. The CLI `--reset-all` path and the UI `Reset & Import All` progress flow share this Core service.
+
+`CreationsForge` starts directly in the main view. The app initializes the database schema during GUI startup before
+the main view model queries imported plugins or record counts. If no active game is configured, the active-game
+autocomplete remains empty and no import runs. If an active game is configured, or if the user selects a different
+active game, the main view uses the same warning and import progress flow before returning to the workspace.
+Presentation navigation creates a child Autofac lifetime scope for each displayed view and disposes the previous view
+scope before replacing it. This keeps scoped database-backed services short-lived and lets the Reset & Import All flow
+dispose the main workspace database connection before the reset workflow deletes the SQLite database files.
+
+The main view owns active-game and active-plugin selector state. `IPluginSelectionService` exposes UI-neutral
+queries for openable plugins and imported record totals by game. Selecting an active plugin updates presentation
+status and loads left-side record-type sections through `IRecordTreeService`. Each section is rendered as an expander
+with a grid populated from persisted shared record rows for `FLST`, `GMST`, and `GLOB`; the grids show per-record
+plugin usage counts and do not call Mutagen directly from presentation code. Plugins with large header record counts
+use a dedicated active-plugin loading screen before returning to the main view with a prebuilt record browser tree.
+That loading screen creates a child Autofac lifetime scope on the worker path so database-backed record tree
+repositories are resolved and disposed with the background load instead of reusing the main view's scoped connection.
+
+`IRecordTreeService` aggregates record-tree entries from shared record repositories. Repository query methods return
+Core `RecordTreeEntryDTO` values scoped by game and plugin `ModKeyDTO`, preserving the UI boundary and allowing the
+presentation project to group and filter records without knowing database table details. Plugin usage counts are
+queried with grouped SQL per shared record table and joined to active-plugin tree entries in memory.
+
+`IRecordComparisonService` exposes the first game-agnostic comparison contract for imported typed record rows.
+It reads all persisted overrides for a selected origin FormKey from shared repositories and returns comparison DTOs
+with plugin columns, field rows, and display values. The presentation project renders those DTOs with an Avalonia
+`TreeDataGrid` and does not query repositories, database tables, or Mutagen directly. The active plugin record browser
+renders record-type groups as expander sections with flat `TreeDataGrid` controls for record rows. The comparison
+slice covers common record header fields plus scalar persisted fields for `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`,
+`AVIF`, `NPC_`, `MGEF`, and `PERK`. GameSetting comparison displays the generic `Data` row instead of duplicating the
+Mutagen-derived typed data helper fields. MISC, NPC_, and MGEF comparison includes shared keyword rows. MISC and MGEF
+comparison includes shared sound rows. MISC comparison also includes persisted model rows and scripting adapter rows
+as hierarchical child rows in the comparison `TreeDataGrid`. MGEF DATA fields follow Mutagen/Spriggit's flattened
+record shape and display as flat comparison rows.
+Core assigns comparison value states for neutral, identical, conflicting, and displayed winning-override values; the
+presentation layer maps those states to the green, red, and yellow comparison colors and shows the legend in the status
+area. Deeper child sections such as perk ranks, patch generation, and conflict resolution workflows remain deferred.
 
 ## Persistence Architecture
 
-NPoco is used for application database access. Repository classes translate between DTOs and NPoco database models and 
-execute parameterized SQL where runtime values are used.
+NPoco is used for application database access. Shared plugin, plugin-master-reference, and typed-record repositories
+use NPoco database models for save behavior. Explicit runtime SQL uses named parameterized queries and named parameter
+objects, not positional NPoco placeholders. Database-backed repositories, importers, and workflow services are
+registered per Autofac lifetime scope so they share the same scoped `IDatabase` and import transaction.
+
+Typed record repositories upsert a shared `RecordInstances` row before saving type-specific detail rows.
+`RecordInstances` is the common persisted parent identity for imported record overrides and lets generic scripting
+adapter tables declare foreign keys to owning records without creating per-record-type adapter tables.
+
+Changed and forced plugin imports refresh master references and typed record rows with an import-batch timestamp.
+When a master-reference refresh or typed record-type import completes without per-record failures, rows for that same
+game/plugin whose `ImportedAtUTC` was not refreshed by the current batch are deleted as stale. FormList parent cleanup
+uses the declared `FormListItems` foreign key cascade to remove child rows for stale parent FormLists, and FormList
+item cleanup runs once per successful plugin FormList batch instead of once per parent FormList.
+Typed record stale cleanup deletes stale type-specific detail rows before deleting stale `RecordInstances` rows, so
+record-owned scripting adapters are removed by the declared `RecordInstances` cascade.
+ModKey name and filename lookup is case-insensitive so load-order, header, and master-reference casing differences do
+not make an existing plugin appear missing.
 
 Schema creation and migration are centralized through:
 
 - `DatabaseSchemaInitializer` in Core
 - `DatabaseMigrationRunner` in Migrations
-- embedded SQL scripts in `SFRecordCompareEngine.Migrations/Sql`
+- embedded SQL scripts in `CreationsForge.Migrations/Sql`
 
-DbUp's `SchemaVersions` table is the migration state source of truth. The application does not define a hardcoded 
+DbUp's `SchemaVersions` table is the migration-state source of truth. The application does not define a hardcoded
 schema-version constant.
-
-`DatabaseMigrationRunner` reports whether DbUp applied pending scripts successfully. `PluginImportService` consumes
-that one-run result and bypasses source-fingerprint skips for the same import pass. The signal is not persisted as
-application configuration.
-
-## Main Record Tree
-
-The main-view record tree reads lightweight persisted supported-record entries through typed Core services. The tree
-path uses `GetRecordTreeEntriesByModKey` methods on the existing typed services and repositories so it only loads each
-record's origin `FormKey` and `EditorID`.
-
-The presentation view model builds record-type and record-leaf nodes for records owned by the active plugin. It uses a
-Mutagen separated-master package for Starfield-aware conversion between stored `FormKey` values and
-plugin-context-relative `FormID` values. The active plugin's masters provide conversion context but are not displayed
-as tree nodes. FormID display and filtering stay in the presentation layer.
-
-Typed services still expose full DTO reads for selected-record detail and comparison workflows. VMAD scripting child
-data is hydrated on those detail paths rather than during tree construction.
-
-## Selected Record Comparison
-
-The main-view comparison workspace uses the selected concrete tree leaf's record type and full origin `FormKey` to
-query every imported plugin containing the same typed record. Explicit per-record services provide typed read
-boundaries over repository queries. `PluginService` provides imported plugin metadata for load-order sorting. The
-presentation view model builds normalized field rows and plugin columns for WinUI binding.
-
-Form list item rows are read by owning plugin and form list key in `Item_Index` order. The persisted index represents
-source enumeration order and keeps duplicate item references as distinct occurrences.
-
-Presentation view models do not call Core repositories directly. Typed Core services own repository access and provide
-the location for record-specific transformations and business rules.
 
 ## Logging
 
-Serilog is configured in `App`. Logs are written under the app data log directory with daily rolling files and a 
-seven-day retention window. Services log workflow-level events and failures. Repositories and stores should not own 
-logging decisions.
+Serilog is configured through `CreationsForge.Bootstrap.Logging.SerilogConfigurator`. UI logs are written to the
+configured application-data `Logs` directory. CLI logs are written to the console and the configured application-data
+`Logs` directory. Logs include machine-name enrichment but do not include environment username enrichment by default.
+Services log workflow-level progress and failures. Repositories do not log.
 
-Mutagen plugin construction failures are enriched with the requested `ModKey`. Failures while mapping a Mutagen major
-record are enriched with its originating `ModKey`, `FormKey`, EditorID, and Mutagen record type before reaching
-workflow-level exception handling and logging.
+## Starfield Scripted Record Extension
 
-## UI Framework Note
+Starfield-only typed records for `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK` follow the same Core-facing import
+contract as shared records: the Starfield adapter maps Mutagen records into Core DTOs, `RecordImportService` dispatches
+by supported game and record type ID, and repositories persist DTO data with named SQL parameters. The UI continues to
+consume Core DTOs and record-tree services only.
 
-The presentation layer is Uno Platform Skia Desktop with WinUI-compatible XAML. The desktop host selects Win32 on
-Windows and X11 on Linux. Any references describing the app as WPF, MAUI, or WinUI-only are stale and should be updated
-in repo instruction/template files when those files are intentionally revised.
+Scripting adapter persistence is shared in Core through `IScriptingAdapterImportService` and scripting adapter
+repositories. Starfield importers call that service for record types that expose virtual-machine adapters. The `MISC`
+slice currently persists parent scalar fields, keyword rows, model rows, and scripts; the old single-game app's deeper
+MiscObject child-detail tables are still a separate follow-up.
+Scripting adapters are persisted against the shared `RecordInstances` parent using record type IDs such as `GLOB`,
+`MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`.
+
+Keyword-list persistence is shared in Core through `IRecordKeywordImportService` and `RecordKeywords`. Starfield
+`MISC`, `NPC_`, and `MGEF` currently populate that shared table. Magic Effect DATA fields are persisted directly on
+`MagicEffects` because Mutagen/Spriggit expose them as flattened MGEF properties.
+
+Model persistence is shared in Core through `IModelImportService` and model repositories. `Models` and
+`ModelMaterialSwaps` reference `RecordInstances` and include `ModelSlot` plus `ModelGender` so future record types can
+map direct, slotted, or gendered `IModelGetter` data into one table family. The first populated model slice is
+Starfield `MISC`, which uses `ModelSlot = Model` and an empty `ModelGender`.
+
+Sound persistence is shared in Core through `IRecordSoundImportService` and `RecordSounds`. Starfield `MISC` maps
+named scalar sounds such as crafting, pickup, and dropdown sounds, while Starfield `MGEF` maps indexed typed sound
+entries such as OnHit, Release, and Charge into the same table shape.
+
+Starfield `MiscItem`, `Static`, `Book`, `Door`, `Container`, and `Terminal` expose a direct `Model : IModelGetter`
+shape. `Terminal.MarkerModel` is a separate terminal-specific scalar. Starfield armor, armor addon, and weapon model
+data need custom mapping: armor and armor addon use gendered model wrappers, and weapons combine a direct `Model` with
+additional first-person/custom model data.

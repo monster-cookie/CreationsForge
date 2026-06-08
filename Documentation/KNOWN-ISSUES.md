@@ -19,6 +19,4 @@
   - NPC (NPC_) currently imports selected scalar fields and direct references only. Inventory, abilities, perks,
     factions, keywords, AI packages, appearance data, object templates, and other nested structures are not
     imported.
-  - MagicEffect (MGEF) currently imports selected scalar fields and direct references only. Conditions, keywords,
-    sounds, components, archetype data, and some direct references are not imported.
   - FormKey and ModKey lists are showing raw information instead of the more helpful EditorID.

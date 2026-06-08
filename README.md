@@ -1,77 +1,96 @@
-# Starfield Record Compare Engine
+# Creations Forge
 
-![Starfield Record Compare Engine](./MarketingSites/Images/SFRecordCompareEngine-Header.png)
+![Creations Forge](./MarketingSites/Images/SFRecordCompareEngine-Header.png)
 
-This application is a Mutagen-based plugin inspection and comparison tool. It combines a UI with a backend analysis
-engine to load Bethesda plugin files, parse their record hierarchy, and present the results in an easy-to-navigate
-format.
+Creations Forge is a Mutagen-based plugin import and record comparison prototype for Bethesda games. It imports
+selected plugin metadata and supported record details into a local SQLite cache, then provides desktop and command-line
+workflows for browsing records, reviewing overrides, and comparing values across plugins.
 
-The tool focuses on helping mod authors and developers inspect plugin records, review overrides, browse records by
-type, and compare matching records across plugins. It is intended to support debugging, validation, compatibility
-review, and general plugin analysis workflows.
-
-The Uno Platform desktop application supports Windows and Linux.
+The Avalonia desktop application currently targets Windows and Linux packaging. A CLI harness is also available for
+import and validation workflows.
 
 ![Screen Shot of Record Comparison](./Documentation/Images/RecordCompare.png)
 
 ## Current Features
 
-1. Discovers the local Starfield plugin load order
-2. Imports plugin metadata, master references, and supported record details into a local SQLite cache
-3. Browses records owned by a selected plugin in a filterable record tree
-4. Filters records by FormID and EditorID
-5. Compares matching records across imported plugins in load-order order
-6. Highlights matching values in green, conflicts in red, and the visible winning override in yellow
-7. Skips unchanged plugins during later imports for faster startup processing
-8. Supports light and dark application themes
+1. Discovers local load-order plugins for supported games through game-specific Mutagen adapters
+2. Imports plugin metadata, declared master references, and supported record details into a local SQLite cache
+3. Skips unchanged plugins during later imports using source fingerprints
+4. Persists one multi-game schema for imported games, plugins, master references, and supported typed records
+5. Browses records owned by a selected plugin in a filterable record tree
+6. Filters records by FormID and EditorID
+7. Compares matching records across imported plugins in load-order order
+8. Highlights matching values in green, conflicts in red, and the visible winning override in yellow
+9. Supports light and dark desktop themes
+10. Provides CLI imports for one selected game, forced reimport, and reset/import-all workflows
+
+## Supported Games
+
+1. Fallout 4
+2. Skyrim
+3. Starfield
 
 ## Currently Supported Record Types
 
-1. Form Lists (FLST)
-2. Game Settings (GMST)
-3. Globals (GLOB)
-4. Miscellaneous Items (MISC)
+Cross-game record types:
+
+1. Actor Value Information (AVIF)
+2. Form Lists (FLST)
+3. Game Settings (GMST)
+4. Globals (GLOB)
 5. Keywords (KYWD)
-6. NPCs (NPC_)
-7. Actor Value Information (AVIF)
-8. Magic Effects (MGEF)
+6. Magic Effects (MGEF)
+7. Miscellaneous Items (MISC)
+8. NPCs (NPC_)
 9. Perks (PERK)
 
 ## Planned Roadmap
 
-1. Support the remaining Starfield record types
-2. Add Spriggit-compatible plugin and record export/import
-3. Validate supported record types against Spriggit and xEdit
-4. Add record editing, plugin saving, plugin creation, and patch creation workflows
+1. Expand supported record details for Starfield, Fallout 4, and Skyrim
+2. Add deeper child comparison sections for supported nested structures
+3. Add Spriggit-compatible plugin and record export/import
+4. Validate supported record types against Spriggit and xEdit
+5. Add record editing, plugin saving, plugin creation, and patch creation workflows
 
-Long-term goals include local LLM-assisted patch creation and support for other Bethesda games.
+Long-term goals include local LLM-assisted patch creation.
 
 ## Current Limitations
 
-1. Only a subset of Starfield record types are currently supported.
-2. Complex nested child structures for supported records are deferred until they can be represented with normalized
-   typed fields or child tables.
-3. `BlueprintShips*.esm` plugins are intentionally skipped during import.
+1. Fallout 4 and Skyrim currently support the shared `FLST`, `GMST`, and `GLOB` typed-record slice.
+2. Starfield currently supports the shared typed-record slice plus additional parent rows for `MISC`, `KYWD`, `AVIF`,
+   `NPC_`, `MGEF`, and `PERK`.
+3. Deep child comparison sections, patch generation, and conflict resolution workflows are deferred.
+4. Oblivion is not implemented.
+5. `BlueprintShips*.esm` Starfield plugins are intentionally skipped during import.
 
 ## Installation
 
-1. Windows users can download the x64 ZIP archive or installer.
-2. Linux users can download the x64 ZIP archive or Debian package.
-3. Do not install the application into your Starfield Data folder.
-4. Starfield must be installed and discoverable on your system, including Linux installations running through Proton.
+1. Windows users can download the x64 desktop ZIP archive or installer.
+2. Linux users can download the x64 desktop ZIP archive, CLI ZIP archive, Debian package, or Arch package.
+3. Do not install the application into a game's Data folder.
+4. The selected game must be installed and discoverable on your system, including Linux installations running through
+   Proton where supported by Mutagen's game discovery.
 
-On Linux, the application stores user data under `~/.SFRecordCompareEngine`.
+Application data and logs are stored under:
+
+1. Windows: `C:\ProgramData\CreationsForge`
+2. Linux/macOS: `~/.CreationsForge`
 
 ## Required Development Environment
 
-1. Must have Starfield installed on your system
-2. Must have Visual Studio 2022 or later, VS Code, or JetBrains Rider (Preferred)
-3. Must have .NET 10 SDK installed
-4. Must have Uno Platform 4.0 Community Edition installed (https://platform.uno/docs/articles/getting-started.html)
+1. .NET 10 SDK
+2. Visual Studio 2022 or later, VS Code, or JetBrains Rider
+3. A supported Bethesda game installation for runtime import testing
 
 ## References
 
-- [Uno Control Gallery and Documentation](https://gallery.platform.uno/)
+- [Mutagen Documentation](https://mutagen-modding.github.io/Mutagen/)
+- [Mutagen GitHub Repository](https://github.com/Mutagen-Modding/Mutagen)
+- [Spriggit GitHub Repository](https://github.com/Mutagen-Modding/Spriggit)
+
+## Source Code
+
+The source code is available at [monster-cookie/CreationsForge](https://github.com/monster-cookie/CreationsForge).
 
 ## Social Presence
 
