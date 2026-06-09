@@ -1,4 +1,5 @@
 using CreationsForge.Bethesda.Assets.Files;
+using CreationsForge.Bethesda.Assets.Resources;
 using CreationsForge.Core.DTOs.Assets;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Services.Interfaces;
@@ -8,111 +9,53 @@ namespace CreationsForge.Core.Services;
 
 public class AssetFileResolverService : IAssetFileResolverService
 {
-    private static readonly string[] ArchiveExtensions =
-    {
-        ".ba2",
-        ".bsa"
-    };
-
     private readonly IReadOnlyList<IGameMetadataService> GameMetadataServices;
+    private readonly IBethesdaAssetProvider BethesdaAssetProvider;
     private readonly ILogger Logger = Log.ForContext<AssetFileResolverService>();
 
-    public AssetFileResolverService(IEnumerable<IGameMetadataService> gameMetadataServices)
+    public AssetFileResolverService(IEnumerable<IGameMetadataService> gameMetadataServices, IBethesdaAssetProvider bethesdaAssetProvider)
     {
         GameMetadataServices = gameMetadataServices.ToList();
+        BethesdaAssetProvider = bethesdaAssetProvider;
     }
 
     public AssetFileResolutionDTO ResolveAssetFile(AssetPreviewCandidateDTO candidate)
     {
-        var normalizedPath = NormalizeAssetPath(candidate.MeshPath);
-        if (Path.IsPathRooted(normalizedPath))
+        var dataFolder = Path.IsPathRooted(candidate.MeshPath) ? null : GetDataFolder(candidate.Game);
+        var assetReadResult = BethesdaAssetProvider.TryReadAsset(new BethesdaAssetReadRequest
         {
-            return ResolveAbsolutePath(normalizedPath);
-        }
-
-        var dataFolder = GetDataFolder(candidate.Game);
-        if (string.IsNullOrWhiteSpace(dataFolder) || !Directory.Exists(dataFolder))
+            AssetPath = candidate.MeshPath,
+            DataFolder = dataFolder
+        });
+        var resolution = CreateResolution(assetReadResult, candidate);
+        if (resolution.Status == AssetFileResolutionStatus.MissingDataFolder)
         {
             Logger.Warning(
                 "Asset file resolver could not locate a data folder for {Game} while resolving {AssetPath}",
                 candidate.Game,
                 candidate.MeshPath);
-            return new AssetFileResolutionDTO
-            {
-                OriginalPath = candidate.MeshPath,
-                DataFolder = dataFolder,
-                Status = AssetFileResolutionStatus.MissingDataFolder,
-                StatusMessage = $"No readable data folder is available for {candidate.Game}."
-            };
         }
 
-        var result = ResolveLooseFile(candidate, normalizedPath, dataFolder);
-        if (result.IsResolved)
-        {
-            return result;
-        }
-
-        if (HasArchives(dataFolder))
-        {
-            result.Status = AssetFileResolutionStatus.ArchiveExtractionUnsupported;
-            result.StatusMessage = $"Asset path {candidate.MeshPath} appears archive-backed. BA2/BSA extraction is not implemented yet.";
-            return result;
-        }
-
-        return result;
+        return resolution;
     }
 
-    private AssetFileResolutionDTO ResolveAbsolutePath(string assetPath)
-    {
-        if (File.Exists(assetPath))
-        {
-            return new AssetFileResolutionDTO
-            {
-                OriginalPath = assetPath,
-                ResolvedPath = assetPath,
-                Status = AssetFileResolutionStatus.ResolvedLooseFile,
-                StatusMessage = $"Resolved loose asset file {assetPath}."
-            };
-        }
-
-        return new AssetFileResolutionDTO
-        {
-            OriginalPath = assetPath,
-            Status = AssetFileResolutionStatus.MissingAbsoluteFile,
-            StatusMessage = $"Absolute asset file {assetPath} was not found."
-        };
-    }
-
-    private AssetFileResolutionDTO ResolveLooseFile(AssetPreviewCandidateDTO candidate, string normalizedPath, string dataFolder)
+    private static AssetFileResolutionDTO CreateResolution(BethesdaAssetReadResult assetReadResult, AssetPreviewCandidateDTO candidate)
     {
         var result = new AssetFileResolutionDTO
         {
-            OriginalPath = candidate.MeshPath,
-            DataFolder = dataFolder,
-            Status = AssetFileResolutionStatus.MissingLooseFile,
-            StatusMessage = $"No loose asset file was found for {candidate.MeshPath}."
+            OriginalPath = assetReadResult.OriginalPath,
+            ResolvedPath = assetReadResult.ResolvedPath,
+            Data = assetReadResult.Data,
+            DataFolder = assetReadResult.DataFolder,
+            SourceArchivePath = assetReadResult.SourceArchivePath,
+            NormalizedEntryPath = assetReadResult.NormalizedEntryPath,
+            Status = MapStatus(assetReadResult.Status),
+            StatusMessage = CreateStatusMessage(assetReadResult, candidate)
         };
 
-        foreach (var relativePath in GetRelativePathCandidates(normalizedPath))
+        foreach (var searchedPath in assetReadResult.SearchedPaths)
         {
-            var resolvedPath = Path.GetFullPath(Path.Combine(dataFolder, relativePath));
-            result.SearchedPaths.Add(resolvedPath);
-            if (!resolvedPath.StartsWith(Path.GetFullPath(dataFolder), StringComparison.OrdinalIgnoreCase))
-            {
-                Logger.Warning(
-                    "Asset file resolver skipped path outside data folder while resolving {AssetPath}: {ResolvedPath}",
-                    candidate.MeshPath,
-                    resolvedPath);
-                continue;
-            }
-
-            if (File.Exists(resolvedPath))
-            {
-                result.ResolvedPath = resolvedPath;
-                result.Status = AssetFileResolutionStatus.ResolvedLooseFile;
-                result.StatusMessage = $"Resolved loose asset file {resolvedPath}.";
-                return result;
-            }
+            result.SearchedPaths.Add(searchedPath);
         }
 
         return result;
@@ -124,37 +67,33 @@ public class AssetFileResolverService : IAssetFileResolverService
         return metadataService?.GetGame().DataFolder;
     }
 
-    private static IReadOnlyList<string> GetRelativePathCandidates(string normalizedPath)
+    private static AssetFileResolutionStatus MapStatus(BethesdaAssetReadStatus status)
     {
-        var candidates = new List<string>
+        return status switch
         {
-            normalizedPath
+            BethesdaAssetReadStatus.ReadLooseFile => AssetFileResolutionStatus.ResolvedLooseFile,
+            BethesdaAssetReadStatus.ReadArchiveEntry => AssetFileResolutionStatus.ResolvedArchiveEntryInMemory,
+            BethesdaAssetReadStatus.MissingAbsoluteFile => AssetFileResolutionStatus.MissingAbsoluteFile,
+            BethesdaAssetReadStatus.MissingDataFolder => AssetFileResolutionStatus.MissingDataFolder,
+            BethesdaAssetReadStatus.MissingLooseFile => AssetFileResolutionStatus.MissingLooseFile,
+            BethesdaAssetReadStatus.ArchiveReaderUnavailable => AssetFileResolutionStatus.ArchiveExtractionUnsupported,
+            BethesdaAssetReadStatus.ArchiveEntryMissing => AssetFileResolutionStatus.ArchiveExtractionUnsupported,
+            _ => AssetFileResolutionStatus.MissingLooseFile
         };
+    }
 
-        if (!StartsWithDirectory(normalizedPath, "Meshes"))
+    private static string CreateStatusMessage(BethesdaAssetReadResult assetReadResult, AssetPreviewCandidateDTO candidate)
+    {
+        if (assetReadResult.Status == BethesdaAssetReadStatus.ReadArchiveEntry)
         {
-            candidates.Add(Path.Combine("Meshes", normalizedPath));
+            return $"Read archive-backed asset path {candidate.MeshPath} into memory. Parser integration is pending.";
         }
 
-        return candidates;
-    }
+        if (assetReadResult.Status == BethesdaAssetReadStatus.ArchiveReaderUnavailable)
+        {
+            return $"Asset path {candidate.MeshPath} appears archive-backed. BA2/BSA extraction is not implemented yet.";
+        }
 
-    private static bool StartsWithDirectory(string path, string directoryName)
-    {
-        return string.Equals(path, directoryName, StringComparison.OrdinalIgnoreCase) ||
-            path.StartsWith(directoryName + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static string NormalizeAssetPath(string assetPath)
-    {
-        return assetPath.Trim()
-            .Replace('\\', Path.DirectorySeparatorChar)
-            .Replace('/', Path.DirectorySeparatorChar);
-    }
-
-    private static bool HasArchives(string dataFolder)
-    {
-        return Directory.EnumerateFiles(dataFolder)
-            .Any(path => ArchiveExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase));
+        return assetReadResult.StatusMessage;
     }
 }

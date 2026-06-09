@@ -21,9 +21,10 @@ shared import orchestration, shared Mutagen primitive mapping, and repositories 
 may reference shared Mutagen packages such as `Mutagen.Bethesda.Core`, but it must not reference game-specific Mutagen
 packages.
 
-`CreationsForge.Bethesda.Assets` owns UI-neutral Bethesda asset IO helpers, local-file resolution result DTOs,
-archive-reader contracts, and temporary extraction session infrastructure. It does not reference Avalonia, Mutagen,
-NPoco, game projects, or the database. Archive implementations are intended to be read-only and preview-focused.
+`CreationsForge.Bethesda.Assets` owns UI-neutral Bethesda asset IO helpers, local-file resolution result DTOs, an
+in-memory asset provider, archive-reader contracts, and temporary extraction session infrastructure. It does not
+reference Avalonia, Mutagen, NPoco, game projects, or the database. Archive implementations are intended to be
+read-only and preview-focused.
 
 `CreationsForge.Starfield`, `CreationsForge.Fallout4`, and `CreationsForge.Skyrim` isolate
 game-specific Mutagen packages, Autofac modules, reader services, and reader facade implementations. These projects
@@ -153,11 +154,11 @@ area. Deeper child sections such as perk ranks, patch generation, and conflict r
 `IAssetFileResolverService` resolves readable local asset files from preview candidates by checking absolute paths,
 game data-folder loose files, and normalized `Meshes` paths before reporting archive-backed assets as unsupported.
 Core DTOs describe record-owned candidate paths and optional mesh payloads without referencing Avalonia, OpenGL,
-Silk.NET, process launching, or binding primitives. Assets DTOs describe local-file resolution and future archive
-extraction results. The presentation project owns `AssetPreviewPaneViewModel`, the Avalonia `OpenGlControlBase`
-renderer, Silk.NET OpenGL calls, optional Nifly-backed NIF geometry reads, render mesh conversion, sample-geometry
-fallback, and the external-open command. Unsupported preview cases, archive-backed paths without BA2/BSA extraction,
-Nifly failures, and OpenGL renderer failures are logged through Serilog.
+Silk.NET, process launching, or binding primitives. Assets DTOs describe local-file resolution, in-memory asset reads,
+and future archive extraction results. The presentation project owns `AssetPreviewPaneViewModel`, the Avalonia
+`OpenGlControlBase` renderer, Silk.NET OpenGL calls, optional Nifly-backed NIF geometry reads, render mesh conversion,
+sample-geometry fallback, and the external-open command. Unsupported preview cases, archive-backed paths without
+BA2/BSA extraction, Nifly failures, and OpenGL renderer failures are logged through Serilog.
 
 ## Persistence Architecture
 

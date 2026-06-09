@@ -9,11 +9,11 @@ not reference UI frameworks and the presentation project must not call Mutagen d
 implemented.
 
 Decision: Add Core asset-preview DTOs and `IAssetPreviewPathResolverService` for UI-neutral candidate resolution from
-persisted model rows. Add `CreationsForge.Bethesda.Assets` for UI-neutral Bethesda asset IO result DTOs,
-archive-reader contracts, and temporary extraction infrastructure. Add `IAssetFileResolverService` for UI-neutral
-local-file resolution that checks absolute paths, game data-folder loose files, and normalized `Meshes` paths before
-reporting archive-backed paths as unsupported. The Avalonia presentation project owns the preview pane, an Avalonia
-`OpenGlControlBase` renderer using Silk.NET, generated sample geometry, external file launching, optional
+persisted model rows. Add `CreationsForge.Bethesda.Assets` for UI-neutral Bethesda asset IO result DTOs, in-memory
+asset reads, archive-reader contracts, and temporary extraction infrastructure. Add `IAssetFileResolverService` for
+UI-neutral local-file resolution that checks absolute paths, game data-folder loose files, and normalized `Meshes`
+paths before reporting archive-backed paths as unsupported. The Avalonia presentation project owns the preview pane,
+an Avalonia `OpenGlControlBase` renderer using Silk.NET, generated sample geometry, external file launching, optional
 Nifly-backed NIF reads, and unsupported-preview logging.
 
 Rationale: This proves the UI workflow without weakening the Core/presentation boundary. It also leaves a stable DTO
@@ -31,6 +31,8 @@ Consequences:
   OpenGL preview control.
 - Nifly can be tried for resolved local NIF file paths, but archive-backed model paths still fall back to generated
   sample geometry until BA2/BSA extraction is implemented.
+- The asset provider can read loose files into memory and dispatch archive reads through registered readers; real
+  BA2/BSA parsing remains a follow-up.
 - Unsupported, missing, or unreadable preview cases are logged through the UI service/view-model path.
 - External opening depends on OS file associations for NifSkope, Blender, or compatible tools.
 - Real Starfield archive-backed NIF mesh and texture loading remain follow-up work.
@@ -40,6 +42,7 @@ Related files:
 - `CreationsForge.Core/DTOs/Assets/AssetPreviewCandidateDTO.cs`
 - `CreationsForge.Core/DTOs/Assets/AssetPreviewModelDTO.cs`
 - `CreationsForge.Bethesda.Assets/Files/AssetFileResolutionDTO.cs`
+- `CreationsForge.Bethesda.Assets/Resources/IBethesdaAssetProvider.cs`
 - `CreationsForge.Bethesda.Assets/Archives/IAssetArchiveReader.cs`
 - `CreationsForge.Bethesda.Assets/Temp/IAssetTempFileSession.cs`
 - `CreationsForge.Core/Services/AssetFileResolverService.cs`

@@ -6,5 +6,6 @@ public enum AssetFileResolutionStatus
     MissingAbsoluteFile,
     MissingDataFolder,
     MissingLooseFile,
+    ResolvedArchiveEntryInMemory,
     ArchiveExtractionUnsupported
 }

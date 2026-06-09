@@ -6,6 +6,8 @@
 - Added an experimental Nifly reader for the new preview pane.
 - Added a `CreationsForge.Bethesda.Assets` library for UI-neutral asset IO result DTOs, archive-reader contracts, and
   temporary extraction infrastructure.
+- Added a Bethesda asset provider that reads loose asset files into memory and dispatches archive-backed reads through
+  registered archive readers, with real BA2/BSA parsing still pending.
 
 ## Version 1.1.2 - 2026-06-08
 

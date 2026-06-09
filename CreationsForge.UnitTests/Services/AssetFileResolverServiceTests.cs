@@ -1,4 +1,5 @@
 using CreationsForge.Bethesda.Assets.Files;
+using CreationsForge.Bethesda.Assets.Resources;
 using CreationsForge.Core.DTOs.Assets;
 using CreationsForge.Core.DTOs.Games;
 using CreationsForge.Core.DTOs.Plugins;
@@ -21,7 +22,7 @@ public class AssetFileResolverServiceTests
         {
             var filePath = Path.Combine(tempDirectory.FullName, "Preview.nif");
             File.WriteAllText(filePath, "nif");
-            var service = new AssetFileResolverService([]);
+            var service = new AssetFileResolverService([], new BethesdaAssetProvider([]));
 
             var result = service.ResolveAssetFile(CreateCandidate(filePath));
 
@@ -45,7 +46,9 @@ public class AssetFileResolverServiceTests
             Directory.CreateDirectory(meshDirectory);
             var filePath = Path.Combine(meshDirectory, "BabyBottleDirty02.nif");
             File.WriteAllText(filePath, "nif");
-            var service = new AssetFileResolverService([CreateGameMetadataService(SupportedGame.Fallout4, tempDirectory.FullName)]);
+            var service = new AssetFileResolverService(
+                [CreateGameMetadataService(SupportedGame.Fallout4, tempDirectory.FullName)],
+                new BethesdaAssetProvider([]));
 
             var result = service.ResolveAssetFile(CreateCandidate("SetDressing\\BabyBottle\\BabyBottleDirty02.nif", SupportedGame.Fallout4));
 
@@ -67,7 +70,9 @@ public class AssetFileResolverServiceTests
         try
         {
             File.WriteAllText(Path.Combine(tempDirectory.FullName, "Fallout4 - Meshes.ba2"), "archive");
-            var service = new AssetFileResolverService([CreateGameMetadataService(SupportedGame.Fallout4, tempDirectory.FullName)]);
+            var service = new AssetFileResolverService(
+                [CreateGameMetadataService(SupportedGame.Fallout4, tempDirectory.FullName)],
+                new BethesdaAssetProvider([]));
 
             var result = service.ResolveAssetFile(CreateCandidate("SetDressing\\BabyBottle\\BabyBottleDirty02.nif", SupportedGame.Fallout4));
 
@@ -84,7 +89,7 @@ public class AssetFileResolverServiceTests
     [Fact]
     public void ResolveAssetFile_ReturnsMissingDataFolderWhenMetadataIsUnavailable()
     {
-        var service = new AssetFileResolverService([]);
+        var service = new AssetFileResolverService([], new BethesdaAssetProvider([]));
 
         var result = service.ResolveAssetFile(CreateCandidate("Meshes\\Props\\Preview.nif"));
 

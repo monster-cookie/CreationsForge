@@ -6,5 +6,5 @@ public interface IAssetArchiveReader
 
     IReadOnlyList<AssetArchiveEntry> ListEntries(string archivePath);
 
-    AssetArchiveReadResult ExtractEntry(string archivePath, string entryPath, string destinationDirectory);
+    AssetArchiveReadResult TryReadEntry(string archivePath, string entryPath);
 }

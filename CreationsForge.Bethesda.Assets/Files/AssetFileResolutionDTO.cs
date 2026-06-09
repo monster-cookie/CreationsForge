@@ -6,7 +6,13 @@ public class AssetFileResolutionDTO
 
     public string? ResolvedPath { get; set; }
 
+    public byte[]? Data { get; set; }
+
     public string? DataFolder { get; set; }
+
+    public string? SourceArchivePath { get; set; }
+
+    public string? NormalizedEntryPath { get; set; }
 
     public required AssetFileResolutionStatus Status { get; set; }
 

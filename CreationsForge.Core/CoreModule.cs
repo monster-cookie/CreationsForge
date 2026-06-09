@@ -1,5 +1,6 @@
 using System.Reflection;
 using Autofac;
+using CreationsForge.Bethesda.Assets.Resources;
 using CreationsForge.Core.Configuration;
 using CreationsForge.Core.Configuration.Interfaces;
 using CreationsForge.Core.Database;
@@ -26,6 +27,10 @@ public class CoreModule : Module
             .SingleInstance();
         builder.Register(c => c.Resolve<ISqliteConnectionFactory>().OpenDatabase())
             .As<IDatabase>()
+            .InstancePerLifetimeScope();
+
+        builder.RegisterType<BethesdaAssetProvider>()
+            .As<IBethesdaAssetProvider>()
             .InstancePerLifetimeScope();
 
         builder.RegisterType<GameImportDispatcher>().InstancePerLifetimeScope();

@@ -4,7 +4,11 @@ public class AssetArchiveReadResult
 {
     public required bool IsSuccess { get; set; }
 
-    public string? ExtractedPath { get; set; }
+    public byte[]? Data { get; set; }
+
+    public string? ArchivePath { get; set; }
+
+    public string? EntryPath { get; set; }
 
     public string? StatusMessage { get; set; }
 }
