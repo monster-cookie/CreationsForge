@@ -1,5 +1,7 @@
 using System.Reflection;
 using Autofac;
+using CreationsForge.Bethesda.Assets.Archives;
+using CreationsForge.Bethesda.Assets.Archives.Ba2;
 using CreationsForge.Bethesda.Assets.Resources;
 using CreationsForge.Core.Configuration;
 using CreationsForge.Core.Configuration.Interfaces;
@@ -31,6 +33,10 @@ public class CoreModule : Module
 
         builder.RegisterType<BethesdaAssetProvider>()
             .As<IBethesdaAssetProvider>()
+            .InstancePerLifetimeScope();
+
+        builder.RegisterType<Ba2ArchiveReader>()
+            .As<IAssetArchiveReader>()
             .InstancePerLifetimeScope();
 
         builder.RegisterType<GameImportDispatcher>().InstancePerLifetimeScope();

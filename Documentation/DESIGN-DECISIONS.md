@@ -1,5 +1,44 @@
 # Design Decisions
 
+## 2026-06-09 - Add Read-Only BA2 Archive Reading To Bethesda Assets
+
+Status: Accepted
+
+Context: Real preview paths for Fallout 4, Skyrim, and Starfield are usually archive-backed rather than loose files.
+Nifly can remain useful as a reference or optional NIF parser, but its project shape and Starfield support do not make
+it a good place for CreationsForge's archive IO path. The UI also should not own Bethesda archive parsing.
+
+Decision: Keep archive IO in `CreationsForge.Bethesda.Assets` and add a minimal `Ba2ArchiveReader` implementing the
+existing `IAssetArchiveReader` contract. The first reader is read-only, targets BA2 general archives, lists archive
+entries, and reads uncompressed and zlib-compressed entries into memory. Core registers the reader through Autofac so
+`BethesdaAssetProvider` can resolve archive-backed asset bytes without adding archive parsing to the UI.
+
+Rationale: A small owned reader keeps the asset pipeline UI-neutral and testable while avoiding a dependency on a
+tool-specific NIF project. It also creates a narrow place to port additional behavior from fo76utils/NifSkope-style C++
+code as the preview path matures.
+
+Alternatives considered:
+
+- Fork Nifly and place BA2/BSA loading inside that fork.
+- Keep archive-backed paths as sample-geometry placeholders until all NIF parsing is ready.
+- Put BA2 parsing directly in the Avalonia preview services.
+
+Consequences:
+
+- Uncompressed and zlib-compressed entries from BA2 general archives can now be read into memory for later NIF parsing.
+- BA2 texture files, Starfield compression variants that are not zlib, BSA archives, material lookup, texture lookup,
+  and real NIF mesh extraction remain follow-up work.
+- The presentation project remains responsible only for rendering, NIF-to-render-mesh conversion, and external-open
+  behavior.
+
+Related files:
+
+- `CreationsForge.Bethesda.Assets/Archives/Ba2/Ba2ArchiveReader.cs`
+- `CreationsForge.Bethesda.Assets/Archives/IAssetArchiveReader.cs`
+- `CreationsForge.Bethesda.Assets/Resources/BethesdaAssetProvider.cs`
+- `CreationsForge.Core/CoreModule.cs`
+- `CreationsForge.UnitTests/Services/Ba2ArchiveReaderTests.cs`
+
 ## 2026-06-08 - Keep Asset Preview Rendering In Presentation
 
 Status: Accepted
@@ -29,13 +68,13 @@ Consequences:
 
 - Selecting a model-bearing record can show preview candidates and render generated sample geometry through the native
   OpenGL preview control.
-- Nifly can be tried for resolved local NIF file paths, but archive-backed model paths still fall back to generated
-  sample geometry until BA2/BSA extraction is implemented.
-- The asset provider can read loose files into memory and dispatch archive reads through registered readers; real
-  BA2/BSA parsing remains a follow-up.
+- Nifly can be tried for resolved local NIF file paths, while archive-backed model paths depend on registered archive
+  readers before falling back to generated sample geometry.
+- The asset provider can read loose files into memory and dispatch archive reads through registered readers.
 - Unsupported, missing, or unreadable preview cases are logged through the UI service/view-model path.
 - External opening depends on OS file associations for NifSkope, Blender, or compatible tools.
-- Real Starfield archive-backed NIF mesh and texture loading remain follow-up work.
+- Real Starfield archive-backed NIF mesh parsing, unsupported archive compression variants, BSA files, and texture
+  loading remain follow-up work.
 
 Related files:
 

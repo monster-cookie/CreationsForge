@@ -116,6 +116,7 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
             return looseResult;
         }
 
+        string? lastArchiveReaderStatusMessage = null;
         foreach (var archivePath in archives)
         {
             var archiveReader = ArchiveReaders.FirstOrDefault(reader => reader.CanRead(archivePath));
@@ -141,6 +142,11 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
                         StatusMessage = readResult.StatusMessage ?? $"Read archive asset {relativePath} from {archivePath}."
                     };
                 }
+
+                if (!string.IsNullOrWhiteSpace(readResult.StatusMessage))
+                {
+                    lastArchiveReaderStatusMessage = readResult.StatusMessage;
+                }
             }
         }
 
@@ -152,7 +158,7 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
             Status = ArchiveReaders.Count == 0 ? BethesdaAssetReadStatus.ArchiveReaderUnavailable : BethesdaAssetReadStatus.ArchiveEntryMissing,
             StatusMessage = ArchiveReaders.Count == 0
                 ? $"Asset path {request.AssetPath} appears archive-backed, but no archive reader is registered."
-                : $"Asset path {request.AssetPath} was not found in registered archive readers."
+                : lastArchiveReaderStatusMessage ?? $"Asset path {request.AssetPath} was not found in registered archive readers."
         };
     }
 

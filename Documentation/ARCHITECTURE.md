@@ -24,7 +24,9 @@ packages.
 `CreationsForge.Bethesda.Assets` owns UI-neutral Bethesda asset IO helpers, local-file resolution result DTOs, an
 in-memory asset provider, archive-reader contracts, and temporary extraction session infrastructure. It does not
 reference Avalonia, Mutagen, NPoco, game projects, or the database. Archive implementations are intended to be
-read-only and preview-focused.
+read-only and preview-focused. The first archive implementation is a minimal BA2 general archive reader that can list
+entries and read uncompressed and zlib-compressed entries into memory. BA2 texture archives, Starfield compression
+variants that are not zlib, and BSA archives are explicit follow-up work.
 
 `CreationsForge.Starfield`, `CreationsForge.Fallout4`, and `CreationsForge.Skyrim` isolate
 game-specific Mutagen packages, Autofac modules, reader services, and reader facade implementations. These projects
@@ -54,7 +56,8 @@ adapter projects rather than persisted game metadata paths.
 `CreationsForge.Bootstrap` provides shared Autofac module registration.
 
 - `CoreModule` registers configuration, SQLite options, connection factory, NPoco `IDatabase`, schema initializer,
-  shared services, UI-neutral workflow services, shared typed importers, and shared repositories.
+  shared services, UI-neutral workflow services, shared typed importers, the BA2 archive reader, and shared
+  repositories.
 - `MigrationsModule` registers `DatabaseMigrationRunner`.
 - Each game module registers that game's plugin reader service, plugin reader facade, record reader, and one
   `IGameImporter` wired to those readers.
@@ -152,13 +155,15 @@ area. Deeper child sections such as perk ranks, patch generation, and conflict r
 
 `IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows.
 `IAssetFileResolverService` resolves readable local asset files from preview candidates by checking absolute paths,
-game data-folder loose files, and normalized `Meshes` paths before reporting archive-backed assets as unsupported.
-Core DTOs describe record-owned candidate paths and optional mesh payloads without referencing Avalonia, OpenGL,
-Silk.NET, process launching, or binding primitives. Assets DTOs describe local-file resolution, in-memory asset reads,
-and future archive extraction results. The presentation project owns `AssetPreviewPaneViewModel`, the Avalonia
-`OpenGlControlBase` renderer, Silk.NET OpenGL calls, optional Nifly-backed NIF geometry reads, render mesh conversion,
-sample-geometry fallback, and the external-open command. Unsupported preview cases, archive-backed paths without
-BA2/BSA extraction, Nifly failures, and OpenGL renderer failures are logged through Serilog.
+game data-folder loose files, normalized `Meshes` paths, and registered read-only archive readers. The current archive
+path can read uncompressed and zlib-compressed BA2 general entries into memory and reports texture BA2 files, BSA
+files, and unsupported compression variants as follow-up work. Core DTOs describe record-owned candidate paths and
+optional mesh payloads without referencing Avalonia, OpenGL, Silk.NET, process launching, or binding primitives.
+Assets DTOs describe local-file resolution, in-memory asset reads, and archive extraction results. The presentation
+project owns `AssetPreviewPaneViewModel`, the Avalonia `OpenGlControlBase` renderer, Silk.NET OpenGL calls, optional
+Nifly-backed NIF geometry reads, render mesh conversion, sample-geometry fallback, and the external-open command.
+Unsupported preview cases, archive-backed paths that cannot yet be read, Nifly failures, and OpenGL renderer failures
+are logged through Serilog.
 
 ## Persistence Architecture
 
