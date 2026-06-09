@@ -13,6 +13,7 @@
         <Description>Multi-game Bethesda plugin import and record comparison prototype.</Description>
         <ApplicationIcon>Resources\AppIcon\CreationsForge.ico</ApplicationIcon>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <ItemGroup>
@@ -34,6 +35,7 @@
         <PackageReference Include="Serilog" Version="4.3.1" />
         <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
         <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+        <PackageReference Include="Silk.NET.OpenGL" Version="2.22.0" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(AVALONIA_UI_LICENSE_KEY)' != ''">

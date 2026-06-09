@@ -1,0 +1,8 @@
+namespace CreationsForge.Services;
+
+public class AssetPreviewRenderMesh
+{
+    public IList<float> Vertices { get; set; } = new List<float>();
+
+    public IList<uint> Indices { get; set; } = new List<uint>();
+}

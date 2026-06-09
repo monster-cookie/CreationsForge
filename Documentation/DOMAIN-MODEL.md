@@ -139,6 +139,11 @@ Models represent Mutagen `IModelGetter` payloads for records that expose model d
 their owning `RecordInstances` row and are further identified by `ModelSlot` and `ModelGender`. The first populated
 slot is Starfield `MISC` with `ModelSlot = Model` and an empty `ModelGender`.
 
+Asset preview candidates are derived from persisted model rows. Candidate identity includes the selected game, source
+plugin, record type, origin FormKey, model slot, model gender, and mesh path. Core can describe preview geometry with
+UI-neutral mesh DTOs containing vertices, normals, triangle indices, UVs, material names, and optional texture paths,
+but the current Avalonia pane renders generated sample geometry while real NIF parsing remains deferred.
+
 Keyword lists represent indexed keyword FormKey payloads for records that expose keyword data. Shared keyword rows are
 linked to their owning `RecordInstances` row by record type and parent FormKey. Starfield `MISC`, `NPC_`, and `MGEF`
 currently populate this shared keyword shape.

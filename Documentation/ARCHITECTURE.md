@@ -4,7 +4,7 @@
 
 The solution is split into UI, console, core, game adapter, migrations, and tests.
 
-`CreationsForge` is the cross-platform Uno Platform Skia Desktop presentation project. It owns views, view models,
+`CreationsForge` is the cross-platform Avalonia presentation project. It owns views, view models,
 presentation commands, and UI-specific coordination. It references Bootstrap and Core, but UI and MVVM code must
 consume Core contracts and DTOs instead of Mutagen APIs or game-specific reader services directly.
 
@@ -142,6 +142,12 @@ record shape and display as flat comparison rows.
 Core assigns comparison value states for neutral, identical, conflicting, and displayed winning-override values; the
 presentation layer maps those states to the green, red, and yellow comparison colors and shows the legend in the status
 area. Deeper child sections such as perk ranks, patch generation, and conflict resolution workflows remain deferred.
+
+`IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows. Core DTOs
+describe candidate paths and optional mesh payloads without referencing Avalonia, OpenGL, Silk.NET, process launching,
+or binding primitives. The presentation project owns `AssetPreviewPaneViewModel`, the Avalonia `OpenGlControlBase`
+renderer, Silk.NET OpenGL calls, render mesh conversion, and the external-open command. Unsupported preview cases and
+OpenGL renderer failures are logged through Serilog from presentation code.
 
 ## Persistence Architecture
 

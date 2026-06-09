@@ -16,11 +16,13 @@ namespace CreationsForge.Views;
 public class MainView : UserControl
 {
     private readonly MainViewModel ViewModel;
+    private readonly AssetPreviewPaneView AssetPreviewPaneView;
     private bool Started;
 
-    public MainView(MainViewModel viewModel)
+    public MainView(MainViewModel viewModel, AssetPreviewPaneView assetPreviewPaneView)
     {
         ViewModel = viewModel;
+        AssetPreviewPaneView = assetPreviewPaneView;
         DataContext = ViewModel;
         Content = BuildContent();
     }
@@ -326,20 +328,31 @@ public class MainView : UserControl
         Grid.SetRow(comparisonTitle, 0);
         Grid.SetRow(comparisonGrid, 1);
 
+        var workspaceGrid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("7*,3*"),
+            ColumnSpacing = 0
+        };
+        var comparisonPane = new Grid
+        {
+            RowDefinitions = new RowDefinitions("Auto,*"),
+            RowSpacing = 12,
+            Children =
+            {
+                comparisonTitle,
+                comparisonGrid
+            }
+        };
+        Grid.SetColumn(comparisonPane, 0);
+        workspaceGrid.Children.Add(comparisonPane);
+        Grid.SetColumn(AssetPreviewPaneView, 1);
+        workspaceGrid.Children.Add(AssetPreviewPaneView);
+
         return new Border
         {
             Background = App.GetApplicationBrush(App.ApplicationSurfaceBrushKey),
             Padding = new Thickness(28),
-            Child = new Grid
-            {
-                RowDefinitions = new RowDefinitions("Auto,*"),
-                RowSpacing = 12,
-                Children =
-                {
-                    comparisonTitle,
-                    comparisonGrid
-                }
-            }
+            Child = workspaceGrid
         };
     }
 

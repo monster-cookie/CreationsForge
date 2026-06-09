@@ -23,7 +23,7 @@ ActorValueInformation, NPCs, MagicEffects, and Perks. Imports currently create/u
 
 ## Projects
 
-- `CreationsForge` is the cross-platform Uno Platform Skia Desktop presentation project. Its first UI slice owns
+- `CreationsForge` is the cross-platform Avalonia presentation project. Its first UI slice owns
   MVVM state for direct main-window game selection, active plugin selection, guarded import flow, and import progress
   through Core workflow services.
 - `CreationsForge.Console` is the command-line import harness. It owns
@@ -62,7 +62,7 @@ ActorValueInformation, NPCs, MagicEffects, and Perks. Imports currently create/u
     record types, resolves registered typed detail importers, records unsupported typed detail importers, and isolates
     per-record failures.
 
-The Uno UI uses `IGameSelectionService` to list and persist supported games, `IGameImportReadinessService` to detect
+The Avalonia UI uses `IGameSelectionService` to list and persist supported games, `IGameImportReadinessService` to detect
 whether the selected game already has imported plugin data, `IPluginSelectionService` to list imported/openable
 plugins for the active game, and `IGameImportWorkflowService` to run the same schema initialization and import
 workflow through Core. UI and MVVM code consume Core DTOs and result objects only; direct Mutagen usage remains
@@ -92,10 +92,13 @@ imported-record tree for the current persisted record types.
   `MagicEffects`, `Perks`, shared model data, shared keyword lists, shared sounds, and shared scripting adapter data.
 - Preserves plugin source-fingerprint behavior for unchanged, changed, missing, failed, and unsupported plugin states.
 - Preserves record import accounting for the approved typed record types.
-- Provides an initial Uno UI with active game and active plugin autocomplete, warning before long first/full imports,
+- Provides an initial Avalonia UI with active game and active plugin autocomplete, warning before long first/full imports,
   toolbar commands for active-game reimport and Reset & Import All, running all imports through Core services with a
   progress screen, and browsing imported typed records in a left-side tree with category counts, per-record plugin
   usage counts, and scalar comparison rows.
+- Provides an experimental asset preview pane in the Avalonia UI. Core resolves persisted model-path candidates through
+  UI-neutral DTOs and services, while the presentation project owns Silk.NET-backed OpenGL rendering and external file
+  launching.
 
 ## Current Limitations
 
@@ -108,6 +111,8 @@ imported-record tree for the current persisted record types.
 - Oblivion is not implemented.
 - The UI shows imported records in a tree and scalar comparison rows for approved persisted record types. Deep child
   comparison sections, patch generation, and conflict resolution behavior do not exist yet.
+- The asset preview pane currently renders generated sample geometry for supported model paths instead of parsing NIF
+  mesh contents. Real NIF loading remains follow-up work.
 
 ## Shared Scripted Record Import
 

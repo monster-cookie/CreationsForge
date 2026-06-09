@@ -85,6 +85,8 @@ public class App : Application
         builder.RegisterType<MainWindow>().SingleInstance();
         builder.RegisterType<ActivePluginLoadView>();
         builder.RegisterType<ActivePluginLoadViewModel>();
+        builder.RegisterType<AssetPreviewPaneView>();
+        builder.RegisterType<AssetPreviewPaneViewModel>().InstancePerLifetimeScope();
         builder.RegisterType<ImportProgressView>();
         builder.RegisterType<ImportProgressViewModel>();
         builder.RegisterType<MainView>();
@@ -93,6 +95,9 @@ public class App : Application
         builder.RegisterType<SettingsViewModel>();
         builder.RegisterType<ApplicationWindowService>().As<IApplicationWindowService>().SingleInstance();
         builder.RegisterType<ApplicationNavigationService>().As<IApplicationNavigationService>().SingleInstance();
+        builder.RegisterType<AssetPreviewRenderMeshFactory>().As<IAssetPreviewRenderMeshFactory>().SingleInstance();
+        builder.RegisterType<AssetPreviewSceneService>().As<IAssetPreviewSceneService>().SingleInstance();
+        builder.RegisterType<ExternalAssetOpenService>().As<IExternalAssetOpenService>().SingleInstance();
         builder.RegisterType<UserDialogService>().As<IUserDialogService>().SingleInstance();
         builder.RegisterInstance(Log.Logger).As<ILogger>().SingleInstance();
     }

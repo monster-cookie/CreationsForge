@@ -1,5 +1,43 @@
 # Design Decisions
 
+## 2026-06-08 - Keep Asset Preview Rendering In Presentation
+
+Status: Accepted
+
+Context: CreationsForge needs an experimental asset preview pane for records that persist model paths, but Core must
+not reference UI frameworks and the presentation project must not call Mutagen directly. Real NIF parsing is not yet
+implemented.
+
+Decision: Add Core asset-preview DTOs and `IAssetPreviewPathResolverService` for UI-neutral candidate resolution from
+persisted model rows. The Avalonia presentation project owns the preview pane, an Avalonia `OpenGlControlBase`
+renderer using Silk.NET, generated sample geometry, external file launching, and unsupported-preview logging.
+
+Rationale: This proves the UI workflow without weakening the Core/presentation boundary. It also leaves a stable DTO
+shape for future NIF readers or mesh importers to populate with real geometry.
+
+Alternatives considered:
+
+- Put Avalonia or HelixToolkit types directly in Core preview contracts.
+- Delay the preview pane until real NIF parsing is available.
+- Have the presentation project query model repositories directly.
+
+Consequences:
+
+- Selecting a model-bearing record can show preview candidates and render generated sample geometry through the native
+  OpenGL preview control.
+- Unsupported or missing preview cases are logged through the UI service/view-model path.
+- External opening depends on OS file associations for NifSkope, Blender, or compatible tools.
+- Real NIF mesh and texture loading remain follow-up work.
+
+Related files:
+
+- `CreationsForge.Core/DTOs/Assets/AssetPreviewCandidateDTO.cs`
+- `CreationsForge.Core/DTOs/Assets/AssetPreviewModelDTO.cs`
+- `CreationsForge.Core/Services/AssetPreviewPathResolverService.cs`
+- `CreationsForge/Views/AssetPreviewOpenGlControl.cs`
+- `CreationsForge/ViewModels/AssetPreviewPaneViewModel.cs`
+- `CreationsForge/Views/AssetPreviewPaneView.cs`
+
 ## 2026-06-08 - Keep Shared Typed Record Support Synchronized Across Games
 
 Status: Accepted

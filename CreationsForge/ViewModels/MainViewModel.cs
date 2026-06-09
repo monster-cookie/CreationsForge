@@ -63,6 +63,7 @@ public class MainViewModel : ViewModelBase
         IPluginSelectionService pluginSelectionService,
         IRecordComparisonService recordComparisonService,
         IRecordTreeService recordTreeService,
+        AssetPreviewPaneViewModel assetPreviewPane,
         IApplicationNavigationService applicationNavigationService,
         IUserDialogService userDialogService,
         ILogger logger)
@@ -72,6 +73,7 @@ public class MainViewModel : ViewModelBase
         PluginSelectionService = pluginSelectionService;
         RecordComparisonService = recordComparisonService;
         RecordTreeService = recordTreeService;
+        AssetPreviewPane = assetPreviewPane;
         ApplicationNavigationService = applicationNavigationService;
         UserDialogService = userDialogService;
         Logger = logger.ForContext<MainViewModel>();
@@ -149,6 +151,8 @@ public class MainViewModel : ViewModelBase
     public ObservableCollection<RecordComparisonRowViewModel> RecordComparisonRows { get; }
 
     public HierarchicalTreeDataGridSource<RecordComparisonRowViewModel> RecordComparisonSource { get; private set; }
+
+    public AssetPreviewPaneViewModel AssetPreviewPane { get; }
 
     public ICommand ToggleRecordTreePaneCommand { get; }
 
@@ -391,6 +395,7 @@ public class MainViewModel : ViewModelBase
         if (SelectedGame is null || item.FormKey is null || string.IsNullOrWhiteSpace(item.RecordType))
         {
             ClearRecordComparison();
+            AssetPreviewPane.ClearPreview();
             return;
         }
 
@@ -417,6 +422,7 @@ public class MainViewModel : ViewModelBase
             ? "Select a record to compare."
             : $"{comparison.RecordType} {comparison.EditorID} ({comparison.FormKey.Id:X8})";
         RefreshRecordComparisonSource();
+        AssetPreviewPane.LoadPreviewForRecord(SelectedGame.Game, item.RecordType, item.FormKey);
     }
 
     private void ShowSettings()
@@ -751,6 +757,7 @@ public class MainViewModel : ViewModelBase
         RecordComparisonRows.Clear();
         RecordComparisonTitleText = "Select a record to compare.";
         RefreshRecordComparisonSource();
+        AssetPreviewPane.ClearPreview();
     }
 
     private void LogRecordTreeSummary(SupportedGameDTO selectedGame, PluginDTO selectedPlugin)
