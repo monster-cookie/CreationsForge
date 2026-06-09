@@ -330,7 +330,7 @@ public class MainView : UserControl
 
         var workspaceGrid = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("7*,3*"),
+            ColumnDefinitions = GetWorkspaceColumnDefinitions(),
             ColumnSpacing = 0
         };
         var comparisonPane = new Grid
@@ -345,8 +345,16 @@ public class MainView : UserControl
         };
         Grid.SetColumn(comparisonPane, 0);
         workspaceGrid.Children.Add(comparisonPane);
+        AssetPreviewPaneView.Bind(IsVisibleProperty, new Binding(nameof(AssetPreviewPaneViewModel.HasPreviewCandidates)));
         Grid.SetColumn(AssetPreviewPaneView, 1);
         workspaceGrid.Children.Add(AssetPreviewPaneView);
+        ViewModel.AssetPreviewPane.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(AssetPreviewPaneViewModel.HasPreviewCandidates))
+            {
+                workspaceGrid.ColumnDefinitions = GetWorkspaceColumnDefinitions();
+            }
+        };
 
         return new Border
         {
@@ -354,6 +362,13 @@ public class MainView : UserControl
             Padding = new Thickness(28),
             Child = workspaceGrid
         };
+    }
+
+    private ColumnDefinitions GetWorkspaceColumnDefinitions()
+    {
+        return ViewModel.AssetPreviewPane.HasPreviewCandidates
+            ? new ColumnDefinitions("7*,3*")
+            : new ColumnDefinitions("*,0");
     }
 
     private Control BuildStatusBar()

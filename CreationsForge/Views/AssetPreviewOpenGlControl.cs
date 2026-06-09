@@ -14,13 +14,13 @@ namespace CreationsForge.Views;
 public class AssetPreviewOpenGlControl : OpenGlControlBase
 {
     private const string VertexShaderSource = """
-        #version 330 core
-        layout (location = 0) in vec3 aPosition;
-        layout (location = 1) in vec3 aColor;
+        #version 120
+        attribute vec3 aPosition;
+        attribute vec3 aColor;
 
         uniform mat4 uMvp;
 
-        out vec3 vColor;
+        varying vec3 vColor;
 
         void main()
         {
@@ -30,13 +30,12 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         """;
 
     private const string FragmentShaderSource = """
-        #version 330 core
-        in vec3 vColor;
-        out vec4 FragColor;
+        #version 120
+        varying vec3 vColor;
 
         void main()
         {
-            FragColor = vec4(vColor, 1.0);
+            gl_FragColor = vec4(vColor, 1.0);
         }
         """;
 
@@ -100,6 +99,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         {
             SetDiagnostic("OpenGL: initializing");
             Gl = GL.GetApi(gl.GetProcAddress);
+            LogOpenGlInfo("before shader compile");
             ShaderProgram = CreateShaderProgram();
             VertexArrayObject = Gl.GenVertexArray();
             VertexBufferObject = Gl.GenBuffer();
@@ -110,7 +110,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
             HasInitialized = true;
             HasInitializationFailed = false;
             LastInitializationError = null;
-            LogOpenGlInfo();
+            LogOpenGlInfo("after initialization");
             SetDiagnostic($"OpenGL: initialized, {IndexCount} indices uploaded");
             Logger.Information("Asset preview OpenGL renderer initialized");
         }
@@ -329,7 +329,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         return shader;
     }
 
-    private void LogOpenGlInfo()
+    private void LogOpenGlInfo(string phase)
     {
         if (Gl is null)
         {
@@ -337,10 +337,12 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         }
 
         Logger.Information(
-            "Asset preview OpenGL info: vendor {Vendor}, renderer {Renderer}, version {Version}",
+            "Asset preview OpenGL info {Phase}: vendor {Vendor}, renderer {Renderer}, version {Version}, Avalonia GL version {AvaloniaGlVersion}",
+            phase,
             Gl.GetStringS(StringName.Vendor),
             Gl.GetStringS(StringName.Renderer),
-            Gl.GetStringS(StringName.Version));
+            Gl.GetStringS(StringName.Version),
+            GlVersion);
     }
 
     private unsafe void SetModelViewProjection(uint width, uint height)

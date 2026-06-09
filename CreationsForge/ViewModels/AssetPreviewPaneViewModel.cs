@@ -38,6 +38,8 @@ public class AssetPreviewPaneViewModel : ViewModelBase
 
     public RelayCommand OpenExternallyCommand { get; }
 
+    public bool HasPreviewCandidates => PreviewCandidates.Count > 0;
+
     public AssetPreviewCandidateDTO? SelectedCandidate
     {
         get => SelectedCandidateValue;
@@ -84,6 +86,7 @@ public class AssetPreviewPaneViewModel : ViewModelBase
     public void LoadPreviewForRecord(SupportedGame game, string recordType, FormKeyDTO formKey)
     {
         PreviewCandidates.Clear();
+        OnPropertyChanged(nameof(HasPreviewCandidates));
         PreviewModel = null;
         PreviewTitleText = "Asset preview";
 
@@ -92,6 +95,8 @@ public class AssetPreviewPaneViewModel : ViewModelBase
         {
             PreviewCandidates.Add(candidate);
         }
+
+        OnPropertyChanged(nameof(HasPreviewCandidates));
 
         if (PreviewCandidates.Count == 0)
         {
@@ -111,6 +116,7 @@ public class AssetPreviewPaneViewModel : ViewModelBase
     public void ClearPreview()
     {
         PreviewCandidates.Clear();
+        OnPropertyChanged(nameof(HasPreviewCandidates));
         SelectedCandidate = null;
         PreviewModel = null;
         PreviewTitleText = "Asset preview";
