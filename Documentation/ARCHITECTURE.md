@@ -21,9 +21,9 @@ shared import orchestration, shared Mutagen primitive mapping, and repositories 
 may reference shared Mutagen packages such as `Mutagen.Bethesda.Core`, but it must not reference game-specific Mutagen
 packages.
 
-`CreationsForge.Assets` owns UI-neutral asset IO helpers, local-file resolution result DTOs, archive-reader contracts,
-and temporary extraction session infrastructure. It does not reference Avalonia, Mutagen, NPoco, game projects, or the
-database. Archive implementations are intended to be read-only and preview-focused.
+`CreationsForge.Bethesda.Assets` owns UI-neutral Bethesda asset IO helpers, local-file resolution result DTOs,
+archive-reader contracts, and temporary extraction session infrastructure. It does not reference Avalonia, Mutagen,
+NPoco, game projects, or the database. Archive implementations are intended to be read-only and preview-focused.
 
 `CreationsForge.Starfield`, `CreationsForge.Fallout4`, and `CreationsForge.Skyrim` isolate
 game-specific Mutagen packages, Autofac modules, reader services, and reader facade implementations. These projects

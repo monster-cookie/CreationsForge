@@ -1,4 +1,4 @@
-namespace CreationsForge.Assets.Temp;
+namespace CreationsForge.Bethesda.Assets.Temp;
 
 public interface IAssetTempFileSession : IDisposable
 {

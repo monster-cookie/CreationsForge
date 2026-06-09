@@ -1,4 +1,4 @@
-using CreationsForge.Assets.Files;
+using CreationsForge.Bethesda.Assets.Files;
 using CreationsForge.Core.DTOs.Assets;
 using CreationsForge.Core.DTOs.Games;
 using CreationsForge.Core.DTOs.Plugins;

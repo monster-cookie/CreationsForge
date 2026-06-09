@@ -17,7 +17,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationsForge", "Creations
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationsForge.Bootstrap", "CreationsForge.Bootstrap\CreationsForge.Bootstrap.csproj", "{6C1DC62A-53B3-4F44-AD63-11093A00B20B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationsForge.Assets", "CreationsForge.Assets\CreationsForge.Assets.csproj", "{7CC67352-F08B-44C7-8E35-85152626DE20}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationsForge.Bethesda.Assets", "CreationsForge.Bethesda.Assets\CreationsForge.Bethesda.Assets.csproj", "{7CC67352-F08B-44C7-8E35-85152626DE20}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

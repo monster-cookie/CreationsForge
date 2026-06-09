@@ -1,4 +1,4 @@
-namespace CreationsForge.Assets.Files;
+namespace CreationsForge.Bethesda.Assets.Files;
 
 public class AssetFileResolutionDTO
 {

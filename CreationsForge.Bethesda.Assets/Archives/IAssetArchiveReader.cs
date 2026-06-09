@@ -1,4 +1,4 @@
-namespace CreationsForge.Assets.Archives;
+namespace CreationsForge.Bethesda.Assets.Archives;
 
 public interface IAssetArchiveReader
 {

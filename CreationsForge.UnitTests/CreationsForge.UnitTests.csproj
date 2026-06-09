@@ -23,7 +23,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\CreationsForge.Assets\CreationsForge.Assets.csproj" />
+        <ProjectReference Include="..\CreationsForge.Bethesda.Assets\CreationsForge.Bethesda.Assets.csproj" />
         <ProjectReference Include="..\CreationsForge.Console\CreationsForge.Console.csproj" />
         <ProjectReference Include="..\CreationsForge.Core\CreationsForge.Core.csproj" />
         <ProjectReference Include="..\CreationsForge.Fallout4\CreationsForge.Fallout4.csproj" />
