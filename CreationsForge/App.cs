@@ -98,6 +98,7 @@ public class App : Application
         builder.RegisterType<AssetPreviewRenderMeshFactory>().As<IAssetPreviewRenderMeshFactory>().SingleInstance();
         builder.RegisterType<AssetPreviewSceneService>().As<IAssetPreviewSceneService>().SingleInstance();
         builder.RegisterType<ExternalAssetOpenService>().As<IExternalAssetOpenService>().SingleInstance();
+        builder.RegisterType<NiflyAssetPreviewGeometryReader>().As<IAssetPreviewGeometryReader>().SingleInstance();
         builder.RegisterType<UserDialogService>().As<IUserDialogService>().SingleInstance();
         builder.RegisterInstance(Log.Logger).As<ILogger>().SingleInstance();
     }

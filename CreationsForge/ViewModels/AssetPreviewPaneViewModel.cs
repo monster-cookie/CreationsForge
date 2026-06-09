@@ -145,8 +145,8 @@ public class AssetPreviewPaneViewModel : ViewModelBase
             return;
         }
 
-        PreviewModel = AssetPreviewSceneService.CreateSamplePreview(SelectedCandidate);
-        PreviewStatusText = $"Experimental sample render for {SelectedCandidate.MeshPath}";
+        PreviewModel = AssetPreviewSceneService.CreatePreview(SelectedCandidate, out var statusMessage);
+        PreviewStatusText = statusMessage;
     }
 
     private void OpenSelectedCandidateExternally()

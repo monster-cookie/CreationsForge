@@ -13,14 +13,14 @@ namespace CreationsForge.Views;
 
 public class AssetPreviewOpenGlControl : OpenGlControlBase
 {
-    private const string VertexShaderSource = """
-        #version 120
-        attribute vec3 aPosition;
-        attribute vec3 aColor;
+    private const string DesktopVertexShaderSource = """
+        #version 330 core
+        layout(location = 0) in vec3 aPosition;
+        layout(location = 1) in vec3 aColor;
 
         uniform mat4 uMvp;
 
-        varying vec3 vColor;
+        out vec3 vColor;
 
         void main()
         {
@@ -29,19 +29,50 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         }
         """;
 
-    private const string FragmentShaderSource = """
-        #version 120
-        varying vec3 vColor;
+    private const string DesktopFragmentShaderSource = """
+        #version 330 core
+        in vec3 vColor;
+
+        out vec4 fragColor;
 
         void main()
         {
-            gl_FragColor = vec4(vColor, 1.0);
+            fragColor = vec4(vColor, 1.0);
+        }
+        """;
+
+    private const string OpenGlesVertexShaderSource = """
+        #version 300 es
+        layout(location = 0) in vec3 aPosition;
+        layout(location = 1) in vec3 aColor;
+
+        uniform mat4 uMvp;
+
+        out vec3 vColor;
+
+        void main()
+        {
+            gl_Position = uMvp * vec4(aPosition, 1.0);
+            vColor = aColor;
+        }
+        """;
+
+    private const string OpenGlesFragmentShaderSource = """
+        #version 300 es
+        precision mediump float;
+
+        in vec3 vColor;
+
+        out vec4 fragColor;
+
+        void main()
+        {
+            fragColor = vec4(vColor, 1.0);
         }
         """;
 
     private readonly IAssetPreviewRenderMeshFactory RenderMeshFactory;
     private readonly ILogger Logger;
-    private readonly Stopwatch Stopwatch = Stopwatch.StartNew();
     private AssetPreviewModelDTO? PreviewModelValue;
     private GL? Gl;
     private uint VertexArrayObject;
@@ -201,7 +232,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         var width = Math.Max(1, (uint)Bounds.Width);
         var height = Math.Max(1, (uint)Bounds.Height);
         Gl.Viewport(0, 0, width, height);
-        Gl.ClearColor(0.85f, 0.05f, 0.55f, 1f);
+        Gl.ClearColor(0.02f, 0.035f, 0.05f, 1f);
         Gl.Clear((uint)(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit));
         RenderCount++;
 
@@ -286,8 +317,10 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
             return 0;
         }
 
-        var vertexShader = CompileShader(ShaderType.VertexShader, VertexShaderSource);
-        var fragmentShader = CompileShader(ShaderType.FragmentShader, FragmentShaderSource);
+        var shaderSources = GetShaderSources();
+        Logger.Information("Asset preview OpenGL using {ShaderProfile} shader profile", shaderSources.Profile);
+        var vertexShader = CompileShader(ShaderType.VertexShader, shaderSources.VertexShaderSource);
+        var fragmentShader = CompileShader(ShaderType.FragmentShader, shaderSources.FragmentShaderSource);
         var shaderProgram = Gl.CreateProgram();
         Gl.AttachShader(shaderProgram, vertexShader);
         Gl.AttachShader(shaderProgram, fragmentShader);
@@ -303,6 +336,16 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         Gl.DeleteShader(vertexShader);
         Gl.DeleteShader(fragmentShader);
         return shaderProgram;
+    }
+
+    private (string Profile, string VertexShaderSource, string FragmentShaderSource) GetShaderSources()
+    {
+        if (string.Equals(GlVersion.Type.ToString(), "OpenGLES", StringComparison.Ordinal))
+        {
+            return ("OpenGL ES 3.0", OpenGlesVertexShaderSource, OpenGlesFragmentShaderSource);
+        }
+
+        return ("Desktop OpenGL 3.3", DesktopVertexShaderSource, DesktopFragmentShaderSource);
     }
 
     private uint CompileShader(ShaderType shaderType, string source)
@@ -352,9 +395,8 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
             return;
         }
 
-        var elapsedSeconds = (float)Stopwatch.Elapsed.TotalSeconds;
-        var model = Matrix4x4.CreateRotationZ(elapsedSeconds * 0.35f);
-        var view = Matrix4x4.CreateLookAt(new Vector3(0f, -3.2f, 2.1f), new Vector3(0f, 0f, 0.2f), Vector3.UnitZ);
+        var model = Matrix4x4.CreateScale(0.45f);
+        var view = Matrix4x4.CreateLookAt(new Vector3(0f, -4.5f, 2.8f), new Vector3(0f, 0f, 0.2f), Vector3.UnitZ);
         var projection = Matrix4x4.CreatePerspectiveFieldOfView(
             MathF.PI / 4f,
             width / (float)height,

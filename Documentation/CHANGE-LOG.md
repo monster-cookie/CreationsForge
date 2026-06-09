@@ -1,12 +1,16 @@
 ﻿# Change Log
 
+## Unreleased
+
+- Added an experimental asset preview pane.
+- Added an experimental Nifly reader for the new preview pane.
+- Added a `CreationsForge.Assets` library for UI-neutral asset IO result DTOs, archive-reader contracts, and
+  temporary extraction infrastructure.
+
 ## Version 1.1.2 - 2026-06-08
 
 - Added Fallout 4 and Skyrim import support for the same approved typed record categories Starfield currently imports:
   MiscObjects, Keywords, ActorValueInformation, NPCs, MagicEffects, and Perks.
-- Added an experimental asset preview pane that resolves persisted model paths for selected records, renders sample
-  geometry through a Silk.NET-backed Avalonia OpenGL control, and exposes an external-open command for supported asset
-  paths.
 
 ## Version 1.1.1 - 2026-06-07 [Beta]
 

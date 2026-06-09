@@ -4,5 +4,5 @@ namespace CreationsForge.Services.Interfaces;
 
 public interface IAssetPreviewSceneService
 {
-    AssetPreviewModelDTO CreateSamplePreview(AssetPreviewCandidateDTO candidate);
+    AssetPreviewModelDTO CreatePreview(AssetPreviewCandidateDTO candidate, out string statusMessage);
 }

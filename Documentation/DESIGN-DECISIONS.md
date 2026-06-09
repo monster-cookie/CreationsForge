@@ -9,8 +9,12 @@ not reference UI frameworks and the presentation project must not call Mutagen d
 implemented.
 
 Decision: Add Core asset-preview DTOs and `IAssetPreviewPathResolverService` for UI-neutral candidate resolution from
-persisted model rows. The Avalonia presentation project owns the preview pane, an Avalonia `OpenGlControlBase`
-renderer using Silk.NET, generated sample geometry, external file launching, and unsupported-preview logging.
+persisted model rows. Add `CreationsForge.Assets` for UI-neutral asset IO result DTOs, archive-reader contracts, and
+temporary extraction infrastructure. Add `IAssetFileResolverService` for UI-neutral local-file resolution that checks
+absolute paths, game data-folder loose files, and normalized `Meshes` paths before reporting archive-backed paths as
+unsupported. The Avalonia presentation project owns the preview pane, an Avalonia `OpenGlControlBase` renderer using
+Silk.NET, generated sample geometry, external file launching, optional Nifly-backed NIF reads, and unsupported-preview
+logging.
 
 Rationale: This proves the UI workflow without weakening the Core/presentation boundary. It also leaves a stable DTO
 shape for future NIF readers or mesh importers to populate with real geometry.
@@ -25,16 +29,23 @@ Consequences:
 
 - Selecting a model-bearing record can show preview candidates and render generated sample geometry through the native
   OpenGL preview control.
-- Unsupported or missing preview cases are logged through the UI service/view-model path.
+- Nifly can be tried for resolved local NIF file paths, but archive-backed model paths still fall back to generated
+  sample geometry until BA2/BSA extraction is implemented.
+- Unsupported, missing, or unreadable preview cases are logged through the UI service/view-model path.
 - External opening depends on OS file associations for NifSkope, Blender, or compatible tools.
-- Real NIF mesh and texture loading remain follow-up work.
+- Real Starfield archive-backed NIF mesh and texture loading remain follow-up work.
 
 Related files:
 
 - `CreationsForge.Core/DTOs/Assets/AssetPreviewCandidateDTO.cs`
 - `CreationsForge.Core/DTOs/Assets/AssetPreviewModelDTO.cs`
+- `CreationsForge.Assets/Files/AssetFileResolutionDTO.cs`
+- `CreationsForge.Assets/Archives/IAssetArchiveReader.cs`
+- `CreationsForge.Assets/Temp/IAssetTempFileSession.cs`
+- `CreationsForge.Core/Services/AssetFileResolverService.cs`
 - `CreationsForge.Core/Services/AssetPreviewPathResolverService.cs`
 - `CreationsForge/Views/AssetPreviewOpenGlControl.cs`
+- `CreationsForge/Services/NiflyAssetPreviewGeometryReader.cs`
 - `CreationsForge/ViewModels/AssetPreviewPaneViewModel.cs`
 - `CreationsForge/Views/AssetPreviewPaneView.cs`
 

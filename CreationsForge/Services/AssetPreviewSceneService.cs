@@ -1,12 +1,43 @@
 using CreationsForge.Core.DTOs.Assets;
 using CreationsForge.Services.Interfaces;
+using Serilog;
 
 namespace CreationsForge.Services;
 
 public class AssetPreviewSceneService : IAssetPreviewSceneService
 {
-    public AssetPreviewModelDTO CreateSamplePreview(AssetPreviewCandidateDTO candidate)
+    private readonly IReadOnlyList<IAssetPreviewGeometryReader> GeometryReaders;
+    private readonly ILogger Logger;
+
+    public AssetPreviewSceneService(IEnumerable<IAssetPreviewGeometryReader> geometryReaders, ILogger logger)
     {
+        GeometryReaders = geometryReaders.ToList();
+        Logger = logger;
+    }
+
+    public AssetPreviewModelDTO CreatePreview(AssetPreviewCandidateDTO candidate, out string statusMessage)
+    {
+        var fallbackReasons = new List<string>();
+        foreach (var geometryReader in GeometryReaders)
+        {
+            if (geometryReader.TryRead(candidate, out var previewModel, out var readerStatusMessage) && previewModel != null)
+            {
+                statusMessage = readerStatusMessage;
+                return previewModel;
+            }
+
+            if (!string.IsNullOrWhiteSpace(readerStatusMessage))
+            {
+                fallbackReasons.Add(readerStatusMessage);
+                Logger.Information("Asset preview geometry reader skipped {MeshPath}: {StatusMessage}", candidate.MeshPath, readerStatusMessage);
+            }
+        }
+
+        statusMessage = CreateFallbackStatus(candidate, fallbackReasons);
+        Logger.Information(
+            "Asset preview using sample placeholder for {MeshPath}: {StatusMessage}",
+            candidate.MeshPath,
+            statusMessage);
         return new AssetPreviewModelDTO
         {
             DisplayName = candidate.DisplayName,
@@ -42,6 +73,21 @@ public class AssetPreviewSceneService : IAssetPreviewSceneService
                 }
             }
         };
+    }
+
+    private static string CreateFallbackStatus(AssetPreviewCandidateDTO candidate, IReadOnlyList<string> fallbackReasons)
+    {
+        if (!Path.IsPathRooted(candidate.MeshPath))
+        {
+            return $"Sample placeholder for archive-backed asset path {candidate.MeshPath}. BA2/BSA extraction is not implemented yet.";
+        }
+
+        if (fallbackReasons.Count == 0)
+        {
+            return $"Sample placeholder for {candidate.MeshPath}. No preview geometry reader handled this asset.";
+        }
+
+        return $"Sample placeholder for {candidate.MeshPath}. {fallbackReasons[0]}";
     }
 
     private static AssetPreviewVertexDTO CreateVertex(float x, float y, float z, float u, float v)

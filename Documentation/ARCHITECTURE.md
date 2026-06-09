@@ -21,6 +21,10 @@ shared import orchestration, shared Mutagen primitive mapping, and repositories 
 may reference shared Mutagen packages such as `Mutagen.Bethesda.Core`, but it must not reference game-specific Mutagen
 packages.
 
+`CreationsForge.Assets` owns UI-neutral asset IO helpers, local-file resolution result DTOs, archive-reader contracts,
+and temporary extraction session infrastructure. It does not reference Avalonia, Mutagen, NPoco, game projects, or the
+database. Archive implementations are intended to be read-only and preview-focused.
+
 `CreationsForge.Starfield`, `CreationsForge.Fallout4`, and `CreationsForge.Skyrim` isolate
 game-specific Mutagen packages, Autofac modules, reader services, and reader facade implementations. These projects
 are the intended home for game-specific record mapping when Mutagen APIs or record/header fields diverge.
@@ -37,7 +41,9 @@ adapter projects rather than persisted game metadata paths.
 - CreationsForge depends on Bootstrap and Core.
 - Console depends on Bootstrap and Core.
 - Bootstrap depends on Core, Migrations, Starfield, Fallout4, and Skyrim.
-- Core depends on Migrations for migration execution and shared Mutagen core primitives for game-agnostic DTO mapping.
+- Core depends on Assets for asset resolution DTOs, Migrations for migration execution, and shared Mutagen core
+  primitives for game-agnostic DTO mapping.
+- Assets has no project dependencies.
 - Game projects depend on Core.
 - Migrations does not depend on Core or game projects.
 - UnitTests depend on Core and the console project for parser tests.
@@ -143,11 +149,15 @@ Core assigns comparison value states for neutral, identical, conflicting, and di
 presentation layer maps those states to the green, red, and yellow comparison colors and shows the legend in the status
 area. Deeper child sections such as perk ranks, patch generation, and conflict resolution workflows remain deferred.
 
-`IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows. Core DTOs
-describe candidate paths and optional mesh payloads without referencing Avalonia, OpenGL, Silk.NET, process launching,
-or binding primitives. The presentation project owns `AssetPreviewPaneViewModel`, the Avalonia `OpenGlControlBase`
-renderer, Silk.NET OpenGL calls, render mesh conversion, and the external-open command. Unsupported preview cases and
-OpenGL renderer failures are logged through Serilog from presentation code.
+`IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows.
+`IAssetFileResolverService` resolves readable local asset files from preview candidates by checking absolute paths,
+game data-folder loose files, and normalized `Meshes` paths before reporting archive-backed assets as unsupported.
+Core DTOs describe record-owned candidate paths and optional mesh payloads without referencing Avalonia, OpenGL,
+Silk.NET, process launching, or binding primitives. Assets DTOs describe local-file resolution and future archive
+extraction results. The presentation project owns `AssetPreviewPaneViewModel`, the Avalonia `OpenGlControlBase`
+renderer, Silk.NET OpenGL calls, optional Nifly-backed NIF geometry reads, render mesh conversion, sample-geometry
+fallback, and the external-open command. Unsupported preview cases, archive-backed paths without BA2/BSA extraction,
+Nifly failures, and OpenGL renderer failures are logged through Serilog.
 
 ## Persistence Architecture
 

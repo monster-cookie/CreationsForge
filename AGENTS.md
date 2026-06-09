@@ -62,6 +62,8 @@ Primary project knowledge files:
 - /Documentation/DOMAIN-MODEL.md - Important domain concepts, record comparison terminology, Mutagen concepts used by the app, and project-specific naming.
 - /Documentation/Database/DATABASE.md - SQLite, NPoco, DbUp migration behavior, schema ownership, and persistence conventions.
 - /Documentation/Database/ERD.md - Entity-Relationship Diagram (ERD) of the database schema, including tables, relationships, and constraints.
+- /Documentation/CHANGE-LOG.md - Log of the changes for each release. This log is for end users, so please keep entries short, non-technical, and friendly.
+- /Documentation/KNOWN-ISSUES.md - List of current known issues and workarounds. This log is for end users, so please keep entries short, non-technical, and friendly.
 
 Before planning a non-trivial change, Codex must read the relevant docs in /Documentation in addition to AGENTS.md.
 
