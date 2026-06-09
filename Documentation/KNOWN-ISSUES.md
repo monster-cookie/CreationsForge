@@ -20,3 +20,5 @@
     factions, keywords, AI packages, appearance data, object templates, and other nested structures are not
     imported.
   - FormKey and ModKey lists are showing raw information instead of the more helpful EditorID.
+ 
+- Currently we cannot support MO2, it virtual file system is causing problems with how mutagen looks up plugins and especially starfield partial/split masters. 
