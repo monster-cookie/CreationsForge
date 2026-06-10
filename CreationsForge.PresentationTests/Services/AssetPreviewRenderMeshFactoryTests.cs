@@ -142,6 +142,51 @@ public class AssetPreviewRenderMeshFactoryTests
         renderMesh.Vertices[5].ShouldBe(0.72f, 0.0001f);
     }
 
+    [Fact]
+    public void CreateRenderMesh_UsesTextureHintForBasketPreviewColor()
+    {
+        var factory = new AssetPreviewRenderMeshFactory(new LoggerConfiguration().CreateLogger());
+        var mesh = CreateMesh("Basket04", 8f);
+        mesh.MaterialName = "Basket04";
+        mesh.TexturePath = @"textures\clutter\Basket01.dds";
+        var model = new AssetPreviewModelDTO
+        {
+            DisplayName = "Preview",
+            SourcePath = "Meshes/Preview.nif",
+            Meshes =
+            {
+                mesh
+            }
+        };
+
+        var renderMesh = factory.CreateRenderMesh(model);
+
+        renderMesh.Vertices[3].ShouldBe(0.58f, 0.0001f);
+        renderMesh.Vertices[4].ShouldBe(0.43f, 0.0001f);
+        renderMesh.Vertices[5].ShouldBe(0.26f, 0.0001f);
+    }
+
+    [Fact]
+    public void CreateRenderMesh_TracksTextureMetadataForDiagnostics()
+    {
+        var factory = new AssetPreviewRenderMeshFactory(new LoggerConfiguration().CreateLogger());
+        var mesh = CreateMesh("Basket04", 8f);
+        mesh.TexturePath = @"textures\clutter\Basket01.dds";
+        var model = new AssetPreviewModelDTO
+        {
+            DisplayName = "Preview",
+            SourcePath = "Meshes/Preview.nif",
+            Meshes =
+            {
+                mesh
+            }
+        };
+
+        var renderMesh = factory.CreateRenderMesh(model);
+
+        renderMesh.TexturePaths.ShouldBe([@"textures\clutter\Basket01.dds"]);
+    }
+
     private static AssetPreviewMeshDTO CreateMesh(string name, float zOffset)
     {
         return new AssetPreviewMeshDTO

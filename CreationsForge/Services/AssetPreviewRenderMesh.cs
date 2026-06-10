@@ -7,4 +7,6 @@ public class AssetPreviewRenderMesh
     public IList<uint> Indices { get; set; } = new List<uint>();
 
     public IList<uint> LineIndices { get; set; } = new List<uint>();
+
+    public IList<string> TexturePaths { get; set; } = new List<string>();
 }

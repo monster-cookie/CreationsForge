@@ -89,6 +89,27 @@ public class NifPreviewModelReaderTests
     }
 
     [Fact]
+    public void TryRead_UsesFloatPositionsForSkyrimSpecialEditionStrideSevenShape()
+    {
+        var reader = new NifPreviewModelReader();
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Clutter/Preview.NIF",
+            DisplayName = "Preview",
+            Data = CreateSkyrimSpecialEditionStrideSevenBSTriShapeNif()
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes.Count.ShouldBe(1);
+        result.Model.Meshes[0].Vertices[0].Position.X.ShouldBe(-1f);
+        result.Model.Meshes[0].Vertices[1].Position.X.ShouldBe(1f);
+        result.Model.Meshes[0].Vertices[2].Position.Y.ShouldBe(1f);
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("position format Float3", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void TryRead_ReturnsMeshWhenHeaderHasUnknownBytesBeforeBlockTables()
     {
         var reader = new NifPreviewModelReader();
@@ -248,6 +269,30 @@ public class NifPreviewModelReaderTests
     }
 
     [Fact]
+    public void TryRead_ReturnsSkinnedGeometryStatusWhenSkyrimMeshUsesSkinBlocks()
+    {
+        var data = CreateMinimalNifWithBlocks(
+            [
+                ("NiNode", []),
+                ("NiSkinInstance", []),
+                ("NiSkinPartition", []),
+                ("BSTriShape", new byte[128])
+            ],
+            bethesdaVersion: 100U);
+        var reader = new NifPreviewModelReader();
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Clutter/Preview.nif",
+            DisplayName = "Preview",
+            Data = data
+        });
+
+        result.IsSuccess.ShouldBeFalse();
+        result.StatusMessage.ShouldContain("Skinned or partitioned NIF geometry is not supported");
+    }
+
+    [Fact]
     public void TryRead_ReturnsFailureWhenHeaderTablesCannotBeLocated()
     {
         var data = CreateMinimalNifWithBlock("BSTriShape", [0xFF, 0xFF, 0xFF, 0xFF], extraBytesBeforeTables: [0xFF, 0xFF, 0xFF, 0xFF], writeTables: false);
@@ -311,6 +356,14 @@ public class NifPreviewModelReaderTests
         return CreateMinimalNifWithBlock(
             "BSTriShape",
             CreateSkyrimSpecialEditionBSTriShapeBlock(),
+            bethesdaVersion: 100U);
+    }
+
+    private static byte[] CreateSkyrimSpecialEditionStrideSevenBSTriShapeNif()
+    {
+        return CreateMinimalNifWithBlock(
+            "BSTriShape",
+            CreateSkyrimSpecialEditionStrideSevenBSTriShapeBlock(),
             bethesdaVersion: 100U);
     }
 
@@ -485,6 +538,34 @@ public class NifPreviewModelReaderTests
         return stream.ToArray();
     }
 
+    private static byte[] CreateSkyrimSpecialEditionStrideSevenBSTriShapeBlock()
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
+        {
+            WriteTransformPrefix(writer, 0f, 0f, 0f, 1f);
+            writer.Write(0f);
+            writer.Write(0f);
+            writer.Write(0f);
+            writer.Write(1f);
+            writer.Write(-1);
+            writer.Write(-1);
+            writer.Write(-1);
+            writer.Write(((ulong)0x00B << 44) | (4UL << 16) | (3UL << 8) | 7UL);
+            writer.Write((ushort)1);
+            writer.Write((ushort)3);
+            writer.Write(90U);
+            WriteSkyrimSpecialEditionStrideSevenVertex(writer, -1f, -1f, 0f);
+            WriteSkyrimSpecialEditionStrideSevenVertex(writer, 1f, -1f, 0f);
+            WriteSkyrimSpecialEditionStrideSevenVertex(writer, 0f, 1f, 0f);
+            writer.Write((ushort)0);
+            writer.Write((ushort)1);
+            writer.Write((ushort)2);
+        }
+
+        return stream.ToArray();
+    }
+
     private static byte[] CreateLightingShaderPropertyBlock(uint nameIndex, int textureSetReference)
     {
         using var stream = new MemoryStream();
@@ -558,7 +639,10 @@ public class NifPreviewModelReaderTests
         return stream.ToArray();
     }
 
-    private static byte[] CreateMinimalNifWithBlocks(IReadOnlyList<(string BlockType, byte[] BlockData)> blocks, IReadOnlyList<string>? strings = null)
+    private static byte[] CreateMinimalNifWithBlocks(
+        IReadOnlyList<(string BlockType, byte[] BlockData)> blocks,
+        IReadOnlyList<string>? strings = null,
+        uint bethesdaVersion = 130U)
     {
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: false);
@@ -567,7 +651,7 @@ public class NifPreviewModelReaderTests
         writer.Write((byte)1);
         writer.Write(12U);
         writer.Write((uint)blocks.Count);
-        writer.Write(130U);
+        writer.Write(bethesdaVersion);
         WriteSizedString(writer, "Creations Forge");
         WriteSizedString(writer, "Process");
         WriteSizedString(writer, "Export");
@@ -651,6 +735,21 @@ public class NifPreviewModelReaderTests
         writer.Write((byte)255);
         writer.Write((byte)0);
         writer.Write(0U);
+        writer.Write(0U);
+        writer.Write(0U);
+    }
+
+    private static void WriteSkyrimSpecialEditionStrideSevenVertex(BinaryWriter writer, float x, float y, float z)
+    {
+        writer.Write(x);
+        writer.Write(y);
+        writer.Write(z);
+        writer.Write(BitConverter.HalfToUInt16Bits((Half)0f));
+        writer.Write(BitConverter.HalfToUInt16Bits((Half)0f));
+        writer.Write((byte)128);
+        writer.Write((byte)128);
+        writer.Write((byte)255);
+        writer.Write((byte)0);
         writer.Write(0U);
         writer.Write(0U);
     }

@@ -51,6 +51,7 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
         }
 
         var renderMesh = new AssetPreviewRenderMesh();
+        AppendTextureMetadata(renderMesh, meshes);
         var transform = AssetPreviewBoundsTransform.Create(bounds);
         for (var meshIndex = 0; meshIndex < meshes.Count; meshIndex++)
         {
@@ -67,13 +68,25 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
         }
 
         Logger.Information(
-            "Asset preview render mesh created for {DisplayName}: {VertexCount} vertices, {IndexCount} indices, {LineIndexCount} line indices, bounds {Bounds}",
+            "Asset preview render mesh created for {DisplayName}: {VertexCount} vertices, {IndexCount} indices, {LineIndexCount} line indices, {TextureCount} texture path(s), bounds {Bounds}",
             previewModel.DisplayName,
             renderMesh.Vertices.Count / 9,
             renderMesh.Indices.Count,
             renderMesh.LineIndices.Count,
+            renderMesh.TexturePaths.Count,
             bounds.Description);
         return renderMesh;
+    }
+
+    private static void AppendTextureMetadata(AssetPreviewRenderMesh renderMesh, IEnumerable<AssetPreviewMeshDTO> meshes)
+    {
+        foreach (var texturePath in meshes
+            .Select(mesh => mesh.TexturePath)
+            .Where(texturePath => !string.IsNullOrWhiteSpace(texturePath))
+            .Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            renderMesh.TexturePaths.Add(texturePath!);
+        }
     }
 
     private static IEnumerable<AssetPreviewMeshDTO> GetMeshes(AssetPreviewModelDTO previewModel, AssetPreviewRenderOptions options)
@@ -107,9 +120,11 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
             .ToList();
         var useDecodedNormals = HasUsableDecodedNormals(decodedNormalValues);
         Logger.Information(
-            "Asset preview mesh {MeshName} using {NormalSource} normals",
+            "Asset preview mesh {MeshName} using {NormalSource} normals, material {MaterialName}, texture {TexturePath}",
             mesh.Name,
-            useDecodedNormals ? "decoded" : "generated");
+            useDecodedNormals ? "decoded" : "generated",
+            mesh.MaterialName,
+            mesh.TexturePath);
 
         for (var index = 0; index < mesh.Vertices.Count; index++)
         {
@@ -386,6 +401,17 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
     private static AssetPreviewRenderColor GetMeshColor(AssetPreviewMeshDTO mesh, AssetPreviewBoundsTransform transform)
     {
         var materialKey = $"{mesh.MaterialName} {mesh.TexturePath}";
+        if (materialKey.Contains("basket", StringComparison.OrdinalIgnoreCase) ||
+            materialKey.Contains("wicker", StringComparison.OrdinalIgnoreCase))
+        {
+            return new AssetPreviewRenderColor(0.58f, 0.43f, 0.26f);
+        }
+
+        if (materialKey.Contains("wood", StringComparison.OrdinalIgnoreCase))
+        {
+            return new AssetPreviewRenderColor(0.48f, 0.34f, 0.22f);
+        }
+
         if (materialKey.Contains(".BGEM", StringComparison.OrdinalIgnoreCase) ||
             materialKey.Contains("empty", StringComparison.OrdinalIgnoreCase))
         {

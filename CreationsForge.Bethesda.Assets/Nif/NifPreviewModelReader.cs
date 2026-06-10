@@ -69,6 +69,11 @@ public class NifPreviewModelReader : INifPreviewModelReader
                     statusMessage += $" Closest candidate: {rejectionReason}";
                 }
 
+                if (HasUnsupportedSkinnedGeometry(header.Blocks))
+                {
+                    statusMessage += " Skinned or partitioned NIF geometry is not supported by the first preview reader yet.";
+                }
+
                 return Failure(statusMessage, diagnostics);
             }
 
@@ -574,7 +579,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
         var candidates = new List<NifPreviewMesh>();
         for (var offset = 0; offset <= block.Data.Length - 18; offset++)
         {
-            if (TryReadBSTriShapeAt(block, blockIndex, offset, meshIndex, transformChain, strings, materialMap, BSTriShapeCountLayout.Fallout4, out var mesh, out var candidateRejectionReason) &&
+            if (TryReadBSTriShapeAt(block, blockIndex, offset, meshIndex, transformChain, strings, materialMap, BSTriShapeCountLayout.Fallout4, BSVertexPositionFormat.DescriptorDefault, out var mesh, out var candidateRejectionReason) &&
                 mesh != null)
             {
                 candidates.Add(mesh);
@@ -622,14 +627,35 @@ public class NifPreviewModelReader : INifPreviewModelReader
             return false;
         }
 
-        if (!TryReadBSTriShapeAt(block, blockIndex, descriptorOffset, meshIndex, transformChain, strings, materialMap, BSTriShapeCountLayout.SkyrimSpecialEdition, out mesh, out var candidateRejectionReason) ||
-            mesh == null)
+        var candidates = new List<NifPreviewMesh>();
+        string? candidateRejectionReason = null;
+        for (var offset = 0; offset <= block.Data.Length - 18; offset++)
         {
-            rejectionReason = $"{block.TypeName} Skyrim SSE layout offset {descriptorOffset}: {candidateRejectionReason ?? "not a supported vertex descriptor"}";
+            foreach (var positionFormat in GetSkyrimSpecialEditionPositionFormats())
+            {
+                if (TryReadBSTriShapeAt(block, blockIndex, offset, meshIndex, transformChain, strings, materialMap, BSTriShapeCountLayout.SkyrimSpecialEdition, positionFormat, out var candidate, out var currentRejectionReason) &&
+                    candidate != null)
+                {
+                    candidates.Add(candidate);
+                }
+
+                if (candidateRejectionReason == null && currentRejectionReason != null)
+                {
+                    candidateRejectionReason = $"{block.TypeName} Skyrim SSE layout offset {offset}: {currentRejectionReason}";
+                }
+            }
+        }
+
+        mesh = candidates
+            .OrderByDescending(GetMeshShapeScore)
+            .FirstOrDefault();
+        if (mesh == null)
+        {
+            rejectionReason = candidateRejectionReason ?? $"{block.TypeName} Skyrim SSE layout offset {descriptorOffset}: not a supported vertex descriptor";
             return false;
         }
 
-        mesh.Diagnostics.Add($"{block.TypeName} block {blockIndex}: parsed with Skyrim SSE layout at descriptor offset {descriptorOffset}");
+        mesh.Diagnostics.Add($"{block.TypeName} block {blockIndex}: parsed with Skyrim SSE layout from {candidates.Count} candidate mesh layout(s)");
         return true;
     }
 
@@ -642,6 +668,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
         IReadOnlyList<string> strings,
         IReadOnlyDictionary<int, NifMaterialInfo> materialMap,
         BSTriShapeCountLayout countLayout,
+        BSVertexPositionFormat positionFormat,
         out NifPreviewMesh? mesh,
         out string? rejectionReason)
     {
@@ -704,7 +731,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
         var vertices = new List<NifPreviewVertex>();
         for (var index = 0; index < vertexCount; index++)
         {
-            var vertex = ReadBSVertex(data, vertexDataOffset + (index * vertexStride), descriptor, countLayout);
+            var vertex = ReadBSVertex(data, vertexDataOffset + (index * vertexStride), descriptor, countLayout, positionFormat);
             if (!rawBounds.TryInclude(vertex.Position, out rejectionReason))
             {
                 return false;
@@ -733,7 +760,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
         {
             for (var index = 0; index < vertices.Count; index++)
             {
-                vertices[index] = ReadBSVertex(data, vertexDataOffset + (index * vertexStride), descriptor, countLayout);
+                vertices[index] = ReadBSVertex(data, vertexDataOffset + (index * vertexStride), descriptor, countLayout, positionFormat);
             }
         }
 
@@ -769,7 +796,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
             Indices = indices,
             Diagnostics =
             {
-                $"{block.TypeName} block {blockIndex} offset {offset}: {vertexCount} vertices, {triangleCount} triangles, count layout {countLayout}, descriptor 0x{vertexDesc:X16}, {descriptor.Description}, transform {GetTransformDescription(useTransform, descriptorAlignedTransformChain, transformSource)}, raw {rawBounds.Description}, {triangleQuality.Description}",
+                $"{block.TypeName} block {blockIndex} offset {offset}: {vertexCount} vertices, {triangleCount} triangles, count layout {countLayout}, position format {positionFormat}, descriptor 0x{vertexDesc:X16}, {descriptor.Description}, transform {GetTransformDescription(useTransform, descriptorAlignedTransformChain, transformSource)}, raw {rawBounds.Description}, {triangleQuality.Description}",
                 $"BSTriShape block {blockIndex} normals: {normalQuality.Description}",
                 $"BSTriShape block {blockIndex} material: {material.MaterialName}, texture {material.TexturePath ?? "none"}",
                 $"BSTriShape block {blockIndex} bytes before descriptor: {CreateHexSample(data, Math.Max(0, offset - DiagnosticHexByteCount), Math.Min(DiagnosticHexByteCount, offset))}",
@@ -1076,12 +1103,30 @@ public class NifPreviewModelReader : INifPreviewModelReader
         return true;
     }
 
-    private static NifPreviewVertex ReadBSVertex(byte[] data, int offset, BSVertexDescriptor descriptor, BSTriShapeCountLayout countLayout)
+    private static IEnumerable<BSVertexPositionFormat> GetSkyrimSpecialEditionPositionFormats()
+    {
+        yield return BSVertexPositionFormat.Float3;
+        yield return BSVertexPositionFormat.Half3;
+    }
+
+    private static bool HasUnsupportedSkinnedGeometry(IReadOnlyList<NifBlock> blocks)
+    {
+        return blocks.Any(block =>
+            block.TypeName.Contains("NiSkinInstance", StringComparison.Ordinal) ||
+            block.TypeName.Contains("NiSkinPartition", StringComparison.Ordinal));
+    }
+
+    private static NifPreviewVertex ReadBSVertex(byte[] data, int offset, BSVertexDescriptor descriptor, BSTriShapeCountLayout countLayout, BSVertexPositionFormat positionFormat)
     {
         var position = offset;
-        var vertex = descriptor.HasFullPrecisionPositions || countLayout == BSTriShapeCountLayout.SkyrimSpecialEdition && descriptor.VertexStride >= 32
-            ? ReadVector3(data, ref position)
-            : ReadHalfVector3(data, ref position);
+        var vertex = positionFormat switch
+        {
+            BSVertexPositionFormat.Float3 => ReadVector3(data, ref position),
+            BSVertexPositionFormat.Half3 => ReadHalfVector3(data, ref position),
+            _ => descriptor.HasFullPrecisionPositions || countLayout == BSTriShapeCountLayout.SkyrimSpecialEdition && descriptor.VertexStride >= 32
+                ? ReadVector3(data, ref position)
+                : ReadHalfVector3(data, ref position)
+        };
 
         position = offset + descriptor.UVOffset;
         var uv = descriptor.HasUV
@@ -1115,7 +1160,24 @@ public class NifPreviewModelReader : INifPreviewModelReader
             }
         }
 
-        return bounds.ShapeScore;
+        var vertices = mesh.Vertices.ToList();
+        var indices = mesh.Indices.ToList();
+        var triangleQuality = GetTriangleQuality(vertices, indices, bounds);
+        if (triangleQuality.TriangleCount == 0)
+        {
+            return 0f;
+        }
+
+        var degenerateRatio = (float)triangleQuality.DegenerateCount / triangleQuality.TriangleCount;
+        if (degenerateRatio >= 0.5f)
+        {
+            return 0f;
+        }
+
+        var compactnessScore = Math.Clamp(bounds.ShapeScore * 4f, 0.05f, 1f);
+        var triangleScore = 1f - degenerateRatio;
+        var sizeScore = bounds.LongestAxis > 10000f ? 0.1f : 1f;
+        return compactnessScore * triangleScore * sizeScore;
     }
 
     private static NifPreviewVector3 ReadVector3(byte[] data, ref int position)
@@ -1544,6 +1606,13 @@ public class NifPreviewModelReader : INifPreviewModelReader
     {
         Fallout4,
         SkyrimSpecialEdition
+    }
+
+    private enum BSVertexPositionFormat
+    {
+        DescriptorDefault,
+        Float3,
+        Half3
     }
 
     private struct NifBinaryReader

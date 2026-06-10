@@ -60,13 +60,28 @@ public class BethesdaAssetPreviewGeometryReader : IAssetPreviewGeometryReader
         }
 
         previewModel = MapModel(readResult.Model);
-        statusMessage = readResult.StatusMessage;
+        statusMessage = GetStatusMessage(readResult.StatusMessage, previewModel);
         return true;
     }
 
     private static bool IsReadableResolution(AssetFileResolutionDTO resolution)
     {
         return resolution.Status is AssetFileResolutionStatus.ResolvedLooseFile or AssetFileResolutionStatus.ResolvedArchiveEntryInMemory;
+    }
+
+    private static string GetStatusMessage(string statusMessage, AssetPreviewModelDTO previewModel)
+    {
+        var textureCount = previewModel.Meshes
+            .Select(mesh => mesh.TexturePath)
+            .Where(texturePath => !string.IsNullOrWhiteSpace(texturePath))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+        if (textureCount == 0)
+        {
+            return statusMessage;
+        }
+
+        return $"{statusMessage} Textures were found but are not shown in the preview yet.";
     }
 
     private static AssetPreviewModelDTO MapModel(NifPreviewModel model)
