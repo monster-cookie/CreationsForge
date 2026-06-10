@@ -44,7 +44,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
             {
                 var block = header.Blocks[blockIndex];
                 var transformChain = GetTransformChain(blockIndex, localTransforms, parentByChild);
-                var mesh = TryReadBSTriShape(block, blockIndex, model.Meshes.Count, transformChain, header.Strings, materialMap, ref rejectionReason);
+                var mesh = TryReadBSTriShape(block, blockIndex, model.Meshes.Count, transformChain, header.Strings, materialMap, header.BethesdaVersion, ref rejectionReason);
                 if (mesh != null)
                 {
                     model.Meshes.Add(mesh);
@@ -551,6 +551,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
         IReadOnlyList<NifObjectTransform> transformChain,
         IReadOnlyList<string> strings,
         IReadOnlyDictionary<int, NifMaterialInfo> materialMap,
+        uint bethesdaVersion,
         ref string? rejectionReason)
     {
         if (!block.TypeName.Contains("TriShape", StringComparison.Ordinal))
@@ -558,10 +559,22 @@ public class NifPreviewModelReader : INifPreviewModelReader
             return null;
         }
 
+        string? skyrimRejectionReason = null;
+        if (bethesdaVersion == SkyrimSpecialEditionBethesdaVersion &&
+            TryReadSkyrimSpecialEditionBSTriShape(block, blockIndex, meshIndex, transformChain, strings, materialMap, out var skyrimMesh, out skyrimRejectionReason))
+        {
+            return skyrimMesh;
+        }
+
+        if (rejectionReason == null && skyrimRejectionReason != null)
+        {
+            rejectionReason = skyrimRejectionReason;
+        }
+
         var candidates = new List<NifPreviewMesh>();
         for (var offset = 0; offset <= block.Data.Length - 18; offset++)
         {
-            if (TryReadBSTriShapeAt(block, blockIndex, offset, meshIndex, transformChain, strings, materialMap, out var mesh, out var candidateRejectionReason) &&
+            if (TryReadBSTriShapeAt(block, blockIndex, offset, meshIndex, transformChain, strings, materialMap, BSTriShapeCountLayout.Fallout4, out var mesh, out var candidateRejectionReason) &&
                 mesh != null)
             {
                 candidates.Add(mesh);
@@ -584,6 +597,42 @@ public class NifPreviewModelReader : INifPreviewModelReader
         return selected;
     }
 
+    private static bool TryReadSkyrimSpecialEditionBSTriShape(
+        NifBlock block,
+        int blockIndex,
+        int meshIndex,
+        IReadOnlyList<NifObjectTransform> transformChain,
+        IReadOnlyList<string> strings,
+        IReadOnlyDictionary<int, NifMaterialInfo> materialMap,
+        out NifPreviewMesh? mesh,
+        out string? rejectionReason)
+    {
+        mesh = null;
+        rejectionReason = null;
+        if (!TryReadNiAVObjectHeader(block.Data, out _, out var position, out var headerFailureReason))
+        {
+            rejectionReason = $"{block.TypeName} Skyrim SSE layout: object header not parsed ({headerFailureReason})";
+            return false;
+        }
+
+        var descriptorOffset = position + BSTriShapeFieldsBeforeVertexDescriptor;
+        if (descriptorOffset > block.Data.Length - 18)
+        {
+            rejectionReason = $"{block.TypeName} Skyrim SSE layout: descriptor offset {descriptorOffset} exceeds block length";
+            return false;
+        }
+
+        if (!TryReadBSTriShapeAt(block, blockIndex, descriptorOffset, meshIndex, transformChain, strings, materialMap, BSTriShapeCountLayout.SkyrimSpecialEdition, out mesh, out var candidateRejectionReason) ||
+            mesh == null)
+        {
+            rejectionReason = $"{block.TypeName} Skyrim SSE layout offset {descriptorOffset}: {candidateRejectionReason ?? "not a supported vertex descriptor"}";
+            return false;
+        }
+
+        mesh.Diagnostics.Add($"{block.TypeName} block {blockIndex}: parsed with Skyrim SSE layout at descriptor offset {descriptorOffset}");
+        return true;
+    }
+
     private static bool TryReadBSTriShapeAt(
         NifBlock block,
         int blockIndex,
@@ -592,6 +641,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
         IReadOnlyList<NifObjectTransform> transformChain,
         IReadOnlyList<string> strings,
         IReadOnlyDictionary<int, NifMaterialInfo> materialMap,
+        BSTriShapeCountLayout countLayout,
         out NifPreviewMesh? mesh,
         out string? rejectionReason)
     {
@@ -606,9 +656,24 @@ public class NifPreviewModelReader : INifPreviewModelReader
         }
 
         var position = offset + sizeof(ulong);
-        if (!TryReadUInt32(data, ref position, out var triangleCount) ||
-            !TryReadUInt16(data, ref position, out var vertexCount) ||
-            !TryReadUInt32(data, ref position, out var dataSize))
+        uint triangleCount;
+        ushort vertexCount;
+        uint dataSize;
+        if (countLayout == BSTriShapeCountLayout.SkyrimSpecialEdition)
+        {
+            if (!TryReadUInt16(data, ref position, out var skyrimTriangleCount) ||
+                !TryReadUInt16(data, ref position, out vertexCount) ||
+                !TryReadUInt32(data, ref position, out dataSize))
+            {
+                rejectionReason = "shape header ended before counts could be read";
+                return false;
+            }
+
+            triangleCount = skyrimTriangleCount;
+        }
+        else if (!TryReadUInt32(data, ref position, out triangleCount) ||
+            !TryReadUInt16(data, ref position, out vertexCount) ||
+            !TryReadUInt32(data, ref position, out dataSize))
         {
             rejectionReason = "shape header ended before counts could be read";
             return false;
@@ -628,6 +693,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
             return false;
         }
 
+        var vertexDataOffset = position;
         var rawBounds = new NifMeshBounds();
         var transformedBounds = new NifMeshBounds();
         var descriptorAlignedTransformChain = TryGetDescriptorAlignedTransformChain(data, offset, transformChain);
@@ -638,7 +704,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
         var vertices = new List<NifPreviewVertex>();
         for (var index = 0; index < vertexCount; index++)
         {
-            var vertex = ReadBSVertex(data, position + (index * vertexStride), descriptor);
+            var vertex = ReadBSVertex(data, vertexDataOffset + (index * vertexStride), descriptor, countLayout);
             if (!rawBounds.TryInclude(vertex.Position, out rejectionReason))
             {
                 return false;
@@ -667,11 +733,11 @@ public class NifPreviewModelReader : INifPreviewModelReader
         {
             for (var index = 0; index < vertices.Count; index++)
             {
-                vertices[index] = ReadBSVertex(data, position + (index * vertexStride), descriptor);
+                vertices[index] = ReadBSVertex(data, vertexDataOffset + (index * vertexStride), descriptor, countLayout);
             }
         }
 
-        position += vertexStride * vertexCount;
+        position = vertexDataOffset + (vertexStride * vertexCount);
         var indices = new List<int>();
         for (var index = 0; index < triangleCount; index++)
         {
@@ -703,11 +769,11 @@ public class NifPreviewModelReader : INifPreviewModelReader
             Indices = indices,
             Diagnostics =
             {
-                $"{block.TypeName} block {blockIndex} offset {offset}: {vertexCount} vertices, {triangleCount} triangles, descriptor 0x{vertexDesc:X16}, {descriptor.Description}, transform {GetTransformDescription(useTransform, descriptorAlignedTransformChain, transformSource)}, raw {rawBounds.Description}, {triangleQuality.Description}",
+                $"{block.TypeName} block {blockIndex} offset {offset}: {vertexCount} vertices, {triangleCount} triangles, count layout {countLayout}, descriptor 0x{vertexDesc:X16}, {descriptor.Description}, transform {GetTransformDescription(useTransform, descriptorAlignedTransformChain, transformSource)}, raw {rawBounds.Description}, {triangleQuality.Description}",
                 $"BSTriShape block {blockIndex} normals: {normalQuality.Description}",
                 $"BSTriShape block {blockIndex} material: {material.MaterialName}, texture {material.TexturePath ?? "none"}",
                 $"BSTriShape block {blockIndex} bytes before descriptor: {CreateHexSample(data, Math.Max(0, offset - DiagnosticHexByteCount), Math.Min(DiagnosticHexByteCount, offset))}",
-                $"BSTriShape block {blockIndex} first vertex bytes: {CreateVertexByteSample(data, offset + sizeof(ulong) + sizeof(uint) + sizeof(ushort) + sizeof(uint), vertexStride, Math.Min(3, (int)vertexCount))}",
+                $"BSTriShape block {blockIndex} first vertex bytes: {CreateVertexByteSample(data, vertexDataOffset, vertexStride, Math.Min(3, (int)vertexCount))}",
                 $"BSTriShape block {blockIndex} vertex sample: {CreateVertexSample(vertices)}",
                 $"BSTriShape block {blockIndex} triangle sample: {CreateTriangleSample(indices)}"
             }
@@ -1010,10 +1076,10 @@ public class NifPreviewModelReader : INifPreviewModelReader
         return true;
     }
 
-    private static NifPreviewVertex ReadBSVertex(byte[] data, int offset, BSVertexDescriptor descriptor)
+    private static NifPreviewVertex ReadBSVertex(byte[] data, int offset, BSVertexDescriptor descriptor, BSTriShapeCountLayout countLayout)
     {
         var position = offset;
-        var vertex = descriptor.HasFullPrecisionPositions
+        var vertex = descriptor.HasFullPrecisionPositions || countLayout == BSTriShapeCountLayout.SkyrimSpecialEdition && descriptor.VertexStride >= 32
             ? ReadVector3(data, ref position)
             : ReadHalfVector3(data, ref position);
 
@@ -1472,6 +1538,12 @@ public class NifPreviewModelReader : INifPreviewModelReader
         {
             return !float.IsNaN(value) && !float.IsInfinity(value) && MathF.Abs(value) <= 2f;
         }
+    }
+
+    private enum BSTriShapeCountLayout
+    {
+        Fallout4,
+        SkyrimSpecialEdition
     }
 
     private struct NifBinaryReader

@@ -67,6 +67,28 @@ public class NifPreviewModelReaderTests
     }
 
     [Fact]
+    public void TryRead_UsesSkyrimSpecialEditionBSTriShapeLayout()
+    {
+        var reader = new NifPreviewModelReader();
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Clutter/Basket04.NIF",
+            DisplayName = "Basket04",
+            Data = CreateSkyrimSpecialEditionLayoutBSTriShapeNif()
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes.Count.ShouldBe(1);
+        result.Model.Meshes[0].Vertices.Count.ShouldBe(3);
+        result.Model.Meshes[0].Vertices[0].Position.X.ShouldBe(-1f);
+        result.Model.Meshes[0].Vertices[2].Position.Y.ShouldBe(1f);
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("parsed with Skyrim SSE layout", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("count layout SkyrimSpecialEdition", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void TryRead_ReturnsMeshWhenHeaderHasUnknownBytesBeforeBlockTables()
     {
         var reader = new NifPreviewModelReader();
@@ -284,6 +306,14 @@ public class NifPreviewModelReaderTests
         return CreateMinimalNifWithBlock("BSTriShape", blockStream.ToArray(), version, includeProcessScript, extraBytesBeforeTables, bethesdaVersion: bethesdaVersion);
     }
 
+    private static byte[] CreateSkyrimSpecialEditionLayoutBSTriShapeNif()
+    {
+        return CreateMinimalNifWithBlock(
+            "BSTriShape",
+            CreateSkyrimSpecialEditionBSTriShapeBlock(),
+            bethesdaVersion: 100U);
+    }
+
     private static byte[] CreateMinimalHalfPositionBSTriShapeNif()
     {
         using var blockStream = new MemoryStream();
@@ -419,6 +449,34 @@ public class NifPreviewModelReaderTests
             WriteVertex(writer, 0f, 0f, firstVertexZ);
             WriteVertex(writer, 1f, 0f, firstVertexZ);
             WriteVertex(writer, 0f, 1f, firstVertexZ);
+            writer.Write((ushort)0);
+            writer.Write((ushort)1);
+            writer.Write((ushort)2);
+        }
+
+        return stream.ToArray();
+    }
+
+    private static byte[] CreateSkyrimSpecialEditionBSTriShapeBlock()
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
+        {
+            WriteTransformPrefix(writer, 0f, 0f, 0f, 1f);
+            writer.Write(0f);
+            writer.Write(0f);
+            writer.Write(0f);
+            writer.Write(1f);
+            writer.Write(-1);
+            writer.Write(-1);
+            writer.Write(-1);
+            writer.Write(((ulong)0x00B << 44) | (4UL << 16) | (3UL << 8) | 8UL);
+            writer.Write((ushort)1);
+            writer.Write((ushort)3);
+            writer.Write(102U);
+            WriteSkyrimSpecialEditionVertex(writer, -1f, -1f, 0f);
+            WriteSkyrimSpecialEditionVertex(writer, 1f, -1f, 0f);
+            WriteSkyrimSpecialEditionVertex(writer, 0f, 1f, 0f);
             writer.Write((ushort)0);
             writer.Write((ushort)1);
             writer.Write((ushort)2);
@@ -578,6 +636,22 @@ public class NifPreviewModelReaderTests
         writer.Write((byte)128);
         writer.Write((byte)255);
         writer.Write((byte)0);
+        writer.Write(0U);
+    }
+
+    private static void WriteSkyrimSpecialEditionVertex(BinaryWriter writer, float x, float y, float z)
+    {
+        writer.Write(x);
+        writer.Write(y);
+        writer.Write(z);
+        writer.Write(BitConverter.HalfToUInt16Bits((Half)0f));
+        writer.Write(BitConverter.HalfToUInt16Bits((Half)0f));
+        writer.Write((byte)128);
+        writer.Write((byte)128);
+        writer.Write((byte)255);
+        writer.Write((byte)0);
+        writer.Write(0U);
+        writer.Write(0U);
         writer.Write(0U);
     }
 
