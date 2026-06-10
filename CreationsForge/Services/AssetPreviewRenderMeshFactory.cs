@@ -6,6 +6,9 @@ namespace CreationsForge.Services;
 
 public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
 {
+    private const string FallbackMaterialName = "PreviewFallback";
+    private const float TargetPreviewSize = 1.8f;
+    private const float MaxReasonableCoordinate = 1000000f;
     private readonly ILogger Logger;
 
     public AssetPreviewRenderMeshFactory(ILogger logger)
@@ -15,33 +18,114 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
 
     public AssetPreviewRenderMesh CreateRenderMesh(AssetPreviewModelDTO? previewModel)
     {
+        return CreateRenderMesh(previewModel, new AssetPreviewRenderOptions());
+    }
+
+    public AssetPreviewRenderMesh CreateRenderMesh(AssetPreviewModelDTO? previewModel, AssetPreviewRenderOptions options)
+    {
         if (previewModel is null || previewModel.Meshes.Count == 0)
         {
+            Logger.Warning("Asset preview render mesh factory using fallback because no preview model meshes were provided");
+            return CreateFallbackMesh();
+        }
+
+        var meshes = GetMeshes(previewModel, options)
+            .Select(ToRenderSpace)
+            .ToList();
+        if (meshes.Count == 0)
+        {
+            Logger.Warning(
+                "Asset preview model {DisplayName} has no mesh matching render filter {MeshIndex}",
+                previewModel.DisplayName,
+                options.MeshIndex);
+            return CreateFallbackMesh();
+        }
+
+        if (!TryGetBounds(meshes, out var bounds) || !bounds.IsReasonable)
+        {
+            Logger.Warning(
+                "Asset preview model {DisplayName} has unsupported bounds {Bounds}",
+                previewModel.DisplayName,
+                bounds.Description);
             return CreateFallbackMesh();
         }
 
         var renderMesh = new AssetPreviewRenderMesh();
-        foreach (var mesh in previewModel.Meshes)
+        var transform = AssetPreviewBoundsTransform.Create(bounds);
+        for (var meshIndex = 0; meshIndex < meshes.Count; meshIndex++)
         {
-            AppendMesh(renderMesh, mesh);
+            AppendMesh(renderMesh, meshes[meshIndex], transform, meshIndex);
         }
 
-        return renderMesh.Indices.Count == 0
-            ? CreateFallbackMesh()
-            : renderMesh;
+        if (renderMesh.Indices.Count == 0)
+        {
+            Logger.Warning(
+                "Asset preview model {DisplayName} produced no valid render triangles from {MeshCount} mesh(es)",
+                previewModel.DisplayName,
+                meshes.Count);
+            return CreateFallbackMesh();
+        }
+
+        Logger.Information(
+            "Asset preview render mesh created for {DisplayName}: {VertexCount} vertices, {IndexCount} indices, {LineIndexCount} line indices, bounds {Bounds}",
+            previewModel.DisplayName,
+            renderMesh.Vertices.Count / 9,
+            renderMesh.Indices.Count,
+            renderMesh.LineIndices.Count,
+            bounds.Description);
+        return renderMesh;
     }
 
-    private void AppendMesh(AssetPreviewRenderMesh renderMesh, AssetPreviewMeshDTO mesh)
+    private static IEnumerable<AssetPreviewMeshDTO> GetMeshes(AssetPreviewModelDTO previewModel, AssetPreviewRenderOptions options)
     {
-        var baseVertex = (uint)(renderMesh.Vertices.Count / 6);
-        foreach (var vertex in mesh.Vertices)
+        if (options.MeshIndex == null)
         {
-            renderMesh.Vertices.Add(vertex.Position.X);
-            renderMesh.Vertices.Add(vertex.Position.Y);
-            renderMesh.Vertices.Add(vertex.Position.Z);
-            renderMesh.Vertices.Add(0.30f);
-            renderMesh.Vertices.Add(0.65f);
-            renderMesh.Vertices.Add(1.00f);
+            return previewModel.Meshes;
+        }
+
+        return options.MeshIndex >= 0 && options.MeshIndex < previewModel.Meshes.Count
+            ? [previewModel.Meshes[options.MeshIndex.Value]]
+            : [];
+    }
+
+    private void AppendMesh(AssetPreviewRenderMesh renderMesh, AssetPreviewMeshDTO mesh, AssetPreviewBoundsTransform transform, int meshIndex)
+    {
+        var baseVertex = (uint)(renderMesh.Vertices.Count / 9);
+        var color = mesh.MaterialName == FallbackMaterialName
+            ? new AssetPreviewRenderColor(0.85f, 0.10f, 0.08f)
+            : GetMeshColor(mesh, transform);
+
+        var positions = mesh.Vertices
+            .Select(vertex => transform.Apply(vertex.Position))
+            .ToList();
+        var geometryNormals = CreateGeometryNormals(positions, mesh.Indices);
+        var decodedNormalValues = mesh.Vertices
+            .Select(vertex => vertex.Normal)
+            .ToList();
+        var decodedNormals = decodedNormalValues
+            .Select(Normalize)
+            .ToList();
+        var useDecodedNormals = HasUsableDecodedNormals(decodedNormalValues);
+        Logger.Information(
+            "Asset preview mesh {MeshName} using {NormalSource} normals",
+            mesh.Name,
+            useDecodedNormals ? "decoded" : "generated");
+
+        for (var index = 0; index < mesh.Vertices.Count; index++)
+        {
+            var position = positions[index];
+            var normal = useDecodedNormals
+                ? decodedNormals[index]
+                : geometryNormals[index];
+            renderMesh.Vertices.Add(position.X);
+            renderMesh.Vertices.Add(position.Y);
+            renderMesh.Vertices.Add(position.Z);
+            renderMesh.Vertices.Add(color.Red);
+            renderMesh.Vertices.Add(color.Green);
+            renderMesh.Vertices.Add(color.Blue);
+            renderMesh.Vertices.Add(normal.X);
+            renderMesh.Vertices.Add(normal.Y);
+            renderMesh.Vertices.Add(normal.Z);
         }
 
         for (var index = 0; index + 2 < mesh.Indices.Count; index += 3)
@@ -54,6 +138,106 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
                     index);
             }
         }
+    }
+
+    private static bool HasUsableDecodedNormals(IReadOnlyList<AssetPreviewVector3DTO> normals)
+    {
+        var validCount = 0;
+        foreach (var normal in normals)
+        {
+            var length = GetLength(normal);
+            if (length is >= 0.5f and <= 1.5f)
+            {
+                validCount++;
+            }
+        }
+
+        return normals.Count > 0 && validCount >= normals.Count / 2;
+    }
+
+    private static AssetPreviewMeshDTO ToRenderSpace(AssetPreviewMeshDTO mesh)
+    {
+        if (mesh.MaterialName == FallbackMaterialName)
+        {
+            return mesh;
+        }
+
+        var renderMesh = new AssetPreviewMeshDTO
+        {
+            Name = mesh.Name,
+            MaterialName = mesh.MaterialName,
+            TexturePath = mesh.TexturePath
+        };
+        foreach (var vertex in mesh.Vertices)
+        {
+            renderMesh.Vertices.Add(new AssetPreviewVertexDTO
+            {
+                Position = ToRenderSpace(vertex.Position),
+                Normal = ToRenderSpace(vertex.Normal),
+                UV = vertex.UV
+            });
+        }
+
+        foreach (var index in mesh.Indices)
+        {
+            renderMesh.Indices.Add(index);
+        }
+
+        return renderMesh;
+    }
+
+    private static AssetPreviewVector3DTO ToRenderSpace(AssetPreviewVector3DTO vector)
+    {
+        return new AssetPreviewVector3DTO
+        {
+            X = vector.X,
+            Y = vector.Z,
+            Z = -vector.Y
+        };
+    }
+
+    private static List<AssetPreviewVector3DTO> CreateGeometryNormals(IReadOnlyList<AssetPreviewVector3DTO> positions, IList<int> indices)
+    {
+        var normals = Enumerable
+            .Range(0, positions.Count)
+            .Select(_ => new AssetPreviewVector3DTO
+            {
+                X = 0f,
+                Y = 0f,
+                Z = 0f
+            })
+            .ToList();
+        for (var index = 0; index + 2 < indices.Count; index += 3)
+        {
+            var first = indices[index];
+            var second = indices[index + 1];
+            var third = indices[index + 2];
+            if (first < 0 || first >= positions.Count ||
+                second < 0 || second >= positions.Count ||
+                third < 0 || third >= positions.Count)
+            {
+                continue;
+            }
+
+            var normal = Cross(
+                Subtract(positions[second], positions[first]),
+                Subtract(positions[third], positions[first]));
+            if (GetLength(normal) <= 0.0001f)
+            {
+                continue;
+            }
+
+            normals[first] = Add(normals[first], normal);
+            normals[second] = Add(normals[second], normal);
+            normals[third] = Add(normals[third], normal);
+        }
+
+        for (var index = 0; index < normals.Count; index++)
+        {
+            normals[index] = Normalize(normals[index]);
+        }
+
+        return normals;
     }
 
     private static bool TryAppendTriangle(
@@ -73,7 +257,16 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
         renderMesh.Indices.Add(baseVertex + (uint)first);
         renderMesh.Indices.Add(baseVertex + (uint)second);
         renderMesh.Indices.Add(baseVertex + (uint)third);
+        AppendLine(renderMesh, baseVertex, first, second);
+        AppendLine(renderMesh, baseVertex, second, third);
+        AppendLine(renderMesh, baseVertex, third, first);
         return true;
+    }
+
+    private static void AppendLine(AssetPreviewRenderMesh renderMesh, uint baseVertex, int first, int second)
+    {
+        renderMesh.LineIndices.Add(baseVertex + (uint)first);
+        renderMesh.LineIndices.Add(baseVertex + (uint)second);
     }
 
     private static bool IsValidIndex(AssetPreviewMeshDTO mesh, int index)
@@ -81,52 +274,320 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
         return index >= 0 && index < mesh.Vertices.Count;
     }
 
+    private static bool TryGetBounds(IEnumerable<AssetPreviewMeshDTO> meshes, out AssetPreviewBounds bounds)
+    {
+        bounds = new AssetPreviewBounds();
+        var hasVertex = false;
+        foreach (var mesh in meshes)
+        {
+            if (mesh.MaterialName == FallbackMaterialName)
+            {
+                continue;
+            }
+
+            foreach (var vertex in mesh.Vertices)
+            {
+                if (!IsFinite(vertex.Position.X) || !IsFinite(vertex.Position.Y) || !IsFinite(vertex.Position.Z))
+                {
+                    bounds = AssetPreviewBounds.Unreasonable("non-finite vertex position");
+                    return false;
+                }
+
+                bounds.Include(vertex.Position);
+                hasVertex = true;
+            }
+        }
+
+        return hasVertex;
+    }
+
+    private static bool IsFinite(float value)
+    {
+        return !float.IsNaN(value) && !float.IsInfinity(value) && MathF.Abs(value) <= MaxReasonableCoordinate;
+    }
+
     private static AssetPreviewRenderMesh CreateFallbackMesh()
     {
-        return new AssetPreviewRenderMesh
+        var mesh = new AssetPreviewRenderMesh
         {
-            Vertices =
-            {
-                -0.9f,
-                -0.6f,
-                0f,
-                0.30f,
-                0.65f,
-                1.00f,
-                0.9f,
-                -0.6f,
-                0f,
-                0.30f,
-                0.65f,
-                1.00f,
-                0f,
-                0.9f,
-                0f,
-                0.30f,
-                0.65f,
-                1.00f,
-                0f,
-                0f,
-                1.1f,
-                1.00f,
-                0.85f,
-                0.25f
-            },
             Indices =
             {
                 0,
                 1,
                 2,
                 0,
+                2,
                 3,
-                1,
-                1,
+                0,
                 3,
+                4,
+                0,
+                4,
+                5,
+                0,
+                5,
+                6,
+                0,
+                6,
+                7,
+                0,
+                7,
+                8,
+                0,
+                8,
+                1
+            },
+            LineIndices =
+            {
+                1,
                 2,
                 2,
                 3,
-                0
+                3,
+                4,
+                4,
+                5,
+                5,
+                6,
+                6,
+                7,
+                7,
+                8,
+                8,
+                1
             }
         };
+
+        AppendFallbackVertex(mesh, 0f, 0f, 0f);
+        AppendFallbackVertex(mesh, -0.35f, 0.9f, 0f);
+        AppendFallbackVertex(mesh, 0.35f, 0.9f, 0f);
+        AppendFallbackVertex(mesh, 0.9f, 0.35f, 0f);
+        AppendFallbackVertex(mesh, 0.9f, -0.35f, 0f);
+        AppendFallbackVertex(mesh, 0.35f, -0.9f, 0f);
+        AppendFallbackVertex(mesh, -0.35f, -0.9f, 0f);
+        AppendFallbackVertex(mesh, -0.9f, -0.35f, 0f);
+        AppendFallbackVertex(mesh, -0.9f, 0.35f, 0f);
+        return mesh;
+    }
+
+    private static void AppendFallbackVertex(AssetPreviewRenderMesh mesh, float x, float y, float z)
+    {
+        mesh.Vertices.Add(x);
+        mesh.Vertices.Add(y);
+        mesh.Vertices.Add(z);
+        mesh.Vertices.Add(0.85f);
+        mesh.Vertices.Add(0.10f);
+        mesh.Vertices.Add(0.08f);
+        mesh.Vertices.Add(0f);
+        mesh.Vertices.Add(0f);
+        mesh.Vertices.Add(1f);
+    }
+
+    private static AssetPreviewRenderColor GetMeshColor(AssetPreviewMeshDTO mesh, AssetPreviewBoundsTransform transform)
+    {
+        var materialKey = $"{mesh.MaterialName} {mesh.TexturePath}";
+        if (materialKey.Contains(".BGEM", StringComparison.OrdinalIgnoreCase) ||
+            materialKey.Contains("empty", StringComparison.OrdinalIgnoreCase))
+        {
+            return new AssetPreviewRenderColor(0.70f, 0.72f, 0.72f);
+        }
+
+        if (materialKey.Contains(".BGSM", StringComparison.OrdinalIgnoreCase))
+        {
+            return new AssetPreviewRenderColor(0.95f, 0.10f, 0.78f);
+        }
+
+        if (TryGetMeshBounds(mesh, transform, out var meshBounds) &&
+            meshBounds.CenterY > 0.15f)
+        {
+            return new AssetPreviewRenderColor(0.95f, 0.10f, 0.78f);
+        }
+
+        return new AssetPreviewRenderColor(0.70f, 0.72f, 0.72f);
+    }
+
+    private static bool TryGetMeshBounds(AssetPreviewMeshDTO mesh, AssetPreviewBoundsTransform transform, out AssetPreviewBounds bounds)
+    {
+        bounds = new AssetPreviewBounds();
+        var hasVertex = false;
+        foreach (var vertex in mesh.Vertices)
+        {
+            bounds.Include(transform.Apply(vertex.Position));
+            hasVertex = true;
+        }
+
+        return hasVertex;
+    }
+
+    private static AssetPreviewVector3DTO Normalize(AssetPreviewVector3DTO normal)
+    {
+        var length = GetLength(normal);
+        if (length <= 0.0001f ||
+            float.IsNaN(length) ||
+            float.IsInfinity(length))
+        {
+            return new AssetPreviewVector3DTO
+            {
+                X = 0f,
+                Y = 0f,
+                Z = 1f
+            };
+        }
+
+        return new AssetPreviewVector3DTO
+        {
+            X = normal.X / length,
+            Y = normal.Y / length,
+            Z = normal.Z / length
+        };
+    }
+
+    private static AssetPreviewVector3DTO Subtract(AssetPreviewVector3DTO first, AssetPreviewVector3DTO second)
+    {
+        return new AssetPreviewVector3DTO
+        {
+            X = first.X - second.X,
+            Y = first.Y - second.Y,
+            Z = first.Z - second.Z
+        };
+    }
+
+    private static AssetPreviewVector3DTO Add(AssetPreviewVector3DTO first, AssetPreviewVector3DTO second)
+    {
+        return new AssetPreviewVector3DTO
+        {
+            X = first.X + second.X,
+            Y = first.Y + second.Y,
+            Z = first.Z + second.Z
+        };
+    }
+
+    private static AssetPreviewVector3DTO Cross(AssetPreviewVector3DTO first, AssetPreviewVector3DTO second)
+    {
+        return new AssetPreviewVector3DTO
+        {
+            X = (first.Y * second.Z) - (first.Z * second.Y),
+            Y = (first.Z * second.X) - (first.X * second.Z),
+            Z = (first.X * second.Y) - (first.Y * second.X)
+        };
+    }
+
+    private static float GetLength(AssetPreviewVector3DTO vector)
+    {
+        return MathF.Sqrt((vector.X * vector.X) + (vector.Y * vector.Y) + (vector.Z * vector.Z));
+    }
+
+    private readonly struct AssetPreviewRenderColor
+    {
+        public AssetPreviewRenderColor(float red, float green, float blue)
+        {
+            Red = red;
+            Green = green;
+            Blue = blue;
+        }
+
+        public float Red { get; }
+
+        public float Green { get; }
+
+        public float Blue { get; }
+    }
+
+    private struct AssetPreviewBounds
+    {
+        private string? FailureReason;
+        private bool HasPosition;
+
+        public float MinX { get; private set; }
+
+        public float MinY { get; private set; }
+
+        public float MinZ { get; private set; }
+
+        public float MaxX { get; private set; }
+
+        public float MaxY { get; private set; }
+
+        public float MaxZ { get; private set; }
+
+        public bool IsReasonable => FailureReason == null && LongestAxis > 0f;
+
+        public float LongestAxis => MathF.Max(MaxX - MinX, MathF.Max(MaxY - MinY, MaxZ - MinZ));
+
+        public float CenterZ => (MinZ + MaxZ) / 2f;
+
+        public float CenterY => (MinY + MaxY) / 2f;
+
+        public string Description => FailureReason ?? $"X {MinX:N3}..{MaxX:N3}, Y {MinY:N3}..{MaxY:N3}, Z {MinZ:N3}..{MaxZ:N3}";
+
+        public static AssetPreviewBounds Unreasonable(string failureReason)
+        {
+            return new AssetPreviewBounds
+            {
+                FailureReason = failureReason
+            };
+        }
+
+        public void Include(AssetPreviewVector3DTO position)
+        {
+            if (FailureReason != null)
+            {
+                return;
+            }
+
+            if (!HasPosition)
+            {
+                MinX = position.X;
+                MaxX = position.X;
+                MinY = position.Y;
+                MaxY = position.Y;
+                MinZ = position.Z;
+                MaxZ = position.Z;
+                HasPosition = true;
+                return;
+            }
+
+            MinX = MathF.Min(MinX, position.X);
+            MinY = MathF.Min(MinY, position.Y);
+            MinZ = MathF.Min(MinZ, position.Z);
+            MaxX = MathF.Max(MaxX, position.X);
+            MaxY = MathF.Max(MaxY, position.Y);
+            MaxZ = MathF.Max(MaxZ, position.Z);
+        }
+    }
+
+    private readonly struct AssetPreviewBoundsTransform
+    {
+        private readonly float CenterX;
+        private readonly float CenterY;
+        private readonly float CenterZ;
+        private readonly float Scale;
+
+        private AssetPreviewBoundsTransform(float centerX, float centerY, float centerZ, float scale)
+        {
+            CenterX = centerX;
+            CenterY = centerY;
+            CenterZ = centerZ;
+            Scale = scale;
+        }
+
+        public static AssetPreviewBoundsTransform Create(AssetPreviewBounds bounds)
+        {
+            return new AssetPreviewBoundsTransform(
+                (bounds.MinX + bounds.MaxX) / 2f,
+                (bounds.MinY + bounds.MaxY) / 2f,
+                (bounds.MinZ + bounds.MaxZ) / 2f,
+                TargetPreviewSize / bounds.LongestAxis);
+        }
+
+        public AssetPreviewVector3DTO Apply(AssetPreviewVector3DTO position)
+        {
+            return new AssetPreviewVector3DTO
+            {
+                X = (position.X - CenterX) * Scale,
+                Y = (position.Y - CenterY) * Scale,
+                Z = (position.Z - CenterZ) * Scale
+            };
+        }
     }
 }

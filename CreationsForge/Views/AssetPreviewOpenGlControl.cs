@@ -6,6 +6,7 @@ using Avalonia.OpenGL.Controls;
 using CreationsForge.Core.DTOs.Assets;
 using CreationsForge.Services;
 using CreationsForge.Services.Interfaces;
+using CreationsForge.ViewModels;
 using Serilog;
 using Silk.NET.OpenGL;
 
@@ -17,15 +18,22 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         #version 330 core
         layout(location = 0) in vec3 aPosition;
         layout(location = 1) in vec3 aColor;
+        layout(location = 2) in vec3 aNormal;
 
         uniform mat4 uMvp;
+        uniform int uUseOverrideColor;
+        uniform vec3 uOverrideColor;
+        uniform vec3 uLightDirection;
 
         out vec3 vColor;
 
         void main()
         {
             gl_Position = uMvp * vec4(aPosition, 1.0);
-            vColor = aColor;
+            gl_PointSize = 6.0;
+            float diffuse = abs(dot(normalize(aNormal), normalize(uLightDirection)));
+            float light = 0.45 + (diffuse * 0.55);
+            vColor = uUseOverrideColor == 1 ? uOverrideColor : aColor * light;
         }
         """;
 
@@ -45,15 +53,22 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         #version 300 es
         layout(location = 0) in vec3 aPosition;
         layout(location = 1) in vec3 aColor;
+        layout(location = 2) in vec3 aNormal;
 
         uniform mat4 uMvp;
+        uniform int uUseOverrideColor;
+        uniform vec3 uOverrideColor;
+        uniform vec3 uLightDirection;
 
         out vec3 vColor;
 
         void main()
         {
             gl_Position = uMvp * vec4(aPosition, 1.0);
-            vColor = aColor;
+            gl_PointSize = 6.0;
+            float diffuse = abs(dot(normalize(aNormal), normalize(uLightDirection)));
+            float light = 0.45 + (diffuse * 0.55);
+            vColor = uUseOverrideColor == 1 ? uOverrideColor : aColor * light;
         }
         """;
 
@@ -74,16 +89,23 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
     private readonly IAssetPreviewRenderMeshFactory RenderMeshFactory;
     private readonly ILogger Logger;
     private AssetPreviewModelDTO? PreviewModelValue;
+    private AssetPreviewRenderOptions RenderOptionsValue = new AssetPreviewRenderOptions();
     private GL? Gl;
     private uint VertexArrayObject;
     private uint VertexBufferObject;
     private uint ElementBufferObject;
+    private uint LineElementBufferObject;
     private uint ShaderProgram;
+    private int VertexCount;
     private int IndexCount;
+    private int LineIndexCount;
     private bool HasPendingMeshUpload = true;
     private bool IsRendererAvailable;
     private bool HasInitializationFailed;
     private bool HasInitialized;
+    private bool IsOrbitEnabledValue;
+    private AssetPreviewRenderMode RenderModeValue = AssetPreviewRenderMode.Solid;
+    private AssetPreviewViewMode ViewModeValue = AssetPreviewViewMode.Isometric;
     private string? LastInitializationError;
     private long RenderCount;
 
@@ -113,6 +135,63 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         }
     }
 
+    public AssetPreviewRenderOptions RenderOptions
+    {
+        get => RenderOptionsValue;
+        set
+        {
+            RenderOptionsValue = value;
+            HasPendingMeshUpload = true;
+            SetDiagnostic("OpenGL: render options changed, upload pending");
+            RequestNextFrameRendering();
+        }
+    }
+
+    public AssetPreviewViewMode ViewMode
+    {
+        get => ViewModeValue;
+        set
+        {
+            if (ViewModeValue == value)
+            {
+                return;
+            }
+
+            ViewModeValue = value;
+            RequestNextFrameRendering();
+        }
+    }
+
+    public bool IsOrbitEnabled
+    {
+        get => IsOrbitEnabledValue;
+        set
+        {
+            if (IsOrbitEnabledValue == value)
+            {
+                return;
+            }
+
+            IsOrbitEnabledValue = value;
+            RequestNextFrameRendering();
+        }
+    }
+
+    public AssetPreviewRenderMode RenderMode
+    {
+        get => RenderModeValue;
+        set
+        {
+            if (RenderModeValue == value)
+            {
+                return;
+            }
+
+            RenderModeValue = value;
+            RequestNextFrameRendering();
+        }
+    }
+
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
@@ -135,6 +214,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
             VertexArrayObject = Gl.GenVertexArray();
             VertexBufferObject = Gl.GenBuffer();
             ElementBufferObject = Gl.GenBuffer();
+            LineElementBufferObject = Gl.GenBuffer();
             Gl.Enable(EnableCap.DepthTest);
             UploadMesh();
             IsRendererAvailable = true;
@@ -168,6 +248,11 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
             Gl.DeleteBuffer(ElementBufferObject);
         }
 
+        if (LineElementBufferObject != 0)
+        {
+            Gl.DeleteBuffer(LineElementBufferObject);
+        }
+
         if (VertexBufferObject != 0)
         {
             Gl.DeleteBuffer(VertexBufferObject);
@@ -197,6 +282,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         VertexArrayObject = 0;
         VertexBufferObject = 0;
         ElementBufferObject = 0;
+        LineElementBufferObject = 0;
         ShaderProgram = 0;
         HasPendingMeshUpload = true;
         IsRendererAvailable = false;
@@ -236,21 +322,50 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         Gl.Clear((uint)(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit));
         RenderCount++;
 
-        if (IndexCount == 0)
+        if (VertexCount == 0 || (RenderMode != AssetPreviewRenderMode.Points && IndexCount == 0))
         {
-            SetDiagnostic($"OpenGL: rendered clear only ({width}x{height}), no indices");
+            SetDiagnostic($"OpenGL: rendered clear only ({width}x{height}), no drawable geometry");
             return;
         }
 
         Gl.UseProgram(ShaderProgram);
         SetModelViewProjection(width, height);
+        SetLightDirection();
         Gl.BindVertexArray(VertexArrayObject);
-        unsafe
+        if (RenderMode == AssetPreviewRenderMode.Points)
         {
-            Gl.DrawElements(PrimitiveType.Triangles, (uint)IndexCount, DrawElementsType.UnsignedInt, null);
+            Gl.Disable(EnableCap.DepthTest);
+            Gl.PointSize(5f);
+            SetColorOverride(true, new Vector3(0.25f, 0.78f, 1f));
+            Gl.DrawArrays(PrimitiveType.Points, 0, (uint)VertexCount);
+            SetColorOverride(false, new Vector3());
+            Gl.Enable(EnableCap.DepthTest);
+        }
+        else
+        {
+            SetColorOverride(false, new Vector3());
+            Gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, ElementBufferObject);
+            unsafe
+            {
+                Gl.DrawElements(PrimitiveType.Triangles, (uint)IndexCount, DrawElementsType.UnsignedInt, null);
+            }
+
+            if (RenderMode == AssetPreviewRenderMode.Wireframe && LineIndexCount > 0)
+            {
+                Gl.Disable(EnableCap.DepthTest);
+                SetColorOverride(true, new Vector3(1f, 0.88f, 0.25f));
+                Gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, LineElementBufferObject);
+                unsafe
+                {
+                    Gl.DrawElements(PrimitiveType.Lines, (uint)LineIndexCount, DrawElementsType.UnsignedInt, null);
+                }
+
+                SetColorOverride(false, new Vector3());
+                Gl.Enable(EnableCap.DepthTest);
+            }
         }
 
-        if (RenderCount == 1 || RenderCount % 120 == 0)
+        if (RenderCount == 1)
         {
             Logger.Information(
                 "Asset preview OpenGL rendered frame {RenderCount} with bounds {Width}x{Height} and {IndexCount} indices",
@@ -260,7 +375,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
                 IndexCount);
         }
 
-        SetDiagnostic($"OpenGL: rendered frame {RenderCount:N0} ({width}x{height}), {IndexCount} indices");
+        SetDiagnostic($"OpenGL: rendered frame {RenderCount:N0} ({width}x{height}), {VertexCount} vertices, {IndexCount} indices, {ViewMode}, {RenderMode}");
         RequestNextFrameRendering();
     }
 
@@ -271,10 +386,13 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
             return;
         }
 
-        var renderMesh = RenderMeshFactory.CreateRenderMesh(PreviewModel);
+        var renderMesh = RenderMeshFactory.CreateRenderMesh(PreviewModel, RenderOptions);
         var vertices = renderMesh.Vertices.ToArray();
         var indices = renderMesh.Indices.ToArray();
+        var lineIndices = renderMesh.LineIndices.ToArray();
+        VertexCount = vertices.Length / 9;
         IndexCount = indices.Length;
+        LineIndexCount = lineIndices.Length;
 
         Gl.BindVertexArray(VertexArrayObject);
         Gl.BindBuffer(BufferTargetARB.ArrayBuffer, VertexBufferObject);
@@ -297,17 +415,30 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
                 BufferUsageARB.StaticDraw);
         }
 
-        var stride = 6 * sizeof(float);
+        Gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, LineElementBufferObject);
+        fixed (uint* lineIndexPointer = lineIndices)
+        {
+            Gl.BufferData(
+                BufferTargetARB.ElementArrayBuffer,
+                (nuint)(lineIndices.Length * sizeof(uint)),
+                lineIndexPointer,
+                BufferUsageARB.StaticDraw);
+        }
+
+        var stride = 9 * sizeof(float);
         Gl.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, (uint)stride, null);
         Gl.EnableVertexAttribArray(0);
         Gl.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, (uint)stride, (void*)(3 * sizeof(float)));
         Gl.EnableVertexAttribArray(1);
+        Gl.VertexAttribPointer(2, 3, VertexAttribPointerType.Float, false, (uint)stride, (void*)(6 * sizeof(float)));
+        Gl.EnableVertexAttribArray(2);
         HasPendingMeshUpload = false;
-        SetDiagnostic($"OpenGL: uploaded {vertices.Length / 6:N0} vertices and {indices.Length:N0} indices");
+        SetDiagnostic($"OpenGL: uploaded {vertices.Length / 9:N0} vertices, {indices.Length:N0} indices, {lineIndices.Length:N0} line indices");
         Logger.Information(
-            "Asset preview OpenGL uploaded {VertexCount} vertices and {IndexCount} indices",
-            vertices.Length / 6,
-            indices.Length);
+            "Asset preview OpenGL uploaded {VertexCount} vertices, {IndexCount} indices, and {LineIndexCount} line indices",
+            vertices.Length / 9,
+            indices.Length,
+            lineIndices.Length);
     }
 
     private uint CreateShaderProgram()
@@ -395,8 +526,9 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
             return;
         }
 
-        var model = Matrix4x4.CreateScale(0.45f);
-        var view = Matrix4x4.CreateLookAt(new Vector3(0f, -4.5f, 2.8f), new Vector3(0f, 0f, 0.2f), Vector3.UnitZ);
+        var angle = IsOrbitEnabled ? RenderCount * 0.01f : 0f;
+        var model = Matrix4x4.CreateRotationY(angle);
+        var view = GetViewMatrix();
         var projection = Matrix4x4.CreatePerspectiveFieldOfView(
             MathF.PI / 4f,
             width / (float)height,
@@ -427,6 +559,38 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         {
             Gl.UniformMatrix4(location, 1, false, matrixPointer);
         }
+    }
+
+    private Matrix4x4 GetViewMatrix()
+    {
+        return ViewMode switch
+        {
+            AssetPreviewViewMode.Front => Matrix4x4.CreateLookAt(new Vector3(0f, 0.2f, 5.25f), Vector3.Zero, Vector3.UnitY),
+            AssetPreviewViewMode.Side => Matrix4x4.CreateLookAt(new Vector3(5.25f, 0.2f, 0f), Vector3.Zero, Vector3.UnitY),
+            AssetPreviewViewMode.Top => Matrix4x4.CreateLookAt(new Vector3(0f, 4.5f, 0f), Vector3.Zero, -Vector3.UnitZ),
+            _ => Matrix4x4.CreateLookAt(new Vector3(4.2f, 3.2f, 5.0f), new Vector3(0f, 0.15f, 0f), Vector3.UnitY)
+        };
+    }
+
+    private void SetLightDirection()
+    {
+        if (Gl is null)
+        {
+            return;
+        }
+
+        Gl.Uniform3(Gl.GetUniformLocation(ShaderProgram, "uLightDirection"), 0.35f, 0.75f, 0.55f);
+    }
+
+    private void SetColorOverride(bool isEnabled, Vector3 color)
+    {
+        if (Gl is null)
+        {
+            return;
+        }
+
+        Gl.Uniform1(Gl.GetUniformLocation(ShaderProgram, "uUseOverrideColor"), isEnabled ? 1 : 0);
+        Gl.Uniform3(Gl.GetUniformLocation(ShaderProgram, "uOverrideColor"), color.X, color.Y, color.Z);
     }
 
     private void SetDiagnostic(string diagnosticText)

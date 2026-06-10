@@ -2,14 +2,8 @@
 
 ## Unreleased
 
-- Added an experimental asset preview pane.
-- Added an experimental Nifly reader for the new preview pane.
-- Added a `CreationsForge.Bethesda.Assets` library for UI-neutral asset IO result DTOs, archive-reader contracts, and
-  temporary extraction infrastructure.
-- Added a Bethesda asset provider that reads loose asset files into memory and dispatches archive-backed reads through
-  registered archive readers.
-- Added a first read-only BA2 general archive reader for uncompressed and zlib-compressed archive entries, with texture
-  BA2 files and BSA files still pending.
+- Added an experimental NIF Preview Pane (FO4 and Skyrim).
+- Added early support for previewing supported NIF meshes.
 
 ## Version 1.1.2 - 2026-06-08
 

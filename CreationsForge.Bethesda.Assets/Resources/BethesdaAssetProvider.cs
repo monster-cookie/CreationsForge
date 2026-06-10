@@ -10,6 +10,18 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
         ".bsa"
     };
 
+    private static readonly string[] ArchiveRootDirectories =
+    {
+        "Meshes",
+        "Textures",
+        "Materials",
+        "Sound",
+        "Music",
+        "Scripts",
+        "Interface",
+        "Strings"
+    };
+
     private readonly IReadOnlyList<IAssetArchiveReader> ArchiveReaders;
 
     public BethesdaAssetProvider(IEnumerable<IAssetArchiveReader> archiveReaders)
@@ -110,13 +122,13 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
         string normalizedPath,
         BethesdaAssetReadResult looseResult)
     {
-        var archives = GetArchives(request.DataFolder!).ToList();
+        var archives = GetArchives(request.DataFolder!, normalizedPath).ToList();
         if (archives.Count == 0)
         {
             return looseResult;
         }
 
-        string? lastArchiveReaderStatusMessage = null;
+        var archiveAttemptMessages = new List<string>();
         foreach (var archivePath in archives)
         {
             var archiveReader = ArchiveReaders.FirstOrDefault(reader => reader.CanRead(archivePath));
@@ -145,7 +157,7 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
 
                 if (!string.IsNullOrWhiteSpace(readResult.StatusMessage))
                 {
-                    lastArchiveReaderStatusMessage = readResult.StatusMessage;
+                    archiveAttemptMessages.Add($"{Path.GetFileName(archivePath)} [{NormalizeArchiveEntryPath(relativePath)}]: {readResult.StatusMessage}");
                 }
             }
         }
@@ -158,14 +170,57 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
             Status = ArchiveReaders.Count == 0 ? BethesdaAssetReadStatus.ArchiveReaderUnavailable : BethesdaAssetReadStatus.ArchiveEntryMissing,
             StatusMessage = ArchiveReaders.Count == 0
                 ? $"Asset path {request.AssetPath} appears archive-backed, but no archive reader is registered."
-                : lastArchiveReaderStatusMessage ?? $"Asset path {request.AssetPath} was not found in registered archive readers."
+                : BuildArchiveFailureMessage(request.AssetPath, archiveAttemptMessages)
         };
     }
 
-    private static IEnumerable<string> GetArchives(string dataFolder)
+    private static string BuildArchiveFailureMessage(string assetPath, IReadOnlyList<string> archiveAttemptMessages)
+    {
+        if (archiveAttemptMessages.Count == 0)
+        {
+            return $"Asset path {assetPath} was not found in registered archive readers.";
+        }
+
+        var shownMessages = archiveAttemptMessages.Take(8).ToList();
+        var message = $"Asset path {assetPath} was not found in registered archive readers. Archive attempts: {string.Join(" | ", shownMessages)}";
+        if (archiveAttemptMessages.Count > shownMessages.Count)
+        {
+            message += $" | {archiveAttemptMessages.Count - shownMessages.Count} more attempt(s).";
+        }
+
+        return message;
+    }
+
+    private static IEnumerable<string> GetArchives(string dataFolder, string normalizedPath)
     {
         return Directory.EnumerateFiles(dataFolder)
-            .Where(path => ArchiveExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase));
+            .Where(path => ArchiveExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
+            .OrderBy(path => GetArchivePreferenceScore(path, normalizedPath))
+            .ThenBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static int GetArchivePreferenceScore(string archivePath, string normalizedPath)
+    {
+        var archiveName = Path.GetFileNameWithoutExtension(archivePath);
+        if (StartsWithDirectory(normalizedPath, "Meshes") &&
+            archiveName.Contains("meshes", StringComparison.OrdinalIgnoreCase))
+        {
+            return 0;
+        }
+
+        if (StartsWithDirectory(normalizedPath, "Textures") &&
+            archiveName.Contains("textures", StringComparison.OrdinalIgnoreCase))
+        {
+            return 0;
+        }
+
+        if (StartsWithDirectory(normalizedPath, "Materials") &&
+            archiveName.Contains("materials", StringComparison.OrdinalIgnoreCase))
+        {
+            return 0;
+        }
+
+        return 1;
     }
 
     private static IReadOnlyList<string> GetRelativePathCandidates(string normalizedPath)
@@ -175,12 +230,37 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
             normalizedPath
         };
 
+        AddRootStrippedPathCandidate(candidates, normalizedPath);
         if (!StartsWithDirectory(normalizedPath, "Meshes"))
         {
-            candidates.Add(Path.Combine("Meshes", normalizedPath));
+            var meshPath = Path.Combine("Meshes", normalizedPath);
+            candidates.Add(meshPath);
+            AddRootStrippedPathCandidate(candidates, meshPath);
         }
 
         return candidates;
+    }
+
+    private static void AddRootStrippedPathCandidate(List<string> candidates, string normalizedPath)
+    {
+        foreach (var rootDirectory in ArchiveRootDirectories)
+        {
+            if (!StartsWithDirectory(normalizedPath, rootDirectory))
+            {
+                continue;
+            }
+
+            var strippedPath = normalizedPath.Length == rootDirectory.Length
+                ? string.Empty
+                : normalizedPath[(rootDirectory.Length + 1)..];
+            if (!string.IsNullOrWhiteSpace(strippedPath) &&
+                !candidates.Contains(strippedPath, StringComparer.OrdinalIgnoreCase))
+            {
+                candidates.Add(strippedPath);
+            }
+
+            return;
+        }
     }
 
     private static bool StartsWithDirectory(string path, string directoryName)

@@ -7,6 +7,7 @@ using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Media;
 using CreationsForge.Core.DTOs.Assets;
+using CreationsForge.Services;
 using CreationsForge.Services.Interfaces;
 using CreationsForge.ViewModels;
 using Serilog;
@@ -50,6 +51,7 @@ public class AssetPreviewPaneView : UserControl
         var title = CreateBoundText(nameof(AssetPreviewPaneViewModel.PreviewTitleText), 16, FontWeight.SemiBold);
         var status = CreateBoundText(nameof(AssetPreviewPaneViewModel.PreviewStatusText), 12, FontWeight.Normal);
         var candidates = CreateCandidateSelector();
+        var controls = CreatePreviewControls();
 
         var openButton = new Button
         {
@@ -77,16 +79,18 @@ public class AssetPreviewPaneView : UserControl
         Grid.SetColumnSpan(candidates, 2);
 
         Grid.SetRow(header, 0);
+        Grid.SetRow(controls, 1);
         var previewHost = BuildPreviewHost();
-        Grid.SetRow(previewHost, 1);
-        Grid.SetRow(status, 2);
+        Grid.SetRow(previewHost, 2);
+        Grid.SetRow(status, 3);
         var root = new Grid
         {
-            RowDefinitions = new RowDefinitions("Auto,*,Auto"),
+            RowDefinitions = new RowDefinitions("Auto,Auto,*,Auto"),
             RowSpacing = 10,
             Children =
             {
                 header,
+                controls,
                 previewHost,
                 status
             }
@@ -156,9 +160,60 @@ public class AssetPreviewPaneView : UserControl
         return comboBox;
     }
 
+    private Control CreatePreviewControls()
+    {
+        var viewModeSelector = new ComboBox
+        {
+            Width = 110,
+            MinHeight = 30
+        };
+        viewModeSelector.Bind(ItemsControl.ItemsSourceProperty, new Binding(nameof(AssetPreviewPaneViewModel.ViewModes)));
+        viewModeSelector.Bind(SelectingItemsControl.SelectedItemProperty, new Binding(nameof(AssetPreviewPaneViewModel.SelectedViewMode))
+        {
+            Mode = BindingMode.TwoWay
+        });
+
+        var renderModeSelector = new ComboBox
+        {
+            Width = 105,
+            MinHeight = 30
+        };
+        renderModeSelector.Bind(ItemsControl.ItemsSourceProperty, new Binding(nameof(AssetPreviewPaneViewModel.RenderModes)));
+        renderModeSelector.Bind(SelectingItemsControl.SelectedItemProperty, new Binding(nameof(AssetPreviewPaneViewModel.SelectedRenderMode))
+        {
+            Mode = BindingMode.TwoWay
+        });
+
+        var orbitToggle = new CheckBox
+        {
+            Content = "Orbit",
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        orbitToggle.Bind(ToggleButton.IsCheckedProperty, new Binding(nameof(AssetPreviewPaneViewModel.IsOrbitEnabled))
+        {
+            Mode = BindingMode.TwoWay
+        });
+
+        return new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 10,
+            Children =
+            {
+                viewModeSelector,
+                renderModeSelector,
+                orbitToggle
+            }
+        };
+    }
+
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(AssetPreviewPaneViewModel.PreviewModel))
+        if (e.PropertyName == nameof(AssetPreviewPaneViewModel.PreviewModel) ||
+            e.PropertyName == nameof(AssetPreviewPaneViewModel.SelectedViewMode) ||
+            e.PropertyName == nameof(AssetPreviewPaneViewModel.SelectedMeshSelection) ||
+            e.PropertyName == nameof(AssetPreviewPaneViewModel.SelectedRenderMode) ||
+            e.PropertyName == nameof(AssetPreviewPaneViewModel.IsOrbitEnabled))
         {
             RefreshViewport();
         }
@@ -172,6 +227,13 @@ public class AssetPreviewPaneView : UserControl
             : "Fallback preview";
         FallbackSurface.InvalidateVisual();
         PreviewSurface.PreviewModel = ViewModel.PreviewModel;
+        PreviewSurface.RenderOptions = new AssetPreviewRenderOptions
+        {
+            MeshIndex = null
+        };
+        PreviewSurface.ViewMode = ViewModel.SelectedViewMode;
+        PreviewSurface.RenderMode = ViewModel.SelectedRenderMode;
+        PreviewSurface.IsOrbitEnabled = ViewModel.IsOrbitEnabled;
         PreviewSurface.RequestNextFrameRendering();
         Logger.Information(
             "Asset preview surfaces refreshed with {MeshCount} meshes",

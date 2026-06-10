@@ -6,6 +6,7 @@ namespace CreationsForge.Services;
 
 public class AssetPreviewSceneService : IAssetPreviewSceneService
 {
+    private const string FallbackMaterialName = "PreviewFallback";
     private readonly IReadOnlyList<IAssetPreviewGeometryReader> GeometryReaders;
     private readonly ILogger Logger;
 
@@ -35,7 +36,7 @@ public class AssetPreviewSceneService : IAssetPreviewSceneService
 
         statusMessage = CreateFallbackStatus(candidate, fallbackReasons);
         Logger.Information(
-            "Asset preview using sample placeholder for {MeshPath}: {StatusMessage}",
+            "Asset preview using fallback geometry for {MeshPath}: {StatusMessage}",
             candidate.MeshPath,
             statusMessage);
         return new AssetPreviewModelDTO
@@ -46,14 +47,19 @@ public class AssetPreviewSceneService : IAssetPreviewSceneService
             {
                 new AssetPreviewMeshDTO
                 {
-                    Name = "Experimental sample mesh",
-                    MaterialName = candidate.ModelSlot,
+                    Name = "Preview fallback stop sign",
+                    MaterialName = FallbackMaterialName,
                     Vertices =
                     {
-                        CreateVertex(-0.9f, -0.6f, 0f, 0f, 0f),
-                        CreateVertex(0.9f, -0.6f, 0f, 1f, 0f),
-                        CreateVertex(0f, 0.9f, 0f, 0.5f, 1f),
-                        CreateVertex(0f, 0f, 1.1f, 0.5f, 0.5f)
+                        CreateVertex(0f, 0f, 0f, 0.5f, 0.5f),
+                        CreateVertex(-0.35f, 0.85f, 0f, 0.3f, 1f),
+                        CreateVertex(0.35f, 0.85f, 0f, 0.7f, 1f),
+                        CreateVertex(0.85f, 0.35f, 0f, 1f, 0.7f),
+                        CreateVertex(0.85f, -0.35f, 0f, 1f, 0.3f),
+                        CreateVertex(0.35f, -0.85f, 0f, 0.7f, 0f),
+                        CreateVertex(-0.35f, -0.85f, 0f, 0.3f, 0f),
+                        CreateVertex(-0.85f, -0.35f, 0f, 0f, 0.3f),
+                        CreateVertex(-0.85f, 0.35f, 0f, 0f, 0.7f)
                     },
                     Indices =
                     {
@@ -61,14 +67,26 @@ public class AssetPreviewSceneService : IAssetPreviewSceneService
                         1,
                         2,
                         0,
-                        3,
-                        1,
-                        1,
-                        3,
-                        2,
                         2,
                         3,
-                        0
+                        0,
+                        3,
+                        4,
+                        0,
+                        4,
+                        5,
+                        0,
+                        5,
+                        6,
+                        0,
+                        6,
+                        7,
+                        0,
+                        7,
+                        8,
+                        0,
+                        8,
+                        1
                     }
                 }
             }
@@ -79,15 +97,17 @@ public class AssetPreviewSceneService : IAssetPreviewSceneService
     {
         if (!Path.IsPathRooted(candidate.MeshPath))
         {
-            return $"Sample placeholder for archive-backed asset path {candidate.MeshPath}. BA2/BSA extraction is not implemented yet.";
+            return fallbackReasons.Count == 0
+                ? $"Preview fallback for archive-backed asset path {candidate.MeshPath}. No preview geometry reader handled this asset."
+                : $"Preview fallback for archive-backed asset path {candidate.MeshPath}. {fallbackReasons[0]}";
         }
 
         if (fallbackReasons.Count == 0)
         {
-            return $"Sample placeholder for {candidate.MeshPath}. No preview geometry reader handled this asset.";
+            return $"Preview fallback for {candidate.MeshPath}. No preview geometry reader handled this asset.";
         }
 
-        return $"Sample placeholder for {candidate.MeshPath}. {fallbackReasons[0]}";
+        return $"Preview fallback for {candidate.MeshPath}. {fallbackReasons[0]}";
     }
 
     private static AssetPreviewVertexDTO CreateVertex(float x, float y, float z, float u, float v)

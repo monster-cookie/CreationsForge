@@ -41,6 +41,11 @@ public class AssetPreviewPathResolverService : IAssetPreviewPathResolverService
         return ModelRepository.GetByFormKey(game, recordType, formKey)
             .Where(model => !string.IsNullOrWhiteSpace(model.File))
             .Select(CreateCandidate)
+            .GroupBy(candidate => candidate.MeshPath, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group
+                .OrderByDescending(candidate => candidate.CanPreview)
+                .ThenByDescending(candidate => candidate.CanOpenExternally)
+                .First())
             .ToList();
     }
 

@@ -5,8 +5,8 @@
 Status: Accepted
 
 Context: Real preview paths for Fallout 4, Skyrim, and Starfield are usually archive-backed rather than loose files.
-Nifly can remain useful as a reference or optional NIF parser, but its project shape and Starfield support do not make
-it a good place for CreationsForge's archive IO path. The UI also should not own Bethesda archive parsing.
+Third-party NIF parser project shape and Starfield support did not make it a good fit for CreationsForge's long-term
+asset IO path. The UI also should not own Bethesda archive parsing.
 
 Decision: Keep archive IO in `CreationsForge.Bethesda.Assets` and add a minimal `Ba2ArchiveReader` implementing the
 existing `IAssetArchiveReader` contract. The first reader is read-only, targets BA2 general archives, lists archive
@@ -19,7 +19,7 @@ code as the preview path matures.
 
 Alternatives considered:
 
-- Fork Nifly and place BA2/BSA loading inside that fork.
+- Fork an existing NIF parser and place BA2/BSA loading inside that fork.
 - Keep archive-backed paths as sample-geometry placeholders until all NIF parsing is ready.
 - Put BA2 parsing directly in the Avalonia preview services.
 
@@ -39,6 +39,43 @@ Related files:
 - `CreationsForge.Core/CoreModule.cs`
 - `CreationsForge.UnitTests/Services/Ba2ArchiveReaderTests.cs`
 
+## 2026-06-09 - Add First Owned NIF Preview Reader
+
+Status: Accepted
+
+Context: CreationsForge removed the experimental third-party NIF reader path and needs the asset previewer to move
+from sample geometry toward real archive-backed mesh previews without putting NIF parsing in the Avalonia project.
+
+Decision: Add a minimal `INifPreviewModelReader` implementation in `CreationsForge.Bethesda.Assets`. The first slice
+reads Fallout 4/Skyrim Special Edition-style NIF headers and extracts simple `BSTriShape` vertex/index data into
+UI-neutral preview models. The Avalonia project maps those preview models into existing Core preview DTOs and keeps
+rendering in the presentation layer.
+
+Rationale: Keeping the first NIF parser in the asset pipeline preserves the UI/Core boundaries and gives the project a
+testable place to grow NIF support from fo76utils/NifSkope-style reference behavior without adopting a parser layout
+that does not fit CreationsForge.
+
+Alternatives considered:
+
+- Reintroduce the third-party NIF reader path.
+- Keep archive-backed NIF previews on generated sample geometry until a complete NIF parser exists.
+- Put NIF parsing directly in the Avalonia preview service.
+
+Consequences:
+
+- Simple `BSTriShape` mesh payloads can now produce real preview vertices and triangle indices.
+- Unsupported NIF versions, block types, and vertex layouts still return parser status messages instead of rendering.
+- Materials, textures, skeletons, collision, Starfield-specific NIF variants, BSA archives, and texture BA2 files
+  remain follow-up work.
+
+Related files:
+
+- `CreationsForge.Bethesda.Assets/Nif/NifPreviewModelReader.cs`
+- `CreationsForge.Bethesda.Assets/Nif/INifPreviewModelReader.cs`
+- `CreationsForge/Services/BethesdaAssetPreviewGeometryReader.cs`
+- `CreationsForge.Core/CoreModule.cs`
+- `CreationsForge.UnitTests/Services/NifPreviewModelReaderTests.cs`
+
 ## 2026-06-08 - Keep Asset Preview Rendering In Presentation
 
 Status: Accepted
@@ -50,10 +87,10 @@ implemented.
 Decision: Add Core asset-preview DTOs and `IAssetPreviewPathResolverService` for UI-neutral candidate resolution from
 persisted model rows. Add `CreationsForge.Bethesda.Assets` for UI-neutral Bethesda asset IO result DTOs, in-memory
 asset reads, archive-reader contracts, and temporary extraction infrastructure. Add `IAssetFileResolverService` for
-UI-neutral local-file resolution that checks absolute paths, game data-folder loose files, and normalized `Meshes`
-paths before reporting archive-backed paths as unsupported. The Avalonia presentation project owns the preview pane,
-an Avalonia `OpenGlControlBase` renderer using Silk.NET, generated sample geometry, external file launching, optional
-Nifly-backed NIF reads, and unsupported-preview logging.
+UI-neutral local-file resolution that checks absolute paths, game data-folder loose files, normalized `Meshes` paths,
+and registered archive readers. The Avalonia presentation project owns the preview pane, an Avalonia
+`OpenGlControlBase` renderer using Silk.NET, generated sample geometry, external file launching, and
+unsupported-preview logging.
 
 Rationale: This proves the UI workflow without weakening the Core/presentation boundary. It also leaves a stable DTO
 shape for future NIF readers or mesh importers to populate with real geometry.
@@ -68,8 +105,7 @@ Consequences:
 
 - Selecting a model-bearing record can show preview candidates and render generated sample geometry through the native
   OpenGL preview control.
-- Nifly can be tried for resolved local NIF file paths, while archive-backed model paths depend on registered archive
-  readers before falling back to generated sample geometry.
+- Archive-backed model paths depend on registered archive readers before falling back to generated sample geometry.
 - The asset provider can read loose files into memory and dispatch archive reads through registered readers.
 - Unsupported, missing, or unreadable preview cases are logged through the UI service/view-model path.
 - External opening depends on OS file associations for NifSkope, Blender, or compatible tools.
@@ -87,7 +123,6 @@ Related files:
 - `CreationsForge.Core/Services/AssetFileResolverService.cs`
 - `CreationsForge.Core/Services/AssetPreviewPathResolverService.cs`
 - `CreationsForge/Views/AssetPreviewOpenGlControl.cs`
-- `CreationsForge/Services/NiflyAssetPreviewGeometryReader.cs`
 - `CreationsForge/ViewModels/AssetPreviewPaneViewModel.cs`
 - `CreationsForge/Views/AssetPreviewPaneView.cs`
 

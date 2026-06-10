@@ -50,6 +50,24 @@ public class AssetPreviewPathResolverServiceTests
         candidates.ShouldBeEmpty();
     }
 
+    [Fact]
+    public void GetPreviewCandidates_DeduplicatesMatchingMeshPaths()
+    {
+        var formKey = CreateFormKey();
+        var repository = new Mock<IModelRepository>();
+        repository.Setup(repo => repo.GetByFormKey(SupportedGame.Starfield, "MISC", formKey))
+            .Returns([
+                CreateModel(formKey, "Meshes\\Props\\Preview.nif", "Model", string.Empty),
+                CreateModel(formKey, "Meshes/Props/Preview.nif", "Model", string.Empty)
+            ]);
+        var service = new AssetPreviewPathResolverService(repository.Object);
+
+        var candidates = service.GetPreviewCandidates(SupportedGame.Starfield, "MISC", formKey);
+
+        candidates.Count.ShouldBe(1);
+        candidates[0].MeshPath.ShouldBe($"Meshes{Path.DirectorySeparatorChar}Props{Path.DirectorySeparatorChar}Preview.nif");
+    }
+
     [Theory]
     [InlineData("Meshes/Example.nif", true)]
     [InlineData("Meshes/Example.obj", true)]

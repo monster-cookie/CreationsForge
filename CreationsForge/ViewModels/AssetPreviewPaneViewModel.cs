@@ -17,6 +17,10 @@ public class AssetPreviewPaneViewModel : ViewModelBase
     private readonly ILogger Logger;
     private AssetPreviewCandidateDTO? SelectedCandidateValue;
     private AssetPreviewModelDTO? PreviewModelValue;
+    private AssetPreviewMeshSelectionOption SelectedMeshSelectionValue = AssetPreviewMeshSelectionOption.All;
+    private AssetPreviewViewMode SelectedViewModeValue = AssetPreviewViewMode.Isometric;
+    private AssetPreviewRenderMode SelectedRenderModeValue = AssetPreviewRenderMode.Solid;
+    private bool IsOrbitEnabledValue;
     private string PreviewTitleTextValue = "Asset preview";
     private string PreviewStatusTextValue = "Select a model-bearing record to preview assets.";
 
@@ -31,10 +35,33 @@ public class AssetPreviewPaneViewModel : ViewModelBase
         ExternalAssetOpenService = externalAssetOpenService;
         Logger = logger.ForContext<AssetPreviewPaneViewModel>();
         PreviewCandidates = new ObservableCollection<AssetPreviewCandidateDTO>();
+        MeshSelections = new ObservableCollection<AssetPreviewMeshSelectionOption>
+        {
+            AssetPreviewMeshSelectionOption.All
+        };
+        ViewModes = new ObservableCollection<AssetPreviewViewMode>
+        {
+            AssetPreviewViewMode.Isometric,
+            AssetPreviewViewMode.Front,
+            AssetPreviewViewMode.Side,
+            AssetPreviewViewMode.Top
+        };
+        RenderModes = new ObservableCollection<AssetPreviewRenderMode>
+        {
+            AssetPreviewRenderMode.Solid,
+            AssetPreviewRenderMode.Wireframe,
+            AssetPreviewRenderMode.Points
+        };
         OpenExternallyCommand = new RelayCommand(OpenSelectedCandidateExternally, () => SelectedCandidate?.CanOpenExternally == true);
     }
 
     public ObservableCollection<AssetPreviewCandidateDTO> PreviewCandidates { get; }
+
+    public ObservableCollection<AssetPreviewMeshSelectionOption> MeshSelections { get; }
+
+    public ObservableCollection<AssetPreviewViewMode> ViewModes { get; }
+
+    public ObservableCollection<AssetPreviewRenderMode> RenderModes { get; }
 
     public RelayCommand OpenExternallyCommand { get; }
 
@@ -45,13 +72,19 @@ public class AssetPreviewPaneViewModel : ViewModelBase
         get => SelectedCandidateValue;
         set
         {
+            var previousCandidate = SelectedCandidateValue;
             if (!SetProperty(ref SelectedCandidateValue, value))
             {
                 return;
             }
 
-            LoadSelectedCandidatePreview();
             OpenExternallyCommand.RaiseCanExecuteChanged();
+            if (IsSameAssetCandidate(previousCandidate, value))
+            {
+                return;
+            }
+
+            LoadSelectedCandidatePreview();
         }
     }
 
@@ -71,6 +104,30 @@ public class AssetPreviewPaneViewModel : ViewModelBase
 
     public bool HasPreviewModel => PreviewModel is not null;
 
+    public AssetPreviewMeshSelectionOption? SelectedMeshSelection
+    {
+        get => SelectedMeshSelectionValue;
+        set => SetProperty(ref SelectedMeshSelectionValue, value ?? AssetPreviewMeshSelectionOption.All);
+    }
+
+    public AssetPreviewViewMode SelectedViewMode
+    {
+        get => SelectedViewModeValue;
+        set => SetProperty(ref SelectedViewModeValue, value);
+    }
+
+    public AssetPreviewRenderMode SelectedRenderMode
+    {
+        get => SelectedRenderModeValue;
+        set => SetProperty(ref SelectedRenderModeValue, value);
+    }
+
+    public bool IsOrbitEnabled
+    {
+        get => IsOrbitEnabledValue;
+        set => SetProperty(ref IsOrbitEnabledValue, value);
+    }
+
     public string PreviewTitleText
     {
         get => PreviewTitleTextValue;
@@ -88,6 +145,7 @@ public class AssetPreviewPaneViewModel : ViewModelBase
         PreviewCandidates.Clear();
         OnPropertyChanged(nameof(HasPreviewCandidates));
         PreviewModel = null;
+        ResetMeshSelections(null);
         PreviewTitleText = "Asset preview";
 
         var candidates = AssetPreviewPathResolverService.GetPreviewCandidates(game, recordType, formKey);
@@ -119,6 +177,7 @@ public class AssetPreviewPaneViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasPreviewCandidates));
         SelectedCandidate = null;
         PreviewModel = null;
+        ResetMeshSelections(null);
         PreviewTitleText = "Asset preview";
         PreviewStatusText = "Select a model-bearing record to preview assets.";
     }
@@ -146,7 +205,23 @@ public class AssetPreviewPaneViewModel : ViewModelBase
         }
 
         PreviewModel = AssetPreviewSceneService.CreatePreview(SelectedCandidate, out var statusMessage);
+        ResetMeshSelections(PreviewModel);
         PreviewStatusText = statusMessage;
+    }
+
+    private void ResetMeshSelections(AssetPreviewModelDTO? previewModel)
+    {
+        MeshSelections.Clear();
+        MeshSelections.Add(AssetPreviewMeshSelectionOption.All);
+        if (previewModel != null)
+        {
+            for (var index = 0; index < previewModel.Meshes.Count; index++)
+            {
+                MeshSelections.Add(new AssetPreviewMeshSelectionOption(index, previewModel.Meshes[index].Name));
+            }
+        }
+
+        SelectedMeshSelection = AssetPreviewMeshSelectionOption.All;
     }
 
     private void OpenSelectedCandidateExternally()
@@ -159,6 +234,41 @@ public class AssetPreviewPaneViewModel : ViewModelBase
         if (!ExternalAssetOpenService.OpenExternally(SelectedCandidate.MeshPath))
         {
             PreviewStatusText = $"Unable to open {SelectedCandidate.MeshPath} externally.";
+        }
+    }
+
+    private static bool IsSameAssetCandidate(AssetPreviewCandidateDTO? first, AssetPreviewCandidateDTO? second)
+    {
+        if (first is null || second is null)
+        {
+            return first is null && second is null;
+        }
+
+        return first.Game == second.Game &&
+            string.Equals(first.RecordType, second.RecordType, StringComparison.OrdinalIgnoreCase) &&
+            first.FormKey.Id == second.FormKey.Id &&
+            string.Equals(first.MeshPath, second.MeshPath, StringComparison.OrdinalIgnoreCase) &&
+            first.CanPreview == second.CanPreview &&
+            first.CanOpenExternally == second.CanOpenExternally;
+    }
+
+    public readonly struct AssetPreviewMeshSelectionOption
+    {
+        public static readonly AssetPreviewMeshSelectionOption All = new AssetPreviewMeshSelectionOption(null, "All meshes");
+
+        public AssetPreviewMeshSelectionOption(int? meshIndex, string displayName)
+        {
+            MeshIndex = meshIndex;
+            DisplayName = displayName;
+        }
+
+        public int? MeshIndex { get; }
+
+        public string DisplayName { get; }
+
+        public override string ToString()
+        {
+            return DisplayName;
         }
     }
 }

@@ -111,8 +111,8 @@ imported-record tree for the current persisted record types.
 - Oblivion is not implemented.
 - The UI shows imported records in a tree and scalar comparison rows for approved persisted record types. Deep child
   comparison sections, patch generation, and conflict resolution behavior do not exist yet.
-- The asset preview pane currently renders generated sample geometry for supported model paths instead of parsing NIF
-  mesh contents. Real NIF loading remains follow-up work.
+- The asset preview pane can load an early subset of NIF mesh geometry, with many model types and visual details still
+  pending.
 
 ## Shared Scripted Record Import
 
