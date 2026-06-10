@@ -1,7 +1,7 @@
 using System.IO.Compression;
 using System.Text;
 using CreationsForge.Bethesda.Assets.Archives.Bsa;
-using K4os.Compression.LZ4;
+using K4os.Compression.LZ4.Streams;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Services;
@@ -591,14 +591,11 @@ public class BsaArchiveReaderTests
                 writer.Write((uint)unpackedData.Length);
             }
 
-            var packedData = new byte[LZ4Codec.MaximumOutputSize(unpackedData.Length)];
-            var packedLength = LZ4Codec.Encode(unpackedData, packedData);
-            if (packedLength <= 0)
+            using (var lz4Stream = LZ4Stream.Encode(storedStream, leaveOpen: true))
             {
-                throw new InvalidOperationException("Test LZ4 compression failed.");
+                lz4Stream.Write(unpackedData);
             }
 
-            storedStream.Write(packedData, 0, packedLength);
             return new TestBsaEntry(folderName, fileName, storedStream.ToArray());
         }
 

@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text;
 using K4os.Compression.LZ4;
+using K4os.Compression.LZ4.Streams;
 
 namespace CreationsForge.Bethesda.Assets.Archives.Bsa;
 
@@ -298,6 +299,39 @@ public class BsaArchiveReader : IAssetArchiveReader
     }
 
     private static string? TryDecompressLz4(byte[] packedData, uint unpackedSize, out byte[] data)
+    {
+        var frameFailure = TryDecompressLz4Frame(packedData, unpackedSize, out data);
+        if (frameFailure is null)
+        {
+            return null;
+        }
+
+        var rawFailure = TryDecompressLz4RawBlock(packedData, unpackedSize, out data);
+        return $"frame failed: {frameFailure}; raw block failed: {rawFailure}";
+    }
+
+    private static string? TryDecompressLz4Frame(byte[] packedData, uint unpackedSize, out byte[] data)
+    {
+        data = new byte[checked((int)unpackedSize)];
+        try
+        {
+            using var packedStream = new MemoryStream(packedData);
+            using var lz4Stream = LZ4Stream.Decode(packedStream, leaveOpen: false);
+            lz4Stream.ReadExactly(data);
+            if (lz4Stream.ReadByte() != -1)
+            {
+                return "produced more bytes than expected";
+            }
+
+            return null;
+        }
+        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or EndOfStreamException or IOException)
+        {
+            return exception.Message;
+        }
+    }
+
+    private static string? TryDecompressLz4RawBlock(byte[] packedData, uint unpackedSize, out byte[] data)
     {
         data = new byte[checked((int)unpackedSize)];
         try
