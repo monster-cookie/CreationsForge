@@ -9,6 +9,7 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
     private const string FallbackMaterialName = "PreviewFallback";
     private const float TargetPreviewSize = 1.8f;
     private const float MaxReasonableCoordinate = 1000000f;
+    private static readonly AssetPreviewRenderColor DefaultLoadedMeshColor = new(0.70f, 0.72f, 0.72f);
     private readonly ILogger Logger;
 
     public AssetPreviewRenderMeshFactory(ILogger logger)
@@ -51,11 +52,11 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
         }
 
         var renderMesh = new AssetPreviewRenderMesh();
-        AppendTextureMetadata(renderMesh, meshes);
+        var textureIndexesByPath = AppendTextureMetadata(renderMesh, meshes);
         var transform = AssetPreviewBoundsTransform.Create(bounds);
         for (var meshIndex = 0; meshIndex < meshes.Count; meshIndex++)
         {
-            AppendMesh(renderMesh, meshes[meshIndex], transform, meshIndex);
+            AppendMesh(renderMesh, meshes[meshIndex], transform, textureIndexesByPath);
         }
 
         if (renderMesh.Indices.Count == 0)
@@ -70,7 +71,7 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
         Logger.Information(
             "Asset preview render mesh created for {DisplayName}: {VertexCount} vertices, {IndexCount} indices, {LineIndexCount} line indices, {TextureCount} texture path(s), bounds {Bounds}",
             previewModel.DisplayName,
-            renderMesh.Vertices.Count / 9,
+            renderMesh.Vertices.Count / 11,
             renderMesh.Indices.Count,
             renderMesh.LineIndices.Count,
             renderMesh.TexturePaths.Count,
@@ -78,8 +79,9 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
         return renderMesh;
     }
 
-    private static void AppendTextureMetadata(AssetPreviewRenderMesh renderMesh, IEnumerable<AssetPreviewMeshDTO> meshes)
+    private static Dictionary<string, int> AppendTextureMetadata(AssetPreviewRenderMesh renderMesh, IEnumerable<AssetPreviewMeshDTO> meshes)
     {
+        var textureIndexesByPath = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (var texturePath in meshes
             .Select(mesh => mesh.TexturePath)
             .Where(texturePath => !string.IsNullOrWhiteSpace(texturePath))
@@ -87,6 +89,22 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
         {
             renderMesh.TexturePaths.Add(texturePath!);
         }
+
+        foreach (var texture in meshes
+            .Select(mesh => mesh.Texture)
+            .Where(texture => texture != null)
+            .DistinctBy(texture => texture!.Path, StringComparer.OrdinalIgnoreCase))
+        {
+            var textureIndex = renderMesh.Textures.Count;
+            renderMesh.Textures.Add(new AssetPreviewRenderTexture
+            {
+                Path = texture!.Path,
+                Data = texture.Data
+            });
+            textureIndexesByPath[texture.Path] = textureIndex;
+        }
+
+        return textureIndexesByPath;
     }
 
     private static IEnumerable<AssetPreviewMeshDTO> GetMeshes(AssetPreviewModelDTO previewModel, AssetPreviewRenderOptions options)
@@ -101,12 +119,22 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
             : [];
     }
 
-    private void AppendMesh(AssetPreviewRenderMesh renderMesh, AssetPreviewMeshDTO mesh, AssetPreviewBoundsTransform transform, int meshIndex)
+    private void AppendMesh(
+        AssetPreviewRenderMesh renderMesh,
+        AssetPreviewMeshDTO mesh,
+        AssetPreviewBoundsTransform transform,
+        IReadOnlyDictionary<string, int> textureIndexesByPath)
     {
-        var baseVertex = (uint)(renderMesh.Vertices.Count / 9);
+        var baseVertex = (uint)(renderMesh.Vertices.Count / 11);
+        var indexOffset = renderMesh.Indices.Count;
         var color = mesh.MaterialName == FallbackMaterialName
             ? new AssetPreviewRenderColor(0.85f, 0.10f, 0.08f)
-            : GetMeshColor(mesh, transform);
+            : DefaultLoadedMeshColor;
+        var textureIndex = mesh.Texture == null
+            ? null
+            : textureIndexesByPath.TryGetValue(mesh.Texture.Path, out var matchedTextureIndex)
+                ? matchedTextureIndex
+                : (int?)null;
 
         var positions = mesh.Vertices
             .Select(vertex => transform.Apply(vertex.Position))
@@ -141,6 +169,8 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
             renderMesh.Vertices.Add(normal.X);
             renderMesh.Vertices.Add(normal.Y);
             renderMesh.Vertices.Add(normal.Z);
+            renderMesh.Vertices.Add(mesh.Vertices[index].UV.U);
+            renderMesh.Vertices.Add(mesh.Vertices[index].UV.V);
         }
 
         for (var index = 0; index + 2 < mesh.Indices.Count; index += 3)
@@ -152,6 +182,17 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
                     mesh.Name,
                     index);
             }
+        }
+
+        var indexCount = renderMesh.Indices.Count - indexOffset;
+        if (indexCount > 0)
+        {
+            renderMesh.MeshParts.Add(new AssetPreviewRenderMeshPart
+            {
+                IndexOffset = indexOffset,
+                IndexCount = indexCount,
+                TextureIndex = textureIndex
+            });
         }
     }
 
@@ -181,7 +222,8 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
         {
             Name = mesh.Name,
             MaterialName = mesh.MaterialName,
-            TexturePath = mesh.TexturePath
+            TexturePath = mesh.TexturePath,
+            Texture = mesh.Texture
         };
         foreach (var vertex in mesh.Vertices)
         {
@@ -396,53 +438,8 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
         mesh.Vertices.Add(0f);
         mesh.Vertices.Add(0f);
         mesh.Vertices.Add(1f);
-    }
-
-    private static AssetPreviewRenderColor GetMeshColor(AssetPreviewMeshDTO mesh, AssetPreviewBoundsTransform transform)
-    {
-        var materialKey = $"{mesh.MaterialName} {mesh.TexturePath}";
-        if (materialKey.Contains("basket", StringComparison.OrdinalIgnoreCase) ||
-            materialKey.Contains("wicker", StringComparison.OrdinalIgnoreCase))
-        {
-            return new AssetPreviewRenderColor(0.58f, 0.43f, 0.26f);
-        }
-
-        if (materialKey.Contains("wood", StringComparison.OrdinalIgnoreCase))
-        {
-            return new AssetPreviewRenderColor(0.48f, 0.34f, 0.22f);
-        }
-
-        if (materialKey.Contains(".BGEM", StringComparison.OrdinalIgnoreCase) ||
-            materialKey.Contains("empty", StringComparison.OrdinalIgnoreCase))
-        {
-            return new AssetPreviewRenderColor(0.70f, 0.72f, 0.72f);
-        }
-
-        if (materialKey.Contains(".BGSM", StringComparison.OrdinalIgnoreCase))
-        {
-            return new AssetPreviewRenderColor(0.95f, 0.10f, 0.78f);
-        }
-
-        if (TryGetMeshBounds(mesh, transform, out var meshBounds) &&
-            meshBounds.CenterY > 0.15f)
-        {
-            return new AssetPreviewRenderColor(0.95f, 0.10f, 0.78f);
-        }
-
-        return new AssetPreviewRenderColor(0.70f, 0.72f, 0.72f);
-    }
-
-    private static bool TryGetMeshBounds(AssetPreviewMeshDTO mesh, AssetPreviewBoundsTransform transform, out AssetPreviewBounds bounds)
-    {
-        bounds = new AssetPreviewBounds();
-        var hasVertex = false;
-        foreach (var vertex in mesh.Vertices)
-        {
-            bounds.Include(transform.Apply(vertex.Position));
-            hasVertex = true;
-        }
-
-        return hasVertex;
+        mesh.Vertices.Add(0f);
+        mesh.Vertices.Add(0f);
     }
 
     private static AssetPreviewVector3DTO Normalize(AssetPreviewVector3DTO normal)

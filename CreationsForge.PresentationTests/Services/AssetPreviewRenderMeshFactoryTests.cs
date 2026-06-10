@@ -40,9 +40,9 @@ public class AssetPreviewRenderMeshFactoryTests
         var renderMesh = factory.CreateRenderMesh(model);
 
         renderMesh.Vertices[1].ShouldBe(-0.9f, 0.0001f);
-        renderMesh.Vertices[10].ShouldBe(0.9f, 0.0001f);
+        renderMesh.Vertices[12].ShouldBe(0.9f, 0.0001f);
         renderMesh.Vertices[2].ShouldBe(0f, 0.0001f);
-        renderMesh.Vertices[11].ShouldBe(0f, 0.0001f);
+        renderMesh.Vertices[13].ShouldBe(0f, 0.0001f);
     }
 
     [Fact]
@@ -53,8 +53,8 @@ public class AssetPreviewRenderMeshFactoryTests
         var renderMesh = factory.CreateRenderMesh(null);
 
         renderMesh.Vertices[1].ShouldBe(0f);
-        renderMesh.Vertices[10].ShouldBe(0.9f);
-        renderMesh.Vertices[11].ShouldBe(0f);
+        renderMesh.Vertices[12].ShouldBe(0.9f);
+        renderMesh.Vertices[13].ShouldBe(0f);
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public class AssetPreviewRenderMeshFactoryTests
         });
 
         renderMesh.Vertices[1].ShouldBe(-0.9f, 0.0001f);
-        renderMesh.Vertices[10].ShouldBe(0.9f, 0.0001f);
+        renderMesh.Vertices[12].ShouldBe(0.9f, 0.0001f);
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public class AssetPreviewRenderMeshFactoryTests
     }
 
     [Fact]
-    public void CreateRenderMesh_UsesTextureHintForBasketPreviewColor()
+    public void CreateRenderMesh_DoesNotUseTextureHintForPreviewColor()
     {
         var factory = new AssetPreviewRenderMeshFactory(new LoggerConfiguration().CreateLogger());
         var mesh = CreateMesh("Basket04", 8f);
@@ -161,9 +161,9 @@ public class AssetPreviewRenderMeshFactoryTests
 
         var renderMesh = factory.CreateRenderMesh(model);
 
-        renderMesh.Vertices[3].ShouldBe(0.58f, 0.0001f);
-        renderMesh.Vertices[4].ShouldBe(0.43f, 0.0001f);
-        renderMesh.Vertices[5].ShouldBe(0.26f, 0.0001f);
+        renderMesh.Vertices[3].ShouldBe(0.70f, 0.0001f);
+        renderMesh.Vertices[4].ShouldBe(0.72f, 0.0001f);
+        renderMesh.Vertices[5].ShouldBe(0.72f, 0.0001f);
     }
 
     [Fact]
@@ -185,6 +185,36 @@ public class AssetPreviewRenderMeshFactoryTests
         var renderMesh = factory.CreateRenderMesh(model);
 
         renderMesh.TexturePaths.ShouldBe([@"textures\clutter\Basket01.dds"]);
+    }
+
+    [Fact]
+    public void CreateRenderMesh_TracksLoadedTextureForMeshPart()
+    {
+        var factory = new AssetPreviewRenderMeshFactory(new LoggerConfiguration().CreateLogger());
+        var mesh = CreateMesh("Basket04", 8f);
+        mesh.TexturePath = @"textures\clutter\Basket01.dds";
+        mesh.Texture = new AssetPreviewTextureDTO
+        {
+            Path = @"textures\clutter\Basket01.dds",
+            Data = [1, 2, 3, 4]
+        };
+        var model = new AssetPreviewModelDTO
+        {
+            DisplayName = "Preview",
+            SourcePath = "Meshes/Preview.nif",
+            Meshes =
+            {
+                mesh
+            }
+        };
+
+        var renderMesh = factory.CreateRenderMesh(model);
+
+        renderMesh.Textures.Count.ShouldBe(1);
+        renderMesh.Textures[0].Path.ShouldBe(@"textures\clutter\Basket01.dds");
+        renderMesh.Textures[0].Data.ShouldBe([1, 2, 3, 4]);
+        renderMesh.MeshParts.Count.ShouldBe(1);
+        renderMesh.MeshParts[0].TextureIndex.ShouldBe(0);
     }
 
     private static AssetPreviewMeshDTO CreateMesh(string name, float zOffset)

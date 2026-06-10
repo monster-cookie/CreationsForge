@@ -59,8 +59,13 @@ public class BethesdaAssetPreviewGeometryReader : IAssetPreviewGeometryReader
             Logger.Information("NIF preview parser diagnostic for {MeshPath}: {Diagnostic}", candidate.MeshPath, diagnostic);
         }
 
-        previewModel = MapModel(readResult.Model);
+        previewModel = MapModel(candidate, readResult.Model, out var loadedTextureCount);
         statusMessage = GetStatusMessage(readResult.StatusMessage, previewModel);
+        if (loadedTextureCount > 0)
+        {
+            statusMessage = $"{statusMessage} Loaded {loadedTextureCount:N0} preview texture(s).";
+        }
+
         return true;
     }
 
@@ -81,11 +86,12 @@ public class BethesdaAssetPreviewGeometryReader : IAssetPreviewGeometryReader
             return statusMessage;
         }
 
-        return $"{statusMessage} Textures were found but are not shown in the preview yet.";
+            return $"{statusMessage} Textures were found.";
     }
 
-    private static AssetPreviewModelDTO MapModel(NifPreviewModel model)
+    private AssetPreviewModelDTO MapModel(AssetPreviewCandidateDTO candidate, NifPreviewModel model, out int loadedTextureCount)
     {
+        loadedTextureCount = 0;
         var previewModel = new AssetPreviewModelDTO
         {
             DisplayName = model.DisplayName,
@@ -94,13 +100,13 @@ public class BethesdaAssetPreviewGeometryReader : IAssetPreviewGeometryReader
 
         foreach (var mesh in model.Meshes)
         {
-            previewModel.Meshes.Add(MapMesh(mesh));
+            previewModel.Meshes.Add(MapMesh(candidate, mesh, ref loadedTextureCount));
         }
 
         return previewModel;
     }
 
-    private static AssetPreviewMeshDTO MapMesh(NifPreviewMesh mesh)
+    private AssetPreviewMeshDTO MapMesh(AssetPreviewCandidateDTO candidate, NifPreviewMesh mesh, ref int loadedTextureCount)
     {
         var previewMesh = new AssetPreviewMeshDTO
         {
@@ -108,6 +114,39 @@ public class BethesdaAssetPreviewGeometryReader : IAssetPreviewGeometryReader
             MaterialName = mesh.MaterialName,
             TexturePath = mesh.TexturePath
         };
+        if (!string.IsNullOrWhiteSpace(mesh.TexturePath))
+        {
+            var textureResolution = AssetFileResolverService.ResolveAssetFile(new AssetPreviewCandidateDTO
+            {
+                Game = candidate.Game,
+                ModKey = candidate.ModKey,
+                RecordType = candidate.RecordType,
+                FormKey = candidate.FormKey,
+                ModelSlot = "Texture",
+                ModelGender = candidate.ModelGender,
+                MeshPath = mesh.TexturePath,
+                DisplayName = mesh.TexturePath,
+                CanPreview = true,
+                CanOpenExternally = false
+            });
+            if (textureResolution.Data != null && IsReadableResolution(textureResolution))
+            {
+                previewMesh.Texture = new AssetPreviewTextureDTO
+                {
+                    Path = textureResolution.NormalizedEntryPath ?? textureResolution.ResolvedPath ?? mesh.TexturePath,
+                    Data = textureResolution.Data
+                };
+                loadedTextureCount++;
+            }
+            else
+            {
+                Logger.Information(
+                    "NIF preview texture skipped for {MeshName} texture {TexturePath}: {StatusMessage}",
+                    mesh.Name,
+                    mesh.TexturePath,
+                    textureResolution.StatusMessage);
+            }
+        }
 
         foreach (var vertex in mesh.Vertices)
         {
