@@ -48,6 +48,25 @@ public class NifPreviewModelReaderTests
     }
 
     [Fact]
+    public void TryRead_ReturnsMeshForSkyrimSpecialEditionStreamVersion()
+    {
+        var reader = new NifPreviewModelReader();
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Clutter/Basket04.NIF",
+            DisplayName = "Basket04",
+            Data = CreateMinimalBSTriShapeNif(bethesdaVersion: 100U)
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes.Count.ShouldBe(1);
+        result.Model.Meshes[0].Vertices.Count.ShouldBe(3);
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("Header user 12, Bethesda 100", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void TryRead_ReturnsMeshWhenHeaderHasUnknownBytesBeforeBlockTables()
     {
         var reader = new NifPreviewModelReader();
@@ -244,7 +263,8 @@ public class NifPreviewModelReaderTests
         uint version = 0x14020007,
         bool includeProcessScript = true,
         byte[]? extraBytesBeforeTables = null,
-        float firstVertexX = -1f)
+        float firstVertexX = -1f,
+        uint bethesdaVersion = 130U)
     {
         using var blockStream = new MemoryStream();
         using (var writer = new BinaryWriter(blockStream, Encoding.UTF8, leaveOpen: true))
@@ -261,7 +281,7 @@ public class NifPreviewModelReaderTests
             writer.Write((ushort)2);
         }
 
-        return CreateMinimalNifWithBlock("BSTriShape", blockStream.ToArray(), version, includeProcessScript, extraBytesBeforeTables);
+        return CreateMinimalNifWithBlock("BSTriShape", blockStream.ToArray(), version, includeProcessScript, extraBytesBeforeTables, bethesdaVersion: bethesdaVersion);
     }
 
     private static byte[] CreateMinimalHalfPositionBSTriShapeNif()
@@ -439,7 +459,8 @@ public class NifPreviewModelReaderTests
         uint version = 0x14020007,
         bool includeProcessScript = true,
         byte[]? extraBytesBeforeTables = null,
-        bool writeTables = true)
+        bool writeTables = true,
+        uint bethesdaVersion = 130U)
     {
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: false);
@@ -448,7 +469,7 @@ public class NifPreviewModelReaderTests
         writer.Write((byte)1);
         writer.Write(12U);
         writer.Write(1U);
-        writer.Write(130U);
+        writer.Write(bethesdaVersion);
         WriteSizedString(writer, "Creations Forge");
         if (includeProcessScript)
         {

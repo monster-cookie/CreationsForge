@@ -8,6 +8,8 @@ public class NifPreviewModelReader : INifPreviewModelReader
 {
     private const uint Fallout4Version = 0x14020007;
     private const uint SkyrimSpecialEditionUserVersion = 12;
+    private const uint SkyrimSpecialEditionBethesdaVersion = 100;
+    private const uint Fallout4BethesdaVersion = 130;
     private const int MaxReasonableBlockCount = 100000;
     private const int MaxReasonableBlockTypeCount = 10000;
     private const int MaxReasonableStringLength = 1000000;
@@ -113,7 +115,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
         }
 
         var bethesdaVersion = reader.ReadUInt32();
-        if (bethesdaVersion < 130)
+        if (!IsSupportedBethesdaStreamVersion(userVersion, bethesdaVersion))
         {
             throw new InvalidDataException($"Bethesda stream version {bethesdaVersion} is not supported by the first preview reader.");
         }
@@ -124,6 +126,12 @@ public class NifPreviewModelReader : INifPreviewModelReader
         }
 
         throw new InvalidDataException($"NIF header tables could not be located with a supported Bethesda header layout. {failureReason}");
+    }
+
+    private static bool IsSupportedBethesdaStreamVersion(uint userVersion, uint bethesdaVersion)
+    {
+        return bethesdaVersion >= Fallout4BethesdaVersion ||
+            userVersion == SkyrimSpecialEditionUserVersion && bethesdaVersion == SkyrimSpecialEditionBethesdaVersion;
     }
 
     private static bool TryFindHeaderTables(
