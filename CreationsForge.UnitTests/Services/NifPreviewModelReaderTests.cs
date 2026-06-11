@@ -29,6 +29,83 @@ public class NifPreviewModelReaderTests
     }
 
     [Fact]
+    public void TryRead_ReturnsMeshForStarfieldBSGeometryBlock()
+    {
+        var reader = new NifPreviewModelReader();
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Items/digipic/DigiPic.nif",
+            DisplayName = "DigiPic",
+            Data = CreateMinimalNifWithBlock("BSGeometry", CreateBSTriShapeBlock(0f, 0f, 0f, 0f), bethesdaVersion: 172U)
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes.Count.ShouldBe(1);
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("BSGeometry block", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryRead_ReturnsMeshForStarfieldBSGeometryWithoutExplicitDataSize()
+    {
+        var reader = new NifPreviewModelReader();
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Items/digipic/DigiPic.nif",
+            DisplayName = "DigiPic",
+            Data = CreateMinimalNifWithBlock("BSGeometry", CreateStarfieldBSGeometryBlockWithoutExplicitDataSize(), bethesdaVersion: 172U)
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes.Count.ShouldBe(1);
+        result.Model.Meshes[0].Vertices.Count.ShouldBe(3);
+        result.Model.Meshes[0].Indices.ShouldBe([0, 1, 2]);
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("count layout StarfieldGeometry", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryRead_ProbesPaddedStarfieldBSGeometryCountFieldsAfterVertexDescriptor()
+    {
+        var reader = new NifPreviewModelReader();
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Items/digipic/DigiPic.nif",
+            DisplayName = "DigiPic",
+            Data = CreateMinimalNifWithBlock("BSGeometry", CreateStarfieldBSGeometryBlockWithPaddedCountsAfterDescriptor(), bethesdaVersion: 172U)
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes.Count.ShouldBe(1);
+        result.Model.Meshes[0].Vertices.Count.ShouldBe(3);
+        result.Model.Meshes[0].Indices.ShouldBe([0, 1, 2]);
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("count layout StarfieldGeometry", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("count offset 4", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("stride bytes 20", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryRead_ReturnsFailureForInvalidStarfieldBSGeometryWithoutExplicitDataSize()
+    {
+        var reader = new NifPreviewModelReader();
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Items/digipic/DigiPic.nif",
+            DisplayName = "DigiPic",
+            Data = CreateMinimalNifWithBlock("BSGeometry", CreateInvalidStarfieldBSGeometryBlockWithoutExplicitDataSize(), bethesdaVersion: 172U)
+        });
+
+        result.IsSuccess.ShouldBeFalse();
+        result.StatusMessage.ShouldContain("No supported preview geometry");
+        result.StatusMessage.ShouldContain("BSGeometry");
+    }
+
+    [Fact]
     public void TryRead_ReturnsMeshForBSTriShapeWithoutProcessScriptHeader()
     {
         var reader = new NifPreviewModelReader();
@@ -263,7 +340,7 @@ public class NifPreviewModelReaderTests
         });
 
         result.IsSuccess.ShouldBeFalse();
-        result.StatusMessage.ShouldContain("No supported BSTriShape geometry");
+        result.StatusMessage.ShouldContain("No supported preview geometry");
         result.StatusMessage.ShouldContain("Block types: NiNode x1");
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("Header user 12", StringComparison.Ordinal));
     }
@@ -510,6 +587,82 @@ public class NifPreviewModelReaderTests
         return stream.ToArray();
     }
 
+    private static byte[] CreateStarfieldBSGeometryBlockWithoutExplicitDataSize()
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
+        {
+            WriteTransformPrefix(writer, 0f, 0f, 0f, 1f);
+            writer.Write(0f);
+            writer.Write(0f);
+            writer.Write(0f);
+            writer.Write(1f);
+            writer.Write(-1);
+            writer.Write(-1);
+            writer.Write(-1);
+            writer.Write(((ulong)0x401 << 44) | 4UL);
+            writer.Write(1U);
+            writer.Write((ushort)3);
+            WriteVertex(writer, 0f, 0f, 0f);
+            WriteVertex(writer, 1f, 0f, 0f);
+            WriteVertex(writer, 0f, 1f, 0f);
+            writer.Write((ushort)0);
+            writer.Write((ushort)1);
+            writer.Write((ushort)2);
+        }
+
+        return stream.ToArray();
+    }
+
+    private static byte[] CreateInvalidStarfieldBSGeometryBlockWithoutExplicitDataSize()
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
+        {
+            WriteTransformPrefix(writer, 0f, 0f, 0f, 1f);
+            writer.Write(0f);
+            writer.Write(0f);
+            writer.Write(0f);
+            writer.Write(1f);
+            writer.Write(-1);
+            writer.Write(-1);
+            writer.Write(-1);
+            writer.Write(((ulong)0x401 << 44) | 4UL);
+            writer.Write(1U);
+            writer.Write((ushort)3);
+        }
+
+        return stream.ToArray();
+    }
+
+    private static byte[] CreateStarfieldBSGeometryBlockWithPaddedCountsAfterDescriptor()
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
+        {
+            WriteTransformPrefix(writer, 0f, 0f, 0f, 1f);
+            writer.Write(0f);
+            writer.Write(0f);
+            writer.Write(0f);
+            writer.Write(1f);
+            writer.Write(-1);
+            writer.Write(-1);
+            writer.Write(-1);
+            writer.Write(((ulong)0x401 << 44) | 5UL);
+            writer.Write(0U);
+            writer.Write(1U);
+            writer.Write((ushort)3);
+            WriteStarfieldStrideFiveVertex(writer, 0f, 0f, 0f);
+            WriteStarfieldStrideFiveVertex(writer, 1f, 0f, 0f);
+            WriteStarfieldStrideFiveVertex(writer, 0f, 1f, 0f);
+            writer.Write((ushort)0);
+            writer.Write((ushort)1);
+            writer.Write((ushort)2);
+        }
+
+        return stream.ToArray();
+    }
+
     private static byte[] CreateSkyrimSpecialEditionBSTriShapeBlock()
     {
         using var stream = new MemoryStream();
@@ -696,6 +849,15 @@ public class NifPreviewModelReaderTests
         writer.Write(x);
         writer.Write(y);
         writer.Write(z);
+        writer.Write(0U);
+    }
+
+    private static void WriteStarfieldStrideFiveVertex(BinaryWriter writer, float x, float y, float z)
+    {
+        writer.Write(x);
+        writer.Write(y);
+        writer.Write(z);
+        writer.Write(0U);
         writer.Write(0U);
     }
 

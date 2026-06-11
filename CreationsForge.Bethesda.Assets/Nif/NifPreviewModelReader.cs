@@ -19,6 +19,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
     private const int TriangleIndexByteCount = 6;
     private const int DiagnosticHexByteCount = 24;
     private const int BSTriShapeFieldsBeforeVertexDescriptor = (sizeof(float) * 4) + (sizeof(int) * 3);
+    private const int MaxStarfieldGeometryCountProbeBytes = 16;
 
     public NifPreviewReadResult TryRead(NifPreviewReadRequest request)
     {
@@ -44,7 +45,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
             {
                 var block = header.Blocks[blockIndex];
                 var transformChain = GetTransformChain(blockIndex, localTransforms, parentByChild);
-                var mesh = TryReadBSTriShape(block, blockIndex, model.Meshes.Count, transformChain, header.Strings, materialMap, header.BethesdaVersion, ref rejectionReason);
+                var mesh = TryReadPreviewGeometry(block, blockIndex, model.Meshes.Count, transformChain, header.Strings, materialMap, header.BethesdaVersion, ref rejectionReason);
                 if (mesh != null)
                 {
                     model.Meshes.Add(mesh);
@@ -57,7 +58,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
 
             if (model.Meshes.Count == 0)
             {
-                var statusMessage = "No supported BSTriShape geometry was found in this NIF.";
+                var statusMessage = "No supported preview geometry was found in this NIF.";
                 var blockSummary = CreateBlockTypeSummary(header.Blocks);
                 if (!string.IsNullOrWhiteSpace(blockSummary))
                 {
@@ -81,7 +82,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
             {
                 IsSuccess = true,
                 Model = model,
-                StatusMessage = $"Loaded {model.Meshes.Count} BSTriShape preview mesh(es).",
+                StatusMessage = $"Loaded {model.Meshes.Count} preview mesh(es).",
                 Diagnostics = diagnostics
             };
         }
@@ -360,7 +361,13 @@ public class NifPreviewModelReader : INifPreviewModelReader
     private static bool IsTransformBearingBlock(NifBlock block)
     {
         return block.TypeName.Contains("Node", StringComparison.Ordinal) ||
-            block.TypeName.Contains("TriShape", StringComparison.Ordinal);
+            IsPreviewGeometryBlock(block);
+    }
+
+    private static bool IsPreviewGeometryBlock(NifBlock block)
+    {
+        return block.TypeName.Contains("TriShape", StringComparison.Ordinal) ||
+            string.Equals(block.TypeName, "BSGeometry", StringComparison.Ordinal);
     }
 
     private static Dictionary<int, NifMaterialInfo> CreateMaterialMap(
@@ -549,7 +556,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
         return transforms;
     }
 
-    private static NifPreviewMesh? TryReadBSTriShape(
+    private static NifPreviewMesh? TryReadPreviewGeometry(
         NifBlock block,
         int blockIndex,
         int meshIndex,
@@ -559,7 +566,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
         uint bethesdaVersion,
         ref string? rejectionReason)
     {
-        if (!block.TypeName.Contains("TriShape", StringComparison.Ordinal))
+        if (!IsPreviewGeometryBlock(block))
         {
             return null;
         }
@@ -579,15 +586,18 @@ public class NifPreviewModelReader : INifPreviewModelReader
         var candidates = new List<NifPreviewMesh>();
         for (var offset = 0; offset <= block.Data.Length - 18; offset++)
         {
-            if (TryReadBSTriShapeAt(block, blockIndex, offset, meshIndex, transformChain, strings, materialMap, BSTriShapeCountLayout.Fallout4, BSVertexPositionFormat.DescriptorDefault, out var mesh, out var candidateRejectionReason) &&
-                mesh != null)
+            foreach (var countLayout in GetCandidateCountLayouts(block))
             {
-                candidates.Add(mesh);
-            }
+                if (TryReadBSTriShapeAt(block, blockIndex, offset, meshIndex, transformChain, strings, materialMap, countLayout, BSVertexPositionFormat.DescriptorDefault, out var mesh, out var candidateRejectionReason) &&
+                    mesh != null)
+                {
+                    candidates.Add(mesh);
+                }
 
-            if (rejectionReason == null && candidateRejectionReason != null)
-            {
-                rejectionReason = $"{block.TypeName} offset {offset}: {candidateRejectionReason}";
+                if (rejectionReason == null && candidateRejectionReason != null)
+                {
+                    rejectionReason = $"{block.TypeName} offset {offset} {countLayout}: {candidateRejectionReason}";
+                }
             }
         }
 
@@ -682,10 +692,13 @@ public class NifPreviewModelReader : INifPreviewModelReader
             return false;
         }
 
-        var position = offset + sizeof(ulong);
+        var countStartPosition = offset + sizeof(ulong);
+        var position = countStartPosition;
         uint triangleCount;
         ushort vertexCount;
-        uint dataSize;
+        uint dataSize = 0U;
+        var hasExplicitDataSize = true;
+        var countProbeOffset = 0;
         if (countLayout == BSTriShapeCountLayout.SkyrimSpecialEdition)
         {
             if (!TryReadUInt16(data, ref position, out var skyrimTriangleCount) ||
@@ -697,6 +710,19 @@ public class NifPreviewModelReader : INifPreviewModelReader
             }
 
             triangleCount = skyrimTriangleCount;
+        }
+        else if (countLayout == BSTriShapeCountLayout.StarfieldGeometry)
+        {
+            if (!TryReadStarfieldGeometryCounts(data, countStartPosition, descriptor.VertexStride, out var counts, out rejectionReason))
+            {
+                return false;
+            }
+
+            triangleCount = counts.TriangleCount;
+            vertexCount = counts.VertexCount;
+            position = counts.VertexDataOffset;
+            countProbeOffset = counts.CountProbeOffset;
+            hasExplicitDataSize = false;
         }
         else if (!TryReadUInt32(data, ref position, out triangleCount) ||
             !TryReadUInt16(data, ref position, out vertexCount) ||
@@ -714,9 +740,15 @@ public class NifPreviewModelReader : INifPreviewModelReader
 
         var vertexStride = descriptor.VertexStride;
         var expectedDataSize = checked(((uint)vertexStride * vertexCount) + (triangleCount * TriangleIndexByteCount));
-        if (dataSize != expectedDataSize || data.Length - position < dataSize)
+        if (hasExplicitDataSize && (dataSize != expectedDataSize || data.Length - position < dataSize))
         {
             rejectionReason = $"data size {dataSize} did not match expected {expectedDataSize} for stride {vertexStride}";
+            return false;
+        }
+
+        if (!hasExplicitDataSize && data.Length - position < expectedDataSize)
+        {
+            rejectionReason = $"inferred data size {expectedDataSize} exceeded remaining block data for stride {vertexStride}";
             return false;
         }
 
@@ -786,7 +818,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
 
         var triangleQuality = GetTriangleQuality(vertices, indices, rawBounds);
         var normalQuality = GetNormalQuality(vertices);
-        var material = GetShapeMaterial(data, offset, blockIndex, meshIndex, strings, materialMap);
+        var material = GetShapeMaterial(data, offset, block.TypeName, blockIndex, meshIndex, strings, materialMap);
         mesh = new NifPreviewMesh
         {
             Name = material.MeshName,
@@ -796,21 +828,61 @@ public class NifPreviewModelReader : INifPreviewModelReader
             Indices = indices,
             Diagnostics =
             {
-                $"{block.TypeName} block {blockIndex} offset {offset}: {vertexCount} vertices, {triangleCount} triangles, count layout {countLayout}, position format {positionFormat}, descriptor 0x{vertexDesc:X16}, {descriptor.Description}, transform {GetTransformDescription(useTransform, descriptorAlignedTransformChain, transformSource)}, raw {rawBounds.Description}, {triangleQuality.Description}",
-                $"BSTriShape block {blockIndex} normals: {normalQuality.Description}",
-                $"BSTriShape block {blockIndex} material: {material.MaterialName}, texture {material.TexturePath ?? "none"}",
-                $"BSTriShape block {blockIndex} bytes before descriptor: {CreateHexSample(data, Math.Max(0, offset - DiagnosticHexByteCount), Math.Min(DiagnosticHexByteCount, offset))}",
-                $"BSTriShape block {blockIndex} first vertex bytes: {CreateVertexByteSample(data, vertexDataOffset, vertexStride, Math.Min(3, (int)vertexCount))}",
-                $"BSTriShape block {blockIndex} vertex sample: {CreateVertexSample(vertices)}",
-                $"BSTriShape block {blockIndex} triangle sample: {CreateTriangleSample(indices)}"
+                $"{block.TypeName} block {blockIndex} offset {offset}: {vertexCount} vertices, {triangleCount} triangles, count layout {countLayout}, count offset {countProbeOffset}, position format {positionFormat}, descriptor 0x{vertexDesc:X16}, {descriptor.Description}, transform {GetTransformDescription(useTransform, descriptorAlignedTransformChain, transformSource)}, raw {rawBounds.Description}, {triangleQuality.Description}",
+                $"{block.TypeName} block {blockIndex} normals: {normalQuality.Description}",
+                $"{block.TypeName} block {blockIndex} material: {material.MaterialName}, texture {material.TexturePath ?? "none"}",
+                $"{block.TypeName} block {blockIndex} bytes before descriptor: {CreateHexSample(data, Math.Max(0, offset - DiagnosticHexByteCount), Math.Min(DiagnosticHexByteCount, offset))}",
+                $"{block.TypeName} block {blockIndex} first vertex bytes: {CreateVertexByteSample(data, vertexDataOffset, vertexStride, Math.Min(3, (int)vertexCount))}",
+                $"{block.TypeName} block {blockIndex} vertex sample: {CreateVertexSample(vertices)}",
+                $"{block.TypeName} block {blockIndex} triangle sample: {CreateTriangleSample(indices)}"
             }
         };
         return true;
     }
 
+    private static bool TryReadStarfieldGeometryCounts(
+        byte[] data,
+        int countStartPosition,
+        int vertexStride,
+        out BSGeometryCountProbe counts,
+        out string? rejectionReason)
+    {
+        counts = default;
+        rejectionReason = "shape header ended before counts could be read";
+        var maxProbeOffset = Math.Min(MaxStarfieldGeometryCountProbeBytes, data.Length - countStartPosition - sizeof(uint) - sizeof(ushort));
+        for (var countProbeOffset = 0; countProbeOffset <= maxProbeOffset; countProbeOffset += sizeof(ushort))
+        {
+            var position = countStartPosition + countProbeOffset;
+            if (!TryReadUInt32(data, ref position, out var triangleCount) ||
+                !TryReadUInt16(data, ref position, out var vertexCount))
+            {
+                continue;
+            }
+
+            if (vertexCount == 0 || triangleCount == 0 || triangleCount > 1000000)
+            {
+                rejectionReason = $"invalid counts ({vertexCount} vertices, {triangleCount} triangles)";
+                continue;
+            }
+
+            var expectedDataSize = checked(((uint)vertexStride * vertexCount) + (triangleCount * TriangleIndexByteCount));
+            if (data.Length - position < expectedDataSize)
+            {
+                rejectionReason = $"inferred data size {expectedDataSize} exceeded remaining block data for stride {vertexStride}";
+                continue;
+            }
+
+            counts = new BSGeometryCountProbe(triangleCount, vertexCount, position, countProbeOffset);
+            return true;
+        }
+
+        return false;
+    }
+
     private static NifShapeMaterial GetShapeMaterial(
         byte[] data,
         int descriptorOffset,
+        string blockTypeName,
         int blockIndex,
         int meshIndex,
         IReadOnlyList<string> strings,
@@ -818,7 +890,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
     {
         var meshName = TryReadStringRef(data, 0, strings, out var parsedMeshName)
             ? parsedMeshName
-            : $"BSTriShape {meshIndex + 1}";
+            : $"{blockTypeName} {meshIndex + 1}";
         var shaderPropertyPosition = descriptorOffset - (sizeof(int) * 2);
         if (shaderPropertyPosition >= 0 &&
             data.Length - shaderPropertyPosition >= sizeof(int))
@@ -830,7 +902,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
             }
         }
 
-        return new NifShapeMaterial(meshName, $"BSTriShape {blockIndex}", null);
+        return new NifShapeMaterial(meshName, $"{blockTypeName} {blockIndex}", null);
     }
 
     private static NifNormalQuality GetNormalQuality(IReadOnlyList<NifPreviewVertex> vertices)
@@ -1107,6 +1179,16 @@ public class NifPreviewModelReader : INifPreviewModelReader
     {
         yield return BSVertexPositionFormat.Float3;
         yield return BSVertexPositionFormat.Half3;
+    }
+
+    private static IEnumerable<BSTriShapeCountLayout> GetCandidateCountLayouts(NifBlock block)
+    {
+        if (string.Equals(block.TypeName, "BSGeometry", StringComparison.Ordinal))
+        {
+            yield return BSTriShapeCountLayout.StarfieldGeometry;
+        }
+
+        yield return BSTriShapeCountLayout.Fallout4;
     }
 
     private static bool HasUnsupportedSkinnedGeometry(IReadOnlyList<NifBlock> blocks)
@@ -1512,6 +1594,25 @@ public class NifPreviewModelReader : INifPreviewModelReader
             $"stride words {StrideWords}, stride bytes {VertexStride}, attributes 0x{Attributes:X}, uv offset {UVOffset}, normal offset {NormalOffset}, full precision {HasFullPrecisionPositions}";
     }
 
+    private readonly struct BSGeometryCountProbe
+    {
+        public BSGeometryCountProbe(uint triangleCount, ushort vertexCount, int vertexDataOffset, int countProbeOffset)
+        {
+            TriangleCount = triangleCount;
+            VertexCount = vertexCount;
+            VertexDataOffset = vertexDataOffset;
+            CountProbeOffset = countProbeOffset;
+        }
+
+        public uint TriangleCount { get; }
+
+        public ushort VertexCount { get; }
+
+        public int VertexDataOffset { get; }
+
+        public int CountProbeOffset { get; }
+    }
+
     private readonly struct NifObjectTransform
     {
         public static readonly NifObjectTransform Identity = new NifObjectTransform(
@@ -1605,7 +1706,8 @@ public class NifPreviewModelReader : INifPreviewModelReader
     private enum BSTriShapeCountLayout
     {
         Fallout4,
-        SkyrimSpecialEdition
+        SkyrimSpecialEdition,
+        StarfieldGeometry
     }
 
     private enum BSVertexPositionFormat
