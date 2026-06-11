@@ -12,6 +12,7 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
 
     private static readonly string[] ArchiveRootDirectories =
     {
+        "Data",
         "Meshes",
         "Textures",
         "Materials",
@@ -202,19 +203,22 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
     private static int GetArchivePreferenceScore(string archivePath, string normalizedPath)
     {
         var archiveName = Path.GetFileNameWithoutExtension(archivePath);
-        if (StartsWithDirectory(normalizedPath, "Meshes") &&
+        if ((StartsWithDirectory(normalizedPath, "Meshes") ||
+             StartsWithDirectory(normalizedPath, Path.Combine("Data", "Meshes"))) &&
             archiveName.Contains("meshes", StringComparison.OrdinalIgnoreCase))
         {
             return 0;
         }
 
-        if (StartsWithDirectory(normalizedPath, "Textures") &&
+        if ((StartsWithDirectory(normalizedPath, "Textures") ||
+             StartsWithDirectory(normalizedPath, Path.Combine("Data", "Textures"))) &&
             archiveName.Contains("textures", StringComparison.OrdinalIgnoreCase))
         {
             return 0;
         }
 
-        if (StartsWithDirectory(normalizedPath, "Materials") &&
+        if ((StartsWithDirectory(normalizedPath, "Materials") ||
+             StartsWithDirectory(normalizedPath, Path.Combine("Data", "Materials"))) &&
             archiveName.Contains("materials", StringComparison.OrdinalIgnoreCase))
         {
             return 0;
@@ -231,14 +235,27 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
         };
 
         AddRootStrippedPathCandidate(candidates, normalizedPath);
+        AddDataPathCandidate(candidates, normalizedPath);
         if (!StartsWithDirectory(normalizedPath, "Meshes"))
         {
             var meshPath = Path.Combine("Meshes", normalizedPath);
-            candidates.Add(meshPath);
+            AddPathCandidate(candidates, meshPath);
             AddRootStrippedPathCandidate(candidates, meshPath);
         }
 
         return candidates;
+    }
+
+    private static void AddDataPathCandidate(List<string> candidates, string normalizedPath)
+    {
+        if (StartsWithDirectory(normalizedPath, "Data"))
+        {
+            return;
+        }
+
+        var dataPath = Path.Combine("Data", normalizedPath);
+        AddPathCandidate(candidates, dataPath);
+        AddRootStrippedPathCandidate(candidates, dataPath);
     }
 
     private static void AddRootStrippedPathCandidate(List<string> candidates, string normalizedPath)
@@ -253,13 +270,18 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
             var strippedPath = normalizedPath.Length == rootDirectory.Length
                 ? string.Empty
                 : normalizedPath[(rootDirectory.Length + 1)..];
-            if (!string.IsNullOrWhiteSpace(strippedPath) &&
-                !candidates.Contains(strippedPath, StringComparer.OrdinalIgnoreCase))
-            {
-                candidates.Add(strippedPath);
-            }
+            AddPathCandidate(candidates, strippedPath);
 
             return;
+        }
+    }
+
+    private static void AddPathCandidate(List<string> candidates, string path)
+    {
+        if (!string.IsNullOrWhiteSpace(path) &&
+            !candidates.Contains(path, StringComparer.OrdinalIgnoreCase))
+        {
+            candidates.Add(path);
         }
     }
 

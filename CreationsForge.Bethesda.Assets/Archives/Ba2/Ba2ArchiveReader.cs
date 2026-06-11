@@ -192,7 +192,7 @@ public class Ba2ArchiveReader : IAssetArchiveReader
         }
 
         var archiveType = archiveTypeValue == TextureArchiveType ? Ba2ArchiveType.Texture : Ba2ArchiveType.General;
-        var headerSize = archiveType == Ba2ArchiveType.Texture && version is 7 or 8
+        var headerSize = archiveType == Ba2ArchiveType.Texture && version is 3 or 7 or 8
             ? Fallout76HeaderSize
             : version is 2 or 3
                 ? ExtendedHeaderSize
@@ -380,7 +380,7 @@ public class Ba2ArchiveReader : IAssetArchiveReader
             throw new InvalidDataException("BA2 packed texture chunk ended before all bytes could be read.");
         }
 
-        return header.HeaderSize == Fallout76HeaderSize
+        return header.Version is 3 or 7 or 8
             ? DecompressLz4TextureChunk(packedData, chunk.UnpackedSize)
             : DecompressZlibTextureChunk(packedData, chunk.UnpackedSize);
     }

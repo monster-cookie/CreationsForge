@@ -106,17 +106,27 @@ public class BethesdaAssetPreviewGeometryReader : IAssetPreviewGeometryReader
 
     private static string GetStatusMessage(string statusMessage, AssetPreviewModelDTO previewModel)
     {
-        var textureCount = previewModel.Meshes
-            .Select(mesh => mesh.TexturePath)
+        var loadedTextureCount = previewModel.Meshes
+            .Select(mesh => mesh.Texture?.Path)
             .Where(texturePath => !string.IsNullOrWhiteSpace(texturePath))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Count();
-        if (textureCount == 0)
+        if (loadedTextureCount > 0)
         {
             return statusMessage;
         }
 
-            return $"{statusMessage} Textures were found.";
+        var texturePathCount = previewModel.Meshes
+            .Select(mesh => mesh.TexturePath)
+            .Where(texturePath => !string.IsNullOrWhiteSpace(texturePath))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+        if (texturePathCount == 0)
+        {
+            return statusMessage;
+        }
+
+        return $"{statusMessage} Texture paths were found, but preview texture bytes were not loaded.";
     }
 
     private AssetPreviewModelDTO MapModel(AssetPreviewCandidateDTO candidate, NifPreviewModel model, out int loadedTextureCount)

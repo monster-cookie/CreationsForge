@@ -172,7 +172,8 @@ uses the owned Assets NIF preview reader when readable `.nif` bytes are availabl
 that reference external `geometries/**/*.mesh` payloads, the adapter passes an external-asset resolver back through
 the existing UI-neutral asset-file resolver. The same resolver path is used when the NIF reader probes Starfield
 `.mat` material assets for preview texture references. Unsupported preview cases, archive-backed paths that cannot yet
-be read, parser gaps, and OpenGL renderer failures are logged through Serilog.
+be read, parser gaps, and OpenGL renderer failures are logged through Serilog. Asset preview creation runs on a
+presentation background task with a loading state, and stale background results are ignored when selection changes.
 
 ## Persistence Architecture
 

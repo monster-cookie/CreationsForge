@@ -188,6 +188,35 @@ public class BethesdaAssetProviderTests
     }
 
     [Fact]
+    public void TryReadAsset_ReadsArchiveEntryStoredWithDataRoot()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var archivePath = Path.Combine(tempDirectory.FullName, "Starfield - Textures01.ba2");
+            File.WriteAllText(archivePath, "archive");
+            var archiveReader = new FakeArchiveReader(archivePath, "Data/Textures/Cinimatics/DigiPic/DigiPick_Material_color.DDS", [20, 21, 22]);
+            var provider = new BethesdaAssetProvider([archiveReader]);
+
+            var result = provider.TryReadAsset(new BethesdaAssetReadRequest
+            {
+                DataFolder = tempDirectory.FullName,
+                AssetPath = @"Textures\Cinimatics\DigiPic\DigiPick_Material_color.DDS"
+            });
+
+            result.Status.ShouldBe(BethesdaAssetReadStatus.ReadArchiveEntry);
+            result.SourceType.ShouldBe(BethesdaAssetSourceType.Archive);
+            result.SourceArchivePath.ShouldBe(archivePath);
+            result.NormalizedEntryPath.ShouldBe("Data/Textures/Cinimatics/DigiPic/DigiPick_Material_color.DDS");
+            result.Data.ShouldBe([20, 21, 22]);
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public void TryReadAsset_PrefersMeshArchivesForMeshPaths()
     {
         var tempDirectory = Directory.CreateTempSubdirectory();
@@ -213,6 +242,39 @@ public class BethesdaAssetProviderTests
             result.SourceArchivePath.ShouldBe(meshesArchivePath);
             archiveReader.Attempts.ShouldNotBeEmpty();
             archiveReader.Attempts[0].ArchivePath.ShouldBe(meshesArchivePath);
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void TryReadAsset_PrefersTextureArchivesForDataRootedTexturePaths()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var meshesArchivePath = Path.Combine(tempDirectory.FullName, "Starfield - Meshes01.ba2");
+            var texturesArchivePath = Path.Combine(tempDirectory.FullName, "Starfield - Textures01.ba2");
+            File.WriteAllText(meshesArchivePath, "archive");
+            File.WriteAllText(texturesArchivePath, "archive");
+            var archiveReader = new RecordingArchiveReader(
+                texturesArchivePath,
+                "Data/Textures/Cinimatics/DigiPic/DigiPick_Material_color.DDS",
+                [23, 24, 25]);
+            var provider = new BethesdaAssetProvider([archiveReader]);
+
+            var result = provider.TryReadAsset(new BethesdaAssetReadRequest
+            {
+                DataFolder = tempDirectory.FullName,
+                AssetPath = @"Data\Textures\Cinimatics\DigiPic\DigiPick_Material_color.DDS"
+            });
+
+            result.Status.ShouldBe(BethesdaAssetReadStatus.ReadArchiveEntry);
+            result.SourceArchivePath.ShouldBe(texturesArchivePath);
+            archiveReader.Attempts.ShouldNotBeEmpty();
+            archiveReader.Attempts[0].ArchivePath.ShouldBe(texturesArchivePath);
         }
         finally
         {
@@ -346,7 +408,8 @@ public class BethesdaAssetProviderTests
 
         public bool CanRead(string archivePath)
         {
-            return string.Equals(Path.GetExtension(archivePath), ".bsa", StringComparison.OrdinalIgnoreCase);
+            return string.Equals(Path.GetExtension(archivePath), ".bsa", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(Path.GetExtension(archivePath), ".ba2", StringComparison.OrdinalIgnoreCase);
         }
 
         public IReadOnlyList<AssetArchiveEntry> ListEntries(string archivePath)

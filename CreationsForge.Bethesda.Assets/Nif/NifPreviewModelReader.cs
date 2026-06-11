@@ -28,6 +28,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
     private const ulong StarfieldMaterialDatabaseBethSignature = 0x0000000848544542UL;
     private const uint StarfieldMaterialDatabaseVersion = 4U;
     private const uint StarfieldMaterialDatabaseStringTableSignature = 0x54525453U;
+    private static readonly byte[] StarfieldMaterialDatabaseBethSignatureBytes = [0x42, 0x45, 0x54, 0x48, 0x08, 0x00, 0x00, 0x00];
     private static readonly string[] StarfieldMaterialDatabasePaths =
     {
         "materials/materialsbeta.cdb",
@@ -555,7 +556,8 @@ public class NifPreviewModelReader : INifPreviewModelReader
         }
 
         var textureSource = "material";
-        if (TryFindMaterialDatabaseTextureCandidate(candidates, resolveExternalAsset, out var databaseTexturePath))
+        var materialDatabaseDiagnostics = new List<string>();
+        if (TryFindMaterialDatabaseTextureCandidate(candidates, resolveExternalAsset, materialDatabaseDiagnostics, out var databaseTexturePath))
         {
             texturePath = databaseTexturePath;
             textureSource = "material database";
@@ -568,65 +570,144 @@ public class NifPreviewModelReader : INifPreviewModelReader
         diagnostic = string.IsNullOrWhiteSpace(unsupportedFeatures)
             ? $"material {materialPath} resolved preview texture {texturePath} from {textureSource}"
             : $"material {materialPath} resolved preview texture {texturePath} from {textureSource}; unsupported material features: {unsupportedFeatures}";
+        if (materialDatabaseDiagnostics.Count > 0)
+        {
+            diagnostic += $"; material database probe: {string.Join("; ", materialDatabaseDiagnostics)}";
+        }
+
         return true;
     }
 
     private static bool TryFindMaterialDatabaseTextureCandidate(
         IReadOnlyList<string> materialTextureCandidates,
         Func<string, byte[]?> resolveExternalAsset,
+        List<string> diagnostics,
         out string texturePath)
     {
         texturePath = string.Empty;
         var materialFileNames = materialTextureCandidates
-            .Select(Path.GetFileName)
+            .Select(GetTextureFileName)
             .Where(fileName => !string.IsNullOrWhiteSpace(fileName))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         if (materialFileNames.Count == 0)
         {
+            diagnostics.Add("skipped because no material DDS filenames were found");
             return false;
         }
 
         foreach (var databasePath in StarfieldMaterialDatabasePaths)
         {
+            diagnostics.Add($"requested {databasePath}");
             var databaseData = resolveExternalAsset(databasePath);
-            if (databaseData == null ||
-                !TryReadStarfieldMaterialDatabaseStrings(databaseData, out var strings))
+            if (databaseData == null || databaseData.Length == 0)
             {
+                diagnostics.Add($"{databasePath} was not resolved");
                 continue;
             }
 
+            diagnostics.Add($"{databasePath} resolved {databaseData.Length} byte(s)");
+            if (!TryReadStarfieldMaterialDatabaseStrings(databaseData, out var strings, out var tableCount, out var readFailureReason))
+            {
+                diagnostics.Add($"{databasePath} was not a supported STRT table: {readFailureReason}");
+                continue;
+            }
+
+            diagnostics.Add($"{databasePath} parsed {strings.Count} string(s) from {tableCount} STRT table(s)");
             var candidates = strings
                 .SelectMany(value => GetMaterialTextureCandidates(Encoding.UTF8.GetBytes(value)))
-                .Where(candidate => materialFileNames.Contains(Path.GetFileName(candidate)))
+                .Where(candidate => materialFileNames.Contains(GetTextureFileName(candidate)))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderByDescending(GetPreviewTextureCandidateScore)
                 .ThenBy(candidate => candidate, StringComparer.OrdinalIgnoreCase)
                 .ToList();
+            diagnostics.Add($"{databasePath} matched {candidates.Count} DDS candidate(s) for {string.Join(", ", materialFileNames)}");
             var correctedCandidate = candidates.FirstOrDefault(candidate =>
                 !materialTextureCandidates.Contains(candidate, StringComparer.OrdinalIgnoreCase));
             if (!string.IsNullOrWhiteSpace(correctedCandidate))
             {
                 texturePath = correctedCandidate;
+                diagnostics.Add($"{databasePath} selected {correctedCandidate}");
                 return true;
+            }
+
+            if (candidates.Count > 0)
+            {
+                diagnostics.Add($"{databasePath} only matched existing material texture path(s)");
             }
         }
 
         return false;
     }
 
-    private static bool TryReadStarfieldMaterialDatabaseStrings(byte[] data, out IReadOnlyList<string> strings)
+    private static bool TryReadStarfieldMaterialDatabaseStrings(byte[] data, out IReadOnlyList<string> strings, out int tableCount, out string failureReason)
     {
         strings = [];
+        tableCount = 0;
+        failureReason = string.Empty;
         if (data.Length < 24)
+        {
+            failureReason = $"length {data.Length} is shorter than the 24 byte header";
+            return false;
+        }
+
+        var parsedStrings = new List<string>();
+        var lastFailureReason = string.Empty;
+        var searchPosition = 0;
+        while (TryFindStarfieldMaterialDatabaseTable(data, searchPosition, out var tablePosition))
+        {
+            searchPosition = tablePosition + StarfieldMaterialDatabaseBethSignatureBytes.Length;
+            if (!TryReadStarfieldMaterialDatabaseStringTable(data, tablePosition, parsedStrings, out lastFailureReason))
+            {
+                continue;
+            }
+
+            tableCount++;
+        }
+
+        strings = parsedStrings;
+        if (strings.Count == 0)
+        {
+            failureReason = string.IsNullOrWhiteSpace(lastFailureReason)
+                ? "no BETH/STRT table was found"
+                : lastFailureReason;
+        }
+
+        return strings.Count > 0;
+    }
+
+    private static bool TryFindStarfieldMaterialDatabaseTable(byte[] data, int searchPosition, out int tablePosition)
+    {
+        tablePosition = -1;
+        if (searchPosition > data.Length - StarfieldMaterialDatabaseBethSignatureBytes.Length)
         {
             return false;
         }
 
-        var position = 0;
+        var relativePosition = data.AsSpan(searchPosition).IndexOf(StarfieldMaterialDatabaseBethSignatureBytes);
+        if (relativePosition < 0)
+        {
+            return false;
+        }
+
+        tablePosition = searchPosition + relativePosition;
+        return true;
+    }
+
+    private static bool TryReadStarfieldMaterialDatabaseStringTable(byte[] data, int tablePosition, List<string> parsedStrings, out string failureReason)
+    {
+        failureReason = string.Empty;
+        if (data.Length - tablePosition < 24)
+        {
+            failureReason = $"table at {tablePosition} is shorter than the 24 byte header";
+            return false;
+        }
+
+        var position = tablePosition;
         var bethSignature = BinaryPrimitives.ReadUInt64LittleEndian(data.AsSpan(position, sizeof(ulong)));
         position += sizeof(ulong);
         if (bethSignature != StarfieldMaterialDatabaseBethSignature)
         {
+            failureReason = $"BETH signature 0x{bethSignature:X16} at {tablePosition} did not match";
             return false;
         }
 
@@ -634,6 +715,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
         position += sizeof(uint);
         if (version != StarfieldMaterialDatabaseVersion)
         {
+            failureReason = $"version {version} at {tablePosition} did not match {StarfieldMaterialDatabaseVersion}";
             return false;
         }
 
@@ -642,6 +724,7 @@ public class NifPreviewModelReader : INifPreviewModelReader
         position += sizeof(uint);
         if (stringTableSignature != StarfieldMaterialDatabaseStringTableSignature)
         {
+            failureReason = $"string table signature 0x{stringTableSignature:X8} at {tablePosition} did not match STRT";
             return false;
         }
 
@@ -649,10 +732,10 @@ public class NifPreviewModelReader : INifPreviewModelReader
         position += sizeof(uint);
         if (byteCount > data.Length - position)
         {
+            failureReason = $"STRT byte count {byteCount} at {tablePosition} exceeds remaining {data.Length - position} byte(s)";
             return false;
         }
 
-        var parsedStrings = new List<string>();
         var start = position;
         var end = position + (int)byteCount;
         for (var index = position; index < end; index++)
@@ -675,8 +758,12 @@ public class NifPreviewModelReader : INifPreviewModelReader
             parsedStrings.Add(Encoding.UTF8.GetString(data, start, end - start));
         }
 
-        strings = parsedStrings;
-        return strings.Count > 0;
+        return true;
+    }
+
+    private static string GetTextureFileName(string texturePath)
+    {
+        return texturePath.Split(['\\', '/'], StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? string.Empty;
     }
 
     private static IEnumerable<string> GetMaterialTextureCandidates(byte[] data)

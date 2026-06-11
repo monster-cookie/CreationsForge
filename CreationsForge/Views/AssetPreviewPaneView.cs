@@ -18,6 +18,7 @@ public class AssetPreviewPaneView : UserControl
 {
     private readonly ILogger Logger;
     private readonly AssetPreviewFallbackSurface FallbackSurface;
+    private readonly Border RendererDiagnosticHost;
     private readonly TextBlock RendererDiagnosticText;
     private readonly AssetPreviewOpenGlControl PreviewSurface;
     private readonly AssetPreviewPaneViewModel ViewModel;
@@ -33,6 +34,7 @@ public class AssetPreviewPaneView : UserControl
         FallbackSurface = new AssetPreviewFallbackSurface();
         PreviewSurface = new AssetPreviewOpenGlControl(renderMeshFactory, logger);
         RendererDiagnosticText = CreateDiagnosticText();
+        RendererDiagnosticHost = CreateDiagnosticHost(RendererDiagnosticText);
         PreviewSurface.DiagnosticsChanged += OnPreviewSurfaceDiagnosticsChanged;
         Content = BuildContent();
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
@@ -120,17 +122,52 @@ public class AssetPreviewPaneView : UserControl
                 {
                     FallbackSurface,
                     PreviewSurface,
-                    new Border
-                    {
-                        Background = new SolidColorBrush(Color.FromArgb(190, 0, 0, 0)),
-                        Padding = new Thickness(8, 4),
-                        HorizontalAlignment = HorizontalAlignment.Stretch,
-                        VerticalAlignment = VerticalAlignment.Bottom,
-                        Child = RendererDiagnosticText
-                    }
+                    RendererDiagnosticHost,
+                    CreateLoadingOverlay()
                 }
             }
         };
+    }
+
+    private static Control CreateLoadingOverlay()
+    {
+        var progressBar = new ProgressBar
+        {
+            IsIndeterminate = true,
+            Height = 4,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+
+        var textBlock = new TextBlock
+        {
+            Text = "Loading asset preview...",
+            FontSize = 13,
+            FontWeight = FontWeight.SemiBold,
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        App.ApplyApplicationTextForeground(textBlock);
+
+        var overlay = new Border
+        {
+            Background = new SolidColorBrush(Color.FromArgb(150, 0, 0, 0)),
+            Padding = new Thickness(18),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch,
+            Child = new StackPanel
+            {
+                Width = 220,
+                Spacing = 10,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Children =
+                {
+                    textBlock,
+                    progressBar
+                }
+            }
+        };
+        overlay.Bind(IsVisibleProperty, new Binding(nameof(AssetPreviewPaneViewModel.IsPreviewLoading)));
+        return overlay;
     }
 
     private ComboBox CreateCandidateSelector()
@@ -213,7 +250,8 @@ public class AssetPreviewPaneView : UserControl
             e.PropertyName == nameof(AssetPreviewPaneViewModel.SelectedViewMode) ||
             e.PropertyName == nameof(AssetPreviewPaneViewModel.SelectedMeshSelection) ||
             e.PropertyName == nameof(AssetPreviewPaneViewModel.SelectedRenderMode) ||
-            e.PropertyName == nameof(AssetPreviewPaneViewModel.IsOrbitEnabled))
+            e.PropertyName == nameof(AssetPreviewPaneViewModel.IsOrbitEnabled) ||
+            e.PropertyName == nameof(AssetPreviewPaneViewModel.IsPreviewLoading))
         {
             RefreshViewport();
         }
@@ -221,6 +259,10 @@ public class AssetPreviewPaneView : UserControl
 
     private void RefreshViewport()
     {
+        var previewContentVisible = !ViewModel.IsPreviewLoading;
+        FallbackSurface.IsVisible = previewContentVisible;
+        PreviewSurface.IsVisible = previewContentVisible;
+        RendererDiagnosticHost.IsVisible = previewContentVisible;
         FallbackSurface.PreviewModel = ViewModel.PreviewModel;
         FallbackSurface.StatusText = ViewModel.PreviewModel is null
             ? "No asset selected"
@@ -256,6 +298,18 @@ public class AssetPreviewPaneView : UserControl
         App.ApplyApplicationTextForeground(textBlock);
         textBlock.Bind(TextBlock.TextProperty, new Binding(boundProperty));
         return textBlock;
+    }
+
+    private static Border CreateDiagnosticHost(TextBlock diagnosticText)
+    {
+        return new Border
+        {
+            Background = new SolidColorBrush(Color.FromArgb(190, 0, 0, 0)),
+            Padding = new Thickness(8, 4),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Bottom,
+            Child = diagnosticText
+        };
     }
 
     private static TextBlock CreateDiagnosticText()

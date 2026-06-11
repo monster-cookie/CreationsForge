@@ -6,6 +6,7 @@ using CreationsForge.Core.Enums;
 using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Services.Interfaces;
 using Serilog;
+using System.Threading;
 
 namespace CreationsForge.ViewModels;
 
@@ -21,6 +22,8 @@ public class AssetPreviewPaneViewModel : ViewModelBase
     private AssetPreviewViewMode SelectedViewModeValue = AssetPreviewViewMode.Isometric;
     private AssetPreviewRenderMode SelectedRenderModeValue = AssetPreviewRenderMode.Solid;
     private bool IsOrbitEnabledValue;
+    private bool IsPreviewLoadingValue;
+    private long PreviewLoadVersion;
     private string PreviewTitleTextValue = "Asset preview";
     private string PreviewStatusTextValue = "Select a model-bearing record to preview assets.";
 
@@ -105,6 +108,12 @@ public class AssetPreviewPaneViewModel : ViewModelBase
 
     public bool HasPreviewModel => PreviewModel is not null;
 
+    public bool IsPreviewLoading
+    {
+        get => IsPreviewLoadingValue;
+        private set => SetProperty(ref IsPreviewLoadingValue, value);
+    }
+
     public AssetPreviewMeshSelectionOption? SelectedMeshSelection
     {
         get => SelectedMeshSelectionValue;
@@ -146,6 +155,7 @@ public class AssetPreviewPaneViewModel : ViewModelBase
         PreviewCandidates.Clear();
         OnPropertyChanged(nameof(HasPreviewCandidates));
         PreviewModel = null;
+        IsPreviewLoading = false;
         ResetMeshSelections(null);
         PreviewTitleText = "Asset preview";
 
@@ -178,6 +188,7 @@ public class AssetPreviewPaneViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasPreviewCandidates));
         SelectedCandidate = null;
         PreviewModel = null;
+        IsPreviewLoading = false;
         ResetMeshSelections(null);
         PreviewTitleText = "Asset preview";
         PreviewStatusText = "Select a model-bearing record to preview assets.";
@@ -185,9 +196,12 @@ public class AssetPreviewPaneViewModel : ViewModelBase
 
     private void LoadSelectedCandidatePreview()
     {
+        var loadVersion = Interlocked.Increment(ref PreviewLoadVersion);
         PreviewModel = null;
+        ResetMeshSelections(null);
         if (SelectedCandidate is null)
         {
+            IsPreviewLoading = false;
             PreviewStatusText = "Select a model-bearing record to preview assets.";
             return;
         }
@@ -195,6 +209,7 @@ public class AssetPreviewPaneViewModel : ViewModelBase
         PreviewTitleText = SelectedCandidate.DisplayName;
         if (!SelectedCandidate.CanPreview)
         {
+            IsPreviewLoading = false;
             PreviewStatusText = SelectedCandidate.UnsupportedReason ?? "This asset type is not supported by the experimental preview renderer.";
             Logger.Warning(
                 "Asset preview does not support path {MeshPath} for {Game} {RecordType} {FormKeyId}",
@@ -205,9 +220,54 @@ public class AssetPreviewPaneViewModel : ViewModelBase
             return;
         }
 
-        PreviewModel = AssetPreviewSceneService.CreatePreview(SelectedCandidate, out var statusMessage);
-        ResetMeshSelections(PreviewModel);
-        PreviewStatusText = statusMessage;
+        IsPreviewLoading = true;
+        PreviewStatusText = "Loading asset preview...";
+        _ = LoadSelectedCandidatePreviewAsync(SelectedCandidate, loadVersion);
+    }
+
+    private async Task LoadSelectedCandidatePreviewAsync(AssetPreviewCandidateDTO candidate, long loadVersion)
+    {
+        try
+        {
+            var result = await Task.Run(() =>
+            {
+                var previewModel = AssetPreviewSceneService.CreatePreview(candidate, out var statusMessage);
+                return new AssetPreviewLoadResult(previewModel, statusMessage);
+            });
+            if (!IsCurrentPreviewLoad(candidate, loadVersion))
+            {
+                return;
+            }
+
+            PreviewModel = result.PreviewModel;
+            ResetMeshSelections(PreviewModel);
+            PreviewStatusText = result.StatusMessage;
+        }
+        catch (Exception exception)
+        {
+            Logger.Error(
+                exception,
+                "Asset preview failed for path {MeshPath} in {Game} {RecordType} {FormKeyId}",
+                candidate.MeshPath,
+                candidate.Game,
+                candidate.RecordType,
+                candidate.FormKey.Id);
+            if (!IsCurrentPreviewLoad(candidate, loadVersion))
+            {
+                return;
+            }
+
+            PreviewModel = null;
+            ResetMeshSelections(null);
+            PreviewStatusText = "Asset preview failed to load.";
+        }
+        finally
+        {
+            if (IsCurrentPreviewLoad(candidate, loadVersion))
+            {
+                IsPreviewLoading = false;
+            }
+        }
     }
 
     private void ResetMeshSelections(AssetPreviewModelDTO? previewModel)
@@ -251,6 +311,24 @@ public class AssetPreviewPaneViewModel : ViewModelBase
             string.Equals(first.MeshPath, second.MeshPath, StringComparison.OrdinalIgnoreCase) &&
             first.CanPreview == second.CanPreview &&
             first.CanOpenExternally == second.CanOpenExternally;
+    }
+
+    private bool IsCurrentPreviewLoad(AssetPreviewCandidateDTO candidate, long loadVersion)
+    {
+        return Interlocked.Read(ref PreviewLoadVersion) == loadVersion && IsSameAssetCandidate(SelectedCandidate, candidate);
+    }
+
+    private readonly struct AssetPreviewLoadResult
+    {
+        public AssetPreviewLoadResult(AssetPreviewModelDTO previewModel, string statusMessage)
+        {
+            PreviewModel = previewModel;
+            StatusMessage = statusMessage;
+        }
+
+        public AssetPreviewModelDTO PreviewModel { get; }
+
+        public string StatusMessage { get; }
     }
 
     public readonly struct AssetPreviewMeshSelectionOption

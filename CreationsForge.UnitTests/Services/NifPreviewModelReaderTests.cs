@@ -455,7 +455,7 @@ public class NifPreviewModelReaderTests
                 }
 
                 return string.Equals(path, materialDatabasePath, StringComparison.OrdinalIgnoreCase)
-                    ? CreateStarfieldMaterialDatabase(@"Textures\Cinematics\DigiPic\DigiPick_Material_color.DDS")
+                    ? CreateStarfieldMaterialDatabase(@"Textures\Verified\DigiPic\DigiPick_Material_color.DDS")
                     : null;
             }
         });
@@ -463,7 +463,103 @@ public class NifPreviewModelReaderTests
         result.IsSuccess.ShouldBeTrue(result.StatusMessage);
         result.Model.ShouldNotBeNull();
         result.Model.Meshes.Count.ShouldBe(1);
-        result.Model.Meshes[0].TexturePath.ShouldBe(@"Textures\Cinematics\DigiPic\DigiPick_Material_color.DDS");
+        result.Model.Meshes[0].TexturePath.ShouldBe(@"Textures\Verified\DigiPic\DigiPick_Material_color.DDS");
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("from material database", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("requested materials/materialsbeta.cdb", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("parsed 1 string(s)", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("matched 1 DDS candidate(s)", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains(@"selected Textures\Verified\DigiPic\DigiPick_Material_color.DDS", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryRead_ReportsMaterialDatabaseProbeFailuresWhenDatabaseDoesNotResolve()
+    {
+        var reader = new NifPreviewModelReader();
+        const string materialPath = @"Materials\Cinimatics\DigiPic\DigiPic_Base.mat";
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Items/digipic/DigiPic.nif",
+            DisplayName = "DigiPic",
+            Data = CreateMaterialLinkedBSTriShapeNif(materialPath),
+            ResolveExternalAsset = path => string.Equals(path, materialPath, StringComparison.OrdinalIgnoreCase)
+                ? CreateStarfieldMaterialFile(@"Textures\Cinimatics\DigiPic\DigiPick_Material_color.DDS")
+                : null
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes.Count.ShouldBe(1);
+        result.Model.Meshes[0].TexturePath.ShouldBe(@"Textures\Cinimatics\DigiPic\DigiPick_Material_color.DDS");
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("from material", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("requested materials/materialsbeta.cdb", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("materials/materialsbeta.cdb was not resolved", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryRead_PreservesVerifiedStarfieldCinimaticsTexturePathWhenDatabaseDoesNotMatch()
+    {
+        var reader = new NifPreviewModelReader();
+        const string materialPath = @"Materials\Cinimatics\DigiPic\DigiPic_Base.mat";
+        const string materialDatabasePath = "materials/materialsbeta.cdb";
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Items/digipic/DigiPic.nif",
+            DisplayName = "DigiPic",
+            Data = CreateMaterialLinkedBSTriShapeNif(materialPath),
+            ResolveExternalAsset = path =>
+            {
+                if (string.Equals(path, materialPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    return CreateStarfieldMaterialFile(@"Textures\Cinimatics\DigiPic\DigiPick_Material_color.DDS");
+                }
+
+                return string.Equals(path, materialDatabasePath, StringComparison.OrdinalIgnoreCase)
+                    ? CreateStarfieldMaterialDatabase(@"Textures\Other\Unrelated_color.DDS")
+                    : null;
+            }
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes.Count.ShouldBe(1);
+        result.Model.Meshes[0].TexturePath.ShouldBe(@"Textures\Cinimatics\DigiPic\DigiPick_Material_color.DDS");
+        result.Diagnostics.ShouldNotContain(diagnostic => diagnostic.Contains("applied known Starfield texture folder correction", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryRead_ReadsMaterialDatabaseStringsFromLaterEmbeddedStringTable()
+    {
+        var reader = new NifPreviewModelReader();
+        const string materialPath = @"Materials\Cinimatics\DigiPic\DigiPic_Base.mat";
+        const string materialDatabasePath = "materials/materialsbeta.cdb";
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Items/digipic/DigiPic.nif",
+            DisplayName = "DigiPic",
+            Data = CreateMaterialLinkedBSTriShapeNif(materialPath),
+            ResolveExternalAsset = path =>
+            {
+                if (string.Equals(path, materialPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    return CreateStarfieldMaterialFile(@"Textures\Cinimatics\DigiPic\DigiPick_Material_color.DDS");
+                }
+
+                return string.Equals(path, materialDatabasePath, StringComparison.OrdinalIgnoreCase)
+                    ? CreateEmbeddedStarfieldMaterialDatabase(
+                        ["Unrelated"],
+                        [@"Textures\Verified\DigiPic\DigiPick_Material_color.DDS"])
+                    : null;
+            }
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes.Count.ShouldBe(1);
+        result.Model.Meshes[0].TexturePath.ShouldBe(@"Textures\Verified\DigiPic\DigiPick_Material_color.DDS");
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("parsed 2 string(s) from 2 STRT table(s)", StringComparison.Ordinal));
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("from material database", StringComparison.Ordinal));
     }
 
@@ -735,6 +831,19 @@ public class NifPreviewModelReaderTests
         writer.Write(0x54525453U);
         writer.Write((uint)stringTable.Length);
         writer.Write(stringTable);
+        return stream.ToArray();
+    }
+
+    private static byte[] CreateEmbeddedStarfieldMaterialDatabase(params string[][] stringTables)
+    {
+        using var stream = new MemoryStream();
+        using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: false);
+        foreach (var strings in stringTables)
+        {
+            writer.Write([0x13, 0x37, 0x42]);
+            writer.Write(CreateStarfieldMaterialDatabase(strings));
+        }
+
         return stream.ToArray();
     }
 

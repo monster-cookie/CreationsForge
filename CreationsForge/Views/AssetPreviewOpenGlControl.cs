@@ -27,7 +27,9 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         uniform vec3 uLightDirection;
 
         out vec3 vColor;
+        out vec3 vNormal;
         out vec2 vUv;
+        out float vLight;
 
         void main()
         {
@@ -35,7 +37,9 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
             gl_PointSize = 6.0;
             float diffuse = abs(dot(normalize(aNormal), normalize(uLightDirection)));
             float light = 0.45 + (diffuse * 0.55);
-            vColor = uUseOverrideColor == 1 ? uOverrideColor : aColor * light;
+            vColor = uUseOverrideColor == 1 ? uOverrideColor : aColor;
+            vNormal = normalize(aNormal);
+            vLight = light;
             vUv = aUv;
         }
         """;
@@ -43,7 +47,9 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
     private const string DesktopFragmentShaderSource = """
         #version 330 core
         in vec3 vColor;
+        in vec3 vNormal;
         in vec2 vUv;
+        in float vLight;
 
         uniform int uUseTexture;
         uniform sampler2D uTexture;
@@ -52,7 +58,19 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
 
         void main()
         {
-            fragColor = uUseTexture == 1 ? texture(uTexture, vUv) * vec4(vColor, 1.0) : vec4(vColor, 1.0);
+            if (uUseTexture == 1)
+            {
+                vec4 textureColor = texture(uTexture, vUv);
+                float previewLight = 0.85 + (vLight * 0.15);
+                float facing = abs(normalize(vNormal).z);
+                float highlight = pow(facing, 20.0) * 0.28;
+                vec3 fill = vec3(0.08, 0.09, 0.10) * (0.6 + (vLight * 0.4));
+                fragColor = vec4(min((textureColor.rgb * previewLight) + fill + vec3(highlight), vec3(1.0)), textureColor.a);
+            }
+            else
+            {
+                fragColor = vec4(vColor * vLight, 1.0);
+            }
         }
         """;
 
@@ -69,7 +87,9 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         uniform vec3 uLightDirection;
 
         out vec3 vColor;
+        out vec3 vNormal;
         out vec2 vUv;
+        out float vLight;
 
         void main()
         {
@@ -77,7 +97,9 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
             gl_PointSize = 6.0;
             float diffuse = abs(dot(normalize(aNormal), normalize(uLightDirection)));
             float light = 0.45 + (diffuse * 0.55);
-            vColor = uUseOverrideColor == 1 ? uOverrideColor : aColor * light;
+            vColor = uUseOverrideColor == 1 ? uOverrideColor : aColor;
+            vNormal = normalize(aNormal);
+            vLight = light;
             vUv = aUv;
         }
         """;
@@ -87,7 +109,9 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         precision mediump float;
 
         in vec3 vColor;
+        in vec3 vNormal;
         in vec2 vUv;
+        in float vLight;
 
         uniform int uUseTexture;
         uniform sampler2D uTexture;
@@ -96,7 +120,19 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
 
         void main()
         {
-            fragColor = uUseTexture == 1 ? texture(uTexture, vUv) * vec4(vColor, 1.0) : vec4(vColor, 1.0);
+            if (uUseTexture == 1)
+            {
+                vec4 textureColor = texture(uTexture, vUv);
+                float previewLight = 0.85 + (vLight * 0.15);
+                float facing = abs(normalize(vNormal).z);
+                float highlight = pow(facing, 20.0) * 0.28;
+                vec3 fill = vec3(0.08, 0.09, 0.10) * (0.6 + (vLight * 0.4));
+                fragColor = vec4(min((textureColor.rgb * previewLight) + fill + vec3(highlight), vec3(1.0)), textureColor.a);
+            }
+            else
+            {
+                fragColor = vec4(vColor * vLight, 1.0);
+            }
         }
         """;
 

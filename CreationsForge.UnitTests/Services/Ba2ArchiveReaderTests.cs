@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text;
 using CreationsForge.Bethesda.Assets.Archives.Ba2;
+using K4os.Compression.LZ4;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Services;
@@ -248,6 +249,39 @@ public class Ba2ArchiveReaderTests
     }
 
     [Fact]
+    public void TryReadEntry_ReadsStarfieldVersion3CompressedTextureEntryAsDds()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var archivePath = Path.Combine(tempDirectory.FullName, "Starfield - Textures03.ba2");
+            var textureData = new byte[] { 30, 31, 32, 33, 34, 35, 36, 37 };
+            WriteBa2TextureArchive(
+                archivePath,
+                [
+                    TestBa2TextureEntry.CreateLz4Compressed("Textures/Cinimatics/DigiPic/DigiPick_Material_color.DDS", 4, 4, 72, textureData)
+                ],
+                version: 3,
+                headerSize: 36);
+            var reader = new Ba2ArchiveReader();
+
+            var result = reader.TryReadEntry(archivePath, "Textures\\Cinimatics\\DigiPic\\DigiPick_Material_color.DDS");
+
+            result.IsSuccess.ShouldBeTrue();
+            result.EntryPath.ShouldBe("textures/cinimatics/digipic/digipick_material_color.dds");
+            var data = result.Data.ShouldNotBeNull();
+            data.Length.ShouldBe(136);
+            Encoding.ASCII.GetString(data, 0, 4).ShouldBe("DDS ");
+            Encoding.ASCII.GetString(data, 84, 4).ShouldBe("DXT1");
+            data.Skip(128).ToArray().ShouldBe(textureData);
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public void TryReadEntry_ReturnsFailureForUnsupportedTextureFormat()
     {
         var tempDirectory = Directory.CreateTempSubdirectory();
@@ -321,9 +355,12 @@ public class Ba2ArchiveReaderTests
         }
     }
 
-    private static void WriteBa2TextureArchive(string archivePath, IReadOnlyList<TestBa2TextureEntry> entries)
+    private static void WriteBa2TextureArchive(
+        string archivePath,
+        IReadOnlyList<TestBa2TextureEntry> entries,
+        uint version = 1,
+        int headerSize = 24)
     {
-        const int headerSize = 24;
         const int textureRecordSize = 24;
         const int textureChunkSize = 24;
         var nameTableSize = entries.Sum(entry => sizeof(ushort) + Encoding.UTF8.GetByteCount(entry.Name));
@@ -333,10 +370,14 @@ public class Ba2ArchiveReaderTests
         using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: false);
 
         writer.Write(Encoding.ASCII.GetBytes("BTDX"));
-        writer.Write(1U);
+        writer.Write(version);
         writer.Write(Encoding.ASCII.GetBytes("DX10"));
         writer.Write((uint)entries.Count);
         writer.Write((ulong)nameTableOffset);
+        if (headerSize > 24)
+        {
+            writer.Write(new byte[headerSize - 24]);
+        }
 
         var nextDataOffset = dataOffset;
         foreach (var entry in entries)
@@ -451,6 +492,16 @@ public class Ba2ArchiveReaderTests
             }
 
             return new TestBa2TextureEntry(name, width, height, dxgiFormat, [new TestBa2TextureChunk(storedStream.ToArray(), unpackedData.Length, true)]);
+        }
+
+        public static TestBa2TextureEntry CreateLz4Compressed(string name, int width, int height, byte dxgiFormat, byte[] unpackedData)
+        {
+            var maximumSize = LZ4Codec.MaximumOutputSize(unpackedData.Length);
+            var storedData = new byte[maximumSize];
+            var storedSize = LZ4Codec.Encode(unpackedData, storedData, LZ4Level.L00_FAST);
+            storedSize.ShouldBeGreaterThan(0);
+            Array.Resize(ref storedData, storedSize);
+            return new TestBa2TextureEntry(name, width, height, dxgiFormat, [new TestBa2TextureChunk(storedData, unpackedData.Length, true)]);
         }
 
         public string Name { get; }
