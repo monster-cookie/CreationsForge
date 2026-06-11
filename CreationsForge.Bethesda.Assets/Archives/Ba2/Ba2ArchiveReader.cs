@@ -7,6 +7,7 @@ namespace CreationsForge.Bethesda.Assets.Archives.Ba2;
 
 public class Ba2ArchiveReader : IAssetArchiveReader
 {
+    private const int MaximumCachedArchiveDirectories = 8;
     private const uint Magic = 0x58445442;
     private const uint GeneralArchiveType = 0x4C524E47;
     private const uint TextureArchiveType = 0x30315844;
@@ -33,6 +34,9 @@ public class Ba2ArchiveReader : IAssetArchiveReader
     private const int TextureRecordSize = 24;
     private const int TextureChunkSize = 24;
     private const int DdsHeaderSize = 128;
+    private readonly object DirectoryCacheLock = new();
+    private readonly Dictionary<string, Ba2ArchiveDirectoryCacheEntry> DirectoryCache = new(StringComparer.OrdinalIgnoreCase);
+    private long DirectoryCacheAccessCounter;
 
     public bool CanRead(string archivePath)
     {
@@ -41,13 +45,10 @@ public class Ba2ArchiveReader : IAssetArchiveReader
 
     public IReadOnlyList<AssetArchiveEntry> ListEntries(string archivePath)
     {
-        using var stream = File.OpenRead(archivePath);
-        using var reader = new BinaryReader(stream, Encoding.ASCII, leaveOpen: false);
-        var header = ReadHeader(reader, stream.Length);
-
-        return header.ArchiveType == Ba2ArchiveType.Texture
-            ? ListTextureEntries(archivePath, reader, header, stream.Length)
-            : ListGeneralEntries(archivePath, reader, header, stream.Length);
+        var directory = GetArchiveDirectory(archivePath);
+        return directory.Header.ArchiveType == Ba2ArchiveType.Texture
+            ? ListTextureEntries(archivePath, directory)
+            : ListGeneralEntries(archivePath, directory);
     }
 
     public AssetArchiveReadResult TryReadEntry(string archivePath, string entryPath)
@@ -55,15 +56,15 @@ public class Ba2ArchiveReader : IAssetArchiveReader
         try
         {
             var normalizedEntryPath = NormalizeEntryPath(entryPath);
+            var directory = GetArchiveDirectory(archivePath);
             using var stream = File.OpenRead(archivePath);
             using var reader = new BinaryReader(stream, Encoding.ASCII, leaveOpen: false);
-            var header = ReadHeader(reader, stream.Length);
-            if (header.ArchiveType == Ba2ArchiveType.Texture)
+            if (directory.Header.ArchiveType == Ba2ArchiveType.Texture)
             {
-                return TryReadTextureEntry(archivePath, entryPath, normalizedEntryPath, reader, header, stream.Length);
+                return TryReadTextureEntry(archivePath, entryPath, normalizedEntryPath, reader, directory, stream.Length);
             }
 
-            return TryReadGeneralEntry(archivePath, entryPath, normalizedEntryPath, reader, header, stream.Length);
+            return TryReadGeneralEntry(archivePath, entryPath, normalizedEntryPath, reader, directory, stream.Length);
         }
         catch (Exception exception) when (exception is EndOfStreamException or IOException or InvalidDataException or OverflowException)
         {
@@ -71,10 +72,67 @@ public class Ba2ArchiveReader : IAssetArchiveReader
         }
     }
 
-    private static IReadOnlyList<AssetArchiveEntry> ListGeneralEntries(string archivePath, BinaryReader reader, Ba2ArchiveHeader header, long archiveLength)
+    private Ba2ArchiveDirectory GetArchiveDirectory(string archivePath)
     {
-        var records = ReadFileRecords(reader, header, archiveLength);
-        var names = ReadNameTable(reader, header, archiveLength);
+        var fullPath = Path.GetFullPath(archivePath);
+        var fileInfo = new FileInfo(fullPath);
+        if (!fileInfo.Exists)
+        {
+            throw new FileNotFoundException("BA2 archive was not found.", fullPath);
+        }
+
+        var cacheKey = new Ba2ArchiveDirectoryCacheKey(fullPath, fileInfo.Length, fileInfo.LastWriteTimeUtc.Ticks);
+        lock (DirectoryCacheLock)
+        {
+            if (DirectoryCache.TryGetValue(cacheKey.ArchivePath, out var cacheEntry) &&
+                cacheEntry.CacheKey.Length == cacheKey.Length &&
+                cacheEntry.CacheKey.LastWriteTimeUtcTicks == cacheKey.LastWriteTimeUtcTicks)
+            {
+                cacheEntry.LastAccess = ++DirectoryCacheAccessCounter;
+                return cacheEntry.Directory;
+            }
+        }
+
+        var directory = ReadArchiveDirectory(fullPath);
+        lock (DirectoryCacheLock)
+        {
+            DirectoryCache[cacheKey.ArchivePath] = new Ba2ArchiveDirectoryCacheEntry(cacheKey, directory, ++DirectoryCacheAccessCounter);
+            TrimArchiveDirectoryCache();
+        }
+
+        return directory;
+    }
+
+    private void TrimArchiveDirectoryCache()
+    {
+        while (DirectoryCache.Count > MaximumCachedArchiveDirectories)
+        {
+            var oldest = DirectoryCache.OrderBy(pair => pair.Value.LastAccess).First();
+            DirectoryCache.Remove(oldest.Key);
+        }
+    }
+
+    private static Ba2ArchiveDirectory ReadArchiveDirectory(string archivePath)
+    {
+        using var stream = File.OpenRead(archivePath);
+        using var reader = new BinaryReader(stream, Encoding.ASCII, leaveOpen: false);
+        var header = ReadHeader(reader, stream.Length);
+        if (header.ArchiveType == Ba2ArchiveType.Texture)
+        {
+            var records = ReadTextureRecords(reader, header, stream.Length);
+            var names = ReadNameTable(reader, header, stream.Length);
+            return Ba2ArchiveDirectory.CreateTexture(header, names, records);
+        }
+
+        var fileRecords = ReadFileRecords(reader, header, stream.Length);
+        var fileNames = ReadNameTable(reader, header, stream.Length);
+        return Ba2ArchiveDirectory.CreateGeneral(header, fileNames, fileRecords);
+    }
+
+    private static IReadOnlyList<AssetArchiveEntry> ListGeneralEntries(string archivePath, Ba2ArchiveDirectory directory)
+    {
+        var records = directory.FileRecords;
+        var names = directory.Names;
         var entries = new List<AssetArchiveEntry>();
 
         for (var index = 0; index < names.Count; index++)
@@ -91,10 +149,10 @@ public class Ba2ArchiveReader : IAssetArchiveReader
         return entries;
     }
 
-    private static IReadOnlyList<AssetArchiveEntry> ListTextureEntries(string archivePath, BinaryReader reader, Ba2ArchiveHeader header, long archiveLength)
+    private static IReadOnlyList<AssetArchiveEntry> ListTextureEntries(string archivePath, Ba2ArchiveDirectory directory)
     {
-        var records = ReadTextureRecords(reader, header, archiveLength);
-        var names = ReadNameTable(reader, header, archiveLength);
+        var records = directory.TextureRecords;
+        var names = directory.Names;
         var entries = new List<AssetArchiveEntry>();
 
         for (var index = 0; index < names.Count; index++)
@@ -111,19 +169,11 @@ public class Ba2ArchiveReader : IAssetArchiveReader
         return entries;
     }
 
-    private static AssetArchiveReadResult TryReadGeneralEntry(string archivePath, string entryPath, string normalizedEntryPath, BinaryReader reader, Ba2ArchiveHeader header, long archiveLength)
+    private static AssetArchiveReadResult TryReadGeneralEntry(string archivePath, string entryPath, string normalizedEntryPath, BinaryReader reader, Ba2ArchiveDirectory directory, long archiveLength)
     {
-        var records = ReadFileRecords(reader, header, archiveLength);
-        var names = ReadNameTable(reader, header, archiveLength);
-
-        for (var index = 0; index < names.Count; index++)
+        if (directory.EntryIndexes.TryGetValue(normalizedEntryPath, out var index))
         {
-            if (!string.Equals(names[index], normalizedEntryPath, StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            var record = records[index];
+            var record = directory.FileRecords[index];
             ValidateDataRange(record, archiveLength);
             reader.BaseStream.Position = checked((long)record.DataOffset);
             var data = ReadEntryData(reader, record);
@@ -132,38 +182,30 @@ public class Ba2ArchiveReader : IAssetArchiveReader
             {
                 IsSuccess = true,
                 ArchivePath = archivePath,
-                EntryPath = names[index],
+                EntryPath = directory.Names[index],
                 Data = data,
-                StatusMessage = $"Read BA2 archive entry {names[index]} from {archivePath}."
+                StatusMessage = $"Read BA2 archive entry {directory.Names[index]} from {archivePath}."
             };
         }
 
         return CreateFailure(archivePath, entryPath, $"BA2 archive entry {entryPath} was not found.");
     }
 
-    private static AssetArchiveReadResult TryReadTextureEntry(string archivePath, string entryPath, string normalizedEntryPath, BinaryReader reader, Ba2ArchiveHeader header, long archiveLength)
+    private static AssetArchiveReadResult TryReadTextureEntry(string archivePath, string entryPath, string normalizedEntryPath, BinaryReader reader, Ba2ArchiveDirectory directory, long archiveLength)
     {
-        var records = ReadTextureRecords(reader, header, archiveLength);
-        var names = ReadNameTable(reader, header, archiveLength);
-
-        for (var index = 0; index < names.Count; index++)
+        if (directory.EntryIndexes.TryGetValue(normalizedEntryPath, out var index))
         {
-            if (!string.Equals(names[index], normalizedEntryPath, StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            var record = records[index];
+            var record = directory.TextureRecords[index];
             ValidateTextureDataRanges(record, archiveLength);
-            var data = ReadTextureEntryData(reader, header, record);
+            var data = ReadTextureEntryData(reader, directory.Header, record);
 
             return new AssetArchiveReadResult
             {
                 IsSuccess = true,
                 ArchivePath = archivePath,
-                EntryPath = names[index],
+                EntryPath = directory.Names[index],
                 Data = data,
-                StatusMessage = $"Read BA2 texture archive entry {names[index]} from {archivePath}."
+                StatusMessage = $"Read BA2 texture archive entry {directory.Names[index]} from {archivePath}."
             };
         }
 

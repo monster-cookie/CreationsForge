@@ -60,6 +60,36 @@ public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
         return null;
     }
 
+    public IReadOnlyList<AssetArchiveEntryDTO> FindEntries(SupportedGame game, string dataFolder, IReadOnlyList<string> normalizedEntryPaths)
+    {
+        var entries = new List<AssetArchiveEntryDTO>();
+        foreach (var normalizedEntryPath in normalizedEntryPaths)
+        {
+            var models = Database.Fetch<AssetArchiveEntryDatabaseModel>(
+                """
+                SELECT entries.*
+                FROM AssetArchiveEntries entries
+                INNER JOIN AssetArchiveFiles archives
+                    ON archives.Game = entries.Game
+                   AND archives.ArchivePath = entries.ArchivePath COLLATE NOCASE
+                WHERE entries.Game = @Game
+                  AND archives.DataFolder = @DataFolder COLLATE NOCASE
+                  AND entries.NormalizedEntryPath = @NormalizedEntryPath COLLATE NOCASE
+                ORDER BY archives.ArchiveFileName COLLATE NOCASE;
+                """,
+                new
+                {
+                    Game = game.ToString(),
+                    DataFolder = Path.GetFullPath(dataFolder),
+                    NormalizedEntryPath = normalizedEntryPath
+                });
+
+            entries.AddRange(models.Select(model => model.ToDTO()));
+        }
+
+        return entries;
+    }
+
     public void SaveArchiveFile(AssetArchiveFileDTO archiveFile)
     {
         Database.Execute(

@@ -212,6 +212,69 @@ public class AssetArchiveIndexServiceTests
     }
 
     [Fact]
+    public void TryReadArchiveAsset_WhenDirectIndexEntryIsStale_FallsBackToReindexArchive()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var archivePath = Path.Combine(tempDirectory.FullName, "Starfield - Meshes01.ba2");
+            File.WriteAllBytes(archivePath, [1, 2, 3, 4]);
+            var fileInfo = new FileInfo(archivePath);
+            var repository = new TestAssetArchiveIndexRepository();
+            repository.SaveArchiveFile(new AssetArchiveFileDTO
+            {
+                Game = SupportedGame.Starfield,
+                DataFolder = tempDirectory.FullName,
+                ArchivePath = archivePath,
+                ArchiveFileName = fileInfo.Name,
+                ArchiveExtension = fileInfo.Extension,
+                ArchiveType = "BA2",
+                SourceLastWriteUTCTicks = fileInfo.LastWriteTimeUtc.Ticks - 1,
+                SourceFileSizeBytes = fileInfo.Length,
+                IndexedAtUTC = DateTime.UtcNow
+            });
+            repository.ReplaceArchiveEntries(
+                SupportedGame.Starfield,
+                archivePath,
+                [
+                    new AssetArchiveEntryDTO
+                    {
+                        Game = SupportedGame.Starfield,
+                        ArchivePath = archivePath,
+                        NormalizedEntryPath = "geometries/preview.mesh",
+                        RootFolder = "geometries",
+                        Extension = ".mesh",
+                        PackedSize = 4,
+                        UnpackedSize = 4
+                    }
+                ]);
+            var reader = new TestAssetArchiveReader(
+                [
+                    new AssetArchiveEntry
+                    {
+                        ArchivePath = archivePath,
+                        EntryPath = "geometries/preview.mesh",
+                        PackedSize = 4,
+                        UnpackedSize = 4
+                    }
+                ],
+                [7, 8, 9]);
+            var service = new AssetArchiveIndexService(repository, [reader]);
+
+            var result = service.TryReadArchiveAsset(SupportedGame.Starfield, tempDirectory.FullName, "geometries\\preview.mesh");
+
+            result.Status.ShouldBe(BethesdaAssetReadStatus.ReadArchiveEntry);
+            result.Data.ShouldBe([7, 8, 9]);
+            reader.ListEntriesCallCount.ShouldBe(1);
+            reader.TryReadEntryCallCount.ShouldBe(1);
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public void TryReadArchiveAsset_ReplacesStaleArchiveEntries()
     {
         var tempDirectory = Directory.CreateTempSubdirectory();
@@ -348,6 +411,21 @@ public class AssetArchiveIndexServiceTests
                 entry.Game == game &&
                 string.Equals(entry.ArchivePath, archivePath, StringComparison.OrdinalIgnoreCase) &&
                 normalizedEntryPaths.Contains(entry.NormalizedEntryPath, StringComparer.OrdinalIgnoreCase));
+        }
+
+        public IReadOnlyList<AssetArchiveEntryDTO> FindEntries(SupportedGame game, string dataFolder, IReadOnlyList<string> normalizedEntryPaths)
+        {
+            var fullDataFolder = Path.GetFullPath(dataFolder);
+            var archivePaths = ArchiveFiles
+                .Where(archive => archive.Game == game && string.Equals(Path.GetFullPath(archive.DataFolder), fullDataFolder, StringComparison.OrdinalIgnoreCase))
+                .Select(archive => archive.ArchivePath)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            return Entries
+                .Where(entry =>
+                    entry.Game == game &&
+                    archivePaths.Contains(entry.ArchivePath) &&
+                    normalizedEntryPaths.Contains(entry.NormalizedEntryPath, StringComparer.OrdinalIgnoreCase))
+                .ToList();
         }
 
         public void SaveArchiveFile(AssetArchiveFileDTO archiveFile)

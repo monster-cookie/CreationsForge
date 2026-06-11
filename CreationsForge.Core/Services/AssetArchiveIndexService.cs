@@ -132,6 +132,12 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
         var candidateEntryPaths = GetRelativePathCandidates(normalizedPath)
             .Select(NormalizeArchiveEntryPath)
             .ToList();
+        var indexedResult = TryReadCurrentIndexedArchiveAsset(game, dataFolder, assetPath, normalizedPath, candidateEntryPaths);
+        if (indexedResult != null)
+        {
+            return indexedResult;
+        }
+
         var archives = GetArchives(dataFolder, normalizedPath).ToList();
         if (archives.Count == 0)
         {
@@ -208,6 +214,57 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
         };
     }
 
+    private BethesdaAssetReadResult? TryReadCurrentIndexedArchiveAsset(
+        SupportedGame game,
+        string dataFolder,
+        string assetPath,
+        string normalizedPath,
+        IReadOnlyList<string> candidateEntryPaths)
+    {
+        var indexedEntries = AssetArchiveIndexRepository.FindEntries(game, dataFolder, candidateEntryPaths)
+            .OrderBy(entry => GetArchivePreferenceScore(entry.ArchivePath, normalizedPath))
+            .ThenBy(entry => Path.GetFileName(entry.ArchivePath), StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        foreach (var entry in indexedEntries)
+        {
+            var archivePath = Path.GetFullPath(entry.ArchivePath);
+            var archiveFile = AssetArchiveIndexRepository.GetArchiveFile(game, archivePath);
+            if (!IsArchiveIndexCurrent(archiveFile, archivePath))
+            {
+                continue;
+            }
+
+            var archiveReader = ArchiveReaders.FirstOrDefault(reader => reader.CanRead(archivePath));
+            if (archiveReader == null)
+            {
+                continue;
+            }
+
+            var readResult = archiveReader.TryReadEntry(archivePath, entry.NormalizedEntryPath);
+            if (readResult.IsSuccess && readResult.Data != null)
+            {
+                Logger.Information(
+                    "Asset archive index directly resolved {AssetPath} from indexed entry {EntryPath} in {ArchivePath}",
+                    assetPath,
+                    readResult.EntryPath ?? entry.NormalizedEntryPath,
+                    archivePath);
+                return new BethesdaAssetReadResult
+                {
+                    OriginalPath = assetPath,
+                    DataFolder = dataFolder,
+                    SourceType = BethesdaAssetSourceType.Archive,
+                    Status = BethesdaAssetReadStatus.ReadArchiveEntry,
+                    Data = readResult.Data,
+                    SourceArchivePath = archivePath,
+                    NormalizedEntryPath = readResult.EntryPath ?? entry.NormalizedEntryPath,
+                    StatusMessage = readResult.StatusMessage ?? $"Read archive asset {entry.NormalizedEntryPath} from {archivePath}."
+                };
+            }
+        }
+
+        return null;
+    }
+
     private AssetArchiveIndexAttemptResult IndexArchive(
         SupportedGame game,
         string dataFolder,
@@ -258,6 +315,18 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
                 game);
             return new AssetArchiveIndexAttemptResult(AssetArchiveIndexStatus.Failed, 0, exception.Message);
         }
+    }
+
+    private static bool IsArchiveIndexCurrent(AssetArchiveFileDTO? archiveFile, string archivePath)
+    {
+        if (archiveFile == null || !File.Exists(archivePath))
+        {
+            return false;
+        }
+
+        var fileInfo = new FileInfo(archivePath);
+        return archiveFile.SourceLastWriteUTCTicks == fileInfo.LastWriteTimeUtc.Ticks &&
+            archiveFile.SourceFileSizeBytes == fileInfo.Length;
     }
 
     private static AssetArchiveEntryDTO CreateEntryDTO(SupportedGame game, string archivePath, AssetArchiveEntry entry)

@@ -9,6 +9,8 @@ public interface IAssetArchiveIndexRepository
 
     AssetArchiveEntryDTO? FindEntry(SupportedGame game, string archivePath, IReadOnlyList<string> normalizedEntryPaths);
 
+    IReadOnlyList<AssetArchiveEntryDTO> FindEntries(SupportedGame game, string dataFolder, IReadOnlyList<string> normalizedEntryPaths);
+
     void SaveArchiveFile(AssetArchiveFileDTO archiveFile);
 
     void ReplaceArchiveEntries(SupportedGame game, string archivePath, IReadOnlyList<AssetArchiveEntryDTO> entries);
