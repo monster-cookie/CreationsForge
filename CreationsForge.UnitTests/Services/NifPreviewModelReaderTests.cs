@@ -89,6 +89,102 @@ public class NifPreviewModelReaderTests
     }
 
     [Fact]
+    public void TryRead_PrefersAnchoredStarfieldBSGeometryDescriptorOverEarlierFalseDescriptor()
+    {
+        var reader = new NifPreviewModelReader();
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Items/digipic/DigiPic.nif",
+            DisplayName = "DigiPic",
+            Data = CreateMinimalNifWithBlock("BSGeometry", CreateStarfieldBSGeometryBlockWithFalsePreDescriptorBytes(), bethesdaVersion: 172U)
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes.Count.ShouldBe(1);
+        result.Model.Meshes[0].Vertices.Count.ShouldBe(3);
+        result.Model.Meshes[0].Indices.ShouldBe([0, 1, 2]);
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("count layout StarfieldGeometry", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("selected from 1 candidate mesh layout(s), anchored offsets 1", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryRead_LoadsStarfieldExternalGeometryMeshReference()
+    {
+        var reader = new NifPreviewModelReader();
+        const string geometryPath = @"geometries\cf623091ecaffe5a43fa\249816728d4437f890e8.mesh";
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Items/digipic/DigiPic.nif",
+            DisplayName = "DigiPic",
+            Data = CreateMinimalNifWithBlock("BSGeometry", CreateStarfieldBSGeometryBlockWithExternalGeometryReference(), bethesdaVersion: 173U),
+            ResolveExternalAsset = path => string.Equals(path, geometryPath, StringComparison.OrdinalIgnoreCase)
+                ? CreateStarfieldGeometryMesh()
+                : null
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes.Count.ShouldBe(1);
+        result.Model.Meshes[0].Vertices.Count.ShouldBe(3);
+        result.Model.Meshes[0].Indices.ShouldBe([0, 1, 2]);
+        result.Model.Meshes[0].Vertices[1].Position.X.ShouldBe(0.5000153f, 0.0001f);
+        result.Model.Meshes[0].Vertices[2].Position.Y.ShouldBe(0.5000153f, 0.0001f);
+        result.Model.Meshes[0].Vertices.ShouldAllBe(vertex =>
+            vertex.Normal.X == 0f &&
+            vertex.Normal.Y == 0f &&
+            vertex.Normal.Z == 0f);
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("external Starfield geometry", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("position stride 6", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("geometry bounds metadata center", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryRead_AttachesMaterialTextureToStarfieldExternalGeometryMesh()
+    {
+        var reader = new NifPreviewModelReader();
+        const string geometryPath = @"geometries\cf623091ecaffe5a43fa\249816728d4437f890e8.mesh";
+        const string materialPath = @"Materials\Cinimatics\DigiPic\DigiPic_Base.mat";
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Items/digipic/DigiPic.nif",
+            DisplayName = "DigiPic",
+            Data = CreateMinimalNifWithBlocks(
+                [
+                    ("BSGeometry", CreateStarfieldBSGeometryBlockWithExternalGeometryReference(shaderProperty: 1)),
+                    ("BSLightingShaderProperty", CreateLightingShaderPropertyBlock(1, -1))
+                ],
+                [
+                    "DigiPick_Final:0",
+                    materialPath
+                ],
+                bethesdaVersion: 173U),
+            ResolveExternalAsset = path =>
+            {
+                if (string.Equals(path, geometryPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    return CreateStarfieldGeometryMesh();
+                }
+
+                return string.Equals(path, materialPath, StringComparison.OrdinalIgnoreCase)
+                    ? CreateStarfieldMaterialFile(@"Textures\\Cinimatics\\DigiPic\\DigiPick_Material_color.DDS")
+                    : null;
+            }
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes.Count.ShouldBe(1);
+        result.Model.Meshes[0].Name.ShouldBe("DigiPick_Final:0");
+        result.Model.Meshes[0].MaterialName.ShouldBe(materialPath);
+        result.Model.Meshes[0].TexturePath.ShouldBe(@"Textures\Cinimatics\DigiPic\DigiPick_Material_color.DDS");
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("external material: Materials\\Cinimatics\\DigiPic\\DigiPic_Base.mat, texture Textures\\Cinimatics\\DigiPic\\DigiPick_Material_color.DDS", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void TryRead_ReturnsFailureForInvalidStarfieldBSGeometryWithoutExplicitDataSize()
     {
         var reader = new NifPreviewModelReader();
@@ -307,6 +403,68 @@ public class NifPreviewModelReaderTests
         result.Model.Meshes[0].MaterialName.ShouldBe(@"Materials\SetDressing\BabyBottle\BabyBottleDirty01.BGSM");
         result.Model.Meshes[0].TexturePath.ShouldBe(@"textures\SetDressing\BabyBottle\BabyBottleDirty01_d.dds");
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("material Materials\\SetDressing\\BabyBottle\\BabyBottleDirty01.BGSM", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryRead_ResolvesPreviewTextureFromStarfieldMaterialFile()
+    {
+        var reader = new NifPreviewModelReader();
+        const string materialPath = @"Materials\Cinimatics\DigiPic\DigiPic_Base.mat";
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Items/digipic/DigiPic.nif",
+            DisplayName = "DigiPic",
+            Data = CreateMaterialLinkedBSTriShapeNif(materialPath),
+            ResolveExternalAsset = path => string.Equals(path, materialPath, StringComparison.OrdinalIgnoreCase)
+                ? CreateStarfieldMaterialFile(
+                    @"textures\Cinimatics\DigiPic\DigiPic_Base_n.dds",
+                    @"textures\Cinimatics\DigiPic\DigiPic_Base_color.dds")
+                : null
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes.Count.ShouldBe(1);
+        result.Model.Meshes[0].MaterialName.ShouldBe(materialPath);
+        result.Model.Meshes[0].TexturePath.ShouldBe(@"textures\Cinimatics\DigiPic\DigiPic_Base_color.dds");
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("resolved preview texture textures\\Cinimatics\\DigiPic\\DigiPic_Base_color.dds", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("unsupported material features:", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("effect", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("glass", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("layered", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryRead_UsesStarfieldMaterialDatabaseTexturePathWhenMaterialPathIsStale()
+    {
+        var reader = new NifPreviewModelReader();
+        const string materialPath = @"Materials\Cinimatics\DigiPic\DigiPic_Base.mat";
+        const string materialDatabasePath = "materials/materialsbeta.cdb";
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Items/digipic/DigiPic.nif",
+            DisplayName = "DigiPic",
+            Data = CreateMaterialLinkedBSTriShapeNif(materialPath),
+            ResolveExternalAsset = path =>
+            {
+                if (string.Equals(path, materialPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    return CreateStarfieldMaterialFile(@"Textures\Cinimatics\DigiPic\DigiPick_Material_color.DDS");
+                }
+
+                return string.Equals(path, materialDatabasePath, StringComparison.OrdinalIgnoreCase)
+                    ? CreateStarfieldMaterialDatabase(@"Textures\Cinematics\DigiPic\DigiPick_Material_color.DDS")
+                    : null;
+            }
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes.Count.ShouldBe(1);
+        result.Model.Meshes[0].TexturePath.ShouldBe(@"Textures\Cinematics\DigiPic\DigiPick_Material_color.DDS");
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("from material database", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -536,6 +694,50 @@ public class NifPreviewModelReaderTests
             ]);
     }
 
+    private static byte[] CreateMaterialLinkedBSTriShapeNif(string materialPath)
+    {
+        var blocks = new List<(string BlockType, byte[] BlockData)>();
+        blocks.Add(("BSTriShape", CreateBSTriShapeBlock(0f, 0f, 0f, 0f, shaderProperty: 1, nameIndex: 0)));
+        blocks.Add(("BSLightingShaderProperty", CreateLightingShaderPropertyBlock(1, -1)));
+
+        return CreateMinimalNifWithBlocks(
+            blocks,
+            [
+                "DigiPick_Final:0",
+                materialPath
+            ],
+            bethesdaVersion: 173U);
+    }
+
+    private static byte[] CreateStarfieldMaterialFile(params string[] texturePaths)
+    {
+        using var stream = new MemoryStream();
+        using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: false);
+        WriteSizedString(writer, "BSLayeredMaterial");
+        WriteSizedString(writer, "1LayerEffectGlass");
+        WriteSizedString(writer, "UseLayeredEdgeFalloff");
+        foreach (var texturePath in texturePaths)
+        {
+            WriteSizedString(writer, texturePath);
+        }
+
+        return stream.ToArray();
+    }
+
+    private static byte[] CreateStarfieldMaterialDatabase(params string[] strings)
+    {
+        var stringTable = Encoding.UTF8.GetBytes(string.Join('\0', strings) + '\0');
+        using var stream = new MemoryStream();
+        using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: false);
+        writer.Write(0x0000000848544542UL);
+        writer.Write(4U);
+        writer.Write(0U);
+        writer.Write(0x54525453U);
+        writer.Write((uint)stringTable.Length);
+        writer.Write(stringTable);
+        return stream.ToArray();
+    }
+
     private static byte[] CreateNodeBlock(IReadOnlyList<int> children)
     {
         using var stream = new MemoryStream();
@@ -658,6 +860,78 @@ public class NifPreviewModelReaderTests
             writer.Write((ushort)0);
             writer.Write((ushort)1);
             writer.Write((ushort)2);
+        }
+
+        return stream.ToArray();
+    }
+
+    private static byte[] CreateStarfieldBSGeometryBlockWithFalsePreDescriptorBytes()
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
+        {
+            WriteTransformPrefix(writer, 0f, 0f, 0f, 1f);
+            writer.Write(((ulong)0x401 << 44) | 4UL);
+            writer.Write(0f);
+            writer.Write(1f);
+            writer.Write(-1);
+            writer.Write(-1);
+            writer.Write(-1);
+            writer.Write(((ulong)0x401 << 44) | 4UL);
+            writer.Write(1U);
+            writer.Write((ushort)3);
+            WriteVertex(writer, 0f, 0f, 0f);
+            WriteVertex(writer, 1f, 0f, 0f);
+            WriteVertex(writer, 0f, 1f, 0f);
+            writer.Write((ushort)0);
+            writer.Write((ushort)1);
+            writer.Write((ushort)2);
+        }
+
+        return stream.ToArray();
+    }
+
+    private static byte[] CreateStarfieldBSGeometryBlockWithExternalGeometryReference(int shaderProperty = -1)
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
+        {
+            WriteTransformPrefix(writer, 0f, 0f, 0f, 1f, nameIndex: 0);
+            writer.Write(0f);
+            writer.Write(0f);
+            writer.Write(0f);
+            writer.Write(1f);
+            writer.Write(0.25f);
+            writer.Write(0.5f);
+            writer.Write(0.75f);
+            writer.Write(0.125f);
+            writer.Write(0.25f);
+            writer.Write(0.5f);
+            writer.Write(-1);
+            writer.Write(shaderProperty);
+            writer.Write(-1);
+            WriteSizedString(writer, @"cf623091ecaffe5a43fa\249816728d4437f890e8");
+        }
+
+        return stream.ToArray();
+    }
+
+    private static byte[] CreateStarfieldGeometryMesh()
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
+        {
+            writer.Write(2U);
+            writer.Write(3U);
+            writer.Write((ushort)0);
+            writer.Write((ushort)1);
+            writer.Write((ushort)2);
+            writer.Write(1f);
+            writer.Write(0U);
+            writer.Write(3U);
+            WriteStarfieldGeometryVertex(writer, 0, 0, 0);
+            WriteStarfieldGeometryVertex(writer, 16384, 0, 0);
+            WriteStarfieldGeometryVertex(writer, 0, 16384, 0);
         }
 
         return stream.ToArray();
@@ -859,6 +1133,13 @@ public class NifPreviewModelReaderTests
         writer.Write(z);
         writer.Write(0U);
         writer.Write(0U);
+    }
+
+    private static void WriteStarfieldGeometryVertex(BinaryWriter writer, short x, short y, short z)
+    {
+        writer.Write(x);
+        writer.Write(y);
+        writer.Write(z);
     }
 
     private static void WriteHalfVertex(BinaryWriter writer, float x, float y, float z)

@@ -44,7 +44,8 @@ public class BethesdaAssetPreviewGeometryReader : IAssetPreviewGeometryReader
         {
             SourcePath = sourcePath,
             DisplayName = candidate.DisplayName,
-            Data = resolution.Data
+            Data = resolution.Data,
+            ResolveExternalAsset = externalAssetPath => ResolveExternalAsset(candidate, externalAssetPath)
         });
 
         if (!readResult.IsSuccess || readResult.Model == null)
@@ -67,6 +68,35 @@ public class BethesdaAssetPreviewGeometryReader : IAssetPreviewGeometryReader
         }
 
         return true;
+    }
+
+    private byte[]? ResolveExternalAsset(AssetPreviewCandidateDTO candidate, string assetPath)
+    {
+        var resolution = AssetFileResolverService.ResolveAssetFile(new AssetPreviewCandidateDTO
+        {
+            Game = candidate.Game,
+            ModKey = candidate.ModKey,
+            RecordType = candidate.RecordType,
+            FormKey = candidate.FormKey,
+            ModelSlot = candidate.ModelSlot,
+            ModelGender = candidate.ModelGender,
+            MeshPath = assetPath,
+            DisplayName = assetPath,
+            CanPreview = true,
+            CanOpenExternally = false
+        });
+
+        if (resolution.Data != null && IsReadableResolution(resolution))
+        {
+            return resolution.Data;
+        }
+
+        Logger.Information(
+            "NIF preview external geometry skipped for {MeshPath} external asset {ExternalAssetPath}: {StatusMessage}",
+            candidate.MeshPath,
+            assetPath,
+            resolution.StatusMessage);
+        return null;
     }
 
     private static bool IsReadableResolution(AssetFileResolutionDTO resolution)

@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Added an experimental NIF Preview Pane (FO4 and Skyrim).
+- Added an experimental NIF Preview Pane (Starfield, FO4, and Skyrim).
 - Added early support for textured meshes.
 
 ## Version 1.1.2 - 2026-06-08

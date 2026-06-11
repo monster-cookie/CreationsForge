@@ -43,6 +43,7 @@ public class AssetPreviewPaneViewModel : ViewModelBase
         {
             AssetPreviewViewMode.Isometric,
             AssetPreviewViewMode.Front,
+            AssetPreviewViewMode.Back,
             AssetPreviewViewMode.Side,
             AssetPreviewViewMode.Top
         };

@@ -114,6 +114,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
     private int IndexCount;
     private int LineIndexCount;
     private AssetPreviewRenderMesh? CurrentRenderMesh;
+    private AssetPreviewOpenGlBounds CurrentRenderBounds = AssetPreviewOpenGlBounds.Empty;
     private readonly List<uint> TextureObjects = new();
     private bool HasPendingMeshUpload = true;
     private bool IsRendererAvailable;
@@ -407,6 +408,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         var vertices = renderMesh.Vertices.ToArray();
         var indices = renderMesh.Indices.ToArray();
         var lineIndices = renderMesh.LineIndices.ToArray();
+        CurrentRenderBounds = AssetPreviewOpenGlBounds.FromVertexBuffer(vertices);
         VertexCount = vertices.Length / 11;
         IndexCount = indices.Length;
         LineIndexCount = lineIndices.Length;
@@ -661,11 +663,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         var angle = IsOrbitEnabled ? RenderCount * 0.01f : 0f;
         var model = Matrix4x4.CreateRotationY(angle);
         var view = GetViewMatrix();
-        var projection = Matrix4x4.CreatePerspectiveFieldOfView(
-            MathF.PI / 4f,
-            width / (float)height,
-            0.1f,
-            100f);
+        var projection = GetProjectionMatrix(width, height);
         var mvp = Matrix4x4.Transpose(model * view * projection);
         var matrixValues = new[]
         {
@@ -698,10 +696,35 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         return ViewMode switch
         {
             AssetPreviewViewMode.Front => Matrix4x4.CreateLookAt(new Vector3(0f, 0.2f, 5.25f), Vector3.Zero, Vector3.UnitY),
+            AssetPreviewViewMode.Back => Matrix4x4.CreateLookAt(new Vector3(0f, 0.2f, -5.25f), Vector3.Zero, Vector3.UnitY),
             AssetPreviewViewMode.Side => Matrix4x4.CreateLookAt(new Vector3(5.25f, 0.2f, 0f), Vector3.Zero, Vector3.UnitY),
             AssetPreviewViewMode.Top => Matrix4x4.CreateLookAt(new Vector3(0f, 4.5f, 0f), Vector3.Zero, -Vector3.UnitZ),
             _ => Matrix4x4.CreateLookAt(new Vector3(4.2f, 3.2f, 5.0f), new Vector3(0f, 0.15f, 0f), Vector3.UnitY)
         };
+    }
+
+    private Matrix4x4 GetProjectionMatrix(uint width, uint height)
+    {
+        var aspect = width / (float)height;
+        if (ViewMode == AssetPreviewViewMode.Isometric || !CurrentRenderBounds.HasValue)
+        {
+            return Matrix4x4.CreatePerspectiveFieldOfView(
+                MathF.PI / 4f,
+                aspect,
+                0.1f,
+                100f);
+        }
+
+        var projectedSize = CurrentRenderBounds.GetProjectedSize(ViewMode);
+        var halfHeight = MathF.Max(
+            projectedSize.Height / 2f,
+            projectedSize.Width / (2f * aspect));
+        halfHeight = MathF.Max(halfHeight * 1.15f, 0.01f);
+        return Matrix4x4.CreateOrthographic(
+            halfHeight * 2f * aspect,
+            halfHeight * 2f,
+            0.1f,
+            100f);
     }
 
     private void SetLightDirection()
@@ -973,6 +996,100 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
                 (byte)(((first.Blue * firstWeight) + (second.Blue * secondWeight)) / denominator),
                 (byte)(((first.Alpha * firstWeight) + (second.Alpha * secondWeight)) / denominator));
         }
+    }
+
+    private readonly struct AssetPreviewOpenGlBounds
+    {
+        public static readonly AssetPreviewOpenGlBounds Empty = new AssetPreviewOpenGlBounds();
+
+        private AssetPreviewOpenGlBounds(float minX, float maxX, float minY, float maxY, float minZ, float maxZ)
+        {
+            HasValue = true;
+            MinX = minX;
+            MaxX = maxX;
+            MinY = minY;
+            MaxY = maxY;
+            MinZ = minZ;
+            MaxZ = maxZ;
+        }
+
+        public bool HasValue { get; }
+
+        private float MinX { get; }
+
+        private float MaxX { get; }
+
+        private float MinY { get; }
+
+        private float MaxY { get; }
+
+        private float MinZ { get; }
+
+        private float MaxZ { get; }
+
+        public static AssetPreviewOpenGlBounds FromVertexBuffer(IReadOnlyList<float> vertices)
+        {
+            if (vertices.Count < 11)
+            {
+                return Empty;
+            }
+
+            var minX = float.PositiveInfinity;
+            var maxX = float.NegativeInfinity;
+            var minY = float.PositiveInfinity;
+            var maxY = float.NegativeInfinity;
+            var minZ = float.PositiveInfinity;
+            var maxZ = float.NegativeInfinity;
+            for (var index = 0; index + 10 < vertices.Count; index += 11)
+            {
+                var x = vertices[index];
+                var y = vertices[index + 1];
+                var z = vertices[index + 2];
+                minX = MathF.Min(minX, x);
+                maxX = MathF.Max(maxX, x);
+                minY = MathF.Min(minY, y);
+                maxY = MathF.Max(maxY, y);
+                minZ = MathF.Min(minZ, z);
+                maxZ = MathF.Max(maxZ, z);
+            }
+
+            if (!IsFinite(minX) || !IsFinite(maxX) ||
+                !IsFinite(minY) || !IsFinite(maxY) ||
+                !IsFinite(minZ) || !IsFinite(maxZ))
+            {
+                return Empty;
+            }
+
+            return new AssetPreviewOpenGlBounds(minX, maxX, minY, maxY, minZ, maxZ);
+        }
+
+        public AssetPreviewProjectedSize GetProjectedSize(AssetPreviewViewMode viewMode)
+        {
+            return viewMode switch
+            {
+                AssetPreviewViewMode.Side => new AssetPreviewProjectedSize(MaxZ - MinZ, MaxY - MinY),
+                AssetPreviewViewMode.Top => new AssetPreviewProjectedSize(MaxX - MinX, MaxZ - MinZ),
+                _ => new AssetPreviewProjectedSize(MaxX - MinX, MaxY - MinY)
+            };
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+    }
+
+    private readonly struct AssetPreviewProjectedSize
+    {
+        public AssetPreviewProjectedSize(float width, float height)
+        {
+            Width = width;
+            Height = height;
+        }
+
+        public float Width { get; }
+
+        public float Height { get; }
     }
 
     private readonly struct AssetPreviewTextureColor

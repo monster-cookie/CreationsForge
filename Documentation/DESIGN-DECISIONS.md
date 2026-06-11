@@ -1,5 +1,87 @@
 # Design Decisions
 
+## 2026-06-11 - Probe Starfield Material Files For Preview Textures
+
+Status: Accepted
+
+Context: Starfield `BSLightingShaderProperty` blocks can reference `.mat` material assets instead of direct
+`BSShaderTextureSet` DDS paths. Digipick preview geometry was loading through the owned Starfield external `.mesh`
+slice, but the render path stayed gray because the NIF reader only understood inline texture paths and texture-set
+blocks. Starfield material files can contain richer shader and layered-material behavior than the preview renderer can
+model today.
+
+Decision: Keep material parsing inside the owned `CreationsForge.Bethesda.Assets` preview reader and add a narrow
+`.mat` probe that resolves material bytes through the existing external-asset resolver. The probe scans material data
+for DDS texture references, prefers diffuse/base/color candidates over normal or mask-style maps, and reports
+unsupported material feature hints in diagnostics. When a `.mat` texture path appears stale, the reader can also probe
+known Starfield `materialsbeta.cdb` files for `BETH`/`STRT` string-table texture paths with the same DDS filename. The
+probe does not alter geometry or claim full Starfield material or CDB graph semantics.
+
+Rationale: This reuses the current archive-backed asset resolver and keeps the UI/Core boundaries intact while making
+Starfield previews texture-aware enough for practical inspection. It avoids taking a dependency on Nifly and leaves
+advanced material behavior for a later, explicit renderer/material-system slice.
+
+Alternatives considered:
+
+- Keep Starfield `.mat` references as material names only and continue rendering gray previews.
+- Add Starfield material parsing to the Avalonia renderer.
+- Treat `.mat` files as geometry authority and change preview shape from material metadata.
+
+Consequences:
+
+- Starfield NIF preview meshes can receive DDS texture paths from archive-backed material files.
+- Stale `.mat` texture paths can be corrected from the Starfield material database string table when a matching DDS
+  filename is present.
+- Advanced `.mat` behavior such as decals, glass/effects, opacity, layered edge falloff, and shape-affecting render
+  semantics remains diagnostic-only, and full CDB object graph parsing remains deferred.
+- Material, texture, and geometry asset lookup still flows through the existing asset-file resolver.
+
+Related files:
+
+- `CreationsForge.Bethesda.Assets/Nif/NifPreviewModelReader.cs`
+- `CreationsForge/Services/BethesdaAssetPreviewGeometryReader.cs`
+- `CreationsForge.UnitTests/Services/NifPreviewModelReaderTests.cs`
+
+## 2026-06-11 - Add First Starfield External Geometry Preview Slice
+
+Status: Accepted
+
+Context: Starfield `BSGeometry` NIFs such as `Meshes\Items\digipic\DigiPic.nif` do not store their full vertex and
+index data inline. The NIF block stores object metadata plus a reference to an external `geometries/**/*.mesh`
+payload. The existing owned NIF reader could find the `BSGeometry` block, but it still fell back to sample geometry
+because there was no external geometry resolution path.
+
+Decision: Keep the owned parser in `CreationsForge.Bethesda.Assets` and add a narrow external-geometry resolver
+contract to `NifPreviewReadRequest`. The presentation geometry adapter resolves referenced geometry payloads through
+the existing asset-file resolver, then passes the bytes back to the NIF reader. The first `.mesh` decoder supports the
+observed Starfield preview shape: versioned mesh payloads with ushort triangle indices and a stride-18 signed
+quantized position buffer. Normals and UVs are defaulted for this first preview slice.
+
+Rationale: This keeps asset lookup in the existing application workflow while leaving parsing in the UI-neutral Assets
+project. It avoids Nifly and gives CreationsForge a small, testable path for Starfield split geometry without claiming
+complete `.mesh` support.
+
+Alternatives considered:
+
+- Keep Starfield `BSGeometry` NIFs on generated fallback geometry until a full mesh parser exists.
+- Put external geometry resolution directly inside the NIF parser.
+- Add a third-party NIF or Starfield mesh parser dependency.
+
+Consequences:
+
+- Starfield `BSGeometry` NIFs with supported external `.mesh` payloads can now produce real preview silhouettes.
+- The first external `.mesh` slice does not yet decode materials, textures, UVs, normals, skinning, or every Starfield
+  vertex-buffer variant.
+- Archive and loose-file lookup remain owned by the existing asset resolver; the Assets NIF reader receives only
+  resolved external bytes.
+
+Related files:
+
+- `CreationsForge.Bethesda.Assets/Nif/NifPreviewReadRequest.cs`
+- `CreationsForge.Bethesda.Assets/Nif/NifPreviewModelReader.cs`
+- `CreationsForge/Services/BethesdaAssetPreviewGeometryReader.cs`
+- `CreationsForge.UnitTests/Services/NifPreviewModelReaderTests.cs`
+
 ## 2026-06-09 - Add Read-Only BA2 Archive Reading To Bethesda Assets
 
 Status: Accepted

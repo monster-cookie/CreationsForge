@@ -27,9 +27,12 @@ reference Avalonia, Mutagen, NPoco, game projects, or the database. Archive impl
 read-only and preview-focused. The first archive implementations are minimal BA2 general and BSA archive readers that
 can list entries and read uncompressed and zlib-compressed entries into memory. BA2 texture archives and Starfield
 compression variants that are not zlib are explicit follow-up work. The first NIF implementation is a minimal preview
-reader for Fallout 4/Skyrim Special Edition-style `BSTriShape` geometry that emits UI-neutral preview meshes.
-Full NIF scene graph support, materials, textures, skeletons, collision, Starfield-specific geometry variants, and
-unsupported vertex layouts remain follow-up work.
+reader for Fallout 4/Skyrim Special Edition-style `BSTriShape` geometry and a narrow Starfield `BSGeometry` external
+`.mesh` preview slice that emits UI-neutral preview meshes. The reader can also resolve Starfield `.mat` material
+assets through the same external-asset callback and extract preview DDS texture references, with a narrow
+`materialsbeta.cdb` `STRT` string-table fallback for stale material texture paths. Full NIF scene graph support,
+Starfield material semantics, full CDB material graph parsing, skeletons, collision, additional Starfield geometry
+variants, and unsupported vertex layouts remain follow-up work.
 
 `CreationsForge.Starfield`, `CreationsForge.Fallout4`, and `CreationsForge.Skyrim` isolate
 game-specific Mutagen packages, Autofac modules, reader services, and reader facade implementations. These projects
@@ -165,8 +168,11 @@ optional mesh payloads without referencing Avalonia, OpenGL, Silk.NET, process l
 Assets DTOs describe local-file resolution, in-memory asset reads, and archive extraction results. The presentation
 project owns `AssetPreviewPaneViewModel`, the Avalonia `OpenGlControlBase` renderer, Silk.NET OpenGL calls, render
 mesh conversion, sample-geometry fallback, and the external-open command. The presentation preview geometry adapter
-uses the owned Assets NIF preview reader when readable `.nif` bytes are available. Unsupported preview cases,
-archive-backed paths that cannot yet be read, parser gaps, and OpenGL renderer failures are logged through Serilog.
+uses the owned Assets NIF preview reader when readable `.nif` bytes are available. For Starfield `BSGeometry` NIFs
+that reference external `geometries/**/*.mesh` payloads, the adapter passes an external-asset resolver back through
+the existing UI-neutral asset-file resolver. The same resolver path is used when the NIF reader probes Starfield
+`.mat` material assets for preview texture references. Unsupported preview cases, archive-backed paths that cannot yet
+be read, parser gaps, and OpenGL renderer failures are logged through Serilog.
 
 ## Persistence Architecture
 

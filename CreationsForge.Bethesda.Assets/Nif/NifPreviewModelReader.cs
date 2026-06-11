@@ -20,6 +20,21 @@ public class NifPreviewModelReader : INifPreviewModelReader
     private const int DiagnosticHexByteCount = 24;
     private const int BSTriShapeFieldsBeforeVertexDescriptor = (sizeof(float) * 4) + (sizeof(int) * 3);
     private const int MaxStarfieldGeometryCountProbeBytes = 16;
+    private const int StarfieldGeometryMeshVersion = 2;
+    private const int StarfieldGeometryMeshIndexDataOffset = 8;
+    private const int StarfieldGeometryMeshVertexHeaderSize = 12;
+    private const int StarfieldGeometryMeshPositionStride = sizeof(short) * 3;
+    private const float StarfieldGeometryMeshPositionScale = 1f / 32767f;
+    private const ulong StarfieldMaterialDatabaseBethSignature = 0x0000000848544542UL;
+    private const uint StarfieldMaterialDatabaseVersion = 4U;
+    private const uint StarfieldMaterialDatabaseStringTableSignature = 0x54525453U;
+    private static readonly string[] StarfieldMaterialDatabasePaths =
+    {
+        "materials/materialsbeta.cdb",
+        "materials/creations/sfbgs003/materialsbeta.cdb",
+        "materials/creations/sfbgs007/materialsbeta.cdb",
+        "materials/creations/sfbgs008/materialsbeta.cdb"
+    };
 
     public NifPreviewReadResult TryRead(NifPreviewReadRequest request)
     {
@@ -38,14 +53,14 @@ public class NifPreviewModelReader : INifPreviewModelReader
             };
 
             string? rejectionReason = null;
-            var materialMap = CreateMaterialMap(header.Blocks, header.Strings, diagnostics);
+            var materialMap = CreateMaterialMap(header.Blocks, header.Strings, diagnostics, request.ResolveExternalAsset);
             var localTransforms = CreateLocalTransformMap(header.Blocks, diagnostics);
             var parentByChild = CreateParentMap(header.Blocks, diagnostics);
             for (var blockIndex = 0; blockIndex < header.Blocks.Count; blockIndex++)
             {
                 var block = header.Blocks[blockIndex];
                 var transformChain = GetTransformChain(blockIndex, localTransforms, parentByChild);
-                var mesh = TryReadPreviewGeometry(block, blockIndex, model.Meshes.Count, transformChain, header.Strings, materialMap, header.BethesdaVersion, ref rejectionReason);
+                var mesh = TryReadPreviewGeometry(block, blockIndex, model.Meshes.Count, transformChain, header.Strings, materialMap, header.BethesdaVersion, request.ResolveExternalAsset, ref rejectionReason);
                 if (mesh != null)
                 {
                     model.Meshes.Add(mesh);
@@ -373,7 +388,8 @@ public class NifPreviewModelReader : INifPreviewModelReader
     private static Dictionary<int, NifMaterialInfo> CreateMaterialMap(
         IReadOnlyList<NifBlock> blocks,
         IReadOnlyList<string> strings,
-        List<string> diagnostics)
+        List<string> diagnostics,
+        Func<string, byte[]?>? resolveExternalAsset)
     {
         var textureSets = CreateTextureSetMap(blocks, diagnostics);
         var materials = new Dictionary<int, NifMaterialInfo>();
@@ -394,6 +410,17 @@ public class NifPreviewModelReader : INifPreviewModelReader
                     textureSets.TryGetValue(textureSetBlockIndex, out var textureSetPath)
                     ? textureSetPath
                     : null;
+            if (texturePath == null &&
+                IsMaterialPath(materialName) &&
+                TryResolveMaterialTexturePath(materialName, resolveExternalAsset, out var materialTexturePath, out var materialDiagnostic))
+            {
+                texturePath = materialTexturePath;
+                diagnostics.Add($"{block.TypeName} block {blockIndex}: {materialDiagnostic}");
+            }
+            else if (texturePath == null && IsMaterialPath(materialName))
+            {
+                diagnostics.Add($"{block.TypeName} block {blockIndex}: material {materialName} did not provide a preview texture");
+            }
 
             materials[blockIndex] = new NifMaterialInfo(materialName, texturePath);
             diagnostics.Add($"{block.TypeName} block {blockIndex}: material {materialName}, texture {texturePath ?? "none"}");
@@ -492,6 +519,296 @@ public class NifPreviewModelReader : INifPreviewModelReader
         return false;
     }
 
+    private static bool TryResolveMaterialTexturePath(
+        string materialPath,
+        Func<string, byte[]?>? resolveExternalAsset,
+        out string texturePath,
+        out string diagnostic)
+    {
+        texturePath = string.Empty;
+        diagnostic = string.Empty;
+        if (resolveExternalAsset == null)
+        {
+            diagnostic = $"material {materialPath} could not be resolved because no external asset resolver is available";
+            return false;
+        }
+
+        var materialData = resolveExternalAsset(materialPath);
+        if (materialData == null || materialData.Length == 0)
+        {
+            diagnostic = $"material {materialPath} could not be resolved";
+            return false;
+        }
+
+        var candidates = GetMaterialTextureCandidates(materialData)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(GetPreviewTextureCandidateScore)
+            .ThenBy(candidate => candidate, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var unsupportedFeatures = GetUnsupportedMaterialFeatureSummary(materialData);
+        if (candidates.Count == 0)
+        {
+            diagnostic = string.IsNullOrWhiteSpace(unsupportedFeatures)
+                ? $"material {materialPath} resolved but no DDS preview texture reference was found"
+                : $"material {materialPath} resolved but no DDS preview texture reference was found; unsupported material features: {unsupportedFeatures}";
+            return false;
+        }
+
+        var textureSource = "material";
+        if (TryFindMaterialDatabaseTextureCandidate(candidates, resolveExternalAsset, out var databaseTexturePath))
+        {
+            texturePath = databaseTexturePath;
+            textureSource = "material database";
+        }
+        else
+        {
+            texturePath = candidates[0];
+        }
+
+        diagnostic = string.IsNullOrWhiteSpace(unsupportedFeatures)
+            ? $"material {materialPath} resolved preview texture {texturePath} from {textureSource}"
+            : $"material {materialPath} resolved preview texture {texturePath} from {textureSource}; unsupported material features: {unsupportedFeatures}";
+        return true;
+    }
+
+    private static bool TryFindMaterialDatabaseTextureCandidate(
+        IReadOnlyList<string> materialTextureCandidates,
+        Func<string, byte[]?> resolveExternalAsset,
+        out string texturePath)
+    {
+        texturePath = string.Empty;
+        var materialFileNames = materialTextureCandidates
+            .Select(Path.GetFileName)
+            .Where(fileName => !string.IsNullOrWhiteSpace(fileName))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (materialFileNames.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (var databasePath in StarfieldMaterialDatabasePaths)
+        {
+            var databaseData = resolveExternalAsset(databasePath);
+            if (databaseData == null ||
+                !TryReadStarfieldMaterialDatabaseStrings(databaseData, out var strings))
+            {
+                continue;
+            }
+
+            var candidates = strings
+                .SelectMany(value => GetMaterialTextureCandidates(Encoding.UTF8.GetBytes(value)))
+                .Where(candidate => materialFileNames.Contains(Path.GetFileName(candidate)))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderByDescending(GetPreviewTextureCandidateScore)
+                .ThenBy(candidate => candidate, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var correctedCandidate = candidates.FirstOrDefault(candidate =>
+                !materialTextureCandidates.Contains(candidate, StringComparer.OrdinalIgnoreCase));
+            if (!string.IsNullOrWhiteSpace(correctedCandidate))
+            {
+                texturePath = correctedCandidate;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryReadStarfieldMaterialDatabaseStrings(byte[] data, out IReadOnlyList<string> strings)
+    {
+        strings = [];
+        if (data.Length < 24)
+        {
+            return false;
+        }
+
+        var position = 0;
+        var bethSignature = BinaryPrimitives.ReadUInt64LittleEndian(data.AsSpan(position, sizeof(ulong)));
+        position += sizeof(ulong);
+        if (bethSignature != StarfieldMaterialDatabaseBethSignature)
+        {
+            return false;
+        }
+
+        var version = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position, sizeof(uint)));
+        position += sizeof(uint);
+        if (version != StarfieldMaterialDatabaseVersion)
+        {
+            return false;
+        }
+
+        position += sizeof(uint);
+        var stringTableSignature = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position, sizeof(uint)));
+        position += sizeof(uint);
+        if (stringTableSignature != StarfieldMaterialDatabaseStringTableSignature)
+        {
+            return false;
+        }
+
+        var byteCount = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position, sizeof(uint)));
+        position += sizeof(uint);
+        if (byteCount > data.Length - position)
+        {
+            return false;
+        }
+
+        var parsedStrings = new List<string>();
+        var start = position;
+        var end = position + (int)byteCount;
+        for (var index = position; index < end; index++)
+        {
+            if (data[index] != 0)
+            {
+                continue;
+            }
+
+            if (index > start)
+            {
+                parsedStrings.Add(Encoding.UTF8.GetString(data, start, index - start));
+            }
+
+            start = index + 1;
+        }
+
+        if (start < end)
+        {
+            parsedStrings.Add(Encoding.UTF8.GetString(data, start, end - start));
+        }
+
+        strings = parsedStrings;
+        return strings.Count > 0;
+    }
+
+    private static IEnumerable<string> GetMaterialTextureCandidates(byte[] data)
+    {
+        foreach (var candidate in GetMaterialStringCandidates(data))
+        {
+            if (TryNormalizeTexturePathCandidate(candidate, out var texturePath))
+            {
+                yield return texturePath;
+            }
+        }
+    }
+
+    private static IEnumerable<string> GetMaterialStringCandidates(byte[] data)
+    {
+        for (var position = 0; position <= data.Length - sizeof(uint); position++)
+        {
+            var candidatePosition = position;
+            if (TryReadSizedString(data, ref candidatePosition, out var candidate) &&
+                !string.IsNullOrWhiteSpace(candidate))
+            {
+                yield return candidate;
+            }
+        }
+
+        foreach (var candidate in GetPrintableAsciiStrings(data))
+        {
+            yield return candidate;
+        }
+    }
+
+    private static IEnumerable<string> GetPrintableAsciiStrings(byte[] data)
+    {
+        var start = -1;
+        for (var index = 0; index <= data.Length; index++)
+        {
+            var isPrintable = index < data.Length && data[index] is >= 0x20 and <= 0x7E;
+            if (isPrintable && start < 0)
+            {
+                start = index;
+            }
+            else if (!isPrintable && start >= 0)
+            {
+                var length = index - start;
+                if (length >= 4)
+                {
+                    yield return Encoding.ASCII.GetString(data, start, length);
+                }
+
+                start = -1;
+            }
+        }
+    }
+
+    private static bool TryNormalizeTexturePathCandidate(string candidate, out string texturePath)
+    {
+        texturePath = string.Empty;
+        var normalized = candidate.Trim().Replace('/', '\\');
+        while (normalized.Contains("\\\\", StringComparison.Ordinal))
+        {
+            normalized = normalized.Replace("\\\\", "\\", StringComparison.Ordinal);
+        }
+
+        var ddsIndex = normalized.IndexOf(".dds", StringComparison.OrdinalIgnoreCase);
+        if (ddsIndex < 0)
+        {
+            return false;
+        }
+
+        var textureRootIndex = normalized.IndexOf("textures\\", StringComparison.OrdinalIgnoreCase);
+        if (textureRootIndex < 0 || textureRootIndex > ddsIndex)
+        {
+            return false;
+        }
+
+        texturePath = normalized[textureRootIndex..(ddsIndex + 4)];
+        return IsTexturePath(texturePath);
+    }
+
+    private static int GetPreviewTextureCandidateScore(string texturePath)
+    {
+        var fileName = Path.GetFileName(texturePath);
+        var score = 0;
+        if (fileName.Contains("diffuse", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Contains("albedo", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Contains("basecolor", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Contains("color", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Contains("_d.", StringComparison.OrdinalIgnoreCase))
+        {
+            score += 100;
+        }
+
+        if (fileName.Contains("normal", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Contains("_n.", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Contains("rough", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Contains("metal", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Contains("mask", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Contains("opacity", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Contains("height", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Contains("emissive", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Contains("glow", StringComparison.OrdinalIgnoreCase))
+        {
+            score -= 50;
+        }
+
+        return score;
+    }
+
+    private static string GetUnsupportedMaterialFeatureSummary(byte[] data)
+    {
+        var features = new List<string>();
+        foreach (var candidate in GetMaterialStringCandidates(data))
+        {
+            AddFeatureIfPresent(features, candidate, "Decal", "decal");
+            AddFeatureIfPresent(features, candidate, "Glass", "glass");
+            AddFeatureIfPresent(features, candidate, "Effect", "effect");
+            AddFeatureIfPresent(features, candidate, "Opacity", "opacity");
+            AddFeatureIfPresent(features, candidate, "EdgeFalloff", "edge falloff");
+            AddFeatureIfPresent(features, candidate, "Layered", "layered");
+        }
+
+        return string.Join(", ", features.Distinct(StringComparer.OrdinalIgnoreCase));
+    }
+
+    private static void AddFeatureIfPresent(List<string> features, string value, string token, string displayName)
+    {
+        if (value.Contains(token, StringComparison.OrdinalIgnoreCase))
+        {
+            features.Add(displayName);
+        }
+    }
+
     private static bool TryReadStringRef(byte[] data, int position, IReadOnlyList<string> strings, out string value)
     {
         value = string.Empty;
@@ -531,6 +848,13 @@ public class NifPreviewModelReader : INifPreviewModelReader
             value.StartsWith("textures/", StringComparison.OrdinalIgnoreCase);
     }
 
+    private static bool IsMaterialPath(string value)
+    {
+        return (value.StartsWith("materials\\", StringComparison.OrdinalIgnoreCase) ||
+                value.StartsWith("materials/", StringComparison.OrdinalIgnoreCase)) &&
+            value.EndsWith(".mat", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static IReadOnlyList<NifObjectTransform> GetTransformChain(
         int blockIndex,
         IReadOnlyDictionary<int, NifObjectTransform> localTransforms,
@@ -564,11 +888,24 @@ public class NifPreviewModelReader : INifPreviewModelReader
         IReadOnlyList<string> strings,
         IReadOnlyDictionary<int, NifMaterialInfo> materialMap,
         uint bethesdaVersion,
+        Func<string, byte[]?>? resolveExternalAsset,
         ref string? rejectionReason)
     {
         if (!IsPreviewGeometryBlock(block))
         {
             return null;
+        }
+
+        string? externalRejectionReason = null;
+        if (string.Equals(block.TypeName, "BSGeometry", StringComparison.Ordinal) &&
+            TryReadStarfieldExternalGeometry(block, blockIndex, meshIndex, transformChain, strings, materialMap, resolveExternalAsset, out var externalMesh, out externalRejectionReason))
+        {
+            return externalMesh;
+        }
+
+        if (rejectionReason == null && externalRejectionReason != null)
+        {
+            rejectionReason = externalRejectionReason;
         }
 
         string? skyrimRejectionReason = null;
@@ -584,19 +921,21 @@ public class NifPreviewModelReader : INifPreviewModelReader
         }
 
         var candidates = new List<NifPreviewMesh>();
-        for (var offset = 0; offset <= block.Data.Length - 18; offset++)
+        string? candidateRejectionReason = null;
+        var anchoredOffsetCount = 0;
+        foreach (var offset in GetCandidateGeometryOffsets(block, out anchoredOffsetCount))
         {
             foreach (var countLayout in GetCandidateCountLayouts(block))
             {
-                if (TryReadBSTriShapeAt(block, blockIndex, offset, meshIndex, transformChain, strings, materialMap, countLayout, BSVertexPositionFormat.DescriptorDefault, out var mesh, out var candidateRejectionReason) &&
+                if (TryReadBSTriShapeAt(block, blockIndex, offset, meshIndex, transformChain, strings, materialMap, countLayout, BSVertexPositionFormat.DescriptorDefault, out var mesh, out var currentRejectionReason) &&
                     mesh != null)
                 {
                     candidates.Add(mesh);
                 }
 
-                if (rejectionReason == null && candidateRejectionReason != null)
+                if (candidateRejectionReason == null && currentRejectionReason != null)
                 {
-                    rejectionReason = $"{block.TypeName} offset {offset} {countLayout}: {candidateRejectionReason}";
+                    candidateRejectionReason = $"{block.TypeName} offset {offset} {countLayout}: {currentRejectionReason}";
                 }
             }
         }
@@ -606,7 +945,12 @@ public class NifPreviewModelReader : INifPreviewModelReader
             .FirstOrDefault();
         if (selected != null)
         {
-            selected.Diagnostics.Add($"{block.TypeName} block {blockIndex}: selected from {candidates.Count} candidate mesh layout(s)");
+            selected.Diagnostics.Add($"{block.TypeName} block {blockIndex}: selected from {candidates.Count} candidate mesh layout(s), anchored offsets {anchoredOffsetCount}");
+        }
+
+        if (rejectionReason == null && candidateRejectionReason != null)
+        {
+            rejectionReason = candidateRejectionReason;
         }
 
         return selected;
@@ -667,6 +1011,246 @@ public class NifPreviewModelReader : INifPreviewModelReader
 
         mesh.Diagnostics.Add($"{block.TypeName} block {blockIndex}: parsed with Skyrim SSE layout from {candidates.Count} candidate mesh layout(s)");
         return true;
+    }
+
+    private static bool TryReadStarfieldExternalGeometry(
+        NifBlock block,
+        int blockIndex,
+        int meshIndex,
+        IReadOnlyList<NifObjectTransform> transformChain,
+        IReadOnlyList<string> strings,
+        IReadOnlyDictionary<int, NifMaterialInfo> materialMap,
+        Func<string, byte[]?>? resolveExternalAsset,
+        out NifPreviewMesh? mesh,
+        out string? rejectionReason)
+    {
+        mesh = null;
+        rejectionReason = null;
+        var geometryPaths = FindStarfieldGeometryPaths(block.Data).ToList();
+        if (geometryPaths.Count == 0)
+        {
+            return false;
+        }
+
+        if (resolveExternalAsset == null)
+        {
+            rejectionReason = $"{block.TypeName} external geometry resolver was not provided";
+            return false;
+        }
+
+        foreach (var geometryPath in geometryPaths)
+        {
+            var geometryData = resolveExternalAsset(geometryPath);
+            if (geometryData == null)
+            {
+                rejectionReason ??= $"{block.TypeName} external geometry {geometryPath} could not be resolved";
+                continue;
+            }
+
+            if (TryReadStarfieldGeometryMesh(geometryData, block, blockIndex, meshIndex, transformChain, strings, materialMap, geometryPath, out mesh, out var meshRejectionReason))
+            {
+                return true;
+            }
+
+            rejectionReason ??= $"{block.TypeName} external geometry {geometryPath}: {meshRejectionReason}";
+        }
+
+        return false;
+    }
+
+    private static IEnumerable<string> FindStarfieldGeometryPaths(byte[] data)
+    {
+        var paths = new List<string>();
+        for (var position = 0; position <= data.Length - sizeof(uint); position++)
+        {
+            var candidatePosition = position;
+            if (!TryReadSizedString(data, ref candidatePosition, out var value) ||
+                !TryCreateStarfieldGeometryPath(value, out var geometryPath) ||
+                paths.Contains(geometryPath, StringComparer.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            paths.Add(geometryPath);
+        }
+
+        return paths;
+    }
+
+    private static bool TryCreateStarfieldGeometryPath(string value, out string geometryPath)
+    {
+        geometryPath = string.Empty;
+        var parts = value.Split(['\\', '/'], StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length != 2 ||
+            parts[0].Length != 20 ||
+            parts[1].Length != 20 ||
+            !parts[0].All(IsLowerHexCharacter) ||
+            !parts[1].All(IsLowerHexCharacter))
+        {
+            return false;
+        }
+
+        geometryPath = $"geometries\\{parts[0]}\\{parts[1]}.mesh";
+        return true;
+    }
+
+    private static bool IsLowerHexCharacter(char value)
+    {
+        return value is >= '0' and <= '9' or >= 'a' and <= 'f';
+    }
+
+    private static bool TryReadStarfieldGeometryMesh(
+        byte[] data,
+        NifBlock block,
+        int blockIndex,
+        int meshIndex,
+        IReadOnlyList<NifObjectTransform> transformChain,
+        IReadOnlyList<string> strings,
+        IReadOnlyDictionary<int, NifMaterialInfo> materialMap,
+        string geometryPath,
+        out NifPreviewMesh? mesh,
+        out string rejectionReason)
+    {
+        mesh = null;
+        rejectionReason = string.Empty;
+        if (data.Length < StarfieldGeometryMeshIndexDataOffset + sizeof(ushort))
+        {
+            rejectionReason = "mesh data ended before the index header";
+            return false;
+        }
+
+        var version = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(0, sizeof(uint)));
+        if (version != StarfieldGeometryMeshVersion)
+        {
+            rejectionReason = $"mesh version {version} is not supported";
+            return false;
+        }
+
+        var indexCount = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(sizeof(uint), sizeof(uint)));
+        if (indexCount == 0 || indexCount % 3 != 0 || indexCount > 1000000)
+        {
+            rejectionReason = $"mesh index count {indexCount} is outside the supported range";
+            return false;
+        }
+
+        var vertexHeaderOffset = checked(StarfieldGeometryMeshIndexDataOffset + ((int)indexCount * sizeof(ushort)));
+        if (data.Length - vertexHeaderOffset < StarfieldGeometryMeshVertexHeaderSize)
+        {
+            rejectionReason = "mesh data ended before the vertex header";
+            return false;
+        }
+
+        var vertexCount = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(vertexHeaderOffset + (sizeof(uint) * 2), sizeof(uint)));
+        if (vertexCount == 0 || vertexCount > 1000000)
+        {
+            rejectionReason = $"mesh vertex count {vertexCount} is outside the supported range";
+            return false;
+        }
+
+        var vertexDataOffset = vertexHeaderOffset + StarfieldGeometryMeshVertexHeaderSize;
+        if (data.Length - vertexDataOffset < checked((int)vertexCount * StarfieldGeometryMeshPositionStride))
+        {
+            rejectionReason = "mesh data ended before the first supported vertex buffer";
+            return false;
+        }
+
+        var hasBounds = TryReadStarfieldGeometryBounds(block.Data, out var geometryBounds);
+        var indices = new List<int>();
+        var maxIndex = 0;
+        var indexPosition = StarfieldGeometryMeshIndexDataOffset;
+        for (var index = 0; index < indexCount; index++)
+        {
+            var vertexIndex = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(indexPosition, sizeof(ushort)));
+            indexPosition += sizeof(ushort);
+            if (vertexIndex >= vertexCount)
+            {
+                rejectionReason = $"mesh index {vertexIndex} was outside the vertex count {vertexCount}";
+                return false;
+            }
+
+            maxIndex = Math.Max(maxIndex, vertexIndex);
+            indices.Add(vertexIndex);
+        }
+
+        if (maxIndex + 1 > vertexCount)
+        {
+            rejectionReason = $"mesh max index {maxIndex} was outside the vertex count {vertexCount}";
+            return false;
+        }
+
+        var useTransform = transformChain.Any(transform => !transform.IsIdentity);
+        var vertices = new List<NifPreviewVertex>();
+        var bounds = new NifMeshBounds();
+        for (var index = 0; index < vertexCount; index++)
+        {
+            var vertexOffset = vertexDataOffset + (index * StarfieldGeometryMeshPositionStride);
+            var position = new NifPreviewVector3
+            {
+                X = BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(vertexOffset, sizeof(short))) * StarfieldGeometryMeshPositionScale,
+                Y = BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(vertexOffset + sizeof(short), sizeof(short))) * StarfieldGeometryMeshPositionScale,
+                Z = BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(vertexOffset + (sizeof(short) * 2), sizeof(short))) * StarfieldGeometryMeshPositionScale
+            };
+
+            if (useTransform)
+            {
+                position = ApplyTransformChain(position, transformChain);
+            }
+
+            if (!bounds.TryInclude(position, out rejectionReason))
+            {
+                return false;
+            }
+
+            vertices.Add(new NifPreviewVertex
+            {
+                Position = position,
+                Normal = new NifPreviewVector3(),
+                UV = new NifPreviewUV()
+            });
+        }
+
+        var material = GetStarfieldExternalGeometryMaterial(block.Data, block.TypeName, blockIndex, meshIndex, strings, materialMap);
+        mesh = new NifPreviewMesh
+        {
+            Name = material.MeshName,
+            MaterialName = material.MaterialName,
+            TexturePath = material.TexturePath,
+            Vertices = vertices,
+            Indices = indices,
+            Diagnostics =
+            {
+                $"{block.TypeName} block {blockIndex}: external Starfield geometry {geometryPath}, {vertexCount} vertices, {indexCount / 3} triangles, position stride {StarfieldGeometryMeshPositionStride}, geometry bounds metadata {(hasBounds ? geometryBounds.Description : "unavailable")}, decoded bounds {bounds.Description}",
+                $"{block.TypeName} block {blockIndex} external material: {material.MaterialName}, texture {material.TexturePath ?? "none"}",
+                $"{block.TypeName} block {blockIndex} triangle sample: {CreateTriangleSample(indices)}"
+            }
+        };
+        return true;
+    }
+
+    private static bool TryReadStarfieldGeometryBounds(byte[] data, out StarfieldGeometryBounds bounds)
+    {
+        bounds = default;
+        if (!TryReadNiAVObjectHeader(data, out _, out var position, out _))
+        {
+            return false;
+        }
+
+        if (data.Length - position < (sizeof(float) * 10))
+        {
+            return false;
+        }
+
+        var firstCenter = ReadVector3(data, ref position);
+        _ = ReadSingle(data, ref position);
+        var center = ReadVector3(data, ref position);
+        var extents = ReadVector3(data, ref position);
+        bounds = new StarfieldGeometryBounds(center, extents);
+        if (!bounds.IsReasonable)
+        {
+            bounds = new StarfieldGeometryBounds(firstCenter, extents);
+        }
+
+        return bounds.IsReasonable;
     }
 
     private static bool TryReadBSTriShapeAt(
@@ -900,6 +1484,33 @@ public class NifPreviewModelReader : INifPreviewModelReader
             {
                 return new NifShapeMaterial(meshName, material.MaterialName, material.TexturePath);
             }
+        }
+
+        return new NifShapeMaterial(meshName, $"{blockTypeName} {blockIndex}", null);
+    }
+
+    private static NifShapeMaterial GetStarfieldExternalGeometryMaterial(
+        byte[] data,
+        string blockTypeName,
+        int blockIndex,
+        int meshIndex,
+        IReadOnlyList<string> strings,
+        IReadOnlyDictionary<int, NifMaterialInfo> materialMap)
+    {
+        var meshName = TryReadStringRef(data, 0, strings, out var parsedMeshName)
+            ? parsedMeshName
+            : $"{blockTypeName} {meshIndex + 1}";
+        if (!TryReadNiAVObjectHeader(data, out _, out var position, out _) ||
+            data.Length - position < (sizeof(float) * 10) + (sizeof(int) * 3))
+        {
+            return new NifShapeMaterial(meshName, $"{blockTypeName} {blockIndex}", null);
+        }
+
+        var shaderPropertyPosition = position + (sizeof(float) * 10) + sizeof(int);
+        var shaderPropertyBlockIndex = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(shaderPropertyPosition, sizeof(int)));
+        if (materialMap.TryGetValue(shaderPropertyBlockIndex, out var material))
+        {
+            return new NifShapeMaterial(meshName, material.MaterialName, material.TexturePath);
         }
 
         return new NifShapeMaterial(meshName, $"{blockTypeName} {blockIndex}", null);
@@ -1179,6 +1790,32 @@ public class NifPreviewModelReader : INifPreviewModelReader
     {
         yield return BSVertexPositionFormat.Float3;
         yield return BSVertexPositionFormat.Half3;
+    }
+
+    private static IEnumerable<int> GetCandidateGeometryOffsets(NifBlock block, out int anchoredOffsetCount)
+    {
+        var offsets = new List<int>();
+        if (string.Equals(block.TypeName, "BSGeometry", StringComparison.Ordinal) &&
+            TryReadNiAVObjectHeader(block.Data, out _, out var position, out _))
+        {
+            AddCandidateOffset(offsets, position + BSTriShapeFieldsBeforeVertexDescriptor, block.Data.Length);
+        }
+
+        anchoredOffsetCount = offsets.Count;
+        for (var offset = 0; offset <= block.Data.Length - 18; offset++)
+        {
+            AddCandidateOffset(offsets, offset, block.Data.Length);
+        }
+
+        return offsets;
+    }
+
+    private static void AddCandidateOffset(ICollection<int> offsets, int offset, int dataLength)
+    {
+        if (offset >= 0 && offset <= dataLength - 18 && !offsets.Contains(offset))
+        {
+            offsets.Add(offset);
+        }
     }
 
     private static IEnumerable<BSTriShapeCountLayout> GetCandidateCountLayouts(NifBlock block)
@@ -1611,6 +2248,33 @@ public class NifPreviewModelReader : INifPreviewModelReader
         public int VertexDataOffset { get; }
 
         public int CountProbeOffset { get; }
+    }
+
+    private readonly struct StarfieldGeometryBounds
+    {
+        private readonly NifPreviewVector3 Center;
+        private readonly NifPreviewVector3 Extents;
+
+        public StarfieldGeometryBounds(NifPreviewVector3 center, NifPreviewVector3 extents)
+        {
+            Center = center;
+            Extents = extents;
+        }
+
+        public bool IsReasonable =>
+            IsReasonableCoordinate(Center.X) &&
+            IsReasonableCoordinate(Center.Y) &&
+            IsReasonableCoordinate(Center.Z) &&
+            IsReasonableExtent(Extents.X) &&
+            IsReasonableExtent(Extents.Y) &&
+            IsReasonableExtent(Extents.Z);
+
+        public string Description => $"center {FormatVector(Center)}, extents {FormatVector(Extents)}";
+
+        private static bool IsReasonableExtent(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value) && value > 0f && value <= MaxReasonableCoordinate;
+        }
     }
 
     private readonly struct NifObjectTransform
