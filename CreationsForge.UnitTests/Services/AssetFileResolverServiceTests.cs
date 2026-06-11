@@ -4,6 +4,7 @@ using CreationsForge.Core.DTOs.Assets;
 using CreationsForge.Core.DTOs.Games;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
+using CreationsForge.Core.DTOs.Results;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Services;
 using CreationsForge.Core.Services.Interfaces;
@@ -22,7 +23,7 @@ public class AssetFileResolverServiceTests
         {
             var filePath = Path.Combine(tempDirectory.FullName, "Preview.nif");
             File.WriteAllText(filePath, "nif");
-            var service = new AssetFileResolverService([], new BethesdaAssetProvider([]));
+            var service = new AssetFileResolverService([], new BethesdaAssetProvider([]), new TestAssetArchiveIndexService());
 
             var result = service.ResolveAssetFile(CreateCandidate(filePath));
 
@@ -48,7 +49,8 @@ public class AssetFileResolverServiceTests
             File.WriteAllText(filePath, "nif");
             var service = new AssetFileResolverService(
                 [CreateGameMetadataService(SupportedGame.Fallout4, tempDirectory.FullName)],
-                new BethesdaAssetProvider([]));
+                new BethesdaAssetProvider([]),
+                new TestAssetArchiveIndexService());
 
             var result = service.ResolveAssetFile(CreateCandidate("SetDressing\\BabyBottle\\BabyBottleDirty02.nif", SupportedGame.Fallout4));
 
@@ -64,7 +66,7 @@ public class AssetFileResolverServiceTests
     }
 
     [Fact]
-    public void ResolveAssetFile_ReturnsArchiveUnsupportedWhenArchivesExist()
+    public void ResolveAssetFile_ReturnsIndexedArchiveMissingWhenArchivesExist()
     {
         var tempDirectory = Directory.CreateTempSubdirectory();
         try
@@ -72,13 +74,14 @@ public class AssetFileResolverServiceTests
             File.WriteAllText(Path.Combine(tempDirectory.FullName, "Fallout4 - Meshes.ba2"), "archive");
             var service = new AssetFileResolverService(
                 [CreateGameMetadataService(SupportedGame.Fallout4, tempDirectory.FullName)],
-                new BethesdaAssetProvider([]));
+                new BethesdaAssetProvider([]),
+                new TestAssetArchiveIndexService());
 
             var result = service.ResolveAssetFile(CreateCandidate("SetDressing\\BabyBottle\\BabyBottleDirty02.nif", SupportedGame.Fallout4));
 
             result.Status.ShouldBe(AssetFileResolutionStatus.ArchiveExtractionUnsupported);
             result.IsResolved.ShouldBeFalse();
-            result.StatusMessage.ShouldContain("BA2/BSA extraction is not implemented yet");
+            result.StatusMessage.ShouldContain("Missing indexed asset");
         }
         finally
         {
@@ -89,12 +92,50 @@ public class AssetFileResolverServiceTests
     [Fact]
     public void ResolveAssetFile_ReturnsMissingDataFolderWhenMetadataIsUnavailable()
     {
-        var service = new AssetFileResolverService([], new BethesdaAssetProvider([]));
+        var service = new AssetFileResolverService([], new BethesdaAssetProvider([]), new TestAssetArchiveIndexService());
 
         var result = service.ResolveAssetFile(CreateCandidate("Meshes\\Props\\Preview.nif"));
 
         result.Status.ShouldBe(AssetFileResolutionStatus.MissingDataFolder);
         result.IsResolved.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void ResolveAssetFile_UsesArchiveIndexWhenLooseFileIsMissing()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var archiveIndexService = new TestAssetArchiveIndexService
+            {
+                Result = new BethesdaAssetReadResult
+                {
+                    OriginalPath = "Meshes\\Props\\Preview.nif",
+                    DataFolder = tempDirectory.FullName,
+                    SourceType = BethesdaAssetSourceType.Archive,
+                    Status = BethesdaAssetReadStatus.ReadArchiveEntry,
+                    Data = [1, 2, 3],
+                    SourceArchivePath = Path.Combine(tempDirectory.FullName, "Starfield - Meshes.ba2"),
+                    NormalizedEntryPath = "meshes/props/preview.nif",
+                    StatusMessage = "Read indexed archive asset."
+                }
+            };
+            var service = new AssetFileResolverService(
+                [CreateGameMetadataService(SupportedGame.Starfield, tempDirectory.FullName)],
+                new BethesdaAssetProvider([]),
+                archiveIndexService);
+
+            var result = service.ResolveAssetFile(CreateCandidate("Meshes\\Props\\Preview.nif"));
+
+            result.Status.ShouldBe(AssetFileResolutionStatus.ResolvedArchiveEntryInMemory);
+            result.Data.ShouldBe([1, 2, 3]);
+            result.SourceArchivePath.ShouldBe(Path.Combine(tempDirectory.FullName, "Starfield - Meshes.ba2"));
+            archiveIndexService.RequestedAssetPath.ShouldBe("Meshes\\Props\\Preview.nif");
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
     }
 
     private static IGameMetadataService CreateGameMetadataService(SupportedGame game, string dataFolder)
@@ -140,5 +181,34 @@ public class AssetFileResolverServiceTests
             CanPreview = true,
             CanOpenExternally = true
         };
+    }
+
+    private class TestAssetArchiveIndexService : IAssetArchiveIndexService
+    {
+        public BethesdaAssetReadResult? Result { get; set; }
+
+        public string? RequestedAssetPath { get; private set; }
+
+        public AssetArchiveIndexResultDTO IndexGameArchives(
+            SupportedGame game,
+            string? dataFolder,
+            IProgress<GameImportProgressDTO>? progress = null,
+            CancellationToken cancellationToken = default)
+        {
+            return new AssetArchiveIndexResultDTO();
+        }
+
+        public BethesdaAssetReadResult TryReadArchiveAsset(SupportedGame game, string dataFolder, string assetPath)
+        {
+            RequestedAssetPath = assetPath;
+            return Result ?? new BethesdaAssetReadResult
+            {
+                OriginalPath = assetPath,
+                DataFolder = dataFolder,
+                SourceType = BethesdaAssetSourceType.Archive,
+                Status = BethesdaAssetReadStatus.ArchiveEntryMissing,
+                StatusMessage = "Missing indexed asset."
+            };
+        }
     }
 }

@@ -1,3 +1,4 @@
+using CreationsForge.Bethesda.Assets.Resources;
 using CreationsForge.Core.DTOs.Games;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
@@ -24,11 +25,12 @@ public class GameImporterTests
             new TestPluginRepository(events),
             new TestPluginMasterReferenceRepository(),
             [],
-            new TestRecordImportService());
+            new TestRecordImportService(),
+            assetArchiveIndexService: new TestAssetArchiveIndexService(events));
 
         importer.Import();
 
-        events.ShouldBe(["game", "base-plugin"]);
+        events.ShouldBe(["game", "asset-index", "base-plugin"]);
     }
 
     [Fact]
@@ -180,7 +182,8 @@ public class GameImporterTests
             new TestPluginRepository(existingPlugins: [plugin]),
             new TestPluginMasterReferenceRepository(),
             [],
-            recordImportService);
+            recordImportService,
+            new TestAssetArchiveIndexService());
 
         var result = importer.Import();
 
@@ -221,7 +224,8 @@ public class GameImporterTests
             new TestPluginRepository(),
             new TestPluginMasterReferenceRepository(),
             [],
-            new TestRecordImportService());
+            new TestRecordImportService(),
+            new TestAssetArchiveIndexService());
 
         Should.Throw<InvalidOperationException>(() => importer.Import())
             .Message.ShouldContain("does not match");
@@ -234,7 +238,8 @@ public class GameImporterTests
         IPluginMasterReferenceRepository pluginMasterReferenceRepository,
         IEnumerable<IPluginExtensionImporter> pluginExtensionImporters,
         IRecordImportService recordImportService,
-        IReadOnlyList<PluginMasterReferenceDTO>? masterReferences = null)
+        IReadOnlyList<PluginMasterReferenceDTO>? masterReferences = null,
+        IAssetArchiveIndexService? assetArchiveIndexService = null)
     {
         return new GameImporter(
             new TestGamePluginReader(plugin, masterReferences ?? []),
@@ -243,7 +248,8 @@ public class GameImporterTests
             pluginRepository,
             pluginMasterReferenceRepository,
             pluginExtensionImporters,
-            recordImportService);
+            recordImportService,
+            assetArchiveIndexService ?? new TestAssetArchiveIndexService());
     }
 
     private static PluginDTO CreatePlugin(SupportedGame game, string name = "Test", string fileName = "Test.esm")
@@ -496,6 +502,43 @@ public class GameImporterTests
         {
             ImportWasCalled = true;
             Events.Add("extension-plugin");
+        }
+    }
+
+    private sealed class TestAssetArchiveIndexService : IAssetArchiveIndexService
+    {
+        private readonly IList<string>? Events;
+
+        public TestAssetArchiveIndexService(IList<string>? events = null)
+        {
+            Events = events;
+        }
+
+        public AssetArchiveIndexResultDTO IndexGameArchives(
+            SupportedGame game,
+            string? dataFolder,
+            IProgress<GameImportProgressDTO>? progress = null,
+            CancellationToken cancellationToken = default)
+        {
+            Events?.Add("asset-index");
+            return new AssetArchiveIndexResultDTO
+            {
+                ArchivesDiscovered = 1,
+                ArchivesIndexed = 1,
+                EntriesIndexed = 1
+            };
+        }
+
+        public BethesdaAssetReadResult TryReadArchiveAsset(SupportedGame game, string dataFolder, string assetPath)
+        {
+            return new BethesdaAssetReadResult
+            {
+                OriginalPath = assetPath,
+                DataFolder = dataFolder,
+                SourceType = BethesdaAssetSourceType.Archive,
+                Status = BethesdaAssetReadStatus.ArchiveEntryMissing,
+                StatusMessage = "Missing indexed asset."
+            };
         }
     }
 }

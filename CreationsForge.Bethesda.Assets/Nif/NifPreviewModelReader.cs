@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
@@ -52,16 +53,21 @@ public class NifPreviewModelReader : INifPreviewModelReader
             {
                 $"Header user {header.UserVersion}, Bethesda {header.BethesdaVersion}, blocks {header.Blocks.Count}"
             };
+            var resolveExternalAsset = CreateCachingExternalAssetResolver(request.ResolveExternalAsset, diagnostics);
 
             string? rejectionReason = null;
-            var materialMap = CreateMaterialMap(header.Blocks, header.Strings, diagnostics, request.ResolveExternalAsset);
+            var materialMap = MeasurePreviewPhase(
+                "material map",
+                diagnostics,
+                () => CreateMaterialMap(header.Blocks, header.Strings, diagnostics, resolveExternalAsset));
             var localTransforms = CreateLocalTransformMap(header.Blocks, diagnostics);
             var parentByChild = CreateParentMap(header.Blocks, diagnostics);
+            var geometryStopwatch = Stopwatch.StartNew();
             for (var blockIndex = 0; blockIndex < header.Blocks.Count; blockIndex++)
             {
                 var block = header.Blocks[blockIndex];
                 var transformChain = GetTransformChain(blockIndex, localTransforms, parentByChild);
-                var mesh = TryReadPreviewGeometry(block, blockIndex, model.Meshes.Count, transformChain, header.Strings, materialMap, header.BethesdaVersion, request.ResolveExternalAsset, ref rejectionReason);
+                var mesh = TryReadPreviewGeometry(block, blockIndex, model.Meshes.Count, transformChain, header.Strings, materialMap, header.BethesdaVersion, resolveExternalAsset, ref rejectionReason);
                 if (mesh != null)
                 {
                     model.Meshes.Add(mesh);
@@ -71,6 +77,8 @@ public class NifPreviewModelReader : INifPreviewModelReader
                     }
                 }
             }
+            geometryStopwatch.Stop();
+            diagnostics.Add($"NIF preview geometry pass completed in {geometryStopwatch.ElapsedMilliseconds.ToString("N0", CultureInfo.InvariantCulture)} ms");
 
             if (model.Meshes.Count == 0)
             {
@@ -106,6 +114,50 @@ public class NifPreviewModelReader : INifPreviewModelReader
         {
             return Failure(exception.Message);
         }
+    }
+
+    private static Func<string, byte[]?>? CreateCachingExternalAssetResolver(
+        Func<string, byte[]?>? resolveExternalAsset,
+        List<string> diagnostics)
+    {
+        if (resolveExternalAsset == null)
+        {
+            return null;
+        }
+
+        var cache = new Dictionary<string, byte[]?>(StringComparer.OrdinalIgnoreCase);
+        return assetPath =>
+        {
+            var cacheKey = NormalizeExternalAssetCacheKey(assetPath);
+            if (cache.TryGetValue(cacheKey, out var cachedData))
+            {
+                diagnostics.Add($"External asset cache hit for {assetPath}");
+                return cachedData;
+            }
+
+            var stopwatch = Stopwatch.StartNew();
+            var data = resolveExternalAsset(assetPath);
+            stopwatch.Stop();
+            cache[cacheKey] = data;
+            diagnostics.Add(data == null || data.Length == 0
+                ? $"External asset {assetPath} was not resolved in {stopwatch.ElapsedMilliseconds.ToString("N0", CultureInfo.InvariantCulture)} ms"
+                : $"External asset {assetPath} resolved {data.Length.ToString("N0", CultureInfo.InvariantCulture)} byte(s) in {stopwatch.ElapsedMilliseconds.ToString("N0", CultureInfo.InvariantCulture)} ms");
+            return data;
+        };
+    }
+
+    private static string NormalizeExternalAssetCacheKey(string assetPath)
+    {
+        return assetPath.Trim().Replace('/', '\\');
+    }
+
+    private static T MeasurePreviewPhase<T>(string phaseName, List<string> diagnostics, Func<T> readPhase)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        var result = readPhase();
+        stopwatch.Stop();
+        diagnostics.Add($"NIF preview {phaseName} completed in {stopwatch.ElapsedMilliseconds.ToString("N0", CultureInfo.InvariantCulture)} ms");
+        return result;
     }
 
     private static NifHeader ReadHeader(NifBinaryReader reader)
@@ -557,14 +609,16 @@ public class NifPreviewModelReader : INifPreviewModelReader
 
         var textureSource = "material";
         var materialDatabaseDiagnostics = new List<string>();
-        if (TryFindMaterialDatabaseTextureCandidate(candidates, resolveExternalAsset, materialDatabaseDiagnostics, out var databaseTexturePath))
+        texturePath = candidates[0];
+        if (!IsPreviewColorTextureCandidate(texturePath) &&
+            TryFindMaterialDatabaseTextureCandidate(candidates, resolveExternalAsset, materialDatabaseDiagnostics, out var databaseTexturePath))
         {
             texturePath = databaseTexturePath;
             textureSource = "material database";
         }
-        else
+        else if (IsPreviewColorTextureCandidate(texturePath))
         {
-            texturePath = candidates[0];
+            materialDatabaseDiagnostics.Add($"skipped because material already provided preview color texture {texturePath}");
         }
 
         diagnostic = string.IsNullOrWhiteSpace(unsupportedFeatures)
@@ -576,6 +630,11 @@ public class NifPreviewModelReader : INifPreviewModelReader
         }
 
         return true;
+    }
+
+    private static bool IsPreviewColorTextureCandidate(string texturePath)
+    {
+        return GetPreviewTextureCandidateScore(texturePath) >= 100;
     }
 
     private static bool TryFindMaterialDatabaseTextureCandidate(

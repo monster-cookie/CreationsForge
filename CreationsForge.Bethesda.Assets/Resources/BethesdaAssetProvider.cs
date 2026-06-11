@@ -32,6 +32,20 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
 
     public BethesdaAssetReadResult TryReadAsset(BethesdaAssetReadRequest request)
     {
+        var looseResult = TryReadLooseAsset(request);
+        if (looseResult.IsSuccess ||
+            looseResult.Status == BethesdaAssetReadStatus.MissingAbsoluteFile ||
+            looseResult.Status == BethesdaAssetReadStatus.MissingDataFolder)
+        {
+            return looseResult;
+        }
+
+        var normalizedPath = NormalizeAssetPath(request.AssetPath);
+        return ReadArchiveBackedAsset(request, normalizedPath, looseResult);
+    }
+
+    public BethesdaAssetReadResult TryReadLooseAsset(BethesdaAssetReadRequest request)
+    {
         var normalizedPath = NormalizeAssetPath(request.AssetPath);
         if (Path.IsPathRooted(normalizedPath))
         {
@@ -50,13 +64,7 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
             };
         }
 
-        var looseResult = ReadDataFolderLooseFile(request, normalizedPath);
-        if (looseResult.IsSuccess)
-        {
-            return looseResult;
-        }
-
-        return ReadArchiveBackedAsset(request, normalizedPath, looseResult);
+        return ReadDataFolderLooseFile(request, normalizedPath);
     }
 
     private static BethesdaAssetReadResult ReadAbsoluteLooseFile(string assetPath)

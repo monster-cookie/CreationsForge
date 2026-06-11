@@ -66,7 +66,9 @@ adapter projects rather than persisted game metadata paths.
   repositories.
 - `MigrationsModule` registers `DatabaseMigrationRunner`.
 - Each game module registers that game's plugin reader service, plugin reader facade, record reader, and one
-  `IGameImporter` wired to those readers.
+  `IGameImporter`. Game reader facades are keyed by `SupportedGame` so the shared `GameImporter` can be constructor
+  wired with the matching plugin and record reader pair while shared repositories and services remain normal Autofac
+  dependencies.
 
 `CreationsForge` builds a presentation container in `App` by calling Bootstrap and then registering presentation-only
 windows, views, and view models. `CreationsForge.Console` builds a CLI container in `Program` by calling Bootstrap and
@@ -161,10 +163,13 @@ area. Deeper child sections such as perk ranks, patch generation, and conflict r
 
 `IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows.
 `IAssetFileResolverService` resolves readable local asset files from preview candidates by checking absolute paths,
-game data-folder loose files, normalized `Meshes` paths, and registered read-only archive readers. The current archive
-path can read uncompressed and zlib-compressed BA2 general and BSA entries into memory and reports texture BA2 files
-and unsupported compression variants as follow-up work. Core DTOs describe record-owned candidate paths and
-optional mesh payloads without referencing Avalonia, OpenGL, Silk.NET, process launching, or binding primitives.
+game data-folder loose files, normalized `Meshes` paths, and the database-backed asset archive index. The archive index
+stores archive metadata and normalized entry paths only, not extracted bytes. Game import builds or refreshes the
+archive index before plugin metadata import so preview clicks can reuse cached archive entry metadata. Lazy preview
+lookup still invalidates one archive at a time by comparing the archive file's last-write ticks and size, then reads
+only the matching archive entry through the owned read-only archive readers. Core DTOs describe record-owned candidate
+paths and optional mesh payloads without referencing Avalonia, OpenGL, Silk.NET, process launching, or binding
+primitives.
 Assets DTOs describe local-file resolution, in-memory asset reads, and archive extraction results. The presentation
 project owns `AssetPreviewPaneViewModel`, the Avalonia `OpenGlControlBase` renderer, Silk.NET OpenGL calls, render
 mesh conversion, sample-geometry fallback, and the external-open command. The presentation preview geometry adapter

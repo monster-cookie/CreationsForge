@@ -12,6 +12,7 @@
 			"Incc",
 			"Intv",
 			"MVVM",
+			"NOCASE",
 			"noqa",
 			"rebranded",
 			"Serilog",

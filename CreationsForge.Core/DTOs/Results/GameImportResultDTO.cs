@@ -24,5 +24,7 @@ public class GameImportResultDTO
 
     public int MasterReferencesImported { get; set; }
 
+    public AssetArchiveIndexResultDTO AssetArchiveIndex { get; set; } = new();
+
     public RecordImportResultDTO Records { get; set; } = new();
 }

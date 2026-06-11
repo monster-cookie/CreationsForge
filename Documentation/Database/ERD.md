@@ -597,6 +597,28 @@ erDiagram
         TEXT ImportedAtUTC
     }
 
+    AssetArchiveFiles {
+        TEXT Game PK
+        TEXT DataFolder
+        TEXT ArchivePath PK
+        TEXT ArchiveFileName
+        TEXT ArchiveExtension
+        TEXT ArchiveType
+        INTEGER SourceLastWriteUTCTicks
+        INTEGER SourceFileSizeBytes
+        TEXT IndexedAtUTC
+    }
+
+    AssetArchiveEntries {
+        TEXT Game PK, FK
+        TEXT ArchivePath PK, FK
+        TEXT NormalizedEntryPath PK
+        TEXT RootFolder
+        TEXT Extension
+        INTEGER PackedSize
+        INTEGER UnpackedSize
+    }
+
     Games ||--o{ Plugins : contains
     Plugins ||--o| StarfieldPlugins : extends
     Plugins ||--o| Fallout4Plugins : extends
@@ -624,6 +646,7 @@ erDiagram
     RecordInstances ||--o{ ScriptingAdapters : contains
     ScriptingAdapters ||--o{ ScriptingAdapterProperties : contains
     ScriptingAdapterProperties ||--o{ ScriptingAdapterPropertyListItems : contains
+    AssetArchiveFiles ||--o{ AssetArchiveEntries : contains
 ```
 
 ## Inferred Relationships

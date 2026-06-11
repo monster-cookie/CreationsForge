@@ -1,8 +1,8 @@
 using Autofac;
+using Autofac.Core;
+using CreationsForge.Core.Enums;
 using CreationsForge.Core.Importers;
 using CreationsForge.Core.Importers.Interfaces;
-using CreationsForge.Core.Repositories.Interfaces;
-using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Starfield.Interfaces;
 using CreationsForge.Starfield.Importers;
 using CreationsForge.Starfield.Repositories;
@@ -20,17 +20,21 @@ public class StarfieldModule : Module
         builder.RegisterType<StarfieldRecordReaderService>().As<IStarfieldRecordReaderService>().SingleInstance();
         builder.RegisterType<StarfieldPluginRepository>().As<IStarfieldPluginRepository>().InstancePerLifetimeScope();
         builder.RegisterType<StarfieldPluginExtensionImporter>().As<IPluginExtensionImporter>().InstancePerLifetimeScope();
-        builder.RegisterType<StarfieldPluginReader>().AsSelf().As<IGamePluginReader>().SingleInstance();
-        builder.RegisterType<StarfieldRecordReader>().AsSelf().As<IGameRecordReader>().SingleInstance();
-        builder.Register(c => new GameImporter(
-                c.Resolve<StarfieldPluginReader>(),
-                c.Resolve<StarfieldRecordReader>(),
-                c.Resolve<IGameRepository>(),
-                c.Resolve<IPluginRepository>(),
-                c.Resolve<IPluginMasterReferenceRepository>(),
-                c.Resolve<IEnumerable<IPluginExtensionImporter>>(),
-                c.Resolve<IRecordImportService>(),
-                c.Resolve<NPoco.IDatabase>()))
+        builder.RegisterType<StarfieldPluginReader>()
+            .AsSelf()
+            .Keyed<IGamePluginReader>(SupportedGame.Starfield)
+            .SingleInstance();
+        builder.RegisterType<StarfieldRecordReader>()
+            .AsSelf()
+            .Keyed<IGameRecordReader>(SupportedGame.Starfield)
+            .SingleInstance();
+        builder.RegisterType<GameImporter>()
+            .WithParameter(new ResolvedParameter(
+                (parameter, _) => parameter.ParameterType == typeof(IGamePluginReader),
+                (_, context) => context.ResolveKeyed<IGamePluginReader>(SupportedGame.Starfield)))
+            .WithParameter(new ResolvedParameter(
+                (parameter, _) => parameter.ParameterType == typeof(IGameRecordReader),
+                (_, context) => context.ResolveKeyed<IGameRecordReader>(SupportedGame.Starfield)))
             .As<IGameImporter>();
     }
 }

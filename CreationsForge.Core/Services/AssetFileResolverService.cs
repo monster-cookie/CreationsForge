@@ -11,22 +11,33 @@ public class AssetFileResolverService : IAssetFileResolverService
 {
     private readonly IReadOnlyList<IGameMetadataService> GameMetadataServices;
     private readonly IBethesdaAssetProvider BethesdaAssetProvider;
+    private readonly IAssetArchiveIndexService AssetArchiveIndexService;
     private readonly ILogger Logger = Log.ForContext<AssetFileResolverService>();
 
-    public AssetFileResolverService(IEnumerable<IGameMetadataService> gameMetadataServices, IBethesdaAssetProvider bethesdaAssetProvider)
+    public AssetFileResolverService(
+        IEnumerable<IGameMetadataService> gameMetadataServices,
+        IBethesdaAssetProvider bethesdaAssetProvider,
+        IAssetArchiveIndexService assetArchiveIndexService)
     {
         GameMetadataServices = gameMetadataServices.ToList();
         BethesdaAssetProvider = bethesdaAssetProvider;
+        AssetArchiveIndexService = assetArchiveIndexService;
     }
 
     public AssetFileResolutionDTO ResolveAssetFile(AssetPreviewCandidateDTO candidate)
     {
         var dataFolder = Path.IsPathRooted(candidate.MeshPath) ? null : GetDataFolder(candidate.Game);
-        var assetReadResult = BethesdaAssetProvider.TryReadAsset(new BethesdaAssetReadRequest
+        var looseAssetReadResult = BethesdaAssetProvider.TryReadLooseAsset(new BethesdaAssetReadRequest
         {
             AssetPath = candidate.MeshPath,
             DataFolder = dataFolder
         });
+        var assetReadResult = looseAssetReadResult.IsSuccess ||
+            looseAssetReadResult.Status == BethesdaAssetReadStatus.MissingAbsoluteFile ||
+            looseAssetReadResult.Status == BethesdaAssetReadStatus.MissingDataFolder ||
+            string.IsNullOrWhiteSpace(dataFolder)
+                ? looseAssetReadResult
+                : AssetArchiveIndexService.TryReadArchiveAsset(candidate.Game, dataFolder, candidate.MeshPath);
         var resolution = CreateResolution(assetReadResult, candidate);
         if (resolution.Status == AssetFileResolutionStatus.MissingDataFolder)
         {

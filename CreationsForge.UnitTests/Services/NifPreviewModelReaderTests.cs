@@ -436,7 +436,7 @@ public class NifPreviewModelReaderTests
     }
 
     [Fact]
-    public void TryRead_UsesStarfieldMaterialDatabaseTexturePathWhenMaterialPathIsStale()
+    public void TryRead_SkipsStarfieldMaterialDatabaseWhenMaterialFileProvidesColorTexture()
     {
         var reader = new NifPreviewModelReader();
         const string materialPath = @"Materials\Cinimatics\DigiPic\DigiPic_Base.mat";
@@ -463,12 +463,10 @@ public class NifPreviewModelReaderTests
         result.IsSuccess.ShouldBeTrue(result.StatusMessage);
         result.Model.ShouldNotBeNull();
         result.Model.Meshes.Count.ShouldBe(1);
-        result.Model.Meshes[0].TexturePath.ShouldBe(@"Textures\Verified\DigiPic\DigiPick_Material_color.DDS");
-        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("from material database", StringComparison.Ordinal));
-        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("requested materials/materialsbeta.cdb", StringComparison.Ordinal));
-        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("parsed 1 string(s)", StringComparison.Ordinal));
-        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("matched 1 DDS candidate(s)", StringComparison.Ordinal));
-        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains(@"selected Textures\Verified\DigiPic\DigiPick_Material_color.DDS", StringComparison.Ordinal));
+        result.Model.Meshes[0].TexturePath.ShouldBe(@"Textures\Cinimatics\DigiPic\DigiPick_Material_color.DDS");
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("from material", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("skipped because material already provided preview color texture", StringComparison.Ordinal));
+        result.Diagnostics.ShouldNotContain(diagnostic => diagnostic.Contains("requested materials/materialsbeta.cdb", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -483,14 +481,14 @@ public class NifPreviewModelReaderTests
             DisplayName = "DigiPic",
             Data = CreateMaterialLinkedBSTriShapeNif(materialPath),
             ResolveExternalAsset = path => string.Equals(path, materialPath, StringComparison.OrdinalIgnoreCase)
-                ? CreateStarfieldMaterialFile(@"Textures\Cinimatics\DigiPic\DigiPick_Material_color.DDS")
+                ? CreateStarfieldMaterialFile(@"Textures\Cinimatics\DigiPic\DigiPick_Material_normal.DDS")
                 : null
         });
 
         result.IsSuccess.ShouldBeTrue(result.StatusMessage);
         result.Model.ShouldNotBeNull();
         result.Model.Meshes.Count.ShouldBe(1);
-        result.Model.Meshes[0].TexturePath.ShouldBe(@"Textures\Cinimatics\DigiPic\DigiPick_Material_color.DDS");
+        result.Model.Meshes[0].TexturePath.ShouldBe(@"Textures\Cinimatics\DigiPic\DigiPick_Material_normal.DDS");
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("from material", StringComparison.Ordinal));
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("requested materials/materialsbeta.cdb", StringComparison.Ordinal));
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("materials/materialsbeta.cdb was not resolved", StringComparison.Ordinal));
@@ -526,6 +524,7 @@ public class NifPreviewModelReaderTests
         result.Model.Meshes.Count.ShouldBe(1);
         result.Model.Meshes[0].TexturePath.ShouldBe(@"Textures\Cinimatics\DigiPic\DigiPick_Material_color.DDS");
         result.Diagnostics.ShouldNotContain(diagnostic => diagnostic.Contains("applied known Starfield texture folder correction", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("skipped because material already provided preview color texture", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -544,13 +543,13 @@ public class NifPreviewModelReaderTests
             {
                 if (string.Equals(path, materialPath, StringComparison.OrdinalIgnoreCase))
                 {
-                    return CreateStarfieldMaterialFile(@"Textures\Cinimatics\DigiPic\DigiPick_Material_color.DDS");
+                    return CreateStarfieldMaterialFile(@"Textures\Cinimatics\DigiPic\DigiPick_Material_normal.DDS");
                 }
 
                 return string.Equals(path, materialDatabasePath, StringComparison.OrdinalIgnoreCase)
                     ? CreateEmbeddedStarfieldMaterialDatabase(
                         ["Unrelated"],
-                        [@"Textures\Verified\DigiPic\DigiPick_Material_color.DDS"])
+                        [@"Textures\Verified\DigiPic\DigiPick_Material_normal.DDS"])
                     : null;
             }
         });
@@ -558,7 +557,7 @@ public class NifPreviewModelReaderTests
         result.IsSuccess.ShouldBeTrue(result.StatusMessage);
         result.Model.ShouldNotBeNull();
         result.Model.Meshes.Count.ShouldBe(1);
-        result.Model.Meshes[0].TexturePath.ShouldBe(@"Textures\Verified\DigiPic\DigiPick_Material_color.DDS");
+        result.Model.Meshes[0].TexturePath.ShouldBe(@"Textures\Verified\DigiPic\DigiPick_Material_normal.DDS");
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("parsed 2 string(s) from 2 STRT table(s)", StringComparison.Ordinal));
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("from material database", StringComparison.Ordinal));
     }
