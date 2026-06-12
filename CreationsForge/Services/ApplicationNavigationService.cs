@@ -12,7 +12,9 @@ public class ApplicationNavigationService : IApplicationNavigationService, IDisp
 {
     private readonly ILifetimeScope RootScope;
     private readonly IApplicationWindowService WindowService;
+    private Control? CurrentView;
     private ILifetimeScope? CurrentViewScope;
+    private string? CurrentActivePluginLoadKey;
 
     public ApplicationNavigationService(
         ILifetimeScope rootScope,
@@ -24,6 +26,7 @@ public class ApplicationNavigationService : IApplicationNavigationService, IDisp
 
     public Task ShowMainViewAsync(SupportedGameDTO? selectedGame, bool runConfiguredGameImport)
     {
+        CurrentActivePluginLoadKey = null;
         var mainView = CreateView<MainView>(out var viewScope);
         mainView.Configure(selectedGame, runConfiguredGameImport);
         SetCurrentView(mainView, viewScope);
@@ -32,6 +35,7 @@ public class ApplicationNavigationService : IApplicationNavigationService, IDisp
 
     public Task ShowMainViewAsync(SupportedGameDTO? selectedGame, bool runConfiguredGameImport, PluginDTO selectedPlugin, IList<RecordTreeItemViewModel> recordTreeItems)
     {
+        CurrentActivePluginLoadKey = null;
         var mainView = CreateView<MainView>(out var viewScope);
         mainView.Configure(selectedGame, runConfiguredGameImport, selectedPlugin, recordTreeItems);
         SetCurrentView(mainView, viewScope);
@@ -40,12 +44,20 @@ public class ApplicationNavigationService : IApplicationNavigationService, IDisp
 
     public Task ShowSettingsViewAsync()
     {
+        CurrentActivePluginLoadKey = null;
         SetCurrentView(CreateView<SettingsView>(out var viewScope), viewScope);
         return Task.CompletedTask;
     }
 
     public Task ShowActivePluginLoadViewAsync(SupportedGameDTO selectedGame, PluginDTO selectedPlugin)
     {
+        var activePluginLoadKey = GetActivePluginLoadKey(selectedGame, selectedPlugin);
+        if (string.Equals(CurrentActivePluginLoadKey, activePluginLoadKey, StringComparison.Ordinal))
+        {
+            return Task.CompletedTask;
+        }
+
+        CurrentActivePluginLoadKey = activePluginLoadKey;
         var activePluginLoadView = CreateView<ActivePluginLoadView>(out var viewScope);
         activePluginLoadView.Configure(selectedGame, selectedPlugin);
         SetCurrentView(activePluginLoadView, viewScope);
@@ -54,6 +66,7 @@ public class ApplicationNavigationService : IApplicationNavigationService, IDisp
 
     public Task ShowImportProgressViewAsync(SupportedGameDTO selectedGame, bool forceFullReimport)
     {
+        CurrentActivePluginLoadKey = null;
         var importProgressView = CreateView<ImportProgressView>(out var viewScope);
         importProgressView.Configure(selectedGame, forceFullReimport);
         SetCurrentView(importProgressView, viewScope);
@@ -62,6 +75,7 @@ public class ApplicationNavigationService : IApplicationNavigationService, IDisp
 
     public Task ShowResetAndImportAllProgressViewAsync()
     {
+        CurrentActivePluginLoadKey = null;
         var importProgressView = CreateView<ImportProgressView>(out var viewScope);
         importProgressView.ConfigureResetAndImportAll();
         SetCurrentView(importProgressView, viewScope);
@@ -85,10 +99,23 @@ public class ApplicationNavigationService : IApplicationNavigationService, IDisp
         return viewScope.Resolve<TView>();
     }
 
+    private static string GetActivePluginLoadKey(SupportedGameDTO selectedGame, PluginDTO selectedPlugin)
+    {
+        return $"{selectedGame.Game}:{selectedPlugin.ModKey.FileName}".ToUpperInvariant();
+    }
+
     private void SetCurrentView(Control view, ILifetimeScope viewScope)
     {
-        CurrentViewScope?.Dispose();
+        var previousView = CurrentView;
+        var previousScope = CurrentViewScope;
+        CurrentView = view;
         CurrentViewScope = viewScope;
         WindowService.SetContent(view);
+        if (previousView is not null)
+        {
+            WindowService.ClearContent(previousView);
+        }
+
+        previousScope?.Dispose();
     }
 }

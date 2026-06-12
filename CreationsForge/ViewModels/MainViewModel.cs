@@ -135,7 +135,9 @@ public class MainViewModel : ViewModelBase
         get => SelectedPluginFileNameValue;
         set
         {
-            if (!SetProperty(ref SelectedPluginFileNameValue, value) || value is null)
+            if (IsUpdatingSelectedPlugin ||
+                !SetProperty(ref SelectedPluginFileNameValue, value) ||
+                value is null)
             {
                 return;
             }
@@ -565,6 +567,11 @@ public class MainViewModel : ViewModelBase
         UpdateStatusBar();
         if (selectedPlugin.RecordCount > LargePluginRecordThreshold)
         {
+            ActivePluginLoadVersion++;
+            LoadingRecordTreePluginKey = pluginKey;
+            IsActivePluginLoading = true;
+            ActivePluginLoadingText = $"Loading records for {selectedPlugin.ModKey.FileName}...";
+            StatusText = ActivePluginLoadingText;
             await ApplicationNavigationService.ShowActivePluginLoadViewAsync(SelectedGame, selectedPlugin);
             return;
         }

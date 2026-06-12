@@ -45,6 +45,11 @@ public class RecordImportService : IRecordImportService
         ImportPluginRecordType(plugin, result, RecordTypeCatalog.NPC, recordSet.NPCs, progress, pluginIndex, pluginCount, cancellationToken);
         ImportPluginRecordType(plugin, result, RecordTypeCatalog.MagicEffect, recordSet.MagicEffects, progress, pluginIndex, pluginCount, cancellationToken);
         ImportPluginRecordType(plugin, result, RecordTypeCatalog.Perk, recordSet.Perks, progress, pluginIndex, pluginCount, cancellationToken);
+        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Static, recordSet.Statics, progress, pluginIndex, pluginCount, cancellationToken);
+        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Book, recordSet.Books, progress, pluginIndex, pluginCount, cancellationToken);
+        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Door, recordSet.Doors, progress, pluginIndex, pluginCount, cancellationToken);
+        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Container, recordSet.Containers, progress, pluginIndex, pluginCount, cancellationToken);
+        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Terminal, recordSet.Terminals, progress, pluginIndex, pluginCount, cancellationToken);
         Logger.Information(
             "Finished record import for {ModKey} for {Game}: headers {HeadersImported}, details {DetailRowsImported}, FormList items {FormListItemsImported}, record failures {RecordsFailed}, unsupported record types {UnsupportedRecordTypes}",
             plugin.ModKey.FileName,
@@ -56,6 +61,24 @@ public class RecordImportService : IRecordImportService
             result.UnsupportedRecordTypes);
 
         return result;
+    }
+
+    private void ImportOptionalPluginRecordType<TRecordDTO>(
+        PluginDTO plugin,
+        RecordImportResultDTO result,
+        RecordTypeData recordType,
+        IReadOnlyList<TRecordDTO> records,
+        IProgress<GameImportProgressDTO>? progress,
+        int pluginIndex,
+        int pluginCount,
+        CancellationToken cancellationToken)
+    {
+        if (records.Count == 0 && !TypedRecordImporters.ContainsKey((plugin.Game, recordType.RecordID)))
+        {
+            return;
+        }
+
+        ImportPluginRecordType(plugin, result, recordType, records, progress, pluginIndex, pluginCount, cancellationToken);
     }
 
     private void ImportPluginRecordType<TRecordDTO>(

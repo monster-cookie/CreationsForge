@@ -45,6 +45,16 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         var magicEffects = MapMagicEffects(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
         var perks = MapPerks(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
+        var statics = MapStaticModelRecords(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
+        var books = MapBookModelRecords(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
+        var doors = MapDoorModelRecords(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
+        var containers = MapContainerModelRecords(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
+        var terminals = MapTerminalModelRecords(plugin, mod);
 
         return new PluginRecordSetDTO
         {
@@ -56,7 +66,12 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             ActorValueInformation = actorValueInformation,
             NPCs = npcs,
             MagicEffects = magicEffects,
-            Perks = perks
+            Perks = perks,
+            Statics = statics,
+            Books = books,
+            Doors = doors,
+            Containers = containers,
+            Terminals = terminals
         };
     }
 
@@ -216,6 +231,63 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ActorValueInformation.RecordType, record)
             })
             .ToList();
+    }
+
+    private static IReadOnlyList<ModelRecordDTO> MapStaticModelRecords(PluginDTO plugin, IStarfieldModGetter mod)
+    {
+        return mod.Statics
+            .Select(record => CreateModelRecord(plugin, RecordTypeCatalog.Static.RecordID, record.FormKey, record.EditorID, record.FormVersion, (int)record.StarfieldMajorRecordFlags, record.Model))
+            .ToList();
+    }
+
+    private static IReadOnlyList<ModelRecordDTO> MapBookModelRecords(PluginDTO plugin, IStarfieldModGetter mod)
+    {
+        return mod.Books
+            .Select(record => CreateModelRecord(plugin, RecordTypeCatalog.Book.RecordID, record.FormKey, record.EditorID, record.FormVersion, (int)record.StarfieldMajorRecordFlags, record.Model))
+            .ToList();
+    }
+
+    private static IReadOnlyList<ModelRecordDTO> MapDoorModelRecords(PluginDTO plugin, IStarfieldModGetter mod)
+    {
+        return mod.Doors
+            .Select(record => CreateModelRecord(plugin, RecordTypeCatalog.Door.RecordID, record.FormKey, record.EditorID, record.FormVersion, (int)record.StarfieldMajorRecordFlags, record.Model))
+            .ToList();
+    }
+
+    private static IReadOnlyList<ModelRecordDTO> MapContainerModelRecords(PluginDTO plugin, IStarfieldModGetter mod)
+    {
+        return mod.Containers
+            .Select(record => CreateModelRecord(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, record.EditorID, record.FormVersion, (int)record.StarfieldMajorRecordFlags, record.Model))
+            .ToList();
+    }
+
+    private static IReadOnlyList<ModelRecordDTO> MapTerminalModelRecords(PluginDTO plugin, IStarfieldModGetter mod)
+    {
+        return mod.Terminals
+            .Select(record => CreateModelRecord(plugin, RecordTypeCatalog.Terminal.RecordID, record.FormKey, record.EditorID, record.FormVersion, (int)record.StarfieldMajorRecordFlags, record.Model))
+            .ToList();
+    }
+
+    private static ModelRecordDTO CreateModelRecord(
+        PluginDTO plugin,
+        string recordType,
+        FormKey formKey,
+        string? editorID,
+        int formVersion,
+        int majorRecordFlags,
+        IModelGetter? model)
+    {
+        return new ModelRecordDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = plugin.ModKey,
+            FormKey = MapFormKey(formKey),
+            EditorID = editorID ?? string.Empty,
+            FormVersion = formVersion,
+            MajorRecordFlags = majorRecordFlags,
+            ImportedAtUTC = DateTime.UtcNow,
+            Models = GetModels(plugin, recordType, formKey, model)
+        };
     }
 
     private static IReadOnlyList<NPCDTO> MapNPCs(PluginDTO plugin, IStarfieldModGetter mod)

@@ -19,4 +19,14 @@ public class PluginRecordSetDTO
     public IReadOnlyList<MagicEffectDTO> MagicEffects { get; set; } = [];
 
     public IReadOnlyList<PerkDTO> Perks { get; set; } = [];
+
+    public IReadOnlyList<ModelRecordDTO> Statics { get; set; } = [];
+
+    public IReadOnlyList<ModelRecordDTO> Books { get; set; } = [];
+
+    public IReadOnlyList<ModelRecordDTO> Doors { get; set; } = [];
+
+    public IReadOnlyList<ModelRecordDTO> Containers { get; set; } = [];
+
+    public IReadOnlyList<ModelRecordDTO> Terminals { get; set; } = [];
 }

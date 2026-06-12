@@ -102,6 +102,9 @@ aborting the full plugin import. The current cross-game shared record types are 
 (`GMST`), Globals (`GLOB`), MiscObjects (`MISC`), Keywords (`KYWD`), ActorValueInformation (`AVIF`), NPCs (`NPC_`),
 MagicEffects (`MGEF`), and Perks (`PERK`). Starfield, Fallout 4, and Skyrim map approved shared records inside their
 game adapters after loading the Mutagen plugin once for the Core-facing record-read call.
+Starfield also imports preview-oriented model-bearing record headers for Statics (`STAT`), Books (`BOOK`), Doors
+(`DOOR`), Containers (`CONT`), and Terminals (`TERM`). These Starfield-only records persist common `RecordInstances`
+and shared `Models` rows only; they do not yet have type-specific detail tables or comparison fields.
 
 Starfield plugin metadata, master-reference, and record reads use a Starfield-only construction helper. The helper
 prefers the full Mutagen environment load order's mod objects with the Starfield environment data folder from
@@ -238,13 +241,15 @@ persisted directly on `MagicEffects` because Mutagen/Spriggit expose them as fla
 Model persistence is shared in Core through `IModelImportService` and model repositories. `Models` and
 `ModelMaterialSwaps` reference `RecordInstances` and include `ModelSlot` plus `ModelGender` so future record types can
 map direct, slotted, or gendered `IModelGetter` data into one table family. The first populated model slice is
-Starfield `MISC`, which uses `ModelSlot = Model` and an empty `ModelGender`.
+Starfield `MISC`, which uses `ModelSlot = Model` and an empty `ModelGender`. Starfield also populates direct-model
+preview rows for `STAT`, `BOOK`, `DOOR`, `CONT`, and `TERM` through header-only `RecordInstances` plus `Models`.
 
 Sound persistence is shared in Core through `IRecordSoundImportService` and `RecordSounds`. `MISC` maps named scalar
 sounds such as crafting, pickup, putdown, and dropdown sounds when present, while `MGEF` maps indexed typed sound
 entries such as OnHit, Release, and Charge into the same table shape when present.
 
 Starfield `MiscItem`, `Static`, `Book`, `Door`, `Container`, and `Terminal` expose a direct `Model : IModelGetter`
-shape. `Terminal.MarkerModel` is a separate terminal-specific scalar. Starfield armor, armor addon, and weapon model
-data need custom mapping: armor and armor addon use gendered model wrappers, and weapons combine a direct `Model` with
-additional first-person/custom model data.
+shape and currently map that direct model to `ModelSlot = Model`. `Terminal.MarkerModel` is a separate
+terminal-specific scalar. Starfield armor, armor addon, and weapon model data need custom mapping: armor and armor
+addon use gendered model wrappers, and weapons combine a direct `Model` with additional first-person/custom model
+data.

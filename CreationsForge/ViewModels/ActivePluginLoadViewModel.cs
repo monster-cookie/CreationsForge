@@ -53,7 +53,7 @@ public class ActivePluginLoadViewModel : ViewModelBase
         CurrentDetailText = $"{selectedPlugin.RecordCount:N0} records. This can take a minute for large master files.";
     }
 
-    public async Task StartLoadAsync()
+    public async Task StartLoadAsync(CancellationToken cancellationToken = default)
     {
         if (LoadStarted || SelectedGame is null || SelectedPlugin is null)
         {
@@ -73,7 +73,8 @@ public class ActivePluginLoadViewModel : ViewModelBase
                 selectedPlugin.ModKey.FileName,
                 selectedPlugin.RecordCount);
 
-            var recordTreeItems = await Task.Run(() => LoadRecordTreeItems(selectedGame, selectedPlugin));
+            var recordTreeItems = await Task.Run(() => LoadRecordTreeItems(selectedGame, selectedPlugin), cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
             stopwatch.Stop();
 
             Logger.Information(
@@ -84,6 +85,15 @@ public class ActivePluginLoadViewModel : ViewModelBase
                 stopwatch.ElapsedMilliseconds);
 
             await ApplicationNavigationService.ShowMainViewAsync(selectedGame, runConfiguredGameImport: false, selectedPlugin, recordTreeItems);
+        }
+        catch (OperationCanceledException)
+        {
+            stopwatch.Stop();
+            Logger.Information(
+                "Canceled active plugin record browser load for {Game} plugin {PluginFileName} after {ElapsedMilliseconds} ms",
+                selectedGame.DisplayName,
+                selectedPlugin.ModKey.FileName,
+                stopwatch.ElapsedMilliseconds);
         }
         catch (Exception ex)
         {

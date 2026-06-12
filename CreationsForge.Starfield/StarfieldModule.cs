@@ -1,12 +1,16 @@
 using Autofac;
 using Autofac.Core;
 using CreationsForge.Core.Enums;
+using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Importers;
 using CreationsForge.Core.Importers.Interfaces;
+using CreationsForge.Core.Repositories.Interfaces;
+using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Starfield.Interfaces;
 using CreationsForge.Starfield.Importers;
 using CreationsForge.Starfield.Repositories;
 using CreationsForge.Starfield.Repositories.Interfaces;
+using NPoco;
 using Module = Autofac.Module;
 
 namespace CreationsForge.Starfield;
@@ -20,6 +24,11 @@ public class StarfieldModule : Module
         builder.RegisterType<StarfieldRecordReaderService>().As<IStarfieldRecordReaderService>().SingleInstance();
         builder.RegisterType<StarfieldPluginRepository>().As<IStarfieldPluginRepository>().InstancePerLifetimeScope();
         builder.RegisterType<StarfieldPluginExtensionImporter>().As<IPluginExtensionImporter>().InstancePerLifetimeScope();
+        RegisterModelRecordSupport(builder, RecordTypeCatalog.Static.RecordID);
+        RegisterModelRecordSupport(builder, RecordTypeCatalog.Book.RecordID);
+        RegisterModelRecordSupport(builder, RecordTypeCatalog.Door.RecordID);
+        RegisterModelRecordSupport(builder, RecordTypeCatalog.Container.RecordID);
+        RegisterModelRecordSupport(builder, RecordTypeCatalog.Terminal.RecordID);
         builder.RegisterType<StarfieldPluginReader>()
             .AsSelf()
             .Keyed<IGamePluginReader>(SupportedGame.Starfield)
@@ -36,5 +45,20 @@ public class StarfieldModule : Module
                 (parameter, _) => parameter.ParameterType == typeof(IGameRecordReader),
                 (_, context) => context.ResolveKeyed<IGameRecordReader>(SupportedGame.Starfield)))
             .As<IGameImporter>();
+    }
+
+    private static void RegisterModelRecordSupport(ContainerBuilder builder, string recordType)
+    {
+        builder.Register(context => new StarfieldModelRecordImporter(
+                recordType,
+                context.Resolve<IRecordInstanceRepository>(),
+                context.Resolve<IModelImportService>()))
+            .As<ITypedRecordImporter>()
+            .InstancePerLifetimeScope();
+        builder.Register(context => new StarfieldModelRecordTreeRepository(
+                recordType,
+                context.Resolve<IDatabase>()))
+            .As<IRecordTreeRepository>()
+            .InstancePerLifetimeScope();
     }
 }

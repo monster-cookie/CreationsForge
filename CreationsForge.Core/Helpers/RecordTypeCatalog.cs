@@ -64,4 +64,39 @@ public static class RecordTypeCatalog
         RecordType = "Perk",
         RecordID = "PERK"
     };
+
+    public static readonly RecordTypeData Static = new()
+    {
+        TableName = "RecordInstances",
+        RecordType = "Static",
+        RecordID = "STAT"
+    };
+
+    public static readonly RecordTypeData Book = new()
+    {
+        TableName = "RecordInstances",
+        RecordType = "Book",
+        RecordID = "BOOK"
+    };
+
+    public static readonly RecordTypeData Door = new()
+    {
+        TableName = "RecordInstances",
+        RecordType = "Door",
+        RecordID = "DOOR"
+    };
+
+    public static readonly RecordTypeData Container = new()
+    {
+        TableName = "RecordInstances",
+        RecordType = "Container",
+        RecordID = "CONT"
+    };
+
+    public static readonly RecordTypeData Terminal = new()
+    {
+        TableName = "RecordInstances",
+        RecordType = "Terminal",
+        RecordID = "TERM"
+    };
 }
