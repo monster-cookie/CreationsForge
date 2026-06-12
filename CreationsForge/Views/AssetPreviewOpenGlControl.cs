@@ -873,7 +873,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
             AssetPreviewViewMode.Front => Matrix4x4.CreateLookAt(new Vector3(0f, 0.2f, 5.25f), Vector3.Zero, Vector3.UnitY),
             AssetPreviewViewMode.Back => Matrix4x4.CreateLookAt(new Vector3(0f, 0.2f, -5.25f), Vector3.Zero, Vector3.UnitY),
             AssetPreviewViewMode.Side => Matrix4x4.CreateLookAt(new Vector3(5.25f, 0.8f, 1.25f), Vector3.Zero, Vector3.UnitY),
-            AssetPreviewViewMode.Top => Matrix4x4.CreateLookAt(new Vector3(0.85f, 4.5f, 1.25f), Vector3.Zero, -Vector3.UnitZ),
+            AssetPreviewViewMode.Top => Matrix4x4.CreateLookAt(new Vector3(0.35f, 4.25f, 3.1f), new Vector3(0f, 0.05f, 0f), Vector3.UnitY),
             _ => Matrix4x4.CreateLookAt(new Vector3(4.2f, 3.2f, 5.0f), new Vector3(0f, 0.15f, 0f), Vector3.UnitY)
         };
     }
@@ -881,7 +881,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
     private Matrix4x4 GetProjectionMatrix(uint width, uint height, Matrix4x4 view)
     {
         var aspect = width / (float)height;
-        if (ViewMode == AssetPreviewViewMode.Isometric || !CurrentRenderBounds.HasValue)
+        if (!CurrentRenderBounds.HasValue)
         {
             return Matrix4x4.CreatePerspectiveFieldOfView(
                 MathF.PI / 4f,
@@ -894,12 +894,19 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         var halfHeight = MathF.Max(
             projectedSize.Height / 2f,
             projectedSize.Width / (2f * aspect));
-        halfHeight = MathF.Max(halfHeight * 1.15f, 0.01f);
+        halfHeight = MathF.Max(halfHeight * GetOrthographicPaddingFactor(), 0.01f);
         return Matrix4x4.CreateOrthographic(
             halfHeight * 2f * aspect,
             halfHeight * 2f,
             0.1f,
             100f);
+    }
+
+    private float GetOrthographicPaddingFactor()
+    {
+        return ViewMode == AssetPreviewViewMode.Side
+            ? 0.82f
+            : 1.15f;
     }
 
     private void SetLightDirection()
