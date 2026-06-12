@@ -104,13 +104,28 @@ public class AssetPreviewPathResolverServiceTests
     [Theory]
     [InlineData("http://host/file.nif")]
     [InlineData(@"C:\Windows\file.nif")]
+    [InlineData("C:/Windows/file.nif")]
+    [InlineData("C:file.nif")]
+    [InlineData("/etc/file.nif")]
     [InlineData(@"..\file.nif")]
+    [InlineData("../file.nif")]
     [InlineData(@"\\server\share\file.nif")]
+    [InlineData(@"\\?\C:\Windows\file.nif")]
     public void CanOpenExternally_RejectsUnsafePaths(string meshPath)
     {
         var service = new AssetPreviewPathResolverService(Mock.Of<IModelRepository>());
 
         service.CanOpenExternally(meshPath).ShouldBeFalse();
+    }
+
+    [Theory]
+    [InlineData("Meshes/Props/Preview.nif")]
+    [InlineData(@"Props\Preview.nif")]
+    public void CanOpenExternally_AllowsRelativeSupportedMeshPaths(string meshPath)
+    {
+        var service = new AssetPreviewPathResolverService(Mock.Of<IModelRepository>());
+
+        service.CanOpenExternally(meshPath).ShouldBeTrue();
     }
 
     [Fact]

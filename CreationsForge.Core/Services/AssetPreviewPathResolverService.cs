@@ -185,10 +185,18 @@ public class AssetPreviewPathResolverService : IAssetPreviewPathResolverService
 
         var trimmedPath = meshPath.Trim();
         return Uri.TryCreate(trimmedPath, UriKind.Absolute, out var uri) && !uri.IsFile ||
+            IsWindowsRootedPath(trimmedPath) ||
             Path.IsPathRooted(trimmedPath) ||
             trimmedPath.StartsWith(@"\\", StringComparison.Ordinal) ||
             trimmedPath.StartsWith(@"\\?\", StringComparison.Ordinal) ||
             NormalizeMeshPath(trimmedPath).Split(Path.DirectorySeparatorChar).Any(part => part == "..");
+    }
+
+    private static bool IsWindowsRootedPath(string path)
+    {
+        return path.Length >= 2 &&
+            char.IsAsciiLetter(path[0]) &&
+            path[1] == ':';
     }
 
     private static bool IsUnderDirectory(string path, string directory)
