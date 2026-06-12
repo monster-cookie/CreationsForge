@@ -285,6 +285,14 @@ Constraints:
 - Full common typed record key without `RecordType` is unique so typed detail tables can reference the shared record
   identity without duplicating a constant `RecordType` column in every typed table.
 
+Indexes:
+
+- `IX_RecordInstances_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+- `IX_RecordInstances_Game_RecordType_Plugin` on `Game`, `RecordType`, containing plugin ModKey columns, `EditorID`,
+  and `FormKey_ID`
+- `IX_RecordInstances_Game_RecordType_FormKey` on `Game`, `RecordType`, origin FormKey ModKey columns, and
+  `FormKey_ID`
+
 Persistence behavior:
 
 - Current imported rows are upserted before typed detail rows and scripting adapters.
@@ -305,6 +313,12 @@ Foreign keys:
 
 - `Game` plus containing `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
 - Full common typed record key references `RecordInstances` with `ON DELETE CASCADE`.
+
+Indexes:
+
+- `IX_FormLists_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+- `IX_FormLists_Game_Plugin` on `Game`, containing plugin ModKey columns, `EditorID`, and `FormKey_ID`
+- `IX_FormLists_Game_FormKey_Collated` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
 
 Persistence behavior:
 
@@ -353,6 +367,12 @@ Foreign keys:
 - `Game` plus containing `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
 - Full common typed record key references `RecordInstances` with `ON DELETE CASCADE`.
 
+Indexes:
+
+- `IX_GameSettings_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+- `IX_GameSettings_Game_Plugin` on `Game`, containing plugin ModKey columns, `EditorID`, and `FormKey_ID`
+- `IX_GameSettings_Game_FormKey_Collated` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
 Persistence behavior:
 
 - Current imported rows are upserted.
@@ -370,6 +390,12 @@ Foreign keys:
 
 - `Game` plus containing `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
 - Full common typed record key references `RecordInstances` with `ON DELETE CASCADE`.
+
+Indexes:
+
+- `IX_Globals_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+- `IX_Globals_Game_Plugin` on `Game`, containing plugin ModKey columns, `EditorID`, and `FormKey_ID`
+- `IX_Globals_Game_FormKey_Collated` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
 
 Persistence behavior:
 
@@ -452,6 +478,14 @@ Foreign keys:
 
 - `Game` plus containing `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
 - Full common typed record key references `RecordInstances` with `ON DELETE CASCADE`.
+
+Indexes:
+
+- Each scripted parent table has a form-key index on `Game`, origin FormKey ModKey columns, and `FormKey_ID`.
+- Each scripted parent table has an active-plugin browse index on `Game`, containing plugin ModKey columns,
+  `EditorID`, and `FormKey_ID`.
+- Each scripted parent table has a collated form-key browse index on `Game`, origin FormKey ModKey columns, and
+  `FormKey_ID`.
 
 Persistence behavior:
 

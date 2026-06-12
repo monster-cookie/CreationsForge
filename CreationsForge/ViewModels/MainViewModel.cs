@@ -707,7 +707,7 @@ public class MainViewModel : ViewModelBase
             await Task.Yield();
 
             var fetchStopwatch = Stopwatch.StartNew();
-            var recordTreeEntries = RecordTreeService.GetRecordTreeEntries(selectedGame.Game, selectedPlugin.ModKey);
+            var recordTreeEntries = await Task.Run(() => RecordTreeService.GetRecordTreeEntries(selectedGame.Game, selectedPlugin.ModKey));
             fetchStopwatch.Stop();
 
             if (requestVersion != ActivePluginLoadVersion ||

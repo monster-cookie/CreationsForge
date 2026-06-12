@@ -31,17 +31,34 @@ public class StarfieldModelRecordTreeRepository : IRecordTreeRepository
                     CurrentRecord.FormKey_ModKey_FileName AS FormKeyModKeyFileName,
                     CurrentRecord.FormKey_ID AS FormKeyId,
                     CurrentRecord.EditorID AS EditorId,
-                    (
-                        SELECT COUNT(*)
-                        FROM RecordInstances PeerRecord
-                        WHERE PeerRecord.Game = CurrentRecord.Game
-                          AND PeerRecord.RecordType = @RecordType
-                          AND PeerRecord.FormKey_ModKey_Name = CurrentRecord.FormKey_ModKey_Name COLLATE NOCASE
-                          AND PeerRecord.FormKey_ModKey_Type = CurrentRecord.FormKey_ModKey_Type
-                          AND PeerRecord.FormKey_ModKey_FileName = CurrentRecord.FormKey_ModKey_FileName COLLATE NOCASE
-                          AND PeerRecord.FormKey_ID = CurrentRecord.FormKey_ID
-                    ) AS PluginCount
+                    COALESCE(PeerCounts.PluginCount, 0) AS PluginCount
                 FROM RecordInstances CurrentRecord
+                LEFT JOIN (
+                    SELECT
+                        PeerRecord.FormKey_ModKey_Name,
+                        PeerRecord.FormKey_ModKey_Type,
+                        PeerRecord.FormKey_ModKey_FileName,
+                        PeerRecord.FormKey_ID,
+                        COUNT(*) AS PluginCount
+                    FROM RecordInstances PeerRecord
+                    INNER JOIN RecordInstances ActiveRecord
+                       ON ActiveRecord.Game = @Game
+                      AND ActiveRecord.RecordType = @RecordType
+                      AND ActiveRecord.ModKey_Name = @ModKeyName COLLATE NOCASE
+                      AND ActiveRecord.ModKey_Type = @ModKeyType
+                      AND ActiveRecord.ModKey_FileName = @ModKeyFileName COLLATE NOCASE
+                      AND ActiveRecord.FormKey_ModKey_Name = PeerRecord.FormKey_ModKey_Name COLLATE NOCASE
+                      AND ActiveRecord.FormKey_ModKey_Type = PeerRecord.FormKey_ModKey_Type
+                      AND ActiveRecord.FormKey_ModKey_FileName = PeerRecord.FormKey_ModKey_FileName COLLATE NOCASE
+                      AND ActiveRecord.FormKey_ID = PeerRecord.FormKey_ID
+                    WHERE PeerRecord.Game = @Game
+                      AND PeerRecord.RecordType = @RecordType
+                    GROUP BY PeerRecord.FormKey_ModKey_Name, PeerRecord.FormKey_ModKey_Type, PeerRecord.FormKey_ModKey_FileName, PeerRecord.FormKey_ID
+                ) PeerCounts
+                  ON PeerCounts.FormKey_ModKey_Name = CurrentRecord.FormKey_ModKey_Name COLLATE NOCASE
+                 AND PeerCounts.FormKey_ModKey_Type = CurrentRecord.FormKey_ModKey_Type
+                 AND PeerCounts.FormKey_ModKey_FileName = CurrentRecord.FormKey_ModKey_FileName COLLATE NOCASE
+                 AND PeerCounts.FormKey_ID = CurrentRecord.FormKey_ID
                 WHERE CurrentRecord.Game = @Game
                   AND CurrentRecord.RecordType = @RecordType
                   AND CurrentRecord.ModKey_Name = @ModKeyName COLLATE NOCASE

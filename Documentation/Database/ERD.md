@@ -649,6 +649,11 @@ erDiagram
     AssetArchiveFiles ||--o{ AssetArchiveEntries : contains
 ```
 
+## Index Notes
+
+Indexes are documented in `DATABASE.md`. Migration `002_AddAssetArchiveIndex.sql` adds active-plugin browse indexes
+for `RecordInstances` and typed parent tables; these do not add columns or declared SQLite relationships to the ERD.
+
 ## Inferred Relationships
 
 These columns contain record-reference data but are not declared SQLite foreign keys:

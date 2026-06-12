@@ -838,7 +838,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         var angle = IsOrbitEnabled ? RenderCount * 0.01f : 0f;
         var model = Matrix4x4.CreateRotationY(angle);
         var view = GetViewMatrix();
-        var projection = GetProjectionMatrix(width, height);
+        var projection = GetProjectionMatrix(width, height, view);
         var mvp = Matrix4x4.Transpose(model * view * projection);
         var matrixValues = new[]
         {
@@ -872,13 +872,13 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         {
             AssetPreviewViewMode.Front => Matrix4x4.CreateLookAt(new Vector3(0f, 0.2f, 5.25f), Vector3.Zero, Vector3.UnitY),
             AssetPreviewViewMode.Back => Matrix4x4.CreateLookAt(new Vector3(0f, 0.2f, -5.25f), Vector3.Zero, Vector3.UnitY),
-            AssetPreviewViewMode.Side => Matrix4x4.CreateLookAt(new Vector3(5.25f, 0.2f, 0f), Vector3.Zero, Vector3.UnitY),
-            AssetPreviewViewMode.Top => Matrix4x4.CreateLookAt(new Vector3(0f, 4.5f, 0f), Vector3.Zero, -Vector3.UnitZ),
+            AssetPreviewViewMode.Side => Matrix4x4.CreateLookAt(new Vector3(5.25f, 0.8f, 1.25f), Vector3.Zero, Vector3.UnitY),
+            AssetPreviewViewMode.Top => Matrix4x4.CreateLookAt(new Vector3(0.85f, 4.5f, 1.25f), Vector3.Zero, -Vector3.UnitZ),
             _ => Matrix4x4.CreateLookAt(new Vector3(4.2f, 3.2f, 5.0f), new Vector3(0f, 0.15f, 0f), Vector3.UnitY)
         };
     }
 
-    private Matrix4x4 GetProjectionMatrix(uint width, uint height)
+    private Matrix4x4 GetProjectionMatrix(uint width, uint height, Matrix4x4 view)
     {
         var aspect = width / (float)height;
         if (ViewMode == AssetPreviewViewMode.Isometric || !CurrentRenderBounds.HasValue)
@@ -890,7 +890,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
                 100f);
         }
 
-        var projectedSize = CurrentRenderBounds.GetProjectedSize(ViewMode);
+        var projectedSize = CurrentRenderBounds.GetProjectedSize(view);
         var halfHeight = MathF.Max(
             projectedSize.Height / 2f,
             projectedSize.Width / (2f * aspect));
@@ -1238,14 +1238,40 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
             return new AssetPreviewOpenGlBounds(minX, maxX, minY, maxY, minZ, maxZ);
         }
 
-        public AssetPreviewProjectedSize GetProjectedSize(AssetPreviewViewMode viewMode)
+        public AssetPreviewProjectedSize GetProjectedSize(Matrix4x4 view)
         {
-            return viewMode switch
+            var minX = float.PositiveInfinity;
+            var maxX = float.NegativeInfinity;
+            var minY = float.PositiveInfinity;
+            var maxY = float.NegativeInfinity;
+            foreach (var corner in GetCorners())
             {
-                AssetPreviewViewMode.Side => new AssetPreviewProjectedSize(MaxZ - MinZ, MaxY - MinY),
-                AssetPreviewViewMode.Top => new AssetPreviewProjectedSize(MaxX - MinX, MaxZ - MinZ),
-                _ => new AssetPreviewProjectedSize(MaxX - MinX, MaxY - MinY)
-            };
+                var projected = Vector3.Transform(corner, view);
+                minX = MathF.Min(minX, projected.X);
+                maxX = MathF.Max(maxX, projected.X);
+                minY = MathF.Min(minY, projected.Y);
+                maxY = MathF.Max(maxY, projected.Y);
+            }
+
+            if (!IsFinite(minX) || !IsFinite(maxX) ||
+                !IsFinite(minY) || !IsFinite(maxY))
+            {
+                return new AssetPreviewProjectedSize(0.01f, 0.01f);
+            }
+
+            return new AssetPreviewProjectedSize(maxX - minX, maxY - minY);
+        }
+
+        private IEnumerable<Vector3> GetCorners()
+        {
+            yield return new Vector3(MinX, MinY, MinZ);
+            yield return new Vector3(MinX, MinY, MaxZ);
+            yield return new Vector3(MinX, MaxY, MinZ);
+            yield return new Vector3(MinX, MaxY, MaxZ);
+            yield return new Vector3(MaxX, MinY, MinZ);
+            yield return new Vector3(MaxX, MinY, MaxZ);
+            yield return new Vector3(MaxX, MaxY, MinZ);
+            yield return new Vector3(MaxX, MaxY, MaxZ);
         }
 
         private static bool IsFinite(float value)
