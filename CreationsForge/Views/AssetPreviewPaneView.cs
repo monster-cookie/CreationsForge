@@ -271,7 +271,7 @@ public class AssetPreviewPaneView : UserControl
         PreviewSurface.PreviewModel = ViewModel.PreviewModel;
         PreviewSurface.RenderOptions = new AssetPreviewRenderOptions
         {
-            MeshIndex = null
+            MeshIndex = ViewModel.SelectedMeshSelection?.MeshIndex
         };
         PreviewSurface.ViewMode = ViewModel.SelectedViewMode;
         PreviewSurface.RenderMode = ViewModel.SelectedRenderMode;
