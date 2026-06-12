@@ -20,6 +20,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         layout(location = 1) in vec3 aColor;
         layout(location = 2) in vec3 aNormal;
         layout(location = 3) in vec2 aUv;
+        layout(location = 4) in float aAlpha;
 
         uniform mat4 uMvp;
         uniform int uUseOverrideColor;
@@ -29,6 +30,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         out vec3 vColor;
         out vec3 vNormal;
         out vec2 vUv;
+        out float vAlpha;
         out float vLight;
 
         void main()
@@ -41,6 +43,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
             vNormal = normalize(aNormal);
             vLight = light;
             vUv = aUv;
+            vAlpha = aAlpha;
         }
         """;
 
@@ -49,28 +52,63 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         in vec3 vColor;
         in vec3 vNormal;
         in vec2 vUv;
+        in float vAlpha;
         in float vLight;
 
         uniform int uUseTexture;
         uniform sampler2D uTexture;
+        uniform vec4 uMaterialTint;
+        uniform int uUseOverlayTexture;
+        uniform sampler2D uOverlayTexture;
+        uniform int uUseDecalOpacityTexture;
+        uniform sampler2D uDecalOpacityTexture;
+        uniform vec4 uDecalTint;
+        uniform vec4 uDecalUvTransform;
+        uniform int uUseAdditiveBlend;
 
         out vec4 fragColor;
 
         void main()
         {
+            float previewLight = 0.85 + (vLight * 0.15);
+            float facing = abs(normalize(vNormal).z);
+            float highlight = pow(facing, 20.0) * 0.28;
+            vec3 fill = vec3(0.08, 0.09, 0.10) * (0.6 + (vLight * 0.4));
+            vec4 baseColor;
             if (uUseTexture == 1)
             {
                 vec4 textureColor = texture(uTexture, vUv);
-                float previewLight = 0.85 + (vLight * 0.15);
-                float facing = abs(normalize(vNormal).z);
-                float highlight = pow(facing, 20.0) * 0.28;
-                vec3 fill = vec3(0.08, 0.09, 0.10) * (0.6 + (vLight * 0.4));
-                fragColor = vec4(min((textureColor.rgb * previewLight) + fill + vec3(highlight), vec3(1.0)), textureColor.a);
+                baseColor = vec4(min((textureColor.rgb * uMaterialTint.rgb * previewLight) + fill + vec3(highlight), vec3(1.0)), textureColor.a);
             }
             else
             {
-                fragColor = vec4(vColor * vLight, 1.0);
+                baseColor = vec4(vColor * vLight, 1.0);
             }
+
+            if (uUseOverlayTexture == 1)
+            {
+                vec4 overlayColor = texture(uOverlayTexture, vUv);
+                if (uUseAdditiveBlend == 1)
+                {
+                    baseColor.rgb = min(baseColor.rgb + (overlayColor.rgb * overlayColor.a), vec3(1.0));
+                }
+                else
+                {
+                    baseColor.rgb = mix(baseColor.rgb, overlayColor.rgb, overlayColor.a);
+                }
+
+                baseColor.a = max(baseColor.a, overlayColor.a);
+            }
+
+            if (uUseDecalOpacityTexture == 1)
+            {
+                vec2 decalUv = (vUv * uDecalUvTransform.xy) + uDecalUvTransform.zw;
+                vec4 opacityColor = texture(uDecalOpacityTexture, decalUv);
+                float opacity = max(max(opacityColor.r, opacityColor.g), opacityColor.b) * opacityColor.a * vAlpha * uDecalTint.a;
+                baseColor = vec4(min(uDecalTint.rgb * previewLight, vec3(1.0)), clamp(opacity, 0.0, 1.0));
+            }
+
+            fragColor = baseColor;
         }
         """;
 
@@ -80,6 +118,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         layout(location = 1) in vec3 aColor;
         layout(location = 2) in vec3 aNormal;
         layout(location = 3) in vec2 aUv;
+        layout(location = 4) in float aAlpha;
 
         uniform mat4 uMvp;
         uniform int uUseOverrideColor;
@@ -89,6 +128,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         out vec3 vColor;
         out vec3 vNormal;
         out vec2 vUv;
+        out float vAlpha;
         out float vLight;
 
         void main()
@@ -101,6 +141,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
             vNormal = normalize(aNormal);
             vLight = light;
             vUv = aUv;
+            vAlpha = aAlpha;
         }
         """;
 
@@ -111,28 +152,63 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         in vec3 vColor;
         in vec3 vNormal;
         in vec2 vUv;
+        in float vAlpha;
         in float vLight;
 
         uniform int uUseTexture;
         uniform sampler2D uTexture;
+        uniform vec4 uMaterialTint;
+        uniform int uUseOverlayTexture;
+        uniform sampler2D uOverlayTexture;
+        uniform int uUseDecalOpacityTexture;
+        uniform sampler2D uDecalOpacityTexture;
+        uniform vec4 uDecalTint;
+        uniform vec4 uDecalUvTransform;
+        uniform int uUseAdditiveBlend;
 
         out vec4 fragColor;
 
         void main()
         {
+            float previewLight = 0.85 + (vLight * 0.15);
+            float facing = abs(normalize(vNormal).z);
+            float highlight = pow(facing, 20.0) * 0.28;
+            vec3 fill = vec3(0.08, 0.09, 0.10) * (0.6 + (vLight * 0.4));
+            vec4 baseColor;
             if (uUseTexture == 1)
             {
                 vec4 textureColor = texture(uTexture, vUv);
-                float previewLight = 0.85 + (vLight * 0.15);
-                float facing = abs(normalize(vNormal).z);
-                float highlight = pow(facing, 20.0) * 0.28;
-                vec3 fill = vec3(0.08, 0.09, 0.10) * (0.6 + (vLight * 0.4));
-                fragColor = vec4(min((textureColor.rgb * previewLight) + fill + vec3(highlight), vec3(1.0)), textureColor.a);
+                baseColor = vec4(min((textureColor.rgb * uMaterialTint.rgb * previewLight) + fill + vec3(highlight), vec3(1.0)), textureColor.a);
             }
             else
             {
-                fragColor = vec4(vColor * vLight, 1.0);
+                baseColor = vec4(vColor * vLight, 1.0);
             }
+
+            if (uUseOverlayTexture == 1)
+            {
+                vec4 overlayColor = texture(uOverlayTexture, vUv);
+                if (uUseAdditiveBlend == 1)
+                {
+                    baseColor.rgb = min(baseColor.rgb + (overlayColor.rgb * overlayColor.a), vec3(1.0));
+                }
+                else
+                {
+                    baseColor.rgb = mix(baseColor.rgb, overlayColor.rgb, overlayColor.a);
+                }
+
+                baseColor.a = max(baseColor.a, overlayColor.a);
+            }
+
+            if (uUseDecalOpacityTexture == 1)
+            {
+                vec2 decalUv = (vUv * uDecalUvTransform.xy) + uDecalUvTransform.zw;
+                vec4 opacityColor = texture(uDecalOpacityTexture, decalUv);
+                float opacity = max(max(opacityColor.r, opacityColor.g), opacityColor.b) * opacityColor.a * vAlpha * uDecalTint.a;
+                baseColor = vec4(min(uDecalTint.rgb * previewLight, vec3(1.0)), clamp(opacity, 0.0, 1.0));
+            }
+
+            fragColor = baseColor;
         }
         """;
 
@@ -445,7 +521,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         var indices = renderMesh.Indices.ToArray();
         var lineIndices = renderMesh.LineIndices.ToArray();
         CurrentRenderBounds = AssetPreviewOpenGlBounds.FromVertexBuffer(vertices);
-        VertexCount = vertices.Length / 11;
+        VertexCount = vertices.Length / 12;
         IndexCount = indices.Length;
         LineIndexCount = lineIndices.Length;
 
@@ -480,7 +556,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
                 BufferUsageARB.StaticDraw);
         }
 
-        var stride = 11 * sizeof(float);
+        var stride = 12 * sizeof(float);
         Gl.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, (uint)stride, null);
         Gl.EnableVertexAttribArray(0);
         Gl.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, (uint)stride, (void*)(3 * sizeof(float)));
@@ -489,12 +565,14 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         Gl.EnableVertexAttribArray(2);
         Gl.VertexAttribPointer(3, 2, VertexAttribPointerType.Float, false, (uint)stride, (void*)(9 * sizeof(float)));
         Gl.EnableVertexAttribArray(3);
+        Gl.VertexAttribPointer(4, 1, VertexAttribPointerType.Float, false, (uint)stride, (void*)(11 * sizeof(float)));
+        Gl.EnableVertexAttribArray(4);
         UploadTextures(renderMesh);
         HasPendingMeshUpload = false;
-        SetDiagnostic($"OpenGL: uploaded {vertices.Length / 11:N0} vertices, {indices.Length:N0} indices, {lineIndices.Length:N0} line indices");
+        SetDiagnostic($"OpenGL: uploaded {vertices.Length / 12:N0} vertices, {indices.Length:N0} indices, {lineIndices.Length:N0} line indices");
         Logger.Information(
             "Asset preview OpenGL uploaded {VertexCount} vertices, {IndexCount} indices, and {LineIndexCount} line indices",
-            vertices.Length / 11,
+            vertices.Length / 12,
             indices.Length,
             lineIndices.Length);
     }
@@ -508,14 +586,33 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
 
         if (CurrentRenderMesh.MeshParts.Count == 0)
         {
-            SetTexture(null);
+            SetTextures(null, null, null, false, false, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 0f, 0f);
             Gl.DrawElements(PrimitiveType.Triangles, (uint)IndexCount, DrawElementsType.UnsignedInt, null);
             return;
         }
 
         foreach (var part in CurrentRenderMesh.MeshParts)
         {
-            SetTexture(part.TextureIndex);
+            var useDecalOpacity = part.IsDecal && part.DecalOpacityTextureIndex.HasValue;
+            SetBlendMode(useDecalOpacity, part.UseAdditiveBlend);
+            SetTextures(
+                part.TextureIndex,
+                part.OverlayTextureIndex,
+                part.DecalOpacityTextureIndex,
+                useDecalOpacity,
+                part.UseAdditiveBlend,
+                part.MaterialTintRed,
+                part.MaterialTintGreen,
+                part.MaterialTintBlue,
+                part.MaterialTintAlpha,
+                part.DecalTintRed,
+                part.DecalTintGreen,
+                part.DecalTintBlue,
+                part.DecalOpacity,
+                part.DecalUvScaleU,
+                part.DecalUvScaleV,
+                part.DecalUvOffsetU,
+                part.DecalUvOffsetV);
             Gl.DrawElements(
                 PrimitiveType.Triangles,
                 (uint)part.IndexCount,
@@ -523,27 +620,69 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
                 (void*)(part.IndexOffset * sizeof(uint)));
         }
 
-        SetTexture(null);
+        SetBlendMode(false, false);
+        SetTextures(null, null, null, false, false, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 0f, 0f);
     }
 
-    private void SetTexture(int? textureIndex)
+    private void SetTextures(int? textureIndex, int? overlayTextureIndex, int? decalOpacityTextureIndex, bool useDecalOpacityTexture, bool useAdditiveBlend, float materialTintRed, float materialTintGreen, float materialTintBlue, float materialTintAlpha, float decalTintRed, float decalTintGreen, float decalTintBlue, float decalOpacity, float decalUvScaleU, float decalUvScaleV, float decalUvOffsetU, float decalUvOffsetV)
     {
         if (Gl is null)
         {
             return;
         }
 
-        if (textureIndex is >= 0 && textureIndex.Value < TextureObjects.Count && TextureObjects[textureIndex.Value] != 0)
+        var hasPrimaryTexture = BindTexture(TextureUnit.Texture0, textureIndex);
+        Gl.Uniform1(Gl.GetUniformLocation(ShaderProgram, "uTexture"), 0);
+        Gl.Uniform1(Gl.GetUniformLocation(ShaderProgram, "uUseTexture"), hasPrimaryTexture ? 1 : 0);
+        Gl.Uniform4(Gl.GetUniformLocation(ShaderProgram, "uMaterialTint"), materialTintRed, materialTintGreen, materialTintBlue, materialTintAlpha);
+
+        var hasOverlayTexture = BindTexture(TextureUnit.Texture1, overlayTextureIndex);
+        Gl.Uniform1(Gl.GetUniformLocation(ShaderProgram, "uOverlayTexture"), 1);
+        Gl.Uniform1(Gl.GetUniformLocation(ShaderProgram, "uUseOverlayTexture"), hasOverlayTexture ? 1 : 0);
+
+        var hasDecalOpacityTexture = BindTexture(TextureUnit.Texture2, decalOpacityTextureIndex);
+        Gl.Uniform1(Gl.GetUniformLocation(ShaderProgram, "uDecalOpacityTexture"), 2);
+        Gl.Uniform1(Gl.GetUniformLocation(ShaderProgram, "uUseDecalOpacityTexture"), useDecalOpacityTexture && hasDecalOpacityTexture ? 1 : 0);
+        Gl.Uniform4(Gl.GetUniformLocation(ShaderProgram, "uDecalTint"), decalTintRed, decalTintGreen, decalTintBlue, decalOpacity);
+        Gl.Uniform4(Gl.GetUniformLocation(ShaderProgram, "uDecalUvTransform"), decalUvScaleU, decalUvScaleV, decalUvOffsetU, decalUvOffsetV);
+        Gl.Uniform1(Gl.GetUniformLocation(ShaderProgram, "uUseAdditiveBlend"), useAdditiveBlend ? 1 : 0);
+    }
+
+    private void SetBlendMode(bool isEnabled, bool useAdditiveBlend)
+    {
+        if (Gl is null)
         {
-            Gl.ActiveTexture(TextureUnit.Texture0);
-            Gl.BindTexture(TextureTarget.Texture2D, TextureObjects[textureIndex.Value]);
-            Gl.Uniform1(Gl.GetUniformLocation(ShaderProgram, "uTexture"), 0);
-            Gl.Uniform1(Gl.GetUniformLocation(ShaderProgram, "uUseTexture"), 1);
             return;
         }
 
+        if (!isEnabled)
+        {
+            Gl.Disable(EnableCap.Blend);
+            Gl.DepthMask(true);
+            return;
+        }
+
+        Gl.Enable(EnableCap.Blend);
+        Gl.DepthMask(false);
+        Gl.BlendFunc(BlendingFactor.SrcAlpha, useAdditiveBlend ? BlendingFactor.One : BlendingFactor.OneMinusSrcAlpha);
+    }
+
+    private bool BindTexture(TextureUnit textureUnit, int? textureIndex)
+    {
+        if (Gl is null)
+        {
+            return false;
+        }
+
+        Gl.ActiveTexture(textureUnit);
+        if (textureIndex is >= 0 && textureIndex.Value < TextureObjects.Count && TextureObjects[textureIndex.Value] != 0)
+        {
+            Gl.BindTexture(TextureTarget.Texture2D, TextureObjects[textureIndex.Value]);
+            return true;
+        }
+
         Gl.BindTexture(TextureTarget.Texture2D, 0);
-        Gl.Uniform1(Gl.GetUniformLocation(ShaderProgram, "uUseTexture"), 0);
+        return false;
     }
 
     private unsafe void UploadTextures(AssetPreviewRenderMesh renderMesh)
@@ -1076,7 +1215,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
             var maxY = float.NegativeInfinity;
             var minZ = float.PositiveInfinity;
             var maxZ = float.NegativeInfinity;
-            for (var index = 0; index + 10 < vertices.Count; index += 11)
+            for (var index = 0; index + 11 < vertices.Count; index += 12)
             {
                 var x = vertices[index];
                 var y = vertices[index + 1];

@@ -107,7 +107,7 @@ public class BethesdaAssetPreviewGeometryReader : IAssetPreviewGeometryReader
     private static string GetStatusMessage(string statusMessage, AssetPreviewModelDTO previewModel)
     {
         var loadedTextureCount = previewModel.Meshes
-            .Select(mesh => mesh.Texture?.Path)
+            .SelectMany(mesh => new[] { mesh.Texture?.Path, mesh.OverlayTexture?.Path, mesh.DecalOpacityTexture?.Path })
             .Where(texturePath => !string.IsNullOrWhiteSpace(texturePath))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Count();
@@ -117,7 +117,7 @@ public class BethesdaAssetPreviewGeometryReader : IAssetPreviewGeometryReader
         }
 
         var texturePathCount = previewModel.Meshes
-            .Select(mesh => mesh.TexturePath)
+            .SelectMany(mesh => new[] { mesh.TexturePath, mesh.OverlayTexturePath, mesh.DecalOpacityTexturePath })
             .Where(texturePath => !string.IsNullOrWhiteSpace(texturePath))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Count();
@@ -152,41 +152,28 @@ public class BethesdaAssetPreviewGeometryReader : IAssetPreviewGeometryReader
         {
             Name = mesh.Name,
             MaterialName = mesh.MaterialName,
-            TexturePath = mesh.TexturePath
+            TexturePath = mesh.TexturePath,
+            OverlayTexturePath = mesh.OverlayTexturePath,
+            DecalOpacityTexturePath = mesh.DecalOpacityTexturePath,
+            MaterialTintRed = mesh.MaterialTintRed,
+            MaterialTintGreen = mesh.MaterialTintGreen,
+            MaterialTintBlue = mesh.MaterialTintBlue,
+            MaterialTintAlpha = mesh.MaterialTintAlpha,
+            DecalTintRed = mesh.DecalTintRed,
+            DecalTintGreen = mesh.DecalTintGreen,
+            DecalTintBlue = mesh.DecalTintBlue,
+            DecalOpacity = mesh.DecalOpacity,
+            DecalUvScaleU = mesh.DecalUvScaleU,
+            DecalUvScaleV = mesh.DecalUvScaleV,
+            DecalUvOffsetU = mesh.DecalUvOffsetU,
+            DecalUvOffsetV = mesh.DecalUvOffsetV,
+            IsDecal = mesh.IsDecal,
+            IsInvisible = mesh.IsInvisible,
+            UseAdditiveBlend = mesh.UseAdditiveBlend
         };
-        if (!string.IsNullOrWhiteSpace(mesh.TexturePath))
-        {
-            var textureResolution = AssetFileResolverService.ResolveAssetFile(new AssetPreviewCandidateDTO
-            {
-                Game = candidate.Game,
-                ModKey = candidate.ModKey,
-                RecordType = candidate.RecordType,
-                FormKey = candidate.FormKey,
-                ModelSlot = "Texture",
-                ModelGender = candidate.ModelGender,
-                MeshPath = mesh.TexturePath,
-                DisplayName = mesh.TexturePath,
-                CanPreview = true,
-                CanOpenExternally = false
-            });
-            if (textureResolution.Data != null && IsReadableResolution(textureResolution))
-            {
-                previewMesh.Texture = new AssetPreviewTextureDTO
-                {
-                    Path = textureResolution.NormalizedEntryPath ?? textureResolution.ResolvedPath ?? mesh.TexturePath,
-                    Data = textureResolution.Data
-                };
-                loadedTextureCount++;
-            }
-            else
-            {
-                Logger.Information(
-                    "NIF preview texture skipped for {MeshName} texture {TexturePath}: {StatusMessage}",
-                    mesh.Name,
-                    mesh.TexturePath,
-                    textureResolution.StatusMessage);
-            }
-        }
+        previewMesh.Texture = TryLoadTexture(candidate, mesh.Name, mesh.TexturePath, ref loadedTextureCount);
+        previewMesh.OverlayTexture = TryLoadTexture(candidate, mesh.Name, mesh.OverlayTexturePath, ref loadedTextureCount);
+        previewMesh.DecalOpacityTexture = TryLoadTexture(candidate, mesh.Name, mesh.DecalOpacityTexturePath, ref loadedTextureCount);
 
         foreach (var vertex in mesh.Vertices)
         {
@@ -198,7 +185,8 @@ public class BethesdaAssetPreviewGeometryReader : IAssetPreviewGeometryReader
                 {
                     U = vertex.UV.U,
                     V = vertex.UV.V
-                }
+                },
+                Alpha = vertex.Alpha
             });
         }
 
@@ -208,6 +196,44 @@ public class BethesdaAssetPreviewGeometryReader : IAssetPreviewGeometryReader
         }
 
         return previewMesh;
+    }
+
+    private AssetPreviewTextureDTO? TryLoadTexture(AssetPreviewCandidateDTO candidate, string meshName, string? texturePath, ref int loadedTextureCount)
+    {
+        if (string.IsNullOrWhiteSpace(texturePath))
+        {
+            return null;
+        }
+
+        var textureResolution = AssetFileResolverService.ResolveAssetFile(new AssetPreviewCandidateDTO
+        {
+            Game = candidate.Game,
+            ModKey = candidate.ModKey,
+            RecordType = candidate.RecordType,
+            FormKey = candidate.FormKey,
+            ModelSlot = "Texture",
+            ModelGender = candidate.ModelGender,
+            MeshPath = texturePath,
+            DisplayName = texturePath,
+            CanPreview = true,
+            CanOpenExternally = false
+        });
+        if (textureResolution.Data != null && IsReadableResolution(textureResolution))
+        {
+            loadedTextureCount++;
+            return new AssetPreviewTextureDTO
+            {
+                Path = textureResolution.NormalizedEntryPath ?? textureResolution.ResolvedPath ?? texturePath,
+                Data = textureResolution.Data
+            };
+        }
+
+        Logger.Information(
+            "NIF preview texture skipped for {MeshName} texture {TexturePath}: {StatusMessage}",
+            meshName,
+            texturePath,
+            textureResolution.StatusMessage);
+        return null;
     }
 
     private static AssetPreviewVector3DTO MapVector(NifPreviewVector3 vector)

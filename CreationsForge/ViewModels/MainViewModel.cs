@@ -790,7 +790,9 @@ public class MainViewModel : ViewModelBase
     public static IList<RecordTreeItemViewModel> BuildRecordTree(IReadOnlyList<RecordTreeEntryDTO> entries)
     {
         var recordTreeItems = new List<RecordTreeItemViewModel>();
-        foreach (var recordTypeGroup in entries.GroupBy(entry => entry.RecordType))
+        foreach (var recordTypeGroup in entries
+            .GroupBy(entry => entry.RecordType)
+            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase))
         {
             var recordTypeItem = new RecordTreeItemViewModel(recordTypeGroup.Key, string.Empty);
             foreach (var record in recordTypeGroup.OrderBy(entry => entry.EditorID, StringComparer.OrdinalIgnoreCase))

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using CreationsForge.Bethesda.Assets.Nif;
 using Shouldly;
@@ -139,6 +140,36 @@ public class NifPreviewModelReaderTests
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("external Starfield geometry", StringComparison.Ordinal));
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("position stride 6", StringComparison.Ordinal));
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("geometry bounds metadata center", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryRead_DecodesStarfieldExternalGeometryUvStream()
+    {
+        var reader = new NifPreviewModelReader();
+        const string geometryPath = @"geometries\cf623091ecaffe5a43fa\249816728d4437f890e8.mesh";
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Items/digipic/DigiPic.nif",
+            DisplayName = "DigiPic",
+            Data = CreateMinimalNifWithBlock("BSGeometry", CreateStarfieldBSGeometryBlockWithExternalGeometryReference(), bethesdaVersion: 173U),
+            ResolveExternalAsset = path => string.Equals(path, geometryPath, StringComparison.OrdinalIgnoreCase)
+                ? CreateStarfieldGeometryMeshWithUvStream()
+                : null
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes.Count.ShouldBe(1);
+        result.Model.Meshes[0].Vertices[0].UV.U.ShouldBe(0.25f, 0.0001f);
+        result.Model.Meshes[0].Vertices[0].UV.V.ShouldBe(0.75f, 0.0001f);
+        result.Model.Meshes[0].Vertices[1].UV.U.ShouldBe(1f, 0.0001f);
+        result.Model.Meshes[0].Vertices[2].UV.V.ShouldBe(1f, 0.0001f);
+        result.Model.Meshes[0].Vertices[0].Alpha.ShouldBe(0f, 0.0001f);
+        result.Model.Meshes[0].Vertices[1].Alpha.ShouldBe(0.5019f, 0.0001f);
+        result.Model.Meshes[0].Vertices[2].Alpha.ShouldBe(1f, 0.0001f);
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("UV stream decoded 3 half-precision UVs", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("vertex alpha stream decoded 3 packed alpha values", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -563,6 +594,283 @@ public class NifPreviewModelReaderTests
     }
 
     [Fact]
+    public void TryRead_MarksStarfieldDecalMaterialAndUsesDirectOverlayTexture()
+    {
+        var reader = new NifPreviewModelReader();
+        const string materialPath = @"Materials\SetDressing\Books\DecalLetterLineOverlay01_LinesStripes.mat";
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/SetDressing/Books/BookSmall01.nif",
+            DisplayName = "BookSmall01",
+            Data = CreateMaterialLinkedBSTriShapeNif(materialPath),
+            ResolveExternalAsset = path => string.Equals(path, materialPath, StringComparison.OrdinalIgnoreCase)
+                ? CreateStarfieldMaterialFileWithStrings(
+                    "BSLayeredMaterial",
+                    "1LayerStandardDecal",
+                    "Additive",
+                    @"Textures\SetDressing\Books\DecalLetterLineOverlay01_LinesStripes_color.dds")
+                : null
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes[0].IsDecal.ShouldBeTrue();
+        result.Model.Meshes[0].UseAdditiveBlend.ShouldBeTrue();
+        result.Model.Meshes[0].TexturePath.ShouldBeNull();
+        result.Model.Meshes[0].OverlayTexturePath.ShouldBe(@"Textures\SetDressing\Books\DecalLetterLineOverlay01_LinesStripes_color.dds");
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("decal material", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("additive blend", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryRead_ParsesStarfieldDecalUvTransformFromMaterial()
+    {
+        var reader = new NifPreviewModelReader();
+        const string materialPath = @"Materials\SetDressing\Books\DecalLetterLineOverlay01_LinesStripes.mat";
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/SetDressing/Books/BookSmall01.nif",
+            DisplayName = "BookSmall01",
+            Data = CreateMaterialLinkedBSTriShapeNif(materialPath),
+            ResolveExternalAsset = path => string.Equals(path, materialPath, StringComparison.OrdinalIgnoreCase)
+                ? CreateStarfieldDecalMaterialJsonFileWithUvTransform(
+                    materialPath,
+                    @"Data\Textures\Common\Decal\DecalLetterLineOverlay01_opacity.DDS",
+                    -0.5f,
+                    0.3f,
+                    0f,
+                    0.505f)
+                : null
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes[0].DecalUvScaleU.ShouldBe(-0.5f);
+        result.Model.Meshes[0].DecalUvScaleV.ShouldBe(0.3f);
+        result.Model.Meshes[0].DecalUvOffsetU.ShouldBe(0f);
+        result.Model.Meshes[0].DecalUvOffsetV.ShouldBe(0.505f);
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("decal UV scale (-0.5,0.3), offset (0,0.505)", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryRead_ResolvesStarfieldDecalOverlayTextureFromMaterialDatabaseByMaterialName()
+    {
+        var reader = new NifPreviewModelReader();
+        const string materialPath = @"Materials\SetDressing\Books\DecalLetterLineOverlay01_LinesStripes.mat";
+        const string materialDatabasePath = "materials/materialsbeta.cdb";
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/SetDressing/Books/BookSmall01.nif",
+            DisplayName = "BookSmall01",
+            Data = CreateMaterialLinkedBSTriShapeNif(materialPath),
+            ResolveExternalAsset = path =>
+            {
+                if (string.Equals(path, materialPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    return CreateStarfieldMaterialFileWithStrings(
+                        "BSLayeredMaterial",
+                        "1LayerStandardDecal",
+                        "Additive",
+                        @"Data\Materials\SetDressing\Books\DecalLetterLineOverlay01_LinesStripes");
+                }
+
+                return string.Equals(path, materialDatabasePath, StringComparison.OrdinalIgnoreCase)
+                    ? CreateStarfieldMaterialDatabase(
+                        @"Textures\SetDressing\Books\DecalLetterLineOverlay01_LinesStripes_color.dds",
+                        @"Textures\SetDressing\Books\Unrelated_color.dds")
+                    : null;
+            }
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes[0].IsDecal.ShouldBeTrue();
+        result.Model.Meshes[0].OverlayTexturePath.ShouldBe(@"Textures\SetDressing\Books\DecalLetterLineOverlay01_LinesStripes_color.dds");
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("material-name DDS candidate", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("selected Textures\\SetDressing\\Books\\DecalLetterLineOverlay01_LinesStripes_color.dds", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryRead_DoesNotUseStarfieldParentOpacityTextureAsRenderableDecalOverlay()
+    {
+        var reader = new NifPreviewModelReader();
+        const string materialPath = @"Materials\SetDressing\Books\DecalLetterLineOverlay01_LinesStripes.mat";
+        const string baseMaterialPath = @"Materials\SetDressing\Books\DecalLetterLineOverlay01_Book_Base.mat";
+        const string commonDecalMaterialPath = @"Materials\Common\Decal\DecalLetterLineOverlay01.mat";
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/SetDressing/Books/BookSmall01.nif",
+            DisplayName = "BookSmall01",
+            Data = CreateMaterialLinkedBSTriShapeNif(materialPath),
+            ResolveExternalAsset = path =>
+            {
+                if (string.Equals(path, materialPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    return CreateStarfieldMaterialJsonFile(
+                        materialPath,
+                        @"Data\MATERIALS\SetDressing\Books\DecalLetterLineOverlay01_Book_Base.mat",
+                        "1LayerStandardDecal",
+                        []);
+                }
+
+                if (string.Equals(path, baseMaterialPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    return CreateStarfieldMaterialJsonFile(
+                        baseMaterialPath,
+                        @"Data\MATERIALS\Common\Decal\DecalLetterLineOverlay01.mat",
+                        "1LayerStandardDecal",
+                        []);
+                }
+
+                return string.Equals(path, commonDecalMaterialPath, StringComparison.OrdinalIgnoreCase)
+                    ? CreateStarfieldDecalMaterialJsonFile(
+                        commonDecalMaterialPath,
+                        @"Data\Textures\Common\Decal\DecalLetterLineOverlay01_opacity.DDS")
+                    : null;
+            }
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes[0].IsDecal.ShouldBeTrue();
+        result.Model.Meshes[0].OverlayTexturePath.ShouldBeNull();
+        result.Model.Meshes[0].DecalOpacityTexturePath.ShouldBe(@"Textures\Common\Decal\DecalLetterLineOverlay01_opacity.DDS");
+        result.Model.Meshes[0].DecalTintRed.ShouldBe(0.901961f, 0.0001f);
+        result.Model.Meshes[0].DecalTintGreen.ShouldBe(0.894118f, 0.0001f);
+        result.Model.Meshes[0].DecalTintBlue.ShouldBe(0.886275f, 0.0001f);
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("parent material", StringComparison.Ordinal) && diagnostic.Contains("DecalLetterLineOverlay01_Book_Base.mat resolved", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("parent material", StringComparison.Ordinal) && diagnostic.Contains("DecalLetterLineOverlay01.mat resolved", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryRead_PrefersStarfieldRootMaterialColorTextureOverParentColorTexture()
+    {
+        var reader = new NifPreviewModelReader();
+        const string materialPath = @"Materials\SetDressing\Books\GenBookA01_PagesAged.mat";
+        const string parentMaterialPath = @"Materials\Common\Textile\TextileDenim01.mat";
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/SetDressing/Books/BookSmall01.nif",
+            DisplayName = "BookSmall01",
+            Data = CreateMaterialLinkedBSTriShapeNif(materialPath),
+            ResolveExternalAsset = path =>
+            {
+                if (string.Equals(path, materialPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    return CreateStarfieldMaterialJsonFile(
+                        materialPath,
+                        @"Data\MATERIALS\Common\Textile\TextileDenim01.mat",
+                        "1LayerStandard",
+                        [@"Data\Textures\SetDressing\Books\genbooka01_color.dds"]);
+                }
+
+                return string.Equals(path, parentMaterialPath, StringComparison.OrdinalIgnoreCase)
+                    ? CreateStarfieldMaterialJsonFile(
+                        parentMaterialPath,
+                        null,
+                        "1LayerStandard",
+                        [@"Data\Textures\Common\Textile\TextileDenim01_color.DDS"])
+                    : null;
+            }
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes[0].TexturePath.ShouldBe(@"Textures\SetDressing\Books\genbooka01_color.dds");
+    }
+
+    [Fact]
+    public void TryRead_ParsesStarfieldMaterialTintFromAlbedoReplacement()
+    {
+        var reader = new NifPreviewModelReader();
+        const string materialPath = @"Materials\SetDressing\Books\GenBookA01_PagesAged.mat";
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/SetDressing/Books/BookSmall01.nif",
+            DisplayName = "BookSmall01",
+            Data = CreateMaterialLinkedBSTriShapeNif(materialPath),
+            ResolveExternalAsset = path => string.Equals(path, materialPath, StringComparison.OrdinalIgnoreCase)
+                ? CreateStarfieldMaterialJsonFileWithAlbedoTint(
+                    materialPath,
+                    @"Data\Textures\SetDressing\Books\genbooka01_color.dds",
+                    0.596078f,
+                    0.588235f,
+                    0.576471f,
+                    0f)
+                : null
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes[0].MaterialTintRed.ShouldBe(0.596078f, 0.0001f);
+        result.Model.Meshes[0].MaterialTintGreen.ShouldBe(0.588235f, 0.0001f);
+        result.Model.Meshes[0].MaterialTintBlue.ShouldBe(0.576471f, 0.0001f);
+        result.Model.Meshes[0].MaterialTintAlpha.ShouldBe(0f, 0.0001f);
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("material tint (0.596,0.588,0.576,0)", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryRead_MarksStarfieldInvisibleMaterial()
+    {
+        var reader = new NifPreviewModelReader();
+        const string materialPath = @"Materials\Common\Utility\Decal_Blank_Off01.mat";
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/SetDressing/Books/BookSmall01.nif",
+            DisplayName = "BookSmall01",
+            Data = CreateMaterialLinkedBSTriShapeNif(materialPath),
+            ResolveExternalAsset = path => string.Equals(path, materialPath, StringComparison.OrdinalIgnoreCase)
+                ? CreateStarfieldMaterialFileWithStrings("BSLayeredMaterial", "Invisible")
+                : null
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes[0].IsInvisible.ShouldBeTrue();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("invisible material", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryRead_MarksStarfieldInvisibleMaterialFromShaderModelParentWhenSummaryIsNull()
+    {
+        var reader = new NifPreviewModelReader();
+        const string materialPath = @"Materials\Common\Utility\Decal_Blank_Off01.mat";
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/SetDressing/Books/BookSmall01.nif",
+            DisplayName = "BookSmall01",
+            Data = CreateMaterialLinkedBSTriShapeNif(materialPath),
+            ResolveExternalAsset = path => string.Equals(path, materialPath, StringComparison.OrdinalIgnoreCase)
+                ? Encoding.UTF8.GetBytes("""
+                    {
+                        "Import" : [ "Data\\MATERIALS\\Layered\\ShaderModels\\Invisible.mat" ],
+                        "Objects" : [
+                            {
+                                "Parent" : "Data\\MATERIALS\\Layered\\ShaderModels\\Invisible.mat"
+                            }
+                        ],
+                        "Summary" : null,
+                        "Version" : 1
+                    }
+                    """)
+                : null
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes[0].IsInvisible.ShouldBeTrue();
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("invisible material", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void TryRead_ReturnsFailureForUnsupportedVersion()
     {
         var data = CreateMinimalBSTriShapeNif(version: 0x14000005);
@@ -819,6 +1127,165 @@ public class NifPreviewModelReaderTests
         return stream.ToArray();
     }
 
+    private static byte[] CreateStarfieldMaterialFileWithStrings(params string[] values)
+    {
+        using var stream = new MemoryStream();
+        using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: false);
+        foreach (var value in values)
+        {
+            WriteSizedString(writer, value);
+        }
+
+        return stream.ToArray();
+    }
+
+    private static byte[] CreateStarfieldMaterialJsonFile(string fileName, string? parent, string shaderModel, string[] textureFiles)
+    {
+        var textureJson = textureFiles.Length == 0
+            ? "null"
+            : "{" + string.Join(",", textureFiles.Select((textureFile, index) => $"\"Texture{index}\":{{\"File\":\"{EscapeJson(textureFile)}\"}}")) + "}";
+        var parentJson = parent == null
+            ? "\"\""
+            : $"\"{EscapeJson(parent)}\"";
+        var json = $$"""
+            {
+                "Filename" : "{{EscapeJson(fileName)}}",
+                "Import" : [ "Data\\MATERIALS\\Layered\\ShaderModels\\{{shaderModel}}.mat" ],
+                "Objects" : [
+                    {
+                        "Parent" : {{parentJson}}
+                    }
+                ],
+                "Summary" : {
+                    "Layer1" : {
+                        "Parent" : {{parentJson}},
+                        "ShaderModel" : "{{shaderModel}}",
+                        "Textures" : {{textureJson}}
+                    }
+                },
+                "Version" : 1
+            }
+            """;
+        return Encoding.UTF8.GetBytes(json);
+    }
+
+    private static byte[] CreateStarfieldDecalMaterialJsonFile(string fileName, string opacityTexturePath)
+    {
+        var json = $$"""
+            {
+                "Filename" : "{{EscapeJson(fileName)}}",
+                "Import" : [ "Data\\MATERIALS\\Layered\\ShaderModels\\1LayerStandardDecal.mat" ],
+                "Objects" : [],
+                "Summary" : {
+                    "Layer1" : {
+                        "ShaderModel" : "1LayerStandardDecal",
+                        "Textures" : {
+                            "Albedo" : {
+                                "File" : "",
+                                "Replacement" : {
+                                    "w" : 1,
+                                    "x" : 0.901961,
+                                    "y" : 0.894118,
+                                    "z" : 0.886275
+                                },
+                                "UseReplacement" : true
+                            },
+                            "Opacity" : {
+                                "File" : "{{EscapeJson(opacityTexturePath)}}",
+                                "Replacement" : {
+                                    "w" : 1,
+                                    "x" : 1,
+                                    "y" : 1,
+                                    "z" : 1
+                                },
+                                "UseReplacement" : false
+                            }
+                        }
+                    }
+                },
+                "Version" : 1
+            }
+            """;
+        return Encoding.UTF8.GetBytes(json);
+    }
+
+    private static byte[] CreateStarfieldMaterialJsonFileWithAlbedoTint(string fileName, string colorTexturePath, float red, float green, float blue, float alpha)
+    {
+        var redText = red.ToString("0.######", CultureInfo.InvariantCulture);
+        var greenText = green.ToString("0.######", CultureInfo.InvariantCulture);
+        var blueText = blue.ToString("0.######", CultureInfo.InvariantCulture);
+        var alphaText = alpha.ToString("0.######", CultureInfo.InvariantCulture);
+        var json = $$"""
+            {
+                "Filename" : "{{EscapeJson(fileName)}}",
+                "Import" : [ "Data\\MATERIALS\\Layered\\ShaderModels\\1LayerStandard.mat" ],
+                "Objects" : [],
+                "Summary" : {
+                    "Layer1" : {
+                        "ShaderModel" : "1LayerStandard",
+                        "Textures" : {
+                            "Albedo" : {
+                                "File" : "{{EscapeJson(colorTexturePath)}}",
+                                "Replacement" : {
+                                    "w" : {{alphaText}},
+                                    "x" : {{redText}},
+                                    "y" : {{greenText}},
+                                    "z" : {{blueText}}
+                                },
+                                "UseReplacement" : true
+                            }
+                        }
+                    }
+                },
+                "Version" : 1
+            }
+            """;
+        return Encoding.UTF8.GetBytes(json);
+    }
+
+    private static byte[] CreateStarfieldDecalMaterialJsonFileWithUvTransform(string fileName, string opacityTexturePath, float scaleU, float scaleV, float offsetU, float offsetV)
+    {
+        var scaleUText = scaleU.ToString("0.###", CultureInfo.InvariantCulture);
+        var scaleVText = scaleV.ToString("0.###", CultureInfo.InvariantCulture);
+        var offsetUText = offsetU.ToString("0.###", CultureInfo.InvariantCulture);
+        var offsetVText = offsetV.ToString("0.###", CultureInfo.InvariantCulture);
+        var json = $$"""
+            {
+                "Filename" : "{{EscapeJson(fileName)}}",
+                "Import" : [ "Data\\MATERIALS\\Layered\\ShaderModels\\1LayerStandardDecal.mat" ],
+                "Objects" : [],
+                "Summary" : {
+                    "Layer1" : {
+                        "ShaderModel" : "1LayerStandardDecal",
+                        "UV Stream" : {
+                            "Scale" : {
+                                "x" : {{scaleUText}},
+                                "y" : {{scaleVText}}
+                            },
+                            "Offset" : {
+                                "x" : {{offsetUText}},
+                                "y" : {{offsetVText}}
+                            }
+                        },
+                        "Textures" : {
+                            "Opacity" : {
+                                "File" : "{{EscapeJson(opacityTexturePath)}}",
+                                "UseReplacement" : false
+                            }
+                        }
+                    }
+                },
+                "Version" : 1
+            }
+            """;
+        return Encoding.UTF8.GetBytes(json);
+    }
+
+    private static string EscapeJson(string value)
+    {
+        return value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal);
+    }
+
     private static byte[] CreateStarfieldMaterialDatabase(params string[] strings)
     {
         var stringTable = Encoding.UTF8.GetBytes(string.Join('\0', strings) + '\0');
@@ -1045,6 +1512,36 @@ public class NifPreviewModelReaderTests
         return stream.ToArray();
     }
 
+    private static byte[] CreateStarfieldGeometryMeshWithUvStream()
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
+        {
+            writer.Write(2U);
+            writer.Write(3U);
+            writer.Write((ushort)0);
+            writer.Write((ushort)1);
+            writer.Write((ushort)2);
+            writer.Write(1f);
+            writer.Write(0U);
+            writer.Write(3U);
+            WriteStarfieldGeometryVertex(writer, 0, 0, 0);
+            WriteStarfieldGeometryVertex(writer, 16384, 0, 0);
+            WriteStarfieldGeometryVertex(writer, 0, 16384, 0);
+            writer.Write(3U);
+            WriteHalfUv(writer, 0.25f, 0.75f);
+            WriteHalfUv(writer, 1f, 0f);
+            WriteHalfUv(writer, 0f, 1f);
+            writer.Write(0U);
+            writer.Write(3U);
+            WritePackedAlpha(writer, 0);
+            WritePackedAlpha(writer, 128);
+            WritePackedAlpha(writer, 255);
+        }
+
+        return stream.ToArray();
+    }
+
     private static byte[] CreateSkyrimSpecialEditionBSTriShapeBlock()
     {
         using var stream = new MemoryStream();
@@ -1248,6 +1745,20 @@ public class NifPreviewModelReaderTests
         writer.Write(x);
         writer.Write(y);
         writer.Write(z);
+    }
+
+    private static void WriteHalfUv(BinaryWriter writer, float u, float v)
+    {
+        writer.Write(BitConverter.HalfToUInt16Bits((Half)u));
+        writer.Write(BitConverter.HalfToUInt16Bits((Half)v));
+    }
+
+    private static void WritePackedAlpha(BinaryWriter writer, byte alpha)
+    {
+        writer.Write(alpha);
+        writer.Write((byte)255);
+        writer.Write((byte)255);
+        writer.Write((byte)255);
     }
 
     private static void WriteHalfVertex(BinaryWriter writer, float x, float y, float z)

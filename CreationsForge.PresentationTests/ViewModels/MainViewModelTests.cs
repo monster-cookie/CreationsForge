@@ -56,6 +56,27 @@ public class MainViewModelTests
         navigationService.ActivePluginLoadCount.ShouldBe(0);
     }
 
+    [Fact]
+    public void BuildRecordTree_SortsRecordTypeGroupsAlphabetically()
+    {
+        var modKey = new ModKeyDTO
+        {
+            Name = "Starfield",
+            Type = 0,
+            FileName = "Starfield.esm"
+        };
+        var entries = new[]
+        {
+            CreateRecordTreeEntry(modKey, "PERK", "PerkRecord", 0x30),
+            CreateRecordTreeEntry(modKey, "BOOK", "BookRecord", 0x10),
+            CreateRecordTreeEntry(modKey, "CONT", "ContainerRecord", 0x20)
+        };
+
+        var tree = MainViewModel.BuildRecordTree(entries);
+
+        tree.Select(item => item.FormIDText).ShouldBe(["BOOK", "CONT", "PERK"]);
+    }
+
     private static MainViewModel CreateViewModel(FakeApplicationNavigationService? navigationService = null)
     {
         return new MainViewModel(
@@ -124,6 +145,23 @@ public class MainViewModelTests
                 FileName = "Large.esm"
             },
             Id = 0x0000000A
+        };
+    }
+
+    private static RecordTreeEntryDTO CreateRecordTreeEntry(ModKeyDTO modKey, string recordType, string editorId, uint formId)
+    {
+        return new RecordTreeEntryDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = modKey,
+            FormKey = new FormKeyDTO
+            {
+                ModKey = modKey,
+                Id = formId
+            },
+            RecordType = recordType,
+            EditorID = editorId,
+            PluginCount = 1
         };
     }
 

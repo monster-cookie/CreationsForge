@@ -29,10 +29,11 @@ can list entries and read uncompressed and zlib-compressed entries into memory. 
 compression variants that are not zlib are explicit follow-up work. The first NIF implementation is a minimal preview
 reader for Fallout 4/Skyrim Special Edition-style `BSTriShape` geometry and a narrow Starfield `BSGeometry` external
 `.mesh` preview slice that emits UI-neutral preview meshes. The reader can also resolve Starfield `.mat` material
-assets through the same external-asset callback and extract preview DDS texture references, with a narrow
-`materialsbeta.cdb` `STRT` string-table fallback for stale material texture paths. Full NIF scene graph support,
-Starfield material semantics, full CDB material graph parsing, skeletons, collision, additional Starfield geometry
-variants, and unsupported vertex layouts remain follow-up work.
+assets through the same external-asset callback and extract preview DDS texture references. Starfield layered material
+preview support is intentionally narrow: it tracks one primary texture, one overlay/decal texture, additive decal
+blending hints, invisible-material skip hints, and a `materialsbeta.cdb` `STRT` string-table fallback for stale or
+indirect texture paths. Full NIF scene graph support, full Starfield material parity, full CDB material graph parsing,
+skeletons, collision, additional Starfield geometry variants, and unsupported vertex layouts remain follow-up work.
 
 `CreationsForge.Starfield`, `CreationsForge.Fallout4`, and `CreationsForge.Skyrim` isolate
 game-specific Mutagen packages, Autofac modules, reader services, and reader facade implementations. These projects

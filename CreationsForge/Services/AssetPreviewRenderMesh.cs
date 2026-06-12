@@ -29,4 +29,36 @@ public class AssetPreviewRenderMeshPart
     public required int IndexCount { get; set; }
 
     public int? TextureIndex { get; set; }
+
+    public int? OverlayTextureIndex { get; set; }
+
+    public int? DecalOpacityTextureIndex { get; set; }
+
+    public float MaterialTintRed { get; set; } = 1f;
+
+    public float MaterialTintGreen { get; set; } = 1f;
+
+    public float MaterialTintBlue { get; set; } = 1f;
+
+    public float MaterialTintAlpha { get; set; } = 1f;
+
+    public float DecalTintRed { get; set; } = 1f;
+
+    public float DecalTintGreen { get; set; } = 1f;
+
+    public float DecalTintBlue { get; set; } = 1f;
+
+    public float DecalOpacity { get; set; } = 1f;
+
+    public float DecalUvScaleU { get; set; } = 1f;
+
+    public float DecalUvScaleV { get; set; } = 1f;
+
+    public float DecalUvOffsetU { get; set; }
+
+    public float DecalUvOffsetV { get; set; }
+
+    public bool IsDecal { get; set; }
+
+    public bool UseAdditiveBlend { get; set; }
 }

@@ -71,7 +71,7 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
         Logger.Information(
             "Asset preview render mesh created for {DisplayName}: {VertexCount} vertices, {IndexCount} indices, {LineIndexCount} line indices, {TextureCount} texture path(s), bounds {Bounds}",
             previewModel.DisplayName,
-            renderMesh.Vertices.Count / 11,
+            renderMesh.Vertices.Count / 12,
             renderMesh.Indices.Count,
             renderMesh.LineIndices.Count,
             renderMesh.TexturePaths.Count,
@@ -83,7 +83,7 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
     {
         var textureIndexesByPath = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (var texturePath in meshes
-            .Select(mesh => mesh.TexturePath)
+            .SelectMany(mesh => new[] { mesh.TexturePath, mesh.OverlayTexturePath, mesh.DecalOpacityTexturePath })
             .Where(texturePath => !string.IsNullOrWhiteSpace(texturePath))
             .Distinct(StringComparer.OrdinalIgnoreCase))
         {
@@ -91,7 +91,7 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
         }
 
         foreach (var texture in meshes
-            .Select(mesh => mesh.Texture)
+            .SelectMany(mesh => new[] { mesh.Texture, mesh.OverlayTexture, mesh.DecalOpacityTexture })
             .Where(texture => texture != null)
             .DistinctBy(texture => texture!.Path, StringComparer.OrdinalIgnoreCase))
         {
@@ -109,13 +109,16 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
 
     private static IEnumerable<AssetPreviewMeshDTO> GetMeshes(AssetPreviewModelDTO previewModel, AssetPreviewRenderOptions options)
     {
+        var meshes = previewModel.Meshes
+            .Where(mesh => !mesh.IsInvisible)
+            .ToList();
         if (options.MeshIndex == null)
         {
-            return previewModel.Meshes;
+            return meshes;
         }
 
-        return options.MeshIndex >= 0 && options.MeshIndex < previewModel.Meshes.Count
-            ? [previewModel.Meshes[options.MeshIndex.Value]]
+        return options.MeshIndex >= 0 && options.MeshIndex < meshes.Count
+            ? [meshes[options.MeshIndex.Value]]
             : [];
     }
 
@@ -125,7 +128,7 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
         AssetPreviewBoundsTransform transform,
         IReadOnlyDictionary<string, int> textureIndexesByPath)
     {
-        var baseVertex = (uint)(renderMesh.Vertices.Count / 11);
+        var baseVertex = (uint)(renderMesh.Vertices.Count / 12);
         var indexOffset = renderMesh.Indices.Count;
         var color = mesh.MaterialName == FallbackMaterialName
             ? new AssetPreviewRenderColor(0.85f, 0.10f, 0.08f)
@@ -134,6 +137,17 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
             ? null
             : textureIndexesByPath.TryGetValue(mesh.Texture.Path, out var matchedTextureIndex)
                 ? matchedTextureIndex
+                : (int?)null;
+        var overlayTextureIndex = mesh.OverlayTexture == null
+            ? null
+            : textureIndexesByPath.TryGetValue(mesh.OverlayTexture.Path, out var matchedOverlayTextureIndex)
+                ? matchedOverlayTextureIndex
+                : (int?)null;
+        var hasUsableTextureCoordinates = HasUsableTextureCoordinates(mesh.Vertices);
+        var decalOpacityTextureIndex = mesh.DecalOpacityTexture == null || !hasUsableTextureCoordinates
+            ? null
+            : textureIndexesByPath.TryGetValue(mesh.DecalOpacityTexture.Path, out var matchedDecalOpacityTextureIndex)
+                ? matchedDecalOpacityTextureIndex
                 : (int?)null;
 
         var positions = mesh.Vertices
@@ -152,7 +166,14 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
             mesh.Name,
             useDecodedNormals ? "decoded" : "generated",
             mesh.MaterialName,
-            mesh.TexturePath);
+            mesh.TexturePath ?? mesh.OverlayTexturePath ?? mesh.DecalOpacityTexturePath);
+        if (mesh.DecalOpacityTexture != null && !hasUsableTextureCoordinates)
+        {
+            Logger.Warning(
+                "Asset preview mesh {MeshName} skipped decal opacity texture {TexturePath} because the mesh has no usable UV coordinates",
+                mesh.Name,
+                mesh.DecalOpacityTexture.Path);
+        }
 
         for (var index = 0; index < mesh.Vertices.Count; index++)
         {
@@ -171,6 +192,7 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
             renderMesh.Vertices.Add(normal.Z);
             renderMesh.Vertices.Add(mesh.Vertices[index].UV.U);
             renderMesh.Vertices.Add(mesh.Vertices[index].UV.V);
+            renderMesh.Vertices.Add(mesh.Vertices[index].Alpha);
         }
 
         for (var index = 0; index + 2 < mesh.Indices.Count; index += 3)
@@ -191,7 +213,23 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
             {
                 IndexOffset = indexOffset,
                 IndexCount = indexCount,
-                TextureIndex = textureIndex
+                TextureIndex = textureIndex,
+                OverlayTextureIndex = overlayTextureIndex,
+                DecalOpacityTextureIndex = decalOpacityTextureIndex,
+                MaterialTintRed = mesh.MaterialTintRed,
+                MaterialTintGreen = mesh.MaterialTintGreen,
+                MaterialTintBlue = mesh.MaterialTintBlue,
+                MaterialTintAlpha = mesh.MaterialTintAlpha,
+                DecalTintRed = mesh.DecalTintRed,
+                DecalTintGreen = mesh.DecalTintGreen,
+                DecalTintBlue = mesh.DecalTintBlue,
+                DecalOpacity = mesh.DecalOpacity,
+                DecalUvScaleU = mesh.DecalUvScaleU,
+                DecalUvScaleV = mesh.DecalUvScaleV,
+                DecalUvOffsetU = mesh.DecalUvOffsetU,
+                DecalUvOffsetV = mesh.DecalUvOffsetV,
+                IsDecal = mesh.IsDecal,
+                UseAdditiveBlend = mesh.UseAdditiveBlend
             });
         }
     }
@@ -211,6 +249,35 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
         return normals.Count > 0 && validCount >= normals.Count / 2;
     }
 
+    private static bool HasUsableTextureCoordinates(IList<AssetPreviewVertexDTO> vertices)
+    {
+        if (vertices.Count < 3)
+        {
+            return false;
+        }
+
+        var minU = float.PositiveInfinity;
+        var maxU = float.NegativeInfinity;
+        var minV = float.PositiveInfinity;
+        var maxV = float.NegativeInfinity;
+        foreach (var vertex in vertices)
+        {
+            var uv = vertex.UV;
+            if (!IsFinite(uv.U) || !IsFinite(uv.V))
+            {
+                return false;
+            }
+
+            minU = MathF.Min(minU, uv.U);
+            maxU = MathF.Max(maxU, uv.U);
+            minV = MathF.Min(minV, uv.V);
+            maxV = MathF.Max(maxV, uv.V);
+        }
+
+        return MathF.Abs(maxU - minU) > 0.0001f ||
+            MathF.Abs(maxV - minV) > 0.0001f;
+    }
+
     private static AssetPreviewMeshDTO ToRenderSpace(AssetPreviewMeshDTO mesh)
     {
         if (mesh.MaterialName == FallbackMaterialName)
@@ -223,7 +290,26 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
             Name = mesh.Name,
             MaterialName = mesh.MaterialName,
             TexturePath = mesh.TexturePath,
-            Texture = mesh.Texture
+            Texture = mesh.Texture,
+            OverlayTexturePath = mesh.OverlayTexturePath,
+            OverlayTexture = mesh.OverlayTexture,
+            DecalOpacityTexturePath = mesh.DecalOpacityTexturePath,
+            DecalOpacityTexture = mesh.DecalOpacityTexture,
+            MaterialTintRed = mesh.MaterialTintRed,
+            MaterialTintGreen = mesh.MaterialTintGreen,
+            MaterialTintBlue = mesh.MaterialTintBlue,
+            MaterialTintAlpha = mesh.MaterialTintAlpha,
+            DecalTintRed = mesh.DecalTintRed,
+            DecalTintGreen = mesh.DecalTintGreen,
+            DecalTintBlue = mesh.DecalTintBlue,
+            DecalOpacity = mesh.DecalOpacity,
+            DecalUvScaleU = mesh.DecalUvScaleU,
+            DecalUvScaleV = mesh.DecalUvScaleV,
+            DecalUvOffsetU = mesh.DecalUvOffsetU,
+            DecalUvOffsetV = mesh.DecalUvOffsetV,
+            IsDecal = mesh.IsDecal,
+            IsInvisible = mesh.IsInvisible,
+            UseAdditiveBlend = mesh.UseAdditiveBlend
         };
         foreach (var vertex in mesh.Vertices)
         {
@@ -231,7 +317,8 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
             {
                 Position = ToRenderSpace(vertex.Position),
                 Normal = ToRenderSpace(vertex.Normal),
-                UV = vertex.UV
+                UV = vertex.UV,
+                Alpha = vertex.Alpha
             });
         }
 
@@ -440,6 +527,7 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
         mesh.Vertices.Add(1f);
         mesh.Vertices.Add(0f);
         mesh.Vertices.Add(0f);
+        mesh.Vertices.Add(1f);
     }
 
     private static AssetPreviewVector3DTO Normalize(AssetPreviewVector3DTO normal)

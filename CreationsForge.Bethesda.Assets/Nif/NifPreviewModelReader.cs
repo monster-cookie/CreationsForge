@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 
 namespace CreationsForge.Bethesda.Assets.Nif;
 
@@ -25,10 +26,12 @@ public class NifPreviewModelReader : INifPreviewModelReader
     private const int StarfieldGeometryMeshIndexDataOffset = 8;
     private const int StarfieldGeometryMeshVertexHeaderSize = 12;
     private const int StarfieldGeometryMeshPositionStride = sizeof(short) * 3;
+    private const int StarfieldGeometryMeshUvStride = sizeof(ushort) * 2;
     private const float StarfieldGeometryMeshPositionScale = 1f / 32767f;
     private const ulong StarfieldMaterialDatabaseBethSignature = 0x0000000848544542UL;
     private const uint StarfieldMaterialDatabaseVersion = 4U;
     private const uint StarfieldMaterialDatabaseStringTableSignature = 0x54525453U;
+    private const int MaxStarfieldMaterialParentDepth = 8;
     private static readonly byte[] StarfieldMaterialDatabaseBethSignatureBytes = [0x42, 0x45, 0x54, 0x48, 0x08, 0x00, 0x00, 0x00];
     private static readonly string[] StarfieldMaterialDatabasePaths =
     {
@@ -463,11 +466,11 @@ public class NifPreviewModelReader : INifPreviewModelReader
                     textureSets.TryGetValue(textureSetBlockIndex, out var textureSetPath)
                     ? textureSetPath
                     : null;
-            if (texturePath == null &&
-                IsMaterialPath(materialName) &&
-                TryResolveMaterialTexturePath(materialName, resolveExternalAsset, out var materialTexturePath, out var materialDiagnostic))
+                var materialInfo = new NifMaterialInfo(materialName, texturePath, null, null, StarfieldPreviewColor.White, 1f, 1f, 1f, 1f, StarfieldPreviewUvTransform.Identity, false, false, false);
+            if (IsMaterialPath(materialName) &&
+                TryResolveMaterialPreviewInfo(materialName, texturePath, resolveExternalAsset, out var resolvedMaterialInfo, out var materialDiagnostic))
             {
-                texturePath = materialTexturePath;
+                materialInfo = resolvedMaterialInfo;
                 diagnostics.Add($"{block.TypeName} block {blockIndex}: {materialDiagnostic}");
             }
             else if (texturePath == null && IsMaterialPath(materialName))
@@ -475,8 +478,8 @@ public class NifPreviewModelReader : INifPreviewModelReader
                 diagnostics.Add($"{block.TypeName} block {blockIndex}: material {materialName} did not provide a preview texture");
             }
 
-            materials[blockIndex] = new NifMaterialInfo(materialName, texturePath);
-            diagnostics.Add($"{block.TypeName} block {blockIndex}: material {materialName}, texture {texturePath ?? "none"}");
+            materials[blockIndex] = materialInfo;
+            diagnostics.Add($"{block.TypeName} block {blockIndex}: material {materialName}, texture {materialInfo.TexturePath ?? "none"}, overlay {materialInfo.OverlayTexturePath ?? "none"}, decal {materialInfo.IsDecal}, invisible {materialInfo.IsInvisible}");
         }
 
         return materials;
@@ -632,9 +635,670 @@ public class NifPreviewModelReader : INifPreviewModelReader
         return true;
     }
 
+    private static bool TryResolveMaterialPreviewInfo(
+        string materialPath,
+        string? existingTexturePath,
+        Func<string, byte[]?>? resolveExternalAsset,
+        out NifMaterialInfo materialInfo,
+        out string diagnostic)
+    {
+        materialInfo = new NifMaterialInfo(materialPath, existingTexturePath, null, null, StarfieldPreviewColor.White, 1f, 1f, 1f, 1f, StarfieldPreviewUvTransform.Identity, false, false, false);
+        diagnostic = string.Empty;
+        if (resolveExternalAsset == null)
+        {
+            diagnostic = $"material {materialPath} could not be resolved because no external asset resolver is available";
+            return false;
+        }
+
+        var materialData = resolveExternalAsset(materialPath);
+        if (materialData == null || materialData.Length == 0)
+        {
+            diagnostic = $"material {materialPath} could not be resolved";
+            return false;
+        }
+
+        var materialDataCandidates = new List<byte[]> { materialData };
+        var materialParentDiagnostics = new List<string>();
+        AddStarfieldMaterialParentData(
+            materialPath,
+            materialData,
+            resolveExternalAsset,
+            materialDataCandidates,
+            materialParentDiagnostics,
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+            0);
+        var stringCandidates = materialDataCandidates
+            .SelectMany(GetMaterialStringCandidates)
+            .ToList();
+        var rootStringCandidates = GetMaterialStringCandidates(materialData).ToList();
+        var rootTextureCandidates = GetPreviewTextureCandidates(rootStringCandidates).ToList();
+        var parentTextureCandidates = GetPreviewTextureCandidates(materialDataCandidates.Skip(1).SelectMany(GetMaterialStringCandidates)).ToList();
+        var directTextureCandidates = rootTextureCandidates
+            .Concat(parentTextureCandidates)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var unsupportedFeatures = GetUnsupportedMaterialFeatureSummary(stringCandidates);
+        var isInvisible = IsInvisibleMaterial(materialData, rootStringCandidates);
+        var isDecal = stringCandidates.Any(IsDecalMaterialToken);
+        var useAdditiveBlend = stringCandidates.Any(IsAdditiveBlendToken);
+        var materialDatabaseDiagnostics = materialParentDiagnostics;
+        var texturePath = existingTexturePath;
+        var overlayTexturePath = isDecal
+            ? directTextureCandidates.FirstOrDefault(IsRenderableDecalOverlayTextureCandidate)
+            : null;
+        var decalOpacityTexturePath = isDecal && !isInvisible
+            ? GetStarfieldDecalOpacityTexturePath(materialDataCandidates)
+            : null;
+        var decalTint = isDecal && !isInvisible
+            ? GetStarfieldDecalTint(materialDataCandidates)
+            : StarfieldPreviewColor.White;
+        var materialTint = !isDecal && !isInvisible
+            ? GetStarfieldMaterialTint(materialDataCandidates)
+            : StarfieldPreviewColor.White;
+        var decalUvTransform = isDecal && !isInvisible
+            ? GetStarfieldDecalUvTransform(materialDataCandidates)
+            : StarfieldPreviewUvTransform.Identity;
+        var textureSource = string.IsNullOrWhiteSpace(texturePath)
+            ? "none"
+            : "material";
+
+        if (string.IsNullOrWhiteSpace(texturePath) && !isDecal && directTextureCandidates.Count > 0)
+        {
+            texturePath = directTextureCandidates[0];
+            textureSource = "material";
+            if (!IsPreviewColorTextureCandidate(texturePath) &&
+                TryFindMaterialDatabaseTextureCandidate(directTextureCandidates, resolveExternalAsset, materialDatabaseDiagnostics, out var databaseTexturePath))
+            {
+                texturePath = databaseTexturePath;
+                textureSource = "material database";
+            }
+            else if (IsPreviewColorTextureCandidate(texturePath))
+            {
+                materialDatabaseDiagnostics.Add($"skipped because material already provided preview color texture {texturePath}");
+            }
+        }
+
+        if (isDecal &&
+            !isInvisible &&
+            string.IsNullOrWhiteSpace(overlayTexturePath) &&
+            string.IsNullOrWhiteSpace(decalOpacityTexturePath))
+        {
+            TryFindMaterialDatabaseTextureCandidateForMaterial(materialPath, stringCandidates, resolveExternalAsset, materialDatabaseDiagnostics, out overlayTexturePath);
+        }
+
+        if (string.IsNullOrWhiteSpace(texturePath) && !string.IsNullOrWhiteSpace(overlayTexturePath) && !isDecal)
+        {
+            texturePath = overlayTexturePath;
+        }
+
+        materialInfo = new NifMaterialInfo(
+            materialPath,
+            texturePath,
+            overlayTexturePath,
+            decalOpacityTexturePath,
+            materialTint,
+            decalTint.Red,
+            decalTint.Green,
+            decalTint.Blue,
+            decalTint.Alpha,
+            decalUvTransform,
+            isDecal,
+            isInvisible,
+            useAdditiveBlend);
+        diagnostic = GetMaterialPreviewDiagnostic(materialPath, materialInfo, textureSource, unsupportedFeatures, materialDatabaseDiagnostics);
+        return true;
+    }
+
+    private static string GetMaterialPreviewDiagnostic(
+        string materialPath,
+        NifMaterialInfo materialInfo,
+        string textureSource,
+        string unsupportedFeatures,
+        IReadOnlyList<string> materialDatabaseDiagnostics)
+    {
+        var diagnostic = $"material {materialPath} resolved preview texture {materialInfo.TexturePath ?? "none"} from {textureSource}, overlay {materialInfo.OverlayTexturePath ?? "none"}, and decal opacity {materialInfo.DecalOpacityTexturePath ?? "none"}";
+        if (materialInfo.IsDecal)
+        {
+            diagnostic += "; decal material";
+        }
+
+        if (materialInfo.IsInvisible)
+        {
+            diagnostic += "; invisible material";
+        }
+
+        if (materialInfo.UseAdditiveBlend)
+        {
+            diagnostic += "; additive blend";
+        }
+
+        if (!materialInfo.DecalUvTransform.IsIdentity)
+        {
+            diagnostic += $"; decal UV {materialInfo.DecalUvTransform.Description}";
+        }
+
+        if (!materialInfo.MaterialTint.IsWhite)
+        {
+            diagnostic += $"; material tint {materialInfo.MaterialTint.Description}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(unsupportedFeatures))
+        {
+            diagnostic += $"; unsupported material features: {unsupportedFeatures}";
+        }
+
+        if (materialDatabaseDiagnostics.Count > 0)
+        {
+            diagnostic += $"; material database probe: {string.Join("; ", materialDatabaseDiagnostics)}";
+        }
+
+        return diagnostic;
+    }
+
+    private static void AddStarfieldMaterialParentData(
+        string materialPath,
+        byte[] materialData,
+        Func<string, byte[]?> resolveExternalAsset,
+        List<byte[]> materialDataCandidates,
+        List<string> diagnostics,
+        HashSet<string> visitedMaterialPaths,
+        int depth)
+    {
+        if (depth >= MaxStarfieldMaterialParentDepth)
+        {
+            diagnostics.Add($"skipped material parent walk for {materialPath} because depth limit was reached");
+            return;
+        }
+
+        foreach (var parentPath in GetStarfieldMaterialParentPaths(materialPath, materialData).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            if (!visitedMaterialPaths.Add(parentPath))
+            {
+                continue;
+            }
+
+            var parentData = resolveExternalAsset(parentPath);
+            if (parentData == null || parentData.Length == 0)
+            {
+                diagnostics.Add($"parent material {parentPath} was not resolved");
+                continue;
+            }
+
+            diagnostics.Add($"parent material {parentPath} resolved {parentData.Length} byte(s)");
+            materialDataCandidates.Add(parentData);
+            AddStarfieldMaterialParentData(
+                parentPath,
+                parentData,
+                resolveExternalAsset,
+                materialDataCandidates,
+                diagnostics,
+                visitedMaterialPaths,
+                depth + 1);
+        }
+    }
+
+    private static IEnumerable<string> GetStarfieldMaterialParentPaths(string materialPath, byte[] materialData)
+    {
+        var normalizedMaterialPath = NormalizeMaterialPathForComparison(materialPath);
+        foreach (var candidate in GetMaterialStringCandidates(materialData))
+        {
+            if (!TryNormalizeMaterialPathCandidate(candidate, out var parentPath) ||
+                !IsPreviewMaterialParentPath(parentPath) ||
+                string.Equals(NormalizeMaterialPathForComparison(parentPath), normalizedMaterialPath, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            yield return parentPath;
+        }
+    }
+
+    private static bool IsPreviewMaterialParentPath(string materialPath)
+    {
+        return !materialPath.Contains("\\Layered\\ShaderModels\\", StringComparison.OrdinalIgnoreCase) &&
+            !materialPath.Contains("\\Layered\\Root\\", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool TryNormalizeMaterialPathCandidate(string candidate, out string materialPath)
+    {
+        materialPath = string.Empty;
+        var normalized = candidate.Trim().Replace('/', '\\');
+        while (normalized.Contains("\\\\", StringComparison.Ordinal))
+        {
+            normalized = normalized.Replace("\\\\", "\\", StringComparison.Ordinal);
+        }
+
+        var materialIndex = normalized.IndexOf(".mat", StringComparison.OrdinalIgnoreCase);
+        if (materialIndex < 0)
+        {
+            return false;
+        }
+
+        var materialRootIndex = normalized.IndexOf("materials\\", StringComparison.OrdinalIgnoreCase);
+        if (materialRootIndex < 0 || materialRootIndex > materialIndex)
+        {
+            return false;
+        }
+
+        materialPath = normalized[materialRootIndex..(materialIndex + 4)];
+        return materialPath.EndsWith(".mat", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string NormalizeMaterialPathForComparison(string materialPath)
+    {
+        var normalized = materialPath.Trim().Replace('/', '\\');
+        while (normalized.Contains("\\\\", StringComparison.Ordinal))
+        {
+            normalized = normalized.Replace("\\\\", "\\", StringComparison.Ordinal);
+        }
+
+        if (normalized.StartsWith("Data\\", StringComparison.OrdinalIgnoreCase))
+        {
+            normalized = normalized["Data\\".Length..];
+        }
+
+        return normalized;
+    }
+
     private static bool IsPreviewColorTextureCandidate(string texturePath)
     {
         return GetPreviewTextureCandidateScore(texturePath) >= 100;
+    }
+
+    private static IEnumerable<string> GetPreviewTextureCandidates(IEnumerable<string> stringCandidates)
+    {
+        return stringCandidates
+            .Select(candidate => TryNormalizeTexturePathCandidate(candidate, out var texturePath) ? texturePath : null)
+            .Where(texturePath => !string.IsNullOrWhiteSpace(texturePath))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(texturePath => GetPreviewTextureCandidateScore(texturePath!))
+            .ThenBy(texturePath => texturePath, StringComparer.OrdinalIgnoreCase)
+            .Select(texturePath => texturePath!);
+    }
+
+    private static bool IsRenderableDecalOverlayTextureCandidate(string texturePath)
+    {
+        var fileName = Path.GetFileName(texturePath);
+        return !fileName.Contains("opacity", StringComparison.OrdinalIgnoreCase) &&
+            !fileName.Contains("mask", StringComparison.OrdinalIgnoreCase) &&
+            !fileName.Contains("normal", StringComparison.OrdinalIgnoreCase) &&
+            !fileName.Contains("rough", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string? GetStarfieldDecalOpacityTexturePath(IEnumerable<byte[]> materialDataCandidates)
+    {
+        foreach (var materialData in materialDataCandidates)
+        {
+            if (!TryParseMaterialJson(materialData, out var document))
+            {
+                continue;
+            }
+
+            using (document)
+            {
+                if (TryGetStarfieldSummaryTexture(document.RootElement, "Opacity", out var texturePath) &&
+                    TryNormalizeTexturePathCandidate(texturePath, out var normalizedTexturePath))
+                {
+                    return normalizedTexturePath;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static StarfieldPreviewColor GetStarfieldDecalTint(IEnumerable<byte[]> materialDataCandidates)
+    {
+        foreach (var materialData in materialDataCandidates)
+        {
+            if (!TryParseMaterialJson(materialData, out var document))
+            {
+                continue;
+            }
+
+            using (document)
+            {
+                if (TryGetStarfieldSummaryReplacementColor(document.RootElement, "Albedo", out var color))
+                {
+                    return color;
+                }
+            }
+        }
+
+        return StarfieldPreviewColor.White;
+    }
+
+    private static StarfieldPreviewColor GetStarfieldMaterialTint(IEnumerable<byte[]> materialDataCandidates)
+    {
+        foreach (var materialData in materialDataCandidates)
+        {
+            if (!TryParseMaterialJson(materialData, out var document))
+            {
+                continue;
+            }
+
+            using (document)
+            {
+                if (TryGetStarfieldSummaryReplacementColor(document.RootElement, "Albedo", out var color))
+                {
+                    return color;
+                }
+
+                if (TryGetStarfieldSummaryMaterialColor(document.RootElement, out color))
+                {
+                    return color;
+                }
+            }
+        }
+
+        return StarfieldPreviewColor.White;
+    }
+
+    private static StarfieldPreviewUvTransform GetStarfieldDecalUvTransform(IEnumerable<byte[]> materialDataCandidates)
+    {
+        foreach (var materialData in materialDataCandidates)
+        {
+            if (!TryParseMaterialJson(materialData, out var document))
+            {
+                continue;
+            }
+
+            using (document)
+            {
+                if (TryGetStarfieldSummaryUvTransform(document.RootElement, out var transform))
+                {
+                    return transform;
+                }
+            }
+        }
+
+        return StarfieldPreviewUvTransform.Identity;
+    }
+
+    private static bool TryGetStarfieldSummaryUvTransform(JsonElement root, out StarfieldPreviewUvTransform transform)
+    {
+        transform = StarfieldPreviewUvTransform.Identity;
+        if (!root.TryGetProperty("Summary", out var summary) ||
+            summary.ValueKind != JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        foreach (var layer in summary.EnumerateObject())
+        {
+            if (layer.Value.ValueKind == JsonValueKind.Object &&
+                TryGetStarfieldUvTransform(layer.Value, out transform))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryGetStarfieldUvTransform(JsonElement element, out StarfieldPreviewUvTransform transform)
+    {
+        transform = StarfieldPreviewUvTransform.Identity;
+        if (TryReadStarfieldUvTransform(element, out transform))
+        {
+            return true;
+        }
+
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        foreach (var property in element.EnumerateObject())
+        {
+            if (IsStarfieldUvStreamProperty(property.Name) &&
+                property.Value.ValueKind == JsonValueKind.Object &&
+                TryReadStarfieldUvTransform(property.Value, out transform))
+            {
+                return true;
+            }
+        }
+
+        foreach (var property in element.EnumerateObject())
+        {
+            if (property.Value.ValueKind == JsonValueKind.Object &&
+                TryGetStarfieldUvTransform(property.Value, out transform))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsStarfieldUvStreamProperty(string propertyName)
+    {
+        return propertyName.Contains("UV", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool TryReadStarfieldUvTransform(JsonElement element, out StarfieldPreviewUvTransform transform)
+    {
+        transform = StarfieldPreviewUvTransform.Identity;
+        if (!TryReadStarfieldVector2(element, "Scale", out var scaleU, out var scaleV) ||
+            !TryReadStarfieldVector2(element, "Offset", out var offsetU, out var offsetV))
+        {
+            return false;
+        }
+
+        if (!IsReasonableUvTransformValue(scaleU) ||
+            !IsReasonableUvTransformValue(scaleV) ||
+            !IsReasonableUvTransformValue(offsetU) ||
+            !IsReasonableUvTransformValue(offsetV))
+        {
+            return false;
+        }
+
+        transform = new StarfieldPreviewUvTransform(scaleU, scaleV, offsetU, offsetV);
+        return true;
+    }
+
+    private static bool TryReadStarfieldVector2(JsonElement element, string propertyName, out float x, out float y)
+    {
+        x = 0f;
+        y = 0f;
+        if (element.TryGetProperty(propertyName, out var property))
+        {
+            if (property.ValueKind == JsonValueKind.Object)
+            {
+                return TryGetJsonSingle(property, "x", out x) &&
+                    TryGetJsonSingle(property, "y", out y);
+            }
+
+            if (property.ValueKind == JsonValueKind.Array && property.GetArrayLength() >= 2)
+            {
+                var values = property.EnumerateArray().Take(2).ToList();
+                return TryGetJsonSingleValue(values[0], out x) &&
+                    TryGetJsonSingleValue(values[1], out y);
+            }
+        }
+
+        return TryGetJsonSingle(element, propertyName + "X", out x) &&
+            TryGetJsonSingle(element, propertyName + "Y", out y);
+    }
+
+    private static bool TryGetStarfieldSummaryTexture(JsonElement root, string textureName, out string texturePath)
+    {
+        texturePath = string.Empty;
+        if (!TryGetStarfieldSummaryTextures(root, out var textures) ||
+            !textures.TryGetProperty(textureName, out var texture) ||
+            !texture.TryGetProperty("File", out var file) ||
+            file.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        texturePath = file.GetString() ?? string.Empty;
+        return !string.IsNullOrWhiteSpace(texturePath);
+    }
+
+    private static bool TryGetStarfieldSummaryReplacementColor(JsonElement root, string textureName, out StarfieldPreviewColor color)
+    {
+        color = StarfieldPreviewColor.White;
+        if (!TryGetStarfieldSummaryTextures(root, out var textures) ||
+            !textures.TryGetProperty(textureName, out var texture) ||
+            !texture.TryGetProperty("UseReplacement", out var useReplacement) ||
+            useReplacement.ValueKind != JsonValueKind.True ||
+            !texture.TryGetProperty("Replacement", out var replacement))
+        {
+            return false;
+        }
+
+        return TryReadStarfieldPreviewColor(replacement, out color);
+    }
+
+    private static bool TryGetStarfieldSummaryMaterialColor(JsonElement root, out StarfieldPreviewColor color)
+    {
+        color = StarfieldPreviewColor.White;
+        if (!root.TryGetProperty("Summary", out var summary) ||
+            summary.ValueKind != JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        foreach (var layer in summary.EnumerateObject())
+        {
+            if (layer.Value.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            if (TryReadStarfieldMaterialColor(layer.Value, out color))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryReadStarfieldMaterialColor(JsonElement element, out StarfieldPreviewColor color)
+    {
+        color = StarfieldPreviewColor.White;
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        if (element.TryGetProperty("Color", out var colorElement) &&
+            TryReadStarfieldPreviewColor(colorElement, out color))
+        {
+            return true;
+        }
+
+        if (element.TryGetProperty("Material", out var material) &&
+            material.ValueKind == JsonValueKind.Object &&
+            material.TryGetProperty("Color", out colorElement) &&
+            TryReadStarfieldPreviewColor(colorElement, out color))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryGetStarfieldSummaryTextures(JsonElement root, out JsonElement textures)
+    {
+        textures = default;
+        if (!root.TryGetProperty("Summary", out var summary) ||
+            summary.ValueKind != JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        foreach (var layer in summary.EnumerateObject())
+        {
+            if (layer.Value.ValueKind == JsonValueKind.Object &&
+                layer.Value.TryGetProperty("Textures", out textures) &&
+                textures.ValueKind == JsonValueKind.Object)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryReadStarfieldPreviewColor(JsonElement element, out StarfieldPreviewColor color)
+    {
+        color = StarfieldPreviewColor.White;
+        if (element.ValueKind == JsonValueKind.String)
+        {
+            return TryReadStarfieldPreviewColorHex(element.GetString(), out color);
+        }
+
+        if ((!TryGetJsonSingle(element, "x", out var red) &&
+                !TryGetJsonSingle(element, "r", out red) &&
+                !TryGetJsonSingle(element, "Red", out red)) ||
+            (!TryGetJsonSingle(element, "y", out var green) &&
+                !TryGetJsonSingle(element, "g", out green) &&
+                !TryGetJsonSingle(element, "Green", out green)) ||
+            (!TryGetJsonSingle(element, "z", out var blue) &&
+                !TryGetJsonSingle(element, "b", out blue) &&
+                !TryGetJsonSingle(element, "Blue", out blue)))
+        {
+            return false;
+        }
+
+        var alpha = TryGetJsonSingle(element, "w", out var parsedAlpha) ||
+            TryGetJsonSingle(element, "a", out parsedAlpha) ||
+            TryGetJsonSingle(element, "Alpha", out parsedAlpha)
+            ? parsedAlpha
+            : 1f;
+        color = new StarfieldPreviewColor(red, green, blue, alpha);
+        return true;
+    }
+
+    private static bool TryReadStarfieldPreviewColorHex(string? value, out StarfieldPreviewColor color)
+    {
+        color = StarfieldPreviewColor.White;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var hex = value.Trim().TrimStart('#');
+        if (hex.Length is not 6 and not 8 ||
+            !uint.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var parsedColor))
+        {
+            return false;
+        }
+
+        var red = ((parsedColor >> (hex.Length == 8 ? 24 : 16)) & 0xFF) / 255f;
+        var green = ((parsedColor >> (hex.Length == 8 ? 16 : 8)) & 0xFF) / 255f;
+        var blue = ((parsedColor >> (hex.Length == 8 ? 8 : 0)) & 0xFF) / 255f;
+        var alpha = hex.Length == 8
+            ? (parsedColor & 0xFF) / 255f
+            : 1f;
+        color = new StarfieldPreviewColor(red, green, blue, alpha);
+        return true;
+    }
+
+    private static bool TryGetJsonSingle(JsonElement element, string propertyName, out float value)
+    {
+        value = 0f;
+        if (!element.TryGetProperty(propertyName, out var property))
+        {
+            return false;
+        }
+
+        return TryGetJsonSingleValue(property, out value);
+    }
+
+    private static bool TryGetJsonSingleValue(JsonElement property, out float value)
+    {
+        value = 0f;
+        if (property.ValueKind == JsonValueKind.Number && property.TryGetSingle(out value))
+        {
+            return true;
+        }
+
+        return property.ValueKind == JsonValueKind.String &&
+            float.TryParse(property.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out value);
     }
 
     private static bool TryFindMaterialDatabaseTextureCandidate(
@@ -696,6 +1360,113 @@ public class NifPreviewModelReader : INifPreviewModelReader
         }
 
         return false;
+    }
+
+    private static bool TryFindMaterialDatabaseTextureCandidateForMaterial(
+        string materialPath,
+        IReadOnlyList<string> materialStringCandidates,
+        Func<string, byte[]?> resolveExternalAsset,
+        List<string> diagnostics,
+        out string? texturePath)
+    {
+        texturePath = null;
+        var searchTokens = GetMaterialSearchTokens(materialPath, materialStringCandidates).ToList();
+        if (searchTokens.Count == 0)
+        {
+            diagnostics.Add("skipped material-name database probe because no material tokens were found");
+            return false;
+        }
+
+        foreach (var databasePath in StarfieldMaterialDatabasePaths)
+        {
+            diagnostics.Add($"requested {databasePath} for material-name search");
+            var databaseData = resolveExternalAsset(databasePath);
+            if (databaseData == null || databaseData.Length == 0)
+            {
+                diagnostics.Add($"{databasePath} was not resolved");
+                continue;
+            }
+
+            diagnostics.Add($"{databasePath} resolved {databaseData.Length} byte(s)");
+            if (!TryReadStarfieldMaterialDatabaseStrings(databaseData, out var strings, out var tableCount, out var readFailureReason))
+            {
+                diagnostics.Add($"{databasePath} was not a supported STRT table: {readFailureReason}");
+                continue;
+            }
+
+            diagnostics.Add($"{databasePath} parsed {strings.Count} string(s) from {tableCount} STRT table(s)");
+            var candidates = strings
+                .SelectMany(value => GetMaterialTextureCandidates(Encoding.UTF8.GetBytes(value)))
+                .Select(candidate => new
+                {
+                    Path = candidate,
+                    Score = GetMaterialNameTextureCandidateScore(candidate, searchTokens)
+                })
+                .Where(candidate => candidate.Score > 0)
+                .DistinctBy(candidate => candidate.Path, StringComparer.OrdinalIgnoreCase)
+                .OrderByDescending(candidate => candidate.Score)
+                .ThenByDescending(candidate => GetPreviewTextureCandidateScore(candidate.Path))
+                .ThenBy(candidate => candidate.Path, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            diagnostics.Add($"{databasePath} matched {candidates.Count} material-name DDS candidate(s) for {string.Join(", ", searchTokens)}");
+            if (candidates.Count == 0)
+            {
+                continue;
+            }
+
+            texturePath = candidates[0].Path;
+            diagnostics.Add($"{databasePath} selected {texturePath}");
+            return true;
+        }
+
+        return false;
+    }
+
+    private static IEnumerable<string> GetMaterialSearchTokens(string materialPath, IReadOnlyList<string> materialStringCandidates)
+    {
+        foreach (var token in SplitMaterialSearchTokens(Path.GetFileNameWithoutExtension(materialPath)))
+        {
+            yield return token;
+        }
+
+        foreach (var candidate in materialStringCandidates)
+        {
+            if (!candidate.Contains("Materials", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            foreach (var token in SplitMaterialSearchTokens(Path.GetFileNameWithoutExtension(candidate)))
+            {
+                yield return token;
+            }
+        }
+    }
+
+    private static IEnumerable<string> SplitMaterialSearchTokens(string value)
+    {
+        foreach (var token in value.Split(['_', '-', ' ', '\\', '/'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            var trimmed = token.Trim();
+            if (trimmed.Length >= 4)
+            {
+                yield return trimmed;
+            }
+        }
+    }
+
+    private static int GetMaterialNameTextureCandidateScore(string texturePath, IReadOnlyList<string> searchTokens)
+    {
+        var score = 0;
+        foreach (var token in searchTokens.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            if (texturePath.Contains(token, StringComparison.OrdinalIgnoreCase))
+            {
+                score += token.Length >= 8 ? 2 : 1;
+            }
+        }
+
+        return score;
     }
 
     private static bool TryReadStarfieldMaterialDatabaseStrings(byte[] data, out IReadOnlyList<string> strings, out int tableCount, out string failureReason)
@@ -933,8 +1704,13 @@ public class NifPreviewModelReader : INifPreviewModelReader
 
     private static string GetUnsupportedMaterialFeatureSummary(byte[] data)
     {
+        return GetUnsupportedMaterialFeatureSummary(GetMaterialStringCandidates(data));
+    }
+
+    private static string GetUnsupportedMaterialFeatureSummary(IEnumerable<string> stringCandidates)
+    {
         var features = new List<string>();
-        foreach (var candidate in GetMaterialStringCandidates(data))
+        foreach (var candidate in stringCandidates)
         {
             AddFeatureIfPresent(features, candidate, "Decal", "decal");
             AddFeatureIfPresent(features, candidate, "Glass", "glass");
@@ -945,6 +1721,94 @@ public class NifPreviewModelReader : INifPreviewModelReader
         }
 
         return string.Join(", ", features.Distinct(StringComparer.OrdinalIgnoreCase));
+    }
+
+    private static bool IsInvisibleMaterialToken(string value)
+    {
+        return string.Equals(value, "Invisible", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsInvisibleMaterial(byte[] materialData, IReadOnlyList<string> rootStringCandidates)
+    {
+        if (TryParseMaterialJson(materialData, out var document))
+        {
+            using (document)
+            {
+                var root = document.RootElement;
+                if (root.TryGetProperty("Summary", out var summary) &&
+                    summary.ValueKind != JsonValueKind.Null &&
+                    summary.ValueKind != JsonValueKind.Undefined)
+                {
+                    return JsonElementStringValues(summary).Any(IsInvisibleMaterialToken);
+                }
+
+                return JsonElementStringValues(root).Any(value =>
+                    value.Contains("\\ShaderModels\\Invisible.mat", StringComparison.OrdinalIgnoreCase) ||
+                    IsInvisibleMaterialToken(value));
+            }
+        }
+
+        return rootStringCandidates.Any(IsInvisibleMaterialToken);
+    }
+
+    private static bool TryParseMaterialJson(byte[] materialData, out JsonDocument document)
+    {
+        try
+        {
+            document = JsonDocument.Parse(materialData);
+            return true;
+        }
+        catch (JsonException)
+        {
+            document = null!;
+            return false;
+        }
+    }
+
+    private static IEnumerable<string> JsonElementStringValues(JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.String:
+                var value = element.GetString();
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    yield return value;
+                }
+
+                break;
+            case JsonValueKind.Object:
+                foreach (var property in element.EnumerateObject())
+                {
+                    foreach (var childValue in JsonElementStringValues(property.Value))
+                    {
+                        yield return childValue;
+                    }
+                }
+
+                break;
+            case JsonValueKind.Array:
+                foreach (var item in element.EnumerateArray())
+                {
+                    foreach (var childValue in JsonElementStringValues(item))
+                    {
+                        yield return childValue;
+                    }
+                }
+
+                break;
+        }
+    }
+
+    private static bool IsDecalMaterialToken(string value)
+    {
+        return value.Contains("Decal", StringComparison.OrdinalIgnoreCase) ||
+            value.Contains("StandardDecal", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsAdditiveBlendToken(string value)
+    {
+        return string.Equals(value, "Additive", StringComparison.OrdinalIgnoreCase);
     }
 
     private static void AddFeatureIfPresent(List<string> features, string value, string token, string displayName)
@@ -1324,6 +2188,9 @@ public class NifPreviewModelReader : INifPreviewModelReader
             return false;
         }
 
+        var positionDataEnd = vertexDataOffset + checked((int)vertexCount * StarfieldGeometryMeshPositionStride);
+        var hasUvStream = TryReadStarfieldGeometryUvStream(data, positionDataEnd, vertexCount, out var uvs, out var uvDiagnostic, out var vertexAttributeStreamEnd);
+        var hasVertexAlphaStream = TryReadStarfieldGeometryVertexAlphaStream(data, vertexAttributeStreamEnd, vertexCount, out var vertexAlphas, out var vertexAlphaDiagnostic);
         var useTransform = transformChain.Any(transform => !transform.IsIdentity);
         var vertices = new List<NifPreviewVertex>();
         var bounds = new NifMeshBounds();
@@ -1351,7 +2218,8 @@ public class NifPreviewModelReader : INifPreviewModelReader
             {
                 Position = position,
                 Normal = new NifPreviewVector3(),
-                UV = new NifPreviewUV()
+                UV = hasUvStream ? uvs[index] : new NifPreviewUV(),
+                Alpha = hasVertexAlphaStream ? vertexAlphas[index] : 1f
             });
         }
 
@@ -1361,15 +2229,185 @@ public class NifPreviewModelReader : INifPreviewModelReader
             Name = material.MeshName,
             MaterialName = material.MaterialName,
             TexturePath = material.TexturePath,
+            OverlayTexturePath = material.OverlayTexturePath,
+            DecalOpacityTexturePath = material.DecalOpacityTexturePath,
+            MaterialTintRed = material.MaterialTint.Red,
+            MaterialTintGreen = material.MaterialTint.Green,
+            MaterialTintBlue = material.MaterialTint.Blue,
+            MaterialTintAlpha = material.MaterialTint.Alpha,
+            DecalTintRed = material.DecalTintRed,
+            DecalTintGreen = material.DecalTintGreen,
+            DecalTintBlue = material.DecalTintBlue,
+            DecalOpacity = material.DecalOpacity,
+            DecalUvScaleU = material.DecalUvTransform.ScaleU,
+            DecalUvScaleV = material.DecalUvTransform.ScaleV,
+            DecalUvOffsetU = material.DecalUvTransform.OffsetU,
+            DecalUvOffsetV = material.DecalUvTransform.OffsetV,
+            IsDecal = material.IsDecal,
+            IsInvisible = material.IsInvisible,
+            UseAdditiveBlend = material.UseAdditiveBlend,
             Vertices = vertices,
             Indices = indices,
             Diagnostics =
             {
                 $"{block.TypeName} block {blockIndex}: external Starfield geometry {geometryPath}, {vertexCount} vertices, {indexCount / 3} triangles, position stride {StarfieldGeometryMeshPositionStride}, geometry bounds metadata {(hasBounds ? geometryBounds.Description : "unavailable")}, decoded bounds {bounds.Description}",
-                $"{block.TypeName} block {blockIndex} external material: {material.MaterialName}, texture {material.TexturePath ?? "none"}",
+                $"{block.TypeName} block {blockIndex}: external Starfield geometry UV stream {uvDiagnostic}",
+                $"{block.TypeName} block {blockIndex}: external Starfield geometry vertex alpha stream {vertexAlphaDiagnostic}",
+                $"{block.TypeName} block {blockIndex} external material: {material.MaterialName}, texture {material.TexturePath ?? "none"}, overlay {material.OverlayTexturePath ?? "none"}, decal opacity {material.DecalOpacityTexturePath ?? "none"}, decal {material.IsDecal}, invisible {material.IsInvisible}",
                 $"{block.TypeName} block {blockIndex} triangle sample: {CreateTriangleSample(indices)}"
             }
         };
+        if (material.DecalOpacityTexturePath != null && !hasUvStream)
+        {
+            mesh.Diagnostics.Add($"{block.TypeName} block {blockIndex}: decal opacity texture resolved, but external Starfield geometry UV and vertex alpha streams are not decoded yet");
+        }
+
+        return true;
+    }
+
+    private static bool TryReadStarfieldGeometryUvStream(
+        byte[] data,
+        int position,
+        uint vertexCount,
+        out IReadOnlyList<NifPreviewUV> uvs,
+        out string diagnostic,
+        out int streamEnd)
+    {
+        uvs = [];
+        streamEnd = position;
+        if (data.Length - position < sizeof(uint))
+        {
+            diagnostic = "not present";
+            return false;
+        }
+
+        var uvCount = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position, sizeof(uint)));
+        if (uvCount != vertexCount)
+        {
+            diagnostic = $"not decoded because stream count {uvCount} did not match vertex count {vertexCount}";
+            return false;
+        }
+
+        position += sizeof(uint);
+        var requiredLength = checked((int)vertexCount * StarfieldGeometryMeshUvStride);
+        if (data.Length - position < requiredLength)
+        {
+            diagnostic = "not decoded because stream ended before all UVs";
+            return false;
+        }
+
+        var parsedUvs = new List<NifPreviewUV>();
+        var minU = float.PositiveInfinity;
+        var maxU = float.NegativeInfinity;
+        var minV = float.PositiveInfinity;
+        var maxV = float.NegativeInfinity;
+        for (var index = 0; index < vertexCount; index++)
+        {
+            var uv = ReadHalfTexCoord(data, ref position);
+            if (!IsReasonableUvCoordinate(uv.U) || !IsReasonableUvCoordinate(uv.V))
+            {
+                diagnostic = $"not decoded because UV {index} was outside the supported range";
+                return false;
+            }
+
+            minU = MathF.Min(minU, uv.U);
+            maxU = MathF.Max(maxU, uv.U);
+            minV = MathF.Min(minV, uv.V);
+            maxV = MathF.Max(maxV, uv.V);
+            parsedUvs.Add(uv);
+        }
+
+        if (MathF.Abs(maxU - minU) <= 0.0001f &&
+            MathF.Abs(maxV - minV) <= 0.0001f)
+        {
+            diagnostic = "not decoded because all UVs were identical";
+            return false;
+        }
+
+        uvs = parsedUvs;
+        streamEnd = position;
+        diagnostic = $"decoded {vertexCount} half-precision UVs, U {minU:N3}..{maxU:N3}, V {minV:N3}..{maxV:N3}";
+        return true;
+    }
+
+    private static bool TryReadStarfieldGeometryVertexAlphaStream(
+        byte[] data,
+        int position,
+        uint vertexCount,
+        out IReadOnlyList<float> vertexAlphas,
+        out string diagnostic)
+    {
+        vertexAlphas = [];
+        if (data.Length - position < sizeof(uint) * 2)
+        {
+            diagnostic = "not present";
+            return false;
+        }
+
+        var countOffsets = new[] { sizeof(uint), sizeof(uint) * 2 };
+        var mismatchDiagnostics = new List<string>();
+        foreach (var countOffset in countOffsets)
+        {
+            if (data.Length - position < countOffset + sizeof(uint))
+            {
+                continue;
+            }
+
+            var streamCount = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position + countOffset, sizeof(uint)));
+            if (streamCount != vertexCount)
+            {
+                mismatchDiagnostics.Add($"count at offset {countOffset} was {streamCount}");
+                continue;
+            }
+
+            if (TryReadStarfieldGeometryVertexAlphaValues(data, position + countOffset + sizeof(uint), vertexCount, out vertexAlphas, out diagnostic))
+            {
+                diagnostic = $"{diagnostic} after {countOffset} byte header";
+                return true;
+            }
+
+            return false;
+        }
+
+        diagnostic = $"not decoded because {string.Join(", ", mismatchDiagnostics)}";
+        return false;
+    }
+
+    private static bool TryReadStarfieldGeometryVertexAlphaValues(
+        byte[] data,
+        int position,
+        uint vertexCount,
+        out IReadOnlyList<float> vertexAlphas,
+        out string diagnostic)
+    {
+        vertexAlphas = [];
+        var requiredLength = checked((int)vertexCount * sizeof(uint));
+        if (data.Length - position < requiredLength)
+        {
+            diagnostic = "not decoded because stream ended before all alpha values";
+            return false;
+        }
+
+        var parsedAlphas = new List<float>();
+        var minAlpha = float.PositiveInfinity;
+        var maxAlpha = float.NegativeInfinity;
+        for (var index = 0; index < vertexCount; index++)
+        {
+            var alpha = data[position] / 255f;
+            position += sizeof(uint);
+            minAlpha = MathF.Min(minAlpha, alpha);
+            maxAlpha = MathF.Max(maxAlpha, alpha);
+            parsedAlphas.Add(alpha);
+        }
+
+        if (MathF.Abs(maxAlpha - minAlpha) <= 0.0001f)
+        {
+            diagnostic = $"not decoded because stream had uniform alpha {minAlpha:N3}";
+            return false;
+        }
+
+        vertexAlphas = parsedAlphas;
+        diagnostic = $"decoded {vertexCount} packed alpha values, alpha {minAlpha:N3}..{maxAlpha:N3}";
         return true;
     }
 
@@ -1554,13 +2592,30 @@ public class NifPreviewModelReader : INifPreviewModelReader
             Name = material.MeshName,
             MaterialName = material.MaterialName,
             TexturePath = material.TexturePath,
+            OverlayTexturePath = material.OverlayTexturePath,
+            DecalOpacityTexturePath = material.DecalOpacityTexturePath,
+            MaterialTintRed = material.MaterialTint.Red,
+            MaterialTintGreen = material.MaterialTint.Green,
+            MaterialTintBlue = material.MaterialTint.Blue,
+            MaterialTintAlpha = material.MaterialTint.Alpha,
+            DecalTintRed = material.DecalTintRed,
+            DecalTintGreen = material.DecalTintGreen,
+            DecalTintBlue = material.DecalTintBlue,
+            DecalOpacity = material.DecalOpacity,
+            DecalUvScaleU = material.DecalUvTransform.ScaleU,
+            DecalUvScaleV = material.DecalUvTransform.ScaleV,
+            DecalUvOffsetU = material.DecalUvTransform.OffsetU,
+            DecalUvOffsetV = material.DecalUvTransform.OffsetV,
+            IsDecal = material.IsDecal,
+            IsInvisible = material.IsInvisible,
+            UseAdditiveBlend = material.UseAdditiveBlend,
             Vertices = vertices,
             Indices = indices,
             Diagnostics =
             {
                 $"{block.TypeName} block {blockIndex} offset {offset}: {vertexCount} vertices, {triangleCount} triangles, count layout {countLayout}, count offset {countProbeOffset}, position format {positionFormat}, descriptor 0x{vertexDesc:X16}, {descriptor.Description}, transform {GetTransformDescription(useTransform, descriptorAlignedTransformChain, transformSource)}, raw {rawBounds.Description}, {triangleQuality.Description}",
                 $"{block.TypeName} block {blockIndex} normals: {normalQuality.Description}",
-                $"{block.TypeName} block {blockIndex} material: {material.MaterialName}, texture {material.TexturePath ?? "none"}",
+                $"{block.TypeName} block {blockIndex} material: {material.MaterialName}, texture {material.TexturePath ?? "none"}, overlay {material.OverlayTexturePath ?? "none"}, decal opacity {material.DecalOpacityTexturePath ?? "none"}, decal {material.IsDecal}, invisible {material.IsInvisible}",
                 $"{block.TypeName} block {blockIndex} bytes before descriptor: {CreateHexSample(data, Math.Max(0, offset - DiagnosticHexByteCount), Math.Min(DiagnosticHexByteCount, offset))}",
                 $"{block.TypeName} block {blockIndex} first vertex bytes: {CreateVertexByteSample(data, vertexDataOffset, vertexStride, Math.Min(3, (int)vertexCount))}",
                 $"{block.TypeName} block {blockIndex} vertex sample: {CreateVertexSample(vertices)}",
@@ -1628,11 +2683,11 @@ public class NifPreviewModelReader : INifPreviewModelReader
             var shaderPropertyBlockIndex = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(shaderPropertyPosition, sizeof(int)));
             if (materialMap.TryGetValue(shaderPropertyBlockIndex, out var material))
             {
-                return new NifShapeMaterial(meshName, material.MaterialName, material.TexturePath);
+                return new NifShapeMaterial(meshName, material);
             }
         }
 
-        return new NifShapeMaterial(meshName, $"{blockTypeName} {blockIndex}", null);
+        return new NifShapeMaterial(meshName, new NifMaterialInfo($"{blockTypeName} {blockIndex}", null, null, null, StarfieldPreviewColor.White, 1f, 1f, 1f, 1f, StarfieldPreviewUvTransform.Identity, false, false, false));
     }
 
     private static NifShapeMaterial GetStarfieldExternalGeometryMaterial(
@@ -1649,17 +2704,17 @@ public class NifPreviewModelReader : INifPreviewModelReader
         if (!TryReadNiAVObjectHeader(data, out _, out var position, out _) ||
             data.Length - position < (sizeof(float) * 10) + (sizeof(int) * 3))
         {
-            return new NifShapeMaterial(meshName, $"{blockTypeName} {blockIndex}", null);
+            return new NifShapeMaterial(meshName, new NifMaterialInfo($"{blockTypeName} {blockIndex}", null, null, null, StarfieldPreviewColor.White, 1f, 1f, 1f, 1f, StarfieldPreviewUvTransform.Identity, false, false, false));
         }
 
         var shaderPropertyPosition = position + (sizeof(float) * 10) + sizeof(int);
         var shaderPropertyBlockIndex = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(shaderPropertyPosition, sizeof(int)));
         if (materialMap.TryGetValue(shaderPropertyBlockIndex, out var material))
         {
-            return new NifShapeMaterial(meshName, material.MaterialName, material.TexturePath);
+            return new NifShapeMaterial(meshName, material);
         }
 
-        return new NifShapeMaterial(meshName, $"{blockTypeName} {blockIndex}", null);
+        return new NifShapeMaterial(meshName, new NifMaterialInfo($"{blockTypeName} {blockIndex}", null, null, null, StarfieldPreviewColor.White, 1f, 1f, 1f, 1f, StarfieldPreviewUvTransform.Identity, false, false, false));
     }
 
     private static NifNormalQuality GetNormalQuality(IReadOnlyList<NifPreviewVertex> vertices)
@@ -2108,9 +3163,19 @@ public class NifPreviewModelReader : INifPreviewModelReader
         return !float.IsNaN(value) && !float.IsInfinity(value) && MathF.Abs(value) <= MaxReasonableCoordinate;
     }
 
+    private static bool IsReasonableUvCoordinate(float value)
+    {
+        return !float.IsNaN(value) && !float.IsInfinity(value) && MathF.Abs(value) <= 10000f;
+    }
+
     private static bool IsReasonableScale(float value)
     {
         return !float.IsNaN(value) && !float.IsInfinity(value) && value > 0f && value <= 10000f;
+    }
+
+    private static bool IsReasonableUvTransformValue(float value)
+    {
+        return !float.IsNaN(value) && !float.IsInfinity(value) && MathF.Abs(value) <= 10000f;
     }
 
     private static bool TryReadUInt16(byte[] data, ref int position, out ushort value)
@@ -2194,24 +3259,68 @@ public class NifPreviewModelReader : INifPreviewModelReader
 
     private readonly struct NifMaterialInfo
     {
-        public NifMaterialInfo(string materialName, string? texturePath)
+        public NifMaterialInfo(string materialName, string? texturePath, string? overlayTexturePath, string? decalOpacityTexturePath, StarfieldPreviewColor materialTint, float decalTintRed, float decalTintGreen, float decalTintBlue, float decalOpacity, StarfieldPreviewUvTransform decalUvTransform, bool isDecal, bool isInvisible, bool useAdditiveBlend)
         {
             MaterialName = materialName;
             TexturePath = texturePath;
+            OverlayTexturePath = overlayTexturePath;
+            DecalOpacityTexturePath = decalOpacityTexturePath;
+            MaterialTint = materialTint;
+            DecalTintRed = decalTintRed;
+            DecalTintGreen = decalTintGreen;
+            DecalTintBlue = decalTintBlue;
+            DecalOpacity = decalOpacity;
+            DecalUvTransform = decalUvTransform;
+            IsDecal = isDecal;
+            IsInvisible = isInvisible;
+            UseAdditiveBlend = useAdditiveBlend;
         }
 
         public string MaterialName { get; }
 
         public string? TexturePath { get; }
+
+        public string? OverlayTexturePath { get; }
+
+        public string? DecalOpacityTexturePath { get; }
+
+        public StarfieldPreviewColor MaterialTint { get; }
+
+        public float DecalTintRed { get; }
+
+        public float DecalTintGreen { get; }
+
+        public float DecalTintBlue { get; }
+
+        public float DecalOpacity { get; }
+
+        public StarfieldPreviewUvTransform DecalUvTransform { get; }
+
+        public bool IsDecal { get; }
+
+        public bool IsInvisible { get; }
+
+        public bool UseAdditiveBlend { get; }
     }
 
     private readonly struct NifShapeMaterial
     {
-        public NifShapeMaterial(string meshName, string materialName, string? texturePath)
+        public NifShapeMaterial(string meshName, NifMaterialInfo material)
         {
             MeshName = meshName;
-            MaterialName = materialName;
-            TexturePath = texturePath;
+            MaterialName = material.MaterialName;
+            TexturePath = material.TexturePath;
+            OverlayTexturePath = material.OverlayTexturePath;
+            DecalOpacityTexturePath = material.DecalOpacityTexturePath;
+            MaterialTint = material.MaterialTint;
+            DecalTintRed = material.DecalTintRed;
+            DecalTintGreen = material.DecalTintGreen;
+            DecalTintBlue = material.DecalTintBlue;
+            DecalOpacity = material.DecalOpacity;
+            DecalUvTransform = material.DecalUvTransform;
+            IsDecal = material.IsDecal;
+            IsInvisible = material.IsInvisible;
+            UseAdditiveBlend = material.UseAdditiveBlend;
         }
 
         public string MeshName { get; }
@@ -2219,6 +3328,88 @@ public class NifPreviewModelReader : INifPreviewModelReader
         public string MaterialName { get; }
 
         public string? TexturePath { get; }
+
+        public string? OverlayTexturePath { get; }
+
+        public string? DecalOpacityTexturePath { get; }
+
+        public StarfieldPreviewColor MaterialTint { get; }
+
+        public float DecalTintRed { get; }
+
+        public float DecalTintGreen { get; }
+
+        public float DecalTintBlue { get; }
+
+        public float DecalOpacity { get; }
+
+        public StarfieldPreviewUvTransform DecalUvTransform { get; }
+
+        public bool IsDecal { get; }
+
+        public bool IsInvisible { get; }
+
+        public bool UseAdditiveBlend { get; }
+    }
+
+    private readonly struct StarfieldPreviewUvTransform
+    {
+        public static StarfieldPreviewUvTransform Identity { get; } = new(1f, 1f, 0f, 0f);
+
+        public StarfieldPreviewUvTransform(float scaleU, float scaleV, float offsetU, float offsetV)
+        {
+            ScaleU = scaleU;
+            ScaleV = scaleV;
+            OffsetU = offsetU;
+            OffsetV = offsetV;
+        }
+
+        public float ScaleU { get; }
+
+        public float ScaleV { get; }
+
+        public float OffsetU { get; }
+
+        public float OffsetV { get; }
+
+        public bool IsIdentity =>
+            MathF.Abs(ScaleU - 1f) <= 0.0001f &&
+            MathF.Abs(ScaleV - 1f) <= 0.0001f &&
+            MathF.Abs(OffsetU) <= 0.0001f &&
+            MathF.Abs(OffsetV) <= 0.0001f;
+
+        public string Description =>
+            $"scale ({ScaleU.ToString("0.###", CultureInfo.InvariantCulture)},{ScaleV.ToString("0.###", CultureInfo.InvariantCulture)}), offset ({OffsetU.ToString("0.###", CultureInfo.InvariantCulture)},{OffsetV.ToString("0.###", CultureInfo.InvariantCulture)})";
+    }
+
+    private readonly struct StarfieldPreviewColor
+    {
+        public static StarfieldPreviewColor White { get; } = new(1f, 1f, 1f, 1f);
+
+        public StarfieldPreviewColor(float red, float green, float blue, float alpha)
+        {
+            Red = red;
+            Green = green;
+            Blue = blue;
+            Alpha = alpha;
+        }
+
+        public float Red { get; }
+
+        public float Green { get; }
+
+        public float Blue { get; }
+
+        public float Alpha { get; }
+
+        public bool IsWhite =>
+            MathF.Abs(Red - 1f) <= 0.0001f &&
+            MathF.Abs(Green - 1f) <= 0.0001f &&
+            MathF.Abs(Blue - 1f) <= 0.0001f &&
+            MathF.Abs(Alpha - 1f) <= 0.0001f;
+
+        public string Description =>
+            $"({Red.ToString("0.###", CultureInfo.InvariantCulture)},{Green.ToString("0.###", CultureInfo.InvariantCulture)},{Blue.ToString("0.###", CultureInfo.InvariantCulture)},{Alpha.ToString("0.###", CultureInfo.InvariantCulture)})";
     }
 
     private readonly struct NifBlock
