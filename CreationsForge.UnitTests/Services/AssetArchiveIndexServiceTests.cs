@@ -56,6 +56,89 @@ public class AssetArchiveIndexServiceTests
     }
 
     [Fact]
+    public void IndexGameArchives_IndexesLargeArchiveEntryListAndReportsInsertedCount()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var archivePath = Path.Combine(tempDirectory.FullName, "Starfield - Meshes01.ba2");
+            File.WriteAllBytes(archivePath, [1, 2, 3]);
+            var entries = Enumerable.Range(0, 1200)
+                .Select(index => new AssetArchiveEntry
+                {
+                    ArchivePath = archivePath,
+                    EntryPath = $"meshes/generated/model{index}.nif",
+                    PackedSize = index,
+                    UnpackedSize = index + 1
+                })
+                .ToList();
+            var repository = new TestAssetArchiveIndexRepository();
+            var reader = new TestAssetArchiveReader(entries, [9]);
+            var service = new AssetArchiveIndexService(repository, [reader]);
+
+            var result = service.IndexGameArchives(SupportedGame.Starfield, tempDirectory.FullName);
+
+            result.ArchivesIndexed.ShouldBe(1);
+            result.EntriesIndexed.ShouldBe(1200);
+            repository.Entries.Count.ShouldBe(1200);
+            repository.LastReplaceEntryCount.ShouldBe(1200);
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void IndexGameArchives_ReplacesOldArchiveEntries()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var archivePath = Path.Combine(tempDirectory.FullName, "Skyrim - Meshes.bsa");
+            File.WriteAllBytes(archivePath, [1, 2, 3]);
+            var repository = new TestAssetArchiveIndexRepository();
+            repository.ReplaceArchiveEntries(
+                SupportedGame.Skyrim,
+                archivePath,
+                [
+                    new AssetArchiveEntryDTO
+                    {
+                        Game = SupportedGame.Skyrim,
+                        ArchivePath = archivePath,
+                        NormalizedEntryPath = "meshes/old.nif",
+                        RootFolder = "meshes",
+                        Extension = ".nif",
+                        PackedSize = 1,
+                        UnpackedSize = 1
+                    }
+                ]);
+            var reader = new TestAssetArchiveReader(
+                [
+                    new AssetArchiveEntry
+                    {
+                        ArchivePath = archivePath,
+                        EntryPath = "meshes/new.nif",
+                        PackedSize = 2,
+                        UnpackedSize = 2
+                    }
+                ],
+                [2]);
+            var service = new AssetArchiveIndexService(repository, [reader]);
+
+            var result = service.IndexGameArchives(SupportedGame.Skyrim, tempDirectory.FullName);
+
+            result.EntriesIndexed.ShouldBe(1);
+            repository.Entries.Count.ShouldBe(1);
+            repository.Entries[0].NormalizedEntryPath.ShouldBe("meshes/new.nif");
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public void IndexGameArchives_SkipsCurrentArchivesWithoutListingEntries()
     {
         var tempDirectory = Directory.CreateTempSubdirectory();
@@ -398,6 +481,8 @@ public class AssetArchiveIndexServiceTests
 
         public List<AssetArchiveEntryDTO> Entries { get; } = new();
 
+        public long LastReplaceEntryCount { get; private set; }
+
         public AssetArchiveFileDTO? GetArchiveFile(SupportedGame game, string archivePath)
         {
             return ArchiveFiles.FirstOrDefault(archive =>
@@ -434,12 +519,15 @@ public class AssetArchiveIndexServiceTests
             ArchiveFiles.Add(archiveFile);
         }
 
-        public void ReplaceArchiveEntries(SupportedGame game, string archivePath, IReadOnlyList<AssetArchiveEntryDTO> entries)
+        public long ReplaceArchiveEntries(SupportedGame game, string archivePath, IEnumerable<AssetArchiveEntryDTO> entries)
         {
             Entries.RemoveAll(entry =>
                 entry.Game == game &&
                 string.Equals(entry.ArchivePath, archivePath, StringComparison.OrdinalIgnoreCase));
-            Entries.AddRange(entries);
+            var currentEntries = entries.ToList();
+            Entries.AddRange(currentEntries);
+            LastReplaceEntryCount = currentEntries.Count;
+            return currentEntries.Count;
         }
 
         public void DeleteArchive(SupportedGame game, string archivePath)

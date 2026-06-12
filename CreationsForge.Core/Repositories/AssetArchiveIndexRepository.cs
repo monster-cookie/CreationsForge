@@ -7,6 +7,7 @@ namespace CreationsForge.Core.Repositories;
 
 public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
 {
+    private const int InsertBatchSize = 500;
     private readonly IDatabase Database;
 
     public AssetArchiveIndexRepository(IDatabase database)
@@ -137,7 +138,7 @@ public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
             });
     }
 
-    public void ReplaceArchiveEntries(SupportedGame game, string archivePath, IReadOnlyList<AssetArchiveEntryDTO> entries)
+    public long ReplaceArchiveEntries(SupportedGame game, string archivePath, IEnumerable<AssetArchiveEntryDTO> entries)
     {
         Database.Execute(
             """
@@ -151,27 +152,52 @@ public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
                 ArchivePath = archivePath
             });
 
+        long insertedCount = 0;
+        var batch = new List<AssetArchiveEntryDTO>(InsertBatchSize);
         foreach (var entry in entries)
         {
-            Database.Execute(
-                """
-                INSERT INTO AssetArchiveEntries (
-                    Game,
-                    ArchivePath,
-                    NormalizedEntryPath,
-                    RootFolder,
-                    Extension,
-                    PackedSize,
-                    UnpackedSize)
-                VALUES (
-                    @Game,
-                    @ArchivePath,
-                    @NormalizedEntryPath,
-                    @RootFolder,
-                    @Extension,
-                    @PackedSize,
-                    @UnpackedSize);
-                """,
+            batch.Add(entry);
+            if (batch.Count == InsertBatchSize)
+            {
+                InsertArchiveEntryBatch(batch);
+                insertedCount += batch.Count;
+                batch.Clear();
+            }
+        }
+
+        if (batch.Count > 0)
+        {
+            InsertArchiveEntryBatch(batch);
+            insertedCount += batch.Count;
+        }
+
+        return insertedCount;
+    }
+
+    private void InsertArchiveEntryBatch(IReadOnlyList<AssetArchiveEntryDTO> entries)
+    {
+        var sql = new Sql("""
+            INSERT INTO AssetArchiveEntries (
+                Game,
+                ArchivePath,
+                NormalizedEntryPath,
+                RootFolder,
+                Extension,
+                PackedSize,
+                UnpackedSize)
+            VALUES
+            """);
+
+        for (var index = 0; index < entries.Count; index++)
+        {
+            var entry = entries[index];
+            if (index > 0)
+            {
+                sql.Append(",");
+            }
+
+            sql.Append(
+                "(@Game, @ArchivePath, @NormalizedEntryPath, @RootFolder, @Extension, @PackedSize, @UnpackedSize)",
                 new
                 {
                     Game = entry.Game.ToString(),
@@ -183,6 +209,8 @@ public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
                     entry.UnpackedSize
                 });
         }
+
+        Database.Execute(sql);
     }
 
     public void DeleteArchive(SupportedGame game, string archivePath)

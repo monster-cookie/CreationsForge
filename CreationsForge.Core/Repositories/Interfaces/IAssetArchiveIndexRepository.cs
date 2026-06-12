@@ -13,7 +13,7 @@ public interface IAssetArchiveIndexRepository
 
     void SaveArchiveFile(AssetArchiveFileDTO archiveFile);
 
-    void ReplaceArchiveEntries(SupportedGame game, string archivePath, IReadOnlyList<AssetArchiveEntryDTO> entries);
+    long ReplaceArchiveEntries(SupportedGame game, string archivePath, IEnumerable<AssetArchiveEntryDTO> entries);
 
     void DeleteArchive(SupportedGame game, string archivePath);
 }

@@ -311,8 +311,7 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
         try
         {
             var entries = archiveReader.ListEntries(archivePath)
-                .Select(entry => CreateEntryDTO(game, archivePath, entry))
-                .ToList();
+                .Select(entry => CreateEntryDTO(game, archivePath, entry));
             AssetArchiveIndexRepository.SaveArchiveFile(new AssetArchiveFileDTO
             {
                 Game = game,
@@ -325,13 +324,13 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
                 SourceFileSizeBytes = fileInfo.Length,
                 IndexedAtUTC = DateTime.UtcNow
             });
-            AssetArchiveIndexRepository.ReplaceArchiveEntries(game, Path.GetFullPath(archivePath), entries);
+            var entryCount = AssetArchiveIndexRepository.ReplaceArchiveEntries(game, Path.GetFullPath(archivePath), entries);
             Logger.Information(
                 "Indexed asset archive {ArchivePath} for {Game} with {EntryCount} entries",
                 archivePath,
                 game,
-                entries.Count);
-            return new AssetArchiveIndexAttemptResult(AssetArchiveIndexStatus.Indexed, entries.Count, null);
+                entryCount);
+            return new AssetArchiveIndexAttemptResult(AssetArchiveIndexStatus.Indexed, entryCount, null);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or OverflowException)
         {
