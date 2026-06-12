@@ -20,18 +20,17 @@ public class KeywordRepository : TypedRecordRepositoryBase, IKeywordRepository
         return FetchByFormKey<KeywordRow>(
                 game,
                 formKey,
-                """
-                ,
-                CurrentRecord.Name,
-                CurrentRecord.Color,
-                CurrentRecord.Type,
-                CurrentRecord.Notes,
-                CurrentRecord.FlashLinkageName,
-                CurrentRecord.AttractionRule_ModKey_Name AS AttractionRuleModKeyName,
-                CurrentRecord.AttractionRule_ModKey_Type AS AttractionRuleModKeyType,
-                CurrentRecord.AttractionRule_ModKey_FileName AS AttractionRuleModKeyFileName,
-                CurrentRecord.AttractionRule_FormKey_ID AS AttractionRuleFormKeyId
-                """)
+                [
+                    SelectColumn("Name"),
+                    SelectColumn("Color"),
+                    SelectColumn("Type"),
+                    SelectColumn("Notes"),
+                    SelectColumn("FlashLinkageName"),
+                    SelectColumn("AttractionRule_ModKey_Name", "AttractionRuleModKeyName"),
+                    SelectColumn("AttractionRule_ModKey_Type", "AttractionRuleModKeyType"),
+                    SelectColumn("AttractionRule_ModKey_FileName", "AttractionRuleModKeyFileName"),
+                    SelectColumn("AttractionRule_FormKey_ID", "AttractionRuleFormKeyId")
+                ])
             .Select(record => ToDTO(record, game))
             .ToList();
     }

@@ -1,6 +1,7 @@
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
+using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Repositories.Interfaces;
 using NPoco;
 
@@ -8,6 +9,16 @@ namespace CreationsForge.Core.Repositories;
 
 public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
 {
+    private static readonly IReadOnlySet<string> AllowedTableNames = new HashSet<string>(StringComparer.Ordinal)
+    {
+        RecordTypeCatalog.ActorValueInformation.TableName,
+        RecordTypeCatalog.Keyword.TableName,
+        RecordTypeCatalog.MagicEffect.TableName,
+        RecordTypeCatalog.MiscObject.TableName,
+        RecordTypeCatalog.NPC.TableName,
+        RecordTypeCatalog.Perk.TableName
+    };
+
     protected readonly IDatabase Database;
     private readonly IRecordInstanceRepository RecordInstanceRepository;
 
@@ -23,6 +34,7 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
 
     public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntriesByPlugin(SupportedGame game, ModKeyDTO modKey)
     {
+        var tableName = GetValidatedTableName();
         return Database.Fetch<RecordTreeEntryRow>(
                 $"""
                 SELECT
@@ -35,7 +47,7 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
                     CurrentRecord.FormKey_ID AS FormKeyId,
                     CurrentRecord.EditorID AS EditorId,
                     COALESCE(PeerCounts.PluginCount, 0) AS PluginCount
-                FROM {TableName} CurrentRecord
+                FROM {tableName} CurrentRecord
                 LEFT JOIN (
                     SELECT
                         PeerRecord.FormKey_ModKey_Name,
@@ -43,8 +55,8 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
                         PeerRecord.FormKey_ModKey_FileName,
                         PeerRecord.FormKey_ID,
                         COUNT(*) AS PluginCount
-                    FROM {TableName} PeerRecord
-                    INNER JOIN {TableName} ActiveRecord
+                    FROM {tableName} PeerRecord
+                    INNER JOIN {tableName} ActiveRecord
                        ON ActiveRecord.Game = @Game
                       AND ActiveRecord.ModKey_Name = @ModKeyName COLLATE NOCASE
                       AND ActiveRecord.ModKey_Type = @ModKeyType
@@ -79,6 +91,7 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
 
     public IReadOnlyDictionary<string, int> GetRecordPluginCountsByGame(SupportedGame game)
     {
+        var tableName = GetValidatedTableName();
         return Database.Fetch<RecordPluginCountRow>(
                 $"""
                 SELECT
@@ -87,7 +100,7 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
                     FormKey_ModKey_FileName AS FormKeyModKeyFileName,
                     FormKey_ID AS FormKeyId,
                     COUNT(*) AS PluginCount
-                FROM {TableName}
+                FROM {tableName}
                 WHERE Game = @Game
                 GROUP BY FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID;
                 """,
@@ -100,9 +113,10 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
 
     public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)
     {
+        var tableName = GetValidatedTableName();
         Database.Execute(
             $"""
-            DELETE FROM {TableName}
+            DELETE FROM {tableName}
             WHERE Game = @Game
               AND ModKey_Name = @ModKeyName
               AND ModKey_Type = @ModKeyType
@@ -135,8 +149,10 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
         });
     }
 
-    protected IReadOnlyList<TRow> FetchByFormKey<TRow>(SupportedGame game, FormKeyDTO formKey, string selectColumns)
+    protected IReadOnlyList<TRow> FetchByFormKey<TRow>(SupportedGame game, FormKeyDTO formKey, IReadOnlyList<SelectColumnDefinition> selectColumns)
     {
+        var tableName = GetValidatedTableName();
+        var selectColumnSql = BuildSelectColumnSql(selectColumns);
         return Database.Fetch<TRow>(
             $"""
             SELECT
@@ -152,8 +168,8 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
                 CurrentRecord.FormVersion,
                 CurrentRecord.MajorRecordFlags,
                 CurrentRecord.ImportedAtUTC
-                {selectColumns}
-            FROM {TableName} CurrentRecord
+                {selectColumnSql}
+            FROM {tableName} CurrentRecord
             WHERE CurrentRecord.Game = @Game
               AND CurrentRecord.FormKey_ModKey_Name = @FormKeyModKeyName COLLATE NOCASE
               AND CurrentRecord.FormKey_ModKey_Type = @FormKeyModKeyType
@@ -169,6 +185,66 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
                 FormKeyModKeyFileName = formKey.ModKey.FileName,
                 FormKeyId = formKey.Id
             });
+    }
+
+    protected static SelectColumnDefinition SelectColumn(string columnName)
+    {
+        return new SelectColumnDefinition(columnName, null);
+    }
+
+    protected static SelectColumnDefinition SelectColumn(string columnName, string alias)
+    {
+        return new SelectColumnDefinition(columnName, alias);
+    }
+
+    protected string GetValidatedTableName()
+    {
+        if (!AllowedTableNames.Contains(TableName))
+        {
+            throw new InvalidOperationException($"Typed record table name '{TableName}' is not allowed.");
+        }
+
+        return TableName;
+    }
+
+    private static string BuildSelectColumnSql(IReadOnlyList<SelectColumnDefinition> selectColumns)
+    {
+        if (selectColumns.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        return string.Join(
+            Environment.NewLine,
+            selectColumns.Select(column => $"                {column.ToSqlFragment()}"));
+    }
+
+    private static void ValidateIdentifier(string identifier, string description)
+    {
+        if (string.IsNullOrWhiteSpace(identifier))
+        {
+            throw new ArgumentException($"{description} cannot be empty.", nameof(identifier));
+        }
+
+        if (!IsIdentifierStart(identifier[0]))
+        {
+            throw new ArgumentException($"{description} '{identifier}' is not a valid SQL identifier.", nameof(identifier));
+        }
+
+        if (identifier.Any(character => !IsIdentifierPart(character)))
+        {
+            throw new ArgumentException($"{description} '{identifier}' is not a valid SQL identifier.", nameof(identifier));
+        }
+    }
+
+    private static bool IsIdentifierStart(char character)
+    {
+        return char.IsAsciiLetter(character) || character == '_';
+    }
+
+    private static bool IsIdentifierPart(char character)
+    {
+        return char.IsAsciiLetterOrDigit(character) || character == '_';
     }
 
     protected static void ApplyCommonFields(RecordDTO dto, RecordRow row, SupportedGame game)
@@ -286,6 +362,34 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
         public int MajorRecordFlags { get; set; }
 
         public DateTime ImportedAtUTC { get; set; }
+    }
+
+    protected readonly struct SelectColumnDefinition
+    {
+        private readonly string ColumnName;
+        private readonly string? Alias;
+
+        public SelectColumnDefinition(string columnName, string? alias)
+        {
+            ValidateIdentifier(columnName, "Column name");
+            if (alias is not null)
+            {
+                ValidateIdentifier(alias, "Column alias");
+            }
+
+            ColumnName = columnName;
+            Alias = alias;
+        }
+
+        public string ToSqlFragment()
+        {
+            if (Alias is null)
+            {
+                return $", CurrentRecord.{ColumnName}";
+            }
+
+            return $", CurrentRecord.{ColumnName} AS {Alias}";
+        }
     }
 
     private sealed class RecordTreeEntryRow

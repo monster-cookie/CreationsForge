@@ -20,19 +20,18 @@ public class MiscObjectRepository : TypedRecordRepositoryBase, IMiscObjectReposi
         return FetchByFormKey<MiscObjectRow>(
                 game,
                 formKey,
-                """
-                ,
-                CurrentRecord.Name,
-                CurrentRecord.ShortName,
-                CurrentRecord.Value,
-                CurrentRecord.Weight,
-                CurrentRecord.DirtinessScale,
-                CurrentRecord.FeaturedItemMessage_ModKey_Name AS FeaturedItemMessageModKeyName,
-                CurrentRecord.FeaturedItemMessage_ModKey_Type AS FeaturedItemMessageModKeyType,
-                CurrentRecord.FeaturedItemMessage_ModKey_FileName AS FeaturedItemMessageModKeyFileName,
-                CurrentRecord.FeaturedItemMessage_FormKey_ID AS FeaturedItemMessageFormKeyId,
-                CurrentRecord.FLAG AS Flag
-                """)
+                [
+                    SelectColumn("Name"),
+                    SelectColumn("ShortName"),
+                    SelectColumn("Value"),
+                    SelectColumn("Weight"),
+                    SelectColumn("DirtinessScale"),
+                    SelectColumn("FeaturedItemMessage_ModKey_Name", "FeaturedItemMessageModKeyName"),
+                    SelectColumn("FeaturedItemMessage_ModKey_Type", "FeaturedItemMessageModKeyType"),
+                    SelectColumn("FeaturedItemMessage_ModKey_FileName", "FeaturedItemMessageModKeyFileName"),
+                    SelectColumn("FeaturedItemMessage_FormKey_ID", "FeaturedItemMessageFormKeyId"),
+                    SelectColumn("FLAG", "Flag")
+                ])
             .Select(record => ToDTO(record, game))
             .ToList();
     }
