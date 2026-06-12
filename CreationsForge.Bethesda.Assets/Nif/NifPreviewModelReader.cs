@@ -979,7 +979,12 @@ public class NifPreviewModelReader : INifPreviewModelReader
 
             using (document)
             {
-                if (TryGetStarfieldSummaryReplacementColor(document.RootElement, "Albedo", out var color))
+                if (TryGetStarfieldObjectsMaterialColor(document.RootElement, out var color))
+                {
+                    return color;
+                }
+
+                if (TryGetStarfieldSummaryReplacementColor(document.RootElement, "Albedo", out color))
                 {
                     return color;
                 }
@@ -992,6 +997,51 @@ public class NifPreviewModelReader : INifPreviewModelReader
         }
 
         return StarfieldPreviewColor.White;
+    }
+
+    private static bool TryGetStarfieldObjectsMaterialColor(JsonElement root, out StarfieldPreviewColor color)
+    {
+        color = StarfieldPreviewColor.White;
+        if (!root.TryGetProperty("Objects", out var objects) ||
+            objects.ValueKind != JsonValueKind.Array)
+        {
+            return false;
+        }
+
+        foreach (var materialObject in objects.EnumerateArray())
+        {
+            if (materialObject.ValueKind != JsonValueKind.Object ||
+                !materialObject.TryGetProperty("Components", out var components) ||
+                components.ValueKind != JsonValueKind.Array)
+            {
+                continue;
+            }
+
+            foreach (var component in components.EnumerateArray())
+            {
+                if (component.ValueKind == JsonValueKind.Object &&
+                    component.TryGetProperty("Type", out var type) &&
+                    type.ValueKind == JsonValueKind.String &&
+                    string.Equals(type.GetString(), "BSMaterial::Color", StringComparison.Ordinal) &&
+                    TryReadStarfieldObjectMaterialColor(component, out color))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryReadStarfieldObjectMaterialColor(JsonElement component, out StarfieldPreviewColor color)
+    {
+        color = StarfieldPreviewColor.White;
+        return component.TryGetProperty("Data", out var data) &&
+            data.ValueKind == JsonValueKind.Object &&
+            data.TryGetProperty("Value", out var value) &&
+            value.ValueKind == JsonValueKind.Object &&
+            value.TryGetProperty("Data", out var colorData) &&
+            TryReadStarfieldPreviewColor(colorData, out color);
     }
 
     private static StarfieldPreviewUvTransform GetStarfieldDecalUvTransform(IEnumerable<byte[]> materialDataCandidates)

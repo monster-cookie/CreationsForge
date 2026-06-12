@@ -785,7 +785,7 @@ public class NifPreviewModelReaderTests
     }
 
     [Fact]
-    public void TryRead_ParsesStarfieldMaterialTintFromAlbedoReplacement()
+    public void TryRead_ParsesStarfieldMaterialTintFromObjectMaterialColor()
     {
         var reader = new NifPreviewModelReader();
         const string materialPath = @"Materials\SetDressing\Books\GenBookA01_PagesAged.mat";
@@ -796,23 +796,23 @@ public class NifPreviewModelReaderTests
             DisplayName = "BookSmall01",
             Data = CreateMaterialLinkedBSTriShapeNif(materialPath),
             ResolveExternalAsset = path => string.Equals(path, materialPath, StringComparison.OrdinalIgnoreCase)
-                ? CreateStarfieldMaterialJsonFileWithAlbedoTint(
+                ? CreateStarfieldMaterialJsonFileWithObjectMaterialColor(
                     materialPath,
                     @"Data\Textures\SetDressing\Books\genbooka01_color.dds",
-                    0.596078f,
-                    0.588235f,
-                    0.576471f,
+                    0.595254f,
+                    0.589136f,
+                    0.575418f,
                     0f)
                 : null
         });
 
         result.IsSuccess.ShouldBeTrue(result.StatusMessage);
         result.Model.ShouldNotBeNull();
-        result.Model.Meshes[0].MaterialTintRed.ShouldBe(0.596078f, 0.0001f);
-        result.Model.Meshes[0].MaterialTintGreen.ShouldBe(0.588235f, 0.0001f);
-        result.Model.Meshes[0].MaterialTintBlue.ShouldBe(0.576471f, 0.0001f);
+        result.Model.Meshes[0].MaterialTintRed.ShouldBe(0.595254f, 0.0001f);
+        result.Model.Meshes[0].MaterialTintGreen.ShouldBe(0.589136f, 0.0001f);
+        result.Model.Meshes[0].MaterialTintBlue.ShouldBe(0.575418f, 0.0001f);
         result.Model.Meshes[0].MaterialTintAlpha.ShouldBe(0f, 0.0001f);
-        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("material tint (0.596,0.588,0.576,0)", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("material tint (0.595,0.589,0.575,0)", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -1235,6 +1235,86 @@ public class NifPreviewModelReaderTests
                                 "UseReplacement" : true
                             }
                         }
+                    }
+                },
+                "Version" : 1
+            }
+            """;
+        return Encoding.UTF8.GetBytes(json);
+    }
+
+    private static byte[] CreateStarfieldMaterialJsonFileWithObjectMaterialColor(string fileName, string colorTexturePath, float red, float green, float blue, float alpha)
+    {
+        var redText = red.ToString("0.######", CultureInfo.InvariantCulture);
+        var greenText = green.ToString("0.######", CultureInfo.InvariantCulture);
+        var blueText = blue.ToString("0.######", CultureInfo.InvariantCulture);
+        var alphaText = alpha.ToString("0.######", CultureInfo.InvariantCulture);
+        var json = $$"""
+            {
+                "Filename" : "{{EscapeJson(fileName)}}",
+                "Import" : [ "Data\\MATERIALS\\Layered\\ShaderModels\\1LayerStandard.mat" ],
+                "Objects" : [
+                    {
+                        "Components" : [
+                            {
+                                "Data" : {
+                                    "Name" : "GenBookA01_PagesAged_Material1"
+                                },
+                                "Index" : 0,
+                                "Type" : "BSComponentDB::CTName"
+                            },
+                            {
+                                "Data" : {
+                                    "ID" : "res:7FC24A27:0005EB54:A577170D"
+                                },
+                                "Index" : 0,
+                                "Type" : "BSMaterial::TextureSetID"
+                            },
+                            {
+                                "Data" : {
+                                    "Value" : {
+                                        "Data" : {
+                                            "w" : "{{alphaText}}",
+                                            "x" : "{{redText}}",
+                                            "y" : "{{greenText}}",
+                                            "z" : "{{blueText}}"
+                                        },
+                                        "Type" : "XMFLOAT4"
+                                    }
+                                },
+                                "Index" : 0,
+                                "Type" : "BSMaterial::Color",
+                                "Version" : 1
+                            }
+                        ],
+                        "ID" : "res:7FC24A25:0005EB54:A577170D",
+                        "Parent" : "res:06763197:0005DAE6:A64340C8"
+                    },
+                    {
+                        "Components" : [
+                            {
+                                "Data" : {
+                                    "Name" : "GenBookA01_PagesAged_TextureSet1"
+                                },
+                                "Index" : 0,
+                                "Type" : "BSComponentDB::CTName"
+                            },
+                            {
+                                "Data" : {
+                                    "FileName" : "{{EscapeJson(colorTexturePath)}}"
+                                },
+                                "Index" : 0,
+                                "Type" : "BSMaterial::MRTextureFile",
+                                "Version" : 2
+                            }
+                        ],
+                        "ID" : "res:7FC24A27:0005EB54:A577170D",
+                        "Parent" : "res:067631C2:0005DAE6:A64340C8"
+                    }
+                ],
+                "Summary" : {
+                    "Layer1" : {
+                        "ShaderModel" : "1LayerStandard"
                     }
                 },
                 "Version" : 1
