@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text;
 using CreationsForge.Bethesda.Assets.Archives.Bsa;
+using CreationsForge.Bethesda.Assets.Resources;
 using K4os.Compression.LZ4.Streams;
 using Shouldly;
 
@@ -357,6 +358,34 @@ public class BsaArchiveReaderTests
     }
 
     [Fact]
+    public void TryReadEntry_ReturnsTooLargeWhenUnpackedSizeExceedsPreviewLimit()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var archivePath = Path.Combine(tempDirectory.FullName, "Skyrim - Meshes.bsa");
+            WriteBsaArchive(
+                archivePath,
+                [
+                    TestBsaEntry.CreateOversizedCompressed("Meshes\\Clutter", "Basket04.NIF")
+                ],
+                compressedByDefault: true);
+            var reader = new BsaArchiveReader();
+
+            var result = reader.TryReadEntry(archivePath, "Meshes\\Clutter\\Basket04.NIF");
+
+            result.IsSuccess.ShouldBeFalse();
+            result.IsTooLarge.ShouldBeTrue();
+            result.StatusMessage.ShouldNotBeNull();
+            result.StatusMessage.ShouldContain("preview read limit");
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public void TryReadEntry_ReturnsFailureForMissingEntry()
     {
         var tempDirectory = Directory.CreateTempSubdirectory();
@@ -596,6 +625,15 @@ public class BsaArchiveReaderTests
                 lz4Stream.Write(unpackedData);
             }
 
+            return new TestBsaEntry(folderName, fileName, storedStream.ToArray());
+        }
+
+        public static TestBsaEntry CreateOversizedCompressed(string folderName, string fileName)
+        {
+            using var storedStream = new MemoryStream();
+            using var writer = new BinaryWriter(storedStream, Encoding.UTF8, leaveOpen: false);
+            writer.Write((uint)BethesdaAssetProvider.MaximumPreviewAssetBytes + 1U);
+            writer.Write((byte)0);
             return new TestBsaEntry(folderName, fileName, storedStream.ToArray());
         }
 

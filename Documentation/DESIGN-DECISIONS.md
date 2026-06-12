@@ -1,5 +1,50 @@
 # Design Decisions
 
+## 2026-06-12 - Harden Local Asset And Database Trust Boundaries
+
+Status: Accepted
+
+Context: Asset preview paths come from imported plugin data, and reset/import workflows operate on configured local
+database paths. The preview pipeline also reads loose files and archive entries into memory for rendering. These are
+local desktop workflows, but they still cross trust boundaries from mod metadata and user-editable configuration into
+OS shell launching, file deletion, and large memory allocations.
+
+Decision: Treat external asset opening as a resolved loose-file operation. Imported model paths can preview through the
+asset resolver, but shell-open behavior only uses a validated local file under the selected game's data folder. URI-like
+paths, rooted paths, device paths, parent traversal, missing files, unsupported extensions, and archive-backed entries
+are rejected for external open. Reset only deletes the expected `CreationsForge.sqlite` filename and sidecars, and
+custom database paths must contain recognizable CreationsForge database markers before deletion. Loose-file and
+archive-backed preview reads enforce a maximum preview asset byte limit before whole-file reads, byte-array allocation,
+or decompression.
+
+Rationale: Imported plugins and asset archives are local files but not necessarily trusted files. Keeping validation in
+the Core/Assets services preserves UI boundaries while preventing untrusted metadata from directly controlling shell
+launches, arbitrary reset deletes, or unbounded preview memory allocation.
+
+Alternatives considered:
+
+- Continue relying on extension checks before external open.
+- Allow any configured database path because configuration is local.
+- Stream all preview assets immediately instead of adding a bounded in-memory read limit.
+
+Consequences:
+
+- External open works only for real loose files resolved under the selected game's data folder.
+- Archive-backed entries remain previewable in memory when supported, but they are not shell-opened directly.
+- Custom database reset targets are stricter and may require a valid existing CreationsForge database marker.
+- Very large loose files or archive entries return controlled oversized-asset failures instead of being read into
+  memory.
+
+Related files:
+
+- `CreationsForge.Core/Services/AssetPreviewPathResolverService.cs`
+- `CreationsForge/Services/ExternalAssetOpenService.cs`
+- `CreationsForge/ViewModels/AssetPreviewPaneViewModel.cs`
+- `CreationsForge.Core/Database/DatabaseResetService.cs`
+- `CreationsForge.Bethesda.Assets/Resources/BethesdaAssetProvider.cs`
+- `CreationsForge.Bethesda.Assets/Archives/Ba2/Ba2ArchiveReader.cs`
+- `CreationsForge.Bethesda.Assets/Archives/Bsa/BsaArchiveReader.cs`
+
 ## 2026-06-11 - Probe Starfield Material Files For Preview Textures
 
 Status: Accepted

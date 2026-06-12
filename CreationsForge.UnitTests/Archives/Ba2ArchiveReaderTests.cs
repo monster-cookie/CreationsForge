@@ -1,5 +1,6 @@
 using System.Text;
 using CreationsForge.Bethesda.Assets.Archives.Ba2;
+using CreationsForge.Bethesda.Assets.Resources;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Archives;
@@ -74,6 +75,28 @@ public class Ba2ArchiveReaderTests
         }
     }
 
+    [Fact]
+    public void TryReadEntry_ReturnsTooLargeWhenUnpackedSizeExceedsPreviewLimit()
+    {
+        var archivePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.ba2");
+        try
+        {
+            WriteOversizedGeneralArchive(archivePath, "geometries/test.mesh");
+            var reader = new Ba2ArchiveReader();
+
+            var result = reader.TryReadEntry(archivePath, "geometries/test.mesh");
+
+            result.IsSuccess.ShouldBeFalse();
+            result.IsTooLarge.ShouldBeTrue();
+            result.StatusMessage.ShouldNotBeNull();
+            result.StatusMessage.ShouldContain("preview read limit");
+        }
+        finally
+        {
+            DeleteArchive(archivePath);
+        }
+    }
+
     private static long WriteGeneralArchive(string archivePath, IReadOnlyList<TestArchiveEntry> entries)
     {
         var normalizedEntries = entries
@@ -119,6 +142,33 @@ public class Ba2ArchiveReaderTests
         }
 
         return firstDataOffset;
+    }
+
+    private static void WriteOversizedGeneralArchive(string archivePath, string entryName)
+    {
+        var entryNameBytes = Encoding.UTF8.GetBytes(NormalizeEntryPath(entryName));
+        var nameTableOffset = HeaderSize + FileRecordSize;
+        var dataOffset = nameTableOffset + sizeof(ushort) + entryNameBytes.Length;
+        Directory.CreateDirectory(Path.GetDirectoryName(archivePath)!);
+
+        using var stream = File.Create(archivePath);
+        using var writer = new BinaryWriter(stream, Encoding.ASCII, leaveOpen: false);
+        writer.Write(Magic);
+        writer.Write(1U);
+        writer.Write(GeneralArchiveType);
+        writer.Write(1U);
+        writer.Write((ulong)nameTableOffset);
+        writer.Write(0U);
+        writer.Write(0U);
+        writer.Write(0U);
+        writer.Write(0U);
+        writer.Write((ulong)dataOffset);
+        writer.Write(1U);
+        writer.Write((uint)BethesdaAssetProvider.MaximumPreviewAssetBytes + 1U);
+        writer.Write(FileRecordSentinel);
+        writer.Write((ushort)entryNameBytes.Length);
+        writer.Write(entryNameBytes);
+        writer.Write((byte)0);
     }
 
     private static string NormalizeEntryPath(string entryPath)

@@ -11,4 +11,6 @@ public interface IAssetPreviewPathResolverService
     bool CanPreviewPath(string? meshPath);
 
     bool CanOpenExternally(string? meshPath);
+
+    string? ResolveExternalOpenPath(AssetPreviewCandidateDTO candidate);
 }

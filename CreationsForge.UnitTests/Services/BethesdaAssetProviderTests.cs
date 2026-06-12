@@ -188,6 +188,34 @@ public class BethesdaAssetProviderTests
     }
 
     [Fact]
+    public void TryReadAsset_ReturnsAssetTooLargeForOversizedLooseFile()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var filePath = Path.Combine(tempDirectory.FullName, "Preview.nif");
+            using (var stream = File.Create(filePath))
+            {
+                stream.SetLength(BethesdaAssetProvider.MaximumPreviewAssetBytes + 1L);
+            }
+
+            var provider = new BethesdaAssetProvider([]);
+
+            var result = provider.TryReadAsset(new BethesdaAssetReadRequest
+            {
+                AssetPath = filePath
+            });
+
+            result.Status.ShouldBe(BethesdaAssetReadStatus.AssetTooLarge);
+            result.Data.ShouldBeNull();
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public void TryReadAsset_ReadsArchiveEntryStoredWithDataRoot()
     {
         var tempDirectory = Directory.CreateTempSubdirectory();
@@ -372,6 +400,36 @@ public class BethesdaAssetProviderTests
         }
     }
 
+    [Fact]
+    public void TryReadAsset_ReturnsAssetTooLargeWhenArchiveReaderRejectsEntrySize()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var archivePath = Path.Combine(tempDirectory.FullName, "Fallout4 - Meshes.ba2");
+            File.WriteAllText(archivePath, "archive");
+            var archiveReader = new FakeArchiveReader(archivePath, "Meshes/SetDressing/BabyBottle/BabyBottleDirty02.nif", [7, 8, 9])
+            {
+                IsTooLarge = true
+            };
+            var provider = new BethesdaAssetProvider([archiveReader]);
+
+            var result = provider.TryReadAsset(new BethesdaAssetReadRequest
+            {
+                DataFolder = tempDirectory.FullName,
+                AssetPath = "SetDressing\\BabyBottle\\BabyBottleDirty02.nif"
+            });
+
+            result.Status.ShouldBe(BethesdaAssetReadStatus.AssetTooLarge);
+            result.SourceArchivePath.ShouldBe(archivePath);
+            result.Data.ShouldBeNull();
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
     private class RecordingArchiveReadAttempt
     {
         public RecordingArchiveReadAttempt(string archivePath, string entryPath)
@@ -458,6 +516,8 @@ public class BethesdaAssetProviderTests
 
         public string? FailureMessage { get; set; }
 
+        public bool IsTooLarge { get; set; }
+
         public bool CanRead(string archivePath)
         {
             return string.Equals(ArchivePath, archivePath, StringComparison.OrdinalIgnoreCase);
@@ -479,7 +539,8 @@ public class BethesdaAssetProviderTests
 
         public AssetArchiveReadResult TryReadEntry(string archivePath, string entryPath)
         {
-            if (string.IsNullOrWhiteSpace(FailureMessage) &&
+            if (!IsTooLarge &&
+                string.IsNullOrWhiteSpace(FailureMessage) &&
                 CanRead(archivePath) &&
                 string.Equals(EntryPath, entryPath, StringComparison.OrdinalIgnoreCase))
             {
@@ -496,9 +557,10 @@ public class BethesdaAssetProviderTests
             return new AssetArchiveReadResult
             {
                 IsSuccess = false,
+                IsTooLarge = IsTooLarge,
                 ArchivePath = archivePath,
                 EntryPath = entryPath,
-                StatusMessage = FailureMessage ?? "Fake archive entry missing."
+                StatusMessage = IsTooLarge ? "Fake archive entry is too large." : FailureMessage ?? "Fake archive entry missing."
             };
         }
     }

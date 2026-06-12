@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Text;
+using CreationsForge.Bethesda.Assets.Resources;
 using K4os.Compression.LZ4;
 using K4os.Compression.LZ4.Streams;
 
@@ -74,7 +75,9 @@ public class BsaArchiveReader : IAssetArchiveReader
         }
         catch (Exception exception) when (exception is EndOfStreamException or IOException or InvalidDataException or OverflowException)
         {
-            return CreateFailure(archivePath, entryPath, exception.Message);
+            return exception is AssetTooLargeException
+                ? CreateTooLargeFailure(archivePath, entryPath, exception.Message)
+                : CreateFailure(archivePath, entryPath, exception.Message);
         }
     }
 
@@ -279,6 +282,7 @@ public class BsaArchiveReader : IAssetArchiveReader
 
     private static string? TryDecompressZlib(byte[] packedData, uint unpackedSize, out byte[] data)
     {
+        EnsurePreviewSize(unpackedSize);
         data = new byte[checked((int)unpackedSize)];
         try
         {
@@ -312,6 +316,7 @@ public class BsaArchiveReader : IAssetArchiveReader
 
     private static string? TryDecompressLz4Frame(byte[] packedData, uint unpackedSize, out byte[] data)
     {
+        EnsurePreviewSize(unpackedSize);
         data = new byte[checked((int)unpackedSize)];
         try
         {
@@ -333,6 +338,7 @@ public class BsaArchiveReader : IAssetArchiveReader
 
     private static string? TryDecompressLz4RawBlock(byte[] packedData, uint unpackedSize, out byte[] data)
     {
+        EnsurePreviewSize(unpackedSize);
         data = new byte[checked((int)unpackedSize)];
         try
         {
@@ -352,6 +358,7 @@ public class BsaArchiveReader : IAssetArchiveReader
 
     private static byte[] ReadStoredBytes(BinaryReader reader, uint storedSize)
     {
+        EnsurePreviewSize(storedSize);
         var data = reader.ReadBytes(checked((int)storedSize));
         if (data.Length != storedSize)
         {
@@ -390,6 +397,26 @@ public class BsaArchiveReader : IAssetArchiveReader
             EntryPath = entryPath,
             StatusMessage = statusMessage
         };
+    }
+
+    private static AssetArchiveReadResult CreateTooLargeFailure(string archivePath, string entryPath, string statusMessage)
+    {
+        return new AssetArchiveReadResult
+        {
+            IsSuccess = false,
+            IsTooLarge = true,
+            ArchivePath = archivePath,
+            EntryPath = entryPath,
+            StatusMessage = statusMessage
+        };
+    }
+
+    private static void EnsurePreviewSize(uint byteCount)
+    {
+        if (byteCount > BethesdaAssetProvider.MaximumPreviewAssetBytes)
+        {
+            throw new AssetTooLargeException($"BSA archive entry is {byteCount} bytes, which exceeds the {BethesdaAssetProvider.MaximumPreviewAssetBytes} byte preview read limit.");
+        }
     }
 
     private static string NormalizeEntryPath(string entryPath)
@@ -486,5 +513,12 @@ public class BsaArchiveReader : IAssetArchiveReader
         }
 
         return char.ToLowerInvariant(character);
+    }
+
+    private sealed class AssetTooLargeException : IOException
+    {
+        public AssetTooLargeException(string message) : base(message)
+        {
+        }
     }
 }

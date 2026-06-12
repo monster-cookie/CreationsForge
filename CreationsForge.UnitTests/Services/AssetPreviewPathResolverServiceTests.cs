@@ -1,8 +1,11 @@
+using CreationsForge.Core.DTOs.Assets;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
+using CreationsForge.Core.DTOs.Games;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Repositories.Interfaces;
 using CreationsForge.Core.Services;
+using CreationsForge.Core.Services.Interfaces;
 using Moq;
 using Shouldly;
 
@@ -98,6 +101,82 @@ public class AssetPreviewPathResolverServiceTests
         candidate.UnsupportedReason.ShouldNotBeNullOrWhiteSpace();
     }
 
+    [Theory]
+    [InlineData("http://host/file.nif")]
+    [InlineData(@"C:\Windows\file.nif")]
+    [InlineData(@"..\file.nif")]
+    [InlineData(@"\\server\share\file.nif")]
+    public void CanOpenExternally_RejectsUnsafePaths(string meshPath)
+    {
+        var service = new AssetPreviewPathResolverService(Mock.Of<IModelRepository>());
+
+        service.CanOpenExternally(meshPath).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void ResolveExternalOpenPath_ReturnsLooseFileUnderDataFolder()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var meshDirectory = Path.Combine(tempDirectory.FullName, "Meshes", "Props");
+            Directory.CreateDirectory(meshDirectory);
+            var filePath = Path.Combine(meshDirectory, "Preview.nif");
+            File.WriteAllText(filePath, "nif");
+            var service = new AssetPreviewPathResolverService(
+                Mock.Of<IModelRepository>(),
+                [CreateGameMetadataService(SupportedGame.Starfield, tempDirectory.FullName)]);
+
+            var resolvedPath = service.ResolveExternalOpenPath(CreateCandidate("Props\\Preview.nif"));
+
+            resolvedPath.ShouldBe(filePath);
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ResolveExternalOpenPath_ReturnsNullForMissingLooseFile()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var service = new AssetPreviewPathResolverService(
+                Mock.Of<IModelRepository>(),
+                [CreateGameMetadataService(SupportedGame.Starfield, tempDirectory.FullName)]);
+
+            var resolvedPath = service.ResolveExternalOpenPath(CreateCandidate("Meshes\\Props\\Missing.nif"));
+
+            resolvedPath.ShouldBeNull();
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ResolveExternalOpenPath_ReturnsNullForUnsafePath()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var service = new AssetPreviewPathResolverService(
+                Mock.Of<IModelRepository>(),
+                [CreateGameMetadataService(SupportedGame.Starfield, tempDirectory.FullName)]);
+
+            var resolvedPath = service.ResolveExternalOpenPath(CreateCandidate(@"..\Preview.nif"));
+
+            resolvedPath.ShouldBeNull();
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
     private static ModelDTO CreateModel(FormKeyDTO formKey, string? file, string modelSlot, string modelGender)
     {
         return new ModelDTO
@@ -116,6 +195,42 @@ public class AssetPreviewPathResolverServiceTests
             File = file,
             ImportedAtUTC = DateTime.UtcNow
         };
+    }
+
+    private static AssetPreviewCandidateDTO CreateCandidate(string meshPath)
+    {
+        return new AssetPreviewCandidateDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = new ModKeyDTO
+            {
+                Name = "Starfield",
+                Type = 0,
+                FileName = "Starfield.esm"
+            },
+            RecordType = "MISC",
+            FormKey = CreateFormKey(),
+            ModelSlot = "Model",
+            MeshPath = meshPath,
+            DisplayName = Path.GetFileName(meshPath),
+            CanPreview = true,
+            CanOpenExternally = true
+        };
+    }
+
+    private static IGameMetadataService CreateGameMetadataService(SupportedGame game, string dataFolder)
+    {
+        var metadataService = new Mock<IGameMetadataService>();
+        metadataService.SetupGet(service => service.Game).Returns(game);
+        metadataService.Setup(service => service.GetGame())
+            .Returns(new GameDTO
+            {
+                Game = game,
+                DisplayName = game.ToString(),
+                DataFolder = dataFolder,
+                ImportedAtUTC = DateTime.UtcNow
+            });
+        return metadataService.Object;
     }
 
     private static FormKeyDTO CreateFormKey()

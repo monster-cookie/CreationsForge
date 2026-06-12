@@ -8,5 +8,6 @@ public enum BethesdaAssetReadStatus
     MissingDataFolder,
     MissingLooseFile,
     ArchiveReaderUnavailable,
-    ArchiveEntryMissing
+    ArchiveEntryMissing,
+    AssetTooLarge
 }

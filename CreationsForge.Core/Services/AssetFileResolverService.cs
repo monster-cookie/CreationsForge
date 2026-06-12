@@ -89,6 +89,7 @@ public class AssetFileResolverService : IAssetFileResolverService
             BethesdaAssetReadStatus.MissingLooseFile => AssetFileResolutionStatus.MissingLooseFile,
             BethesdaAssetReadStatus.ArchiveReaderUnavailable => AssetFileResolutionStatus.ArchiveExtractionUnsupported,
             BethesdaAssetReadStatus.ArchiveEntryMissing => AssetFileResolutionStatus.ArchiveExtractionUnsupported,
+            BethesdaAssetReadStatus.AssetTooLarge => AssetFileResolutionStatus.AssetTooLarge,
             _ => AssetFileResolutionStatus.MissingLooseFile
         };
     }

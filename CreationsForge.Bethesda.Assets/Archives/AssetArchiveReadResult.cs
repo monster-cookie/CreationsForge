@@ -6,6 +6,8 @@ public class AssetArchiveReadResult
 
     public byte[]? Data { get; set; }
 
+    public bool IsTooLarge { get; set; }
+
     public string? ArchivePath { get; set; }
 
     public string? EntryPath { get; set; }

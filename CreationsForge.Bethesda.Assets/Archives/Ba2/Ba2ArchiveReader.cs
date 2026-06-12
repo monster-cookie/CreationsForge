@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Text;
+using CreationsForge.Bethesda.Assets.Resources;
 using K4os.Compression.LZ4;
 using K4os.Compression.LZ4.Streams;
 
@@ -68,7 +69,9 @@ public class Ba2ArchiveReader : IAssetArchiveReader
         }
         catch (Exception exception) when (exception is EndOfStreamException or IOException or InvalidDataException or OverflowException)
         {
-            return CreateFailure(archivePath, entryPath, exception.Message);
+            return exception is AssetTooLargeException
+                ? CreateTooLargeFailure(archivePath, entryPath, exception.Message)
+                : CreateFailure(archivePath, entryPath, exception.Message);
         }
     }
 
@@ -358,6 +361,7 @@ public class Ba2ArchiveReader : IAssetArchiveReader
             return ReadCompressedEntryData(reader, record);
         }
 
+        EnsurePreviewSize(record.UnpackedSize);
         var data = reader.ReadBytes(checked((int)record.UnpackedSize));
         if (data.Length != record.UnpackedSize)
         {
@@ -375,6 +379,7 @@ public class Ba2ArchiveReader : IAssetArchiveReader
             throw new InvalidDataException("BA2 compressed entry ended before all packed bytes could be read.");
         }
 
+        EnsurePreviewSize(record.UnpackedSize);
         var data = new byte[checked((int)record.UnpackedSize)];
         using var packedStream = new MemoryStream(packedData);
         using var zlibStream = new ZLibStream(packedStream, CompressionMode.Decompress);
@@ -389,6 +394,7 @@ public class Ba2ArchiveReader : IAssetArchiveReader
 
     private static byte[] ReadTextureEntryData(BinaryReader reader, Ba2ArchiveHeader header, Ba2ArchiveTextureRecord record)
     {
+        EnsurePreviewSize(checked(DdsHeaderSize + (long)record.UnpackedSize));
         var data = new byte[checked(DdsHeaderSize + (int)record.UnpackedSize)];
         WriteDdsHeader(data, record);
         var outputOffset = DdsHeaderSize;
@@ -407,6 +413,7 @@ public class Ba2ArchiveReader : IAssetArchiveReader
     {
         if (chunk.PackedSize == 0)
         {
+            EnsurePreviewSize(chunk.UnpackedSize);
             var data = reader.ReadBytes(checked((int)chunk.UnpackedSize));
             if (data.Length != chunk.UnpackedSize)
             {
@@ -429,6 +436,7 @@ public class Ba2ArchiveReader : IAssetArchiveReader
 
     private static byte[] DecompressZlibTextureChunk(byte[] packedData, uint unpackedSize)
     {
+        EnsurePreviewSize(unpackedSize);
         var data = new byte[checked((int)unpackedSize)];
         using var packedStream = new MemoryStream(packedData);
         using var zlibStream = new ZLibStream(packedStream, CompressionMode.Decompress);
@@ -443,6 +451,7 @@ public class Ba2ArchiveReader : IAssetArchiveReader
 
     private static byte[] DecompressLz4TextureChunk(byte[] packedData, uint unpackedSize)
     {
+        EnsurePreviewSize(unpackedSize);
         var data = new byte[checked((int)unpackedSize)];
         var rawFailure = TryDecompressRawLz4TextureChunk(packedData, data);
         if (rawFailure is null)
@@ -623,6 +632,26 @@ public class Ba2ArchiveReader : IAssetArchiveReader
         };
     }
 
+    private static AssetArchiveReadResult CreateTooLargeFailure(string archivePath, string entryPath, string statusMessage)
+    {
+        return new AssetArchiveReadResult
+        {
+            IsSuccess = false,
+            IsTooLarge = true,
+            ArchivePath = archivePath,
+            EntryPath = entryPath,
+            StatusMessage = statusMessage
+        };
+    }
+
+    private static void EnsurePreviewSize(long byteCount)
+    {
+        if (byteCount > BethesdaAssetProvider.MaximumPreviewAssetBytes)
+        {
+            throw new AssetTooLargeException($"BA2 archive entry is {byteCount} bytes, which exceeds the {BethesdaAssetProvider.MaximumPreviewAssetBytes} byte preview read limit.");
+        }
+    }
+
     private static string NormalizeEntryPath(string entryPath)
     {
         return new string(entryPath.Trim().Select(NormalizeEntryCharacter).ToArray());
@@ -641,5 +670,12 @@ public class Ba2ArchiveReader : IAssetArchiveReader
         }
 
         return char.ToLowerInvariant(character);
+    }
+
+    private sealed class AssetTooLargeException : IOException
+    {
+        public AssetTooLargeException(string message) : base(message)
+        {
+        }
     }
 }

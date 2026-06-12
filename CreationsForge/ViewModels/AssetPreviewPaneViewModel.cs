@@ -292,7 +292,9 @@ public class AssetPreviewPaneViewModel : ViewModelBase
             return;
         }
 
-        if (!ExternalAssetOpenService.OpenExternally(SelectedCandidate.MeshPath))
+        var externalOpenPath = AssetPreviewPathResolverService.ResolveExternalOpenPath(SelectedCandidate);
+        if (string.IsNullOrWhiteSpace(externalOpenPath) ||
+            !ExternalAssetOpenService.OpenExternally(externalOpenPath))
         {
             PreviewStatusText = $"Unable to open {SelectedCandidate.MeshPath} externally.";
         }

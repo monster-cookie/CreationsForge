@@ -365,6 +365,11 @@ public class MainViewModelTests
         {
             return false;
         }
+
+        public string? ResolveExternalOpenPath(AssetPreviewCandidateDTO candidate)
+        {
+            return null;
+        }
     }
 
     private class FakeAssetPreviewSceneService : IAssetPreviewSceneService

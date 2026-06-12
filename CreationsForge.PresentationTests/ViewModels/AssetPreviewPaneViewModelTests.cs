@@ -130,14 +130,35 @@ public class AssetPreviewPaneViewModelTests
         viewModel.PreviewStatusText.ShouldBe("Select a model-bearing record to preview assets.");
     }
 
+    [Fact]
+    public void OpenExternallyCommand_OpensResolvedPath()
+    {
+        var pathResolver = new FakeAssetPreviewPathResolverService
+        {
+            Candidates =
+            [
+                CreateCandidate()
+            ],
+            ExternalOpenPath = @"C:\Games\Data\Meshes\Preview.nif"
+        };
+        var externalOpenService = new FakeExternalAssetOpenService();
+        var viewModel = CreateViewModel(pathResolver, externalAssetOpenService: externalOpenService);
+
+        viewModel.LoadPreviewForRecord(SupportedGame.Fallout4, "MISC", CreateFormKey());
+        viewModel.OpenExternallyCommand.Execute(null);
+
+        externalOpenService.OpenedPath.ShouldBe(@"C:\Games\Data\Meshes\Preview.nif");
+    }
+
     private static AssetPreviewPaneViewModel CreateViewModel(
         IAssetPreviewPathResolverService? pathResolver = null,
-        IAssetPreviewSceneService? sceneService = null)
+        IAssetPreviewSceneService? sceneService = null,
+        IExternalAssetOpenService? externalAssetOpenService = null)
     {
         return new AssetPreviewPaneViewModel(
             pathResolver ?? new FakeAssetPreviewPathResolverService(),
             sceneService ?? new FakeAssetPreviewSceneService(),
-            new FakeExternalAssetOpenService(),
+            externalAssetOpenService ?? new FakeExternalAssetOpenService(),
             new LoggerConfiguration().CreateLogger());
     }
 
@@ -202,6 +223,8 @@ public class AssetPreviewPaneViewModelTests
     {
         public IReadOnlyList<AssetPreviewCandidateDTO> Candidates { get; set; } = [];
 
+        public string? ExternalOpenPath { get; set; }
+
         public IReadOnlyList<AssetPreviewCandidateDTO> GetPreviewCandidates(SupportedGame game, string recordType, FormKeyDTO formKey)
         {
             return Candidates;
@@ -215,6 +238,11 @@ public class AssetPreviewPaneViewModelTests
         public bool CanOpenExternally(string? meshPath)
         {
             return true;
+        }
+
+        public string? ResolveExternalOpenPath(AssetPreviewCandidateDTO candidate)
+        {
+            return ExternalOpenPath;
         }
     }
 
@@ -260,8 +288,11 @@ public class AssetPreviewPaneViewModelTests
 
     private class FakeExternalAssetOpenService : IExternalAssetOpenService
     {
+        public string? OpenedPath { get; private set; }
+
         public bool OpenExternally(string assetPath)
         {
+            OpenedPath = assetPath;
             return true;
         }
     }

@@ -196,6 +196,20 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
                 };
             }
 
+            if (readResult.IsTooLarge)
+            {
+                return new BethesdaAssetReadResult
+                {
+                    OriginalPath = assetPath,
+                    DataFolder = dataFolder,
+                    SourceType = BethesdaAssetSourceType.Archive,
+                    Status = BethesdaAssetReadStatus.AssetTooLarge,
+                    SourceArchivePath = archivePath,
+                    NormalizedEntryPath = entry.NormalizedEntryPath,
+                    StatusMessage = readResult.StatusMessage ?? $"Archive asset {entry.NormalizedEntryPath} exceeds the preview read limit."
+                };
+            }
+
             if (!string.IsNullOrWhiteSpace(readResult.StatusMessage))
             {
                 archiveAttemptMessages.Add($"{Path.GetFileName(archivePath)} [{entry.NormalizedEntryPath}]: {readResult.StatusMessage}");
@@ -258,6 +272,20 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
                     SourceArchivePath = archivePath,
                     NormalizedEntryPath = readResult.EntryPath ?? entry.NormalizedEntryPath,
                     StatusMessage = readResult.StatusMessage ?? $"Read archive asset {entry.NormalizedEntryPath} from {archivePath}."
+                };
+            }
+
+            if (readResult.IsTooLarge)
+            {
+                return new BethesdaAssetReadResult
+                {
+                    OriginalPath = assetPath,
+                    DataFolder = dataFolder,
+                    SourceType = BethesdaAssetSourceType.Archive,
+                    Status = BethesdaAssetReadStatus.AssetTooLarge,
+                    SourceArchivePath = archivePath,
+                    NormalizedEntryPath = entry.NormalizedEntryPath,
+                    StatusMessage = readResult.StatusMessage ?? $"Archive asset {entry.NormalizedEntryPath} exceeds the preview read limit."
                 };
             }
         }

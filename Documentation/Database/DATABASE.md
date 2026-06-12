@@ -63,8 +63,11 @@ See [ERD.md](ERD.md) for the relationship diagram.
 `ApplicationConfiguration` can store custom application data, database, and logging directories.
 
 The Reset & Import All workflow deletes the configured `CreationsForge.sqlite` database file and SQLite sidecar files
-with `-wal` and `-shm` suffixes before running DbUp migrations and full imports for every supported game. This changes
-database contents but does not change the application schema shape.
+with `-wal` and `-shm` suffixes before running DbUp migrations and full imports for every supported game. Reset only
+deletes the expected `CreationsForge.sqlite` file name. Paths under the default CreationsForge application-data
+directory are trusted reset targets. Custom database paths must already contain a recognizable CreationsForge SQLite
+database marker, such as expected application tables or DbUp's `SchemaVersions` table, before reset deletes the main
+database file or its sidecars. This changes database contents but does not change the application schema shape.
 
 ## Connection Behavior
 

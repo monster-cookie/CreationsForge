@@ -4,6 +4,7 @@ using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Repositories.Interfaces;
 using CreationsForge.Core.Services.Interfaces;
+using Serilog;
 
 namespace CreationsForge.Core.Services;
 
@@ -30,10 +31,15 @@ public class AssetPreviewPathResolverService : IAssetPreviewPathResolverService
     };
 
     private readonly IModelRepository ModelRepository;
+    private readonly IReadOnlyList<IGameMetadataService> GameMetadataServices;
+    private readonly ILogger Logger = Log.ForContext<AssetPreviewPathResolverService>();
 
-    public AssetPreviewPathResolverService(IModelRepository modelRepository)
+    public AssetPreviewPathResolverService(
+        IModelRepository modelRepository,
+        IEnumerable<IGameMetadataService>? gameMetadataServices = null)
     {
         ModelRepository = modelRepository;
+        GameMetadataServices = gameMetadataServices?.ToList() ?? [];
     }
 
     public IReadOnlyList<AssetPreviewCandidateDTO> GetPreviewCandidates(SupportedGame game, string recordType, FormKeyDTO formKey)
@@ -56,7 +62,51 @@ public class AssetPreviewPathResolverService : IAssetPreviewPathResolverService
 
     public bool CanOpenExternally(string? meshPath)
     {
-        return HasSupportedExtension(meshPath, ExternalOpenExtensions);
+        return HasSupportedExtension(meshPath, ExternalOpenExtensions) && !IsUnsafeExternalPath(meshPath);
+    }
+
+    public string? ResolveExternalOpenPath(AssetPreviewCandidateDTO candidate)
+    {
+        if (!CanOpenExternally(candidate.MeshPath))
+        {
+            Logger.Warning(
+                "Rejecting external asset open for unsafe or unsupported path {MeshPath} in {Game}",
+                candidate.MeshPath,
+                candidate.Game);
+            return null;
+        }
+
+        var dataFolder = GetDataFolder(candidate.Game);
+        if (string.IsNullOrWhiteSpace(dataFolder) || !Directory.Exists(dataFolder))
+        {
+            Logger.Warning(
+                "Rejecting external asset open for {MeshPath} in {Game}; data folder is unavailable",
+                candidate.MeshPath,
+                candidate.Game);
+            return null;
+        }
+
+        var fullDataFolder = Path.GetFullPath(dataFolder);
+        foreach (var relativePath in GetRelativePathCandidates(candidate.MeshPath))
+        {
+            var resolvedPath = Path.GetFullPath(Path.Combine(fullDataFolder, relativePath));
+            if (!IsUnderDirectory(resolvedPath, fullDataFolder))
+            {
+                continue;
+            }
+
+            if (File.Exists(resolvedPath))
+            {
+                return resolvedPath;
+            }
+        }
+
+        Logger.Warning(
+            "Rejecting external asset open for {MeshPath} in {Game}; no matching loose file was found under {DataFolder}",
+            candidate.MeshPath,
+            candidate.Game,
+            fullDataFolder);
+        return null;
     }
 
     private AssetPreviewCandidateDTO CreateCandidate(ModelDTO model)
@@ -87,6 +137,70 @@ public class AssetPreviewPathResolverService : IAssetPreviewPathResolverService
         return meshPath.Trim()
             .Replace('\\', Path.DirectorySeparatorChar)
             .Replace('/', Path.DirectorySeparatorChar);
+    }
+
+    private string? GetDataFolder(SupportedGame game)
+    {
+        var metadataService = GameMetadataServices.FirstOrDefault(service => service.Game == game);
+        return metadataService?.GetGame().DataFolder;
+    }
+
+    private static IReadOnlyList<string> GetRelativePathCandidates(string meshPath)
+    {
+        var normalizedPath = NormalizeMeshPath(meshPath);
+        var candidates = new List<string>
+        {
+            normalizedPath
+        };
+
+        if (!StartsWithDirectory(normalizedPath, "Meshes"))
+        {
+            AddPathCandidate(candidates, Path.Combine("Meshes", normalizedPath));
+        }
+
+        return candidates;
+    }
+
+    private static void AddPathCandidate(List<string> candidates, string path)
+    {
+        if (!string.IsNullOrWhiteSpace(path) &&
+            !candidates.Contains(path, StringComparer.OrdinalIgnoreCase))
+        {
+            candidates.Add(path);
+        }
+    }
+
+    private static bool StartsWithDirectory(string path, string directoryName)
+    {
+        return string.Equals(path, directoryName, StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith(directoryName + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsUnsafeExternalPath(string? meshPath)
+    {
+        if (string.IsNullOrWhiteSpace(meshPath))
+        {
+            return true;
+        }
+
+        var trimmedPath = meshPath.Trim();
+        return Uri.TryCreate(trimmedPath, UriKind.Absolute, out var uri) && !uri.IsFile ||
+            Path.IsPathRooted(trimmedPath) ||
+            trimmedPath.StartsWith(@"\\", StringComparison.Ordinal) ||
+            trimmedPath.StartsWith(@"\\?\", StringComparison.Ordinal) ||
+            NormalizeMeshPath(trimmedPath).Split(Path.DirectorySeparatorChar).Any(part => part == "..");
+    }
+
+    private static bool IsUnderDirectory(string path, string directory)
+    {
+        var normalizedPath = Path.GetFullPath(path);
+        var normalizedDirectory = Path.GetFullPath(directory);
+        if (!normalizedDirectory.EndsWith(Path.DirectorySeparatorChar))
+        {
+            normalizedDirectory += Path.DirectorySeparatorChar;
+        }
+
+        return normalizedPath.StartsWith(normalizedDirectory, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string GetDisplayName(ModelDTO model, string meshPath)

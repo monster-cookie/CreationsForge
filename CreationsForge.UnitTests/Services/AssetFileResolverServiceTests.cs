@@ -138,6 +138,18 @@ public class AssetFileResolverServiceTests
         }
     }
 
+    [Fact]
+    public void ResolveAssetFile_MapsAssetTooLargeStatus()
+    {
+        var service = new AssetFileResolverService([], new BethesdaAssetProvider([]), new TestAssetArchiveIndexService());
+
+        var result = service.ResolveAssetFile(CreateCandidate(CreateOversizedLooseFile()));
+
+        result.Status.ShouldBe(AssetFileResolutionStatus.AssetTooLarge);
+        result.IsResolved.ShouldBeFalse();
+        File.Delete(result.OriginalPath);
+    }
+
     private static IGameMetadataService CreateGameMetadataService(SupportedGame game, string dataFolder)
     {
         var metadataService = new Mock<IGameMetadataService>();
@@ -181,6 +193,14 @@ public class AssetFileResolverServiceTests
             CanPreview = true,
             CanOpenExternally = true
         };
+    }
+
+    private static string CreateOversizedLooseFile()
+    {
+        var filePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.nif");
+        using var stream = File.Create(filePath);
+        stream.SetLength(BethesdaAssetProvider.MaximumPreviewAssetBytes + 1L);
+        return filePath;
     }
 
     private class TestAssetArchiveIndexService : IAssetArchiveIndexService

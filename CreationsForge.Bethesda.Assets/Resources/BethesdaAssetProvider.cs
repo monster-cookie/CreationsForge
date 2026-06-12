@@ -4,6 +4,8 @@ namespace CreationsForge.Bethesda.Assets.Resources;
 
 public class BethesdaAssetProvider : IBethesdaAssetProvider
 {
+    public const int MaximumPreviewAssetBytes = 128 * 1024 * 1024;
+
     private static readonly string[] ArchiveExtensions =
     {
         ".ba2",
@@ -34,6 +36,7 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
     {
         var looseResult = TryReadLooseAsset(request);
         if (looseResult.IsSuccess ||
+            looseResult.Status == BethesdaAssetReadStatus.AssetTooLarge ||
             looseResult.Status == BethesdaAssetReadStatus.MissingAbsoluteFile ||
             looseResult.Status == BethesdaAssetReadStatus.MissingDataFolder)
         {
@@ -71,6 +74,12 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
     {
         if (File.Exists(assetPath))
         {
+            var fileInfo = new FileInfo(assetPath);
+            if (fileInfo.Length > MaximumPreviewAssetBytes)
+            {
+                return CreateTooLargeResult(assetPath, null, fileInfo.Length);
+            }
+
             return new BethesdaAssetReadResult
             {
                 OriginalPath = assetPath,
@@ -107,13 +116,19 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
         {
             var resolvedPath = Path.GetFullPath(Path.Combine(dataFolder, relativePath));
             result.SearchedPaths.Add(resolvedPath);
-            if (!resolvedPath.StartsWith(dataFolder, StringComparison.OrdinalIgnoreCase))
+            if (!IsUnderDirectory(resolvedPath, dataFolder))
             {
                 continue;
             }
 
             if (File.Exists(resolvedPath))
             {
+                var fileInfo = new FileInfo(resolvedPath);
+                if (fileInfo.Length > MaximumPreviewAssetBytes)
+                {
+                    return CreateTooLargeResult(request.AssetPath, request.DataFolder, fileInfo.Length);
+                }
+
                 result.ResolvedPath = resolvedPath;
                 result.SourceType = BethesdaAssetSourceType.LooseFile;
                 result.Status = BethesdaAssetReadStatus.ReadLooseFile;
@@ -161,6 +176,20 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
                         SourceArchivePath = archivePath,
                         NormalizedEntryPath = readResult.EntryPath ?? NormalizeArchiveEntryPath(relativePath),
                         StatusMessage = readResult.StatusMessage ?? $"Read archive asset {relativePath} from {archivePath}."
+                    };
+                }
+
+                if (readResult.IsTooLarge)
+                {
+                    return new BethesdaAssetReadResult
+                    {
+                        OriginalPath = request.AssetPath,
+                        DataFolder = request.DataFolder,
+                        SourceType = BethesdaAssetSourceType.Archive,
+                        Status = BethesdaAssetReadStatus.AssetTooLarge,
+                        SourceArchivePath = archivePath,
+                        NormalizedEntryPath = readResult.EntryPath ?? NormalizeArchiveEntryPath(relativePath),
+                        StatusMessage = readResult.StatusMessage ?? $"Archive asset {relativePath} exceeds the preview read limit."
                     };
                 }
 
@@ -297,6 +326,30 @@ public class BethesdaAssetProvider : IBethesdaAssetProvider
     {
         return string.Equals(path, directoryName, StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith(directoryName + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsUnderDirectory(string path, string directory)
+    {
+        var normalizedPath = Path.GetFullPath(path);
+        var normalizedDirectory = Path.GetFullPath(directory);
+        if (!normalizedDirectory.EndsWith(Path.DirectorySeparatorChar))
+        {
+            normalizedDirectory += Path.DirectorySeparatorChar;
+        }
+
+        return normalizedPath.StartsWith(normalizedDirectory, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static BethesdaAssetReadResult CreateTooLargeResult(string originalPath, string? dataFolder, long fileSize)
+    {
+        return new BethesdaAssetReadResult
+        {
+            OriginalPath = originalPath,
+            DataFolder = dataFolder,
+            SourceType = BethesdaAssetSourceType.None,
+            Status = BethesdaAssetReadStatus.AssetTooLarge,
+            StatusMessage = $"Asset file {originalPath} is {fileSize} bytes, which exceeds the {MaximumPreviewAssetBytes} byte preview read limit."
+        };
     }
 
     private static string NormalizeAssetPath(string assetPath)
