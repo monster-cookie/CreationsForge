@@ -20,17 +20,16 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
         return FetchByFormKey<ActorValueInformationRow>(
                 game,
                 formKey,
-                """
-                ,
-                CurrentRecord.Name,
-                CurrentRecord.Abbreviation,
-                CurrentRecord.ContextNotes,
-                CurrentRecord.DefaultValue,
-                CurrentRecord.Flags,
-                CurrentRecord.Type,
-                CurrentRecord.Min,
-                CurrentRecord.Max
-                """)
+                [
+                    SelectColumn("Name"),
+                    SelectColumn("Abbreviation"),
+                    SelectColumn("ContextNotes"),
+                    SelectColumn("DefaultValue"),
+                    SelectColumn("Flags"),
+                    SelectColumn("Type"),
+                    SelectColumn("Min"),
+                    SelectColumn("Max")
+                ])
             .Select(record => ToDTO(record, game))
             .ToList();
     }

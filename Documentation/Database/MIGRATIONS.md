@@ -9,3 +9,5 @@ REF: CreationsForge.Migrations\Sql\001_CreateMultiGameImportSchema.sql
 ## Migration 002 - UNRELEASED
 
 All current database work needs to use migration 002.
+
+REF: CreationsForge.Migrations\Sql\002_AddAssetArchiveIndex.sql

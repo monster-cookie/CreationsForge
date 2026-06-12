@@ -25,6 +25,14 @@ public class ApplicationWindowService : IApplicationWindowService
         MainWindow.SetContent(content);
     }
 
+    public void ClearContent(Control content)
+    {
+        if (MainWindow?.Content == content)
+        {
+            MainWindow.SetContent(new Border());
+        }
+    }
+
     public void ApplyTheme(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode)
     {
         if (Application.Current is null)

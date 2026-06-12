@@ -18,6 +18,7 @@ public class GameImporter : IGameImporter
     private readonly IPluginMasterReferenceRepository PluginMasterReferenceRepository;
     private readonly IEnumerable<IPluginExtensionImporter> PluginExtensionImporters;
     private readonly IRecordImportService RecordImportService;
+    private readonly IAssetArchiveIndexService AssetArchiveIndexService;
     private readonly IDatabase? Database;
     private readonly ILogger Logger = Log.ForContext<GameImporter>();
 
@@ -29,6 +30,7 @@ public class GameImporter : IGameImporter
         IPluginMasterReferenceRepository pluginMasterReferenceRepository,
         IEnumerable<IPluginExtensionImporter> pluginExtensionImporters,
         IRecordImportService recordImportService,
+        IAssetArchiveIndexService assetArchiveIndexService,
         IDatabase? database = null)
     {
         PluginReader = pluginReader;
@@ -38,6 +40,7 @@ public class GameImporter : IGameImporter
         PluginMasterReferenceRepository = pluginMasterReferenceRepository;
         PluginExtensionImporters = pluginExtensionImporters;
         RecordImportService = recordImportService;
+        AssetArchiveIndexService = assetArchiveIndexService;
         Database = database;
     }
 
@@ -56,9 +59,14 @@ public class GameImporter : IGameImporter
         var gameDTO = PluginReader.ReadGame();
         gameDTO.ImportedAtUTC = DateTime.UtcNow;
         GameRepository.Save(gameDTO);
+        var result = new GameImportResultDTO { Game = Game };
+        result.AssetArchiveIndex = AssetArchiveIndexService.IndexGameArchives(
+            Game,
+            gameDTO.DataFolder,
+            progress,
+            cancellationToken);
 
         cancellationToken.ThrowIfCancellationRequested();
-        var result = new GameImportResultDTO { Game = Game };
         var loadOrderEntries = PluginReader.ReadLoadOrder();
         result.PluginsDiscovered = loadOrderEntries.Count;
         progress?.Report(new GameImportProgressDTO

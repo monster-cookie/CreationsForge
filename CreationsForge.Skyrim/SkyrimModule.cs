@@ -1,8 +1,8 @@
 using Autofac;
+using Autofac.Core;
+using CreationsForge.Core.Enums;
 using CreationsForge.Core.Importers;
 using CreationsForge.Core.Importers.Interfaces;
-using CreationsForge.Core.Repositories.Interfaces;
-using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Skyrim.Interfaces;
 using CreationsForge.Skyrim.Importers;
 using CreationsForge.Skyrim.Repositories;
@@ -20,17 +20,21 @@ public class SkyrimModule : Module
         builder.RegisterType<SkyrimRecordReaderService>().As<ISkyrimRecordReaderService>().SingleInstance();
         builder.RegisterType<SkyrimPluginRepository>().As<ISkyrimPluginRepository>().InstancePerLifetimeScope();
         builder.RegisterType<SkyrimPluginExtensionImporter>().As<IPluginExtensionImporter>().InstancePerLifetimeScope();
-        builder.RegisterType<SkyrimPluginReader>().AsSelf().As<IGamePluginReader>().SingleInstance();
-        builder.RegisterType<SkyrimRecordReader>().AsSelf().As<IGameRecordReader>().SingleInstance();
-        builder.Register(c => new GameImporter(
-                c.Resolve<SkyrimPluginReader>(),
-                c.Resolve<SkyrimRecordReader>(),
-                c.Resolve<IGameRepository>(),
-                c.Resolve<IPluginRepository>(),
-                c.Resolve<IPluginMasterReferenceRepository>(),
-                c.Resolve<IEnumerable<IPluginExtensionImporter>>(),
-                c.Resolve<IRecordImportService>(),
-                c.Resolve<NPoco.IDatabase>()))
+        builder.RegisterType<SkyrimPluginReader>()
+            .AsSelf()
+            .Keyed<IGamePluginReader>(SupportedGame.Skyrim)
+            .SingleInstance();
+        builder.RegisterType<SkyrimRecordReader>()
+            .AsSelf()
+            .Keyed<IGameRecordReader>(SupportedGame.Skyrim)
+            .SingleInstance();
+        builder.RegisterType<GameImporter>()
+            .WithParameter(new ResolvedParameter(
+                (parameter, _) => parameter.ParameterType == typeof(IGamePluginReader),
+                (_, context) => context.ResolveKeyed<IGamePluginReader>(SupportedGame.Skyrim)))
+            .WithParameter(new ResolvedParameter(
+                (parameter, _) => parameter.ParameterType == typeof(IGameRecordReader),
+                (_, context) => context.ResolveKeyed<IGameRecordReader>(SupportedGame.Skyrim)))
             .As<IGameImporter>();
     }
 }

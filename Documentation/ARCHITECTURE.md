@@ -4,7 +4,7 @@
 
 The solution is split into UI, console, core, game adapter, migrations, and tests.
 
-`CreationsForge` is the cross-platform Uno Platform Skia Desktop presentation project. It owns views, view models,
+`CreationsForge` is the cross-platform Avalonia presentation project. It owns views, view models,
 presentation commands, and UI-specific coordination. It references Bootstrap and Core, but UI and MVVM code must
 consume Core contracts and DTOs instead of Mutagen APIs or game-specific reader services directly.
 
@@ -20,6 +20,20 @@ configuration, database connection setup, schema initialization, common DTO iden
 shared import orchestration, shared Mutagen primitive mapping, and repositories for the approved shared schema. Core
 may reference shared Mutagen packages such as `Mutagen.Bethesda.Core`, but it must not reference game-specific Mutagen
 packages.
+
+`CreationsForge.Bethesda.Assets` owns UI-neutral Bethesda asset IO helpers, local-file resolution result DTOs, an
+in-memory asset provider, archive-reader contracts, and temporary extraction session infrastructure. It does not
+reference Avalonia, Mutagen, NPoco, game projects, or the database. Archive implementations are intended to be
+read-only and preview-focused. The first archive implementations are minimal BA2 general and BSA archive readers that
+can list entries and read uncompressed and zlib-compressed entries into memory. BA2 texture archives and Starfield
+compression variants that are not zlib are explicit follow-up work. The first NIF implementation is a minimal preview
+reader for Fallout 4/Skyrim Special Edition-style `BSTriShape` geometry and a narrow Starfield `BSGeometry` external
+`.mesh` preview slice that emits UI-neutral preview meshes. The reader can also resolve Starfield `.mat` material
+assets through the same external-asset callback and extract preview DDS texture references. Starfield layered material
+preview support is intentionally narrow: it tracks one primary texture, one overlay/decal texture, additive decal
+blending hints, invisible-material skip hints, and a `materialsbeta.cdb` `STRT` string-table fallback for stale or
+indirect texture paths. Full NIF scene graph support, full Starfield material parity, full CDB material graph parsing,
+skeletons, collision, additional Starfield geometry variants, and unsupported vertex layouts remain follow-up work.
 
 `CreationsForge.Starfield`, `CreationsForge.Fallout4`, and `CreationsForge.Skyrim` isolate
 game-specific Mutagen packages, Autofac modules, reader services, and reader facade implementations. These projects
@@ -37,7 +51,9 @@ adapter projects rather than persisted game metadata paths.
 - CreationsForge depends on Bootstrap and Core.
 - Console depends on Bootstrap and Core.
 - Bootstrap depends on Core, Migrations, Starfield, Fallout4, and Skyrim.
-- Core depends on Migrations for migration execution and shared Mutagen core primitives for game-agnostic DTO mapping.
+- Core depends on Assets for asset resolution DTOs, Migrations for migration execution, and shared Mutagen core
+  primitives for game-agnostic DTO mapping.
+- Assets has no project dependencies.
 - Game projects depend on Core.
 - Migrations does not depend on Core or game projects.
 - UnitTests depend on Core and the console project for parser tests.
@@ -47,10 +63,13 @@ adapter projects rather than persisted game metadata paths.
 `CreationsForge.Bootstrap` provides shared Autofac module registration.
 
 - `CoreModule` registers configuration, SQLite options, connection factory, NPoco `IDatabase`, schema initializer,
-  shared services, UI-neutral workflow services, shared typed importers, and shared repositories.
+  shared services, UI-neutral workflow services, shared typed importers, the asset archive readers, and shared
+  repositories.
 - `MigrationsModule` registers `DatabaseMigrationRunner`.
 - Each game module registers that game's plugin reader service, plugin reader facade, record reader, and one
-  `IGameImporter` wired to those readers.
+  `IGameImporter`. Game reader facades are keyed by `SupportedGame` so the shared `GameImporter` can be constructor
+  wired with the matching plugin and record reader pair while shared repositories and services remain normal Autofac
+  dependencies.
 
 `CreationsForge` builds a presentation container in `App` by calling Bootstrap and then registering presentation-only
 windows, views, and view models. `CreationsForge.Console` builds a CLI container in `Program` by calling Bootstrap and
@@ -84,6 +103,9 @@ aborting the full plugin import. The current cross-game shared record types are 
 (`GMST`), Globals (`GLOB`), MiscObjects (`MISC`), Keywords (`KYWD`), ActorValueInformation (`AVIF`), NPCs (`NPC_`),
 MagicEffects (`MGEF`), and Perks (`PERK`). Starfield, Fallout 4, and Skyrim map approved shared records inside their
 game adapters after loading the Mutagen plugin once for the Core-facing record-read call.
+Starfield also imports preview-oriented model-bearing record headers for Statics (`STAT`), Books (`BOOK`), Doors
+(`DOOR`), Containers (`CONT`), and Terminals (`TERM`). These Starfield-only records persist common `RecordInstances`
+and shared `Models` rows only; they do not yet have type-specific detail tables or comparison fields.
 
 Starfield plugin metadata, master-reference, and record reads use a Starfield-only construction helper. The helper
 prefers the full Mutagen environment load order's mod objects with the Starfield environment data folder from
@@ -143,6 +165,25 @@ Core assigns comparison value states for neutral, identical, conflicting, and di
 presentation layer maps those states to the green, red, and yellow comparison colors and shows the legend in the status
 area. Deeper child sections such as perk ranks, patch generation, and conflict resolution workflows remain deferred.
 
+`IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows.
+`IAssetFileResolverService` resolves readable local asset files from preview candidates by checking absolute paths,
+game data-folder loose files, normalized `Meshes` paths, and the database-backed asset archive index. The archive index
+stores archive metadata and normalized entry paths only, not extracted bytes. Game import builds or refreshes the
+archive index before plugin metadata import so preview clicks can reuse cached archive entry metadata. Lazy preview
+lookup still invalidates one archive at a time by comparing the archive file's last-write ticks and size, then reads
+only the matching archive entry through the owned read-only archive readers. Core DTOs describe record-owned candidate
+paths and optional mesh payloads without referencing Avalonia, OpenGL, Silk.NET, process launching, or binding
+primitives.
+Assets DTOs describe local-file resolution, in-memory asset reads, and archive extraction results. The presentation
+project owns `AssetPreviewPaneViewModel`, the Avalonia `OpenGlControlBase` renderer, Silk.NET OpenGL calls, render
+mesh conversion, sample-geometry fallback, and the external-open command. The presentation preview geometry adapter
+uses the owned Assets NIF preview reader when readable `.nif` bytes are available. For Starfield `BSGeometry` NIFs
+that reference external `geometries/**/*.mesh` payloads, the adapter passes an external-asset resolver back through
+the existing UI-neutral asset-file resolver. The same resolver path is used when the NIF reader probes Starfield
+`.mat` material assets for preview texture references. Unsupported preview cases, archive-backed paths that cannot yet
+be read, parser gaps, and OpenGL renderer failures are logged through Serilog. Asset preview creation runs on a
+presentation background task with a loading state, and stale background results are ignored when selection changes.
+
 ## Persistence Architecture
 
 NPoco is used for application database access. Shared plugin, plugin-master-reference, and typed-record repositories
@@ -201,13 +242,15 @@ persisted directly on `MagicEffects` because Mutagen/Spriggit expose them as fla
 Model persistence is shared in Core through `IModelImportService` and model repositories. `Models` and
 `ModelMaterialSwaps` reference `RecordInstances` and include `ModelSlot` plus `ModelGender` so future record types can
 map direct, slotted, or gendered `IModelGetter` data into one table family. The first populated model slice is
-Starfield `MISC`, which uses `ModelSlot = Model` and an empty `ModelGender`.
+Starfield `MISC`, which uses `ModelSlot = Model` and an empty `ModelGender`. Starfield also populates direct-model
+preview rows for `STAT`, `BOOK`, `DOOR`, `CONT`, and `TERM` through header-only `RecordInstances` plus `Models`.
 
 Sound persistence is shared in Core through `IRecordSoundImportService` and `RecordSounds`. `MISC` maps named scalar
 sounds such as crafting, pickup, putdown, and dropdown sounds when present, while `MGEF` maps indexed typed sound
 entries such as OnHit, Release, and Charge into the same table shape when present.
 
 Starfield `MiscItem`, `Static`, `Book`, `Door`, `Container`, and `Terminal` expose a direct `Model : IModelGetter`
-shape. `Terminal.MarkerModel` is a separate terminal-specific scalar. Starfield armor, armor addon, and weapon model
-data need custom mapping: armor and armor addon use gendered model wrappers, and weapons combine a direct `Model` with
-additional first-person/custom model data.
+shape and currently map that direct model to `ModelSlot = Model`. `Terminal.MarkerModel` is a separate
+terminal-specific scalar. Starfield armor, armor addon, and weapon model data need custom mapping: armor and armor
+addon use gendered model wrappers, and weapons combine a direct `Model` with additional first-person/custom model
+data.

@@ -9,6 +9,8 @@ public interface IApplicationWindowService
 
     void SetContent(Control content);
 
+    void ClearContent(Control content);
+
     void ApplyTheme(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode);
 
     Task<TResult> ShowDialogAsync<TResult>(Window dialog);

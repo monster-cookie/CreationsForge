@@ -14,6 +14,7 @@ namespace CreationsForge.Views;
 public class ActivePluginLoadView : UserControl
 {
     private readonly ActivePluginLoadViewModel ViewModel;
+    private CancellationTokenSource? LoadCancellationTokenSource;
     private bool LoadStarted;
 
     public ActivePluginLoadView(ActivePluginLoadViewModel viewModel)
@@ -26,6 +27,9 @@ public class ActivePluginLoadView : UserControl
     public void Configure(SupportedGameDTO selectedGame, PluginDTO selectedPlugin)
     {
         LoadStarted = false;
+        LoadCancellationTokenSource?.Cancel();
+        LoadCancellationTokenSource?.Dispose();
+        LoadCancellationTokenSource = new CancellationTokenSource();
         ViewModel.Configure(selectedGame, selectedPlugin);
     }
 
@@ -38,7 +42,14 @@ public class ActivePluginLoadView : UserControl
         }
 
         LoadStarted = true;
-        await ViewModel.StartLoadAsync();
+        LoadCancellationTokenSource ??= new CancellationTokenSource();
+        await ViewModel.StartLoadAsync(LoadCancellationTokenSource.Token);
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        LoadCancellationTokenSource?.Cancel();
+        base.OnDetachedFromVisualTree(e);
     }
 
     private Control BuildContent()

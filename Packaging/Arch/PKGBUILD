@@ -7,7 +7,8 @@ url='https://github.com/Venpi/CreationsForge'
 license=('custom')
 depends=('glibc' 'fontconfig' 'libgl' 'dbus' 'libxrandr' 'libxi')
 source=('package-root.tar.gz')
-sha256sums=('SKIP')
+# Release packaging must replace this placeholder with the SHA-256 of package-root.tar.gz.
+sha256sums=('0000000000000000000000000000000000000000000000000000000000000000')
 
 package() {
     cp -a "$srcdir/package-root/." "$pkgdir/"

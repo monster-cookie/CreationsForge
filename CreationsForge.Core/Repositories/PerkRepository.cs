@@ -20,25 +20,24 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
         return FetchByFormKey<PerkRow>(
                 game,
                 formKey,
-                """
-                ,
-                CurrentRecord.Name,
-                CurrentRecord.Description,
-                CurrentRecord.Flags,
-                CurrentRecord.SkillGroup,
-                CurrentRecord.CrewAssignment,
-                CurrentRecord.PerkIcon,
-                CurrentRecord.Category,
-                CurrentRecord.Restriction_ModKey_Name AS RestrictionModKeyName,
-                CurrentRecord.Restriction_ModKey_Type AS RestrictionModKeyType,
-                CurrentRecord.Restriction_ModKey_FileName AS RestrictionModKeyFileName,
-                CurrentRecord.Restriction_FormKey_ID AS RestrictionFormKeyId,
-                CurrentRecord.Training_ModKey_Name AS TrainingModKeyName,
-                CurrentRecord.Training_ModKey_Type AS TrainingModKeyType,
-                CurrentRecord.Training_ModKey_FileName AS TrainingModKeyFileName,
-                CurrentRecord.Training_FormKey_ID AS TrainingFormKeyId,
-                CurrentRecord.MajorFlags
-                """)
+                [
+                    SelectColumn("Name"),
+                    SelectColumn("Description"),
+                    SelectColumn("Flags"),
+                    SelectColumn("SkillGroup"),
+                    SelectColumn("CrewAssignment"),
+                    SelectColumn("PerkIcon"),
+                    SelectColumn("Category"),
+                    SelectColumn("Restriction_ModKey_Name", "RestrictionModKeyName"),
+                    SelectColumn("Restriction_ModKey_Type", "RestrictionModKeyType"),
+                    SelectColumn("Restriction_ModKey_FileName", "RestrictionModKeyFileName"),
+                    SelectColumn("Restriction_FormKey_ID", "RestrictionFormKeyId"),
+                    SelectColumn("Training_ModKey_Name", "TrainingModKeyName"),
+                    SelectColumn("Training_ModKey_Type", "TrainingModKeyType"),
+                    SelectColumn("Training_ModKey_FileName", "TrainingModKeyFileName"),
+                    SelectColumn("Training_FormKey_ID", "TrainingFormKeyId"),
+                    SelectColumn("MajorFlags")
+                ])
             .Select(record => ToDTO(record, game))
             .ToList();
     }

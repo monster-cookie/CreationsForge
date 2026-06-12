@@ -6,7 +6,7 @@ public class SqliteDatabaseOptions
 {
     public SqliteDatabaseOptions(IApplicationConfigurationStore configurationStore)
     {
-        DatabaseDirectory = configurationStore.Current.DatabaseDirectory;
+        DatabaseDirectory = Path.GetFullPath(configurationStore.Current.DatabaseDirectory);
         DatabasePath = Path.Combine(DatabaseDirectory, "CreationsForge.sqlite");
     }
 

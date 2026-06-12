@@ -7,6 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\CreationsForge.Bethesda.Assets\CreationsForge.Bethesda.Assets.csproj" />
         <ProjectReference Include="..\CreationsForge.Migrations\CreationsForge.Migrations.csproj" />
     </ItemGroup>
 

@@ -1,5 +1,258 @@
 # Design Decisions
 
+## 2026-06-12 - Harden Local Asset And Database Trust Boundaries
+
+Status: Accepted
+
+Context: Asset preview paths come from imported plugin data, and reset/import workflows operate on configured local
+database paths. The preview pipeline also reads loose files and archive entries into memory for rendering. These are
+local desktop workflows, but they still cross trust boundaries from mod metadata and user-editable configuration into
+OS shell launching, file deletion, and large memory allocations.
+
+Decision: Treat external asset opening as a resolved loose-file operation. Imported model paths can preview through the
+asset resolver, but shell-open behavior only uses a validated local file under the selected game's data folder. URI-like
+paths, rooted paths, device paths, parent traversal, missing files, unsupported extensions, and archive-backed entries
+are rejected for external open. Reset only deletes the expected `CreationsForge.sqlite` filename and sidecars, and
+custom database paths must contain recognizable CreationsForge database markers before deletion. Loose-file and
+archive-backed preview reads enforce a maximum preview asset byte limit before whole-file reads, byte-array allocation,
+or decompression.
+
+Rationale: Imported plugins and asset archives are local files but not necessarily trusted files. Keeping validation in
+the Core/Assets services preserves UI boundaries while preventing untrusted metadata from directly controlling shell
+launches, arbitrary reset deletes, or unbounded preview memory allocation.
+
+Alternatives considered:
+
+- Continue relying on extension checks before external open.
+- Allow any configured database path because configuration is local.
+- Stream all preview assets immediately instead of adding a bounded in-memory read limit.
+
+Consequences:
+
+- External open works only for real loose files resolved under the selected game's data folder.
+- Archive-backed entries remain previewable in memory when supported, but they are not shell-opened directly.
+- Custom database reset targets are stricter and may require a valid existing CreationsForge database marker.
+- Very large loose files or archive entries return controlled oversized-asset failures instead of being read into
+  memory.
+
+Related files:
+
+- `CreationsForge.Core/Services/AssetPreviewPathResolverService.cs`
+- `CreationsForge/Services/ExternalAssetOpenService.cs`
+- `CreationsForge/ViewModels/AssetPreviewPaneViewModel.cs`
+- `CreationsForge.Core/Database/DatabaseResetService.cs`
+- `CreationsForge.Bethesda.Assets/Resources/BethesdaAssetProvider.cs`
+- `CreationsForge.Bethesda.Assets/Archives/Ba2/Ba2ArchiveReader.cs`
+- `CreationsForge.Bethesda.Assets/Archives/Bsa/BsaArchiveReader.cs`
+
+## 2026-06-11 - Probe Starfield Material Files For Preview Textures
+
+Status: Accepted
+
+Context: Starfield `BSLightingShaderProperty` blocks can reference `.mat` material assets instead of direct
+`BSShaderTextureSet` DDS paths. Digipick preview geometry was loading through the owned Starfield external `.mesh`
+slice, but the render path stayed gray because the NIF reader only understood inline texture paths and texture-set
+blocks. Starfield material files can contain richer shader and layered-material behavior than the preview renderer can
+model today.
+
+Decision: Keep material parsing inside the owned `CreationsForge.Bethesda.Assets` preview reader and add a narrow
+`.mat` probe that resolves material bytes through the existing external-asset resolver. The probe scans material data
+for DDS texture references, prefers diffuse/base/color candidates over normal or mask-style maps, and reports
+unsupported material feature hints in diagnostics. When a `.mat` texture path appears stale, the reader can also probe
+known Starfield `materialsbeta.cdb` files for `BETH`/`STRT` string-table texture paths with the same DDS filename. The
+probe does not alter geometry or claim full Starfield material or CDB graph semantics.
+
+Rationale: This reuses the current archive-backed asset resolver and keeps the UI/Core boundaries intact while making
+Starfield previews texture-aware enough for practical inspection. It avoids taking a dependency on Nifly and leaves
+advanced material behavior for a later, explicit renderer/material-system slice.
+
+Alternatives considered:
+
+- Keep Starfield `.mat` references as material names only and continue rendering gray previews.
+- Add Starfield material parsing to the Avalonia renderer.
+- Treat `.mat` files as geometry authority and change preview shape from material metadata.
+
+Consequences:
+
+- Starfield NIF preview meshes can receive DDS texture paths from archive-backed material files.
+- Stale `.mat` texture paths can be corrected from the Starfield material database string table when a matching DDS
+  filename is present.
+- Advanced `.mat` behavior such as decals, glass/effects, opacity, layered edge falloff, and shape-affecting render
+  semantics remains diagnostic-only, and full CDB object graph parsing remains deferred.
+- Material, texture, and geometry asset lookup still flows through the existing asset-file resolver.
+
+Related files:
+
+- `CreationsForge.Bethesda.Assets/Nif/NifPreviewModelReader.cs`
+- `CreationsForge/Services/BethesdaAssetPreviewGeometryReader.cs`
+- `CreationsForge.UnitTests/Services/NifPreviewModelReaderTests.cs`
+
+## 2026-06-11 - Add First Starfield External Geometry Preview Slice
+
+Status: Accepted
+
+Context: Starfield `BSGeometry` NIFs such as `Meshes\Items\digipic\DigiPic.nif` do not store their full vertex and
+index data inline. The NIF block stores object metadata plus a reference to an external `geometries/**/*.mesh`
+payload. The existing owned NIF reader could find the `BSGeometry` block, but it still fell back to sample geometry
+because there was no external geometry resolution path.
+
+Decision: Keep the owned parser in `CreationsForge.Bethesda.Assets` and add a narrow external-geometry resolver
+contract to `NifPreviewReadRequest`. The presentation geometry adapter resolves referenced geometry payloads through
+the existing asset-file resolver, then passes the bytes back to the NIF reader. The first `.mesh` decoder supports the
+observed Starfield preview shape: versioned mesh payloads with ushort triangle indices and a stride-18 signed
+quantized position buffer. Normals and UVs are defaulted for this first preview slice.
+
+Rationale: This keeps asset lookup in the existing application workflow while leaving parsing in the UI-neutral Assets
+project. It avoids Nifly and gives CreationsForge a small, testable path for Starfield split geometry without claiming
+complete `.mesh` support.
+
+Alternatives considered:
+
+- Keep Starfield `BSGeometry` NIFs on generated fallback geometry until a full mesh parser exists.
+- Put external geometry resolution directly inside the NIF parser.
+- Add a third-party NIF or Starfield mesh parser dependency.
+
+Consequences:
+
+- Starfield `BSGeometry` NIFs with supported external `.mesh` payloads can now produce real preview silhouettes.
+- The first external `.mesh` slice does not yet decode materials, textures, UVs, normals, skinning, or every Starfield
+  vertex-buffer variant.
+- Archive and loose-file lookup remain owned by the existing asset resolver; the Assets NIF reader receives only
+  resolved external bytes.
+
+Related files:
+
+- `CreationsForge.Bethesda.Assets/Nif/NifPreviewReadRequest.cs`
+- `CreationsForge.Bethesda.Assets/Nif/NifPreviewModelReader.cs`
+- `CreationsForge/Services/BethesdaAssetPreviewGeometryReader.cs`
+- `CreationsForge.UnitTests/Services/NifPreviewModelReaderTests.cs`
+
+## 2026-06-09 - Add Read-Only BA2 Archive Reading To Bethesda Assets
+
+Status: Accepted
+
+Context: Real preview paths for Fallout 4, Skyrim, and Starfield are usually archive-backed rather than loose files.
+Third-party NIF parser project shape and Starfield support did not make it a good fit for CreationsForge's long-term
+asset IO path. The UI also should not own Bethesda archive parsing.
+
+Decision: Keep archive IO in `CreationsForge.Bethesda.Assets` and add a minimal `Ba2ArchiveReader` implementing the
+existing `IAssetArchiveReader` contract. The first reader is read-only, targets BA2 general archives, lists archive
+entries, and reads uncompressed and zlib-compressed entries into memory. Core registers the reader through Autofac so
+`BethesdaAssetProvider` can resolve archive-backed asset bytes without adding archive parsing to the UI.
+
+Rationale: A small owned reader keeps the asset pipeline UI-neutral and testable while avoiding a dependency on a
+tool-specific NIF project. It also creates a narrow place to port additional behavior from fo76utils/NifSkope-style C++
+code as the preview path matures.
+
+Alternatives considered:
+
+- Fork an existing NIF parser and place BA2/BSA loading inside that fork.
+- Keep archive-backed paths as sample-geometry placeholders until all NIF parsing is ready.
+- Put BA2 parsing directly in the Avalonia preview services.
+
+Consequences:
+
+- Uncompressed and zlib-compressed entries from BA2 general archives can now be read into memory for later NIF parsing.
+- BA2 texture files, Starfield compression variants that are not zlib, BSA archives, material lookup, texture lookup,
+  and real NIF mesh extraction remain follow-up work.
+- The presentation project remains responsible only for rendering, NIF-to-render-mesh conversion, and external-open
+  behavior.
+
+Related files:
+
+- `CreationsForge.Bethesda.Assets/Archives/Ba2/Ba2ArchiveReader.cs`
+- `CreationsForge.Bethesda.Assets/Archives/IAssetArchiveReader.cs`
+- `CreationsForge.Bethesda.Assets/Resources/BethesdaAssetProvider.cs`
+- `CreationsForge.Core/CoreModule.cs`
+- `CreationsForge.UnitTests/Services/Ba2ArchiveReaderTests.cs`
+
+## 2026-06-09 - Add First Owned NIF Preview Reader
+
+Status: Accepted
+
+Context: CreationsForge removed the experimental third-party NIF reader path and needs the asset previewer to move
+from sample geometry toward real archive-backed mesh previews without putting NIF parsing in the Avalonia project.
+
+Decision: Add a minimal `INifPreviewModelReader` implementation in `CreationsForge.Bethesda.Assets`. The first slice
+reads Fallout 4/Skyrim Special Edition-style NIF headers and extracts simple `BSTriShape` vertex/index data into
+UI-neutral preview models. The Avalonia project maps those preview models into existing Core preview DTOs and keeps
+rendering in the presentation layer.
+
+Rationale: Keeping the first NIF parser in the asset pipeline preserves the UI/Core boundaries and gives the project a
+testable place to grow NIF support from fo76utils/NifSkope-style reference behavior without adopting a parser layout
+that does not fit CreationsForge.
+
+Alternatives considered:
+
+- Reintroduce the third-party NIF reader path.
+- Keep archive-backed NIF previews on generated sample geometry until a complete NIF parser exists.
+- Put NIF parsing directly in the Avalonia preview service.
+
+Consequences:
+
+- Simple `BSTriShape` mesh payloads can now produce real preview vertices and triangle indices.
+- Unsupported NIF versions, block types, and vertex layouts still return parser status messages instead of rendering.
+- Materials, textures, skeletons, collision, Starfield-specific NIF variants, BSA archives, and texture BA2 files
+  remain follow-up work.
+
+Related files:
+
+- `CreationsForge.Bethesda.Assets/Nif/NifPreviewModelReader.cs`
+- `CreationsForge.Bethesda.Assets/Nif/INifPreviewModelReader.cs`
+- `CreationsForge/Services/BethesdaAssetPreviewGeometryReader.cs`
+- `CreationsForge.Core/CoreModule.cs`
+- `CreationsForge.UnitTests/Services/NifPreviewModelReaderTests.cs`
+
+## 2026-06-08 - Keep Asset Preview Rendering In Presentation
+
+Status: Accepted
+
+Context: CreationsForge needs an experimental asset preview pane for records that persist model paths, but Core must
+not reference UI frameworks and the presentation project must not call Mutagen directly. Real NIF parsing is not yet
+implemented.
+
+Decision: Add Core asset-preview DTOs and `IAssetPreviewPathResolverService` for UI-neutral candidate resolution from
+persisted model rows. Add `CreationsForge.Bethesda.Assets` for UI-neutral Bethesda asset IO result DTOs, in-memory
+asset reads, archive-reader contracts, and temporary extraction infrastructure. Add `IAssetFileResolverService` for
+UI-neutral local-file resolution that checks absolute paths, game data-folder loose files, normalized `Meshes` paths,
+and registered archive readers. The Avalonia presentation project owns the preview pane, an Avalonia
+`OpenGlControlBase` renderer using Silk.NET, generated sample geometry, external file launching, and
+unsupported-preview logging.
+
+Rationale: This proves the UI workflow without weakening the Core/presentation boundary. It also leaves a stable DTO
+shape for future NIF readers or mesh importers to populate with real geometry.
+
+Alternatives considered:
+
+- Put Avalonia or HelixToolkit types directly in Core preview contracts.
+- Delay the preview pane until real NIF parsing is available.
+- Have the presentation project query model repositories directly.
+
+Consequences:
+
+- Selecting a model-bearing record can show preview candidates and render generated sample geometry through the native
+  OpenGL preview control.
+- Archive-backed model paths depend on registered archive readers before falling back to generated sample geometry.
+- The asset provider can read loose files into memory and dispatch archive reads through registered readers.
+- Unsupported, missing, or unreadable preview cases are logged through the UI service/view-model path.
+- External opening depends on OS file associations for NifSkope, Blender, or compatible tools.
+- Real Starfield archive-backed NIF mesh parsing, unsupported archive compression variants, BSA files, and texture
+  loading remain follow-up work.
+
+Related files:
+
+- `CreationsForge.Core/DTOs/Assets/AssetPreviewCandidateDTO.cs`
+- `CreationsForge.Core/DTOs/Assets/AssetPreviewModelDTO.cs`
+- `CreationsForge.Bethesda.Assets/Files/AssetFileResolutionDTO.cs`
+- `CreationsForge.Bethesda.Assets/Resources/IBethesdaAssetProvider.cs`
+- `CreationsForge.Bethesda.Assets/Archives/IAssetArchiveReader.cs`
+- `CreationsForge.Bethesda.Assets/Temp/IAssetTempFileSession.cs`
+- `CreationsForge.Core/Services/AssetFileResolverService.cs`
+- `CreationsForge.Core/Services/AssetPreviewPathResolverService.cs`
+- `CreationsForge/Views/AssetPreviewOpenGlControl.cs`
+- `CreationsForge/ViewModels/AssetPreviewPaneViewModel.cs`
+- `CreationsForge/Views/AssetPreviewPaneView.cs`
+
 ## 2026-06-08 - Keep Shared Typed Record Support Synchronized Across Games
 
 Status: Accepted

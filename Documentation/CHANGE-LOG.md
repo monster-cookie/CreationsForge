@@ -1,5 +1,10 @@
 ﻿# Change Log
 
+## Unreleased
+
+- Added an experimental NIF Preview Pane (Starfield, FO4, and Skyrim).
+- Added early support for textured meshes.
+
 ## Version 1.1.2 - 2026-06-08
 
 - Added Fallout 4 and Skyrim import support for the same approved typed record categories Starfield currently imports:

@@ -433,6 +433,12 @@ jobs:
           sed -i "s/^pkgver=.*/pkgver=$PACKAGE_VERSION/" "$build_dir/PKGBUILD"
           sed -i "s|^url=.*|url='https://github.com/${GITHUB_REPOSITORY}'|" "$build_dir/PKGBUILD"
           tar -C "$build_dir" -czf "$build_dir/package-root.tar.gz" package-root
+          package_root_sha256="$(sha256sum "$build_dir/package-root.tar.gz" | cut -d ' ' -f 1)"
+          sed -i "s/^sha256sums=.*/sha256sums=('$package_root_sha256')/" "$build_dir/PKGBUILD"
+          if grep -q "0000000000000000000000000000000000000000000000000000000000000000" "$build_dir/PKGBUILD"; then
+            echo "Arch PKGBUILD checksum placeholder was not replaced." >&2
+            exit 1
+          fi
 
       - name: Build Arch package
         shell: bash

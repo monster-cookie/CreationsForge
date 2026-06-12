@@ -13,6 +13,7 @@ Multi-game Bethesda plugin import and record persistence prototype. The current 
 - CreationsForge.Skyrim (Skyrim game-specific models, DTOs, services, and repositories)
 - CreationsForge.Migrations (DbUp migrations)
 - CreationsForge.UnitTests (Unit tests)
+- CreationsForge.PresentationTests (Presentation-layer unit tests for pure UI services, view models, commands, and render-data preparation. Do not start windows, app lifetimes, or GPU/OpenGL contexts in these tests.)
 
 ## HARD RULES
 
@@ -62,6 +63,8 @@ Primary project knowledge files:
 - /Documentation/DOMAIN-MODEL.md - Important domain concepts, record comparison terminology, Mutagen concepts used by the app, and project-specific naming.
 - /Documentation/Database/DATABASE.md - SQLite, NPoco, DbUp migration behavior, schema ownership, and persistence conventions.
 - /Documentation/Database/ERD.md - Entity-Relationship Diagram (ERD) of the database schema, including tables, relationships, and constraints.
+- /Documentation/CHANGE-LOG.md - Log of the high level changes for each release. Do not modify or maintain this file human project mangers will maintain this file.
+- /Documentation/KNOWN-ISSUES.md - List of current known issues and workarounds. Do not modify or maintain this file human project mangers will maintain this file.
 
 Before planning a non-trivial change, Codex must read the relevant docs in /Documentation in addition to AGENTS.md.
 
@@ -228,6 +231,9 @@ schema documentation.
 - For new features/bugfixes that affect testable service, factory, validator, DTO, or business logic, include tests in the PLAN and add them alongside code changes.
 - Do not unit test database access, repository implementations, or DbUp migration execution.
 - When a change is limited to repositories, database access, migrations, or workflows, the PLAN must explicitly state that no unit tests will be added and explain the validation approach.
+- Presentation-layer tests live in /CreationsForge.PresentationTests.
+- Presentation tests may cover view models, commands, selection/state logic, and pure render-data preparation.
+- Do not unit test live Avalonia windows, OpenGL contexts, GPU output, timing, focus, or pixel-perfect rendering.
 
 ## Multi-game typed record support
 

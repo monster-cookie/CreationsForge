@@ -6,11 +6,12 @@ The application uses a local SQLite database. The schema is defined by embedded 
 `CreationsForge.Migrations/Sql`:
 
 - `001_CreateMultiGameImportSchema.sql` creates the application tables, keys, indexes, constraints, and views.
+- `002_AddAssetArchiveIndex.sql` adds the metadata-only asset archive index/cache tables.
 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains twenty-seven tables:
+The application schema contains twenty-nine tables:
 
 - `Games`
 - `Plugins`
@@ -39,6 +40,8 @@ The application schema contains twenty-seven tables:
 - `ScriptingAdapters`
 - `ScriptingAdapterProperties`
 - `ScriptingAdapterPropertyListItems`
+- `AssetArchiveFiles`
+- `AssetArchiveEntries`
 
 The application schema also contains these read views:
 
@@ -60,8 +63,11 @@ See [ERD.md](ERD.md) for the relationship diagram.
 `ApplicationConfiguration` can store custom application data, database, and logging directories.
 
 The Reset & Import All workflow deletes the configured `CreationsForge.sqlite` database file and SQLite sidecar files
-with `-wal` and `-shm` suffixes before running DbUp migrations and full imports for every supported game. This changes
-database contents but does not change the application schema shape.
+with `-wal` and `-shm` suffixes before running DbUp migrations and full imports for every supported game. Reset only
+deletes the expected `CreationsForge.sqlite` file name. Paths under the default CreationsForge application-data
+directory are trusted reset targets. Custom database paths must already contain a recognizable CreationsForge SQLite
+database marker, such as expected application tables or DbUp's `SchemaVersions` table, before reset deletes the main
+database file or its sidecars. This changes database contents but does not change the application schema shape.
 
 ## Connection Behavior
 
@@ -282,6 +288,14 @@ Constraints:
 - Full common typed record key without `RecordType` is unique so typed detail tables can reference the shared record
   identity without duplicating a constant `RecordType` column in every typed table.
 
+Indexes:
+
+- `IX_RecordInstances_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+- `IX_RecordInstances_Game_RecordType_Plugin` on `Game`, `RecordType`, containing plugin ModKey columns, `EditorID`,
+  and `FormKey_ID`
+- `IX_RecordInstances_Game_RecordType_FormKey` on `Game`, `RecordType`, origin FormKey ModKey columns, and
+  `FormKey_ID`
+
 Persistence behavior:
 
 - Current imported rows are upserted before typed detail rows and scripting adapters.
@@ -302,6 +316,12 @@ Foreign keys:
 
 - `Game` plus containing `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
 - Full common typed record key references `RecordInstances` with `ON DELETE CASCADE`.
+
+Indexes:
+
+- `IX_FormLists_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+- `IX_FormLists_Game_Plugin` on `Game`, containing plugin ModKey columns, `EditorID`, and `FormKey_ID`
+- `IX_FormLists_Game_FormKey_Collated` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
 
 Persistence behavior:
 
@@ -350,6 +370,12 @@ Foreign keys:
 - `Game` plus containing `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
 - Full common typed record key references `RecordInstances` with `ON DELETE CASCADE`.
 
+Indexes:
+
+- `IX_GameSettings_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+- `IX_GameSettings_Game_Plugin` on `Game`, containing plugin ModKey columns, `EditorID`, and `FormKey_ID`
+- `IX_GameSettings_Game_FormKey_Collated` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
 Persistence behavior:
 
 - Current imported rows are upserted.
@@ -367,6 +393,12 @@ Foreign keys:
 
 - `Game` plus containing `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
 - Full common typed record key references `RecordInstances` with `ON DELETE CASCADE`.
+
+Indexes:
+
+- `IX_Globals_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+- `IX_Globals_Game_Plugin` on `Game`, containing plugin ModKey columns, `EditorID`, and `FormKey_ID`
+- `IX_Globals_Game_FormKey_Collated` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
 
 Persistence behavior:
 
@@ -449,6 +481,14 @@ Foreign keys:
 
 - `Game` plus containing `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
 - Full common typed record key references `RecordInstances` with `ON DELETE CASCADE`.
+
+Indexes:
+
+- Each scripted parent table has a form-key index on `Game`, origin FormKey ModKey columns, and `FormKey_ID`.
+- Each scripted parent table has an active-plugin browse index on `Game`, containing plugin ModKey columns,
+  `EditorID`, and `FormKey_ID`.
+- Each scripted parent table has a collated form-key browse index on `Game`, origin FormKey ModKey columns, and
+  `FormKey_ID`.
 
 Persistence behavior:
 
@@ -646,6 +686,66 @@ Columns:
 Foreign keys:
 
 - Full parent key references `ScriptingAdapterProperties` with `ON DELETE CASCADE`.
+
+### AssetArchiveFiles
+
+Columns:
+
+- `Game` (`TEXT`, `NOT NULL`, primary key)
+- `DataFolder` (`TEXT`, `NOT NULL`)
+- `ArchivePath` (`TEXT`, `NOT NULL`, primary key)
+- `ArchiveFileName` (`TEXT`, `NOT NULL`)
+- `ArchiveExtension` (`TEXT`, `NOT NULL`)
+- `ArchiveType` (`TEXT`, `NOT NULL`)
+- `SourceLastWriteUTCTicks` (`INTEGER`, `NOT NULL`)
+- `SourceFileSizeBytes` (`INTEGER`, `NOT NULL`)
+- `IndexedAtUTC` (`TEXT`, `NOT NULL`)
+
+Constraints:
+
+- `Game` must be `Starfield`, `Fallout4`, or `Skyrim`.
+- Source last-write ticks and file size must be greater than or equal to zero.
+
+Indexes:
+
+- `IX_AssetArchiveFiles_Game_DataFolder` on `Game` and `DataFolder`
+
+Persistence behavior:
+
+- Rows cache archive file metadata for asset lookup acceleration only.
+- Cache validity is based on matching archive last-write ticks and file size.
+- Cache rows do not store extracted archive bytes.
+
+### AssetArchiveEntries
+
+Columns:
+
+- `Game` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `ArchivePath` (`TEXT`, `NOT NULL`, primary key, foreign key)
+- `NormalizedEntryPath` (`TEXT`, `NOT NULL`, primary key)
+- `RootFolder` (`TEXT`, `NOT NULL`)
+- `Extension` (`TEXT`, `NOT NULL`)
+- `PackedSize` (`INTEGER`, `NOT NULL`)
+- `UnpackedSize` (`INTEGER`, `NOT NULL`)
+
+Foreign keys:
+
+- `Game` plus `ArchivePath` references `AssetArchiveFiles` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- Packed and unpacked sizes must be greater than or equal to zero.
+
+Indexes:
+
+- `IX_AssetArchiveEntries_Game_NormalizedEntryPath` on `Game` and `NormalizedEntryPath`
+- `IX_AssetArchiveEntries_Game_RootFolder_Extension` on `Game`, `RootFolder`, and `Extension`
+
+Persistence behavior:
+
+- Rows cache normalized archive entry paths and size metadata for asset lookup acceleration only.
+- Entries are replaced for one archive when its cached file metadata is missing or stale.
+- Matching entries are read from the source archive on demand; extracted bytes are not persisted.
 
 ## Views
 

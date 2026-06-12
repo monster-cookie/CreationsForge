@@ -19,27 +19,7 @@ public class RecordTreeService : IRecordTreeService
     public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntries(SupportedGame game, ModKeyDTO modKey)
     {
         return RecordTreeRepositories
-            .SelectMany(repository => ApplyPluginCounts(
-                repository.GetRecordTreeEntriesByPlugin(game, modKey),
-                repository.GetRecordPluginCountsByGame(game)))
+            .SelectMany(repository => repository.GetRecordTreeEntriesByPlugin(game, modKey))
             .ToList();
-    }
-
-    private static IEnumerable<RecordTreeEntryDTO> ApplyPluginCounts(
-        IEnumerable<RecordTreeEntryDTO> entries,
-        IReadOnlyDictionary<string, int> pluginCounts)
-    {
-        foreach (var entry in entries)
-        {
-            entry.PluginCount = pluginCounts.TryGetValue(GetFormKeyKey(entry.FormKey), out var pluginCount)
-                ? pluginCount
-                : entry.PluginCount;
-            yield return entry;
-        }
-    }
-
-    private static string GetFormKeyKey(FormKeyDTO formKey)
-    {
-        return $"{formKey.ModKey.Name}|{formKey.ModKey.Type}|{formKey.ModKey.FileName}|{formKey.Id}";
     }
 }

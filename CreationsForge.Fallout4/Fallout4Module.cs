@@ -1,8 +1,8 @@
 using Autofac;
+using Autofac.Core;
+using CreationsForge.Core.Enums;
 using CreationsForge.Core.Importers;
 using CreationsForge.Core.Importers.Interfaces;
-using CreationsForge.Core.Repositories.Interfaces;
-using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Fallout4.Interfaces;
 using CreationsForge.Fallout4.Importers;
 using CreationsForge.Fallout4.Repositories;
@@ -20,17 +20,21 @@ public class Fallout4Module : Module
         builder.RegisterType<Fallout4RecordReaderService>().As<IFallout4RecordReaderService>().SingleInstance();
         builder.RegisterType<Fallout4PluginRepository>().As<IFallout4PluginRepository>().InstancePerLifetimeScope();
         builder.RegisterType<Fallout4PluginExtensionImporter>().As<IPluginExtensionImporter>().InstancePerLifetimeScope();
-        builder.RegisterType<Fallout4PluginReader>().AsSelf().As<IGamePluginReader>().SingleInstance();
-        builder.RegisterType<Fallout4RecordReader>().AsSelf().As<IGameRecordReader>().SingleInstance();
-        builder.Register(c => new GameImporter(
-                c.Resolve<Fallout4PluginReader>(),
-                c.Resolve<Fallout4RecordReader>(),
-                c.Resolve<IGameRepository>(),
-                c.Resolve<IPluginRepository>(),
-                c.Resolve<IPluginMasterReferenceRepository>(),
-                c.Resolve<IEnumerable<IPluginExtensionImporter>>(),
-                c.Resolve<IRecordImportService>(),
-                c.Resolve<NPoco.IDatabase>()))
+        builder.RegisterType<Fallout4PluginReader>()
+            .AsSelf()
+            .Keyed<IGamePluginReader>(SupportedGame.Fallout4)
+            .SingleInstance();
+        builder.RegisterType<Fallout4RecordReader>()
+            .AsSelf()
+            .Keyed<IGameRecordReader>(SupportedGame.Fallout4)
+            .SingleInstance();
+        builder.RegisterType<GameImporter>()
+            .WithParameter(new ResolvedParameter(
+                (parameter, _) => parameter.ParameterType == typeof(IGamePluginReader),
+                (_, context) => context.ResolveKeyed<IGamePluginReader>(SupportedGame.Fallout4)))
+            .WithParameter(new ResolvedParameter(
+                (parameter, _) => parameter.ParameterType == typeof(IGameRecordReader),
+                (_, context) => context.ResolveKeyed<IGameRecordReader>(SupportedGame.Fallout4)))
             .As<IGameImporter>();
     }
 }

@@ -43,12 +43,12 @@ public class RecordTreeServiceTests
     }
 
     [Fact]
-    public void GetRecordTreeEntries_AppliesPluginCountsByRecordTypeAndFormKey()
+    public void GetRecordTreeEntries_UsesRepositoryProvidedPluginCounts()
     {
         var modKey = CreateModKey("Example", "Example.esm");
-        var formListEntry = CreateEntry("FLST", "FormListEditorID", 123);
-        var gameSettingEntry = CreateEntry("GMST", "GameSettingEditorID", 234);
-        var globalEntry = CreateEntry("GLOB", "GlobalEditorID", 345);
+        var formListEntry = CreateEntry("FLST", "FormListEditorID", 123, 2);
+        var gameSettingEntry = CreateEntry("GMST", "GameSettingEditorID", 234, 3);
+        var globalEntry = CreateEntry("GLOB", "GlobalEditorID", 345, 4);
         var service = new RecordTreeService([
             new TestFormListRepository
             {
@@ -74,18 +74,24 @@ public class RecordTreeServiceTests
     }
 
     [Fact]
-    public void GetRecordTreeEntries_PreservesRepositoryPluginCountWhenCountLookupMisses()
+    public void GetRecordTreeEntries_DoesNotRequestFullGamePluginCounts()
     {
         var modKey = CreateModKey("Example", "Example.esm");
         var formListEntry = CreateEntry("FLST", "FormListEditorID", pluginCount: 5);
+        var formListRepository = new TestFormListRepository { Entries = [formListEntry] };
+        var gameSettingRepository = new TestGameSettingRepository();
+        var globalRepository = new TestGlobalRepository();
         var service = new RecordTreeService([
-            new TestFormListRepository { Entries = [formListEntry] },
-            new TestGameSettingRepository(),
-            new TestGlobalRepository()]);
+            formListRepository,
+            gameSettingRepository,
+            globalRepository]);
 
         var entries = service.GetRecordTreeEntries(SupportedGame.Starfield, modKey);
 
         entries.Single().PluginCount.ShouldBe(5);
+        formListRepository.PluginCountRequestCount.ShouldBe(0);
+        gameSettingRepository.PluginCountRequestCount.ShouldBe(0);
+        globalRepository.PluginCountRequestCount.ShouldBe(0);
     }
 
     private static RecordTreeEntryDTO CreateEntry(string recordType, string editorId, uint formKeyId = 123, int pluginCount = 0)
@@ -130,6 +136,8 @@ public class RecordTreeServiceTests
 
         public (SupportedGame Game, ModKeyDTO ModKey)? Request { get; private set; }
 
+        public int PluginCountRequestCount { get; private set; }
+
         public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntriesByPlugin(SupportedGame game, ModKeyDTO modKey)
         {
             Request = (game, modKey);
@@ -138,6 +146,7 @@ public class RecordTreeServiceTests
 
         public IReadOnlyDictionary<string, int> GetRecordPluginCountsByGame(SupportedGame game)
         {
+            PluginCountRequestCount++;
             return PluginCounts;
         }
 
@@ -163,6 +172,8 @@ public class RecordTreeServiceTests
 
         public (SupportedGame Game, ModKeyDTO ModKey)? Request { get; private set; }
 
+        public int PluginCountRequestCount { get; private set; }
+
         public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntriesByPlugin(SupportedGame game, ModKeyDTO modKey)
         {
             Request = (game, modKey);
@@ -171,6 +182,7 @@ public class RecordTreeServiceTests
 
         public IReadOnlyDictionary<string, int> GetRecordPluginCountsByGame(SupportedGame game)
         {
+            PluginCountRequestCount++;
             return PluginCounts;
         }
 
@@ -196,6 +208,8 @@ public class RecordTreeServiceTests
 
         public (SupportedGame Game, ModKeyDTO ModKey)? Request { get; private set; }
 
+        public int PluginCountRequestCount { get; private set; }
+
         public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntriesByPlugin(SupportedGame game, ModKeyDTO modKey)
         {
             Request = (game, modKey);
@@ -204,6 +218,7 @@ public class RecordTreeServiceTests
 
         public IReadOnlyDictionary<string, int> GetRecordPluginCountsByGame(SupportedGame game)
         {
+            PluginCountRequestCount++;
             return PluginCounts;
         }
 
