@@ -7,6 +7,7 @@ using CreationsForge.Core.Models.Configuration;
 using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Services.Interfaces;
 using CreationsForge.ViewModels;
+using Autofac;
 using Serilog;
 using Shouldly;
 
@@ -85,6 +86,7 @@ public class MainViewModelTests
             new FakePluginSelectionService(),
             new FakeRecordComparisonService(),
             new FakeRecordTreeService(),
+            CreateRootScope(),
             CreateAssetPreviewPaneViewModel(),
             navigationService ?? new FakeApplicationNavigationService(),
             new FakeUserDialogService(),
@@ -98,6 +100,15 @@ public class MainViewModelTests
             new FakeAssetPreviewSceneService(),
             new FakeExternalAssetOpenService(),
             new LoggerConfiguration().CreateLogger());
+    }
+
+    private static ILifetimeScope CreateRootScope()
+    {
+        var builder = new ContainerBuilder();
+        builder.RegisterType<FakeRecordTreeService>()
+            .As<IRecordTreeService>()
+            .InstancePerLifetimeScope();
+        return builder.Build();
     }
 
     private static SupportedGameDTO CreateGame()

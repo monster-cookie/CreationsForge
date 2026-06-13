@@ -106,6 +106,9 @@ game adapters after loading the Mutagen plugin once for the Core-facing record-r
 Starfield also imports preview-oriented model-bearing record headers for Statics (`STAT`), Books (`BOOK`), Doors
 (`DOOR`), Containers (`CONT`), and Terminals (`TERM`). These Starfield-only records persist common `RecordInstances`
 and shared `Models` rows only; they do not yet have type-specific detail tables or comparison fields.
+All typed record importers save the record's parent row before dispatching shared child import by DTO capability.
+Records that expose models, keywords, sounds, or scripting adapters persist those child rows through the common
+`RecordInstances` identity instead of game-specific child-table paths.
 
 Starfield plugin metadata, master-reference, and record reads use a Starfield-only construction helper. The helper
 prefers the full Mutagen environment load order's mod objects with the Starfield environment data folder from
@@ -142,13 +145,15 @@ status and loads left-side record-type sections through `IRecordTreeService`. Ea
 with a grid populated from persisted shared record rows for the approved typed record set; the grids show per-record
 plugin usage counts and do not call Mutagen directly from presentation code. Plugins with large header record counts
 use a dedicated active-plugin loading screen before returning to the main view with a prebuilt record browser tree.
-That loading screen creates a child Autofac lifetime scope on the worker path so database-backed record tree
-repositories are resolved and disposed with the background load instead of reusing the main view's scoped connection.
+That loading screen, and the main view's asynchronous record-tree refresh path, create child Autofac lifetime scopes on
+worker paths so database-backed record tree services are resolved and disposed with the background load instead of
+reusing the main view's scoped connection. Active-plugin record tree entries are loaded from the shared
+`RecordInstances` parent table so browsing does not fan out through every typed detail table.
 
-`IRecordTreeService` aggregates record-tree entries from shared record repositories. Repository query methods return
-Core `RecordTreeEntryDTO` values scoped by game and plugin `ModKeyDTO`, preserving the UI boundary and allowing the
-presentation project to group and filter records without knowing database table details. Plugin usage counts are
-queried with grouped SQL per shared record table and joined to active-plugin tree entries in memory.
+`IRecordTreeService` reads active-plugin record tree entries through `IRecordInstanceRepository`. Repository query
+methods return Core `RecordTreeEntryDTO` values scoped by game and plugin `ModKeyDTO`, preserving the UI boundary and
+allowing the presentation project to group and filter records without knowing database table details. Plugin usage
+counts are calculated in the same `RecordInstances` query by grouping peers by record type and origin FormKey.
 
 `IRecordComparisonService` exposes the first game-agnostic comparison contract for imported typed record rows.
 It reads all persisted overrides for a selected origin FormKey from shared repositories and returns comparison DTOs
@@ -192,8 +197,9 @@ objects, not positional NPoco placeholders. Database-backed repositories, import
 registered per Autofac lifetime scope so they share the same scoped `IDatabase` and import transaction.
 
 Typed record repositories upsert a shared `RecordInstances` row before saving type-specific detail rows.
-`RecordInstances` is the common persisted parent identity for imported record overrides and lets generic scripting
-adapter tables declare foreign keys to owning records without creating per-record-type adapter tables.
+`RecordInstances` is the common persisted parent identity for imported record overrides and lets shared child tables
+such as models, keywords, sounds, and scripting adapters declare foreign keys to owning records without creating
+per-record-type child tables.
 
 Changed and forced plugin imports refresh master references and typed record rows with an import-batch timestamp.
 When a master-reference refresh or typed record-type import completes without per-record failures, rows for that same
@@ -224,30 +230,35 @@ Services log workflow-level progress and failures. Repositories do not log.
 ## Shared Scripted Record Extension
 
 Typed records for `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK` follow the same Core-facing import contract as
-shared records: the game adapters map Mutagen records into Core DTOs, `RecordImportService` dispatches by supported
-game and record type ID, and repositories persist DTO data with named SQL parameters. The UI continues to consume Core
-DTOs and record-tree services only.
+`FLST`, `GMST`, and `GLOB`: the game adapters map Mutagen records into Core DTOs, `RecordImportService` dispatches by
+supported game and record type ID, and repositories persist DTO data with named SQL parameters. The UI continues to
+consume Core DTOs and record-tree services only.
 
 Scripting adapter persistence is shared in Core through `IScriptingAdapterImportService` and scripting adapter
-repositories. Game adapters populate scripting adapter DTOs for record types that expose virtual-machine adapters.
+repositories. `IRecordChildImportService` invokes scripting adapter persistence for any imported `RecordDTO` that
+implements the scripting-adapter capability interface. Game adapters populate scripting adapter DTOs for record types
+that expose virtual-machine adapters.
 The `MISC` slice currently persists parent scalar fields, keyword rows, model rows, and scripts; the old single-game
 app's deeper MiscObject child-detail tables are still a separate follow-up.
 Scripting adapters are persisted against the shared `RecordInstances` parent using record type IDs such as `GLOB`,
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`.
 
-Keyword-list persistence is shared in Core through `IRecordKeywordImportService` and `RecordKeywords`. `MISC`, `NPC_`,
-and `MGEF` populate that shared table when the source game exposes keyword lists. Magic Effect DATA fields are
-persisted directly on `MagicEffects` because Mutagen/Spriggit expose them as flattened MGEF properties.
+Keyword-list persistence is shared in Core through `IRecordKeywordImportService` and `RecordKeywords`.
+`IRecordChildImportService` invokes keyword persistence for any imported `RecordDTO` that implements the keyword-list
+capability interface. Magic Effect DATA fields are persisted directly on `MagicEffects` because Mutagen/Spriggit
+expose them as flattened MGEF properties.
 
 Model persistence is shared in Core through `IModelImportService` and model repositories. `Models` and
 `ModelMaterialSwaps` reference `RecordInstances` and include `ModelSlot` plus `ModelGender` so future record types can
-map direct, slotted, or gendered `IModelGetter` data into one table family. The first populated model slice is
-Starfield `MISC`, which uses `ModelSlot = Model` and an empty `ModelGender`. Starfield also populates direct-model
+map direct, slotted, or gendered `IModelGetter` data into one table family. `IRecordChildImportService` invokes model
+persistence for any imported `RecordDTO` that implements the model capability interface. The first populated model
+slice is `MISC`, which uses `ModelSlot = Model` and an empty `ModelGender`. Starfield also populates direct-model
 preview rows for `STAT`, `BOOK`, `DOOR`, `CONT`, and `TERM` through header-only `RecordInstances` plus `Models`.
 
-Sound persistence is shared in Core through `IRecordSoundImportService` and `RecordSounds`. `MISC` maps named scalar
-sounds such as crafting, pickup, putdown, and dropdown sounds when present, while `MGEF` maps indexed typed sound
-entries such as OnHit, Release, and Charge into the same table shape when present.
+Sound persistence is shared in Core through `IRecordSoundImportService` and `RecordSounds`. `IRecordChildImportService`
+invokes sound persistence for any imported `RecordDTO` that implements the sound capability interface. `MISC` maps
+named scalar sounds such as crafting, pickup, putdown, and dropdown sounds when present, while `MGEF` maps indexed
+typed sound entries such as OnHit, Release, and Charge into the same table shape when present.
 
 Starfield `MiscItem`, `Static`, `Book`, `Door`, `Container`, and `Terminal` expose a direct `Model : IModelGetter`
 shape and currently map that direct model to `ModelSlot = Model`. `Terminal.MarkerModel` is a separate

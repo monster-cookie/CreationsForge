@@ -21,27 +21,21 @@ public class TypedRecordImporterSupportedGamesTests
     {
         yield return [new MiscObjectImporter(
             Mock.Of<IMiscObjectRepository>(),
-            Mock.Of<IScriptingAdapterImportService>(),
-            Mock.Of<IModelImportService>(),
-            Mock.Of<IRecordKeywordImportService>(),
-            Mock.Of<IRecordSoundImportService>())];
+            Mock.Of<IRecordChildImportService>())];
         yield return [new KeywordImporter(
             Mock.Of<IKeywordRepository>(),
-            Mock.Of<IScriptingAdapterImportService>())];
+            Mock.Of<IRecordChildImportService>())];
         yield return [new ActorValueInformationImporter(
             Mock.Of<IActorValueInformationRepository>(),
-            Mock.Of<IScriptingAdapterImportService>())];
+            Mock.Of<IRecordChildImportService>())];
         yield return [new NPCImporter(
             Mock.Of<INPCRepository>(),
-            Mock.Of<IScriptingAdapterImportService>(),
-            Mock.Of<IRecordKeywordImportService>())];
+            Mock.Of<IRecordChildImportService>())];
         yield return [new MagicEffectImporter(
             Mock.Of<IMagicEffectRepository>(),
-            Mock.Of<IScriptingAdapterImportService>(),
-            Mock.Of<IRecordKeywordImportService>(),
-            Mock.Of<IRecordSoundImportService>())];
+            Mock.Of<IRecordChildImportService>())];
         yield return [new PerkImporter(
             Mock.Of<IPerkRepository>(),
-            Mock.Of<IScriptingAdapterImportService>())];
+            Mock.Of<IRecordChildImportService>())];
     }
 }

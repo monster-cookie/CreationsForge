@@ -119,6 +119,11 @@ public class StarfieldModelRecordImporterTests
 
         public DateTime? DeletedImportedAtUTC { get; private set; }
 
+        public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntriesByPlugin(SupportedGame game, ModKeyDTO modKey)
+        {
+            return [];
+        }
+
         public void Save(RecordInstanceDTO dto)
         {
             Saved = dto;

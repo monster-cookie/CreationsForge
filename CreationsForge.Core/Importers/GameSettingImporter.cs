@@ -5,16 +5,21 @@ using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Importers.Interfaces;
 using CreationsForge.Core.Repositories.Interfaces;
+using CreationsForge.Core.Services.Interfaces;
 
 namespace CreationsForge.Core.Importers;
 
 public class GameSettingImporter : ITypedRecordImporter
 {
     private readonly IGameSettingRepository GameSettingRepository;
+    private readonly IRecordChildImportService RecordChildImportService;
 
-    public GameSettingImporter(IGameSettingRepository gameSettingRepository)
+    public GameSettingImporter(
+        IGameSettingRepository gameSettingRepository,
+        IRecordChildImportService recordChildImportService)
     {
         GameSettingRepository = gameSettingRepository;
+        RecordChildImportService = recordChildImportService;
     }
 
     public string RecordType => RecordTypeCatalog.GameSetting.RecordID;
@@ -34,6 +39,7 @@ public class GameSettingImporter : ITypedRecordImporter
 
         gameSetting.ImportedAtUTC = importedAtUTC;
         GameSettingRepository.Save(gameSetting);
+        RecordChildImportService.ReplaceRecordChildren(gameSetting, RecordTypeCatalog.GameSetting.RecordID);
         result.DetailRowsImported++;
     }
 

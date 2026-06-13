@@ -12,23 +12,14 @@ namespace CreationsForge.Core.Importers;
 public class MiscObjectImporter : ITypedRecordImporter
 {
     private readonly IMiscObjectRepository MiscObjectRepository;
-    private readonly IModelImportService ModelImportService;
-    private readonly IRecordKeywordImportService RecordKeywordImportService;
-    private readonly IRecordSoundImportService RecordSoundImportService;
-    private readonly IScriptingAdapterImportService ScriptingAdapterImportService;
+    private readonly IRecordChildImportService RecordChildImportService;
 
     public MiscObjectImporter(
         IMiscObjectRepository miscObjectRepository,
-        IScriptingAdapterImportService scriptingAdapterImportService,
-        IModelImportService modelImportService,
-        IRecordKeywordImportService recordKeywordImportService,
-        IRecordSoundImportService recordSoundImportService)
+        IRecordChildImportService recordChildImportService)
     {
         MiscObjectRepository = miscObjectRepository;
-        ScriptingAdapterImportService = scriptingAdapterImportService;
-        ModelImportService = modelImportService;
-        RecordKeywordImportService = recordKeywordImportService;
-        RecordSoundImportService = recordSoundImportService;
+        RecordChildImportService = recordChildImportService;
     }
 
     public string RecordType => RecordTypeCatalog.MiscObject.RecordID;
@@ -43,10 +34,7 @@ public class MiscObjectImporter : ITypedRecordImporter
 
         miscObject.ImportedAtUTC = importedAtUTC;
         MiscObjectRepository.Save(miscObject);
-        ModelImportService.ReplaceRecordModels(miscObject, RecordTypeCatalog.MiscObject.RecordID);
-        RecordKeywordImportService.ReplaceRecordKeywords(miscObject, RecordTypeCatalog.MiscObject.RecordID);
-        RecordSoundImportService.ReplaceRecordSounds(miscObject, RecordTypeCatalog.MiscObject.RecordID);
-        ScriptingAdapterImportService.ReplaceRecordScriptingAdapters(miscObject, RecordTypeCatalog.MiscObject.RecordID);
+        RecordChildImportService.ReplaceRecordChildren(miscObject, RecordTypeCatalog.MiscObject.RecordID);
         result.DetailRowsImported++;
     }
 

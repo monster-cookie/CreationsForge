@@ -12,20 +12,14 @@ namespace CreationsForge.Core.Importers;
 public class MagicEffectImporter : ITypedRecordImporter
 {
     private readonly IMagicEffectRepository MagicEffectRepository;
-    private readonly IRecordKeywordImportService RecordKeywordImportService;
-    private readonly IRecordSoundImportService RecordSoundImportService;
-    private readonly IScriptingAdapterImportService ScriptingAdapterImportService;
+    private readonly IRecordChildImportService RecordChildImportService;
 
     public MagicEffectImporter(
         IMagicEffectRepository magicEffectRepository,
-        IScriptingAdapterImportService scriptingAdapterImportService,
-        IRecordKeywordImportService recordKeywordImportService,
-        IRecordSoundImportService recordSoundImportService)
+        IRecordChildImportService recordChildImportService)
     {
         MagicEffectRepository = magicEffectRepository;
-        ScriptingAdapterImportService = scriptingAdapterImportService;
-        RecordKeywordImportService = recordKeywordImportService;
-        RecordSoundImportService = recordSoundImportService;
+        RecordChildImportService = recordChildImportService;
     }
 
     public string RecordType => RecordTypeCatalog.MagicEffect.RecordID;
@@ -40,9 +34,7 @@ public class MagicEffectImporter : ITypedRecordImporter
 
         magicEffect.ImportedAtUTC = importedAtUTC;
         MagicEffectRepository.Save(magicEffect);
-        RecordKeywordImportService.ReplaceRecordKeywords(magicEffect, RecordTypeCatalog.MagicEffect.RecordID);
-        RecordSoundImportService.ReplaceRecordSounds(magicEffect, RecordTypeCatalog.MagicEffect.RecordID);
-        ScriptingAdapterImportService.ReplaceRecordScriptingAdapters(magicEffect, RecordTypeCatalog.MagicEffect.RecordID);
+        RecordChildImportService.ReplaceRecordChildren(magicEffect, RecordTypeCatalog.MagicEffect.RecordID);
         result.DetailRowsImported++;
     }
 

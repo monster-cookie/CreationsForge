@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows.Input;
+using Autofac;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
@@ -27,6 +28,7 @@ public class MainViewModel : ViewModelBase
     private readonly IPluginSelectionService PluginSelectionService;
     private readonly IRecordComparisonService RecordComparisonService;
     private readonly IRecordTreeService RecordTreeService;
+    private readonly ILifetimeScope RootScope;
     private readonly IUserDialogService UserDialogService;
     private IList<RecordTreeItemViewModel> AllRecordTreeItems = [];
     private IReadOnlyList<PluginDTO> MatchingPlugins = [];
@@ -63,6 +65,7 @@ public class MainViewModel : ViewModelBase
         IPluginSelectionService pluginSelectionService,
         IRecordComparisonService recordComparisonService,
         IRecordTreeService recordTreeService,
+        ILifetimeScope rootScope,
         AssetPreviewPaneViewModel assetPreviewPane,
         IApplicationNavigationService applicationNavigationService,
         IUserDialogService userDialogService,
@@ -73,6 +76,7 @@ public class MainViewModel : ViewModelBase
         PluginSelectionService = pluginSelectionService;
         RecordComparisonService = recordComparisonService;
         RecordTreeService = recordTreeService;
+        RootScope = rootScope;
         AssetPreviewPane = assetPreviewPane;
         ApplicationNavigationService = applicationNavigationService;
         UserDialogService = userDialogService;
@@ -707,7 +711,7 @@ public class MainViewModel : ViewModelBase
             await Task.Yield();
 
             var fetchStopwatch = Stopwatch.StartNew();
-            var recordTreeEntries = await Task.Run(() => RecordTreeService.GetRecordTreeEntries(selectedGame.Game, selectedPlugin.ModKey));
+            var recordTreeEntries = await Task.Run(() => LoadRecordTreeEntriesInBackgroundScope(selectedGame.Game, selectedPlugin.ModKey));
             fetchStopwatch.Stop();
 
             if (requestVersion != ActivePluginLoadVersion ||
@@ -756,6 +760,12 @@ public class MainViewModel : ViewModelBase
                 ActivePluginLoadingText = string.Empty;
             }
         }
+    }
+
+    private IReadOnlyList<RecordTreeEntryDTO> LoadRecordTreeEntriesInBackgroundScope(SupportedGame game, ModKeyDTO modKey)
+    {
+        using var scope = RootScope.BeginLifetimeScope();
+        return scope.Resolve<IRecordTreeService>().GetRecordTreeEntries(game, modKey);
     }
 
     private void ClearRecordComparison()

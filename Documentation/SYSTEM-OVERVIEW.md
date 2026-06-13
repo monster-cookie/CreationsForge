@@ -62,11 +62,11 @@ ActorValueInformation, NPCs, MagicEffects, and Perks. Imports currently create/u
     record types, resolves registered typed detail importers, records unsupported typed detail importers, and isolates
     per-record failures.
 
-The Avalonia UI uses `IGameSelectionService` to list and persist supported games, `IGameImportReadinessService` to detect
-whether the selected game already has imported plugin data, `IPluginSelectionService` to list imported/openable
-plugins for the active game, and `IGameImportWorkflowService` to run the same schema initialization and import
-workflow through Core. UI and MVVM code consume Core DTOs and result objects only; direct Mutagen usage remains
-outside the presentation project.
+The Avalonia UI uses `IGameSelectionService` to list and persist supported games, `IGameImportReadinessService` to
+detect whether the selected game already has imported plugin data, `IPluginSelectionService` to list imported/openable
+plugins for the active game, and `IGameImportWorkflowService` to run the same schema initialization and import workflow
+through Core. UI and MVVM code consume Core DTOs and result objects only; direct Mutagen usage remains outside the
+presentation project.
 
 On startup, the UI opens the main window immediately and initializes the database schema before view-model queries run.
 The active-game autocomplete defaults to no game unless a valid active game is configured. When a configured active
@@ -92,10 +92,10 @@ imported-record tree for the current persisted record types.
   `MagicEffects`, `Perks`, shared model data, shared keyword lists, shared sounds, and shared scripting adapter data.
 - Preserves plugin source-fingerprint behavior for unchanged, changed, missing, failed, and unsupported plugin states.
 - Preserves record import accounting for the approved typed record types.
-- Provides an initial Avalonia UI with active game and active plugin autocomplete, warning before long first/full imports,
-  toolbar commands for active-game reimport and Reset & Import All, running all imports through Core services with a
-  progress screen, and browsing imported typed records in a left-side tree with category counts, per-record plugin
-  usage counts, and scalar comparison rows.
+- Provides an initial Avalonia UI with active game and active plugin autocomplete, warning before long first/full
+  imports, toolbar commands for active-game reimport and Reset & Import All, running all imports through Core services
+  with a progress screen, and browsing imported typed records in a left-side tree with category counts, per-record
+  plugin usage counts, and scalar comparison rows.
 - Provides an experimental asset preview pane in the Avalonia UI. Core resolves persisted model-path candidates through
   UI-neutral DTOs and services, while the presentation project owns Silk.NET-backed OpenGL rendering and external file
   launching.
@@ -114,13 +114,15 @@ imported-record tree for the current persisted record types.
 - The asset preview pane can load an early subset of NIF mesh geometry, with many model types and visual details still
   pending.
 
-## Shared Scripted Record Import
+## Shared Record Child Import
 
 Starfield, Fallout 4, and Skyrim import typed record parent rows for MiscObjects (`MISC`), Keywords (`KYWD`),
 ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), and Perks (`PERK`). These records are mapped in
 their game adapter projects and persisted through Core DTOs, repositories, and typed importers. Scripting adapters are
 persisted for `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK` when the source record exposes virtual-machine
-adapter data; `FLST` and `GMST` remain flat records without scripting adapter persistence.
+adapter data; `FLST` and `GMST` remain flat records without scripting adapter persistence. Shared child rows for
+models, keywords, sounds, and scripting adapters are dispatched by Core DTO capability interfaces and linked through
+the owning `RecordInstances` row.
 
 The current `MISC` implementation persists the parent scalar row, shared model rows, and scripting adapters. The
 deeper MiscObject child-detail tables from the old single-game app remain follow-up work.

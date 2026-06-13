@@ -5,6 +5,7 @@ using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Importers;
 using CreationsForge.Core.Repositories.Interfaces;
+using CreationsForge.Core.Services.Interfaces;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Importers;
@@ -22,7 +23,8 @@ public class FormListImporterTests
         formList.Items.Add(secondItem);
         var formListRepository = new TestFormListRepository();
         var itemRepository = new TestFormListItemRepository();
-        var importer = new FormListImporter(formListRepository, itemRepository);
+        var childImportService = new TestRecordChildImportService();
+        var importer = new FormListImporter(formListRepository, itemRepository, childImportService);
         var result = new RecordTypeImportResultDTO { RecordType = RecordTypeCatalog.FormList.RecordID };
 
         var importedAtUTC = DateTime.UtcNow;
@@ -37,6 +39,7 @@ public class FormListImporterTests
         firstItem.ItemIndex.ShouldBe(0);
         secondItem.ItemIndex.ShouldBe(1);
         formList.ImportedAtUTC.ShouldBe(importedAtUTC);
+        childImportService.ReplaceRequests.ShouldBe([(formList, RecordTypeCatalog.FormList.RecordID)]);
         firstItem.ImportedAtUTC.ShouldNotBe(default);
         secondItem.ImportedAtUTC.ShouldNotBe(default);
         firstItem.ImportedAtUTC.ShouldBe(formList.ImportedAtUTC);
@@ -51,7 +54,7 @@ public class FormListImporterTests
         var plugin = CreatePlugin();
         var formListRepository = new TestFormListRepository();
         var itemRepository = new TestFormListItemRepository();
-        var importer = new FormListImporter(formListRepository, itemRepository);
+        var importer = new FormListImporter(formListRepository, itemRepository, new TestRecordChildImportService());
         var importedAtUTC = DateTime.UtcNow;
 
         importer.DeleteStaleRecords(plugin, importedAtUTC);
@@ -70,7 +73,7 @@ public class FormListImporterTests
         formList.Items.Add(itemThatMovedFirst);
         formList.Items.Add(itemThatMovedSecond);
         var itemRepository = new TestFormListItemRepository();
-        var importer = new FormListImporter(new TestFormListRepository(), itemRepository);
+        var importer = new FormListImporter(new TestFormListRepository(), itemRepository, new TestRecordChildImportService());
 
         importer.Import(formList, new RecordTypeImportResultDTO { RecordType = RecordTypeCatalog.FormList.RecordID }, DateTime.UtcNow);
 
@@ -85,7 +88,7 @@ public class FormListImporterTests
         var plugin = CreatePlugin();
         var formList = CreateFormList(plugin, 100);
         var itemRepository = new TestFormListItemRepository();
-        var importer = new FormListImporter(new TestFormListRepository(), itemRepository);
+        var importer = new FormListImporter(new TestFormListRepository(), itemRepository, new TestRecordChildImportService());
 
         importer.Import(formList, new RecordTypeImportResultDTO { RecordType = RecordTypeCatalog.FormList.RecordID }, DateTime.UtcNow);
 
@@ -104,7 +107,7 @@ public class FormListImporterTests
         }
 
         var itemRepository = new TestFormListItemRepository();
-        var importer = new FormListImporter(new TestFormListRepository(), itemRepository);
+        var importer = new FormListImporter(new TestFormListRepository(), itemRepository, new TestRecordChildImportService());
 
         importer.Import(formList, new RecordTypeImportResultDTO { RecordType = RecordTypeCatalog.FormList.RecordID }, DateTime.UtcNow);
 
@@ -223,6 +226,16 @@ public class FormListImporterTests
         public void Save(FormListItemDTO dto)
         {
             Saved.Add(dto);
+        }
+    }
+
+    private sealed class TestRecordChildImportService : IRecordChildImportService
+    {
+        public IList<(RecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(RecordDTO Record, string RecordType)>();
+
+        public void ReplaceRecordChildren(RecordDTO record, string recordType)
+        {
+            ReplaceRequests.Add((record, recordType));
         }
     }
 }

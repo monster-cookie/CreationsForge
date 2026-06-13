@@ -12,14 +12,14 @@ namespace CreationsForge.Core.Importers;
 public class KeywordImporter : ITypedRecordImporter
 {
     private readonly IKeywordRepository KeywordRepository;
-    private readonly IScriptingAdapterImportService ScriptingAdapterImportService;
+    private readonly IRecordChildImportService RecordChildImportService;
 
     public KeywordImporter(
         IKeywordRepository keywordRepository,
-        IScriptingAdapterImportService scriptingAdapterImportService)
+        IRecordChildImportService recordChildImportService)
     {
         KeywordRepository = keywordRepository;
-        ScriptingAdapterImportService = scriptingAdapterImportService;
+        RecordChildImportService = recordChildImportService;
     }
 
     public string RecordType => RecordTypeCatalog.Keyword.RecordID;
@@ -34,7 +34,7 @@ public class KeywordImporter : ITypedRecordImporter
 
         keyword.ImportedAtUTC = importedAtUTC;
         KeywordRepository.Save(keyword);
-        ScriptingAdapterImportService.ReplaceRecordScriptingAdapters(keyword, RecordTypeCatalog.Keyword.RecordID);
+        RecordChildImportService.ReplaceRecordChildren(keyword, RecordTypeCatalog.Keyword.RecordID);
         result.DetailRowsImported++;
     }
 

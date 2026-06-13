@@ -8,18 +8,15 @@ namespace CreationsForge.Core.Services;
 
 public class RecordTreeService : IRecordTreeService
 {
-    private readonly IReadOnlyList<IRecordTreeRepository> RecordTreeRepositories;
+    private readonly IRecordInstanceRepository RecordInstanceRepository;
 
-    public RecordTreeService(IEnumerable<IRecordTreeRepository> recordTreeRepositories)
+    public RecordTreeService(IRecordInstanceRepository recordInstanceRepository)
     {
-        RecordTreeRepositories = recordTreeRepositories
-            .ToList();
+        RecordInstanceRepository = recordInstanceRepository;
     }
 
     public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntries(SupportedGame game, ModKeyDTO modKey)
     {
-        return RecordTreeRepositories
-            .SelectMany(repository => repository.GetRecordTreeEntriesByPlugin(game, modKey))
-            .ToList();
+        return RecordInstanceRepository.GetRecordTreeEntriesByPlugin(game, modKey);
     }
 }

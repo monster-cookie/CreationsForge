@@ -12,14 +12,14 @@ namespace CreationsForge.Core.Importers;
 public class ActorValueInformationImporter : ITypedRecordImporter
 {
     private readonly IActorValueInformationRepository ActorValueInformationRepository;
-    private readonly IScriptingAdapterImportService ScriptingAdapterImportService;
+    private readonly IRecordChildImportService RecordChildImportService;
 
     public ActorValueInformationImporter(
         IActorValueInformationRepository actorValueInformationRepository,
-        IScriptingAdapterImportService scriptingAdapterImportService)
+        IRecordChildImportService recordChildImportService)
     {
         ActorValueInformationRepository = actorValueInformationRepository;
-        ScriptingAdapterImportService = scriptingAdapterImportService;
+        RecordChildImportService = recordChildImportService;
     }
 
     public string RecordType => RecordTypeCatalog.ActorValueInformation.RecordID;
@@ -34,7 +34,7 @@ public class ActorValueInformationImporter : ITypedRecordImporter
 
         actorValueInformation.ImportedAtUTC = importedAtUTC;
         ActorValueInformationRepository.Save(actorValueInformation);
-        ScriptingAdapterImportService.ReplaceRecordScriptingAdapters(actorValueInformation, RecordTypeCatalog.ActorValueInformation.RecordID);
+        RecordChildImportService.ReplaceRecordChildren(actorValueInformation, RecordTypeCatalog.ActorValueInformation.RecordID);
         result.DetailRowsImported++;
     }
 
