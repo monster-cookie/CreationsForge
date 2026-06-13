@@ -4,6 +4,7 @@
 
 - Added an experimental NIF Preview Pane (Starfield, FO4, and Skyrim).
 - Added early support for textured meshes.
+- Added support for launching models in [Nifskope](https://www.nexusmods.com/starfield/mods/10748)
 
 ## Version 1.1.2 - 2026-06-08
 

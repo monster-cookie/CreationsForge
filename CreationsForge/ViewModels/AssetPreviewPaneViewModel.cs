@@ -56,7 +56,7 @@ public class AssetPreviewPaneViewModel : ViewModelBase
             AssetPreviewRenderMode.Wireframe,
             AssetPreviewRenderMode.Points
         };
-        OpenExternallyCommand = new RelayCommand(OpenSelectedCandidateExternally, () => SelectedCandidate?.CanOpenExternally == true);
+        OpenExternallyCommand = new RelayCommand(OpenSelectedCandidateExternally, () => IsExternalOpenAvailable);
     }
 
     public ObservableCollection<AssetPreviewCandidateDTO> PreviewCandidates { get; }
@@ -68,6 +68,10 @@ public class AssetPreviewPaneViewModel : ViewModelBase
     public ObservableCollection<AssetPreviewRenderMode> RenderModes { get; }
 
     public RelayCommand OpenExternallyCommand { get; }
+
+    public bool IsExternalOpenVisible => OperatingSystem.IsWindows();
+
+    public bool IsExternalOpenAvailable => IsExternalOpenVisible && SelectedCandidate?.CanOpenExternally == true;
 
     public bool HasPreviewCandidates => PreviewCandidates.Count > 0;
 
@@ -83,6 +87,7 @@ public class AssetPreviewPaneViewModel : ViewModelBase
             }
 
             OpenExternallyCommand.RaiseCanExecuteChanged();
+            OnPropertyChanged(nameof(IsExternalOpenAvailable));
             if (IsSameAssetCandidate(previousCandidate, value))
             {
                 return;
@@ -293,8 +298,10 @@ public class AssetPreviewPaneViewModel : ViewModelBase
         }
 
         var externalOpenPath = AssetPreviewPathResolverService.ResolveExternalOpenPath(SelectedCandidate);
-        if (string.IsNullOrWhiteSpace(externalOpenPath) ||
-            !ExternalAssetOpenService.OpenExternally(externalOpenPath))
+        var openedExternally = !string.IsNullOrWhiteSpace(externalOpenPath)
+            ? ExternalAssetOpenService.OpenExternally(externalOpenPath)
+            : ExternalAssetOpenService.OpenExternally(SelectedCandidate);
+        if (!openedExternally)
         {
             PreviewStatusText = $"Unable to open {SelectedCandidate.MeshPath} externally.";
         }

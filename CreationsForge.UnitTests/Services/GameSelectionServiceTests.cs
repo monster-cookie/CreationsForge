@@ -57,6 +57,7 @@ public class GameSelectionServiceTests
             {
                 ThemeFamily = ApplicationThemeFamily.Fluent,
                 ThemeMode = ApplicationThemeMode.Light,
+                NifSkopeExecutablePath = "nifskope.exe",
                 ApplicationDataDirectory = "app-data",
                 DatabaseDirectory = "database",
                 LoggingDirectory = "logs"
@@ -69,6 +70,7 @@ public class GameSelectionServiceTests
         store.Current.ActiveGame.ShouldBe("Fallout4");
         store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
         store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
+        store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
         store.Current.ApplicationDataDirectory.ShouldBe("app-data");
         store.Current.DatabaseDirectory.ShouldBe("database");
         store.Current.LoggingDirectory.ShouldBe("logs");
@@ -103,6 +105,20 @@ public class GameSelectionServiceTests
     }
 
     [Fact]
+    public void GetNifSkopeExecutablePath_ReturnsConfiguredPath()
+    {
+        var store = new TestApplicationConfigurationStore
+        {
+            Current = new ApplicationConfiguration { NifSkopeExecutablePath = "nifskope.exe" }
+        };
+        var service = new GameSelectionService(store);
+
+        var path = service.GetNifSkopeExecutablePath();
+
+        path.ShouldBe("nifskope.exe");
+    }
+
+    [Fact]
     public void SetThemeMode_PreservesActiveGameAndExistingPaths()
     {
         var store = new TestApplicationConfigurationStore
@@ -111,6 +127,7 @@ public class GameSelectionServiceTests
             {
                 ActiveGame = "Skyrim",
                 ThemeFamily = ApplicationThemeFamily.Fluent,
+                NifSkopeExecutablePath = "nifskope.exe",
                 ApplicationDataDirectory = "app-data",
                 DatabaseDirectory = "database",
                 LoggingDirectory = "logs"
@@ -123,6 +140,7 @@ public class GameSelectionServiceTests
         store.Current.ActiveGame.ShouldBe("Skyrim");
         store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
         store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
+        store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
         store.Current.ApplicationDataDirectory.ShouldBe("app-data");
         store.Current.DatabaseDirectory.ShouldBe("database");
         store.Current.LoggingDirectory.ShouldBe("logs");
@@ -137,6 +155,7 @@ public class GameSelectionServiceTests
             {
                 ActiveGame = "Skyrim",
                 ThemeMode = ApplicationThemeMode.Light,
+                NifSkopeExecutablePath = "nifskope.exe",
                 ApplicationDataDirectory = "app-data",
                 DatabaseDirectory = "database",
                 LoggingDirectory = "logs"
@@ -149,6 +168,7 @@ public class GameSelectionServiceTests
         store.Current.ActiveGame.ShouldBe("Skyrim");
         store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
         store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
+        store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
         store.Current.ApplicationDataDirectory.ShouldBe("app-data");
         store.Current.DatabaseDirectory.ShouldBe("database");
         store.Current.LoggingDirectory.ShouldBe("logs");
@@ -162,6 +182,7 @@ public class GameSelectionServiceTests
             Current = new ApplicationConfiguration
             {
                 ThemeFamily = ApplicationThemeFamily.Fluent,
+                NifSkopeExecutablePath = "nifskope.exe",
                 ApplicationDataDirectory = "app-data",
                 DatabaseDirectory = "database",
                 LoggingDirectory = "logs"
@@ -174,6 +195,7 @@ public class GameSelectionServiceTests
         store.Current.ActiveGame.ShouldBe("Starfield");
         store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
         store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
+        store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
         store.Current.ApplicationDataDirectory.ShouldBe("app-data");
         store.Current.DatabaseDirectory.ShouldBe("database");
         store.Current.LoggingDirectory.ShouldBe("logs");
@@ -187,6 +209,7 @@ public class GameSelectionServiceTests
             Current = new ApplicationConfiguration
             {
                 ApplicationDataDirectory = "app-data",
+                NifSkopeExecutablePath = "nifskope.exe",
                 DatabaseDirectory = "database",
                 LoggingDirectory = "logs"
             }
@@ -198,6 +221,7 @@ public class GameSelectionServiceTests
         store.Current.ActiveGame.ShouldBe("Starfield");
         store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
         store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
+        store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
         store.Current.ApplicationDataDirectory.ShouldBe("app-data");
         store.Current.DatabaseDirectory.ShouldBe("database");
         store.Current.LoggingDirectory.ShouldBe("logs");
@@ -211,6 +235,7 @@ public class GameSelectionServiceTests
             Current = new ApplicationConfiguration
             {
                 ActiveGame = "Fallout4",
+                NifSkopeExecutablePath = "nifskope.exe",
                 ApplicationDataDirectory = "app-data",
                 DatabaseDirectory = "database",
                 LoggingDirectory = "logs"
@@ -223,6 +248,58 @@ public class GameSelectionServiceTests
         store.Current.ActiveGame.ShouldBe("Fallout4");
         store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
         store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
+        store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
+        store.Current.ApplicationDataDirectory.ShouldBe("app-data");
+        store.Current.DatabaseDirectory.ShouldBe("database");
+        store.Current.LoggingDirectory.ShouldBe("logs");
+    }
+
+    [Fact]
+    public void SetActiveGameThemeAndNifSkopeExecutablePath_SavesTrimmedPath()
+    {
+        var store = new TestApplicationConfigurationStore
+        {
+            Current = new ApplicationConfiguration
+            {
+                ApplicationDataDirectory = "app-data",
+                DatabaseDirectory = "database",
+                LoggingDirectory = "logs"
+            }
+        };
+        var service = new GameSelectionService(store);
+
+        service.SetActiveGameThemeAndNifSkopeExecutablePath(SupportedGame.Starfield, ApplicationThemeFamily.Fluent, ApplicationThemeMode.Light, "  nifskope.exe  ");
+
+        store.Current.ActiveGame.ShouldBe("Starfield");
+        store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
+        store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
+        store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
+        store.Current.ApplicationDataDirectory.ShouldBe("app-data");
+        store.Current.DatabaseDirectory.ShouldBe("database");
+        store.Current.LoggingDirectory.ShouldBe("logs");
+    }
+
+    [Fact]
+    public void SetThemeAndNifSkopeExecutablePath_BlankPathSavesNull()
+    {
+        var store = new TestApplicationConfigurationStore
+        {
+            Current = new ApplicationConfiguration
+            {
+                ActiveGame = "Fallout4",
+                ApplicationDataDirectory = "app-data",
+                DatabaseDirectory = "database",
+                LoggingDirectory = "logs"
+            }
+        };
+        var service = new GameSelectionService(store);
+
+        service.SetThemeAndNifSkopeExecutablePath(ApplicationThemeFamily.Fluent, ApplicationThemeMode.Light, " ");
+
+        store.Current.ActiveGame.ShouldBe("Fallout4");
+        store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
+        store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
+        store.Current.NifSkopeExecutablePath.ShouldBeNull();
         store.Current.ApplicationDataDirectory.ShouldBe("app-data");
         store.Current.DatabaseDirectory.ShouldBe("database");
         store.Current.LoggingDirectory.ShouldBe("logs");
