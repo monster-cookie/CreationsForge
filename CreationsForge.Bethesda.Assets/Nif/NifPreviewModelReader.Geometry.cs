@@ -238,14 +238,14 @@ public partial class NifPreviewModelReader
     {
         mesh = null;
         rejectionReason = string.Empty;
-        if (data.Length < StarfieldGeometryMeshIndexDataOffset + sizeof(ushort))
+        if (data.Length < sizeof(uint) * 2)
         {
             rejectionReason = "mesh data ended before the index header";
             return false;
         }
 
         var version = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(0, sizeof(uint)));
-        if (version != StarfieldGeometryMeshVersion)
+        if (version > StarfieldGeometryMeshVersion)
         {
             rejectionReason = $"mesh version {version} is not supported";
             return false;
@@ -258,28 +258,13 @@ public partial class NifPreviewModelReader
             return false;
         }
 
-        var vertexHeaderOffset = checked(StarfieldGeometryMeshIndexDataOffset + ((int)indexCount * sizeof(ushort)));
-        if (data.Length - vertexHeaderOffset < StarfieldGeometryMeshVertexHeaderSize)
+        var indexDataByteCount = checked((int)indexCount * sizeof(ushort));
+        if (data.Length - StarfieldGeometryMeshIndexDataOffset < indexDataByteCount)
         {
-            rejectionReason = "mesh data ended before the vertex header";
+            rejectionReason = "mesh data ended before all triangle indices";
             return false;
         }
 
-        var vertexCount = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(vertexHeaderOffset + (sizeof(uint) * 2), sizeof(uint)));
-        if (vertexCount == 0 || vertexCount > 1000000)
-        {
-            rejectionReason = $"mesh vertex count {vertexCount} is outside the supported range";
-            return false;
-        }
-
-        var vertexDataOffset = vertexHeaderOffset + StarfieldGeometryMeshVertexHeaderSize;
-        if (data.Length - vertexDataOffset < checked((int)vertexCount * StarfieldGeometryMeshPositionStride))
-        {
-            rejectionReason = "mesh data ended before the first supported vertex buffer";
-            return false;
-        }
-
-        var hasBounds = TryReadStarfieldGeometryBounds(block.Data, out var geometryBounds);
         var indices = new List<int>();
         var maxIndex = 0;
         var indexPosition = StarfieldGeometryMeshIndexDataOffset;
@@ -287,14 +272,34 @@ public partial class NifPreviewModelReader
         {
             var vertexIndex = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(indexPosition, sizeof(ushort)));
             indexPosition += sizeof(ushort);
-            if (vertexIndex >= vertexCount)
-            {
-                rejectionReason = $"mesh index {vertexIndex} was outside the vertex count {vertexCount}";
-                return false;
-            }
 
             maxIndex = Math.Max(maxIndex, vertexIndex);
             indices.Add(vertexIndex);
+        }
+
+        var position = indexPosition;
+        if (data.Length - position < sizeof(float) + (sizeof(uint) * 2))
+        {
+            rejectionReason = "mesh data ended before the vertex header";
+            return false;
+        }
+
+        var scale = BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(position, sizeof(float)));
+        position += sizeof(float);
+        if (!IsReasonableScale(scale))
+        {
+            rejectionReason = $"mesh scale {scale.ToString("0.###", CultureInfo.InvariantCulture)} is outside the supported range";
+            return false;
+        }
+
+        var weightsPerVertex = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position, sizeof(uint)));
+        position += sizeof(uint);
+        var vertexCount = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position, sizeof(uint)));
+        position += sizeof(uint);
+        if (vertexCount == 0 || vertexCount > 1000000)
+        {
+            rejectionReason = $"mesh vertex count {vertexCount} is outside the supported range";
+            return false;
         }
 
         if (maxIndex + 1 > vertexCount)
@@ -303,46 +308,79 @@ public partial class NifPreviewModelReader
             return false;
         }
 
-        var positionDataEnd = vertexDataOffset + checked((int)vertexCount * StarfieldGeometryMeshPositionStride);
-        var hasUvStream = TryReadStarfieldGeometryUvStream(data, positionDataEnd, vertexCount, out var uvs, out var uvDiagnostic, out var vertexAttributeStreamEnd);
-        var hasVertexAlphaStream = TryReadStarfieldGeometryVertexAlphaStream(data, vertexAttributeStreamEnd, vertexCount, out var vertexAlphas, out var vertexAlphaDiagnostic);
+        var vertexDataOffset = position;
+        if (data.Length - vertexDataOffset < checked((int)vertexCount * StarfieldGeometryMeshPositionStride))
+        {
+            rejectionReason = "mesh data ended before all packed positions";
+            return false;
+        }
+
         var useTransform = transformChain.Any(transform => !transform.IsIdentity);
         var vertices = new List<NifPreviewVertex>();
         var bounds = new NifMeshBounds();
         for (var index = 0; index < vertexCount; index++)
         {
             var vertexOffset = vertexDataOffset + (index * StarfieldGeometryMeshPositionStride);
-            var position = new NifPreviewVector3
+            var vertexPosition = new NifPreviewVector3
             {
-                X = BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(vertexOffset, sizeof(short))) * StarfieldGeometryMeshPositionScale,
-                Y = BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(vertexOffset + sizeof(short), sizeof(short))) * StarfieldGeometryMeshPositionScale,
-                Z = BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(vertexOffset + (sizeof(short) * 2), sizeof(short))) * StarfieldGeometryMeshPositionScale
+                X = BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(vertexOffset, sizeof(short))) * StarfieldGeometryMeshPositionScale * scale,
+                Y = BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(vertexOffset + sizeof(short), sizeof(short))) * StarfieldGeometryMeshPositionScale * scale,
+                Z = BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(vertexOffset + (sizeof(short) * 2), sizeof(short))) * StarfieldGeometryMeshPositionScale * scale
             };
-
-            if (hasBounds)
-            {
-                position = geometryBounds.ExpandNormalizedPosition(position);
-            }
 
             if (useTransform)
             {
-                position = ApplyTransformChain(position, transformChain);
+                vertexPosition = ApplyTransformChain(vertexPosition, transformChain);
             }
 
-            if (!bounds.TryInclude(position, out rejectionReason))
+            if (!bounds.TryInclude(vertexPosition, out rejectionReason))
             {
                 return false;
             }
 
             vertices.Add(new NifPreviewVertex
             {
-                Position = position,
+                Position = vertexPosition,
                 Normal = new NifPreviewVector3(),
-                UV = hasUvStream ? uvs[index] : new NifPreviewUV(),
-                Alpha = hasVertexAlphaStream ? vertexAlphas[index] : 1f
+                UV = new NifPreviewUV(),
+                Alpha = 1f
             });
         }
 
+        position = vertexDataOffset + checked((int)vertexCount * StarfieldGeometryMeshPositionStride);
+        var hasUvStream = TryReadStarfieldGeometryUvStream(data, position, vertexCount, out var uvs, out var uvDiagnostic, out var vertexAttributeStreamEnd);
+        if (hasUvStream)
+        {
+            for (var index = 0; index < vertexCount; index++)
+            {
+                vertices[index].UV = uvs[index];
+            }
+        }
+
+        var hasUv2Stream = TrySkipStarfieldGeometryUvStream(data, vertexAttributeStreamEnd, "UV2", out var uv2Diagnostic, out vertexAttributeStreamEnd);
+        var hasVertexColorStream = TryReadStarfieldGeometryVertexColorStream(data, vertexAttributeStreamEnd, vertexCount, out var vertexAlphas, out var vertexColorDiagnostic, out vertexAttributeStreamEnd);
+        if (hasVertexColorStream)
+        {
+            for (var index = 0; index < vertexCount; index++)
+            {
+                vertices[index].Alpha = vertexAlphas[index];
+            }
+        }
+
+        var hasNormalStream = TryReadStarfieldGeometryNormalStream(data, vertexAttributeStreamEnd, vertexCount, out var normals, out var normalDiagnostic, out vertexAttributeStreamEnd);
+        if (hasNormalStream)
+        {
+            for (var index = 0; index < vertexCount; index++)
+            {
+                vertices[index].Normal = normals[index];
+            }
+        }
+
+        var tangentDiagnostic = SkipStarfieldGeometrySizedStream(data, vertexAttributeStreamEnd, "tangent", sizeof(uint), out vertexAttributeStreamEnd);
+        var weightDiagnostic = SkipStarfieldGeometryWeights(data, vertexAttributeStreamEnd, weightsPerVertex, out vertexAttributeStreamEnd);
+        var lodDiagnostic = version > 0
+            ? SkipStarfieldGeometryLods(data, vertexAttributeStreamEnd)
+            : "not present for version 0";
         var material = GetStarfieldExternalGeometryMaterial(block.Data, block.TypeName, blockIndex, meshIndex, strings, materialMap);
         mesh = new NifPreviewMesh
         {
@@ -370,16 +408,21 @@ public partial class NifPreviewModelReader
             Indices = indices,
             Diagnostics =
             {
-                $"{block.TypeName} block {blockIndex}: external Starfield geometry {geometryPath}, {vertexCount} vertices, {indexCount / 3} triangles, position stride {StarfieldGeometryMeshPositionStride}, geometry bounds metadata {(hasBounds ? geometryBounds.Description : "unavailable")}, decoded bounds {bounds.Description}",
+                $"{block.TypeName} block {blockIndex}: external Starfield geometry {geometryPath}, version {version}, scale {scale.ToString("0.###", CultureInfo.InvariantCulture)}, {vertexCount} vertices, {indexCount / 3} triangles, position stride {StarfieldGeometryMeshPositionStride}, decoded bounds {bounds.Description}",
                 $"{block.TypeName} block {blockIndex}: external Starfield geometry UV stream {uvDiagnostic}",
-                $"{block.TypeName} block {blockIndex}: external Starfield geometry vertex alpha stream {vertexAlphaDiagnostic}",
+                $"{block.TypeName} block {blockIndex}: external Starfield geometry UV2 stream {uv2Diagnostic}",
+                $"{block.TypeName} block {blockIndex}: external Starfield geometry vertex color stream {vertexColorDiagnostic}",
+                $"{block.TypeName} block {blockIndex}: external Starfield geometry normal stream {normalDiagnostic}",
+                $"{block.TypeName} block {blockIndex}: external Starfield geometry tangent stream {tangentDiagnostic}",
+                $"{block.TypeName} block {blockIndex}: external Starfield geometry weight stream {weightDiagnostic}",
+                $"{block.TypeName} block {blockIndex}: external Starfield geometry LOD stream {lodDiagnostic}",
                 $"{block.TypeName} block {blockIndex} external material: {material.MaterialName}, texture {material.TexturePath ?? "none"}, overlay {material.OverlayTexturePath ?? "none"}, decal opacity {material.DecalOpacityTexturePath ?? "none"}, decal {material.IsDecal}, invisible {material.IsInvisible}",
                 $"{block.TypeName} block {blockIndex} triangle sample: {CreateTriangleSample(indices)}"
             }
         };
         if (material.DecalOpacityTexturePath != null && !hasUvStream)
         {
-            mesh.Diagnostics.Add($"{block.TypeName} block {blockIndex}: decal opacity texture resolved, but external Starfield geometry UV and vertex alpha streams are not decoded yet");
+            mesh.Diagnostics.Add($"{block.TypeName} block {blockIndex}: decal opacity texture resolved, but external Starfield geometry UV stream is not decoded yet");
         }
 
         return true;
@@ -402,17 +445,19 @@ public partial class NifPreviewModelReader
         }
 
         var uvCount = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position, sizeof(uint)));
-        if (uvCount != vertexCount)
-        {
-            diagnostic = $"not decoded because stream count {uvCount} did not match vertex count {vertexCount}";
-            return false;
-        }
-
         position += sizeof(uint);
-        var requiredLength = checked((int)vertexCount * StarfieldGeometryMeshUvStride);
+        var requiredLength = checked((int)uvCount * StarfieldGeometryMeshUvStride);
         if (data.Length - position < requiredLength)
         {
             diagnostic = "not decoded because stream ended before all UVs";
+            return false;
+        }
+
+        var uvStreamEnd = position + requiredLength;
+        if (uvCount != vertexCount)
+        {
+            streamEnd = uvStreamEnd;
+            diagnostic = $"skipped because stream count {uvCount} did not match vertex count {vertexCount}";
             return false;
         }
 
@@ -440,6 +485,7 @@ public partial class NifPreviewModelReader
         if (MathF.Abs(maxU - minU) <= 0.0001f &&
             MathF.Abs(maxV - minV) <= 0.0001f)
         {
+            streamEnd = position;
             diagnostic = "not decoded because all UVs were identical";
             return false;
         }
@@ -450,61 +496,71 @@ public partial class NifPreviewModelReader
         return true;
     }
 
-    private static bool TryReadStarfieldGeometryVertexAlphaStream(
+    private static bool TrySkipStarfieldGeometryUvStream(
         byte[] data,
         int position,
-        uint vertexCount,
-        out IReadOnlyList<float> vertexAlphas,
-        out string diagnostic)
+        string streamName,
+        out string diagnostic,
+        out int streamEnd)
     {
-        vertexAlphas = [];
-        if (data.Length - position < sizeof(uint) * 2)
+        streamEnd = position;
+        if (data.Length - position < sizeof(uint))
         {
             diagnostic = "not present";
             return false;
         }
 
-        var countOffsets = new[] { sizeof(uint), sizeof(uint) * 2 };
-        var mismatchDiagnostics = new List<string>();
-        foreach (var countOffset in countOffsets)
+        var count = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position, sizeof(uint)));
+        position += sizeof(uint);
+        var streamByteCount = checked((int)count * StarfieldGeometryMeshUvStride);
+        if (data.Length - position < streamByteCount)
         {
-            if (data.Length - position < countOffset + sizeof(uint))
-            {
-                continue;
-            }
-
-            var streamCount = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position + countOffset, sizeof(uint)));
-            if (streamCount != vertexCount)
-            {
-                mismatchDiagnostics.Add($"count at offset {countOffset} was {streamCount}");
-                continue;
-            }
-
-            if (TryReadStarfieldGeometryVertexAlphaValues(data, position + countOffset + sizeof(uint), vertexCount, out vertexAlphas, out diagnostic))
-            {
-                diagnostic = $"{diagnostic} after {countOffset} byte header";
-                return true;
-            }
-
+            diagnostic = $"not decoded because {streamName} stream ended before all UVs";
             return false;
         }
 
-        diagnostic = $"not decoded because {string.Join(", ", mismatchDiagnostics)}";
-        return false;
+        streamEnd = position + streamByteCount;
+        diagnostic = count == 0
+            ? "absent"
+            : $"skipped {count} half-precision UVs";
+        return count > 0;
     }
 
-    private static bool TryReadStarfieldGeometryVertexAlphaValues(
+    private static bool TryReadStarfieldGeometryVertexColorStream(
         byte[] data,
         int position,
         uint vertexCount,
         out IReadOnlyList<float> vertexAlphas,
-        out string diagnostic)
+        out string diagnostic,
+        out int streamEnd)
     {
         vertexAlphas = [];
-        var requiredLength = checked((int)vertexCount * sizeof(uint));
-        if (data.Length - position < requiredLength)
+        streamEnd = position;
+        if (data.Length - position < sizeof(uint))
         {
-            diagnostic = "not decoded because stream ended before all alpha values";
+            diagnostic = "not present";
+            return false;
+        }
+
+        var colorCount = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position, sizeof(uint)));
+        position += sizeof(uint);
+        var streamByteCount = checked((int)colorCount * sizeof(uint));
+        if (data.Length - position < streamByteCount)
+        {
+            diagnostic = "not decoded because stream ended before all vertex colors";
+            return false;
+        }
+
+        streamEnd = position + streamByteCount;
+        if (colorCount == 0)
+        {
+            diagnostic = "absent";
+            return false;
+        }
+
+        if (colorCount != vertexCount)
+        {
+            diagnostic = $"skipped because color count {colorCount} did not match vertex count {vertexCount}";
             return false;
         }
 
@@ -513,7 +569,7 @@ public partial class NifPreviewModelReader
         var maxAlpha = float.NegativeInfinity;
         for (var index = 0; index < vertexCount; index++)
         {
-            var alpha = data[position] / 255f;
+            var alpha = data[position + 3] / 255f;
             position += sizeof(uint);
             minAlpha = MathF.Min(minAlpha, alpha);
             maxAlpha = MathF.Max(maxAlpha, alpha);
@@ -527,8 +583,150 @@ public partial class NifPreviewModelReader
         }
 
         vertexAlphas = parsedAlphas;
-        diagnostic = $"decoded {vertexCount} packed alpha values, alpha {minAlpha:N3}..{maxAlpha:N3}";
+        diagnostic = $"decoded {vertexCount} BGRA colors, alpha {minAlpha:N3}..{maxAlpha:N3}";
         return true;
+    }
+
+    private static bool TryReadStarfieldGeometryNormalStream(
+        byte[] data,
+        int position,
+        uint vertexCount,
+        out IReadOnlyList<NifPreviewVector3> normals,
+        out string diagnostic,
+        out int streamEnd)
+    {
+        normals = [];
+        streamEnd = position;
+        if (data.Length - position < sizeof(uint))
+        {
+            diagnostic = "not present";
+            return false;
+        }
+
+        var normalCount = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position, sizeof(uint)));
+        position += sizeof(uint);
+        var streamByteCount = checked((int)normalCount * sizeof(uint));
+        if (data.Length - position < streamByteCount)
+        {
+            diagnostic = "not decoded because stream ended before all normals";
+            return false;
+        }
+
+        streamEnd = position + streamByteCount;
+        if (normalCount == 0)
+        {
+            diagnostic = "absent";
+            return false;
+        }
+
+        if (normalCount != vertexCount)
+        {
+            diagnostic = $"skipped because normal count {normalCount} did not match vertex count {vertexCount}";
+            return false;
+        }
+
+        var parsedNormals = new List<NifPreviewVector3>();
+        for (var index = 0; index < vertexCount; index++)
+        {
+            var packed = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position, sizeof(uint)));
+            position += sizeof(uint);
+            parsedNormals.Add(ReadUnsignedDecVector3(packed));
+        }
+
+        normals = parsedNormals;
+        diagnostic = $"decoded {vertexCount} packed X10Y10Z10 normals";
+        return true;
+    }
+
+    private static string SkipStarfieldGeometrySizedStream(byte[] data, int position, string streamName, int elementSize, out int streamEnd)
+    {
+        streamEnd = position;
+        if (data.Length - position < sizeof(uint))
+        {
+            return "not present";
+        }
+
+        var count = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position, sizeof(uint)));
+        position += sizeof(uint);
+        var streamByteCount = checked((int)count * elementSize);
+        if (data.Length - position < streamByteCount)
+        {
+            return $"not skipped because {streamName} stream ended before all values";
+        }
+
+        streamEnd = position + streamByteCount;
+        return count == 0
+            ? "absent"
+            : $"skipped {count} {elementSize}-byte values";
+    }
+
+    private static string SkipStarfieldGeometryWeights(byte[] data, int position, uint weightsPerVertex, out int streamEnd)
+    {
+        streamEnd = position;
+        if (data.Length - position < sizeof(uint))
+        {
+            return "not present";
+        }
+
+        var count = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position, sizeof(uint)));
+        position += sizeof(uint);
+        var streamByteCount = checked((int)count * sizeof(uint));
+        if (data.Length - position < streamByteCount)
+        {
+            return "not skipped because weight stream ended before all values";
+        }
+
+        streamEnd = position + streamByteCount;
+        return count == 0
+            ? "absent"
+            : $"skipped {count} weights, {weightsPerVertex} per vertex";
+    }
+
+    private static string SkipStarfieldGeometryLods(byte[] data, int position)
+    {
+        if (data.Length - position < sizeof(uint))
+        {
+            return "not present";
+        }
+
+        var lodCount = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position, sizeof(uint)));
+        position += sizeof(uint);
+        for (var lodIndex = 0; lodIndex < lodCount; lodIndex++)
+        {
+            if (data.Length - position < sizeof(uint))
+            {
+                return $"not skipped because LOD {lodIndex} ended before its index count";
+            }
+
+            var lodIndexCount = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position, sizeof(uint)));
+            position += sizeof(uint);
+            if (lodIndexCount % 3 != 0)
+            {
+                return $"not skipped because LOD {lodIndex} index count {lodIndexCount} was not divisible by 3";
+            }
+
+            var indexByteCount = checked((int)lodIndexCount * sizeof(ushort));
+            if (data.Length - position < indexByteCount)
+            {
+                return $"not skipped because LOD {lodIndex} ended before all triangle indices";
+            }
+
+            position += indexByteCount;
+        }
+
+        return lodCount == 0
+            ? "absent"
+            : $"skipped {lodCount} LOD stream(s)";
+    }
+
+    private static NifPreviewVector3 ReadUnsignedDecVector3(uint packed)
+    {
+        return new NifPreviewVector3
+        {
+            X = (packed & 0x000003FFU) * (2f / 1023f) - 1f,
+            Y = ((packed >> 10) & 0x000003FFU) * (2f / 1023f) - 1f,
+            Z = ((packed >> 20) & 0x000003FFU) * (2f / 1023f) - 1f
+        };
     }
 
     private static bool TryReadStarfieldGeometryBounds(byte[] data, out StarfieldGeometryBounds bounds)

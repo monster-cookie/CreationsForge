@@ -131,18 +131,19 @@ public class NifPreviewModelReaderTests
         result.Model.Meshes.Count.ShouldBe(1);
         result.Model.Meshes[0].Vertices.Count.ShouldBe(3);
         result.Model.Meshes[0].Indices.ShouldBe([0, 1, 2]);
-        result.Model.Meshes[0].Vertices[0].Position.X.ShouldBe(0.25f, 0.0001f);
-        result.Model.Meshes[0].Vertices[0].Position.Y.ShouldBe(0.5f, 0.0001f);
-        result.Model.Meshes[0].Vertices[0].Position.Z.ShouldBe(0.75f, 0.0001f);
-        result.Model.Meshes[0].Vertices[1].Position.X.ShouldBe(0.3125f, 0.0001f);
-        result.Model.Meshes[0].Vertices[2].Position.Y.ShouldBe(0.625f, 0.0001f);
+        result.Model.Meshes[0].Vertices[0].Position.X.ShouldBe(0f, 0.0001f);
+        result.Model.Meshes[0].Vertices[0].Position.Y.ShouldBe(0f, 0.0001f);
+        result.Model.Meshes[0].Vertices[0].Position.Z.ShouldBe(0f, 0.0001f);
+        result.Model.Meshes[0].Vertices[1].Position.X.ShouldBe(1.00003f, 0.0001f);
+        result.Model.Meshes[0].Vertices[2].Position.Y.ShouldBe(1.00003f, 0.0001f);
         result.Model.Meshes[0].Vertices.ShouldAllBe(vertex =>
             vertex.Normal.X == 0f &&
             vertex.Normal.Y == 0f &&
             vertex.Normal.Z == 0f);
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("external Starfield geometry", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("scale 2", StringComparison.Ordinal));
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("position stride 6", StringComparison.Ordinal));
-        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("geometry bounds metadata center", StringComparison.Ordinal));
+        result.Diagnostics.ShouldNotContain(diagnostic => diagnostic.Contains("geometry bounds metadata", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -172,7 +173,7 @@ public class NifPreviewModelReaderTests
         result.Model.Meshes[0].Vertices[1].Alpha.ShouldBe(0.5019f, 0.0001f);
         result.Model.Meshes[0].Vertices[2].Alpha.ShouldBe(1f, 0.0001f);
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("UV stream decoded 3 half-precision UVs", StringComparison.Ordinal));
-        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("vertex alpha stream decoded 3 packed alpha values", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("vertex color stream decoded 3 BGRA colors", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -1584,7 +1585,7 @@ public class NifPreviewModelReaderTests
             writer.Write((ushort)0);
             writer.Write((ushort)1);
             writer.Write((ushort)2);
-            writer.Write(1f);
+            writer.Write(2f);
             writer.Write(0U);
             writer.Write(3U);
             WriteStarfieldGeometryVertex(writer, 0, 0, 0);
@@ -1838,10 +1839,10 @@ public class NifPreviewModelReaderTests
 
     private static void WritePackedAlpha(BinaryWriter writer, byte alpha)
     {
+        writer.Write((byte)255);
+        writer.Write((byte)255);
+        writer.Write((byte)255);
         writer.Write(alpha);
-        writer.Write((byte)255);
-        writer.Write((byte)255);
-        writer.Write((byte)255);
     }
 
     private static void WriteHalfVertex(BinaryWriter writer, float x, float y, float z)

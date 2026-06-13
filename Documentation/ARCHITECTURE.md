@@ -28,9 +28,10 @@ read-only and preview-focused. The first archive implementations are minimal BA2
 can list entries and read uncompressed and zlib-compressed entries into memory. BA2 texture archives and Starfield
 compression variants that are not zlib are explicit follow-up work. The first NIF implementation is a minimal preview
 reader for Fallout 4/Skyrim Special Edition-style `BSTriShape` geometry and a narrow Starfield `BSGeometry` external
-`.mesh` preview slice that expands packed positions through BSGeometry bounds metadata and emits UI-neutral preview
-meshes. The reader can also resolve Starfield `.mat` material assets through the same external-asset callback and
-extract preview DDS texture references. Starfield layered material preview support is intentionally narrow: it tracks
+`.mesh` preview slice that follows NifSkope's `MeshFile` stream order, scales packed signed 16-bit positions by the
+`.mesh` scale field, and emits UI-neutral preview meshes. The reader can also resolve Starfield `.mat` material
+assets through the same external-asset callback and extract preview DDS texture references. Starfield layered material
+preview support is intentionally narrow: it tracks
 one primary texture, one overlay/decal texture, additive decal
 blending hints, invisible-material skip hints, and a `materialsbeta.cdb` `STRT` string-table fallback for stale or
 indirect texture paths. Full NIF scene graph support, full Starfield material parity, full CDB material graph parsing,
