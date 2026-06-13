@@ -6,12 +6,17 @@ namespace CreationsForge.ViewModels;
 public class RecordComparisonRowViewModel
 {
     public RecordComparisonRowViewModel(string fieldName, IReadOnlyList<RecordComparisonValueDTO> values, IReadOnlyList<RecordComparisonFieldDTO> children)
+        : this(fieldName, values, children, null)
+    { }
+
+    private RecordComparisonRowViewModel(string fieldName, IReadOnlyList<RecordComparisonValueDTO> values, IReadOnlyList<RecordComparisonFieldDTO> children, string? parentFieldName)
     {
         FieldName = fieldName;
+        ParentFieldName = parentFieldName;
         Values = values;
         foreach (var child in children)
         {
-            Children.Add(new RecordComparisonRowViewModel(child.FieldName, child.Values, child.Children));
+            Children.Add(new RecordComparisonRowViewModel(child.FieldName, child.Values, child.Children, FieldName));
         }
     }
 
@@ -23,6 +28,8 @@ public class RecordComparisonRowViewModel
 
     public string FieldName { get; }
 
+    public string? ParentFieldName { get; }
+
     public IReadOnlyList<RecordComparisonValueDTO> Values { get; }
 
     public string this[int index] => GetValue(index);
@@ -32,6 +39,13 @@ public class RecordComparisonRowViewModel
         return index >= 0 && index < Values.Count
             ? Values[index].DisplayValue
             : string.Empty;
+    }
+
+    public RecordComparisonValueDTO? GetComparisonValue(int index)
+    {
+        return index >= 0 && index < Values.Count
+            ? Values[index]
+            : null;
     }
 
     public RecordComparisonValueState GetValueState(int index)

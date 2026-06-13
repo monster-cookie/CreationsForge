@@ -354,6 +354,11 @@ public class MainViewModelTests
             return Task.FromResult(true);
         }
 
+        public Task ShowHexPayloadAsync(string title, string payloadValue)
+        {
+            return Task.CompletedTask;
+        }
+
         public Task ShowErrorAsync(string message)
         {
             return Task.CompletedTask;

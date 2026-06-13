@@ -6,12 +6,13 @@ The application uses a local SQLite database. The schema is defined by embedded 
 `CreationsForge.Migrations/Sql`:
 
 - `001_CreateMultiGameImportSchema.sql` creates the application tables, keys, indexes, constraints, and views.
-- `002_AddAssetArchiveIndex.sql` adds the metadata-only asset archive index/cache tables.
+- `002_AddAssetArchiveIndex.sql` adds the metadata-only asset archive index/cache tables, the `Statics` and
+  `Containers` typed record tables, `ContainerItems`, and `RawRecordPayloads`.
 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains twenty-nine tables:
+The application schema contains thirty-three tables:
 
 - `Games`
 - `Plugins`
@@ -30,6 +31,9 @@ The application schema contains twenty-nine tables:
 - `NPCs`
 - `MagicEffects`
 - `Perks`
+- `Statics`
+- `Containers`
+- `ContainerItems`
 - `RecordKeywords`
 - `PerkRanks`
 - `PerkRankEffects`
@@ -40,6 +44,7 @@ The application schema contains twenty-nine tables:
 - `ScriptingAdapters`
 - `ScriptingAdapterProperties`
 - `ScriptingAdapterPropertyListItems`
+- `RawRecordPayloads`
 - `AssetArchiveFiles`
 - `AssetArchiveEntries`
 
@@ -138,6 +143,8 @@ direct, slotted, and gendered model payloads can share one table family.
 record types that expose the same indexed keyword payload.
 `RecordSounds` references the full `RecordInstances` key including `RecordType`, so named and indexed sound payloads
 can be shared by record types that expose the same Spriggit-style sound data.
+`RawRecordPayloads` references the full `RecordInstances` key including `RecordType`, so opaque payload bytes or
+strings can be retained for future parsing without adding one table per record type.
 
 ## Tables
 
@@ -406,10 +413,10 @@ Persistence behavior:
 - Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful Global import batch
   are deleted as stale.
 
-### Starfield scripted parent records
+### Shared scripted parent records
 
-`MiscObjects`, `Keywords`, `ActorValueInformation`, `NPCs`, `MagicEffects`, and `Perks` use the common typed record
-key and metadata columns. They are currently populated only by the Starfield record reader.
+`MiscObjects`, `Keywords`, `ActorValueInformation`, `NPCs`, `MagicEffects`, `Perks`, `Statics`, and `Containers` use
+the common typed record key and metadata columns.
 
 `MiscObjects` additional columns:
 
@@ -477,6 +484,21 @@ key and metadata columns. They are currently populated only by the Starfield rec
 - `Flags` (`TEXT`, `NOT NULL`)
 - nullable decomposed FormKey columns for `Restriction` and `Training`
 
+`Statics` additional columns:
+
+- `Version2` (`INTEGER`, nullable)
+- `ObjectBounds_First` and `ObjectBounds_Second` (`TEXT`, nullable)
+- `MaxAngle`, `UnknownDNAMFloat`, `LeafAmplitude`, and `LeafFrequency` (`REAL`, nullable)
+- `Unused` (`TEXT`, nullable)
+- `DNAMDataTypeState` (`TEXT`, nullable)
+
+`Containers` additional columns:
+
+- `Version2` (`INTEGER`, nullable)
+- `ObjectBounds_First` and `ObjectBounds_Second` (`TEXT`, nullable)
+- `Name`, `Flags`, and `MajorFlags` (`TEXT`, nullable)
+- nullable decomposed FormKey columns for `NativeTerminal`
+
 Foreign keys:
 
 - `Game` plus containing `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
@@ -496,8 +518,40 @@ Persistence behavior:
 - Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful typed-record import
   batch are deleted as stale.
 - `MiscObjects` currently persists the parent scalar row, shared keyword rows, shared model rows, and scripting
-  adapters. `NPCs` and `MagicEffects` persist shared keyword rows. `MiscObjects` and `MagicEffects` persist shared
-  sound rows. `MagicEffects` persists Spriggit-flattened DATA fields directly on the parent row.
+  adapters. `Statics` persists parent scalar rows, shared model rows, shared keyword rows when present, and raw
+  opaque payload rows. `Containers` persists parent scalar rows, child item rows, shared model rows, shared keyword
+  rows when present, shared sound rows when present, and raw opaque payload rows. `NPCs` and `MagicEffects` persist
+  shared keyword rows. `MiscObjects` and `MagicEffects` persist shared sound rows. `MagicEffects` persists
+  Spriggit-flattened DATA fields directly on the parent row.
+
+### ContainerItems
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `Item_Index` (`INTEGER`, `NOT NULL`, primary key)
+- decomposed `Item_*` FormKey columns (`NOT NULL`)
+- `Count` (`INTEGER`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `Containers` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `Item_Index`, `Item_FormKey_ID`, and `FormKey_ID` must be greater than or equal to zero.
+
+Indexes:
+
+- `IX_ContainerItems_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning container row is saved.
+- Existing item rows for the same container are deleted before replacement so removed items do not remain stale.
+- Stale typed-record deletion removes item rows through the declared `Containers` cascade.
 
 ### RecordKeywords
 
@@ -630,6 +684,43 @@ Persistence behavior:
 - Current imported rows are upserted after their owning typed record row is saved.
 - Existing sound rows for the same record are deleted before replacement so removed sound slots do not remain stale.
 - Stale typed-record deletion removes sound rows through the declared `RecordInstances` cascade.
+
+### RawRecordPayloads
+
+Columns:
+
+- Common containing plugin key columns listed above
+- `RecordType` (`TEXT`, `NOT NULL`, primary key)
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `PayloadSlot` (`TEXT`, `NOT NULL`, primary key)
+- `Payload_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `PayloadType` (`TEXT`, `NOT NULL`)
+- `PayloadValue` (`TEXT`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key plus `RecordType` references `RecordInstances` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `PayloadSlot` and `PayloadType` must not be empty.
+- `Payload_Index` and `FormKey_ID` must be greater than or equal to zero.
+
+Indexes:
+
+- `IX_RawRecordPayloads_Game_Record_FormKey` on `Game`, `RecordType`, origin FormKey ModKey columns, and
+  `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning typed record row is saved.
+- Existing raw payload rows for the same record are deleted before replacement so removed payload slots do not remain
+  stale.
+- Stale typed-record deletion removes raw payload rows through the declared `RecordInstances` cascade.
+- Current importers populate raw payload rows for Static model/component reflection payloads and Container
+  model/component reflection payloads, including Starfield container `ANAM`, `BNAM`, `CNAM`, and `REFL` component
+  subfields when Mutagen exposes them through reflection.
 
 ### ScriptingAdapters
 

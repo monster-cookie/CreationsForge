@@ -103,9 +103,10 @@ aborting the full plugin import. The current cross-game shared record types are 
 (`GMST`), Globals (`GLOB`), MiscObjects (`MISC`), Keywords (`KYWD`), ActorValueInformation (`AVIF`), NPCs (`NPC_`),
 MagicEffects (`MGEF`), and Perks (`PERK`). Starfield, Fallout 4, and Skyrim map approved shared records inside their
 game adapters after loading the Mutagen plugin once for the Core-facing record-read call.
-Starfield also imports preview-oriented model-bearing record headers for Statics (`STAT`), Books (`BOOK`), Doors
-(`DOOR`), Containers (`CONT`), and Terminals (`TERM`). These Starfield-only records persist common `RecordInstances`
-and shared `Models` rows only; they do not yet have type-specific detail tables or comparison fields.
+Starfield, Fallout 4, and Skyrim import Static (`STAT`) and Container (`CONT`) records through the shared typed-record
+pipeline. Starfield also imports preview-oriented model-bearing record headers for Books (`BOOK`), Doors (`DOOR`), and
+Terminals (`TERM`). These Starfield-only records persist common `RecordInstances` and shared `Models` rows only; they
+do not yet have type-specific detail tables or comparison fields.
 All typed record importers save the record's parent row before dispatching shared child import by DTO capability.
 Records that expose models, keywords, sounds, or scripting adapters persist those child rows through the common
 `RecordInstances` identity instead of game-specific child-table paths.
@@ -161,10 +162,15 @@ with plugin columns, field rows, and display values. The presentation project re
 `TreeDataGrid` and does not query repositories, database tables, or Mutagen directly. The active plugin record browser
 renders record-type groups as expander sections with flat `TreeDataGrid` controls for record rows. The comparison
 slice covers common record header fields plus scalar persisted fields for `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`,
-`AVIF`, `NPC_`, `MGEF`, and `PERK`. GameSetting comparison displays the generic `Data` row instead of duplicating the
-Mutagen-derived typed data helper fields. MISC, NPC_, and MGEF comparison includes shared keyword rows. MISC and MGEF
+`AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, and `CONT`. GameSetting comparison displays the generic `Data` row instead of
+duplicating the Mutagen-derived typed data helper fields. MISC, NPC_, and MGEF comparison includes shared keyword rows.
+MISC and MGEF
 comparison includes shared sound rows. MISC comparison also includes persisted model rows and scripting adapter rows
-as hierarchical child rows in the comparison `TreeDataGrid`. MGEF DATA fields follow Mutagen/Spriggit's flattened
+as hierarchical child rows in the comparison `TreeDataGrid`. STAT comparison includes scalar fields, shared keyword
+rows, shared model rows, and raw payload rows. CONT comparison includes scalar fields, item rows, shared keyword rows,
+shared model rows, shared sound rows, and raw payload rows. Raw payload values are compared by their retained full
+value but are summarized in the grid as `[UNPARSEABLE REFLECTION DATA]`; the presentation layer opens the full value in
+a hex-view dialog when the user selects the summarized value. MGEF DATA fields follow Mutagen/Spriggit's flattened
 record shape and display as flat comparison rows.
 Core assigns comparison value states for neutral, identical, conflicting, and displayed winning-override values; the
 presentation layer maps those states to the green, red, and yellow comparison colors and shows the legend in the status
@@ -229,17 +235,18 @@ Services log workflow-level progress and failures. Repositories do not log.
 
 ## Shared Scripted Record Extension
 
-Typed records for `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK` follow the same Core-facing import contract as
-`FLST`, `GMST`, and `GLOB`: the game adapters map Mutagen records into Core DTOs, `RecordImportService` dispatches by
-supported game and record type ID, and repositories persist DTO data with named SQL parameters. The UI continues to
-consume Core DTOs and record-tree services only.
+Typed records for `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, and `CONT` follow the same Core-facing
+import contract as `FLST`, `GMST`, and `GLOB`: the game adapters map Mutagen records into Core DTOs,
+`RecordImportService` dispatches by supported game and record type ID, and repositories persist DTO data with named
+SQL parameters. The UI continues to consume Core DTOs and record-tree services only.
 
 Scripting adapter persistence is shared in Core through `IScriptingAdapterImportService` and scripting adapter
 repositories. `IRecordChildImportService` invokes scripting adapter persistence for any imported `RecordDTO` that
 implements the scripting-adapter capability interface. Game adapters populate scripting adapter DTOs for record types
 that expose virtual-machine adapters.
-The `MISC` slice currently persists parent scalar fields, keyword rows, model rows, and scripts; the old single-game
-app's deeper MiscObject child-detail tables are still a separate follow-up.
+The `MISC` slice currently persists parent scalar fields, keyword rows, model rows, and scripts. The `CONT` slice
+persists parent scalar fields, item rows, keyword rows, model rows, sounds, and raw payloads. The old single-game app's
+deeper MiscObject child-detail tables are still a separate follow-up.
 Scripting adapters are persisted against the shared `RecordInstances` parent using record type IDs such as `GLOB`,
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`.
 
@@ -252,8 +259,17 @@ Model persistence is shared in Core through `IModelImportService` and model repo
 `ModelMaterialSwaps` reference `RecordInstances` and include `ModelSlot` plus `ModelGender` so future record types can
 map direct, slotted, or gendered `IModelGetter` data into one table family. `IRecordChildImportService` invokes model
 persistence for any imported `RecordDTO` that implements the model capability interface. The first populated model
-slice is `MISC`, which uses `ModelSlot = Model` and an empty `ModelGender`. Starfield also populates direct-model
-preview rows for `STAT`, `BOOK`, `DOOR`, `CONT`, and `TERM` through header-only `RecordInstances` plus `Models`.
+slice is `MISC`, which uses `ModelSlot = Model` and an empty `ModelGender`. `STAT` and `CONT` also use shared model
+persistence across Starfield, Fallout 4, and Skyrim. Starfield still populates direct-model preview rows for `BOOK`,
+`DOOR`, and `TERM` through header-only `RecordInstances` plus `Models`.
+
+Raw payload persistence is shared in Core through `IRawRecordPayloadImportService` and `RawRecordPayloads`.
+`IRecordChildImportService` invokes raw payload persistence for any imported `RecordDTO` that implements the raw
+payload capability interface. The current populated slices are `STAT` and `CONT`: Starfield, Fallout 4, and Skyrim
+preserve opaque `Model.Data` payloads, and Starfield also preserves component `REFL` payload bytes when present.
+Starfield `CONT` import preserves component subfields such as `Components.AnimationGraphComponent.ANAM`, `BNAM`, and
+`CNAM` when Mutagen exposes them through reflection. Comparison DTOs keep the full payload value as detail data while
+exposing a summarized display label for the UI hex viewer.
 
 Sound persistence is shared in Core through `IRecordSoundImportService` and `RecordSounds`. `IRecordChildImportService`
 invokes sound persistence for any imported `RecordDTO` that implements the sound capability interface. `MISC` maps

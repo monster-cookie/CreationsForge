@@ -8,17 +8,20 @@ public class RecordChildImportService : IRecordChildImportService
 {
     private readonly IModelImportService ModelImportService;
     private readonly IRecordKeywordImportService RecordKeywordImportService;
+    private readonly IRawRecordPayloadImportService RawRecordPayloadImportService;
     private readonly IRecordSoundImportService RecordSoundImportService;
     private readonly IScriptingAdapterImportService ScriptingAdapterImportService;
 
     public RecordChildImportService(
         IModelImportService modelImportService,
         IRecordKeywordImportService recordKeywordImportService,
+        IRawRecordPayloadImportService rawRecordPayloadImportService,
         IRecordSoundImportService recordSoundImportService,
         IScriptingAdapterImportService scriptingAdapterImportService)
     {
         ModelImportService = modelImportService;
         RecordKeywordImportService = recordKeywordImportService;
+        RawRecordPayloadImportService = rawRecordPayloadImportService;
         RecordSoundImportService = recordSoundImportService;
         ScriptingAdapterImportService = scriptingAdapterImportService;
     }
@@ -38,6 +41,11 @@ public class RecordChildImportService : IRecordChildImportService
         if (record is IHasSoundsRecordDTO soundRecord)
         {
             RecordSoundImportService.ReplaceRecordSounds(soundRecord, recordType);
+        }
+
+        if (record is IHasRawRecordPayloadsRecordDTO rawPayloadRecord)
+        {
+            RawRecordPayloadImportService.ReplaceRawRecordPayloads(rawPayloadRecord, recordType);
         }
 
         if (record is IHasScriptingAdaptersRecordDTO scriptingAdapterRecord)

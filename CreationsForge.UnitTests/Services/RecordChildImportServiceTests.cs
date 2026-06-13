@@ -15,11 +15,13 @@ public class RecordChildImportServiceTests
     {
         var modelImportService = new TestModelImportService();
         var keywordImportService = new TestRecordKeywordImportService();
+        var rawRecordPayloadImportService = new TestRawRecordPayloadImportService();
         var soundImportService = new TestRecordSoundImportService();
         var scriptingAdapterImportService = new TestScriptingAdapterImportService();
         var service = new RecordChildImportService(
             modelImportService,
             keywordImportService,
+            rawRecordPayloadImportService,
             soundImportService,
             scriptingAdapterImportService);
         var record = CreateCompositeRecord();
@@ -28,6 +30,7 @@ public class RecordChildImportServiceTests
 
         modelImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
         keywordImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
+        rawRecordPayloadImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
         soundImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
         scriptingAdapterImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
     }
@@ -37,11 +40,13 @@ public class RecordChildImportServiceTests
     {
         var modelImportService = new TestModelImportService();
         var keywordImportService = new TestRecordKeywordImportService();
+        var rawRecordPayloadImportService = new TestRawRecordPayloadImportService();
         var soundImportService = new TestRecordSoundImportService();
         var scriptingAdapterImportService = new TestScriptingAdapterImportService();
         var service = new RecordChildImportService(
             modelImportService,
             keywordImportService,
+            rawRecordPayloadImportService,
             soundImportService,
             scriptingAdapterImportService);
 
@@ -49,6 +54,7 @@ public class RecordChildImportServiceTests
 
         modelImportService.ReplaceRequests.ShouldBeEmpty();
         keywordImportService.ReplaceRequests.ShouldBeEmpty();
+        rawRecordPayloadImportService.ReplaceRequests.ShouldBeEmpty();
         soundImportService.ReplaceRequests.ShouldBeEmpty();
         scriptingAdapterImportService.ReplaceRequests.ShouldBeEmpty();
     }
@@ -91,11 +97,13 @@ public class RecordChildImportServiceTests
         };
     }
 
-    private sealed class CompositeRecordDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO, IHasSoundsRecordDTO, IHasScriptingAdaptersRecordDTO
+    private sealed class CompositeRecordDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO, IHasRawRecordPayloadsRecordDTO, IHasSoundsRecordDTO, IHasScriptingAdaptersRecordDTO
     {
         public IList<ModelDTO> Models { get; set; } = new List<ModelDTO>();
 
         public IList<RecordKeywordDTO> Keywords { get; set; } = new List<RecordKeywordDTO>();
+
+        public IList<RawRecordPayloadDTO> RawPayloads { get; set; } = new List<RawRecordPayloadDTO>();
 
         public IList<RecordSoundDTO> Sounds { get; set; } = new List<RecordSoundDTO>();
 
@@ -120,6 +128,16 @@ public class RecordChildImportServiceTests
         public IList<(IHasKeywordsRecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasKeywordsRecordDTO Record, string RecordType)>();
 
         public void ReplaceRecordKeywords(IHasKeywordsRecordDTO record, string recordType)
+        {
+            ReplaceRequests.Add((record, recordType));
+        }
+    }
+
+    private sealed class TestRawRecordPayloadImportService : IRawRecordPayloadImportService
+    {
+        public IList<(IHasRawRecordPayloadsRecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasRawRecordPayloadsRecordDTO Record, string RecordType)>();
+
+        public void ReplaceRawRecordPayloads(IHasRawRecordPayloadsRecordDTO record, string recordType)
         {
             ReplaceRequests.Add((record, recordType));
         }

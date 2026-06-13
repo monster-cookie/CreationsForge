@@ -26,6 +26,12 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
     {
         if (previewModel is null || previewModel.Meshes.Count == 0)
         {
+            if (previewModel?.AllowFallbackRender == false)
+            {
+                Logger.Information("Asset preview render mesh factory received no drawable geometry for {DisplayName}", previewModel.DisplayName);
+                return new AssetPreviewRenderMesh();
+            }
+
             Logger.Warning("Asset preview render mesh factory using fallback because no preview model meshes were provided");
             return CreateFallbackMesh();
         }
@@ -35,6 +41,15 @@ public class AssetPreviewRenderMeshFactory : IAssetPreviewRenderMeshFactory
             .ToList();
         if (meshes.Count == 0)
         {
+            if (!previewModel.AllowFallbackRender)
+            {
+                Logger.Information(
+                    "Asset preview model {DisplayName} has no mesh matching render filter {MeshIndex}",
+                    previewModel.DisplayName,
+                    options.MeshIndex);
+                return new AssetPreviewRenderMesh();
+            }
+
             Logger.Warning(
                 "Asset preview model {DisplayName} has no mesh matching render filter {MeshIndex}",
                 previewModel.DisplayName,

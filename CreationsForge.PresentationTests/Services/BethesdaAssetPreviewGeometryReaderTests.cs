@@ -55,6 +55,26 @@ public class BethesdaAssetPreviewGeometryReaderTests
         statusMessage.ShouldNotContain("Texture paths were found");
     }
 
+    [Fact]
+    public void TryRead_ReturnsNonFallbackModelWhenAssetIsMissing()
+    {
+        var assetFileResolver = new FakeAssetFileResolverService();
+        assetFileResolver.Resolutions[@"Meshes\Preview.nif"] = CreateResolution(@"Meshes\Preview.nif", AssetFileResolutionStatus.MissingLooseFile, null);
+        var nifReader = new FakeNifPreviewModelReader
+        {
+            Result = CreateNifResult(texturePath: string.Empty)
+        };
+        var reader = CreateReader(assetFileResolver, nifReader);
+
+        var read = reader.TryRead(CreateCandidate(), out var previewModel, out var statusMessage);
+
+        read.ShouldBeTrue();
+        previewModel.ShouldNotBeNull();
+        previewModel.Meshes.ShouldBeEmpty();
+        previewModel.AllowFallbackRender.ShouldBeFalse();
+        statusMessage.ShouldBe(@"Could not read Meshes\Preview.nif.");
+    }
+
     private static BethesdaAssetPreviewGeometryReader CreateReader(
         IAssetFileResolverService assetFileResolver,
         INifPreviewModelReader nifReader)

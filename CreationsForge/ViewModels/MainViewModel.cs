@@ -44,6 +44,7 @@ public class MainViewModel : ViewModelBase
     private string ActivePluginTextValue = string.Empty;
     private string ImportedRecordCountTextValue = "Imported records: 0";
     private string RecordComparisonTitleTextValue = "Select a record to compare.";
+    private string CurrentRecordComparisonEditorID = string.Empty;
     private string ActiveGameStatusTextValue = "Active game: None";
     private string ActivePluginStatusTextValue = "Active plugin: None";
     private string ActiveRecordCountTextValue = "Active records: 0";
@@ -427,6 +428,7 @@ public class MainViewModel : ViewModelBase
         RecordComparisonTitleText = comparison.FormKey is null
             ? "Select a record to compare."
             : $"{comparison.RecordType} {comparison.EditorID} ({comparison.FormKey.Id:X8})";
+        CurrentRecordComparisonEditorID = comparison.EditorID;
         RefreshRecordComparisonSource();
         AssetPreviewPane.LoadPreviewForRecord(SelectedGame.Game, item.RecordType, item.FormKey);
     }
@@ -773,6 +775,7 @@ public class MainViewModel : ViewModelBase
         RecordComparisonColumns.Clear();
         RecordComparisonRows.Clear();
         RecordComparisonTitleText = "Select a record to compare.";
+        CurrentRecordComparisonEditorID = string.Empty;
         RefreshRecordComparisonSource();
         AssetPreviewPane.ClearPreview();
     }
@@ -925,15 +928,35 @@ public class MainViewModel : ViewModelBase
         return $"{plugin.Game}|{plugin.ModKey.Name}|{plugin.ModKey.Type}|{plugin.ModKey.FileName}";
     }
 
-    private static Control CreateComparisonValueCell(RecordComparisonRowViewModel row, int columnIndex, bool isActiveColumn)
+    private Control CreateComparisonValueCell(RecordComparisonRowViewModel row, int columnIndex, bool isActiveColumn)
     {
-        var textBlock = new TextBlock
+        var value = row.GetComparisonValue(columnIndex);
+        Control child;
+        if (value is not null &&
+            value.DisplayKind == RecordComparisonValueDisplayKind.RawBinaryPayload &&
+            !string.IsNullOrWhiteSpace(value.DetailValue))
         {
-            Text = row.GetValue(columnIndex),
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        App.ApplyApplicationTextForeground(textBlock);
+            var button = new Button
+            {
+                Content = value.DisplayValue,
+                Padding = new Thickness(8, 2),
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            button.Click += async (_, _) => await UserDialogService.ShowHexPayloadAsync(CreateRawPayloadDialogTitle(row, value), value.DetailValue);
+            child = button;
+        }
+        else
+        {
+            var textBlock = new TextBlock
+            {
+                Text = row.GetValue(columnIndex),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            App.ApplyApplicationTextForeground(textBlock);
+            child = textBlock;
+        }
 
         return new Border
         {
@@ -945,8 +968,19 @@ public class MainViewModel : ViewModelBase
                 ? new Thickness(1, 0)
                 : new Thickness(0),
             Padding = new Thickness(6, 3),
-            Child = textBlock
+            Child = child
         };
+    }
+
+    private string CreateRawPayloadDialogTitle(RecordComparisonRowViewModel row, RecordComparisonValueDTO value)
+    {
+        var recordName = string.IsNullOrWhiteSpace(CurrentRecordComparisonEditorID)
+            ? RecordComparisonTitleText
+            : CurrentRecordComparisonEditorID;
+        var payloadName = string.IsNullOrWhiteSpace(row.ParentFieldName)
+            ? row.FieldName
+            : row.ParentFieldName;
+        return $"{recordName} - {payloadName} - {value.ModKey.FileName}";
     }
 
     private static IBrush GetComparisonValueBrush(RecordComparisonValueState state)

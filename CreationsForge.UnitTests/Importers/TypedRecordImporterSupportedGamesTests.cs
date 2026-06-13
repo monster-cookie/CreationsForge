@@ -37,5 +37,11 @@ public class TypedRecordImporterSupportedGamesTests
         yield return [new PerkImporter(
             Mock.Of<IPerkRepository>(),
             Mock.Of<IRecordChildImportService>())];
+        yield return [new StaticImporter(
+            Mock.Of<IStaticRepository>(),
+            Mock.Of<IRecordChildImportService>())];
+        yield return [new ContainerImporter(
+            Mock.Of<IContainerRepository>(),
+            Mock.Of<IRecordChildImportService>())];
     }
 }

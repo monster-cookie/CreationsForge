@@ -58,6 +58,24 @@ public class AssetPreviewRenderMeshFactoryTests
     }
 
     [Fact]
+    public void CreateRenderMesh_ReturnsEmptyMeshWhenFallbackIsDisabled()
+    {
+        var factory = new AssetPreviewRenderMeshFactory(new LoggerConfiguration().CreateLogger());
+        var model = new AssetPreviewModelDTO
+        {
+            DisplayName = "Preview",
+            SourcePath = "Meshes/Preview.nif",
+            AllowFallbackRender = false
+        };
+
+        var renderMesh = factory.CreateRenderMesh(model);
+
+        renderMesh.Vertices.ShouldBeEmpty();
+        renderMesh.Indices.ShouldBeEmpty();
+        renderMesh.LineIndices.ShouldBeEmpty();
+    }
+
+    [Fact]
     public void CreateRenderMesh_AppliesMeshFilterBeforeCoordinateConversion()
     {
         var factory = new AssetPreviewRenderMeshFactory(new LoggerConfiguration().CreateLogger());

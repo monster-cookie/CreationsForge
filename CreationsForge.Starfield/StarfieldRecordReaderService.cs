@@ -52,7 +52,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         cancellationToken.ThrowIfCancellationRequested();
         var doors = MapDoorModelRecords(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
-        var containers = MapContainerModelRecords(plugin, mod);
+        var containers = MapContainers(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
         var terminals = MapTerminalModelRecords(plugin, mod);
 
@@ -233,10 +233,28 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             .ToList();
     }
 
-    private static IReadOnlyList<ModelRecordDTO> MapStaticModelRecords(PluginDTO plugin, IStarfieldModGetter mod)
+    private static IReadOnlyList<StaticDTO> MapStaticModelRecords(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.Statics
-            .Select(record => CreateModelRecord(plugin, RecordTypeCatalog.Static.RecordID, record.FormKey, record.EditorID, record.FormVersion, (int)record.StarfieldMajorRecordFlags, record.Model))
+            .Select(record => new StaticDTO
+            {
+                Game = SupportedGame.Starfield,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(record.FormKey),
+                EditorID = record.EditorID ?? string.Empty,
+                FormVersion = record.FormVersion,
+                MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
+                ImportedAtUTC = DateTime.UtcNow,
+                Version2 = GetPropertyNullableInt(record, "Version2"),
+                ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
+                ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
+                MaxAngle = GetPropertyNullableDouble(record, "MaxAngle"),
+                UnknownDNAMFloat = GetPropertyNullableDouble(record, "UnknownDNAMFloat"),
+                DNAMDataTypeState = FormatEnumerable(GetPropertyValue(record, "DNAMDataTypeState")),
+                Models = GetModels(plugin, RecordTypeCatalog.Static.RecordID, record.FormKey, record.Model),
+                Keywords = GetComponentKeywords(plugin, RecordTypeCatalog.Static.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
+                RawPayloads = GetStaticRawPayloads(plugin, record.FormKey, record.Model, GetPropertyValue(record, "Components"))
+            })
             .ToList();
     }
 
@@ -254,10 +272,37 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             .ToList();
     }
 
-    private static IReadOnlyList<ModelRecordDTO> MapContainerModelRecords(PluginDTO plugin, IStarfieldModGetter mod)
+    private static IReadOnlyList<ContainerDTO> MapContainers(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.Containers
-            .Select(record => CreateModelRecord(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, record.EditorID, record.FormVersion, (int)record.StarfieldMajorRecordFlags, record.Model))
+            .Select(record => new ContainerDTO
+            {
+                Game = SupportedGame.Starfield,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(record.FormKey),
+                EditorID = record.EditorID ?? string.Empty,
+                FormVersion = record.FormVersion,
+                MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
+                ImportedAtUTC = DateTime.UtcNow,
+                Version2 = GetPropertyNullableInt(record, "Version2"),
+                ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
+                ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
+                Name = record.Name?.Lookup(Language.English),
+                Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
+                MajorFlags = FormatEnumerable(GetPropertyValue(record, "MajorFlags")),
+                NativeTerminalFormKey = record.NativeTerminal.IsNull ? null : MapFormKey(record.NativeTerminal.FormKey),
+                Items = GetContainerItems(plugin, record.FormKey, GetPropertyValue(record, "Items")),
+                Models = GetModels(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, record.Model),
+                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, record.Keywords)
+                    .Concat(GetComponentKeywords(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, GetPropertyValue(record, "Components")))
+                    .Select((keyword, keywordIndex) =>
+                    {
+                        keyword.KeywordIndex = keywordIndex;
+                        return keyword;
+                    })
+                    .ToList(),
+                RawPayloads = GetContainerRawPayloads(plugin, record.FormKey, record.Model, GetPropertyValue(record, "Components"))
+            })
             .ToList();
     }
 
@@ -556,6 +601,185 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             .ToList();
     }
 
+    private static List<RecordKeywordDTO> GetComponentKeywords(PluginDTO plugin, string recordType, FormKey formKey, object? components)
+    {
+        if (components is not IEnumerable enumerable) return new List<RecordKeywordDTO>();
+
+        var importedAtUTC = DateTime.UtcNow;
+        var keywords = new List<RecordKeywordDTO>();
+        foreach (var component in enumerable.Cast<object>())
+        {
+            var componentKeywords = GetPropertyValue(component, "Keywords") as IEnumerable;
+            if (componentKeywords == null)
+            {
+                continue;
+            }
+
+            foreach (var keyword in componentKeywords.Cast<object>())
+            {
+                if (GetFormKeyFromObject(keyword) is not { } keywordFormKey)
+                {
+                    continue;
+                }
+
+                keywords.Add(new RecordKeywordDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = plugin.ModKey,
+                    RecordType = recordType,
+                    FormKey = MapFormKey(formKey),
+                    KeywordFormKey = keywordFormKey,
+                    KeywordIndex = keywords.Count,
+                    ImportedAtUTC = importedAtUTC
+                });
+            }
+        }
+
+        return keywords;
+    }
+
+    private static List<RawRecordPayloadDTO> GetStaticRawPayloads(PluginDTO plugin, FormKey formKey, object? model, object? components)
+    {
+        var importedAtUTC = DateTime.UtcNow;
+        var payloads = new List<RawRecordPayloadDTO>();
+        AddRawPayload(payloads, plugin, RecordTypeCatalog.Static.RecordID, formKey, "Model.Data", 0, model?.GetType().Name ?? "Model", FormatHexValue(GetPropertyValue(model, "Data")), importedAtUTC);
+
+        if (components is IEnumerable enumerable)
+        {
+            foreach (var component in enumerable.Cast<object>().Select((value, index) => new { value, index }))
+            {
+                AddRawPayload(
+                    payloads,
+                    plugin,
+                    RecordTypeCatalog.Static.RecordID,
+                    formKey,
+                    "Components.REFL",
+                    component.index,
+                    component.value.GetType().Name,
+                    FormatHexValue(GetPropertyValue(component.value, "REFL")),
+                    importedAtUTC);
+            }
+        }
+
+        return payloads;
+    }
+
+    private static List<ContainerItemDTO> GetContainerItems(PluginDTO plugin, FormKey formKey, object? items)
+    {
+        if (items is not IEnumerable enumerable) return new List<ContainerItemDTO>();
+
+        var importedAtUTC = DateTime.UtcNow;
+        return enumerable
+            .Cast<object>()
+            .Select((item, itemIndex) => CreateContainerItem(plugin, formKey, item, itemIndex, importedAtUTC))
+            .Where(item => item != null)
+            .Cast<ContainerItemDTO>()
+            .ToList();
+    }
+
+    private static ContainerItemDTO? CreateContainerItem(PluginDTO plugin, FormKey formKey, object item, int itemIndex, DateTime importedAtUTC)
+    {
+        var itemData = GetPropertyValue(item, "Item") ?? item;
+        var itemFormKey = GetFormKeyFromObject(GetPropertyValue(itemData, "Item")) ?? GetFormKeyFromObject(itemData);
+        if (itemFormKey == null)
+        {
+            return null;
+        }
+
+        return new ContainerItemDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = plugin.ModKey,
+            FormKey = MapFormKey(formKey),
+            ItemIndex = itemIndex,
+            ItemFormKey = itemFormKey,
+            Count = GetPropertyNullableInt(item, "Count") ?? GetPropertyNullableInt(itemData, "Count"),
+            ImportedAtUTC = importedAtUTC
+        };
+    }
+
+    private static List<RawRecordPayloadDTO> GetContainerRawPayloads(PluginDTO plugin, FormKey formKey, object? model, object? components)
+    {
+        var importedAtUTC = DateTime.UtcNow;
+        var payloads = new List<RawRecordPayloadDTO>();
+        AddRawPayload(payloads, plugin, RecordTypeCatalog.Container.RecordID, formKey, "Model.Data", 0, model?.GetType().Name ?? "Model", FormatHexValue(GetPropertyValue(model, "Data")), importedAtUTC);
+        AddComponentRawPayloads(payloads, plugin, RecordTypeCatalog.Container.RecordID, formKey, components, importedAtUTC);
+        return payloads;
+    }
+
+    private static void AddComponentRawPayloads(
+        ICollection<RawRecordPayloadDTO> payloads,
+        PluginDTO plugin,
+        string recordType,
+        FormKey formKey,
+        object? components,
+        DateTime importedAtUTC)
+    {
+        if (components is not IEnumerable enumerable)
+        {
+            return;
+        }
+
+        foreach (var component in enumerable.Cast<object>().Select((value, index) => new { value, index }))
+        {
+            var componentType = component.value.GetType().Name;
+            foreach (var property in component.value.GetType().GetProperties())
+            {
+                var propertyName = property.Name;
+                if (!IsRawComponentPayloadProperty(propertyName))
+                {
+                    continue;
+                }
+
+                AddRawPayload(
+                    payloads,
+                    plugin,
+                    recordType,
+                    formKey,
+                    $"Components.{componentType}.{propertyName}",
+                    component.index,
+                    componentType,
+                    FormatHexValue(property.GetValue(component.value)),
+                    importedAtUTC);
+            }
+        }
+    }
+
+    private static bool IsRawComponentPayloadProperty(string propertyName)
+    {
+        return propertyName is "ANAM" or "BNAM" or "CNAM" or "REFL";
+    }
+
+    private static void AddRawPayload(
+        ICollection<RawRecordPayloadDTO> payloads,
+        PluginDTO plugin,
+        string recordType,
+        FormKey formKey,
+        string payloadSlot,
+        int payloadIndex,
+        string payloadType,
+        string? payloadValue,
+        DateTime importedAtUTC)
+    {
+        if (string.IsNullOrWhiteSpace(payloadValue))
+        {
+            return;
+        }
+
+        payloads.Add(new RawRecordPayloadDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = plugin.ModKey,
+            RecordType = recordType,
+            FormKey = MapFormKey(formKey),
+            PayloadSlot = payloadSlot,
+            PayloadIndex = payloadIndex,
+            PayloadType = payloadType,
+            PayloadValue = payloadValue,
+            ImportedAtUTC = importedAtUTC
+        });
+    }
+
     private static List<RecordSoundDTO> GetNamedSounds(PluginDTO plugin, string recordType, FormKey formKey, object record, params string[] soundSlots)
     {
         var importedAtUTC = DateTime.UtcNow;
@@ -620,9 +844,36 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         return sound == null ? null : GetPropertyValue(sound, "Start")?.ToString();
     }
 
-    private static object? GetPropertyValue(object source, string propertyName)
+    private static object? GetPropertyValue(object? source, string propertyName)
     {
-        return source.GetType().GetProperty(propertyName)?.GetValue(source);
+        return source?.GetType().GetProperty(propertyName)?.GetValue(source);
+    }
+
+    private static FormKeyDTO? GetFormKeyFromObject(object? value)
+    {
+        if (value == null) return null;
+        if (value is FormKey formKey) return MapFormKey(formKey);
+        if (GetPropertyValue(value, "IsNull") is bool isNull && isNull) return null;
+        if (GetPropertyValue(value, "FormKey") is FormKey linkedFormKey) return MapFormKey(linkedFormKey);
+        if (GetPropertyValue(value, "FormKeyNullable") is FormKey nullableFormKey) return MapFormKey(nullableFormKey);
+        return null;
+    }
+
+    private static int? GetPropertyNullableInt(object? source, string propertyName)
+    {
+        var value = GetPropertyValue(source, propertyName);
+        return value == null ? null : Convert.ToInt32(value, CultureInfo.InvariantCulture);
+    }
+
+    private static double? GetPropertyNullableDouble(object? source, string propertyName)
+    {
+        var value = GetPropertyValue(source, propertyName);
+        return value == null ? null : Convert.ToDouble(value, CultureInfo.InvariantCulture);
+    }
+
+    private static string? FormatObjectBoundsPoint(object? objectBounds, string propertyName)
+    {
+        return GetPropertyValue(objectBounds, propertyName)?.ToString();
     }
 
     private static string? FormatEnumerable(object? value)

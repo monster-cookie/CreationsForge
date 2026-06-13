@@ -46,8 +46,8 @@ try
 
         var game = parseResult.Game.Value;
         Log.Information("Starting CreationsForge import for {Game}; force full reimport: {ForceFullReimport}", game, parseResult.ForceFullReimport);
-        container.Resolve<IDatabaseSchemaInitializer>().Initialize();
-        var result = container.Resolve<GameImportDispatcher>().Import(game, parseResult.ForceFullReimport);
+        var migrationsApplied = container.Resolve<IDatabaseSchemaInitializer>().Initialize();
+        var result = container.Resolve<GameImportDispatcher>().Import(game, parseResult.ForceFullReimport || migrationsApplied);
         Log.Information("CreationsForge import completed for {Game}; plugins imported: {PluginsImported}", result.Game, result.PluginsImported);
         return 0;
     }

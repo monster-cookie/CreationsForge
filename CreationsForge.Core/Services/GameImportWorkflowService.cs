@@ -54,16 +54,17 @@ public class GameImportWorkflowService : IGameImportWorkflowService
                     IsIndeterminate = true
                 });
                 var migrationsApplied = DatabaseSchemaInitializer.Initialize();
+                var forceImport = forceFullReimport || migrationsApplied;
 
                 cancellationToken.ThrowIfCancellationRequested();
                 progress?.Report(new GameImportProgressDTO
                 {
                     StatusText = $"Importing {game} plugins and records...",
-                    DetailText = forceFullReimport ? "Running a full reimport. This may take several minutes." : "Unchanged plugins will be skipped.",
+                    DetailText = forceImport ? "Running a full reimport. This may take several minutes." : "Unchanged plugins will be skipped.",
                     ProgressValue = 50,
                     IsIndeterminate = true
                 });
-                var importResult = GameImportDispatcher.Import(game, forceFullReimport, progress, cancellationToken);
+                var importResult = GameImportDispatcher.Import(game, forceImport, progress, cancellationToken);
                 Logger.Information("Completed UI import workflow for {Game}; plugins imported: {PluginsImported}", game, importResult.PluginsImported);
                 progress?.Report(new GameImportProgressDTO
                 {

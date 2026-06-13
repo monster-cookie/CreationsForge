@@ -349,6 +349,12 @@ public class AssetPreviewPaneView : UserControl
                 return;
             }
 
+            if (PreviewModel.Meshes.Count == 0 && !PreviewModel.AllowFallbackRender)
+            {
+                DrawEmptyState(context, bounds, StatusText);
+                return;
+            }
+
             DrawSampleGeometry(context, bounds);
         }
 

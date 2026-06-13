@@ -45,6 +45,10 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         var magicEffects = MapMagicEffects(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
         var perks = MapPerks(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
+        var statics = MapStatics(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
+        var containers = MapContainers(plugin, mod);
 
         return new PluginRecordSetDTO
         {
@@ -56,7 +60,9 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             ActorValueInformation = actorValueInformation,
             NPCs = npcs,
             MagicEffects = magicEffects,
-            Perks = perks
+            Perks = perks,
+            Statics = statics,
+            Containers = containers
         };
     }
 
@@ -324,6 +330,58 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             .ToList();
     }
 
+    private static IReadOnlyList<StaticDTO> MapStatics(PluginDTO plugin, IFallout4ModGetter mod)
+    {
+        return GetRecordCollection(mod, "Statics")
+            .Select(record => new StaticDTO
+            {
+                Game = SupportedGame.Fallout4,
+                ModKey = plugin.ModKey,
+                FormKey = GetRequiredFormKey(record),
+                EditorID = GetPropertyString(record, "EditorID"),
+                FormVersion = GetPropertyInt(record, "FormVersion"),
+                MajorRecordFlags = GetPropertyInt(record, "Fallout4MajorRecordFlags"),
+                ImportedAtUTC = DateTime.UtcNow,
+                Version2 = GetPropertyNullableInt(record, "Version2"),
+                ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
+                ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
+                MaxAngle = GetPropertyNullableDouble(record, "MaxAngle"),
+                LeafAmplitude = GetPropertyNullableDouble(record, "LeafAmplitude"),
+                LeafFrequency = GetPropertyNullableDouble(record, "LeafFrequency"),
+                DNAMDataTypeState = FormatEnumerable(GetPropertyValue(record, "DNAMDataTypeState")),
+                Models = GetModels(plugin, RecordTypeCatalog.Static.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model")),
+                RawPayloads = GetModelRawPayloads(plugin, RecordTypeCatalog.Static.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model"))
+            })
+            .ToList();
+    }
+
+    private static IReadOnlyList<ContainerDTO> MapContainers(PluginDTO plugin, IFallout4ModGetter mod)
+    {
+        return GetRecordCollection(mod, "Containers")
+            .Select(record => new ContainerDTO
+            {
+                Game = SupportedGame.Fallout4,
+                ModKey = plugin.ModKey,
+                FormKey = GetRequiredFormKey(record),
+                EditorID = GetPropertyString(record, "EditorID"),
+                FormVersion = GetPropertyInt(record, "FormVersion"),
+                MajorRecordFlags = GetPropertyInt(record, "Fallout4MajorRecordFlags"),
+                ImportedAtUTC = DateTime.UtcNow,
+                Version2 = GetPropertyNullableInt(record, "Version2"),
+                ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
+                ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
+                Name = GetLocalizedEnglishText(record, "Name"),
+                Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
+                MajorFlags = GetPropertyStringOrNull(record, "MajorFlags"),
+                Items = GetContainerItems(plugin, GetRequiredRawFormKey(record), GetPropertyValue(record, "Items")),
+                Models = GetModels(plugin, RecordTypeCatalog.Container.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model")),
+                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Container.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
+                Sounds = GetNamedSounds(plugin, RecordTypeCatalog.Container.RecordID, GetRequiredRawFormKey(record), record, "OpenSound", "CloseSound"),
+                RawPayloads = GetModelRawPayloads(plugin, RecordTypeCatalog.Container.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model"))
+            })
+            .ToList();
+    }
+
     private static List<PerkRankDTO> GetPerkRanks(object record)
     {
         var ranks = GetPropertyValue(record, "Ranks") as IEnumerable;
@@ -465,6 +523,64 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             .Where(keyword => keyword != null)
             .Cast<RecordKeywordDTO>()
             .ToList();
+    }
+
+    private static List<ContainerItemDTO> GetContainerItems(PluginDTO plugin, FormKey formKey, object? items)
+    {
+        if (items is not IEnumerable enumerable) return new List<ContainerItemDTO>();
+
+        var importedAtUTC = DateTime.UtcNow;
+        return enumerable
+            .Cast<object>()
+            .Select((item, itemIndex) => CreateContainerItem(plugin, formKey, item, itemIndex, importedAtUTC))
+            .Where(item => item != null)
+            .Cast<ContainerItemDTO>()
+            .ToList();
+    }
+
+    private static ContainerItemDTO? CreateContainerItem(PluginDTO plugin, FormKey formKey, object item, int itemIndex, DateTime importedAtUTC)
+    {
+        var itemData = GetPropertyValue(item, "Item") ?? item;
+        var itemFormKey = GetFormKeyFromObject(GetPropertyValue(itemData, "Item")) ?? GetFormKeyFromObject(itemData);
+        if (itemFormKey == null)
+        {
+            return null;
+        }
+
+        return new ContainerItemDTO
+        {
+            Game = SupportedGame.Fallout4,
+            ModKey = plugin.ModKey,
+            FormKey = MapFormKey(formKey),
+            ItemIndex = itemIndex,
+            ItemFormKey = itemFormKey,
+            Count = GetPropertyNullableInt(item, "Count") ?? GetPropertyNullableInt(itemData, "Count"),
+            ImportedAtUTC = importedAtUTC
+        };
+    }
+
+    private static List<RawRecordPayloadDTO> GetModelRawPayloads(PluginDTO plugin, string recordType, FormKey formKey, object? model)
+    {
+        var payloads = new List<RawRecordPayloadDTO>();
+        var payloadValue = FormatHexValue(GetPropertyValue(model, "Data"));
+        if (string.IsNullOrWhiteSpace(payloadValue))
+        {
+            return payloads;
+        }
+
+        payloads.Add(new RawRecordPayloadDTO
+        {
+            Game = SupportedGame.Fallout4,
+            ModKey = plugin.ModKey,
+            RecordType = recordType,
+            FormKey = MapFormKey(formKey),
+            PayloadSlot = "Model.Data",
+            PayloadIndex = 0,
+            PayloadType = model?.GetType().Name ?? "Model",
+            PayloadValue = payloadValue,
+            ImportedAtUTC = DateTime.UtcNow
+        });
+        return payloads;
     }
 
     private static List<RecordSoundDTO> GetNamedSounds(PluginDTO plugin, string recordType, FormKey formKey, object record, params string[] soundSlots)
@@ -832,6 +948,11 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         return value is IEnumerable enumerable
             ? string.Join(", ", enumerable.Cast<object>().Select(item => item.ToString()))
             : value?.ToString();
+    }
+
+    private static string? FormatObjectBoundsPoint(object? objectBounds, string propertyName)
+    {
+        return GetPropertyValue(objectBounds, propertyName)?.ToString();
     }
 
     private static string? FormatHexValue(object? value)
