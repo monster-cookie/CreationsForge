@@ -1,3 +1,16 @@
+PRAGMA writable_schema = ON;
+
+UPDATE sqlite_schema
+SET sql = REPLACE(
+    sql,
+    'CHECK (ImportState IN (''Current'', ''Changed'', ''Missing'', ''Failed'', ''Unsupported''))',
+    'CHECK (ImportState IN (''Current'', ''Changed'', ''PartiallyImported'', ''Missing'', ''Failed'', ''Unsupported''))')
+WHERE type = 'table'
+  AND name = 'Plugins'
+  AND sql LIKE '%CHECK (ImportState IN (%Unsupported%';
+
+PRAGMA writable_schema = OFF;
+
 CREATE TABLE AssetArchiveFiles
 (
     Game                    TEXT    NOT NULL,

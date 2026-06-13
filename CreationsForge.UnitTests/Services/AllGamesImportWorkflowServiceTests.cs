@@ -4,6 +4,7 @@ using CreationsForge.Core.Enums;
 using CreationsForge.Core.Importers;
 using CreationsForge.Core.Importers.Interfaces;
 using CreationsForge.Core.Services;
+using CreationsForge.Core.Services.Interfaces;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Services;
@@ -20,7 +21,8 @@ public class AllGamesImportWorkflowServiceTests
             .Select(game => new TestGameImporter(game, callOrder))
             .ToList();
         var dispatcher = new GameImportDispatcher(importers);
-        var workflowService = new AllGamesImportWorkflowService(resetService, schemaInitializer, dispatcher);
+        var memoryPressureService = new TestMemoryPressureService();
+        var workflowService = new AllGamesImportWorkflowService(resetService, schemaInitializer, dispatcher, memoryPressureService);
 
         var result = await workflowService.ImportAllAsync(resetDatabase: true);
 
@@ -38,6 +40,7 @@ public class AllGamesImportWorkflowServiceTests
         result.MigrationsApplied.ShouldBeTrue();
         result.ImportResults.Count.ShouldBe(importers.Count);
         result.ImportResults.Select(importResult => importResult.Game).ShouldBe(Enum.GetValues<SupportedGame>());
+        memoryPressureService.PhaseNames.ShouldBe(Enum.GetValues<SupportedGame>().Select(game => $"{game} import"));
     }
 
     [Fact]
@@ -122,6 +125,16 @@ public class AllGamesImportWorkflowServiceTests
                 Game = Game,
                 PluginsImported = 1
             };
+        }
+    }
+
+    private sealed class TestMemoryPressureService : IMemoryPressureService
+    {
+        public List<string> PhaseNames { get; } = new();
+
+        public void CollectAfterBulkImportPhase(string phaseName)
+        {
+            PhaseNames.Add(phaseName);
         }
     }
 }

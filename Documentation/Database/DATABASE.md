@@ -189,6 +189,10 @@ Foreign keys:
 
 - `Game` references `Games.Game` with `ON DELETE CASCADE`.
 
+Constraints:
+
+- `ImportState` must be `Current`, `Changed`, `PartiallyImported`, `Missing`, `Failed`, or `Unsupported`.
+
 Indexes:
 
 - `IX_Plugins_Game_LoadOrderIndex` on `Game` and `LoadOrderIndex`

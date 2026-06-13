@@ -105,7 +105,9 @@ public class GameImporter : IGameImporter
             cancellationToken.ThrowIfCancellationRequested();
             var plugin = pluginsForLaterPhases[index];
             ReportPluginProgress(progress, plugin, index + 1, pluginsForLaterPhases.Count, "Importing records", "Reading approved shared record types.");
-            result.Records.Add(RecordImportService.ImportPluginRecords(plugin, RecordReader, progress, index + 1, pluginsForLaterPhases.Count, cancellationToken));
+            var recordImportResult = RecordImportService.ImportPluginRecords(plugin, RecordReader, progress, index + 1, pluginsForLaterPhases.Count, cancellationToken);
+            result.Records.Add(recordImportResult);
+            SavePartialImportStateWhenNeeded(plugin, recordImportResult);
         }
 
         transaction?.Complete();
@@ -286,6 +288,23 @@ public class GameImporter : IGameImporter
         PluginMasterReferenceRepository.DeleteStaleByPlugin(Game, plugin.ModKey, importedAtUTC);
     }
 
+    private void SavePartialImportStateWhenNeeded(PluginDTO plugin, RecordImportResultDTO recordImportResult)
+    {
+        if (recordImportResult.RecordsFailed == 0)
+        {
+            return;
+        }
+
+        plugin.ImportState = PluginImportState.PartiallyImported;
+        plugin.InvalidatedAtUTC = DateTime.UtcNow;
+        PluginRepository.Save(plugin);
+        Logger.Warning(
+            "Plugin {ModKey} for {Game} was partially imported with {RecordFailures} record failures",
+            plugin.ModKey.FileName,
+            Game,
+            recordImportResult.RecordsFailed);
+    }
+
     private PluginDTO CreatePluginState(
         PluginLoadOrderEntryDTO loadOrderEntry,
         PluginDTO? existingPlugin,
@@ -315,7 +334,7 @@ public class GameImporter : IGameImporter
         plugin.LastCheckedUTC = DateTime.UtcNow;
         plugin.SourceLastWriteUTCTicks = sourceInfo.LastWriteUTCTicks;
         plugin.SourceFileSizeBytes = sourceInfo.FileSizeBytes;
-        if (importState is PluginImportState.Failed or PluginImportState.Changed)
+        if (importState is PluginImportState.Failed or PluginImportState.Changed or PluginImportState.PartiallyImported)
         {
             plugin.InvalidatedAtUTC = DateTime.UtcNow;
         }

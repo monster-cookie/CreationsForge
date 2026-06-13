@@ -26,15 +26,20 @@ try
 
         var configurationStore = container.Resolve<IApplicationConfigurationStore>();
         SerilogConfigurator.Configure(configurationStore, writeToConsole: true);
+        var terminationDiagnosticsService = container.Resolve<IProcessTerminationDiagnosticsService>();
+        terminationDiagnosticsService.StartSession("CLI", SerilogConfigurator.CurrentLogPath);
 
         if (parseResult.ResetAll)
         {
             Log.Information("Starting CreationsForge Reset & Import All from CLI");
-            var allGamesResult = await container.Resolve<IAllGamesImportWorkflowService>().ImportAllAsync(resetDatabase: true);
+            var allGamesResult = await container.Resolve<IAllGamesImportWorkflowService>().ImportAllAsync(
+                resetDatabase: true,
+                cancellationToken: terminationDiagnosticsService.TerminationToken);
             Log.Information(
                 "CreationsForge Reset & Import All completed; games imported: {GamesImported}; plugins imported: {PluginsImported}",
                 allGamesResult.ImportResults.Count,
                 allGamesResult.ImportResults.Sum(result => result.PluginsImported));
+            terminationDiagnosticsService.MarkCleanShutdown("CLI reset-all completed");
             return 0;
         }
 
@@ -47,10 +52,19 @@ try
         var game = parseResult.Game.Value;
         Log.Information("Starting CreationsForge import for {Game}; force full reimport: {ForceFullReimport}", game, parseResult.ForceFullReimport);
         var migrationsApplied = container.Resolve<IDatabaseSchemaInitializer>().Initialize();
-        var result = container.Resolve<GameImportDispatcher>().Import(game, parseResult.ForceFullReimport || migrationsApplied);
+        var result = container.Resolve<GameImportDispatcher>().Import(
+            game,
+            parseResult.ForceFullReimport || migrationsApplied,
+            cancellationToken: terminationDiagnosticsService.TerminationToken);
         Log.Information("CreationsForge import completed for {Game}; plugins imported: {PluginsImported}", result.Game, result.PluginsImported);
+        terminationDiagnosticsService.MarkCleanShutdown($"CLI {game} import completed");
         return 0;
     }
+}
+catch (OperationCanceledException)
+{
+    Log.Warning("CreationsForge import canceled by process termination request");
+    return 130;
 }
 catch (Exception ex)
 {

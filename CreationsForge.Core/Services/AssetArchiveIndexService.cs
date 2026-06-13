@@ -30,16 +30,55 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
         "Strings"
     };
 
+    private static readonly string[] ImportArchiveNameTokens =
+    {
+        "meshes",
+        "textures",
+        "materials",
+        "misc",
+        "main"
+    };
+
+    private static readonly string[] MeshArchiveNameTokens =
+    {
+        "meshes",
+        "main",
+        "misc"
+    };
+
+    private static readonly string[] TextureArchiveNameTokens =
+    {
+        "textures",
+        "main",
+        "misc"
+    };
+
+    private static readonly string[] MaterialArchiveNameTokens =
+    {
+        "materials",
+        "main",
+        "misc"
+    };
+
+    private static readonly string[] DefaultLazyArchiveNameTokens =
+    {
+        "main",
+        "misc"
+    };
+
     private readonly IAssetArchiveIndexRepository AssetArchiveIndexRepository;
     private readonly IReadOnlyList<IAssetArchiveReader> ArchiveReaders;
     private readonly ILogger Logger = Log.ForContext<AssetArchiveIndexService>();
+    private readonly IMemoryPressureService? MemoryPressureService;
 
     public AssetArchiveIndexService(
         IAssetArchiveIndexRepository assetArchiveIndexRepository,
-        IEnumerable<IAssetArchiveReader> archiveReaders)
+        IEnumerable<IAssetArchiveReader> archiveReaders,
+        IMemoryPressureService? memoryPressureService = null)
     {
         AssetArchiveIndexRepository = assetArchiveIndexRepository;
         ArchiveReaders = archiveReaders.ToList();
+        MemoryPressureService = memoryPressureService;
     }
 
     public AssetArchiveIndexResultDTO IndexGameArchives(
@@ -57,7 +96,9 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
             return new AssetArchiveIndexResultDTO();
         }
 
-        var archives = GetArchives(dataFolder).ToList();
+        var archives = GetArchives(dataFolder)
+            .Where(IsImportArchiveCandidate)
+            .ToList();
         var result = new AssetArchiveIndexResultDTO
         {
             ArchivesDiscovered = archives.Count
@@ -113,6 +154,8 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
             {
                 result.ArchivesFailed++;
             }
+
+            ClearArchiveReaderCache(archiveReader);
         }
 
         Logger.Information(
@@ -123,6 +166,7 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
             result.ArchivesSkippedCurrent,
             result.ArchivesFailed,
             result.EntriesIndexed);
+        MemoryPressureService?.CollectAfterBulkImportPhase($"{game} asset archive indexing");
         return result;
     }
 
@@ -226,6 +270,14 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
                 ? $"Asset path {assetPath} appears archive-backed, but no archive reader is registered."
                 : BuildArchiveFailureMessage(assetPath, archiveAttemptMessages)
         };
+    }
+
+    private static void ClearArchiveReaderCache(IAssetArchiveReader archiveReader)
+    {
+        if (archiveReader is IAssetArchiveCache assetArchiveCache)
+        {
+            assetArchiveCache.ClearCache();
+        }
     }
 
     private BethesdaAssetReadResult? TryReadCurrentIndexedArchiveAsset(
@@ -390,8 +442,9 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
 
     private static IEnumerable<string> GetArchives(string dataFolder, string normalizedPath)
     {
+        var lazyArchiveNameTokens = GetLazyArchiveNameTokens(normalizedPath);
         return GetArchives(dataFolder)
-            .Where(path => ArchiveExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
+            .Where(path => IsLazyArchiveCandidate(path, lazyArchiveNameTokens))
             .OrderBy(path => GetArchivePreferenceScore(path, normalizedPath))
             .ThenBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase);
     }
@@ -403,25 +456,56 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
             .OrderBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase);
     }
 
+    private static bool IsImportArchiveCandidate(string archivePath)
+    {
+        var fileName = Path.GetFileNameWithoutExtension(archivePath);
+        return ImportArchiveNameTokens.Any(token => fileName.Contains(token, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsLazyArchiveCandidate(string archivePath, IReadOnlyList<string> archiveNameTokens)
+    {
+        var fileName = Path.GetFileNameWithoutExtension(archivePath);
+        return archiveNameTokens.Any(token => fileName.Contains(token, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static IReadOnlyList<string> GetLazyArchiveNameTokens(string normalizedPath)
+    {
+        if (StartsWithAnyRoot(normalizedPath, "Meshes") ||
+            StartsWithAnyRoot(normalizedPath, "Geometries"))
+        {
+            return MeshArchiveNameTokens;
+        }
+
+        if (StartsWithAnyRoot(normalizedPath, "Textures"))
+        {
+            return TextureArchiveNameTokens;
+        }
+
+        if (StartsWithAnyRoot(normalizedPath, "Materials"))
+        {
+            return MaterialArchiveNameTokens;
+        }
+
+        return DefaultLazyArchiveNameTokens;
+    }
+
     private static int GetArchivePreferenceScore(string archivePath, string normalizedPath)
     {
         var archiveName = Path.GetFileNameWithoutExtension(archivePath);
-        if ((StartsWithDirectory(normalizedPath, "Meshes") ||
-             StartsWithDirectory(normalizedPath, Path.Combine("Data", "Meshes"))) &&
+        if ((StartsWithAnyRoot(normalizedPath, "Meshes") ||
+             StartsWithAnyRoot(normalizedPath, "Geometries")) &&
             archiveName.Contains("meshes", StringComparison.OrdinalIgnoreCase))
         {
             return 0;
         }
 
-        if ((StartsWithDirectory(normalizedPath, "Textures") ||
-             StartsWithDirectory(normalizedPath, Path.Combine("Data", "Textures"))) &&
+        if (StartsWithAnyRoot(normalizedPath, "Textures") &&
             archiveName.Contains("textures", StringComparison.OrdinalIgnoreCase))
         {
             return 0;
         }
 
-        if ((StartsWithDirectory(normalizedPath, "Materials") ||
-             StartsWithDirectory(normalizedPath, Path.Combine("Data", "Materials"))) &&
+        if (StartsWithAnyRoot(normalizedPath, "Materials") &&
             archiveName.Contains("materials", StringComparison.OrdinalIgnoreCase))
         {
             return 0;
@@ -492,6 +576,12 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
     {
         return string.Equals(path, directoryName, StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith(directoryName + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool StartsWithAnyRoot(string path, string directoryName)
+    {
+        return StartsWithDirectory(path, directoryName) ||
+            StartsWithDirectory(path, Path.Combine("Data", directoryName));
     }
 
     private static string NormalizeAssetPath(string assetPath)

@@ -743,6 +743,9 @@ Indexes are documented in `DATABASE.md`. Migration `002_AddAssetArchiveIndex.sql
 for `RecordInstances` and typed parent tables, plus indexes for `Statics`, `Containers`, `ContainerItems`, and
 `RawRecordPayloads`.
 
+`Plugins.ImportState` is constrained to `Current`, `Changed`, `PartiallyImported`, `Missing`, `Failed`, or
+`Unsupported`.
+
 ## Inferred Relationships
 
 These columns contain record-reference data but are not declared SQLite foreign keys:

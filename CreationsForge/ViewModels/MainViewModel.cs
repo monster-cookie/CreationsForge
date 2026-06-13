@@ -37,7 +37,7 @@ public class MainViewModel : ViewModelBase
     private SupportedGameDTO? SelectedGame;
     private PluginDTO? SelectedPlugin;
     private IList<string> GameSuggestionList = [];
-    private IList<string> PluginSuggestionList = [];
+    private IList<PluginSuggestionViewModel> PluginSuggestionList = [];
     private string? SelectedGameDisplayNameValue;
     private string? SelectedPluginFileNameValue;
     private string ActiveGameText = string.Empty;
@@ -115,7 +115,7 @@ public class MainViewModel : ViewModelBase
         private set => SetProperty(ref GameSuggestionList, value);
     }
 
-    public IList<string> PluginSuggestions
+    public IList<PluginSuggestionViewModel> PluginSuggestions
     {
         get => PluginSuggestionList;
         private set => SetProperty(ref PluginSuggestionList, value);
@@ -371,8 +371,8 @@ public class MainViewModel : ViewModelBase
 
     public bool IsExactPluginSuggestion(string searchText)
     {
-        return PluginSuggestions.Any(pluginFileName =>
-            string.Equals(pluginFileName, searchText, StringComparison.OrdinalIgnoreCase));
+        return PluginSuggestions.Any(plugin =>
+            string.Equals(plugin.FileName, searchText, StringComparison.OrdinalIgnoreCase));
     }
 
     public void ChoosePluginSuggestion(string pluginFileName)
@@ -384,7 +384,7 @@ public class MainViewModel : ViewModelBase
     public void SubmitPluginQuery(string queryText)
     {
         ActivePluginSearchText = queryText;
-        if (!PluginSuggestions.Any(pluginFileName => string.Equals(pluginFileName, queryText, StringComparison.OrdinalIgnoreCase)))
+        if (!PluginSuggestions.Any(plugin => string.Equals(plugin.FileName, queryText, StringComparison.OrdinalIgnoreCase)))
         {
             return;
         }
@@ -529,7 +529,7 @@ public class MainViewModel : ViewModelBase
         MatchingPlugins = PluginSelectionService.SearchOpenablePluginsByFilename(SelectedGame.Game, searchText);
         PluginSuggestions = MatchingPlugins
             .Take(25)
-            .Select(plugin => plugin.ModKey.FileName)
+            .Select(plugin => new PluginSuggestionViewModel(plugin))
             .ToList();
     }
 
@@ -551,6 +551,15 @@ public class MainViewModel : ViewModelBase
 
         if (selectedPlugin is null)
         {
+            return;
+        }
+
+        if (!CanOpenPlugin(selectedPlugin))
+        {
+            SelectedPlugin = selectedPlugin;
+            SetActivePluginSelection(selectedPlugin.ModKey.FileName);
+            UpdateStatusBar();
+            StatusText = $"{selectedPlugin.ModKey.FileName} is {selectedPlugin.ImportState} and cannot be opened.";
             return;
         }
 
@@ -970,6 +979,12 @@ public class MainViewModel : ViewModelBase
             Padding = new Thickness(6, 3),
             Child = child
         };
+    }
+
+    private static bool CanOpenPlugin(PluginDTO plugin)
+    {
+        return plugin.ExistsOnDisk &&
+            plugin.ImportState is PluginImportState.Current or PluginImportState.Changed or PluginImportState.PartiallyImported or PluginImportState.Failed;
     }
 
     private string CreateRawPayloadDialogTitle(RecordComparisonRowViewModel row, RecordComparisonValueDTO value)

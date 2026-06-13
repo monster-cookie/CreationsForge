@@ -6,8 +6,9 @@ using K4os.Compression.LZ4.Streams;
 
 namespace CreationsForge.Bethesda.Assets.Archives.Bsa;
 
-public class BsaArchiveReader : IAssetArchiveReader
+public class BsaArchiveReader : IAssetArchiveReader, IAssetArchiveCache
 {
+    private const int MaximumCachedArchiveDirectories = 8;
     private const uint Magic = 0x00415342;
     private const int HeaderSize = 36;
     private const int LegacyFolderRecordSize = 16;
@@ -16,6 +17,9 @@ public class BsaArchiveReader : IAssetArchiveReader
     private const uint SizeCompressionToggle = 0x40000000;
     private const uint CompressedSizeMask = 0x3FFFFFFF;
     private const uint SizePayloadMask = 0x7FFFFFFF;
+    private readonly object DirectoryCacheLock = new();
+    private readonly Dictionary<string, BsaArchiveDirectoryCacheEntry> DirectoryCache = new(StringComparer.OrdinalIgnoreCase);
+    private long DirectoryCacheAccessCounter;
 
     public bool CanRead(string archivePath)
     {
@@ -24,12 +28,9 @@ public class BsaArchiveReader : IAssetArchiveReader
 
     public IReadOnlyList<AssetArchiveEntry> ListEntries(string archivePath)
     {
-        using var stream = File.OpenRead(archivePath);
-        using var reader = new BinaryReader(stream, Encoding.ASCII, leaveOpen: false);
-        var header = ReadHeader(reader, stream.Length);
-        var records = ReadFileRecords(reader, header, stream.Length);
+        var directory = GetArchiveDirectory(archivePath);
 
-        return records
+        return directory.Records
             .Select(record => new AssetArchiveEntry
             {
                 ArchivePath = archivePath,
@@ -45,12 +46,11 @@ public class BsaArchiveReader : IAssetArchiveReader
         try
         {
             var normalizedEntryPath = NormalizeEntryPath(entryPath);
+            var directory = GetArchiveDirectory(archivePath);
             using var stream = File.OpenRead(archivePath);
             using var reader = new BinaryReader(stream, Encoding.ASCII, leaveOpen: false);
-            var header = ReadHeader(reader, stream.Length);
-            var records = ReadFileRecords(reader, header, stream.Length);
 
-            var match = FindMatchingRecord(records, normalizedEntryPath);
+            var match = FindMatchingRecord(directory.Records, normalizedEntryPath);
             if (match.StatusMessage is not null)
             {
                 return CreateFailure(archivePath, entryPath, match.StatusMessage);
@@ -60,7 +60,7 @@ public class BsaArchiveReader : IAssetArchiveReader
             {
                 var record = match.Record.Value;
                 stream.Position = record.DataOffset;
-                var data = ReadEntryData(reader, header, record, stream.Length);
+                var data = ReadEntryData(reader, directory.Header, record, stream.Length);
                 return new AssetArchiveReadResult
                 {
                     IsSuccess = true,
@@ -71,7 +71,7 @@ public class BsaArchiveReader : IAssetArchiveReader
                 };
             }
 
-            return CreateFailure(archivePath, entryPath, BuildMissingEntryStatusMessage(records, entryPath, normalizedEntryPath));
+            return CreateFailure(archivePath, entryPath, BuildMissingEntryStatusMessage(directory.Records, entryPath, normalizedEntryPath));
         }
         catch (Exception exception) when (exception is EndOfStreamException or IOException or InvalidDataException or OverflowException)
         {
@@ -79,6 +79,64 @@ public class BsaArchiveReader : IAssetArchiveReader
                 ? CreateTooLargeFailure(archivePath, entryPath, exception.Message)
                 : CreateFailure(archivePath, entryPath, exception.Message);
         }
+    }
+
+    public void ClearCache()
+    {
+        lock (DirectoryCacheLock)
+        {
+            DirectoryCache.Clear();
+            DirectoryCacheAccessCounter = 0;
+        }
+    }
+
+    private BsaArchiveDirectory GetArchiveDirectory(string archivePath)
+    {
+        var fullPath = Path.GetFullPath(archivePath);
+        var fileInfo = new FileInfo(fullPath);
+        if (!fileInfo.Exists)
+        {
+            throw new FileNotFoundException("BSA archive was not found.", fullPath);
+        }
+
+        var cacheKey = new BsaArchiveDirectoryCacheKey(fullPath, fileInfo.Length, fileInfo.LastWriteTimeUtc.Ticks);
+        lock (DirectoryCacheLock)
+        {
+            if (DirectoryCache.TryGetValue(cacheKey.ArchivePath, out var cacheEntry) &&
+                cacheEntry.CacheKey.Length == cacheKey.Length &&
+                cacheEntry.CacheKey.LastWriteTimeUtcTicks == cacheKey.LastWriteTimeUtcTicks)
+            {
+                cacheEntry.LastAccess = ++DirectoryCacheAccessCounter;
+                return cacheEntry.Directory;
+            }
+        }
+
+        var directory = ReadArchiveDirectory(fullPath);
+        lock (DirectoryCacheLock)
+        {
+            DirectoryCache[cacheKey.ArchivePath] = new BsaArchiveDirectoryCacheEntry(cacheKey, directory, ++DirectoryCacheAccessCounter);
+            TrimArchiveDirectoryCache();
+        }
+
+        return directory;
+    }
+
+    private void TrimArchiveDirectoryCache()
+    {
+        while (DirectoryCache.Count > MaximumCachedArchiveDirectories)
+        {
+            var oldest = DirectoryCache.OrderBy(pair => pair.Value.LastAccess).First();
+            DirectoryCache.Remove(oldest.Key);
+        }
+    }
+
+    private static BsaArchiveDirectory ReadArchiveDirectory(string archivePath)
+    {
+        using var stream = File.OpenRead(archivePath);
+        using var reader = new BinaryReader(stream, Encoding.ASCII, leaveOpen: false);
+        var header = ReadHeader(reader, stream.Length);
+        var records = ReadFileRecords(reader, header, stream.Length);
+        return new BsaArchiveDirectory(header, records);
     }
 
     private static BsaArchiveHeader ReadHeader(BinaryReader reader, long archiveLength)

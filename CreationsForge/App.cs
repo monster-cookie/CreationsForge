@@ -12,6 +12,7 @@ using CreationsForge.Core.Configuration;
 using CreationsForge.Core.Configuration.Interfaces;
 using CreationsForge.Core.Database.Interfaces;
 using CreationsForge.Core.Models.Configuration;
+using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Services;
 using CreationsForge.Services.Interfaces;
 using CreationsForge.ViewModels;
@@ -49,6 +50,7 @@ public class App : Application
         try
         {
             Log.Information("Starting CreationsForge UI");
+            Container.Resolve<IProcessTerminationDiagnosticsService>().StartSession("UI", SerilogConfigurator.CurrentLogPath);
             Container.Resolve<IDatabaseSchemaInitializer>().Initialize();
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
@@ -147,15 +149,32 @@ public class App : Application
 
     public static void ApplyApplicationTextForeground(TextBlock textBlock)
     {
+        textBlock.Foreground = GetApplicationForegroundBrush();
+    }
+
+    public static IBrush GetApplicationForegroundBrush()
+    {
         if (Current?.Resources.TryGetResource(ApplicationForegroundBrushKey, Current.ActualThemeVariant, out var resource) == true &&
             resource is IBrush brush)
         {
-            textBlock.Foreground = brush;
+            return brush;
         }
+
+        if (Current?.ActualThemeVariant == ThemeVariant.Dark)
+        {
+            return new SolidColorBrush(Color.FromRgb(238, 241, 245));
+        }
+
+        return new SolidColorBrush(Color.FromRgb(24, 28, 32));
     }
 
     public static IBrush GetApplicationBrush(string resourceKey)
     {
+        if (resourceKey == ApplicationForegroundBrushKey)
+        {
+            return GetApplicationForegroundBrush();
+        }
+
         if (Current?.Resources.TryGetResource(resourceKey, Current.ActualThemeVariant, out var resource) == true &&
             resource is IBrush brush)
         {
@@ -224,6 +243,7 @@ public class App : Application
 
         HasShutDown = true;
         Log.Information("Exiting CreationsForge UI");
+        Container.Resolve<IProcessTerminationDiagnosticsService>().MarkCleanShutdown("UI exit");
         Container.Dispose();
         Log.CloseAndFlush();
     }

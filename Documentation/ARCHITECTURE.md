@@ -179,12 +179,20 @@ area. Deeper child sections such as perk ranks, patch generation, and conflict r
 `IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows.
 `IAssetFileResolverService` resolves readable local asset files from preview candidates by checking absolute paths,
 game data-folder loose files, normalized `Meshes` paths, and the database-backed asset archive index. The archive index
-stores archive metadata and normalized entry paths only, not extracted bytes. Game import builds or refreshes the
-archive index before plugin metadata import so preview clicks can reuse cached archive entry metadata. Lazy preview
-lookup still invalidates one archive at a time by comparing the archive file's last-write ticks and size, then reads
-only the matching archive entry through the owned read-only archive readers. Core DTOs describe record-owned candidate
-paths and optional mesh payloads without referencing Avalonia, OpenGL, Silk.NET, process launching, or binding
-primitives.
+stores archive metadata and normalized entry paths only, not extracted bytes. Game import builds or refreshes archive
+indexes only for preview-relevant archive names containing `meshes`, `textures`, `materials`, `misc`, or `main`, so
+large non-preview archives such as animation, voice, shader, terrain, and localization packs are skipped during import.
+BA2 texture archive indexing reads the archive header and name table only; full texture record and chunk parsing is
+reserved for reading the selected texture entry during preview. Preview lookup can still lazily build or refresh one
+archive index at a time by comparing the archive file's last-write ticks and size, then reads only the matching archive
+entry through the owned read-only archive readers. Lazy fallback lookup scopes archive candidates by asset path:
+`Meshes` and Starfield `geometries` paths search mesh/main/misc archives, `Textures` paths search texture/main/misc
+archives, `Materials` paths search material/main/misc archives, and other paths search main/misc archives. Core DTOs
+describe record-owned candidate paths and optional mesh payloads without referencing Avalonia, OpenGL, Silk.NET,
+process launching, or binding primitives.
+Bulk game import treats archive indexing and each game boundary as memory-pressure checkpoints: archive reader
+directory caches are cleared after each archive index attempt, and the all-games workflow runs an explicit
+large-object-heap-compacting collection after each game completes.
 Assets DTOs describe local-file resolution, in-memory asset reads, and archive extraction results. The presentation
 project owns `AssetPreviewPaneViewModel`, the Avalonia `OpenGlControlBase` renderer, Silk.NET OpenGL calls, render
 mesh conversion, sample-geometry fallback, and the external-open command. The presentation preview geometry adapter
@@ -232,6 +240,12 @@ Serilog is configured through `CreationsForge.Bootstrap.Logging.SerilogConfigura
 configured application-data `Logs` directory. CLI logs are written to the console and the configured application-data
 `Logs` directory. Logs include machine-name enrichment but do not include environment username enrichment by default.
 Services log workflow-level progress and failures. Repositories do not log.
+`ProcessTerminationDiagnosticsService` writes an application-data session marker with the current PID, log path, last
+import heartbeat, memory snapshot, process handle count, thread count, termination-request state, and clean-shutdown
+state. UI and CLI startup log an unexpected previous session when the prior marker was not cleanly shut down. Catchable
+process termination events such as console cancel and POSIX `SIGTERM`, `SIGINT`, and `SIGHUP` request import
+cancellation and update the session marker; hard kills such as `SIGKILL`, Windows task termination, and some OS memory
+kills are diagnosed only on the next launch from the last heartbeat.
 
 ## Shared Scripted Record Extension
 

@@ -7,11 +7,14 @@ namespace CreationsForge.Bootstrap.Logging;
 
 public static class SerilogConfigurator
 {
+    public static string? CurrentLogPath { get; private set; }
+
     public static void Configure(IApplicationConfigurationStore configurationStore, bool writeToConsole)
     {
         Directory.CreateDirectory(configurationStore.Current.LoggingDirectory);
         var startupTime = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss-fff");
         var logPath = Path.Combine(configurationStore.Current.LoggingDirectory, $"CreationsForge-{startupTime}.log");
+        CurrentLogPath = logPath;
 
         var loggerConfiguration = new LoggerConfiguration()
 #if DEBUG

@@ -14,6 +14,7 @@ public class ImportProgressViewModel : ViewModelBase
     private readonly IAllGamesImportWorkflowService AllGamesImportWorkflowService;
     private readonly IGameImportWorkflowService GameImportWorkflowService;
     private readonly ILogger Logger;
+    private readonly IProcessTerminationDiagnosticsService ProcessTerminationDiagnosticsService;
     private readonly IUserDialogService UserDialogService;
     private readonly CancellationTokenSource CancellationTokenSource = new();
     private SupportedGameDTO? SelectedGame;
@@ -32,12 +33,14 @@ public class ImportProgressViewModel : ViewModelBase
         IAllGamesImportWorkflowService allGamesImportWorkflowService,
         IApplicationNavigationService applicationNavigationService,
         IUserDialogService userDialogService,
+        IProcessTerminationDiagnosticsService processTerminationDiagnosticsService,
         ILogger logger)
     {
         GameImportWorkflowService = gameImportWorkflowService;
         AllGamesImportWorkflowService = allGamesImportWorkflowService;
         ApplicationNavigationService = applicationNavigationService;
         UserDialogService = userDialogService;
+        ProcessTerminationDiagnosticsService = processTerminationDiagnosticsService;
         Logger = logger.ForContext<ImportProgressViewModel>();
         CancelImportCommand = new RelayCommand(CancelImport);
     }
@@ -112,13 +115,16 @@ public class ImportProgressViewModel : ViewModelBase
 
         try
         {
+            using var linkedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
+                CancellationTokenSource.Token,
+                ProcessTerminationDiagnosticsService.TerminationToken);
             var progress = new Progress<GameImportProgressDTO>(UpdateProgress);
             if (ResetAndImportAll)
             {
                 await AllGamesImportWorkflowService.ImportAllAsync(
                     resetDatabase: true,
                     progress: progress,
-                    cancellationToken: CancellationTokenSource.Token);
+                    cancellationToken: linkedCancellationTokenSource.Token);
             }
             else
             {
@@ -126,7 +132,7 @@ public class ImportProgressViewModel : ViewModelBase
                     SelectedGame!.Game,
                     ForceFullReimport,
                     progress,
-                    CancellationTokenSource.Token);
+                    linkedCancellationTokenSource.Token);
             }
 
             ImportCompleted = true;
