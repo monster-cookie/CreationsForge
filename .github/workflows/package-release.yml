@@ -56,32 +56,10 @@ jobs:
   validate-release:
     name: Validate Release
     needs: validate-tag-source
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Restore
-        shell: pwsh
-        run: dotnet restore ./CreationsForge.sln
-
-      - name: Build
-        shell: pwsh
-        run: dotnet build ./CreationsForge.sln --configuration Release --no-restore
-
-      - name: Unit Tests
-        shell: pwsh
-        run: dotnet test ./CreationsForge.UnitTests/CreationsForge.UnitTests.csproj --configuration Release --no-build --filter "Category!=RequiresStarfield"
-
-      - name: Presentation Layer Tests
-        shell: pwsh
-        run: dotnet test ./CreationsForge.PresentationTests/CreationsForge.PresentationTests.csproj --configuration Release --no-build --filter "Category!=RequiresStarfield"
+    uses: ./.github/workflows/validate-pull-request.yml
+    with:
+      dotnet-version: ${{ vars.DOTNET_VERSION || '10.0.x' }}
+    secrets: inherit
 
   package-windows:
     name: Package Windows

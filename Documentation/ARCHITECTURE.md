@@ -28,9 +28,10 @@ read-only and preview-focused. The first archive implementations are minimal BA2
 can list entries and read uncompressed and zlib-compressed entries into memory. BA2 texture archives and Starfield
 compression variants that are not zlib are explicit follow-up work. The first NIF implementation is a minimal preview
 reader for Fallout 4/Skyrim Special Edition-style `BSTriShape` geometry and a narrow Starfield `BSGeometry` external
-`.mesh` preview slice that emits UI-neutral preview meshes. The reader can also resolve Starfield `.mat` material
-assets through the same external-asset callback and extract preview DDS texture references. Starfield layered material
-preview support is intentionally narrow: it tracks one primary texture, one overlay/decal texture, additive decal
+`.mesh` preview slice that expands packed positions through BSGeometry bounds metadata and emits UI-neutral preview
+meshes. The reader can also resolve Starfield `.mat` material assets through the same external-asset callback and
+extract preview DDS texture references. Starfield layered material preview support is intentionally narrow: it tracks
+one primary texture, one overlay/decal texture, additive decal
 blending hints, invisible-material skip hints, and a `materialsbeta.cdb` `STRT` string-table fallback for stale or
 indirect texture paths. Full NIF scene graph support, full Starfield material parity, full CDB material graph parsing,
 skeletons, collision, additional Starfield geometry variants, and unsupported vertex layouts remain follow-up work.
@@ -202,6 +203,12 @@ the existing UI-neutral asset-file resolver. The same resolver path is used when
 `.mat` material assets for preview texture references. Unsupported preview cases, archive-backed paths that cannot yet
 be read, parser gaps, and OpenGL renderer failures are logged through Serilog. Asset preview creation runs on a
 presentation background task with a loading state, and stale background results are ignored when selection changes.
+The OpenGL preview uses one interactive, bounds-based camera view with pointer orbit, pointer pan, wheel zoom, a
+reset-view control, and a small X/Y/Z orientation overlay. Preview render-space maps Creation Engine/NIF Z-up to render
+Y-up, so camera defaults and the orientation overlay follow that presentation-space mapping. Render mode and mesh
+selection remain presentation-only controls. Each background preview load creates its own Autofac lifetime scope before
+resolving preview scene services, because archive and database-backed asset resolution are scoped dependencies and must
+not be shared across overlapping preview tasks.
 
 ## Persistence Architecture
 

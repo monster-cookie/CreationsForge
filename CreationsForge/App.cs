@@ -5,6 +5,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using Avalonia.Themes.Fluent;
 using CreationsForge.Bootstrap.Composition;
 using CreationsForge.Bootstrap.Logging;
@@ -98,8 +99,8 @@ public class App : Application
         builder.RegisterType<ApplicationWindowService>().As<IApplicationWindowService>().SingleInstance();
         builder.RegisterType<ApplicationNavigationService>().As<IApplicationNavigationService>().SingleInstance();
         builder.RegisterType<AssetPreviewRenderMeshFactory>().As<IAssetPreviewRenderMeshFactory>().SingleInstance();
-        builder.RegisterType<AssetPreviewSceneService>().As<IAssetPreviewSceneService>().SingleInstance();
-        builder.RegisterType<BethesdaAssetPreviewGeometryReader>().As<IAssetPreviewGeometryReader>().SingleInstance();
+        builder.RegisterType<AssetPreviewSceneService>().As<IAssetPreviewSceneService>().InstancePerLifetimeScope();
+        builder.RegisterType<BethesdaAssetPreviewGeometryReader>().As<IAssetPreviewGeometryReader>().InstancePerLifetimeScope();
         builder.RegisterType<ExternalAssetOpenService>().As<IExternalAssetOpenService>().SingleInstance();
         builder.RegisterType<UserDialogService>().As<IUserDialogService>().SingleInstance();
         builder.RegisterInstance(Log.Logger).As<ILogger>().SingleInstance();
@@ -154,6 +155,11 @@ public class App : Application
 
     public static IBrush GetApplicationForegroundBrush()
     {
+        if (Current is null || !Dispatcher.UIThread.CheckAccess())
+        {
+            return new SolidColorBrush(Color.FromRgb(24, 28, 32));
+        }
+
         if (Current?.Resources.TryGetResource(ApplicationForegroundBrushKey, Current.ActualThemeVariant, out var resource) == true &&
             resource is IBrush brush)
         {

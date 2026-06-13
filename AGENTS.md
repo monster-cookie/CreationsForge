@@ -227,6 +227,8 @@ schema documentation.
 
 - Analyzer warnings are treated as errors.
 - Follow existing conventions in the repo. Do not introduce new naming or patterns.
+- Ensure the latest stable versions of libraries are used
+  - One caveat Mutagen has to remain on latest prerelease version
 
 ## TESTING
 

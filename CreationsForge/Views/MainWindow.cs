@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Automation;
 using Avalonia.Styling;
 using CreationsForge.Core.Models.Configuration;
 using CreationsForge.Services.Interfaces;
@@ -17,6 +18,7 @@ public class MainWindow : Window
         Width = 2100;
         Height = 1000;
         WindowState = WindowState.Maximized;
+        AutomationProperties.SetAutomationId(this, "MainWindow");
         ApplicationWindowService = applicationWindowService;
         ApplicationWindowService.RegisterMainWindow(this);
         _ = applicationNavigationService.ShowMainViewAsync(selectedGame: null, runConfiguredGameImport: true);

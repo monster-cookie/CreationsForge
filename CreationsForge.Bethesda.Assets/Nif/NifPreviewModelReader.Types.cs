@@ -376,6 +376,16 @@ public partial class NifPreviewModelReader
 
         public string Description => $"center {FormatVector(Center)}, extents {FormatVector(Extents)}";
 
+        public NifPreviewVector3 ExpandNormalizedPosition(NifPreviewVector3 position)
+        {
+            return new NifPreviewVector3
+            {
+                X = Center.X + (position.X * Extents.X),
+                Y = Center.Y + (position.Y * Extents.Y),
+                Z = Center.Z + (position.Z * Extents.Z)
+            };
+        }
+
         private static bool IsReasonableExtent(float value)
         {
             return !float.IsNaN(value) && !float.IsInfinity(value) && value > 0f && value <= MaxReasonableCoordinate;

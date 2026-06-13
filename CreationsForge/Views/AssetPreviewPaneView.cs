@@ -1,9 +1,11 @@
 using System.ComponentModel;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using CreationsForge.Core.DTOs.Assets;
@@ -22,6 +24,8 @@ public class AssetPreviewPaneView : UserControl
     private readonly TextBlock RendererDiagnosticText;
     private readonly AssetPreviewOpenGlControl PreviewSurface;
     private readonly AssetPreviewPaneViewModel ViewModel;
+    private AssetPreviewDragMode ActiveDragMode;
+    private Point LastDragPosition;
 
     public AssetPreviewPaneView(
         AssetPreviewPaneViewModel viewModel,
@@ -123,11 +127,30 @@ public class AssetPreviewPaneView : UserControl
                 {
                     FallbackSurface,
                     PreviewSurface,
+                    CreateRotationInputOverlay(),
                     RendererDiagnosticHost,
                     CreateLoadingOverlay()
                 }
             }
         };
+    }
+
+    private Control CreateRotationInputOverlay()
+    {
+        var overlay = new Border
+        {
+            Background = new SolidColorBrush(Colors.Transparent),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch,
+            Cursor = new Cursor(StandardCursorType.SizeAll)
+        };
+        overlay.PointerPressed += OnRotationOverlayPointerPressed;
+        overlay.PointerMoved += OnRotationOverlayPointerMoved;
+        overlay.PointerReleased += OnRotationOverlayPointerReleased;
+        overlay.PointerWheelChanged += OnRotationOverlayPointerWheelChanged;
+        overlay.PointerCaptureLost += OnRotationOverlayPointerCaptureLost;
+        AutomationProperties.SetAutomationId(overlay, "AssetPreviewInputOverlay");
+        return overlay;
     }
 
     private static Control CreateLoadingOverlay()
@@ -200,37 +223,35 @@ public class AssetPreviewPaneView : UserControl
 
     private Control CreatePreviewControls()
     {
-        var viewModeSelector = new ComboBox
-        {
-            Width = 110,
-            MinHeight = 30
-        };
-        viewModeSelector.Bind(ItemsControl.ItemsSourceProperty, new Binding(nameof(AssetPreviewPaneViewModel.ViewModes)));
-        viewModeSelector.Bind(SelectingItemsControl.SelectedItemProperty, new Binding(nameof(AssetPreviewPaneViewModel.SelectedViewMode))
-        {
-            Mode = BindingMode.TwoWay
-        });
-
         var renderModeSelector = new ComboBox
         {
             Width = 105,
             MinHeight = 30
         };
+        AutomationProperties.SetAutomationId(renderModeSelector, "AssetPreviewRenderModeSelector");
         renderModeSelector.Bind(ItemsControl.ItemsSourceProperty, new Binding(nameof(AssetPreviewPaneViewModel.RenderModes)));
         renderModeSelector.Bind(SelectingItemsControl.SelectedItemProperty, new Binding(nameof(AssetPreviewPaneViewModel.SelectedRenderMode))
         {
             Mode = BindingMode.TwoWay
         });
 
-        var orbitToggle = new CheckBox
+        var resetButton = new Button
         {
-            Content = "Orbit",
+            Content = "Reset view",
+            Padding = new Thickness(12, 6)
+        };
+        AutomationProperties.SetAutomationId(resetButton, "AssetPreviewResetViewButton");
+        resetButton.Bind(IsVisibleProperty, new Binding(nameof(AssetPreviewPaneViewModel.HasPreviewModel)));
+        resetButton.Click += (_, _) => PreviewSurface.ResetCamera();
+
+        var hint = new TextBlock
+        {
+            Text = "Left drag orbit; right or middle drag pan; wheel zoom",
+            FontSize = 12,
             VerticalAlignment = VerticalAlignment.Center
         };
-        orbitToggle.Bind(ToggleButton.IsCheckedProperty, new Binding(nameof(AssetPreviewPaneViewModel.IsOrbitEnabled))
-        {
-            Mode = BindingMode.TwoWay
-        });
+        App.ApplyApplicationTextForeground(hint);
+        hint.Bind(IsVisibleProperty, new Binding(nameof(AssetPreviewPaneViewModel.HasPreviewModel)));
 
         return new StackPanel
         {
@@ -238,9 +259,9 @@ public class AssetPreviewPaneView : UserControl
             Spacing = 10,
             Children =
             {
-                viewModeSelector,
                 renderModeSelector,
-                orbitToggle
+                resetButton,
+                hint
             }
         };
     }
@@ -248,10 +269,8 @@ public class AssetPreviewPaneView : UserControl
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(AssetPreviewPaneViewModel.PreviewModel) ||
-            e.PropertyName == nameof(AssetPreviewPaneViewModel.SelectedViewMode) ||
             e.PropertyName == nameof(AssetPreviewPaneViewModel.SelectedMeshSelection) ||
             e.PropertyName == nameof(AssetPreviewPaneViewModel.SelectedRenderMode) ||
-            e.PropertyName == nameof(AssetPreviewPaneViewModel.IsOrbitEnabled) ||
             e.PropertyName == nameof(AssetPreviewPaneViewModel.IsPreviewLoading))
         {
             RefreshViewport();
@@ -274,9 +293,7 @@ public class AssetPreviewPaneView : UserControl
         {
             MeshIndex = ViewModel.SelectedMeshSelection?.MeshIndex
         };
-        PreviewSurface.ViewMode = ViewModel.SelectedViewMode;
         PreviewSurface.RenderMode = ViewModel.SelectedRenderMode;
-        PreviewSurface.IsOrbitEnabled = ViewModel.IsOrbitEnabled;
         PreviewSurface.RequestNextFrameRendering();
         Logger.Information(
             "Asset preview surfaces refreshed with {MeshCount} meshes",
@@ -286,6 +303,99 @@ public class AssetPreviewPaneView : UserControl
     private void OnPreviewSurfaceDiagnosticsChanged(object? sender, EventArgs e)
     {
         RendererDiagnosticText.Text = PreviewSurface.DiagnosticText;
+    }
+
+    private void OnRotationOverlayPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is not Control overlay)
+        {
+            return;
+        }
+
+        var point = e.GetCurrentPoint(overlay);
+        if (point.Properties.IsLeftButtonPressed)
+        {
+            ActiveDragMode = AssetPreviewDragMode.Orbit;
+            PreviewSurface.BeginOrbitDrag();
+        }
+        else if (point.Properties.IsRightButtonPressed || point.Properties.IsMiddleButtonPressed)
+        {
+            ActiveDragMode = AssetPreviewDragMode.Pan;
+            PreviewSurface.BeginPanDrag();
+        }
+        else
+        {
+            return;
+        }
+
+        LastDragPosition = point.Position;
+        e.Pointer.Capture(overlay);
+        e.Handled = true;
+    }
+
+    private void OnRotationOverlayPointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (ActiveDragMode == AssetPreviewDragMode.None || sender is not Control overlay)
+        {
+            return;
+        }
+
+        var point = e.GetCurrentPoint(overlay);
+        if (ActiveDragMode == AssetPreviewDragMode.Orbit && !point.Properties.IsLeftButtonPressed ||
+            ActiveDragMode == AssetPreviewDragMode.Pan && !point.Properties.IsRightButtonPressed && !point.Properties.IsMiddleButtonPressed)
+        {
+            StopCameraDrag(e.Pointer);
+            return;
+        }
+
+        var position = point.Position;
+        var delta = position - LastDragPosition;
+        LastDragPosition = position;
+        if (ActiveDragMode == AssetPreviewDragMode.Orbit)
+        {
+            PreviewSurface.OrbitByDragDelta(delta.X, delta.Y);
+        }
+        else
+        {
+            PreviewSurface.PanByDragDelta(delta.X, delta.Y);
+        }
+
+        e.Handled = true;
+    }
+
+    private void OnRotationOverlayPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (ActiveDragMode == AssetPreviewDragMode.None)
+        {
+            return;
+        }
+
+        StopCameraDrag(e.Pointer);
+        e.Handled = true;
+    }
+
+    private void OnRotationOverlayPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
+    {
+        if (ActiveDragMode == AssetPreviewDragMode.None)
+        {
+            return;
+        }
+
+        ActiveDragMode = AssetPreviewDragMode.None;
+        PreviewSurface.EndCameraDrag();
+    }
+
+    private void StopCameraDrag(IPointer pointer)
+    {
+        ActiveDragMode = AssetPreviewDragMode.None;
+        PreviewSurface.EndCameraDrag();
+        pointer.Capture(null);
+    }
+
+    private void OnRotationOverlayPointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        PreviewSurface.ZoomByWheelDelta(e.Delta.Y);
+        e.Handled = true;
     }
 
     private static TextBlock CreateBoundText(string boundProperty, double fontSize, FontWeight fontWeight)
@@ -322,6 +432,13 @@ public class AssetPreviewPaneView : UserControl
             TextWrapping = TextWrapping.Wrap,
             Foreground = new SolidColorBrush(Color.FromRgb(230, 236, 244))
         };
+    }
+
+    private enum AssetPreviewDragMode
+    {
+        None,
+        Orbit,
+        Pan
     }
 
     private class AssetPreviewFallbackSurface : Control

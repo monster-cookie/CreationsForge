@@ -319,6 +319,11 @@ public partial class NifPreviewModelReader
                 Z = BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(vertexOffset + (sizeof(short) * 2), sizeof(short))) * StarfieldGeometryMeshPositionScale
             };
 
+            if (hasBounds)
+            {
+                position = geometryBounds.ExpandNormalizedPosition(position);
+            }
+
             if (useTransform)
             {
                 position = ApplyTransformChain(position, transformChain);

@@ -149,9 +149,16 @@ public class MainViewModelTests
     {
         return new AssetPreviewPaneViewModel(
             new FakeAssetPreviewPathResolverService(),
-            new FakeAssetPreviewSceneService(),
+            CreateAssetPreviewScope(),
             new FakeExternalAssetOpenService(),
             new LoggerConfiguration().CreateLogger());
+    }
+
+    private static ILifetimeScope CreateAssetPreviewScope()
+    {
+        var builder = new ContainerBuilder();
+        builder.RegisterType<FakeAssetPreviewSceneService>().As<IAssetPreviewSceneService>();
+        return builder.Build();
     }
 
     private static Color GetColor(PluginSuggestionViewModel plugin)

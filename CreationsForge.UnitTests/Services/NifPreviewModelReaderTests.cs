@@ -131,8 +131,11 @@ public class NifPreviewModelReaderTests
         result.Model.Meshes.Count.ShouldBe(1);
         result.Model.Meshes[0].Vertices.Count.ShouldBe(3);
         result.Model.Meshes[0].Indices.ShouldBe([0, 1, 2]);
-        result.Model.Meshes[0].Vertices[1].Position.X.ShouldBe(0.5000153f, 0.0001f);
-        result.Model.Meshes[0].Vertices[2].Position.Y.ShouldBe(0.5000153f, 0.0001f);
+        result.Model.Meshes[0].Vertices[0].Position.X.ShouldBe(0.25f, 0.0001f);
+        result.Model.Meshes[0].Vertices[0].Position.Y.ShouldBe(0.5f, 0.0001f);
+        result.Model.Meshes[0].Vertices[0].Position.Z.ShouldBe(0.75f, 0.0001f);
+        result.Model.Meshes[0].Vertices[1].Position.X.ShouldBe(0.3125f, 0.0001f);
+        result.Model.Meshes[0].Vertices[2].Position.Y.ShouldBe(0.625f, 0.0001f);
         result.Model.Meshes[0].Vertices.ShouldAllBe(vertex =>
             vertex.Normal.X == 0f &&
             vertex.Normal.Y == 0f &&
