@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Autofac;
 using CreationsForge.Bethesda.Assets.Files;
 using CreationsForge.Bethesda.Assets.Temp;
 using CreationsForge.Core.Configuration.Interfaces;
@@ -12,17 +13,17 @@ namespace CreationsForge.Services;
 public class ExternalAssetOpenService : IExternalAssetOpenService, IDisposable
 {
     private readonly IApplicationConfigurationStore ConfigurationStore;
-    private readonly IAssetFileResolverService AssetFileResolverService;
+    private readonly ILifetimeScope LifetimeScope;
     private readonly IAssetTempFileSession TempFileSession;
     private readonly ILogger Logger;
 
     public ExternalAssetOpenService(
         IApplicationConfigurationStore configurationStore,
-        IAssetFileResolverService assetFileResolverService,
+        ILifetimeScope lifetimeScope,
         ILogger logger)
     {
         ConfigurationStore = configurationStore;
-        AssetFileResolverService = assetFileResolverService;
+        LifetimeScope = lifetimeScope;
         TempFileSession = new AssetTempFileSession();
         Logger = logger.ForContext<ExternalAssetOpenService>();
     }
@@ -68,7 +69,9 @@ public class ExternalAssetOpenService : IExternalAssetOpenService, IDisposable
 
     private string? ResolveLocalAssetPath(AssetPreviewCandidateDTO candidate)
     {
-        var resolution = AssetFileResolverService.ResolveAssetFile(candidate);
+        using var scope = LifetimeScope.BeginLifetimeScope();
+        var assetFileResolverService = scope.Resolve<IAssetFileResolverService>();
+        var resolution = assetFileResolverService.ResolveAssetFile(candidate);
         if (resolution.Status == AssetFileResolutionStatus.ResolvedLooseFile && !string.IsNullOrWhiteSpace(resolution.ResolvedPath))
         {
             return resolution.ResolvedPath;
