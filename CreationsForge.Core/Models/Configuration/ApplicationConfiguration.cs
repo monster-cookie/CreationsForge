@@ -22,6 +22,8 @@ public class ApplicationConfiguration
 
     public ApplicationThemeFamily ThemeFamily { get; set; } = ApplicationThemeFamily.Semi;
 
+    public string? NifSkopeExecutablePath { get; set; }
+
     public string ApplicationDataDirectory { get; set; } = ApplicationConfigurationStore.DefaultApplicationDataDirectory;
 
     public string DatabaseDirectory { get; set; } = ApplicationConfigurationStore.DefaultDatabaseDirectory;

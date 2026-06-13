@@ -14,6 +14,11 @@ public interface IGameSelectionService
 
     ApplicationThemeFamily GetThemeFamily();
 
+    string? GetNifSkopeExecutablePath()
+    {
+        return null;
+    }
+
     void SetActiveGame(SupportedGame game);
 
     void SetThemeMode(ApplicationThemeMode themeMode);
@@ -25,4 +30,14 @@ public interface IGameSelectionService
     void SetActiveGameAndTheme(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode);
 
     void SetTheme(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode);
+
+    void SetActiveGameThemeAndNifSkopeExecutablePath(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, string? nifSkopeExecutablePath)
+    {
+        SetActiveGameAndTheme(game, themeFamily, themeMode);
+    }
+
+    void SetThemeAndNifSkopeExecutablePath(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, string? nifSkopeExecutablePath)
+    {
+        SetTheme(themeFamily, themeMode);
+    }
 }

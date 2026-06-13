@@ -15,5 +15,10 @@ public interface IApplicationWindowService
 
     Task<TResult> ShowDialogAsync<TResult>(Window dialog);
 
+    Task<string?> ShowNifSkopeExecutablePickerAsync()
+    {
+        return Task.FromResult<string?>(null);
+    }
+
     void Quit();
 }

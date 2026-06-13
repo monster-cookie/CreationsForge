@@ -58,8 +58,10 @@ for a selected-game import, a selected-game full reimport, and Reset & Import Al
 `ActivePluginLoadView` is shown before returning to the main workspace when the selected plugin is large enough that
 building its record browser should not happen inline in the main view.
 
-`SettingsView` lets users choose the active game, theme family, and theme mode. Saving settings persists the selected
-configuration through Core services, applies the selected Avalonia theme immediately, and returns to the main view.
+`SettingsView` lets users choose the active game, theme family, and theme mode. On Windows, it also lets users
+configure the fo76utils NifSkope executable path for external NIF inspection, either by typing a path or browsing for
+the executable. Saving settings persists the selected configuration through Core services, applies the selected
+Avalonia theme immediately, and returns to the main view.
 
 ## View Models
 
@@ -95,9 +97,11 @@ lifetime scope on the worker path, resolves `IRecordTreeService` inside that sco
 and returns to `MainView` with the selected plugin plus the prebuilt tree. This keeps database-backed services scoped
 to the background load instead of reusing the main view's scoped connection.
 
-`SettingsViewModel` exposes supported game options, theme family options, theme mode options, and Save/Cancel
-commands. Save persists the selected active game and theme through Core services, applies the theme through
-`IApplicationWindowService`, and returns to `MainView`. Cancel returns to `MainView` without changing settings.
+`SettingsViewModel` exposes supported game options, theme family options, theme mode options, the Windows-only
+NifSkope executable path setting, Browse, and Save/Cancel commands. Browse asks `IApplicationWindowService` for an
+executable path. Save persists the selected active game, theme, and NifSkope path through Core services, applies the
+theme through `IApplicationWindowService`, and returns to `MainView`. Cancel returns to `MainView` without changing
+settings.
 
 `RecordTreeItemViewModel`, `RecordComparisonColumnViewModel`, and `RecordComparisonRowViewModel` are presentation
 models used by the record browser and comparison workspace. They wrap Core DTO data into Avalonia-friendly state

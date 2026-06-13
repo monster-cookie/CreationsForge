@@ -16,6 +16,7 @@ public class SettingsViewModel : ViewModelBase
     private string? SelectedGameDisplayNameValue;
     private string SelectedThemeFamilyValue;
     private string SelectedThemeModeValue;
+    private string? NifSkopeExecutablePathValue;
 
     public SettingsViewModel(
         IGameSelectionService gameSelectionService,
@@ -33,7 +34,9 @@ public class SettingsViewModel : ViewModelBase
         SelectedGameDisplayNameValue = InitialSelectedGame?.DisplayName;
         SelectedThemeFamilyValue = GameSelectionService.GetThemeFamily().ToString();
         SelectedThemeModeValue = GameSelectionService.GetThemeMode().ToString();
+        NifSkopeExecutablePathValue = GameSelectionService.GetNifSkopeExecutablePath();
         SaveCommand = new RelayCommand(Save);
+        BrowseNifSkopeExecutableCommand = new AsyncRelayCommand(BrowseNifSkopeExecutableAsync, () => IsNifSkopeSettingVisible);
         CancelCommand = new RelayCommand(Cancel);
     }
 
@@ -47,7 +50,11 @@ public class SettingsViewModel : ViewModelBase
 
     public ICommand SaveCommand { get; }
 
+    public ICommand BrowseNifSkopeExecutableCommand { get; }
+
     public ICommand CancelCommand { get; }
+
+    public bool IsNifSkopeSettingVisible => OperatingSystem.IsWindows();
 
     public string? SelectedGameDisplayName
     {
@@ -67,6 +74,12 @@ public class SettingsViewModel : ViewModelBase
         set => SetProperty(ref SelectedThemeFamilyValue, value);
     }
 
+    public string? NifSkopeExecutablePath
+    {
+        get => NifSkopeExecutablePathValue;
+        set => SetProperty(ref NifSkopeExecutablePathValue, value);
+    }
+
     private void Save()
     {
         var selectedGame = SupportedGames.FirstOrDefault(game =>
@@ -75,11 +88,11 @@ public class SettingsViewModel : ViewModelBase
         var themeMode = GetSelectedThemeMode();
         if (selectedGame is not null)
         {
-            GameSelectionService.SetActiveGameAndTheme(selectedGame.Game, themeFamily, themeMode);
+            GameSelectionService.SetActiveGameThemeAndNifSkopeExecutablePath(selectedGame.Game, themeFamily, themeMode, GetSelectedNifSkopeExecutablePath());
         }
         else
         {
-            GameSelectionService.SetTheme(themeFamily, themeMode);
+            GameSelectionService.SetThemeAndNifSkopeExecutablePath(themeFamily, themeMode, GetSelectedNifSkopeExecutablePath());
         }
 
         ApplicationWindowService.ApplyTheme(themeFamily, themeMode);
@@ -89,6 +102,20 @@ public class SettingsViewModel : ViewModelBase
     private void Cancel()
     {
         _ = ApplicationNavigationService.ShowMainViewAsync(InitialSelectedGame, runConfiguredGameImport: false);
+    }
+
+    private async Task BrowseNifSkopeExecutableAsync()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var selectedPath = await ApplicationWindowService.ShowNifSkopeExecutablePickerAsync();
+        if (!string.IsNullOrWhiteSpace(selectedPath))
+        {
+            NifSkopeExecutablePath = selectedPath;
+        }
     }
 
     private SupportedGameDTO? GetConfiguredGame()
@@ -118,4 +145,15 @@ public class SettingsViewModel : ViewModelBase
             : ApplicationThemeMode.Dark;
     }
 
+    private string? GetSelectedNifSkopeExecutablePath()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return GameSelectionService.GetNifSkopeExecutablePath();
+        }
+
+        return string.IsNullOrWhiteSpace(NifSkopeExecutablePath)
+            ? null
+            : NifSkopeExecutablePath.Trim();
+    }
 }
