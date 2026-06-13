@@ -62,6 +62,7 @@ public class AssetPreviewPaneView : UserControl
             Padding = new Thickness(12, 6)
         };
         openButton.Bind(Button.CommandProperty, new Binding(nameof(AssetPreviewPaneViewModel.OpenExternallyCommand)));
+        openButton.Bind(IsVisibleProperty, new Binding(nameof(AssetPreviewPaneViewModel.IsExternalOpenVisible)));
 
         var header = new Grid
         {

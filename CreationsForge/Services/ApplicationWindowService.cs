@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Platform.Storage;
 using CreationsForge.Core.Models.Configuration;
 using CreationsForge.Services.Interfaces;
 
@@ -52,6 +53,31 @@ public class ApplicationWindowService : IApplicationWindowService
         }
 
         return await dialog.ShowDialog<TResult>(MainWindow);
+    }
+
+    public async Task<string?> ShowNifSkopeExecutablePickerAsync()
+    {
+        if (MainWindow is null)
+        {
+            throw new InvalidOperationException("The main window has not been registered.");
+        }
+
+        var files = await MainWindow.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Select fo76utils NifSkope executable",
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("NifSkope executable")
+                {
+                    Patterns = ["*.exe"]
+                },
+                FilePickerFileTypes.All
+            ]
+        });
+        return files.Count > 0
+            ? files[0].TryGetLocalPath()
+            : null;
     }
 
     public void Quit()

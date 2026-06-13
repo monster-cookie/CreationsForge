@@ -75,18 +75,20 @@ public class SettingsView : UserControl
         var gameBox = CreateComboBox(nameof(SettingsViewModel.GameOptions), nameof(SettingsViewModel.SelectedGameDisplayName));
         var themeFamilyBox = CreateComboBox(nameof(SettingsViewModel.ThemeFamilyOptions), nameof(SettingsViewModel.SelectedThemeFamily));
         var themeBox = CreateComboBox(nameof(SettingsViewModel.ThemeModeOptions), nameof(SettingsViewModel.SelectedThemeMode));
+        var nifSkopePathBox = CreateNifSkopePathInput();
 
         var form = new Grid
         {
             MaxWidth = 620,
             HorizontalAlignment = HorizontalAlignment.Left,
-            RowDefinitions = new RowDefinitions("Auto,Auto,Auto"),
+            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto"),
             RowSpacing = 18,
             Children =
             {
                 CreateField("Active game", gameBox, 0),
                 CreateField("Theme", themeFamilyBox, 1),
-                CreateField("Display mode", themeBox, 2)
+                CreateField("Display mode", themeBox, 2),
+                CreateNifSkopeField(nifSkopePathBox, 3)
             }
         };
         Grid.SetRow(form, 1);
@@ -159,5 +161,51 @@ public class SettingsView : UserControl
             Mode = BindingMode.TwoWay
         });
         return comboBox;
+    }
+
+    private static Control CreateNifSkopeField(Control input, int row)
+    {
+        var field = CreateField("fo76utils NifSkope executable", input, row);
+        field.Bind(IsVisibleProperty, new Binding(nameof(SettingsViewModel.IsNifSkopeSettingVisible)));
+        return field;
+    }
+
+    private static TextBox CreateTextBox(string textProperty)
+    {
+        var textBox = new TextBox
+        {
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            MinWidth = 360,
+            PlaceholderText = @"C:\Tools\NifSkope.exe"
+        };
+        textBox.Bind(TextBox.TextProperty, new Binding(textProperty)
+        {
+            Mode = BindingMode.TwoWay
+        });
+        return textBox;
+    }
+
+    private static Control CreateNifSkopePathInput()
+    {
+        var pathBox = CreateTextBox(nameof(SettingsViewModel.NifSkopeExecutablePath));
+        var browseButton = new Button
+        {
+            Content = "Browse",
+            Padding = new Thickness(12, 6),
+            MinWidth = 86
+        };
+        browseButton.Bind(Button.CommandProperty, new Binding(nameof(SettingsViewModel.BrowseNifSkopeExecutableCommand)));
+        Grid.SetColumn(browseButton, 1);
+
+        return new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,Auto"),
+            ColumnSpacing = 8,
+            Children =
+            {
+                pathBox,
+                browseButton
+            }
+        };
     }
 }

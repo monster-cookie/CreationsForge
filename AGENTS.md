@@ -50,6 +50,9 @@ Use these as primary documentation references:
 - [Mutagen Documentation](https://mutagen-modding.github.io/Mutagen/)
 - [Mutagen Code Repository](https://github.com/Mutagen-Modding/Mutagen)
 - [Spriggit Code Repository - Uses mutagen to export plugins as YAML](https://github.com/Mutagen-Modding/Spriggit)
+- [Fallout4.esm spriggit converted to YAML](C:\FalloutExtractions\Spriggit\Fallout4.esm)
+- [Skyrim.esm spriggit converted to YAML](C:\SkyrimExtractions\Spriggit\Skyrim.esm)
+- [Starfield.esm spriggit converted to YAML](C:\StarfieldExtractions\Spriggit\Starfield.esm)
 
 ## PROJECT KNOWLEDGE & DESIGN DOCUMENTATION
 
