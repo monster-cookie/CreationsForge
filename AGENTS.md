@@ -336,6 +336,7 @@ Do not include empty scaffolding sections, placeholder text, or repeated policy 
   - dotnet restore ./CreationsForge.sln
   - dotnet build ./CreationsForge.sln --no-restore
   - dotnet test ./CreationsForge.UnitTests/CreationsForge.UnitTests.csproj --no-build
+  - dotnet test ./CreationsForge.PresentationTests/CreationsForge.PresentationTests.csproj --no-build
 - Runtime validation, when relevant:
   - dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --game Starfield
   - dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --game Fallout4

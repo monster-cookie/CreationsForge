@@ -38,6 +38,10 @@ jobs:
         shell: pwsh
         run: dotnet build ./CreationsForge.sln --configuration Release --no-restore
 
-      - name: Test
+      - name: Unit Tests
         shell: pwsh
         run: dotnet test ./CreationsForge.UnitTests/CreationsForge.UnitTests.csproj --configuration Release --no-build --filter "Category!=RequiresStarfield"
+
+      - name: Presentation Layer Tests
+        shell: pwsh
+        run: dotnet test ./CreationsForge.PresentationTests/CreationsForge.PresentationTests.csproj --configuration Release --no-build --filter "Category!=RequiresStarfield"
