@@ -18,12 +18,14 @@ public class RecordChildImportServiceTests
         var rawRecordPayloadImportService = new TestRawRecordPayloadImportService();
         var soundImportService = new TestRecordSoundImportService();
         var scriptingAdapterImportService = new TestScriptingAdapterImportService();
+        var terminalMarkerParameterImportService = new TestTerminalMarkerParameterImportService();
         var service = new RecordChildImportService(
             modelImportService,
             keywordImportService,
             rawRecordPayloadImportService,
             soundImportService,
-            scriptingAdapterImportService);
+            scriptingAdapterImportService,
+            terminalMarkerParameterImportService);
         var record = CreateCompositeRecord();
 
         service.ReplaceRecordChildren(record, "TEST");
@@ -33,6 +35,7 @@ public class RecordChildImportServiceTests
         rawRecordPayloadImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
         soundImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
         scriptingAdapterImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
+        terminalMarkerParameterImportService.ReplaceRequests.ShouldBe([record]);
     }
 
     [Fact]
@@ -43,12 +46,14 @@ public class RecordChildImportServiceTests
         var rawRecordPayloadImportService = new TestRawRecordPayloadImportService();
         var soundImportService = new TestRecordSoundImportService();
         var scriptingAdapterImportService = new TestScriptingAdapterImportService();
+        var terminalMarkerParameterImportService = new TestTerminalMarkerParameterImportService();
         var service = new RecordChildImportService(
             modelImportService,
             keywordImportService,
             rawRecordPayloadImportService,
             soundImportService,
-            scriptingAdapterImportService);
+            scriptingAdapterImportService,
+            terminalMarkerParameterImportService);
 
         service.ReplaceRecordChildren(CreateFlatRecord(), "FLAT");
 
@@ -57,6 +62,7 @@ public class RecordChildImportServiceTests
         rawRecordPayloadImportService.ReplaceRequests.ShouldBeEmpty();
         soundImportService.ReplaceRequests.ShouldBeEmpty();
         scriptingAdapterImportService.ReplaceRequests.ShouldBeEmpty();
+        terminalMarkerParameterImportService.ReplaceRequests.ShouldBeEmpty();
     }
 
     private static CompositeRecordDTO CreateCompositeRecord()
@@ -97,7 +103,7 @@ public class RecordChildImportServiceTests
         };
     }
 
-    private sealed class CompositeRecordDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO, IHasRawRecordPayloadsRecordDTO, IHasSoundsRecordDTO, IHasScriptingAdaptersRecordDTO
+    private sealed class CompositeRecordDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO, IHasRawRecordPayloadsRecordDTO, IHasSoundsRecordDTO, IHasScriptingAdaptersRecordDTO, IHasTerminalMarkerParametersRecordDTO
     {
         public IList<ModelDTO> Models { get; set; } = new List<ModelDTO>();
 
@@ -108,6 +114,8 @@ public class RecordChildImportServiceTests
         public IList<RecordSoundDTO> Sounds { get; set; } = new List<RecordSoundDTO>();
 
         public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
+
+        public IList<TerminalMarkerParameterDTO> MarkerParameters { get; set; } = new List<TerminalMarkerParameterDTO>();
     }
 
     private sealed class FlatRecordDTO : RecordDTO
@@ -160,6 +168,16 @@ public class RecordChildImportServiceTests
         public void ReplaceRecordScriptingAdapters(IHasScriptingAdaptersRecordDTO record, string recordType)
         {
             ReplaceRequests.Add((record, recordType));
+        }
+    }
+
+    private sealed class TestTerminalMarkerParameterImportService : ITerminalMarkerParameterImportService
+    {
+        public IList<IHasTerminalMarkerParametersRecordDTO> ReplaceRequests { get; } = new List<IHasTerminalMarkerParametersRecordDTO>();
+
+        public void ReplaceRecordMarkerParameters(IHasTerminalMarkerParametersRecordDTO record)
+        {
+            ReplaceRequests.Add(record);
         }
     }
 }

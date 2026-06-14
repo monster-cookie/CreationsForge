@@ -53,8 +53,6 @@ Use these as primary references:
 - [Fallout4.esm spriggit converted to YAML](C:\FalloutExtractions\Spriggit\Fallout4.esm)
 - [Skyrim.esm spriggit converted to YAML](C:\SkyrimExtractions\Spriggit\Skyrim.esm)
 - [Starfield.esm spriggit converted to YAML](C:\StarfieldExtractions\Spriggit\Starfield.esm)
-- [Fo76Utils and libfo76utils](C:\Repositories\Public\fo76utils)
-- [Nifskope](C:\Repositories\Public\nifskope)
 
 ## PROJECT KNOWLEDGE & DESIGN DOCUMENTATION
 

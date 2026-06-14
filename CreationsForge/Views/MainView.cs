@@ -310,6 +310,7 @@ public class MainView : UserControl
             HorizontalAlignment = HorizontalAlignment.Stretch,
             VerticalAlignment = VerticalAlignment.Stretch
         };
+        AutomationProperties.SetAutomationId(comparisonGrid, "RecordComparisonGrid");
         comparisonGrid.Bind(TreeDataGrid.SourceProperty, new Binding(nameof(MainViewModel.RecordComparisonSource)));
         Grid.SetRow(comparisonTitle, 0);
         Grid.SetRow(comparisonGrid, 1);

@@ -25,6 +25,9 @@
 
     <ItemGroup>
         <ProjectReference Include="..\CreationsForge\CreationsForge.csproj" />
+        <ProjectReference Include="..\CreationsForge.Fallout4\CreationsForge.Fallout4.csproj" />
+        <ProjectReference Include="..\CreationsForge.Skyrim\CreationsForge.Skyrim.csproj" />
+        <ProjectReference Include="..\CreationsForge.Starfield\CreationsForge.Starfield.csproj" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(AVALONIA_UI_LICENSE_KEY)' != ''">

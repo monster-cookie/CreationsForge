@@ -5,6 +5,7 @@ using CreationsForge.Core.DTOs.Results;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Repositories.Interfaces;
 using CreationsForge.Core.Services.Interfaces;
+using System.Diagnostics;
 using Serilog;
 
 namespace CreationsForge.Core.Services;
@@ -70,15 +71,18 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
     private readonly IReadOnlyList<IAssetArchiveReader> ArchiveReaders;
     private readonly ILogger Logger = Log.ForContext<AssetArchiveIndexService>();
     private readonly IMemoryPressureService? MemoryPressureService;
+    private readonly IProcessTerminationDiagnosticsService? ProcessTerminationDiagnosticsService;
 
     public AssetArchiveIndexService(
         IAssetArchiveIndexRepository assetArchiveIndexRepository,
         IEnumerable<IAssetArchiveReader> archiveReaders,
-        IMemoryPressureService? memoryPressureService = null)
+        IMemoryPressureService? memoryPressureService = null,
+        IProcessTerminationDiagnosticsService? processTerminationDiagnosticsService = null)
     {
         AssetArchiveIndexRepository = assetArchiveIndexRepository;
         ArchiveReaders = archiveReaders.ToList();
         MemoryPressureService = memoryPressureService;
+        ProcessTerminationDiagnosticsService = processTerminationDiagnosticsService;
     }
 
     public AssetArchiveIndexResultDTO IndexGameArchives(
@@ -120,14 +124,25 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
         {
             cancellationToken.ThrowIfCancellationRequested();
             var archivePath = Path.GetFullPath(archives[index]);
-            progress?.Report(new GameImportProgressDTO
+            var fileInfo = new FileInfo(archivePath);
+            var progressSnapshot = new GameImportProgressDTO
             {
                 StatusText = $"Indexing {game} asset archives",
                 DetailText = Path.GetFileName(archivePath),
                 ProgressValue = index + 1,
                 ProgressMaximum = archives.Count,
                 IsIndeterminate = false
-            });
+            };
+            progress?.Report(progressSnapshot);
+            ProcessTerminationDiagnosticsService?.UpdateHeartbeat($"{game} asset archive indexing", progressSnapshot);
+            Logger.Information(
+                "Starting asset archive index for {Game}; archive {ArchiveIndex}/{ArchiveCount}; path: {ArchivePath}; size bytes: {SourceFileSizeBytes}; last write UTC: {SourceLastWriteUTC}",
+                game,
+                index + 1,
+                archives.Count,
+                archivePath,
+                fileInfo.Exists ? fileInfo.Length : 0,
+                fileInfo.Exists ? fileInfo.LastWriteTimeUtc : null);
 
             var archiveReader = ArchiveReaders.FirstOrDefault(reader => reader.CanRead(archivePath));
             if (archiveReader == null)
@@ -362,8 +377,17 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
 
         try
         {
+            var listStopwatch = Stopwatch.StartNew();
             var entries = archiveReader.ListEntries(archivePath)
-                .Select(entry => CreateEntryDTO(game, archivePath, entry));
+                .Select(entry => CreateEntryDTO(game, archivePath, entry))
+                .ToList();
+            listStopwatch.Stop();
+            Logger.Information(
+                "Listed asset archive entries for {Game}; archive path: {ArchivePath}; entry count: {EntryCount}; elapsed ms: {ElapsedMilliseconds}",
+                game,
+                archivePath,
+                entries.Count,
+                listStopwatch.ElapsedMilliseconds);
             AssetArchiveIndexRepository.SaveArchiveFile(new AssetArchiveFileDTO
             {
                 Game = game,
@@ -376,7 +400,15 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
                 SourceFileSizeBytes = fileInfo.Length,
                 IndexedAtUTC = DateTime.UtcNow
             });
+            var replaceStopwatch = Stopwatch.StartNew();
             var entryCount = AssetArchiveIndexRepository.ReplaceArchiveEntries(game, Path.GetFullPath(archivePath), entries);
+            replaceStopwatch.Stop();
+            Logger.Information(
+                "Replaced asset archive index entries for {Game}; archive path: {ArchivePath}; entry count: {EntryCount}; elapsed ms: {ElapsedMilliseconds}",
+                game,
+                archivePath,
+                entryCount,
+                replaceStopwatch.ElapsedMilliseconds);
             Logger.Information(
                 "Indexed asset archive {ArchivePath} for {Game} with {EntryCount} entries",
                 archivePath,

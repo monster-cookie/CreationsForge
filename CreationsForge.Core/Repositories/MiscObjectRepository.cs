@@ -41,7 +41,7 @@ public class MiscObjectRepository : TypedRecordRepositoryBase, IMiscObjectReposi
         SaveRecordInstance(dto);
         Database.Execute(
             """
-            INSERT OR REPLACE INTO MiscObjects (
+            INSERT OR REPLACE INTO MiscItems (
                 Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
                 EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Name, ShortName, Value, Weight, DirtinessScale,
                 FeaturedItemMessage_ModKey_Name, FeaturedItemMessage_ModKey_Type, FeaturedItemMessage_ModKey_FileName, FeaturedItemMessage_FormKey_ID, FLAG)

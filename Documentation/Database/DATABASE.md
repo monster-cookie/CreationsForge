@@ -8,11 +8,13 @@ The application uses a local SQLite database. The schema is defined by embedded 
 - `001_CreateMultiGameImportSchema.sql` creates the application tables, keys, indexes, constraints, and views.
 - `002_AddAssetArchiveIndex.sql` adds the metadata-only asset archive index/cache tables, the `Statics` and
   `Containers` typed record tables, `ContainerItems`, and `RawRecordPayloads`.
+- `003_Migrations003.sql` renames `MiscObjects` to `MiscItems` and adds the `Books`, `Doors`, `Terminals`, and
+  `TerminalMarkerParameters` tables.
 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains thirty-three tables:
+The application schema contains thirty-seven tables:
 
 - `Games`
 - `Plugins`
@@ -25,15 +27,19 @@ The application schema contains thirty-three tables:
 - `FormListItems`
 - `GameSettings`
 - `Globals`
-- `MiscObjects`
+- `MiscItems`
 - `Keywords`
 - `ActorValueInformation`
 - `NPCs`
 - `MagicEffects`
 - `Perks`
 - `Statics`
+- `Books`
+- `Doors`
 - `Containers`
 - `ContainerItems`
+- `Terminals`
+- `TerminalMarkerParameters`
 - `RecordKeywords`
 - `PerkRanks`
 - `PerkRankEffects`
@@ -419,10 +425,11 @@ Persistence behavior:
 
 ### Shared scripted parent records
 
-`MiscObjects`, `Keywords`, `ActorValueInformation`, `NPCs`, `MagicEffects`, `Perks`, `Statics`, and `Containers` use
+`MiscItems`, `Keywords`, `ActorValueInformation`, `NPCs`, `MagicEffects`, `Perks`, `Statics`, `Books`, `Doors`,
+`Containers`, and `Terminals` use
 the common typed record key and metadata columns.
 
-`MiscObjects` additional columns:
+`MiscItems` additional columns:
 
 - `Name` (`TEXT`, nullable)
 - `ShortName` (`TEXT`, nullable)
@@ -496,12 +503,38 @@ the common typed record key and metadata columns.
 - `Unused` (`TEXT`, nullable)
 - `DNAMDataTypeState` (`TEXT`, nullable)
 
+`Books` additional columns:
+
+- `Version2` (`INTEGER`, nullable)
+- `ObjectBounds_First` and `ObjectBounds_Second` (`TEXT`, nullable)
+- nullable decomposed FormKey columns for `InventoryTransform`
+- `XALG` (`INTEGER`, nullable)
+- `Name`, `Text`, `Flags`, `TeachesType`, `TeachesRawContent`, `DataSlateType`, `Description`,
+  `DataSlateHeaderLeft`, and `DataSlateHeaderRight` (`TEXT`, nullable)
+- `Value` (`INTEGER`, nullable)
+- `Weight` (`REAL`, nullable)
+
+`Doors` additional columns:
+
+- `Version2` (`INTEGER`, nullable)
+- `ObjectBounds_First` and `ObjectBounds_Second` (`TEXT`, nullable)
+- `Name`, `Flags`, `SoundLevel`, and `FacingAxisOverride` (`TEXT`, nullable)
+- nullable decomposed FormKey columns for `NativeTerminal`
+
 `Containers` additional columns:
 
 - `Version2` (`INTEGER`, nullable)
 - `ObjectBounds_First` and `ObjectBounds_Second` (`TEXT`, nullable)
 - `Name`, `Flags`, and `MajorFlags` (`TEXT`, nullable)
 - nullable decomposed FormKey columns for `NativeTerminal`
+
+`Terminals` additional columns:
+
+- `Version2` (`INTEGER`, nullable)
+- `ObjectBounds_First` and `ObjectBounds_Second` (`TEXT`, nullable)
+- nullable decomposed FormKey columns for `Menu` and `FurnitureTemplate`
+- `Background`, `Name`, `PNAM`, `FNAM`, `JNAM`, `GNAM`, `WorkbenchData`, and `MarkerModel` (`TEXT`, nullable)
+- `MarkerFlags` (`INTEGER`, nullable)
 
 Foreign keys:
 
@@ -521,12 +554,15 @@ Persistence behavior:
 - Current imported rows are upserted.
 - Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful typed-record import
   batch are deleted as stale.
-- `MiscObjects` currently persists the parent scalar row, shared keyword rows, shared model rows, and scripting
-  adapters. `Statics` persists parent scalar rows, shared model rows, shared keyword rows when present, and raw
-  opaque payload rows. `Containers` persists parent scalar rows, child item rows, shared model rows, shared keyword
-  rows when present, shared sound rows when present, and raw opaque payload rows. `NPCs` and `MagicEffects` persist
-  shared keyword rows. `MiscObjects` and `MagicEffects` persist shared sound rows. `MagicEffects` persists
-  Spriggit-flattened DATA fields directly on the parent row.
+- `MiscItems` currently persists the parent scalar row, shared keyword rows, shared model rows, shared sound rows,
+  and scripting adapters. `Statics` persists parent scalar rows, shared model rows, shared keyword rows when present,
+  and raw opaque payload rows. `Books` persist parent scalar rows, shared model rows, shared keyword rows, shared
+  sound rows, scripting adapters, and raw payload rows. `Doors` persist parent scalar rows, shared model rows,
+  shared keyword rows, shared sound rows, and raw payload rows. `Containers` persist parent scalar rows, child item
+  rows, shared model rows, shared keyword rows when present, shared sound rows when present, and raw opaque payload
+  rows. `Terminals` persist parent scalar rows, shared model rows, shared keyword rows, scripting adapters, raw
+  payload rows, and `TerminalMarkerParameters` rows. `NPCs` and `MagicEffects` persist shared keyword rows.
+  `MagicEffects` persists shared sound rows and Spriggit-flattened DATA fields directly on the parent row.
 
 ### ContainerItems
 
@@ -556,6 +592,35 @@ Persistence behavior:
 - Current imported rows are upserted after their owning container row is saved.
 - Existing item rows for the same container are deleted before replacement so removed items do not remain stale.
 - Stale typed-record deletion removes item rows through the declared `Containers` cascade.
+
+### TerminalMarkerParameters
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `Parameter_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `Offset`, `EntryTypes`, and `ExitTypes` (`TEXT`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `Terminals` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `Parameter_Index` and `FormKey_ID` must be greater than or equal to zero.
+
+Indexes:
+
+- `IX_TerminalMarkerParameters_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning terminal row is saved.
+- Existing marker-parameter rows for the same terminal are deleted before replacement so removed parameter slots do not
+  remain stale.
+- Stale typed-record deletion removes marker-parameter rows through the declared `Terminals` cascade.
 
 ### RecordKeywords
 
@@ -854,6 +919,24 @@ These columns carry record-reference identity but do not declare SQLite foreign 
 
 - `FormLists.AddToList_ModKey_Name`, `AddToList_ModKey_Type`, `AddToList_ModKey_FileName`,
   and `AddToList_FormKey_ID`
+- `MiscItems.FeaturedItemMessage_ModKey_Name`, `FeaturedItemMessage_ModKey_Type`,
+  `FeaturedItemMessage_ModKey_FileName`, and `FeaturedItemMessage_FormKey_ID`
+- `Keywords.AttractionRule_ModKey_Name`, `AttractionRule_ModKey_Type`, `AttractionRule_ModKey_FileName`,
+  and `AttractionRule_FormKey_ID`
+- `NPCs.Voice_*`, `Race_*`, `CombatOverridePackageList_*`, `CombatStyle_*`, `DefaultPackageList_*`,
+  and `CrimeFaction_*`
+- `MagicEffects.ActorValue2_*`, `ResistValue_*`, `PerkToApply_*`, `EquipAbility_*`, `Explosion_*`,
+  `CastingArt_*`, `HitEffectArt_*`, `HitShader_*`, `ImageSpaceModifier_*`, `ImpactData_*`, and `Projectile_*`
+- `Perks.Restriction_*` and `Training_*`
+- `Books.InventoryTransform_ModKey_Name`, `InventoryTransform_ModKey_Type`,
+  `InventoryTransform_ModKey_FileName`, and `InventoryTransform_FormKey_ID`
+- `Doors.NativeTerminal_ModKey_Name`, `NativeTerminal_ModKey_Type`, `NativeTerminal_ModKey_FileName`,
+  and `NativeTerminal_FormKey_ID`
+- `Containers.NativeTerminal_ModKey_Name`, `NativeTerminal_ModKey_Type`, `NativeTerminal_ModKey_FileName`,
+  and `NativeTerminal_FormKey_ID`
+- `Terminals.Menu_ModKey_Name`, `Menu_ModKey_Type`, `Menu_ModKey_FileName`, and `Menu_FormKey_ID`
+- `Terminals.FurnitureTemplate_ModKey_Name`, `FurnitureTemplate_ModKey_Type`,
+  `FurnitureTemplate_ModKey_FileName`, and `FurnitureTemplate_FormKey_ID`
 - `FormListItems.Item_ModKey_Name`, `Item_ModKey_Type`, `Item_ModKey_FileName`, and `Item_FormKey_ID`
 - `ModelMaterialSwaps.MaterialSwap_ModKey_Name`, `MaterialSwap_ModKey_Type`, `MaterialSwap_ModKey_FileName`,
   and `MaterialSwap_FormKey_ID`

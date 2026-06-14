@@ -17,9 +17,10 @@ selected game installation metadata, load-order plugins, source fingerprints, he
 declared plugin master references. Thin game plugin readers expose the shared Core import contract over those services.
 Plugin metadata import avoids typed record enumeration; record counts are read from header stats. Game-specific plugin
 extension importers persist audited scalar plugin header fields into extension tables. Starfield, Fallout 4, and
-Skyrim map the currently approved cross-game typed records: FormLists, GameSettings, Globals, MiscObjects, Keywords,
-ActorValueInformation, NPCs, MagicEffects, Perks, and Statics. Imports currently create/update the selected `Games`,
-`Plugins`, `PluginMasterReferences`, game-specific plugin extension rows, and approved typed record rows.
+Skyrim map the currently approved cross-game typed records: FormLists, GameSettings, Globals, MiscItems, Keywords,
+ActorValueInformation, NPCs, MagicEffects, Perks, Statics, and Containers. Starfield also maps Books, Doors, and
+Terminals into typed detail rows. Imports currently create/update the selected `Games`, `Plugins`,
+`PluginMasterReferences`, game-specific plugin extension rows, and approved typed record rows.
 
 ## Projects
 
@@ -90,9 +91,9 @@ imported-record tree for the current persisted record types.
 - Creates and migrates a SQLite database through DbUp.
 - Uses DbUp `SchemaVersions` as the migration-state source of truth.
 - Creates a multi-game application schema for `Games`, `Plugins`, `PluginMasterReferences`, `FormLists`,
-  `FormListItems`, `GameSettings`, `Globals`, `MiscObjects`, `Keywords`, `ActorValueInformation`, `NPCs`,
-  `MagicEffects`, `Perks`, `Statics`, `Containers`, `ContainerItems`, shared model data, shared keyword lists, shared
-  sounds, shared raw payload data, and shared scripting adapter data.
+  `FormListItems`, `GameSettings`, `Globals`, `MiscItems`, `Keywords`, `ActorValueInformation`, `NPCs`,
+  `MagicEffects`, `Perks`, `Statics`, `Books`, `Doors`, `Containers`, `Terminals`, `TerminalMarkerParameters`,
+  shared model data, shared keyword lists, shared sounds, shared raw payload data, and shared scripting adapter data.
 - Preserves plugin source-fingerprint behavior for unchanged, changed, missing, failed, and unsupported plugin states.
 - Preserves record import accounting for the approved typed record types.
 - Provides an initial Avalonia UI with active game and active plugin autocomplete, warning before long first/full
@@ -121,14 +122,16 @@ imported-record tree for the current persisted record types.
 
 ## Shared Record Child Import
 
-Starfield, Fallout 4, and Skyrim import typed record parent rows for MiscObjects (`MISC`), Keywords (`KYWD`),
-ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), Perks (`PERK`), Statics (`STAT`), and Containers
-(`CONT`). These records are mapped in their game adapter projects and persisted through Core DTOs, repositories, and
-typed importers. Scripting adapters are persisted for `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK` when
-the source record exposes virtual-machine adapter data; `FLST` and `GMST` remain flat records without scripting
-adapter persistence. Shared child rows for models, keywords, sounds, raw payloads, and scripting adapters are
-dispatched by Core DTO capability interfaces and linked through the owning `RecordInstances` row.
+Starfield, Fallout 4, and Skyrim import typed record parent rows for MiscItems (`MISC`), Keywords (`KYWD`),
+ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), Perks (`PERK`), Statics (`STAT`), and
+Containers (`CONT`). Starfield also imports Books (`BOOK`), Doors (`DOOR`), and Terminals (`TERM`) into typed detail
+tables. These records are mapped in their game adapter projects and persisted through Core DTOs, repositories, and
+typed importers. Scripting adapters are persisted for `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `BOOK`,
+and `TERM` when the source record exposes virtual-machine adapter data; `FLST`, `GMST`, and `DOOR` remain flat
+records without scripting adapter persistence. Shared child rows for models, keywords, sounds, raw payloads,
+scripting adapters, and terminal marker parameters are dispatched by Core DTO capability interfaces and linked through
+the owning `RecordInstances` row or terminal parent row.
 
-The current `MISC` implementation persists the parent scalar row, shared model rows, and scripting adapters. The
-current `CONT` implementation persists the parent scalar row, item rows, shared model rows, and opaque raw payload
-rows. The deeper MiscObject child-detail tables from the old single-game app remain follow-up work.
+The current `MISC` implementation persists the parent scalar row plus shared model, keyword, sound, and scripting
+adapter rows. `BOOK`, `DOOR`, `CONT`, and `TERM` now persist typed parent scalar rows in addition to their shared
+children, and `TERM` also persists marker parameter child rows.
