@@ -205,9 +205,16 @@ public class AssetPreviewPaneViewModelTests
         var viewModel = CreateViewModel(pathResolver, externalAssetOpenService: externalOpenService);
 
         viewModel.LoadPreviewForRecord(SupportedGame.Fallout4, "MISC", CreateFormKey());
+        viewModel.OpenExternallyCommand.CanExecute(null).ShouldBe(OperatingSystem.IsWindows());
         viewModel.OpenExternallyCommand.Execute(null);
 
-        externalOpenService.OpenedPath.ShouldBe(@"C:\Games\Data\Meshes\Preview.nif");
+        if (OperatingSystem.IsWindows())
+        {
+            externalOpenService.OpenedPath.ShouldBe(@"C:\Games\Data\Meshes\Preview.nif");
+            return;
+        }
+
+        externalOpenService.OpenedPath.ShouldBeNull();
     }
 
     private static AssetPreviewPaneViewModel CreateViewModel(
