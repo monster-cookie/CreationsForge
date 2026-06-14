@@ -6,9 +6,9 @@ This was released with version 1.1.1 on 2026-06-07
 
 REF: CreationsForge.Migrations\Sql\001_CreateMultiGameImportSchema.sql
 
-## Migration 002 - Released Version 1.1.6
+## Migration 002 - Released Version 1.1.7
 
-This was released with version 1.1.6 on 2026-06-13
+This was released with version 1.1.7 on 2026-06-13
 
 REF: CreationsForge.Migrations\Sql\002_AddAssetArchiveIndex.sql
 

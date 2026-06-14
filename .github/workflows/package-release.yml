@@ -1,529 +1,529 @@
 name: Package Release
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
+    push:
+        tags:
+            - "v*.*.*"
 
 permissions:
-  contents: write
+    contents: write
 
 env:
-  DOTNET_VERSION: ${{ vars.DOTNET_VERSION || '10.0.x' }}
-  APPLICATION_DISPLAY_NAME: ${{ vars.APPLICATION_DISPLAY_NAME || 'Creations Forge' }}
-  APPLICATION_PUBLISHER: ${{ vars.APPLICATION_PUBLISHER || 'Venpi' }}
-  LINUX_PACKAGE_NAME: ${{ vars.LINUX_PACKAGE_NAME || 'creationsforge' }}
-  AVALONIA_UI_LICENSE_KEY: ${{ secrets.AVALONIA_UI_LICENSE_KEY }}
+    DOTNET_VERSION: ${{ vars.DOTNET_VERSION || '10.0.x' }}
+    APPLICATION_DISPLAY_NAME: ${{ vars.APPLICATION_DISPLAY_NAME || 'Creations Forge' }}
+    APPLICATION_PUBLISHER: ${{ vars.APPLICATION_PUBLISHER || 'Venpi' }}
+    LINUX_PACKAGE_NAME: ${{ vars.LINUX_PACKAGE_NAME || 'creationsforge' }}
+    AVALONIA_UI_LICENSE_KEY: ${{ secrets.AVALONIA_UI_LICENSE_KEY }}
 
 jobs:
-  validate-tag-source:
-    name: Validate Tag Source
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.validate.outputs.version }}
+    validate-tag-source:
+        name: Validate Tag Source
+        runs-on: ubuntu-latest
+        outputs:
+            version: ${{ steps.validate.outputs.version }}
 
-    steps:
-      - name: Verify tag and master HEAD
-        id: validate
-        shell: bash
+        steps:
+            - name: Verify tag and master HEAD
+              id: validate
+              shell: bash
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  TAG_CREATED: ${{ github.event.created }}
+                  TAG_NAME: ${{ github.ref_name }}
+                  TAG_SHA: ${{ github.sha }}
+              run: |
+                  if [ "$TAG_CREATED" != "true" ]; then
+                    echo "Release tag '$TAG_NAME' was updated instead of newly created."
+                    exit 1
+                  fi
+
+                  if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                    echo "Release tag '$TAG_NAME' must use the v<major>.<minor>.<patch> format."
+                    exit 1
+                  fi
+
+                  MASTER_SHA="$(gh api "repos/${{ github.repository }}/commits/master" --jq '.sha')"
+
+                  if [ "$TAG_SHA" != "$MASTER_SHA" ]; then
+                    echo "Tag is not on the current master HEAD."
+                    echo "Tag SHA:    $TAG_SHA"
+                    echo "Master SHA: $MASTER_SHA"
+                    exit 1
+                  fi
+
+                  echo "version=${TAG_NAME#v}" >> "$GITHUB_OUTPUT"
+
+    validate-release:
+        name: Validate Release
+        needs: validate-tag-source
+        uses: ./.github/workflows/validate-pull-request.yml
+        with:
+            dotnet-version: ${{ vars.DOTNET_VERSION || '10.0.x' }}
+        secrets: inherit
+
+    package-windows:
+        name: Package Windows
+        needs:
+            - validate-tag-source
+            - validate-release
+        runs-on: windows-latest
         env:
-          GH_TOKEN: ${{ github.token }}
-          TAG_CREATED: ${{ github.event.created }}
-          TAG_NAME: ${{ github.ref_name }}
-          TAG_SHA: ${{ github.sha }}
-        run: |
-          if [ "$TAG_CREATED" != "true" ]; then
-            echo "Release tag '$TAG_NAME' was updated instead of newly created."
-            exit 1
-          fi
-
-          if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Release tag '$TAG_NAME' must use the v<major>.<minor>.<patch> format."
-            exit 1
-          fi
-
-          MASTER_SHA="$(gh api "repos/${{ github.repository }}/commits/master" --jq '.sha')"
-
-          if [ "$TAG_SHA" != "$MASTER_SHA" ]; then
-            echo "Tag is not on the current master HEAD."
-            echo "Tag SHA:    $TAG_SHA"
-            echo "Master SHA: $MASTER_SHA"
-            exit 1
-          fi
-
-          echo "version=${TAG_NAME#v}" >> "$GITHUB_OUTPUT"
-
-  validate-release:
-    name: Validate Release
-    needs: validate-tag-source
-    uses: ./.github/workflows/validate-pull-request.yml
-    with:
-      dotnet-version: ${{ vars.DOTNET_VERSION || '10.0.x' }}
-    secrets: inherit
-
-  package-windows:
-    name: Package Windows
-    needs:
-      - validate-tag-source
-      - validate-release
-    runs-on: windows-latest
-    env:
-      PACKAGE_VERSION: ${{ needs.validate-tag-source.outputs.version }}
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Restore
-        shell: pwsh
-        run: dotnet restore ./CreationsForge.sln
-
-      - name: Build
-        shell: pwsh
-        run: dotnet build ./CreationsForge.sln --configuration Release --no-restore
-
-      - name: Publish Windows applications
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Path ./artifacts/publish/windows/desktop -Force | Out-Null
-          New-Item -ItemType Directory -Path ./artifacts/publish/windows/cli -Force | Out-Null
-
-          dotnet publish ./CreationsForge/CreationsForge.csproj `
-            --configuration Release `
-            --runtime win-x64 `
-            --self-contained true `
-            --output ./artifacts/publish/windows/desktop `
-            -p:Version=$env:PACKAGE_VERSION `
-            -p:AssemblyVersion=$env:PACKAGE_VERSION `
-            -p:FileVersion=$env:PACKAGE_VERSION
-
-          dotnet publish ./CreationsForge.Console/CreationsForge.Console.csproj `
-            --configuration Release `
-            --runtime win-x64 `
-            --self-contained true `
-            --output ./artifacts/publish/windows/cli `
-            -p:Version=$env:PACKAGE_VERSION `
-            -p:AssemblyVersion=$env:PACKAGE_VERSION `
-            -p:FileVersion=$env:PACKAGE_VERSION
-
-      - name: Package Windows ZIPs
-        shell: pwsh
-        run: |
-          Copy-Item -LiteralPath ./Documentation/KNOWN-ISSUES.md -Destination ./artifacts/publish/windows/desktop
-          Copy-Item -LiteralPath ./Documentation/ROADMAP.md -Destination ./artifacts/publish/windows/desktop
-          Copy-Item -LiteralPath ./Documentation/CHANGE-LOG.md -Destination ./artifacts/publish/windows/desktop
-          Copy-Item -LiteralPath ./Documentation/KNOWN-ISSUES.md -Destination ./artifacts/publish/windows/cli
-          Copy-Item -LiteralPath ./Documentation/ROADMAP.md -Destination ./artifacts/publish/windows/cli
-          Copy-Item -LiteralPath ./Documentation/CHANGE-LOG.md -Destination ./artifacts/publish/windows/cli
-
-          Compress-Archive `
-            -Path ./artifacts/publish/windows/desktop/* `
-            -DestinationPath ./artifacts/CreationsForge-Desktop-win-x64-$env:PACKAGE_VERSION.zip `
-            -Force
-          Compress-Archive `
-            -Path ./artifacts/publish/windows/cli/* `
-            -DestinationPath ./artifacts/CreationsForge-Cli-win-x64-$env:PACKAGE_VERSION.zip `
-            -Force
-
-      - name: Install Inno Setup
-        shell: pwsh
-        run: winget install --id JRSoftware.InnoSetup --exact --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity
-
-      - name: Package Windows installer
-        shell: pwsh
-        run: |
-          $compilerCommand = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
-          $compilerPaths = @(
-              $(if ($compilerCommand) { $compilerCommand.Source }),
-              (Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"),
-              (Join-Path $env:ProgramFiles "Inno Setup 6\ISCC.exe"),
-              (Join-Path $env:LOCALAPPDATA "Programs\Inno Setup 6\ISCC.exe")
-          )
-          $compilerPath = $compilerPaths | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
-          if (-not $compilerPath) {
-              throw "Inno Setup Compiler was not found."
-          }
-
-          & $compilerPath `
-            "/DDesktopSourceDirectory=$((Resolve-Path ./artifacts/publish/windows/desktop).Path)" `
-            "/DCliSourceDirectory=$((Resolve-Path ./artifacts/publish/windows/cli).Path)" `
-            "/DOutputDirectory=$((Resolve-Path ./artifacts).Path)" `
-            "/DInstallerIconFile=$((Resolve-Path ./CreationsForge/Resources/AppIcon/CreationsForge.ico).Path)" `
-            "/DApplicationName=$env:APPLICATION_DISPLAY_NAME" `
-            "/DApplicationPublisher=$env:APPLICATION_PUBLISHER" `
-            "/DApplicationVersion=$env:PACKAGE_VERSION" `
-            ./Packaging/Windows/CreationsForge.iss
-
-      - name: Upload Windows desktop ZIP
-        uses: actions/upload-artifact@v7
-        with:
-          name: CreationsForge-Desktop-win-x64-${{ env.PACKAGE_VERSION }}
-          path: artifacts/CreationsForge-Desktop-win-x64-${{ env.PACKAGE_VERSION }}.zip
-          if-no-files-found: error
-
-      - name: Upload Windows CLI ZIP
-        uses: actions/upload-artifact@v7
-        with:
-          name: CreationsForge-Cli-win-x64-${{ env.PACKAGE_VERSION }}
-          path: artifacts/CreationsForge-Cli-win-x64-${{ env.PACKAGE_VERSION }}.zip
-          if-no-files-found: error
-
-      - name: Upload Windows installer
-        uses: actions/upload-artifact@v7
-        with:
-          name: CreationsForge-Setup-${{ env.PACKAGE_VERSION }}
-          path: artifacts/CreationsForge-Setup-${{ env.PACKAGE_VERSION }}.exe
-          if-no-files-found: error
-
-  package-linux:
-    name: Package Linux
-    needs:
-      - validate-tag-source
-      - validate-release
-    runs-on: ubuntu-latest
-    env:
-      PACKAGE_VERSION: ${{ needs.validate-tag-source.outputs.version }}
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Install packaging tools
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes dpkg-dev zip
-
-      - name: Restore
-        shell: pwsh
-        run: dotnet restore ./CreationsForge.sln
-
-      - name: Build
-        shell: pwsh
-        run: dotnet build ./CreationsForge.sln --configuration Release --no-restore
-
-      - name: Publish Linux applications
-        shell: bash
-        run: |
-          mkdir -p ./artifacts/publish/linux/desktop
-          mkdir -p ./artifacts/publish/linux/cli
-
-          dotnet publish ./CreationsForge/CreationsForge.csproj \
-            --configuration Release \
-            --runtime linux-x64 \
-            --self-contained true \
-            --output ./artifacts/publish/linux/desktop \
-            -p:Version="$PACKAGE_VERSION" \
-            -p:AssemblyVersion="$PACKAGE_VERSION" \
-            -p:FileVersion="$PACKAGE_VERSION"
-
-          dotnet publish ./CreationsForge.Console/CreationsForge.Console.csproj \
-            --configuration Release \
-            --runtime linux-x64 \
-            --self-contained true \
-            --output ./artifacts/publish/linux/cli \
-            -p:Version="$PACKAGE_VERSION" \
-            -p:AssemblyVersion="$PACKAGE_VERSION" \
-            -p:FileVersion="$PACKAGE_VERSION"
-
-      - name: Package Linux ZIPs
-        shell: bash
-        run: |
-          cp ./Documentation/KNOWN-ISSUES.md ./artifacts/publish/linux/desktop/
-          cp ./Documentation/ROADMAP.md ./artifacts/publish/linux/desktop/
-          cp ./Documentation/CHANGE-LOG.md ./artifacts/publish/linux/desktop/
-          cp ./Documentation/KNOWN-ISSUES.md ./artifacts/publish/linux/cli/
-          cp ./Documentation/ROADMAP.md ./artifacts/publish/linux/cli/
-          cp ./Documentation/CHANGE-LOG.md ./artifacts/publish/linux/cli/
-
-          (cd ./artifacts/publish/linux/desktop && zip -r ../../../CreationsForge-Desktop-linux-x64-"$PACKAGE_VERSION".zip .)
-          (cd ./artifacts/publish/linux/cli && zip -r ../../../CreationsForge-Cli-linux-x64-"$PACKAGE_VERSION".zip .)
-
-      - name: Package Debian installer
-        shell: bash
-        run: |
-          package_root="./artifacts/debian/package"
-          app_root="$package_root/opt/CreationsForge"
-          desktop_app="$app_root/Desktop"
-          cli_app="$app_root/Cli"
-          control_dir="$package_root/DEBIAN"
-          launcher_dir="$package_root/usr/bin"
-          desktop_entry_dir="$package_root/usr/share/applications"
-          icon_dir="$package_root/usr/share/icons/hicolor/scalable/apps"
-
-          mkdir -p "$desktop_app"
-          mkdir -p "$cli_app"
-          mkdir -p "$control_dir"
-          mkdir -p "$launcher_dir"
-          mkdir -p "$desktop_entry_dir"
-          mkdir -p "$icon_dir"
-
-          cp -r ./artifacts/publish/linux/desktop/. "$desktop_app/"
-          cp -r ./artifacts/publish/linux/cli/. "$cli_app/"
-          cp ./Documentation/KNOWN-ISSUES.md "$app_root/"
-          cp ./Documentation/ROADMAP.md "$app_root/"
-          cp ./Documentation/CHANGE-LOG.md "$app_root/"
-          cp ./Packaging/Linux/com.creationsforge.app.desktop "$desktop_entry_dir/"
-          cp ./Packaging/Linux/creationsforge.svg "$icon_dir/"
-
-          cat > "$launcher_dir/creationsforge" <<'EOF'
-          #!/usr/bin/env bash
-          exec /opt/CreationsForge/Desktop/CreationsForge "$@"
-          EOF
-
-          cat > "$launcher_dir/creationsforge-cli" <<'EOF'
-          #!/usr/bin/env bash
-          exec /opt/CreationsForge/Cli/CreationsForge.Console "$@"
-          EOF
-
-          chmod +x "$launcher_dir/creationsforge"
-          chmod +x "$launcher_dir/creationsforge-cli"
-          chmod +x "$desktop_app/CreationsForge"
-          chmod +x "$cli_app/CreationsForge.Console"
-
-          cat > "$control_dir/control" <<EOF
-          Package: $LINUX_PACKAGE_NAME
-          Version: $PACKAGE_VERSION
-          Section: utils
-          Priority: optional
-          Architecture: amd64
-          Depends: libgl1, dbus, libfontconfig1, libxrandr2, libxi6
-          Maintainer: $APPLICATION_PUBLISHER
-          Description: Multi-game Bethesda plugin import and comparison tool
-           $APPLICATION_DISPLAY_NAME imports and compares selected Bethesda plugin records.
-          EOF
-
-          dpkg-deb --build --root-owner-group "$package_root" "./artifacts/CreationsForge_${PACKAGE_VERSION}_amd64.deb"
-
-      - name: Upload Linux desktop ZIP
-        uses: actions/upload-artifact@v7
-        with:
-          name: CreationsForge-Desktop-linux-x64-${{ env.PACKAGE_VERSION }}
-          path: artifacts/CreationsForge-Desktop-linux-x64-${{ env.PACKAGE_VERSION }}.zip
-          if-no-files-found: error
-
-      - name: Upload Linux CLI ZIP
-        uses: actions/upload-artifact@v7
-        with:
-          name: CreationsForge-Cli-linux-x64-${{ env.PACKAGE_VERSION }}
-          path: artifacts/CreationsForge-Cli-linux-x64-${{ env.PACKAGE_VERSION }}.zip
-          if-no-files-found: error
-
-      - name: Upload Debian installer
-        uses: actions/upload-artifact@v7
-        with:
-          name: CreationsForge-${{ env.PACKAGE_VERSION }}-amd64-deb
-          path: artifacts/CreationsForge_${{ env.PACKAGE_VERSION }}_amd64.deb
-          if-no-files-found: error
-
-  package-arch:
-    name: Package Arch Linux
-    needs:
-      - validate-tag-source
-      - validate-release
-    runs-on: ubuntu-latest
-    container: archlinux:base-devel
-    env:
-      PACKAGE_VERSION: ${{ needs.validate-tag-source.outputs.version }}
-
-    steps:
-      - name: Install build tools
-        shell: bash
-        run: |
-          pacman -Syu --noconfirm
-          pacman -S --noconfirm dotnet-sdk git zstd zip fontconfig libglvnd dbus libxrandr libxi
-
-      - name: Check out repository
-        uses: actions/checkout@v6
-
-      - name: Publish Arch Linux applications
-        shell: bash
-        run: |
-          mkdir -p ./artifacts/publish/arch/desktop
-          mkdir -p ./artifacts/publish/arch/cli
-
-          dotnet publish ./CreationsForge/CreationsForge.csproj \
-            --configuration Release \
-            --runtime linux-x64 \
-            --self-contained true \
-            --output ./artifacts/publish/arch/desktop \
-            -p:Version="$PACKAGE_VERSION" \
-            -p:AssemblyVersion="$PACKAGE_VERSION" \
-            -p:FileVersion="$PACKAGE_VERSION"
-
-          dotnet publish ./CreationsForge.Console/CreationsForge.Console.csproj \
-            --configuration Release \
-            --runtime linux-x64 \
-            --self-contained true \
-            --output ./artifacts/publish/arch/cli \
-            -p:Version="$PACKAGE_VERSION" \
-            -p:AssemblyVersion="$PACKAGE_VERSION" \
-            -p:FileVersion="$PACKAGE_VERSION"
-
-      - name: Stage Arch package files
-        shell: bash
-        run: |
-          build_dir="./artifacts/arch/build"
-          package_root="$build_dir/package-root"
-          app_root="$package_root/opt/CreationsForge"
-          desktop_app="$app_root/Desktop"
-          cli_app="$app_root/Cli"
-          launcher_dir="$package_root/usr/bin"
-          desktop_entry_dir="$package_root/usr/share/applications"
-          icon_dir="$package_root/usr/share/icons/hicolor/scalable/apps"
-
-          mkdir -p "$desktop_app"
-          mkdir -p "$cli_app"
-          mkdir -p "$launcher_dir"
-          mkdir -p "$desktop_entry_dir"
-          mkdir -p "$icon_dir"
-
-          cp -r ./artifacts/publish/arch/desktop/. "$desktop_app/"
-          cp -r ./artifacts/publish/arch/cli/. "$cli_app/"
-          cp ./Documentation/KNOWN-ISSUES.md "$app_root/"
-          cp ./Documentation/ROADMAP.md "$app_root/"
-          cp ./Documentation/CHANGE-LOG.md "$app_root/"
-          cp ./Packaging/Linux/com.creationsforge.app.desktop "$desktop_entry_dir/"
-          cp ./Packaging/Linux/creationsforge.svg "$icon_dir/"
-          cp ./Packaging/Arch/PKGBUILD "$build_dir/PKGBUILD"
-
-          cat > "$launcher_dir/creationsforge" <<'EOF'
-          #!/usr/bin/env bash
-          exec /opt/CreationsForge/Desktop/CreationsForge "$@"
-          EOF
-
-          cat > "$launcher_dir/creationsforge-cli" <<'EOF'
-          #!/usr/bin/env bash
-          exec /opt/CreationsForge/Cli/CreationsForge.Console "$@"
-          EOF
-
-          chmod +x "$launcher_dir/creationsforge"
-          chmod +x "$launcher_dir/creationsforge-cli"
-          chmod +x "$desktop_app/CreationsForge"
-          chmod +x "$cli_app/CreationsForge.Console"
-
-          sed -i "s/^pkgver=.*/pkgver=$PACKAGE_VERSION/" "$build_dir/PKGBUILD"
-          sed -i "s|^url=.*|url='https://github.com/${GITHUB_REPOSITORY}'|" "$build_dir/PKGBUILD"
-          tar -C "$build_dir" -czf "$build_dir/package-root.tar.gz" package-root
-          package_root_sha256="$(sha256sum "$build_dir/package-root.tar.gz" | cut -d ' ' -f 1)"
-          sed -i "s/^sha256sums=.*/sha256sums=('$package_root_sha256')/" "$build_dir/PKGBUILD"
-          if grep -q "0000000000000000000000000000000000000000000000000000000000000000" "$build_dir/PKGBUILD"; then
-            echo "Arch PKGBUILD checksum placeholder was not replaced." >&2
-            exit 1
-          fi
-
-      - name: Build Arch package
-        shell: bash
-        run: |
-          useradd --create-home builder
-          chown -R builder:builder "$GITHUB_WORKSPACE"
-          cd ./artifacts/arch/build
-          runuser -u builder -- makepkg --noconfirm --force
-          mkdir -p "$GITHUB_WORKSPACE/artifacts"
-          cp ./*.pkg.tar.zst "$GITHUB_WORKSPACE/artifacts/"
-
-      - name: Upload Arch Linux package
-        uses: actions/upload-artifact@v7
-        with:
-          name: creationsforge-${{ env.PACKAGE_VERSION }}-1-x86_64-pkg
-          path: artifacts/creationsforge-${{ env.PACKAGE_VERSION }}-1-x86_64.pkg.tar.zst
-          if-no-files-found: error
-
-  create-release:
-    name: Create GitHub Release
-    needs:
-      - validate-tag-source
-      - validate-release
-      - package-windows
-      - package-linux
-      - package-arch
-    runs-on: ubuntu-latest
-    env:
-      PACKAGE_VERSION: ${{ needs.validate-tag-source.outputs.version }}
-
-    steps:
-      - name: Download Windows installer artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: CreationsForge-Setup-${{ env.PACKAGE_VERSION }}
-          path: ./artifacts/release/windows
-
-      - name: Download Debian package artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: CreationsForge-${{ env.PACKAGE_VERSION }}-amd64-deb
-          path: ./artifacts/release/linux-deb
-
-      - name: Download Arch package artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: creationsforge-${{ env.PACKAGE_VERSION }}-1-x86_64-pkg
-          path: ./artifacts/release/linux-arch
-
-      - name: Check out repository
-        uses: actions/checkout@v6
-
-      - name: Extract release notes from change log
-        shell: pwsh
-        run: |
-          $version = $env:PACKAGE_VERSION
-          $changeLogPath = Join-Path $env:GITHUB_WORKSPACE 'Documentation/CHANGE-LOG.md'
-          $releaseNotesPath = Join-Path $env:GITHUB_WORKSPACE 'artifacts/release/release-notes.md'
-          $content = Get-Content -LiteralPath $changeLogPath -Raw
-          $escapedVersion = [Regex]::Escape($version)
-          $pattern = "(?ms)^## Version $escapedVersion - .*?(?=^## Version \d+\.\d+\.\d+ - |\z)"
-          $match = [Regex]::Match($content, $pattern)
-
-          if (-not $match.Success) {
-              throw "Unable to find release notes in Documentation/CHANGE-LOG.md for version $version."
-          }
-
-          $releaseNotesDirectory = Split-Path -Path $releaseNotesPath -Parent
-          New-Item -ItemType Directory -Force -Path $releaseNotesDirectory | Out-Null
-          [System.IO.File]::WriteAllText($releaseNotesPath, $match.Value.Trim())
-
-      - name: Resolve release asset paths
-        id: release-assets
-        shell: pwsh
-        run: |
-          $windowsInstaller = Get-ChildItem -Path ./artifacts/release/windows -Recurse -File | Select-Object -First 1 -ExpandProperty FullName
-          $debianPackage = Get-ChildItem -Path ./artifacts/release/linux-deb -Recurse -Filter *.deb -File | Select-Object -First 1 -ExpandProperty FullName
-          $archPackage = Get-ChildItem -Path ./artifacts/release/linux-arch -Recurse -Filter *.pkg.tar.zst -File | Select-Object -First 1 -ExpandProperty FullName
-
-          if (-not $windowsInstaller) {
-              throw "Unable to find downloaded Windows installer artifact."
-          }
-
-          if (-not $debianPackage) {
-              throw "Unable to find downloaded Debian package artifact."
-          }
-
-          if (-not $archPackage) {
-              throw "Unable to find downloaded Arch package artifact."
-          }
-
-          "windows_installer=$windowsInstaller" >> $env:GITHUB_OUTPUT
-          "debian_package=$debianPackage" >> $env:GITHUB_OUTPUT
-          "arch_package=$archPackage" >> $env:GITHUB_OUTPUT
-
-      - name: Create GitHub release
-        shell: bash
+            PACKAGE_VERSION: ${{ needs.validate-tag-source.outputs.version }}
+
+        steps:
+            - name: Check out repository
+              uses: actions/checkout@v6
+
+            - name: Set up .NET
+              uses: actions/setup-dotnet@v5
+              with:
+                  dotnet-version: ${{ env.DOTNET_VERSION }}
+
+            - name: Restore
+              shell: pwsh
+              run: dotnet restore ./CreationsForge.sln
+
+            - name: Build
+              shell: pwsh
+              run: dotnet build ./CreationsForge.sln --configuration Release --no-restore
+
+            - name: Publish Windows applications
+              shell: pwsh
+              run: |
+                  New-Item -ItemType Directory -Path ./artifacts/publish/windows/desktop -Force | Out-Null
+                  New-Item -ItemType Directory -Path ./artifacts/publish/windows/cli -Force | Out-Null
+
+                  dotnet publish ./CreationsForge/CreationsForge.csproj `
+                    --configuration Release `
+                    --runtime win-x64 `
+                    --self-contained true `
+                    --output ./artifacts/publish/windows/desktop `
+                    -p:Version=$env:PACKAGE_VERSION `
+                    -p:AssemblyVersion=$env:PACKAGE_VERSION `
+                    -p:FileVersion=$env:PACKAGE_VERSION
+
+                  dotnet publish ./CreationsForge.Console/CreationsForge.Console.csproj `
+                    --configuration Release `
+                    --runtime win-x64 `
+                    --self-contained true `
+                    --output ./artifacts/publish/windows/cli `
+                    -p:Version=$env:PACKAGE_VERSION `
+                    -p:AssemblyVersion=$env:PACKAGE_VERSION `
+                    -p:FileVersion=$env:PACKAGE_VERSION
+
+            - name: Package Windows ZIPs
+              shell: pwsh
+              run: |
+                  Copy-Item -LiteralPath ./Documentation/KNOWN-ISSUES.md -Destination ./artifacts/publish/windows/desktop
+                  Copy-Item -LiteralPath ./Documentation/ROADMAP.md -Destination ./artifacts/publish/windows/desktop
+                  Copy-Item -LiteralPath ./Documentation/CHANGE-LOG.md -Destination ./artifacts/publish/windows/desktop
+                  Copy-Item -LiteralPath ./Documentation/KNOWN-ISSUES.md -Destination ./artifacts/publish/windows/cli
+                  Copy-Item -LiteralPath ./Documentation/ROADMAP.md -Destination ./artifacts/publish/windows/cli
+                  Copy-Item -LiteralPath ./Documentation/CHANGE-LOG.md -Destination ./artifacts/publish/windows/cli
+
+                  Compress-Archive `
+                    -Path ./artifacts/publish/windows/desktop/* `
+                    -DestinationPath ./artifacts/CreationsForge-Desktop-win-x64-$env:PACKAGE_VERSION.zip `
+                    -Force
+                  Compress-Archive `
+                    -Path ./artifacts/publish/windows/cli/* `
+                    -DestinationPath ./artifacts/CreationsForge-Cli-win-x64-$env:PACKAGE_VERSION.zip `
+                    -Force
+
+            - name: Install Inno Setup
+              shell: pwsh
+              run: winget install --id JRSoftware.InnoSetup --exact --source winget --accept-source-agreements --accept-package-agreements --disable-interactivity
+
+            - name: Package Windows installer
+              shell: pwsh
+              run: |
+                  $compilerCommand = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
+                  $compilerPaths = @(
+                      $(if ($compilerCommand) { $compilerCommand.Source }),
+                      (Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"),
+                      (Join-Path $env:ProgramFiles "Inno Setup 6\ISCC.exe"),
+                      (Join-Path $env:LOCALAPPDATA "Programs\Inno Setup 6\ISCC.exe")
+                  )
+                  $compilerPath = $compilerPaths | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
+                  if (-not $compilerPath) {
+                      throw "Inno Setup Compiler was not found."
+                  }
+
+                  & $compilerPath `
+                    "/DDesktopSourceDirectory=$((Resolve-Path ./artifacts/publish/windows/desktop).Path)" `
+                    "/DCliSourceDirectory=$((Resolve-Path ./artifacts/publish/windows/cli).Path)" `
+                    "/DOutputDirectory=$((Resolve-Path ./artifacts).Path)" `
+                    "/DInstallerIconFile=$((Resolve-Path ./CreationsForge/Resources/AppIcon/CreationsForge.ico).Path)" `
+                    "/DApplicationName=$env:APPLICATION_DISPLAY_NAME" `
+                    "/DApplicationPublisher=$env:APPLICATION_PUBLISHER" `
+                    "/DApplicationVersion=$env:PACKAGE_VERSION" `
+                    ./Packaging/Windows/CreationsForge.iss
+
+            - name: Upload Windows desktop ZIP
+              uses: actions/upload-artifact@v7
+              with:
+                  name: CreationsForge-Desktop-win-x64-${{ env.PACKAGE_VERSION }}
+                  path: artifacts/CreationsForge-Desktop-win-x64-${{ env.PACKAGE_VERSION }}.zip
+                  if-no-files-found: error
+
+            - name: Upload Windows CLI ZIP
+              uses: actions/upload-artifact@v7
+              with:
+                  name: CreationsForge-Cli-win-x64-${{ env.PACKAGE_VERSION }}
+                  path: artifacts/CreationsForge-Cli-win-x64-${{ env.PACKAGE_VERSION }}.zip
+                  if-no-files-found: error
+
+            - name: Upload Windows installer
+              uses: actions/upload-artifact@v7
+              with:
+                  name: CreationsForge-Setup-${{ env.PACKAGE_VERSION }}
+                  path: artifacts/CreationsForge-Setup-${{ env.PACKAGE_VERSION }}.exe
+                  if-no-files-found: error
+
+    package-linux:
+        name: Package Linux
+        needs:
+            - validate-tag-source
+            - validate-release
+        runs-on: ubuntu-latest
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create "${{ github.ref_name }}" \
-            "${{ steps.release-assets.outputs.windows_installer }}" \
-            "${{ steps.release-assets.outputs.debian_package }}" \
-            "${{ steps.release-assets.outputs.arch_package }}" \
-            --title "${{ github.ref_name }}" \
-            --notes-file "./artifacts/release/release-notes.md"
+            PACKAGE_VERSION: ${{ needs.validate-tag-source.outputs.version }}
+
+        steps:
+            - name: Check out repository
+              uses: actions/checkout@v6
+
+            - name: Set up .NET
+              uses: actions/setup-dotnet@v5
+              with:
+                  dotnet-version: ${{ env.DOTNET_VERSION }}
+
+            - name: Install packaging tools
+              shell: bash
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install --yes dpkg-dev zip
+
+            - name: Restore
+              shell: pwsh
+              run: dotnet restore ./CreationsForge.sln
+
+            - name: Build
+              shell: pwsh
+              run: dotnet build ./CreationsForge.sln --configuration Release --no-restore
+
+            - name: Publish Linux applications
+              shell: bash
+              run: |
+                  mkdir -p ./artifacts/publish/linux/desktop
+                  mkdir -p ./artifacts/publish/linux/cli
+
+                  dotnet publish ./CreationsForge/CreationsForge.csproj \
+                    --configuration Release \
+                    --runtime linux-x64 \
+                    --self-contained true \
+                    --output ./artifacts/publish/linux/desktop \
+                    -p:Version="$PACKAGE_VERSION" \
+                    -p:AssemblyVersion="$PACKAGE_VERSION" \
+                    -p:FileVersion="$PACKAGE_VERSION"
+
+                  dotnet publish ./CreationsForge.Console/CreationsForge.Console.csproj \
+                    --configuration Release \
+                    --runtime linux-x64 \
+                    --self-contained true \
+                    --output ./artifacts/publish/linux/cli \
+                    -p:Version="$PACKAGE_VERSION" \
+                    -p:AssemblyVersion="$PACKAGE_VERSION" \
+                    -p:FileVersion="$PACKAGE_VERSION"
+
+            - name: Package Linux ZIPs
+              shell: bash
+              run: |
+                  cp ./Documentation/KNOWN-ISSUES.md ./artifacts/publish/linux/desktop/
+                  cp ./Documentation/ROADMAP.md ./artifacts/publish/linux/desktop/
+                  cp ./Documentation/CHANGE-LOG.md ./artifacts/publish/linux/desktop/
+                  cp ./Documentation/KNOWN-ISSUES.md ./artifacts/publish/linux/cli/
+                  cp ./Documentation/ROADMAP.md ./artifacts/publish/linux/cli/
+                  cp ./Documentation/CHANGE-LOG.md ./artifacts/publish/linux/cli/
+
+                  (cd ./artifacts/publish/linux/desktop && zip -r ../../../CreationsForge-Desktop-linux-x64-"$PACKAGE_VERSION".zip .)
+                  (cd ./artifacts/publish/linux/cli && zip -r ../../../CreationsForge-Cli-linux-x64-"$PACKAGE_VERSION".zip .)
+
+            - name: Package Debian installer
+              shell: bash
+              run: |
+                  package_root="./artifacts/debian/package"
+                  app_root="$package_root/opt/CreationsForge"
+                  desktop_app="$app_root/Desktop"
+                  cli_app="$app_root/Cli"
+                  control_dir="$package_root/DEBIAN"
+                  launcher_dir="$package_root/usr/bin"
+                  desktop_entry_dir="$package_root/usr/share/applications"
+                  icon_dir="$package_root/usr/share/icons/hicolor/scalable/apps"
+
+                  mkdir -p "$desktop_app"
+                  mkdir -p "$cli_app"
+                  mkdir -p "$control_dir"
+                  mkdir -p "$launcher_dir"
+                  mkdir -p "$desktop_entry_dir"
+                  mkdir -p "$icon_dir"
+
+                  cp -r ./artifacts/publish/linux/desktop/. "$desktop_app/"
+                  cp -r ./artifacts/publish/linux/cli/. "$cli_app/"
+                  cp ./Documentation/KNOWN-ISSUES.md "$app_root/"
+                  cp ./Documentation/ROADMAP.md "$app_root/"
+                  cp ./Documentation/CHANGE-LOG.md "$app_root/"
+                  cp ./Packaging/Linux/com.creationsforge.app.desktop "$desktop_entry_dir/"
+                  cp ./Packaging/Linux/creationsforge.svg "$icon_dir/"
+
+                  cat > "$launcher_dir/creationsforge" <<'EOF'
+                  #!/usr/bin/env bash
+                  exec /opt/CreationsForge/Desktop/CreationsForge "$@"
+                  EOF
+
+                  cat > "$launcher_dir/creationsforge-cli" <<'EOF'
+                  #!/usr/bin/env bash
+                  exec /opt/CreationsForge/Cli/CreationsForge.Console "$@"
+                  EOF
+
+                  chmod +x "$launcher_dir/creationsforge"
+                  chmod +x "$launcher_dir/creationsforge-cli"
+                  chmod +x "$desktop_app/CreationsForge"
+                  chmod +x "$cli_app/CreationsForge.Console"
+
+                  cat > "$control_dir/control" <<EOF
+                  Package: $LINUX_PACKAGE_NAME
+                  Version: $PACKAGE_VERSION
+                  Section: utils
+                  Priority: optional
+                  Architecture: amd64
+                  Depends: libgl1, dbus, libfontconfig1, libxrandr2, libxi6
+                  Maintainer: $APPLICATION_PUBLISHER
+                  Description: Multi-game Bethesda plugin import and comparison tool
+                   $APPLICATION_DISPLAY_NAME imports and compares selected Bethesda plugin records.
+                  EOF
+
+                  dpkg-deb --build --root-owner-group "$package_root" "./artifacts/CreationsForge_${PACKAGE_VERSION}_amd64.deb"
+
+            - name: Upload Linux desktop ZIP
+              uses: actions/upload-artifact@v7
+              with:
+                  name: CreationsForge-Desktop-linux-x64-${{ env.PACKAGE_VERSION }}
+                  path: artifacts/CreationsForge-Desktop-linux-x64-${{ env.PACKAGE_VERSION }}.zip
+                  if-no-files-found: error
+
+            - name: Upload Linux CLI ZIP
+              uses: actions/upload-artifact@v7
+              with:
+                  name: CreationsForge-Cli-linux-x64-${{ env.PACKAGE_VERSION }}
+                  path: artifacts/CreationsForge-Cli-linux-x64-${{ env.PACKAGE_VERSION }}.zip
+                  if-no-files-found: error
+
+            - name: Upload Debian installer
+              uses: actions/upload-artifact@v7
+              with:
+                  name: CreationsForge-${{ env.PACKAGE_VERSION }}-amd64-deb
+                  path: artifacts/CreationsForge_${{ env.PACKAGE_VERSION }}_amd64.deb
+                  if-no-files-found: error
+
+    package-arch:
+        name: Package Arch Linux
+        needs:
+            - validate-tag-source
+            - validate-release
+        runs-on: ubuntu-latest
+        container: archlinux:base-devel
+        env:
+            PACKAGE_VERSION: ${{ needs.validate-tag-source.outputs.version }}
+
+        steps:
+            - name: Install build tools
+              shell: bash
+              run: |
+                  pacman -Syu --noconfirm
+                  pacman -S --noconfirm dotnet-sdk git zstd zip fontconfig libglvnd dbus libxrandr libxi
+
+            - name: Check out repository
+              uses: actions/checkout@v6
+
+            - name: Publish Arch Linux applications
+              shell: bash
+              run: |
+                  mkdir -p ./artifacts/publish/arch/desktop
+                  mkdir -p ./artifacts/publish/arch/cli
+
+                  dotnet publish ./CreationsForge/CreationsForge.csproj \
+                    --configuration Release \
+                    --runtime linux-x64 \
+                    --self-contained true \
+                    --output ./artifacts/publish/arch/desktop \
+                    -p:Version="$PACKAGE_VERSION" \
+                    -p:AssemblyVersion="$PACKAGE_VERSION" \
+                    -p:FileVersion="$PACKAGE_VERSION"
+
+                  dotnet publish ./CreationsForge.Console/CreationsForge.Console.csproj \
+                    --configuration Release \
+                    --runtime linux-x64 \
+                    --self-contained true \
+                    --output ./artifacts/publish/arch/cli \
+                    -p:Version="$PACKAGE_VERSION" \
+                    -p:AssemblyVersion="$PACKAGE_VERSION" \
+                    -p:FileVersion="$PACKAGE_VERSION"
+
+            - name: Stage Arch package files
+              shell: bash
+              run: |
+                  build_dir="./artifacts/arch/build"
+                  package_root="$build_dir/package-root"
+                  app_root="$package_root/opt/CreationsForge"
+                  desktop_app="$app_root/Desktop"
+                  cli_app="$app_root/Cli"
+                  launcher_dir="$package_root/usr/bin"
+                  desktop_entry_dir="$package_root/usr/share/applications"
+                  icon_dir="$package_root/usr/share/icons/hicolor/scalable/apps"
+
+                  mkdir -p "$desktop_app"
+                  mkdir -p "$cli_app"
+                  mkdir -p "$launcher_dir"
+                  mkdir -p "$desktop_entry_dir"
+                  mkdir -p "$icon_dir"
+
+                  cp -r ./artifacts/publish/arch/desktop/. "$desktop_app/"
+                  cp -r ./artifacts/publish/arch/cli/. "$cli_app/"
+                  cp ./Documentation/KNOWN-ISSUES.md "$app_root/"
+                  cp ./Documentation/ROADMAP.md "$app_root/"
+                  cp ./Documentation/CHANGE-LOG.md "$app_root/"
+                  cp ./Packaging/Linux/com.creationsforge.app.desktop "$desktop_entry_dir/"
+                  cp ./Packaging/Linux/creationsforge.svg "$icon_dir/"
+                  cp ./Packaging/Arch/PKGBUILD "$build_dir/PKGBUILD"
+
+                  cat > "$launcher_dir/creationsforge" <<'EOF'
+                  #!/usr/bin/env bash
+                  exec /opt/CreationsForge/Desktop/CreationsForge "$@"
+                  EOF
+
+                  cat > "$launcher_dir/creationsforge-cli" <<'EOF'
+                  #!/usr/bin/env bash
+                  exec /opt/CreationsForge/Cli/CreationsForge.Console "$@"
+                  EOF
+
+                  chmod +x "$launcher_dir/creationsforge"
+                  chmod +x "$launcher_dir/creationsforge-cli"
+                  chmod +x "$desktop_app/CreationsForge"
+                  chmod +x "$cli_app/CreationsForge.Console"
+
+                  sed -i "s/^pkgver=.*/pkgver=$PACKAGE_VERSION/" "$build_dir/PKGBUILD"
+                  sed -i "s|^url=.*|url='https://github.com/${GITHUB_REPOSITORY}'|" "$build_dir/PKGBUILD"
+                  tar -C "$build_dir" -czf "$build_dir/package-root.tar.gz" package-root
+                  package_root_sha256="$(sha256sum "$build_dir/package-root.tar.gz" | cut -d ' ' -f 1)"
+                  sed -i "s/^sha256sums=.*/sha256sums=('$package_root_sha256')/" "$build_dir/PKGBUILD"
+                  if grep -q "0000000000000000000000000000000000000000000000000000000000000000" "$build_dir/PKGBUILD"; then
+                    echo "Arch PKGBUILD checksum placeholder was not replaced." >&2
+                    exit 1
+                  fi
+
+            - name: Build Arch package
+              shell: bash
+              run: |
+                  useradd --create-home builder
+                  chown -R builder:builder "$GITHUB_WORKSPACE"
+                  cd ./artifacts/arch/build
+                  runuser -u builder -- makepkg --noconfirm --force
+                  mkdir -p "$GITHUB_WORKSPACE/artifacts"
+                  cp ./*.pkg.tar.zst "$GITHUB_WORKSPACE/artifacts/"
+
+            - name: Upload Arch Linux package
+              uses: actions/upload-artifact@v7
+              with:
+                  name: creationsforge-${{ env.PACKAGE_VERSION }}-1-x86_64-pkg
+                  path: artifacts/creationsforge-${{ env.PACKAGE_VERSION }}-1-x86_64.pkg.tar.zst
+                  if-no-files-found: error
+
+    create-release:
+        name: Create GitHub Release
+        needs:
+            - validate-tag-source
+            - validate-release
+            - package-windows
+            - package-linux
+            - package-arch
+        runs-on: ubuntu-latest
+        env:
+            PACKAGE_VERSION: ${{ needs.validate-tag-source.outputs.version }}
+
+        steps:
+            - name: Check out repository
+              uses: actions/checkout@v6
+
+            - name: Download Windows installer artifact
+              uses: actions/download-artifact@v6
+              with:
+                  name: CreationsForge-Setup-${{ env.PACKAGE_VERSION }}
+                  path: ./artifacts/release/windows
+
+            - name: Download Debian package artifact
+              uses: actions/download-artifact@v6
+              with:
+                  name: CreationsForge-${{ env.PACKAGE_VERSION }}-amd64-deb
+                  path: ./artifacts/release/linux-deb
+
+            - name: Download Arch package artifact
+              uses: actions/download-artifact@v6
+              with:
+                  name: creationsforge-${{ env.PACKAGE_VERSION }}-1-x86_64-pkg
+                  path: ./artifacts/release/linux-arch
+
+            - name: Extract release notes from change log
+              shell: pwsh
+              run: |
+                  $version = $env:PACKAGE_VERSION
+                  $changeLogPath = Join-Path $env:GITHUB_WORKSPACE 'Documentation/CHANGE-LOG.md'
+                  $releaseNotesPath = Join-Path $env:GITHUB_WORKSPACE 'artifacts/release/release-notes.md'
+                  $content = Get-Content -LiteralPath $changeLogPath -Raw
+                  $escapedVersion = [Regex]::Escape($version)
+                  $pattern = "(?ms)^## Version $escapedVersion - .*?(?=^## Version \d+\.\d+\.\d+ - |\z)"
+                  $match = [Regex]::Match($content, $pattern)
+
+                  if (-not $match.Success) {
+                      throw "Unable to find release notes in Documentation/CHANGE-LOG.md for version $version."
+                  }
+
+                  $releaseNotesDirectory = Split-Path -Path $releaseNotesPath -Parent
+                  New-Item -ItemType Directory -Force -Path $releaseNotesDirectory | Out-Null
+                  [System.IO.File]::WriteAllText($releaseNotesPath, $match.Value.Trim())
+
+            - name: Resolve release asset paths
+              id: release-assets
+              shell: pwsh
+              run: |
+                  $windowsInstaller = Get-ChildItem -Path ./artifacts/release/windows -Recurse -File | Select-Object -First 1 -ExpandProperty FullName
+                  $debianPackage = Get-ChildItem -Path ./artifacts/release/linux-deb -Recurse -Filter *.deb -File | Select-Object -First 1 -ExpandProperty FullName
+                  $archPackage = Get-ChildItem -Path ./artifacts/release/linux-arch -Recurse -Filter *.pkg.tar.zst -File | Select-Object -First 1 -ExpandProperty FullName
+
+                  if (-not $windowsInstaller) {
+                      throw "Unable to find downloaded Windows installer artifact."
+                  }
+
+                  if (-not $debianPackage) {
+                      throw "Unable to find downloaded Debian package artifact."
+                  }
+
+                  if (-not $archPackage) {
+                      throw "Unable to find downloaded Arch package artifact."
+                  }
+
+                  "windows_installer=$windowsInstaller" >> $env:GITHUB_OUTPUT
+                  "debian_package=$debianPackage" >> $env:GITHUB_OUTPUT
+                  "arch_package=$archPackage" >> $env:GITHUB_OUTPUT
+
+            - name: Create GitHub release
+              shell: bash
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  gh release create "${{ github.ref_name }}" \
+                    "${{ steps.release-assets.outputs.windows_installer }}" \
+                    "${{ steps.release-assets.outputs.debian_package }}" \
+                    "${{ steps.release-assets.outputs.arch_package }}" \
+                    --title "${{ github.ref_name }}" \
+                    --notes-file "./artifacts/release/release-notes.md"
