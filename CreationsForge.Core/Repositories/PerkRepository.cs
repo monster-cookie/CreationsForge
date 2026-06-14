@@ -212,14 +212,22 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
     {
         return Database.Fetch<PerkRankRow>(
                 """
-                SELECT *
-                FROM PerkRanks
-                WHERE Game = @Game
-                  AND FormKey_ModKey_Name = @FormKeyModKeyName COLLATE NOCASE
-                  AND FormKey_ModKey_Type = @FormKeyModKeyType
-                  AND FormKey_ModKey_FileName = @FormKeyModKeyFileName COLLATE NOCASE
-                  AND FormKey_ID = @FormKeyId
-                ORDER BY ModKey_FileName COLLATE NOCASE, Rank_Index;
+                SELECT ranks.*
+                FROM PerkRanks ranks
+                INNER JOIN Perks perks ON perks.Game = ranks.Game
+                  AND perks.ModKey_Name = ranks.ModKey_Name COLLATE NOCASE
+                  AND perks.ModKey_Type = ranks.ModKey_Type
+                  AND perks.ModKey_FileName = ranks.ModKey_FileName COLLATE NOCASE
+                  AND perks.FormKey_ModKey_Name = ranks.FormKey_ModKey_Name COLLATE NOCASE
+                  AND perks.FormKey_ModKey_Type = ranks.FormKey_ModKey_Type
+                  AND perks.FormKey_ModKey_FileName = ranks.FormKey_ModKey_FileName COLLATE NOCASE
+                  AND perks.FormKey_ID = ranks.FormKey_ID
+                WHERE ranks.Game = @Game
+                  AND ranks.FormKey_ModKey_Name = @FormKeyModKeyName COLLATE NOCASE
+                  AND ranks.FormKey_ModKey_Type = @FormKeyModKeyType
+                  AND ranks.FormKey_ModKey_FileName = @FormKeyModKeyFileName COLLATE NOCASE
+                  AND ranks.FormKey_ID = @FormKeyId
+                ORDER BY ranks.ModKey_FileName COLLATE NOCASE, ranks.Rank_Index;
                 """,
                 new
                 {
@@ -235,14 +243,22 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
     {
         return Database.Fetch<PerkRankEffectRow>(
                 """
-                SELECT *
-                FROM PerkRankEffects
-                WHERE Game = @Game
-                  AND FormKey_ModKey_Name = @FormKeyModKeyName COLLATE NOCASE
-                  AND FormKey_ModKey_Type = @FormKeyModKeyType
-                  AND FormKey_ModKey_FileName = @FormKeyModKeyFileName COLLATE NOCASE
-                  AND FormKey_ID = @FormKeyId
-                ORDER BY ModKey_FileName COLLATE NOCASE, Rank_Index, Effect_Index;
+                SELECT effects.*
+                FROM PerkRankEffects effects
+                INNER JOIN Perks perks ON perks.Game = effects.Game
+                  AND perks.ModKey_Name = effects.ModKey_Name COLLATE NOCASE
+                  AND perks.ModKey_Type = effects.ModKey_Type
+                  AND perks.ModKey_FileName = effects.ModKey_FileName COLLATE NOCASE
+                  AND perks.FormKey_ModKey_Name = effects.FormKey_ModKey_Name COLLATE NOCASE
+                  AND perks.FormKey_ModKey_Type = effects.FormKey_ModKey_Type
+                  AND perks.FormKey_ModKey_FileName = effects.FormKey_ModKey_FileName COLLATE NOCASE
+                  AND perks.FormKey_ID = effects.FormKey_ID
+                WHERE effects.Game = @Game
+                  AND effects.FormKey_ModKey_Name = @FormKeyModKeyName COLLATE NOCASE
+                  AND effects.FormKey_ModKey_Type = @FormKeyModKeyType
+                  AND effects.FormKey_ModKey_FileName = @FormKeyModKeyFileName COLLATE NOCASE
+                  AND effects.FormKey_ID = @FormKeyId
+                ORDER BY effects.ModKey_FileName COLLATE NOCASE, effects.Rank_Index, effects.Effect_Index;
                 """,
                 new
                 {
@@ -258,14 +274,22 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
     {
         return Database.Fetch<PerkBackgroundSkillRow>(
                 """
-                SELECT *
-                FROM PerkBackgroundSkills
-                WHERE Game = @Game
-                  AND FormKey_ModKey_Name = @FormKeyModKeyName COLLATE NOCASE
-                  AND FormKey_ModKey_Type = @FormKeyModKeyType
-                  AND FormKey_ModKey_FileName = @FormKeyModKeyFileName COLLATE NOCASE
-                  AND FormKey_ID = @FormKeyId
-                ORDER BY ModKey_FileName COLLATE NOCASE, Skill_Index;
+                SELECT skills.*
+                FROM PerkBackgroundSkills skills
+                INNER JOIN Perks perks ON perks.Game = skills.Game
+                  AND perks.ModKey_Name = skills.ModKey_Name COLLATE NOCASE
+                  AND perks.ModKey_Type = skills.ModKey_Type
+                  AND perks.ModKey_FileName = skills.ModKey_FileName COLLATE NOCASE
+                  AND perks.FormKey_ModKey_Name = skills.FormKey_ModKey_Name COLLATE NOCASE
+                  AND perks.FormKey_ModKey_Type = skills.FormKey_ModKey_Type
+                  AND perks.FormKey_ModKey_FileName = skills.FormKey_ModKey_FileName COLLATE NOCASE
+                  AND perks.FormKey_ID = skills.FormKey_ID
+                WHERE skills.Game = @Game
+                  AND skills.FormKey_ModKey_Name = @FormKeyModKeyName COLLATE NOCASE
+                  AND skills.FormKey_ModKey_Type = @FormKeyModKeyType
+                  AND skills.FormKey_ModKey_FileName = @FormKeyModKeyFileName COLLATE NOCASE
+                  AND skills.FormKey_ID = @FormKeyId
+                ORDER BY skills.ModKey_FileName COLLATE NOCASE, skills.Skill_Index;
                 """,
                 new
                 {
