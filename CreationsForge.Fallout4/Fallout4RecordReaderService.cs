@@ -165,7 +165,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 Notes = GetPropertyStringOrNull(record, "Notes"),
                 FlashLinkageName = GetPropertyStringOrNull(record, "FlashLinkageName"),
                 AttractionRuleFormKey = GetLinkedFormKey(record, "AttractionRule"),
-                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Keyword.RecordType, record)
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Keyword.RecordID, record)
             })
             .ToList();
     }
@@ -189,10 +189,10 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 DirtinessScale = GetPropertyNullableFloat(record, "DirtinessScale"),
                 FeaturedItemMessageFormKey = GetLinkedFormKey(record, "FeaturedItemMessage"),
                 Flag = FormatHexValue(GetPropertyValue(record, "FLAG")),
-                Models = GetModels(plugin, RecordTypeCatalog.MiscObject.RecordType, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model")),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.MiscObject.RecordType, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
-                Sounds = GetNamedSounds(plugin, RecordTypeCatalog.MiscObject.RecordType, GetRequiredRawFormKey(record), record, "CraftingSound", "PickupSound", "PutdownSound", "DropdownSound"),
-                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MiscObject.RecordType, record)
+                Models = GetModels(plugin, RecordTypeCatalog.MiscObject.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model")),
+                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.MiscObject.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
+                Sounds = GetNamedSounds(plugin, RecordTypeCatalog.MiscObject.RecordID, GetRequiredRawFormKey(record), record, "CraftingSound", "PickupSound", "PutdownSound", "DropdownSound"),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MiscObject.RecordID, record)
             })
             .ToList();
     }
@@ -217,7 +217,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 Type = GetPropertyStringOrNull(record, "Type"),
                 Min = GetPropertyNullableDouble(record, "Min"),
                 Max = GetPropertyNullableDouble(record, "Max"),
-                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ActorValueInformation.RecordType, record)
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ActorValueInformation.RecordID, record)
             })
             .ToList();
     }
@@ -254,8 +254,8 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 CombatStyleFormKey = GetLinkedFormKey(record, "CombatStyle"),
                 DefaultPackageListFormKey = GetLinkedFormKey(record, "DefaultPackageList"),
                 CrimeFactionFormKey = GetLinkedFormKey(record, "CrimeFaction"),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.NPC.RecordType, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
-                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.NPC.RecordType, record)
+                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.NPC.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.NPC.RecordID, record)
             })
             .ToList();
     }
@@ -294,9 +294,9 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 Unknown = FormatHexValue(GetPropertyValue(record, "Unknown")),
                 Unknown2 = FormatHexValue(GetPropertyValue(record, "Unknown2")),
                 DataTypeState = GetPropertyStringOrNull(record, "DATADataTypeState"),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.MagicEffect.RecordType, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
-                Sounds = GetIndexedSounds(plugin, RecordTypeCatalog.MagicEffect.RecordType, GetRequiredRawFormKey(record), record),
-                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MagicEffect.RecordType, record)
+                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.MagicEffect.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
+                Sounds = GetIndexedSounds(plugin, RecordTypeCatalog.MagicEffect.RecordID, GetRequiredRawFormKey(record), record),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MagicEffect.RecordID, record)
             })
             .ToList();
     }
@@ -325,7 +325,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 MajorFlags = GetPropertyStringOrNull(record, "MajorFlags"),
                 Ranks = GetPerkRanks(record),
                 BackgroundSkills = GetPerkBackgroundSkills(record),
-                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Perk.RecordType, record)
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Perk.RecordID, record)
             })
             .ToList();
     }
@@ -467,7 +467,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 FormKey = MapFormKey(formKey),
                 ModelSlot = "Model",
                 ModelGender = string.Empty,
-                File = GetPropertyStringOrNull(model, "File"),
+                  File = GetPropertyValue(model, "File")?.ToString(),
                 TextureFileHashes = FormatHexValue(GetPropertyValue(model, "TextureFileHashes")),
                 LightLayer = GetPropertyNullableUInt(model, "LightLayer"),
                 Flags = GetPropertyStringOrNull(model, "Flags"),
@@ -849,7 +849,28 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
 
     private static object? GetPropertyValue(object? source, string propertyName)
     {
-        return source?.GetType().GetProperty(propertyName)?.GetValue(source);
+        if (source == null)
+        {
+            return null;
+        }
+
+        var sourceType = source.GetType();
+        var property = sourceType.GetProperty(propertyName);
+        if (property != null)
+        {
+            return property.GetValue(source);
+        }
+
+        foreach (var interfaceType in sourceType.GetInterfaces())
+        {
+            property = interfaceType.GetProperty(propertyName);
+            if (property != null)
+            {
+                return property.GetValue(source);
+            }
+        }
+
+        return null;
     }
 
     private static string GetPropertyString(object source, string propertyName)

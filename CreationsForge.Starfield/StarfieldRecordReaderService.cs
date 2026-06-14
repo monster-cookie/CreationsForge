@@ -93,7 +93,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 FormVersion = record.FormVersion,
                 MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
                 ImportedAtUTC = DateTime.UtcNow,
-                AddToListFormKey = record.AddToList.IsNull ? null : MapFormKey(record.AddToList.FormKey),
+                AddToListFormKey = GetFormKeyFromObject(GetPropertyValue(record, "AddToList")),
                 Items = record.Items.Select((item, itemIndex) => new FormListItemDTO
                 {
                     Game = SupportedGame.Starfield,
@@ -153,7 +153,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
                 ImportedAtUTC = DateTime.UtcNow,
                 Data = record.Data,
-                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Global.RecordType, record)
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Global.RecordID, record)
             })
             .ToList();
     }
@@ -176,7 +176,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Notes = record.Notes,
                 FlashLinkageName = record.FlashLinkageName,
                 AttractionRuleFormKey = record.AttractionRule.IsNull ? null : MapFormKey(record.AttractionRule.FormKey),
-                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Keyword.RecordType, record)
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Keyword.RecordID, record)
             })
             .ToList();
     }
@@ -200,10 +200,10 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 DirtinessScale = (float)record.DirtinessScale,
                 FeaturedItemMessageFormKey = record.FeaturedItemMessage.IsNull ? null : MapFormKey(record.FeaturedItemMessage.FormKey),
                 Flag = record.FLAG == null ? null : Convert.ToHexString(record.FLAG.Value.ToArray()),
-                Models = GetModels(plugin, RecordTypeCatalog.MiscObject.RecordType, record.FormKey, record.Model),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.MiscObject.RecordType, record.FormKey, record.Keywords),
-                Sounds = GetNamedSounds(plugin, RecordTypeCatalog.MiscObject.RecordType, record.FormKey, record, "CraftingSound", "PickupSound", "DropdownSound"),
-                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MiscObject.RecordType, record)
+                Models = GetModels(plugin, RecordTypeCatalog.MiscObject.RecordID, record.FormKey, record.Model),
+                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.MiscObject.RecordID, record.FormKey, record.Keywords),
+                Sounds = GetNamedSounds(plugin, RecordTypeCatalog.MiscObject.RecordID, record.FormKey, record, "CraftingSound", "PickupSound", "DropdownSound"),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MiscObject.RecordID, record)
             })
             .ToList();
     }
@@ -228,7 +228,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Type = record.Type?.ToString(),
                 Min = record.Min,
                 Max = record.Max,
-                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ActorValueInformation.RecordType, record)
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ActorValueInformation.RecordID, record)
             })
             .ToList();
     }
@@ -425,8 +425,8 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 CombatStyleFormKey = record.CombatStyle.IsNull ? null : MapFormKey(record.CombatStyle.FormKey),
                 DefaultPackageListFormKey = record.DefaultPackageList.IsNull ? null : MapFormKey(record.DefaultPackageList.FormKey),
                 CrimeFactionFormKey = record.CrimeFaction.IsNull ? null : MapFormKey(record.CrimeFaction.FormKey),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.NPC.RecordType, record.FormKey, record.Keywords),
-                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.NPC.RecordType, record)
+                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.NPC.RecordID, record.FormKey, record.Keywords),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.NPC.RecordID, record)
             })
             .ToList();
     }
@@ -465,9 +465,9 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Unknown = Convert.ToHexString(record.Unknown.ToArray()),
                 Unknown2 = Convert.ToHexString(record.Unknown2.ToArray()),
                 DataTypeState = record.DATADataTypeState.ToString(),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.MagicEffect.RecordType, record.FormKey, record.Keywords),
-                Sounds = GetIndexedSounds(plugin, RecordTypeCatalog.MagicEffect.RecordType, record.FormKey, record),
-                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MagicEffect.RecordType, record)
+                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.MagicEffect.RecordID, record.FormKey, record.Keywords),
+                Sounds = GetIndexedSounds(plugin, RecordTypeCatalog.MagicEffect.RecordID, record.FormKey, record),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MagicEffect.RecordID, record)
             })
             .ToList();
     }
@@ -496,7 +496,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 MajorFlags = record.MajorFlags.ToString(),
                 Ranks = GetPerkRanks(record),
                 BackgroundSkills = GetPerkBackgroundSkills(record),
-                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Perk.RecordType, record)
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Perk.RecordID, record)
             })
             .ToList();
     }
@@ -624,7 +624,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 FormKey = MapFormKey(formKey),
                 ModelSlot = "Model",
                 ModelGender = string.Empty,
-                File = model.File?.ToString(),
+                  File = model.File?.ToString(),
                 TextureFileHashes = model.TextureFileHashes == null ? null : Convert.ToHexString(model.TextureFileHashes.Value.ToArray()),
                 LightLayer = model.LightLayer,
                 Flags = model.Flags?.ToString(),
@@ -962,7 +962,28 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
 
     private static object? GetPropertyValue(object? source, string propertyName)
     {
-        return source?.GetType().GetProperty(propertyName)?.GetValue(source);
+        if (source == null)
+        {
+            return null;
+        }
+
+        var sourceType = source.GetType();
+        var property = sourceType.GetProperty(propertyName);
+        if (property != null)
+        {
+            return property.GetValue(source);
+        }
+
+        foreach (var interfaceType in sourceType.GetInterfaces())
+        {
+            property = interfaceType.GetProperty(propertyName);
+            if (property != null)
+            {
+                return property.GetValue(source);
+            }
+        }
+
+        return null;
     }
 
     private static FormKeyDTO? GetFormKeyFromObject(object? value)

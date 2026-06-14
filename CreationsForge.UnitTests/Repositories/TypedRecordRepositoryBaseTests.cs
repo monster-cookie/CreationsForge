@@ -13,11 +13,16 @@ public class TypedRecordRepositoryBaseTests
         new()
         {
             RecordTypeCatalog.ActorValueInformation.TableName,
+            RecordTypeCatalog.Book.TableName,
+            RecordTypeCatalog.Container.TableName,
+            RecordTypeCatalog.Door.TableName,
             RecordTypeCatalog.Keyword.TableName,
             RecordTypeCatalog.MagicEffect.TableName,
             RecordTypeCatalog.MiscObject.TableName,
             RecordTypeCatalog.NPC.TableName,
-            RecordTypeCatalog.Perk.TableName
+            RecordTypeCatalog.Perk.TableName,
+            RecordTypeCatalog.Static.TableName,
+            RecordTypeCatalog.Terminal.TableName
         };
 
     public static TheoryData<string> UnsafeIdentifiers =>
