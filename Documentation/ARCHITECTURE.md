@@ -255,9 +255,9 @@ Services log workflow-level progress and failures. Repositories do not log.
 `ProcessTerminationDiagnosticsService` writes an application-data session marker with the current PID, log path, last
 import heartbeat, memory snapshot, process handle count, thread count, termination-request state, and clean-shutdown
 state. UI and CLI startup log an unexpected previous session when the prior marker was not cleanly shut down. Catchable
-process termination events such as console cancel and POSIX `SIGTERM`, `SIGINT`, and `SIGHUP` request import
-cancellation and update the session marker; hard kills such as `SIGKILL`, Windows task termination, and some OS memory
-kills are diagnosed only on the next launch from the last heartbeat.
+termination events observed by the app, such as console cancel, request import cancellation and update the session
+marker; hard kills such as `SIGKILL`, Windows task termination, and some OS memory kills are diagnosed only on the
+next launch from the last heartbeat.
 
 ## Shared Scripted Record Extension
 

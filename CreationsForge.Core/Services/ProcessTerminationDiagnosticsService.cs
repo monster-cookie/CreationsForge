@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CreationsForge.Core.Configuration.Interfaces;
@@ -22,7 +21,6 @@ public class ProcessTerminationDiagnosticsService : IProcessTerminationDiagnosti
     private readonly IApplicationConfigurationStore ConfigurationStore;
     private readonly ILogger Logger = Log.ForContext<ProcessTerminationDiagnosticsService>();
     private readonly CancellationTokenSource TerminationCancellationTokenSource = new();
-    private readonly List<PosixSignalRegistration> PosixSignalRegistrations = new();
     private string? SessionPath;
     private SessionState? CurrentSession;
     private bool Started;
@@ -120,12 +118,6 @@ public class ProcessTerminationDiagnosticsService : IProcessTerminationDiagnosti
             AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
             AppDomain.CurrentDomain.UnhandledException -= OnUnhandledException;
             TaskScheduler.UnobservedTaskException -= OnUnobservedTaskException;
-            foreach (var registration in PosixSignalRegistrations)
-            {
-                registration.Dispose();
-            }
-
-            PosixSignalRegistrations.Clear();
             TerminationCancellationTokenSource.Dispose();
         }
     }
@@ -136,24 +128,12 @@ public class ProcessTerminationDiagnosticsService : IProcessTerminationDiagnosti
         AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
-        if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
-        {
-            PosixSignalRegistrations.Add(PosixSignalRegistration.Create(PosixSignal.SIGTERM, OnPosixSignal));
-            PosixSignalRegistrations.Add(PosixSignalRegistration.Create(PosixSignal.SIGINT, OnPosixSignal));
-            PosixSignalRegistrations.Add(PosixSignalRegistration.Create(PosixSignal.SIGHUP, OnPosixSignal));
-        }
     }
 
     private void OnConsoleCancelKeyPress(object? sender, ConsoleCancelEventArgs e)
     {
         RequestTermination($"console {e.SpecialKey}", cancelDefaultTermination: true);
         e.Cancel = true;
-    }
-
-    private void OnPosixSignal(PosixSignalContext context)
-    {
-        RequestTermination(context.Signal.ToString(), cancelDefaultTermination: true);
-        context.Cancel = true;
     }
 
     private void OnProcessExit(object? sender, EventArgs e)
