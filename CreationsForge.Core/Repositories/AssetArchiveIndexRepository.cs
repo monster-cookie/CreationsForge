@@ -7,7 +7,7 @@ namespace CreationsForge.Core.Repositories;
 
 public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
 {
-    private const int InsertBatchSize = 500;
+    private const int InsertBatchSize = 100;
     private readonly IDatabase Database;
 
     public AssetArchiveIndexRepository(IDatabase database)

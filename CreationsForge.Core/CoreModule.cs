@@ -12,6 +12,8 @@ using CreationsForge.Core.Database.Interfaces;
 using CreationsForge.Core.Importers;
 using CreationsForge.Core.Importers.Interfaces;
 using CreationsForge.Core.Models.Database;
+using CreationsForge.Core.Services;
+using CreationsForge.Core.Services.Interfaces;
 using NPoco;
 using Module = Autofac.Module;
 
@@ -51,13 +53,17 @@ public class CoreModule : Module
 
         builder.RegisterType<GameImportDispatcher>().InstancePerLifetimeScope();
 
+        builder.RegisterType<ProcessTerminationDiagnosticsService>()
+            .As<IProcessTerminationDiagnosticsService>()
+            .SingleInstance();
+
         builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly())
             .Where(t => t.Name.EndsWith("Importer", StringComparison.OrdinalIgnoreCase) && t != typeof(GameImporter))
             .AsImplementedInterfaces()
             .InstancePerLifetimeScope();
 
         builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly())
-            .Where(t => t.Name.EndsWith("Service", StringComparison.OrdinalIgnoreCase))
+            .Where(t => t.Name.EndsWith("Service", StringComparison.OrdinalIgnoreCase) && t != typeof(ProcessTerminationDiagnosticsService))
             .AsImplementedInterfaces()
             .InstancePerLifetimeScope();
 
