@@ -222,6 +222,53 @@ public class RecordComparisonServiceTests
     }
 
     [Fact]
+    public void GetRecordComparison_ForPerk_ExpandsRanksBackgroundSkillsAndScripts()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x2CE2C0);
+        var staticFormKey = CreateFormKey("Starfield.esm", 0x333);
+        var backgroundSkillFormKey = CreateFormKey("Starfield.esm", 0x444);
+        var perkRepository = new TestPerkRepository
+        {
+            Records =
+            [
+                CreatePerk("Base.esm", formKey, "Chemistry", staticFormKey, backgroundSkillFormKey, "Base description", "Base value"),
+                CreatePerk("Patch.esp", formKey, "Chemistry", staticFormKey, backgroundSkillFormKey, "Patch description", "Patch value")
+            ]
+        };
+        var scriptingAdapterRepository = new TestScriptingAdapterRepository
+        {
+            Records =
+            [
+                CreateScriptingAdapter("Base.esm", RecordTypeCatalog.Perk.RecordID, formKey, "SkillScript", "RankProperty", "Base script value"),
+                CreateScriptingAdapter("Patch.esp", RecordTypeCatalog.Perk.RecordID, formKey, "SkillScript", "RankProperty", "Patch script value")
+            ]
+        };
+        var service = CreateService(
+            perkRepository: perkRepository,
+            scriptingAdapterRepository: scriptingAdapterRepository);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Perk.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["Chemistry", "Chemistry"]);
+        var ranks = comparison.Fields.Single(field => field.FieldName == "Ranks");
+        var rank = ranks.Children.Single(field => field.FieldName == "Rank [0]");
+        rank.Children.Single(field => field.FieldName == "Description").Values.Select(value => value.DisplayValue).ShouldBe(["Base description", "Patch description"]);
+        rank.Children.Single(field => field.FieldName == "UnknownStaticFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000333", "Starfield.esm:00000333"]);
+        var effects = rank.Children.Single(field => field.FieldName == "Effects");
+        var effect = effects.Children.Single(field => field.FieldName == "Effect [0]");
+        effect.Children.Single(field => field.FieldName == "MutagenObjectType").Values.Select(value => value.DisplayValue).ShouldBe(["PerkEntryPointModifyValue", "PerkEntryPointModifyValue"]);
+        effect.Children.Single(field => field.FieldName == "EntryPoint").Values.Select(value => value.DisplayValue).ShouldBe(["ModSkillUse", "ModSkillUse"]);
+        effect.Children.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["1.5", "2.5"]);
+        var backgroundSkills = comparison.Fields.Single(field => field.FieldName == "Background Skills");
+        backgroundSkills.Children.Single(field => field.FieldName == "Skill [0]").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000444", "Starfield.esm:00000444"]);
+        var scripts = comparison.Fields.Single(field => field.FieldName == "Scripts");
+        var script = scripts.Children.Single(field => field.FieldName == "Script [0]");
+        script.Children.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["SkillScript", "SkillScript"]);
+        var property = script.Children.Single(field => field.FieldName == "Property [0]");
+        property.Children.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["Base script value", "Patch script value"]);
+    }
+
+    [Fact]
     public void GetRecordComparison_ForStatic_MapsStaticFieldsAndRawPayloads()
     {
         var formKey = CreateFormKey("Starfield.esm", 0x1000);
@@ -904,6 +951,75 @@ public class RecordComparisonServiceTests
             Archetype = archetype,
             UnknownInt2 = unknownInt2,
             Flags = "None"
+        };
+    }
+
+    private static PerkDTO CreatePerk(string fileName, FormKeyDTO formKey, string name, FormKeyDTO unknownStaticFormKey, FormKeyDTO backgroundSkillFormKey, string rankDescription, string buttonLabel)
+    {
+        return new PerkDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            EditorID = "MyPerk",
+            FormVersion = 1,
+            MajorRecordFlags = 2,
+            ImportedAtUTC = DateTime.UtcNow,
+            Name = name,
+            Description = "Perk description",
+            Flags = "PcPlayable",
+            SkillGroup = "Expert",
+            CrewAssignment = "None",
+            PerkIcon = "Patch_Science_Chemistry",
+            Category = "Science",
+            MajorFlags = "0",
+            Ranks =
+            {
+                new PerkRankDTO
+                {
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    RankIndex = 0,
+                    Description = rankDescription,
+                    UnknownStaticFormKey = unknownStaticFormKey,
+                    ConditionCount = 1,
+                    ActivityCount = 2,
+                    ImportedAtUTC = DateTime.UtcNow,
+                    Effects =
+                    {
+                        new PerkRankEffectDTO
+                        {
+                            ModKey = CreateModKey(fileName),
+                            FormKey = formKey,
+                            RankIndex = 0,
+                            EffectIndex = 0,
+                            MutagenObjectType = "PerkEntryPointModifyValue",
+                            Rank = 1,
+                            Priority = 10,
+                            PerkEntryId = 20,
+                            Flags = "None",
+                            ButtonLabel = buttonLabel,
+                            ConditionCount = 3,
+                            EntryPoint = "ModSkillUse",
+                            PerkConditionTabCount = 4,
+                            Modification = "Add",
+                            Value = fileName.StartsWith("Base", StringComparison.Ordinal) ? 1.5 : 2.5,
+                            ImportedAtUTC = DateTime.UtcNow
+                        }
+                    }
+                }
+            },
+            BackgroundSkills =
+            {
+                new PerkBackgroundSkillDTO
+                {
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    SkillFormKey = backgroundSkillFormKey,
+                    SkillIndex = 0,
+                    ImportedAtUTC = DateTime.UtcNow
+                }
+            }
         };
     }
 

@@ -4,6 +4,8 @@ namespace CreationsForge.Core.DTOs.Records;
 
 public class PerkBackgroundSkillDTO
 {
+    public required ModKeyDTO ModKey { get; set; }
+
     public required FormKeyDTO FormKey { get; set; }
 
     public required FormKeyDTO SkillFormKey { get; set; }

@@ -1,5 +1,10 @@
 ﻿# Change Log
 
+## Unreleased
+
+- Fixed regression that removed several major record types child data.
+- Fixed regression that renamed MiscItem to MiscObject
+
 ## Version 1.1.7 - 2026-06-13
 
 - Added an experimental NIF Preview Pane (Starfield, FO4, and Skyrim).

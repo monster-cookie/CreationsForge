@@ -323,8 +323,8 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 RestrictionFormKey = GetLinkedFormKey(record, "Restriction"),
                 TrainingFormKey = GetLinkedFormKey(record, "Training"),
                 MajorFlags = GetPropertyStringOrNull(record, "MajorFlags"),
-                Ranks = GetPerkRanks(record),
-                BackgroundSkills = GetPerkBackgroundSkills(record),
+                Ranks = GetPerkRanks(plugin, record),
+                BackgroundSkills = GetPerkBackgroundSkills(plugin, record),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Perk.RecordID, record)
             })
             .ToList();
@@ -382,7 +382,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             .ToList();
     }
 
-    private static List<PerkRankDTO> GetPerkRanks(object record)
+    private static List<PerkRankDTO> GetPerkRanks(PluginDTO plugin, object record)
     {
         var ranks = GetPropertyValue(record, "Ranks") as IEnumerable;
         if (ranks == null) return new List<PerkRankDTO>();
@@ -393,6 +393,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             .Cast<object>()
             .Select((rank, rankIndex) => new PerkRankDTO
             {
+                ModKey = plugin.ModKey,
                 FormKey = MapFormKey(formKey),
                 RankIndex = rankIndex,
                 Description = GetLocalizedEnglishText(rank, "Description"),
@@ -400,16 +401,17 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 ConditionCount = GetEnumerableCount(GetPropertyValue(rank, "Conditions")),
                 ActivityCount = GetEnumerableCount(GetPropertyValue(rank, "Activities")),
                 ImportedAtUTC = importedAtUTC,
-                Effects = GetPerkRankEffects(formKey, rank, rankIndex, importedAtUTC)
+                Effects = GetPerkRankEffects(plugin, formKey, rank, rankIndex, importedAtUTC)
             })
             .ToList();
     }
 
-    private static List<PerkRankEffectDTO> GetPerkRankEffects(FormKey formKey, object rank, int rankIndex, DateTime importedAtUTC)
+    private static List<PerkRankEffectDTO> GetPerkRankEffects(PluginDTO plugin, FormKey formKey, object rank, int rankIndex, DateTime importedAtUTC)
     {
         return (GetPropertyValue(rank, "Effects") as IEnumerable)?.Cast<object>()
             .Select((effect, effectIndex) => new PerkRankEffectDTO
             {
+                ModKey = plugin.ModKey,
                 FormKey = MapFormKey(formKey),
                 RankIndex = rankIndex,
                 EffectIndex = effectIndex,
@@ -429,7 +431,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             .ToList() ?? new List<PerkRankEffectDTO>();
     }
 
-    private static List<PerkBackgroundSkillDTO> GetPerkBackgroundSkills(object record)
+    private static List<PerkBackgroundSkillDTO> GetPerkBackgroundSkills(PluginDTO plugin, object record)
     {
         var backgroundSkills = GetPropertyValue(record, "BackgroundSkills") as IEnumerable;
         if (backgroundSkills == null) return new List<PerkBackgroundSkillDTO>();
@@ -441,6 +443,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             .Select((skill, skillIndex) => GetFormKeyFromObject(skill) is { } skillFormKey
                 ? new PerkBackgroundSkillDTO
                 {
+                    ModKey = plugin.ModKey,
                     FormKey = MapFormKey(formKey),
                     SkillFormKey = skillFormKey,
                     SkillIndex = skillIndex,

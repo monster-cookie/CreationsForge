@@ -4,6 +4,8 @@ namespace CreationsForge.Core.DTOs.Records;
 
 public class PerkRankDTO
 {
+    public required ModKeyDTO ModKey { get; set; }
+
     public required FormKeyDTO FormKey { get; set; }
 
     public int RankIndex { get; set; }

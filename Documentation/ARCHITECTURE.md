@@ -165,20 +165,20 @@ renders record-type groups as expander sections with flat `TreeDataGrid` control
 slice covers common record header fields plus scalar persisted fields for `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`,
 `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, and `CONT`. GameSetting comparison displays the generic `Data` row instead of
 duplicating the Mutagen-derived typed data helper fields. MISC, NPC_, and MGEF comparison includes shared keyword rows.
-MISC and MGEF
-comparison includes shared sound rows. MISC comparison also includes persisted model rows and scripting adapter rows
-as hierarchical child rows in the comparison `TreeDataGrid`. STAT comparison includes scalar fields, shared keyword
-rows, shared model rows, and raw payload rows. BOOK comparison includes scalar fields plus shared models, keywords,
-sounds, scripting adapters, and raw payload rows. DOOR comparison includes scalar fields plus shared models, keywords,
-sounds, and raw payload rows. CONT comparison includes scalar fields, item rows, shared keyword rows, shared model
-rows, shared sound rows, and raw payload rows. TERM comparison includes scalar fields, shared models, keywords,
-scripting adapters, raw payload rows, and terminal marker parameter child rows. Raw payload values are compared by
-their retained full value but are summarized in the grid as `[UNPARSEABLE REFLECTION DATA]`; the presentation layer
-opens the full value in a hex-view dialog when the user selects the summarized value. MGEF DATA fields follow
-Mutagen/Spriggit's flattened record shape and display as flat comparison rows.
+MISC and MGEF comparison includes shared sound rows. MISC comparison also includes persisted model rows and scripting
+adapter rows as hierarchical child rows in the comparison `TreeDataGrid`. PERK comparison includes rank rows, nested
+rank-effect rows, background skill rows, and shared scripting adapter rows. STAT comparison includes scalar fields,
+shared keyword rows, shared model rows, and raw payload rows. BOOK comparison includes scalar fields plus shared
+models, keywords, sounds, scripting adapters, and raw payload rows. DOOR comparison includes scalar fields plus shared
+models, keywords, sounds, and raw payload rows. CONT comparison includes scalar fields, item rows, shared keyword rows,
+shared model rows, shared sound rows, and raw payload rows. TERM comparison includes scalar fields, shared models,
+keywords, scripting adapters, raw payload rows, and terminal marker parameter child rows. Raw payload values are
+compared by their retained full value but are summarized in the grid as `[UNPARSEABLE REFLECTION DATA]`; the
+presentation layer opens the full value in a hex-view dialog when the user selects the summarized value. MGEF DATA
+fields follow Mutagen/Spriggit's flattened record shape and display as flat comparison rows.
 Core assigns comparison value states for neutral, identical, conflicting, and displayed winning-override values; the
 presentation layer maps those states to the green, red, and yellow comparison colors and shows the legend in the status
-area. Deeper child sections such as perk ranks, patch generation, and conflict resolution workflows remain deferred.
+area.
 
 `IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows.
 `IAssetFileResolverService` resolves readable local asset files from preview candidates by checking absolute paths,

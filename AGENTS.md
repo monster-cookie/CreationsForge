@@ -240,6 +240,24 @@ schema documentation.
 - Presentation tests may cover view models, commands, selection/state logic, and pure render-data preparation.
 - Do not unit test live Avalonia windows, OpenGL contexts, GPU output, timing, focus, or pixel-perfect rendering.
 
+## DEFERRAL / INCOMPLETE WORK RULES
+
+- Codex must not mark any discovered missing behavior, child record family, UI surface, persistence read path, comparison row,
+  test coverage, or documentation update as "deferred", "follow-up", "out of scope", or "future work" unless the PLAN
+  explicitly lists it under Out of scope and the user approves that PLAN.
+- If existing code persists or imports data, the corresponding repository read path, comparison service output, UI render-data
+  path, and applicable tests are in scope unless the PLAN explicitly excludes them.
+- When adding or changing a typed record with child collections, the task is not complete until imported child data can be:
+  - persisted,
+  - read back into DTOs,
+  - exposed through comparison/render services,
+  - rendered by the UI/view model path when applicable,
+  - covered by unit and/or presentation tests.
+- If Codex finds documentation saying a behavior is deferred but code/schema/importers already support it, Codex must call
+  out the conflict in the PLAN and propose either implementing the missing path or explicitly re-approving the deferral.
+- TODO, deferred, follow-up, placeholder, and "not yet implemented" statements may not be added to docs or code comments
+  without explicit approval in the PLAN.
+
 ## Multi-game typed record support
 
 When adding, removing, or changing a shared typed record import, comparison, persistence, or UI browsing capability,

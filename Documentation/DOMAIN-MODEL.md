@@ -97,11 +97,13 @@ The first comparison slice displays common fields (`EditorID`, `FormVersion`, an
 records. FormLists also display `AddToListFormKey` and indexed `Items[n]` rows. GameSettings display `SettingType`
 and the generic `Data` value. Globals display `Data`. Starfield `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`,
 `STAT`, `BOOK`, `DOOR`, `CONT`, and `TERM` comparisons display their currently persisted scalar parent fields and
-record-reference fields. Starfield `MISC`, `NPC_`, `MGEF`, `BOOK`, `DOOR`, `CONT`, and `TERM` comparisons display
+record-reference fields. PERK comparison displays rank rows, nested rank-effect rows, background skill rows, and
+shared scripting adapter rows. Starfield `MISC`, `NPC_`, `MGEF`, `BOOK`, `DOOR`, `CONT`, and `TERM` comparisons display
 shared child rows when those payloads are persisted. `TERM` comparison also displays marker parameter child rows.
 MGEF DATA follows Mutagen/Spriggit's flattened record shape and displays as flat rows. Child comparison data such as
-keywords, models, sounds, scripts, raw payloads, items, and terminal marker parameters is represented as hierarchical
-rows in the comparison TreeDataGrid instead of flattened dotted field names.
+keywords, models, sounds, scripts, raw payloads, items, perk ranks, perk rank effects, perk background skills, and
+terminal marker parameters is represented as hierarchical rows in the comparison TreeDataGrid instead of flattened
+dotted field names.
 
 Comparable comparison rows are highlighted green when all visible plugin values match and red when any visible plugin
 value differs. Blank values count as values. Single-column comparisons and non-comparable informational rows remain
@@ -109,8 +111,7 @@ neutral. In a conflicting row, the far-right visible plugin value is highlighted
 the displayed load-order-sorted comparison set.
 
 The UI renders comparison DTOs from `IRecordComparisonService` and does not call repositories, database tables, or
-Mutagen APIs directly. Deep child sections beyond the current MISC model and scripting adapter rows, such as perk
-ranks, conflict resolution state, patch generation, and exact display FormID translation remain follow-up work.
+Mutagen APIs directly.
 
 ## Current Import Data
 
