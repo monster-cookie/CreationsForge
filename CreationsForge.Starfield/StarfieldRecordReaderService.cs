@@ -494,19 +494,20 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 RestrictionFormKey = record.Restriction.IsNull ? null : MapFormKey(record.Restriction.FormKey),
                 TrainingFormKey = record.Training.IsNull ? null : MapFormKey(record.Training.FormKey),
                 MajorFlags = record.MajorFlags.ToString(),
-                Ranks = GetPerkRanks(record),
-                BackgroundSkills = GetPerkBackgroundSkills(record),
+                Ranks = GetPerkRanks(plugin, record),
+                BackgroundSkills = GetPerkBackgroundSkills(plugin, record),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Perk.RecordID, record)
             })
             .ToList();
     }
 
-    private static List<PerkRankDTO> GetPerkRanks(IPerkGetter record)
+    private static List<PerkRankDTO> GetPerkRanks(PluginDTO plugin, IPerkGetter record)
     {
         var importedAtUTC = DateTime.UtcNow;
         return record.Ranks
             .Select((rank, rankIndex) => new PerkRankDTO
             {
+                ModKey = plugin.ModKey,
                 FormKey = MapFormKey(record.FormKey),
                 RankIndex = rankIndex,
                 Description = GetLocalizedEnglishText(() => rank.Description),
@@ -514,18 +515,19 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 ConditionCount = rank.Conditions?.Count ?? 0,
                 ActivityCount = rank.Activities?.Count ?? 0,
                 ImportedAtUTC = importedAtUTC,
-                Effects = GetPerkRankEffects(record.FormKey, rank, rankIndex, importedAtUTC)
+                Effects = GetPerkRankEffects(plugin, record.FormKey, rank, rankIndex, importedAtUTC)
             })
             .ToList();
     }
 
-    private static List<PerkRankEffectDTO> GetPerkRankEffects(FormKey formKey, IPerkRankGetter rank, int rankIndex, DateTime importedAtUTC)
+    private static List<PerkRankEffectDTO> GetPerkRankEffects(PluginDTO plugin, FormKey formKey, IPerkRankGetter rank, int rankIndex, DateTime importedAtUTC)
     {
         return rank.Effects
             .Select((effect, effectIndex) =>
             {
                 var dto = new PerkRankEffectDTO
                 {
+                    ModKey = plugin.ModKey,
                     FormKey = MapFormKey(formKey),
                     RankIndex = rankIndex,
                     EffectIndex = effectIndex,
@@ -556,12 +558,13 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             .ToList();
     }
 
-    private static List<PerkBackgroundSkillDTO> GetPerkBackgroundSkills(IPerkGetter record)
+    private static List<PerkBackgroundSkillDTO> GetPerkBackgroundSkills(PluginDTO plugin, IPerkGetter record)
     {
         var importedAtUTC = DateTime.UtcNow;
         return record.BackgroundSkills
             .Select((skill, skillIndex) => new PerkBackgroundSkillDTO
             {
+                ModKey = plugin.ModKey,
                 FormKey = MapFormKey(record.FormKey),
                 SkillFormKey = MapFormKey(skill.FormKey),
                 SkillIndex = skillIndex,

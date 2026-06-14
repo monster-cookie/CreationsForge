@@ -29,15 +29,13 @@ public class SpriggitComparisonHeadlessFixture
             .ReadPluginRecords(CreatePlugin(SupportedGame.Starfield, "Starfield.esm")));
     }
 
-    public ComparisonSample CreateSample(SupportedGame game, string recordType, string folderName, IReadOnlyList<string> requiredPaths)
+    public ComparisonSample CreateSample(SupportedGame game, string recordType, string folderName, IReadOnlyList<string> requiredPaths, Func<RecordDTO, bool>? recordPredicate = null)
     {
-        var sample = GetSample(game, folderName, requiredPaths);
-        if (!sample.TryGetFormKey(out var rawFormKey) || string.IsNullOrWhiteSpace(rawFormKey))
-        {
-            throw new InvalidOperationException($"Spriggit sample '{sample.FilePath}' should contain a FormKey.");
-        }
-
-        var record = GetRecord(game, recordType, rawFormKey);
+        var sampleRecord = recordPredicate is null
+            ? GetSampleRecord(game, recordType, folderName, requiredPaths)
+            : GetSampleRecord(game, recordType, folderName, requiredPaths, recordPredicate);
+        var sample = sampleRecord.Sample;
+        var record = sampleRecord.Record;
         var repository = new InMemoryComparisonRepository(record, recordType);
         var comparisonService = CreateComparisonService(repository);
         var plugin = CreatePlugin(game, record.ModKey.FileName);
@@ -45,6 +43,43 @@ public class SpriggitComparisonHeadlessFixture
         plugin.RecordCount = 1;
 
         return new ComparisonSample(game, recordType, record, plugin, sample, comparisonService);
+    }
+
+    private (SpriggitYamlDocument Sample, RecordDTO Record) GetSampleRecord(SupportedGame game, string recordType, string folderName, IReadOnlyList<string> requiredPaths)
+    {
+        var sample = GetSample(game, folderName, requiredPaths);
+        if (!sample.TryGetFormKey(out var rawFormKey) || string.IsNullOrWhiteSpace(rawFormKey))
+        {
+            throw new InvalidOperationException($"Spriggit sample '{sample.FilePath}' should contain a FormKey.");
+        }
+
+        return (sample, GetRecord(game, recordType, rawFormKey));
+    }
+
+    private (SpriggitYamlDocument Sample, RecordDTO Record) GetSampleRecord(SupportedGame game, string recordType, string folderName, IReadOnlyList<string> requiredPaths, Func<RecordDTO, bool> recordPredicate)
+    {
+        var folderPath = Path.Combine(GetSpriggitRootPath(game), folderName);
+        if (!Directory.Exists(folderPath))
+        {
+            throw new DirectoryNotFoundException($"Spriggit folder '{folderPath}' does not exist.");
+        }
+
+        foreach (var filePath in Directory.EnumerateFiles(folderPath, "*.yaml").OrderBy(static path => path, StringComparer.OrdinalIgnoreCase))
+        {
+            var document = SpriggitYamlDocument.Load(filePath);
+            if (!requiredPaths.All(document.HasPath) || !document.TryGetFormKey(out var rawFormKey) || string.IsNullOrWhiteSpace(rawFormKey))
+            {
+                continue;
+            }
+
+            var record = GetRecord(game, recordType, rawFormKey);
+            if (recordPredicate(record))
+            {
+                return (document, record);
+            }
+        }
+
+        throw new InvalidOperationException($"Unable to find a Spriggit sample in '{folderPath}' with paths '{string.Join(", ", requiredPaths)}' and matching imported record data.");
     }
 
     private SpriggitYamlDocument GetSample(SupportedGame game, string folderName, IReadOnlyList<string> requiredPaths)
@@ -102,6 +137,7 @@ public class SpriggitComparisonHeadlessFixture
             "GMST" => recordSet.GameSettings,
             "GLOB" => recordSet.Globals,
             "MISC" => recordSet.MiscObjects,
+            "PERK" => recordSet.Perks,
             _ => throw new InvalidOperationException($"Unsupported headless comparison record type '{recordType}'.")
         };
     }
@@ -253,6 +289,9 @@ public class SpriggitComparisonHeadlessFixture
                     break;
                 case "MISC":
                     miscObjects = [RequireRecord<MiscObjectDTO>(record, recordType)];
+                    break;
+                case "PERK":
+                    perks = [RequireRecord<PerkDTO>(record, recordType)];
                     break;
             }
 

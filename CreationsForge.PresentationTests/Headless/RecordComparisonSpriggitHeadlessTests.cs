@@ -55,7 +55,17 @@ public class RecordComparisonSpriggitHeadlessTests : IClassFixture<SpriggitCompa
                 [
                     new ComparisonExpectation(["Value"], "Value"),
                     new ComparisonExpectation(["Model", "File"], "Model.File")
-                ])
+                ]),
+            new ComparisonCase(
+                SupportedGame.Starfield,
+                RecordTypeCatalog.Perk.RecordID,
+                "Perks",
+                ["EditorID"],
+                [
+                    new ComparisonExpectation(["Ranks", "Rank [0]", "Effects", "Effect [0]", "Value"], null)
+                ],
+                record => ((PerkDTO)record).Ranks.Any(rank => rank.Effects.Count > 0),
+                "Ranks")
         };
 
         foreach (var comparisonCase in cases)
@@ -70,7 +80,8 @@ public class RecordComparisonSpriggitHeadlessTests : IClassFixture<SpriggitCompa
             comparisonCase.Game,
             comparisonCase.RecordType,
             comparisonCase.FolderName,
-            comparisonCase.RequiredPaths);
+            comparisonCase.RequiredPaths,
+            comparisonCase.RecordPredicate);
         var window = CreateWindowWithMainView(sample);
 
         try
@@ -96,11 +107,14 @@ public class RecordComparisonSpriggitHeadlessTests : IClassFixture<SpriggitCompa
                 row.ShouldNotBeNull($"Comparison row '{string.Join("/", expectation.FieldPath)}' should be present for sample '{sample.Spriggit.FilePath}'.");
                 var displayValue = row.GetValue(0);
                 displayValue.ShouldNotBeNullOrWhiteSpace($"Comparison row '{string.Join("/", expectation.FieldPath)}' should render a value for sample '{sample.Spriggit.FilePath}'.");
-                sample.Spriggit.ScalarMatchesDisplayValue(expectation.SpriggitPath, displayValue)
-                    .ShouldBeTrue($"Comparison row '{string.Join("/", expectation.FieldPath)}' value '{displayValue}' should match Spriggit path '{expectation.SpriggitPath}' in '{sample.Spriggit.FilePath}'.");
+                if (!string.IsNullOrWhiteSpace(expectation.SpriggitPath))
+                {
+                    sample.Spriggit.ScalarMatchesDisplayValue(expectation.SpriggitPath, displayValue)
+                        .ShouldBeTrue($"Comparison row '{string.Join("/", expectation.FieldPath)}' value '{displayValue}' should match Spriggit path '{expectation.SpriggitPath}' in '{sample.Spriggit.FilePath}'.");
+                }
             }
 
-            ShouldContainVisualText(mainView, comparisonCase.Expectations[0].FieldPath[^1]);
+            ShouldContainVisualText(mainView, comparisonCase.VisualText ?? comparisonCase.Expectations[0].FieldPath[^1]);
         }
         finally
         {
@@ -214,11 +228,13 @@ public class RecordComparisonSpriggitHeadlessTests : IClassFixture<SpriggitCompa
         string RecordType,
         string FolderName,
         IReadOnlyList<string> RequiredPaths,
-        IReadOnlyList<ComparisonExpectation> Expectations);
+        IReadOnlyList<ComparisonExpectation> Expectations,
+        Func<RecordDTO, bool>? RecordPredicate = null,
+        string? VisualText = null);
 
     private sealed record ComparisonExpectation(
         IReadOnlyList<string> FieldPath,
-        string SpriggitPath);
+        string? SpriggitPath);
 
     private class FakeGameSelectionService : IGameSelectionService
     {

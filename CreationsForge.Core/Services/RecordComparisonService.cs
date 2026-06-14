@@ -313,6 +313,9 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("RestrictionFormKey", records, record => FormatFormKey(record.RestrictionFormKey)));
         fields.Add(CreateField("TrainingFormKey", records, record => FormatFormKey(record.TrainingFormKey)));
         fields.Add(CreateField("MajorFlags", records, record => record.MajorFlags ?? string.Empty));
+        AddPerkRankGroups(fields, records);
+        AddPerkBackgroundSkillGroup(fields, records);
+        AddScriptingAdapterGroups(fields, records.Cast<RecordDTO>().ToList(), ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Perk.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.Perk.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
@@ -645,6 +648,121 @@ public class RecordComparisonService : IRecordComparisonService
         }
     }
 
+    private static void AddPerkRankGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<PerkDTO> records)
+    {
+        var rankIndexes = records
+            .SelectMany(record => record.Ranks)
+            .Select(rank => rank.RankIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (rankIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var rankFields = new List<RecordComparisonFieldDTO>();
+        foreach (var rankIndex in rankIndexes)
+        {
+            var currentRankIndex = rankIndex;
+            var rankChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("Description", records, record => FindPerkRank(record, currentRankIndex)?.Description ?? string.Empty),
+                CreateField("UnknownStaticFormKey", records, record => FormatFormKey(FindPerkRank(record, currentRankIndex)?.UnknownStaticFormKey)),
+                CreateField("ConditionCount", records, record => FindPerkRank(record, currentRankIndex)?.ConditionCount.ToString() ?? string.Empty),
+                CreateField("ActivityCount", records, record => FindPerkRank(record, currentRankIndex)?.ActivityCount.ToString() ?? string.Empty)
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            AddPerkRankEffectGroups(rankChildren, records, currentRankIndex);
+            if (rankChildren.Count > 0)
+            {
+                rankFields.Add(CreateGroupField($"Rank [{rankIndex}]", records.Cast<RecordDTO>().ToList(), rankChildren));
+            }
+        }
+
+        if (rankFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("Ranks", records.Cast<RecordDTO>().ToList(), rankFields));
+        }
+    }
+
+    private static void AddPerkRankEffectGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<PerkDTO> records,
+        int rankIndex)
+    {
+        var effectIndexes = records
+            .SelectMany(record => record.Ranks.Where(rank => rank.RankIndex == rankIndex))
+            .SelectMany(rank => rank.Effects)
+            .Select(effect => effect.EffectIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (effectIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var effectFields = new List<RecordComparisonFieldDTO>();
+        foreach (var effectIndex in effectIndexes)
+        {
+            var currentEffectIndex = effectIndex;
+            var effectChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("MutagenObjectType", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.MutagenObjectType ?? string.Empty),
+                CreateField("Rank", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.Rank.ToString() ?? string.Empty),
+                CreateField("Priority", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.Priority.ToString() ?? string.Empty),
+                CreateField("PerkEntryID", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.PerkEntryId?.ToString() ?? string.Empty),
+                CreateField("Flags", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.Flags ?? string.Empty),
+                CreateField("ButtonLabel", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.ButtonLabel ?? string.Empty),
+                CreateField("ConditionCount", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.ConditionCount.ToString() ?? string.Empty),
+                CreateField("EntryPoint", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.EntryPoint ?? string.Empty),
+                CreateField("PerkConditionTabCount", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.PerkConditionTabCount?.ToString() ?? string.Empty),
+                CreateField("Modification", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.Modification ?? string.Empty),
+                CreateField("Value", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.Value?.ToString() ?? string.Empty)
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (effectChildren.Count > 0)
+            {
+                effectFields.Add(CreateGroupField($"Effect [{effectIndex}]", records.Cast<RecordDTO>().ToList(), effectChildren));
+            }
+        }
+
+        if (effectFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("Effects", records.Cast<RecordDTO>().ToList(), effectFields));
+        }
+    }
+
+    private static void AddPerkBackgroundSkillGroup(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<PerkDTO> records)
+    {
+        var skillIndexes = records
+            .SelectMany(record => record.BackgroundSkills)
+            .Select(skill => skill.SkillIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (skillIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var skillFields = new List<RecordComparisonFieldDTO>();
+        foreach (var skillIndex in skillIndexes)
+        {
+            var currentSkillIndex = skillIndex;
+            skillFields.Add(CreateField($"Skill [{skillIndex}]", records, record => FormatFormKey(FindPerkBackgroundSkill(record, currentSkillIndex)?.SkillFormKey)));
+        }
+
+        fields.Add(CreateGroupField("Background Skills", records.Cast<RecordDTO>().ToList(), skillFields));
+    }
+
     private static void AddTerminalMarkerParameterGroups(
         IList<RecordComparisonFieldDTO> fields,
         IReadOnlyList<TerminalDTO> records)
@@ -888,6 +1006,21 @@ public class RecordComparisonService : IRecordComparisonService
         return payloads.FirstOrDefault(payload => IsSameModKey(payload.ModKey, modKey) &&
             string.Equals(payload.PayloadSlot, payloadKey.Slot, StringComparison.Ordinal) &&
             payload.PayloadIndex == payloadKey.Index);
+    }
+
+    private static PerkRankDTO? FindPerkRank(PerkDTO record, int rankIndex)
+    {
+        return record.Ranks.FirstOrDefault(rank => rank.RankIndex == rankIndex);
+    }
+
+    private static PerkRankEffectDTO? FindPerkRankEffect(PerkDTO record, int rankIndex, int effectIndex)
+    {
+        return FindPerkRank(record, rankIndex)?.Effects.FirstOrDefault(effect => effect.EffectIndex == effectIndex);
+    }
+
+    private static PerkBackgroundSkillDTO? FindPerkBackgroundSkill(PerkDTO record, int skillIndex)
+    {
+        return record.BackgroundSkills.FirstOrDefault(skill => skill.SkillIndex == skillIndex);
     }
 
     private static ScriptingAdapterDTO? FindScriptingAdapter(IReadOnlyList<ScriptingAdapterDTO> scriptingAdapters, ModKeyDTO modKey, int scriptIndex)

@@ -1,4 +1,6 @@
+using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
+using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Repositories.Interfaces;
 using NPoco;
@@ -15,9 +17,9 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
 
     protected override string TableName => RecordTypeCatalog.Perk.TableName;
 
-    public IReadOnlyList<PerkDTO> GetByFormKey(CreationsForge.Core.Enums.SupportedGame game, CreationsForge.Core.DTOs.Plugins.FormKeyDTO formKey)
+    public IReadOnlyList<PerkDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
     {
-        return FetchByFormKey<PerkRow>(
+        var records = FetchByFormKey<PerkRow>(
                 game,
                 formKey,
                 [
@@ -40,6 +42,33 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
                 ])
             .Select(record => ToDTO(record, game))
             .ToList();
+        var rankRows = FetchRankRowsByFormKey(game, formKey);
+        var effectRows = FetchRankEffectRowsByFormKey(game, formKey);
+        var backgroundSkillRows = FetchBackgroundSkillRowsByFormKey(game, formKey);
+        foreach (var record in records)
+        {
+            record.Ranks = rankRows
+                .Where(rank => IsSameModKey(rank, record.ModKey))
+                .OrderBy(rank => rank.RankIndex)
+                .Select(ToDTO)
+                .ToList();
+            foreach (var rank in record.Ranks)
+            {
+                rank.Effects = effectRows
+                    .Where(effect => IsSameModKey(effect, record.ModKey) && effect.RankIndex == rank.RankIndex)
+                    .OrderBy(effect => effect.EffectIndex)
+                    .Select(ToDTO)
+                    .ToList();
+            }
+
+            record.BackgroundSkills = backgroundSkillRows
+                .Where(skill => IsSameModKey(skill, record.ModKey))
+                .OrderBy(skill => skill.SkillIndex)
+                .Select(ToDTO)
+                .ToList();
+        }
+
+        return records;
     }
 
     public void Save(PerkDTO dto)
@@ -99,6 +128,7 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
         foreach (var rank in dto.Ranks)
         {
             rank.FormKey = dto.FormKey;
+            rank.ModKey = dto.ModKey;
             rank.ImportedAtUTC = dto.ImportedAtUTC;
             Database.Execute(
                 """
@@ -135,6 +165,7 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
             foreach (var effect in rank.Effects)
             {
                 effect.FormKey = dto.FormKey;
+                effect.ModKey = dto.ModKey;
                 effect.RankIndex = rank.RankIndex;
                 effect.ImportedAtUTC = dto.ImportedAtUTC;
                 Database.Execute(
@@ -177,13 +208,82 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
         }
     }
 
-    private static PerkDTO ToDTO(PerkRow record, CreationsForge.Core.Enums.SupportedGame game)
+    private IReadOnlyList<PerkRankRow> FetchRankRowsByFormKey(SupportedGame game, FormKeyDTO formKey)
+    {
+        return Database.Fetch<PerkRankRow>(
+                """
+                SELECT *
+                FROM PerkRanks
+                WHERE Game = @Game
+                  AND FormKey_ModKey_Name = @FormKeyModKeyName COLLATE NOCASE
+                  AND FormKey_ModKey_Type = @FormKeyModKeyType
+                  AND FormKey_ModKey_FileName = @FormKeyModKeyFileName COLLATE NOCASE
+                  AND FormKey_ID = @FormKeyId
+                ORDER BY ModKey_FileName COLLATE NOCASE, Rank_Index;
+                """,
+                new
+                {
+                    Game = game.ToString(),
+                    FormKeyModKeyName = formKey.ModKey.Name,
+                    FormKeyModKeyType = formKey.ModKey.Type,
+                    FormKeyModKeyFileName = formKey.ModKey.FileName,
+                    FormKeyId = formKey.Id
+                });
+    }
+
+    private IReadOnlyList<PerkRankEffectRow> FetchRankEffectRowsByFormKey(SupportedGame game, FormKeyDTO formKey)
+    {
+        return Database.Fetch<PerkRankEffectRow>(
+                """
+                SELECT *
+                FROM PerkRankEffects
+                WHERE Game = @Game
+                  AND FormKey_ModKey_Name = @FormKeyModKeyName COLLATE NOCASE
+                  AND FormKey_ModKey_Type = @FormKeyModKeyType
+                  AND FormKey_ModKey_FileName = @FormKeyModKeyFileName COLLATE NOCASE
+                  AND FormKey_ID = @FormKeyId
+                ORDER BY ModKey_FileName COLLATE NOCASE, Rank_Index, Effect_Index;
+                """,
+                new
+                {
+                    Game = game.ToString(),
+                    FormKeyModKeyName = formKey.ModKey.Name,
+                    FormKeyModKeyType = formKey.ModKey.Type,
+                    FormKeyModKeyFileName = formKey.ModKey.FileName,
+                    FormKeyId = formKey.Id
+                });
+    }
+
+    private IReadOnlyList<PerkBackgroundSkillRow> FetchBackgroundSkillRowsByFormKey(SupportedGame game, FormKeyDTO formKey)
+    {
+        return Database.Fetch<PerkBackgroundSkillRow>(
+                """
+                SELECT *
+                FROM PerkBackgroundSkills
+                WHERE Game = @Game
+                  AND FormKey_ModKey_Name = @FormKeyModKeyName COLLATE NOCASE
+                  AND FormKey_ModKey_Type = @FormKeyModKeyType
+                  AND FormKey_ModKey_FileName = @FormKeyModKeyFileName COLLATE NOCASE
+                  AND FormKey_ID = @FormKeyId
+                ORDER BY ModKey_FileName COLLATE NOCASE, Skill_Index;
+                """,
+                new
+                {
+                    Game = game.ToString(),
+                    FormKeyModKeyName = formKey.ModKey.Name,
+                    FormKeyModKeyType = formKey.ModKey.Type,
+                    FormKeyModKeyFileName = formKey.ModKey.FileName,
+                    FormKeyId = formKey.Id
+                });
+    }
+
+    private static PerkDTO ToDTO(PerkRow record, SupportedGame game)
     {
         var dto = new PerkDTO
         {
             Game = game,
-            ModKey = new CreationsForge.Core.DTOs.Plugins.ModKeyDTO { Name = string.Empty, Type = 0, FileName = string.Empty },
-            FormKey = new CreationsForge.Core.DTOs.Plugins.FormKeyDTO { ModKey = new CreationsForge.Core.DTOs.Plugins.ModKeyDTO { Name = string.Empty, Type = 0, FileName = string.Empty }, Id = 0 },
+            ModKey = new ModKeyDTO { Name = string.Empty, Type = 0, FileName = string.Empty },
+            FormKey = new FormKeyDTO { ModKey = new ModKeyDTO { Name = string.Empty, Type = 0, FileName = string.Empty }, Id = 0 },
             EditorID = string.Empty,
             FormVersion = 0,
             MajorRecordFlags = 0,
@@ -201,6 +301,89 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
         };
         ApplyCommonFields(dto, record, game);
         return dto;
+    }
+
+    private static PerkRankDTO ToDTO(PerkRankRow row)
+    {
+        return new PerkRankDTO
+        {
+            ModKey = CreateModKey(row.ModKeyName, row.ModKeyType, row.ModKeyFileName),
+            FormKey = CreateFormKey(row.FormKeyModKeyName, row.FormKeyModKeyType, row.FormKeyModKeyFileName, row.FormKeyId),
+            RankIndex = row.RankIndex,
+            Description = row.Description,
+            UnknownStaticFormKey = CreateNullableFormKey(row.UnknownStaticModKeyName, row.UnknownStaticModKeyType, row.UnknownStaticModKeyFileName, row.UnknownStaticFormKeyId),
+            ConditionCount = row.ConditionCount,
+            ActivityCount = row.ActivityCount,
+            ImportedAtUTC = row.ImportedAtUTC
+        };
+    }
+
+    private static PerkRankEffectDTO ToDTO(PerkRankEffectRow row)
+    {
+        return new PerkRankEffectDTO
+        {
+            ModKey = CreateModKey(row.ModKeyName, row.ModKeyType, row.ModKeyFileName),
+            FormKey = CreateFormKey(row.FormKeyModKeyName, row.FormKeyModKeyType, row.FormKeyModKeyFileName, row.FormKeyId),
+            RankIndex = row.RankIndex,
+            EffectIndex = row.EffectIndex,
+            MutagenObjectType = row.MutagenObjectType,
+            Rank = row.Rank,
+            Priority = row.Priority,
+            PerkEntryId = row.PerkEntryID,
+            Flags = row.Flags,
+            ButtonLabel = row.ButtonLabel,
+            ConditionCount = row.ConditionCount,
+            EntryPoint = row.EntryPoint,
+            PerkConditionTabCount = row.PerkConditionTabCount,
+            Modification = row.Modification,
+            Value = row.Value,
+            ImportedAtUTC = row.ImportedAtUTC
+        };
+    }
+
+    private static PerkBackgroundSkillDTO ToDTO(PerkBackgroundSkillRow row)
+    {
+        return new PerkBackgroundSkillDTO
+        {
+            ModKey = CreateModKey(row.ModKeyName, row.ModKeyType, row.ModKeyFileName),
+            FormKey = CreateFormKey(row.FormKeyModKeyName, row.FormKeyModKeyType, row.FormKeyModKeyFileName, row.FormKeyId),
+            SkillFormKey = CreateFormKey(row.SkillModKeyName, row.SkillModKeyType, row.SkillModKeyFileName, row.SkillFormKeyId),
+            SkillIndex = row.SkillIndex,
+            ImportedAtUTC = row.ImportedAtUTC
+        };
+    }
+
+    private static ModKeyDTO CreateModKey(string name, int type, string fileName)
+    {
+        return new ModKeyDTO
+        {
+            Name = name,
+            Type = type,
+            FileName = fileName
+        };
+    }
+
+    private static FormKeyDTO CreateFormKey(string modKeyName, int modKeyType, string modKeyFileName, long formKeyId)
+    {
+        return new FormKeyDTO
+        {
+            ModKey = CreateModKey(modKeyName, modKeyType, modKeyFileName),
+            Id = (uint)formKeyId
+        };
+    }
+
+    private static bool IsSameModKey(ModKeyDTO first, ModKeyDTO second)
+    {
+        return first.Type == second.Type &&
+            string.Equals(first.Name, second.Name, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(first.FileName, second.FileName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsSameModKey(PerkChildRow row, ModKeyDTO modKey)
+    {
+        return row.ModKeyType == modKey.Type &&
+            string.Equals(row.ModKeyName, modKey.Name, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(row.ModKeyFileName, modKey.FileName, StringComparison.OrdinalIgnoreCase);
     }
 
     private sealed class PerkRow : RecordRow
@@ -223,11 +406,63 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
         public string? MajorFlags { get; set; }
     }
 
+    private abstract class PerkChildRow
+    {
+        public string Game { get; set; } = string.Empty;
+        public string ModKeyName { get; set; } = string.Empty;
+        public int ModKeyType { get; set; }
+        public string ModKeyFileName { get; set; } = string.Empty;
+        public string FormKeyModKeyName { get; set; } = string.Empty;
+        public int FormKeyModKeyType { get; set; }
+        public string FormKeyModKeyFileName { get; set; } = string.Empty;
+        public long FormKeyId { get; set; }
+        public DateTime ImportedAtUTC { get; set; }
+    }
+
+    private sealed class PerkRankRow : PerkChildRow
+    {
+        public int RankIndex { get; set; }
+        public string? Description { get; set; }
+        public string? UnknownStaticModKeyName { get; set; }
+        public int? UnknownStaticModKeyType { get; set; }
+        public string? UnknownStaticModKeyFileName { get; set; }
+        public long? UnknownStaticFormKeyId { get; set; }
+        public int ConditionCount { get; set; }
+        public int ActivityCount { get; set; }
+    }
+
+    private sealed class PerkRankEffectRow : PerkChildRow
+    {
+        public int RankIndex { get; set; }
+        public int EffectIndex { get; set; }
+        public string MutagenObjectType { get; set; } = string.Empty;
+        public int Rank { get; set; }
+        public int Priority { get; set; }
+        public int? PerkEntryID { get; set; }
+        public string? Flags { get; set; }
+        public string? ButtonLabel { get; set; }
+        public int ConditionCount { get; set; }
+        public string? EntryPoint { get; set; }
+        public int? PerkConditionTabCount { get; set; }
+        public string? Modification { get; set; }
+        public double? Value { get; set; }
+    }
+
+    private sealed class PerkBackgroundSkillRow : PerkChildRow
+    {
+        public string SkillModKeyName { get; set; } = string.Empty;
+        public int SkillModKeyType { get; set; }
+        public string SkillModKeyFileName { get; set; } = string.Empty;
+        public long SkillFormKeyId { get; set; }
+        public int SkillIndex { get; set; }
+    }
+
     private void SaveBackgroundSkills(PerkDTO dto)
     {
         foreach (var backgroundSkill in dto.BackgroundSkills)
         {
             backgroundSkill.FormKey = dto.FormKey;
+            backgroundSkill.ModKey = dto.ModKey;
             backgroundSkill.ImportedAtUTC = dto.ImportedAtUTC;
             Database.Execute(
                 """
