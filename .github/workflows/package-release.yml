@@ -6,7 +6,7 @@ on:
       - 'v*.*.*'
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   DOTNET_VERSION: ${{ vars.DOTNET_VERSION || '10.0.x' }}
@@ -438,3 +438,68 @@ jobs:
           name: creationsforge-${{ env.PACKAGE_VERSION }}-1-x86_64-pkg
           path: artifacts/creationsforge-${{ env.PACKAGE_VERSION }}-1-x86_64.pkg.tar.zst
           if-no-files-found: error
+
+  create-release:
+    name: Create GitHub Release
+    needs:
+      - validate-tag-source
+      - validate-release
+      - package-windows
+      - package-linux
+      - package-arch
+    runs-on: ubuntu-latest
+    env:
+      PACKAGE_VERSION: ${{ needs.validate-tag-source.outputs.version }}
+
+    steps:
+      - name: Download Windows installer artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: CreationsForge-Setup-${{ env.PACKAGE_VERSION }}
+          path: ./artifacts/release/windows
+
+      - name: Download Debian package artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: CreationsForge-${{ env.PACKAGE_VERSION }}-amd64-deb
+          path: ./artifacts/release/linux-deb
+
+      - name: Download Arch package artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: creationsforge-${{ env.PACKAGE_VERSION }}-1-x86_64-pkg
+          path: ./artifacts/release/linux-arch
+
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Extract release notes from change log
+        shell: pwsh
+        run: |
+          $version = $env:PACKAGE_VERSION
+          $changeLogPath = Join-Path $env:GITHUB_WORKSPACE 'Documentation/CHANGE-LOG.md'
+          $releaseNotesPath = Join-Path $env:GITHUB_WORKSPACE 'artifacts/release/release-notes.md'
+          $content = Get-Content -LiteralPath $changeLogPath -Raw
+          $escapedVersion = [Regex]::Escape($version)
+          $pattern = "(?ms)^## Version $escapedVersion - .*?(?=^## Version \d+\.\d+\.\d+ - |\z)"
+          $match = [Regex]::Match($content, $pattern)
+
+          if (-not $match.Success) {
+              throw "Unable to find release notes in Documentation/CHANGE-LOG.md for version $version."
+          }
+
+          $releaseNotesDirectory = Split-Path -Path $releaseNotesPath -Parent
+          New-Item -ItemType Directory -Force -Path $releaseNotesDirectory | Out-Null
+          [System.IO.File]::WriteAllText($releaseNotesPath, $match.Value.Trim())
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body_path: ./artifacts/release/release-notes.md
+          fail_on_unmatched_files: true
+          files: |
+            ./artifacts/release/windows/CreationsForge-Setup-${{ env.PACKAGE_VERSION }}.exe
+            ./artifacts/release/linux-deb/CreationsForge_${{ env.PACKAGE_VERSION }}_amd64.deb
+            ./artifacts/release/linux-arch/creationsforge-${{ env.PACKAGE_VERSION }}-1-x86_64.pkg.tar.zst
