@@ -8,10 +8,14 @@ IMPORTANT: Creations Forge is a major replacement for Starfield Record Compare E
 [/quote]
 
 [quote]
-NOTE: This is an early multi-game release. Strafield mode currently supports the shared record-type slice listed below, and record-type support will expand over time.
+NOTE: This is an early multi-game release. Starfield mode currently supports the shared record-type slice listed below, and record-type support will expand over time.
 
 Starfield must be installed on the system so the application can discover the local load order and plugin files.
+
+Currently MO2 breaks how mutagen assembles and accesses split masters. So using Creations Forge with MO2 currently is not supported, but I'm looking into the issue.
 [/quote]
+
+Please report bugs here: [url=https://github.com/monster-cookie/CreationsForge/issues]https://github.com/monster-cookie/CreationsForge/issues[/url]
 
 [size=4][b][u]Features[/u][/b][/size]
 [list]
@@ -21,11 +25,16 @@ Starfield must be installed on the system so the application can discover the lo
 [*]Compares matching records across imported plugins in load-order order.[/*]
 [*]Highlights matching values in green, conflicts in red, and the visible winning override in yellow.[/*]
 [*]Includes a CLI harness for selected-game imports, forced reimports, and reset/import-all workflows.[/*]
+[*]NEW: Model previewer[/*]
+[*]NEW: Binary Reflection Viewer as Hexadecimal with strings[/*]
 [/list]
 
 [size=4][b][u]Currently Supported Starfield Record Types[/u][/b][/size]
 [list]
 [*]Actor Value Information (AVIF)[/*]
+[*]Book (BOOK)[/*]
+[*]Container (CONT)[/*]
+[*]Door (DOOR)[/*]
 [*]Form Lists (FLST)[/*]
 [*]Game Settings (GMST)[/*]
 [*]Globals (GLOB)[/*]
@@ -34,6 +43,8 @@ Starfield must be installed on the system so the application can discover the lo
 [*]Miscellaneous Items (MISC)[/*]
 [*]NPCs (NPC_)[/*]
 [*]Perks (PERK)[/*]
+[*]Static (STAT)[/*]
+[*]Terminals (TERM)[/*]
 [/list]
 
 [size=4][b][u]Other Supported Games[/u][/b][/size]

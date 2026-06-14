@@ -1,7 +1,40 @@
 namespace CreationsForge.Core.Helpers;
 
+/// <summary>
+/// Listing of all currently implemented major record types
+/// 
+/// NOTE: Please keep these alphabetized. 
+/// </summary>
 public static class RecordTypeCatalog
 {
+    public static readonly RecordTypeData ActorValueInformation = new()
+    {
+        TableName = "ActorValueInformation",
+        RecordType = "ActorValueInformation",
+        RecordID = "AVIF"
+    };
+
+    public static readonly RecordTypeData Book = new()
+    {
+        TableName = "Books",
+        RecordType = "Book",
+        RecordID = "BOOK"
+    };
+
+    public static readonly RecordTypeData Container = new()
+    {
+        TableName = "Containers",
+        RecordType = "Container",
+        RecordID = "CONT"
+    };
+
+    public static readonly RecordTypeData Door = new()
+    {
+        TableName = "Doors",
+        RecordType = "Door",
+        RecordID = "DOOR"
+    };
+
     public static readonly RecordTypeData FormList = new()
     {
         TableName = "FormLists",
@@ -23,13 +56,6 @@ public static class RecordTypeCatalog
         RecordID = "GLOB"
     };
 
-    public static readonly RecordTypeData MiscObject = new()
-    {
-        TableName = "MiscObjects",
-        RecordType = "MiscObject",
-        RecordID = "MISC"
-    };
-
     public static readonly RecordTypeData Keyword = new()
     {
         TableName = "Keywords",
@@ -37,11 +63,18 @@ public static class RecordTypeCatalog
         RecordID = "KYWD"
     };
 
-    public static readonly RecordTypeData ActorValueInformation = new()
+    public static readonly RecordTypeData MagicEffect = new()
     {
-        TableName = "ActorValueInformation",
-        RecordType = "ActorValueInformation",
-        RecordID = "AVIF"
+        TableName = "MagicEffects",
+        RecordType = "MagicEffect",
+        RecordID = "MGEF"
+    };
+
+    public static readonly RecordTypeData MiscObject = new()
+    {
+        TableName = "MiscItems",
+        RecordType = "MiscItems",
+        RecordID = "MISC"
     };
 
     public static readonly RecordTypeData NPC = new()
@@ -49,13 +82,6 @@ public static class RecordTypeCatalog
         TableName = "NPCs",
         RecordType = "NPC",
         RecordID = "NPC_"
-    };
-
-    public static readonly RecordTypeData MagicEffect = new()
-    {
-        TableName = "MagicEffects",
-        RecordType = "MagicEffect",
-        RecordID = "MGEF"
     };
 
     public static readonly RecordTypeData Perk = new()
@@ -72,30 +98,9 @@ public static class RecordTypeCatalog
         RecordID = "STAT"
     };
 
-    public static readonly RecordTypeData Book = new()
-    {
-        TableName = "RecordInstances",
-        RecordType = "Book",
-        RecordID = "BOOK"
-    };
-
-    public static readonly RecordTypeData Door = new()
-    {
-        TableName = "RecordInstances",
-        RecordType = "Door",
-        RecordID = "DOOR"
-    };
-
-    public static readonly RecordTypeData Container = new()
-    {
-        TableName = "Containers",
-        RecordType = "Container",
-        RecordID = "CONT"
-    };
-
     public static readonly RecordTypeData Terminal = new()
     {
-        TableName = "RecordInstances",
+        TableName = "Terminals",
         RecordType = "Terminal",
         RecordID = "TERM"
     };
