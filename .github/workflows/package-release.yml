@@ -492,14 +492,38 @@ jobs:
           New-Item -ItemType Directory -Force -Path $releaseNotesDirectory | Out-Null
           [System.IO.File]::WriteAllText($releaseNotesPath, $match.Value.Trim())
 
+      - name: Resolve release asset paths
+        id: release-assets
+        shell: pwsh
+        run: |
+          $windowsInstaller = Get-ChildItem -Path ./artifacts/release/windows -Recurse -File | Select-Object -First 1 -ExpandProperty FullName
+          $debianPackage = Get-ChildItem -Path ./artifacts/release/linux-deb -Recurse -Filter *.deb -File | Select-Object -First 1 -ExpandProperty FullName
+          $archPackage = Get-ChildItem -Path ./artifacts/release/linux-arch -Recurse -Filter *.pkg.tar.zst -File | Select-Object -First 1 -ExpandProperty FullName
+
+          if (-not $windowsInstaller) {
+              throw "Unable to find downloaded Windows installer artifact."
+          }
+
+          if (-not $debianPackage) {
+              throw "Unable to find downloaded Debian package artifact."
+          }
+
+          if (-not $archPackage) {
+              throw "Unable to find downloaded Arch package artifact."
+          }
+
+          "windows_installer=$windowsInstaller" >> $env:GITHUB_OUTPUT
+          "debian_package=$debianPackage" >> $env:GITHUB_OUTPUT
+          "arch_package=$archPackage" >> $env:GITHUB_OUTPUT
+
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
-          body_path: ./artifacts/release/release-notes.md
-          fail_on_unmatched_files: true
-          files: |
-            ./artifacts/release/windows/CreationsForge-Setup-${{ env.PACKAGE_VERSION }}.exe
-            ./artifacts/release/linux-deb/CreationsForge_${{ env.PACKAGE_VERSION }}_amd64.deb
-            ./artifacts/release/linux-arch/creationsforge-${{ env.PACKAGE_VERSION }}-1-x86_64.pkg.tar.zst
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            "${{ steps.release-assets.outputs.windows_installer }}" \
+            "${{ steps.release-assets.outputs.debian_package }}" \
+            "${{ steps.release-assets.outputs.arch_package }}" \
+            --title "${{ github.ref_name }}" \
+            --notes-file "./artifacts/release/release-notes.md"
