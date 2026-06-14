@@ -1,6 +1,6 @@
 ﻿# Change Log
 
-## Unreleased
+## Version 1.1.3 - 2026-06-13
 
 - Added an experimental NIF Preview Pane (Starfield, FO4, and Skyrim).
 - Added early support for previewing textured meshes in the preview pane.
