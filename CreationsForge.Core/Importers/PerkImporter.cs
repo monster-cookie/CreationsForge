@@ -12,14 +12,14 @@ namespace CreationsForge.Core.Importers;
 public class PerkImporter : ITypedRecordImporter
 {
     private readonly IPerkRepository PerkRepository;
-    private readonly IScriptingAdapterImportService ScriptingAdapterImportService;
+    private readonly IRecordChildImportService RecordChildImportService;
 
     public PerkImporter(
         IPerkRepository perkRepository,
-        IScriptingAdapterImportService scriptingAdapterImportService)
+        IRecordChildImportService recordChildImportService)
     {
         PerkRepository = perkRepository;
-        ScriptingAdapterImportService = scriptingAdapterImportService;
+        RecordChildImportService = recordChildImportService;
     }
 
     public string RecordType => RecordTypeCatalog.Perk.RecordID;
@@ -34,7 +34,7 @@ public class PerkImporter : ITypedRecordImporter
 
         perk.ImportedAtUTC = importedAtUTC;
         PerkRepository.Save(perk);
-        ScriptingAdapterImportService.ReplaceRecordScriptingAdapters(perk, RecordTypeCatalog.Perk.RecordID);
+        RecordChildImportService.ReplaceRecordChildren(perk, RecordTypeCatalog.Perk.RecordID);
         result.DetailRowsImported++;
     }
 

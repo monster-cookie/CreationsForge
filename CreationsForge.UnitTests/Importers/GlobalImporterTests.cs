@@ -18,8 +18,8 @@ public class GlobalImporterTests
         var plugin = CreatePlugin();
         var global = CreateGlobal(plugin);
         var repository = new TestGlobalRepository();
-        var scriptingAdapterImportService = new TestScriptingAdapterImportService();
-        var importer = new GlobalImporter(repository, scriptingAdapterImportService);
+        var childImportService = new TestRecordChildImportService();
+        var importer = new GlobalImporter(repository, childImportService);
         var result = new RecordTypeImportResultDTO { RecordType = RecordTypeCatalog.Global.RecordID };
 
         var importedAtUTC = DateTime.UtcNow;
@@ -29,6 +29,7 @@ public class GlobalImporterTests
         importer.TableName.ShouldBe("Globals");
         importer.SupportedGames.ShouldBe([SupportedGame.Starfield, SupportedGame.Fallout4, SupportedGame.Skyrim], ignoreOrder: true);
         repository.Saved.ShouldBe([global]);
+        childImportService.ReplaceRequests.ShouldBe([(global, RecordTypeCatalog.Global.RecordID)]);
         global.ImportedAtUTC.ShouldBe(importedAtUTC);
         result.DetailRowsImported.ShouldBe(1);
     }
@@ -106,9 +107,13 @@ public class GlobalImporterTests
         { }
     }
 
-    private sealed class TestScriptingAdapterImportService : IScriptingAdapterImportService
+    private sealed class TestRecordChildImportService : IRecordChildImportService
     {
-        public void ReplaceRecordScriptingAdapters(CreationsForge.Core.DTOs.Records.Interfaces.IHasScriptingAdaptersRecordDTO record, string recordType)
-        { }
+        public IList<(RecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(RecordDTO Record, string RecordType)>();
+
+        public void ReplaceRecordChildren(RecordDTO record, string recordType)
+        {
+            ReplaceRequests.Add((record, recordType));
+        }
     }
 }

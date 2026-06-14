@@ -1,11 +1,9 @@
 using System.Diagnostics;
-using System.Collections.Concurrent;
 using Autofac;
 using CreationsForge.Core.DTOs.Games;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
-using CreationsForge.Core.Repositories.Interfaces;
 using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Services.Interfaces;
 using Serilog;
@@ -121,49 +119,21 @@ public class ActivePluginLoadViewModel : ViewModelBase
 
     private IReadOnlyList<RecordTreeEntryDTO> LoadRecordTreeEntries(SupportedGame game, ModKeyDTO modKey, string gameDisplayName, string pluginFileName, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         using var scope = RootScope.BeginLifetimeScope();
-        var recordTypes = scope.Resolve<IEnumerable<IRecordTreeRepository>>()
-            .Select(repository => repository.RecordType)
-            .ToList();
-        var indexedRecordTypes = recordTypes
-            .Select((recordType, index) => new RecordTreeLoadRequest(index, recordType))
-            .ToList();
-        var results = new ConcurrentBag<RecordTreeLoadResult>();
-        var parallelOptions = new ParallelOptions
-        {
-            CancellationToken = cancellationToken,
-            MaxDegreeOfParallelism = Math.Max(1, Math.Min(Environment.ProcessorCount, indexedRecordTypes.Count))
-        };
+        var recordTreeService = scope.Resolve<IRecordTreeService>();
+        var stopwatch = Stopwatch.StartNew();
+        var entries = recordTreeService.GetRecordTreeEntries(game, modKey);
+        stopwatch.Stop();
+        cancellationToken.ThrowIfCancellationRequested();
 
-        Parallel.ForEach(indexedRecordTypes, parallelOptions, request =>
-        {
-            cancellationToken.ThrowIfCancellationRequested();
+        Logger.Information(
+            "Loaded active plugin record tree with {RecordTreeEntryCount} entries for {Game} plugin {PluginFileName} in {ElapsedMilliseconds} ms",
+            entries.Count,
+            gameDisplayName,
+            pluginFileName,
+            stopwatch.ElapsedMilliseconds);
 
-            using var recordTypeScope = RootScope.BeginLifetimeScope();
-            var repository = recordTypeScope.Resolve<IEnumerable<IRecordTreeRepository>>()
-                .Single(candidate => string.Equals(candidate.RecordType, request.RecordType, StringComparison.Ordinal));
-            var stopwatch = Stopwatch.StartNew();
-            var entries = repository.GetRecordTreeEntriesByPlugin(game, modKey);
-            stopwatch.Stop();
-
-            Logger.Information(
-                "Loaded active plugin record tree group {RecordType} with {RecordTreeEntryCount} entries for {Game} plugin {PluginFileName} in {ElapsedMilliseconds} ms",
-                request.RecordType,
-                entries.Count,
-                gameDisplayName,
-                pluginFileName,
-                stopwatch.ElapsedMilliseconds);
-
-            results.Add(new RecordTreeLoadResult(request.Index, entries));
-        });
-
-        return results
-            .OrderBy(result => result.Index)
-            .SelectMany(result => result.Entries)
-            .ToList();
+        return entries;
     }
-
-    private sealed record RecordTreeLoadRequest(int Index, string RecordType);
-
-    private sealed record RecordTreeLoadResult(int Index, IReadOnlyList<RecordTreeEntryDTO> Entries);
 }

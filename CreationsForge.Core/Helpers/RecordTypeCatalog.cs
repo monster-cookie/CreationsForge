@@ -67,7 +67,7 @@ public static class RecordTypeCatalog
 
     public static readonly RecordTypeData Static = new()
     {
-        TableName = "RecordInstances",
+        TableName = "Statics",
         RecordType = "Static",
         RecordID = "STAT"
     };
@@ -88,7 +88,7 @@ public static class RecordTypeCatalog
 
     public static readonly RecordTypeData Container = new()
     {
-        TableName = "RecordInstances",
+        TableName = "Containers",
         RecordType = "Container",
         RecordID = "CONT"
     };

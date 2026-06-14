@@ -7,6 +7,8 @@ using CreationsForge.Core.Models.Configuration;
 using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Services.Interfaces;
 using CreationsForge.ViewModels;
+using Autofac;
+using Avalonia.Media;
 using Serilog;
 using Shouldly;
 
@@ -77,14 +79,66 @@ public class MainViewModelTests
         tree.Select(item => item.FormIDText).ShouldBe(["BOOK", "CONT", "PERK"]);
     }
 
-    private static MainViewModel CreateViewModel(FakeApplicationNavigationService? navigationService = null)
+    [Fact]
+    public void PluginSuggestions_ExposeStatusColors()
+    {
+        var changed = CreatePlugin("Changed.esm", 1);
+        changed.ImportState = PluginImportState.Changed;
+        var partiallyImported = CreatePlugin("Partial.esm", 1);
+        partiallyImported.ImportState = PluginImportState.PartiallyImported;
+        var missing = CreatePlugin("Missing.esm", 1);
+        missing.ImportState = PluginImportState.Missing;
+        missing.ExistsOnDisk = false;
+        var failed = CreatePlugin("Failed.esm", 1);
+        failed.ImportState = PluginImportState.Failed;
+        var unsupported = CreatePlugin("Unsupported.esm", 1);
+        unsupported.ImportState = PluginImportState.Unsupported;
+        var viewModel = CreateViewModel(pluginSelectionService: new FakePluginSelectionService([changed, partiallyImported, missing, failed, unsupported]));
+
+        viewModel.PluginSuggestions.Select(plugin => plugin.ImportState).ShouldBe(
+        [
+            PluginImportState.Changed,
+            PluginImportState.PartiallyImported,
+            PluginImportState.Missing,
+            PluginImportState.Failed,
+            PluginImportState.Unsupported
+        ]);
+        GetColor(viewModel.PluginSuggestions[0]).ShouldBe(Color.FromRgb(255, 168, 74));
+        GetColor(viewModel.PluginSuggestions[1]).ShouldBe(Color.FromRgb(238, 190, 82));
+        GetColor(viewModel.PluginSuggestions[2]).ShouldBe(Color.FromRgb(178, 144, 255));
+        GetColor(viewModel.PluginSuggestions[3]).ShouldBe(Color.FromRgb(255, 112, 112));
+        GetColor(viewModel.PluginSuggestions[4]).ShouldBe(Color.FromRgb(178, 186, 196));
+    }
+
+    [Fact]
+    public async Task ChoosePluginSuggestion_WithMissingPlugin_DoesNotLoadRecords()
+    {
+        var navigationService = new FakeApplicationNavigationService();
+        var missing = CreatePlugin("Missing.esm", 100);
+        missing.ImportState = PluginImportState.Missing;
+        missing.ExistsOnDisk = false;
+        var viewModel = CreateViewModel(
+            navigationService,
+            new FakePluginSelectionService([missing]));
+
+        viewModel.ChoosePluginSuggestion("Missing.esm");
+        await Task.Delay(20);
+
+        navigationService.ActivePluginLoadCount.ShouldBe(0);
+        viewModel.StatusText.ShouldContain("cannot be opened");
+    }
+
+    private static MainViewModel CreateViewModel(
+        FakeApplicationNavigationService? navigationService = null,
+        IPluginSelectionService? pluginSelectionService = null)
     {
         return new MainViewModel(
             new FakeGameSelectionService(),
             new FakeGameImportReadinessService(),
-            new FakePluginSelectionService(),
+            pluginSelectionService ?? new FakePluginSelectionService(),
             new FakeRecordComparisonService(),
             new FakeRecordTreeService(),
+            CreateRootScope(),
             CreateAssetPreviewPaneViewModel(),
             navigationService ?? new FakeApplicationNavigationService(),
             new FakeUserDialogService(),
@@ -95,9 +149,30 @@ public class MainViewModelTests
     {
         return new AssetPreviewPaneViewModel(
             new FakeAssetPreviewPathResolverService(),
-            new FakeAssetPreviewSceneService(),
+            CreateAssetPreviewScope(),
             new FakeExternalAssetOpenService(),
             new LoggerConfiguration().CreateLogger());
+    }
+
+    private static ILifetimeScope CreateAssetPreviewScope()
+    {
+        var builder = new ContainerBuilder();
+        builder.RegisterType<FakeAssetPreviewSceneService>().As<IAssetPreviewSceneService>();
+        return builder.Build();
+    }
+
+    private static Color GetColor(PluginSuggestionViewModel plugin)
+    {
+        return plugin.StatusBrush.ShouldBeOfType<SolidColorBrush>().Color;
+    }
+
+    private static ILifetimeScope CreateRootScope()
+    {
+        var builder = new ContainerBuilder();
+        builder.RegisterType<FakeRecordTreeService>()
+            .As<IRecordTreeService>()
+            .InstancePerLifetimeScope();
+        return builder.Build();
     }
 
     private static SupportedGameDTO CreateGame()
@@ -216,7 +291,12 @@ public class MainViewModelTests
 
     private class FakePluginSelectionService : IPluginSelectionService
     {
-        private readonly IReadOnlyList<PluginDTO> Plugins = [CreatePlugin("Large.esm", 5000)];
+        private readonly IReadOnlyList<PluginDTO> Plugins;
+
+        public FakePluginSelectionService(IReadOnlyList<PluginDTO>? plugins = null)
+        {
+            Plugins = plugins ?? [CreatePlugin("Large.esm", 5000)];
+        }
 
         public IReadOnlyList<PluginDTO> GetOpenablePlugins(SupportedGame game)
         {
@@ -341,6 +421,11 @@ public class MainViewModelTests
         public Task<bool> ShowResetAndImportAllWarningAsync()
         {
             return Task.FromResult(true);
+        }
+
+        public Task ShowHexPayloadAsync(string title, string payloadValue)
+        {
+            return Task.CompletedTask;
         }
 
         public Task ShowErrorAsync(string message)

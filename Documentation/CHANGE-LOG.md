@@ -3,8 +3,10 @@
 ## Unreleased
 
 - Added an experimental NIF Preview Pane (Starfield, FO4, and Skyrim).
-- Added early support for textured meshes.
+- Added early support for previewing textured meshes in the preview pane.
 - Added support for launching models in [Nifskope](https://www.nexusmods.com/starfield/mods/10748)
+- Added a hexadecimal editor type display for binary and binary reflection data.
+- Added Additional Major Record Types: Static (STAT), and Containers (CONT)
 
 ## Version 1.1.2 - 2026-06-08
 

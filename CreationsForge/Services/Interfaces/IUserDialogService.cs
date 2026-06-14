@@ -10,5 +10,7 @@ public interface IUserDialogService
 
     Task<bool> ShowResetAndImportAllWarningAsync();
 
+    Task ShowHexPayloadAsync(string title, string payloadValue);
+
     Task ShowErrorAsync(string message);
 }

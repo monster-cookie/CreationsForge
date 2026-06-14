@@ -20,9 +20,25 @@ public class AssetTempFileSession : IAssetTempFileSession
 
     public void Dispose()
     {
-        if (Directory.Exists(RootDirectory))
+        if (!IsSafeSessionDirectory() || !Directory.Exists(RootDirectory))
+        {
+            return;
+        }
+
+        try
         {
             Directory.Delete(RootDirectory, recursive: true);
         }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+        }
+    }
+
+    private bool IsSafeSessionDirectory()
+    {
+        var root = Path.GetFullPath(RootDirectory);
+        var expectedParent = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "CreationsForge", "AssetPreview"));
+        return root.StartsWith(expectedParent, StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(root, expectedParent, StringComparison.OrdinalIgnoreCase);
     }
 }

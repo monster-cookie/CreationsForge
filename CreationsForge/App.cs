@@ -5,6 +5,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using Avalonia.Themes.Fluent;
 using CreationsForge.Bootstrap.Composition;
 using CreationsForge.Bootstrap.Logging;
@@ -12,6 +13,7 @@ using CreationsForge.Core.Configuration;
 using CreationsForge.Core.Configuration.Interfaces;
 using CreationsForge.Core.Database.Interfaces;
 using CreationsForge.Core.Models.Configuration;
+using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Services;
 using CreationsForge.Services.Interfaces;
 using CreationsForge.ViewModels;
@@ -49,6 +51,7 @@ public class App : Application
         try
         {
             Log.Information("Starting CreationsForge UI");
+            Container.Resolve<IProcessTerminationDiagnosticsService>().StartSession("UI", SerilogConfigurator.CurrentLogPath);
             Container.Resolve<IDatabaseSchemaInitializer>().Initialize();
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
@@ -96,8 +99,8 @@ public class App : Application
         builder.RegisterType<ApplicationWindowService>().As<IApplicationWindowService>().SingleInstance();
         builder.RegisterType<ApplicationNavigationService>().As<IApplicationNavigationService>().SingleInstance();
         builder.RegisterType<AssetPreviewRenderMeshFactory>().As<IAssetPreviewRenderMeshFactory>().SingleInstance();
-        builder.RegisterType<AssetPreviewSceneService>().As<IAssetPreviewSceneService>().SingleInstance();
-        builder.RegisterType<BethesdaAssetPreviewGeometryReader>().As<IAssetPreviewGeometryReader>().SingleInstance();
+        builder.RegisterType<AssetPreviewSceneService>().As<IAssetPreviewSceneService>().InstancePerLifetimeScope();
+        builder.RegisterType<BethesdaAssetPreviewGeometryReader>().As<IAssetPreviewGeometryReader>().InstancePerLifetimeScope();
         builder.RegisterType<ExternalAssetOpenService>().As<IExternalAssetOpenService>().SingleInstance();
         builder.RegisterType<UserDialogService>().As<IUserDialogService>().SingleInstance();
         builder.RegisterInstance(Log.Logger).As<ILogger>().SingleInstance();
@@ -147,15 +150,37 @@ public class App : Application
 
     public static void ApplyApplicationTextForeground(TextBlock textBlock)
     {
+        textBlock.Foreground = GetApplicationForegroundBrush();
+    }
+
+    public static IBrush GetApplicationForegroundBrush()
+    {
+        if (Current is null || !Dispatcher.UIThread.CheckAccess())
+        {
+            return new SolidColorBrush(Color.FromRgb(24, 28, 32));
+        }
+
         if (Current?.Resources.TryGetResource(ApplicationForegroundBrushKey, Current.ActualThemeVariant, out var resource) == true &&
             resource is IBrush brush)
         {
-            textBlock.Foreground = brush;
+            return brush;
         }
+
+        if (Current?.ActualThemeVariant == ThemeVariant.Dark)
+        {
+            return new SolidColorBrush(Color.FromRgb(238, 241, 245));
+        }
+
+        return new SolidColorBrush(Color.FromRgb(24, 28, 32));
     }
 
     public static IBrush GetApplicationBrush(string resourceKey)
     {
+        if (resourceKey == ApplicationForegroundBrushKey)
+        {
+            return GetApplicationForegroundBrush();
+        }
+
         if (Current?.Resources.TryGetResource(resourceKey, Current.ActualThemeVariant, out var resource) == true &&
             resource is IBrush brush)
         {
@@ -224,6 +249,7 @@ public class App : Application
 
         HasShutDown = true;
         Log.Information("Exiting CreationsForge UI");
+        Container.Resolve<IProcessTerminationDiagnosticsService>().MarkCleanShutdown("UI exit");
         Container.Dispose();
         Log.CloseAndFlush();
     }

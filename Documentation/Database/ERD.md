@@ -389,6 +389,73 @@ erDiagram
         TEXT MajorFlags
     }
 
+    Statics {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER MajorRecordFlags
+        TEXT ImportedAtUTC
+        INTEGER Version2
+        TEXT ObjectBounds_First
+        TEXT ObjectBounds_Second
+        REAL MaxAngle
+        REAL UnknownDNAMFloat
+        REAL LeafAmplitude
+        REAL LeafFrequency
+        TEXT Unused
+        TEXT DNAMDataTypeState
+    }
+
+    Containers {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER MajorRecordFlags
+        TEXT ImportedAtUTC
+        INTEGER Version2
+        TEXT ObjectBounds_First
+        TEXT ObjectBounds_Second
+        TEXT Name
+        TEXT Flags
+        TEXT MajorFlags
+        TEXT NativeTerminal_ModKey_Name
+        INTEGER NativeTerminal_ModKey_Type
+        TEXT NativeTerminal_ModKey_FileName
+        INTEGER NativeTerminal_FormKey_ID
+    }
+
+    ContainerItems {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Item_Index PK
+        TEXT Item_ModKey_Name
+        INTEGER Item_ModKey_Type
+        TEXT Item_ModKey_FileName
+        INTEGER Item_FormKey_ID
+        INTEGER Count
+        TEXT ImportedAtUTC
+    }
+
     RecordKeywords {
         TEXT Game PK, FK
         TEXT ModKey_Name PK, FK
@@ -528,6 +595,23 @@ erDiagram
         TEXT ImportedAtUTC
     }
 
+    RawRecordPayloads {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT RecordType PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT PayloadSlot PK
+        INTEGER Payload_Index PK
+        TEXT PayloadType
+        TEXT PayloadValue
+        TEXT ImportedAtUTC
+    }
+
     ScriptingAdapters {
         TEXT Game PK, FK
         TEXT ModKey_Name PK, FK
@@ -636,6 +720,9 @@ erDiagram
     RecordInstances ||--o| NPCs : "typed detail"
     RecordInstances ||--o| MagicEffects : "typed detail"
     RecordInstances ||--o| Perks : "typed detail"
+    RecordInstances ||--o| Statics : "typed detail"
+    RecordInstances ||--o| Containers : "typed detail"
+    Containers ||--o{ ContainerItems : contains
     RecordInstances ||--o{ RecordKeywords : contains
     Perks ||--o{ PerkRanks : contains
     PerkRanks ||--o{ PerkRankEffects : contains
@@ -643,6 +730,7 @@ erDiagram
     RecordInstances ||--o{ Models : contains
     Models ||--o{ ModelMaterialSwaps : contains
     RecordInstances ||--o{ RecordSounds : contains
+    RecordInstances ||--o{ RawRecordPayloads : contains
     RecordInstances ||--o{ ScriptingAdapters : contains
     ScriptingAdapters ||--o{ ScriptingAdapterProperties : contains
     ScriptingAdapterProperties ||--o{ ScriptingAdapterPropertyListItems : contains
@@ -652,7 +740,11 @@ erDiagram
 ## Index Notes
 
 Indexes are documented in `DATABASE.md`. Migration `002_AddAssetArchiveIndex.sql` adds active-plugin browse indexes
-for `RecordInstances` and typed parent tables; these do not add columns or declared SQLite relationships to the ERD.
+for `RecordInstances` and typed parent tables, plus indexes for `Statics`, `Containers`, `ContainerItems`, and
+`RawRecordPayloads`.
+
+`Plugins.ImportState` is constrained to `Current`, `Changed`, `PartiallyImported`, `Missing`, `Failed`, or
+`Unsupported`.
 
 ## Inferred Relationships
 
@@ -661,6 +753,9 @@ These columns contain record-reference data but are not declared SQLite foreign 
 - `FormLists.AddToList_ModKey_Name`, `AddToList_ModKey_Type`, `AddToList_ModKey_FileName`,
   and `AddToList_FormKey_ID`
 - `FormListItems.Item_ModKey_Name`, `Item_ModKey_Type`, `Item_ModKey_FileName`, and `Item_FormKey_ID`
+- `Containers.NativeTerminal_ModKey_Name`, `NativeTerminal_ModKey_Type`, `NativeTerminal_ModKey_FileName`, and
+  `NativeTerminal_FormKey_ID`
+- `ContainerItems.Item_ModKey_Name`, `Item_ModKey_Type`, `Item_ModKey_FileName`, and `Item_FormKey_ID`
 - `ModelMaterialSwaps.MaterialSwap_ModKey_Name`, `MaterialSwap_ModKey_Type`, `MaterialSwap_ModKey_FileName`,
   and `MaterialSwap_FormKey_ID`
 - `RecordKeywords.Keyword_ModKey_Name`, `Keyword_ModKey_Type`, `Keyword_ModKey_FileName`, and `Keyword_FormKey_ID`

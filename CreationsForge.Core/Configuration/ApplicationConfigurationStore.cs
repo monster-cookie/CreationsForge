@@ -85,9 +85,9 @@ public class ApplicationConfigurationStore : IApplicationConfigurationStore
         {
             Current = JsonSerializer.Deserialize<ApplicationConfiguration>(json, SerializerOptions) ?? new ApplicationConfiguration();
         }
-        catch (JsonException)
+        catch (JsonException exception)
         {
-            logger.Error("Configuration file found at {ConfigurationPath} contained invalid json so loading default configuration.", ConfigurationPath);
+            logger.Error(exception, "Configuration file found at {ConfigurationPath} contained invalid json so loading default configuration.", ConfigurationPath);
             Current = new ApplicationConfiguration();
         }
     }

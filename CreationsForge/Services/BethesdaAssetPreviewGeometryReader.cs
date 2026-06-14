@@ -36,6 +36,17 @@ public class BethesdaAssetPreviewGeometryReader : IAssetPreviewGeometryReader
         if (resolution.Data == null || !IsReadableResolution(resolution))
         {
             statusMessage = resolution.StatusMessage;
+            if (IsMissingAssetResolution(resolution))
+            {
+                previewModel = new AssetPreviewModelDTO
+                {
+                    DisplayName = candidate.DisplayName,
+                    SourcePath = candidate.MeshPath,
+                    AllowFallbackRender = false
+                };
+                return true;
+            }
+
             return false;
         }
 
@@ -102,6 +113,13 @@ public class BethesdaAssetPreviewGeometryReader : IAssetPreviewGeometryReader
     private static bool IsReadableResolution(AssetFileResolutionDTO resolution)
     {
         return resolution.Status is AssetFileResolutionStatus.ResolvedLooseFile or AssetFileResolutionStatus.ResolvedArchiveEntryInMemory;
+    }
+
+    private static bool IsMissingAssetResolution(AssetFileResolutionDTO resolution)
+    {
+        return resolution.Status is AssetFileResolutionStatus.MissingAbsoluteFile or
+            AssetFileResolutionStatus.MissingLooseFile or
+            AssetFileResolutionStatus.MissingDataFolder;
     }
 
     private static string GetStatusMessage(string statusMessage, AssetPreviewModelDTO previewModel)

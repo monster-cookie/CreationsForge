@@ -131,15 +131,51 @@ public class NifPreviewModelReaderTests
         result.Model.Meshes.Count.ShouldBe(1);
         result.Model.Meshes[0].Vertices.Count.ShouldBe(3);
         result.Model.Meshes[0].Indices.ShouldBe([0, 1, 2]);
-        result.Model.Meshes[0].Vertices[1].Position.X.ShouldBe(0.5000153f, 0.0001f);
-        result.Model.Meshes[0].Vertices[2].Position.Y.ShouldBe(0.5000153f, 0.0001f);
+        result.Model.Meshes[0].Vertices[0].Position.X.ShouldBe(0f, 0.0001f);
+        result.Model.Meshes[0].Vertices[0].Position.Y.ShouldBe(0f, 0.0001f);
+        result.Model.Meshes[0].Vertices[0].Position.Z.ShouldBe(0f, 0.0001f);
+        result.Model.Meshes[0].Vertices[1].Position.X.ShouldBe(1.00003f, 0.0001f);
+        result.Model.Meshes[0].Vertices[2].Position.Y.ShouldBe(1.00003f, 0.0001f);
         result.Model.Meshes[0].Vertices.ShouldAllBe(vertex =>
             vertex.Normal.X == 0f &&
             vertex.Normal.Y == 0f &&
             vertex.Normal.Z == 0f);
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("external Starfield geometry", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("scale 2", StringComparison.Ordinal));
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("position stride 6", StringComparison.Ordinal));
-        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("geometry bounds metadata center", StringComparison.Ordinal));
+        result.Diagnostics.ShouldNotContain(diagnostic => diagnostic.Contains("geometry bounds metadata", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryRead_AppliesStarfieldExternalGeometryMeshWorldTransform()
+    {
+        var reader = new NifPreviewModelReader();
+        const string geometryPath = @"geometries\cf623091ecaffe5a43fa\249816728d4437f890e8.mesh";
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Items/digipic/DigiPic.nif",
+            DisplayName = "DigiPic",
+            Data = CreateMinimalNifWithBlock(
+                "BSGeometry",
+                CreateStarfieldBSGeometryBlockWithExternalGeometryReference(translationX: 10f, translationY: 20f, translationZ: 30f),
+                bethesdaVersion: 173U),
+            ResolveExternalAsset = path => string.Equals(path, geometryPath, StringComparison.OrdinalIgnoreCase)
+                ? CreateStarfieldGeometryMesh()
+                : null
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes.Count.ShouldBe(1);
+        result.Model.Meshes[0].Vertices[0].Position.X.ShouldBe(10f, 0.0001f);
+        result.Model.Meshes[0].Vertices[0].Position.Y.ShouldBe(20f, 0.0001f);
+        result.Model.Meshes[0].Vertices[0].Position.Z.ShouldBe(30f, 0.0001f);
+        result.Model.Meshes[0].Vertices[1].Position.X.ShouldBe(11.00003f, 0.0001f);
+        result.Model.Meshes[0].Vertices[2].Position.Y.ShouldBe(21.00003f, 0.0001f);
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("raw mesh-space bounds", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("applied NIF world transform", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("preview bounds", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -169,7 +205,7 @@ public class NifPreviewModelReaderTests
         result.Model.Meshes[0].Vertices[1].Alpha.ShouldBe(0.5019f, 0.0001f);
         result.Model.Meshes[0].Vertices[2].Alpha.ShouldBe(1f, 0.0001f);
         result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("UV stream decoded 3 half-precision UVs", StringComparison.Ordinal));
-        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("vertex alpha stream decoded 3 packed alpha values", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("vertex color stream decoded 3 BGRA colors", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -1546,12 +1582,16 @@ public class NifPreviewModelReaderTests
         return stream.ToArray();
     }
 
-    private static byte[] CreateStarfieldBSGeometryBlockWithExternalGeometryReference(int shaderProperty = -1)
+    private static byte[] CreateStarfieldBSGeometryBlockWithExternalGeometryReference(
+        int shaderProperty = -1,
+        float translationX = 0f,
+        float translationY = 0f,
+        float translationZ = 0f)
     {
         using var stream = new MemoryStream();
         using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
         {
-            WriteTransformPrefix(writer, 0f, 0f, 0f, 1f, nameIndex: 0);
+            WriteTransformPrefix(writer, translationX, translationY, translationZ, 1f, nameIndex: 0);
             writer.Write(0f);
             writer.Write(0f);
             writer.Write(0f);
@@ -1581,7 +1621,7 @@ public class NifPreviewModelReaderTests
             writer.Write((ushort)0);
             writer.Write((ushort)1);
             writer.Write((ushort)2);
-            writer.Write(1f);
+            writer.Write(2f);
             writer.Write(0U);
             writer.Write(3U);
             WriteStarfieldGeometryVertex(writer, 0, 0, 0);
@@ -1835,10 +1875,10 @@ public class NifPreviewModelReaderTests
 
     private static void WritePackedAlpha(BinaryWriter writer, byte alpha)
     {
+        writer.Write((byte)255);
+        writer.Write((byte)255);
+        writer.Write((byte)255);
         writer.Write(alpha);
-        writer.Write((byte)255);
-        writer.Write((byte)255);
-        writer.Write((byte)255);
     }
 
     private static void WriteHalfVertex(BinaryWriter writer, float x, float y, float z)

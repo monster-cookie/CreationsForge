@@ -94,7 +94,7 @@ public class ExternalAssetOpenService : IExternalAssetOpenService, IDisposable
         try
         {
             var directory = TempFileSession.CreateExtractionDirectory($"{candidate.Game}_{candidate.RecordType}_{candidate.FormKey.Id}");
-            var fileName = GetSafeFileName(resolution.NormalizedEntryPath ?? candidate.MeshPath);
+            var fileName = ExternalAssetPathPolicy.GetSafeFileName(resolution.NormalizedEntryPath ?? candidate.MeshPath);
             var filePath = Path.Combine(directory, fileName);
             File.WriteAllBytes(filePath, resolution.Data ?? []);
             Logger.Information(
@@ -115,7 +115,7 @@ public class ExternalAssetOpenService : IExternalAssetOpenService, IDisposable
 
     private bool OpenWithShellAssociation(string assetPath)
     {
-        if (!IsSafeExistingFilePath(assetPath))
+        if (!ExternalAssetPathPolicy.IsSafeExistingAssetPath(assetPath))
         {
             Logger.Warning("Cannot open unsafe or missing asset path {AssetPath} externally", assetPath);
             return false;
@@ -139,13 +139,13 @@ public class ExternalAssetOpenService : IExternalAssetOpenService, IDisposable
 
     private bool OpenWithNifSkope(string nifSkopePath, string assetPath)
     {
-        if (!IsSafeExistingFilePath(nifSkopePath))
+        if (!ExternalAssetPathPolicy.IsSafeExistingExecutablePath(nifSkopePath))
         {
             Logger.Warning("Cannot open asset path {AssetPath} because configured NifSkope executable path {NifSkopePath} is unsafe or missing", assetPath, nifSkopePath);
             return false;
         }
 
-        if (!IsSafeExistingFilePath(assetPath))
+        if (!ExternalAssetPathPolicy.IsSafeExistingAssetPath(assetPath))
         {
             Logger.Warning("Cannot open unsafe or missing asset path {AssetPath} in NifSkope", assetPath);
             return false;
@@ -170,25 +170,4 @@ public class ExternalAssetOpenService : IExternalAssetOpenService, IDisposable
         }
     }
 
-    private static bool IsSafeExistingFilePath(string path)
-    {
-        return !string.IsNullOrWhiteSpace(path) &&
-            Path.IsPathRooted(path) &&
-            (!Uri.TryCreate(path, UriKind.Absolute, out var uri) || uri.IsFile) &&
-            File.Exists(path);
-    }
-
-    private static string GetSafeFileName(string path)
-    {
-        var fileName = Path.GetFileName(path);
-        if (string.IsNullOrWhiteSpace(fileName))
-        {
-            fileName = "Preview.nif";
-        }
-
-        var safeFileName = string.Join("_", fileName.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
-        return string.IsNullOrWhiteSpace(Path.GetExtension(safeFileName))
-            ? safeFileName + ".nif"
-            : safeFileName;
-    }
 }

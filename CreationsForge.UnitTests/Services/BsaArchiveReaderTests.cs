@@ -86,6 +86,40 @@ public class BsaArchiveReaderTests
     }
 
     [Fact]
+    public void TryReadEntry_AfterArchiveChanges_RefreshesCachedDirectory()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var archivePath = Path.Combine(tempDirectory.FullName, "Skyrim - Meshes.bsa");
+            WriteBsaArchive(
+                archivePath,
+                [
+                    new TestBsaEntry("Meshes\\Clutter", "Basket04.NIF", [1])
+                ],
+                compressedByDefault: false);
+            var reader = new BsaArchiveReader();
+
+            reader.TryReadEntry(archivePath, "Meshes\\Clutter\\Basket04.NIF").Data.ShouldBe([1]);
+            WriteBsaArchive(
+                archivePath,
+                [
+                    new TestBsaEntry("Meshes\\Clutter", "Basket04.NIF", [2, 3])
+                ],
+                compressedByDefault: false);
+
+            var result = reader.TryReadEntry(archivePath, "Meshes\\Clutter\\Basket04.NIF");
+
+            result.IsSuccess.ShouldBeTrue();
+            result.Data.ShouldBe([2, 3]);
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public void TryReadEntry_ReadsWideFolderRecordEntry()
     {
         var tempDirectory = Directory.CreateTempSubdirectory();

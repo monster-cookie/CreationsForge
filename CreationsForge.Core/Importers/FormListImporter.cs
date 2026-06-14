@@ -5,6 +5,7 @@ using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Importers.Interfaces;
 using CreationsForge.Core.Repositories.Interfaces;
+using CreationsForge.Core.Services.Interfaces;
 
 namespace CreationsForge.Core.Importers;
 
@@ -12,13 +13,16 @@ public class FormListImporter : ITypedRecordImporter
 {
     private readonly IFormListRepository FormListRepository;
     private readonly IFormListItemRepository FormListItemRepository;
+    private readonly IRecordChildImportService RecordChildImportService;
 
     public FormListImporter(
         IFormListRepository formListRepository,
-        IFormListItemRepository formListItemRepository)
+        IFormListItemRepository formListItemRepository,
+        IRecordChildImportService recordChildImportService)
     {
         FormListRepository = formListRepository;
         FormListItemRepository = formListItemRepository;
+        RecordChildImportService = recordChildImportService;
     }
 
     public string RecordType => RecordTypeCatalog.FormList.RecordID;
@@ -38,6 +42,7 @@ public class FormListImporter : ITypedRecordImporter
 
         formList.ImportedAtUTC = importedAtUTC;
         FormListRepository.Save(formList);
+        RecordChildImportService.ReplaceRecordChildren(formList, RecordTypeCatalog.FormList.RecordID);
         result.DetailRowsImported++;
 
         var itemIndex = 0;

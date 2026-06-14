@@ -5,6 +5,7 @@ using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Importers;
 using CreationsForge.Core.Repositories.Interfaces;
+using CreationsForge.Core.Services.Interfaces;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Importers;
@@ -17,7 +18,8 @@ public class GameSettingImporterTests
         var plugin = CreatePlugin();
         var gameSetting = CreateGameSetting(plugin);
         var repository = new TestGameSettingRepository();
-        var importer = new GameSettingImporter(repository);
+        var childImportService = new TestRecordChildImportService();
+        var importer = new GameSettingImporter(repository, childImportService);
         var result = new RecordTypeImportResultDTO { RecordType = RecordTypeCatalog.GameSetting.RecordID };
 
         var importedAtUTC = DateTime.UtcNow;
@@ -27,6 +29,7 @@ public class GameSettingImporterTests
         importer.TableName.ShouldBe("GameSettings");
         importer.SupportedGames.ShouldBe([SupportedGame.Starfield, SupportedGame.Fallout4, SupportedGame.Skyrim], ignoreOrder: true);
         repository.Saved.ShouldBe([gameSetting]);
+        childImportService.ReplaceRequests.ShouldBe([(gameSetting, RecordTypeCatalog.GameSetting.RecordID)]);
         gameSetting.ImportedAtUTC.ShouldBe(importedAtUTC);
         result.DetailRowsImported.ShouldBe(1);
     }
@@ -100,5 +103,15 @@ public class GameSettingImporterTests
 
         public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)
         { }
+    }
+
+    private sealed class TestRecordChildImportService : IRecordChildImportService
+    {
+        public IList<(RecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(RecordDTO Record, string RecordType)>();
+
+        public void ReplaceRecordChildren(RecordDTO record, string recordType)
+        {
+            ReplaceRequests.Add((record, recordType));
+        }
     }
 }

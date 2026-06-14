@@ -24,10 +24,8 @@ public class StarfieldModule : Module
         builder.RegisterType<StarfieldRecordReaderService>().As<IStarfieldRecordReaderService>().SingleInstance();
         builder.RegisterType<StarfieldPluginRepository>().As<IStarfieldPluginRepository>().InstancePerLifetimeScope();
         builder.RegisterType<StarfieldPluginExtensionImporter>().As<IPluginExtensionImporter>().InstancePerLifetimeScope();
-        RegisterModelRecordSupport(builder, RecordTypeCatalog.Static.RecordID);
         RegisterModelRecordSupport(builder, RecordTypeCatalog.Book.RecordID);
         RegisterModelRecordSupport(builder, RecordTypeCatalog.Door.RecordID);
-        RegisterModelRecordSupport(builder, RecordTypeCatalog.Container.RecordID);
         RegisterModelRecordSupport(builder, RecordTypeCatalog.Terminal.RecordID);
         builder.RegisterType<StarfieldPluginReader>()
             .AsSelf()

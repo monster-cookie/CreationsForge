@@ -45,7 +45,7 @@ Multi-game Bethesda plugin import and record persistence prototype. The current 
 
 ## REFERENCE & DOCUMENTATION
 
-Use these as primary documentation references:
+Use these as primary references:
 
 - [Mutagen Documentation](https://mutagen-modding.github.io/Mutagen/)
 - [Mutagen Code Repository](https://github.com/Mutagen-Modding/Mutagen)
@@ -53,6 +53,8 @@ Use these as primary documentation references:
 - [Fallout4.esm spriggit converted to YAML](C:\FalloutExtractions\Spriggit\Fallout4.esm)
 - [Skyrim.esm spriggit converted to YAML](C:\SkyrimExtractions\Spriggit\Skyrim.esm)
 - [Starfield.esm spriggit converted to YAML](C:\StarfieldExtractions\Spriggit\Starfield.esm)
+- [Fo76Utils and libfo76utils](C:\Repositories\Public\fo76utils)
+- [Nifskope](C:\Repositories\Public\nifskope)
 
 ## PROJECT KNOWLEDGE & DESIGN DOCUMENTATION
 
@@ -227,6 +229,8 @@ schema documentation.
 
 - Analyzer warnings are treated as errors.
 - Follow existing conventions in the repo. Do not introduce new naming or patterns.
+- Ensure the latest stable versions of libraries are used
+  - One caveat Mutagen has to remain on latest prerelease version
 
 ## TESTING
 
@@ -291,7 +295,26 @@ record type or behavior as game-specific and documents why it cannot apply to al
   - `Get-Process`
   - `Get-CimInstance Win32_Process`
 - Prefer `rg` and `rg --files` for search and file inventory.
-- Exclude `bin`, `obj`, `.git`, and generated output directories from recursive scans.
+- Exclude `bin`, `obj`, `.git`, and generated output directories
+
+## Token Usage Reporting
+
+After each plan and completed implementation, include a short token usage note.
+
+- Report exact token usage only if Codex can directly see it.
+- If exact usage is unavailable, provide a rough estimate and mark it as estimated.
+- Do not invent exact numbers.
+- Mention the biggest usage drivers.
+- For Codex CLI, remind me to run `/status` for the live token/context report.
+- For plans generating a large or very large token estimate suggest I drop to Codex GPT 5.4
+
+Format:
+
+Token usage: Exact / Estimated / Not available
+Total:
+Context remaining:
+Main drivers:
+Notes:
 
 ## PLAN → EXECUTE → VALIDATE
 
@@ -336,6 +359,7 @@ Do not include empty scaffolding sections, placeholder text, or repeated policy 
   - dotnet restore ./CreationsForge.sln
   - dotnet build ./CreationsForge.sln --no-restore
   - dotnet test ./CreationsForge.UnitTests/CreationsForge.UnitTests.csproj --no-build
+  - dotnet test ./CreationsForge.PresentationTests/CreationsForge.PresentationTests.csproj --no-build
 - Runtime validation, when relevant:
   - dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --game Starfield
   - dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --game Fallout4

@@ -37,12 +37,13 @@ public class PluginRepository : IPluginRepository
             FROM Plugins
             WHERE Game = @Game
               AND ExistsOnDisk = 1
-              AND ImportState = @ImportState;
+              AND ImportState IN (@CurrentImportState, @PartiallyImportedImportState);
             """,
             new
             {
                 Game = game.ToString(),
-                ImportState = nameof(PluginImportState.Current)
+                CurrentImportState = nameof(PluginImportState.Current),
+                PartiallyImportedImportState = nameof(PluginImportState.PartiallyImported)
             });
     }
 
@@ -75,15 +76,11 @@ public class PluginRepository : IPluginRepository
                 SELECT *
                 FROM Plugins
                 WHERE Game = @Game
-                  AND ExistsOnDisk = 1
-                  AND ImportState IN (@CurrentImportState, @FailedImportState)
                 ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex;
                 """,
                 new
                 {
-                    Game = game.ToString(),
-                    CurrentImportState = nameof(PluginImportState.Current),
-                    FailedImportState = nameof(PluginImportState.Failed)
+                    Game = game.ToString()
                 })
             .Select(plugin => plugin.ToDTO())
             .ToList();
@@ -97,16 +94,12 @@ public class PluginRepository : IPluginRepository
                 SELECT *
                 FROM Plugins
                 WHERE Game = @Game
-                  AND ExistsOnDisk = 1
-                  AND ImportState IN (@CurrentImportState, @FailedImportState)
                   AND ModKey_FileName LIKE @SearchPattern COLLATE NOCASE
                 ORDER BY LoadOrderIndex IS NULL, LoadOrderIndex;
                 """,
                 new
                 {
                     Game = game.ToString(),
-                    CurrentImportState = nameof(PluginImportState.Current),
-                    FailedImportState = nameof(PluginImportState.Failed),
                     SearchPattern = searchPattern
                 })
             .Select(plugin => plugin.ToDTO())

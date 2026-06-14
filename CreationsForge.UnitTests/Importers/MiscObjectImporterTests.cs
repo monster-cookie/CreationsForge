@@ -1,6 +1,5 @@
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
-using CreationsForge.Core.DTOs.Records.Interfaces;
 using CreationsForge.Core.DTOs.Results;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
@@ -19,11 +18,8 @@ public class MiscObjectImporterTests
         var plugin = CreatePlugin();
         var miscObject = CreateMiscObject(plugin);
         var repository = new TestMiscObjectRepository();
-        var scriptingAdapterImportService = new TestScriptingAdapterImportService();
-        var modelImportService = new TestModelImportService();
-        var recordKeywordImportService = new TestRecordKeywordImportService();
-        var recordSoundImportService = new TestRecordSoundImportService();
-        var importer = new MiscObjectImporter(repository, scriptingAdapterImportService, modelImportService, recordKeywordImportService, recordSoundImportService);
+        var childImportService = new TestRecordChildImportService();
+        var importer = new MiscObjectImporter(repository, childImportService);
         var result = new RecordTypeImportResultDTO { RecordType = RecordTypeCatalog.MiscObject.RecordID };
 
         var importedAtUTC = DateTime.UtcNow;
@@ -33,10 +29,7 @@ public class MiscObjectImporterTests
         importer.TableName.ShouldBe("MiscObjects");
         importer.SupportedGames.ShouldBe([SupportedGame.Starfield, SupportedGame.Fallout4, SupportedGame.Skyrim], ignoreOrder: true);
         repository.Saved.ShouldBe([miscObject]);
-        recordKeywordImportService.ReplaceRequests.ShouldBe([(miscObject, RecordTypeCatalog.MiscObject.RecordID)]);
-        modelImportService.ReplaceRequests.ShouldBe([(miscObject, RecordTypeCatalog.MiscObject.RecordID)]);
-        recordSoundImportService.ReplaceRequests.ShouldBe([(miscObject, RecordTypeCatalog.MiscObject.RecordID)]);
-        scriptingAdapterImportService.ReplaceRequests.ShouldBe([(miscObject, RecordTypeCatalog.MiscObject.RecordID)]);
+        childImportService.ReplaceRequests.ShouldBe([(miscObject, RecordTypeCatalog.MiscObject.RecordID)]);
         miscObject.ImportedAtUTC.ShouldBe(importedAtUTC);
         result.DetailRowsImported.ShouldBe(1);
     }
@@ -114,41 +107,11 @@ public class MiscObjectImporterTests
         { }
     }
 
-    private sealed class TestModelImportService : IModelImportService
+    private sealed class TestRecordChildImportService : IRecordChildImportService
     {
-        public IList<(IHasModelsRecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasModelsRecordDTO Record, string RecordType)>();
+        public IList<(RecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(RecordDTO Record, string RecordType)>();
 
-        public void ReplaceRecordModels(IHasModelsRecordDTO record, string recordType)
-        {
-            ReplaceRequests.Add((record, recordType));
-        }
-    }
-
-    private sealed class TestRecordKeywordImportService : IRecordKeywordImportService
-    {
-        public IList<(IHasKeywordsRecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasKeywordsRecordDTO Record, string RecordType)>();
-
-        public void ReplaceRecordKeywords(IHasKeywordsRecordDTO record, string recordType)
-        {
-            ReplaceRequests.Add((record, recordType));
-        }
-    }
-
-    private sealed class TestRecordSoundImportService : IRecordSoundImportService
-    {
-        public IList<(IHasSoundsRecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasSoundsRecordDTO Record, string RecordType)>();
-
-        public void ReplaceRecordSounds(IHasSoundsRecordDTO record, string recordType)
-        {
-            ReplaceRequests.Add((record, recordType));
-        }
-    }
-
-    private sealed class TestScriptingAdapterImportService : IScriptingAdapterImportService
-    {
-        public IList<(IHasScriptingAdaptersRecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasScriptingAdaptersRecordDTO Record, string RecordType)>();
-
-        public void ReplaceRecordScriptingAdapters(IHasScriptingAdaptersRecordDTO record, string recordType)
+        public void ReplaceRecordChildren(RecordDTO record, string recordType)
         {
             ReplaceRequests.Add((record, recordType));
         }

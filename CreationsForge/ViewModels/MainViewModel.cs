@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows.Input;
+using Autofac;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
@@ -27,6 +28,7 @@ public class MainViewModel : ViewModelBase
     private readonly IPluginSelectionService PluginSelectionService;
     private readonly IRecordComparisonService RecordComparisonService;
     private readonly IRecordTreeService RecordTreeService;
+    private readonly ILifetimeScope RootScope;
     private readonly IUserDialogService UserDialogService;
     private IList<RecordTreeItemViewModel> AllRecordTreeItems = [];
     private IReadOnlyList<PluginDTO> MatchingPlugins = [];
@@ -35,13 +37,14 @@ public class MainViewModel : ViewModelBase
     private SupportedGameDTO? SelectedGame;
     private PluginDTO? SelectedPlugin;
     private IList<string> GameSuggestionList = [];
-    private IList<string> PluginSuggestionList = [];
+    private IList<PluginSuggestionViewModel> PluginSuggestionList = [];
     private string? SelectedGameDisplayNameValue;
     private string? SelectedPluginFileNameValue;
     private string ActiveGameText = string.Empty;
     private string ActivePluginTextValue = string.Empty;
     private string ImportedRecordCountTextValue = "Imported records: 0";
     private string RecordComparisonTitleTextValue = "Select a record to compare.";
+    private string CurrentRecordComparisonEditorID = string.Empty;
     private string ActiveGameStatusTextValue = "Active game: None";
     private string ActivePluginStatusTextValue = "Active plugin: None";
     private string ActiveRecordCountTextValue = "Active records: 0";
@@ -63,6 +66,7 @@ public class MainViewModel : ViewModelBase
         IPluginSelectionService pluginSelectionService,
         IRecordComparisonService recordComparisonService,
         IRecordTreeService recordTreeService,
+        ILifetimeScope rootScope,
         AssetPreviewPaneViewModel assetPreviewPane,
         IApplicationNavigationService applicationNavigationService,
         IUserDialogService userDialogService,
@@ -73,6 +77,7 @@ public class MainViewModel : ViewModelBase
         PluginSelectionService = pluginSelectionService;
         RecordComparisonService = recordComparisonService;
         RecordTreeService = recordTreeService;
+        RootScope = rootScope;
         AssetPreviewPane = assetPreviewPane;
         ApplicationNavigationService = applicationNavigationService;
         UserDialogService = userDialogService;
@@ -110,7 +115,7 @@ public class MainViewModel : ViewModelBase
         private set => SetProperty(ref GameSuggestionList, value);
     }
 
-    public IList<string> PluginSuggestions
+    public IList<PluginSuggestionViewModel> PluginSuggestions
     {
         get => PluginSuggestionList;
         private set => SetProperty(ref PluginSuggestionList, value);
@@ -366,8 +371,8 @@ public class MainViewModel : ViewModelBase
 
     public bool IsExactPluginSuggestion(string searchText)
     {
-        return PluginSuggestions.Any(pluginFileName =>
-            string.Equals(pluginFileName, searchText, StringComparison.OrdinalIgnoreCase));
+        return PluginSuggestions.Any(plugin =>
+            string.Equals(plugin.FileName, searchText, StringComparison.OrdinalIgnoreCase));
     }
 
     public void ChoosePluginSuggestion(string pluginFileName)
@@ -379,7 +384,7 @@ public class MainViewModel : ViewModelBase
     public void SubmitPluginQuery(string queryText)
     {
         ActivePluginSearchText = queryText;
-        if (!PluginSuggestions.Any(pluginFileName => string.Equals(pluginFileName, queryText, StringComparison.OrdinalIgnoreCase)))
+        if (!PluginSuggestions.Any(plugin => string.Equals(plugin.FileName, queryText, StringComparison.OrdinalIgnoreCase)))
         {
             return;
         }
@@ -423,6 +428,7 @@ public class MainViewModel : ViewModelBase
         RecordComparisonTitleText = comparison.FormKey is null
             ? "Select a record to compare."
             : $"{comparison.RecordType} {comparison.EditorID} ({comparison.FormKey.Id:X8})";
+        CurrentRecordComparisonEditorID = comparison.EditorID;
         RefreshRecordComparisonSource();
         AssetPreviewPane.LoadPreviewForRecord(SelectedGame.Game, item.RecordType, item.FormKey);
     }
@@ -523,7 +529,7 @@ public class MainViewModel : ViewModelBase
         MatchingPlugins = PluginSelectionService.SearchOpenablePluginsByFilename(SelectedGame.Game, searchText);
         PluginSuggestions = MatchingPlugins
             .Take(25)
-            .Select(plugin => plugin.ModKey.FileName)
+            .Select(plugin => new PluginSuggestionViewModel(plugin))
             .ToList();
     }
 
@@ -545,6 +551,15 @@ public class MainViewModel : ViewModelBase
 
         if (selectedPlugin is null)
         {
+            return;
+        }
+
+        if (!CanOpenPlugin(selectedPlugin))
+        {
+            SelectedPlugin = selectedPlugin;
+            SetActivePluginSelection(selectedPlugin.ModKey.FileName);
+            UpdateStatusBar();
+            StatusText = $"{selectedPlugin.ModKey.FileName} is {selectedPlugin.ImportState} and cannot be opened.";
             return;
         }
 
@@ -707,7 +722,7 @@ public class MainViewModel : ViewModelBase
             await Task.Yield();
 
             var fetchStopwatch = Stopwatch.StartNew();
-            var recordTreeEntries = await Task.Run(() => RecordTreeService.GetRecordTreeEntries(selectedGame.Game, selectedPlugin.ModKey));
+            var recordTreeEntries = await Task.Run(() => LoadRecordTreeEntriesInBackgroundScope(selectedGame.Game, selectedPlugin.ModKey));
             fetchStopwatch.Stop();
 
             if (requestVersion != ActivePluginLoadVersion ||
@@ -758,11 +773,18 @@ public class MainViewModel : ViewModelBase
         }
     }
 
+    private IReadOnlyList<RecordTreeEntryDTO> LoadRecordTreeEntriesInBackgroundScope(SupportedGame game, ModKeyDTO modKey)
+    {
+        using var scope = RootScope.BeginLifetimeScope();
+        return scope.Resolve<IRecordTreeService>().GetRecordTreeEntries(game, modKey);
+    }
+
     private void ClearRecordComparison()
     {
         RecordComparisonColumns.Clear();
         RecordComparisonRows.Clear();
         RecordComparisonTitleText = "Select a record to compare.";
+        CurrentRecordComparisonEditorID = string.Empty;
         RefreshRecordComparisonSource();
         AssetPreviewPane.ClearPreview();
     }
@@ -915,15 +937,35 @@ public class MainViewModel : ViewModelBase
         return $"{plugin.Game}|{plugin.ModKey.Name}|{plugin.ModKey.Type}|{plugin.ModKey.FileName}";
     }
 
-    private static Control CreateComparisonValueCell(RecordComparisonRowViewModel row, int columnIndex, bool isActiveColumn)
+    private Control CreateComparisonValueCell(RecordComparisonRowViewModel row, int columnIndex, bool isActiveColumn)
     {
-        var textBlock = new TextBlock
+        var value = row.GetComparisonValue(columnIndex);
+        Control child;
+        if (value is not null &&
+            value.DisplayKind == RecordComparisonValueDisplayKind.RawBinaryPayload &&
+            !string.IsNullOrWhiteSpace(value.DetailValue))
         {
-            Text = row.GetValue(columnIndex),
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        App.ApplyApplicationTextForeground(textBlock);
+            var button = new Button
+            {
+                Content = value.DisplayValue,
+                Padding = new Thickness(8, 2),
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            button.Click += async (_, _) => await UserDialogService.ShowHexPayloadAsync(CreateRawPayloadDialogTitle(row, value), value.DetailValue);
+            child = button;
+        }
+        else
+        {
+            var textBlock = new TextBlock
+            {
+                Text = row.GetValue(columnIndex),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            App.ApplyApplicationTextForeground(textBlock);
+            child = textBlock;
+        }
 
         return new Border
         {
@@ -935,8 +977,25 @@ public class MainViewModel : ViewModelBase
                 ? new Thickness(1, 0)
                 : new Thickness(0),
             Padding = new Thickness(6, 3),
-            Child = textBlock
+            Child = child
         };
+    }
+
+    private static bool CanOpenPlugin(PluginDTO plugin)
+    {
+        return plugin.ExistsOnDisk &&
+            plugin.ImportState is PluginImportState.Current or PluginImportState.Changed or PluginImportState.PartiallyImported or PluginImportState.Failed;
+    }
+
+    private string CreateRawPayloadDialogTitle(RecordComparisonRowViewModel row, RecordComparisonValueDTO value)
+    {
+        var recordName = string.IsNullOrWhiteSpace(CurrentRecordComparisonEditorID)
+            ? RecordComparisonTitleText
+            : CurrentRecordComparisonEditorID;
+        var payloadName = string.IsNullOrWhiteSpace(row.ParentFieldName)
+            ? row.FieldName
+            : row.ParentFieldName;
+        return $"{recordName} - {payloadName} - {value.ModKey.FileName}";
     }
 
     private static IBrush GetComparisonValueBrush(RecordComparisonValueState state)

@@ -28,9 +28,12 @@ read-only and preview-focused. The first archive implementations are minimal BA2
 can list entries and read uncompressed and zlib-compressed entries into memory. BA2 texture archives and Starfield
 compression variants that are not zlib are explicit follow-up work. The first NIF implementation is a minimal preview
 reader for Fallout 4/Skyrim Special Edition-style `BSTriShape` geometry and a narrow Starfield `BSGeometry` external
-`.mesh` preview slice that emits UI-neutral preview meshes. The reader can also resolve Starfield `.mat` material
-assets through the same external-asset callback and extract preview DDS texture references. Starfield layered material
-preview support is intentionally narrow: it tracks one primary texture, one overlay/decal texture, additive decal
+`.mesh` preview slice that follows NifSkope's `MeshFile` stream order, scales packed signed 16-bit positions by the
+`.mesh` scale field, decodes raw external mesh positions like NifSkope's `BSMesh::updateData`, then bakes the parsed
+NIF world transform into the UI-neutral preview mesh because the current renderer does not carry a NIF scene graph.
+The reader can also resolve Starfield `.mat` material assets through the same external-asset callback and extract
+preview DDS texture references. Starfield layered material preview support is intentionally narrow: it tracks one
+primary texture, one overlay/decal texture, additive decal
 blending hints, invisible-material skip hints, and a `materialsbeta.cdb` `STRT` string-table fallback for stale or
 indirect texture paths. Full NIF scene graph support, full Starfield material parity, full CDB material graph parsing,
 skeletons, collision, additional Starfield geometry variants, and unsupported vertex layouts remain follow-up work.
@@ -103,9 +106,13 @@ aborting the full plugin import. The current cross-game shared record types are 
 (`GMST`), Globals (`GLOB`), MiscObjects (`MISC`), Keywords (`KYWD`), ActorValueInformation (`AVIF`), NPCs (`NPC_`),
 MagicEffects (`MGEF`), and Perks (`PERK`). Starfield, Fallout 4, and Skyrim map approved shared records inside their
 game adapters after loading the Mutagen plugin once for the Core-facing record-read call.
-Starfield also imports preview-oriented model-bearing record headers for Statics (`STAT`), Books (`BOOK`), Doors
-(`DOOR`), Containers (`CONT`), and Terminals (`TERM`). These Starfield-only records persist common `RecordInstances`
-and shared `Models` rows only; they do not yet have type-specific detail tables or comparison fields.
+Starfield, Fallout 4, and Skyrim import Static (`STAT`) and Container (`CONT`) records through the shared typed-record
+pipeline. Starfield also imports preview-oriented model-bearing record headers for Books (`BOOK`), Doors (`DOOR`), and
+Terminals (`TERM`). These Starfield-only records persist common `RecordInstances` and shared `Models` rows only; they
+do not yet have type-specific detail tables or comparison fields.
+All typed record importers save the record's parent row before dispatching shared child import by DTO capability.
+Records that expose models, keywords, sounds, or scripting adapters persist those child rows through the common
+`RecordInstances` identity instead of game-specific child-table paths.
 
 Starfield plugin metadata, master-reference, and record reads use a Starfield-only construction helper. The helper
 prefers the full Mutagen environment load order's mod objects with the Starfield environment data folder from
@@ -142,13 +149,15 @@ status and loads left-side record-type sections through `IRecordTreeService`. Ea
 with a grid populated from persisted shared record rows for the approved typed record set; the grids show per-record
 plugin usage counts and do not call Mutagen directly from presentation code. Plugins with large header record counts
 use a dedicated active-plugin loading screen before returning to the main view with a prebuilt record browser tree.
-That loading screen creates a child Autofac lifetime scope on the worker path so database-backed record tree
-repositories are resolved and disposed with the background load instead of reusing the main view's scoped connection.
+That loading screen, and the main view's asynchronous record-tree refresh path, create child Autofac lifetime scopes on
+worker paths so database-backed record tree services are resolved and disposed with the background load instead of
+reusing the main view's scoped connection. Active-plugin record tree entries are loaded from the shared
+`RecordInstances` parent table so browsing does not fan out through every typed detail table.
 
-`IRecordTreeService` aggregates record-tree entries from shared record repositories. Repository query methods return
-Core `RecordTreeEntryDTO` values scoped by game and plugin `ModKeyDTO`, preserving the UI boundary and allowing the
-presentation project to group and filter records without knowing database table details. Plugin usage counts are
-queried with grouped SQL per shared record table and joined to active-plugin tree entries in memory.
+`IRecordTreeService` reads active-plugin record tree entries through `IRecordInstanceRepository`. Repository query
+methods return Core `RecordTreeEntryDTO` values scoped by game and plugin `ModKeyDTO`, preserving the UI boundary and
+allowing the presentation project to group and filter records without knowing database table details. Plugin usage
+counts are calculated in the same `RecordInstances` query by grouping peers by record type and origin FormKey.
 
 `IRecordComparisonService` exposes the first game-agnostic comparison contract for imported typed record rows.
 It reads all persisted overrides for a selected origin FormKey from shared repositories and returns comparison DTOs
@@ -156,10 +165,15 @@ with plugin columns, field rows, and display values. The presentation project re
 `TreeDataGrid` and does not query repositories, database tables, or Mutagen directly. The active plugin record browser
 renders record-type groups as expander sections with flat `TreeDataGrid` controls for record rows. The comparison
 slice covers common record header fields plus scalar persisted fields for `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`,
-`AVIF`, `NPC_`, `MGEF`, and `PERK`. GameSetting comparison displays the generic `Data` row instead of duplicating the
-Mutagen-derived typed data helper fields. MISC, NPC_, and MGEF comparison includes shared keyword rows. MISC and MGEF
+`AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, and `CONT`. GameSetting comparison displays the generic `Data` row instead of
+duplicating the Mutagen-derived typed data helper fields. MISC, NPC_, and MGEF comparison includes shared keyword rows.
+MISC and MGEF
 comparison includes shared sound rows. MISC comparison also includes persisted model rows and scripting adapter rows
-as hierarchical child rows in the comparison `TreeDataGrid`. MGEF DATA fields follow Mutagen/Spriggit's flattened
+as hierarchical child rows in the comparison `TreeDataGrid`. STAT comparison includes scalar fields, shared keyword
+rows, shared model rows, and raw payload rows. CONT comparison includes scalar fields, item rows, shared keyword rows,
+shared model rows, shared sound rows, and raw payload rows. Raw payload values are compared by their retained full
+value but are summarized in the grid as `[UNPARSEABLE REFLECTION DATA]`; the presentation layer opens the full value in
+a hex-view dialog when the user selects the summarized value. MGEF DATA fields follow Mutagen/Spriggit's flattened
 record shape and display as flat comparison rows.
 Core assigns comparison value states for neutral, identical, conflicting, and displayed winning-override values; the
 presentation layer maps those states to the green, red, and yellow comparison colors and shows the legend in the status
@@ -168,12 +182,20 @@ area. Deeper child sections such as perk ranks, patch generation, and conflict r
 `IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows.
 `IAssetFileResolverService` resolves readable local asset files from preview candidates by checking absolute paths,
 game data-folder loose files, normalized `Meshes` paths, and the database-backed asset archive index. The archive index
-stores archive metadata and normalized entry paths only, not extracted bytes. Game import builds or refreshes the
-archive index before plugin metadata import so preview clicks can reuse cached archive entry metadata. Lazy preview
-lookup still invalidates one archive at a time by comparing the archive file's last-write ticks and size, then reads
-only the matching archive entry through the owned read-only archive readers. Core DTOs describe record-owned candidate
-paths and optional mesh payloads without referencing Avalonia, OpenGL, Silk.NET, process launching, or binding
-primitives.
+stores archive metadata and normalized entry paths only, not extracted bytes. Game import builds or refreshes archive
+indexes only for preview-relevant archive names containing `meshes`, `textures`, `materials`, `misc`, or `main`, so
+large non-preview archives such as animation, voice, shader, terrain, and localization packs are skipped during import.
+BA2 texture archive indexing reads the archive header and name table only; full texture record and chunk parsing is
+reserved for reading the selected texture entry during preview. Preview lookup can still lazily build or refresh one
+archive index at a time by comparing the archive file's last-write ticks and size, then reads only the matching archive
+entry through the owned read-only archive readers. Lazy fallback lookup scopes archive candidates by asset path:
+`Meshes` and Starfield `geometries` paths search mesh/main/misc archives, `Textures` paths search texture/main/misc
+archives, `Materials` paths search material/main/misc archives, and other paths search main/misc archives. Core DTOs
+describe record-owned candidate paths and optional mesh payloads without referencing Avalonia, OpenGL, Silk.NET,
+process launching, or binding primitives.
+Bulk game import treats archive indexing and each game boundary as memory-pressure checkpoints: archive reader
+directory caches are cleared after each archive index attempt, and the all-games workflow runs an explicit
+large-object-heap-compacting collection after each game completes.
 Assets DTOs describe local-file resolution, in-memory asset reads, and archive extraction results. The presentation
 project owns `AssetPreviewPaneViewModel`, the Avalonia `OpenGlControlBase` renderer, Silk.NET OpenGL calls, render
 mesh conversion, sample-geometry fallback, and the external-open command. The presentation preview geometry adapter
@@ -183,6 +205,15 @@ the existing UI-neutral asset-file resolver. The same resolver path is used when
 `.mat` material assets for preview texture references. Unsupported preview cases, archive-backed paths that cannot yet
 be read, parser gaps, and OpenGL renderer failures are logged through Serilog. Asset preview creation runs on a
 presentation background task with a loading state, and stale background results are ignored when selection changes.
+The OpenGL preview uses one interactive, bounds-based camera view with full-orientation pointer orbit, pointer pan,
+wheel zoom, a reset-view control, explicit X/Y/Z axis view presets, and a small X/Y/Z orientation overlay. Preview
+render-space maps Creation Engine/NIF Z-up to render Y-up, so camera defaults, view presets, and the orientation
+overlay follow that presentation-space mapping. Render mode and mesh selection remain presentation-only controls.
+The simplified Starfield material preview follows NifSkope's CE2 opacity rule at a preview level by treating ordinary
+base texture alpha as opaque and using only explicit decal opacity texture handling for preview alpha. Each background
+preview load creates its own Autofac lifetime scope before resolving preview scene services, because
+archive and database-backed asset resolution are scoped dependencies and must not be shared across overlapping preview
+tasks.
 
 ## Persistence Architecture
 
@@ -192,8 +223,9 @@ objects, not positional NPoco placeholders. Database-backed repositories, import
 registered per Autofac lifetime scope so they share the same scoped `IDatabase` and import transaction.
 
 Typed record repositories upsert a shared `RecordInstances` row before saving type-specific detail rows.
-`RecordInstances` is the common persisted parent identity for imported record overrides and lets generic scripting
-adapter tables declare foreign keys to owning records without creating per-record-type adapter tables.
+`RecordInstances` is the common persisted parent identity for imported record overrides and lets shared child tables
+such as models, keywords, sounds, and scripting adapters declare foreign keys to owning records without creating
+per-record-type child tables.
 
 Changed and forced plugin imports refresh master references and typed record rows with an import-batch timestamp.
 When a master-reference refresh or typed record-type import completes without per-record failures, rows for that same
@@ -220,34 +252,55 @@ Serilog is configured through `CreationsForge.Bootstrap.Logging.SerilogConfigura
 configured application-data `Logs` directory. CLI logs are written to the console and the configured application-data
 `Logs` directory. Logs include machine-name enrichment but do not include environment username enrichment by default.
 Services log workflow-level progress and failures. Repositories do not log.
+`ProcessTerminationDiagnosticsService` writes an application-data session marker with the current PID, log path, last
+import heartbeat, memory snapshot, process handle count, thread count, termination-request state, and clean-shutdown
+state. UI and CLI startup log an unexpected previous session when the prior marker was not cleanly shut down. Catchable
+termination events observed by the app, such as console cancel, request import cancellation and update the session
+marker; hard kills such as `SIGKILL`, Windows task termination, and some OS memory kills are diagnosed only on the
+next launch from the last heartbeat.
 
 ## Shared Scripted Record Extension
 
-Typed records for `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK` follow the same Core-facing import contract as
-shared records: the game adapters map Mutagen records into Core DTOs, `RecordImportService` dispatches by supported
-game and record type ID, and repositories persist DTO data with named SQL parameters. The UI continues to consume Core
-DTOs and record-tree services only.
+Typed records for `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, and `CONT` follow the same Core-facing
+import contract as `FLST`, `GMST`, and `GLOB`: the game adapters map Mutagen records into Core DTOs,
+`RecordImportService` dispatches by supported game and record type ID, and repositories persist DTO data with named
+SQL parameters. The UI continues to consume Core DTOs and record-tree services only.
 
 Scripting adapter persistence is shared in Core through `IScriptingAdapterImportService` and scripting adapter
-repositories. Game adapters populate scripting adapter DTOs for record types that expose virtual-machine adapters.
-The `MISC` slice currently persists parent scalar fields, keyword rows, model rows, and scripts; the old single-game
-app's deeper MiscObject child-detail tables are still a separate follow-up.
+repositories. `IRecordChildImportService` invokes scripting adapter persistence for any imported `RecordDTO` that
+implements the scripting-adapter capability interface. Game adapters populate scripting adapter DTOs for record types
+that expose virtual-machine adapters.
+The `MISC` slice currently persists parent scalar fields, keyword rows, model rows, and scripts. The `CONT` slice
+persists parent scalar fields, item rows, keyword rows, model rows, sounds, and raw payloads. The old single-game app's
+deeper MiscObject child-detail tables are still a separate follow-up.
 Scripting adapters are persisted against the shared `RecordInstances` parent using record type IDs such as `GLOB`,
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`.
 
-Keyword-list persistence is shared in Core through `IRecordKeywordImportService` and `RecordKeywords`. `MISC`, `NPC_`,
-and `MGEF` populate that shared table when the source game exposes keyword lists. Magic Effect DATA fields are
-persisted directly on `MagicEffects` because Mutagen/Spriggit expose them as flattened MGEF properties.
+Keyword-list persistence is shared in Core through `IRecordKeywordImportService` and `RecordKeywords`.
+`IRecordChildImportService` invokes keyword persistence for any imported `RecordDTO` that implements the keyword-list
+capability interface. Magic Effect DATA fields are persisted directly on `MagicEffects` because Mutagen/Spriggit
+expose them as flattened MGEF properties.
 
 Model persistence is shared in Core through `IModelImportService` and model repositories. `Models` and
 `ModelMaterialSwaps` reference `RecordInstances` and include `ModelSlot` plus `ModelGender` so future record types can
-map direct, slotted, or gendered `IModelGetter` data into one table family. The first populated model slice is
-Starfield `MISC`, which uses `ModelSlot = Model` and an empty `ModelGender`. Starfield also populates direct-model
-preview rows for `STAT`, `BOOK`, `DOOR`, `CONT`, and `TERM` through header-only `RecordInstances` plus `Models`.
+map direct, slotted, or gendered `IModelGetter` data into one table family. `IRecordChildImportService` invokes model
+persistence for any imported `RecordDTO` that implements the model capability interface. The first populated model
+slice is `MISC`, which uses `ModelSlot = Model` and an empty `ModelGender`. `STAT` and `CONT` also use shared model
+persistence across Starfield, Fallout 4, and Skyrim. Starfield still populates direct-model preview rows for `BOOK`,
+`DOOR`, and `TERM` through header-only `RecordInstances` plus `Models`.
 
-Sound persistence is shared in Core through `IRecordSoundImportService` and `RecordSounds`. `MISC` maps named scalar
-sounds such as crafting, pickup, putdown, and dropdown sounds when present, while `MGEF` maps indexed typed sound
-entries such as OnHit, Release, and Charge into the same table shape when present.
+Raw payload persistence is shared in Core through `IRawRecordPayloadImportService` and `RawRecordPayloads`.
+`IRecordChildImportService` invokes raw payload persistence for any imported `RecordDTO` that implements the raw
+payload capability interface. The current populated slices are `STAT` and `CONT`: Starfield, Fallout 4, and Skyrim
+preserve opaque `Model.Data` payloads, and Starfield also preserves component `REFL` payload bytes when present.
+Starfield `CONT` import preserves component subfields such as `Components.AnimationGraphComponent.ANAM`, `BNAM`, and
+`CNAM` when Mutagen exposes them through reflection. Comparison DTOs keep the full payload value as detail data while
+exposing a summarized display label for the UI hex viewer.
+
+Sound persistence is shared in Core through `IRecordSoundImportService` and `RecordSounds`. `IRecordChildImportService`
+invokes sound persistence for any imported `RecordDTO` that implements the sound capability interface. `MISC` maps
+named scalar sounds such as crafting, pickup, putdown, and dropdown sounds when present, while `MGEF` maps indexed
+typed sound entries such as OnHit, Release, and Charge into the same table shape when present.
 
 Starfield `MiscItem`, `Static`, `Book`, `Door`, `Container`, and `Terminal` expose a direct `Model : IModelGetter`
 shape and currently map that direct model to `ModelSlot = Model`. `Terminal.MarkerModel` is a separate

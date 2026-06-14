@@ -16,7 +16,9 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
         RecordTypeCatalog.MagicEffect.TableName,
         RecordTypeCatalog.MiscObject.TableName,
         RecordTypeCatalog.NPC.TableName,
-        RecordTypeCatalog.Perk.TableName
+        RecordTypeCatalog.Perk.TableName,
+        RecordTypeCatalog.Static.TableName,
+        RecordTypeCatalog.Container.TableName
     };
 
     protected readonly IDatabase Database;

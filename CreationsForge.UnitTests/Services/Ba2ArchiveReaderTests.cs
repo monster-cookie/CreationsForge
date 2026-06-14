@@ -159,7 +159,7 @@ public class Ba2ArchiveReaderTests
     }
 
     [Fact]
-    public void ListEntries_ReturnsTextureArchiveEntriesWithDdsHeaderSize()
+    public void ListEntries_ReturnsTextureArchiveEntryNames()
     {
         var tempDirectory = Directory.CreateTempSubdirectory();
         try
@@ -178,7 +178,36 @@ public class Ba2ArchiveReaderTests
             entries[0].ArchivePath.ShouldBe(archivePath);
             entries[0].EntryPath.ShouldBe("textures/setdressing/babybottle/babybottledirty01_d.dds");
             entries[0].PackedSize.ShouldBe(0);
-            entries[0].UnpackedSize.ShouldBe(136U);
+            entries[0].UnpackedSize.ShouldBe(0);
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ListEntries_ReturnsTextureArchiveNamesWhenChunkHeaderSizeIsUnsupported()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var archivePath = Path.Combine(tempDirectory.FullName, "Textures.ba2");
+            WriteBa2TextureArchive(
+                archivePath,
+                [
+                    new TestBa2TextureEntry("Textures/SetDressing/BabyBottle/BabyBottleDirty01_d.dds", 4, 4, 71, [1, 2, 3, 4])
+                ],
+                textureChunkHeaderSize: 0);
+            var reader = new Ba2ArchiveReader();
+
+            var entries = reader.ListEntries(archivePath);
+
+            entries.Count.ShouldBe(1);
+            entries[0].ArchivePath.ShouldBe(archivePath);
+            entries[0].EntryPath.ShouldBe("textures/setdressing/babybottle/babybottledirty01_d.dds");
+            entries[0].PackedSize.ShouldBe(0);
+            entries[0].UnpackedSize.ShouldBe(0);
         }
         finally
         {
@@ -359,7 +388,8 @@ public class Ba2ArchiveReaderTests
         string archivePath,
         IReadOnlyList<TestBa2TextureEntry> entries,
         uint version = 1,
-        int headerSize = 24)
+        int headerSize = 24,
+        int textureChunkHeaderSize = 24)
     {
         const int textureRecordSize = 24;
         const int textureChunkSize = 24;
@@ -387,7 +417,7 @@ public class Ba2ArchiveReaderTests
             writer.Write(0U);
             writer.Write((byte)0);
             writer.Write((byte)entry.Chunks.Count);
-            writer.Write((ushort)textureChunkSize);
+            writer.Write((ushort)textureChunkHeaderSize);
             writer.Write((ushort)entry.Height);
             writer.Write((ushort)entry.Width);
             writer.Write((byte)1);

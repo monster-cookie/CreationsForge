@@ -13,15 +13,21 @@ public class AllGamesImportWorkflowService : IAllGamesImportWorkflowService
     private readonly IDatabaseSchemaInitializer DatabaseSchemaInitializer;
     private readonly GameImportDispatcher GameImportDispatcher;
     private readonly ILogger Logger = Log.ForContext<AllGamesImportWorkflowService>();
+    private readonly IMemoryPressureService? MemoryPressureService;
+    private readonly IProcessTerminationDiagnosticsService? ProcessTerminationDiagnosticsService;
 
     public AllGamesImportWorkflowService(
         IDatabaseResetService databaseResetService,
         IDatabaseSchemaInitializer databaseSchemaInitializer,
-        GameImportDispatcher gameImportDispatcher)
+        GameImportDispatcher gameImportDispatcher,
+        IMemoryPressureService? memoryPressureService = null,
+        IProcessTerminationDiagnosticsService? processTerminationDiagnosticsService = null)
     {
         DatabaseResetService = databaseResetService;
         DatabaseSchemaInitializer = databaseSchemaInitializer;
         GameImportDispatcher = gameImportDispatcher;
+        MemoryPressureService = memoryPressureService;
+        ProcessTerminationDiagnosticsService = processTerminationDiagnosticsService;
     }
 
     public async Task<AllGamesImportWorkflowResultDTO> ImportAllAsync(
@@ -36,9 +42,10 @@ public class AllGamesImportWorkflowService : IAllGamesImportWorkflowService
             return await Task.Run(() =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                var reportingProgress = CreateHeartbeatProgress("Reset & Import All", progress);
                 if (resetDatabase)
                 {
-                    progress?.Report(new GameImportProgressDTO
+                    reportingProgress.Report(new GameImportProgressDTO
                     {
                         StatusText = "Resetting database...",
                         DetailText = "Deleting the SQLite database and sidecar files.",
@@ -49,7 +56,7 @@ public class AllGamesImportWorkflowService : IAllGamesImportWorkflowService
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
-                progress?.Report(new GameImportProgressDTO
+                reportingProgress.Report(new GameImportProgressDTO
                 {
                     StatusText = "Initializing database...",
                     DetailText = "Applying migrations before all-games import.",
@@ -66,7 +73,7 @@ public class AllGamesImportWorkflowService : IAllGamesImportWorkflowService
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     var game = games[index];
-                    progress?.Report(new GameImportProgressDTO
+                    reportingProgress.Report(new GameImportProgressDTO
                     {
                         StatusText = $"Importing {game}...",
                         DetailText = $"Game {index + 1} of {games.Length}.",
@@ -75,13 +82,14 @@ public class AllGamesImportWorkflowService : IAllGamesImportWorkflowService
                         IsIndeterminate = true
                     });
 
-                    var result = GameImportDispatcher.Import(game, true, progress, cancellationToken);
+                    var result = GameImportDispatcher.Import(game, true, reportingProgress, cancellationToken);
                     importResults.Add(result);
                     Logger.Information("Completed all-games import for {Game}; plugins imported: {PluginsImported}", game, result.PluginsImported);
+                    MemoryPressureService?.CollectAfterBulkImportPhase($"{game} import");
                 }
 
                 var totalPluginsImported = importResults.Sum(result => result.PluginsImported);
-                progress?.Report(new GameImportProgressDTO
+                reportingProgress.Report(new GameImportProgressDTO
                 {
                     StatusText = "Completed all-games import.",
                     DetailText = $"Imported {totalPluginsImported} plugins across {importResults.Count} games.",
@@ -103,6 +111,36 @@ public class AllGamesImportWorkflowService : IAllGamesImportWorkflowService
         {
             Logger.Information("All-games import workflow was canceled; reset database: {ResetDatabase}", resetDatabase);
             throw;
+        }
+    }
+
+    private IProgress<GameImportProgressDTO> CreateHeartbeatProgress(
+        string phaseName,
+        IProgress<GameImportProgressDTO>? progress)
+    {
+        return new HeartbeatProgress(phaseName, progress, ProcessTerminationDiagnosticsService);
+    }
+
+    private sealed class HeartbeatProgress : IProgress<GameImportProgressDTO>
+    {
+        private readonly string PhaseName;
+        private readonly IProgress<GameImportProgressDTO>? InnerProgress;
+        private readonly IProcessTerminationDiagnosticsService? ProcessTerminationDiagnosticsService;
+
+        public HeartbeatProgress(
+            string phaseName,
+            IProgress<GameImportProgressDTO>? innerProgress,
+            IProcessTerminationDiagnosticsService? processTerminationDiagnosticsService)
+        {
+            PhaseName = phaseName;
+            InnerProgress = innerProgress;
+            ProcessTerminationDiagnosticsService = processTerminationDiagnosticsService;
+        }
+
+        public void Report(GameImportProgressDTO value)
+        {
+            ProcessTerminationDiagnosticsService?.UpdateHeartbeat(PhaseName, value);
+            InnerProgress?.Report(value);
         }
     }
 }

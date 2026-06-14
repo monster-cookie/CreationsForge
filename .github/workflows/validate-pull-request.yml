@@ -1,6 +1,13 @@
 name: Validate Pull Request
 
 on:
+  workflow_call:
+    inputs:
+      dotnet-version:
+        description: .NET SDK version to install.
+        required: false
+        type: string
+        default: '10.0.x'
   pull_request:
     branches:
       - master
@@ -14,6 +21,7 @@ permissions:
   contents: read
 
 env:
+  DOTNET_VERSION: ${{ inputs.dotnet-version || '10.0.x' }}
   AVALONIA_UI_LICENSE_KEY: ${{ secrets.AVALONIA_UI_LICENSE_KEY }}
 
 jobs:
@@ -28,7 +36,7 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Restore
         shell: pwsh
@@ -38,6 +46,10 @@ jobs:
         shell: pwsh
         run: dotnet build ./CreationsForge.sln --configuration Release --no-restore
 
-      - name: Test
+      - name: Unit Tests
         shell: pwsh
         run: dotnet test ./CreationsForge.UnitTests/CreationsForge.UnitTests.csproj --configuration Release --no-build --filter "Category!=RequiresStarfield"
+
+      - name: Presentation Layer Tests
+        shell: pwsh
+        run: dotnet test ./CreationsForge.PresentationTests/CreationsForge.PresentationTests.csproj --configuration Release --no-build --filter "Category!=RequiresStarfield"

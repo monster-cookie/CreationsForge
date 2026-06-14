@@ -5,6 +5,7 @@ using CreationsForge.Core.DTOs.Results;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Repositories.Interfaces;
 using CreationsForge.Core.Services;
+using CreationsForge.Core.Services.Interfaces;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Services;
@@ -82,6 +83,87 @@ public class AssetArchiveIndexServiceTests
             result.EntriesIndexed.ShouldBe(1200);
             repository.Entries.Count.ShouldBe(1200);
             repository.LastReplaceEntryCount.ShouldBe(1200);
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void IndexGameArchives_ClearsArchiveReaderCacheAndCollectsAfterIndexing()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var archivePath = Path.Combine(tempDirectory.FullName, "Starfield - Meshes01.ba2");
+            File.WriteAllBytes(archivePath, [1, 2, 3]);
+            var repository = new TestAssetArchiveIndexRepository();
+            var reader = new TestAssetArchiveReader(
+                [
+                    new AssetArchiveEntry
+                    {
+                        ArchivePath = archivePath,
+                        EntryPath = "meshes/generated/model.nif",
+                        PackedSize = 1,
+                        UnpackedSize = 1
+                    }
+                ],
+                [9]);
+            var memoryPressureService = new TestMemoryPressureService();
+            var service = new AssetArchiveIndexService(repository, [reader], memoryPressureService);
+
+            service.IndexGameArchives(SupportedGame.Starfield, tempDirectory.FullName);
+
+            reader.ClearCacheCallCount.ShouldBe(1);
+            memoryPressureService.PhaseNames.ShouldBe(["Starfield asset archive indexing"]);
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void IndexGameArchives_IndexesOnlyPreviewRelevantArchiveNames()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var includedArchives = new[]
+            {
+                "Starfield - Main.ba2",
+                "Starfield - Materials.ba2",
+                "Starfield - Meshes01.ba2",
+                "Starfield - Misc.ba2",
+                "Starfield - Textures01.ba2"
+            };
+            foreach (var archiveName in includedArchives)
+            {
+                File.WriteAllBytes(Path.Combine(tempDirectory.FullName, archiveName), [1, 2, 3]);
+            }
+
+            File.WriteAllBytes(Path.Combine(tempDirectory.FullName, "Starfield - Animations.ba2"), [1, 2, 3]);
+            var repository = new TestAssetArchiveIndexRepository();
+            var reader = new TestAssetArchiveReader(
+                [
+                    new AssetArchiveEntry
+                    {
+                        ArchivePath = string.Empty,
+                        EntryPath = "meshes/generated/model.nif",
+                        PackedSize = 1,
+                        UnpackedSize = 1
+                    }
+                ],
+                [9]);
+            var service = new AssetArchiveIndexService(repository, [reader]);
+
+            var result = service.IndexGameArchives(SupportedGame.Starfield, tempDirectory.FullName);
+
+            result.ArchivesDiscovered.ShouldBe(includedArchives.Length);
+            result.ArchivesIndexed.ShouldBe(includedArchives.Length);
+            repository.ArchiveFiles.Select(archive => archive.ArchiveFileName).ShouldBe(includedArchives);
+            repository.ArchiveFiles.ShouldNotContain(archive => archive.ArchiveFileName == "Starfield - Animations.ba2");
         }
         finally
         {
@@ -234,6 +316,105 @@ public class AssetArchiveIndexServiceTests
             repository.Entries.Count.ShouldBe(1);
             repository.Entries[0].RootFolder.ShouldBe("textures");
             repository.Entries[0].Extension.ShouldBe(".dds");
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void TryReadArchiveAsset_WhenTextureMissingFromIndex_IndexesOnlyTextureRelevantArchives()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var archiveNames = new[]
+            {
+                "Starfield - Textures01.ba2",
+                "Starfield - Main.ba2",
+                "Starfield - Misc.ba2",
+                "Starfield - Animations.ba2",
+                "Starfield - Voices_en.ba2",
+                "Starfield - Localization.ba2",
+                "Starfield - Shaders.ba2"
+            };
+            foreach (var archiveName in archiveNames)
+            {
+                File.WriteAllBytes(Path.Combine(tempDirectory.FullName, archiveName), [1, 2, 3]);
+            }
+
+            var repository = new TestAssetArchiveIndexRepository();
+            var reader = new TestAssetArchiveReader(
+                [
+                    new AssetArchiveEntry
+                    {
+                        ArchivePath = string.Empty,
+                        EntryPath = "textures/other.dds",
+                        PackedSize = 1,
+                        UnpackedSize = 1
+                    }
+                ],
+                [1]);
+            var service = new AssetArchiveIndexService(repository, [reader]);
+
+            var result = service.TryReadArchiveAsset(
+                SupportedGame.Starfield,
+                tempDirectory.FullName,
+                "Textures\\Missing\\Nope.dds");
+
+            result.Status.ShouldBe(BethesdaAssetReadStatus.ArchiveEntryMissing);
+            repository.ArchiveFiles.Select(archive => archive.ArchiveFileName).ShouldBe(
+                [
+                    "Starfield - Textures01.ba2",
+                    "Starfield - Main.ba2",
+                    "Starfield - Misc.ba2"
+                ]);
+            repository.ArchiveFiles.ShouldNotContain(archive => archive.ArchiveFileName == "Starfield - Animations.ba2");
+            repository.ArchiveFiles.ShouldNotContain(archive => archive.ArchiveFileName == "Starfield - Voices_en.ba2");
+            repository.ArchiveFiles.ShouldNotContain(archive => archive.ArchiveFileName == "Starfield - Localization.ba2");
+            repository.ArchiveFiles.ShouldNotContain(archive => archive.ArchiveFileName == "Starfield - Shaders.ba2");
+            reader.ListEntriesCallCount.ShouldBe(3);
+            reader.TryReadEntryCallCount.ShouldBe(0);
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void TryReadArchiveAsset_UsesMeshArchivesForStarfieldGeometryPath()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var meshArchivePath = Path.Combine(tempDirectory.FullName, "Starfield - Meshes01.ba2");
+            File.WriteAllBytes(meshArchivePath, [1, 2, 3]);
+            File.WriteAllBytes(Path.Combine(tempDirectory.FullName, "Starfield - Main.ba2"), [1, 2, 3]);
+            File.WriteAllBytes(Path.Combine(tempDirectory.FullName, "Starfield - Textures01.ba2"), [1, 2, 3]);
+            var repository = new TestAssetArchiveIndexRepository();
+            var reader = new TestAssetArchiveReader(
+                [
+                    new AssetArchiveEntry
+                    {
+                        ArchivePath = string.Empty,
+                        EntryPath = "geometries/preview.mesh",
+                        PackedSize = 4,
+                        UnpackedSize = 4
+                    }
+                ],
+                [7, 8, 9]);
+            var service = new AssetArchiveIndexService(repository, [reader]);
+
+            var result = service.TryReadArchiveAsset(SupportedGame.Starfield, tempDirectory.FullName, "geometries\\preview.mesh");
+
+            result.Status.ShouldBe(BethesdaAssetReadStatus.ReadArchiveEntry);
+            result.SourceArchivePath.ShouldBe(meshArchivePath);
+            result.NormalizedEntryPath.ShouldBe("geometries/preview.mesh");
+            repository.ArchiveFiles.Select(archive => archive.ArchiveFileName).ShouldBe(["Starfield - Meshes01.ba2"]);
+            reader.ListEntriesCallCount.ShouldBe(1);
+            reader.TryReadEntryCallCount.ShouldBe(1);
         }
         finally
         {
@@ -420,7 +601,7 @@ public class AssetArchiveIndexServiceTests
         }
     }
 
-    private class TestAssetArchiveReader : IAssetArchiveReader
+    private class TestAssetArchiveReader : IAssetArchiveReader, IAssetArchiveCache
     {
         private readonly IReadOnlyList<AssetArchiveEntry> Entries;
         private readonly byte[] Data;
@@ -434,6 +615,8 @@ public class AssetArchiveIndexServiceTests
         public int ListEntriesCallCount { get; private set; }
 
         public int TryReadEntryCallCount { get; private set; }
+
+        public int ClearCacheCallCount { get; private set; }
 
         public bool CanRead(string archivePath)
         {
@@ -458,6 +641,21 @@ public class AssetArchiveIndexServiceTests
                 StatusMessage = "Read test archive entry."
             };
         }
+
+        public void ClearCache()
+        {
+            ClearCacheCallCount++;
+        }
+    }
+
+    private sealed class TestMemoryPressureService : IMemoryPressureService
+    {
+        public List<string> PhaseNames { get; } = new();
+
+        public void CollectAfterBulkImportPhase(string phaseName)
+        {
+            PhaseNames.Add(phaseName);
+        }
     }
 
     private class TestProgress<T> : IProgress<T>
@@ -477,7 +675,7 @@ public class AssetArchiveIndexServiceTests
 
     private class TestAssetArchiveIndexRepository : IAssetArchiveIndexRepository
     {
-        private readonly List<AssetArchiveFileDTO> ArchiveFiles = new();
+        public List<AssetArchiveFileDTO> ArchiveFiles { get; } = new();
 
         public List<AssetArchiveEntryDTO> Entries { get; } = new();
 

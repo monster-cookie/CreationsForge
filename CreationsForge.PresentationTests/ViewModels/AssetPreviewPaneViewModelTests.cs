@@ -1,3 +1,4 @@
+using Autofac;
 using CreationsForge.Core.DTOs.Assets;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.Enums;
@@ -23,6 +24,20 @@ public class AssetPreviewPaneViewModelTests
         viewModel.SelectedMeshSelection.ShouldNotBeNull();
         viewModel.SelectedMeshSelection.Value.MeshIndex.ShouldBeNull();
         viewModel.SelectedMeshSelection.Value.DisplayName.ShouldBe("All meshes");
+    }
+
+    [Fact]
+    public void Constructor_ExposesRenderModesForSingleInteractivePreview()
+    {
+        var viewModel = CreateViewModel();
+
+        viewModel.RenderModes.ShouldBe(
+            [
+                AssetPreviewRenderMode.Solid,
+                AssetPreviewRenderMode.Wireframe,
+                AssetPreviewRenderMode.Points
+            ]);
+        viewModel.SelectedRenderMode.ShouldBe(AssetPreviewRenderMode.Solid);
     }
 
     [Fact]
@@ -131,6 +146,51 @@ public class AssetPreviewPaneViewModelTests
     }
 
     [Fact]
+    public async Task LoadPreviewForRecord_IgnoresPreviousPreviewWhenSelectionChanges()
+    {
+        var firstCandidate = CreateCandidate(@"Meshes\First.nif", 0x100);
+        var secondCandidate = CreateCandidate(@"Meshes\Second.nif", 0x200);
+        var pathResolver = new FakeAssetPreviewPathResolverService
+        {
+            Candidates =
+            [
+                firstCandidate
+            ]
+        };
+        var firstSceneService = new BlockingAssetPreviewSceneService
+        {
+            PreviewModel = CreatePreviewModel("First preview")
+        };
+        var secondSceneService = new FakeAssetPreviewSceneService
+        {
+            PreviewModel = CreatePreviewModel("Second preview")
+        };
+        var viewModel = CreateViewModel(
+            pathResolver,
+            CreateQueuedLifetimeScope(firstSceneService, secondSceneService));
+
+        viewModel.LoadPreviewForRecord(SupportedGame.Fallout4, "MISC", firstCandidate.FormKey);
+        await WaitForTask(firstSceneService.Started.Task);
+
+        pathResolver.Candidates =
+        [
+            secondCandidate
+        ];
+        viewModel.LoadPreviewForRecord(SupportedGame.Fallout4, "MISC", secondCandidate.FormKey);
+        await WaitUntil(() => !viewModel.IsPreviewLoading);
+
+        viewModel.PreviewModel.ShouldNotBeNull();
+        viewModel.PreviewModel.DisplayName.ShouldBe("Second preview");
+
+        firstSceneService.Release();
+        await WaitForTask(firstSceneService.Completed.Task);
+        await Task.Delay(20);
+
+        viewModel.PreviewModel.ShouldNotBeNull();
+        viewModel.PreviewModel.DisplayName.ShouldBe("Second preview");
+    }
+
+    [Fact]
     public void OpenExternallyCommand_OpensResolvedPath()
     {
         var pathResolver = new FakeAssetPreviewPathResolverService
@@ -145,9 +205,16 @@ public class AssetPreviewPaneViewModelTests
         var viewModel = CreateViewModel(pathResolver, externalAssetOpenService: externalOpenService);
 
         viewModel.LoadPreviewForRecord(SupportedGame.Fallout4, "MISC", CreateFormKey());
+        viewModel.OpenExternallyCommand.CanExecute(null).ShouldBe(OperatingSystem.IsWindows());
         viewModel.OpenExternallyCommand.Execute(null);
 
-        externalOpenService.OpenedPath.ShouldBe(@"C:\Games\Data\Meshes\Preview.nif");
+        if (OperatingSystem.IsWindows())
+        {
+            externalOpenService.OpenedPath.ShouldBe(@"C:\Games\Data\Meshes\Preview.nif");
+            return;
+        }
+
+        externalOpenService.OpenedPath.ShouldBeNull();
     }
 
     private static AssetPreviewPaneViewModel CreateViewModel(
@@ -155,34 +222,60 @@ public class AssetPreviewPaneViewModelTests
         IAssetPreviewSceneService? sceneService = null,
         IExternalAssetOpenService? externalAssetOpenService = null)
     {
+        return CreateViewModel(
+            pathResolver,
+            CreateLifetimeScope(sceneService ?? new FakeAssetPreviewSceneService()),
+            externalAssetOpenService);
+    }
+
+    private static AssetPreviewPaneViewModel CreateViewModel(
+        IAssetPreviewPathResolverService? pathResolver,
+        ILifetimeScope lifetimeScope,
+        IExternalAssetOpenService? externalAssetOpenService = null)
+    {
         return new AssetPreviewPaneViewModel(
             pathResolver ?? new FakeAssetPreviewPathResolverService(),
-            sceneService ?? new FakeAssetPreviewSceneService(),
+            lifetimeScope,
             externalAssetOpenService ?? new FakeExternalAssetOpenService(),
             new LoggerConfiguration().CreateLogger());
     }
 
-    private static AssetPreviewCandidateDTO CreateCandidate()
+    private static ILifetimeScope CreateLifetimeScope(IAssetPreviewSceneService sceneService)
+    {
+        var builder = new ContainerBuilder();
+        builder.RegisterInstance(sceneService).As<IAssetPreviewSceneService>();
+        return builder.Build();
+    }
+
+    private static ILifetimeScope CreateQueuedLifetimeScope(params IAssetPreviewSceneService[] sceneServices)
+    {
+        var queue = new Queue<IAssetPreviewSceneService>(sceneServices);
+        var builder = new ContainerBuilder();
+        builder.Register(_ => queue.Dequeue()).As<IAssetPreviewSceneService>();
+        return builder.Build();
+    }
+
+    private static AssetPreviewCandidateDTO CreateCandidate(string meshPath = @"Meshes\Preview.nif", uint formId = 0x1A899B)
     {
         return new AssetPreviewCandidateDTO
         {
             Game = SupportedGame.Fallout4,
             ModKey = CreateModKey(),
             RecordType = "MISC",
-            FormKey = CreateFormKey(),
+            FormKey = CreateFormKey(formId),
             ModelSlot = "Model",
-            MeshPath = @"Meshes\Preview.nif",
-            DisplayName = "Model: Preview.nif",
+            MeshPath = meshPath,
+            DisplayName = $"Model: {Path.GetFileName(meshPath)}",
             CanPreview = true,
             CanOpenExternally = true
         };
     }
 
-    private static AssetPreviewModelDTO CreatePreviewModel()
+    private static AssetPreviewModelDTO CreatePreviewModel(string displayName = "Preview")
     {
         return new AssetPreviewModelDTO
         {
-            DisplayName = "Preview",
+            DisplayName = displayName,
             SourcePath = @"Meshes\Preview.nif",
             Meshes =
             {
@@ -200,12 +293,12 @@ public class AssetPreviewPaneViewModelTests
         };
     }
 
-    private static FormKeyDTO CreateFormKey()
+    private static FormKeyDTO CreateFormKey(uint formId = 0x1A899B)
     {
         return new FormKeyDTO
         {
             ModKey = CreateModKey(),
-            Id = 0x1A899B
+            Id = formId
         };
     }
 
@@ -261,6 +354,8 @@ public class AssetPreviewPaneViewModelTests
     {
         private readonly ManualResetEventSlim ReleaseGate = new ManualResetEventSlim(false);
 
+        public AssetPreviewModelDTO PreviewModel { get; set; } = CreatePreviewModel();
+
         public TaskCompletionSource Started { get; } = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public TaskCompletionSource Completed { get; } = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -272,7 +367,7 @@ public class AssetPreviewPaneViewModelTests
             {
                 ReleaseGate.Wait();
                 statusMessage = "Loaded preview.";
-                return CreatePreviewModel();
+                return PreviewModel;
             }
             finally
             {

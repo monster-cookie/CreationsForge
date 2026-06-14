@@ -12,16 +12,19 @@ public class GameImportWorkflowService : IGameImportWorkflowService
     private readonly IDatabaseSchemaInitializer DatabaseSchemaInitializer;
     private readonly GameImportDispatcher GameImportDispatcher;
     private readonly IGameSelectionService GameSelectionService;
+    private readonly IProcessTerminationDiagnosticsService? ProcessTerminationDiagnosticsService;
     private readonly ILogger Logger = Log.ForContext<GameImportWorkflowService>();
 
     public GameImportWorkflowService(
         IDatabaseSchemaInitializer databaseSchemaInitializer,
         GameImportDispatcher gameImportDispatcher,
-        IGameSelectionService gameSelectionService)
+        IGameSelectionService gameSelectionService,
+        IProcessTerminationDiagnosticsService? processTerminationDiagnosticsService = null)
     {
         DatabaseSchemaInitializer = databaseSchemaInitializer;
         GameImportDispatcher = gameImportDispatcher;
         GameSelectionService = gameSelectionService;
+        ProcessTerminationDiagnosticsService = processTerminationDiagnosticsService;
     }
 
     public async Task<GameImportWorkflowResultDTO> ImportAsync(
@@ -31,7 +34,8 @@ public class GameImportWorkflowService : IGameImportWorkflowService
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        progress?.Report(new GameImportProgressDTO
+        var reportingProgress = CreateHeartbeatProgress($"Import {game}", progress);
+        reportingProgress.Report(new GameImportProgressDTO
         {
             StatusText = $"Preparing {game} import...",
             DetailText = "Saving selected game.",
@@ -46,7 +50,7 @@ public class GameImportWorkflowService : IGameImportWorkflowService
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 Logger.Information("Starting UI import workflow for {Game}", game);
-                progress?.Report(new GameImportProgressDTO
+                reportingProgress.Report(new GameImportProgressDTO
                 {
                     StatusText = $"Initializing {game} database...",
                     DetailText = "Applying any pending migrations.",
@@ -54,18 +58,19 @@ public class GameImportWorkflowService : IGameImportWorkflowService
                     IsIndeterminate = true
                 });
                 var migrationsApplied = DatabaseSchemaInitializer.Initialize();
+                var forceImport = forceFullReimport || migrationsApplied;
 
                 cancellationToken.ThrowIfCancellationRequested();
-                progress?.Report(new GameImportProgressDTO
+                reportingProgress.Report(new GameImportProgressDTO
                 {
                     StatusText = $"Importing {game} plugins and records...",
-                    DetailText = forceFullReimport ? "Running a full reimport. This may take several minutes." : "Unchanged plugins will be skipped.",
+                    DetailText = forceImport ? "Running a full reimport. This may take several minutes." : "Unchanged plugins will be skipped.",
                     ProgressValue = 50,
                     IsIndeterminate = true
                 });
-                var importResult = GameImportDispatcher.Import(game, forceFullReimport, progress, cancellationToken);
+                var importResult = GameImportDispatcher.Import(game, forceImport, reportingProgress, cancellationToken);
                 Logger.Information("Completed UI import workflow for {Game}; plugins imported: {PluginsImported}", game, importResult.PluginsImported);
-                progress?.Report(new GameImportProgressDTO
+                reportingProgress.Report(new GameImportProgressDTO
                 {
                     StatusText = $"Completed {game} import.",
                     DetailText = $"Imported {importResult.PluginsImported} plugins.",
@@ -84,6 +89,36 @@ public class GameImportWorkflowService : IGameImportWorkflowService
         {
             Logger.Information("UI import workflow for {Game} was canceled", game);
             throw;
+        }
+    }
+
+    private IProgress<GameImportProgressDTO> CreateHeartbeatProgress(
+        string phaseName,
+        IProgress<GameImportProgressDTO>? progress)
+    {
+        return new HeartbeatProgress(phaseName, progress, ProcessTerminationDiagnosticsService);
+    }
+
+    private sealed class HeartbeatProgress : IProgress<GameImportProgressDTO>
+    {
+        private readonly string PhaseName;
+        private readonly IProgress<GameImportProgressDTO>? InnerProgress;
+        private readonly IProcessTerminationDiagnosticsService? ProcessTerminationDiagnosticsService;
+
+        public HeartbeatProgress(
+            string phaseName,
+            IProgress<GameImportProgressDTO>? innerProgress,
+            IProcessTerminationDiagnosticsService? processTerminationDiagnosticsService)
+        {
+            PhaseName = phaseName;
+            InnerProgress = innerProgress;
+            ProcessTerminationDiagnosticsService = processTerminationDiagnosticsService;
+        }
+
+        public void Report(GameImportProgressDTO value)
+        {
+            ProcessTerminationDiagnosticsService?.UpdateHeartbeat(PhaseName, value);
+            InnerProgress?.Report(value);
         }
     }
 }

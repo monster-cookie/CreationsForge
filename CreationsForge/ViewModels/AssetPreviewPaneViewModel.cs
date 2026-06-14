@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Autofac;
 using CreationsForge.Commands;
 using CreationsForge.Core.DTOs.Assets;
 using CreationsForge.Core.DTOs.Plugins;
@@ -13,42 +14,34 @@ namespace CreationsForge.ViewModels;
 public class AssetPreviewPaneViewModel : ViewModelBase
 {
     private readonly IAssetPreviewPathResolverService AssetPreviewPathResolverService;
-    private readonly IAssetPreviewSceneService AssetPreviewSceneService;
+    private readonly ILifetimeScope LifetimeScope;
     private readonly IExternalAssetOpenService ExternalAssetOpenService;
     private readonly ILogger Logger;
+    private readonly object PreviewLoadSyncRoot = new();
     private AssetPreviewCandidateDTO? SelectedCandidateValue;
     private AssetPreviewModelDTO? PreviewModelValue;
     private AssetPreviewMeshSelectionOption SelectedMeshSelectionValue = AssetPreviewMeshSelectionOption.All;
-    private AssetPreviewViewMode SelectedViewModeValue = AssetPreviewViewMode.Isometric;
     private AssetPreviewRenderMode SelectedRenderModeValue = AssetPreviewRenderMode.Solid;
-    private bool IsOrbitEnabledValue;
     private bool IsPreviewLoadingValue;
     private long PreviewLoadVersion;
     private string PreviewTitleTextValue = "Asset preview";
     private string PreviewStatusTextValue = "Select a model-bearing record to preview assets.";
+    private CancellationTokenSource? PreviewLoadCancellationTokenSource;
 
     public AssetPreviewPaneViewModel(
         IAssetPreviewPathResolverService assetPreviewPathResolverService,
-        IAssetPreviewSceneService assetPreviewSceneService,
+        ILifetimeScope lifetimeScope,
         IExternalAssetOpenService externalAssetOpenService,
         ILogger logger)
     {
         AssetPreviewPathResolverService = assetPreviewPathResolverService;
-        AssetPreviewSceneService = assetPreviewSceneService;
+        LifetimeScope = lifetimeScope;
         ExternalAssetOpenService = externalAssetOpenService;
         Logger = logger.ForContext<AssetPreviewPaneViewModel>();
         PreviewCandidates = new ObservableCollection<AssetPreviewCandidateDTO>();
         MeshSelections = new ObservableCollection<AssetPreviewMeshSelectionOption>
         {
             AssetPreviewMeshSelectionOption.All
-        };
-        ViewModes = new ObservableCollection<AssetPreviewViewMode>
-        {
-            AssetPreviewViewMode.Isometric,
-            AssetPreviewViewMode.Front,
-            AssetPreviewViewMode.Back,
-            AssetPreviewViewMode.Side,
-            AssetPreviewViewMode.Top
         };
         RenderModes = new ObservableCollection<AssetPreviewRenderMode>
         {
@@ -62,8 +55,6 @@ public class AssetPreviewPaneViewModel : ViewModelBase
     public ObservableCollection<AssetPreviewCandidateDTO> PreviewCandidates { get; }
 
     public ObservableCollection<AssetPreviewMeshSelectionOption> MeshSelections { get; }
-
-    public ObservableCollection<AssetPreviewViewMode> ViewModes { get; }
 
     public ObservableCollection<AssetPreviewRenderMode> RenderModes { get; }
 
@@ -125,22 +116,10 @@ public class AssetPreviewPaneViewModel : ViewModelBase
         set => SetProperty(ref SelectedMeshSelectionValue, value ?? AssetPreviewMeshSelectionOption.All);
     }
 
-    public AssetPreviewViewMode SelectedViewMode
-    {
-        get => SelectedViewModeValue;
-        set => SetProperty(ref SelectedViewModeValue, value);
-    }
-
     public AssetPreviewRenderMode SelectedRenderMode
     {
         get => SelectedRenderModeValue;
         set => SetProperty(ref SelectedRenderModeValue, value);
-    }
-
-    public bool IsOrbitEnabled
-    {
-        get => IsOrbitEnabledValue;
-        set => SetProperty(ref IsOrbitEnabledValue, value);
     }
 
     public string PreviewTitleText
@@ -157,8 +136,10 @@ public class AssetPreviewPaneViewModel : ViewModelBase
 
     public void LoadPreviewForRecord(SupportedGame game, string recordType, FormKeyDTO formKey)
     {
+        CancelCurrentPreviewLoad();
         PreviewCandidates.Clear();
         OnPropertyChanged(nameof(HasPreviewCandidates));
+        ResetSelectedCandidateWithoutLoading();
         PreviewModel = null;
         IsPreviewLoading = false;
         ResetMeshSelections(null);
@@ -189,9 +170,10 @@ public class AssetPreviewPaneViewModel : ViewModelBase
 
     public void ClearPreview()
     {
+        CancelCurrentPreviewLoad();
         PreviewCandidates.Clear();
         OnPropertyChanged(nameof(HasPreviewCandidates));
-        SelectedCandidate = null;
+        ResetSelectedCandidateWithoutLoading();
         PreviewModel = null;
         IsPreviewLoading = false;
         ResetMeshSelections(null);
@@ -202,6 +184,7 @@ public class AssetPreviewPaneViewModel : ViewModelBase
     private void LoadSelectedCandidatePreview()
     {
         var loadVersion = Interlocked.Increment(ref PreviewLoadVersion);
+        var cancellationToken = ResetPreviewLoadCancellationTokenSource();
         PreviewModel = null;
         ResetMeshSelections(null);
         if (SelectedCandidate is null)
@@ -227,18 +210,22 @@ public class AssetPreviewPaneViewModel : ViewModelBase
 
         IsPreviewLoading = true;
         PreviewStatusText = "Loading asset preview...";
-        _ = LoadSelectedCandidatePreviewAsync(SelectedCandidate, loadVersion);
+        _ = LoadSelectedCandidatePreviewAsync(SelectedCandidate, loadVersion, cancellationToken);
     }
 
-    private async Task LoadSelectedCandidatePreviewAsync(AssetPreviewCandidateDTO candidate, long loadVersion)
+    private async Task LoadSelectedCandidatePreviewAsync(AssetPreviewCandidateDTO candidate, long loadVersion, CancellationToken cancellationToken)
     {
         try
         {
             var result = await Task.Run(() =>
             {
-                var previewModel = AssetPreviewSceneService.CreatePreview(candidate, out var statusMessage);
+                cancellationToken.ThrowIfCancellationRequested();
+                using var previewLoadScope = LifetimeScope.BeginLifetimeScope();
+                var assetPreviewSceneService = previewLoadScope.Resolve<IAssetPreviewSceneService>();
+                var previewModel = assetPreviewSceneService.CreatePreview(candidate, out var statusMessage);
+                cancellationToken.ThrowIfCancellationRequested();
                 return new AssetPreviewLoadResult(previewModel, statusMessage);
-            });
+            }, cancellationToken);
             if (!IsCurrentPreviewLoad(candidate, loadVersion))
             {
                 return;
@@ -247,6 +234,15 @@ public class AssetPreviewPaneViewModel : ViewModelBase
             PreviewModel = result.PreviewModel;
             ResetMeshSelections(PreviewModel);
             PreviewStatusText = result.StatusMessage;
+        }
+        catch (OperationCanceledException)
+        {
+            if (IsCurrentPreviewLoad(candidate, loadVersion))
+            {
+                PreviewModel = null;
+                ResetMeshSelections(null);
+                PreviewStatusText = "Asset preview canceled.";
+            }
         }
         catch (Exception exception)
         {
@@ -325,6 +321,46 @@ public class AssetPreviewPaneViewModel : ViewModelBase
     private bool IsCurrentPreviewLoad(AssetPreviewCandidateDTO candidate, long loadVersion)
     {
         return Interlocked.Read(ref PreviewLoadVersion) == loadVersion && IsSameAssetCandidate(SelectedCandidate, candidate);
+    }
+
+    private void ResetSelectedCandidateWithoutLoading()
+    {
+        if (SelectedCandidateValue is null)
+        {
+            return;
+        }
+
+        SelectedCandidateValue = null;
+        OpenExternallyCommand.RaiseCanExecuteChanged();
+        OnPropertyChanged(nameof(SelectedCandidate));
+        OnPropertyChanged(nameof(IsExternalOpenAvailable));
+    }
+
+    private CancellationToken ResetPreviewLoadCancellationTokenSource()
+    {
+        CancellationTokenSource? previousCancellationTokenSource;
+        var nextCancellationTokenSource = new CancellationTokenSource();
+        lock (PreviewLoadSyncRoot)
+        {
+            previousCancellationTokenSource = PreviewLoadCancellationTokenSource;
+            PreviewLoadCancellationTokenSource = nextCancellationTokenSource;
+        }
+
+        previousCancellationTokenSource?.Cancel();
+        return nextCancellationTokenSource.Token;
+    }
+
+    private void CancelCurrentPreviewLoad()
+    {
+        Interlocked.Increment(ref PreviewLoadVersion);
+        CancellationTokenSource? cancellationTokenSource;
+        lock (PreviewLoadSyncRoot)
+        {
+            cancellationTokenSource = PreviewLoadCancellationTokenSource;
+            PreviewLoadCancellationTokenSource = null;
+        }
+
+        cancellationTokenSource?.Cancel();
     }
 
     private readonly struct AssetPreviewLoadResult

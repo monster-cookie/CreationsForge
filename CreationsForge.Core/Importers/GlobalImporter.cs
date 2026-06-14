@@ -12,14 +12,14 @@ namespace CreationsForge.Core.Importers;
 public class GlobalImporter : ITypedRecordImporter
 {
     private readonly IGlobalRepository GlobalRepository;
-    private readonly IScriptingAdapterImportService ScriptingAdapterImportService;
+    private readonly IRecordChildImportService RecordChildImportService;
 
     public GlobalImporter(
         IGlobalRepository globalRepository,
-        IScriptingAdapterImportService scriptingAdapterImportService)
+        IRecordChildImportService recordChildImportService)
     {
         GlobalRepository = globalRepository;
-        ScriptingAdapterImportService = scriptingAdapterImportService;
+        RecordChildImportService = recordChildImportService;
     }
 
     public string RecordType => RecordTypeCatalog.Global.RecordID;
@@ -39,11 +39,7 @@ public class GlobalImporter : ITypedRecordImporter
 
         global.ImportedAtUTC = importedAtUTC;
         GlobalRepository.Save(global);
-        if (global.Game == SupportedGame.Starfield)
-        {
-            ScriptingAdapterImportService.ReplaceRecordScriptingAdapters(global, RecordTypeCatalog.Global.RecordID);
-        }
-
+        RecordChildImportService.ReplaceRecordChildren(global, RecordTypeCatalog.Global.RecordID);
         result.DetailRowsImported++;
     }
 

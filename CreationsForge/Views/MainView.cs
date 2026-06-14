@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
@@ -24,6 +25,7 @@ public class MainView : UserControl
         ViewModel = viewModel;
         AssetPreviewPaneView = assetPreviewPaneView;
         DataContext = ViewModel;
+        AutomationProperties.SetAutomationId(this, "MainView");
         Content = BuildContent();
     }
 
@@ -92,23 +94,7 @@ public class MainView : UserControl
             ViewModel.UpdateGameSearchText,
             ViewModel.IsExactGameSuggestion);
 
-        var activePluginBox = CreateComboBox(
-            nameof(MainViewModel.PluginSuggestions),
-            nameof(MainViewModel.ActivePluginSearchText),
-            nameof(MainViewModel.SelectedPluginFileName),
-            isEditable: true,
-            text =>
-            {
-                ViewModel.ChoosePluginSuggestion(text);
-                return Task.CompletedTask;
-            },
-            text =>
-            {
-                ViewModel.SubmitPluginQuery(text);
-                return Task.CompletedTask;
-            },
-            ViewModel.UpdatePluginSearchText,
-            ViewModel.IsExactPluginSuggestion);
+        var activePluginBox = CreatePluginComboBox();
 
         return new Border
         {
@@ -467,22 +453,24 @@ public class MainView : UserControl
             VerticalAlignment = VerticalAlignment.Bottom,
             Children =
             {
-                CreateToolbarButton("Reimport", nameof(MainViewModel.ReimportSelectedGameCommand)),
-                CreateToolbarButton("Reset & Import All", nameof(MainViewModel.ResetAndImportAllCommand)),
-                CreateToolbarButton("Settings", nameof(MainViewModel.ShowSettingsCommand))
+                CreateToolbarButton("Reimport", nameof(MainViewModel.ReimportSelectedGameCommand), "ReimportButton"),
+                CreateToolbarButton("Reset & Import All", nameof(MainViewModel.ResetAndImportAllCommand), "ResetAndImportAllButton"),
+                CreateToolbarButton("Settings", nameof(MainViewModel.ShowSettingsCommand), "SettingsButton")
             }
         };
+        AutomationProperties.SetAutomationId(toolbar, "MainToolbar");
         Grid.SetColumn(toolbar, 2);
         return toolbar;
     }
 
-    private static Button CreateToolbarButton(string content, string commandProperty)
+    private static Button CreateToolbarButton(string content, string commandProperty, string automationId)
     {
         var button = new Button
         {
             Content = content,
             Padding = new Thickness(16, 8)
         };
+        AutomationProperties.SetAutomationId(button, automationId);
         button.Bind(Button.CommandProperty, new Binding(commandProperty));
         return button;
     }
@@ -561,6 +549,52 @@ public class MainView : UserControl
         }
 
         return comboBox;
+    }
+
+    private ComboBox CreatePluginComboBox()
+    {
+        var comboBox = CreateComboBox(
+            nameof(MainViewModel.PluginSuggestions),
+            nameof(MainViewModel.ActivePluginSearchText),
+            nameof(MainViewModel.SelectedPluginFileName),
+            isEditable: true,
+            text =>
+            {
+                ViewModel.ChoosePluginSuggestion(text);
+                return Task.CompletedTask;
+            },
+            text =>
+            {
+                ViewModel.SubmitPluginQuery(text);
+                return Task.CompletedTask;
+            },
+            ViewModel.UpdatePluginSearchText,
+            ViewModel.IsExactPluginSuggestion);
+
+        comboBox.ItemTemplate = new FuncDataTemplate<PluginSuggestionViewModel>(
+            (plugin, _) => plugin is null
+                ? new TextBlock()
+                : CreatePluginSuggestionItem(plugin));
+        comboBox.GetObservable(SelectingItemsControl.SelectedItemProperty)
+            .Subscribe(selectedItem =>
+            {
+                if (selectedItem is PluginSuggestionViewModel plugin)
+                {
+                    ViewModel.ChoosePluginSuggestion(plugin.FileName);
+                }
+            });
+        return comboBox;
+    }
+
+    private static Control CreatePluginSuggestionItem(PluginSuggestionViewModel plugin)
+    {
+        return new TextBlock
+        {
+            Text = plugin.FileName,
+            Foreground = plugin.StatusBrush,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center
+        };
     }
 
     private TextBox CreateFilterTextBox(string boundProperty, string watermark, int column)

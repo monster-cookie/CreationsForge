@@ -18,8 +18,8 @@ declared plugin master references. Thin game plugin readers expose the shared Co
 Plugin metadata import avoids typed record enumeration; record counts are read from header stats. Game-specific plugin
 extension importers persist audited scalar plugin header fields into extension tables. Starfield, Fallout 4, and
 Skyrim map the currently approved cross-game typed records: FormLists, GameSettings, Globals, MiscObjects, Keywords,
-ActorValueInformation, NPCs, MagicEffects, and Perks. Imports currently create/update the selected `Games`, `Plugins`,
-`PluginMasterReferences`, game-specific plugin extension rows, and approved typed record rows.
+ActorValueInformation, NPCs, MagicEffects, Perks, and Statics. Imports currently create/update the selected `Games`,
+`Plugins`, `PluginMasterReferences`, game-specific plugin extension rows, and approved typed record rows.
 
 ## Projects
 
@@ -52,21 +52,23 @@ ActorValueInformation, NPCs, MagicEffects, and Perks. Imports currently create/u
    deletes the current database and imports every supported game.
 4. The selected single-game import is saved back to `ApplicationConfigurationStore`.
 5. `IDatabaseSchemaInitializer` runs DbUp migrations.
-6. `GameImportDispatcher` selects the registered game importer.
-7. `GameImporter` saves the selected game row and reads the selected game's load order.
-8. `GameImporter` evaluates each plugin source fingerprint, preserving missing, unsupported, unchanged, changed, and
+6. If migrations were applied during a single-game import, the import is forced so existing cached plugin data is
+   refreshed for the updated schema.
+7. `GameImportDispatcher` selects the registered game importer.
+8. `GameImporter` saves the selected game row and reads the selected game's load order.
+9. `GameImporter` evaluates each plugin source fingerprint, preserving missing, unsupported, unchanged, changed, and
    failed import states before expensive metadata or record work.
-9. Current plugin rows and matching game-specific plugin extension rows are persisted before master references.
-10. Declared plugin masters are mapped to shared `PluginMasterReferenceDTO` rows after plugin rows exist.
-11. `RecordImportService` runs last for plugins that were imported in the current run. It discovers approved shared
+10. Current plugin rows and matching game-specific plugin extension rows are persisted before master references.
+11. Declared plugin masters are mapped to shared `PluginMasterReferenceDTO` rows after plugin rows exist.
+12. `RecordImportService` runs last for plugins that were imported in the current run. It discovers approved shared
     record types, resolves registered typed detail importers, records unsupported typed detail importers, and isolates
     per-record failures.
 
-The Avalonia UI uses `IGameSelectionService` to list and persist supported games, `IGameImportReadinessService` to detect
-whether the selected game already has imported plugin data, `IPluginSelectionService` to list imported/openable
-plugins for the active game, and `IGameImportWorkflowService` to run the same schema initialization and import
-workflow through Core. UI and MVVM code consume Core DTOs and result objects only; direct Mutagen usage remains
-outside the presentation project.
+The Avalonia UI uses `IGameSelectionService` to list and persist supported games, `IGameImportReadinessService` to
+detect whether the selected game already has imported plugin data, `IPluginSelectionService` to list imported/openable
+plugins for the active game, and `IGameImportWorkflowService` to run the same schema initialization and import workflow
+through Core. UI and MVVM code consume Core DTOs and result objects only; direct Mutagen usage remains outside the
+presentation project.
 
 On startup, the UI opens the main window immediately and initializes the database schema before view-model queries run.
 The active-game autocomplete defaults to no game unless a valid active game is configured. When a configured active
@@ -89,13 +91,15 @@ imported-record tree for the current persisted record types.
 - Uses DbUp `SchemaVersions` as the migration-state source of truth.
 - Creates a multi-game application schema for `Games`, `Plugins`, `PluginMasterReferences`, `FormLists`,
   `FormListItems`, `GameSettings`, `Globals`, `MiscObjects`, `Keywords`, `ActorValueInformation`, `NPCs`,
-  `MagicEffects`, `Perks`, shared model data, shared keyword lists, shared sounds, and shared scripting adapter data.
+  `MagicEffects`, `Perks`, `Statics`, `Containers`, `ContainerItems`, shared model data, shared keyword lists, shared
+  sounds, shared raw payload data, and shared scripting adapter data.
 - Preserves plugin source-fingerprint behavior for unchanged, changed, missing, failed, and unsupported plugin states.
 - Preserves record import accounting for the approved typed record types.
-- Provides an initial Avalonia UI with active game and active plugin autocomplete, warning before long first/full imports,
-  toolbar commands for active-game reimport and Reset & Import All, running all imports through Core services with a
-  progress screen, and browsing imported typed records in a left-side tree with category counts, per-record plugin
-  usage counts, and scalar comparison rows.
+- Provides an initial Avalonia UI with active game and active plugin autocomplete, warning before long first/full
+  imports, toolbar commands for active-game reimport and Reset & Import All, running all imports through Core services
+  with a progress screen, and browsing imported typed records in a left-side tree with category counts, per-record
+  plugin usage counts, and scalar comparison rows. Long binary raw payload comparison values are summarized as
+  `[UNPARSEABLE REFLECTION DATA]` and can be opened in a hex-view dialog from the comparison grid.
 - Provides an experimental asset preview pane in the Avalonia UI. Core resolves persisted model-path candidates through
   UI-neutral DTOs and services, while the presentation project owns Silk.NET-backed OpenGL rendering and external file
   launching.
@@ -104,8 +108,9 @@ imported-record tree for the current persisted record types.
 
 - Game-specific reader services currently return selected game metadata, load-order plugin metadata, header-stat
   record counts, declared master references, and audited scalar game-specific plugin header fields.
-- Starfield, Fallout 4, and Skyrim share `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`
-  typed-record mapping. Additional typed record types and deeper game-specific fields are follow-up work.
+- Starfield, Fallout 4, and Skyrim share `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`,
+  `STAT`, and `CONT` typed-record mapping. Additional typed record types and deeper game-specific fields are follow-up
+  work.
 - Shared plugin, plugin-master-reference, and typed-record repositories use NPoco database models for save behavior.
   Repository delete/query SQL remains parameterized where explicit SQL is used.
 - Oblivion is not implemented.
@@ -114,13 +119,16 @@ imported-record tree for the current persisted record types.
 - The asset preview pane can load an early subset of NIF mesh geometry, with many model types and visual details still
   pending.
 
-## Shared Scripted Record Import
+## Shared Record Child Import
 
 Starfield, Fallout 4, and Skyrim import typed record parent rows for MiscObjects (`MISC`), Keywords (`KYWD`),
-ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), and Perks (`PERK`). These records are mapped in
-their game adapter projects and persisted through Core DTOs, repositories, and typed importers. Scripting adapters are
-persisted for `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK` when the source record exposes virtual-machine
-adapter data; `FLST` and `GMST` remain flat records without scripting adapter persistence.
+ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), Perks (`PERK`), Statics (`STAT`), and Containers
+(`CONT`). These records are mapped in their game adapter projects and persisted through Core DTOs, repositories, and
+typed importers. Scripting adapters are persisted for `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK` when
+the source record exposes virtual-machine adapter data; `FLST` and `GMST` remain flat records without scripting
+adapter persistence. Shared child rows for models, keywords, sounds, raw payloads, and scripting adapters are
+dispatched by Core DTO capability interfaces and linked through the owning `RecordInstances` row.
 
 The current `MISC` implementation persists the parent scalar row, shared model rows, and scripting adapters. The
-deeper MiscObject child-detail tables from the old single-game app remain follow-up work.
+current `CONT` implementation persists the parent scalar row, item rows, shared model rows, and opaque raw payload
+rows. The deeper MiscObject child-detail tables from the old single-game app remain follow-up work.

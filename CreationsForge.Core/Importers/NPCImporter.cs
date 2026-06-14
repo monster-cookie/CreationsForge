@@ -12,17 +12,14 @@ namespace CreationsForge.Core.Importers;
 public class NPCImporter : ITypedRecordImporter
 {
     private readonly INPCRepository NPCRepository;
-    private readonly IRecordKeywordImportService RecordKeywordImportService;
-    private readonly IScriptingAdapterImportService ScriptingAdapterImportService;
+    private readonly IRecordChildImportService RecordChildImportService;
 
     public NPCImporter(
         INPCRepository npcRepository,
-        IScriptingAdapterImportService scriptingAdapterImportService,
-        IRecordKeywordImportService recordKeywordImportService)
+        IRecordChildImportService recordChildImportService)
     {
         NPCRepository = npcRepository;
-        ScriptingAdapterImportService = scriptingAdapterImportService;
-        RecordKeywordImportService = recordKeywordImportService;
+        RecordChildImportService = recordChildImportService;
     }
 
     public string RecordType => RecordTypeCatalog.NPC.RecordID;
@@ -37,8 +34,7 @@ public class NPCImporter : ITypedRecordImporter
 
         npc.ImportedAtUTC = importedAtUTC;
         NPCRepository.Save(npc);
-        RecordKeywordImportService.ReplaceRecordKeywords(npc, RecordTypeCatalog.NPC.RecordID);
-        ScriptingAdapterImportService.ReplaceRecordScriptingAdapters(npc, RecordTypeCatalog.NPC.RecordID);
+        RecordChildImportService.ReplaceRecordChildren(npc, RecordTypeCatalog.NPC.RecordID);
         result.DetailRowsImported++;
     }
 

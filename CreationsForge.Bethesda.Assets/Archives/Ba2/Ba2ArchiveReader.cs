@@ -6,7 +6,7 @@ using K4os.Compression.LZ4.Streams;
 
 namespace CreationsForge.Bethesda.Assets.Archives.Ba2;
 
-public class Ba2ArchiveReader : IAssetArchiveReader
+public class Ba2ArchiveReader : IAssetArchiveReader, IAssetArchiveCache
 {
     private const int MaximumCachedArchiveDirectories = 8;
     private const uint Magic = 0x58445442;
@@ -46,10 +46,13 @@ public class Ba2ArchiveReader : IAssetArchiveReader
 
     public IReadOnlyList<AssetArchiveEntry> ListEntries(string archivePath)
     {
+        if (IsTextureArchive(archivePath))
+        {
+            return ListTextureEntries(archivePath);
+        }
+
         var directory = GetArchiveDirectory(archivePath);
-        return directory.Header.ArchiveType == Ba2ArchiveType.Texture
-            ? ListTextureEntries(archivePath, directory)
-            : ListGeneralEntries(archivePath, directory);
+        return ListGeneralEntries(archivePath, directory);
     }
 
     public AssetArchiveReadResult TryReadEntry(string archivePath, string entryPath)
@@ -72,6 +75,15 @@ public class Ba2ArchiveReader : IAssetArchiveReader
             return exception is AssetTooLargeException
                 ? CreateTooLargeFailure(archivePath, entryPath, exception.Message)
                 : CreateFailure(archivePath, entryPath, exception.Message);
+        }
+    }
+
+    public void ClearCache()
+    {
+        lock (DirectoryCacheLock)
+        {
+            DirectoryCache.Clear();
+            DirectoryCacheAccessCounter = 0;
         }
     }
 
@@ -132,6 +144,14 @@ public class Ba2ArchiveReader : IAssetArchiveReader
         return Ba2ArchiveDirectory.CreateGeneral(header, fileNames, fileRecords);
     }
 
+    private static bool IsTextureArchive(string archivePath)
+    {
+        using var stream = File.OpenRead(archivePath);
+        using var reader = new BinaryReader(stream, Encoding.ASCII, leaveOpen: false);
+        var header = ReadHeader(reader, stream.Length);
+        return header.ArchiveType == Ba2ArchiveType.Texture;
+    }
+
     private static IReadOnlyList<AssetArchiveEntry> ListGeneralEntries(string archivePath, Ba2ArchiveDirectory directory)
     {
         var records = directory.FileRecords;
@@ -152,10 +172,12 @@ public class Ba2ArchiveReader : IAssetArchiveReader
         return entries;
     }
 
-    private static IReadOnlyList<AssetArchiveEntry> ListTextureEntries(string archivePath, Ba2ArchiveDirectory directory)
+    private static IReadOnlyList<AssetArchiveEntry> ListTextureEntries(string archivePath)
     {
-        var records = directory.TextureRecords;
-        var names = directory.Names;
+        using var stream = File.OpenRead(archivePath);
+        using var reader = new BinaryReader(stream, Encoding.ASCII, leaveOpen: false);
+        var header = ReadHeader(reader, stream.Length);
+        var names = ReadNameTable(reader, header, stream.Length);
         var entries = new List<AssetArchiveEntry>();
 
         for (var index = 0; index < names.Count; index++)
@@ -164,8 +186,8 @@ public class Ba2ArchiveReader : IAssetArchiveReader
             {
                 ArchivePath = archivePath,
                 EntryPath = names[index],
-                PackedSize = records[index].PackedSize,
-                UnpackedSize = checked((uint)(DdsHeaderSize + records[index].UnpackedSize))
+                PackedSize = 0,
+                UnpackedSize = 0
             });
         }
 
@@ -373,6 +395,7 @@ public class Ba2ArchiveReader : IAssetArchiveReader
 
     private static byte[] ReadCompressedEntryData(BinaryReader reader, Ba2ArchiveFileRecord record)
     {
+        EnsurePreviewSize(record.PackedSize);
         var packedData = reader.ReadBytes(checked((int)record.PackedSize));
         if (packedData.Length != record.PackedSize)
         {
@@ -423,6 +446,7 @@ public class Ba2ArchiveReader : IAssetArchiveReader
             return data;
         }
 
+        EnsurePreviewSize(chunk.PackedSize);
         var packedData = reader.ReadBytes(checked((int)chunk.PackedSize));
         if (packedData.Length != chunk.PackedSize)
         {

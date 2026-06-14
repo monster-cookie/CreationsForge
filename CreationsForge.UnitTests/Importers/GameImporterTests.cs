@@ -214,6 +214,57 @@ public class GameImporterTests
     }
 
     [Fact]
+    public void Import_WithRecordFailures_SavesPluginAsPartiallyImported()
+    {
+        var plugin = CreatePlugin(SupportedGame.Skyrim);
+        var pluginRepository = new TestPluginRepository();
+        var recordImportService = new TestRecordImportService(new RecordImportResultDTO
+        {
+            RecordTypes =
+            [
+                new RecordTypeImportResultDTO
+                {
+                    RecordType = "GLOB",
+                    HeaderImportSupported = true,
+                    TypedDetailImportSupported = true,
+                    RecordsFailed = 1
+                }
+            ]
+        });
+        var importer = CreateImporter(
+            plugin,
+            new TestGameRepository(),
+            pluginRepository,
+            new TestPluginMasterReferenceRepository(),
+            [],
+            recordImportService);
+
+        var result = importer.Import();
+
+        result.Records.RecordsFailed.ShouldBe(1);
+        pluginRepository.Saved.Last().ImportState.ShouldBe(PluginImportState.PartiallyImported);
+        pluginRepository.Saved.Last().InvalidatedAtUTC.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void ImportedRecordCount_IncludesPartiallyImportedPlugins()
+    {
+        var current = CreatePlugin(SupportedGame.Starfield, "Current", "Current.esm");
+        current.RecordCount = 10;
+        var partial = CreatePlugin(SupportedGame.Starfield, "Partial", "Partial.esm");
+        partial.RecordCount = 5;
+        partial.ImportState = PluginImportState.PartiallyImported;
+        var failed = CreatePlugin(SupportedGame.Starfield, "Failed", "Failed.esm");
+        failed.RecordCount = 20;
+        failed.ImportState = PluginImportState.Failed;
+        var pluginRepository = new TestPluginRepository(existingPlugins: [current, partial, failed]);
+
+        var count = pluginRepository.GetImportedRecordCountByGame(SupportedGame.Starfield);
+
+        count.ShouldBe(15);
+    }
+
+    [Fact]
     public void Import_WhenPluginReaderAndRecordReaderGamesDoNotMatch_Throws()
     {
         var plugin = CreatePlugin(SupportedGame.Starfield);
@@ -387,6 +438,8 @@ public class GameImporterTests
             ExistingPlugins = existingPlugins ?? new List<PluginDTO>();
         }
 
+        public IList<PluginDTO> Saved { get; } = new List<PluginDTO>();
+
         public PluginDTO? GetByModKey(SupportedGame game, ModKeyDTO modKey)
         {
             return ExistingPlugins.FirstOrDefault(plugin =>
@@ -404,7 +457,9 @@ public class GameImporterTests
         public long GetImportedRecordCountByGame(SupportedGame game)
         {
             return ExistingPlugins
-                .Where(plugin => plugin.Game == game && plugin.ExistsOnDisk && plugin.ImportState == PluginImportState.Current)
+                .Where(plugin => plugin.Game == game &&
+                    plugin.ExistsOnDisk &&
+                    plugin.ImportState is PluginImportState.Current or PluginImportState.PartiallyImported)
                 .Sum(plugin => plugin.RecordCount);
         }
 
@@ -427,6 +482,13 @@ public class GameImporterTests
         public void Save(PluginDTO dto)
         {
             Events?.Add("base-plugin");
+            Saved.Add(dto);
+            var existingPlugin = GetByModKey(dto.Game, dto.ModKey);
+            if (existingPlugin is not null)
+            {
+                ExistingPlugins.Remove(existingPlugin);
+            }
+
             ExistingPlugins.Add(dto);
         }
     }
@@ -450,6 +512,25 @@ public class GameImporterTests
 
     private sealed class TestRecordImportService : IRecordImportService
     {
+        private readonly RecordImportResultDTO Result;
+
+        public TestRecordImportService(RecordImportResultDTO? result = null)
+        {
+            Result = result ?? new RecordImportResultDTO
+            {
+                RecordTypes =
+                [
+                    new RecordTypeImportResultDTO
+                    {
+                        RecordType = "GLOB",
+                        HeaderImportSupported = true,
+                        TypedDetailImportSupported = true,
+                        DetailRowsImported = 1
+                    }
+                ]
+            };
+        }
+
         public bool ImportWasCalled { get; private set; }
 
         public PluginDTO? ImportedPlugin { get; private set; }
@@ -464,19 +545,7 @@ public class GameImporterTests
         {
             ImportWasCalled = true;
             ImportedPlugin = plugin;
-            return new RecordImportResultDTO
-            {
-                RecordTypes =
-                [
-                    new RecordTypeImportResultDTO
-                    {
-                        RecordType = "GLOB",
-                        HeaderImportSupported = true,
-                        TypedDetailImportSupported = true,
-                        DetailRowsImported = 1
-                    }
-                ]
-            };
+            return Result;
         }
     }
 
