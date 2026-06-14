@@ -295,7 +295,26 @@ record type or behavior as game-specific and documents why it cannot apply to al
   - `Get-Process`
   - `Get-CimInstance Win32_Process`
 - Prefer `rg` and `rg --files` for search and file inventory.
-- Exclude `bin`, `obj`, `.git`, and generated output directories from recursive scans.
+- Exclude `bin`, `obj`, `.git`, and generated output directories
+
+## Token Usage Reporting
+
+After each plan and completed implementation, include a short token usage note.
+
+- Report exact token usage only if Codex can directly see it.
+- If exact usage is unavailable, provide a rough estimate and mark it as estimated.
+- Do not invent exact numbers.
+- Mention the biggest usage drivers.
+- For Codex CLI, remind me to run `/status` for the live token/context report.
+- For plans generating a large or very large token estimate suggest I drop to Codex GPT 5.4
+
+Format:
+
+Token usage: Exact / Estimated / Not available
+Total:
+Context remaining:
+Main drivers:
+Notes:
 
 ## PLAN → EXECUTE → VALIDATE
 

@@ -147,6 +147,38 @@ public class NifPreviewModelReaderTests
     }
 
     [Fact]
+    public void TryRead_AppliesStarfieldExternalGeometryMeshWorldTransform()
+    {
+        var reader = new NifPreviewModelReader();
+        const string geometryPath = @"geometries\cf623091ecaffe5a43fa\249816728d4437f890e8.mesh";
+
+        var result = reader.TryRead(new NifPreviewReadRequest
+        {
+            SourcePath = "Meshes/Items/digipic/DigiPic.nif",
+            DisplayName = "DigiPic",
+            Data = CreateMinimalNifWithBlock(
+                "BSGeometry",
+                CreateStarfieldBSGeometryBlockWithExternalGeometryReference(translationX: 10f, translationY: 20f, translationZ: 30f),
+                bethesdaVersion: 173U),
+            ResolveExternalAsset = path => string.Equals(path, geometryPath, StringComparison.OrdinalIgnoreCase)
+                ? CreateStarfieldGeometryMesh()
+                : null
+        });
+
+        result.IsSuccess.ShouldBeTrue(result.StatusMessage);
+        result.Model.ShouldNotBeNull();
+        result.Model.Meshes.Count.ShouldBe(1);
+        result.Model.Meshes[0].Vertices[0].Position.X.ShouldBe(10f, 0.0001f);
+        result.Model.Meshes[0].Vertices[0].Position.Y.ShouldBe(20f, 0.0001f);
+        result.Model.Meshes[0].Vertices[0].Position.Z.ShouldBe(30f, 0.0001f);
+        result.Model.Meshes[0].Vertices[1].Position.X.ShouldBe(11.00003f, 0.0001f);
+        result.Model.Meshes[0].Vertices[2].Position.Y.ShouldBe(21.00003f, 0.0001f);
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("raw mesh-space bounds", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("applied NIF world transform", StringComparison.Ordinal));
+        result.Diagnostics.ShouldContain(diagnostic => diagnostic.Contains("preview bounds", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void TryRead_DecodesStarfieldExternalGeometryUvStream()
     {
         var reader = new NifPreviewModelReader();
@@ -1550,12 +1582,16 @@ public class NifPreviewModelReaderTests
         return stream.ToArray();
     }
 
-    private static byte[] CreateStarfieldBSGeometryBlockWithExternalGeometryReference(int shaderProperty = -1)
+    private static byte[] CreateStarfieldBSGeometryBlockWithExternalGeometryReference(
+        int shaderProperty = -1,
+        float translationX = 0f,
+        float translationY = 0f,
+        float translationZ = 0f)
     {
         using var stream = new MemoryStream();
         using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
         {
-            WriteTransformPrefix(writer, 0f, 0f, 0f, 1f, nameIndex: 0);
+            WriteTransformPrefix(writer, translationX, translationY, translationZ, 1f, nameIndex: 0);
             writer.Write(0f);
             writer.Write(0f);
             writer.Write(0f);

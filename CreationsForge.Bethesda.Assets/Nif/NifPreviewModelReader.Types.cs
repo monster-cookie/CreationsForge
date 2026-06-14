@@ -418,7 +418,7 @@ public partial class NifPreviewModelReader
             Rotation.Equals(NifRotation3x3.Identity);
 
         public string Description =>
-            $"translation {FormatVector(Translation)}, scale {Scale.ToString("0.###", CultureInfo.InvariantCulture)}";
+            $"translation {FormatVector(Translation)}, rotation {Rotation.Description}, scale {Scale.ToString("0.###", CultureInfo.InvariantCulture)}";
 
         public NifPreviewVector3 Apply(NifPreviewVector3 position)
         {
@@ -434,6 +434,16 @@ public partial class NifPreviewModelReader
                 X = (scaled.X * Rotation.M11) + (scaled.Y * Rotation.M21) + (scaled.Z * Rotation.M31) + Translation.X,
                 Y = (scaled.X * Rotation.M12) + (scaled.Y * Rotation.M22) + (scaled.Z * Rotation.M32) + Translation.Y,
                 Z = (scaled.X * Rotation.M13) + (scaled.Y * Rotation.M23) + (scaled.Z * Rotation.M33) + Translation.Z
+            };
+        }
+
+        public NifPreviewVector3 ApplyRotation(NifPreviewVector3 vector)
+        {
+            return new NifPreviewVector3
+            {
+                X = (vector.X * Rotation.M11) + (vector.Y * Rotation.M21) + (vector.Z * Rotation.M31),
+                Y = (vector.X * Rotation.M12) + (vector.Y * Rotation.M22) + (vector.Z * Rotation.M32),
+                Z = (vector.X * Rotation.M13) + (vector.Y * Rotation.M23) + (vector.Z * Rotation.M33)
             };
         }
     }
@@ -475,6 +485,9 @@ public partial class NifPreviewModelReader
             IsReasonableRotationValue(M31) &&
             IsReasonableRotationValue(M32) &&
             IsReasonableRotationValue(M33);
+
+        public string Description =>
+            $"[{M11:0.###},{M12:0.###},{M13:0.###}; {M21:0.###},{M22:0.###},{M23:0.###}; {M31:0.###},{M32:0.###},{M33:0.###}]";
 
         private static bool IsReasonableRotationValue(float value)
         {

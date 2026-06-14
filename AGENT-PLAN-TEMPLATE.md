@@ -59,5 +59,56 @@ Rollback:
 
 - Revert the approved file changes from this plan.
 
+## Token Budget Gate
+
+Before implementation, classify the task:
+
+- Tiny: expected under 10k tokens
+- Small: expected 10k-50k tokens
+- Medium: expected 50k-150k tokens
+- Large: expected 150k-500k tokens
+- Very Large: expected over 500k tokens
+
+If a one-file or small targeted change is estimated above 50k tokens, explain the expected token drivers before implementation and propose a lower-token approach.
+
+Default low-token approach:
+
+- inspect fewer files
+- use targeted search
+- avoid full test suites
+- avoid broad repo summaries
+- avoid large log dumps
+- perform one focused change only
+
+## Token / Usage Budget Estimate
+
+Before implementation, estimate expected token usage for the full task.
+
+Include:
+
+- Estimated task size: Tiny / Small / Medium / Large / Very Large
+- Expected token range:
+  - Input/context tokens:
+  - Cached input tokens, if likely:
+  - Output tokens:
+  - Total rough range:
+- Expected Codex credit impact: Low / Medium / High / Very High
+- Confidence: Low / Medium / High
+- Primary token drivers:
+  - Number of files likely to inspect
+  - Expected command/test output volume
+  - Expected diff size
+  - Risk of retries or exploratory work
+- Budget risks:
+  - Large generated files
+  - Noisy logs
+  - Broad repository scans
+  - Repeated full-file reads
+  - Failing tests or build loops
+
+If the estimate is Large or Very Large, pause before implementation and propose a smaller first slice.
+
+Prefer targeted file reads over broad repository scans. Avoid dumping large command output unless it is necessary. Summarize findings instead of pasting huge logs.
+
 Approval required before EXECUTE: Yes
 No files will be edited until this plan is approved.

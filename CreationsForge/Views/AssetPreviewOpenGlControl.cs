@@ -78,7 +78,8 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
             if (uUseTexture == 1)
             {
                 vec4 textureColor = texture(uTexture, vUv);
-                baseColor = vec4(min((textureColor.rgb * uMaterialTint.rgb * previewLight) + fill + vec3(highlight), vec3(1.0)), textureColor.a);
+                // NifSkope's CE2 preview treats opacity as explicit material state, not ordinary base texture alpha.
+                baseColor = vec4(min((textureColor.rgb * uMaterialTint.rgb * previewLight) + fill + vec3(highlight), vec3(1.0)), 1.0);
             }
             else
             {
@@ -178,7 +179,8 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
             if (uUseTexture == 1)
             {
                 vec4 textureColor = texture(uTexture, vUv);
-                baseColor = vec4(min((textureColor.rgb * uMaterialTint.rgb * previewLight) + fill + vec3(highlight), vec3(1.0)), textureColor.a);
+                // NifSkope's CE2 preview treats opacity as explicit material state, not ordinary base texture alpha.
+                baseColor = vec4(min((textureColor.rgb * uMaterialTint.rgb * previewLight) + fill + vec3(highlight), vec3(1.0)), 1.0);
             }
             else
             {
@@ -238,13 +240,11 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
     private AssetPreviewRenderMode RenderModeValue = AssetPreviewRenderMode.Solid;
     private string? LastInitializationError;
     private long RenderCount;
-    private float CameraYaw;
-    private float CameraPitch;
+    private Quaternion CameraOrientation = Quaternion.Identity;
     private float CameraZoom = 1f;
     private Vector3 CameraTarget;
     private Vector3 DefaultCameraTarget;
-    private float DefaultCameraYaw;
-    private float DefaultCameraPitch;
+    private Quaternion DefaultCameraOrientation = Quaternion.Identity;
     private float DefaultCameraZoom = 1f;
 
     public AssetPreviewOpenGlControl(IAssetPreviewRenderMeshFactory renderMeshFactory, ILogger logger)
@@ -319,8 +319,10 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
 
     public void OrbitByDragDelta(double deltaX, double deltaY)
     {
-        CameraYaw -= (float)deltaX * 0.01f;
-        CameraPitch = Math.Clamp(CameraPitch + (float)deltaY * 0.01f, -1.56f, 1.56f);
+        var camera = GetCameraFrame();
+        var yawRotation = Quaternion.CreateFromAxisAngle(camera.Up, -(float)deltaX * 0.01f);
+        var pitchRotation = Quaternion.CreateFromAxisAngle(camera.Right, -(float)deltaY * 0.01f);
+        CameraOrientation = Quaternion.Normalize(pitchRotation * yawRotation * CameraOrientation);
         RequestNextFrameRendering();
     }
 
@@ -351,11 +353,40 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
     public void ResetCamera()
     {
         CameraTarget = DefaultCameraTarget;
-        CameraYaw = DefaultCameraYaw;
-        CameraPitch = DefaultCameraPitch;
+        CameraOrientation = DefaultCameraOrientation;
         CameraZoom = DefaultCameraZoom;
         SetDiagnostic("OpenGL: camera reset");
         RequestNextFrameRendering();
+    }
+
+    public void SnapCameraToPositiveX()
+    {
+        SnapCameraToDirection(Vector3.UnitX, "X+");
+    }
+
+    public void SnapCameraToNegativeX()
+    {
+        SnapCameraToDirection(-Vector3.UnitX, "X-");
+    }
+
+    public void SnapCameraToPositiveY()
+    {
+        SnapCameraToDirection(Vector3.UnitY, "Y+");
+    }
+
+    public void SnapCameraToNegativeY()
+    {
+        SnapCameraToDirection(-Vector3.UnitY, "Y-");
+    }
+
+    public void SnapCameraToPositiveZ()
+    {
+        SnapCameraToDirection(Vector3.UnitZ, "Z+");
+    }
+
+    public void SnapCameraToNegativeZ()
+    {
+        SnapCameraToDirection(-Vector3.UnitZ, "Z-");
     }
 
     public void EndCameraDrag()
@@ -554,7 +585,8 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
                 IndexCount);
         }
 
-        SetDiagnostic($"OpenGL: rendered frame {RenderCount:N0} ({width}x{height}), {VertexCount} vertices, {IndexCount} indices, camera {CameraYaw:0.00}/{CameraPitch:0.00}/{CameraZoom:0.00}, {RenderMode}");
+        var cameraDiagnostic = GetCameraFrame();
+        SetDiagnostic($"OpenGL: rendered frame {RenderCount:N0} ({width}x{height}), {VertexCount} vertices, {IndexCount} indices, camera {cameraDiagnostic.Direction.X:0.00}/{cameraDiagnostic.Direction.Y:0.00}/{cameraDiagnostic.Direction.Z:0.00}/{CameraZoom:0.00}, {RenderMode}");
         RequestNextFrameRendering();
     }
 
@@ -923,7 +955,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         var camera = GetCameraFrame();
         var view = camera.View;
         var projection = GetProjectionMatrix(width, height, view);
-        var mvp = Matrix4x4.Transpose(model * view * projection);
+        var mvp = model * view * projection;
         SetModelViewProjection(mvp);
     }
 
@@ -934,6 +966,8 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
             return;
         }
 
+        // System.Numerics builds row-major transforms; OpenGL reads this array as column-major.
+        // Sending the row-major values directly gives the shader the equivalent column-vector matrix.
         var matrixValues = new[]
         {
             mvp.M11,
@@ -982,19 +1016,16 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
 
     private AssetPreviewCameraFrame GetCameraFrame()
     {
-        var direction = GetCameraDirection(CameraYaw, CameraPitch);
+        var direction = Vector3.Normalize(Vector3.Transform(Vector3.UnitZ, CameraOrientation));
         var target = CameraTarget;
         var cameraDistance = CurrentRenderBounds.HasValue
             ? MathF.Max(CurrentRenderBounds.Radius * 3f, 1f)
             : 8f;
         var eye = target + (direction * cameraDistance);
-        var up = MathF.Abs(Vector3.Dot(direction, Vector3.UnitY)) > 0.96f
-            ? Vector3.UnitZ
-            : Vector3.UnitY;
+        var up = Vector3.Normalize(Vector3.Transform(Vector3.UnitY, CameraOrientation));
         var view = Matrix4x4.CreateLookAt(eye, target, up);
-        var right = Vector3.Normalize(Vector3.Cross(up, -direction));
-        var cameraUp = Vector3.Normalize(Vector3.Cross(-direction, right));
-        return new AssetPreviewCameraFrame(view, right, cameraUp);
+        var right = Vector3.Normalize(Vector3.Transform(Vector3.UnitX, CameraOrientation));
+        return new AssetPreviewCameraFrame(view, right, up, direction);
     }
 
     private void DrawOrientationOverlay(uint width, uint height)
@@ -1012,13 +1043,12 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         SetTextures(null, null, null, false, false, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 0f, 0f);
         SetColorOverride(false, new Vector3());
 
-        var direction = GetCameraDirection(CameraYaw, CameraPitch);
-        var up = MathF.Abs(Vector3.Dot(direction, Vector3.UnitY)) > 0.96f
-            ? Vector3.UnitZ
-            : Vector3.UnitY;
+        var camera = GetCameraFrame();
+        var direction = camera.Direction;
+        var up = camera.Up;
         var view = Matrix4x4.CreateLookAt(direction * 4f, Vector3.Zero, up);
         var projection = Matrix4x4.CreateOrthographic(3.2f, 3.2f, 0.1f, 10f);
-        SetModelViewProjection(Matrix4x4.Transpose(view * projection));
+        SetModelViewProjection(view * projection);
         Gl.LineWidth(2f);
         Gl.DrawArrays(PrimitiveType.Lines, 0, (uint)OrientationOverlayVertexCount);
         Gl.LineWidth(1f);
@@ -1051,8 +1081,7 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         if (!CurrentRenderBounds.HasValue)
         {
             DefaultCameraTarget = Vector3.Zero;
-            DefaultCameraYaw = -0.85f;
-            DefaultCameraPitch = 0.55f;
+            DefaultCameraOrientation = CreateCameraOrientation(GetCameraDirection(-0.85f, 0.55f));
             DefaultCameraZoom = 1f;
             ResetCamera();
             return;
@@ -1060,10 +1089,49 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
 
         DefaultCameraTarget = CurrentRenderBounds.Center;
         var defaultDirection = CurrentRenderBounds.GetDefaultCameraDirection();
-        DefaultCameraYaw = MathF.Atan2(defaultDirection.Z, defaultDirection.X);
-        DefaultCameraPitch = MathF.Asin(Math.Clamp(defaultDirection.Y, -0.999f, 0.999f));
+        DefaultCameraOrientation = CreateCameraOrientation(defaultDirection);
         DefaultCameraZoom = 1f;
         ResetCamera();
+    }
+
+    private void SnapCameraToDirection(Vector3 direction, string label)
+    {
+        CameraTarget = CurrentRenderBounds.HasValue
+            ? CurrentRenderBounds.Center
+            : DefaultCameraTarget;
+        CameraOrientation = CreateCameraOrientation(direction);
+        CameraZoom = 1f;
+        var camera = GetCameraFrame();
+        SetDiagnostic($"OpenGL: camera snapped {label}, actual {camera.Direction.X:0.00}/{camera.Direction.Y:0.00}/{camera.Direction.Z:0.00}");
+        RequestNextFrameRendering();
+    }
+
+    private static Quaternion CreateCameraOrientation(Vector3 direction)
+    {
+        direction = Vector3.Normalize(direction);
+        var upReference = MathF.Abs(Vector3.Dot(direction, Vector3.UnitY)) > 0.96f
+            ? Vector3.UnitZ
+            : Vector3.UnitY;
+        var right = Vector3.Normalize(Vector3.Cross(upReference, direction));
+        var up = Vector3.Normalize(Vector3.Cross(direction, right));
+        var matrix = new Matrix4x4(
+            right.X,
+            right.Y,
+            right.Z,
+            0f,
+            up.X,
+            up.Y,
+            up.Z,
+            0f,
+            direction.X,
+            direction.Y,
+            direction.Z,
+            0f,
+            0f,
+            0f,
+            0f,
+            1f);
+        return Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(matrix));
     }
 
     private static Vector3 GetCameraDirection(float yaw, float pitch)
@@ -1557,11 +1625,12 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
 
     private readonly struct AssetPreviewCameraFrame
     {
-        public AssetPreviewCameraFrame(Matrix4x4 view, Vector3 right, Vector3 up)
+        public AssetPreviewCameraFrame(Matrix4x4 view, Vector3 right, Vector3 up, Vector3 direction)
         {
             View = view;
             Right = right;
             Up = up;
+            Direction = direction;
         }
 
         public Matrix4x4 View { get; }
@@ -1569,6 +1638,8 @@ public class AssetPreviewOpenGlControl : OpenGlControlBase
         public Vector3 Right { get; }
 
         public Vector3 Up { get; }
+
+        public Vector3 Direction { get; }
     }
 
     private readonly struct AssetPreviewTextureColor

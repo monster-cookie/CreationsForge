@@ -315,7 +315,6 @@ public partial class NifPreviewModelReader
             return false;
         }
 
-        var useTransform = transformChain.Any(transform => !transform.IsIdentity);
         var vertices = new List<NifPreviewVertex>();
         var bounds = new NifMeshBounds();
         for (var index = 0; index < vertexCount; index++)
@@ -327,11 +326,6 @@ public partial class NifPreviewModelReader
                 Y = BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(vertexOffset + sizeof(short), sizeof(short))) * StarfieldGeometryMeshPositionScale * scale,
                 Z = BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(vertexOffset + (sizeof(short) * 2), sizeof(short))) * StarfieldGeometryMeshPositionScale * scale
             };
-
-            if (useTransform)
-            {
-                vertexPosition = ApplyTransformChain(vertexPosition, transformChain);
-            }
 
             if (!bounds.TryInclude(vertexPosition, out rejectionReason))
             {
@@ -376,6 +370,28 @@ public partial class NifPreviewModelReader
             }
         }
 
+        var useTransform = transformChain.Any(transform => !transform.IsIdentity);
+        var transformedBounds = bounds;
+        if (useTransform)
+        {
+            transformedBounds = new NifMeshBounds();
+            for (var index = 0; index < vertices.Count; index++)
+            {
+                var vertex = vertices[index];
+                vertex.Position = ApplyTransformChain(vertex.Position, transformChain);
+                if (hasNormalStream)
+                {
+                    vertex.Normal = ApplyRotationChain(vertex.Normal, transformChain);
+                }
+
+                vertices[index] = vertex;
+                if (!transformedBounds.TryInclude(vertex.Position, out rejectionReason))
+                {
+                    return false;
+                }
+            }
+        }
+
         var tangentDiagnostic = SkipStarfieldGeometrySizedStream(data, vertexAttributeStreamEnd, "tangent", sizeof(uint), out vertexAttributeStreamEnd);
         var weightDiagnostic = SkipStarfieldGeometryWeights(data, vertexAttributeStreamEnd, weightsPerVertex, out vertexAttributeStreamEnd);
         var lodDiagnostic = version > 0
@@ -408,7 +424,7 @@ public partial class NifPreviewModelReader
             Indices = indices,
             Diagnostics =
             {
-                $"{block.TypeName} block {blockIndex}: external Starfield geometry {geometryPath}, version {version}, scale {scale.ToString("0.###", CultureInfo.InvariantCulture)}, {vertexCount} vertices, {indexCount / 3} triangles, position stride {StarfieldGeometryMeshPositionStride}, decoded bounds {bounds.Description}",
+                $"{block.TypeName} block {blockIndex}: external Starfield geometry {geometryPath}, version {version}, scale {scale.ToString("0.###", CultureInfo.InvariantCulture)}, {vertexCount} vertices, {indexCount / 3} triangles, position stride {StarfieldGeometryMeshPositionStride}, raw mesh-space bounds {bounds.Description}, {GetTransformDescription(useTransform, transformChain, "NIF world transform")}, preview bounds {transformedBounds.Description}",
                 $"{block.TypeName} block {blockIndex}: external Starfield geometry UV stream {uvDiagnostic}",
                 $"{block.TypeName} block {blockIndex}: external Starfield geometry UV2 stream {uv2Diagnostic}",
                 $"{block.TypeName} block {blockIndex}: external Starfield geometry vertex color stream {vertexColorDiagnostic}",
@@ -1188,6 +1204,17 @@ public partial class NifPreviewModelReader
         foreach (var transform in transformChain)
         {
             transformed = transform.Apply(transformed);
+        }
+
+        return transformed;
+    }
+
+    private static NifPreviewVector3 ApplyRotationChain(NifPreviewVector3 vector, IReadOnlyList<NifObjectTransform> transformChain)
+    {
+        var transformed = vector;
+        foreach (var transform in transformChain)
+        {
+            transformed = transform.ApplyRotation(transformed);
         }
 
         return transformed;

@@ -226,7 +226,8 @@ public class AssetPreviewPaneView : UserControl
         var renderModeSelector = new ComboBox
         {
             Width = 105,
-            MinHeight = 30
+            MinHeight = 30,
+            Margin = new Thickness(0, 0, 8, 6)
         };
         AutomationProperties.SetAutomationId(renderModeSelector, "AssetPreviewRenderModeSelector");
         renderModeSelector.Bind(ItemsControl.ItemsSourceProperty, new Binding(nameof(AssetPreviewPaneViewModel.RenderModes)));
@@ -238,32 +239,72 @@ public class AssetPreviewPaneView : UserControl
         var resetButton = new Button
         {
             Content = "Reset view",
-            Padding = new Thickness(12, 6)
+            Padding = new Thickness(12, 6),
+            Margin = new Thickness(0, 0, 8, 6)
         };
         AutomationProperties.SetAutomationId(resetButton, "AssetPreviewResetViewButton");
         resetButton.Bind(IsVisibleProperty, new Binding(nameof(AssetPreviewPaneViewModel.HasPreviewModel)));
         resetButton.Click += (_, _) => PreviewSurface.ResetCamera();
 
+        var xPositiveButton = CreateViewSnapButton("X+", "AssetPreviewViewPositiveXButton", "View from positive X");
+        xPositiveButton.Click += (_, _) => PreviewSurface.SnapCameraToPositiveX();
+
+        var xNegativeButton = CreateViewSnapButton("X-", "AssetPreviewViewNegativeXButton", "View from negative X");
+        xNegativeButton.Click += (_, _) => PreviewSurface.SnapCameraToNegativeX();
+
+        var yPositiveButton = CreateViewSnapButton("Y+", "AssetPreviewViewPositiveYButton", "View from positive Y");
+        yPositiveButton.Click += (_, _) => PreviewSurface.SnapCameraToPositiveY();
+
+        var yNegativeButton = CreateViewSnapButton("Y-", "AssetPreviewViewNegativeYButton", "View from negative Y");
+        yNegativeButton.Click += (_, _) => PreviewSurface.SnapCameraToNegativeY();
+
+        var zPositiveButton = CreateViewSnapButton("Z+", "AssetPreviewViewPositiveZButton", "View from positive Z");
+        zPositiveButton.Click += (_, _) => PreviewSurface.SnapCameraToPositiveZ();
+
+        var zNegativeButton = CreateViewSnapButton("Z-", "AssetPreviewViewNegativeZButton", "View from negative Z");
+        zNegativeButton.Click += (_, _) => PreviewSurface.SnapCameraToNegativeZ();
+
         var hint = new TextBlock
         {
-            Text = "Left drag orbit; right or middle drag pan; wheel zoom",
+            Text = "Axis buttons snap view; left drag orbit; right or middle drag pan; wheel zoom",
             FontSize = 12,
-            VerticalAlignment = VerticalAlignment.Center
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 8, 6)
         };
         App.ApplyApplicationTextForeground(hint);
         hint.Bind(IsVisibleProperty, new Binding(nameof(AssetPreviewPaneViewModel.HasPreviewModel)));
 
-        return new StackPanel
+        return new WrapPanel
         {
             Orientation = Orientation.Horizontal,
-            Spacing = 10,
             Children =
             {
                 renderModeSelector,
                 resetButton,
+                xPositiveButton,
+                xNegativeButton,
+                yPositiveButton,
+                yNegativeButton,
+                zPositiveButton,
+                zNegativeButton,
                 hint
             }
         };
+    }
+
+    private static Button CreateViewSnapButton(string content, string automationId, string toolTip)
+    {
+        var button = new Button
+        {
+            Content = content,
+            Padding = new Thickness(8, 6),
+            MinWidth = 36,
+            Margin = new Thickness(0, 0, 8, 6)
+        };
+        AutomationProperties.SetAutomationId(button, automationId);
+        ToolTip.SetTip(button, toolTip);
+        button.Bind(IsVisibleProperty, new Binding(nameof(AssetPreviewPaneViewModel.HasPreviewModel)));
+        return button;
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
