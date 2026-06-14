@@ -11,19 +11,22 @@ public class RecordChildImportService : IRecordChildImportService
     private readonly IRawRecordPayloadImportService RawRecordPayloadImportService;
     private readonly IRecordSoundImportService RecordSoundImportService;
     private readonly IScriptingAdapterImportService ScriptingAdapterImportService;
+    private readonly ITerminalMarkerParameterImportService TerminalMarkerParameterImportService;
 
     public RecordChildImportService(
         IModelImportService modelImportService,
         IRecordKeywordImportService recordKeywordImportService,
         IRawRecordPayloadImportService rawRecordPayloadImportService,
         IRecordSoundImportService recordSoundImportService,
-        IScriptingAdapterImportService scriptingAdapterImportService)
+        IScriptingAdapterImportService scriptingAdapterImportService,
+        ITerminalMarkerParameterImportService terminalMarkerParameterImportService)
     {
         ModelImportService = modelImportService;
         RecordKeywordImportService = recordKeywordImportService;
         RawRecordPayloadImportService = rawRecordPayloadImportService;
         RecordSoundImportService = recordSoundImportService;
         ScriptingAdapterImportService = scriptingAdapterImportService;
+        TerminalMarkerParameterImportService = terminalMarkerParameterImportService;
     }
 
     public void ReplaceRecordChildren(RecordDTO record, string recordType)
@@ -51,6 +54,11 @@ public class RecordChildImportService : IRecordChildImportService
         if (record is IHasScriptingAdaptersRecordDTO scriptingAdapterRecord)
         {
             ScriptingAdapterImportService.ReplaceRecordScriptingAdapters(scriptingAdapterRecord, recordType);
+        }
+
+        if (record is IHasTerminalMarkerParametersRecordDTO terminalMarkerParameterRecord)
+        {
+            TerminalMarkerParameterImportService.ReplaceRecordMarkerParameters(terminalMarkerParameterRecord);
         }
     }
 }

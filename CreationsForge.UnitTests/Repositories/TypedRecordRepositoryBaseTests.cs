@@ -23,7 +23,7 @@ public class TypedRecordRepositoryBaseTests
     public static TheoryData<string> UnsafeIdentifiers =>
         new()
         {
-            "MiscObjects; DROP TABLE Plugins",
+            "MiscItems; DROP TABLE Plugins",
             "Name, Other",
             "Name --",
             "COUNT(*)",

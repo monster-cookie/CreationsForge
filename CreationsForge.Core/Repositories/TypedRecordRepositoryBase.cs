@@ -17,8 +17,11 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
         RecordTypeCatalog.MiscObject.TableName,
         RecordTypeCatalog.NPC.TableName,
         RecordTypeCatalog.Perk.TableName,
+        RecordTypeCatalog.Book.TableName,
+        RecordTypeCatalog.Door.TableName,
         RecordTypeCatalog.Static.TableName,
-        RecordTypeCatalog.Container.TableName
+        RecordTypeCatalog.Container.TableName,
+        RecordTypeCatalog.Terminal.TableName
     };
 
     protected readonly IDatabase Database;

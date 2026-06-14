@@ -48,13 +48,13 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         cancellationToken.ThrowIfCancellationRequested();
         var statics = MapStaticModelRecords(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
-        var books = MapBookModelRecords(plugin, mod);
+        var books = MapBooks(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
-        var doors = MapDoorModelRecords(plugin, mod);
+        var doors = MapDoors(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
         var containers = MapContainers(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
-        var terminals = MapTerminalModelRecords(plugin, mod);
+        var terminals = MapTerminals(plugin, mod);
 
         return new PluginRecordSetDTO
         {
@@ -258,17 +258,69 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             .ToList();
     }
 
-    private static IReadOnlyList<ModelRecordDTO> MapBookModelRecords(PluginDTO plugin, IStarfieldModGetter mod)
+    private static IReadOnlyList<BookDTO> MapBooks(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.Books
-            .Select(record => CreateModelRecord(plugin, RecordTypeCatalog.Book.RecordID, record.FormKey, record.EditorID, record.FormVersion, (int)record.StarfieldMajorRecordFlags, record.Model))
+            .Select(record => new BookDTO
+            {
+                Game = SupportedGame.Starfield,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(record.FormKey),
+                EditorID = record.EditorID ?? string.Empty,
+                FormVersion = record.FormVersion,
+                MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
+                ImportedAtUTC = DateTime.UtcNow,
+                Version2 = GetPropertyNullableInt(record, "Version2"),
+                ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
+                ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
+                InventoryTransformFormKey = GetFormKeyFromObject(GetPropertyValue(GetPropertyValue(record, "Transforms"), "Inventory")),
+                Xalg = GetPropertyNullableInt(record, "XALG"),
+                Name = record.Name?.Lookup(Language.English),
+                Text = GetLocalizedEnglishText(GetPropertyValue(record, "BookTextOverride"))
+                    ?? GetLocalizedEnglishText(GetPropertyValue(record, "Text")),
+                Value = GetPropertyNullableInt(record, "Value"),
+                Weight = GetPropertyNullableFloat(record, "Weight"),
+                Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
+                TeachesType = GetPropertyValue(GetPropertyValue(record, "Teaches"), "Type")?.ToString(),
+                TeachesRawContent = FormatEnumerable(GetPropertyValue(record, "Teaches")),
+                DataSlateType = GetPropertyValue(record, "DataSlateType")?.ToString(),
+                Description = GetLocalizedEnglishText(GetPropertyValue(record, "Description")),
+                DataSlateHeaderLeft = GetLocalizedEnglishText(GetPropertyValue(record, "DataSlateHeaderLeft")),
+                DataSlateHeaderRight = GetLocalizedEnglishText(GetPropertyValue(record, "DataSlateHeaderRight")),
+                Models = GetModels(plugin, RecordTypeCatalog.Book.RecordID, record.FormKey, record.Model),
+                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Book.RecordID, record.FormKey, record.Keywords),
+                Sounds = GetNamedSounds(plugin, RecordTypeCatalog.Book.RecordID, record.FormKey, record, "PickupSound", "DropdownSound"),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Book.RecordID, record),
+                RawPayloads = GetBookRawPayloads(plugin, record.FormKey, record)
+            })
             .ToList();
     }
 
-    private static IReadOnlyList<ModelRecordDTO> MapDoorModelRecords(PluginDTO plugin, IStarfieldModGetter mod)
+    private static IReadOnlyList<DoorDTO> MapDoors(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.Doors
-            .Select(record => CreateModelRecord(plugin, RecordTypeCatalog.Door.RecordID, record.FormKey, record.EditorID, record.FormVersion, (int)record.StarfieldMajorRecordFlags, record.Model))
+            .Select(record => new DoorDTO
+            {
+                Game = SupportedGame.Starfield,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(record.FormKey),
+                EditorID = record.EditorID ?? string.Empty,
+                FormVersion = record.FormVersion,
+                MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
+                ImportedAtUTC = DateTime.UtcNow,
+                Version2 = GetPropertyNullableInt(record, "Version2"),
+                ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
+                ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
+                Name = record.Name?.Lookup(Language.English),
+                Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
+                NativeTerminalFormKey = record.NativeTerminal.IsNull ? null : MapFormKey(record.NativeTerminal.FormKey),
+                SoundLevel = GetPropertyValue(record, "SoundLevel")?.ToString(),
+                FacingAxisOverride = GetPropertyValue(record, "FacingAxisOverride")?.ToString(),
+                Models = GetModels(plugin, RecordTypeCatalog.Door.RecordID, record.FormKey, record.Model),
+                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Door.RecordID, record.FormKey, record.Keywords),
+                Sounds = GetNamedSounds(plugin, RecordTypeCatalog.Door.RecordID, record.FormKey, record, "OpenSound", "CloseSound"),
+                RawPayloads = GetDoorRawPayloads(plugin, record.FormKey, record.Model, GetPropertyValue(record, "Components"))
+            })
             .ToList();
     }
 
@@ -306,33 +358,39 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             .ToList();
     }
 
-    private static IReadOnlyList<ModelRecordDTO> MapTerminalModelRecords(PluginDTO plugin, IStarfieldModGetter mod)
+    private static IReadOnlyList<TerminalDTO> MapTerminals(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.Terminals
-            .Select(record => CreateModelRecord(plugin, RecordTypeCatalog.Terminal.RecordID, record.FormKey, record.EditorID, record.FormVersion, (int)record.StarfieldMajorRecordFlags, record.Model))
+            .Select(record => new TerminalDTO
+            {
+                Game = SupportedGame.Starfield,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(record.FormKey),
+                EditorID = record.EditorID ?? string.Empty,
+                FormVersion = record.FormVersion,
+                MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
+                ImportedAtUTC = DateTime.UtcNow,
+                Version2 = GetPropertyNullableInt(record, "Version2"),
+                ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
+                ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
+                MenuFormKey = GetFormKeyFromObject(GetPropertyValue(record, "Menu")),
+                Background = GetPropertyValue(record, "Background")?.ToString(),
+                Name = record.Name?.Lookup(Language.English),
+                Pnam = GetPropertyValue(record, "PNAM")?.ToString(),
+                Fnam = GetPropertyValue(record, "FNAM")?.ToString(),
+                Jnam = GetPropertyValue(record, "JNAM")?.ToString(),
+                MarkerFlags = GetPropertyNullableLong(record, "MarkerFlags"),
+                Gnam = GetPropertyValue(record, "GNAM")?.ToString(),
+                WorkbenchData = FormatEnumerable(GetPropertyValue(record, "WorkbenchData")),
+                FurnitureTemplateFormKey = GetFormKeyFromObject(GetPropertyValue(record, "FurnitureTemplate")),
+                MarkerModel = GetPropertyValue(record, "MarkerModel")?.ToString(),
+                Models = GetModels(plugin, RecordTypeCatalog.Terminal.RecordID, record.FormKey, record.Model),
+                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Terminal.RecordID, record.FormKey, record.Keywords),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Terminal.RecordID, record),
+                RawPayloads = GetTerminalRawPayloads(plugin, record.FormKey, record.Model, GetPropertyValue(record, "Components")),
+                MarkerParameters = GetTerminalMarkerParameters(plugin, record.FormKey, GetPropertyValue(record, "MarkerParameters"))
+            })
             .ToList();
-    }
-
-    private static ModelRecordDTO CreateModelRecord(
-        PluginDTO plugin,
-        string recordType,
-        FormKey formKey,
-        string? editorID,
-        int formVersion,
-        int majorRecordFlags,
-        IModelGetter? model)
-    {
-        return new ModelRecordDTO
-        {
-            Game = SupportedGame.Starfield,
-            ModKey = plugin.ModKey,
-            FormKey = MapFormKey(formKey),
-            EditorID = editorID ?? string.Empty,
-            FormVersion = formVersion,
-            MajorRecordFlags = majorRecordFlags,
-            ImportedAtUTC = DateTime.UtcNow,
-            Models = GetModels(plugin, recordType, formKey, model)
-        };
     }
 
     private static IReadOnlyList<NPCDTO> MapNPCs(PluginDTO plugin, IStarfieldModGetter mod)
@@ -524,6 +582,13 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         }
     }
 
+    private static string? GetLocalizedEnglishText(object? value)
+    {
+        return value is ITranslatedStringGetter translatedString
+            ? GetLocalizedEnglishText(() => translatedString)
+            : value?.ToString();
+    }
+
     private static List<ScriptingAdapterDTO> GetScriptingAdapters(PluginDTO plugin, string recordType, IHaveVirtualMachineAdapterGetter record)
     {
         if (record.VirtualMachineAdapter == null) return new List<ScriptingAdapterDTO>();
@@ -664,6 +729,15 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         return payloads;
     }
 
+    private static List<RawRecordPayloadDTO> GetBookRawPayloads(PluginDTO plugin, FormKey formKey, object record)
+    {
+        var importedAtUTC = DateTime.UtcNow;
+        var payloads = new List<RawRecordPayloadDTO>();
+        AddRawPayload(payloads, plugin, RecordTypeCatalog.Book.RecordID, formKey, "Model.Data", 0, record.GetType().Name, FormatHexValue(GetPropertyValue(GetPropertyValue(record, "Model"), "Data")), importedAtUTC);
+        AddRawPayload(payloads, plugin, RecordTypeCatalog.Book.RecordID, formKey, "Components", 0, "Components", FormatEnumerable(GetPropertyValue(record, "Components")), importedAtUTC);
+        return payloads;
+    }
+
     private static List<ContainerItemDTO> GetContainerItems(PluginDTO plugin, FormKey formKey, object? items)
     {
         if (items is not IEnumerable enumerable) return new List<ContainerItemDTO>();
@@ -705,6 +779,48 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         AddRawPayload(payloads, plugin, RecordTypeCatalog.Container.RecordID, formKey, "Model.Data", 0, model?.GetType().Name ?? "Model", FormatHexValue(GetPropertyValue(model, "Data")), importedAtUTC);
         AddComponentRawPayloads(payloads, plugin, RecordTypeCatalog.Container.RecordID, formKey, components, importedAtUTC);
         return payloads;
+    }
+
+    private static List<RawRecordPayloadDTO> GetDoorRawPayloads(PluginDTO plugin, FormKey formKey, object? model, object? components)
+    {
+        var importedAtUTC = DateTime.UtcNow;
+        var payloads = new List<RawRecordPayloadDTO>();
+        AddRawPayload(payloads, plugin, RecordTypeCatalog.Door.RecordID, formKey, "Model.Data", 0, model?.GetType().Name ?? "Model", FormatHexValue(GetPropertyValue(model, "Data")), importedAtUTC);
+        AddComponentRawPayloads(payloads, plugin, RecordTypeCatalog.Door.RecordID, formKey, components, importedAtUTC);
+        return payloads;
+    }
+
+    private static List<RawRecordPayloadDTO> GetTerminalRawPayloads(PluginDTO plugin, FormKey formKey, object? model, object? components)
+    {
+        var importedAtUTC = DateTime.UtcNow;
+        var payloads = new List<RawRecordPayloadDTO>();
+        AddRawPayload(payloads, plugin, RecordTypeCatalog.Terminal.RecordID, formKey, "Model.Data", 0, model?.GetType().Name ?? "Model", FormatHexValue(GetPropertyValue(model, "Data")), importedAtUTC);
+        AddComponentRawPayloads(payloads, plugin, RecordTypeCatalog.Terminal.RecordID, formKey, components, importedAtUTC);
+        return payloads;
+    }
+
+    private static List<TerminalMarkerParameterDTO> GetTerminalMarkerParameters(PluginDTO plugin, FormKey formKey, object? markerParameters)
+    {
+        if (markerParameters is not IEnumerable enumerable)
+        {
+            return new List<TerminalMarkerParameterDTO>();
+        }
+
+        var importedAtUTC = DateTime.UtcNow;
+        return enumerable
+            .Cast<object>()
+            .Select((parameter, parameterIndex) => new TerminalMarkerParameterDTO
+            {
+                Game = SupportedGame.Starfield,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                ParameterIndex = parameterIndex,
+                Offset = GetPropertyValue(parameter, "Offset")?.ToString(),
+                EntryTypes = FormatEnumerable(GetPropertyValue(parameter, "EntryTypes")),
+                ExitTypes = FormatEnumerable(GetPropertyValue(parameter, "ExitTypes")),
+                ImportedAtUTC = importedAtUTC
+            })
+            .ToList();
     }
 
     private static void AddComponentRawPayloads(
@@ -865,10 +981,22 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         return value == null ? null : Convert.ToInt32(value, CultureInfo.InvariantCulture);
     }
 
+    private static long? GetPropertyNullableLong(object? source, string propertyName)
+    {
+        var value = GetPropertyValue(source, propertyName);
+        return value == null ? null : Convert.ToInt64(value, CultureInfo.InvariantCulture);
+    }
+
     private static double? GetPropertyNullableDouble(object? source, string propertyName)
     {
         var value = GetPropertyValue(source, propertyName);
         return value == null ? null : Convert.ToDouble(value, CultureInfo.InvariantCulture);
+    }
+
+    private static float? GetPropertyNullableFloat(object? source, string propertyName)
+    {
+        var value = GetPropertyValue(source, propertyName);
+        return value == null ? null : Convert.ToSingle(value, CultureInfo.InvariantCulture);
     }
 
     private static string? FormatObjectBoundsPoint(object? objectBounds, string propertyName)

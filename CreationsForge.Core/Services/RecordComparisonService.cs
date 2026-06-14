@@ -20,7 +20,10 @@ public class RecordComparisonService : IRecordComparisonService
     private readonly IMagicEffectRepository MagicEffectRepository;
     private readonly IPerkRepository PerkRepository;
     private readonly IStaticRepository StaticRepository;
+    private readonly IBookRepository BookRepository;
+    private readonly IDoorRepository DoorRepository;
     private readonly IContainerRepository ContainerRepository;
+    private readonly ITerminalRepository TerminalRepository;
     private readonly IModelRepository ModelRepository;
     private readonly IRecordKeywordRepository RecordKeywordRepository;
     private readonly IRecordSoundRepository RecordSoundRepository;
@@ -38,7 +41,10 @@ public class RecordComparisonService : IRecordComparisonService
         IMagicEffectRepository magicEffectRepository,
         IPerkRepository perkRepository,
         IStaticRepository staticRepository,
+        IBookRepository bookRepository,
+        IDoorRepository doorRepository,
         IContainerRepository containerRepository,
+        ITerminalRepository terminalRepository,
         IModelRepository modelRepository,
         IRecordKeywordRepository recordKeywordRepository,
         IRecordSoundRepository recordSoundRepository,
@@ -55,7 +61,10 @@ public class RecordComparisonService : IRecordComparisonService
         MagicEffectRepository = magicEffectRepository;
         PerkRepository = perkRepository;
         StaticRepository = staticRepository;
+        BookRepository = bookRepository;
+        DoorRepository = doorRepository;
         ContainerRepository = containerRepository;
+        TerminalRepository = terminalRepository;
         ModelRepository = modelRepository;
         RecordKeywordRepository = recordKeywordRepository;
         RecordSoundRepository = recordSoundRepository;
@@ -115,9 +124,24 @@ public class RecordComparisonService : IRecordComparisonService
             return CreateStaticComparison(game, formKey);
         }
 
+        if (recordType == RecordTypeCatalog.Book.RecordID)
+        {
+            return CreateBookComparison(game, formKey);
+        }
+
+        if (recordType == RecordTypeCatalog.Door.RecordID)
+        {
+            return CreateDoorComparison(game, formKey);
+        }
+
         if (recordType == RecordTypeCatalog.Container.RecordID)
         {
             return CreateContainerComparison(game, formKey);
+        }
+
+        if (recordType == RecordTypeCatalog.Terminal.RecordID)
+        {
+            return CreateTerminalComparison(game, formKey);
         }
 
         return new RecordComparisonDTO
@@ -313,6 +337,57 @@ public class RecordComparisonService : IRecordComparisonService
         return CreateComparison(RecordTypeCatalog.Static.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
 
+    private RecordComparisonDTO CreateBookComparison(SupportedGame game, FormKeyDTO formKey)
+    {
+        var records = BookRepository.GetByFormKey(game, formKey);
+        var baseRecords = records.Cast<RecordDTO>().ToList();
+        var fields = CreateCommonFields(baseRecords);
+        fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
+        fields.Add(CreateField("ObjectBoundsFirst", records, record => record.ObjectBoundsFirst ?? string.Empty));
+        fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBoundsSecond ?? string.Empty));
+        fields.Add(CreateField("InventoryTransformFormKey", records, record => FormatFormKey(record.InventoryTransformFormKey)));
+        fields.Add(CreateField("Xalg", records, record => record.Xalg?.ToString() ?? string.Empty));
+        fields.Add(CreateField("Name", records, record => record.Name ?? string.Empty));
+        fields.Add(CreateField("Text", records, record => record.Text ?? string.Empty));
+        fields.Add(CreateField("Value", records, record => record.Value?.ToString() ?? string.Empty));
+        fields.Add(CreateField("Weight", records, record => record.Weight?.ToString() ?? string.Empty));
+        fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
+        fields.Add(CreateField("TeachesType", records, record => record.TeachesType ?? string.Empty));
+        fields.Add(CreateField("TeachesRawContent", records, record => record.TeachesRawContent ?? string.Empty));
+        fields.Add(CreateField("DataSlateType", records, record => record.DataSlateType ?? string.Empty));
+        fields.Add(CreateField("Description", records, record => record.Description ?? string.Empty));
+        fields.Add(CreateField("DataSlateHeaderLeft", records, record => record.DataSlateHeaderLeft ?? string.Empty));
+        fields.Add(CreateField("DataSlateHeaderRight", records, record => record.DataSlateHeaderRight ?? string.Empty));
+        AddKeywordGroup(fields, baseRecords, RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
+        AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
+        AddSoundGroups(fields, baseRecords, RecordSoundRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
+        AddScriptingAdapterGroups(fields, baseRecords, ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
+        AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
+
+        return CreateComparison(RecordTypeCatalog.Book.RecordID, formKey, baseRecords, fields);
+    }
+
+    private RecordComparisonDTO CreateDoorComparison(SupportedGame game, FormKeyDTO formKey)
+    {
+        var records = DoorRepository.GetByFormKey(game, formKey);
+        var baseRecords = records.Cast<RecordDTO>().ToList();
+        var fields = CreateCommonFields(baseRecords);
+        fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
+        fields.Add(CreateField("ObjectBoundsFirst", records, record => record.ObjectBoundsFirst ?? string.Empty));
+        fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBoundsSecond ?? string.Empty));
+        fields.Add(CreateField("Name", records, record => record.Name ?? string.Empty));
+        fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
+        fields.Add(CreateField("NativeTerminalFormKey", records, record => FormatFormKey(record.NativeTerminalFormKey)));
+        fields.Add(CreateField("SoundLevel", records, record => record.SoundLevel ?? string.Empty));
+        fields.Add(CreateField("FacingAxisOverride", records, record => record.FacingAxisOverride ?? string.Empty));
+        AddKeywordGroup(fields, baseRecords, RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
+        AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
+        AddSoundGroups(fields, baseRecords, RecordSoundRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
+        AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
+
+        return CreateComparison(RecordTypeCatalog.Door.RecordID, formKey, baseRecords, fields);
+    }
+
     private RecordComparisonDTO CreateContainerComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = ContainerRepository.GetByFormKey(game, formKey);
@@ -332,6 +407,34 @@ public class RecordComparisonService : IRecordComparisonService
         AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.Container.RecordID, formKey, baseRecords, fields);
+    }
+
+    private RecordComparisonDTO CreateTerminalComparison(SupportedGame game, FormKeyDTO formKey)
+    {
+        var records = TerminalRepository.GetByFormKey(game, formKey);
+        var baseRecords = records.Cast<RecordDTO>().ToList();
+        var fields = CreateCommonFields(baseRecords);
+        fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
+        fields.Add(CreateField("ObjectBoundsFirst", records, record => record.ObjectBoundsFirst ?? string.Empty));
+        fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBoundsSecond ?? string.Empty));
+        fields.Add(CreateField("MenuFormKey", records, record => FormatFormKey(record.MenuFormKey)));
+        fields.Add(CreateField("Background", records, record => record.Background ?? string.Empty));
+        fields.Add(CreateField("Name", records, record => record.Name ?? string.Empty));
+        fields.Add(CreateField("Pnam", records, record => record.Pnam ?? string.Empty));
+        fields.Add(CreateField("Fnam", records, record => record.Fnam ?? string.Empty));
+        fields.Add(CreateField("Jnam", records, record => record.Jnam ?? string.Empty));
+        fields.Add(CreateField("MarkerFlags", records, record => record.MarkerFlags?.ToString() ?? string.Empty));
+        fields.Add(CreateField("Gnam", records, record => record.Gnam ?? string.Empty));
+        fields.Add(CreateField("WorkbenchData", records, record => record.WorkbenchData ?? string.Empty));
+        fields.Add(CreateField("FurnitureTemplateFormKey", records, record => FormatFormKey(record.FurnitureTemplateFormKey)));
+        fields.Add(CreateField("MarkerModel", records, record => record.MarkerModel ?? string.Empty));
+        AddKeywordGroup(fields, baseRecords, RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
+        AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
+        AddScriptingAdapterGroups(fields, baseRecords, ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
+        AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
+        AddTerminalMarkerParameterGroups(fields, records);
+
+        return CreateComparison(RecordTypeCatalog.Terminal.RecordID, formKey, baseRecords, fields);
     }
 
     private static RecordComparisonDTO CreateComparison(
@@ -539,6 +642,45 @@ public class RecordComparisonService : IRecordComparisonService
         if (itemFields.Count > 0)
         {
             fields.Add(CreateGroupField("Items", records.Cast<RecordDTO>().ToList(), itemFields));
+        }
+    }
+
+    private static void AddTerminalMarkerParameterGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<TerminalDTO> records)
+    {
+        var parameterIndexes = records
+            .SelectMany(record => record.MarkerParameters)
+            .Select(parameter => parameter.ParameterIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (parameterIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var parameterFields = new List<RecordComparisonFieldDTO>();
+        foreach (var parameterIndex in parameterIndexes)
+        {
+            var currentIndex = parameterIndex;
+            var parameterChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("Offset", records, record => record.MarkerParameters.FirstOrDefault(parameter => parameter.ParameterIndex == currentIndex)?.Offset ?? string.Empty),
+                CreateField("EntryTypes", records, record => record.MarkerParameters.FirstOrDefault(parameter => parameter.ParameterIndex == currentIndex)?.EntryTypes ?? string.Empty),
+                CreateField("ExitTypes", records, record => record.MarkerParameters.FirstOrDefault(parameter => parameter.ParameterIndex == currentIndex)?.ExitTypes ?? string.Empty)
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (parameterChildren.Count > 0)
+            {
+                parameterFields.Add(CreateGroupField($"Marker Parameter [{parameterIndex}]", records.Cast<RecordDTO>().ToList(), parameterChildren));
+            }
+        }
+
+        if (parameterFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("Marker Parameters", records.Cast<RecordDTO>().ToList(), parameterFields));
         }
     }
 

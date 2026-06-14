@@ -27,7 +27,7 @@ public class RecordImportServiceTests
         var formListImporter = new TestTypedRecordImporter("FLST", "FormLists", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1, formListItems: 2);
         var gameSettingImporter = new TestTypedRecordImporter("GMST", "GameSettings", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
         var globalImporter = new TestTypedRecordImporter("GLOB", "Globals", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
-        var miscObjectImporter = new TestTypedRecordImporter("MISC", "MiscObjects", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
+        var miscObjectImporter = new TestTypedRecordImporter("MISC", "MiscItems", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
         var keywordImporter = new TestTypedRecordImporter("KYWD", "Keywords", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
         var actorValueInformationImporter = new TestTypedRecordImporter("AVIF", "ActorValueInformation", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
         var npcImporter = new TestTypedRecordImporter("NPC_", "NPCs", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);

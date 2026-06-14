@@ -32,8 +32,10 @@ models, keywords, sounds, and scripting adapters.
 Master reference: A relationship edge from a declaring plugin to a declared master plugin in the same game.
 
 Record type: A Bethesda major-record type identified by a four-character record ID. The current cross-game shared
-record import workflow includes FormLists (`FLST`), GameSettings (`GMST`), Globals (`GLOB`), MiscObjects (`MISC`),
-Keywords (`KYWD`), ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), and Perks (`PERK`).
+record import workflow includes FormLists (`FLST`), GameSettings (`GMST`), Globals (`GLOB`), MiscItems (`MISC`),
+Keywords (`KYWD`), ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), Perks (`PERK`),
+Statics (`STAT`), and Containers (`CONT`). Starfield also persists typed detail rows for Books (`BOOK`),
+Doors (`DOOR`), and Terminals (`TERM`).
 
 Starfield master references require special construction through Mutagen's separated-master-aware load-order paths.
 The Starfield reader prefers the full Mutagen environment load order's mod objects so split masters, medium masters,
@@ -76,7 +78,8 @@ with active game, plugin, and record-count context; it does not perform direct M
 ## Imported Record Tree
 
 The main workspace includes a left-side imported-record tree for the active plugin. The current tree includes the
-approved persisted record types: `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`. Tree
+approved persisted record types: `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`,
+`BOOK`, `DOOR`, `CONT`, and `TERM`. Tree
 entries are read from Core repository data through `IRecordTreeService` and grouped by record ID. Each record-type
 group shows its visible record count, and each record row shows how many imported plugins in the active game contain
 that same origin FormKey.
@@ -91,14 +94,14 @@ Record comparison groups persisted records by origin FormKey across imported plu
 columns represent plugin overrides, and comparison rows represent fields exposed by Core DTOs.
 
 The first comparison slice displays common fields (`EditorID`, `FormVersion`, and `MajorRecordFlags`) for all approved
-records. FormLists also display `AddToListFormKey` and indexed `Items[n]` rows. GameSettings display `SettingType` and
-the generic `Data` value. Globals display `Data`. Starfield `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`
-comparisons display their currently persisted scalar parent fields and record-reference fields. Starfield `MISC`,
-`NPC_`, and `MGEF` comparisons display shared keyword rows. Starfield `MISC` comparison also displays persisted shared
-model rows and scripting adapter rows. Starfield `MISC` and `MGEF` comparisons display shared sound rows. MGEF DATA
-follows Mutagen/Spriggit's flattened record shape and displays as flat rows. Child comparison data such as keyword
-lists, MISC models, MISC/MGEF sounds, and MISC scripts is represented as hierarchical rows in the comparison
-TreeDataGrid instead of flattened dotted field names.
+records. FormLists also display `AddToListFormKey` and indexed `Items[n]` rows. GameSettings display `SettingType`
+and the generic `Data` value. Globals display `Data`. Starfield `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`,
+`STAT`, `BOOK`, `DOOR`, `CONT`, and `TERM` comparisons display their currently persisted scalar parent fields and
+record-reference fields. Starfield `MISC`, `NPC_`, `MGEF`, `BOOK`, `DOOR`, `CONT`, and `TERM` comparisons display
+shared child rows when those payloads are persisted. `TERM` comparison also displays marker parameter child rows.
+MGEF DATA follows Mutagen/Spriggit's flattened record shape and displays as flat rows. Child comparison data such as
+keywords, models, sounds, scripts, raw payloads, items, and terminal marker parameters is represented as hierarchical
+rows in the comparison TreeDataGrid instead of flattened dotted field names.
 
 Comparable comparison rows are highlighted green when all visible plugin values match and red when any visible plugin
 value differs. Blank values count as values. Single-column comparisons and non-comparable informational rows remain
@@ -113,10 +116,11 @@ ranks, conflict resolution state, patch generation, and exact display FormID tra
 
 The current readers save the selected game row, discover load-order plugins, read plugin source fingerprints, persist
 plugin metadata, persist declared master references, and run shared record import orchestration for approved record
-types. Starfield, Fallout 4, and Skyrim map `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`
-records to shared DTO shapes. Additional shared record types and deeper game-specific typed record fields remain
-follow-up work. Typed record repositories persist a shared record instance before saving type-specific detail rows, and
-typed importers dispatch shared child persistence from the record DTO capability interfaces.
+types. Starfield, Fallout 4, and Skyrim map `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`,
+`STAT`, and `CONT` records to shared DTO shapes. Starfield also maps `BOOK`, `DOOR`, and `TERM` records to typed
+detail DTOs instead of model-only preview rows. Typed record repositories persist a shared record instance before
+saving type-specific detail rows, and typed importers dispatch shared child persistence from the record DTO capability
+interfaces.
 
 ## Presentation Boundary
 
@@ -127,9 +131,10 @@ identity shapes to presentation code.
 
 ## Shared Record Children
 
-Typed records currently include `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK` across
-Starfield, Fallout 4, and Skyrim. Core exposes these through CreationsForge DTOs and primitive `FormKeyDTO`/`ModKeyDTO`
-identity shapes; direct Mutagen mapping remains in the game adapter projects.
+Typed records currently include `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, and
+`CONT` across Starfield, Fallout 4, and Skyrim. Starfield also includes `BOOK`, `DOOR`, and `TERM`. Core exposes
+these through CreationsForge DTOs and primitive `FormKeyDTO`/`ModKeyDTO` identity shapes; direct Mutagen mapping
+remains in the game adapter projects.
 
 Scripting adapters represent virtual-machine script attachments exposed by Mutagen. They are persisted for Starfield
 Fallout 4, and Skyrim records that expose scripting adapters through Core DTO capability interfaces. `FLST` and `GMST`
@@ -137,8 +142,9 @@ do not persist scripting adapters. Scripting adapters are linked to their owning
 to the containing plugin.
 
 Models represent Mutagen `IModelGetter` payloads for records that expose model data. Shared model rows are linked to
-their owning `RecordInstances` row and are further identified by `ModelSlot` and `ModelGender`. The first populated
-slot is `MISC` with `ModelSlot = Model` and an empty `ModelGender`.
+their owning `RecordInstances` row and are further identified by `ModelSlot` and `ModelGender`. The currently
+populated direct-model slices are `MISC`, `STAT`, `BOOK`, `DOOR`, `CONT`, and `TERM`, each with `ModelSlot = Model`
+and an empty `ModelGender`.
 
 Asset preview candidates are derived from persisted model rows. Candidate identity includes the selected game, source
 plugin, record type, origin FormKey, model slot, model gender, and mesh path. Core can describe preview geometry with

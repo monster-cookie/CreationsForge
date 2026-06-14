@@ -162,7 +162,7 @@ erDiagram
         REAL Data
     }
 
-    MiscObjects {
+    MiscItems {
         TEXT Game PK, FK
         TEXT ModKey_Name PK, FK
         INTEGER ModKey_Type PK, FK
@@ -413,6 +413,66 @@ erDiagram
         TEXT DNAMDataTypeState
     }
 
+    Books {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER MajorRecordFlags
+        TEXT ImportedAtUTC
+        INTEGER Version2
+        TEXT ObjectBounds_First
+        TEXT ObjectBounds_Second
+        TEXT InventoryTransform_ModKey_Name
+        INTEGER InventoryTransform_ModKey_Type
+        TEXT InventoryTransform_ModKey_FileName
+        INTEGER InventoryTransform_FormKey_ID
+        INTEGER XALG
+        TEXT Name
+        TEXT Text
+        INTEGER Value
+        REAL Weight
+        TEXT Flags
+        TEXT TeachesType
+        TEXT TeachesRawContent
+        TEXT DataSlateType
+        TEXT Description
+        TEXT DataSlateHeaderLeft
+        TEXT DataSlateHeaderRight
+    }
+
+    Doors {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER MajorRecordFlags
+        TEXT ImportedAtUTC
+        INTEGER Version2
+        TEXT ObjectBounds_First
+        TEXT ObjectBounds_Second
+        TEXT Name
+        TEXT Flags
+        TEXT NativeTerminal_ModKey_Name
+        INTEGER NativeTerminal_ModKey_Type
+        TEXT NativeTerminal_ModKey_FileName
+        INTEGER NativeTerminal_FormKey_ID
+        TEXT SoundLevel
+        TEXT FacingAxisOverride
+    }
+
     Containers {
         TEXT Game PK, FK
         TEXT ModKey_Name PK, FK
@@ -453,6 +513,57 @@ erDiagram
         TEXT Item_ModKey_FileName
         INTEGER Item_FormKey_ID
         INTEGER Count
+        TEXT ImportedAtUTC
+    }
+
+    Terminals {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER MajorRecordFlags
+        TEXT ImportedAtUTC
+        INTEGER Version2
+        TEXT ObjectBounds_First
+        TEXT ObjectBounds_Second
+        TEXT Menu_ModKey_Name
+        INTEGER Menu_ModKey_Type
+        TEXT Menu_ModKey_FileName
+        INTEGER Menu_FormKey_ID
+        TEXT Background
+        TEXT Name
+        TEXT PNAM
+        TEXT FNAM
+        TEXT JNAM
+        INTEGER MarkerFlags
+        TEXT GNAM
+        TEXT WorkbenchData
+        TEXT FurnitureTemplate_ModKey_Name
+        INTEGER FurnitureTemplate_ModKey_Type
+        TEXT FurnitureTemplate_ModKey_FileName
+        INTEGER FurnitureTemplate_FormKey_ID
+        TEXT MarkerModel
+    }
+
+    TerminalMarkerParameters {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Parameter_Index PK
+        TEXT Offset
+        TEXT EntryTypes
+        TEXT ExitTypes
         TEXT ImportedAtUTC
     }
 
@@ -714,15 +825,19 @@ erDiagram
     FormLists ||--o{ FormListItems : contains
     RecordInstances ||--o| GameSettings : "typed detail"
     RecordInstances ||--o| Globals : "typed detail"
-    RecordInstances ||--o| MiscObjects : "typed detail"
+    RecordInstances ||--o| MiscItems : "typed detail"
     RecordInstances ||--o| Keywords : "typed detail"
     RecordInstances ||--o| ActorValueInformation : "typed detail"
     RecordInstances ||--o| NPCs : "typed detail"
     RecordInstances ||--o| MagicEffects : "typed detail"
     RecordInstances ||--o| Perks : "typed detail"
     RecordInstances ||--o| Statics : "typed detail"
+    RecordInstances ||--o| Books : "typed detail"
+    RecordInstances ||--o| Doors : "typed detail"
     RecordInstances ||--o| Containers : "typed detail"
     Containers ||--o{ ContainerItems : contains
+    RecordInstances ||--o| Terminals : "typed detail"
+    Terminals ||--o{ TerminalMarkerParameters : contains
     RecordInstances ||--o{ RecordKeywords : contains
     Perks ||--o{ PerkRanks : contains
     PerkRanks ||--o{ PerkRankEffects : contains
@@ -753,11 +868,20 @@ These columns contain record-reference data but are not declared SQLite foreign 
 - `FormLists.AddToList_ModKey_Name`, `AddToList_ModKey_Type`, `AddToList_ModKey_FileName`,
   and `AddToList_FormKey_ID`
 - `FormListItems.Item_ModKey_Name`, `Item_ModKey_Type`, `Item_ModKey_FileName`, and `Item_FormKey_ID`
+- `MiscItems.FeaturedItemMessage_ModKey_Name`, `FeaturedItemMessage_ModKey_Type`,
+  `FeaturedItemMessage_ModKey_FileName`, and `FeaturedItemMessage_FormKey_ID`
+- `Books.InventoryTransform_ModKey_Name`, `InventoryTransform_ModKey_Type`,
+  `InventoryTransform_ModKey_FileName`, and `InventoryTransform_FormKey_ID`
+- `Doors.NativeTerminal_ModKey_Name`, `NativeTerminal_ModKey_Type`, `NativeTerminal_ModKey_FileName`, and
+  `NativeTerminal_FormKey_ID`
 - `Containers.NativeTerminal_ModKey_Name`, `NativeTerminal_ModKey_Type`, `NativeTerminal_ModKey_FileName`, and
   `NativeTerminal_FormKey_ID`
+- `Terminals.Menu_ModKey_Name`, `Menu_ModKey_Type`, `Menu_ModKey_FileName`, and `Menu_FormKey_ID`
+- `Terminals.FurnitureTemplate_ModKey_Name`, `FurnitureTemplate_ModKey_Type`,
+  `FurnitureTemplate_ModKey_FileName`, and `FurnitureTemplate_FormKey_ID`
 - `ContainerItems.Item_ModKey_Name`, `Item_ModKey_Type`, `Item_ModKey_FileName`, and `Item_FormKey_ID`
 - `ModelMaterialSwaps.MaterialSwap_ModKey_Name`, `MaterialSwap_ModKey_Type`, `MaterialSwap_ModKey_FileName`,
   and `MaterialSwap_FormKey_ID`
 - `RecordKeywords.Keyword_ModKey_Name`, `Keyword_ModKey_Type`, `Keyword_ModKey_FileName`, and `Keyword_FormKey_ID`
-- New Starfield record-reference columns on `MiscObjects`, `Keywords`, `NPCs`, `MagicEffects`, `Perks`,
+- New Starfield record-reference columns on `MiscItems`, `Keywords`, `NPCs`, `MagicEffects`, `Perks`,
   `PerkRanks`, `PerkBackgroundSkills`, `ScriptingAdapterProperties`, and `ScriptingAdapterPropertyListItems`

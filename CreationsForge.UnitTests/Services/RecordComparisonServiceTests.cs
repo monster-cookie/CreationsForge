@@ -337,6 +337,102 @@ public class RecordComparisonServiceTests
     }
 
     [Fact]
+    public void GetRecordComparison_ForBook_MapsBookFieldsAndChildren()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x3000);
+        var bookRepository = new TestBookRepository
+        {
+            Records =
+            [
+                CreateBook("Base.esm", formKey, "Captain's Log", 100),
+                CreateBook("Patch.esp", formKey, "Captain's Log", 150)
+            ]
+        };
+        var modelRepository = new TestModelRepository
+        {
+            Records =
+            [
+                CreateModel("Base.esm", RecordTypeCatalog.Book.RecordID, formKey, "Meshes\\SetDressing\\Books\\Book01.nif"),
+                CreateModel("Patch.esp", RecordTypeCatalog.Book.RecordID, formKey, "Meshes\\SetDressing\\Books\\Book01.nif")
+            ]
+        };
+        var recordKeywordRepository = new TestRecordKeywordRepository
+        {
+            Records =
+            [
+                CreateRecordKeyword("Base.esm", RecordTypeCatalog.Book.RecordID, formKey, CreateFormKey("Starfield.esm", 0x101), 0),
+                CreateRecordKeyword("Patch.esp", RecordTypeCatalog.Book.RecordID, formKey, CreateFormKey("Starfield.esm", 0x101), 0)
+            ]
+        };
+        var recordSoundRepository = new TestRecordSoundRepository
+        {
+            Records =
+            [
+                CreateRecordSound("Base.esm", RecordTypeCatalog.Book.RecordID, formKey, "PickupSound", 0, "pickup"),
+                CreateRecordSound("Patch.esp", RecordTypeCatalog.Book.RecordID, formKey, "PickupSound", 0, "pickup")
+            ]
+        };
+        var service = CreateService(
+            bookRepository: bookRepository,
+            modelRepository: modelRepository,
+            recordKeywordRepository: recordKeywordRepository,
+            recordSoundRepository: recordSoundRepository);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Book.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["Captain's Log", "Captain's Log"]);
+        comparison.Fields.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["100", "150"]);
+        comparison.Fields.Single(field => field.FieldName == "InventoryTransformFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000999", "Starfield.esm:00000999"]);
+        comparison.Fields.Single(field => field.FieldName == "Text").Values.Select(value => value.DisplayValue).ShouldBe(["Base text", "Patch text"]);
+        comparison.Fields.Single(field => field.FieldName == "TeachesType").Values.Select(value => value.DisplayValue).ShouldBe(["Skill", "Skill"]);
+    }
+
+    [Fact]
+    public void GetRecordComparison_ForDoor_MapsDoorFieldsAndChildren()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x4000);
+        var nativeTerminalFormKey = CreateFormKey("Starfield.esm", 0x555);
+        var doorRepository = new TestDoorRepository
+        {
+            Records =
+            [
+                CreateDoor("Base.esm", formKey, "Airlock", nativeTerminalFormKey, "Both"),
+                CreateDoor("Patch.esp", formKey, "Airlock", nativeTerminalFormKey, "Positive")
+            ]
+        };
+        var service = CreateService(doorRepository: doorRepository);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Door.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["Airlock", "Airlock"]);
+        comparison.Fields.Single(field => field.FieldName == "NativeTerminalFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000555", "Starfield.esm:00000555"]);
+        comparison.Fields.Single(field => field.FieldName == "FacingAxisOverride").Values.Select(value => value.DisplayValue).ShouldBe(["Both", "Positive"]);
+    }
+
+    [Fact]
+    public void GetRecordComparison_ForTerminal_MapsTerminalFieldsAndMarkerParameters()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x5000);
+        var terminalRepository = new TestTerminalRepository
+        {
+            Records =
+            [
+                CreateTerminal("Base.esm", formKey, "Kiosk", "0x1", "BaseEntry"),
+                CreateTerminal("Patch.esp", formKey, "Kiosk", "0x2", "PatchEntry")
+            ]
+        };
+        var service = CreateService(terminalRepository: terminalRepository);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Terminal.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["Kiosk", "Kiosk"]);
+        comparison.Fields.Single(field => field.FieldName == "MarkerFlags").Values.Select(value => value.DisplayValue).ShouldBe(["1", "2"]);
+        var markerParameters = comparison.Fields.Single(field => field.FieldName == "Marker Parameters");
+        var firstParameter = markerParameters.Children.Single(field => field.FieldName == "Marker Parameter [0]");
+        firstParameter.Children.Single(field => field.FieldName == "EntryTypes").Values.Select(value => value.DisplayValue).ShouldBe(["BaseEntry", "PatchEntry"]);
+    }
+
+    [Fact]
     public void GetRecordComparison_ForSingleColumn_KeepsValuesNeutral()
     {
         var formKey = CreateFormKey("Starfield.esm", 0x321);
@@ -400,7 +496,10 @@ public class RecordComparisonServiceTests
         TestMagicEffectRepository? magicEffectRepository = null,
         TestPerkRepository? perkRepository = null,
         TestStaticRepository? staticRepository = null,
+        TestBookRepository? bookRepository = null,
+        TestDoorRepository? doorRepository = null,
         TestContainerRepository? containerRepository = null,
+        TestTerminalRepository? terminalRepository = null,
         TestModelRepository? modelRepository = null,
         TestRecordKeywordRepository? recordKeywordRepository = null,
         TestRecordSoundRepository? recordSoundRepository = null,
@@ -418,7 +517,10 @@ public class RecordComparisonServiceTests
             magicEffectRepository ?? new TestMagicEffectRepository(),
             perkRepository ?? new TestPerkRepository(),
             staticRepository ?? new TestStaticRepository(),
+            bookRepository ?? new TestBookRepository(),
+            doorRepository ?? new TestDoorRepository(),
             containerRepository ?? new TestContainerRepository(),
+            terminalRepository ?? new TestTerminalRepository(),
             modelRepository ?? new TestModelRepository(),
             recordKeywordRepository ?? new TestRecordKeywordRepository(),
             recordSoundRepository ?? new TestRecordSoundRepository(),
@@ -571,6 +673,58 @@ public class RecordComparisonServiceTests
         };
     }
 
+    private static BookDTO CreateBook(string fileName, FormKeyDTO formKey, string name, int value)
+    {
+        return new BookDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            EditorID = "MyBook",
+            FormVersion = 1,
+            MajorRecordFlags = 2,
+            ImportedAtUTC = DateTime.UtcNow,
+            Version2 = 3,
+            ObjectBoundsFirst = "0, 0, 0",
+            ObjectBoundsSecond = "1, 1, 1",
+            InventoryTransformFormKey = CreateFormKey("Starfield.esm", 0x999),
+            Xalg = 7,
+            Name = name,
+            Text = fileName.StartsWith("Base", StringComparison.Ordinal) ? "Base text" : "Patch text",
+            Value = value,
+            Weight = 1.25f,
+            Flags = "Takeable",
+            TeachesType = "Skill",
+            TeachesRawContent = "Piloting",
+            DataSlateType = "None",
+            Description = "Book description",
+            DataSlateHeaderLeft = "Left",
+            DataSlateHeaderRight = "Right"
+        };
+    }
+
+    private static DoorDTO CreateDoor(string fileName, FormKeyDTO formKey, string name, FormKeyDTO? nativeTerminalFormKey, string facingAxisOverride)
+    {
+        return new DoorDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            EditorID = "MyDoor",
+            FormVersion = 1,
+            MajorRecordFlags = 2,
+            ImportedAtUTC = DateTime.UtcNow,
+            Version2 = 1,
+            ObjectBoundsFirst = "0, 0, 0",
+            ObjectBoundsSecond = "1, 1, 1",
+            Name = name,
+            Flags = "Automatic",
+            NativeTerminalFormKey = nativeTerminalFormKey,
+            SoundLevel = "Normal",
+            FacingAxisOverride = facingAxisOverride
+        };
+    }
+
     private static ContainerDTO CreateContainer(string fileName, FormKeyDTO formKey, string name, FormKeyDTO? nativeTerminalFormKey, IList<ContainerItemDTO> items)
     {
         return new ContainerDTO
@@ -589,6 +743,48 @@ public class RecordComparisonServiceTests
             Flags = "Respawns",
             NativeTerminalFormKey = nativeTerminalFormKey,
             Items = items
+        };
+    }
+
+    private static TerminalDTO CreateTerminal(string fileName, FormKeyDTO formKey, string name, string markerFlags, string entryTypes)
+    {
+        return new TerminalDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            EditorID = "MyTerminal",
+            FormVersion = 1,
+            MajorRecordFlags = 2,
+            ImportedAtUTC = DateTime.UtcNow,
+            Version2 = 4,
+            ObjectBoundsFirst = "0, 0, 0",
+            ObjectBoundsSecond = "1, 1, 1",
+            MenuFormKey = CreateFormKey("Starfield.esm", 0x111),
+            Background = "BackgroundA",
+            Name = name,
+            Pnam = "PNAM",
+            Fnam = "FNAM",
+            Jnam = "JNAM",
+            MarkerFlags = long.Parse(markerFlags.Replace("0x", string.Empty), System.Globalization.NumberStyles.HexNumber),
+            Gnam = "GNAM",
+            WorkbenchData = "WorkbenchData",
+            FurnitureTemplateFormKey = CreateFormKey("Starfield.esm", 0x222),
+            MarkerModel = "MarkerModel.nif",
+            MarkerParameters =
+            [
+                new TerminalMarkerParameterDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    ParameterIndex = 0,
+                    Offset = "0,0,0",
+                    EntryTypes = entryTypes,
+                    ExitTypes = "ExitType",
+                    ImportedAtUTC = DateTime.UtcNow
+                }
+            ]
         };
     }
 
@@ -985,6 +1181,62 @@ public class RecordComparisonServiceTests
         { }
     }
 
+    private sealed class TestBookRepository : IBookRepository
+    {
+        public string RecordType => RecordTypeCatalog.Book.RecordID;
+
+        public IReadOnlyList<BookDTO> Records { get; set; } = [];
+
+        public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntriesByPlugin(SupportedGame game, ModKeyDTO modKey)
+        {
+            return [];
+        }
+
+        public IReadOnlyDictionary<string, int> GetRecordPluginCountsByGame(SupportedGame game)
+        {
+            return new Dictionary<string, int>();
+        }
+
+        public IReadOnlyList<BookDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        {
+            return Records;
+        }
+
+        public void Save(BookDTO dto)
+        { }
+
+        public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)
+        { }
+    }
+
+    private sealed class TestDoorRepository : IDoorRepository
+    {
+        public string RecordType => RecordTypeCatalog.Door.RecordID;
+
+        public IReadOnlyList<DoorDTO> Records { get; set; } = [];
+
+        public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntriesByPlugin(SupportedGame game, ModKeyDTO modKey)
+        {
+            return [];
+        }
+
+        public IReadOnlyDictionary<string, int> GetRecordPluginCountsByGame(SupportedGame game)
+        {
+            return new Dictionary<string, int>();
+        }
+
+        public IReadOnlyList<DoorDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        {
+            return Records;
+        }
+
+        public void Save(DoorDTO dto)
+        { }
+
+        public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)
+        { }
+    }
+
     private sealed class TestContainerRepository : IContainerRepository
     {
         public string RecordType => RecordTypeCatalog.Container.RecordID;
@@ -1007,6 +1259,34 @@ public class RecordComparisonServiceTests
         }
 
         public void Save(ContainerDTO dto)
+        { }
+
+        public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)
+        { }
+    }
+
+    private sealed class TestTerminalRepository : ITerminalRepository
+    {
+        public string RecordType => RecordTypeCatalog.Terminal.RecordID;
+
+        public IReadOnlyList<TerminalDTO> Records { get; set; } = [];
+
+        public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntriesByPlugin(SupportedGame game, ModKeyDTO modKey)
+        {
+            return [];
+        }
+
+        public IReadOnlyDictionary<string, int> GetRecordPluginCountsByGame(SupportedGame game)
+        {
+            return new Dictionary<string, int>();
+        }
+
+        public IReadOnlyList<TerminalDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        {
+            return Records;
+        }
+
+        public void Save(TerminalDTO dto)
         { }
 
         public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)
