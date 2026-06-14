@@ -160,3 +160,7 @@ riderModule.iml
 *.userosscache
 *.sln.docstates
 *.env
+
+# Codex Temporary Files (It should be cleaning these up)
+**/bin/CodexTemp/
+**/bin/Validation/
