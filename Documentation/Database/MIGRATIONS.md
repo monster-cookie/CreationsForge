@@ -12,8 +12,14 @@ This was released with version 1.1.7 on 2026-06-13
 
 REF: CreationsForge.Migrations\Sql\002_AddAssetArchiveIndex.sql
 
-## Migration 003 - UNRELEASED
+## Migration 003 - Released Version 1.1.8
 
-All current database work needs to use migration 003.
+This was released with version 1.1.8 on 2026-06-14
 
 REF: CreationsForge.Migrations\Sql\003_Migrations003.sql
+
+## Migration 004 - UNRELEASED
+
+All current database work needs to use migration 004.
+
+REF: CreationsForge.Migrations\Sql\003_Migrations004.sql
