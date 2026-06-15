@@ -255,7 +255,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 UnknownDNAMFloat = GetPropertyNullableDouble(record, "UnknownDNAMFloat"),
                 DNAMDataTypeState = FormatEnumerable(GetPropertyValue(record, "DNAMDataTypeState")),
                 Models = GetModels(plugin, RecordTypeCatalog.Static.RecordID, record.FormKey, record.Model),
-                Keywords = GetComponentKeywords(plugin, RecordTypeCatalog.Static.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
+                Keywords = GetRecordKeywordsFromNestedKeywordLists(plugin, RecordTypeCatalog.Static.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
                 RawPayloads = GetStaticRawPayloads(plugin, record.FormKey, record.Model, GetPropertyValue(record, "Components"))
             })
             .ToList();
@@ -349,7 +349,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Items = GetContainerItems(plugin, record.FormKey, GetPropertyValue(record, "Items")),
                 Models = GetModels(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, record.Model),
                 Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, record.Keywords)
-                    .Concat(GetComponentKeywords(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, GetPropertyValue(record, "Components")))
+                    .Concat(GetRecordKeywordsFromNestedKeywordLists(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, GetPropertyValue(record, "Components")))
                     .Select((keyword, keywordIndex) =>
                     {
                         keyword.KeywordIndex = keywordIndex;
@@ -382,7 +382,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 LearnMethod = GetPropertyValue(record, "LearnMethod")?.ToString(),
                 Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
                 Components = GetConstructibleObjectComponents(plugin, record.FormKey, GetPropertyValue(record, "ConstructableComponents")),
-                Categories = GetConstructibleObjectCategories(plugin, record.FormKey, "RecipeFilter", GetPropertyValue(record, "RecipeFilters")),
+                RecipeFilters = GetConstructibleObjectRecipeFilters(plugin, record.FormKey, GetPropertyValue(record, "RecipeFilters")),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ConstructibleObject.RecordID, record),
                 RawPayloads = GetConstructibleObjectRawPayloads(plugin, record.FormKey, record)
             })
@@ -700,21 +700,21 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             .ToList();
     }
 
-    private static List<RecordKeywordDTO> GetComponentKeywords(PluginDTO plugin, string recordType, FormKey formKey, object? components)
+    private static List<RecordKeywordDTO> GetRecordKeywordsFromNestedKeywordLists(PluginDTO plugin, string recordType, FormKey formKey, object? keywordSources)
     {
-        if (components is not IEnumerable enumerable) return new List<RecordKeywordDTO>();
+        if (keywordSources is not IEnumerable enumerable) return new List<RecordKeywordDTO>();
 
         var importedAtUTC = DateTime.UtcNow;
         var keywords = new List<RecordKeywordDTO>();
-        foreach (var component in enumerable.Cast<object>())
+        foreach (var keywordSource in enumerable.Cast<object>())
         {
-            var componentKeywords = GetPropertyValue(component, "Keywords") as IEnumerable;
-            if (componentKeywords == null)
+            var nestedKeywords = GetPropertyValue(keywordSource, "Keywords") as IEnumerable;
+            if (nestedKeywords == null)
             {
                 continue;
             }
 
-            foreach (var keyword in componentKeywords.Cast<object>())
+            foreach (var keyword in nestedKeywords.Cast<object>())
             {
                 if (GetFormKeyFromObject(keyword) is not { } keywordFormKey)
                 {
@@ -752,11 +752,12 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                     plugin,
                     RecordTypeCatalog.Static.RecordID,
                     formKey,
-                    "Components.REFL",
+                    "BaseFormComponents.REFL",
                     component.index,
                     component.value.GetType().Name,
                     FormatHexValue(GetPropertyValue(component.value, "REFL")),
-                    importedAtUTC);
+                    importedAtUTC,
+                    "Components.REFL");
             }
         }
 
@@ -768,7 +769,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         var importedAtUTC = DateTime.UtcNow;
         var payloads = new List<RawRecordPayloadDTO>();
         AddRawPayload(payloads, plugin, RecordTypeCatalog.Book.RecordID, formKey, "Model.Data", 0, record.GetType().Name, FormatHexValue(GetPropertyValue(GetPropertyValue(record, "Model"), "Data")), importedAtUTC);
-        AddRawPayload(payloads, plugin, RecordTypeCatalog.Book.RecordID, formKey, "Components", 0, "Components", FormatEnumerable(GetPropertyValue(record, "Components")), importedAtUTC);
+        AddRawPayload(payloads, plugin, RecordTypeCatalog.Book.RecordID, formKey, "BaseFormComponents", 0, "Components", FormatEnumerable(GetPropertyValue(record, "Components")), importedAtUTC, "Components");
         return payloads;
     }
 
@@ -839,27 +840,26 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         };
     }
 
-    private static List<ConstructibleObjectCategoryDTO> GetConstructibleObjectCategories(PluginDTO plugin, FormKey formKey, string categorySlot, object? categories)
+    private static List<ConstructibleObjectRecipeFilterDTO> GetConstructibleObjectRecipeFilters(PluginDTO plugin, FormKey formKey, object? recipeFilters)
     {
-        if (categories is not IEnumerable enumerable) return new List<ConstructibleObjectCategoryDTO>();
+        if (recipeFilters is not IEnumerable enumerable) return new List<ConstructibleObjectRecipeFilterDTO>();
 
         var importedAtUTC = DateTime.UtcNow;
         return enumerable
             .Cast<object>()
-            .Select((category, categoryIndex) => GetFormKeyFromObject(category) is { } categoryFormKey
-                ? new ConstructibleObjectCategoryDTO
+            .Select((recipeFilter, recipeFilterIndex) => GetFormKeyFromObject(recipeFilter) is { } recipeFilterFormKey
+                ? new ConstructibleObjectRecipeFilterDTO
                 {
                     Game = SupportedGame.Starfield,
                     ModKey = plugin.ModKey,
                     FormKey = MapFormKey(formKey),
-                    CategoryFormKey = categoryFormKey,
-                    CategorySlot = categorySlot,
-                    CategoryIndex = categoryIndex,
+                    RecipeFilterFormKey = recipeFilterFormKey,
+                    RecipeFilterIndex = recipeFilterIndex,
                     ImportedAtUTC = importedAtUTC
                 }
                 : null)
-            .Where(category => category != null)
-            .Cast<ConstructibleObjectCategoryDTO>()
+            .Where(recipeFilter => recipeFilter != null)
+            .Cast<ConstructibleObjectRecipeFilterDTO>()
             .ToList();
     }
 
@@ -876,7 +876,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         var importedAtUTC = DateTime.UtcNow;
         var payloads = new List<RawRecordPayloadDTO>();
         AddRawPayload(payloads, plugin, RecordTypeCatalog.Container.RecordID, formKey, "Model.Data", 0, model?.GetType().Name ?? "Model", FormatHexValue(GetPropertyValue(model, "Data")), importedAtUTC);
-        AddComponentRawPayloads(payloads, plugin, RecordTypeCatalog.Container.RecordID, formKey, components, importedAtUTC);
+        AddBaseFormComponentRawPayloads(payloads, plugin, RecordTypeCatalog.Container.RecordID, formKey, components, importedAtUTC);
         return payloads;
     }
 
@@ -885,7 +885,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         var importedAtUTC = DateTime.UtcNow;
         var payloads = new List<RawRecordPayloadDTO>();
         AddRawPayload(payloads, plugin, RecordTypeCatalog.Door.RecordID, formKey, "Model.Data", 0, model?.GetType().Name ?? "Model", FormatHexValue(GetPropertyValue(model, "Data")), importedAtUTC);
-        AddComponentRawPayloads(payloads, plugin, RecordTypeCatalog.Door.RecordID, formKey, components, importedAtUTC);
+        AddBaseFormComponentRawPayloads(payloads, plugin, RecordTypeCatalog.Door.RecordID, formKey, components, importedAtUTC);
         return payloads;
     }
 
@@ -894,7 +894,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         var importedAtUTC = DateTime.UtcNow;
         var payloads = new List<RawRecordPayloadDTO>();
         AddRawPayload(payloads, plugin, RecordTypeCatalog.Terminal.RecordID, formKey, "Model.Data", 0, model?.GetType().Name ?? "Model", FormatHexValue(GetPropertyValue(model, "Data")), importedAtUTC);
-        AddComponentRawPayloads(payloads, plugin, RecordTypeCatalog.Terminal.RecordID, formKey, components, importedAtUTC);
+        AddBaseFormComponentRawPayloads(payloads, plugin, RecordTypeCatalog.Terminal.RecordID, formKey, components, importedAtUTC);
         return payloads;
     }
 
@@ -922,7 +922,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             .ToList();
     }
 
-    private static void AddComponentRawPayloads(
+    private static void AddBaseFormComponentRawPayloads(
         ICollection<RawRecordPayloadDTO> payloads,
         PluginDTO plugin,
         string recordType,
@@ -941,7 +941,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             foreach (var property in component.value.GetType().GetProperties())
             {
                 var propertyName = property.Name;
-                if (!IsRawComponentPayloadProperty(propertyName))
+                if (!IsRawBaseFormComponentPayloadProperty(propertyName))
                 {
                     continue;
                 }
@@ -951,16 +951,17 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                     plugin,
                     recordType,
                     formKey,
-                    $"Components.{componentType}.{propertyName}",
+                    $"BaseFormComponents.{componentType}.{propertyName}",
                     component.index,
                     componentType,
                     FormatHexValue(property.GetValue(component.value)),
-                    importedAtUTC);
+                    importedAtUTC,
+                    $"Components.{componentType}.{propertyName}");
             }
         }
     }
 
-    private static bool IsRawComponentPayloadProperty(string propertyName)
+    private static bool IsRawBaseFormComponentPayloadProperty(string propertyName)
     {
         return propertyName is "ANAM" or "BNAM" or "CNAM" or "REFL";
     }
@@ -974,7 +975,8 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         int payloadIndex,
         string payloadType,
         string? payloadValue,
-        DateTime importedAtUTC)
+        DateTime importedAtUTC,
+        string? sourcePath = null)
     {
         if (string.IsNullOrWhiteSpace(payloadValue))
         {
@@ -990,6 +992,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             PayloadSlot = payloadSlot,
             PayloadIndex = payloadIndex,
             PayloadType = payloadType,
+            SourcePath = sourcePath ?? payloadSlot,
             PayloadValue = payloadValue,
             ImportedAtUTC = importedAtUTC
         });

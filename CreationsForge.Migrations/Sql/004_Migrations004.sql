@@ -72,27 +72,52 @@ CREATE TABLE ConstructibleObjectCategories
     FormKey_ModKey_Type             INTEGER NOT NULL,
     FormKey_ModKey_FileName         TEXT    NOT NULL,
     FormKey_ID                      INTEGER NOT NULL,
-    CategorySlot                    TEXT    NOT NULL,
     Category_Index                  INTEGER NOT NULL,
     Category_ModKey_Name            TEXT    NOT NULL,
     Category_ModKey_Type            INTEGER NOT NULL,
     Category_ModKey_FileName        TEXT    NOT NULL,
     Category_FormKey_ID             INTEGER NOT NULL,
     ImportedAtUTC                   TEXT    NOT NULL,
-    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, CategorySlot, Category_Index),
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Category_Index),
     FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
         REFERENCES ConstructibleObjects (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
     CHECK (FormKey_ID >= 0),
-    CHECK (CategorySlot <> ''),
     CHECK (Category_Index >= 0),
     CHECK (Category_FormKey_ID >= 0)
 );
+
+CREATE TABLE ConstructibleObjectRecipeFilters
+(
+    Game                            TEXT    NOT NULL,
+    ModKey_Name                     TEXT    NOT NULL,
+    ModKey_Type                     INTEGER NOT NULL,
+    ModKey_FileName                 TEXT    NOT NULL,
+    FormKey_ModKey_Name             TEXT    NOT NULL,
+    FormKey_ModKey_Type             INTEGER NOT NULL,
+    FormKey_ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ID                      INTEGER NOT NULL,
+    RecipeFilter_Index              INTEGER NOT NULL,
+    RecipeFilter_ModKey_Name        TEXT    NOT NULL,
+    RecipeFilter_ModKey_Type        INTEGER NOT NULL,
+    RecipeFilter_ModKey_FileName    TEXT    NOT NULL,
+    RecipeFilter_FormKey_ID         INTEGER NOT NULL,
+    ImportedAtUTC                   TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, RecipeFilter_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES ConstructibleObjects (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (RecipeFilter_Index >= 0),
+    CHECK (RecipeFilter_FormKey_ID >= 0)
+);
+
+ALTER TABLE RawRecordPayloads ADD COLUMN SourcePath TEXT NULL;
 
 CREATE INDEX IX_ConstructibleObjects_FormKey ON ConstructibleObjects (Game, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
 CREATE INDEX IX_ConstructibleObjects_Game_Plugin ON ConstructibleObjects (Game, ModKey_Name COLLATE NOCASE, ModKey_Type, ModKey_FileName COLLATE NOCASE, EditorID COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_ConstructibleObjects_Game_FormKey_Collated ON ConstructibleObjects (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_ConstructibleObjectComponents_Game_FormKey ON ConstructibleObjectComponents (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_ConstructibleObjectCategories_Game_FormKey ON ConstructibleObjectCategories (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+CREATE INDEX IX_ConstructibleObjectRecipeFilters_Game_FormKey ON ConstructibleObjectRecipeFilters (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 
 UPDATE Plugins
 SET ImportState = 'Changed',

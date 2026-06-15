@@ -27,6 +27,8 @@ public class ConstructibleObjectDTO : RecordDTO, IHasScriptingAdaptersRecordDTO,
 
     public IList<ConstructibleObjectCategoryDTO> Categories { get; set; } = new List<ConstructibleObjectCategoryDTO>();
 
+    public IList<ConstructibleObjectRecipeFilterDTO> RecipeFilters { get; set; } = new List<ConstructibleObjectRecipeFilterDTO>();
+
     public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 
     public IList<RawRecordPayloadDTO> RawPayloads { get; set; } = new List<RawRecordPayloadDTO>();

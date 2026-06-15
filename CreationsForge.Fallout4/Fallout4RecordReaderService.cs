@@ -403,7 +403,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 WorkbenchKeywordFormKey = GetLinkedFormKey(record, "WorkbenchKeyword"),
                 CreatedObjectCount = GetFirstCount(GetPropertyValue(record, "CreatedObjectCounts")),
                 Components = GetConstructibleObjectComponents(plugin, GetRequiredRawFormKey(record), GetPropertyValue(record, "Components")),
-                Categories = GetConstructibleObjectCategories(plugin, GetRequiredRawFormKey(record), "Category", GetPropertyValue(record, "Categories")),
+                Categories = GetConstructibleObjectCategories(plugin, GetRequiredRawFormKey(record), GetPropertyValue(record, "Categories")),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ConstructibleObject.RecordID, record),
                 RawPayloads = GetConstructibleObjectRawPayloads(plugin, GetRequiredRawFormKey(record), record)
             })
@@ -624,7 +624,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         };
     }
 
-    private static List<ConstructibleObjectCategoryDTO> GetConstructibleObjectCategories(PluginDTO plugin, FormKey formKey, string categorySlot, object? categories)
+    private static List<ConstructibleObjectCategoryDTO> GetConstructibleObjectCategories(PluginDTO plugin, FormKey formKey, object? categories)
     {
         if (categories is not IEnumerable enumerable) return new List<ConstructibleObjectCategoryDTO>();
 
@@ -638,7 +638,6 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                     ModKey = plugin.ModKey,
                     FormKey = MapFormKey(formKey),
                     CategoryFormKey = categoryFormKey,
-                    CategorySlot = categorySlot,
                     CategoryIndex = categoryIndex,
                     ImportedAtUTC = importedAtUTC
                 }
@@ -685,6 +684,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             PayloadSlot = "Model.Data",
             PayloadIndex = 0,
             PayloadType = model?.GetType().Name ?? "Model",
+            SourcePath = "Model.Data",
             PayloadValue = payloadValue,
             ImportedAtUTC = DateTime.UtcNow
         });
@@ -716,6 +716,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             PayloadSlot = payloadSlot,
             PayloadIndex = payloadIndex,
             PayloadType = payloadType,
+            SourcePath = payloadSlot,
             PayloadValue = payloadValue,
             ImportedAtUTC = importedAtUTC
         });

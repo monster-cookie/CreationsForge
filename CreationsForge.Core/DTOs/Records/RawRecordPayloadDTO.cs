@@ -19,6 +19,8 @@ public class RawRecordPayloadDTO
 
     public required string PayloadType { get; set; }
 
+    public string? SourcePath { get; set; }
+
     public string? PayloadValue { get; set; }
 
     public required DateTime ImportedAtUTC { get; set; }

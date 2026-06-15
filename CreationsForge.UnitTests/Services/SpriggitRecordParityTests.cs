@@ -209,6 +209,16 @@ public class SpriggitRecordParityTests
                     constructibleObjectRecord.Components.Count.ShouldBe(expectedComponentCount, $"ConstructibleObject '{record.EditorID}' should preserve component counts.");
                 }
 
+                if (sample.GetListItemCount("RecipeFilters") > 0)
+                {
+                    constructibleObjectRecord.RecipeFilters.Count.ShouldBe(sample.GetListItemCount("RecipeFilters"), $"ConstructibleObject '{record.EditorID}' should preserve RecipeFilters.");
+                }
+
+                if (sample.GetListItemCount("Categories") > 0)
+                {
+                    constructibleObjectRecord.Categories.Count.ShouldBe(sample.GetListItemCount("Categories"), $"ConstructibleObject '{record.EditorID}' should preserve Categories.");
+                }
+
                 if (sample.HasPath("AmountProduced"))
                 {
                     AssertNullableIntProperty(record, sample, "AmountProduced", "AmountProduced");

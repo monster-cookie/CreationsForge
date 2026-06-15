@@ -99,12 +99,13 @@ and the generic `Data` value. Globals display `Data`. `MISC`, `KYWD`, `AVIF`, `N
 `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM` comparisons display their currently persisted scalar parent fields and
 record-reference fields. PERK comparison displays rank rows, nested rank-effect rows, background skill rows, and
 shared scripting adapter rows. `MISC`, `NPC_`, `MGEF`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM` comparisons display
-shared child rows when those payloads are persisted. `COBJ` comparison displays component and category/filter rows.
+shared child rows when those payloads are persisted. `COBJ` comparison displays component, Fallout 4 category, and
+Starfield recipe-filter rows.
 `TERM` comparison also displays marker parameter child rows.
 MGEF DATA follows Mutagen/Spriggit's flattened record shape and displays as flat rows. Child comparison data such as
-keywords, models, sounds, scripts, raw payloads, items, constructible object components, category/filter links, perk
-ranks, perk rank effects, perk background skills, and terminal marker parameters is represented as hierarchical rows
-in the comparison TreeDataGrid instead of flattened dotted field names.
+keywords, models, sounds, scripts, raw payloads, items, constructible object components, Fallout 4 COBJ category
+links, Starfield COBJ recipe-filter links, perk ranks, perk rank effects, perk background skills, and terminal marker
+parameters is represented as hierarchical rows in the comparison TreeDataGrid instead of flattened dotted field names.
 
 Comparable comparison rows are highlighted green when all visible plugin values match and red when any visible plugin
 value differs. Blank values count as values. Single-column comparisons and non-comparable informational rows remain
@@ -161,9 +162,14 @@ Sounds represent Spriggit-style sound payloads. Shared sound rows are linked to 
 record type and parent FormKey. `MISC` maps named scalar sounds such as `CraftingSound`, `PickupSound`, and
 `DropdownSound`; `MGEF` maps indexed typed sound entries such as `OnHit`, `Release`, and `Charge`.
 
-Constructible object components and category/filter links are stored in COBJ-specific child tables. Skyrim maps COBJ
-`Items`, Fallout 4 maps `Components` and `Categories`, and Starfield maps `ConstructableComponents` and
-`RecipeFilters`. COBJ conditions are preserved through raw payload rows.
+Constructible object components, categories, and recipe filters are stored in COBJ-specific child tables. Skyrim maps
+COBJ `Items`, Fallout 4 maps `Components` and `Categories`, and Starfield maps `ConstructableComponents` and
+`RecipeFilters`. COBJ conditions are preserved through raw payload rows. The COBJ `Components` term is intentionally
+kept distinct from shared Bethesda base-form components.
+
+Shared Bethesda base-form component payloads use the internal `BaseFormComponents` name when persisted as raw payload
+slots. The original Mutagen/Spriggit source path, such as `Components.AnimationGraphComponent.ANAM`, is retained in
+`RawRecordPayloads.SourcePath` for future writer/export work.
 
 Magic Effect DATA represents flattened Starfield `MGEF` properties exposed by Mutagen/Spriggit. Those fields are
 persisted directly on `MagicEffects` and displayed as flat comparison rows.

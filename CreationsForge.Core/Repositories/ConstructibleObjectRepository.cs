@@ -43,6 +43,7 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
             .ToList();
         var components = FetchComponentsByFormKey(game, formKey);
         var categories = FetchCategoriesByFormKey(game, formKey);
+        var recipeFilters = FetchRecipeFiltersByFormKey(game, formKey);
         foreach (var record in records)
         {
             record.Components = components
@@ -51,8 +52,11 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
                 .ToList();
             record.Categories = categories
                 .Where(category => IsSameModKey(category.ModKey, record.ModKey))
-                .OrderBy(category => category.CategorySlot)
-                .ThenBy(category => category.CategoryIndex)
+                .OrderBy(category => category.CategoryIndex)
+                .ToList();
+            record.RecipeFilters = recipeFilters
+                .Where(recipeFilter => IsSameModKey(recipeFilter.ModKey, record.ModKey))
+                .OrderBy(recipeFilter => recipeFilter.RecipeFilterIndex)
                 .ToList();
         }
 
@@ -107,6 +111,7 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
             });
         ReplaceComponents(dto);
         ReplaceCategories(dto);
+        ReplaceRecipeFilters(dto);
     }
 
     private IReadOnlyList<ConstructibleObjectComponentDTO> FetchComponentsByFormKey(SupportedGame game, FormKeyDTO formKey)
@@ -145,7 +150,32 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
                   AND FormKey_ModKey_Type = @FormKeyModKeyType
                   AND FormKey_ModKey_FileName = @FormKeyModKeyFileName COLLATE NOCASE
                   AND FormKey_ID = @FormKeyId
-                ORDER BY ModKey_FileName COLLATE NOCASE, CategorySlot COLLATE NOCASE, Category_Index;
+                ORDER BY ModKey_FileName COLLATE NOCASE, Category_Index;
+                """,
+                new
+                {
+                    Game = game.ToString(),
+                    FormKeyModKeyName = formKey.ModKey.Name,
+                    FormKeyModKeyType = formKey.ModKey.Type,
+                    FormKeyModKeyFileName = formKey.ModKey.FileName,
+                    FormKeyId = formKey.Id
+                })
+            .Select(row => ToDTO(row, game))
+            .ToList();
+    }
+
+    private IReadOnlyList<ConstructibleObjectRecipeFilterDTO> FetchRecipeFiltersByFormKey(SupportedGame game, FormKeyDTO formKey)
+    {
+        return Database.Fetch<ConstructibleObjectRecipeFilterRow>(
+                """
+                SELECT *
+                FROM ConstructibleObjectRecipeFilters
+                WHERE Game = @Game
+                  AND FormKey_ModKey_Name = @FormKeyModKeyName COLLATE NOCASE
+                  AND FormKey_ModKey_Type = @FormKeyModKeyType
+                  AND FormKey_ModKey_FileName = @FormKeyModKeyFileName COLLATE NOCASE
+                  AND FormKey_ID = @FormKeyId
+                ORDER BY ModKey_FileName COLLATE NOCASE, RecipeFilter_Index;
                 """,
                 new
                 {
@@ -231,10 +261,10 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
                 """
                 INSERT OR REPLACE INTO ConstructibleObjectCategories (
                     Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                    CategorySlot, Category_Index, Category_ModKey_Name, Category_ModKey_Type, Category_ModKey_FileName, Category_FormKey_ID, ImportedAtUTC)
+                    Category_Index, Category_ModKey_Name, Category_ModKey_Type, Category_ModKey_FileName, Category_FormKey_ID, ImportedAtUTC)
                 VALUES (
                     @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                    @CategorySlot, @CategoryIndex, @CategoryModKeyName, @CategoryModKeyType, @CategoryModKeyFileName, @CategoryFormKeyId, @ImportedAtUTC);
+                    @CategoryIndex, @CategoryModKeyName, @CategoryModKeyType, @CategoryModKeyFileName, @CategoryFormKeyId, @ImportedAtUTC);
                 """,
                 new
                 {
@@ -246,13 +276,60 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
                     FormKeyModKeyType = category.FormKey.ModKey.Type,
                     FormKeyModKeyFileName = category.FormKey.ModKey.FileName,
                     FormKeyId = category.FormKey.Id,
-                    category.CategorySlot,
                     category.CategoryIndex,
                     CategoryModKeyName = category.CategoryFormKey.ModKey.Name,
                     CategoryModKeyType = category.CategoryFormKey.ModKey.Type,
                     CategoryModKeyFileName = category.CategoryFormKey.ModKey.FileName,
                     CategoryFormKeyId = category.CategoryFormKey.Id,
                     category.ImportedAtUTC
+                });
+        }
+    }
+
+    private void ReplaceRecipeFilters(ConstructibleObjectDTO dto)
+    {
+        Database.Execute(
+            """
+            DELETE FROM ConstructibleObjectRecipeFilters
+            WHERE Game = @Game
+              AND ModKey_Name = @ModKeyName
+              AND ModKey_Type = @ModKeyType
+              AND ModKey_FileName = @ModKeyFileName
+              AND FormKey_ModKey_Name = @FormKeyModKeyName
+              AND FormKey_ModKey_Type = @FormKeyModKeyType
+              AND FormKey_ModKey_FileName = @FormKeyModKeyFileName
+              AND FormKey_ID = @FormKeyId;
+            """,
+            CommonParameters(dto));
+
+        foreach (var recipeFilter in dto.RecipeFilters)
+        {
+            recipeFilter.ImportedAtUTC = dto.ImportedAtUTC;
+            Database.Execute(
+                """
+                INSERT OR REPLACE INTO ConstructibleObjectRecipeFilters (
+                    Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
+                    RecipeFilter_Index, RecipeFilter_ModKey_Name, RecipeFilter_ModKey_Type, RecipeFilter_ModKey_FileName, RecipeFilter_FormKey_ID, ImportedAtUTC)
+                VALUES (
+                    @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
+                    @RecipeFilterIndex, @RecipeFilterModKeyName, @RecipeFilterModKeyType, @RecipeFilterModKeyFileName, @RecipeFilterFormKeyId, @ImportedAtUTC);
+                """,
+                new
+                {
+                    Game = recipeFilter.Game.ToString(),
+                    ModKeyName = recipeFilter.ModKey.Name,
+                    ModKeyType = recipeFilter.ModKey.Type,
+                    ModKeyFileName = recipeFilter.ModKey.FileName,
+                    FormKeyModKeyName = recipeFilter.FormKey.ModKey.Name,
+                    FormKeyModKeyType = recipeFilter.FormKey.ModKey.Type,
+                    FormKeyModKeyFileName = recipeFilter.FormKey.ModKey.FileName,
+                    FormKeyId = recipeFilter.FormKey.Id,
+                    recipeFilter.RecipeFilterIndex,
+                    RecipeFilterModKeyName = recipeFilter.RecipeFilterFormKey.ModKey.Name,
+                    RecipeFilterModKeyType = recipeFilter.RecipeFilterFormKey.ModKey.Type,
+                    RecipeFilterModKeyFileName = recipeFilter.RecipeFilterFormKey.ModKey.FileName,
+                    RecipeFilterFormKeyId = recipeFilter.RecipeFilterFormKey.Id,
+                    recipeFilter.ImportedAtUTC
                 });
         }
     }
@@ -304,8 +381,20 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
             ModKey = CreateModKey(row.ModKeyName, row.ModKeyType, row.ModKeyFileName),
             FormKey = CreateFormKey(row.FormKeyModKeyName, row.FormKeyModKeyType, row.FormKeyModKeyFileName, row.FormKeyId),
             CategoryFormKey = CreateFormKey(row.CategoryModKeyName, row.CategoryModKeyType, row.CategoryModKeyFileName, row.CategoryFormKeyId),
-            CategorySlot = row.CategorySlot,
             CategoryIndex = row.CategoryIndex,
+            ImportedAtUTC = row.ImportedAtUTC
+        };
+    }
+
+    private static ConstructibleObjectRecipeFilterDTO ToDTO(ConstructibleObjectRecipeFilterRow row, SupportedGame game)
+    {
+        return new ConstructibleObjectRecipeFilterDTO
+        {
+            Game = game,
+            ModKey = CreateModKey(row.ModKeyName, row.ModKeyType, row.ModKeyFileName),
+            FormKey = CreateFormKey(row.FormKeyModKeyName, row.FormKeyModKeyType, row.FormKeyModKeyFileName, row.FormKeyId),
+            RecipeFilterFormKey = CreateFormKey(row.RecipeFilterModKeyName, row.RecipeFilterModKeyType, row.RecipeFilterModKeyFileName, row.RecipeFilterFormKeyId),
+            RecipeFilterIndex = row.RecipeFilterIndex,
             ImportedAtUTC = row.ImportedAtUTC
         };
     }
@@ -416,8 +505,6 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
 
         public long FormKeyId { get; set; }
 
-        public string CategorySlot { get; set; } = string.Empty;
-
         public int CategoryIndex { get; set; }
 
         public string CategoryModKeyName { get; set; } = string.Empty;
@@ -427,6 +514,35 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
         public string CategoryModKeyFileName { get; set; } = string.Empty;
 
         public long CategoryFormKeyId { get; set; }
+
+        public DateTime ImportedAtUTC { get; set; }
+    }
+
+    private sealed class ConstructibleObjectRecipeFilterRow
+    {
+        public string ModKeyName { get; set; } = string.Empty;
+
+        public int ModKeyType { get; set; }
+
+        public string ModKeyFileName { get; set; } = string.Empty;
+
+        public string FormKeyModKeyName { get; set; } = string.Empty;
+
+        public int FormKeyModKeyType { get; set; }
+
+        public string FormKeyModKeyFileName { get; set; } = string.Empty;
+
+        public long FormKeyId { get; set; }
+
+        public int RecipeFilterIndex { get; set; }
+
+        public string RecipeFilterModKeyName { get; set; } = string.Empty;
+
+        public int RecipeFilterModKeyType { get; set; }
+
+        public string RecipeFilterModKeyFileName { get; set; } = string.Empty;
+
+        public long RecipeFilterFormKeyId { get; set; }
 
         public DateTime ImportedAtUTC { get; set; }
     }

@@ -436,6 +436,7 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
         AddConstructibleObjectComponentGroups(fields, records);
         AddConstructibleObjectCategoryGroups(fields, records);
+        AddConstructibleObjectRecipeFilterGroups(fields, records);
         AddScriptingAdapterGroups(fields, baseRecords, ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.ConstructibleObject.RecordID, formKey));
         AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.ConstructibleObject.RecordID, formKey));
 
@@ -876,10 +877,9 @@ public class RecordComparisonService : IRecordComparisonService
     {
         var categoryKeys = records
             .SelectMany(record => record.Categories)
-            .Select(category => new CategoryKey(category.CategorySlot, category.CategoryIndex))
+            .Select(category => category.CategoryIndex)
             .Distinct()
-            .OrderBy(key => key.Slot, StringComparer.Ordinal)
-            .ThenBy(key => key.Index)
+            .Order()
             .ToList();
         if (categoryKeys.Count == 0)
         {
@@ -887,23 +887,61 @@ public class RecordComparisonService : IRecordComparisonService
         }
 
         var categoryFields = new List<RecordComparisonFieldDTO>();
-        foreach (var categoryKey in categoryKeys)
+        foreach (var categoryIndex in categoryKeys)
         {
+            var currentIndex = categoryIndex;
             var categoryChildren = new List<RecordComparisonFieldDTO>
             {
-                CreateField("CategoryFormKey", records, record => FormatFormKey(FindConstructibleObjectCategory(record, categoryKey)?.CategoryFormKey))
+                CreateField("CategoryFormKey", records, record => FormatFormKey(record.Categories.FirstOrDefault(category => category.CategoryIndex == currentIndex)?.CategoryFormKey))
             }
                 .Where(HasVisibleValue)
                 .ToList();
             if (categoryChildren.Count > 0)
             {
-                categoryFields.Add(CreateGroupField(GetConstructibleObjectCategoryGroupName(categoryKey), records.Cast<RecordDTO>().ToList(), categoryChildren));
+                categoryFields.Add(CreateGroupField($"Category [{categoryIndex}]", records.Cast<RecordDTO>().ToList(), categoryChildren));
             }
         }
 
         if (categoryFields.Count > 0)
         {
             fields.Add(CreateGroupField("Categories", records.Cast<RecordDTO>().ToList(), categoryFields));
+        }
+    }
+
+    private static void AddConstructibleObjectRecipeFilterGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<ConstructibleObjectDTO> records)
+    {
+        var recipeFilterIndexes = records
+            .SelectMany(record => record.RecipeFilters)
+            .Select(recipeFilter => recipeFilter.RecipeFilterIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (recipeFilterIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var recipeFilterFields = new List<RecordComparisonFieldDTO>();
+        foreach (var recipeFilterIndex in recipeFilterIndexes)
+        {
+            var currentIndex = recipeFilterIndex;
+            var recipeFilterChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("RecipeFilterFormKey", records, record => FormatFormKey(record.RecipeFilters.FirstOrDefault(recipeFilter => recipeFilter.RecipeFilterIndex == currentIndex)?.RecipeFilterFormKey))
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (recipeFilterChildren.Count > 0)
+            {
+                recipeFilterFields.Add(CreateGroupField($"RecipeFilter [{recipeFilterIndex}]", records.Cast<RecordDTO>().ToList(), recipeFilterChildren));
+            }
+        }
+
+        if (recipeFilterFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("RecipeFilters", records.Cast<RecordDTO>().ToList(), recipeFilterFields));
         }
     }
 
@@ -1113,13 +1151,6 @@ public class RecordComparisonService : IRecordComparisonService
             payload.PayloadIndex == payloadKey.Index);
     }
 
-    private static ConstructibleObjectCategoryDTO? FindConstructibleObjectCategory(ConstructibleObjectDTO record, CategoryKey categoryKey)
-    {
-        return record.Categories.FirstOrDefault(category =>
-            string.Equals(category.CategorySlot, categoryKey.Slot, StringComparison.Ordinal) &&
-            category.CategoryIndex == categoryKey.Index);
-    }
-
     private static PerkRankDTO? FindPerkRank(PerkDTO record, int rankIndex)
     {
         return record.Ranks.FirstOrDefault(rank => rank.RankIndex == rankIndex);
@@ -1257,13 +1288,6 @@ public class RecordComparisonService : IRecordComparisonService
             : $"{payloadKey.Slot} [{payloadKey.Index}]";
     }
 
-    private static string GetConstructibleObjectCategoryGroupName(CategoryKey categoryKey)
-    {
-        return categoryKey.Index == 0
-            ? categoryKey.Slot
-            : $"{categoryKey.Slot} [{categoryKey.Index}]";
-    }
-
     private static bool IsSameModKey(ModKeyDTO first, ModKeyDTO second)
     {
         return first.Type == second.Type &&
@@ -1277,5 +1301,4 @@ public class RecordComparisonService : IRecordComparisonService
 
     private sealed record RawPayloadKey(string Slot, int Index);
 
-    private sealed record CategoryKey(string Slot, int Index);
 }

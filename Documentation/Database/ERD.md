@@ -573,12 +573,28 @@ erDiagram
         INTEGER FormKey_ModKey_Type PK, FK
         TEXT FormKey_ModKey_FileName PK, FK
         INTEGER FormKey_ID PK, FK
-        TEXT CategorySlot PK
         INTEGER Category_Index PK
         TEXT Category_ModKey_Name
         INTEGER Category_ModKey_Type
         TEXT Category_ModKey_FileName
         INTEGER Category_FormKey_ID
+        TEXT ImportedAtUTC
+    }
+
+    ConstructibleObjectRecipeFilters {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER RecipeFilter_Index PK
+        TEXT RecipeFilter_ModKey_Name
+        INTEGER RecipeFilter_ModKey_Type
+        TEXT RecipeFilter_ModKey_FileName
+        INTEGER RecipeFilter_FormKey_ID
         TEXT ImportedAtUTC
     }
 
@@ -785,6 +801,7 @@ erDiagram
         TEXT PayloadSlot PK
         INTEGER Payload_Index PK
         TEXT PayloadType
+        TEXT SourcePath
         TEXT PayloadValue
         TEXT ImportedAtUTC
     }
@@ -905,6 +922,7 @@ erDiagram
     RecordInstances ||--o| ConstructibleObjects : "typed detail"
     ConstructibleObjects ||--o{ ConstructibleObjectComponents : contains
     ConstructibleObjects ||--o{ ConstructibleObjectCategories : contains
+    ConstructibleObjects ||--o{ ConstructibleObjectRecipeFilters : contains
     RecordInstances ||--o| Terminals : "typed detail"
     Terminals ||--o{ TerminalMarkerParameters : contains
     RecordInstances ||--o{ RecordKeywords : contains
@@ -957,6 +975,8 @@ These columns contain record-reference data but are not declared SQLite foreign 
   `Component_ModKey_FileName`, and `Component_FormKey_ID`
 - `ConstructibleObjectCategories.Category_ModKey_Name`, `Category_ModKey_Type`,
   `Category_ModKey_FileName`, and `Category_FormKey_ID`
+- `ConstructibleObjectRecipeFilters.RecipeFilter_ModKey_Name`, `RecipeFilter_ModKey_Type`,
+  `RecipeFilter_ModKey_FileName`, and `RecipeFilter_FormKey_ID`
 - `ModelMaterialSwaps.MaterialSwap_ModKey_Name`, `MaterialSwap_ModKey_Type`, `MaterialSwap_ModKey_FileName`,
   and `MaterialSwap_FormKey_ID`
 - `RecordKeywords.Keyword_ModKey_Name`, `Keyword_ModKey_Type`, `Keyword_ModKey_FileName`, and `Keyword_FormKey_ID`

@@ -279,10 +279,10 @@ The `MISC` slice currently persists parent scalar fields, keyword rows, model ro
 slice persists parent scalar fields, keyword rows, model rows, sounds, scripts, and raw payloads. The `DOOR` slice
 persists parent scalar fields, keyword rows, model rows, sounds, and raw payloads. The `CONT` slice persists parent
 scalar fields, item rows, keyword rows, model rows, sounds, and raw payloads. The `COBJ` slice persists parent scalar
-fields, recipe component rows, category/filter rows, scripts when present, and raw payloads for conditions and
-partially understood count/list data. The `TERM` slice persists parent scalar fields, keyword rows, model rows,
-scripts, raw payloads, and marker parameter rows. The old single-game app's deeper MiscObject child-detail tables are
-still a separate follow-up.
+fields, recipe component rows, Fallout 4 category rows, Starfield recipe-filter rows, scripts when present, and raw
+payloads for conditions and partially understood count/list data. The `TERM` slice persists parent scalar fields,
+keyword rows, model rows, scripts, raw payloads, and marker parameter rows. The old single-game app's deeper
+MiscObject child-detail tables are still a separate follow-up.
 Scripting adapters are persisted against the shared `RecordInstances` parent using record type IDs such as `GLOB`,
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`.
 
@@ -302,11 +302,13 @@ Raw payload persistence is shared in Core through `IRawRecordPayloadImportServic
 `IRecordChildImportService` invokes raw payload persistence for any imported `RecordDTO` that implements the raw
 payload capability interface. The current populated slices are `STAT`, `CONT`, `BOOK`, `DOOR`, `TERM`, and `COBJ`:
 Starfield, Fallout 4, and Skyrim preserve opaque `Model.Data` payloads where present, and COBJ preserves condition
-payloads because the current schema does not model the full Mutagen condition tree. Starfield also preserves component
-`REFL` payload bytes when present.
-Starfield `CONT` import preserves component subfields such as `Components.AnimationGraphComponent.ANAM`, `BNAM`, and
-`CNAM` when Mutagen exposes them through reflection. Comparison DTOs keep the full payload value as detail data while
-exposing a summarized display label for the UI hex viewer.
+payloads because the current schema does not model the full Mutagen condition tree. Starfield also preserves shared
+base-form component payload bytes when present.
+Starfield `CONT` import stores shared Bethesda base-form component payloads under internal
+`BaseFormComponents.*` slots while preserving the source Mutagen/Spriggit `Components.*` path in
+`RawRecordPayloads.SourcePath`. Ordinary keyword rows discovered through nested component-shaped objects remain
+`RecordKeywords`; they are not treated as base-form component payload rows. Comparison DTOs keep the full payload value
+as detail data while exposing a summarized display label for the UI hex viewer.
 
 Sound persistence is shared in Core through `IRecordSoundImportService` and `RecordSounds`. `IRecordChildImportService`
 invokes sound persistence for any imported `RecordDTO` that implements the sound capability interface. `MISC` maps

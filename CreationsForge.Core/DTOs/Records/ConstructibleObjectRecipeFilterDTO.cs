@@ -3,7 +3,7 @@ using CreationsForge.Core.Enums;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class ConstructibleObjectCategoryDTO
+public class ConstructibleObjectRecipeFilterDTO
 {
     public required SupportedGame Game { get; set; }
 
@@ -11,9 +11,9 @@ public class ConstructibleObjectCategoryDTO
 
     public required FormKeyDTO FormKey { get; set; }
 
-    public required FormKeyDTO CategoryFormKey { get; set; }
+    public required FormKeyDTO RecipeFilterFormKey { get; set; }
 
-    public int CategoryIndex { get; set; }
+    public int RecipeFilterIndex { get; set; }
 
     public DateTime ImportedAtUTC { get; set; }
 }

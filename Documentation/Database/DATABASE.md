@@ -10,14 +10,15 @@ The application uses a local SQLite database. The schema is defined by embedded 
   `Containers` typed record tables, `ContainerItems`, and `RawRecordPayloads`.
 - `003_Migrations003.sql` renames `MiscObjects` to `MiscItems` and adds the `Books`, `Doors`, `Terminals`, and
   `TerminalMarkerParameters` tables.
-- `004_Migrations004.sql` adds the `ConstructibleObjects`, `ConstructibleObjectComponents`, and
-  `ConstructibleObjectCategories` tables and marks existing current or partially imported plugin rows as `Changed`
-  so each supported game reimports cached plugin data after the migration.
+- `004_Migrations004.sql` adds the `ConstructibleObjects`, `ConstructibleObjectComponents`,
+  `ConstructibleObjectCategories`, and `ConstructibleObjectRecipeFilters` tables, adds `RawRecordPayloads.SourcePath`,
+  and marks existing current or partially imported plugin rows as `Changed` so each supported game reimports cached
+  plugin data after the migration.
 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains forty tables:
+The application schema contains forty-one tables:
 
 - `Games`
 - `Plugins`
@@ -44,6 +45,7 @@ The application schema contains forty tables:
 - `ConstructibleObjects`
 - `ConstructibleObjectComponents`
 - `ConstructibleObjectCategories`
+- `ConstructibleObjectRecipeFilters`
 - `Terminals`
 - `TerminalMarkerParameters`
 - `RecordKeywords`
@@ -573,9 +575,10 @@ Persistence behavior:
   sound rows, scripting adapters, and raw payload rows. `Doors` persist parent scalar rows, shared model rows,
   shared keyword rows, shared sound rows, and raw payload rows. `Containers` persist parent scalar rows, child item
   rows, shared model rows, shared keyword rows when present, shared sound rows when present, and raw opaque payload
-  rows. `ConstructibleObjects` persist parent scalar rows, component rows, category/filter rows, scripting adapters
-  when present, and raw opaque payload rows such as conditions and multi-count data. `Terminals` persist parent scalar
-  rows, shared model rows, shared keyword rows, scripting adapters, raw payload rows, and
+  rows. `ConstructibleObjects` persist parent scalar rows, component rows, Fallout 4 category rows, Starfield
+  recipe-filter rows, scripting adapters when present, and raw opaque payload rows such as conditions and multi-count
+  data. `Terminals` persist parent scalar rows, shared model rows, shared keyword rows, scripting adapters, raw
+  payload rows, and
   `TerminalMarkerParameters` rows. `NPCs` and `MagicEffects` persist shared keyword rows.
   `MagicEffects` persists shared sound rows and Spriggit-flattened DATA fields directly on the parent row.
 
@@ -641,11 +644,12 @@ Persistence behavior:
 
 ### ConstructibleObjectCategories
 
+Fallout 4 COBJ `Categories` rows are stored here.
+
 Columns:
 
 - Common containing plugin key columns listed above
 - typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
-- `CategorySlot` (`TEXT`, `NOT NULL`, primary key)
 - `Category_Index` (`INTEGER`, `NOT NULL`, primary key)
 - decomposed `Category_*` FormKey columns (`NOT NULL`)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
@@ -656,7 +660,6 @@ Foreign keys:
 
 Constraints:
 
-- `CategorySlot` must not be empty.
 - `Category_Index`, `Category_FormKey_ID`, and `FormKey_ID` must be greater than or equal to zero.
 
 Indexes:
@@ -666,9 +669,40 @@ Indexes:
 Persistence behavior:
 
 - Current imported rows are upserted after their owning constructible object row is saved.
-- Existing category/filter rows for the same constructible object are deleted before replacement so removed category
+- Existing Fallout 4 category rows for the same constructible object are deleted before replacement so removed category
   links do not remain stale.
-- Stale typed-record deletion removes category/filter rows through the declared `ConstructibleObjects` cascade.
+- Stale typed-record deletion removes category rows through the declared `ConstructibleObjects` cascade.
+
+### ConstructibleObjectRecipeFilters
+
+Starfield COBJ `RecipeFilters` rows are stored here.
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `RecipeFilter_Index` (`INTEGER`, `NOT NULL`, primary key)
+- decomposed `RecipeFilter_*` FormKey columns (`NOT NULL`)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `ConstructibleObjects` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `RecipeFilter_Index`, `RecipeFilter_FormKey_ID`, and `FormKey_ID` must be greater than or equal to zero.
+
+Indexes:
+
+- `IX_ConstructibleObjectRecipeFilters_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning constructible object row is saved.
+- Existing Starfield recipe-filter rows for the same constructible object are deleted before replacement so removed
+  filter links do not remain stale.
+- Stale typed-record deletion removes recipe-filter rows through the declared `ConstructibleObjects` cascade.
 
 ### TerminalMarkerParameters
 
@@ -841,6 +875,7 @@ Columns:
 - `PayloadSlot` (`TEXT`, `NOT NULL`, primary key)
 - `Payload_Index` (`INTEGER`, `NOT NULL`, primary key)
 - `PayloadType` (`TEXT`, `NOT NULL`)
+- `SourcePath` (`TEXT`, nullable)
 - `PayloadValue` (`TEXT`, nullable)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
@@ -865,8 +900,11 @@ Persistence behavior:
   stale.
 - Stale typed-record deletion removes raw payload rows through the declared `RecordInstances` cascade.
 - Current importers populate raw payload rows for Static model/component reflection payloads and Container
-  model/component reflection payloads, including Starfield container `ANAM`, `BNAM`, `CNAM`, and `REFL` component
-  subfields when Mutagen exposes them through reflection.
+  model/base-form-component reflection payloads, including Starfield container `ANAM`, `BNAM`, `CNAM`, and `REFL`
+  base-form-component subfields when Mutagen exposes them through reflection.
+- `PayloadSlot` stores the internal comparison/storage name. `SourcePath` stores the source Mutagen/Spriggit path
+  when it differs, such as `Components.AnimationGraphComponent.ANAM` for internal
+  `BaseFormComponents.AnimationGraphComponent.ANAM`.
 
 ### ScriptingAdapters
 
@@ -1023,6 +1061,8 @@ These columns carry record-reference identity but do not declare SQLite foreign 
   `Component_ModKey_FileName`, and `Component_FormKey_ID`
 - `ConstructibleObjectCategories.Category_ModKey_Name`, `Category_ModKey_Type`,
   `Category_ModKey_FileName`, and `Category_FormKey_ID`
+- `ConstructibleObjectRecipeFilters.RecipeFilter_ModKey_Name`, `RecipeFilter_ModKey_Type`,
+  `RecipeFilter_ModKey_FileName`, and `RecipeFilter_FormKey_ID`
 - `ModelMaterialSwaps.MaterialSwap_ModKey_Name`, `MaterialSwap_ModKey_Type`, `MaterialSwap_ModKey_FileName`,
   and `MaterialSwap_FormKey_ID`
 - `RecordKeywords.Keyword_ModKey_Name`, `Keyword_ModKey_Type`, `Keyword_ModKey_FileName`, and `Keyword_FormKey_ID`

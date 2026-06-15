@@ -648,6 +648,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             PayloadSlot = "Model.Data",
             PayloadIndex = 0,
             PayloadType = model?.GetType().Name ?? "Model",
+            SourcePath = "Model.Data",
             PayloadValue = payloadValue,
             ImportedAtUTC = DateTime.UtcNow
         });
@@ -679,6 +680,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             PayloadSlot = payloadSlot,
             PayloadIndex = payloadIndex,
             PayloadType = payloadType,
+            SourcePath = payloadSlot,
             PayloadValue = payloadValue,
             ImportedAtUTC = importedAtUTC
         });
