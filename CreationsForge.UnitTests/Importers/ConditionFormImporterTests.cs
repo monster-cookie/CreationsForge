@@ -13,12 +13,10 @@ namespace CreationsForge.UnitTests.Importers;
 public class ConditionFormImporterTests
 {
     [Fact]
-    public void Import_SavesConditionFormAndRawPayloads()
+    public void Import_SavesConditionFormAndStructuredConditions()
     {
         var plugin = CreatePlugin();
         var conditionForm = CreateConditionForm(plugin, 100);
-        var rawPayload = CreateRawPayload(plugin, conditionForm.FormKey);
-        conditionForm.RawPayloads.Add(rawPayload);
         var repository = new TestConditionFormRepository();
         var childImportService = new TestRecordChildImportService();
         var importer = new ConditionFormImporter(repository, childImportService);
@@ -31,6 +29,8 @@ public class ConditionFormImporterTests
         importer.TableName.ShouldBe("ConditionForms");
         importer.SupportedGames.ShouldBe([SupportedGame.Starfield], ignoreOrder: true);
         repository.Saved.ShouldBe([conditionForm]);
+        conditionForm.Conditions.Single().DataMutagenObjectType.ShouldBe("HasKeywordConditionData");
+        conditionForm.Conditions.Single().Parameters.Single().ParameterName.ShouldBe("FirstParameter");
         conditionForm.ImportedAtUTC.ShouldBe(importedAtUTC);
         childImportService.ReplaceRequests.ShouldBe([(conditionForm, RecordTypeCatalog.ConditionForm.RecordID)]);
         result.DetailRowsImported.ShouldBe(1);
@@ -79,24 +79,35 @@ public class ConditionFormImporterTests
             FormVersion = 1,
             MajorRecordFlags = 0,
             ImportedAtUTC = default,
-            Version2 = 1
-        };
-    }
-
-    private static RawRecordPayloadDTO CreateRawPayload(PluginDTO plugin, FormKeyDTO formKey)
-    {
-        return new RawRecordPayloadDTO
-        {
-            Game = plugin.Game,
-            ModKey = plugin.ModKey,
-            RecordType = RecordTypeCatalog.ConditionForm.RecordID,
-            FormKey = formKey,
-            PayloadSlot = "Conditions",
-            PayloadIndex = 0,
-            PayloadType = "Conditions",
-            SourcePath = "Conditions",
-            PayloadValue = "ConditionFloat",
-            ImportedAtUTC = default
+            Version2 = 1,
+            Conditions =
+            {
+                new ConditionFormConditionDTO
+                {
+                    Game = plugin.Game,
+                    ModKey = plugin.ModKey,
+                    FormKey = CreateFormKey(plugin.ModKey, id),
+                    ConditionIndex = 0,
+                    MutagenObjectType = "ConditionFloat",
+                    DataMutagenObjectType = "HasKeywordConditionData",
+                    ComparisonValue = "1",
+                    ImportedAtUTC = default,
+                    Parameters =
+                    {
+                        new ConditionFormConditionParameterDTO
+                        {
+                            Game = plugin.Game,
+                            ModKey = plugin.ModKey,
+                            FormKey = CreateFormKey(plugin.ModKey, id),
+                            ConditionIndex = 0,
+                            ParameterName = "FirstParameter",
+                            ParameterValue = "Test.esm:00000100",
+                            ParameterFormKey = CreateFormKey(plugin.ModKey, id),
+                            ImportedAtUTC = default
+                        }
+                    }
+                }
+            }
         };
     }
 

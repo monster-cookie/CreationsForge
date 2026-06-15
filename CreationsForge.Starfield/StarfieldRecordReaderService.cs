@@ -408,7 +408,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                     MajorRecordFlags = GetPropertyNullableInt(record, "StarfieldMajorRecordFlags") ?? 0,
                     ImportedAtUTC = DateTime.UtcNow,
                     Version2 = GetPropertyNullableInt(record, "Version2"),
-                    RawPayloads = GetConditionFormRawPayloads(plugin, formKey, record)
+                    Conditions = GetConditionFormConditions(plugin, formKey, GetPropertyValue(record, "Conditions"))
                 };
             })
             .ToList();
@@ -896,12 +896,73 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         return payloads;
     }
 
-    private static List<RawRecordPayloadDTO> GetConditionFormRawPayloads(PluginDTO plugin, FormKey formKey, object record)
+    private static List<ConditionFormConditionDTO> GetConditionFormConditions(PluginDTO plugin, FormKey formKey, object? conditions)
     {
+        if (conditions is not IEnumerable enumerable)
+        {
+            return new List<ConditionFormConditionDTO>();
+        }
+
         var importedAtUTC = DateTime.UtcNow;
-        var payloads = new List<RawRecordPayloadDTO>();
-        AddRawPayload(payloads, plugin, RecordTypeCatalog.ConditionForm.RecordID, formKey, "Conditions", 0, "Conditions", FormatEnumerable(GetPropertyValue(record, "Conditions")), importedAtUTC);
-        return payloads;
+        return enumerable
+            .Cast<object>()
+            .Select((condition, conditionIndex) =>
+            {
+                var data = GetPropertyValue(condition, "Data");
+                var comparisonValue = GetPropertyValue(condition, "ComparisonValue");
+                return new ConditionFormConditionDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = plugin.ModKey,
+                    FormKey = MapFormKey(formKey),
+                    ConditionIndex = conditionIndex,
+                    MutagenObjectType = condition.GetType().Name,
+                    DataMutagenObjectType = data?.GetType().Name,
+                    CompareOperator = GetPropertyValue(condition, "CompareOperator")?.ToString(),
+                    ComparisonValue = FormatConditionValue(comparisonValue),
+                    ComparisonValueFormKey = GetFormKeyFromObject(comparisonValue),
+                    ImportedAtUTC = importedAtUTC,
+                    Parameters = GetConditionFormConditionParameters(plugin, formKey, conditionIndex, data, importedAtUTC)
+                };
+            })
+            .ToList();
+    }
+
+    private static List<ConditionFormConditionParameterDTO> GetConditionFormConditionParameters(
+        PluginDTO plugin,
+        FormKey formKey,
+        int conditionIndex,
+        object? data,
+        DateTime importedAtUTC)
+    {
+        if (data == null)
+        {
+            return new List<ConditionFormConditionParameterDTO>();
+        }
+
+        return data
+            .GetType()
+            .GetProperties()
+            .Where(property => property.GetIndexParameters().Length == 0)
+            .Select(property => new
+            {
+                property.Name,
+                Value = property.GetValue(data)
+            })
+            .Where(parameter => !string.Equals(parameter.Name, "MutagenObjectType", StringComparison.Ordinal))
+            .Select(parameter => new ConditionFormConditionParameterDTO
+            {
+                Game = SupportedGame.Starfield,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                ConditionIndex = conditionIndex,
+                ParameterName = parameter.Name,
+                ParameterValue = FormatConditionValue(parameter.Value),
+                ParameterFormKey = GetFormKeyFromObject(parameter.Value),
+                ImportedAtUTC = importedAtUTC
+            })
+            .Where(parameter => !string.IsNullOrWhiteSpace(parameter.ParameterValue) || parameter.ParameterFormKey != null)
+            .ToList();
     }
 
     private static List<RawRecordPayloadDTO> GetContainerRawPayloads(PluginDTO plugin, FormKey formKey, object? model, object? components)
@@ -1210,6 +1271,24 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         }
 
         return value.ToString();
+    }
+
+    private static string? FormatConditionValue(object? value)
+    {
+        if (value == null)
+        {
+            return null;
+        }
+
+        var formKey = GetFormKeyFromObject(value);
+        if (formKey != null)
+        {
+            return $"{formKey.ModKey.FileName}:{formKey.Id:X8}";
+        }
+
+        return value is IConvertible convertible
+            ? Convert.ToString(convertible, CultureInfo.InvariantCulture)
+            : FormatEnumerable(value);
     }
 
     private static string? GetMagicEffectArchetype(IMagicEffectGetter record)

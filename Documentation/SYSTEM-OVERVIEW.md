@@ -19,7 +19,8 @@ Plugin metadata import avoids typed record enumeration; record counts are read f
 extension importers persist audited scalar plugin header fields into extension tables. Starfield, Fallout 4, and
 Skyrim map the currently approved cross-game typed records: FormLists, GameSettings, Globals, MiscItems, Keywords,
 ActorValueInformation, NPCs, MagicEffects, Perks, Statics, Containers, and ConstructibleObjects. Starfield also maps
-ConditionForms, Books, Doors, and Terminals into typed detail rows. Imports currently create/update the selected
+ConditionForms, Books, Doors, and Terminals into typed detail rows. ConditionForms include structured condition rows
+and generic condition-data parameter rows. Imports currently create/update the selected
 `Games`, `Plugins`, `PluginMasterReferences`, game-specific plugin extension rows, and approved typed record rows.
 
 ## Projects
@@ -94,15 +95,17 @@ imported-record tree for the current persisted record types.
 - Uses DbUp `SchemaVersions` as the migration-state source of truth.
 - Creates a multi-game application schema for `Games`, `Plugins`, `PluginMasterReferences`, `FormLists`,
   `FormListItems`, `GameSettings`, `Globals`, `MiscItems`, `Keywords`, `ActorValueInformation`, `NPCs`,
-  `MagicEffects`, `Perks`, `Statics`, `Books`, `Doors`, `Containers`, `Terminals`, `TerminalMarkerParameters`,
-  shared model data, shared keyword lists, shared sounds, shared raw payload data, and shared scripting adapter data.
+  `MagicEffects`, `Perks`, `Statics`, `ConditionForms`, `ConstructibleObjects`, `Books`, `Doors`, `Containers`,
+  `Terminals`, `TerminalMarkerParameters`, shared model data, shared keyword lists, shared sounds, shared raw payload
+  data, and shared scripting adapter data.
 - Preserves plugin source-fingerprint behavior for unchanged, changed, missing, failed, and unsupported plugin states.
 - Preserves record import accounting for the approved typed record types.
 - Provides an initial Avalonia UI with active game and active plugin autocomplete, warning before long first/full
   imports, toolbar commands for active-game reimport and Reset & Import All, running all imports through Core services
   with a progress screen, and browsing imported typed records in a left-side tree with category counts, per-record
-  plugin usage counts, and scalar comparison rows. Long binary raw payload comparison values are summarized as
-  `[UNPARSEABLE REFLECTION DATA]` and can be opened in a hex-view dialog from the comparison grid.
+  plugin usage counts, scalar comparison rows, and supported child comparison rows such as CNDF condition rows. Long
+  binary raw payload comparison values are summarized as `[UNPARSEABLE REFLECTION DATA]` and can be opened in a
+  hex-view dialog from the comparison grid.
 - Provides an experimental asset preview pane in the Avalonia UI. Core resolves persisted model-path candidates through
   UI-neutral DTOs and services, while the presentation project owns Silk.NET-backed OpenGL rendering and external file
   launching.
@@ -117,8 +120,8 @@ imported-record tree for the current persisted record types.
 - Shared plugin, plugin-master-reference, and typed-record repositories use NPoco database models for save behavior.
   Repository delete/query SQL remains parameterized where explicit SQL is used.
 - Oblivion is not implemented.
-- The UI shows imported records in a tree and scalar comparison rows for approved persisted record types. Deep child
-  comparison sections, patch generation, and conflict resolution behavior do not exist yet.
+- The UI shows imported records in a tree plus scalar and supported child comparison rows for approved persisted
+  record types. Patch generation and conflict resolution behavior do not exist yet.
 - The asset preview pane can load an early subset of NIF mesh geometry, with many model types and visual details still
   pending.
 
@@ -126,8 +129,9 @@ imported-record tree for the current persisted record types.
 
 Starfield, Fallout 4, and Skyrim import typed record parent rows for MiscItems (`MISC`), Keywords (`KYWD`),
 ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), Perks (`PERK`), Statics (`STAT`), and
-Containers (`CONT`). Starfield also imports Books (`BOOK`), Doors (`DOOR`), and Terminals (`TERM`) into typed detail
-tables. These records are mapped in their game adapter projects and persisted through Core DTOs, repositories, and
+Containers (`CONT`). Starfield also imports ConditionForms (`CNDF`), Books (`BOOK`), Doors (`DOOR`), and Terminals
+(`TERM`) into typed detail tables. These records are mapped in their game adapter projects and persisted through Core
+DTOs, repositories, and
 typed importers. Scripting adapters are persisted for `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `BOOK`,
 and `TERM` when the source record exposes virtual-machine adapter data; `FLST`, `GMST`, and `DOOR` remain flat
 records without scripting adapter persistence. Shared child rows for models, keywords, sounds, raw payloads,

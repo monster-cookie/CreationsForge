@@ -442,37 +442,34 @@ public class RecordComparisonServiceTests
     }
 
     [Fact]
-    public void GetRecordComparison_ForConditionForm_MapsVersion2AndRawPayloads()
+    public void GetRecordComparison_ForConditionForm_MapsVersion2AndConditions()
     {
         var formKey = CreateFormKey("Starfield.esm", 0x246E86);
+        var firstParameter = CreateFormKey("Starfield.esm", 0x258350);
+        var patchFirstParameter = CreateFormKey("Starfield.esm", 0x2CC9F2);
         var conditionFormRepository = new TestConditionFormRepository
         {
             Records =
             [
-                CreateConditionForm("Base.esm", formKey, 1),
-                CreateConditionForm("Patch.esp", formKey, 2)
+                CreateConditionForm("Base.esm", formKey, 1, firstParameter, "1"),
+                CreateConditionForm("Patch.esp", formKey, 2, patchFirstParameter, null)
             ]
         };
-        var rawRecordPayloadRepository = new TestRawRecordPayloadRepository
-        {
-            Records =
-            [
-                CreateRawRecordPayload("Base.esm", RecordTypeCatalog.ConditionForm.RecordID, formKey, "Conditions", 0, "Conditions", "BaseCondition"),
-                CreateRawRecordPayload("Patch.esp", RecordTypeCatalog.ConditionForm.RecordID, formKey, "Conditions", 0, "Conditions", "PatchCondition")
-            ]
-        };
-        var service = CreateService(
-            conditionFormRepository: conditionFormRepository,
-            rawRecordPayloadRepository: rawRecordPayloadRepository);
+        var service = CreateService(conditionFormRepository: conditionFormRepository);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.ConditionForm.RecordID, formKey);
 
         comparison.RecordType.ShouldBe(RecordTypeCatalog.ConditionForm.RecordID);
         comparison.Fields.Single(field => field.FieldName == "Version2").Values.Select(value => value.DisplayValue).ShouldBe(["1", "2"]);
-        var rawPayloads = comparison.Fields.Single(field => field.FieldName == "Raw Payloads");
-        var conditionValues = rawPayloads.Children.Single(field => field.FieldName == "Conditions").Children.Single(field => field.FieldName == "Value").Values;
-        conditionValues.Select(value => value.DisplayValue).ShouldBe(["[UNPARSEABLE REFLECTION DATA]", "[UNPARSEABLE REFLECTION DATA]"]);
-        conditionValues.Select(value => value.DetailValue).ShouldBe(["BaseCondition", "PatchCondition"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Raw Payloads");
+        var conditions = comparison.Fields.Single(field => field.FieldName == "Conditions");
+        var condition = conditions.Children.Single(field => field.FieldName == "Condition [0]");
+        condition.Children.Single(field => field.FieldName == "MutagenObjectType").Values.Select(value => value.DisplayValue).ShouldBe(["ConditionFloat", "ConditionFloat"]);
+        condition.Children.Single(field => field.FieldName == "DataMutagenObjectType").Values.Select(value => value.DisplayValue).ShouldBe(["HasKeywordConditionData", "HasKeywordConditionData"]);
+        condition.Children.Single(field => field.FieldName == "ComparisonValue").Values.Select(value => value.DisplayValue).ShouldBe(["1", ""]);
+        var firstParameterField = condition.Children.Single(field => field.FieldName == "Parameters").Children.Single(field => field.FieldName == "FirstParameter");
+        firstParameterField.Children.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00258350", "Starfield.esm:002CC9F2"]);
+        firstParameterField.Children.Single(field => field.FieldName == "FormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00258350", "Starfield.esm:002CC9F2"]);
     }
 
     [Fact]
@@ -984,7 +981,7 @@ public class RecordComparisonServiceTests
         };
     }
 
-    private static ConditionFormDTO CreateConditionForm(string fileName, FormKeyDTO formKey, int version2)
+    private static ConditionFormDTO CreateConditionForm(string fileName, FormKeyDTO formKey, int version2, FormKeyDTO firstParameter, string? comparisonValue)
     {
         return new ConditionFormDTO
         {
@@ -995,7 +992,35 @@ public class RecordComparisonServiceTests
             FormVersion = 1,
             MajorRecordFlags = 2,
             ImportedAtUTC = DateTime.UtcNow,
-            Version2 = version2
+            Version2 = version2,
+            Conditions =
+            {
+                new ConditionFormConditionDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    ConditionIndex = 0,
+                    MutagenObjectType = "ConditionFloat",
+                    DataMutagenObjectType = "HasKeywordConditionData",
+                    ComparisonValue = comparisonValue,
+                    ImportedAtUTC = DateTime.UtcNow,
+                    Parameters =
+                    {
+                        new ConditionFormConditionParameterDTO
+                        {
+                            Game = SupportedGame.Starfield,
+                            ModKey = CreateModKey(fileName),
+                            FormKey = formKey,
+                            ConditionIndex = 0,
+                            ParameterName = "FirstParameter",
+                            ParameterValue = FormatFormKey(firstParameter),
+                            ParameterFormKey = firstParameter,
+                            ImportedAtUTC = DateTime.UtcNow
+                        }
+                    }
+                }
+            }
         };
     }
 
@@ -1016,6 +1041,11 @@ public class RecordComparisonServiceTests
     private static RawRecordPayloadDTO CreateRawRecordPayload(string fileName, FormKeyDTO formKey, string payloadSlot, int payloadIndex, string payloadType, string payloadValue)
     {
         return CreateRawRecordPayload(fileName, RecordTypeCatalog.Static.RecordID, formKey, payloadSlot, payloadIndex, payloadType, payloadValue);
+    }
+
+    private static string FormatFormKey(FormKeyDTO formKey)
+    {
+        return $"{formKey.ModKey.FileName}:{formKey.Id:X8}";
     }
 
     private static RawRecordPayloadDTO CreateRawRecordPayload(string fileName, string recordType, FormKeyDTO formKey, string payloadSlot, int payloadIndex, string payloadType, string payloadValue, string? sourcePath = null)

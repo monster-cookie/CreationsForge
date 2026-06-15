@@ -132,6 +132,61 @@ CREATE TABLE ConditionForms
     CHECK (FormKey_ID >= 0)
 );
 
+CREATE TABLE ConditionFormConditions
+(
+    Game                                      TEXT    NOT NULL,
+    ModKey_Name                               TEXT    NOT NULL,
+    ModKey_Type                               INTEGER NOT NULL,
+    ModKey_FileName                           TEXT    NOT NULL,
+    FormKey_ModKey_Name                       TEXT    NOT NULL,
+    FormKey_ModKey_Type                       INTEGER NOT NULL,
+    FormKey_ModKey_FileName                   TEXT    NOT NULL,
+    FormKey_ID                                INTEGER NOT NULL,
+    Condition_Index                           INTEGER NOT NULL,
+    MutagenObjectType                         TEXT    NOT NULL,
+    DataMutagenObjectType                     TEXT    NULL,
+    CompareOperator                           TEXT    NULL,
+    ComparisonValue                           TEXT    NULL,
+    ComparisonValue_ModKey_Name               TEXT    NULL,
+    ComparisonValue_ModKey_Type               INTEGER NULL,
+    ComparisonValue_ModKey_FileName           TEXT    NULL,
+    ComparisonValue_FormKey_ID                INTEGER NULL,
+    ImportedAtUTC                             TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Condition_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES ConditionForms (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Condition_Index >= 0),
+    CHECK (ComparisonValue_FormKey_ID IS NULL OR ComparisonValue_FormKey_ID >= 0)
+);
+
+CREATE TABLE ConditionFormConditionParameters
+(
+    Game                                      TEXT    NOT NULL,
+    ModKey_Name                               TEXT    NOT NULL,
+    ModKey_Type                               INTEGER NOT NULL,
+    ModKey_FileName                           TEXT    NOT NULL,
+    FormKey_ModKey_Name                       TEXT    NOT NULL,
+    FormKey_ModKey_Type                       INTEGER NOT NULL,
+    FormKey_ModKey_FileName                   TEXT    NOT NULL,
+    FormKey_ID                                INTEGER NOT NULL,
+    Condition_Index                           INTEGER NOT NULL,
+    Parameter_Name                            TEXT    NOT NULL,
+    ParameterValue                            TEXT    NULL,
+    Parameter_ModKey_Name                     TEXT    NULL,
+    Parameter_ModKey_Type                     INTEGER NULL,
+    Parameter_ModKey_FileName                 TEXT    NULL,
+    Parameter_FormKey_ID                      INTEGER NULL,
+    ImportedAtUTC                             TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Condition_Index, Parameter_Name),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Condition_Index)
+        REFERENCES ConditionFormConditions (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Condition_Index) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Condition_Index >= 0),
+    CHECK (Parameter_Name <> ''),
+    CHECK (Parameter_FormKey_ID IS NULL OR Parameter_FormKey_ID >= 0)
+);
+
 ALTER TABLE RawRecordPayloads ADD COLUMN SourcePath TEXT NULL;
 
 CREATE INDEX IX_ConstructibleObjects_FormKey ON ConstructibleObjects (Game, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
@@ -143,6 +198,8 @@ CREATE INDEX IX_ConstructibleObjectRecipeFilters_Game_FormKey ON ConstructibleOb
 CREATE INDEX IX_ConditionForms_FormKey ON ConditionForms (Game, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
 CREATE INDEX IX_ConditionForms_Game_Plugin ON ConditionForms (Game, ModKey_Name COLLATE NOCASE, ModKey_Type, ModKey_FileName COLLATE NOCASE, EditorID COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_ConditionForms_Game_FormKey_Collated ON ConditionForms (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+CREATE INDEX IX_ConditionFormConditions_Game_FormKey ON ConditionFormConditions (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+CREATE INDEX IX_ConditionFormConditionParameters_Game_FormKey ON ConditionFormConditionParameters (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 
 UPDATE Plugins
 SET ImportState = 'Changed',
