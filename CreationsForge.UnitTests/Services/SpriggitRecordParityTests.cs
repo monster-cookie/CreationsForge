@@ -35,6 +35,7 @@ public class SpriggitRecordParityTests
     {
         yield return [SupportedGame.Fallout4, RecordTypeCatalog.ActorValueInformation.RecordID];
         yield return [SupportedGame.Fallout4, RecordTypeCatalog.Container.RecordID];
+        yield return [SupportedGame.Fallout4, RecordTypeCatalog.ConstructibleObject.RecordID];
         yield return [SupportedGame.Fallout4, RecordTypeCatalog.FormList.RecordID];
         yield return [SupportedGame.Fallout4, RecordTypeCatalog.GameSetting.RecordID];
         yield return [SupportedGame.Fallout4, RecordTypeCatalog.Global.RecordID];
@@ -46,6 +47,7 @@ public class SpriggitRecordParityTests
         yield return [SupportedGame.Fallout4, RecordTypeCatalog.Static.RecordID];
         yield return [SupportedGame.Skyrim, RecordTypeCatalog.ActorValueInformation.RecordID];
         yield return [SupportedGame.Skyrim, RecordTypeCatalog.Container.RecordID];
+        yield return [SupportedGame.Skyrim, RecordTypeCatalog.ConstructibleObject.RecordID];
         yield return [SupportedGame.Skyrim, RecordTypeCatalog.FormList.RecordID];
         yield return [SupportedGame.Skyrim, RecordTypeCatalog.GameSetting.RecordID];
         yield return [SupportedGame.Skyrim, RecordTypeCatalog.Global.RecordID];
@@ -58,6 +60,7 @@ public class SpriggitRecordParityTests
         yield return [SupportedGame.Starfield, RecordTypeCatalog.ActorValueInformation.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.Book.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.Container.RecordID];
+        yield return [SupportedGame.Starfield, RecordTypeCatalog.ConstructibleObject.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.Door.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.FormList.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.GameSetting.RecordID];
@@ -175,6 +178,60 @@ public class SpriggitRecordParityTests
                 if (sample.HasPath("NativeTerminal"))
                 {
                     containerRecord.NativeTerminalFormKey.ShouldNotBeNull($"Container '{record.EditorID}' should preserve NativeTerminal.");
+                }
+
+                break;
+            case "COBJ":
+                var constructibleObjectRecord = record.ShouldBeOfType<ConstructibleObjectDTO>();
+                if (sample.HasPath("CreatedObject"))
+                {
+                    constructibleObjectRecord.CreatedObjectFormKey.ShouldNotBeNull($"ConstructibleObject '{record.EditorID}' should preserve CreatedObject.");
+                }
+
+                if (sample.HasPath("WorkbenchKeyword"))
+                {
+                    constructibleObjectRecord.WorkbenchKeywordFormKey.ShouldNotBeNull($"ConstructibleObject '{record.EditorID}' should preserve WorkbenchKeyword.");
+                }
+
+                var expectedComponentCount = sample.GetListItemCount("ConstructableComponents");
+                if (expectedComponentCount == 0)
+                {
+                    expectedComponentCount = sample.GetListItemCount("Components");
+                }
+
+                if (expectedComponentCount == 0)
+                {
+                    expectedComponentCount = sample.GetListItemCount("Items");
+                }
+
+                if (expectedComponentCount > 0)
+                {
+                    constructibleObjectRecord.Components.Count.ShouldBe(expectedComponentCount, $"ConstructibleObject '{record.EditorID}' should preserve component counts.");
+                }
+
+                if (sample.GetListItemCount("RecipeFilters") > 0)
+                {
+                    constructibleObjectRecord.RecipeFilters.Count.ShouldBe(sample.GetListItemCount("RecipeFilters"), $"ConstructibleObject '{record.EditorID}' should preserve RecipeFilters.");
+                }
+
+                if (sample.GetListItemCount("Categories") > 0)
+                {
+                    constructibleObjectRecord.Categories.Count.ShouldBe(sample.GetListItemCount("Categories"), $"ConstructibleObject '{record.EditorID}' should preserve Categories.");
+                }
+
+                if (sample.HasPath("AmountProduced"))
+                {
+                    AssertNullableIntProperty(record, sample, "AmountProduced", "AmountProduced");
+                }
+
+                if (sample.HasPath("CreatedObjectCount"))
+                {
+                    AssertNullableIntProperty(record, sample, "CreatedObjectCount", "CreatedObjectCount");
+                }
+
+                if (sample.HasPath("Conditions"))
+                {
+                    constructibleObjectRecord.RawPayloads.Count.ShouldBeGreaterThan(0, $"ConstructibleObject '{record.EditorID}' should preserve Conditions as raw payloads.");
                 }
 
                 break;
@@ -399,6 +456,7 @@ public class SpriggitRecordParityTests
             "AVIF" => "ActorValueInformation",
             "BOOK" => "Books",
             "CONT" => "Containers",
+            "COBJ" => "ConstructibleObjects",
             "DOOR" => "Doors",
             "FLST" => "FormLists",
             "GMST" => "GameSettings",
@@ -421,6 +479,7 @@ public class SpriggitRecordParityTests
             "AVIF" => ["DefaultValue"],
             "BOOK" => ["Model.File", "Keywords"],
             "CONT" => ["Model.File", "Items"],
+            "COBJ" => ["CreatedObject"],
             "DOOR" => ["Model.File"],
             "FLST" => ["Items"],
             "GMST" => ["Data"],

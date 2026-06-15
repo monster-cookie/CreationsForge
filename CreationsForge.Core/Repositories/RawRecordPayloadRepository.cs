@@ -21,10 +21,10 @@ public class RawRecordPayloadRepository : IRawRecordPayloadRepository
             """
             INSERT OR REPLACE INTO RawRecordPayloads (
                 Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                PayloadSlot, Payload_Index, PayloadType, PayloadValue, ImportedAtUTC)
+                PayloadSlot, Payload_Index, PayloadType, SourcePath, PayloadValue, ImportedAtUTC)
             VALUES (
                 @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @RecordType, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                @PayloadSlot, @PayloadIndex, @PayloadType, @PayloadValue, @ImportedAtUTC);
+                @PayloadSlot, @PayloadIndex, @PayloadType, @SourcePath, @PayloadValue, @ImportedAtUTC);
             """,
             new
             {
@@ -40,6 +40,7 @@ public class RawRecordPayloadRepository : IRawRecordPayloadRepository
                 dto.PayloadSlot,
                 dto.PayloadIndex,
                 dto.PayloadType,
+                dto.SourcePath,
                 dto.PayloadValue,
                 dto.ImportedAtUTC
             });
@@ -62,6 +63,7 @@ public class RawRecordPayloadRepository : IRawRecordPayloadRepository
                     PayloadSlot,
                     Payload_Index AS PayloadIndex,
                     PayloadType,
+                    SourcePath,
                     PayloadValue,
                     ImportedAtUTC
                 FROM RawRecordPayloads
@@ -140,6 +142,7 @@ public class RawRecordPayloadRepository : IRawRecordPayloadRepository
             PayloadSlot = row.PayloadSlot,
             PayloadIndex = row.PayloadIndex,
             PayloadType = row.PayloadType,
+            SourcePath = row.SourcePath,
             PayloadValue = row.PayloadValue,
             ImportedAtUTC = row.ImportedAtUTC
         };
@@ -170,6 +173,8 @@ public class RawRecordPayloadRepository : IRawRecordPayloadRepository
         public int PayloadIndex { get; set; }
 
         public string PayloadType { get; set; } = string.Empty;
+
+        public string? SourcePath { get; set; }
 
         public string? PayloadValue { get; set; }
 

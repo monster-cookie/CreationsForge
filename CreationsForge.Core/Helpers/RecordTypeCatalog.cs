@@ -28,6 +28,13 @@ public static class RecordTypeCatalog
         RecordID = "CONT"
     };
 
+    public static readonly RecordTypeData ConstructibleObject = new()
+    {
+        TableName = "ConstructibleObjects",
+        RecordType = "ConstructibleObject",
+        RecordID = "COBJ"
+    };
+
     public static readonly RecordTypeData Door = new()
     {
         TableName = "Doors",

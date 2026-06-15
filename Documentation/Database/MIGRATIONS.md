@@ -22,4 +22,4 @@ REF: CreationsForge.Migrations\Sql\003_Migrations003.sql
 
 All current database work needs to use migration 004.
 
-REF: CreationsForge.Migrations\Sql\003_Migrations004.sql
+REF: CreationsForge.Migrations\Sql\004_Migrations004.sql

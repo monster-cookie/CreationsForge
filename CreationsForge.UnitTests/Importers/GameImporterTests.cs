@@ -194,6 +194,34 @@ public class GameImporterTests
     }
 
     [Fact]
+    public void Import_WithInvalidatedUnchangedPlugin_ReimportsMetadataMasterReferencesAndRecords()
+    {
+        var plugin = CreatePlugin(SupportedGame.Skyrim);
+        var invalidatedPlugin = CreatePlugin(SupportedGame.Skyrim);
+        invalidatedPlugin.ImportState = PluginImportState.Changed;
+        invalidatedPlugin.InvalidatedAtUTC = DateTime.UtcNow;
+        var recordImportService = new TestRecordImportService();
+        var pluginReader = new TestGamePluginReader(plugin);
+        var importer = new GameImporter(
+            pluginReader,
+            new TestGameRecordReader(plugin.Game),
+            new TestGameRepository(),
+            new TestPluginRepository(existingPlugins: [invalidatedPlugin]),
+            new TestPluginMasterReferenceRepository(),
+            [],
+            recordImportService,
+            new TestAssetArchiveIndexService());
+
+        var result = importer.Import();
+
+        result.PluginsUnchanged.ShouldBe(0);
+        result.PluginsChanged.ShouldBe(1);
+        result.PluginsImported.ShouldBe(1);
+        pluginReader.ReadPluginMetadataWasCalled.ShouldBeTrue();
+        recordImportService.ImportWasCalled.ShouldBeTrue();
+    }
+
+    [Fact]
     public void Import_InvokesRecordImportService()
     {
         var plugin = CreatePlugin(SupportedGame.Skyrim);

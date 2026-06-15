@@ -90,6 +90,7 @@ public class SpriggitRecordParityFixture
             "AVIF" => recordSet.ActorValueInformation,
             "BOOK" => recordSet.Books,
             "CONT" => recordSet.Containers,
+            "COBJ" => recordSet.ConstructibleObjects,
             "DOOR" => recordSet.Doors,
             "FLST" => recordSet.FormLists,
             "GMST" => recordSet.GameSettings,

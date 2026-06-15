@@ -516,6 +516,88 @@ erDiagram
         TEXT ImportedAtUTC
     }
 
+    ConstructibleObjects {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER MajorRecordFlags
+        TEXT ImportedAtUTC
+        INTEGER Version2
+        TEXT Description
+        TEXT CreatedObject_ModKey_Name
+        INTEGER CreatedObject_ModKey_Type
+        TEXT CreatedObject_ModKey_FileName
+        INTEGER CreatedObject_FormKey_ID
+        TEXT WorkbenchKeyword_ModKey_Name
+        INTEGER WorkbenchKeyword_ModKey_Type
+        TEXT WorkbenchKeyword_ModKey_FileName
+        INTEGER WorkbenchKeyword_FormKey_ID
+        INTEGER CreatedObjectCount
+        INTEGER AmountProduced
+        INTEGER MenuSortOrder
+        TEXT LearnMethod
+        TEXT Flags
+    }
+
+    ConstructibleObjectComponents {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Component_Index PK
+        TEXT Component_ModKey_Name
+        INTEGER Component_ModKey_Type
+        TEXT Component_ModKey_FileName
+        INTEGER Component_FormKey_ID
+        INTEGER Count
+        TEXT ImportedAtUTC
+    }
+
+    ConstructibleObjectCategories {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Category_Index PK
+        TEXT Category_ModKey_Name
+        INTEGER Category_ModKey_Type
+        TEXT Category_ModKey_FileName
+        INTEGER Category_FormKey_ID
+        TEXT ImportedAtUTC
+    }
+
+    ConstructibleObjectRecipeFilters {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER RecipeFilter_Index PK
+        TEXT RecipeFilter_ModKey_Name
+        INTEGER RecipeFilter_ModKey_Type
+        TEXT RecipeFilter_ModKey_FileName
+        INTEGER RecipeFilter_FormKey_ID
+        TEXT ImportedAtUTC
+    }
+
     Terminals {
         TEXT Game PK, FK
         TEXT ModKey_Name PK, FK
@@ -719,6 +801,7 @@ erDiagram
         TEXT PayloadSlot PK
         INTEGER Payload_Index PK
         TEXT PayloadType
+        TEXT SourcePath
         TEXT PayloadValue
         TEXT ImportedAtUTC
     }
@@ -836,6 +919,10 @@ erDiagram
     RecordInstances ||--o| Doors : "typed detail"
     RecordInstances ||--o| Containers : "typed detail"
     Containers ||--o{ ContainerItems : contains
+    RecordInstances ||--o| ConstructibleObjects : "typed detail"
+    ConstructibleObjects ||--o{ ConstructibleObjectComponents : contains
+    ConstructibleObjects ||--o{ ConstructibleObjectCategories : contains
+    ConstructibleObjects ||--o{ ConstructibleObjectRecipeFilters : contains
     RecordInstances ||--o| Terminals : "typed detail"
     Terminals ||--o{ TerminalMarkerParameters : contains
     RecordInstances ||--o{ RecordKeywords : contains
@@ -876,10 +963,20 @@ These columns contain record-reference data but are not declared SQLite foreign 
   `NativeTerminal_FormKey_ID`
 - `Containers.NativeTerminal_ModKey_Name`, `NativeTerminal_ModKey_Type`, `NativeTerminal_ModKey_FileName`, and
   `NativeTerminal_FormKey_ID`
+- `ConstructibleObjects.CreatedObject_ModKey_Name`, `CreatedObject_ModKey_Type`,
+  `CreatedObject_ModKey_FileName`, and `CreatedObject_FormKey_ID`
+- `ConstructibleObjects.WorkbenchKeyword_ModKey_Name`, `WorkbenchKeyword_ModKey_Type`,
+  `WorkbenchKeyword_ModKey_FileName`, and `WorkbenchKeyword_FormKey_ID`
 - `Terminals.Menu_ModKey_Name`, `Menu_ModKey_Type`, `Menu_ModKey_FileName`, and `Menu_FormKey_ID`
 - `Terminals.FurnitureTemplate_ModKey_Name`, `FurnitureTemplate_ModKey_Type`,
   `FurnitureTemplate_ModKey_FileName`, and `FurnitureTemplate_FormKey_ID`
 - `ContainerItems.Item_ModKey_Name`, `Item_ModKey_Type`, `Item_ModKey_FileName`, and `Item_FormKey_ID`
+- `ConstructibleObjectComponents.Component_ModKey_Name`, `Component_ModKey_Type`,
+  `Component_ModKey_FileName`, and `Component_FormKey_ID`
+- `ConstructibleObjectCategories.Category_ModKey_Name`, `Category_ModKey_Type`,
+  `Category_ModKey_FileName`, and `Category_FormKey_ID`
+- `ConstructibleObjectRecipeFilters.RecipeFilter_ModKey_Name`, `RecipeFilter_ModKey_Type`,
+  `RecipeFilter_ModKey_FileName`, and `RecipeFilter_FormKey_ID`
 - `ModelMaterialSwaps.MaterialSwap_ModKey_Name`, `MaterialSwap_ModKey_Type`, `MaterialSwap_ModKey_FileName`,
   and `MaterialSwap_FormKey_ID`
 - `RecordKeywords.Keyword_ModKey_Name`, `Keyword_ModKey_Type`, `Keyword_ModKey_FileName`, and `Keyword_FormKey_ID`

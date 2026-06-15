@@ -197,11 +197,12 @@ public class GameImporter : IGameImporter
             return null;
         }
 
-        var isUnchanged = existingPlugin is not null
+        var isCurrentAndUnchanged = existingPlugin is not null
+            && existingPlugin.ImportState == PluginImportState.Current
             && existingPlugin.SourceLastWriteUTCTicks == sourceInfo.LastWriteUTCTicks
             && existingPlugin.SourceFileSizeBytes == sourceInfo.FileSizeBytes;
 
-        if (isUnchanged && !forceFullReimport)
+        if (isCurrentAndUnchanged && !forceFullReimport)
         {
             result.PluginsUnchanged++;
             existingPlugin!.LoadOrderIndex = loadOrderEntry.LoadOrderIndex;
@@ -218,7 +219,7 @@ public class GameImporter : IGameImporter
         if (existingPlugin is not null)
         {
             result.PluginsInvalidated++;
-            if (!isUnchanged)
+            if (!isCurrentAndUnchanged)
             {
                 result.PluginsChanged++;
                 Logger.Information(

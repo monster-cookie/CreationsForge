@@ -18,8 +18,8 @@ declared plugin master references. Thin game plugin readers expose the shared Co
 Plugin metadata import avoids typed record enumeration; record counts are read from header stats. Game-specific plugin
 extension importers persist audited scalar plugin header fields into extension tables. Starfield, Fallout 4, and
 Skyrim map the currently approved cross-game typed records: FormLists, GameSettings, Globals, MiscItems, Keywords,
-ActorValueInformation, NPCs, MagicEffects, Perks, Statics, and Containers. Starfield also maps Books, Doors, and
-Terminals into typed detail rows. Imports currently create/update the selected `Games`, `Plugins`,
+ActorValueInformation, NPCs, MagicEffects, Perks, Statics, Containers, and ConstructibleObjects. Starfield also maps
+Books, Doors, and Terminals into typed detail rows. Imports currently create/update the selected `Games`, `Plugins`,
 `PluginMasterReferences`, game-specific plugin extension rows, and approved typed record rows.
 
 ## Projects
@@ -53,8 +53,10 @@ Terminals into typed detail rows. Imports currently create/update the selected `
    deletes the current database and imports every supported game.
 4. The selected single-game import is saved back to `ApplicationConfigurationStore`.
 5. `IDatabaseSchemaInitializer` runs DbUp migrations.
-6. If migrations were applied during a single-game import, the import is forced so existing cached plugin data is
-   refreshed for the updated schema.
+6. If migrations were applied during a single-game import, the import is forced so existing cached plugin data for
+   the selected game is refreshed for the updated schema. Migrations can also invalidate existing plugin rows by
+   setting `ImportState` to `Changed`; invalidated rows are reimported on the next import for their game even when the
+   source fingerprint has not changed.
 7. `GameImportDispatcher` selects the registered game importer.
 8. `GameImporter` saves the selected game row and reads the selected game's load order.
 9. `GameImporter` evaluates each plugin source fingerprint, preserving missing, unsupported, unchanged, changed, and

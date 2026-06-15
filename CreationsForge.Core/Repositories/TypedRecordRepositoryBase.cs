@@ -21,6 +21,7 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
         RecordTypeCatalog.Door.TableName,
         RecordTypeCatalog.Static.TableName,
         RecordTypeCatalog.Container.TableName,
+        RecordTypeCatalog.ConstructibleObject.TableName,
         RecordTypeCatalog.Terminal.TableName
     };
 

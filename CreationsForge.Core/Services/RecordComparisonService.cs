@@ -23,6 +23,7 @@ public class RecordComparisonService : IRecordComparisonService
     private readonly IBookRepository BookRepository;
     private readonly IDoorRepository DoorRepository;
     private readonly IContainerRepository ContainerRepository;
+    private readonly IConstructibleObjectRepository ConstructibleObjectRepository;
     private readonly ITerminalRepository TerminalRepository;
     private readonly IModelRepository ModelRepository;
     private readonly IRecordKeywordRepository RecordKeywordRepository;
@@ -44,6 +45,7 @@ public class RecordComparisonService : IRecordComparisonService
         IBookRepository bookRepository,
         IDoorRepository doorRepository,
         IContainerRepository containerRepository,
+        IConstructibleObjectRepository constructibleObjectRepository,
         ITerminalRepository terminalRepository,
         IModelRepository modelRepository,
         IRecordKeywordRepository recordKeywordRepository,
@@ -64,6 +66,7 @@ public class RecordComparisonService : IRecordComparisonService
         BookRepository = bookRepository;
         DoorRepository = doorRepository;
         ContainerRepository = containerRepository;
+        ConstructibleObjectRepository = constructibleObjectRepository;
         TerminalRepository = terminalRepository;
         ModelRepository = modelRepository;
         RecordKeywordRepository = recordKeywordRepository;
@@ -137,6 +140,11 @@ public class RecordComparisonService : IRecordComparisonService
         if (recordType == RecordTypeCatalog.Container.RecordID)
         {
             return CreateContainerComparison(game, formKey);
+        }
+
+        if (recordType == RecordTypeCatalog.ConstructibleObject.RecordID)
+        {
+            return CreateConstructibleObjectComparison(game, formKey);
         }
 
         if (recordType == RecordTypeCatalog.Terminal.RecordID)
@@ -410,6 +418,29 @@ public class RecordComparisonService : IRecordComparisonService
         AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.Container.RecordID, formKey, baseRecords, fields);
+    }
+
+    private RecordComparisonDTO CreateConstructibleObjectComparison(SupportedGame game, FormKeyDTO formKey)
+    {
+        var records = ConstructibleObjectRepository.GetByFormKey(game, formKey);
+        var baseRecords = records.Cast<RecordDTO>().ToList();
+        var fields = CreateCommonFields(baseRecords);
+        fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
+        fields.Add(CreateField("Description", records, record => record.Description ?? string.Empty));
+        fields.Add(CreateField("CreatedObjectFormKey", records, record => FormatFormKey(record.CreatedObjectFormKey)));
+        fields.Add(CreateField("WorkbenchKeywordFormKey", records, record => FormatFormKey(record.WorkbenchKeywordFormKey)));
+        fields.Add(CreateField("CreatedObjectCount", records, record => record.CreatedObjectCount?.ToString() ?? string.Empty));
+        fields.Add(CreateField("AmountProduced", records, record => record.AmountProduced?.ToString() ?? string.Empty));
+        fields.Add(CreateField("MenuSortOrder", records, record => record.MenuSortOrder?.ToString() ?? string.Empty));
+        fields.Add(CreateField("LearnMethod", records, record => record.LearnMethod ?? string.Empty));
+        fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
+        AddConstructibleObjectComponentGroups(fields, records);
+        AddConstructibleObjectCategoryGroups(fields, records);
+        AddConstructibleObjectRecipeFilterGroups(fields, records);
+        AddScriptingAdapterGroups(fields, baseRecords, ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.ConstructibleObject.RecordID, formKey));
+        AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.ConstructibleObject.RecordID, formKey));
+
+        return CreateComparison(RecordTypeCatalog.ConstructibleObject.RecordID, formKey, baseRecords, fields);
     }
 
     private RecordComparisonDTO CreateTerminalComparison(SupportedGame game, FormKeyDTO formKey)
@@ -802,6 +833,118 @@ public class RecordComparisonService : IRecordComparisonService
         }
     }
 
+    private static void AddConstructibleObjectComponentGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<ConstructibleObjectDTO> records)
+    {
+        var componentIndexes = records
+            .SelectMany(record => record.Components)
+            .Select(component => component.ComponentIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (componentIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var componentFields = new List<RecordComparisonFieldDTO>();
+        foreach (var componentIndex in componentIndexes)
+        {
+            var currentIndex = componentIndex;
+            var componentChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("ComponentFormKey", records, record => FormatFormKey(record.Components.FirstOrDefault(component => component.ComponentIndex == currentIndex)?.ComponentFormKey)),
+                CreateField("Count", records, record => record.Components.FirstOrDefault(component => component.ComponentIndex == currentIndex)?.Count?.ToString() ?? string.Empty)
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (componentChildren.Count > 0)
+            {
+                componentFields.Add(CreateGroupField($"Component [{componentIndex}]", records.Cast<RecordDTO>().ToList(), componentChildren));
+            }
+        }
+
+        if (componentFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("Components", records.Cast<RecordDTO>().ToList(), componentFields));
+        }
+    }
+
+    private static void AddConstructibleObjectCategoryGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<ConstructibleObjectDTO> records)
+    {
+        var categoryKeys = records
+            .SelectMany(record => record.Categories)
+            .Select(category => category.CategoryIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (categoryKeys.Count == 0)
+        {
+            return;
+        }
+
+        var categoryFields = new List<RecordComparisonFieldDTO>();
+        foreach (var categoryIndex in categoryKeys)
+        {
+            var currentIndex = categoryIndex;
+            var categoryChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("CategoryFormKey", records, record => FormatFormKey(record.Categories.FirstOrDefault(category => category.CategoryIndex == currentIndex)?.CategoryFormKey))
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (categoryChildren.Count > 0)
+            {
+                categoryFields.Add(CreateGroupField($"Category [{categoryIndex}]", records.Cast<RecordDTO>().ToList(), categoryChildren));
+            }
+        }
+
+        if (categoryFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("Categories", records.Cast<RecordDTO>().ToList(), categoryFields));
+        }
+    }
+
+    private static void AddConstructibleObjectRecipeFilterGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<ConstructibleObjectDTO> records)
+    {
+        var recipeFilterIndexes = records
+            .SelectMany(record => record.RecipeFilters)
+            .Select(recipeFilter => recipeFilter.RecipeFilterIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (recipeFilterIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var recipeFilterFields = new List<RecordComparisonFieldDTO>();
+        foreach (var recipeFilterIndex in recipeFilterIndexes)
+        {
+            var currentIndex = recipeFilterIndex;
+            var recipeFilterChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("RecipeFilterFormKey", records, record => FormatFormKey(record.RecipeFilters.FirstOrDefault(recipeFilter => recipeFilter.RecipeFilterIndex == currentIndex)?.RecipeFilterFormKey))
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (recipeFilterChildren.Count > 0)
+            {
+                recipeFilterFields.Add(CreateGroupField($"RecipeFilter [{recipeFilterIndex}]", records.Cast<RecordDTO>().ToList(), recipeFilterChildren));
+            }
+        }
+
+        if (recipeFilterFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("RecipeFilters", records.Cast<RecordDTO>().ToList(), recipeFilterFields));
+        }
+    }
+
     private static void AddRawPayloadGroups(
         IList<RecordComparisonFieldDTO> fields,
         IReadOnlyList<RecordDTO> records,
@@ -1157,4 +1300,5 @@ public class RecordComparisonService : IRecordComparisonService
     private sealed record SoundKey(string Slot, int Index);
 
     private sealed record RawPayloadKey(string Slot, int Index);
+
 }
