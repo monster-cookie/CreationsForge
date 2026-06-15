@@ -13,8 +13,8 @@ The application uses a local SQLite database. The schema is defined by embedded 
 - `004_Migrations004.sql` adds the `ConditionForms`, `ConditionFormConditions`,
   `ConditionFormConditionParameters`, `ConstructibleObjects`, `ConstructibleObjectComponents`,
   `ConstructibleObjectCategories`, and `ConstructibleObjectRecipeFilters` tables, adds
-  `RawRecordPayloads.SourcePath`, and marks existing current or partially imported plugin rows as `Changed` so each
-  supported game reimports cached plugin data after the migration.
+  `RawRecordPayloads.SourcePath`, adds plugin import diagnostic columns, and marks existing current or partially
+  imported plugin rows as `Changed` so each supported game reimports cached plugin data after the migration.
 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
@@ -196,6 +196,8 @@ Columns:
 - `FormVersion` (`INTEGER`, `NOT NULL`)
 - `Author` (`TEXT`, nullable)
 - `Description` (`TEXT`, nullable)
+- `ImportMessage` (`TEXT`, nullable)
+- `ImportDetails` (`TEXT`, nullable)
 - `RecordCount` (`INTEGER`, `NOT NULL`, default `0`)
 - `SourceLastWriteUTCTicks` (`INTEGER`, `NOT NULL`)
 - `SourceFileSizeBytes` (`INTEGER`, `NOT NULL`)
@@ -215,6 +217,12 @@ Indexes:
 
 - `IX_Plugins_Game_LoadOrderIndex` on `Game` and `LoadOrderIndex`
 - `IX_Plugins_Game_ImportState` on `Game` and `ImportState`
+
+Persistence behavior:
+
+- `ImportMessage` stores a concise user-facing summary for non-current import states when available.
+- `ImportDetails` stores longer diagnostic details, such as metadata import exception text or failed record-type
+  summaries for partially imported plugins.
 
 ### StarfieldPlugins
 

@@ -75,13 +75,12 @@ through Core. UI and MVVM code consume Core DTOs and result objects only; direct
 presentation project.
 
 On startup, the UI opens the main window immediately and initializes the database schema before view-model queries run.
-The active-game autocomplete defaults to no game unless a valid active game is configured. When a configured active
-game exists, or when the user selects a different active game, the UI runs that game's import through the import
-progress screen before returning to the main workspace. New and full imports warn that import can take 5-15 minutes.
-The toolbar also exposes `Reimport` for a full import of the active game and `Reset & Import All` for deleting the
-current database before importing every supported game. After import completes, the active-plugin autocomplete is
-refreshed for the selected game. Selecting an active plugin updates the main-window status bar and loads the
-imported-record tree for the current persisted record types.
+The main toolbar exposes `Open Plugin` for active game/plugin selection. When a configured active game exists, startup
+can run that game's import through the import progress screen before returning to the main workspace. New and full
+imports warn that import can take 5-15 minutes. The toolbar also exposes `Reimport` for a full import of the active
+game and `Reset & Import All` for deleting the current database before importing every supported game. Selecting an
+active plugin updates the main-window status bar and loads the imported-record tree for the current persisted record
+types.
 
 ## Current Capabilities
 
@@ -100,9 +99,10 @@ imported-record tree for the current persisted record types.
   data, and shared scripting adapter data.
 - Preserves plugin source-fingerprint behavior for unchanged, changed, missing, failed, and unsupported plugin states.
 - Preserves record import accounting for the approved typed record types.
-- Provides an initial Avalonia UI with active game and active plugin autocomplete, warning before long first/full
-  imports, toolbar commands for active-game reimport and Reset & Import All, running all imports through Core services
-  with a progress screen, and browsing imported typed records in a left-side tree with category counts, per-record
+- Provides an initial Avalonia UI with an Open Plugin dialog for active game/plugin selection, warning before long
+  first/full imports, toolbar commands for active-game reimport and Reset & Import All, running all imports through
+  Core services with a progress screen, and browsing imported typed records in a left-side tree with category counts,
+  per-record
   plugin usage counts, scalar comparison rows, and supported child comparison rows such as CNDF condition rows. Long
   binary raw payload comparison values are summarized as `[UNPARSEABLE REFLECTION DATA]` and can be opened in a
   hex-view dialog from the comparison grid.

@@ -2,12 +2,13 @@
 
 ## Unreleased
 
+- Moved the active game/plugin dropdowns in to an open plugin dialog.
 - Added Additional Major Record Types: ConstructibleObject (COBJ), ConditionForm (CNDF)
 
 ## Version 1.1.8 - 2026-06-14
 
 - Fixed regression that removed several major record types child data.
-- Fixed regression that renamed MiscItem back to MiscObject
+- Fixed regression that renamed MiscItem back to MiscObject.
 
 ## Version 1.1.7 - 2026-06-13
 

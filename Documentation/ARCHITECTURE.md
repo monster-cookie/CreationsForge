@@ -143,12 +143,14 @@ Presentation navigation creates a child Autofac lifetime scope for each displaye
 scope before replacing it. This keeps scoped database-backed services short-lived and lets the Reset & Import All flow
 dispose the main workspace database connection before the reset workflow deletes the SQLite database files.
 
-The main view owns active-game and active-plugin selector state. `IPluginSelectionService` exposes UI-neutral
-queries for openable plugins and imported record totals by game. Selecting an active plugin updates presentation
-status and loads left-side record-type sections through `IRecordTreeService`. Each section is rendered as an expander
-with a grid populated from persisted shared record rows for the approved typed record set; the grids show per-record
-plugin usage counts and do not call Mutagen directly from presentation code. Plugins with large header record counts
-use a dedicated active-plugin loading screen before returning to the main view with a prebuilt record browser tree.
+The main view owns active-game and active-plugin selection state, but selection is initiated through an Open Plugin
+dialog rather than command-bar autocomplete controls. `IPluginSelectionService` exposes UI-neutral queries for openable
+plugins and imported record totals by game. The dialog filters, sorts, and presents those plugin rows in presentation
+code, including persisted plugin import diagnostics. Selecting an active plugin updates presentation status and loads
+left-side record-type sections through `IRecordTreeService`. Each section is rendered as an expander with a grid
+populated from persisted shared record rows for the approved typed record set; the grids show per-record plugin usage
+counts and do not call Mutagen directly from presentation code. Plugins with large header record counts use a dedicated
+active-plugin loading screen before returning to the main view with a prebuilt record browser tree.
 That loading screen, and the main view's asynchronous record-tree refresh path, create child Autofac lifetime scopes on
 worker paths so database-backed record tree services are resolved and disposed with the background load instead of
 reusing the main view's scoped connection. Active-plugin record tree entries are loaded from the shared

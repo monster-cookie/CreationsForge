@@ -24,6 +24,10 @@ public class PluginDTO
 
     public string? Description { get; set; }
 
+    public string? ImportMessage { get; set; }
+
+    public string? ImportDetails { get; set; }
+
     public required int RecordCount { get; set; }
 
     public required long SourceLastWriteUTCTicks { get; set; }

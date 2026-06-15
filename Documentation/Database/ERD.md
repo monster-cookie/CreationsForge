@@ -28,6 +28,8 @@ erDiagram
         INTEGER FormVersion
         TEXT Author
         TEXT Description
+        TEXT ImportMessage
+        TEXT ImportDetails
         INTEGER RecordCount
         INTEGER SourceLastWriteUTCTicks
         INTEGER SourceFileSizeBytes

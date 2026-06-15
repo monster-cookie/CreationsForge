@@ -84,18 +84,6 @@ public class MainView : UserControl
 
     private Control BuildHeader()
     {
-        var activeGameBox = CreateComboBox(
-            nameof(MainViewModel.GameSuggestions),
-            nameof(MainViewModel.ActiveGameSearchText),
-            nameof(MainViewModel.SelectedGameDisplayName),
-            isEditable: true,
-            text => ViewModel.ChooseGameSuggestionAsync(text),
-            text => ViewModel.SubmitGameQueryAsync(text),
-            ViewModel.UpdateGameSearchText,
-            ViewModel.IsExactGameSuggestion);
-
-        var activePluginBox = CreatePluginComboBox();
-
         return new Border
         {
             Background = App.GetApplicationBrush(App.PanelSurfaceBrushKey),
@@ -104,12 +92,12 @@ public class MainView : UserControl
             BorderThickness = new Thickness(0, 0, 0, 1),
             Child = new Grid
             {
-                ColumnDefinitions = new ColumnDefinitions("*,*,Auto"),
+                ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"),
                 ColumnSpacing = 18,
                 Children =
                 {
-                    CreateSearchPanel("Active game", activeGameBox, 0),
-                    CreateSearchPanel("Active plugin", activePluginBox, 1),
+                    CreateToolbarButton("Open Plugin", nameof(MainViewModel.OpenPluginCommand), "OpenPluginButton"),
+                    CreateActiveSelectionSummary(),
                     CreateToolbar()
                 }
             }
@@ -462,6 +450,26 @@ public class MainView : UserControl
         AutomationProperties.SetAutomationId(toolbar, "MainToolbar");
         Grid.SetColumn(toolbar, 2);
         return toolbar;
+    }
+
+    private static Control CreateActiveSelectionSummary()
+    {
+        var activeGame = CreateBoundText(nameof(MainViewModel.ActiveGameStatusText), 13, FontWeight.SemiBold);
+        var activePlugin = CreateBoundText(nameof(MainViewModel.ActivePluginStatusText), 13, FontWeight.Normal);
+        var importedRecords = CreateBoundText(nameof(MainViewModel.ImportedRecordCountText), 12, FontWeight.Normal);
+        var panel = new StackPanel
+        {
+            Spacing = 2,
+            VerticalAlignment = VerticalAlignment.Center,
+            Children =
+            {
+                activeGame,
+                activePlugin,
+                importedRecords
+            }
+        };
+        Grid.SetColumn(panel, 1);
+        return panel;
     }
 
     private static Button CreateToolbarButton(string content, string commandProperty, string automationId)
