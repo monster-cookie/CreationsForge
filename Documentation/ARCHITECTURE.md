@@ -106,8 +106,10 @@ aborting the full plugin import. The current cross-game shared record types are 
 (`GMST`), Globals (`GLOB`), MiscItems (`MISC`), Keywords (`KYWD`), ActorValueInformation (`AVIF`), NPCs (`NPC_`),
 MagicEffects (`MGEF`), Perks (`PERK`), Statics (`STAT`), Containers (`CONT`), and ConstructibleObjects (`COBJ`).
 Starfield, Fallout 4, and Skyrim map approved shared records inside their game adapters after loading the Mutagen
-plugin once for the Core-facing record-read call. Starfield also imports Books (`BOOK`), Doors (`DOOR`), and
-Terminals (`TERM`) through the same typed-record pipeline with type-specific detail tables and comparison fields.
+plugin once for the Core-facing record-read call. Starfield also imports ConditionForms (`CNDF`), Books (`BOOK`),
+Doors (`DOOR`), and Terminals (`TERM`) through the same typed-record pipeline with type-specific detail tables and
+comparison fields. Starfield ConditionForms include structured condition rows and generic condition-data parameter
+rows, not raw condition payload rows, because Mutagen exposes the CNDF condition list as typed condition objects.
 All typed record importers save the record's parent row before dispatching shared child import by DTO capability.
 Records that expose models, keywords, sounds, or scripting adapters persist those child rows through the common
 `RecordInstances` identity instead of game-specific child-table paths.
@@ -172,7 +174,8 @@ shared keyword rows, shared model rows, and raw payload rows. BOOK comparison in
 models, keywords, sounds, scripting adapters, and raw payload rows. DOOR comparison includes scalar fields plus shared
 models, keywords, sounds, and raw payload rows. CONT comparison includes scalar fields, item rows, shared keyword rows,
 shared model rows, shared sound rows, and raw payload rows. TERM comparison includes scalar fields, shared models,
-keywords, scripting adapters, raw payload rows, and terminal marker parameter child rows. Raw payload values are
+keywords, scripting adapters, raw payload rows, and terminal marker parameter child rows. CNDF comparison includes
+structured condition rows and condition-data parameter rows. Raw payload values are
 compared by their retained full value but are summarized in the grid as `[UNPARSEABLE REFLECTION DATA]`; the
 presentation layer opens the full value in a hex-view dialog when the user selects the summarized value. MGEF DATA
 fields follow Mutagen/Spriggit's flattened record shape and display as flat comparison rows.
@@ -265,8 +268,8 @@ next launch from the last heartbeat.
 
 ## Shared Scripted Record Extension
 
-Typed records for `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM`
-follow the same Core-facing
+Typed records for `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `CNDF`, `COBJ`,
+and `TERM` follow the same Core-facing
 import contract as `FLST`, `GMST`, and `GLOB`: the game adapters map Mutagen records into Core DTOs,
 `RecordImportService` dispatches by supported game and record type ID, and repositories persist DTO data with named
 SQL parameters. The UI continues to consume Core DTOs and record-tree services only.
@@ -278,10 +281,11 @@ that expose virtual-machine adapters.
 The `MISC` slice currently persists parent scalar fields, keyword rows, model rows, sounds, and scripts. The `BOOK`
 slice persists parent scalar fields, keyword rows, model rows, sounds, scripts, and raw payloads. The `DOOR` slice
 persists parent scalar fields, keyword rows, model rows, sounds, and raw payloads. The `CONT` slice persists parent
-scalar fields, item rows, keyword rows, model rows, sounds, and raw payloads. The `COBJ` slice persists parent scalar
-fields, recipe component rows, Fallout 4 category rows, Starfield recipe-filter rows, scripts when present, and raw
-payloads for conditions and partially understood count/list data. The `TERM` slice persists parent scalar fields,
-keyword rows, model rows, scripts, raw payloads, and marker parameter rows. The old single-game app's deeper
+scalar fields, item rows, keyword rows, model rows, sounds, and raw payloads. The `CNDF` slice persists parent scalar
+fields, condition rows, and generic condition-data parameter rows. The `COBJ` slice persists parent scalar fields,
+recipe component rows, Fallout 4 category rows, Starfield recipe-filter rows, scripts when present, and raw payloads
+for conditions and partially understood count/list data. The `TERM` slice persists parent scalar fields, keyword
+rows, model rows, scripts, raw payloads, and marker parameter rows. The old single-game app's deeper
 MiscObject child-detail tables are still a separate follow-up.
 Scripting adapters are persisted against the shared `RecordInstances` parent using record type IDs such as `GLOB`,
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`.
@@ -304,6 +308,8 @@ payload capability interface. The current populated slices are `STAT`, `CONT`, `
 Starfield, Fallout 4, and Skyrim preserve opaque `Model.Data` payloads where present, and COBJ preserves condition
 payloads because the current schema does not model the full Mutagen condition tree. Starfield also preserves shared
 base-form component payload bytes when present.
+CNDF condition rules are modeled as structured condition and parameter rows, so `ConditionFormDTO` does not expose the
+raw payload capability.
 Starfield `CONT` import stores shared Bethesda base-form component payloads under internal
 `BaseFormComponents.*` slots while preserving the source Mutagen/Spriggit `Components.*` path in
 `RawRecordPayloads.SourcePath`. Ordinary keyword rows discovered through nested component-shaped objects remain

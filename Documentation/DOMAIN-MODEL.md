@@ -35,7 +35,7 @@ Record type: A Bethesda major-record type identified by a four-character record 
 record import workflow includes FormLists (`FLST`), GameSettings (`GMST`), Globals (`GLOB`), MiscItems (`MISC`),
 Keywords (`KYWD`), ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), Perks (`PERK`),
 Statics (`STAT`), Containers (`CONT`), and ConstructibleObjects (`COBJ`). Starfield also persists typed detail rows
-for Books (`BOOK`), Doors (`DOOR`), and Terminals (`TERM`).
+for ConditionForms (`CNDF`), Books (`BOOK`), Doors (`DOOR`), and Terminals (`TERM`).
 
 Starfield master references require special construction through Mutagen's separated-master-aware load-order paths.
 The Starfield reader prefers the full Mutagen environment load order's mod objects so split masters, medium masters,
@@ -79,7 +79,7 @@ with active game, plugin, and record-count context; it does not perform direct M
 
 The main workspace includes a left-side imported-record tree for the active plugin. The current tree includes the
 approved persisted record types: `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`,
-`BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM`. Tree
+`CNDF`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM`. Tree
 entries are read from Core repository data through `IRecordTreeService` and grouped by record ID. Each record-type
 group shows its visible record count, and each record row shows how many imported plugins in the active game contain
 that same origin FormKey.
@@ -99,13 +99,15 @@ and the generic `Data` value. Globals display `Data`. `MISC`, `KYWD`, `AVIF`, `N
 `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM` comparisons display their currently persisted scalar parent fields and
 record-reference fields. PERK comparison displays rank rows, nested rank-effect rows, background skill rows, and
 shared scripting adapter rows. `MISC`, `NPC_`, `MGEF`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM` comparisons display
-shared child rows when those payloads are persisted. `COBJ` comparison displays component, Fallout 4 category, and
-Starfield recipe-filter rows.
+shared child rows when those payloads are persisted. `CNDF` comparison displays structured condition rows and generic
+condition-data parameter rows. `COBJ` comparison displays component, Fallout 4 category, and Starfield recipe-filter
+rows.
 `TERM` comparison also displays marker parameter child rows.
 MGEF DATA follows Mutagen/Spriggit's flattened record shape and displays as flat rows. Child comparison data such as
-keywords, models, sounds, scripts, raw payloads, items, constructible object components, Fallout 4 COBJ category
-links, Starfield COBJ recipe-filter links, perk ranks, perk rank effects, perk background skills, and terminal marker
-parameters is represented as hierarchical rows in the comparison TreeDataGrid instead of flattened dotted field names.
+keywords, models, sounds, scripts, raw payloads, items, condition-form conditions, condition-form parameters,
+constructible object components, Fallout 4 COBJ category links, Starfield COBJ recipe-filter links, perk ranks, perk
+rank effects, perk background skills, and terminal marker parameters is represented as hierarchical rows in the
+comparison TreeDataGrid instead of flattened dotted field names.
 
 Comparable comparison rows are highlighted green when all visible plugin values match and red when any visible plugin
 value differs. Blank values count as values. Single-column comparisons and non-comparable informational rows remain
@@ -120,10 +122,10 @@ Mutagen APIs directly.
 The current readers save the selected game row, discover load-order plugins, read plugin source fingerprints, persist
 plugin metadata, persist declared master references, and run shared record import orchestration for approved record
 types. Starfield, Fallout 4, and Skyrim map `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`,
-`STAT`, `CONT`, and `COBJ` records to shared DTO shapes. Starfield also maps `BOOK`, `DOOR`, and `TERM` records to
-typed detail DTOs instead of model-only preview rows. Typed record repositories persist a shared record instance before
-saving type-specific detail rows, and typed importers dispatch shared child persistence from the record DTO capability
-interfaces.
+`STAT`, `CONT`, and `COBJ` records to shared DTO shapes. Starfield also maps `CNDF`, `BOOK`, `DOOR`, and `TERM`
+records to typed detail DTOs instead of model-only preview rows. Typed record repositories persist a shared record
+instance before saving type-specific detail rows, and typed importers dispatch shared child persistence from the record
+DTO capability interfaces.
 
 ## Presentation Boundary
 
@@ -135,7 +137,8 @@ identity shapes to presentation code.
 ## Shared Record Children
 
 Typed records currently include `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`,
-`CONT`, and `COBJ` across Starfield, Fallout 4, and Skyrim. Starfield also includes `BOOK`, `DOOR`, and `TERM`. Core
+`CONT`, and `COBJ` across Starfield, Fallout 4, and Skyrim. Starfield also includes `CNDF`, `BOOK`, `DOOR`, and
+`TERM`. Core
 exposes these through CreationsForge DTOs and primitive `FormKeyDTO`/`ModKeyDTO` identity shapes; direct Mutagen
 mapping remains in the game adapter projects.
 
@@ -166,6 +169,10 @@ Constructible object components, categories, and recipe filters are stored in CO
 COBJ `Items`, Fallout 4 maps `Components` and `Categories`, and Starfield maps `ConstructableComponents` and
 `RecipeFilters`. COBJ conditions are preserved through raw payload rows. The COBJ `Components` term is intentionally
 kept distinct from shared Bethesda base-form components.
+
+Condition form conditions represent Starfield CNDF condition rules as indexed condition rows plus generic parameter
+rows. The condition data function is stored as `DataMutagenObjectType`, and parameter values retain a decomposed
+FormKey when the Mutagen value exposes one.
 
 Shared Bethesda base-form component payloads use the internal `BaseFormComponents` name when persisted as raw payload
 slots. The original Mutagen/Spriggit source path, such as `Components.AnimationGraphComponent.ANAM`, is retained in

@@ -2,6 +2,7 @@ using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.DTOs.Records.Interfaces;
 using CreationsForge.Core.Enums;
+using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Services;
 using CreationsForge.Core.Services.Interfaces;
 using Shouldly;
@@ -65,6 +66,28 @@ public class RecordChildImportServiceTests
         terminalMarkerParameterImportService.ReplaceRequests.ShouldBeEmpty();
     }
 
+    [Fact]
+    public void ReplaceRecordChildren_WhenConditionForm_DoesNotDispatchRawPayloads()
+    {
+        var modelImportService = new TestModelImportService();
+        var keywordImportService = new TestRecordKeywordImportService();
+        var rawRecordPayloadImportService = new TestRawRecordPayloadImportService();
+        var soundImportService = new TestRecordSoundImportService();
+        var scriptingAdapterImportService = new TestScriptingAdapterImportService();
+        var terminalMarkerParameterImportService = new TestTerminalMarkerParameterImportService();
+        var service = new RecordChildImportService(
+            modelImportService,
+            keywordImportService,
+            rawRecordPayloadImportService,
+            soundImportService,
+            scriptingAdapterImportService,
+            terminalMarkerParameterImportService);
+
+        service.ReplaceRecordChildren(CreateConditionForm(), RecordTypeCatalog.ConditionForm.RecordID);
+
+        rawRecordPayloadImportService.ReplaceRequests.ShouldBeEmpty();
+    }
+
     private static CompositeRecordDTO CreateCompositeRecord()
     {
         return new CompositeRecordDTO
@@ -87,6 +110,20 @@ public class RecordChildImportServiceTests
             ModKey = CreateModKey(),
             FormKey = new FormKeyDTO { ModKey = CreateModKey(), Id = 11 },
             EditorID = "Flat",
+            FormVersion = 1,
+            MajorRecordFlags = 0,
+            ImportedAtUTC = DateTime.UtcNow
+        };
+    }
+
+    private static ConditionFormDTO CreateConditionForm()
+    {
+        return new ConditionFormDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(),
+            FormKey = new FormKeyDTO { ModKey = CreateModKey(), Id = 12 },
+            EditorID = "ConditionForm",
             FormVersion = 1,
             MajorRecordFlags = 0,
             ImportedAtUTC = DateTime.UtcNow

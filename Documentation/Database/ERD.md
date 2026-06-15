@@ -516,6 +516,62 @@ erDiagram
         TEXT ImportedAtUTC
     }
 
+    ConditionForms {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER MajorRecordFlags
+        TEXT ImportedAtUTC
+        INTEGER Version2
+    }
+
+    ConditionFormConditions {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Condition_Index PK
+        TEXT MutagenObjectType
+        TEXT DataMutagenObjectType
+        TEXT CompareOperator
+        TEXT ComparisonValue
+        TEXT ComparisonValue_ModKey_Name
+        INTEGER ComparisonValue_ModKey_Type
+        TEXT ComparisonValue_ModKey_FileName
+        INTEGER ComparisonValue_FormKey_ID
+        TEXT ImportedAtUTC
+    }
+
+    ConditionFormConditionParameters {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Condition_Index PK, FK
+        TEXT Parameter_Name PK
+        TEXT ParameterValue
+        TEXT Parameter_ModKey_Name
+        INTEGER Parameter_ModKey_Type
+        TEXT Parameter_ModKey_FileName
+        INTEGER Parameter_FormKey_ID
+        TEXT ImportedAtUTC
+    }
+
     ConstructibleObjects {
         TEXT Game PK, FK
         TEXT ModKey_Name PK, FK
@@ -919,6 +975,9 @@ erDiagram
     RecordInstances ||--o| Doors : "typed detail"
     RecordInstances ||--o| Containers : "typed detail"
     Containers ||--o{ ContainerItems : contains
+    RecordInstances ||--o| ConditionForms : "typed detail"
+    ConditionForms ||--o{ ConditionFormConditions : contains
+    ConditionFormConditions ||--o{ ConditionFormConditionParameters : contains
     RecordInstances ||--o| ConstructibleObjects : "typed detail"
     ConstructibleObjects ||--o{ ConstructibleObjectComponents : contains
     ConstructibleObjects ||--o{ ConstructibleObjectCategories : contains

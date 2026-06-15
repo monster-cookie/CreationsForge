@@ -442,6 +442,44 @@ public class RecordComparisonServiceTests
     }
 
     [Fact]
+    public void GetRecordComparison_ForConditionForm_MapsVersion2AndConditions()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x246E86);
+        var firstParameter = CreateFormKey("Starfield.esm", 0x258350);
+        var patchFirstParameter = CreateFormKey("Starfield.esm", 0x2CC9F2);
+        var conditionFormRepository = new TestConditionFormRepository
+        {
+            Records =
+            [
+                CreateConditionForm("Base.esm", formKey, 1, firstParameter, "1"),
+                CreateConditionForm("Patch.esp", formKey, 2, patchFirstParameter, null)
+            ]
+        };
+        var rawRecordPayloadRepository = new TestRawRecordPayloadRepository
+        {
+            Records =
+            [
+                CreateRawRecordPayload("Base.esm", RecordTypeCatalog.ConditionForm.RecordID, formKey, "Conditions", 0, "Conditions", "RawCondition")
+            ]
+        };
+        var service = CreateService(conditionFormRepository: conditionFormRepository, rawRecordPayloadRepository: rawRecordPayloadRepository);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.ConditionForm.RecordID, formKey);
+
+        comparison.RecordType.ShouldBe(RecordTypeCatalog.ConditionForm.RecordID);
+        comparison.Fields.Single(field => field.FieldName == "Version2").Values.Select(value => value.DisplayValue).ShouldBe(["1", "2"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Raw Payloads");
+        var conditions = comparison.Fields.Single(field => field.FieldName == "Conditions");
+        var condition = conditions.Children.Single(field => field.FieldName == "Condition [0]");
+        condition.Children.Single(field => field.FieldName == "MutagenObjectType").Values.Select(value => value.DisplayValue).ShouldBe(["ConditionFloat", "ConditionFloat"]);
+        condition.Children.Single(field => field.FieldName == "DataMutagenObjectType").Values.Select(value => value.DisplayValue).ShouldBe(["HasKeywordConditionData", "HasKeywordConditionData"]);
+        condition.Children.Single(field => field.FieldName == "ComparisonValue").Values.Select(value => value.DisplayValue).ShouldBe(["1", ""]);
+        var firstParameterField = condition.Children.Single(field => field.FieldName == "Parameters").Children.Single(field => field.FieldName == "FirstParameter");
+        firstParameterField.Children.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00258350", "Starfield.esm:002CC9F2"]);
+        firstParameterField.Children.Single(field => field.FieldName == "FormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00258350", "Starfield.esm:002CC9F2"]);
+    }
+
+    [Fact]
     public void GetRecordComparison_ForBook_MapsBookFieldsAndChildren()
     {
         var formKey = CreateFormKey("Starfield.esm", 0x3000);
@@ -605,6 +643,7 @@ public class RecordComparisonServiceTests
         TestDoorRepository? doorRepository = null,
         TestContainerRepository? containerRepository = null,
         TestConstructibleObjectRepository? constructibleObjectRepository = null,
+        TestConditionFormRepository? conditionFormRepository = null,
         TestTerminalRepository? terminalRepository = null,
         TestModelRepository? modelRepository = null,
         TestRecordKeywordRepository? recordKeywordRepository = null,
@@ -627,6 +666,7 @@ public class RecordComparisonServiceTests
             doorRepository ?? new TestDoorRepository(),
             containerRepository ?? new TestContainerRepository(),
             constructibleObjectRepository ?? new TestConstructibleObjectRepository(),
+            conditionFormRepository ?? new TestConditionFormRepository(),
             terminalRepository ?? new TestTerminalRepository(),
             modelRepository ?? new TestModelRepository(),
             recordKeywordRepository ?? new TestRecordKeywordRepository(),
@@ -948,6 +988,49 @@ public class RecordComparisonServiceTests
         };
     }
 
+    private static ConditionFormDTO CreateConditionForm(string fileName, FormKeyDTO formKey, int version2, FormKeyDTO firstParameter, string? comparisonValue)
+    {
+        return new ConditionFormDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            EditorID = "MyConditionForm",
+            FormVersion = 1,
+            MajorRecordFlags = 2,
+            ImportedAtUTC = DateTime.UtcNow,
+            Version2 = version2,
+            Conditions =
+            {
+                new ConditionFormConditionDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    ConditionIndex = 0,
+                    MutagenObjectType = "ConditionFloat",
+                    DataMutagenObjectType = "HasKeywordConditionData",
+                    ComparisonValue = comparisonValue,
+                    ImportedAtUTC = DateTime.UtcNow,
+                    Parameters =
+                    {
+                        new ConditionFormConditionParameterDTO
+                        {
+                            Game = SupportedGame.Starfield,
+                            ModKey = CreateModKey(fileName),
+                            FormKey = formKey,
+                            ConditionIndex = 0,
+                            ParameterName = "FirstParameter",
+                            ParameterValue = FormatFormKey(firstParameter),
+                            ParameterFormKey = firstParameter,
+                            ImportedAtUTC = DateTime.UtcNow
+                        }
+                    }
+                }
+            }
+        };
+    }
+
     private static ContainerItemDTO CreateContainerItem(string fileName, FormKeyDTO formKey, FormKeyDTO itemFormKey, int itemIndex, int count)
     {
         return new ContainerItemDTO
@@ -965,6 +1048,11 @@ public class RecordComparisonServiceTests
     private static RawRecordPayloadDTO CreateRawRecordPayload(string fileName, FormKeyDTO formKey, string payloadSlot, int payloadIndex, string payloadType, string payloadValue)
     {
         return CreateRawRecordPayload(fileName, RecordTypeCatalog.Static.RecordID, formKey, payloadSlot, payloadIndex, payloadType, payloadValue);
+    }
+
+    private static string FormatFormKey(FormKeyDTO formKey)
+    {
+        return $"{formKey.ModKey.FileName}:{formKey.Id:X8}";
     }
 
     private static RawRecordPayloadDTO CreateRawRecordPayload(string fileName, string recordType, FormKeyDTO formKey, string payloadSlot, int payloadIndex, string payloadType, string payloadValue, string? sourcePath = null)
@@ -1517,6 +1605,34 @@ public class RecordComparisonServiceTests
         }
 
         public void Save(ConstructibleObjectDTO dto)
+        { }
+
+        public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)
+        { }
+    }
+
+    private sealed class TestConditionFormRepository : IConditionFormRepository
+    {
+        public string RecordType => RecordTypeCatalog.ConditionForm.RecordID;
+
+        public IReadOnlyList<ConditionFormDTO> Records { get; set; } = [];
+
+        public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntriesByPlugin(SupportedGame game, ModKeyDTO modKey)
+        {
+            return [];
+        }
+
+        public IReadOnlyDictionary<string, int> GetRecordPluginCountsByGame(SupportedGame game)
+        {
+            return new Dictionary<string, int>();
+        }
+
+        public IReadOnlyList<ConditionFormDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        {
+            return Records;
+        }
+
+        public void Save(ConditionFormDTO dto)
         { }
 
         public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)

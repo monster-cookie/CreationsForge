@@ -67,6 +67,34 @@ public class RecordImportServiceTests
     }
 
     [Fact]
+    public void ImportPluginRecords_WhenConditionFormsArePresent_ImportsOptionalStarfieldRecordType()
+    {
+        var plugin = CreatePlugin(SupportedGame.Starfield);
+        var conditionForm = CreateConditionForm(plugin, 100);
+        var conditionFormImporter = new TestTypedRecordImporter("CNDF", "ConditionForms", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
+        var formListImporter = new TestTypedRecordImporter("FLST", "FormLists", CreateSupportedGames(SupportedGame.Starfield));
+        var gameSettingImporter = new TestTypedRecordImporter("GMST", "GameSettings", CreateSupportedGames(SupportedGame.Starfield));
+        var globalImporter = new TestTypedRecordImporter("GLOB", "Globals", CreateSupportedGames(SupportedGame.Starfield));
+        var miscObjectImporter = new TestTypedRecordImporter("MISC", "MiscItems", CreateSupportedGames(SupportedGame.Starfield));
+        var keywordImporter = new TestTypedRecordImporter("KYWD", "Keywords", CreateSupportedGames(SupportedGame.Starfield));
+        var actorValueInformationImporter = new TestTypedRecordImporter("AVIF", "ActorValueInformation", CreateSupportedGames(SupportedGame.Starfield));
+        var npcImporter = new TestTypedRecordImporter("NPC_", "NPCs", CreateSupportedGames(SupportedGame.Starfield));
+        var magicEffectImporter = new TestTypedRecordImporter("MGEF", "MagicEffects", CreateSupportedGames(SupportedGame.Starfield));
+        var perkImporter = new TestTypedRecordImporter("PERK", "Perks", CreateSupportedGames(SupportedGame.Starfield));
+        var service = new RecordImportService([formListImporter, gameSettingImporter, globalImporter, miscObjectImporter, keywordImporter, actorValueInformationImporter, npcImporter, magicEffectImporter, perkImporter, conditionFormImporter]);
+
+        var result = service.ImportPluginRecords(plugin, new TestGameRecordReader(plugin.Game, [], [], [], conditionForms: [conditionForm]));
+
+        result.RecordTypes.Select(recordType => recordType.RecordType).ShouldContain("CNDF");
+        result.RecordTypes.Single(recordType => recordType.RecordType == "CNDF").TypedDetailImportSupported.ShouldBeTrue();
+        result.HeadersImported.ShouldBe(1);
+        result.DetailRowsImported.ShouldBe(1);
+        result.UnsupportedRecordTypes.ShouldBe(0);
+        conditionFormImporter.StaleCleanupRequests.ShouldBe([plugin]);
+        conditionFormImporter.ImportedRecords.ShouldBe([conditionForm]);
+    }
+
+    [Fact]
     public void ImportPluginRecords_WhenImporterIsMissing_MarksRecordTypeUnsupportedAndContinues()
     {
         var plugin = CreatePlugin(SupportedGame.Fallout4);
@@ -285,6 +313,21 @@ public class RecordImportServiceTests
         };
     }
 
+    private static ConditionFormDTO CreateConditionForm(PluginDTO plugin, uint id)
+    {
+        return new ConditionFormDTO
+        {
+            Game = plugin.Game,
+            ModKey = plugin.ModKey,
+            FormKey = CreateFormKey(plugin.ModKey, id),
+            EditorID = $"CNDF{id}",
+            FormVersion = 1,
+            MajorRecordFlags = 0,
+            ImportedAtUTC = default,
+            Version2 = 1
+        };
+    }
+
     private static FormKeyDTO CreateFormKey(ModKeyDTO modKey, uint id)
     {
         return new FormKeyDTO
@@ -320,6 +363,7 @@ public class RecordImportServiceTests
         private readonly IReadOnlyList<NPCDTO> NPCs;
         private readonly IReadOnlyList<MagicEffectDTO> MagicEffects;
         private readonly IReadOnlyList<PerkDTO> Perks;
+        private readonly IReadOnlyList<ConditionFormDTO> ConditionForms;
 
         public TestGameRecordReader(
             SupportedGame game,
@@ -331,7 +375,8 @@ public class RecordImportServiceTests
             IReadOnlyList<ActorValueInformationDTO>? actorValueInformation = null,
             IReadOnlyList<NPCDTO>? npcs = null,
             IReadOnlyList<MagicEffectDTO>? magicEffects = null,
-            IReadOnlyList<PerkDTO>? perks = null)
+            IReadOnlyList<PerkDTO>? perks = null,
+            IReadOnlyList<ConditionFormDTO>? conditionForms = null)
         {
             Game = game;
             FormLists = formLists;
@@ -343,6 +388,7 @@ public class RecordImportServiceTests
             NPCs = npcs ?? [];
             MagicEffects = magicEffects ?? [];
             Perks = perks ?? [];
+            ConditionForms = conditionForms ?? [];
         }
 
         public SupportedGame Game { get; }
@@ -359,7 +405,8 @@ public class RecordImportServiceTests
                 ActorValueInformation = ActorValueInformation,
                 NPCs = NPCs,
                 MagicEffects = MagicEffects,
-                Perks = Perks
+                Perks = Perks,
+                ConditionForms = ConditionForms
             };
         }
     }

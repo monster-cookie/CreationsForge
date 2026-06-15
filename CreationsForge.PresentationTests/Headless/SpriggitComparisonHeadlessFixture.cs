@@ -227,6 +227,7 @@ public class SpriggitComparisonHeadlessFixture
             repository,
             repository,
             repository,
+            repository,
             repository);
     }
 
@@ -253,6 +254,7 @@ public class SpriggitComparisonHeadlessFixture
         IDoorRepository,
         IContainerRepository,
         IConstructibleObjectRepository,
+        IConditionFormRepository,
         ITerminalRepository,
         IModelRepository,
         IRecordKeywordRepository,
@@ -274,6 +276,7 @@ public class SpriggitComparisonHeadlessFixture
         private readonly IReadOnlyList<DoorDTO> doors = [];
         private readonly IReadOnlyList<ContainerDTO> containers = [];
         private readonly IReadOnlyList<ConstructibleObjectDTO> constructibleObjects = [];
+        private readonly IReadOnlyList<ConditionFormDTO> conditionForms = [];
         private readonly IReadOnlyList<TerminalDTO> terminals = [];
         private readonly IReadOnlyList<ModelDTO> models = [];
         private readonly IReadOnlyList<RecordKeywordDTO> recordKeywords = [];
@@ -296,6 +299,9 @@ public class SpriggitComparisonHeadlessFixture
                     break;
                 case "COBJ":
                     constructibleObjects = [RequireRecord<ConstructibleObjectDTO>(record, recordType)];
+                    break;
+                case "CNDF":
+                    conditionForms = [RequireRecord<ConditionFormDTO>(record, recordType)];
                     break;
                 case "PERK":
                     perks = [RequireRecord<PerkDTO>(record, recordType)];
@@ -410,6 +416,11 @@ public class SpriggitComparisonHeadlessFixture
             return constructibleObjects;
         }
 
+        IReadOnlyList<ConditionFormDTO> IConditionFormRepository.GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        {
+            return conditionForms;
+        }
+
         IReadOnlyList<TerminalDTO> ITerminalRepository.GetByFormKey(SupportedGame game, FormKeyDTO formKey)
         {
             return terminals;
@@ -480,6 +491,9 @@ public class SpriggitComparisonHeadlessFixture
         { }
 
         public void Save(ConstructibleObjectDTO dto)
+        { }
+
+        public void Save(ConditionFormDTO dto)
         { }
 
         public void Save(TerminalDTO dto)

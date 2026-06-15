@@ -24,6 +24,7 @@ public class RecordComparisonService : IRecordComparisonService
     private readonly IDoorRepository DoorRepository;
     private readonly IContainerRepository ContainerRepository;
     private readonly IConstructibleObjectRepository ConstructibleObjectRepository;
+    private readonly IConditionFormRepository ConditionFormRepository;
     private readonly ITerminalRepository TerminalRepository;
     private readonly IModelRepository ModelRepository;
     private readonly IRecordKeywordRepository RecordKeywordRepository;
@@ -46,6 +47,7 @@ public class RecordComparisonService : IRecordComparisonService
         IDoorRepository doorRepository,
         IContainerRepository containerRepository,
         IConstructibleObjectRepository constructibleObjectRepository,
+        IConditionFormRepository conditionFormRepository,
         ITerminalRepository terminalRepository,
         IModelRepository modelRepository,
         IRecordKeywordRepository recordKeywordRepository,
@@ -67,6 +69,7 @@ public class RecordComparisonService : IRecordComparisonService
         DoorRepository = doorRepository;
         ContainerRepository = containerRepository;
         ConstructibleObjectRepository = constructibleObjectRepository;
+        ConditionFormRepository = conditionFormRepository;
         TerminalRepository = terminalRepository;
         ModelRepository = modelRepository;
         RecordKeywordRepository = recordKeywordRepository;
@@ -145,6 +148,11 @@ public class RecordComparisonService : IRecordComparisonService
         if (recordType == RecordTypeCatalog.ConstructibleObject.RecordID)
         {
             return CreateConstructibleObjectComparison(game, formKey);
+        }
+
+        if (recordType == RecordTypeCatalog.ConditionForm.RecordID)
+        {
+            return CreateConditionFormComparison(game, formKey);
         }
 
         if (recordType == RecordTypeCatalog.Terminal.RecordID)
@@ -441,6 +449,17 @@ public class RecordComparisonService : IRecordComparisonService
         AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.ConstructibleObject.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.ConstructibleObject.RecordID, formKey, baseRecords, fields);
+    }
+
+    private RecordComparisonDTO CreateConditionFormComparison(SupportedGame game, FormKeyDTO formKey)
+    {
+        var records = ConditionFormRepository.GetByFormKey(game, formKey);
+        var baseRecords = records.Cast<RecordDTO>().ToList();
+        var fields = CreateCommonFields(baseRecords);
+        fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
+        AddConditionFormConditionGroups(fields, records);
+
+        return CreateComparison(RecordTypeCatalog.ConditionForm.RecordID, formKey, baseRecords, fields);
     }
 
     private RecordComparisonDTO CreateTerminalComparison(SupportedGame game, FormKeyDTO formKey)
@@ -945,6 +964,87 @@ public class RecordComparisonService : IRecordComparisonService
         }
     }
 
+    private static void AddConditionFormConditionGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<ConditionFormDTO> records)
+    {
+        var conditionIndexes = records
+            .SelectMany(record => record.Conditions)
+            .Select(condition => condition.ConditionIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (conditionIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var conditionFields = new List<RecordComparisonFieldDTO>();
+        foreach (var conditionIndex in conditionIndexes)
+        {
+            var currentIndex = conditionIndex;
+            var conditionChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("MutagenObjectType", records, record => FindCondition(record, currentIndex)?.MutagenObjectType ?? string.Empty),
+                CreateField("DataMutagenObjectType", records, record => FindCondition(record, currentIndex)?.DataMutagenObjectType ?? string.Empty),
+                CreateField("CompareOperator", records, record => FindCondition(record, currentIndex)?.CompareOperator ?? string.Empty),
+                CreateField("ComparisonValue", records, record => FindCondition(record, currentIndex)?.ComparisonValue ?? string.Empty),
+                CreateField("ComparisonValueFormKey", records, record => FormatFormKey(FindCondition(record, currentIndex)?.ComparisonValueFormKey))
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            AddConditionFormParameterGroups(conditionChildren, records, currentIndex);
+            if (conditionChildren.Count > 0)
+            {
+                conditionFields.Add(CreateGroupField($"Condition [{conditionIndex}]", records.Cast<RecordDTO>().ToList(), conditionChildren));
+            }
+        }
+
+        if (conditionFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("Conditions", records.Cast<RecordDTO>().ToList(), conditionFields));
+        }
+    }
+
+    private static void AddConditionFormParameterGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<ConditionFormDTO> records,
+        int conditionIndex)
+    {
+        var parameterNames = records
+            .SelectMany(record => FindCondition(record, conditionIndex)?.Parameters ?? [])
+            .Select(parameter => parameter.ParameterName)
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToList();
+        if (parameterNames.Count == 0)
+        {
+            return;
+        }
+
+        var parameterFields = new List<RecordComparisonFieldDTO>();
+        foreach (var parameterName in parameterNames)
+        {
+            var currentName = parameterName;
+            var parameterChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("Value", records, record => FindConditionParameter(record, conditionIndex, currentName)?.ParameterValue ?? string.Empty),
+                CreateField("FormKey", records, record => FormatFormKey(FindConditionParameter(record, conditionIndex, currentName)?.ParameterFormKey))
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (parameterChildren.Count > 0)
+            {
+                parameterFields.Add(CreateGroupField(parameterName, records.Cast<RecordDTO>().ToList(), parameterChildren));
+            }
+        }
+
+        if (parameterFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("Parameters", records.Cast<RecordDTO>().ToList(), parameterFields));
+        }
+    }
+
     private static void AddRawPayloadGroups(
         IList<RecordComparisonFieldDTO> fields,
         IReadOnlyList<RecordDTO> records,
@@ -1149,6 +1249,16 @@ public class RecordComparisonService : IRecordComparisonService
         return payloads.FirstOrDefault(payload => IsSameModKey(payload.ModKey, modKey) &&
             string.Equals(payload.PayloadSlot, payloadKey.Slot, StringComparison.Ordinal) &&
             payload.PayloadIndex == payloadKey.Index);
+    }
+
+    private static ConditionFormConditionDTO? FindCondition(ConditionFormDTO record, int conditionIndex)
+    {
+        return record.Conditions.FirstOrDefault(condition => condition.ConditionIndex == conditionIndex);
+    }
+
+    private static ConditionFormConditionParameterDTO? FindConditionParameter(ConditionFormDTO record, int conditionIndex, string parameterName)
+    {
+        return FindCondition(record, conditionIndex)?.Parameters.FirstOrDefault(parameter => string.Equals(parameter.ParameterName, parameterName, StringComparison.Ordinal));
     }
 
     private static PerkRankDTO? FindPerkRank(PerkDTO record, int rankIndex)

@@ -10,15 +10,16 @@ The application uses a local SQLite database. The schema is defined by embedded 
   `Containers` typed record tables, `ContainerItems`, and `RawRecordPayloads`.
 - `003_Migrations003.sql` renames `MiscObjects` to `MiscItems` and adds the `Books`, `Doors`, `Terminals`, and
   `TerminalMarkerParameters` tables.
-- `004_Migrations004.sql` adds the `ConstructibleObjects`, `ConstructibleObjectComponents`,
-  `ConstructibleObjectCategories`, and `ConstructibleObjectRecipeFilters` tables, adds `RawRecordPayloads.SourcePath`,
-  and marks existing current or partially imported plugin rows as `Changed` so each supported game reimports cached
-  plugin data after the migration.
+- `004_Migrations004.sql` adds the `ConditionForms`, `ConditionFormConditions`,
+  `ConditionFormConditionParameters`, `ConstructibleObjects`, `ConstructibleObjectComponents`,
+  `ConstructibleObjectCategories`, and `ConstructibleObjectRecipeFilters` tables, adds
+  `RawRecordPayloads.SourcePath`, and marks existing current or partially imported plugin rows as `Changed` so each
+  supported game reimports cached plugin data after the migration.
 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains forty-one tables:
+The application schema contains forty-four tables:
 
 - `Games`
 - `Plugins`
@@ -42,6 +43,9 @@ The application schema contains forty-one tables:
 - `Doors`
 - `Containers`
 - `ContainerItems`
+- `ConditionForms`
+- `ConditionFormConditions`
+- `ConditionFormConditionParameters`
 - `ConstructibleObjects`
 - `ConstructibleObjectComponents`
 - `ConstructibleObjectCategories`
@@ -536,6 +540,10 @@ the common typed record key and metadata columns.
 - `Name`, `Flags`, and `MajorFlags` (`TEXT`, nullable)
 - nullable decomposed FormKey columns for `NativeTerminal`
 
+`ConditionForms` additional columns:
+
+- `Version2` (`INTEGER`, nullable)
+
 `ConstructibleObjects` additional columns:
 
 - `Version2` (`INTEGER`, nullable)
@@ -575,11 +583,12 @@ Persistence behavior:
   sound rows, scripting adapters, and raw payload rows. `Doors` persist parent scalar rows, shared model rows,
   shared keyword rows, shared sound rows, and raw payload rows. `Containers` persist parent scalar rows, child item
   rows, shared model rows, shared keyword rows when present, shared sound rows when present, and raw opaque payload
-  rows. `ConstructibleObjects` persist parent scalar rows, component rows, Fallout 4 category rows, Starfield
-  recipe-filter rows, scripting adapters when present, and raw opaque payload rows such as conditions and multi-count
-  data. `Terminals` persist parent scalar rows, shared model rows, shared keyword rows, scripting adapters, raw
-  payload rows, and
-  `TerminalMarkerParameters` rows. `NPCs` and `MagicEffects` persist shared keyword rows.
+  rows. `ConditionForms` persist parent scalar rows and structured Starfield condition rows with generic parameter
+  rows.
+  `ConstructibleObjects` persist parent scalar rows, component rows, Fallout 4 category rows, Starfield recipe-filter
+  rows, scripting adapters when present, and raw opaque payload rows such as conditions and multi-count data.
+  `Terminals` persist parent scalar rows, shared model rows, shared keyword rows, scripting adapters, raw payload rows,
+  and `TerminalMarkerParameters` rows. `NPCs` and `MagicEffects` persist shared keyword rows.
   `MagicEffects` persists shared sound rows and Spriggit-flattened DATA fields directly on the parent row.
 
 ### ContainerItems
@@ -610,6 +619,76 @@ Persistence behavior:
 - Current imported rows are upserted after their owning container row is saved.
 - Existing item rows for the same container are deleted before replacement so removed items do not remain stale.
 - Stale typed-record deletion removes item rows through the declared `Containers` cascade.
+
+### ConditionFormConditions
+
+Starfield CNDF `Conditions` rows are stored here. The table stores the condition envelope shared by
+`ConditionFloat` and `ConditionGlobal` rows.
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `Condition_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `MutagenObjectType` (`TEXT`, `NOT NULL`)
+- `DataMutagenObjectType` (`TEXT`, nullable)
+- `CompareOperator` (`TEXT`, nullable)
+- `ComparisonValue` (`TEXT`, nullable)
+- nullable decomposed FormKey columns for `ComparisonValue`
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `ConditionForms` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `Condition_Index`, `FormKey_ID`, and non-null `ComparisonValue_FormKey_ID` must be greater than or equal to zero.
+
+Indexes:
+
+- `IX_ConditionFormConditions_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning condition form row is saved.
+- Existing condition rows for the same condition form are deleted before replacement so removed conditions do not
+  remain stale.
+- Stale typed-record deletion removes condition rows through the declared `ConditionForms` cascade.
+
+### ConditionFormConditionParameters
+
+Starfield CNDF condition data fields such as `RunOnType`, `Reference`, `FirstParameter`, `SecondParameter`,
+`Unknown3`, `UseAliases`, and `VoiceTypeOrList` are stored here.
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `Condition_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `Parameter_Name` (`TEXT`, `NOT NULL`, primary key)
+- `ParameterValue` (`TEXT`, nullable)
+- nullable decomposed FormKey columns for the parameter value
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full parent condition key references `ConditionFormConditions` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `Condition_Index`, `FormKey_ID`, and non-null `Parameter_FormKey_ID` must be greater than or equal to zero.
+- `Parameter_Name` must not be empty.
+
+Indexes:
+
+- `IX_ConditionFormConditionParameters_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning condition row is saved.
+- Existing parameter rows for a replaced condition are deleted through the parent condition row replacement/delete
+  behavior.
 
 ### ConstructibleObjectComponents
 
