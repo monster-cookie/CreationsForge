@@ -20,7 +20,7 @@ extension importers persist audited scalar plugin header fields into extension t
 Skyrim map the currently approved cross-game typed records: FormLists, GameSettings, Globals, MiscItems, Keywords,
 ActorValueInformation, NPCs, MagicEffects, Perks, Statics, Containers, and ConstructibleObjects. Starfield also maps
 ConditionForms, Books, Doors, and Terminals into typed detail rows. ConditionForms include structured condition rows
-and generic condition-data parameter rows. Imports currently create/update the selected
+and generic condition-data parameter rows, not raw condition payload rows. Imports currently create/update the selected
 `Games`, `Plugins`, `PluginMasterReferences`, game-specific plugin extension rows, and approved typed record rows.
 
 ## Projects

@@ -458,7 +458,6 @@ public class RecordComparisonService : IRecordComparisonService
         var fields = CreateCommonFields(baseRecords);
         fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
         AddConditionFormConditionGroups(fields, records);
-        AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.ConditionForm.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.ConditionForm.RecordID, formKey, baseRecords, fields);
     }

@@ -109,7 +109,7 @@ Starfield, Fallout 4, and Skyrim map approved shared records inside their game a
 plugin once for the Core-facing record-read call. Starfield also imports ConditionForms (`CNDF`), Books (`BOOK`),
 Doors (`DOOR`), and Terminals (`TERM`) through the same typed-record pipeline with type-specific detail tables and
 comparison fields. Starfield ConditionForms include structured condition rows and generic condition-data parameter
-rows because Mutagen exposes the CNDF condition list as typed condition objects.
+rows, not raw condition payload rows, because Mutagen exposes the CNDF condition list as typed condition objects.
 All typed record importers save the record's parent row before dispatching shared child import by DTO capability.
 Records that expose models, keywords, sounds, or scripting adapters persist those child rows through the common
 `RecordInstances` identity instead of game-specific child-table paths.
@@ -308,6 +308,8 @@ payload capability interface. The current populated slices are `STAT`, `CONT`, `
 Starfield, Fallout 4, and Skyrim preserve opaque `Model.Data` payloads where present, and COBJ preserves condition
 payloads because the current schema does not model the full Mutagen condition tree. Starfield also preserves shared
 base-form component payload bytes when present.
+CNDF condition rules are modeled as structured condition and parameter rows, so `ConditionFormDTO` does not expose the
+raw payload capability.
 Starfield `CONT` import stores shared Bethesda base-form component payloads under internal
 `BaseFormComponents.*` slots while preserving the source Mutagen/Spriggit `Components.*` path in
 `RawRecordPayloads.SourcePath`. Ordinary keyword rows discovered through nested component-shaped objects remain

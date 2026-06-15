@@ -191,7 +191,7 @@ public class SpriggitRecordParityTests
 
                 if (sample.HasPath("Conditions"))
                 {
-                    conditionFormRecord.RawPayloads.Count.ShouldBeGreaterThan(0, $"ConditionForm '{record.EditorID}' should preserve Conditions as raw payloads.");
+                    conditionFormRecord.Conditions.Count.ShouldBeGreaterThan(0, $"ConditionForm '{record.EditorID}' should preserve structured Conditions.");
                 }
 
                 break;

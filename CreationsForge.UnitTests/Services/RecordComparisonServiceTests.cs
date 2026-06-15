@@ -455,7 +455,14 @@ public class RecordComparisonServiceTests
                 CreateConditionForm("Patch.esp", formKey, 2, patchFirstParameter, null)
             ]
         };
-        var service = CreateService(conditionFormRepository: conditionFormRepository);
+        var rawRecordPayloadRepository = new TestRawRecordPayloadRepository
+        {
+            Records =
+            [
+                CreateRawRecordPayload("Base.esm", RecordTypeCatalog.ConditionForm.RecordID, formKey, "Conditions", 0, "Conditions", "RawCondition")
+            ]
+        };
+        var service = CreateService(conditionFormRepository: conditionFormRepository, rawRecordPayloadRepository: rawRecordPayloadRepository);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.ConditionForm.RecordID, formKey);
 
