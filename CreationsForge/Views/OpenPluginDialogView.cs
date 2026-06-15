@@ -7,6 +7,7 @@ using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
 using CreationsForge.Core.DTOs.Games;
 using CreationsForge.ViewModels;
 
@@ -17,6 +18,9 @@ public class OpenPluginDialogView : UserControl
     private readonly OpenPluginDialogViewModel ViewModel;
     private readonly Action<bool> CloseAction;
     private readonly IList<Button> GameButtons = new List<Button>();
+    private Button? PrimaryActionButton;
+    private CancellationTokenSource? PrimaryActionPulseCancellationTokenSource;
+    private bool LastPrimaryActionWasImport;
 
     public OpenPluginDialogView(OpenPluginDialogViewModel viewModel, Action<bool> closeAction)
     {
@@ -25,11 +29,18 @@ public class OpenPluginDialogView : UserControl
         DataContext = ViewModel;
         AutomationProperties.SetAutomationId(this, "OpenPluginDialogView");
         Content = BuildContent();
+        LastPrimaryActionWasImport = ViewModel.HasNoPlugins;
         ViewModel.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(OpenPluginDialogViewModel.SelectedGame))
             {
                 RefreshGameButtons();
+            }
+
+            if (e.PropertyName == nameof(OpenPluginDialogViewModel.PrimaryActionText) ||
+                e.PropertyName == nameof(OpenPluginDialogViewModel.HasNoPlugins))
+            {
+                PulsePrimaryActionButtonWhenImportBecomesAvailable();
             }
         };
         RefreshGameButtons();
@@ -452,6 +463,7 @@ public class OpenPluginDialogView : UserControl
             MinWidth = 110,
             Padding = new Thickness(16, 8)
         };
+        PrimaryActionButton = openButton;
         AutomationProperties.SetAutomationId(openButton, "OpenPluginDialogOpenButton");
         openButton.Bind(ContentControl.ContentProperty, new Binding(nameof(OpenPluginDialogViewModel.PrimaryActionText)));
         openButton.Bind(IsEnabledProperty, new Binding(nameof(OpenPluginDialogViewModel.CanRunPrimaryAction)));
@@ -485,6 +497,72 @@ public class OpenPluginDialogView : UserControl
                 buttons
             }
         };
+    }
+
+    private void PulsePrimaryActionButtonWhenImportBecomesAvailable()
+    {
+        var isImportAction = ViewModel.HasNoPlugins;
+        if (isImportAction && !LastPrimaryActionWasImport)
+        {
+            _ = PulsePrimaryActionButtonAsync();
+        }
+
+        LastPrimaryActionWasImport = isImportAction;
+    }
+
+    private async Task PulsePrimaryActionButtonAsync()
+    {
+        if (PrimaryActionButton is null)
+        {
+            return;
+        }
+
+        PrimaryActionPulseCancellationTokenSource?.Cancel();
+        PrimaryActionPulseCancellationTokenSource?.Dispose();
+        PrimaryActionPulseCancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = PrimaryActionPulseCancellationTokenSource.Token;
+        var button = PrimaryActionButton;
+        try
+        {
+            await SetPrimaryActionPulseStateAsync(button, 1.05, Color.FromRgb(64, 122, 205), cancellationToken);
+            await Task.Delay(120, cancellationToken);
+            await SetPrimaryActionPulseStateAsync(button, 1.0, Color.FromRgb(45, 95, 168), cancellationToken);
+            await Task.Delay(80, cancellationToken);
+            await SetPrimaryActionPulseStateAsync(button, 1.03, Color.FromRgb(64, 122, 205), cancellationToken);
+            await Task.Delay(120, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        finally
+        {
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    button.ClearValue(BackgroundProperty);
+                    button.ClearValue(BorderBrushProperty);
+                    button.ClearValue(RenderTransformProperty);
+                });
+            }
+        }
+    }
+
+    private static Task SetPrimaryActionPulseStateAsync(Button button, double scale, Color backgroundColor, CancellationToken cancellationToken)
+    {
+        return Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            button.RenderTransformOrigin = RelativePoint.Center;
+            button.RenderTransform = new ScaleTransform(scale, scale);
+            button.Background = new SolidColorBrush(backgroundColor);
+            button.BorderBrush = new SolidColorBrush(Color.FromRgb(122, 172, 255));
+        }).GetTask();
     }
 
     private void RefreshGameButtons()
