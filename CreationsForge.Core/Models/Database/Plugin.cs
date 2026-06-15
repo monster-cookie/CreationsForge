@@ -25,6 +25,8 @@ public class Plugin
         FormVersion = dto.FormVersion;
         Author = dto.Author;
         Description = dto.Description;
+        ImportMessage = dto.ImportMessage;
+        ImportDetails = dto.ImportDetails;
         RecordCount = dto.RecordCount;
         SourceLastWriteUTCTicks = dto.SourceLastWriteUTCTicks;
         SourceFileSizeBytes = dto.SourceFileSizeBytes;
@@ -56,6 +58,10 @@ public class Plugin
     [Column("Author")] public string? Author { get; set; }
 
     [Column("Description")] public string? Description { get; set; }
+
+    [Column("ImportMessage")] public string? ImportMessage { get; set; }
+
+    [Column("ImportDetails")] public string? ImportDetails { get; set; }
 
     [Column("RecordCount")] public int RecordCount { get; set; }
 
@@ -98,6 +104,8 @@ public class Plugin
             FormVersion = FormVersion,
             Author = Author,
             Description = Description,
+            ImportMessage = ImportMessage,
+            ImportDetails = ImportDetails,
             RecordCount = RecordCount,
             SourceLastWriteUTCTicks = SourceLastWriteUTCTicks,
             SourceFileSizeBytes = SourceFileSizeBytes,

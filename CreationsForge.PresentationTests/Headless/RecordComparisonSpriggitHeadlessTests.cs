@@ -368,6 +368,11 @@ public class RecordComparisonSpriggitHeadlessTests : IClassFixture<SpriggitCompa
             return Task.FromResult(selectedGame);
         }
 
+        public Task<bool> ShowOpenPluginAsync(OpenPluginDialogViewModel viewModel)
+        {
+            return Task.FromResult(false);
+        }
+
         public Task<bool> ShowImportWarningAsync(SupportedGameDTO selectedGame, bool forceFullReimport)
         {
             return Task.FromResult(true);

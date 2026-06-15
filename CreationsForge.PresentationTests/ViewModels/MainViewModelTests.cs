@@ -111,6 +111,43 @@ public class MainViewModelTests
     }
 
     [Fact]
+    public async Task OpenPluginCommand_WhenDialogSelectsPlugin_LoadsSelectedPlugin()
+    {
+        var plugin = CreatePlugin("Small.esm", 10);
+        var dialogService = new FakeUserDialogService
+        {
+            OpenPluginDialogAccepted = true
+        };
+        var viewModel = CreateViewModel(
+            pluginSelectionService: new FakePluginSelectionService([plugin]),
+            userDialogService: dialogService);
+
+        viewModel.OpenPluginCommand.Execute(null);
+        await WaitUntil(() => viewModel.StatusText.Contains("Small.esm", StringComparison.OrdinalIgnoreCase));
+
+        viewModel.StatusText.ShouldContain("Small.esm");
+    }
+
+    [Fact]
+    public async Task OpenPluginCommand_WhenDialogSelectsEmptyGame_StartsImport()
+    {
+        var navigationService = new FakeApplicationNavigationService();
+        var dialogService = new FakeUserDialogService
+        {
+            OpenPluginDialogAccepted = true
+        };
+        var viewModel = CreateViewModel(
+            navigationService,
+            new FakePluginSelectionService([]),
+            dialogService);
+
+        viewModel.OpenPluginCommand.Execute(null);
+        await WaitUntil(() => navigationService.ImportProgressCount == 1);
+
+        navigationService.ImportProgressCount.ShouldBe(1);
+    }
+
+    [Fact]
     public async Task ChoosePluginSuggestion_WithMissingPlugin_DoesNotLoadRecords()
     {
         var navigationService = new FakeApplicationNavigationService();
@@ -130,7 +167,8 @@ public class MainViewModelTests
 
     private static MainViewModel CreateViewModel(
         FakeApplicationNavigationService? navigationService = null,
-        IPluginSelectionService? pluginSelectionService = null)
+        IPluginSelectionService? pluginSelectionService = null,
+        IUserDialogService? userDialogService = null)
     {
         return new MainViewModel(
             new FakeGameSelectionService(),
@@ -141,7 +179,7 @@ public class MainViewModelTests
             CreateRootScope(),
             CreateAssetPreviewPaneViewModel(),
             navigationService ?? new FakeApplicationNavigationService(),
-            new FakeUserDialogService(),
+            userDialogService ?? new FakeUserDialogService(),
             new LoggerConfiguration().CreateLogger());
     }
 
@@ -354,6 +392,8 @@ public class MainViewModelTests
 
         public int ActivePluginLoadCount { get; private set; }
 
+        public int ImportProgressCount { get; private set; }
+
         public Task ShowMainViewAsync(SupportedGameDTO? selectedGame, bool runConfiguredGameImport)
         {
             CurrentActivePluginLoadKey = null;
@@ -388,6 +428,7 @@ public class MainViewModelTests
         public Task ShowImportProgressViewAsync(SupportedGameDTO selectedGame, bool forceFullReimport)
         {
             CurrentActivePluginLoadKey = null;
+            ImportProgressCount++;
             return Task.CompletedTask;
         }
 
@@ -408,9 +449,17 @@ public class MainViewModelTests
 
     private class FakeUserDialogService : IUserDialogService
     {
+        public bool OpenPluginDialogAccepted { get; set; }
+
         public Task<SupportedGameDTO?> ShowGameSelectionAsync(IReadOnlyList<SupportedGameDTO> supportedGames, SupportedGameDTO? selectedGame)
         {
             return Task.FromResult(selectedGame);
+        }
+
+        public Task<bool> ShowOpenPluginAsync(OpenPluginDialogViewModel viewModel)
+        {
+            viewModel.SelectedPluginRow = viewModel.PluginRows.FirstOrDefault();
+            return Task.FromResult(OpenPluginDialogAccepted);
         }
 
         public Task<bool> ShowImportWarningAsync(SupportedGameDTO selectedGame, bool forceFullReimport)

@@ -53,6 +53,7 @@ public class MainViewHeadlessTests
 
             var mainView = (MainView)window.Content!;
             ControlFinder.FindByAutomationId<StackPanel>(mainView, "MainToolbar").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<Button>(mainView, "OpenPluginButton").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<Button>(mainView, "ReimportButton").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<Button>(mainView, "ResetAndImportAllButton").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<Button>(mainView, "SettingsButton").ShouldNotBeNull();
@@ -285,6 +286,11 @@ public class MainViewHeadlessTests
         public Task<SupportedGameDTO?> ShowGameSelectionAsync(IReadOnlyList<SupportedGameDTO> supportedGames, SupportedGameDTO? selectedGame)
         {
             return Task.FromResult(selectedGame);
+        }
+
+        public Task<bool> ShowOpenPluginAsync(OpenPluginDialogViewModel viewModel)
+        {
+            return Task.FromResult(false);
         }
 
         public Task<bool> ShowImportWarningAsync(SupportedGameDTO selectedGame, bool forceFullReimport)

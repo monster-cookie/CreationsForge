@@ -82,6 +82,7 @@ public class MainViewModel : ViewModelBase
         ApplicationNavigationService = applicationNavigationService;
         UserDialogService = userDialogService;
         Logger = logger.ForContext<MainViewModel>();
+        OpenPluginCommand = new AsyncRelayCommand(OpenPluginAsync);
         ShowSettingsCommand = new RelayCommand(ShowSettings);
         ReimportSelectedGameCommand = new AsyncRelayCommand(ReimportSelectedGameAsync, () => SelectedGame is not null);
         ResetAndImportAllCommand = new AsyncRelayCommand(ResetAndImportAllAsync);
@@ -164,6 +165,8 @@ public class MainViewModel : ViewModelBase
     public ICommand ToggleRecordTreePaneCommand { get; }
 
     public ICommand ShowSettingsCommand { get; }
+
+    public AsyncRelayCommand OpenPluginCommand { get; }
 
     public AsyncRelayCommand ReimportSelectedGameCommand { get; }
 
@@ -438,6 +441,42 @@ public class MainViewModel : ViewModelBase
         _ = ApplicationNavigationService.ShowSettingsViewAsync();
     }
 
+    private async Task OpenPluginAsync()
+    {
+        var dialogViewModel = new OpenPluginDialogViewModel(SupportedGames, SelectedGame, PluginSelectionService);
+        var accepted = await UserDialogService.ShowOpenPluginAsync(dialogViewModel);
+        if (!accepted)
+        {
+            return;
+        }
+
+        var selectedGame = SupportedGames.FirstOrDefault(game => game.Game == dialogViewModel.SelectedGame.Game) ??
+            dialogViewModel.SelectedGame;
+        var gameChanged = SelectedGame?.Game != selectedGame.Game;
+        SelectedGame = selectedGame;
+        GameSelectionService.SetActiveGame(selectedGame.Game);
+        ActiveGameSearchText = selectedGame.DisplayName;
+        SetSelectedGameDisplayName(selectedGame.DisplayName);
+        UpdateSelectedGameState();
+        RefreshPluginSuggestions(string.Empty);
+        if (dialogViewModel.SelectedPlugin is null)
+        {
+            ClearActivePlugin();
+            UpdateStatusBar();
+            await ImportSelectedGameAsync(forceFullReimport: false);
+            return;
+        }
+
+        var selectedPlugin = dialogViewModel.SelectedPlugin;
+        if (gameChanged && !GameImportReadinessService.HasImportedData(selectedGame.Game))
+        {
+            await ImportSelectedGameAsync(forceFullReimport: false);
+            return;
+        }
+
+        await SelectPluginAsync(selectedPlugin);
+    }
+
     private async Task ReimportSelectedGameAsync()
     {
         await ImportSelectedGameAsync(forceFullReimport: true);
@@ -550,6 +589,16 @@ public class MainViewModel : ViewModelBase
         }
 
         if (selectedPlugin is null)
+        {
+            return;
+        }
+
+        await SelectPluginAsync(selectedPlugin);
+    }
+
+    private async Task SelectPluginAsync(PluginDTO selectedPlugin)
+    {
+        if (SelectedGame is null)
         {
             return;
         }

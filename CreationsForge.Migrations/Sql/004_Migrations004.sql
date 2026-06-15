@@ -188,6 +188,8 @@ CREATE TABLE ConditionFormConditionParameters
 );
 
 ALTER TABLE RawRecordPayloads ADD COLUMN SourcePath TEXT NULL;
+ALTER TABLE Plugins ADD COLUMN ImportMessage TEXT NULL;
+ALTER TABLE Plugins ADD COLUMN ImportDetails TEXT NULL;
 
 CREATE INDEX IX_ConstructibleObjects_FormKey ON ConstructibleObjects (Game, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
 CREATE INDEX IX_ConstructibleObjects_Game_Plugin ON ConstructibleObjects (Game, ModKey_Name COLLATE NOCASE, ModKey_Type, ModKey_FileName COLLATE NOCASE, EditorID COLLATE NOCASE, FormKey_ID);

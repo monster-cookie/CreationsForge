@@ -65,15 +65,18 @@ the stored active game. Running without a game argument uses the stored active g
 The UI uses the same active-game configuration through `IGameSelectionService`. Supported-game display labels are
 presentation-safe Core DTOs and do not expose Mutagen types.
 
-The main-window active-game autocomplete defaults to no selection unless a valid active game is stored in the
-configuration file. A configured or newly selected active game triggers the shared import workflow and refreshes the
-active-plugin choices for that game after import completes.
+The main-window Open Plugin workflow defaults to the configured active game when one is stored in the configuration
+file. Selecting a game/plugin from the dialog updates presentation active-selection state, and configured startup or
+explicit import commands continue to run through the shared import workflow.
 
 ## Active Plugin Selection
 
-An active plugin is a presentation selection from the active game's imported/openable plugin rows. Plugin choices are
-listed by filename from Core DTOs and are scoped to the active game. Selecting an active plugin updates the status bar
-with active game, plugin, and record-count context; it does not perform direct Mutagen reads in the presentation layer.
+An active plugin is a presentation selection from imported/openable plugin rows for a selected active game. The UI uses
+an Open Plugin dialog to choose both the active game and active plugin from Core DTOs. Plugin choices are scoped to the
+selected game and can be filtered/sorted in presentation code. Selecting an active plugin updates the status bar with
+active game, plugin, and record-count context; it does not perform direct Mutagen reads in the presentation layer.
+Plugin rows can carry persisted import diagnostics for failed, missing, unsupported, changed, or partially imported
+states so the UI can show details without reading logs.
 
 ## Imported Record Tree
 

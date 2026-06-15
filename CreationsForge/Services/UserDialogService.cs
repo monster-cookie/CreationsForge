@@ -4,6 +4,8 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using CreationsForge.Core.DTOs.Games;
 using CreationsForge.Services.Interfaces;
+using CreationsForge.ViewModels;
+using CreationsForge.Views;
 
 namespace CreationsForge.Services;
 
@@ -31,6 +33,23 @@ public class UserDialogService : IUserDialogService
         return result
             ? gameSelector.SelectedItem as SupportedGameDTO
             : null;
+    }
+
+    public async Task<bool> ShowOpenPluginAsync(OpenPluginDialogViewModel viewModel)
+    {
+        var dialog = new Window
+        {
+            Title = "Open Plugin",
+            Width = 1040,
+            Height = 720,
+            MinWidth = 900,
+            MinHeight = 620,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            CanResize = true
+        };
+        dialog.Content = new OpenPluginDialogView(viewModel, result => dialog.Close(result));
+
+        return await WindowService.ShowDialogAsync<bool>(dialog);
     }
 
     public async Task<bool> ShowImportWarningAsync(SupportedGameDTO selectedGame, bool forceFullReimport)

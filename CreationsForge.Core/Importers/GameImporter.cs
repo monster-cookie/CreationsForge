@@ -186,14 +186,26 @@ public class GameImporter : IGameImporter
         {
             result.PluginsUnsupported++;
             Logger.Information("Skipping unsupported plugin {ModKey} for {Game}", loadOrderEntry.ModKey.FileName, Game);
-            PluginRepository.Save(CreatePluginState(loadOrderEntry, existingPlugin, sourceInfo, PluginImportState.Unsupported));
+            PluginRepository.Save(CreatePluginState(
+                loadOrderEntry,
+                existingPlugin,
+                sourceInfo,
+                PluginImportState.Unsupported,
+                "Plugin is not supported for import.",
+                $"The plugin {loadOrderEntry.ModKey.FileName} was skipped because the selected game reader marked it unsupported."));
             return null;
         }
 
         if (!sourceInfo.Exists)
         {
             result.PluginsMissing++;
-            PluginRepository.Save(CreatePluginState(loadOrderEntry, existingPlugin, sourceInfo, PluginImportState.Missing));
+            PluginRepository.Save(CreatePluginState(
+                loadOrderEntry,
+                existingPlugin,
+                sourceInfo,
+                PluginImportState.Missing,
+                "Plugin source file is missing.",
+                $"The load order references {loadOrderEntry.ModKey.FileName}, but the file was not found on disk."));
             return null;
         }
 
@@ -211,6 +223,8 @@ public class GameImporter : IGameImporter
             existingPlugin.LastCheckedUTC = DateTime.UtcNow;
             existingPlugin.SourceLastWriteUTCTicks = sourceInfo.LastWriteUTCTicks;
             existingPlugin.SourceFileSizeBytes = sourceInfo.FileSizeBytes;
+            existingPlugin.ImportMessage = null;
+            existingPlugin.ImportDetails = null;
             PluginRepository.Save(existingPlugin);
             Logger.Information("Skipping unchanged plugin {ModKey} for {Game}", loadOrderEntry.ModKey.FileName, Game);
             return null;
@@ -244,6 +258,8 @@ public class GameImporter : IGameImporter
             plugin.LastCheckedUTC = DateTime.UtcNow;
             plugin.LastImportedUTC = DateTime.UtcNow;
             plugin.InvalidatedAtUTC = null;
+            plugin.ImportMessage = null;
+            plugin.ImportDetails = null;
 
             PluginRepository.Save(plugin);
 
@@ -259,7 +275,13 @@ public class GameImporter : IGameImporter
         {
             result.PluginsFailed++;
             Logger.Error(ex, "Unable to import plugin metadata for {ModKey} for {Game}", loadOrderEntry.ModKey.FileName, Game);
-            PluginRepository.Save(CreatePluginState(loadOrderEntry, existingPlugin, sourceInfo, PluginImportState.Failed));
+            PluginRepository.Save(CreatePluginState(
+                loadOrderEntry,
+                existingPlugin,
+                sourceInfo,
+                PluginImportState.Failed,
+                "Plugin metadata import failed.",
+                ex.ToString()));
             return null;
         }
     }
@@ -298,6 +320,8 @@ public class GameImporter : IGameImporter
 
         plugin.ImportState = PluginImportState.PartiallyImported;
         plugin.InvalidatedAtUTC = DateTime.UtcNow;
+        plugin.ImportMessage = $"Record import completed with {recordImportResult.RecordsFailed:N0} failed records.";
+        plugin.ImportDetails = CreatePartialImportDetails(recordImportResult);
         PluginRepository.Save(plugin);
         Logger.Warning(
             "Plugin {ModKey} for {Game} was partially imported with {RecordFailures} record failures",
@@ -310,7 +334,9 @@ public class GameImporter : IGameImporter
         PluginLoadOrderEntryDTO loadOrderEntry,
         PluginDTO? existingPlugin,
         PluginSourceInfoDTO sourceInfo,
-        PluginImportState importState)
+        PluginImportState importState,
+        string? importMessage = null,
+        string? importDetails = null)
     {
         var plugin = existingPlugin ?? new PluginDTO
         {
@@ -332,6 +358,8 @@ public class GameImporter : IGameImporter
         plugin.Enabled = loadOrderEntry.Enabled;
         plugin.ExistsOnDisk = sourceInfo.Exists;
         plugin.ImportState = importState;
+        plugin.ImportMessage = importMessage;
+        plugin.ImportDetails = importDetails;
         plugin.LastCheckedUTC = DateTime.UtcNow;
         plugin.SourceLastWriteUTCTicks = sourceInfo.LastWriteUTCTicks;
         plugin.SourceFileSizeBytes = sourceInfo.FileSizeBytes;
@@ -341,5 +369,14 @@ public class GameImporter : IGameImporter
         }
 
         return plugin;
+    }
+
+    private static string CreatePartialImportDetails(RecordImportResultDTO recordImportResult)
+    {
+        var failedRecordTypes = recordImportResult.RecordTypes
+            .Where(recordType => recordType.RecordsFailed > 0)
+            .Select(recordType => $"{recordType.RecordType}: {recordType.RecordsFailed:N0} failed records");
+
+        return string.Join(Environment.NewLine, failedRecordTypes);
     }
 }
