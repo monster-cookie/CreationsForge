@@ -35,7 +35,7 @@ Record type: A Bethesda major-record type identified by a four-character record 
 record import workflow includes FormLists (`FLST`), GameSettings (`GMST`), Globals (`GLOB`), MiscItems (`MISC`),
 Keywords (`KYWD`), ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), Perks (`PERK`),
 Statics (`STAT`), Containers (`CONT`), and ConstructibleObjects (`COBJ`). Starfield also persists typed detail rows
-for Books (`BOOK`), Doors (`DOOR`), and Terminals (`TERM`).
+for ConditionForms (`CNDF`), Books (`BOOK`), Doors (`DOOR`), and Terminals (`TERM`).
 
 Starfield master references require special construction through Mutagen's separated-master-aware load-order paths.
 The Starfield reader prefers the full Mutagen environment load order's mod objects so split masters, medium masters,

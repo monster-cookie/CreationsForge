@@ -24,6 +24,7 @@ public class RecordComparisonService : IRecordComparisonService
     private readonly IDoorRepository DoorRepository;
     private readonly IContainerRepository ContainerRepository;
     private readonly IConstructibleObjectRepository ConstructibleObjectRepository;
+    private readonly IConditionFormRepository ConditionFormRepository;
     private readonly ITerminalRepository TerminalRepository;
     private readonly IModelRepository ModelRepository;
     private readonly IRecordKeywordRepository RecordKeywordRepository;
@@ -46,6 +47,7 @@ public class RecordComparisonService : IRecordComparisonService
         IDoorRepository doorRepository,
         IContainerRepository containerRepository,
         IConstructibleObjectRepository constructibleObjectRepository,
+        IConditionFormRepository conditionFormRepository,
         ITerminalRepository terminalRepository,
         IModelRepository modelRepository,
         IRecordKeywordRepository recordKeywordRepository,
@@ -67,6 +69,7 @@ public class RecordComparisonService : IRecordComparisonService
         DoorRepository = doorRepository;
         ContainerRepository = containerRepository;
         ConstructibleObjectRepository = constructibleObjectRepository;
+        ConditionFormRepository = conditionFormRepository;
         TerminalRepository = terminalRepository;
         ModelRepository = modelRepository;
         RecordKeywordRepository = recordKeywordRepository;
@@ -145,6 +148,11 @@ public class RecordComparisonService : IRecordComparisonService
         if (recordType == RecordTypeCatalog.ConstructibleObject.RecordID)
         {
             return CreateConstructibleObjectComparison(game, formKey);
+        }
+
+        if (recordType == RecordTypeCatalog.ConditionForm.RecordID)
+        {
+            return CreateConditionFormComparison(game, formKey);
         }
 
         if (recordType == RecordTypeCatalog.Terminal.RecordID)
@@ -441,6 +449,17 @@ public class RecordComparisonService : IRecordComparisonService
         AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.ConstructibleObject.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.ConstructibleObject.RecordID, formKey, baseRecords, fields);
+    }
+
+    private RecordComparisonDTO CreateConditionFormComparison(SupportedGame game, FormKeyDTO formKey)
+    {
+        var records = ConditionFormRepository.GetByFormKey(game, formKey);
+        var baseRecords = records.Cast<RecordDTO>().ToList();
+        var fields = CreateCommonFields(baseRecords);
+        fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
+        AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.ConditionForm.RecordID, formKey));
+
+        return CreateComparison(RecordTypeCatalog.ConditionForm.RecordID, formKey, baseRecords, fields);
     }
 
     private RecordComparisonDTO CreateTerminalComparison(SupportedGame game, FormKeyDTO formKey)

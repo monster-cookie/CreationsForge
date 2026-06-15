@@ -54,6 +54,8 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         cancellationToken.ThrowIfCancellationRequested();
         var containers = MapContainers(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
+        var conditionForms = MapConditionForms(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
         var constructibleObjects = MapConstructibleObjects(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
         var terminals = MapTerminals(plugin, mod);
@@ -73,6 +75,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             Books = books,
             Doors = doors,
             Containers = containers,
+            ConditionForms = conditionForms,
             ConstructibleObjects = constructibleObjects,
             Terminals = terminals
         };
@@ -385,6 +388,28 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 RecipeFilters = GetConstructibleObjectRecipeFilters(plugin, record.FormKey, GetPropertyValue(record, "RecipeFilters")),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ConstructibleObject.RecordID, record),
                 RawPayloads = GetConstructibleObjectRawPayloads(plugin, record.FormKey, record)
+            })
+            .ToList();
+    }
+
+    private static IReadOnlyList<ConditionFormDTO> MapConditionForms(PluginDTO plugin, IStarfieldModGetter mod)
+    {
+        return GetRecordCollection(mod, "ConditionRecords")
+            .Select(record =>
+            {
+                var formKey = GetRequiredFormKey(record);
+                return new ConditionFormDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = plugin.ModKey,
+                    FormKey = MapFormKey(formKey),
+                    EditorID = GetPropertyValue(record, "EditorID")?.ToString() ?? string.Empty,
+                    FormVersion = GetPropertyNullableInt(record, "FormVersion") ?? 0,
+                    MajorRecordFlags = GetPropertyNullableInt(record, "StarfieldMajorRecordFlags") ?? 0,
+                    ImportedAtUTC = DateTime.UtcNow,
+                    Version2 = GetPropertyNullableInt(record, "Version2"),
+                    RawPayloads = GetConditionFormRawPayloads(plugin, formKey, record)
+                };
             })
             .ToList();
     }
@@ -871,6 +896,14 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         return payloads;
     }
 
+    private static List<RawRecordPayloadDTO> GetConditionFormRawPayloads(PluginDTO plugin, FormKey formKey, object record)
+    {
+        var importedAtUTC = DateTime.UtcNow;
+        var payloads = new List<RawRecordPayloadDTO>();
+        AddRawPayload(payloads, plugin, RecordTypeCatalog.ConditionForm.RecordID, formKey, "Conditions", 0, "Conditions", FormatEnumerable(GetPropertyValue(record, "Conditions")), importedAtUTC);
+        return payloads;
+    }
+
     private static List<RawRecordPayloadDTO> GetContainerRawPayloads(PluginDTO plugin, FormKey formKey, object? model, object? components)
     {
         var importedAtUTC = DateTime.UtcNow;
@@ -1086,6 +1119,20 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         }
 
         return null;
+    }
+
+    private static IEnumerable<object> GetRecordCollection(object source, string propertyName)
+    {
+        return GetPropertyValue(source, propertyName) is IEnumerable enumerable
+            ? enumerable.Cast<object>()
+            : [];
+    }
+
+    private static FormKey GetRequiredFormKey(object record)
+    {
+        return GetPropertyValue(record, "FormKey") is FormKey formKey
+            ? formKey
+            : throw new InvalidOperationException($"Record '{record.GetType().Name}' did not expose a FormKey.");
     }
 
     private static FormKeyDTO? GetFormKeyFromObject(object? value)

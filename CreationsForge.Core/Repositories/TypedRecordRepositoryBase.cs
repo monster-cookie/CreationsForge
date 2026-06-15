@@ -22,6 +22,7 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
         RecordTypeCatalog.Static.TableName,
         RecordTypeCatalog.Container.TableName,
         RecordTypeCatalog.ConstructibleObject.TableName,
+        RecordTypeCatalog.ConditionForm.TableName,
         RecordTypeCatalog.Terminal.TableName
     };
 

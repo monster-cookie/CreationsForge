@@ -17,6 +17,16 @@ public class TypedRecordImporterSupportedGamesTests
         importer.SupportedGames.ShouldBe([SupportedGame.Starfield, SupportedGame.Fallout4, SupportedGame.Skyrim], ignoreOrder: true);
     }
 
+    [Fact]
+    public void ConditionFormImporter_SupportsOnlyStarfield()
+    {
+        var importer = new ConditionFormImporter(
+            Mock.Of<IConditionFormRepository>(),
+            Mock.Of<IRecordChildImportService>());
+
+        importer.SupportedGames.ShouldBe([SupportedGame.Starfield], ignoreOrder: true);
+    }
+
     public static IEnumerable<object[]> ExpandedRecordImporters()
     {
         yield return [new MiscObjectImporter(

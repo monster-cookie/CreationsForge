@@ -60,6 +60,7 @@ public class SpriggitRecordParityTests
         yield return [SupportedGame.Starfield, RecordTypeCatalog.ActorValueInformation.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.Book.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.Container.RecordID];
+        yield return [SupportedGame.Starfield, RecordTypeCatalog.ConditionForm.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.ConstructibleObject.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.Door.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.FormList.RecordID];
@@ -178,6 +179,19 @@ public class SpriggitRecordParityTests
                 if (sample.HasPath("NativeTerminal"))
                 {
                     containerRecord.NativeTerminalFormKey.ShouldNotBeNull($"Container '{record.EditorID}' should preserve NativeTerminal.");
+                }
+
+                break;
+            case "CNDF":
+                var conditionFormRecord = record.ShouldBeOfType<ConditionFormDTO>();
+                if (sample.HasPath("Version2"))
+                {
+                    AssertNullableIntProperty(record, sample, "Version2", "Version2");
+                }
+
+                if (sample.HasPath("Conditions"))
+                {
+                    conditionFormRecord.RawPayloads.Count.ShouldBeGreaterThan(0, $"ConditionForm '{record.EditorID}' should preserve Conditions as raw payloads.");
                 }
 
                 break;
@@ -456,6 +470,7 @@ public class SpriggitRecordParityTests
             "AVIF" => "ActorValueInformation",
             "BOOK" => "Books",
             "CONT" => "Containers",
+            "CNDF" => "ConditionRecords",
             "COBJ" => "ConstructibleObjects",
             "DOOR" => "Doors",
             "FLST" => "FormLists",
@@ -479,6 +494,7 @@ public class SpriggitRecordParityTests
             "AVIF" => ["DefaultValue"],
             "BOOK" => ["Model.File", "Keywords"],
             "CONT" => ["Model.File", "Items"],
+            "CNDF" => ["Conditions"],
             "COBJ" => ["CreatedObject"],
             "DOOR" => ["Model.File"],
             "FLST" => ["Items"],

@@ -30,5 +30,7 @@ public class PluginRecordSetDTO
 
     public IReadOnlyList<ConstructibleObjectDTO> ConstructibleObjects { get; set; } = [];
 
+    public IReadOnlyList<ConditionFormDTO> ConditionForms { get; set; } = [];
+
     public IReadOnlyList<TerminalDTO> Terminals { get; set; } = [];
 }

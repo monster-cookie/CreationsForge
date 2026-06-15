@@ -110,6 +110,28 @@ CREATE TABLE ConstructibleObjectRecipeFilters
     CHECK (RecipeFilter_FormKey_ID >= 0)
 );
 
+CREATE TABLE ConditionForms
+(
+    Game                                TEXT    NOT NULL,
+    ModKey_Name                         TEXT    NOT NULL,
+    ModKey_Type                         INTEGER NOT NULL,
+    ModKey_FileName                     TEXT    NOT NULL,
+    FormKey_ModKey_Name                 TEXT    NOT NULL,
+    FormKey_ModKey_Type                 INTEGER NOT NULL,
+    FormKey_ModKey_FileName             TEXT    NOT NULL,
+    FormKey_ID                          INTEGER NOT NULL,
+    EditorID                            TEXT    NOT NULL,
+    FormVersion                         INTEGER NOT NULL,
+    MajorRecordFlags                    INTEGER NOT NULL,
+    ImportedAtUTC                       TEXT    NOT NULL,
+    Version2                            INTEGER NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName) REFERENCES Plugins (Game, ModKey_Name, ModKey_Type, ModKey_FileName) ON DELETE CASCADE,
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES RecordInstances (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0)
+);
+
 ALTER TABLE RawRecordPayloads ADD COLUMN SourcePath TEXT NULL;
 
 CREATE INDEX IX_ConstructibleObjects_FormKey ON ConstructibleObjects (Game, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
@@ -118,6 +140,9 @@ CREATE INDEX IX_ConstructibleObjects_Game_FormKey_Collated ON ConstructibleObjec
 CREATE INDEX IX_ConstructibleObjectComponents_Game_FormKey ON ConstructibleObjectComponents (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_ConstructibleObjectCategories_Game_FormKey ON ConstructibleObjectCategories (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_ConstructibleObjectRecipeFilters_Game_FormKey ON ConstructibleObjectRecipeFilters (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+CREATE INDEX IX_ConditionForms_FormKey ON ConditionForms (Game, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
+CREATE INDEX IX_ConditionForms_Game_Plugin ON ConditionForms (Game, ModKey_Name COLLATE NOCASE, ModKey_Type, ModKey_FileName COLLATE NOCASE, EditorID COLLATE NOCASE, FormKey_ID);
+CREATE INDEX IX_ConditionForms_Game_FormKey_Collated ON ConditionForms (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 
 UPDATE Plugins
 SET ImportState = 'Changed',

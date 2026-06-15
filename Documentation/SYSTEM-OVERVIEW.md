@@ -19,8 +19,8 @@ Plugin metadata import avoids typed record enumeration; record counts are read f
 extension importers persist audited scalar plugin header fields into extension tables. Starfield, Fallout 4, and
 Skyrim map the currently approved cross-game typed records: FormLists, GameSettings, Globals, MiscItems, Keywords,
 ActorValueInformation, NPCs, MagicEffects, Perks, Statics, Containers, and ConstructibleObjects. Starfield also maps
-Books, Doors, and Terminals into typed detail rows. Imports currently create/update the selected `Games`, `Plugins`,
-`PluginMasterReferences`, game-specific plugin extension rows, and approved typed record rows.
+ConditionForms, Books, Doors, and Terminals into typed detail rows. Imports currently create/update the selected
+`Games`, `Plugins`, `PluginMasterReferences`, game-specific plugin extension rows, and approved typed record rows.
 
 ## Projects
 

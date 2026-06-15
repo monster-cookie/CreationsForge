@@ -106,8 +106,9 @@ aborting the full plugin import. The current cross-game shared record types are 
 (`GMST`), Globals (`GLOB`), MiscItems (`MISC`), Keywords (`KYWD`), ActorValueInformation (`AVIF`), NPCs (`NPC_`),
 MagicEffects (`MGEF`), Perks (`PERK`), Statics (`STAT`), Containers (`CONT`), and ConstructibleObjects (`COBJ`).
 Starfield, Fallout 4, and Skyrim map approved shared records inside their game adapters after loading the Mutagen
-plugin once for the Core-facing record-read call. Starfield also imports Books (`BOOK`), Doors (`DOOR`), and
-Terminals (`TERM`) through the same typed-record pipeline with type-specific detail tables and comparison fields.
+plugin once for the Core-facing record-read call. Starfield also imports ConditionForms (`CNDF`), Books (`BOOK`),
+Doors (`DOOR`), and Terminals (`TERM`) through the same typed-record pipeline with type-specific detail tables and
+comparison fields.
 All typed record importers save the record's parent row before dispatching shared child import by DTO capability.
 Records that expose models, keywords, sounds, or scripting adapters persist those child rows through the common
 `RecordInstances` identity instead of game-specific child-table paths.

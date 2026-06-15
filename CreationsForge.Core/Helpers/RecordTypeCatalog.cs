@@ -28,6 +28,13 @@ public static class RecordTypeCatalog
         RecordID = "CONT"
     };
 
+    public static readonly RecordTypeData ConditionForm = new()
+    {
+        TableName = "ConditionForms",
+        RecordType = "ConditionForm",
+        RecordID = "CNDF"
+    };
+
     public static readonly RecordTypeData ConstructibleObject = new()
     {
         TableName = "ConstructibleObjects",

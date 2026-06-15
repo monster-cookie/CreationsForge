@@ -10,15 +10,15 @@ The application uses a local SQLite database. The schema is defined by embedded 
   `Containers` typed record tables, `ContainerItems`, and `RawRecordPayloads`.
 - `003_Migrations003.sql` renames `MiscObjects` to `MiscItems` and adds the `Books`, `Doors`, `Terminals`, and
   `TerminalMarkerParameters` tables.
-- `004_Migrations004.sql` adds the `ConstructibleObjects`, `ConstructibleObjectComponents`,
-  `ConstructibleObjectCategories`, and `ConstructibleObjectRecipeFilters` tables, adds `RawRecordPayloads.SourcePath`,
-  and marks existing current or partially imported plugin rows as `Changed` so each supported game reimports cached
-  plugin data after the migration.
+- `004_Migrations004.sql` adds the `ConditionForms`, `ConstructibleObjects`, `ConstructibleObjectComponents`,
+  `ConstructibleObjectCategories`, and `ConstructibleObjectRecipeFilters` tables, adds
+  `RawRecordPayloads.SourcePath`, and marks existing current or partially imported plugin rows as `Changed` so each
+  supported game reimports cached plugin data after the migration.
 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains forty-one tables:
+The application schema contains forty-two tables:
 
 - `Games`
 - `Plugins`
@@ -42,6 +42,7 @@ The application schema contains forty-one tables:
 - `Doors`
 - `Containers`
 - `ContainerItems`
+- `ConditionForms`
 - `ConstructibleObjects`
 - `ConstructibleObjectComponents`
 - `ConstructibleObjectCategories`
@@ -536,6 +537,10 @@ the common typed record key and metadata columns.
 - `Name`, `Flags`, and `MajorFlags` (`TEXT`, nullable)
 - nullable decomposed FormKey columns for `NativeTerminal`
 
+`ConditionForms` additional columns:
+
+- `Version2` (`INTEGER`, nullable)
+
 `ConstructibleObjects` additional columns:
 
 - `Version2` (`INTEGER`, nullable)
@@ -575,11 +580,11 @@ Persistence behavior:
   sound rows, scripting adapters, and raw payload rows. `Doors` persist parent scalar rows, shared model rows,
   shared keyword rows, shared sound rows, and raw payload rows. `Containers` persist parent scalar rows, child item
   rows, shared model rows, shared keyword rows when present, shared sound rows when present, and raw opaque payload
-  rows. `ConstructibleObjects` persist parent scalar rows, component rows, Fallout 4 category rows, Starfield
-  recipe-filter rows, scripting adapters when present, and raw opaque payload rows such as conditions and multi-count
-  data. `Terminals` persist parent scalar rows, shared model rows, shared keyword rows, scripting adapters, raw
-  payload rows, and
-  `TerminalMarkerParameters` rows. `NPCs` and `MagicEffects` persist shared keyword rows.
+  rows. `ConditionForms` persist parent scalar rows and raw opaque payload rows for Starfield condition data.
+  `ConstructibleObjects` persist parent scalar rows, component rows, Fallout 4 category rows, Starfield recipe-filter
+  rows, scripting adapters when present, and raw opaque payload rows such as conditions and multi-count data.
+  `Terminals` persist parent scalar rows, shared model rows, shared keyword rows, scripting adapters, raw payload rows,
+  and `TerminalMarkerParameters` rows. `NPCs` and `MagicEffects` persist shared keyword rows.
   `MagicEffects` persists shared sound rows and Spriggit-flattened DATA fields directly on the parent row.
 
 ### ContainerItems

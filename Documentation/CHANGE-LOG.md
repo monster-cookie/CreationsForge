@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Added Additional Major Record Types: ConstructibleObject (COBJ)
+- Added Additional Major Record Types: ConstructibleObject (COBJ), ConditionForm (CNDF)
 
 ## Version 1.1.8 - 2026-06-14
 

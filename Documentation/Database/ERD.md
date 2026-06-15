@@ -516,6 +516,22 @@ erDiagram
         TEXT ImportedAtUTC
     }
 
+    ConditionForms {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER MajorRecordFlags
+        TEXT ImportedAtUTC
+        INTEGER Version2
+    }
+
     ConstructibleObjects {
         TEXT Game PK, FK
         TEXT ModKey_Name PK, FK
@@ -919,6 +935,7 @@ erDiagram
     RecordInstances ||--o| Doors : "typed detail"
     RecordInstances ||--o| Containers : "typed detail"
     Containers ||--o{ ContainerItems : contains
+    RecordInstances ||--o| ConditionForms : "typed detail"
     RecordInstances ||--o| ConstructibleObjects : "typed detail"
     ConstructibleObjects ||--o{ ConstructibleObjectComponents : contains
     ConstructibleObjects ||--o{ ConstructibleObjectCategories : contains
