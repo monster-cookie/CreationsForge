@@ -49,6 +49,8 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         var statics = MapStatics(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
         var containers = MapContainers(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
+        var constructibleObjects = MapConstructibleObjects(plugin, mod);
 
         return new PluginRecordSetDTO
         {
@@ -62,7 +64,8 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             MagicEffects = magicEffects,
             Perks = perks,
             Statics = statics,
-            Containers = containers
+            Containers = containers,
+            ConstructibleObjects = constructibleObjects
         };
     }
 
@@ -382,6 +385,31 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             .ToList();
     }
 
+    private static IReadOnlyList<ConstructibleObjectDTO> MapConstructibleObjects(PluginDTO plugin, IFallout4ModGetter mod)
+    {
+        return GetRecordCollection(mod, "ConstructibleObjects")
+            .Select(record => new ConstructibleObjectDTO
+            {
+                Game = SupportedGame.Fallout4,
+                ModKey = plugin.ModKey,
+                FormKey = GetRequiredFormKey(record),
+                EditorID = GetPropertyString(record, "EditorID"),
+                FormVersion = GetPropertyInt(record, "FormVersion"),
+                MajorRecordFlags = GetPropertyInt(record, "Fallout4MajorRecordFlags"),
+                ImportedAtUTC = DateTime.UtcNow,
+                Version2 = GetPropertyNullableInt(record, "Version2"),
+                Description = GetLocalizedEnglishText(record, "Description"),
+                CreatedObjectFormKey = GetLinkedFormKey(record, "CreatedObject"),
+                WorkbenchKeywordFormKey = GetLinkedFormKey(record, "WorkbenchKeyword"),
+                CreatedObjectCount = GetFirstCount(GetPropertyValue(record, "CreatedObjectCounts")),
+                Components = GetConstructibleObjectComponents(plugin, GetRequiredRawFormKey(record), GetPropertyValue(record, "Components")),
+                Categories = GetConstructibleObjectCategories(plugin, GetRequiredRawFormKey(record), "Category", GetPropertyValue(record, "Categories")),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ConstructibleObject.RecordID, record),
+                RawPayloads = GetConstructibleObjectRawPayloads(plugin, GetRequiredRawFormKey(record), record)
+            })
+            .ToList();
+    }
+
     private static List<PerkRankDTO> GetPerkRanks(PluginDTO plugin, object record)
     {
         var ranks = GetPropertyValue(record, "Ranks") as IEnumerable;
@@ -562,6 +590,83 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         };
     }
 
+    private static List<ConstructibleObjectComponentDTO> GetConstructibleObjectComponents(PluginDTO plugin, FormKey formKey, object? components)
+    {
+        if (components is not IEnumerable enumerable) return new List<ConstructibleObjectComponentDTO>();
+
+        var importedAtUTC = DateTime.UtcNow;
+        return enumerable
+            .Cast<object>()
+            .Select((component, componentIndex) => CreateConstructibleObjectComponent(plugin, formKey, component, componentIndex, importedAtUTC))
+            .Where(component => component != null)
+            .Cast<ConstructibleObjectComponentDTO>()
+            .ToList();
+    }
+
+    private static ConstructibleObjectComponentDTO? CreateConstructibleObjectComponent(PluginDTO plugin, FormKey formKey, object component, int componentIndex, DateTime importedAtUTC)
+    {
+        var componentData = GetPropertyValue(component, "Component") ?? component;
+        var componentFormKey = GetFormKeyFromObject(GetPropertyValue(componentData, "Component")) ?? GetFormKeyFromObject(GetPropertyValue(componentData, "Item")) ?? GetFormKeyFromObject(componentData);
+        if (componentFormKey == null)
+        {
+            return null;
+        }
+
+        return new ConstructibleObjectComponentDTO
+        {
+            Game = SupportedGame.Fallout4,
+            ModKey = plugin.ModKey,
+            FormKey = MapFormKey(formKey),
+            ComponentFormKey = componentFormKey,
+            ComponentIndex = componentIndex,
+            Count = GetPropertyNullableInt(component, "Count") ?? GetPropertyNullableInt(componentData, "Count") ?? GetPropertyNullableInt(component, "RequiredCount"),
+            ImportedAtUTC = importedAtUTC
+        };
+    }
+
+    private static List<ConstructibleObjectCategoryDTO> GetConstructibleObjectCategories(PluginDTO plugin, FormKey formKey, string categorySlot, object? categories)
+    {
+        if (categories is not IEnumerable enumerable) return new List<ConstructibleObjectCategoryDTO>();
+
+        var importedAtUTC = DateTime.UtcNow;
+        return enumerable
+            .Cast<object>()
+            .Select((category, categoryIndex) => GetFormKeyFromObject(category) is { } categoryFormKey
+                ? new ConstructibleObjectCategoryDTO
+                {
+                    Game = SupportedGame.Fallout4,
+                    ModKey = plugin.ModKey,
+                    FormKey = MapFormKey(formKey),
+                    CategoryFormKey = categoryFormKey,
+                    CategorySlot = categorySlot,
+                    CategoryIndex = categoryIndex,
+                    ImportedAtUTC = importedAtUTC
+                }
+                : null)
+            .Where(category => category != null)
+            .Cast<ConstructibleObjectCategoryDTO>()
+            .ToList();
+    }
+
+    private static int? GetFirstCount(object? counts)
+    {
+        if (counts is not IEnumerable enumerable)
+        {
+            return null;
+        }
+
+        return enumerable.Cast<object>().Select(count => GetPropertyNullableInt(count, "Count")).FirstOrDefault(count => count.HasValue);
+    }
+
+    private static List<RawRecordPayloadDTO> GetConstructibleObjectRawPayloads(PluginDTO plugin, FormKey formKey, object record)
+    {
+        var importedAtUTC = DateTime.UtcNow;
+        var payloads = new List<RawRecordPayloadDTO>();
+        AddRawRecordPayload(payloads, plugin, RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "Conditions", 0, "Conditions", FormatEnumerable(GetPropertyValue(record, "Conditions")), importedAtUTC);
+        AddRawRecordPayload(payloads, plugin, RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "CreatedObjectCounts", 0, "CreatedObjectCounts", FormatEnumerable(GetPropertyValue(record, "CreatedObjectCounts")), importedAtUTC);
+        return payloads;
+    }
+
     private static List<RawRecordPayloadDTO> GetModelRawPayloads(PluginDTO plugin, string recordType, FormKey formKey, object? model)
     {
         var payloads = new List<RawRecordPayloadDTO>();
@@ -584,6 +689,36 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             ImportedAtUTC = DateTime.UtcNow
         });
         return payloads;
+    }
+
+    private static void AddRawRecordPayload(
+        ICollection<RawRecordPayloadDTO> payloads,
+        PluginDTO plugin,
+        string recordType,
+        FormKey formKey,
+        string payloadSlot,
+        int payloadIndex,
+        string payloadType,
+        string? payloadValue,
+        DateTime importedAtUTC)
+    {
+        if (string.IsNullOrWhiteSpace(payloadValue))
+        {
+            return;
+        }
+
+        payloads.Add(new RawRecordPayloadDTO
+        {
+            Game = SupportedGame.Fallout4,
+            ModKey = plugin.ModKey,
+            RecordType = recordType,
+            FormKey = MapFormKey(formKey),
+            PayloadSlot = payloadSlot,
+            PayloadIndex = payloadIndex,
+            PayloadType = payloadType,
+            PayloadValue = payloadValue,
+            ImportedAtUTC = importedAtUTC
+        });
     }
 
     private static List<RecordSoundDTO> GetNamedSounds(PluginDTO plugin, string recordType, FormKey formKey, object record, params string[] soundSlots)

@@ -54,6 +54,8 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         cancellationToken.ThrowIfCancellationRequested();
         var containers = MapContainers(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
+        var constructibleObjects = MapConstructibleObjects(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
         var terminals = MapTerminals(plugin, mod);
 
         return new PluginRecordSetDTO
@@ -71,6 +73,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             Books = books,
             Doors = doors,
             Containers = containers,
+            ConstructibleObjects = constructibleObjects,
             Terminals = terminals
         };
     }
@@ -354,6 +357,34 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                     })
                     .ToList(),
                 RawPayloads = GetContainerRawPayloads(plugin, record.FormKey, record.Model, GetPropertyValue(record, "Components"))
+            })
+            .ToList();
+    }
+
+    private static IReadOnlyList<ConstructibleObjectDTO> MapConstructibleObjects(PluginDTO plugin, IStarfieldModGetter mod)
+    {
+        return mod.ConstructibleObjects
+            .Select(record => new ConstructibleObjectDTO
+            {
+                Game = SupportedGame.Starfield,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(record.FormKey),
+                EditorID = record.EditorID ?? string.Empty,
+                FormVersion = record.FormVersion,
+                MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
+                ImportedAtUTC = DateTime.UtcNow,
+                Version2 = GetPropertyNullableInt(record, "Version2"),
+                Description = GetLocalizedEnglishText(GetPropertyValue(record, "Description")),
+                CreatedObjectFormKey = GetFormKeyFromObject(GetPropertyValue(record, "CreatedObject")),
+                WorkbenchKeywordFormKey = GetFormKeyFromObject(GetPropertyValue(record, "WorkbenchKeyword")),
+                AmountProduced = GetPropertyNullableInt(record, "AmountProduced"),
+                MenuSortOrder = GetPropertyNullableInt(record, "MenuSortOrder"),
+                LearnMethod = GetPropertyValue(record, "LearnMethod")?.ToString(),
+                Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
+                Components = GetConstructibleObjectComponents(plugin, record.FormKey, GetPropertyValue(record, "ConstructableComponents")),
+                Categories = GetConstructibleObjectCategories(plugin, record.FormKey, "RecipeFilter", GetPropertyValue(record, "RecipeFilters")),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ConstructibleObject.RecordID, record),
+                RawPayloads = GetConstructibleObjectRawPayloads(plugin, record.FormKey, record)
             })
             .ToList();
     }
@@ -773,6 +804,71 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             Count = GetPropertyNullableInt(item, "Count") ?? GetPropertyNullableInt(itemData, "Count"),
             ImportedAtUTC = importedAtUTC
         };
+    }
+
+    private static List<ConstructibleObjectComponentDTO> GetConstructibleObjectComponents(PluginDTO plugin, FormKey formKey, object? components)
+    {
+        if (components is not IEnumerable enumerable) return new List<ConstructibleObjectComponentDTO>();
+
+        var importedAtUTC = DateTime.UtcNow;
+        return enumerable
+            .Cast<object>()
+            .Select((component, componentIndex) => CreateConstructibleObjectComponent(plugin, formKey, component, componentIndex, importedAtUTC))
+            .Where(component => component != null)
+            .Cast<ConstructibleObjectComponentDTO>()
+            .ToList();
+    }
+
+    private static ConstructibleObjectComponentDTO? CreateConstructibleObjectComponent(PluginDTO plugin, FormKey formKey, object component, int componentIndex, DateTime importedAtUTC)
+    {
+        var componentFormKey = GetFormKeyFromObject(GetPropertyValue(component, "Component")) ?? GetFormKeyFromObject(component);
+        if (componentFormKey == null)
+        {
+            return null;
+        }
+
+        return new ConstructibleObjectComponentDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = plugin.ModKey,
+            FormKey = MapFormKey(formKey),
+            ComponentFormKey = componentFormKey,
+            ComponentIndex = componentIndex,
+            Count = GetPropertyNullableInt(component, "RequiredCount") ?? GetPropertyNullableInt(component, "Count"),
+            ImportedAtUTC = importedAtUTC
+        };
+    }
+
+    private static List<ConstructibleObjectCategoryDTO> GetConstructibleObjectCategories(PluginDTO plugin, FormKey formKey, string categorySlot, object? categories)
+    {
+        if (categories is not IEnumerable enumerable) return new List<ConstructibleObjectCategoryDTO>();
+
+        var importedAtUTC = DateTime.UtcNow;
+        return enumerable
+            .Cast<object>()
+            .Select((category, categoryIndex) => GetFormKeyFromObject(category) is { } categoryFormKey
+                ? new ConstructibleObjectCategoryDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = plugin.ModKey,
+                    FormKey = MapFormKey(formKey),
+                    CategoryFormKey = categoryFormKey,
+                    CategorySlot = categorySlot,
+                    CategoryIndex = categoryIndex,
+                    ImportedAtUTC = importedAtUTC
+                }
+                : null)
+            .Where(category => category != null)
+            .Cast<ConstructibleObjectCategoryDTO>()
+            .ToList();
+    }
+
+    private static List<RawRecordPayloadDTO> GetConstructibleObjectRawPayloads(PluginDTO plugin, FormKey formKey, object record)
+    {
+        var importedAtUTC = DateTime.UtcNow;
+        var payloads = new List<RawRecordPayloadDTO>();
+        AddRawPayload(payloads, plugin, RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "Conditions", 0, "Conditions", FormatEnumerable(GetPropertyValue(record, "Conditions")), importedAtUTC);
+        return payloads;
     }
 
     private static List<RawRecordPayloadDTO> GetContainerRawPayloads(PluginDTO plugin, FormKey formKey, object? model, object? components)

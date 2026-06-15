@@ -104,10 +104,10 @@ types from a bundled `PluginRecordSetDTO`, creates per-record-type results, reso
 by `SupportedGame` and record type ID, tracks unsupported typed detail importers, and logs per-record failures without
 aborting the full plugin import. The current cross-game shared record types are FormLists (`FLST`), GameSettings
 (`GMST`), Globals (`GLOB`), MiscItems (`MISC`), Keywords (`KYWD`), ActorValueInformation (`AVIF`), NPCs (`NPC_`),
-MagicEffects (`MGEF`), Perks (`PERK`), Statics (`STAT`), and Containers (`CONT`). Starfield, Fallout 4, and Skyrim
-map approved shared records inside their game adapters after loading the Mutagen plugin once for the Core-facing
-record-read call. Starfield also imports Books (`BOOK`), Doors (`DOOR`), and Terminals (`TERM`) through the same
-typed-record pipeline with type-specific detail tables and comparison fields.
+MagicEffects (`MGEF`), Perks (`PERK`), Statics (`STAT`), Containers (`CONT`), and ConstructibleObjects (`COBJ`).
+Starfield, Fallout 4, and Skyrim map approved shared records inside their game adapters after loading the Mutagen
+plugin once for the Core-facing record-read call. Starfield also imports Books (`BOOK`), Doors (`DOOR`), and
+Terminals (`TERM`) through the same typed-record pipeline with type-specific detail tables and comparison fields.
 All typed record importers save the record's parent row before dispatching shared child import by DTO capability.
 Records that expose models, keywords, sounds, or scripting adapters persist those child rows through the common
 `RecordInstances` identity instead of game-specific child-table paths.
@@ -246,6 +246,9 @@ Schema creation and migration are centralized through:
 
 DbUp's `SchemaVersions` table is the migration-state source of truth. The application does not define a hardcoded
 schema-version constant.
+Migrations that add typed record support can invalidate existing cached plugin rows by setting `ImportState` to
+`Changed`; `GameImporter` only skips source-matching rows when the existing row is still `Current`, so invalidated rows
+are reimported when their game is next imported.
 
 ## Logging
 
@@ -262,8 +265,8 @@ next launch from the last heartbeat.
 
 ## Shared Scripted Record Extension
 
-Typed records for `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, and `TERM` follow
-the same Core-facing
+Typed records for `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM`
+follow the same Core-facing
 import contract as `FLST`, `GMST`, and `GLOB`: the game adapters map Mutagen records into Core DTOs,
 `RecordImportService` dispatches by supported game and record type ID, and repositories persist DTO data with named
 SQL parameters. The UI continues to consume Core DTOs and record-tree services only.
@@ -275,9 +278,11 @@ that expose virtual-machine adapters.
 The `MISC` slice currently persists parent scalar fields, keyword rows, model rows, sounds, and scripts. The `BOOK`
 slice persists parent scalar fields, keyword rows, model rows, sounds, scripts, and raw payloads. The `DOOR` slice
 persists parent scalar fields, keyword rows, model rows, sounds, and raw payloads. The `CONT` slice persists parent
-scalar fields, item rows, keyword rows, model rows, sounds, and raw payloads. The `TERM` slice persists parent scalar
-fields, keyword rows, model rows, scripts, raw payloads, and marker parameter rows. The old single-game app's deeper
-MiscObject child-detail tables are still a separate follow-up.
+scalar fields, item rows, keyword rows, model rows, sounds, and raw payloads. The `COBJ` slice persists parent scalar
+fields, recipe component rows, category/filter rows, scripts when present, and raw payloads for conditions and
+partially understood count/list data. The `TERM` slice persists parent scalar fields, keyword rows, model rows,
+scripts, raw payloads, and marker parameter rows. The old single-game app's deeper MiscObject child-detail tables are
+still a separate follow-up.
 Scripting adapters are persisted against the shared `RecordInstances` parent using record type IDs such as `GLOB`,
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`.
 
@@ -295,8 +300,10 @@ empty `ModelGender`.
 
 Raw payload persistence is shared in Core through `IRawRecordPayloadImportService` and `RawRecordPayloads`.
 `IRecordChildImportService` invokes raw payload persistence for any imported `RecordDTO` that implements the raw
-payload capability interface. The current populated slices are `STAT` and `CONT`: Starfield, Fallout 4, and Skyrim
-preserve opaque `Model.Data` payloads, and Starfield also preserves component `REFL` payload bytes when present.
+payload capability interface. The current populated slices are `STAT`, `CONT`, `BOOK`, `DOOR`, `TERM`, and `COBJ`:
+Starfield, Fallout 4, and Skyrim preserve opaque `Model.Data` payloads where present, and COBJ preserves condition
+payloads because the current schema does not model the full Mutagen condition tree. Starfield also preserves component
+`REFL` payload bytes when present.
 Starfield `CONT` import preserves component subfields such as `Components.AnimationGraphComponent.ANAM`, `BNAM`, and
 `CNAM` when Mutagen exposes them through reflection. Comparison DTOs keep the full payload value as detail data while
 exposing a summarized display label for the UI hex viewer.

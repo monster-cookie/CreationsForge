@@ -384,6 +384,63 @@ public class RecordComparisonServiceTests
     }
 
     [Fact]
+    public void GetRecordComparison_ForConstructibleObject_MapsComponentsCategoriesScriptsAndRawPayloads()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x2500);
+        var createdObjectFormKey = CreateFormKey("Starfield.esm", 0x111);
+        var workbenchKeywordFormKey = CreateFormKey("Starfield.esm", 0x222);
+        var componentFormKey = CreateFormKey("Starfield.esm", 0x333);
+        var categoryFormKey = CreateFormKey("Starfield.esm", 0x444);
+        var constructibleObjectRepository = new TestConstructibleObjectRepository
+        {
+            Records =
+            [
+                CreateConstructibleObject("Base.esm", formKey, createdObjectFormKey, workbenchKeywordFormKey, componentFormKey, categoryFormKey, 2),
+                CreateConstructibleObject("Patch.esp", formKey, createdObjectFormKey, workbenchKeywordFormKey, componentFormKey, categoryFormKey, 4)
+            ]
+        };
+        var scriptingAdapterRepository = new TestScriptingAdapterRepository
+        {
+            Records =
+            [
+                CreateScriptingAdapter("Base.esm", RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "RecipeScript", "Enabled", "True"),
+                CreateScriptingAdapter("Patch.esp", RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "RecipeScript", "Enabled", "False")
+            ]
+        };
+        var rawRecordPayloadRepository = new TestRawRecordPayloadRepository
+        {
+            Records =
+            [
+                CreateRawRecordPayload("Base.esm", RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "Conditions", 0, "Conditions", "BaseCondition"),
+                CreateRawRecordPayload("Patch.esp", RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "Conditions", 0, "Conditions", "PatchCondition")
+            ]
+        };
+        var service = CreateService(
+            constructibleObjectRepository: constructibleObjectRepository,
+            scriptingAdapterRepository: scriptingAdapterRepository,
+            rawRecordPayloadRepository: rawRecordPayloadRepository);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.ConstructibleObject.RecordID, formKey);
+
+        comparison.RecordType.ShouldBe(RecordTypeCatalog.ConstructibleObject.RecordID);
+        comparison.Fields.Single(field => field.FieldName == "CreatedObjectFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000111", "Starfield.esm:00000111"]);
+        comparison.Fields.Single(field => field.FieldName == "WorkbenchKeywordFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000222", "Starfield.esm:00000222"]);
+        comparison.Fields.Single(field => field.FieldName == "AmountProduced").Values.Select(value => value.DisplayValue).ShouldBe(["2", "4"]);
+        var components = comparison.Fields.Single(field => field.FieldName == "Components");
+        var component = components.Children.Single(field => field.FieldName == "Component [0]");
+        component.Children.Single(field => field.FieldName == "ComponentFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000333", "Starfield.esm:00000333"]);
+        component.Children.Single(field => field.FieldName == "Count").Values.Select(value => value.DisplayValue).ShouldBe(["3", "3"]);
+        var categories = comparison.Fields.Single(field => field.FieldName == "Categories");
+        categories.Children.Single(field => field.FieldName == "RecipeFilter").Children.Single(field => field.FieldName == "CategoryFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000444", "Starfield.esm:00000444"]);
+        var scripts = comparison.Fields.Single(field => field.FieldName == "Scripts");
+        scripts.Children.Single(field => field.FieldName == "Script [0]").Children.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["RecipeScript", "RecipeScript"]);
+        var rawPayloads = comparison.Fields.Single(field => field.FieldName == "Raw Payloads");
+        var conditionValues = rawPayloads.Children.Single(field => field.FieldName == "Conditions").Children.Single(field => field.FieldName == "Value").Values;
+        conditionValues.Select(value => value.DisplayValue).ShouldBe(["[UNPARSEABLE REFLECTION DATA]", "[UNPARSEABLE REFLECTION DATA]"]);
+        conditionValues.Select(value => value.DetailValue).ShouldBe(["BaseCondition", "PatchCondition"]);
+    }
+
+    [Fact]
     public void GetRecordComparison_ForBook_MapsBookFieldsAndChildren()
     {
         var formKey = CreateFormKey("Starfield.esm", 0x3000);
@@ -546,6 +603,7 @@ public class RecordComparisonServiceTests
         TestBookRepository? bookRepository = null,
         TestDoorRepository? doorRepository = null,
         TestContainerRepository? containerRepository = null,
+        TestConstructibleObjectRepository? constructibleObjectRepository = null,
         TestTerminalRepository? terminalRepository = null,
         TestModelRepository? modelRepository = null,
         TestRecordKeywordRepository? recordKeywordRepository = null,
@@ -567,6 +625,7 @@ public class RecordComparisonServiceTests
             bookRepository ?? new TestBookRepository(),
             doorRepository ?? new TestDoorRepository(),
             containerRepository ?? new TestContainerRepository(),
+            constructibleObjectRepository ?? new TestConstructibleObjectRepository(),
             terminalRepository ?? new TestTerminalRepository(),
             modelRepository ?? new TestModelRepository(),
             recordKeywordRepository ?? new TestRecordKeywordRepository(),
@@ -832,6 +891,60 @@ public class RecordComparisonServiceTests
                     ImportedAtUTC = DateTime.UtcNow
                 }
             ]
+        };
+    }
+
+    private static ConstructibleObjectDTO CreateConstructibleObject(
+        string fileName,
+        FormKeyDTO formKey,
+        FormKeyDTO createdObjectFormKey,
+        FormKeyDTO workbenchKeywordFormKey,
+        FormKeyDTO componentFormKey,
+        FormKeyDTO categoryFormKey,
+        int amountProduced)
+    {
+        return new ConstructibleObjectDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            EditorID = "MyRecipe",
+            FormVersion = 1,
+            MajorRecordFlags = 2,
+            ImportedAtUTC = DateTime.UtcNow,
+            Version2 = 2,
+            Description = "Recipe description",
+            CreatedObjectFormKey = createdObjectFormKey,
+            WorkbenchKeywordFormKey = workbenchKeywordFormKey,
+            AmountProduced = amountProduced,
+            LearnMethod = "DefaultOrConditions",
+            Flags = "None",
+            Components =
+            {
+                new ConstructibleObjectComponentDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    ComponentFormKey = componentFormKey,
+                    ComponentIndex = 0,
+                    Count = 3,
+                    ImportedAtUTC = DateTime.UtcNow
+                }
+            },
+            Categories =
+            {
+                new ConstructibleObjectCategoryDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    CategoryFormKey = categoryFormKey,
+                    CategorySlot = "RecipeFilter",
+                    CategoryIndex = 0,
+                    ImportedAtUTC = DateTime.UtcNow
+                }
+            }
         };
     }
 
@@ -1375,6 +1488,34 @@ public class RecordComparisonServiceTests
         }
 
         public void Save(ContainerDTO dto)
+        { }
+
+        public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)
+        { }
+    }
+
+    private sealed class TestConstructibleObjectRepository : IConstructibleObjectRepository
+    {
+        public string RecordType => RecordTypeCatalog.ConstructibleObject.RecordID;
+
+        public IReadOnlyList<ConstructibleObjectDTO> Records { get; set; } = [];
+
+        public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntriesByPlugin(SupportedGame game, ModKeyDTO modKey)
+        {
+            return [];
+        }
+
+        public IReadOnlyDictionary<string, int> GetRecordPluginCountsByGame(SupportedGame game)
+        {
+            return new Dictionary<string, int>();
+        }
+
+        public IReadOnlyList<ConstructibleObjectDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        {
+            return Records;
+        }
+
+        public void Save(ConstructibleObjectDTO dto)
         { }
 
         public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)

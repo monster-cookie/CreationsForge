@@ -1,5 +1,9 @@
 ﻿# Change Log
 
+## Unreleased
+
+- Added Additional Major Record Types: ConstructibleObject (COBJ)
+
 ## Version 1.1.8 - 2026-06-14
 
 - Fixed regression that removed several major record types child data.

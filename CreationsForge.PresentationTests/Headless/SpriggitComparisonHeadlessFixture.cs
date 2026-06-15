@@ -137,6 +137,7 @@ public class SpriggitComparisonHeadlessFixture
             "GMST" => recordSet.GameSettings,
             "GLOB" => recordSet.Globals,
             "MISC" => recordSet.MiscObjects,
+            "COBJ" => recordSet.ConstructibleObjects,
             "PERK" => recordSet.Perks,
             _ => throw new InvalidOperationException($"Unsupported headless comparison record type '{recordType}'.")
         };
@@ -225,6 +226,7 @@ public class SpriggitComparisonHeadlessFixture
             repository,
             repository,
             repository,
+            repository,
             repository);
     }
 
@@ -250,6 +252,7 @@ public class SpriggitComparisonHeadlessFixture
         IBookRepository,
         IDoorRepository,
         IContainerRepository,
+        IConstructibleObjectRepository,
         ITerminalRepository,
         IModelRepository,
         IRecordKeywordRepository,
@@ -270,6 +273,7 @@ public class SpriggitComparisonHeadlessFixture
         private readonly IReadOnlyList<BookDTO> books = [];
         private readonly IReadOnlyList<DoorDTO> doors = [];
         private readonly IReadOnlyList<ContainerDTO> containers = [];
+        private readonly IReadOnlyList<ConstructibleObjectDTO> constructibleObjects = [];
         private readonly IReadOnlyList<TerminalDTO> terminals = [];
         private readonly IReadOnlyList<ModelDTO> models = [];
         private readonly IReadOnlyList<RecordKeywordDTO> recordKeywords = [];
@@ -289,6 +293,9 @@ public class SpriggitComparisonHeadlessFixture
                     break;
                 case "MISC":
                     miscObjects = [RequireRecord<MiscObjectDTO>(record, recordType)];
+                    break;
+                case "COBJ":
+                    constructibleObjects = [RequireRecord<ConstructibleObjectDTO>(record, recordType)];
                     break;
                 case "PERK":
                     perks = [RequireRecord<PerkDTO>(record, recordType)];
@@ -398,6 +405,11 @@ public class SpriggitComparisonHeadlessFixture
             return containers;
         }
 
+        IReadOnlyList<ConstructibleObjectDTO> IConstructibleObjectRepository.GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        {
+            return constructibleObjects;
+        }
+
         IReadOnlyList<TerminalDTO> ITerminalRepository.GetByFormKey(SupportedGame game, FormKeyDTO formKey)
         {
             return terminals;
@@ -465,6 +477,9 @@ public class SpriggitComparisonHeadlessFixture
         { }
 
         public void Save(ContainerDTO dto)
+        { }
+
+        public void Save(ConstructibleObjectDTO dto)
         { }
 
         public void Save(TerminalDTO dto)

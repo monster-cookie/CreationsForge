@@ -49,6 +49,8 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         var statics = MapStatics(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
         var containers = MapContainers(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
+        var constructibleObjects = MapConstructibleObjects(plugin, mod);
 
         return new PluginRecordSetDTO
         {
@@ -62,7 +64,8 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             MagicEffects = magicEffects,
             Perks = perks,
             Statics = statics,
-            Containers = containers
+            Containers = containers,
+            ConstructibleObjects = constructibleObjects
         };
     }
 
@@ -381,6 +384,30 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             .ToList();
     }
 
+    private static IReadOnlyList<ConstructibleObjectDTO> MapConstructibleObjects(PluginDTO plugin, ISkyrimModGetter mod)
+    {
+        return GetRecordCollection(mod, "ConstructibleObjects")
+            .Select(record => new ConstructibleObjectDTO
+            {
+                Game = SupportedGame.Skyrim,
+                ModKey = plugin.ModKey,
+                FormKey = GetRequiredFormKey(record),
+                EditorID = GetPropertyString(record, "EditorID"),
+                FormVersion = GetPropertyInt(record, "FormVersion"),
+                MajorRecordFlags = GetPropertyInt(record, "SkyrimMajorRecordFlags"),
+                ImportedAtUTC = DateTime.UtcNow,
+                Version2 = GetPropertyNullableInt(record, "Version2"),
+                Description = GetLocalizedEnglishText(record, "Description"),
+                CreatedObjectFormKey = GetLinkedFormKey(record, "CreatedObject"),
+                WorkbenchKeywordFormKey = GetLinkedFormKey(record, "WorkbenchKeyword"),
+                CreatedObjectCount = GetPropertyNullableInt(record, "CreatedObjectCount"),
+                Components = GetConstructibleObjectComponents(plugin, GetRequiredRawFormKey(record), GetPropertyValue(record, "Items")),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ConstructibleObject.RecordID, record),
+                RawPayloads = GetConstructibleObjectRawPayloads(plugin, GetRequiredRawFormKey(record), record)
+            })
+            .ToList();
+    }
+
     private static List<PerkRankDTO> GetPerkRanks(PluginDTO plugin, object record)
     {
         var ranks = GetPropertyValue(record, "Ranks") as IEnumerable;
@@ -561,6 +588,48 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         };
     }
 
+    private static List<ConstructibleObjectComponentDTO> GetConstructibleObjectComponents(PluginDTO plugin, FormKey formKey, object? components)
+    {
+        if (components is not IEnumerable enumerable) return new List<ConstructibleObjectComponentDTO>();
+
+        var importedAtUTC = DateTime.UtcNow;
+        return enumerable
+            .Cast<object>()
+            .Select((component, componentIndex) => CreateConstructibleObjectComponent(plugin, formKey, component, componentIndex, importedAtUTC))
+            .Where(component => component != null)
+            .Cast<ConstructibleObjectComponentDTO>()
+            .ToList();
+    }
+
+    private static ConstructibleObjectComponentDTO? CreateConstructibleObjectComponent(PluginDTO plugin, FormKey formKey, object component, int componentIndex, DateTime importedAtUTC)
+    {
+        var componentData = GetPropertyValue(component, "Item") ?? component;
+        var componentFormKey = GetFormKeyFromObject(GetPropertyValue(componentData, "Item")) ?? GetFormKeyFromObject(GetPropertyValue(componentData, "Component")) ?? GetFormKeyFromObject(componentData);
+        if (componentFormKey == null)
+        {
+            return null;
+        }
+
+        return new ConstructibleObjectComponentDTO
+        {
+            Game = SupportedGame.Skyrim,
+            ModKey = plugin.ModKey,
+            FormKey = MapFormKey(formKey),
+            ComponentFormKey = componentFormKey,
+            ComponentIndex = componentIndex,
+            Count = GetPropertyNullableInt(component, "Count") ?? GetPropertyNullableInt(componentData, "Count") ?? GetPropertyNullableInt(component, "RequiredCount"),
+            ImportedAtUTC = importedAtUTC
+        };
+    }
+
+    private static List<RawRecordPayloadDTO> GetConstructibleObjectRawPayloads(PluginDTO plugin, FormKey formKey, object record)
+    {
+        var importedAtUTC = DateTime.UtcNow;
+        var payloads = new List<RawRecordPayloadDTO>();
+        AddRawRecordPayload(payloads, plugin, RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "Conditions", 0, "Conditions", FormatEnumerable(GetPropertyValue(record, "Conditions")), importedAtUTC);
+        return payloads;
+    }
+
     private static List<RawRecordPayloadDTO> GetModelRawPayloads(PluginDTO plugin, string recordType, FormKey formKey, object? model)
     {
         var payloads = new List<RawRecordPayloadDTO>();
@@ -583,6 +652,36 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             ImportedAtUTC = DateTime.UtcNow
         });
         return payloads;
+    }
+
+    private static void AddRawRecordPayload(
+        ICollection<RawRecordPayloadDTO> payloads,
+        PluginDTO plugin,
+        string recordType,
+        FormKey formKey,
+        string payloadSlot,
+        int payloadIndex,
+        string payloadType,
+        string? payloadValue,
+        DateTime importedAtUTC)
+    {
+        if (string.IsNullOrWhiteSpace(payloadValue))
+        {
+            return;
+        }
+
+        payloads.Add(new RawRecordPayloadDTO
+        {
+            Game = SupportedGame.Skyrim,
+            ModKey = plugin.ModKey,
+            RecordType = recordType,
+            FormKey = MapFormKey(formKey),
+            PayloadSlot = payloadSlot,
+            PayloadIndex = payloadIndex,
+            PayloadType = payloadType,
+            PayloadValue = payloadValue,
+            ImportedAtUTC = importedAtUTC
+        });
     }
 
     private static List<RecordSoundDTO> GetNamedSounds(PluginDTO plugin, string recordType, FormKey formKey, object record, params string[] soundSlots)

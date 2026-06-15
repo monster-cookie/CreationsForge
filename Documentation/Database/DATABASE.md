@@ -10,11 +10,14 @@ The application uses a local SQLite database. The schema is defined by embedded 
   `Containers` typed record tables, `ContainerItems`, and `RawRecordPayloads`.
 - `003_Migrations003.sql` renames `MiscObjects` to `MiscItems` and adds the `Books`, `Doors`, `Terminals`, and
   `TerminalMarkerParameters` tables.
+- `004_Migrations004.sql` adds the `ConstructibleObjects`, `ConstructibleObjectComponents`, and
+  `ConstructibleObjectCategories` tables and marks existing current or partially imported plugin rows as `Changed`
+  so each supported game reimports cached plugin data after the migration.
 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains thirty-seven tables:
+The application schema contains forty tables:
 
 - `Games`
 - `Plugins`
@@ -38,6 +41,9 @@ The application schema contains thirty-seven tables:
 - `Doors`
 - `Containers`
 - `ContainerItems`
+- `ConstructibleObjects`
+- `ConstructibleObjectComponents`
+- `ConstructibleObjectCategories`
 - `Terminals`
 - `TerminalMarkerParameters`
 - `RecordKeywords`
@@ -426,7 +432,7 @@ Persistence behavior:
 ### Shared scripted parent records
 
 `MiscItems`, `Keywords`, `ActorValueInformation`, `NPCs`, `MagicEffects`, `Perks`, `Statics`, `Books`, `Doors`,
-`Containers`, and `Terminals` use
+`Containers`, `ConstructibleObjects`, and `Terminals` use
 the common typed record key and metadata columns.
 
 `MiscItems` additional columns:
@@ -528,6 +534,13 @@ the common typed record key and metadata columns.
 - `Name`, `Flags`, and `MajorFlags` (`TEXT`, nullable)
 - nullable decomposed FormKey columns for `NativeTerminal`
 
+`ConstructibleObjects` additional columns:
+
+- `Version2` (`INTEGER`, nullable)
+- `Description`, `LearnMethod`, and `Flags` (`TEXT`, nullable)
+- nullable decomposed FormKey columns for `CreatedObject` and `WorkbenchKeyword`
+- `CreatedObjectCount`, `AmountProduced`, and `MenuSortOrder` (`INTEGER`, nullable)
+
 `Terminals` additional columns:
 
 - `Version2` (`INTEGER`, nullable)
@@ -560,8 +573,10 @@ Persistence behavior:
   sound rows, scripting adapters, and raw payload rows. `Doors` persist parent scalar rows, shared model rows,
   shared keyword rows, shared sound rows, and raw payload rows. `Containers` persist parent scalar rows, child item
   rows, shared model rows, shared keyword rows when present, shared sound rows when present, and raw opaque payload
-  rows. `Terminals` persist parent scalar rows, shared model rows, shared keyword rows, scripting adapters, raw
-  payload rows, and `TerminalMarkerParameters` rows. `NPCs` and `MagicEffects` persist shared keyword rows.
+  rows. `ConstructibleObjects` persist parent scalar rows, component rows, category/filter rows, scripting adapters
+  when present, and raw opaque payload rows such as conditions and multi-count data. `Terminals` persist parent scalar
+  rows, shared model rows, shared keyword rows, scripting adapters, raw payload rows, and
+  `TerminalMarkerParameters` rows. `NPCs` and `MagicEffects` persist shared keyword rows.
   `MagicEffects` persists shared sound rows and Spriggit-flattened DATA fields directly on the parent row.
 
 ### ContainerItems
@@ -592,6 +607,68 @@ Persistence behavior:
 - Current imported rows are upserted after their owning container row is saved.
 - Existing item rows for the same container are deleted before replacement so removed items do not remain stale.
 - Stale typed-record deletion removes item rows through the declared `Containers` cascade.
+
+### ConstructibleObjectComponents
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `Component_Index` (`INTEGER`, `NOT NULL`, primary key)
+- decomposed `Component_*` FormKey columns (`NOT NULL`)
+- `Count` (`INTEGER`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `ConstructibleObjects` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `Component_Index`, `Component_FormKey_ID`, and `FormKey_ID` must be greater than or equal to zero.
+- `Count` must be null or greater than or equal to zero.
+
+Indexes:
+
+- `IX_ConstructibleObjectComponents_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning constructible object row is saved.
+- Existing component rows for the same constructible object are deleted before replacement so removed components do
+  not remain stale.
+- Stale typed-record deletion removes component rows through the declared `ConstructibleObjects` cascade.
+
+### ConstructibleObjectCategories
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `CategorySlot` (`TEXT`, `NOT NULL`, primary key)
+- `Category_Index` (`INTEGER`, `NOT NULL`, primary key)
+- decomposed `Category_*` FormKey columns (`NOT NULL`)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `ConstructibleObjects` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `CategorySlot` must not be empty.
+- `Category_Index`, `Category_FormKey_ID`, and `FormKey_ID` must be greater than or equal to zero.
+
+Indexes:
+
+- `IX_ConstructibleObjectCategories_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning constructible object row is saved.
+- Existing category/filter rows for the same constructible object are deleted before replacement so removed category
+  links do not remain stale.
+- Stale typed-record deletion removes category/filter rows through the declared `ConstructibleObjects` cascade.
 
 ### TerminalMarkerParameters
 
@@ -934,10 +1011,18 @@ These columns carry record-reference identity but do not declare SQLite foreign 
   and `NativeTerminal_FormKey_ID`
 - `Containers.NativeTerminal_ModKey_Name`, `NativeTerminal_ModKey_Type`, `NativeTerminal_ModKey_FileName`,
   and `NativeTerminal_FormKey_ID`
+- `ConstructibleObjects.CreatedObject_ModKey_Name`, `CreatedObject_ModKey_Type`,
+  `CreatedObject_ModKey_FileName`, and `CreatedObject_FormKey_ID`
+- `ConstructibleObjects.WorkbenchKeyword_ModKey_Name`, `WorkbenchKeyword_ModKey_Type`,
+  `WorkbenchKeyword_ModKey_FileName`, and `WorkbenchKeyword_FormKey_ID`
 - `Terminals.Menu_ModKey_Name`, `Menu_ModKey_Type`, `Menu_ModKey_FileName`, and `Menu_FormKey_ID`
 - `Terminals.FurnitureTemplate_ModKey_Name`, `FurnitureTemplate_ModKey_Type`,
   `FurnitureTemplate_ModKey_FileName`, and `FurnitureTemplate_FormKey_ID`
 - `FormListItems.Item_ModKey_Name`, `Item_ModKey_Type`, `Item_ModKey_FileName`, and `Item_FormKey_ID`
+- `ConstructibleObjectComponents.Component_ModKey_Name`, `Component_ModKey_Type`,
+  `Component_ModKey_FileName`, and `Component_FormKey_ID`
+- `ConstructibleObjectCategories.Category_ModKey_Name`, `Category_ModKey_Type`,
+  `Category_ModKey_FileName`, and `Category_FormKey_ID`
 - `ModelMaterialSwaps.MaterialSwap_ModKey_Name`, `MaterialSwap_ModKey_Type`, `MaterialSwap_ModKey_FileName`,
   and `MaterialSwap_FormKey_ID`
 - `RecordKeywords.Keyword_ModKey_Name`, `Keyword_ModKey_Type`, `Keyword_ModKey_FileName`, and `Keyword_FormKey_ID`

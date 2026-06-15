@@ -47,6 +47,7 @@ public class RecordImportService : IRecordImportService
         ImportPluginRecordType(plugin, result, RecordTypeCatalog.Perk, recordSet.Perks, progress, pluginIndex, pluginCount, cancellationToken);
         ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Static, recordSet.Statics, progress, pluginIndex, pluginCount, cancellationToken);
         ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Container, recordSet.Containers, progress, pluginIndex, pluginCount, cancellationToken);
+        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.ConstructibleObject, recordSet.ConstructibleObjects, progress, pluginIndex, pluginCount, cancellationToken);
         ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Book, recordSet.Books, progress, pluginIndex, pluginCount, cancellationToken);
         ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Door, recordSet.Doors, progress, pluginIndex, pluginCount, cancellationToken);
         ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Terminal, recordSet.Terminals, progress, pluginIndex, pluginCount, cancellationToken);
