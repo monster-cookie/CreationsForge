@@ -115,8 +115,8 @@ types.
 - Game-specific reader services currently return selected game metadata, load-order plugin metadata, header-stat
   record counts, declared master references, and audited scalar game-specific plugin header fields.
 - Starfield, Fallout 4, and Skyrim share `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`,
-  `STAT`, and `CONT` typed-record mapping. Additional typed record types and deeper game-specific fields are follow-up
-  work.
+  `STAT`, `CONT`, and `COBJ` typed-record mapping. Starfield also maps `CNDF`, `BOOK`, `DOOR`, and `TERM`.
+  Deeper game-specific fields are follow-up work.
 - Shared plugin, plugin-master-reference, and typed-record repositories use NPoco database models for save behavior.
   Repository delete/query SQL remains parameterized where explicit SQL is used.
 - Oblivion is not implemented.

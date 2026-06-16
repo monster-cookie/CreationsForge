@@ -11,6 +11,14 @@
     - ActorValueInformation (AVIF)
     - MagicEffect (MGEF)
     - Perk (PERK)
+    - Static (STAT)
+    - Container (CONT)
+    - ConstructibleObject (COBJ)
+  - Starfield also supports:
+    - ConditionForm (CNDF)
+    - Book (BOOK)
+    - Door (DOOR)
+    - Terminal (TERM)
 
 - Some supported record types have partial detail coverage. The current implementation intentionally persists clearly
   understood scalar fields and direct `FormKey` references first. The following omitted child structures are
