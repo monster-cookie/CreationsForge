@@ -18,8 +18,14 @@ This was released with version 1.1.8 on 2026-06-14
 
 REF: CreationsForge.Migrations\Sql\003_Migrations003.sql
 
-## Migration 004 - UNRELEASED
+## Migration 004 - Released Version 1.1.9
 
-All current database work needs to use migration 004.
+This was released with version 1.1.9 on 2026-06-16
 
 REF: CreationsForge.Migrations\Sql\004_Migrations004.sql
+
+## Migration 005 - UNRELEASED
+
+All current database work needs to use migration 005.
+
+REF: CreationsForge.Migrations\Sql\005_Migrations005.sql

@@ -11,8 +11,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Autofac" Version="9.1.0" />
-        <PackageReference Include="Mutagen.Bethesda.Skyrim" Version="0.54.0-alpha.100" />
+        <PackageReference Include="Autofac" Version="9.2.0" />
+        <PackageReference Include="Mutagen.Bethesda.Skyrim" Version="0.54.0-alpha.104" />
     </ItemGroup>
 
 </Project>

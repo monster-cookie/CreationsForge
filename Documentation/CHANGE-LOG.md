@@ -1,6 +1,6 @@
 ﻿# Change Log
 
-## Unreleased
+## Version 1.1.9 - 2026-06-16
 
 - Moved the active game/plugin dropdowns in to an open plugin dialog.
 - Now use friendly names fro the record type selector not the record IDs.
