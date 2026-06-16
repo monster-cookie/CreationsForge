@@ -56,6 +56,7 @@ public class MainViewModelTests
         viewModel.SelectRecordForComparison(recordItem);
 
         navigationService.ActivePluginLoadCount.ShouldBe(0);
+        viewModel.RecordComparisonTitleText.ShouldBe("Static (STAT) PreviewRecord (0000000A)");
     }
 
     [Fact]
@@ -76,7 +77,29 @@ public class MainViewModelTests
 
         var tree = MainViewModel.BuildRecordTree(entries);
 
-        tree.Select(item => item.FormIDText).ShouldBe(["BOOK", "CONT", "PERK"]);
+        tree.Select(item => item.FormIDText).ShouldBe(["Book (BOOK)", "Container (CONT)", "Perk (PERK)"]);
+    }
+
+    [Fact]
+    public void BuildRecordTree_FormatsRecordTypeGroupWithFriendlyNameSignatureAndCount()
+    {
+        var modKey = new ModKeyDTO
+        {
+            Name = "Starfield",
+            Type = 0,
+            FileName = "Starfield.esm"
+        };
+        var entries = new[]
+        {
+            CreateRecordTreeEntry(modKey, "KYWD", "FirstKeyword", 0x10),
+            CreateRecordTreeEntry(modKey, "KYWD", "SecondKeyword", 0x20),
+            CreateRecordTreeEntry(modKey, "KYWD", "ThirdKeyword", 0x30)
+        };
+
+        var tree = MainViewModel.BuildRecordTree(entries);
+
+        tree.Single().FormIDText.ShouldBe("Keyword (KYWD)");
+        tree.Single().DisplayFormIDText.ShouldBe("Keyword (KYWD) (3)");
     }
 
     [Fact]
