@@ -1,7 +1,7 @@
 ﻿# Known Issues
 
 - Only a subset of the record types are supported at this time.
-  - The supported record types are:
+  - The supported record types in all games are:
     - ActorValueInformation (AVIF)
     - Book (BOOK)
     - Container (CONT)
