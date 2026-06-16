@@ -12,6 +12,7 @@ using CreationsForge.Core.DTOs.Games;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
+using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Services.Interfaces;
 using Serilog;
@@ -430,7 +431,7 @@ public class MainViewModel : ViewModelBase
 
         RecordComparisonTitleText = comparison.FormKey is null
             ? "Select a record to compare."
-            : $"{comparison.RecordType} {comparison.EditorID} ({comparison.FormKey.Id:X8})";
+            : $"{RecordTypeCatalog.GetDisplayLabel(comparison.RecordType)} {comparison.EditorID} ({comparison.FormKey.Id:X8})";
         CurrentRecordComparisonEditorID = comparison.EditorID;
         RefreshRecordComparisonSource();
         AssetPreviewPane.LoadPreviewForRecord(SelectedGame.Game, item.RecordType, item.FormKey);
@@ -863,9 +864,9 @@ public class MainViewModel : ViewModelBase
         var recordTreeItems = new List<RecordTreeItemViewModel>();
         foreach (var recordTypeGroup in entries
             .GroupBy(entry => entry.RecordType)
-            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase))
+            .OrderBy(group => RecordTypeCatalog.GetDisplayLabel(group.Key), StringComparer.OrdinalIgnoreCase))
         {
-            var recordTypeItem = new RecordTreeItemViewModel(recordTypeGroup.Key, string.Empty);
+            var recordTypeItem = new RecordTreeItemViewModel(RecordTypeCatalog.GetDisplayLabel(recordTypeGroup.Key), string.Empty);
             foreach (var record in recordTypeGroup.OrderBy(entry => entry.EditorID, StringComparer.OrdinalIgnoreCase))
             {
                 recordTypeItem.Children.Add(CreateRecordTreeItem(record));
