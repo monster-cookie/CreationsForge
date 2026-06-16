@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Moved the active game/plugin dropdowns in to an open plugin dialog.
+- Now use friendly names fro the record type selector not the record IDs.
 - Added Additional Major Record Types: ConstructibleObject (COBJ), ConditionForm (CNDF)
 
 ## Version 1.1.8 - 2026-06-14
