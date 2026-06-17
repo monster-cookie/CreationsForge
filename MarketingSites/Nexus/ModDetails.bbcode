@@ -1,19 +1,25 @@
 [size=4][b][u]Overview[/u][/b][/size]
-Creations Forge is a cross-platform desktop and command-line application for importing, browsing, and comparing Bethesda plugin records. While this page is Fallout 4 specific, the application also supports Skyrim and Starfield.
+Creations Forge is a cross-platform desktop and command-line application for importing, browsing, and comparing Bethesda plugin records for Fallout 4, Skyrim, and Starfield.
 
-The application discovers your local Fallout 4 load order, imports supported plugin records into a local SQLite cache, and presents record differences in a comparison workspace. It is intended for mod authors and developers reviewing overrides, debugging compatibility issues, and inspecting plugin data.
+The application discovers your local game load order, imports supported plugin records into a local SQLite cache, and presents record differences in a comparison workspace. It is intended for mod authors and developers reviewing overrides, debugging compatibility issues, and inspecting plugin data across supported Bethesda games.
 
 [quote]
-NOTE: This is an early multi-game release. Fallout 4 mode currently supports the shared record-types listed below, and record-type support will expand over time.
+IMPORTANT: Creations Forge is a major replacement for Starfield Record Compare Engine. If you have the old Starfield Record Compare Engine installed, uninstall or delete it before installing Creations Forge. Do not reuse the old SFRecordCompareEngine application folder or cache/log directory as a Creations Forge install.
+[/quote]
 
-Fallout 4 must be installed on the system so the application can discover the local load order and plugin files.
+[quote]
+NOTE: This is an early multi-game release. Fallout 4, Skyrim, and Starfield currently support the record-types listed below, and record-type support will expand over time.
+
+The selected game must be installed on the system so the application can discover the local load order and plugin files.
+
+Currently MO2 breaks how Mutagen assembles and accesses Starfield split masters. So using Creations Forge with MO2 for Starfield currently is not supported, but I'm looking into the issue.
 [/quote]
 
 Please report bugs here: [url=https://github.com/monster-cookie/CreationsForge/issues]https://github.com/monster-cookie/CreationsForge/issues[/url]
 
 [size=4][b][u]Features[/u][/b][/size]
 [list]
-[*]Imports Fallout 4 plugin metadata, declared master references, and supported record details for high-speed comparison and searching.[/*]
+[*]Imports Fallout 4, Skyrim, and Starfield plugin metadata, declared master references, and supported record details for high-speed comparison and searching.[/*]
 [*]Skips unchanged plugins during later imports using source fingerprints for quicker load times.[/*]
 [*]Browses records owned by the active plugin in a filterable record tree.[/*]
 [*]Compares matching records across imported plugins in load-order order.[/*]
@@ -23,11 +29,20 @@ Please report bugs here: [url=https://github.com/monster-cookie/CreationsForge/
 [*]NEW: Binary Reflection Viewer as Hexadecimal with strings[/*]
 [/list]
 
-[size=4][b][u]Currently Supported Fallout 4 Record Types[/u][/b][/size]
+[size=4][b][u]Supported Games[/u][/b][/size]
+[list]
+[*]Fallout 4[/*]
+[*]Skyrim Special Edition[/*]
+[*]Starfield[/*]
+[/list]
+
+[size=4][b][u]Currently Supported Record Types Across All Games[/u][/b][/size]
 [list]
 [*]Actor Value Information (AVIF)[/*]
+[*]Book (BOOK)[/*]
 [*]ConstructibleObject (COBJ)[/*]
 [*]Container (CONT)[/*]
+[*]Door (DOOR)[/*]
 [*]Form Lists (FLST)[/*]
 [*]Game Settings (GMST)[/*]
 [*]Globals (GLOB)[/*]
@@ -37,18 +52,17 @@ Please report bugs here: [url=https://github.com/monster-cookie/CreationsForge/
 [*]NPCs (NPC_)[/*]
 [*]Perks (PERK)[/*]
 [*]Static (STAT)[/*]
+[*]Terminals (TERM)[/*]
 [/list]
 
-[size=4][b][u]Other Supported Games[/u][/b][/size]
+[size=4][b][u]Additionally Supported Starfield Record Types[/u][/b][/size]
 [list]
-[*]Skyrim[/*]
-[*]Starfield[/*]
+[*]ConditionForm (CNDF)[/*]
 [/list]
 
 [size=4][b][u]Planned Features[/u][/b][/size]
 [list]
 [*]Expand supported record details for Fallout 4, Skyrim, and Starfield.[/*]
-[*]Add deeper child comparison sections for supported nested structures.[/*]
 [*]Add Spriggit-compatible plugin and record export/import.[/*]
 [*]Validate supported record types against Spriggit and xEdit.[/*]
 [*]Add record editing, plugin saving, plugin creation, and patch creation workflows.[/*]
@@ -58,7 +72,7 @@ Please report bugs here: [url=https://github.com/monster-cookie/CreationsForge/
 [size=4][b][u]Usage[/u][/b][/size]
 [list=1]
 [*]Launch Creations Forge.[/*]
-[*]Select Fallout 4 as the active game if it is not already configured.[/*]
+[*]Select Fallout 4, Skyrim, or Starfield as the active game if it is not already configured.[/*]
 [*]Approve the import when prompted and wait for the application to process your local load order.[/*]
 [*]Select an active plugin.[/*]
 [*]Use the record tree and filters to find a supported record.[/*]
@@ -83,11 +97,13 @@ The application data directory is C:\ProgramData\CreationsForge. This is where t
 [size=4][b][u]Installation[/u][/b][/size]
 Windows users can download the x64 desktop ZIP archive or installer. Linux users can download the x64 desktop ZIP archive, CLI ZIP archive, Debian package, or Arch package.
 
-Do not install the application into your Fallout 4 Data folder. Fallout 4 must be installed and discoverable on your system, including Linux installations running through Proton where supported by Mutagen's game discovery.
+Do not install the application into your game's Data folder. The selected game must be installed and discoverable on your system, including Linux installations running through Proton where supported by Mutagen's game discovery.
 
 [size=4][b][u]Current Limitations[/u][/b][/size]
 [list]
-[*]Only a subset of Fallout 4 record details are currently supported.[/*]
+[*]Only a subset of Fallout 4, Skyrim Special Edition, and Starfield record details are currently supported.[/*]
+[*]Starfield BlueprintShips*.esm plugins are intentionally skipped during import.[/*]
+[*]Starfield through MO2 is not currently supported because of split master assembly/access behavior in Mutagen.[/*]
 [/list]
 
 [size=4][b][u]Social Presence[/u][/b][/size]
@@ -99,4 +115,3 @@ Do not install the application into your Fallout 4 Data folder. Fallout 4 must b
 
 [size=4][b][u]Source Code[/u][/b][/size]
 The source code is available on GitHub at [url=https://github.com/monster-cookie/CreationsForge]https://github.com/monster-cookie/CreationsForge[/url]
-
