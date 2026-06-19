@@ -6,6 +6,7 @@ public class SpriggitFieldPathMapper
     {
         ["ObjectBounds.First"] = "ObjectBoundsFirst",
         ["ObjectBounds.Second"] = "ObjectBoundsSecond",
+        ["MajorRecordFlagsRaw"] = "MajorRecordFlags",
         ["Model.File"] = "Models[0].File",
         ["Model.LightLayer"] = "Models[0].LightLayer",
         ["Model.Flags"] = "Models[0].Flags",

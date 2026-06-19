@@ -21,7 +21,7 @@ create or update that file.
 
 Project-local validation configuration lives in `CreationsForge.DataValidationTests/Configuration`:
 
-- `SpriggitValidationSamples.json` contains selected sample records.
+- `SpriggitValidationSamples.json` contains selected sample records for the manifest-backed validation tests.
 - `SpriggitApprovedDifferences.json` contains accepted differences and exclusions.
 
 ## Running
@@ -33,9 +33,10 @@ dotnet test ./CreationsForge.DataValidationTests/CreationsForge.DataValidationTe
   --filter Category=SpriggitDataValidation
 ```
 
-Each supported game and record type has its own xUnit fact, such as
-`Fallout4_NPC_ShouldMatchSpriggitSamples` or `Starfield_BOOK_ShouldMatchSpriggitSamples`. In an IDE test explorer,
-run that individual test when investigating one record type.
+Global (`GLOB`) samples currently use explicit xUnit facts, such as
+`Starfield_GLOB_ShouldMatchSpriggitSample_2B7FBD_Starfield_esm`, with visible field-by-field Shouldly assertions in
+the test body. Other record types still use one manifest-backed xUnit fact per supported game and record type, such
+as `Fallout4_NPC_ShouldMatchSpriggitSamples` or `Starfield_BOOK_ShouldMatchSpriggitSamples`.
 
 You can also filter from the CLI:
 
@@ -44,7 +45,8 @@ dotnet test ./CreationsForge.DataValidationTests/CreationsForge.DataValidationTe
   --filter "Category=SpriggitDataValidation&Game=Starfield&RecordType=NPC_"
 ```
 
-The tests write scoped reports before failing on real mismatches:
+Global tests fail directly through visible Shouldly assertions. Other record-type tests write scoped reports before
+failing on real mismatches:
 
 - `TestResults/SpriggitValidation/<timestamp>/<game-record-type>/SpriggitValidationReport.md`
 - `TestResults/SpriggitValidation/<timestamp>/<game-record-type>/SpriggitValidationReport.json`
@@ -56,12 +58,13 @@ five YAML records per supported record type and game. Selection favors files wit
 collections, references, models, keywords, sounds, conditions, raw payload markers, or other edge-case paths currently
 relevant to Creations Forge DTOs.
 
-When refreshing samples, keep the manifest deterministic:
+When refreshing manifest-backed samples, keep the manifest deterministic:
 
 - Keep paths relative to the configured Spriggit root.
 - Prefer base-game plugin samples.
 - Keep three to five samples per supported record type and game unless an approved plan expands the count.
-- Use `coverageHints` to explain why the sample is useful.
+- For `GLOB`, add the sample as an explicit `[Fact]` with `Game`, `RecordType`, `FormKey`, `EditorID`, and
+  `SpriggitFile` traits.
 - Do not copy external Spriggit YAML files into the repository.
 
 ## Approved Differences
@@ -75,19 +78,18 @@ Creations Forge metadata, or fields deliberately unsupported by the current mapp
 Do not use approved differences to hide unknown mapping bugs. If the harness reports a mismatch and the behavior is
 not understood, fix the mapping or keep the validation failure visible.
 
-## Report Interpretation
+## Report And Assertion Interpretation
 
-The Markdown report summarizes category counts, failed records, a capped preview of why each failed record failed, and
-the highest-priority findings across the run. The JSON report contains full per-field details, including original and
-normalized values where available.
+Global tests load the selected Spriggit YAML file and the real DTO produced by the matching game reader, then assert
+mapped fields directly in the test body before checking unmatched fields. The manifest-backed tests flatten Spriggit
+fields and DTO fields, map known equivalent field paths, normalize comparable values, and write Markdown/JSON reports.
 
-Important categories:
+Important failure shapes:
 
-- `MissingInCreationsForge`: Spriggit exposed a path that the DTO comparison could not find.
-- `ValueMismatch`: Spriggit and Creations Forge both exposed a value, but normalized values still differed.
-- `EquivalentAfterNormalization`: Values differed only by accepted formatting normalization.
-- `MissingInSpriggit`: Creations Forge exposed a DTO path absent from the selected Spriggit sample.
-- `ApprovedDifference`: The difference matched an approved entry.
+- No matching CreationsForge reader DTO data was found for a Spriggit field.
+- No matching Spriggit field was found for a CreationsForge reader DTO field.
+- Spriggit and Creations Forge both exposed a value, but normalized values still differed.
+- An approved difference matched the configured reason.
 
 ## Limitations
 
@@ -95,4 +97,4 @@ The harness compares DTO data from existing game record readers. It does not val
 readback, or Avalonia comparison rows. Those can be added later through a separately approved validation slice.
 
 The YAML parser is intentionally small and shaped around Spriggit's current extraction output. If Spriggit changes its
-YAML shape, update the parser and sample manifest together.
+YAML shape, update the parser, manifest-backed samples, and explicit Global sample tests together.
