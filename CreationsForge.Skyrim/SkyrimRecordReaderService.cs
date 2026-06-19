@@ -115,7 +115,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
     private static IReadOnlyList<GameSettingDTO> MapGameSettings(PluginDTO plugin, ISkyrimModGetter mod)
     {
         return mod.GameSettings
-            .Select(record => new GameSettingDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new GameSettingDTO
             {
                 Game = SupportedGame.Skyrim,
                 ModKey = plugin.ModKey,
@@ -124,12 +124,15 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 FormVersion = record.FormVersion,
                 MajorRecordFlags = (int)record.SkyrimMajorRecordFlags,
                 ImportedAtUTC = DateTime.UtcNow,
+                MutagenObjectType = GetGameSettingType(record),
+                Version2 = GetPropertyNullableInt(record, "Version2"),
+                VersionControl = GetPropertyNullableInt(record, "VersionControl"),
                 SettingType = GetGameSettingType(record),
                 Data = GetGameSettingData(record),
                 NumericData = GetGameSettingNumericData(record),
                 IntegerData = GetGameSettingIntegerData(record),
                 BooleanData = GetGameSettingBooleanData(record)
-            })
+            }, record))
             .ToList();
     }
 
@@ -1213,7 +1216,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         return value == null ? 0 : Convert.ToInt32(value, CultureInfo.InvariantCulture);
     }
 
-    private static int? GetPropertyNullableInt(object source, string propertyName)
+    private static int? GetPropertyNullableInt(object? source, string propertyName)
     {
         var value = GetPropertyValue(source, propertyName);
         return value == null ? null : Convert.ToInt32(value, CultureInfo.InvariantCulture);
@@ -1243,7 +1246,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         return value == null ? 0 : Convert.ToDouble(value, CultureInfo.InvariantCulture);
     }
 
-    private static double? GetPropertyNullableDouble(object source, string propertyName)
+    private static double? GetPropertyNullableDouble(object? source, string propertyName)
     {
         var value = GetPropertyValue(source, propertyName);
         return value == null ? null : Convert.ToDouble(value, CultureInfo.InvariantCulture);
@@ -1351,7 +1354,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             IGameSettingBoolGetter gameSetting => Convert.ToString(gameSetting.Data, CultureInfo.InvariantCulture),
             IGameSettingFloatGetter gameSetting => Convert.ToString(gameSetting.Data, CultureInfo.InvariantCulture),
             IGameSettingIntGetter gameSetting => Convert.ToString(gameSetting.Data, CultureInfo.InvariantCulture),
-            IGameSettingStringGetter gameSetting => gameSetting.Data?.ToString(),
+            IGameSettingStringGetter gameSetting => LocalizedStringDTOMapper.GetLocalizedText(gameSetting.Data, Language.English),
             _ => null
         };
     }

@@ -24,7 +24,8 @@ FACT, and COBJ condition lists use shared structured condition-rule rows and gen
 not raw condition payload rows. Factions can also persist shared component child rows for Starfield-only FACT component
 payloads. Imports
 currently create/update the selected
-`Games`, `Plugins`, `PluginMasterReferences`, game-specific plugin extension rows, and approved typed record rows.
+`Games`, `Plugins`, `PluginMasterReferences`, game-specific plugin extension rows, approved typed record rows, and
+localized text rows for imported fields that expose Mutagen translation tables.
 
 ## Projects
 
@@ -95,6 +96,8 @@ types.
 - Accepts `--reset-all` to delete the current database and force a full import for every supported game.
 - Rejects unsupported game values with a clear error and non-zero exit code.
 - Persists active game and app data paths in a JSON configuration file.
+- Persists the selected record text language in the Settings screen. Record comparison uses that language for
+  localized values when available and falls back to English values when needed.
 - Writes logs to console and the configured `Logs` directory.
 - Creates and migrates a SQLite database through DbUp.
 - Uses DbUp `SchemaVersions` as the migration-state source of truth.
@@ -103,7 +106,7 @@ types.
   `ActorValueInformation`, `NPCs`,
   `MagicEffects`, `Perks`, `Statics`, `ConditionForms`, `ConstructibleObjects`, `Books`, `Doors`, `Containers`,
   `Terminals`, `TerminalMarkerParameters`, shared model data, shared keyword lists, shared record components, shared
-  sounds, shared raw payload data, and shared scripting adapter data.
+  sounds, shared raw payload data, shared localized string data, and shared scripting adapter data.
 - Preserves plugin source-fingerprint behavior for unchanged, changed, missing, failed, and unsupported plugin states.
 - Preserves record import accounting for the approved typed record types.
 - Provides an initial Avalonia UI with an Open Plugin dialog for active game/plugin selection, warning before long
@@ -147,7 +150,8 @@ typed importers. Scripting adapters are persisted for `GLOB`, `MISC`, `KYWD`, `A
 and `TERM` when the source record exposes virtual-machine adapter data; `FLST`, `GMST`, and `DOOR` remain flat
 records without scripting adapter persistence. Shared child rows for models, keywords, record components, sounds, raw
 payloads, scripting adapters, and terminal marker parameters are dispatched by Core DTO capability interfaces and
-linked through the owning `RecordInstances` row or terminal parent row.
+linked through the owning `RecordInstances` row or terminal parent row. Localized string rows are also dispatched from
+Core DTO capability interfaces and linked through the owning `RecordInstances` row.
 
 The current `MISC` implementation persists the parent scalar row plus shared model, keyword, sound, and scripting
 adapter rows. `BOOK`, `DOOR`, `CONT`, and `TERM` now persist typed parent scalar rows in addition to their shared

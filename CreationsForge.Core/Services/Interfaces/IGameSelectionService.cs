@@ -14,6 +14,16 @@ public interface IGameSelectionService
 
     ApplicationThemeFamily GetThemeFamily();
 
+    IReadOnlyList<string> GetRecordTextLanguages()
+    {
+        return [ApplicationConfiguration.DefaultRecordTextLanguage];
+    }
+
+    string GetRecordTextLanguage()
+    {
+        return ApplicationConfiguration.DefaultRecordTextLanguage;
+    }
+
     string? GetNifSkopeExecutablePath()
     {
         return null;
@@ -31,7 +41,17 @@ public interface IGameSelectionService
 
     void SetTheme(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode);
 
+    void SetThemeRecordTextLanguageAndNifSkopeExecutablePath(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, string recordTextLanguage, string? nifSkopeExecutablePath)
+    {
+        SetTheme(themeFamily, themeMode);
+    }
+
     void SetActiveGameThemeAndNifSkopeExecutablePath(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, string? nifSkopeExecutablePath)
+    {
+        SetActiveGameAndTheme(game, themeFamily, themeMode);
+    }
+
+    void SetActiveGameThemeRecordTextLanguageAndNifSkopeExecutablePath(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, string recordTextLanguage, string? nifSkopeExecutablePath)
     {
         SetActiveGameAndTheme(game, themeFamily, themeMode);
     }

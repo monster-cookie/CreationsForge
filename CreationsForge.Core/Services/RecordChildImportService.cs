@@ -14,6 +14,7 @@ public class RecordChildImportService : IRecordChildImportService
     private readonly IRecordSoundImportService RecordSoundImportService;
     private readonly IScriptingAdapterImportService ScriptingAdapterImportService;
     private readonly ITerminalMarkerParameterImportService TerminalMarkerParameterImportService;
+    private readonly IRecordLocalizedStringImportService RecordLocalizedStringImportService;
 
     public RecordChildImportService(
         IModelImportService modelImportService,
@@ -23,7 +24,8 @@ public class RecordChildImportService : IRecordChildImportService
         IRawRecordPayloadImportService rawRecordPayloadImportService,
         IRecordSoundImportService recordSoundImportService,
         IScriptingAdapterImportService scriptingAdapterImportService,
-        ITerminalMarkerParameterImportService terminalMarkerParameterImportService)
+        ITerminalMarkerParameterImportService terminalMarkerParameterImportService,
+        IRecordLocalizedStringImportService recordLocalizedStringImportService)
     {
         ModelImportService = modelImportService;
         RecordKeywordImportService = recordKeywordImportService;
@@ -33,6 +35,7 @@ public class RecordChildImportService : IRecordChildImportService
         RecordSoundImportService = recordSoundImportService;
         ScriptingAdapterImportService = scriptingAdapterImportService;
         TerminalMarkerParameterImportService = terminalMarkerParameterImportService;
+        RecordLocalizedStringImportService = recordLocalizedStringImportService;
     }
 
     public void ReplaceRecordChildren(RecordDTO record, string recordType)
@@ -75,6 +78,11 @@ public class RecordChildImportService : IRecordChildImportService
         if (record is IHasTerminalMarkerParametersRecordDTO terminalMarkerParameterRecord)
         {
             TerminalMarkerParameterImportService.ReplaceRecordMarkerParameters(terminalMarkerParameterRecord);
+        }
+
+        if (record is IHasLocalizedStringsRecordDTO localizedStringRecord)
+        {
+            RecordLocalizedStringImportService.ReplaceRecordLocalizedStrings(localizedStringRecord, recordType);
         }
     }
 }

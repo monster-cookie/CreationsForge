@@ -1,8 +1,10 @@
+using CreationsForge.Core.DTOs.Games;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.DTOs.Records.Interfaces;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
+using CreationsForge.Core.Models.Configuration;
 using CreationsForge.Core.Repositories.Interfaces;
 using CreationsForge.Core.Services;
 using CreationsForge.Core.Services.Interfaces;
@@ -230,7 +232,9 @@ public class SpriggitComparisonHeadlessFixture
             repository,
             repository,
             repository,
-            repository);
+            repository,
+            repository,
+            new HeadlessGameSelectionService());
     }
 
     public sealed record ComparisonSample(
@@ -265,7 +269,8 @@ public class SpriggitComparisonHeadlessFixture
         IRecordComponentRepository,
         IRecordSoundRepository,
         IScriptingAdapterRepository,
-        IRawRecordPayloadRepository
+        IRawRecordPayloadRepository,
+        IRecordLocalizedStringRepository
     {
         private readonly IReadOnlyList<FormListDTO> formLists = [];
         private readonly IReadOnlyList<GameSettingDTO> gameSettings = [];
@@ -291,6 +296,7 @@ public class SpriggitComparisonHeadlessFixture
         private readonly IReadOnlyList<RecordSoundDTO> recordSounds = [];
         private readonly IReadOnlyList<ScriptingAdapterDTO> scriptingAdapters = [];
         private readonly IReadOnlyList<RawRecordPayloadDTO> rawPayloads = [];
+        private readonly IReadOnlyList<LocalizedStringDTO> localizedStrings = [];
 
         public InMemoryComparisonRepository(RecordDTO record, string recordType)
         {
@@ -350,6 +356,11 @@ public class SpriggitComparisonHeadlessFixture
             if (record is IHasRawRecordPayloadsRecordDTO rawPayloadRecord)
             {
                 rawPayloads = rawPayloadRecord.RawPayloads.ToList();
+            }
+
+            if (record is IHasLocalizedStringsRecordDTO localizedStringRecord)
+            {
+                localizedStrings = localizedStringRecord.LocalizedStrings.ToList();
             }
         }
 
@@ -485,6 +496,11 @@ public class SpriggitComparisonHeadlessFixture
             return rawPayloads;
         }
 
+        IReadOnlyList<LocalizedStringDTO> IRecordLocalizedStringRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+        {
+            return localizedStrings;
+        }
+
         public void Save(FormListDTO dto)
         { }
 
@@ -560,6 +576,9 @@ public class SpriggitComparisonHeadlessFixture
         public void Save(RawRecordPayloadDTO dto)
         { }
 
+        public void Save(LocalizedStringDTO dto)
+        { }
+
         public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)
         { }
 
@@ -576,5 +595,51 @@ public class SpriggitComparisonHeadlessFixture
 
             throw new InvalidOperationException($"Record type '{recordType}' resolved to unexpected DTO '{record.GetType().Name}'.");
         }
+    }
+
+    private sealed class HeadlessGameSelectionService : IGameSelectionService
+    {
+        public IReadOnlyList<SupportedGameDTO> GetSupportedGames()
+        {
+            return [];
+        }
+
+        public SupportedGame? GetActiveGame()
+        {
+            return null;
+        }
+
+        public ApplicationThemeMode GetThemeMode()
+        {
+            return ApplicationThemeMode.Dark;
+        }
+
+        public ApplicationThemeFamily GetThemeFamily()
+        {
+            return ApplicationThemeFamily.Semi;
+        }
+
+        public string GetRecordTextLanguage()
+        {
+            return ApplicationConfiguration.DefaultRecordTextLanguage;
+        }
+
+        public void SetActiveGame(SupportedGame game)
+        { }
+
+        public void SetThemeMode(ApplicationThemeMode themeMode)
+        { }
+
+        public void SetThemeFamily(ApplicationThemeFamily themeFamily)
+        { }
+
+        public void SetActiveGameAndThemeMode(SupportedGame game, ApplicationThemeMode themeMode)
+        { }
+
+        public void SetActiveGameAndTheme(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode)
+        { }
+
+        public void SetTheme(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode)
+        { }
     }
 }

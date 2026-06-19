@@ -34,6 +34,8 @@ public class RecordComparisonService : IRecordComparisonService
     private readonly IRecordSoundRepository RecordSoundRepository;
     private readonly IScriptingAdapterRepository ScriptingAdapterRepository;
     private readonly IRawRecordPayloadRepository RawRecordPayloadRepository;
+    private readonly IRecordLocalizedStringRepository RecordLocalizedStringRepository;
+    private readonly IGameSelectionService GameSelectionService;
 
     public RecordComparisonService(
         IFormListRepository formListRepository,
@@ -58,7 +60,9 @@ public class RecordComparisonService : IRecordComparisonService
         IRecordKeywordRepository recordKeywordRepository,
         IRecordSoundRepository recordSoundRepository,
         IScriptingAdapterRepository scriptingAdapterRepository,
-        IRawRecordPayloadRepository rawRecordPayloadRepository)
+        IRawRecordPayloadRepository rawRecordPayloadRepository,
+        IRecordLocalizedStringRepository recordLocalizedStringRepository,
+        IGameSelectionService gameSelectionService)
     {
         FormListRepository = formListRepository;
         GameSettingRepository = gameSettingRepository;
@@ -83,6 +87,8 @@ public class RecordComparisonService : IRecordComparisonService
         RecordSoundRepository = recordSoundRepository;
         ScriptingAdapterRepository = scriptingAdapterRepository;
         RawRecordPayloadRepository = rawRecordPayloadRepository;
+        RecordLocalizedStringRepository = recordLocalizedStringRepository;
+        GameSelectionService = gameSelectionService;
     }
 
     public RecordComparisonDTO GetRecordComparison(SupportedGame game, string recordType, FormKeyDTO formKey)
@@ -205,9 +211,11 @@ public class RecordComparisonService : IRecordComparisonService
     private RecordComparisonDTO CreateGameSettingComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = GameSettingRepository.GetByFormKey(game, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.GameSetting.RecordID, formKey);
+        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
         fields.Add(CreateField("SettingType", records, record => record.SettingType ?? string.Empty));
-        fields.Add(CreateField("Data", records, record => record.Data ?? string.Empty));
+        fields.Add(CreateField("Data", records, record => GetLocalizedDisplayValue(localizedStrings, record, "Data", recordTextLanguage, record.Data)));
 
         return CreateComparison(RecordTypeCatalog.GameSetting.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
@@ -1707,6 +1715,25 @@ public class RecordComparisonService : IRecordComparisonService
         }
 
         return objectUnused?.ToString() ?? string.Empty;
+    }
+
+    private static string GetLocalizedDisplayValue(
+        IReadOnlyList<LocalizedStringDTO> localizedStrings,
+        RecordDTO record,
+        string sourceField,
+        string recordTextLanguage,
+        string? fallback)
+    {
+        return localizedStrings.FirstOrDefault(localizedString =>
+                   IsSameModKey(localizedString.ModKey, record.ModKey) &&
+                   string.Equals(localizedString.SourceField, sourceField, StringComparison.Ordinal) &&
+                   string.Equals(localizedString.Language, recordTextLanguage, StringComparison.OrdinalIgnoreCase))?.Value ??
+               localizedStrings.FirstOrDefault(localizedString =>
+                   IsSameModKey(localizedString.ModKey, record.ModKey) &&
+                   string.Equals(localizedString.SourceField, sourceField, StringComparison.Ordinal) &&
+                   string.Equals(localizedString.Language, "English", StringComparison.OrdinalIgnoreCase))?.Value ??
+               fallback ??
+               string.Empty;
     }
 
     private static bool IsModelKey(ModelDTO model, ModelKey modelKey)

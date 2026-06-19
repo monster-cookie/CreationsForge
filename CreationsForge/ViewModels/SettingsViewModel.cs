@@ -16,6 +16,7 @@ public class SettingsViewModel : ViewModelBase
     private string? SelectedGameDisplayNameValue;
     private string SelectedThemeFamilyValue;
     private string SelectedThemeModeValue;
+    private string SelectedRecordTextLanguageValue;
     private string? NifSkopeExecutablePathValue;
 
     public SettingsViewModel(
@@ -30,10 +31,12 @@ public class SettingsViewModel : ViewModelBase
         GameOptions = SupportedGames.Select(game => game.DisplayName).ToList();
         ThemeFamilyOptions = ["Semi", "Fluent"];
         ThemeModeOptions = ["Dark", "Light"];
+        RecordTextLanguageOptions = GameSelectionService.GetRecordTextLanguages().ToList();
         InitialSelectedGame = GetConfiguredGame();
         SelectedGameDisplayNameValue = InitialSelectedGame?.DisplayName;
         SelectedThemeFamilyValue = GameSelectionService.GetThemeFamily().ToString();
         SelectedThemeModeValue = GameSelectionService.GetThemeMode().ToString();
+        SelectedRecordTextLanguageValue = GameSelectionService.GetRecordTextLanguage();
         NifSkopeExecutablePathValue = GameSelectionService.GetNifSkopeExecutablePath();
         SaveCommand = new RelayCommand(Save);
         BrowseNifSkopeExecutableCommand = new AsyncRelayCommand(BrowseNifSkopeExecutableAsync, () => IsNifSkopeSettingVisible);
@@ -47,6 +50,8 @@ public class SettingsViewModel : ViewModelBase
     public IList<string> ThemeModeOptions { get; }
 
     public IList<string> ThemeFamilyOptions { get; }
+
+    public IList<string> RecordTextLanguageOptions { get; }
 
     public ICommand SaveCommand { get; }
 
@@ -74,6 +79,12 @@ public class SettingsViewModel : ViewModelBase
         set => SetProperty(ref SelectedThemeFamilyValue, value);
     }
 
+    public string SelectedRecordTextLanguage
+    {
+        get => SelectedRecordTextLanguageValue;
+        set => SetProperty(ref SelectedRecordTextLanguageValue, value);
+    }
+
     public string? NifSkopeExecutablePath
     {
         get => NifSkopeExecutablePathValue;
@@ -86,13 +97,14 @@ public class SettingsViewModel : ViewModelBase
             string.Equals(game.DisplayName, SelectedGameDisplayName, StringComparison.OrdinalIgnoreCase));
         var themeFamily = GetSelectedThemeFamily();
         var themeMode = GetSelectedThemeMode();
+        var recordTextLanguage = GetSelectedRecordTextLanguage();
         if (selectedGame is not null)
         {
-            GameSelectionService.SetActiveGameThemeAndNifSkopeExecutablePath(selectedGame.Game, themeFamily, themeMode, GetSelectedNifSkopeExecutablePath());
+            GameSelectionService.SetActiveGameThemeRecordTextLanguageAndNifSkopeExecutablePath(selectedGame.Game, themeFamily, themeMode, recordTextLanguage, GetSelectedNifSkopeExecutablePath());
         }
         else
         {
-            GameSelectionService.SetThemeAndNifSkopeExecutablePath(themeFamily, themeMode, GetSelectedNifSkopeExecutablePath());
+            GameSelectionService.SetThemeRecordTextLanguageAndNifSkopeExecutablePath(themeFamily, themeMode, recordTextLanguage, GetSelectedNifSkopeExecutablePath());
         }
 
         ApplicationWindowService.ApplyTheme(themeFamily, themeMode);
@@ -143,6 +155,13 @@ public class SettingsViewModel : ViewModelBase
         return Enum.TryParse<ApplicationThemeMode>(SelectedThemeMode, true, out var themeMode)
             ? themeMode
             : ApplicationThemeMode.Dark;
+    }
+
+    private string GetSelectedRecordTextLanguage()
+    {
+        return string.IsNullOrWhiteSpace(SelectedRecordTextLanguage)
+            ? ApplicationConfiguration.DefaultRecordTextLanguage
+            : SelectedRecordTextLanguage.Trim();
     }
 
     private string? GetSelectedNifSkopeExecutablePath()

@@ -1081,6 +1081,22 @@ erDiagram
         TEXT ImportedAtUTC
     }
 
+    LocalizedStrings {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT RecordType PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT SourceField PK
+        TEXT Language PK
+        TEXT Value
+        TEXT ImportedAtUTC
+    }
+
     ScriptingAdapters {
         TEXT Game PK, FK
         TEXT ModKey_Name PK, FK
@@ -1219,6 +1235,7 @@ erDiagram
     Models ||--o{ ModelMaterialSwaps : contains
     RecordInstances ||--o{ RecordSounds : contains
     RecordInstances ||--o{ RawRecordPayloads : contains
+    RecordInstances ||--o{ LocalizedStrings : contains
     RecordInstances ||--o{ ScriptingAdapters : contains
     ScriptingAdapters ||--o{ ScriptingAdapterProperties : contains
     ScriptingAdapterProperties ||--o{ ScriptingAdapterPropertyListItems : contains
@@ -1229,7 +1246,7 @@ erDiagram
 
 Indexes are documented in `DATABASE.md`. Migration `002_AddAssetArchiveIndex.sql` adds active-plugin browse indexes
 for `RecordInstances` and typed parent tables, plus indexes for `Statics`, `Containers`, `ContainerItems`, and
-`RawRecordPayloads`.
+`RawRecordPayloads`. Migration `006_AddLocalizedStrings.sql` adds the localized-string form-key lookup index.
 
 `Plugins.ImportState` is constrained to `Current`, `Changed`, `PartiallyImported`, `Missing`, `Failed`, or
 `Unsupported`.

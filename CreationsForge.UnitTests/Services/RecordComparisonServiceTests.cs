@@ -1,9 +1,12 @@
+using CreationsForge.Core.DTOs.Games;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
+using CreationsForge.Core.Models.Configuration;
 using CreationsForge.Core.Repositories.Interfaces;
 using CreationsForge.Core.Services;
+using CreationsForge.Core.Services.Interfaces;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Services;
@@ -55,6 +58,39 @@ public class RecordComparisonServiceTests
         comparison.Fields.ShouldNotContain(field => field.FieldName == "NumericData");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "IntegerData");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "BooleanData");
+    }
+
+    [Fact]
+    public void GetRecordComparison_ForGameSetting_UsesSelectedLocalizedData()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x457);
+        var gameSettingRepository = new TestGameSettingRepository
+        {
+            Records =
+            [
+                CreateGameSetting("Base.esm", formKey, "sSetting", "String", "Base English"),
+                CreateGameSetting("Patch.esp", formKey, "sSetting", "String", "Patch English")
+            ]
+        };
+        var localizedStringRepository = new TestRecordLocalizedStringRepository
+        {
+            Records =
+            [
+                CreateLocalizedString("Base.esm", formKey, "Data", "English", "Base English"),
+                CreateLocalizedString("Base.esm", formKey, "Data", "German", "Base German"),
+                CreateLocalizedString("Patch.esp", formKey, "Data", "English", "Patch English"),
+                CreateLocalizedString("Patch.esp", formKey, "Data", "German", "Patch German")
+            ]
+        };
+        var gameSelectionService = new TestGameSelectionService { RecordTextLanguage = "German" };
+        var service = CreateService(
+            gameSettingRepository: gameSettingRepository,
+            recordLocalizedStringRepository: localizedStringRepository,
+            gameSelectionService: gameSelectionService);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.GameSetting.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Data").Values.Select(value => value.DisplayValue).ShouldBe(["Base German", "Patch German"]);
     }
 
     [Fact]
@@ -683,7 +719,9 @@ public class RecordComparisonServiceTests
         TestRecordKeywordRepository? recordKeywordRepository = null,
         TestRecordSoundRepository? recordSoundRepository = null,
         TestScriptingAdapterRepository? scriptingAdapterRepository = null,
-        TestRawRecordPayloadRepository? rawRecordPayloadRepository = null)
+        TestRawRecordPayloadRepository? rawRecordPayloadRepository = null,
+        TestRecordLocalizedStringRepository? recordLocalizedStringRepository = null,
+        TestGameSelectionService? gameSelectionService = null)
     {
         return new RecordComparisonService(
             formListRepository ?? new TestFormListRepository(),
@@ -708,7 +746,9 @@ public class RecordComparisonServiceTests
             recordKeywordRepository ?? new TestRecordKeywordRepository(),
             recordSoundRepository ?? new TestRecordSoundRepository(),
             scriptingAdapterRepository ?? new TestScriptingAdapterRepository(),
-            rawRecordPayloadRepository ?? new TestRawRecordPayloadRepository());
+            rawRecordPayloadRepository ?? new TestRawRecordPayloadRepository(),
+            recordLocalizedStringRepository ?? new TestRecordLocalizedStringRepository(),
+            gameSelectionService ?? new TestGameSelectionService());
     }
 
     private static FormKeyDTO CreateFormKey(string fileName, uint id)
@@ -765,6 +805,26 @@ public class RecordComparisonServiceTests
             SettingType = settingType,
             Data = data,
             NumericData = numericData
+        };
+    }
+
+    private static LocalizedStringDTO CreateLocalizedString(
+        string fileName,
+        FormKeyDTO formKey,
+        string sourceField,
+        string language,
+        string value)
+    {
+        return new LocalizedStringDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            RecordType = RecordTypeCatalog.GameSetting.RecordID,
+            FormKey = formKey,
+            SourceField = sourceField,
+            Language = language,
+            Value = value,
+            ImportedAtUTC = DateTime.UtcNow
         };
     }
 
@@ -1935,6 +1995,78 @@ public class RecordComparisonServiceTests
         }
 
         public void DeleteByRecord(SupportedGame game, ModKeyDTO modKey, string recordType, FormKeyDTO formKey)
+        { }
+    }
+
+    private sealed class TestRecordLocalizedStringRepository : IRecordLocalizedStringRepository
+    {
+        public IReadOnlyList<LocalizedStringDTO> Records { get; set; } = [];
+
+        public void Save(LocalizedStringDTO dto)
+        { }
+
+        public IReadOnlyList<LocalizedStringDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+        {
+            return Records;
+        }
+
+        public void DeleteByRecord(SupportedGame game, ModKeyDTO modKey, string recordType, FormKeyDTO formKey)
+        { }
+
+        public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)
+        { }
+    }
+
+    private sealed class TestGameSelectionService : IGameSelectionService
+    {
+        public string RecordTextLanguage { get; set; } = ApplicationConfiguration.DefaultRecordTextLanguage;
+
+        public IReadOnlyList<SupportedGameDTO> GetSupportedGames()
+        {
+            return [];
+        }
+
+        public SupportedGame? GetActiveGame()
+        {
+            return null;
+        }
+
+        public ApplicationThemeMode GetThemeMode()
+        {
+            return ApplicationThemeMode.Dark;
+        }
+
+        public ApplicationThemeFamily GetThemeFamily()
+        {
+            return ApplicationThemeFamily.Semi;
+        }
+
+        public IReadOnlyList<string> GetRecordTextLanguages()
+        {
+            return [RecordTextLanguage];
+        }
+
+        public string GetRecordTextLanguage()
+        {
+            return RecordTextLanguage;
+        }
+
+        public void SetActiveGame(SupportedGame game)
+        { }
+
+        public void SetThemeMode(ApplicationThemeMode themeMode)
+        { }
+
+        public void SetThemeFamily(ApplicationThemeFamily themeFamily)
+        { }
+
+        public void SetActiveGameAndThemeMode(SupportedGame game, ApplicationThemeMode themeMode)
+        { }
+
+        public void SetActiveGameAndTheme(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode)
+        { }
+
+        public void SetTheme(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode)
         { }
     }
 

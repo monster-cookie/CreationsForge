@@ -1,5 +1,47 @@
 # Design Decisions
 
+## 2026-06-19 - Persist Localized Record Text
+
+Status: Accepted
+
+Context: Mutagen can expose localized text values through translation-table-backed strings, but CreationsForge was
+collapsing imported string data to English scalar values. Manual Spriggit validation showed this most clearly on
+GameSettings, where Spriggit preserves language-specific values and English-only DTO comparison can report false
+differences.
+
+Decision: Add shared localized string persistence under `LocalizedStrings`, owned by `RecordInstances`. `RecordDTO`
+exposes localized strings as shared child data, imported records replace those rows through
+`IRecordLocalizedStringImportService`, and GameSetting import stores localized `Data` values when available. The
+Settings screen stores the preferred record text language. Comparison resolves GameSetting `Data` through the selected
+language, then English, then the scalar fallback. The command bar does not expose a language selector.
+
+Rationale: Localized text is record-owned data and needs the same stale-row behavior as other shared child payloads.
+Keeping language selection in Settings avoids crowding the command bar and gives comparison a stable persisted display
+preference.
+
+Alternatives considered:
+
+- Continue storing only English scalar strings.
+- Add per-record-type translation tables.
+- Add a command-bar language dropdown.
+
+Consequences:
+
+- Plugins must be reimported after migration 006 so localized string rows are populated.
+- Comparison can display localized GameSetting text without direct Mutagen access from the UI.
+- Additional localized fields can use the shared child table without adding new schema tables.
+
+Related files:
+
+- `CreationsForge.Migrations/Sql/006_AddLocalizedStrings.sql`
+- `CreationsForge.Core/DTOs/Records/LocalizedStringDTO.cs`
+- `CreationsForge.Core/Repositories/RecordLocalizedStringRepository.cs`
+- `CreationsForge.Core/Services/RecordLocalizedStringImportService.cs`
+- `CreationsForge.Core/Utilities/LocalizedStringDTOMapper.cs`
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge/ViewModels/SettingsViewModel.cs`
+- `CreationsForge/Views/SettingsView.cs`
+
 ## 2026-06-19 - Add Manual Spriggit DTO Validation Tests
 
 Status: Accepted

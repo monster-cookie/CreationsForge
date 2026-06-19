@@ -191,6 +191,8 @@ comparison includes structured condition rows and condition-data parameter rows.
 compared by their retained full value but are summarized in the grid as `[UNPARSEABLE REFLECTION DATA]`; the
 presentation layer opens the full value in a hex-view dialog when the user selects the summarized value. MGEF DATA
 fields follow Mutagen/Spriggit's flattened record shape and display as flat comparison rows.
+GameSetting comparison resolves localized `Data` through persisted localized string rows using the Settings-selected
+record text language, then falls back to English and finally the scalar `Data` value.
 Core assigns comparison value states for neutral, identical, conflicting, and displayed winning-override values; the
 presentation layer maps those states to the green, red, and yellow comparison colors and shows the legend in the status
 area.
@@ -333,6 +335,12 @@ Sound persistence is shared in Core through `IRecordSoundImportService` and `Rec
 invokes sound persistence for any imported `RecordDTO` that implements the sound capability interface. `MISC` maps
 named scalar sounds such as crafting, pickup, putdown, and dropdown sounds when present, while `MGEF` maps indexed
 typed sound entries such as OnHit, Release, and Charge into the same table shape when present.
+
+Localized string persistence is shared in Core through `IRecordLocalizedStringImportService` and `LocalizedStrings`.
+`RecordDTO` exposes localized strings as a shared child collection, and `IRecordChildImportService` replaces those
+rows for imported records. GameSetting import populates translated `Data` rows when Mutagen exposes
+translation-table values. The Settings screen owns the persisted record text language selection; the command bar does
+not expose a language dropdown.
 
 Starfield `MiscItem`, `Static`, `Book`, `Door`, `Container`, and `Terminal` expose a direct `Model : IModelGetter`
 shape and currently map that direct model to `ModelSlot = Model`. `Terminal.MarkerModel` is a separate

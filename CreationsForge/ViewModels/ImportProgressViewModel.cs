@@ -192,11 +192,6 @@ public class ImportProgressViewModel : ViewModelBase
 
     private void UpdateProgress(GameImportProgressDTO progress)
     {
-        if (ImportCompleted)
-        {
-            return;
-        }
-
         CurrentStatusText = progress.StatusText;
         CurrentGameText = GetProgressGameText(progress);
         CurrentDetailText = progress.DetailText;

@@ -22,6 +22,7 @@ public class RecordChildImportServiceTests
         var soundImportService = new TestRecordSoundImportService();
         var scriptingAdapterImportService = new TestScriptingAdapterImportService();
         var terminalMarkerParameterImportService = new TestTerminalMarkerParameterImportService();
+        var localizedStringImportService = new TestRecordLocalizedStringImportService();
         var service = new RecordChildImportService(
             modelImportService,
             keywordImportService,
@@ -30,7 +31,8 @@ public class RecordChildImportServiceTests
             rawRecordPayloadImportService,
             soundImportService,
             scriptingAdapterImportService,
-            terminalMarkerParameterImportService);
+            terminalMarkerParameterImportService,
+            localizedStringImportService);
         var record = CreateCompositeRecord();
 
         service.ReplaceRecordChildren(record, "TEST");
@@ -43,10 +45,11 @@ public class RecordChildImportServiceTests
         soundImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
         scriptingAdapterImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
         terminalMarkerParameterImportService.ReplaceRequests.ShouldBe([record]);
+        localizedStringImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
     }
 
     [Fact]
-    public void ReplaceRecordChildren_WhenRecordHasNoSharedChildren_DoesNotDispatch()
+    public void ReplaceRecordChildren_WhenRecordHasOnlyLocalizedStrings_DispatchesOnlyLocalizedStrings()
     {
         var modelImportService = new TestModelImportService();
         var keywordImportService = new TestRecordKeywordImportService();
@@ -56,6 +59,7 @@ public class RecordChildImportServiceTests
         var soundImportService = new TestRecordSoundImportService();
         var scriptingAdapterImportService = new TestScriptingAdapterImportService();
         var terminalMarkerParameterImportService = new TestTerminalMarkerParameterImportService();
+        var localizedStringImportService = new TestRecordLocalizedStringImportService();
         var service = new RecordChildImportService(
             modelImportService,
             keywordImportService,
@@ -64,9 +68,12 @@ public class RecordChildImportServiceTests
             rawRecordPayloadImportService,
             soundImportService,
             scriptingAdapterImportService,
-            terminalMarkerParameterImportService);
+            terminalMarkerParameterImportService,
+            localizedStringImportService);
 
-        service.ReplaceRecordChildren(CreateFlatRecord(), "FLAT");
+        var record = CreateFlatRecord();
+
+        service.ReplaceRecordChildren(record, "FLAT");
 
         modelImportService.ReplaceRequests.ShouldBeEmpty();
         keywordImportService.ReplaceRequests.ShouldBeEmpty();
@@ -76,6 +83,7 @@ public class RecordChildImportServiceTests
         soundImportService.ReplaceRequests.ShouldBeEmpty();
         scriptingAdapterImportService.ReplaceRequests.ShouldBeEmpty();
         terminalMarkerParameterImportService.ReplaceRequests.ShouldBeEmpty();
+        localizedStringImportService.ReplaceRequests.ShouldBe([(record, "FLAT")]);
     }
 
     [Fact]
@@ -89,6 +97,7 @@ public class RecordChildImportServiceTests
         var soundImportService = new TestRecordSoundImportService();
         var scriptingAdapterImportService = new TestScriptingAdapterImportService();
         var terminalMarkerParameterImportService = new TestTerminalMarkerParameterImportService();
+        var localizedStringImportService = new TestRecordLocalizedStringImportService();
         var service = new RecordChildImportService(
             modelImportService,
             keywordImportService,
@@ -97,7 +106,8 @@ public class RecordChildImportServiceTests
             rawRecordPayloadImportService,
             soundImportService,
             scriptingAdapterImportService,
-            terminalMarkerParameterImportService);
+            terminalMarkerParameterImportService,
+            localizedStringImportService);
 
         var conditionForm = CreateConditionForm();
 
@@ -258,6 +268,16 @@ public class RecordChildImportServiceTests
         public void ReplaceRecordMarkerParameters(IHasTerminalMarkerParametersRecordDTO record)
         {
             ReplaceRequests.Add(record);
+        }
+    }
+
+    private sealed class TestRecordLocalizedStringImportService : IRecordLocalizedStringImportService
+    {
+        public IList<(IHasLocalizedStringsRecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasLocalizedStringsRecordDTO Record, string RecordType)>();
+
+        public void ReplaceRecordLocalizedStrings(IHasLocalizedStringsRecordDTO record, string recordType)
+        {
+            ReplaceRequests.Add((record, recordType));
         }
     }
 }

@@ -1,0 +1,947 @@
+[
+  {
+    "Sample": {
+      "Game": "Fallout4",
+      "RecordType": "GMST",
+      "Plugin": "Fallout4.esm",
+      "FormKey": "0D4C40:Fallout4.esm",
+      "EditorId": "sAbortText",
+      "SpriggitFile": "GameSettings/sAbortText - 0D4C40_Fallout4.esm.yaml",
+      "CoverageHints": [
+        "Data"
+      ],
+      "Notes": "Selected by feature scan for GMST; score 2.1."
+    },
+    "Comparisons": [
+      {
+        "FieldPath": "Data.Count",
+        "Category": "Match",
+        "SpriggitValue": "11",
+        "CreationsForgeValue": "11",
+        "NormalizedSpriggitValue": "11",
+        "NormalizedCreationsForgeValue": "11",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data.TargetLanguage",
+        "Category": "Match",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": "English",
+        "NormalizedSpriggitValue": "English",
+        "NormalizedCreationsForgeValue": "English",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[0].Language",
+        "Category": "Match",
+        "SpriggitValue": "Chinese",
+        "CreationsForgeValue": "Chinese",
+        "NormalizedSpriggitValue": "Chinese",
+        "NormalizedCreationsForgeValue": "Chinese",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[0].String",
+        "Category": "Match",
+        "SpriggitValue": "\u4E2D\u6B62",
+        "CreationsForgeValue": "\u4E2D\u6B62",
+        "NormalizedSpriggitValue": "\u4E2D\u6B62",
+        "NormalizedCreationsForgeValue": "\u4E2D\u6B62",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[10].Language",
+        "Category": "Match",
+        "SpriggitValue": "Russian",
+        "CreationsForgeValue": "Russian",
+        "NormalizedSpriggitValue": "Russian",
+        "NormalizedCreationsForgeValue": "Russian",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[10].String",
+        "Category": "Match",
+        "SpriggitValue": "\u041E\u0442\u043C\u0435\u043D\u0430",
+        "CreationsForgeValue": "\u041E\u0442\u043C\u0435\u043D\u0430",
+        "NormalizedSpriggitValue": "\u041E\u0442\u043C\u0435\u043D\u0430",
+        "NormalizedCreationsForgeValue": "\u041E\u0442\u043C\u0435\u043D\u0430",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[1].Language",
+        "Category": "Match",
+        "SpriggitValue": "German",
+        "CreationsForgeValue": "German",
+        "NormalizedSpriggitValue": "German",
+        "NormalizedCreationsForgeValue": "German",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[1].String",
+        "Category": "Match",
+        "SpriggitValue": "Abbrechen",
+        "CreationsForgeValue": "Abbrechen",
+        "NormalizedSpriggitValue": "Abbrechen",
+        "NormalizedCreationsForgeValue": "Abbrechen",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[2].Language",
+        "Category": "Match",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": "English",
+        "NormalizedSpriggitValue": "English",
+        "NormalizedCreationsForgeValue": "English",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[2].String",
+        "Category": "Match",
+        "SpriggitValue": "Abort",
+        "CreationsForgeValue": "Abort",
+        "NormalizedSpriggitValue": "Abort",
+        "NormalizedCreationsForgeValue": "Abort",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[3].Language",
+        "Category": "Match",
+        "SpriggitValue": "Spanish",
+        "CreationsForgeValue": "Spanish",
+        "NormalizedSpriggitValue": "Spanish",
+        "NormalizedCreationsForgeValue": "Spanish",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[3].String",
+        "Category": "Match",
+        "SpriggitValue": "Detener",
+        "CreationsForgeValue": "Detener",
+        "NormalizedSpriggitValue": "Detener",
+        "NormalizedCreationsForgeValue": "Detener",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[4].Language",
+        "Category": "Match",
+        "SpriggitValue": "Spanish_Mexico",
+        "CreationsForgeValue": "Spanish_Mexico",
+        "NormalizedSpriggitValue": "Spanish_Mexico",
+        "NormalizedCreationsForgeValue": "Spanish_Mexico",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[4].String",
+        "Category": "Match",
+        "SpriggitValue": "Detener",
+        "CreationsForgeValue": "Detener",
+        "NormalizedSpriggitValue": "Detener",
+        "NormalizedCreationsForgeValue": "Detener",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[5].Language",
+        "Category": "Match",
+        "SpriggitValue": "French",
+        "CreationsForgeValue": "French",
+        "NormalizedSpriggitValue": "French",
+        "NormalizedCreationsForgeValue": "French",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[5].String",
+        "Category": "Match",
+        "SpriggitValue": "Abandonner",
+        "CreationsForgeValue": "Abandonner",
+        "NormalizedSpriggitValue": "Abandonner",
+        "NormalizedCreationsForgeValue": "Abandonner",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[6].Language",
+        "Category": "Match",
+        "SpriggitValue": "Italian",
+        "CreationsForgeValue": "Italian",
+        "NormalizedSpriggitValue": "Italian",
+        "NormalizedCreationsForgeValue": "Italian",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[6].String",
+        "Category": "Match",
+        "SpriggitValue": "Annulla",
+        "CreationsForgeValue": "Annulla",
+        "NormalizedSpriggitValue": "Annulla",
+        "NormalizedCreationsForgeValue": "Annulla",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[7].Language",
+        "Category": "Match",
+        "SpriggitValue": "Japanese",
+        "CreationsForgeValue": "Japanese",
+        "NormalizedSpriggitValue": "Japanese",
+        "NormalizedCreationsForgeValue": "Japanese",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[7].String",
+        "Category": "Match",
+        "SpriggitValue": "\u4E2D\u6B62",
+        "CreationsForgeValue": "\u4E2D\u6B62",
+        "NormalizedSpriggitValue": "\u4E2D\u6B62",
+        "NormalizedCreationsForgeValue": "\u4E2D\u6B62",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[8].Language",
+        "Category": "Match",
+        "SpriggitValue": "Polish",
+        "CreationsForgeValue": "Polish",
+        "NormalizedSpriggitValue": "Polish",
+        "NormalizedCreationsForgeValue": "Polish",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[8].String",
+        "Category": "Match",
+        "SpriggitValue": "Przerwij",
+        "CreationsForgeValue": "Przerwij",
+        "NormalizedSpriggitValue": "Przerwij",
+        "NormalizedCreationsForgeValue": "Przerwij",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[9].Language",
+        "Category": "Match",
+        "SpriggitValue": "Portuguese_Brazil",
+        "CreationsForgeValue": "Portuguese_Brazil",
+        "NormalizedSpriggitValue": "Portuguese_Brazil",
+        "NormalizedCreationsForgeValue": "Portuguese_Brazil",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[9].String",
+        "Category": "Match",
+        "SpriggitValue": "Abortar",
+        "CreationsForgeValue": "Abortar",
+        "NormalizedSpriggitValue": "Abortar",
+        "NormalizedCreationsForgeValue": "Abortar",
+        "Notes": null
+      },
+      {
+        "FieldPath": "EditorID",
+        "Category": "Match",
+        "SpriggitValue": "sAbortText",
+        "CreationsForgeValue": "sAbortText",
+        "NormalizedSpriggitValue": "sAbortText",
+        "NormalizedCreationsForgeValue": "sAbortText",
+        "Notes": null
+      },
+      {
+        "FieldPath": "FormKey",
+        "Category": "Match",
+        "SpriggitValue": "0D4C40:Fallout4.esm",
+        "CreationsForgeValue": "0D4C40:Fallout4.esm",
+        "NormalizedSpriggitValue": "0D4C40:FALLOUT4.ESM",
+        "NormalizedCreationsForgeValue": "0D4C40:FALLOUT4.ESM",
+        "Notes": null
+      },
+      {
+        "FieldPath": "MutagenObjectType",
+        "Category": "Match",
+        "SpriggitValue": "GameSettingString",
+        "CreationsForgeValue": "GameSettingString",
+        "NormalizedSpriggitValue": "GameSettingString",
+        "NormalizedCreationsForgeValue": "GameSettingString",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Version2",
+        "Category": "Match",
+        "SpriggitValue": "2",
+        "CreationsForgeValue": "2",
+        "NormalizedSpriggitValue": "2",
+        "NormalizedCreationsForgeValue": "2",
+        "Notes": null
+      },
+      {
+        "FieldPath": "VersionControl",
+        "Category": "Match",
+        "SpriggitValue": "78993",
+        "CreationsForgeValue": "78993",
+        "NormalizedSpriggitValue": "78993",
+        "NormalizedCreationsForgeValue": "78993",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "Abort",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "FormVersion",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "131",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "MajorRecordFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "SettingType",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "GameSettingString",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      }
+    ],
+    "Errors": [],
+    "HasFailingFindings": false
+  },
+  {
+    "Sample": {
+      "Game": "Fallout4",
+      "RecordType": "GMST",
+      "Plugin": "Fallout4.esm",
+      "FormKey": "0D4DC4:Fallout4.esm",
+      "EditorId": "sAccept",
+      "SpriggitFile": "GameSettings/sAccept - 0D4DC4_Fallout4.esm.yaml",
+      "CoverageHints": [
+        "Data"
+      ],
+      "Notes": "Selected by feature scan for GMST; score 2.1."
+    },
+    "Comparisons": [
+      {
+        "FieldPath": "Data.Count",
+        "Category": "Match",
+        "SpriggitValue": "11",
+        "CreationsForgeValue": "11",
+        "NormalizedSpriggitValue": "11",
+        "NormalizedCreationsForgeValue": "11",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data.TargetLanguage",
+        "Category": "Match",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": "English",
+        "NormalizedSpriggitValue": "English",
+        "NormalizedCreationsForgeValue": "English",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[0].Language",
+        "Category": "Match",
+        "SpriggitValue": "Chinese",
+        "CreationsForgeValue": "Chinese",
+        "NormalizedSpriggitValue": "Chinese",
+        "NormalizedCreationsForgeValue": "Chinese",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[0].String",
+        "Category": "Match",
+        "SpriggitValue": "\u63A5\u53D7",
+        "CreationsForgeValue": "\u63A5\u53D7",
+        "NormalizedSpriggitValue": "\u63A5\u53D7",
+        "NormalizedCreationsForgeValue": "\u63A5\u53D7",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[10].Language",
+        "Category": "Match",
+        "SpriggitValue": "Russian",
+        "CreationsForgeValue": "Russian",
+        "NormalizedSpriggitValue": "Russian",
+        "NormalizedCreationsForgeValue": "Russian",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[10].String",
+        "Category": "Match",
+        "SpriggitValue": "\u041F\u0440\u0438\u043D\u044F\u0442\u044C",
+        "CreationsForgeValue": "\u041F\u0440\u0438\u043D\u044F\u0442\u044C",
+        "NormalizedSpriggitValue": "\u041F\u0440\u0438\u043D\u044F\u0442\u044C",
+        "NormalizedCreationsForgeValue": "\u041F\u0440\u0438\u043D\u044F\u0442\u044C",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[1].Language",
+        "Category": "Match",
+        "SpriggitValue": "German",
+        "CreationsForgeValue": "German",
+        "NormalizedSpriggitValue": "German",
+        "NormalizedCreationsForgeValue": "German",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[1].String",
+        "Category": "Match",
+        "SpriggitValue": "Akzeptieren",
+        "CreationsForgeValue": "Akzeptieren",
+        "NormalizedSpriggitValue": "Akzeptieren",
+        "NormalizedCreationsForgeValue": "Akzeptieren",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[2].Language",
+        "Category": "Match",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": "English",
+        "NormalizedSpriggitValue": "English",
+        "NormalizedCreationsForgeValue": "English",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[2].String",
+        "Category": "Match",
+        "SpriggitValue": "Accept",
+        "CreationsForgeValue": "Accept",
+        "NormalizedSpriggitValue": "Accept",
+        "NormalizedCreationsForgeValue": "Accept",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[3].Language",
+        "Category": "Match",
+        "SpriggitValue": "Spanish",
+        "CreationsForgeValue": "Spanish",
+        "NormalizedSpriggitValue": "Spanish",
+        "NormalizedCreationsForgeValue": "Spanish",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[3].String",
+        "Category": "Match",
+        "SpriggitValue": "Aceptar",
+        "CreationsForgeValue": "Aceptar",
+        "NormalizedSpriggitValue": "Aceptar",
+        "NormalizedCreationsForgeValue": "Aceptar",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[4].Language",
+        "Category": "Match",
+        "SpriggitValue": "Spanish_Mexico",
+        "CreationsForgeValue": "Spanish_Mexico",
+        "NormalizedSpriggitValue": "Spanish_Mexico",
+        "NormalizedCreationsForgeValue": "Spanish_Mexico",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[4].String",
+        "Category": "Match",
+        "SpriggitValue": "Aceptar",
+        "CreationsForgeValue": "Aceptar",
+        "NormalizedSpriggitValue": "Aceptar",
+        "NormalizedCreationsForgeValue": "Aceptar",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[5].Language",
+        "Category": "Match",
+        "SpriggitValue": "French",
+        "CreationsForgeValue": "French",
+        "NormalizedSpriggitValue": "French",
+        "NormalizedCreationsForgeValue": "French",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[5].String",
+        "Category": "Match",
+        "SpriggitValue": "Accepter",
+        "CreationsForgeValue": "Accepter",
+        "NormalizedSpriggitValue": "Accepter",
+        "NormalizedCreationsForgeValue": "Accepter",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[6].Language",
+        "Category": "Match",
+        "SpriggitValue": "Italian",
+        "CreationsForgeValue": "Italian",
+        "NormalizedSpriggitValue": "Italian",
+        "NormalizedCreationsForgeValue": "Italian",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[6].String",
+        "Category": "Match",
+        "SpriggitValue": "Accetta",
+        "CreationsForgeValue": "Accetta",
+        "NormalizedSpriggitValue": "Accetta",
+        "NormalizedCreationsForgeValue": "Accetta",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[7].Language",
+        "Category": "Match",
+        "SpriggitValue": "Japanese",
+        "CreationsForgeValue": "Japanese",
+        "NormalizedSpriggitValue": "Japanese",
+        "NormalizedCreationsForgeValue": "Japanese",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[7].String",
+        "Category": "Match",
+        "SpriggitValue": "\u6C7A\u5B9A",
+        "CreationsForgeValue": "\u6C7A\u5B9A",
+        "NormalizedSpriggitValue": "\u6C7A\u5B9A",
+        "NormalizedCreationsForgeValue": "\u6C7A\u5B9A",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[8].Language",
+        "Category": "Match",
+        "SpriggitValue": "Polish",
+        "CreationsForgeValue": "Polish",
+        "NormalizedSpriggitValue": "Polish",
+        "NormalizedCreationsForgeValue": "Polish",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[8].String",
+        "Category": "Match",
+        "SpriggitValue": "Zatwierd\u017A",
+        "CreationsForgeValue": "Zatwierd\u017A",
+        "NormalizedSpriggitValue": "Zatwierd\u017A",
+        "NormalizedCreationsForgeValue": "Zatwierd\u017A",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[9].Language",
+        "Category": "Match",
+        "SpriggitValue": "Portuguese_Brazil",
+        "CreationsForgeValue": "Portuguese_Brazil",
+        "NormalizedSpriggitValue": "Portuguese_Brazil",
+        "NormalizedCreationsForgeValue": "Portuguese_Brazil",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[9].String",
+        "Category": "Match",
+        "SpriggitValue": "Aceitar",
+        "CreationsForgeValue": "Aceitar",
+        "NormalizedSpriggitValue": "Aceitar",
+        "NormalizedCreationsForgeValue": "Aceitar",
+        "Notes": null
+      },
+      {
+        "FieldPath": "EditorID",
+        "Category": "Match",
+        "SpriggitValue": "sAccept",
+        "CreationsForgeValue": "sAccept",
+        "NormalizedSpriggitValue": "sAccept",
+        "NormalizedCreationsForgeValue": "sAccept",
+        "Notes": null
+      },
+      {
+        "FieldPath": "FormKey",
+        "Category": "Match",
+        "SpriggitValue": "0D4DC4:Fallout4.esm",
+        "CreationsForgeValue": "0D4DC4:Fallout4.esm",
+        "NormalizedSpriggitValue": "0D4DC4:FALLOUT4.ESM",
+        "NormalizedCreationsForgeValue": "0D4DC4:FALLOUT4.ESM",
+        "Notes": null
+      },
+      {
+        "FieldPath": "MutagenObjectType",
+        "Category": "Match",
+        "SpriggitValue": "GameSettingString",
+        "CreationsForgeValue": "GameSettingString",
+        "NormalizedSpriggitValue": "GameSettingString",
+        "NormalizedCreationsForgeValue": "GameSettingString",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Version2",
+        "Category": "Match",
+        "SpriggitValue": "2",
+        "CreationsForgeValue": "2",
+        "NormalizedSpriggitValue": "2",
+        "NormalizedCreationsForgeValue": "2",
+        "Notes": null
+      },
+      {
+        "FieldPath": "VersionControl",
+        "Category": "Match",
+        "SpriggitValue": "78993",
+        "CreationsForgeValue": "78993",
+        "NormalizedSpriggitValue": "78993",
+        "NormalizedCreationsForgeValue": "78993",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "Accept",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "FormVersion",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "131",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "MajorRecordFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "SettingType",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "GameSettingString",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      }
+    ],
+    "Errors": [],
+    "HasFailingFindings": false
+  },
+  {
+    "Sample": {
+      "Game": "Fallout4",
+      "RecordType": "GMST",
+      "Plugin": "Fallout4.esm",
+      "FormKey": "0D4DFC:Fallout4.esm",
+      "EditorId": "sActivate",
+      "SpriggitFile": "GameSettings/sActivate - 0D4DFC_Fallout4.esm.yaml",
+      "CoverageHints": [
+        "Data"
+      ],
+      "Notes": "Selected by feature scan for GMST; score 2.1."
+    },
+    "Comparisons": [
+      {
+        "FieldPath": "Data.Count",
+        "Category": "Match",
+        "SpriggitValue": "11",
+        "CreationsForgeValue": "11",
+        "NormalizedSpriggitValue": "11",
+        "NormalizedCreationsForgeValue": "11",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data.TargetLanguage",
+        "Category": "Match",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": "English",
+        "NormalizedSpriggitValue": "English",
+        "NormalizedCreationsForgeValue": "English",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[0].Language",
+        "Category": "Match",
+        "SpriggitValue": "Chinese",
+        "CreationsForgeValue": "Chinese",
+        "NormalizedSpriggitValue": "Chinese",
+        "NormalizedCreationsForgeValue": "Chinese",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[0].String",
+        "Category": "Match",
+        "SpriggitValue": "\u52D5\u4F5C",
+        "CreationsForgeValue": "\u52D5\u4F5C",
+        "NormalizedSpriggitValue": "\u52D5\u4F5C",
+        "NormalizedCreationsForgeValue": "\u52D5\u4F5C",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[10].Language",
+        "Category": "Match",
+        "SpriggitValue": "Russian",
+        "CreationsForgeValue": "Russian",
+        "NormalizedSpriggitValue": "Russian",
+        "NormalizedCreationsForgeValue": "Russian",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[10].String",
+        "Category": "Match",
+        "SpriggitValue": "\u0410\u043A\u0442\u0438\u0432\u0438\u0440\u043E\u0432\u0430\u0442\u044C",
+        "CreationsForgeValue": "\u0410\u043A\u0442\u0438\u0432\u0438\u0440\u043E\u0432\u0430\u0442\u044C",
+        "NormalizedSpriggitValue": "\u0410\u043A\u0442\u0438\u0432\u0438\u0440\u043E\u0432\u0430\u0442\u044C",
+        "NormalizedCreationsForgeValue": "\u0410\u043A\u0442\u0438\u0432\u0438\u0440\u043E\u0432\u0430\u0442\u044C",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[1].Language",
+        "Category": "Match",
+        "SpriggitValue": "German",
+        "CreationsForgeValue": "German",
+        "NormalizedSpriggitValue": "German",
+        "NormalizedCreationsForgeValue": "German",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[1].String",
+        "Category": "Match",
+        "SpriggitValue": "Aktivieren",
+        "CreationsForgeValue": "Aktivieren",
+        "NormalizedSpriggitValue": "Aktivieren",
+        "NormalizedCreationsForgeValue": "Aktivieren",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[2].Language",
+        "Category": "Match",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": "English",
+        "NormalizedSpriggitValue": "English",
+        "NormalizedCreationsForgeValue": "English",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[2].String",
+        "Category": "Match",
+        "SpriggitValue": "Activate",
+        "CreationsForgeValue": "Activate",
+        "NormalizedSpriggitValue": "Activate",
+        "NormalizedCreationsForgeValue": "Activate",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[3].Language",
+        "Category": "Match",
+        "SpriggitValue": "Spanish",
+        "CreationsForgeValue": "Spanish",
+        "NormalizedSpriggitValue": "Spanish",
+        "NormalizedCreationsForgeValue": "Spanish",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[3].String",
+        "Category": "Match",
+        "SpriggitValue": "Activar",
+        "CreationsForgeValue": "Activar",
+        "NormalizedSpriggitValue": "Activar",
+        "NormalizedCreationsForgeValue": "Activar",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[4].Language",
+        "Category": "Match",
+        "SpriggitValue": "Spanish_Mexico",
+        "CreationsForgeValue": "Spanish_Mexico",
+        "NormalizedSpriggitValue": "Spanish_Mexico",
+        "NormalizedCreationsForgeValue": "Spanish_Mexico",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[4].String",
+        "Category": "Match",
+        "SpriggitValue": "Activar",
+        "CreationsForgeValue": "Activar",
+        "NormalizedSpriggitValue": "Activar",
+        "NormalizedCreationsForgeValue": "Activar",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[5].Language",
+        "Category": "Match",
+        "SpriggitValue": "French",
+        "CreationsForgeValue": "French",
+        "NormalizedSpriggitValue": "French",
+        "NormalizedCreationsForgeValue": "French",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[5].String",
+        "Category": "Match",
+        "SpriggitValue": "Activer",
+        "CreationsForgeValue": "Activer",
+        "NormalizedSpriggitValue": "Activer",
+        "NormalizedCreationsForgeValue": "Activer",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[6].Language",
+        "Category": "Match",
+        "SpriggitValue": "Italian",
+        "CreationsForgeValue": "Italian",
+        "NormalizedSpriggitValue": "Italian",
+        "NormalizedCreationsForgeValue": "Italian",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[6].String",
+        "Category": "Match",
+        "SpriggitValue": "Interagisci",
+        "CreationsForgeValue": "Interagisci",
+        "NormalizedSpriggitValue": "Interagisci",
+        "NormalizedCreationsForgeValue": "Interagisci",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[7].Language",
+        "Category": "Match",
+        "SpriggitValue": "Japanese",
+        "CreationsForgeValue": "Japanese",
+        "NormalizedSpriggitValue": "Japanese",
+        "NormalizedCreationsForgeValue": "Japanese",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[7].String",
+        "Category": "Match",
+        "SpriggitValue": "\u30A2\u30AF\u30B7\u30E7\u30F3",
+        "CreationsForgeValue": "\u30A2\u30AF\u30B7\u30E7\u30F3",
+        "NormalizedSpriggitValue": "\u30A2\u30AF\u30B7\u30E7\u30F3",
+        "NormalizedCreationsForgeValue": "\u30A2\u30AF\u30B7\u30E7\u30F3",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[8].Language",
+        "Category": "Match",
+        "SpriggitValue": "Polish",
+        "CreationsForgeValue": "Polish",
+        "NormalizedSpriggitValue": "Polish",
+        "NormalizedCreationsForgeValue": "Polish",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[8].String",
+        "Category": "Match",
+        "SpriggitValue": "Interakcja",
+        "CreationsForgeValue": "Interakcja",
+        "NormalizedSpriggitValue": "Interakcja",
+        "NormalizedCreationsForgeValue": "Interakcja",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[9].Language",
+        "Category": "Match",
+        "SpriggitValue": "Portuguese_Brazil",
+        "CreationsForgeValue": "Portuguese_Brazil",
+        "NormalizedSpriggitValue": "Portuguese_Brazil",
+        "NormalizedCreationsForgeValue": "Portuguese_Brazil",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data[9].String",
+        "Category": "Match",
+        "SpriggitValue": "Ativar",
+        "CreationsForgeValue": "Ativar",
+        "NormalizedSpriggitValue": "Ativar",
+        "NormalizedCreationsForgeValue": "Ativar",
+        "Notes": null
+      },
+      {
+        "FieldPath": "EditorID",
+        "Category": "Match",
+        "SpriggitValue": "sActivate",
+        "CreationsForgeValue": "sActivate",
+        "NormalizedSpriggitValue": "sActivate",
+        "NormalizedCreationsForgeValue": "sActivate",
+        "Notes": null
+      },
+      {
+        "FieldPath": "FormKey",
+        "Category": "Match",
+        "SpriggitValue": "0D4DFC:Fallout4.esm",
+        "CreationsForgeValue": "0D4DFC:Fallout4.esm",
+        "NormalizedSpriggitValue": "0D4DFC:FALLOUT4.ESM",
+        "NormalizedCreationsForgeValue": "0D4DFC:FALLOUT4.ESM",
+        "Notes": null
+      },
+      {
+        "FieldPath": "MutagenObjectType",
+        "Category": "Match",
+        "SpriggitValue": "GameSettingString",
+        "CreationsForgeValue": "GameSettingString",
+        "NormalizedSpriggitValue": "GameSettingString",
+        "NormalizedCreationsForgeValue": "GameSettingString",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Version2",
+        "Category": "Match",
+        "SpriggitValue": "2",
+        "CreationsForgeValue": "2",
+        "NormalizedSpriggitValue": "2",
+        "NormalizedCreationsForgeValue": "2",
+        "Notes": null
+      },
+      {
+        "FieldPath": "VersionControl",
+        "Category": "Match",
+        "SpriggitValue": "78993",
+        "CreationsForgeValue": "78993",
+        "NormalizedSpriggitValue": "78993",
+        "NormalizedCreationsForgeValue": "78993",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Data",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "Activate",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "FormVersion",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "131",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "MajorRecordFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "SettingType",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "GameSettingString",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      }
+    ],
+    "Errors": [],
+    "HasFailingFindings": false
+  }
+]

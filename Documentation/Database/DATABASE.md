@@ -20,11 +20,14 @@ The application uses a local SQLite database. The schema is defined by embedded 
   `RecordComponentItems` tables, migrates released CNDF condition rows into the shared condition-rule tables, drops
   the old CNDF-specific condition tables, and marks existing current or partially imported plugin rows as `Changed`
   so each supported game reimports cached plugin data after the migration.
+- `006_AddLocalizedStrings.sql` adds the `LocalizedStrings` table for per-language record text values and marks
+  existing current or partially imported plugin rows as `Changed` so each supported game reimports cached plugin data
+  after the migration.
 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains fifty-two tables:
+The application schema contains fifty-three tables:
 
 - `Games`
 - `Plugins`
@@ -76,6 +79,7 @@ The application schema contains fifty-two tables:
 - `ScriptingAdapterProperties`
 - `ScriptingAdapterPropertyListItems`
 - `RawRecordPayloads`
+- `LocalizedStrings`
 - `AssetArchiveFiles`
 - `AssetArchiveEntries`
 
@@ -182,6 +186,8 @@ shared component path.
 can be shared by record types that expose the same Spriggit-style sound data.
 `RawRecordPayloads` references the full `RecordInstances` key including `RecordType`, so opaque payload bytes or
 strings can be retained for future parsing without adding one table per record type.
+`LocalizedStrings` references the full `RecordInstances` key including `RecordType`, so translated text values can be
+shared by record types that expose Mutagen localized strings.
 
 ## Tables
 
@@ -1276,6 +1282,40 @@ Persistence behavior:
 - `PayloadSlot` stores the internal comparison/storage name. `SourcePath` stores the source Mutagen/Spriggit path
   when it differs, such as `Components.AnimationGraphComponent.ANAM` for internal
   `BaseFormComponents.AnimationGraphComponent.ANAM`.
+
+### LocalizedStrings
+
+Columns:
+
+- Common containing plugin key columns listed above
+- `RecordType` (`TEXT`, `NOT NULL`, primary key)
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `SourceField` (`TEXT`, `NOT NULL`, primary key)
+- `Language` (`TEXT`, `NOT NULL`, primary key)
+- `Value` (`TEXT`, `NOT NULL`)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key plus `RecordType` references `RecordInstances` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `SourceField` and `Language` must not be empty.
+
+Indexes:
+
+- `IX_LocalizedStrings_Game_Record_FormKey` on `Game`, `RecordType`, origin FormKey ModKey columns, and
+  `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning typed record row is saved.
+- Existing localized string rows for the same record are deleted before replacement so removed language values do not
+  remain stale.
+- Stale typed-record deletion removes localized string rows through the declared `RecordInstances` cascade.
+- The current GameSetting import maps localized `Data` values from Mutagen where available. The scalar `Data` column
+  remains the English fallback value used when the selected record text language is unavailable.
 
 ### ScriptingAdapters
 

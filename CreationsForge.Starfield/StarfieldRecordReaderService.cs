@@ -128,7 +128,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
     private static IReadOnlyList<GameSettingDTO> MapGameSettings(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.GameSettings
-            .Select(record => new GameSettingDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new GameSettingDTO
             {
                 Game = SupportedGame.Starfield,
                 ModKey = plugin.ModKey,
@@ -137,12 +137,15 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 FormVersion = record.FormVersion,
                 MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
                 ImportedAtUTC = DateTime.UtcNow,
+                MutagenObjectType = GetGameSettingType(record),
+                Version2 = GetPropertyNullableInt(record, "Version2"),
+                VersionControl = GetPropertyNullableInt(record, "VersionControl"),
                 SettingType = GetGameSettingType(record),
                 Data = GetGameSettingData(record),
                 NumericData = GetGameSettingNumericData(record),
                 IntegerData = GetGameSettingIntegerData(record),
                 BooleanData = GetGameSettingBooleanData(record)
-            })
+            }, record))
             .ToList();
     }
 
@@ -1664,7 +1667,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             IGameSettingBoolGetter gameSetting => Convert.ToString(gameSetting.Data, CultureInfo.InvariantCulture),
             IGameSettingFloatGetter gameSetting => Convert.ToString(gameSetting.Data, CultureInfo.InvariantCulture),
             IGameSettingIntGetter gameSetting => Convert.ToString(gameSetting.Data, CultureInfo.InvariantCulture),
-            IGameSettingStringGetter gameSetting => gameSetting.Data?.ToString(),
+            IGameSettingStringGetter gameSetting => LocalizedStringDTOMapper.GetLocalizedText(gameSetting.Data, Language.English),
             IGameSettingUIntGetter gameSetting => Convert.ToString(gameSetting.Data, CultureInfo.InvariantCulture),
             _ => null
         };

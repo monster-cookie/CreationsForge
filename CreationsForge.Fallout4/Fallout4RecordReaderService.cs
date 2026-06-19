@@ -115,7 +115,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
     private static IReadOnlyList<GameSettingDTO> MapGameSettings(PluginDTO plugin, IFallout4ModGetter mod)
     {
         return mod.GameSettings
-            .Select(record => new GameSettingDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new GameSettingDTO
             {
                 Game = SupportedGame.Fallout4,
                 ModKey = plugin.ModKey,
@@ -124,12 +124,15 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 FormVersion = record.FormVersion,
                 MajorRecordFlags = (int)record.Fallout4MajorRecordFlags,
                 ImportedAtUTC = DateTime.UtcNow,
+                MutagenObjectType = GetGameSettingType(record),
+                Version2 = GetPropertyNullableInt(record, "Version2"),
+                VersionControl = GetPropertyNullableInt(record, "VersionControl"),
                 SettingType = GetGameSettingType(record),
                 Data = GetGameSettingData(record),
                 NumericData = GetGameSettingNumericData(record),
                 IntegerData = GetGameSettingIntegerData(record),
                 BooleanData = GetGameSettingBooleanData(record)
-            })
+            }, record))
             .ToList();
     }
 
@@ -1240,7 +1243,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         return value == null ? 0 : Convert.ToInt32(value, CultureInfo.InvariantCulture);
     }
 
-    private static int? GetPropertyNullableInt(object source, string propertyName)
+    private static int? GetPropertyNullableInt(object? source, string propertyName)
     {
         var value = GetPropertyValue(source, propertyName);
         return value == null ? null : Convert.ToInt32(value, CultureInfo.InvariantCulture);
@@ -1270,7 +1273,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         return value == null ? 0 : Convert.ToDouble(value, CultureInfo.InvariantCulture);
     }
 
-    private static double? GetPropertyNullableDouble(object source, string propertyName)
+    private static double? GetPropertyNullableDouble(object? source, string propertyName)
     {
         var value = GetPropertyValue(source, propertyName);
         return value == null ? null : Convert.ToDouble(value, CultureInfo.InvariantCulture);
@@ -1379,7 +1382,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             IGameSettingBoolGetter gameSetting => Convert.ToString(gameSetting.Data, CultureInfo.InvariantCulture),
             IGameSettingFloatGetter gameSetting => Convert.ToString(gameSetting.Data, CultureInfo.InvariantCulture),
             IGameSettingIntGetter gameSetting => Convert.ToString(gameSetting.Data, CultureInfo.InvariantCulture),
-            IGameSettingStringGetter gameSetting => gameSetting.Data?.ToString(),
+            IGameSettingStringGetter gameSetting => LocalizedStringDTOMapper.GetLocalizedText(gameSetting.Data, Language.English),
             IGameSettingUIntGetter gameSetting => Convert.ToString(gameSetting.Data, CultureInfo.InvariantCulture),
             _ => null
         };

@@ -2,6 +2,12 @@ namespace CreationsForge.Core.DTOs.Records;
 
 public class GameSettingDTO : RecordDTO
 {
+    public string? MutagenObjectType { get; set; }
+
+    public int? Version2 { get; set; }
+
+    public int? VersionControl { get; set; }
+
     public string? SettingType { get; set; }
 
     public string? Data { get; set; }
