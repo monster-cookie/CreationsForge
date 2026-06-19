@@ -434,7 +434,8 @@ public class RecordComparisonServiceTests
         var recipeFilters = comparison.Fields.Single(field => field.FieldName == "RecipeFilters");
         recipeFilters.Children.Single(field => field.FieldName == "RecipeFilter [0]").Children.Single(field => field.FieldName == "RecipeFilterFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000444", "Starfield.esm:00000444"]);
         var conditions = comparison.Fields.Single(field => field.FieldName == "Conditions");
-        var condition = conditions.Children.Single(field => field.FieldName == "Condition [0]");
+        var condition = conditions.Children.Single();
+        condition.FieldName.ShouldBe("GetItemCount() EqualTo 4");
         condition.Children.Single(field => field.FieldName == "CompareOperator").Values.Select(value => value.DisplayValue).ShouldBe(["EqualTo", "EqualTo"]);
         condition.Children.Single(field => field.FieldName == "ComparisonValue").Values.Select(value => value.DisplayValue).ShouldBe(["2", "4"]);
         var scripts = comparison.Fields.Single(field => field.FieldName == "Scripts");
@@ -474,13 +475,39 @@ public class RecordComparisonServiceTests
         comparison.Fields.Single(field => field.FieldName == "Version2").Values.Select(value => value.DisplayValue).ShouldBe(["1", "2"]);
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Raw Payloads");
         var conditions = comparison.Fields.Single(field => field.FieldName == "Conditions");
-        var condition = conditions.Children.Single(field => field.FieldName == "Condition [0]");
+        var condition = conditions.Children.Single(field => field.FieldName == "Subject: HasKeyword(Starfield.esm:002CC9F2, 0)");
         condition.Children.Single(field => field.FieldName == "MutagenObjectType").Values.Select(value => value.DisplayValue).ShouldBe(["ConditionFloat", "ConditionFloat"]);
         condition.Children.Single(field => field.FieldName == "DataMutagenObjectType").Values.Select(value => value.DisplayValue).ShouldBe(["HasKeywordConditionData", "HasKeywordConditionData"]);
         condition.Children.Single(field => field.FieldName == "ComparisonValue").Values.Select(value => value.DisplayValue).ShouldBe(["1", ""]);
         var firstParameterField = condition.Children.Single(field => field.FieldName == "Parameters").Children.Single(field => field.FieldName == "FirstParameter");
         firstParameterField.Children.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00258350", "Starfield.esm:002CC9F2"]);
         firstParameterField.Children.Single(field => field.FieldName == "FormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00258350", "Starfield.esm:002CC9F2"]);
+    }
+
+    [Fact]
+    public void GetRecordComparison_ForConditionForm_PreservesMultipleConditionRules()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x246E86);
+        var conditionFormRepository = new TestConditionFormRepository
+        {
+            Records =
+            [
+                CreateActorIsPreyConditionForm(formKey)
+            ]
+        };
+        var service = CreateService(conditionFormRepository: conditionFormRepository);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.ConditionForm.RecordID, formKey);
+
+        var conditions = comparison.Fields.Single(field => field.FieldName == "Conditions");
+        conditions.Children.Select(field => field.FieldName).ShouldBe([
+            "Subject: HasKeyword(Starfield.esm:00258350, 0) EqualTo 1",
+            "Subject: HasKeyword(Starfield.esm:002CC9F2, 0) EqualTo 0"
+        ]);
+        conditions.Children[0].Children.Single(field => field.FieldName == "ComparisonValue").Values.Single().DisplayValue.ShouldBe("1");
+        conditions.Children[1].Children.Single(field => field.FieldName == "ComparisonValue").Values.Single().DisplayValue.ShouldBe("0");
+        conditions.Children[0].Children.Single(field => field.FieldName == "Parameters").Children.Single(field => field.FieldName == "FirstParameter").Children.Single(field => field.FieldName == "FormKey").Values.Single().DisplayValue.ShouldBe("Starfield.esm:00258350");
+        conditions.Children[1].Children.Single(field => field.FieldName == "Parameters").Children.Single(field => field.FieldName == "FirstParameter").Children.Single(field => field.FieldName == "FormKey").Values.Single().DisplayValue.ShouldBe("Starfield.esm:002CC9F2");
     }
 
     [Fact]
@@ -1033,6 +1060,7 @@ public class RecordComparisonServiceTests
                     ConditionIndex = 0,
                     MutagenObjectType = "ConditionFloat",
                     DataMutagenObjectType = "HasKeywordConditionData",
+                    CompareOperator = "EqualTo",
                     ComparisonValue = comparisonValue,
                     ImportedAtUTC = DateTime.UtcNow,
                     Parameters =
@@ -1047,8 +1075,98 @@ public class RecordComparisonServiceTests
                             ParameterValue = FormatFormKey(firstParameter),
                             ParameterFormKey = firstParameter,
                             ImportedAtUTC = DateTime.UtcNow
+                        },
+                        new ConditionFormConditionParameterDTO
+                        {
+                            Game = SupportedGame.Starfield,
+                            ModKey = CreateModKey(fileName),
+                            FormKey = formKey,
+                            ConditionIndex = 0,
+                            ParameterName = "RunOnType",
+                            ParameterValue = "Subject",
+                            ImportedAtUTC = DateTime.UtcNow
+                        },
+                        new ConditionFormConditionParameterDTO
+                        {
+                            Game = SupportedGame.Starfield,
+                            ModKey = CreateModKey(fileName),
+                            FormKey = formKey,
+                            ConditionIndex = 0,
+                            ParameterName = "SecondParameter",
+                            ParameterValue = "0",
+                            ImportedAtUTC = DateTime.UtcNow
                         }
                     }
+                }
+            }
+        };
+    }
+
+    private static ConditionFormDTO CreateActorIsPreyConditionForm(FormKeyDTO formKey)
+    {
+        return new ConditionFormDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey("Starfield.esm"),
+            FormKey = formKey,
+            EditorID = "ActorIsPrey",
+            FormVersion = 581,
+            MajorRecordFlags = 0,
+            ImportedAtUTC = DateTime.UtcNow,
+            Version2 = 1,
+            Conditions =
+            {
+                CreateCondition("Starfield.esm", formKey, 0, CreateFormKey("Starfield.esm", 0x258350), "1"),
+                CreateCondition("Starfield.esm", formKey, 1, CreateFormKey("Starfield.esm", 0x2CC9F2), "0")
+            }
+        };
+    }
+
+    private static ConditionFormConditionDTO CreateCondition(string fileName, FormKeyDTO formKey, int conditionIndex, FormKeyDTO firstParameter, string comparisonValue)
+    {
+        return new ConditionFormConditionDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            ConditionIndex = conditionIndex,
+            MutagenObjectType = "ConditionFloat",
+            DataMutagenObjectType = "HasKeywordConditionData",
+            CompareOperator = "EqualTo",
+            ComparisonValue = comparisonValue,
+            ImportedAtUTC = DateTime.UtcNow,
+            Parameters =
+            {
+                new ConditionFormConditionParameterDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    ConditionIndex = conditionIndex,
+                    ParameterName = "RunOnType",
+                    ParameterValue = "Subject",
+                    ImportedAtUTC = DateTime.UtcNow
+                },
+                new ConditionFormConditionParameterDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    ConditionIndex = conditionIndex,
+                    ParameterName = "FirstParameter",
+                    ParameterValue = FormatFormKey(firstParameter),
+                    ParameterFormKey = firstParameter,
+                    ImportedAtUTC = DateTime.UtcNow
+                },
+                new ConditionFormConditionParameterDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    ConditionIndex = conditionIndex,
+                    ParameterName = "SecondParameter",
+                    ParameterValue = "0",
+                    ImportedAtUTC = DateTime.UtcNow
                 }
             }
         };

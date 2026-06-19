@@ -31,6 +31,22 @@ Game-specific readers map Mutagen condition objects into the shared condition DT
 understood as a scalar string, enum string, numeric value, boolean, or FormKey reference, stop and identify the field
 instead of storing it as raw binary.
 
+Condition parameter import must treat Mutagen link wrapper values as references when they expose a nested `FormKey`,
+`FormKeyNullable`, link, reference, target, object, item, or value property. The persisted parameter keeps both the
+display value and the nullable FormKey when a reference is available.
+
+Condition import must preserve every entry in a condition list by `Condition_Index`. For example, Starfield
+`ActorIsPrey` (`CNDF:00246E86`) has two `HasKeyword` rules: one for `ActorTypePrey` and one for
+`ActorTypePredator`. Both rules must persist and render independently.
+
 Shared/Core workflow code should call `IRecordChildImportService`; that service dispatches `IHasConditionsRecordDTO`
 records to `IConditionRuleImportService`. New condition-bearing record types should use this path rather than adding
 record-specific condition repositories or tables.
+
+## Comparison Display
+
+Record comparison output uses a readable condition expression as the condition group label. The label uses the condition
+run-on type, a friendly condition data name, the first and second parameters when present, the compare operator, and
+the comparison value. Detailed rows for Mutagen object type, condition data type, comparison fields, and persisted
+parameters remain available for diagnostics. Existing imported rows that persisted a wrapper type name instead of a
+FormKey need reimport before the fixed parameter extraction can display the real referenced form.

@@ -1135,11 +1135,26 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
 
     private static FormKeyDTO? GetFormKeyFromObject(object? value)
     {
+        return GetFormKeyFromObject(value, 0);
+    }
+
+    private static FormKeyDTO? GetFormKeyFromObject(object? value, int depth)
+    {
         if (value == null) return null;
         if (value is FormKey formKey) return MapFormKey(formKey);
+        if (value is string) return null;
+        if (depth > 2) return null;
         if (GetPropertyValue(value, "IsNull") is bool isNull && isNull) return null;
         if (GetPropertyValue(value, "FormKey") is FormKey linkedFormKey) return MapFormKey(linkedFormKey);
         if (GetPropertyValue(value, "FormKeyNullable") is FormKey nullableFormKey) return MapFormKey(nullableFormKey);
+        foreach (var propertyName in new[] { "FormKeyOrIndex", "FormLinkOrIndex", "LinkOrIndex", "FormLinkGetter", "FormLink", "Link", "Value", "Reference", "Target", "Object", "Item" })
+        {
+            if (GetFormKeyFromObject(GetPropertyValue(value, propertyName), depth + 1) is { } nestedFormKey)
+            {
+                return nestedFormKey;
+            }
+        }
+
         return null;
     }
 

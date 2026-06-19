@@ -1106,7 +1106,7 @@ public class RecordComparisonService : IRecordComparisonService
             AddConditionRuleParameterGroups(children, baseRecords, records, currentKey);
             if (children.Count > 0)
             {
-                conditionFields.Add(CreateGroupField(GetConditionRuleGroupName(currentKey), baseRecords, children));
+                conditionFields.Add(CreateGroupField(GetConditionRuleGroupName(currentKey, records), baseRecords, children));
             }
         }
 
@@ -1524,6 +1524,129 @@ public class RecordComparisonService : IRecordComparisonService
         return FindConditionRule(records, baseRecords, modKey, conditionKey)?.Parameters.FirstOrDefault(parameter => string.Equals(parameter.ParameterName, parameterName, StringComparison.Ordinal));
     }
 
+    private static string FormatConditionRuleSummary(ConditionFormConditionDTO? condition)
+    {
+        if (condition is null)
+        {
+            return string.Empty;
+        }
+
+        var runOnType = FormatConditionParameterValue(FindConditionRuleParameter(condition, "RunOnType"));
+        var firstParameter = FormatConditionParameterValue(FindConditionRuleParameter(condition, "FirstParameter"));
+        var secondParameter = FormatConditionParameterValue(FindConditionRuleParameter(condition, "SecondParameter"));
+        var functionName = FormatFriendlyTypeName(condition.DataMutagenObjectType, splitWords: false);
+        var comparisonValue = FormatFormKey(condition.ComparisonValueFormKey);
+        if (string.IsNullOrWhiteSpace(comparisonValue))
+        {
+            comparisonValue = condition.ComparisonValue ?? string.Empty;
+        }
+
+        var arguments = new List<string>();
+        if (!string.IsNullOrWhiteSpace(firstParameter))
+        {
+            arguments.Add(firstParameter);
+        }
+
+        if (!string.IsNullOrWhiteSpace(secondParameter))
+        {
+            arguments.Add(secondParameter);
+        }
+
+        var invocation = string.IsNullOrWhiteSpace(functionName)
+            ? string.Join(", ", arguments)
+            : $"{functionName}({string.Join(", ", arguments)})";
+        var comparisonParts = string.IsNullOrWhiteSpace(comparisonValue)
+            ? new[] { invocation }
+            : new[] { invocation, FormatFriendlyTypeName(condition.CompareOperator, splitWords: false), comparisonValue };
+        var comparison = string.Join(" ", comparisonParts.Where(value => !string.IsNullOrWhiteSpace(value)));
+        return string.IsNullOrWhiteSpace(runOnType) ? comparison : $"{runOnType}: {comparison}";
+    }
+
+    private static ConditionFormConditionParameterDTO? FindConditionRuleParameter(ConditionFormConditionDTO condition, string parameterName)
+    {
+        return condition.Parameters.FirstOrDefault(parameter => string.Equals(parameter.ParameterName, parameterName, StringComparison.Ordinal));
+    }
+
+    private static string FormatConditionParameterValue(ConditionFormConditionParameterDTO? parameter)
+    {
+        if (parameter is null)
+        {
+            return string.Empty;
+        }
+
+        var formKey = FormatFormKey(parameter.ParameterFormKey);
+        return string.IsNullOrWhiteSpace(formKey)
+            ? FormatFriendlyTypeName(parameter.ParameterValue)
+            : formKey;
+    }
+
+    private static string FormatFriendlyTypeName(string? value, bool splitWords = true)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var name = value;
+        var genericArgumentStart = name.IndexOf('[');
+        var genericArgumentEnd = name.LastIndexOf(']');
+        if (genericArgumentStart >= 0 && genericArgumentEnd > genericArgumentStart)
+        {
+            name = name[(genericArgumentStart + 1)..genericArgumentEnd];
+        }
+
+        var genericStart = name.IndexOf('`');
+        if (genericStart >= 0)
+        {
+            name = name[..genericStart];
+        }
+
+        var lastDot = name.LastIndexOf('.');
+        if (lastDot >= 0)
+        {
+            name = name[(lastDot + 1)..];
+        }
+
+        if (name.StartsWith("I", StringComparison.Ordinal) && name.Length > 1 && char.IsUpper(name[1]))
+        {
+            name = name[1..];
+        }
+
+        foreach (var suffix in new[] { "ConditionData", "Getter", "Registration" })
+        {
+            if (name.EndsWith(suffix, StringComparison.Ordinal))
+            {
+                name = name[..^suffix.Length];
+            }
+        }
+
+        name = name.Replace("_", " ");
+        return splitWords ? SplitPascalCase(name) : name;
+    }
+
+    private static string SplitPascalCase(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var characters = new List<char>();
+        for (var index = 0; index < value.Length; index++)
+        {
+            var current = value[index];
+            if (index > 0 && current != ' ' && char.IsUpper(current) && !char.IsWhiteSpace(value[index - 1]) &&
+                (char.IsLower(value[index - 1]) || index + 1 < value.Length && char.IsLower(value[index + 1])))
+            {
+                characters.Add(' ');
+            }
+
+            characters.Add(current);
+        }
+
+        return new string(characters.ToArray());
+    }
+
     private static int FindRecordIndex(IReadOnlyList<RecordDTO> records, ModKeyDTO modKey)
     {
         for (var recordIndex = 0; recordIndex < records.Count; recordIndex++)
@@ -1674,8 +1797,17 @@ public class RecordComparisonService : IRecordComparisonService
             : $"{payloadKey.Slot} [{payloadKey.Index}]";
     }
 
-    private static string GetConditionRuleGroupName(ConditionRuleKey conditionKey)
+    private static string GetConditionRuleGroupName(ConditionRuleKey conditionKey, IReadOnlyList<IHasConditionsRecordDTO> records)
     {
+        var summary = records
+            .Select(record => FormatConditionRuleSummary(FindConditionRule(record, conditionKey)))
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .LastOrDefault();
+        if (!string.IsNullOrWhiteSpace(summary))
+        {
+            return summary;
+        }
+
         return string.Equals(conditionKey.Slot, "Conditions", StringComparison.Ordinal)
             ? $"Condition [{conditionKey.Index}]"
             : $"{conditionKey.Slot} Condition [{conditionKey.Index}]";
