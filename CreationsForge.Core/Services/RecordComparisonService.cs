@@ -1095,58 +1095,12 @@ public class RecordComparisonService : IRecordComparisonService
         foreach (var conditionKey in conditionKeys)
         {
             var currentKey = conditionKey;
-            var children = new List<RecordComparisonFieldDTO>
-            {
-                CreateField("MutagenObjectType", baseRecords, record => FindConditionRule(records, baseRecords, record.ModKey, currentKey)?.MutagenObjectType ?? string.Empty),
-                CreateField("DataMutagenObjectType", baseRecords, record => FindConditionRule(records, baseRecords, record.ModKey, currentKey)?.DataMutagenObjectType ?? string.Empty),
-                CreateField("CompareOperator", baseRecords, record => FindConditionRule(records, baseRecords, record.ModKey, currentKey)?.CompareOperator ?? string.Empty),
-                CreateField("ComparisonValue", baseRecords, record => FindConditionRule(records, baseRecords, record.ModKey, currentKey)?.ComparisonValue ?? string.Empty),
-                CreateField("ComparisonValueFormKey", baseRecords, record => FormatFormKey(FindConditionRule(records, baseRecords, record.ModKey, currentKey)?.ComparisonValueFormKey))
-            }.Where(HasVisibleValue).ToList();
-            AddConditionRuleParameterGroups(children, baseRecords, records, currentKey);
-            if (children.Count > 0)
-            {
-                conditionFields.Add(CreateGroupField(GetConditionRuleGroupName(currentKey, records), baseRecords, children));
-            }
+            conditionFields.Add(CreateField(GetConditionRuleGroupName(currentKey), baseRecords, record => FormatConditionRuleSummary(FindConditionRule(records, baseRecords, record.ModKey, currentKey))));
         }
 
         if (conditionFields.Count > 0)
         {
             fields.Add(CreateGroupField("Conditions", baseRecords, conditionFields));
-        }
-    }
-
-    private static void AddConditionRuleParameterGroups(
-        IList<RecordComparisonFieldDTO> fields,
-        IReadOnlyList<RecordDTO> baseRecords,
-        IReadOnlyList<IHasConditionsRecordDTO> records,
-        ConditionRuleKey conditionKey)
-    {
-        var parameterNames = records
-            .SelectMany(record => FindConditionRule(record, conditionKey)?.Parameters ?? [])
-            .Select(parameter => parameter.ParameterName)
-            .Distinct(StringComparer.Ordinal)
-            .Order(StringComparer.Ordinal)
-            .ToList();
-        if (parameterNames.Count == 0) return;
-        var parameterFields = new List<RecordComparisonFieldDTO>();
-        foreach (var parameterName in parameterNames)
-        {
-            var currentName = parameterName;
-            var children = new List<RecordComparisonFieldDTO>
-            {
-                CreateField("Value", baseRecords, record => FindConditionRuleParameter(records, baseRecords, record.ModKey, conditionKey, currentName)?.ParameterValue ?? string.Empty),
-                CreateField("FormKey", baseRecords, record => FormatFormKey(FindConditionRuleParameter(records, baseRecords, record.ModKey, conditionKey, currentName)?.ParameterFormKey))
-            }.Where(HasVisibleValue).ToList();
-            if (children.Count > 0)
-            {
-                parameterFields.Add(CreateGroupField(parameterName, baseRecords, children));
-            }
-        }
-
-        if (parameterFields.Count > 0)
-        {
-            fields.Add(CreateGroupField("Parameters", baseRecords, parameterFields));
         }
     }
 
@@ -1514,16 +1468,6 @@ public class RecordComparisonService : IRecordComparisonService
         return recordIndex < 0 ? null : FindConditionRule(records[recordIndex], conditionKey);
     }
 
-    private static ConditionFormConditionParameterDTO? FindConditionRuleParameter(
-        IReadOnlyList<IHasConditionsRecordDTO> records,
-        IReadOnlyList<RecordDTO> baseRecords,
-        ModKeyDTO modKey,
-        ConditionRuleKey conditionKey,
-        string parameterName)
-    {
-        return FindConditionRule(records, baseRecords, modKey, conditionKey)?.Parameters.FirstOrDefault(parameter => string.Equals(parameter.ParameterName, parameterName, StringComparison.Ordinal));
-    }
-
     private static string FormatConditionRuleSummary(ConditionFormConditionDTO? condition)
     {
         if (condition is null)
@@ -1797,17 +1741,8 @@ public class RecordComparisonService : IRecordComparisonService
             : $"{payloadKey.Slot} [{payloadKey.Index}]";
     }
 
-    private static string GetConditionRuleGroupName(ConditionRuleKey conditionKey, IReadOnlyList<IHasConditionsRecordDTO> records)
+    private static string GetConditionRuleGroupName(ConditionRuleKey conditionKey)
     {
-        var summary = records
-            .Select(record => FormatConditionRuleSummary(FindConditionRule(record, conditionKey)))
-            .Where(value => !string.IsNullOrWhiteSpace(value))
-            .LastOrDefault();
-        if (!string.IsNullOrWhiteSpace(summary))
-        {
-            return summary;
-        }
-
         return string.Equals(conditionKey.Slot, "Conditions", StringComparison.Ordinal)
             ? $"Condition [{conditionKey.Index}]"
             : $"{conditionKey.Slot} Condition [{conditionKey.Index}]";

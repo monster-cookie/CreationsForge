@@ -435,9 +435,11 @@ public class RecordComparisonServiceTests
         recipeFilters.Children.Single(field => field.FieldName == "RecipeFilter [0]").Children.Single(field => field.FieldName == "RecipeFilterFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000444", "Starfield.esm:00000444"]);
         var conditions = comparison.Fields.Single(field => field.FieldName == "Conditions");
         var condition = conditions.Children.Single();
-        condition.FieldName.ShouldBe("GetItemCount() EqualTo 4");
-        condition.Children.Single(field => field.FieldName == "CompareOperator").Values.Select(value => value.DisplayValue).ShouldBe(["EqualTo", "EqualTo"]);
-        condition.Children.Single(field => field.FieldName == "ComparisonValue").Values.Select(value => value.DisplayValue).ShouldBe(["2", "4"]);
+        condition.FieldName.ShouldBe("Condition [0]");
+        condition.Values.Select(value => value.DisplayValue).ShouldBe(["GetItemCount() EqualTo 2", "GetItemCount() EqualTo 4"]);
+        condition.State.ShouldBe(RecordComparisonValueState.Conflict);
+        condition.Values.Select(value => value.State).ShouldBe([RecordComparisonValueState.Conflict, RecordComparisonValueState.WinningOverride]);
+        condition.Children.ShouldBeEmpty();
         var scripts = comparison.Fields.Single(field => field.FieldName == "Scripts");
         scripts.Children.Single(field => field.FieldName == "Script [0]").Children.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["RecipeScript", "RecipeScript"]);
         var rawPayloads = comparison.Fields.Single(field => field.FieldName == "Raw Payloads");
@@ -475,13 +477,11 @@ public class RecordComparisonServiceTests
         comparison.Fields.Single(field => field.FieldName == "Version2").Values.Select(value => value.DisplayValue).ShouldBe(["1", "2"]);
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Raw Payloads");
         var conditions = comparison.Fields.Single(field => field.FieldName == "Conditions");
-        var condition = conditions.Children.Single(field => field.FieldName == "Subject: HasKeyword(Starfield.esm:002CC9F2, 0)");
-        condition.Children.Single(field => field.FieldName == "MutagenObjectType").Values.Select(value => value.DisplayValue).ShouldBe(["ConditionFloat", "ConditionFloat"]);
-        condition.Children.Single(field => field.FieldName == "DataMutagenObjectType").Values.Select(value => value.DisplayValue).ShouldBe(["HasKeywordConditionData", "HasKeywordConditionData"]);
-        condition.Children.Single(field => field.FieldName == "ComparisonValue").Values.Select(value => value.DisplayValue).ShouldBe(["1", ""]);
-        var firstParameterField = condition.Children.Single(field => field.FieldName == "Parameters").Children.Single(field => field.FieldName == "FirstParameter");
-        firstParameterField.Children.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00258350", "Starfield.esm:002CC9F2"]);
-        firstParameterField.Children.Single(field => field.FieldName == "FormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00258350", "Starfield.esm:002CC9F2"]);
+        var condition = conditions.Children.Single(field => field.FieldName == "Condition [0]");
+        condition.Values.Select(value => value.DisplayValue).ShouldBe(["Subject: HasKeyword(Starfield.esm:00258350, 0) EqualTo 1", "Subject: HasKeyword(Starfield.esm:002CC9F2, 0)"]);
+        condition.State.ShouldBe(RecordComparisonValueState.Conflict);
+        condition.Values.Select(value => value.State).ShouldBe([RecordComparisonValueState.Conflict, RecordComparisonValueState.WinningOverride]);
+        condition.Children.ShouldBeEmpty();
     }
 
     [Fact]
@@ -501,13 +501,14 @@ public class RecordComparisonServiceTests
 
         var conditions = comparison.Fields.Single(field => field.FieldName == "Conditions");
         conditions.Children.Select(field => field.FieldName).ShouldBe([
+            "Condition [0]",
+            "Condition [1]"
+        ]);
+        conditions.Children.Select(field => field.Values.Single().DisplayValue).ShouldBe([
             "Subject: HasKeyword(Starfield.esm:00258350, 0) EqualTo 1",
             "Subject: HasKeyword(Starfield.esm:002CC9F2, 0) EqualTo 0"
         ]);
-        conditions.Children[0].Children.Single(field => field.FieldName == "ComparisonValue").Values.Single().DisplayValue.ShouldBe("1");
-        conditions.Children[1].Children.Single(field => field.FieldName == "ComparisonValue").Values.Single().DisplayValue.ShouldBe("0");
-        conditions.Children[0].Children.Single(field => field.FieldName == "Parameters").Children.Single(field => field.FieldName == "FirstParameter").Children.Single(field => field.FieldName == "FormKey").Values.Single().DisplayValue.ShouldBe("Starfield.esm:00258350");
-        conditions.Children[1].Children.Single(field => field.FieldName == "Parameters").Children.Single(field => field.FieldName == "FirstParameter").Children.Single(field => field.FieldName == "FormKey").Values.Single().DisplayValue.ShouldBe("Starfield.esm:002CC9F2");
+        conditions.Children.Select(field => field.Children.Count).ShouldBe([0, 0]);
     }
 
     [Fact]

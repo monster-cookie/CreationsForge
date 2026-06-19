@@ -45,8 +45,10 @@ record-specific condition repositories or tables.
 
 ## Comparison Display
 
-Record comparison output uses a readable condition expression as the condition group label. The label uses the condition
-run-on type, a friendly condition data name, the first and second parameters when present, the compare operator, and
-the comparison value. Detailed rows for Mutagen object type, condition data type, comparison fields, and persisted
-parameters remain available for diagnostics. Existing imported rows that persisted a wrapper type name instead of a
-FormKey need reimport before the fixed parameter extraction can display the real referenced form.
+Record comparison output uses structural condition row labels such as `Condition [0]` so matching condition indexes
+align across plugins. Each plugin value cell contains the readable condition expression, including the condition run-on
+type, friendly condition data name, first and second parameters when present, compare operator, and comparison value.
+Normal comparison output hides diagnostic child rows for Mutagen object type, condition data type, comparison fields,
+and persisted parameters. Those details remain available in DTOs and persistence for future write/export behavior.
+Existing imported rows that persisted a wrapper type name instead of a FormKey need reimport before the fixed parameter
+extraction can display the real referenced form.
