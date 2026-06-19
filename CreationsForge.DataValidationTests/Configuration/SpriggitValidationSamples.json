@@ -1,0 +1,3169 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": "CreationsForge.DataValidationTests bounded sample candidate scan",
+  "generatedAtUtc": "2026-06-19T18:52:14.1594311Z",
+  "samples": [
+    {
+      "game": "Fallout4",
+      "recordType": "AVIF",
+      "plugin": "Fallout4.esm",
+      "formKey": "0B287B:Fallout4.esm",
+      "editorId": "SentryBotMaxHeatLevel",
+      "spriggitFile": "ActorValueInformation/SentryBotMaxHeatLevel - 0B287B_Fallout4.esm.yaml",
+      "coverageHints": [
+        "DefaultValue",
+        "Max",
+        "Type",
+        "Name",
+        "Description"
+      ],
+      "notes": "Selected by feature scan for AVIF; score 8.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "AVIF",
+      "plugin": "Fallout4.esm",
+      "formKey": "00080F:Fallout4.esm",
+      "editorId": "HC_Adrenaline",
+      "spriggitFile": "ActorValueInformation/HC_Adrenaline - 00080F_Fallout4.esm.yaml",
+      "coverageHints": [
+        "DefaultValue",
+        "Type",
+        "Name",
+        "Description"
+      ],
+      "notes": "Selected by feature scan for AVIF; score 7.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "AVIF",
+      "plugin": "Fallout4.esm",
+      "formKey": "1B88D8:Fallout4.esm",
+      "editorId": "Incendiary",
+      "spriggitFile": "ActorValueInformation/Incendiary - 1B88D8_Fallout4.esm.yaml",
+      "coverageHints": [
+        "DefaultValue",
+        "Type",
+        "Name",
+        "Description"
+      ],
+      "notes": "Selected by feature scan for AVIF; score 7.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "AVIF",
+      "plugin": "Fallout4.esm",
+      "formKey": "0002C7:Fallout4.esm",
+      "editorId": "Agility",
+      "spriggitFile": "ActorValueInformation/Agility - 0002C7_Fallout4.esm.yaml",
+      "coverageHints": [
+        "DefaultValue",
+        "Name",
+        "Description"
+      ],
+      "notes": "Selected by feature scan for AVIF; score 6.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "AVIF",
+      "plugin": "Fallout4.esm",
+      "formKey": "1EB998:Fallout4.esm",
+      "editorId": "AddictionCount",
+      "spriggitFile": "ActorValueInformation/AddictionCount - 1EB998_Fallout4.esm.yaml",
+      "coverageHints": [
+        "DefaultValue",
+        "Type",
+        "Description"
+      ],
+      "notes": "Selected by feature scan for AVIF; score 4.2."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "CLAS",
+      "plugin": "Fallout4.esm",
+      "formKey": "1CD0A8:Fallout4.esm",
+      "editorId": "ZeroSPECIALclass",
+      "spriggitFile": "Classes/ZeroSPECIALclass - 1CD0A8_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Description",
+        "Properties",
+        "BleedoutDefault"
+      ],
+      "notes": "Selected by feature scan for CLAS; score 5.8."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "CLAS",
+      "plugin": "Fallout4.esm",
+      "formKey": "01326B:Fallout4.esm",
+      "editorId": "Citizen",
+      "spriggitFile": "Classes/Citizen - 01326B_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Description",
+        "Properties"
+      ],
+      "notes": "Selected by feature scan for CLAS; score 4.9."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "CLAS",
+      "plugin": "Fallout4.esm",
+      "formKey": "031757:Fallout4.esm",
+      "editorId": "BloatflyClass",
+      "spriggitFile": "Classes/BloatflyClass - 031757_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Description",
+        "Properties"
+      ],
+      "notes": "Selected by feature scan for CLAS; score 4.8."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "CLAS",
+      "plugin": "Fallout4.esm",
+      "formKey": "20ED07:Fallout4.esm",
+      "editorId": "MQ203Class",
+      "spriggitFile": "Classes/MQ203Class - 20ED07_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Description",
+        "Properties",
+        "BleedoutDefault"
+      ],
+      "notes": "Selected by feature scan for CLAS; score 3.7."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "CONT",
+      "plugin": "Fallout4.esm",
+      "formKey": "1F2B6A:Fallout4.esm",
+      "editorId": "DN054Loot_Prewar_Safe",
+      "spriggitFile": "Containers/DN054Loot_Prewar_Safe - 1F2B6A_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Items",
+        "Keywords",
+        "NativeTerminal",
+        "OpenSound",
+        "CloseSound"
+      ],
+      "notes": "Selected by feature scan for CONT; score 9.4."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "CONT",
+      "plugin": "Fallout4.esm",
+      "formKey": "064A36:Fallout4.esm",
+      "editorId": "Loot_Raider_Safe",
+      "spriggitFile": "Containers/Loot_Raider_Safe - 064A36_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Items",
+        "Keywords",
+        "NativeTerminal",
+        "OpenSound",
+        "CloseSound"
+      ],
+      "notes": "Selected by feature scan for CONT; score 9.2."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "CONT",
+      "plugin": "Fallout4.esm",
+      "formKey": "1C0292:Fallout4.esm",
+      "editorId": "TheaterTickerTape_Safe",
+      "spriggitFile": "Containers/TheaterTickerTape_Safe - 1C0292_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Items",
+        "Keywords",
+        "NativeTerminal",
+        "OpenSound",
+        "CloseSound"
+      ],
+      "notes": "Selected by feature scan for CONT; score 9.2."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "CONT",
+      "plugin": "Fallout4.esm",
+      "formKey": "06355F:Fallout4.esm",
+      "editorId": "Loot_Trunk_Boss",
+      "spriggitFile": "Containers/Loot_Trunk_Boss - 06355F_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Items",
+        "Keywords",
+        "OpenSound",
+        "CloseSound"
+      ],
+      "notes": "Selected by feature scan for CONT; score 8.3."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "CONT",
+      "plugin": "Fallout4.esm",
+      "formKey": "11CB14:Fallout4.esm",
+      "editorId": "DN123_SkylanesSecretCompartment",
+      "spriggitFile": "Containers/DN123_SkylanesSecretCompartment - 11CB14_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Items",
+        "OpenSound",
+        "CloseSound"
+      ],
+      "notes": "Selected by feature scan for CONT; score 8.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "COBJ",
+      "plugin": "Fallout4.esm",
+      "formKey": "0ADF6E:Fallout4.esm",
+      "editorId": "workshop_co_Artillery",
+      "spriggitFile": "ConstructibleObjects/workshop_co_Artillery - 0ADF6E_Fallout4.esm.yaml",
+      "coverageHints": [
+        "CreatedObject",
+        "WorkbenchKeyword",
+        "Components",
+        "Categories",
+        "Conditions",
+        "CreatedObjectCounts"
+      ],
+      "notes": "Selected by feature scan for COBJ; score 8.3."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "COBJ",
+      "plugin": "Fallout4.esm",
+      "formKey": "0CEA6F:Fallout4.esm",
+      "editorId": "workshop_co_MQ206BeamEmitter",
+      "spriggitFile": "ConstructibleObjects/workshop_co_MQ206BeamEmitter - 0CEA6F_Fallout4.esm.yaml",
+      "coverageHints": [
+        "CreatedObject",
+        "WorkbenchKeyword",
+        "Components",
+        "Categories",
+        "Conditions",
+        "CreatedObjectCounts"
+      ],
+      "notes": "Selected by feature scan for COBJ; score 8.2."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "COBJ",
+      "plugin": "Fallout4.esm",
+      "formKey": "0CEA7B:Fallout4.esm",
+      "editorId": "workshop_co_MQ206Console",
+      "spriggitFile": "ConstructibleObjects/workshop_co_MQ206Console - 0CEA7B_Fallout4.esm.yaml",
+      "coverageHints": [
+        "CreatedObject",
+        "WorkbenchKeyword",
+        "Components",
+        "Categories",
+        "Conditions",
+        "CreatedObjectCounts"
+      ],
+      "notes": "Selected by feature scan for COBJ; score 8.1."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "COBJ",
+      "plugin": "Fallout4.esm",
+      "formKey": "05A0CD:Fallout4.esm",
+      "editorId": "workshop_co_WaterPurifier",
+      "spriggitFile": "ConstructibleObjects/workshop_co_WaterPurifier - 05A0CD_Fallout4.esm.yaml",
+      "coverageHints": [
+        "CreatedObject",
+        "WorkbenchKeyword",
+        "Components",
+        "Categories",
+        "CreatedObjectCounts"
+      ],
+      "notes": "Selected by feature scan for COBJ; score 6.9."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "COBJ",
+      "plugin": "Fallout4.esm",
+      "formKey": "1889E3:Fallout4.esm",
+      "editorId": "co_mod_GatlingLaser_BarrelMingunLaser_Super",
+      "spriggitFile": "ConstructibleObjects/co_mod_GatlingLaser_BarrelMingunLaser_Super - 1889E3_Fallout4.esm.yaml",
+      "coverageHints": [
+        "CreatedObject",
+        "Components",
+        "Conditions",
+        "CreatedObjectCounts"
+      ],
+      "notes": "Selected by feature scan for COBJ; score 5.3."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "FACT",
+      "plugin": "Fallout4.esm",
+      "formKey": "0975FC:Fallout4.esm",
+      "editorId": "DNFinancial_OpalVendorFaction",
+      "spriggitFile": "Factions/DNFinancial_OpalVendorFaction - 0975FC_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Relations",
+        "VendorBuySellList",
+        "MerchantContainer"
+      ],
+      "notes": "Selected by feature scan for FACT; score 5.4."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "FACT",
+      "plugin": "Fallout4.esm",
+      "formKey": "03E0C8:Fallout4.esm",
+      "editorId": "CaptiveFaction",
+      "spriggitFile": "Factions/CaptiveFaction - 03E0C8_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Relations"
+      ],
+      "notes": "Selected by feature scan for FACT; score 5.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "FACT",
+      "plugin": "Fallout4.esm",
+      "formKey": "01C21C:Fallout4.esm",
+      "editorId": "PlayerFaction",
+      "spriggitFile": "Factions/PlayerFaction - 01C21C_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Relations"
+      ],
+      "notes": "Selected by feature scan for FACT; score 5.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "FACT",
+      "plugin": "Fallout4.esm",
+      "formKey": "157ACE:Fallout4.esm",
+      "editorId": "DN049BakeryClerkFaction",
+      "spriggitFile": "Factions/DN049BakeryClerkFaction - 157ACE_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "VendorBuySellList",
+        "MerchantContainer"
+      ],
+      "notes": "Selected by feature scan for FACT; score 4.4."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "FACT",
+      "plugin": "Fallout4.esm",
+      "formKey": "14EB97:Fallout4.esm",
+      "editorId": "FarmVendorTheSlog",
+      "spriggitFile": "Factions/FarmVendorTheSlog - 14EB97_Fallout4.esm.yaml",
+      "coverageHints": [
+        "VendorBuySellList",
+        "MerchantContainer",
+        "Conditions"
+      ],
+      "notes": "Selected by feature scan for FACT; score 3.3."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "FLST",
+      "plugin": "Fallout4.esm",
+      "formKey": "246EE7:Fallout4.esm",
+      "editorId": "CA_JunkItems",
+      "spriggitFile": "FormLists/CA_JunkItems - 246EE7_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Items"
+      ],
+      "notes": "Selected by feature scan for FLST; score 4.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "FLST",
+      "plugin": "Fallout4.esm",
+      "formKey": "1A4AE8:Fallout4.esm",
+      "editorId": "ChargenOptionsSortList",
+      "spriggitFile": "FormLists/ChargenOptionsSortList - 1A4AE8_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Items"
+      ],
+      "notes": "Selected by feature scan for FLST; score 4.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "FLST",
+      "plugin": "Fallout4.esm",
+      "formKey": "2494E7:Fallout4.esm",
+      "editorId": "CompanionCrime__Common",
+      "spriggitFile": "FormLists/CompanionCrime__Common - 2494E7_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Items"
+      ],
+      "notes": "Selected by feature scan for FLST; score 4.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "FLST",
+      "plugin": "Fallout4.esm",
+      "formKey": "14EC02:Fallout4.esm",
+      "editorId": "VoicesEmpty",
+      "spriggitFile": "FormLists/VoicesEmpty - 14EC02_Fallout4.esm.yaml",
+      "coverageHints": [],
+      "notes": "Selected by feature scan for FLST; score 1.1."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "GMST",
+      "plugin": "Fallout4.esm",
+      "formKey": "0D4C40:Fallout4.esm",
+      "editorId": "sAbortText",
+      "spriggitFile": "GameSettings/sAbortText - 0D4C40_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Data"
+      ],
+      "notes": "Selected by feature scan for GMST; score 2.1."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "GMST",
+      "plugin": "Fallout4.esm",
+      "formKey": "0D4DC4:Fallout4.esm",
+      "editorId": "sAccept",
+      "spriggitFile": "GameSettings/sAccept - 0D4DC4_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Data"
+      ],
+      "notes": "Selected by feature scan for GMST; score 2.1."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "GMST",
+      "plugin": "Fallout4.esm",
+      "formKey": "0D4DFC:Fallout4.esm",
+      "editorId": "sActivate",
+      "spriggitFile": "GameSettings/sActivate - 0D4DFC_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Data"
+      ],
+      "notes": "Selected by feature scan for GMST; score 2.1."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "GLOB",
+      "plugin": "Fallout4.esm",
+      "formKey": "18E889:Fallout4.esm",
+      "editorId": "AO_Companion_Search_JunkThresholdValue",
+      "spriggitFile": "Globals/AO_Companion_Search_JunkThresholdValue - 18E889_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Data"
+      ],
+      "notes": "Selected by feature scan for GLOB; score 1.2."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "GLOB",
+      "plugin": "Fallout4.esm",
+      "formKey": "176107:Fallout4.esm",
+      "editorId": "AO_Companion_Search_NextAllowedDaysUntil",
+      "spriggitFile": "Globals/AO_Companion_Search_NextAllowedDaysUntil - 176107_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Data"
+      ],
+      "notes": "Selected by feature scan for GLOB; score 1.2."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "GLOB",
+      "plugin": "Fallout4.esm",
+      "formKey": "043F14:Fallout4.esm",
+      "editorId": "AO_Dogmeat_Container_Bailout_Dist",
+      "spriggitFile": "Globals/AO_Dogmeat_Container_Bailout_Dist - 043F14_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Data"
+      ],
+      "notes": "Selected by feature scan for GLOB; score 1.2."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "KYWD",
+      "plugin": "Fallout4.esm",
+      "formKey": "119B9B:Fallout4.esm",
+      "editorId": "02Metal03Floor",
+      "spriggitFile": "Keywords/02Metal03Floor - 119B9B_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Type",
+        "Color"
+      ],
+      "notes": "Selected by feature scan for KYWD; score 4.1."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "KYWD",
+      "plugin": "Fallout4.esm",
+      "formKey": "119B9C:Fallout4.esm",
+      "editorId": "02Metal03Misc",
+      "spriggitFile": "Keywords/02Metal03Misc - 119B9C_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Type",
+        "Color"
+      ],
+      "notes": "Selected by feature scan for KYWD; score 4.1."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "KYWD",
+      "plugin": "Fallout4.esm",
+      "formKey": "119B9D:Fallout4.esm",
+      "editorId": "02Metal03Prefabs",
+      "spriggitFile": "Keywords/02Metal03Prefabs - 119B9D_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Type",
+        "Color"
+      ],
+      "notes": "Selected by feature scan for KYWD; score 4.1."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "KYWD",
+      "plugin": "Fallout4.esm",
+      "formKey": "0CF43E:Fallout4.esm",
+      "editorId": "AO_BoS_ScribeCollectData",
+      "spriggitFile": "Keywords/AO_BoS_ScribeCollectData - 0CF43E_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Type",
+        "Color",
+        "AttractionRule"
+      ],
+      "notes": "Selected by feature scan for KYWD; score 3.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "KYWD",
+      "plugin": "Fallout4.esm",
+      "formKey": "093BBE:Fallout4.esm",
+      "editorId": "if_Armor_Combat_Freefall_Restricted",
+      "spriggitFile": "Keywords/if_Armor_Combat_Freefall_Restricted - 093BBE_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Type",
+        "Color"
+      ],
+      "notes": "Selected by feature scan for KYWD; score 2.2."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "MGEF",
+      "plugin": "Fallout4.esm",
+      "formKey": "247A6C:Fallout4.esm",
+      "editorId": "CritCryoFreezeEffect",
+      "spriggitFile": "MagicEffects/CritCryoFreezeEffect - 247A6C_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "CastType",
+        "TargetType",
+        "ResistValue"
+      ],
+      "notes": "Selected by feature scan for MGEF; score 7.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "MGEF",
+      "plugin": "Fallout4.esm",
+      "formKey": "18C354:Fallout4.esm",
+      "editorId": "CryoFreezeEffect01",
+      "spriggitFile": "MagicEffects/CryoFreezeEffect01 - 18C354_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "CastType",
+        "TargetType",
+        "ResistValue"
+      ],
+      "notes": "Selected by feature scan for MGEF; score 7.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "MGEF",
+      "plugin": "Fallout4.esm",
+      "formKey": "18C356:Fallout4.esm",
+      "editorId": "CryoFreezeEffect02",
+      "spriggitFile": "MagicEffects/CryoFreezeEffect02 - 18C356_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "CastType",
+        "TargetType",
+        "ResistValue"
+      ],
+      "notes": "Selected by feature scan for MGEF; score 7.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "MGEF",
+      "plugin": "Fallout4.esm",
+      "formKey": "171781:Fallout4.esm",
+      "editorId": "PerkPainTrainKnockbackEffect",
+      "spriggitFile": "MagicEffects/PerkPainTrainKnockbackEffect - 171781_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "CastType",
+        "TargetType",
+        "OnHit"
+      ],
+      "notes": "Selected by feature scan for MGEF; score 6.7."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "MGEF",
+      "plugin": "Fallout4.esm",
+      "formKey": "0AE04F:Fallout4.esm",
+      "editorId": "DN102_LabDemo3ParalyzeEffect",
+      "spriggitFile": "MagicEffects/DN102_LabDemo3ParalyzeEffect - 0AE04F_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "CastType",
+        "TargetType",
+        "Release"
+      ],
+      "notes": "Selected by feature scan for MGEF; score 6.6."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "MISC",
+      "plugin": "Fallout4.esm",
+      "formKey": "247E7F:Fallout4.esm",
+      "editorId": "Debug_Components",
+      "spriggitFile": "MiscItems/Debug_Components - 247E7F_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Value",
+        "Weight",
+        "Keywords"
+      ],
+      "notes": "Selected by feature scan for MISC; score 8.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "MISC",
+      "plugin": "Fallout4.esm",
+      "formKey": "0A4754:Fallout4.esm",
+      "editorId": "FFDiamondCity07Paper",
+      "spriggitFile": "MiscItems/FFDiamondCity07Paper - 0A4754_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Value",
+        "Weight",
+        "Keywords"
+      ],
+      "notes": "Selected by feature scan for MISC; score 7.5."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "MISC",
+      "plugin": "Fallout4.esm",
+      "formKey": "01F8F9:Fallout4.esm",
+      "editorId": "FireExtinguisher01",
+      "spriggitFile": "MiscItems/FireExtinguisher01 - 01F8F9_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Value",
+        "Weight",
+        "Keywords"
+      ],
+      "notes": "Selected by feature scan for MISC; score 7.1."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "MISC",
+      "plugin": "Fallout4.esm",
+      "formKey": "178B51:Fallout4.esm",
+      "editorId": "BobbleHead_Agility",
+      "spriggitFile": "MiscItems/BobbleHead_Agility - 178B51_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Value",
+        "Keywords",
+        "FeaturedItemMessage"
+      ],
+      "notes": "Selected by feature scan for MISC; score 6.7."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "MISC",
+      "plugin": "Fallout4.esm",
+      "formKey": "04E3A2:Fallout4.esm",
+      "editorId": "MS11GuidanceChip",
+      "spriggitFile": "MiscItems/MS11GuidanceChip - 04E3A2_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Value",
+        "Keywords"
+      ],
+      "notes": "Selected by feature scan for MISC; score 6.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "NPC_",
+      "plugin": "Fallout4.esm",
+      "formKey": "0FB232:Fallout4.esm",
+      "editorId": "BHExtBOSSoldier",
+      "spriggitFile": "Npcs/BHExtBOSSoldier - 0FB232_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Aggression",
+        "Confidence",
+        "Race",
+        "Voice",
+        "Keywords",
+        "CombatStyle",
+        "DefaultPackageList",
+        "CrimeFaction"
+      ],
+      "notes": "Selected by feature scan for NPC_; score 11.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "NPC_",
+      "plugin": "Fallout4.esm",
+      "formKey": "0FB22E:Fallout4.esm",
+      "editorId": "BHExtBOSSoldier_PowerArmorAuto",
+      "spriggitFile": "Npcs/BHExtBOSSoldier_PowerArmorAuto - 0FB22E_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Aggression",
+        "Confidence",
+        "Race",
+        "Voice",
+        "Keywords",
+        "CombatStyle",
+        "DefaultPackageList",
+        "CrimeFaction"
+      ],
+      "notes": "Selected by feature scan for NPC_; score 11.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "NPC_",
+      "plugin": "Fallout4.esm",
+      "formKey": "1D58EA:Fallout4.esm",
+      "editorId": "BHExtBOSSoldier_PowerArmorBigGun",
+      "spriggitFile": "Npcs/BHExtBOSSoldier_PowerArmorBigGun - 1D58EA_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Aggression",
+        "Confidence",
+        "Race",
+        "Voice",
+        "Keywords",
+        "CombatStyle",
+        "DefaultPackageList",
+        "CrimeFaction"
+      ],
+      "notes": "Selected by feature scan for NPC_; score 11.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "NPC_",
+      "plugin": "Fallout4.esm",
+      "formKey": "05E557:Fallout4.esm",
+      "editorId": "AllieFilmore",
+      "spriggitFile": "Npcs/AllieFilmore - 05E557_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Aggression",
+        "Confidence",
+        "Race",
+        "Voice",
+        "Keywords",
+        "CombatStyle",
+        "CrimeFaction"
+      ],
+      "notes": "Selected by feature scan for NPC_; score 10.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "NPC_",
+      "plugin": "Fallout4.esm",
+      "formKey": "240C21:Fallout4.esm",
+      "editorId": "AudioTemplateSynthGen1",
+      "spriggitFile": "Npcs/AudioTemplateSynthGen1 - 240C21_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Aggression",
+        "Confidence",
+        "Race",
+        "Voice",
+        "Keywords",
+        "CombatStyle",
+        "DefaultPackageList"
+      ],
+      "notes": "Selected by feature scan for NPC_; score 10.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "PERK",
+      "plugin": "Fallout4.esm",
+      "formKey": "2458BA:Fallout4.esm",
+      "editorId": "AddictionManager",
+      "spriggitFile": "Perks/AddictionManager - 2458BA_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "Ranks"
+      ],
+      "notes": "Selected by feature scan for PERK; score 5.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "PERK",
+      "plugin": "Fallout4.esm",
+      "formKey": "01E67F:Fallout4.esm",
+      "editorId": "AnimalFriend01",
+      "spriggitFile": "Perks/AnimalFriend01 - 01E67F_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "Ranks"
+      ],
+      "notes": "Selected by feature scan for PERK; score 5.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "PERK",
+      "plugin": "Fallout4.esm",
+      "formKey": "04A0D9:Fallout4.esm",
+      "editorId": "AnimalFriend02",
+      "spriggitFile": "Perks/AnimalFriend02 - 04A0D9_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "Ranks"
+      ],
+      "notes": "Selected by feature scan for PERK; score 5.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "PERK",
+      "plugin": "Fallout4.esm",
+      "formKey": "0D979D:Fallout4.esm",
+      "editorId": "TrainingAG01",
+      "spriggitFile": "Perks/TrainingAG01 - 0D979D_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Ranks",
+        "Training"
+      ],
+      "notes": "Selected by feature scan for PERK; score 4.4."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "PERK",
+      "plugin": "Fallout4.esm",
+      "formKey": "065DFA:Fallout4.esm",
+      "editorId": "Basher02",
+      "spriggitFile": "Perks/Basher02 - 065DFA_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Ranks"
+      ],
+      "notes": "Selected by feature scan for PERK; score 4.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "STAT",
+      "plugin": "Fallout4.esm",
+      "formKey": "1B4AC0:Fallout4.esm",
+      "editorId": "workshop_JunkWallDoor01",
+      "spriggitFile": "Statics/workshop_JunkWallDoor01 - 1B4AC0_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "MaxAngle",
+        "Data"
+      ],
+      "notes": "Selected by feature scan for STAT; score 7.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "STAT",
+      "plugin": "Fallout4.esm",
+      "formKey": "1B4AC1:Fallout4.esm",
+      "editorId": "workshop_JunkWallDoor01A",
+      "spriggitFile": "Statics/workshop_JunkWallDoor01A - 1B4AC1_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "MaxAngle",
+        "Data"
+      ],
+      "notes": "Selected by feature scan for STAT; score 7.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "STAT",
+      "plugin": "Fallout4.esm",
+      "formKey": "0EC532:Fallout4.esm",
+      "editorId": "workshop_ShackBalconyStairs01",
+      "spriggitFile": "Statics/workshop_ShackBalconyStairs01 - 0EC532_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "MaxAngle",
+        "Data"
+      ],
+      "notes": "Selected by feature scan for STAT; score 7.0."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "STAT",
+      "plugin": "Fallout4.esm",
+      "formKey": "000032:Fallout4.esm",
+      "editorId": "COCMarkerHeading",
+      "spriggitFile": "Statics/COCMarkerHeading - 000032_Fallout4.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "MaxAngle"
+      ],
+      "notes": "Selected by feature scan for STAT; score 3.2."
+    },
+    {
+      "game": "Fallout4",
+      "recordType": "STAT",
+      "plugin": "Fallout4.esm",
+      "formKey": "000021:Fallout4.esm",
+      "editorId": "CollisionMarker",
+      "spriggitFile": "Statics/CollisionMarker - 000021_Fallout4.esm.yaml",
+      "coverageHints": [
+        "MaxAngle"
+      ],
+      "notes": "Selected by feature scan for STAT; score 1.3."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "AVIF",
+      "plugin": "Skyrim.esm",
+      "formKey": "000456:Skyrim.esm",
+      "editorId": "AVAlchemy",
+      "spriggitFile": "ActorValueInformation/AVAlchemy - 000456_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Description"
+      ],
+      "notes": "Selected by feature scan for AVIF; score 5.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "AVIF",
+      "plugin": "Skyrim.esm",
+      "formKey": "000458:Skyrim.esm",
+      "editorId": "AVAlteration",
+      "spriggitFile": "ActorValueInformation/AVAlteration - 000458_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Description"
+      ],
+      "notes": "Selected by feature scan for AVIF; score 5.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "AVIF",
+      "plugin": "Skyrim.esm",
+      "formKey": "00044F:Skyrim.esm",
+      "editorId": "AVBlock",
+      "spriggitFile": "ActorValueInformation/AVBlock - 00044F_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Description"
+      ],
+      "notes": "Selected by feature scan for AVIF; score 5.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "AVIF",
+      "plugin": "Skyrim.esm",
+      "formKey": "0005F6:Skyrim.esm",
+      "editorId": "AVFavorActive",
+      "spriggitFile": "ActorValueInformation/AVFavorActive - 0005F6_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Description"
+      ],
+      "notes": "Selected by feature scan for AVIF; score 1.9."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "CLAS",
+      "plugin": "Skyrim.esm",
+      "formKey": "0E3A6E:Skyrim.esm",
+      "editorId": "TrainerAlchemyExpert",
+      "spriggitFile": "Classes/TrainerAlchemyExpert - 0E3A6E_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Description",
+        "Teaches",
+        "MaxTrainingLevel",
+        "Weights",
+        "BleedoutDefault",
+        "VoicePoints"
+      ],
+      "notes": "Selected by feature scan for CLAS; score 10.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "CLAS",
+      "plugin": "Skyrim.esm",
+      "formKey": "0E3A5D:Skyrim.esm",
+      "editorId": "TrainerAlchemyJourneyman",
+      "spriggitFile": "Classes/TrainerAlchemyJourneyman - 0E3A5D_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Description",
+        "Teaches",
+        "MaxTrainingLevel",
+        "Weights",
+        "BleedoutDefault",
+        "VoicePoints"
+      ],
+      "notes": "Selected by feature scan for CLAS; score 10.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "CLAS",
+      "plugin": "Skyrim.esm",
+      "formKey": "02F202:Skyrim.esm",
+      "editorId": "AAAPlayerSpellswordClass",
+      "spriggitFile": "Classes/AAAPlayerSpellswordClass - 02F202_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Description",
+        "Teaches",
+        "Weights",
+        "BleedoutDefault",
+        "VoicePoints"
+      ],
+      "notes": "Selected by feature scan for CLAS; score 9.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "CLAS",
+      "plugin": "Skyrim.esm",
+      "formKey": "013177:Skyrim.esm",
+      "editorId": "CombatSpellsword",
+      "spriggitFile": "Classes/CombatSpellsword - 013177_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Description",
+        "Teaches",
+        "MaxTrainingLevel",
+        "Weights",
+        "BleedoutDefault"
+      ],
+      "notes": "Selected by feature scan for CLAS; score 9.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "CLAS",
+      "plugin": "Skyrim.esm",
+      "formKey": "01325D:Skyrim.esm",
+      "editorId": "Bard",
+      "spriggitFile": "Classes/Bard - 01325D_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Description",
+        "Teaches",
+        "Weights",
+        "BleedoutDefault"
+      ],
+      "notes": "Selected by feature scan for CLAS; score 8.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "CONT",
+      "plugin": "Skyrim.esm",
+      "formKey": "02065B:Skyrim.esm",
+      "editorId": "TreasFalmerChestBoss",
+      "spriggitFile": "Containers/TreasFalmerChestBoss - 02065B_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Items",
+        "OpenSound",
+        "CloseSound"
+      ],
+      "notes": "Selected by feature scan for CONT; score 8.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "CONT",
+      "plugin": "Skyrim.esm",
+      "formKey": "0B1176:Skyrim.esm",
+      "editorId": "TreasFalmerChestBossDwarven",
+      "spriggitFile": "Containers/TreasFalmerChestBossDwarven - 0B1176_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Items",
+        "OpenSound",
+        "CloseSound"
+      ],
+      "notes": "Selected by feature scan for CONT; score 7.9."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "CONT",
+      "plugin": "Skyrim.esm",
+      "formKey": "020659:Skyrim.esm",
+      "editorId": "TreasFalmerChest",
+      "spriggitFile": "Containers/TreasFalmerChest - 020659_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Items",
+        "OpenSound",
+        "CloseSound"
+      ],
+      "notes": "Selected by feature scan for CONT; score 7.7."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "CONT",
+      "plugin": "Skyrim.esm",
+      "formKey": "0A918C:Skyrim.esm",
+      "editorId": "BeeHive",
+      "spriggitFile": "Containers/BeeHive - 0A918C_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Items",
+        "OpenSound"
+      ],
+      "notes": "Selected by feature scan for CONT; score 6.3."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "CONT",
+      "plugin": "Skyrim.esm",
+      "formKey": "07434B:Skyrim.esm",
+      "editorId": "MerchantCaravanAChest",
+      "spriggitFile": "Containers/MerchantCaravanAChest - 07434B_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Items"
+      ],
+      "notes": "Selected by feature scan for CONT; score 6.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "COBJ",
+      "plugin": "Skyrim.esm",
+      "formKey": "0DCA13:Skyrim.esm",
+      "editorId": "RecipeArmorDragonscaleBoots",
+      "spriggitFile": "ConstructibleObjects/RecipeArmorDragonscaleBoots - 0DCA13_Skyrim.esm.yaml",
+      "coverageHints": [
+        "CreatedObject",
+        "WorkbenchKeyword",
+        "Items",
+        "Conditions",
+        "CreatedObjectCount"
+      ],
+      "notes": "Selected by feature scan for COBJ; score 5.5."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "COBJ",
+      "plugin": "Skyrim.esm",
+      "formKey": "0DCA14:Skyrim.esm",
+      "editorId": "RecipeArmorDragonscaleCuirass",
+      "spriggitFile": "ConstructibleObjects/RecipeArmorDragonscaleCuirass - 0DCA14_Skyrim.esm.yaml",
+      "coverageHints": [
+        "CreatedObject",
+        "WorkbenchKeyword",
+        "Items",
+        "Conditions",
+        "CreatedObjectCount"
+      ],
+      "notes": "Selected by feature scan for COBJ; score 5.5."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "COBJ",
+      "plugin": "Skyrim.esm",
+      "formKey": "0DCA15:Skyrim.esm",
+      "editorId": "RecipeArmorDragonscaleGauntlets",
+      "spriggitFile": "ConstructibleObjects/RecipeArmorDragonscaleGauntlets - 0DCA15_Skyrim.esm.yaml",
+      "coverageHints": [
+        "CreatedObject",
+        "WorkbenchKeyword",
+        "Items",
+        "Conditions",
+        "CreatedObjectCount"
+      ],
+      "notes": "Selected by feature scan for COBJ; score 5.5."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "COBJ",
+      "plugin": "Skyrim.esm",
+      "formKey": "0DD982:Skyrim.esm",
+      "editorId": "RecipeArmorSteelPlateShield",
+      "spriggitFile": "ConstructibleObjects/RecipeArmorSteelPlateShield - 0DD982_Skyrim.esm.yaml",
+      "coverageHints": [
+        "WorkbenchKeyword",
+        "Items",
+        "Conditions",
+        "CreatedObjectCount"
+      ],
+      "notes": "Selected by feature scan for COBJ; score 4.5."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "COBJ",
+      "plugin": "Skyrim.esm",
+      "formKey": "0F431A:Skyrim.esm",
+      "editorId": "RecipeFoodSoupCabbagePotato",
+      "spriggitFile": "ConstructibleObjects/RecipeFoodSoupCabbagePotato - 0F431A_Skyrim.esm.yaml",
+      "coverageHints": [
+        "CreatedObject",
+        "WorkbenchKeyword",
+        "Items",
+        "CreatedObjectCount"
+      ],
+      "notes": "Selected by feature scan for COBJ; score 4.4."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "FACT",
+      "plugin": "Skyrim.esm",
+      "formKey": "103372:Skyrim.esm",
+      "editorId": "CollegeofWinterholdArchMageFaction",
+      "spriggitFile": "Factions/CollegeofWinterholdArchMageFaction - 103372_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Relations",
+        "Ranks"
+      ],
+      "notes": "Selected by feature scan for FACT; score 6.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "FACT",
+      "plugin": "Skyrim.esm",
+      "formKey": "01F259:Skyrim.esm",
+      "editorId": "CollegeofWinterholdFaction",
+      "spriggitFile": "Factions/CollegeofWinterholdFaction - 01F259_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Relations",
+        "Ranks"
+      ],
+      "notes": "Selected by feature scan for FACT; score 6.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "FACT",
+      "plugin": "Skyrim.esm",
+      "formKey": "048362:Skyrim.esm",
+      "editorId": "CompanionsFaction",
+      "spriggitFile": "Factions/CompanionsFaction - 048362_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Relations",
+        "Ranks"
+      ],
+      "notes": "Selected by feature scan for FACT; score 6.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "FACT",
+      "plugin": "Skyrim.esm",
+      "formKey": "0FFD65:Skyrim.esm",
+      "editorId": "DBSancBabetteBedFaction",
+      "spriggitFile": "Factions/DBSancBabetteBedFaction - 0FFD65_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Relations",
+        "VendorBuySellList",
+        "MerchantContainer"
+      ],
+      "notes": "Selected by feature scan for FACT; score 5.1."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "FACT",
+      "plugin": "Skyrim.esm",
+      "formKey": "040B60:Skyrim.esm",
+      "editorId": "ArenaFaction",
+      "spriggitFile": "Factions/ArenaFaction - 040B60_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Ranks"
+      ],
+      "notes": "Selected by feature scan for FACT; score 5.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "FLST",
+      "plugin": "Skyrim.esm",
+      "formKey": "06F3F7:Skyrim.esm",
+      "editorId": "AAAMothPlantTypes",
+      "spriggitFile": "FormLists/AAAMothPlantTypes - 06F3F7_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Items"
+      ],
+      "notes": "Selected by feature scan for FLST; score 4.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "FLST",
+      "plugin": "Skyrim.esm",
+      "formKey": "045C32:Skyrim.esm",
+      "editorId": "CityWindhelmResidentList",
+      "spriggitFile": "FormLists/CityWindhelmResidentList - 045C32_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Items"
+      ],
+      "notes": "Selected by feature scan for FLST; score 4.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "FLST",
+      "plugin": "Skyrim.esm",
+      "formKey": "026953:Skyrim.esm",
+      "editorId": "CrimeFactionsList",
+      "spriggitFile": "FormLists/CrimeFactionsList - 026953_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Items"
+      ],
+      "notes": "Selected by feature scan for FLST; score 4.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "FLST",
+      "plugin": "Skyrim.esm",
+      "formKey": "000D14:Skyrim.esm",
+      "editorId": "DraugrWeapons",
+      "spriggitFile": "FormLists/DraugrWeapons - 000D14_Skyrim.esm.yaml",
+      "coverageHints": [],
+      "notes": "Selected by feature scan for FLST; score 0.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "GMST",
+      "plugin": "Skyrim.esm",
+      "formKey": "0D4C40:Skyrim.esm",
+      "editorId": "sAbortText",
+      "spriggitFile": "GameSettings/sAbortText - 0D4C40_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Data"
+      ],
+      "notes": "Selected by feature scan for GMST; score 1.9."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "GMST",
+      "plugin": "Skyrim.esm",
+      "formKey": "0D4DC4:Skyrim.esm",
+      "editorId": "sAccept",
+      "spriggitFile": "GameSettings/sAccept - 0D4DC4_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Data"
+      ],
+      "notes": "Selected by feature scan for GMST; score 1.9."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "GMST",
+      "plugin": "Skyrim.esm",
+      "formKey": "0D4B96:Skyrim.esm",
+      "editorId": "sActionMapping",
+      "spriggitFile": "GameSettings/sActionMapping - 0D4B96_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Data"
+      ],
+      "notes": "Selected by feature scan for GMST; score 1.9."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "GLOB",
+      "plugin": "Skyrim.esm",
+      "formKey": "10636A:Skyrim.esm",
+      "editorId": "1stPKillCam",
+      "spriggitFile": "Globals/1stPKillCam - 10636A_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Data"
+      ],
+      "notes": "Selected by feature scan for GLOB; score 1.2."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "GLOB",
+      "plugin": "Skyrim.esm",
+      "formKey": "050765:Skyrim.esm",
+      "editorId": "CarriageCost",
+      "spriggitFile": "Globals/CarriageCost - 050765_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Data"
+      ],
+      "notes": "Selected by feature scan for GLOB; score 1.2."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "GLOB",
+      "plugin": "Skyrim.esm",
+      "formKey": "107702:Skyrim.esm",
+      "editorId": "CarriageCostSmall",
+      "spriggitFile": "Globals/CarriageCostSmall - 107702_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Data"
+      ],
+      "notes": "Selected by feature scan for GLOB; score 1.2."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "KYWD",
+      "plugin": "Skyrim.esm",
+      "formKey": "10EAD7:Skyrim.esm",
+      "editorId": "ActorTypeFamiliar",
+      "spriggitFile": "Keywords/ActorTypeFamiliar - 10EAD7_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Color"
+      ],
+      "notes": "Selected by feature scan for KYWD; score 1.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "KYWD",
+      "plugin": "Skyrim.esm",
+      "formKey": "10E984:Skyrim.esm",
+      "editorId": "ActorTypeGiant",
+      "spriggitFile": "Keywords/ActorTypeGiant - 10E984_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Color"
+      ],
+      "notes": "Selected by feature scan for KYWD; score 1.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "KYWD",
+      "plugin": "Skyrim.esm",
+      "formKey": "0F5D16:Skyrim.esm",
+      "editorId": "ActorTypeTroll",
+      "spriggitFile": "Keywords/ActorTypeTroll - 0F5D16_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Color"
+      ],
+      "notes": "Selected by feature scan for KYWD; score 1.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "KYWD",
+      "plugin": "Skyrim.esm",
+      "formKey": "06DEAD:Skyrim.esm",
+      "editorId": "ActivatorLever",
+      "spriggitFile": "Keywords/ActivatorLever - 06DEAD_Skyrim.esm.yaml",
+      "coverageHints": [],
+      "notes": "Selected by feature scan for KYWD; score 0.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "MGEF",
+      "plugin": "Skyrim.esm",
+      "formKey": "0D22FA:Skyrim.esm",
+      "editorId": "ShockDamageMassConcAimed",
+      "spriggitFile": "MagicEffects/ShockDamageMassConcAimed - 0D22FA_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "CastType",
+        "TargetType",
+        "ResistValue",
+        "EquipAbility",
+        "Release",
+        "Charge"
+      ],
+      "notes": "Selected by feature scan for MGEF; score 10.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "MGEF",
+      "plugin": "Skyrim.esm",
+      "formKey": "1019D6:Skyrim.esm",
+      "editorId": "dunVolunruudPickaxeEffect",
+      "spriggitFile": "MagicEffects/dunVolunruudPickaxeEffect - 1019D6_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "CastType",
+        "TargetType",
+        "ResistValue",
+        "EquipAbility",
+        "Release",
+        "Charge"
+      ],
+      "notes": "Selected by feature scan for MGEF; score 9.8."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "MGEF",
+      "plugin": "Skyrim.esm",
+      "formKey": "0CDB75:Skyrim.esm",
+      "editorId": "ArmorFFSelf100",
+      "spriggitFile": "MagicEffects/ArmorFFSelf100 - 0CDB75_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "CastType",
+        "PerkToApply",
+        "EquipAbility",
+        "Release",
+        "Charge"
+      ],
+      "notes": "Selected by feature scan for MGEF; score 9.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "MGEF",
+      "plugin": "Skyrim.esm",
+      "formKey": "09B246:Skyrim.esm",
+      "editorId": "DA15WabbajackFF",
+      "spriggitFile": "MagicEffects/DA15WabbajackFF - 09B246_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "CastType",
+        "TargetType",
+        "ResistValue",
+        "Release",
+        "Charge"
+      ],
+      "notes": "Selected by feature scan for MGEF; score 9.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "MGEF",
+      "plugin": "Skyrim.esm",
+      "formKey": "0FB406:Skyrim.esm",
+      "editorId": "dunHalldirAggDownFFAimedArea",
+      "spriggitFile": "MagicEffects/dunHalldirAggDownFFAimedArea - 0FB406_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "CastType",
+        "TargetType",
+        "OnHit",
+        "Release",
+        "Charge"
+      ],
+      "notes": "Selected by feature scan for MGEF; score 9.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "MISC",
+      "plugin": "Skyrim.esm",
+      "formKey": "0D0756:Skyrim.esm",
+      "editorId": "MGRDragonHeartScales",
+      "spriggitFile": "MiscItems/MGRDragonHeartScales - 0D0756_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Value",
+        "Weight",
+        "Keywords"
+      ],
+      "notes": "Selected by feature scan for MISC; score 6.3."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "MISC",
+      "plugin": "Skyrim.esm",
+      "formKey": "06F993:Skyrim.esm",
+      "editorId": "Firewood01",
+      "spriggitFile": "MiscItems/Firewood01 - 06F993_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Value",
+        "Weight",
+        "Keywords"
+      ],
+      "notes": "Selected by feature scan for MISC; score 6.1."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "MISC",
+      "plugin": "Skyrim.esm",
+      "formKey": "0D4BE7:Skyrim.esm",
+      "editorId": "FoxPeltSnow",
+      "spriggitFile": "MiscItems/FoxPeltSnow - 0D4BE7_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Value",
+        "Weight",
+        "Keywords"
+      ],
+      "notes": "Selected by feature scan for MISC; score 6.1."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "MISC",
+      "plugin": "Skyrim.esm",
+      "formKey": "02996F:Skyrim.esm",
+      "editorId": "C04HagravenHead",
+      "spriggitFile": "MiscItems/C04HagravenHead - 02996F_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Weight",
+        "Keywords"
+      ],
+      "notes": "Selected by feature scan for MISC; score 5.5."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "MISC",
+      "plugin": "Skyrim.esm",
+      "formKey": "0B08C7:Skyrim.esm",
+      "editorId": "dunUniqueBeeInJar",
+      "spriggitFile": "MiscItems/dunUniqueBeeInJar - 0B08C7_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Value",
+        "Weight"
+      ],
+      "notes": "Selected by feature scan for MISC; score 5.1."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "NPC_",
+      "plugin": "Skyrim.esm",
+      "formKey": "0F6F37:Skyrim.esm",
+      "editorId": "EncGuardImperialTemplate",
+      "spriggitFile": "Npcs/EncGuardImperialTemplate - 0F6F37_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Aggression",
+        "Confidence",
+        "Race",
+        "Voice",
+        "Keywords",
+        "CombatStyle",
+        "DefaultPackageList",
+        "CrimeFaction"
+      ],
+      "notes": "Selected by feature scan for NPC_; score 11.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "NPC_",
+      "plugin": "Skyrim.esm",
+      "formKey": "0F6F38:Skyrim.esm",
+      "editorId": "EncGuardSonsTemplate",
+      "spriggitFile": "Npcs/EncGuardSonsTemplate - 0F6F38_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Aggression",
+        "Confidence",
+        "Race",
+        "Voice",
+        "Keywords",
+        "CombatStyle",
+        "DefaultPackageList",
+        "CrimeFaction"
+      ],
+      "notes": "Selected by feature scan for NPC_; score 11.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "NPC_",
+      "plugin": "Skyrim.esm",
+      "formKey": "041B30:Skyrim.esm",
+      "editorId": "EncSiegeImperialSoldierTemplate",
+      "spriggitFile": "Npcs/EncSiegeImperialSoldierTemplate - 041B30_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Aggression",
+        "Confidence",
+        "Race",
+        "Voice",
+        "Keywords",
+        "CombatStyle",
+        "DefaultPackageList",
+        "CrimeFaction"
+      ],
+      "notes": "Selected by feature scan for NPC_; score 11.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "NPC_",
+      "plugin": "Skyrim.esm",
+      "formKey": "01A696:Skyrim.esm",
+      "editorId": "AelaTheHuntress",
+      "spriggitFile": "Npcs/AelaTheHuntress - 01A696_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Aggression",
+        "Confidence",
+        "Race",
+        "Voice",
+        "Keywords",
+        "CombatStyle",
+        "CrimeFaction"
+      ],
+      "notes": "Selected by feature scan for NPC_; score 10.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "NPC_",
+      "plugin": "Skyrim.esm",
+      "formKey": "08E4F1:Skyrim.esm",
+      "editorId": "AlduinBase",
+      "spriggitFile": "Npcs/AlduinBase - 08E4F1_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Aggression",
+        "Confidence",
+        "Race",
+        "Voice",
+        "Keywords",
+        "CombatStyle",
+        "DefaultPackageList"
+      ],
+      "notes": "Selected by feature scan for NPC_; score 10.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "PERK",
+      "plugin": "Skyrim.esm",
+      "formKey": "0A725C:Skyrim.esm",
+      "editorId": "AlchemySkillBoosts",
+      "spriggitFile": "Perks/AlchemySkillBoosts - 0A725C_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "Ranks"
+      ],
+      "notes": "Selected by feature scan for PERK; score 5.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "PERK",
+      "plugin": "Skyrim.esm",
+      "formKey": "0BABE4:Skyrim.esm",
+      "editorId": "Armsman00",
+      "spriggitFile": "Perks/Armsman00 - 0BABE4_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "Ranks"
+      ],
+      "notes": "Selected by feature scan for PERK; score 5.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "PERK",
+      "plugin": "Skyrim.esm",
+      "formKey": "079343:Skyrim.esm",
+      "editorId": "Armsman20",
+      "spriggitFile": "Perks/Armsman20 - 079343_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "Ranks"
+      ],
+      "notes": "Selected by feature scan for PERK; score 5.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "PERK",
+      "plugin": "Skyrim.esm",
+      "formKey": "058F75:Skyrim.esm",
+      "editorId": "Allure",
+      "spriggitFile": "Perks/Allure - 058F75_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Ranks"
+      ],
+      "notes": "Selected by feature scan for PERK; score 4.0."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "STAT",
+      "plugin": "Skyrim.esm",
+      "formKey": "0D19F9:Skyrim.esm",
+      "editorId": "BlackreachECeiling01_GlowLichen",
+      "spriggitFile": "Statics/BlackreachECeiling01_GlowLichen - 0D19F9_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "MaxAngle",
+        "Data"
+      ],
+      "notes": "Selected by feature scan for STAT; score 5.1."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "STAT",
+      "plugin": "Skyrim.esm",
+      "formKey": "06DD69:Skyrim.esm",
+      "editorId": "DweFacadeTowerSpacer01Snow",
+      "spriggitFile": "Statics/DweFacadeTowerSpacer01Snow - 06DD69_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "MaxAngle",
+        "Data"
+      ],
+      "notes": "Selected by feature scan for STAT; score 4.9."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "STAT",
+      "plugin": "Skyrim.esm",
+      "formKey": "090E82:Skyrim.esm",
+      "editorId": "HHMountainRidge01",
+      "spriggitFile": "Statics/HHMountainRidge01 - 090E82_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "MaxAngle",
+        "Data"
+      ],
+      "notes": "Selected by feature scan for STAT; score 4.9."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "STAT",
+      "plugin": "Skyrim.esm",
+      "formKey": "0946B2:Skyrim.esm",
+      "editorId": "CaveGRockPileS01IceBlend",
+      "spriggitFile": "Statics/CaveGRockPileS01IceBlend - 0946B2_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Data"
+      ],
+      "notes": "Selected by feature scan for STAT; score 3.7."
+    },
+    {
+      "game": "Skyrim",
+      "recordType": "STAT",
+      "plugin": "Skyrim.esm",
+      "formKey": "078DC0:Skyrim.esm",
+      "editorId": "XMarkerSnow",
+      "spriggitFile": "Statics/XMarkerSnow - 078DC0_Skyrim.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "MaxAngle"
+      ],
+      "notes": "Selected by feature scan for STAT; score 3.7."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "AVIF",
+      "plugin": "Starfield.esm",
+      "formKey": "05ACD4:Starfield.esm",
+      "editorId": "TargetingModeActionPoints_AV",
+      "spriggitFile": "ActorValueInformation/TargetingModeActionPoints_AV - 05ACD4_Starfield.esm.yaml",
+      "coverageHints": [
+        "DefaultValue",
+        "Min",
+        "Max",
+        "Type",
+        "Name"
+      ],
+      "notes": "Selected by feature scan for AVIF; score 7.4."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "AVIF",
+      "plugin": "Starfield.esm",
+      "formKey": "248D31:Starfield.esm",
+      "editorId": "ENV_Resist_Airborne",
+      "spriggitFile": "ActorValueInformation/ENV_Resist_Airborne - 248D31_Starfield.esm.yaml",
+      "coverageHints": [
+        "DefaultValue",
+        "Min",
+        "Max",
+        "Type",
+        "Name"
+      ],
+      "notes": "Selected by feature scan for AVIF; score 7.1."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "AVIF",
+      "plugin": "Starfield.esm",
+      "formKey": "248D30:Starfield.esm",
+      "editorId": "ENV_Resist_Corrosive",
+      "spriggitFile": "ActorValueInformation/ENV_Resist_Corrosive - 248D30_Starfield.esm.yaml",
+      "coverageHints": [
+        "DefaultValue",
+        "Min",
+        "Max",
+        "Type",
+        "Name"
+      ],
+      "notes": "Selected by feature scan for AVIF; score 7.1."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "AVIF",
+      "plugin": "Starfield.esm",
+      "formKey": "2EE0BB:Starfield.esm",
+      "editorId": "PEO_CarryWeight",
+      "spriggitFile": "ActorValueInformation/PEO_CarryWeight - 2EE0BB_Starfield.esm.yaml",
+      "coverageHints": [
+        "DefaultValue",
+        "Type",
+        "Name"
+      ],
+      "notes": "Selected by feature scan for AVIF; score 5.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "AVIF",
+      "plugin": "Starfield.esm",
+      "formKey": "0002D4:Starfield.esm",
+      "editorId": "Health",
+      "spriggitFile": "ActorValueInformation/Health - 0002D4_Starfield.esm.yaml",
+      "coverageHints": [
+        "DefaultValue",
+        "Name"
+      ],
+      "notes": "Selected by feature scan for AVIF; score 4.5."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "BOOK",
+      "plugin": "Starfield.esm",
+      "formKey": "165BF3:Starfield.esm",
+      "editorId": "NH_SouvenirSlate",
+      "spriggitFile": "Books/NH_SouvenirSlate - 165BF3_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Keywords",
+        "Text",
+        "Value",
+        "DataSlateType",
+        "InventoryArt",
+        "PickupSound"
+      ],
+      "notes": "Selected by feature scan for BOOK; score 11.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "BOOK",
+      "plugin": "Starfield.esm",
+      "formKey": "1F40EE:Starfield.esm",
+      "editorId": "UC07_ScrappingNiira",
+      "spriggitFile": "Books/UC07_ScrappingNiira - 1F40EE_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Keywords",
+        "Text",
+        "Value",
+        "DataSlateType",
+        "InventoryArt",
+        "PickupSound"
+      ],
+      "notes": "Selected by feature scan for BOOK; score 10.9."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "BOOK",
+      "plugin": "Starfield.esm",
+      "formKey": "26E6B1:Starfield.esm",
+      "editorId": "SQ_PlanetSurveySlate00_025",
+      "spriggitFile": "Books/SQ_PlanetSurveySlate00_025 - 26E6B1_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Keywords",
+        "Text",
+        "Value",
+        "DataSlateType",
+        "InventoryArt",
+        "PickupSound"
+      ],
+      "notes": "Selected by feature scan for BOOK; score 10.4."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "BOOK",
+      "plugin": "Starfield.esm",
+      "formKey": "070510:Starfield.esm",
+      "editorId": "_RENAME_TestDataslate",
+      "spriggitFile": "Books/_RENAME_TestDataslate - 070510_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Keywords",
+        "Text",
+        "DataSlateType",
+        "InventoryArt",
+        "PickupSound"
+      ],
+      "notes": "Selected by feature scan for BOOK; score 10.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "BOOK",
+      "plugin": "Starfield.esm",
+      "formKey": "045631:Starfield.esm",
+      "editorId": "TreasureMap_Resource_AnySystem_Unique_Aldumite",
+      "spriggitFile": "Books/TreasureMap_Resource_AnySystem_Unique_Aldumite - 045631_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Keywords",
+        "Text",
+        "Value",
+        "InventoryArt",
+        "PickupSound"
+      ],
+      "notes": "Selected by feature scan for BOOK; score 10.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "CLAS",
+      "plugin": "Starfield.esm",
+      "formKey": "01326B:Starfield.esm",
+      "editorId": "Citizen",
+      "spriggitFile": "Classes/Citizen - 01326B_Starfield.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Description",
+        "Properties"
+      ],
+      "notes": "Selected by feature scan for CLAS; score 4.7."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "CLAS",
+      "plugin": "Starfield.esm",
+      "formKey": "20F487:Starfield.esm",
+      "editorId": "CourserClass",
+      "spriggitFile": "Classes/CourserClass - 20F487_Starfield.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Description",
+        "Properties"
+      ],
+      "notes": "Selected by feature scan for CLAS; score 4.6."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "CLAS",
+      "plugin": "Starfield.esm",
+      "formKey": "010B2F:Starfield.esm",
+      "editorId": "CrimsonFleetClass",
+      "spriggitFile": "Classes/CrimsonFleetClass - 010B2F_Starfield.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Description",
+        "Properties"
+      ],
+      "notes": "Selected by feature scan for CLAS; score 4.6."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "CONT",
+      "plugin": "Starfield.esm",
+      "formKey": "277A73:Starfield.esm",
+      "editorId": "ShipOutpost_Loot_Storage_Safe_Floor_Reg_Common",
+      "spriggitFile": "Containers/ShipOutpost_Loot_Storage_Safe_Floor_Reg_Common - 277A73_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Items",
+        "Keywords",
+        "NativeTerminal",
+        "OpenSound",
+        "CloseSound",
+        "ANAM",
+        "REFL"
+      ],
+      "notes": "Selected by feature scan for CONT; score 11.3."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "CONT",
+      "plugin": "Starfield.esm",
+      "formKey": "277A81:Starfield.esm",
+      "editorId": "ShipOutpost_Loot_Storage_Safe_Floor_Tall_Rare",
+      "spriggitFile": "Containers/ShipOutpost_Loot_Storage_Safe_Floor_Tall_Rare - 277A81_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Items",
+        "Keywords",
+        "NativeTerminal",
+        "OpenSound",
+        "CloseSound",
+        "ANAM",
+        "REFL"
+      ],
+      "notes": "Selected by feature scan for CONT; score 11.3."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "CONT",
+      "plugin": "Starfield.esm",
+      "formKey": "2779E9:Starfield.esm",
+      "editorId": "ShipOutpost_Loot_Storage_BossChest_Industrial_Rare",
+      "spriggitFile": "Containers/ShipOutpost_Loot_Storage_BossChest_Industrial_Rare - 2779E9_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Items",
+        "Keywords",
+        "NativeTerminal",
+        "OpenSound",
+        "CloseSound",
+        "ANAM",
+        "REFL"
+      ],
+      "notes": "Selected by feature scan for CONT; score 11.2."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "CONT",
+      "plugin": "Starfield.esm",
+      "formKey": "1A23DF:Starfield.esm",
+      "editorId": "Loot_Display_WeaponRack03_EMPTY",
+      "spriggitFile": "Containers/Loot_Display_WeaponRack03_EMPTY - 1A23DF_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Items",
+        "Keywords",
+        "NativeTerminal",
+        "OpenSound",
+        "CloseSound",
+        "ANAM"
+      ],
+      "notes": "Selected by feature scan for CONT; score 11.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "CONT",
+      "plugin": "Starfield.esm",
+      "formKey": "057C20:Starfield.esm",
+      "editorId": "Loot_Display_ArboronWeaponRackPanel02",
+      "spriggitFile": "Containers/Loot_Display_ArboronWeaponRackPanel02 - 057C20_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Items",
+        "Keywords",
+        "NativeTerminal",
+        "OpenSound",
+        "CloseSound"
+      ],
+      "notes": "Selected by feature scan for CONT; score 10.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "CNDF",
+      "plugin": "Starfield.esm",
+      "formKey": "3C8F9C:Starfield.esm",
+      "editorId": "DebugMoveToPlanetConditions_Trait",
+      "spriggitFile": "ConditionRecords/DebugMoveToPlanetConditions_Trait - 3C8F9C_Starfield.esm.yaml",
+      "coverageHints": [
+        "Conditions",
+        "Version2"
+      ],
+      "notes": "Selected by feature scan for CNDF; score 5.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "CNDF",
+      "plugin": "Starfield.esm",
+      "formKey": "31982F:Starfield.esm",
+      "editorId": "SFBGS_CND_Placeholder01_ReservedForUse",
+      "spriggitFile": "ConditionRecords/SFBGS_CND_Placeholder01_ReservedForUse - 31982F_Starfield.esm.yaml",
+      "coverageHints": [
+        "Conditions",
+        "Version2"
+      ],
+      "notes": "Selected by feature scan for CNDF; score 5.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "CNDF",
+      "plugin": "Starfield.esm",
+      "formKey": "10460E:Starfield.esm",
+      "editorId": "SQ_TreasureMap_CND_IsResourceLocation",
+      "spriggitFile": "ConditionRecords/SQ_TreasureMap_CND_IsResourceLocation - 10460E_Starfield.esm.yaml",
+      "coverageHints": [
+        "Conditions",
+        "Version2"
+      ],
+      "notes": "Selected by feature scan for CNDF; score 5.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "CNDF",
+      "plugin": "Starfield.esm",
+      "formKey": "0B1206:Starfield.esm",
+      "editorId": "ActorShouldShowSpacesuitGameplayFlashlight",
+      "spriggitFile": "ConditionRecords/ActorShouldShowSpacesuitGameplayFlashlight - 0B1206_Starfield.esm.yaml",
+      "coverageHints": [
+        "Version2"
+      ],
+      "notes": "Selected by feature scan for CNDF; score 1.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "COBJ",
+      "plugin": "Starfield.esm",
+      "formKey": "007F7C:Starfield.esm",
+      "editorId": "co_Outpost_Power_Reactor01",
+      "spriggitFile": "ConstructibleObjects/co_Outpost_Power_Reactor01 - 007F7C_Starfield.esm.yaml",
+      "coverageHints": [
+        "CreatedObject",
+        "WorkbenchKeyword",
+        "ConstructableComponents",
+        "Components",
+        "RecipeFilters",
+        "Conditions",
+        "AmountProduced"
+      ],
+      "notes": "Selected by feature scan for COBJ; score 8.8."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "COBJ",
+      "plugin": "Starfield.esm",
+      "formKey": "1C5144:Starfield.esm",
+      "editorId": "co_Outpost_Power_Reactor02",
+      "spriggitFile": "ConstructibleObjects/co_Outpost_Power_Reactor02 - 1C5144_Starfield.esm.yaml",
+      "coverageHints": [
+        "CreatedObject",
+        "WorkbenchKeyword",
+        "ConstructableComponents",
+        "Components",
+        "RecipeFilters",
+        "Conditions",
+        "AmountProduced"
+      ],
+      "notes": "Selected by feature scan for COBJ; score 8.8."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "COBJ",
+      "plugin": "Starfield.esm",
+      "formKey": "0C8720:Starfield.esm",
+      "editorId": "co_Chem_XenoAurora",
+      "spriggitFile": "ConstructibleObjects/co_Chem_XenoAurora - 0C8720_Starfield.esm.yaml",
+      "coverageHints": [
+        "CreatedObject",
+        "WorkbenchKeyword",
+        "ConstructableComponents",
+        "Components",
+        "RecipeFilters",
+        "Conditions",
+        "AmountProduced"
+      ],
+      "notes": "Selected by feature scan for COBJ; score 8.6."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "COBJ",
+      "plugin": "Starfield.esm",
+      "formKey": "09DE67:Starfield.esm",
+      "editorId": "UC07_co_mfg_MicroCell_Old",
+      "spriggitFile": "ConstructibleObjects/UC07_co_mfg_MicroCell_Old - 09DE67_Starfield.esm.yaml",
+      "coverageHints": [
+        "CreatedObject",
+        "WorkbenchKeyword",
+        "ConstructableComponents",
+        "Components",
+        "Conditions",
+        "AmountProduced"
+      ],
+      "notes": "Selected by feature scan for COBJ; score 7.8."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "COBJ",
+      "plugin": "Starfield.esm",
+      "formKey": "1DF844:Starfield.esm",
+      "editorId": "co_Outpost_Misc_MissionBoardConsole",
+      "spriggitFile": "ConstructibleObjects/co_Outpost_Misc_MissionBoardConsole - 1DF844_Starfield.esm.yaml",
+      "coverageHints": [
+        "CreatedObject",
+        "WorkbenchKeyword",
+        "ConstructableComponents",
+        "Components",
+        "RecipeFilters",
+        "Conditions"
+      ],
+      "notes": "Selected by feature scan for COBJ; score 7.6."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "DOOR",
+      "plugin": "Starfield.esm",
+      "formKey": "144F85:Starfield.esm",
+      "editorId": "ShipFloorLoadHatch",
+      "spriggitFile": "Doors/ShipFloorLoadHatch - 144F85_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "NativeTerminal",
+        "OpenSound",
+        "CloseSound",
+        "SoundLevel",
+        "FacingAxisOverride",
+        "Keywords",
+        "ANAM"
+      ],
+      "notes": "Selected by feature scan for DOOR; score 12.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "DOOR",
+      "plugin": "Starfield.esm",
+      "formKey": "205AA6:Starfield.esm",
+      "editorId": "ShipDockingHatchFloor",
+      "spriggitFile": "Doors/ShipDockingHatchFloor - 205AA6_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "OpenSound",
+        "CloseSound",
+        "SoundLevel",
+        "FacingAxisOverride",
+        "Keywords",
+        "ANAM"
+      ],
+      "notes": "Selected by feature scan for DOOR; score 11.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "DOOR",
+      "plugin": "Starfield.esm",
+      "formKey": "19AFF6:Starfield.esm",
+      "editorId": "SftIntRmSmWallMid_DoorA00",
+      "spriggitFile": "Doors/SftIntRmSmWallMid_DoorA00 - 19AFF6_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "NativeTerminal",
+        "OpenSound",
+        "CloseSound",
+        "SoundLevel",
+        "FacingAxisOverride",
+        "Keywords",
+        "ANAM"
+      ],
+      "notes": "Selected by feature scan for DOOR; score 10.7."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "DOOR",
+      "plugin": "Starfield.esm",
+      "formKey": "30D813:Starfield.esm",
+      "editorId": "SftIntRmSmWallMid_DoorA00_Loud",
+      "spriggitFile": "Doors/SftIntRmSmWallMid_DoorA00_Loud - 30D813_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "NativeTerminal",
+        "OpenSound",
+        "CloseSound",
+        "SoundLevel",
+        "FacingAxisOverride",
+        "ANAM"
+      ],
+      "notes": "Selected by feature scan for DOOR; score 9.6."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "DOOR",
+      "plugin": "Starfield.esm",
+      "formKey": "31D042:Starfield.esm",
+      "editorId": "ShpGenIntPerSmWallMid_ExLg_DockingDoor02L_NonLoad",
+      "spriggitFile": "Doors/ShpGenIntPerSmWallMid_ExLg_DockingDoor02L_NonLoad - 31D042_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "OpenSound",
+        "CloseSound",
+        "SoundLevel",
+        "FacingAxisOverride",
+        "ANAM"
+      ],
+      "notes": "Selected by feature scan for DOOR; score 9.5."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "FACT",
+      "plugin": "Starfield.esm",
+      "formKey": "010B30:Starfield.esm",
+      "editorId": "CrimeFactionCrimsonFleet",
+      "spriggitFile": "Factions/CrimeFactionCrimsonFleet - 010B30_Starfield.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Relations",
+        "Keyword"
+      ],
+      "notes": "Selected by feature scan for FACT; score 6.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "FACT",
+      "plugin": "Starfield.esm",
+      "formKey": "03E0C8:Starfield.esm",
+      "editorId": "CaptiveFaction",
+      "spriggitFile": "Factions/CaptiveFaction - 03E0C8_Starfield.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Relations"
+      ],
+      "notes": "Selected by feature scan for FACT; score 5.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "FACT",
+      "plugin": "Starfield.esm",
+      "formKey": "01C21C:Starfield.esm",
+      "editorId": "PlayerFaction",
+      "spriggitFile": "Factions/PlayerFaction - 01C21C_Starfield.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Relations"
+      ],
+      "notes": "Selected by feature scan for FACT; score 5.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "FACT",
+      "plugin": "Starfield.esm",
+      "formKey": "1A2C9C:Starfield.esm",
+      "editorId": "LISTColonistFaction",
+      "spriggitFile": "Factions/LISTColonistFaction - 1A2C9C_Starfield.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Relations",
+        "VendorBuySellList"
+      ],
+      "notes": "Selected by feature scan for FACT; score 4.3."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "FACT",
+      "plugin": "Starfield.esm",
+      "formKey": "3CAFBA:Starfield.esm",
+      "editorId": "Vendor_ShipServices_AkilaCityFaction",
+      "spriggitFile": "Factions/Vendor_ShipServices_AkilaCityFaction - 3CAFBA_Starfield.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "MerchantContainer",
+        "Components"
+      ],
+      "notes": "Selected by feature scan for FACT; score 4.2."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "FLST",
+      "plugin": "Starfield.esm",
+      "formKey": "2117E6:Starfield.esm",
+      "editorId": "AkilaVendorVeryHighOrganicResources",
+      "spriggitFile": "FormLists/AkilaVendorVeryHighOrganicResources - 2117E6_Starfield.esm.yaml",
+      "coverageHints": [
+        "Items",
+        "AddToList"
+      ],
+      "notes": "Selected by feature scan for FLST; score 5.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "FLST",
+      "plugin": "Starfield.esm",
+      "formKey": "2117EC:Starfield.esm",
+      "editorId": "AkilaVendorVeryLowOrganicResources",
+      "spriggitFile": "FormLists/AkilaVendorVeryLowOrganicResources - 2117EC_Starfield.esm.yaml",
+      "coverageHints": [
+        "Items",
+        "AddToList"
+      ],
+      "notes": "Selected by feature scan for FLST; score 5.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "FLST",
+      "plugin": "Starfield.esm",
+      "formKey": "2117F0:Starfield.esm",
+      "editorId": "AlikaVendorLowOrganicResources",
+      "spriggitFile": "FormLists/AlikaVendorLowOrganicResources - 2117F0_Starfield.esm.yaml",
+      "coverageHints": [
+        "Items",
+        "AddToList"
+      ],
+      "notes": "Selected by feature scan for FLST; score 5.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "FLST",
+      "plugin": "Starfield.esm",
+      "formKey": "0C3830:Starfield.esm",
+      "editorId": "COND_imgui_1_Assorted",
+      "spriggitFile": "FormLists/COND_imgui_1_Assorted - 0C3830_Starfield.esm.yaml",
+      "coverageHints": [
+        "AddToList"
+      ],
+      "notes": "Selected by feature scan for FLST; score 1.9."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "GMST",
+      "plugin": "Starfield.esm",
+      "formKey": "0657E0:Starfield.esm",
+      "editorId": "sAbort",
+      "spriggitFile": "GameSettings/sAbort - 0657E0_Starfield.esm.yaml",
+      "coverageHints": [
+        "Data"
+      ],
+      "notes": "Selected by feature scan for GMST; score 1.9."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "GMST",
+      "plugin": "Starfield.esm",
+      "formKey": "0D4DFC:Starfield.esm",
+      "editorId": "sActivate",
+      "spriggitFile": "GameSettings/sActivate - 0D4DFC_Starfield.esm.yaml",
+      "coverageHints": [
+        "Data"
+      ],
+      "notes": "Selected by feature scan for GMST; score 1.9."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "GMST",
+      "plugin": "Starfield.esm",
+      "formKey": "0D4DEB:Starfield.esm",
+      "editorId": "sActivateCreatureCalmed",
+      "spriggitFile": "GameSettings/sActivateCreatureCalmed - 0D4DEB_Starfield.esm.yaml",
+      "coverageHints": [
+        "Data"
+      ],
+      "notes": "Selected by feature scan for GMST; score 1.9."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "GLOB",
+      "plugin": "Starfield.esm",
+      "formKey": "20C81D:Starfield.esm",
+      "editorId": "_UpdateShatteredSpaceMaster",
+      "spriggitFile": "Globals/_UpdateShatteredSpaceMaster - 20C81D_Starfield.esm.yaml",
+      "coverageHints": [
+        "Data"
+      ],
+      "notes": "Selected by feature scan for GLOB; score 1.2."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "GLOB",
+      "plugin": "Starfield.esm",
+      "formKey": "2B7FBD:Starfield.esm",
+      "editorId": "2B7FBD_Starfield.esm",
+      "spriggitFile": "Globals/2B7FBD_Starfield.esm.yaml",
+      "coverageHints": [
+        "Data"
+      ],
+      "notes": "Selected by feature scan for GLOB; score 1.2."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "GLOB",
+      "plugin": "Starfield.esm",
+      "formKey": "2B91E0:Starfield.esm",
+      "editorId": "2B91E0_Starfield.esm",
+      "spriggitFile": "Globals/2B91E0_Starfield.esm.yaml",
+      "coverageHints": [
+        "Data"
+      ],
+      "notes": "Selected by feature scan for GLOB; score 1.2."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "KYWD",
+      "plugin": "Starfield.esm",
+      "formKey": "200AEB:Starfield.esm",
+      "editorId": "CCT_Enviro_AmbusherSurface",
+      "spriggitFile": "Keywords/CCT_Enviro_AmbusherSurface - 200AEB_Starfield.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Type",
+        "Color",
+        "AttractionRule"
+      ],
+      "notes": "Selected by feature scan for KYWD; score 4.9."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "KYWD",
+      "plugin": "Starfield.esm",
+      "formKey": "145388:Starfield.esm",
+      "editorId": "CCT_Enviro_AmbusherUnderground",
+      "spriggitFile": "Keywords/CCT_Enviro_AmbusherUnderground - 145388_Starfield.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Type",
+        "Color",
+        "AttractionRule"
+      ],
+      "notes": "Selected by feature scan for KYWD; score 4.9."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "KYWD",
+      "plugin": "Starfield.esm",
+      "formKey": "200ADF:Starfield.esm",
+      "editorId": "CCT_Enviro_Basking",
+      "spriggitFile": "Keywords/CCT_Enviro_Basking - 200ADF_Starfield.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Type",
+        "Color",
+        "AttractionRule"
+      ],
+      "notes": "Selected by feature scan for KYWD; score 4.9."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "KYWD",
+      "plugin": "Starfield.esm",
+      "formKey": "1C84DD:Starfield.esm",
+      "editorId": "WeaponTypeDisplay_ElectromagneticRifle",
+      "spriggitFile": "Keywords/WeaponTypeDisplay_ElectromagneticRifle - 1C84DD_Starfield.esm.yaml",
+      "coverageHints": [
+        "Name",
+        "Type",
+        "Color"
+      ],
+      "notes": "Selected by feature scan for KYWD; score 4.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "KYWD",
+      "plugin": "Starfield.esm",
+      "formKey": "200AE9:Starfield.esm",
+      "editorId": "CCT_Enviro_Spook",
+      "spriggitFile": "Keywords/CCT_Enviro_Spook - 200AE9_Starfield.esm.yaml",
+      "coverageHints": [
+        "Type",
+        "Color",
+        "AttractionRule"
+      ],
+      "notes": "Selected by feature scan for KYWD; score 3.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "MGEF",
+      "plugin": "Starfield.esm",
+      "formKey": "2C5392:Starfield.esm",
+      "editorId": "ArtifactPowerLifeForced_Effect",
+      "spriggitFile": "MagicEffects/ArtifactPowerLifeForced_Effect - 2C5392_Starfield.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "CastType",
+        "TargetType",
+        "ActorValue2",
+        "OnHit",
+        "Release",
+        "Charge"
+      ],
+      "notes": "Selected by feature scan for MGEF; score 10.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "MGEF",
+      "plugin": "Starfield.esm",
+      "formKey": "2C7789:Starfield.esm",
+      "editorId": "ArtifactPowerParticleBeam_Effect",
+      "spriggitFile": "MagicEffects/ArtifactPowerParticleBeam_Effect - 2C7789_Starfield.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "CastType",
+        "TargetType",
+        "ResistValue",
+        "OnHit",
+        "Release",
+        "Charge"
+      ],
+      "notes": "Selected by feature scan for MGEF; score 10.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "MGEF",
+      "plugin": "Starfield.esm",
+      "formKey": "23AF01:Starfield.esm",
+      "editorId": "ArtifactPowerSunlessSpace_AIUse",
+      "spriggitFile": "MagicEffects/ArtifactPowerSunlessSpace_AIUse - 23AF01_Starfield.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "CastType",
+        "TargetType",
+        "ActorValue2",
+        "ResistValue",
+        "Release",
+        "Charge"
+      ],
+      "notes": "Selected by feature scan for MGEF; score 10.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "MGEF",
+      "plugin": "Starfield.esm",
+      "formKey": "22AC10:Starfield.esm",
+      "editorId": "ArtifactPowerSolarFlare_AIUse",
+      "spriggitFile": "MagicEffects/ArtifactPowerSolarFlare_AIUse - 22AC10_Starfield.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "CastType",
+        "TargetType",
+        "ActorValue2",
+        "Release",
+        "Charge"
+      ],
+      "notes": "Selected by feature scan for MGEF; score 9.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "MGEF",
+      "plugin": "Starfield.esm",
+      "formKey": "245B6F:Starfield.esm",
+      "editorId": "ENV_DMG_Airborne_Hazard_Damage_Effect",
+      "spriggitFile": "MagicEffects/ENV_DMG_Airborne_Hazard_Damage_Effect - 245B6F_Starfield.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "CastType",
+        "TargetType",
+        "ActorValue2",
+        "ResistValue",
+        "OnHit"
+      ],
+      "notes": "Selected by feature scan for MGEF; score 9.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "MISC",
+      "plugin": "Starfield.esm",
+      "formKey": "005591:Starfield.esm",
+      "editorId": "InorgCommonWater",
+      "spriggitFile": "MiscItems/InorgCommonWater - 005591_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Value",
+        "Weight",
+        "Keywords",
+        "CraftingSound",
+        "PickupSound",
+        "DropdownSound"
+      ],
+      "notes": "Selected by feature scan for MISC; score 10.4."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "MISC",
+      "plugin": "Starfield.esm",
+      "formKey": "00558C:Starfield.esm",
+      "editorId": "InorgExoticPlutonium",
+      "spriggitFile": "MiscItems/InorgExoticPlutonium - 00558C_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Value",
+        "Weight",
+        "Keywords",
+        "CraftingSound",
+        "PickupSound",
+        "DropdownSound"
+      ],
+      "notes": "Selected by feature scan for MISC; score 10.4."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "MISC",
+      "plugin": "Starfield.esm",
+      "formKey": "005DED:Starfield.esm",
+      "editorId": "InorgUniqueTasine",
+      "spriggitFile": "MiscItems/InorgUniqueTasine - 005DED_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Value",
+        "Weight",
+        "Keywords",
+        "CraftingSound",
+        "PickupSound",
+        "DropdownSound"
+      ],
+      "notes": "Selected by feature scan for MISC; score 10.4."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "MISC",
+      "plugin": "Starfield.esm",
+      "formKey": "302791:Starfield.esm",
+      "editorId": "FFCydoniaZ07_HeartOfMarsTitanium",
+      "spriggitFile": "MiscItems/FFCydoniaZ07_HeartOfMarsTitanium - 302791_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Value",
+        "Weight",
+        "CraftingSound",
+        "PickupSound",
+        "DropdownSound"
+      ],
+      "notes": "Selected by feature scan for MISC; score 8.8."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "MISC",
+      "plugin": "Starfield.esm",
+      "formKey": "10A797:Starfield.esm",
+      "editorId": "ExoticPlayingCard_Diamond_Q",
+      "spriggitFile": "MiscItems/ExoticPlayingCard_Diamond_Q - 10A797_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Value",
+        "Weight",
+        "Keywords",
+        "PickupSound",
+        "DropdownSound"
+      ],
+      "notes": "Selected by feature scan for MISC; score 8.7."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "NPC_",
+      "plugin": "Starfield.esm",
+      "formKey": "01539F:Starfield.esm",
+      "editorId": "CF_AludraTahan",
+      "spriggitFile": "Npcs/CF_AludraTahan - 01539F_Starfield.esm.yaml",
+      "coverageHints": [
+        "Aggression",
+        "Confidence",
+        "Race",
+        "Voice",
+        "Keywords",
+        "CombatStyle",
+        "DefaultPackageList",
+        "CrimeFaction"
+      ],
+      "notes": "Selected by feature scan for NPC_; score 11.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "NPC_",
+      "plugin": "Starfield.esm",
+      "formKey": "0A0273:Starfield.esm",
+      "editorId": "CF_CESandin",
+      "spriggitFile": "Npcs/CF_CESandin - 0A0273_Starfield.esm.yaml",
+      "coverageHints": [
+        "Aggression",
+        "Confidence",
+        "Race",
+        "Voice",
+        "Keywords",
+        "CombatStyle",
+        "DefaultPackageList",
+        "CrimeFaction"
+      ],
+      "notes": "Selected by feature scan for NPC_; score 11.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "NPC_",
+      "plugin": "Starfield.esm",
+      "formKey": "09C32F:Starfield.esm",
+      "editorId": "CF_CPMurata",
+      "spriggitFile": "Npcs/CF_CPMurata - 09C32F_Starfield.esm.yaml",
+      "coverageHints": [
+        "Aggression",
+        "Confidence",
+        "Race",
+        "Voice",
+        "Keywords",
+        "CombatStyle",
+        "DefaultPackageList",
+        "CrimeFaction"
+      ],
+      "notes": "Selected by feature scan for NPC_; score 11.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "NPC_",
+      "plugin": "Starfield.esm",
+      "formKey": "0B6667:Starfield.esm",
+      "editorId": "BE_FAB12_LvlCitizenChunks",
+      "spriggitFile": "Npcs/BE_FAB12_LvlCitizenChunks - 0B6667_Starfield.esm.yaml",
+      "coverageHints": [
+        "Aggression",
+        "Confidence",
+        "Race",
+        "Voice",
+        "Keywords",
+        "CombatStyle",
+        "DefaultPackageList"
+      ],
+      "notes": "Selected by feature scan for NPC_; score 10.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "NPC_",
+      "plugin": "Starfield.esm",
+      "formKey": "17C10E:Starfield.esm",
+      "editorId": "BQ01_Actor_EllieYankton",
+      "spriggitFile": "Npcs/BQ01_Actor_EllieYankton - 17C10E_Starfield.esm.yaml",
+      "coverageHints": [
+        "Confidence",
+        "Race",
+        "Voice",
+        "Keywords",
+        "CombatStyle",
+        "DefaultPackageList",
+        "CrimeFaction"
+      ],
+      "notes": "Selected by feature scan for NPC_; score 10.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "PERK",
+      "plugin": "Starfield.esm",
+      "formKey": "08C3EE:Starfield.esm",
+      "editorId": "Skill_BoostAssaultTraining",
+      "spriggitFile": "Perks/Skill_BoostAssaultTraining - 08C3EE_Starfield.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "Ranks",
+        "Training"
+      ],
+      "notes": "Selected by feature scan for PERK; score 6.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "PERK",
+      "plugin": "Starfield.esm",
+      "formKey": "146C2C:Starfield.esm",
+      "editorId": "Skill_BoostPackTraining",
+      "spriggitFile": "Perks/Skill_BoostPackTraining - 146C2C_Starfield.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "Ranks",
+        "Training"
+      ],
+      "notes": "Selected by feature scan for PERK; score 6.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "PERK",
+      "plugin": "Starfield.esm",
+      "formKey": "27CBBE:Starfield.esm",
+      "editorId": "TrainingTechnologyExpert",
+      "spriggitFile": "Perks/TrainingTechnologyExpert - 27CBBE_Starfield.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "Ranks",
+        "Training"
+      ],
+      "notes": "Selected by feature scan for PERK; score 6.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "PERK",
+      "plugin": "Starfield.esm",
+      "formKey": "227FD5:Starfield.esm",
+      "editorId": "TRAIT_FreestarCollectiveSettler",
+      "spriggitFile": "Perks/TRAIT_FreestarCollectiveSettler - 227FD5_Starfield.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "Ranks",
+        "Restriction"
+      ],
+      "notes": "Selected by feature scan for PERK; score 5.5."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "PERK",
+      "plugin": "Starfield.esm",
+      "formKey": "22EC76:Starfield.esm",
+      "editorId": "BackgroundBigGameHunter",
+      "spriggitFile": "Perks/BackgroundBigGameHunter - 22EC76_Starfield.esm.yaml",
+      "coverageHints": [
+        "Flags",
+        "Ranks",
+        "BackgroundSkills"
+      ],
+      "notes": "Selected by feature scan for PERK; score 5.4."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "STAT",
+      "plugin": "Starfield.esm",
+      "formKey": "0514C6:Starfield.esm",
+      "editorId": "OpiExtPodAirlock01",
+      "spriggitFile": "Statics/OpiExtPodAirlock01 - 0514C6_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "MaxAngle",
+        "Keywords",
+        "REFL"
+      ],
+      "notes": "Selected by feature scan for STAT; score 8.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "STAT",
+      "plugin": "Starfield.esm",
+      "formKey": "036311:Starfield.esm",
+      "editorId": "OpmIntPodSmSide01",
+      "spriggitFile": "Statics/OpmIntPodSmSide01 - 036311_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "MaxAngle",
+        "Keywords",
+        "Data"
+      ],
+      "notes": "Selected by feature scan for STAT; score 8.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "STAT",
+      "plugin": "Starfield.esm",
+      "formKey": "042AE4:Starfield.esm",
+      "editorId": "OpmIntPodSmSideWin01",
+      "spriggitFile": "Statics/OpmIntPodSmSideWin01 - 042AE4_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "MaxAngle",
+        "Keywords",
+        "Data"
+      ],
+      "notes": "Selected by feature scan for STAT; score 8.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "STAT",
+      "plugin": "Starfield.esm",
+      "formKey": "03A1B4:Starfield.esm",
+      "editorId": "CatIndWalkSm2WayB01",
+      "spriggitFile": "Statics/CatIndWalkSm2WayB01 - 03A1B4_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "MaxAngle",
+        "Keywords"
+      ],
+      "notes": "Selected by feature scan for STAT; score 7.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "STAT",
+      "plugin": "Starfield.esm",
+      "formKey": "04F391:Starfield.esm",
+      "editorId": "OpiExtPodAirlockStairs01",
+      "spriggitFile": "Statics/OpiExtPodAirlockStairs01 - 04F391_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "MaxAngle",
+        "REFL"
+      ],
+      "notes": "Selected by feature scan for STAT; score 7.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "TERM",
+      "plugin": "Starfield.esm",
+      "formKey": "2D1D29:Starfield.esm",
+      "editorId": "AkilaLife04_Computer",
+      "spriggitFile": "Terminals/AkilaLife04_Computer - 2D1D29_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Menu",
+        "FurnitureTemplate",
+        "MarkerParameters",
+        "Keywords",
+        "MarkerModel"
+      ],
+      "notes": "Selected by feature scan for TERM; score 10.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "TERM",
+      "plugin": "Starfield.esm",
+      "formKey": "2D2617:Starfield.esm",
+      "editorId": "AkilaLife08_FarmingComputer",
+      "spriggitFile": "Terminals/AkilaLife08_FarmingComputer - 2D2617_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Menu",
+        "FurnitureTemplate",
+        "MarkerParameters",
+        "Keywords",
+        "MarkerModel"
+      ],
+      "notes": "Selected by feature scan for TERM; score 10.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "TERM",
+      "plugin": "Starfield.esm",
+      "formKey": "386CD0:Starfield.esm",
+      "editorId": "BE_ShipComputer_BarStanding",
+      "spriggitFile": "Terminals/BE_ShipComputer_BarStanding - 386CD0_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Menu",
+        "FurnitureTemplate",
+        "MarkerParameters",
+        "Keywords",
+        "MarkerModel"
+      ],
+      "notes": "Selected by feature scan for TERM; score 10.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "TERM",
+      "plugin": "Starfield.esm",
+      "formKey": "261A51:Starfield.esm",
+      "editorId": "City_NA_Botany02Terminal",
+      "spriggitFile": "Terminals/City_NA_Botany02Terminal - 261A51_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "Menu",
+        "MarkerParameters",
+        "Keywords",
+        "MarkerModel"
+      ],
+      "notes": "Selected by feature scan for TERM; score 9.0."
+    },
+    {
+      "game": "Starfield",
+      "recordType": "TERM",
+      "plugin": "Starfield.esm",
+      "formKey": "19F266:Starfield.esm",
+      "editorId": "TerminalSittingActivatorA01_Desk",
+      "spriggitFile": "Terminals/TerminalSittingActivatorA01_Desk - 19F266_Starfield.esm.yaml",
+      "coverageHints": [
+        "Model",
+        "File",
+        "FurnitureTemplate",
+        "MarkerParameters",
+        "Keywords",
+        "MarkerModel"
+      ],
+      "notes": "Selected by feature scan for TERM; score 9.0."
+    }
+  ]
+}

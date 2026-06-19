@@ -1,0 +1,1217 @@
+[
+  {
+    "Sample": {
+      "Game": "Fallout4",
+      "RecordType": "KYWD",
+      "Plugin": "Fallout4.esm",
+      "FormKey": "119B9B:Fallout4.esm",
+      "EditorId": "02Metal03Floor",
+      "SpriggitFile": "Keywords/02Metal03Floor - 119B9B_Fallout4.esm.yaml",
+      "CoverageHints": [
+        "Name",
+        "Type",
+        "Color"
+      ],
+      "Notes": "Selected by feature scan for KYWD; score 4.1."
+    },
+    "Comparisons": [
+      {
+        "FieldPath": "Color",
+        "Category": "ValueMismatch",
+        "SpriggitValue": "#00FFFFFF",
+        "CreationsForgeValue": "Color [A=0, R=255, G=255, B=255]",
+        "NormalizedSpriggitValue": "#00FFFFFF",
+        "NormalizedCreationsForgeValue": "Color [A=0, R=255, G=255, B=255]",
+        "Notes": null
+      },
+      {
+        "FieldPath": "EditorID",
+        "Category": "Match",
+        "SpriggitValue": "02Metal03Floor",
+        "CreationsForgeValue": "02Metal03Floor",
+        "NormalizedSpriggitValue": "02Metal03Floor",
+        "NormalizedCreationsForgeValue": "02Metal03Floor",
+        "Notes": null
+      },
+      {
+        "FieldPath": "FormKey",
+        "Category": "Match",
+        "SpriggitValue": "119B9B:Fallout4.esm",
+        "CreationsForgeValue": "119B9B:Fallout4.esm",
+        "NormalizedSpriggitValue": "119B9B:FALLOUT4.ESM",
+        "NormalizedCreationsForgeValue": "119B9B:FALLOUT4.ESM",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Name.Count",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "11",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name.Count\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name.TargetLanguage",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name.TargetLanguage\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[0].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Chinese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[0].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[0].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u5730\u9762",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[0].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[10].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Russian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[10].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[10].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u041F\u043E\u043B\u044B",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[10].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[1].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "German",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[1].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[1].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "B\u00F6den",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[1].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[2].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[2].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[2].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Floors",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[2].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[3].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Spanish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[3].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[3].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Suelos",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[3].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[4].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Spanish_Mexico",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[4].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[4].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Suelos",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[4].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[5].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "French",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[5].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[5].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Sols",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[5].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[6].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Italian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[6].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[6].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Pavimenti",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[6].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[7].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Japanese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[7].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[7].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u5E8A",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[7].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[8].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Polish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[8].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[8].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Pod\u0142ogi",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[8].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[9].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Portuguese_Brazil",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[9].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[9].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Pisos",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[9].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Type",
+        "Category": "Match",
+        "SpriggitValue": "RecipeFilter",
+        "CreationsForgeValue": "RecipeFilter",
+        "NormalizedSpriggitValue": "RecipeFilter",
+        "NormalizedCreationsForgeValue": "RecipeFilter",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Version2",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "2",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Version2\u0027 was not populated."
+      },
+      {
+        "FieldPath": "VersionControl",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "78993",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027VersionControl\u0027 was not populated."
+      },
+      {
+        "FieldPath": "FormVersion",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "131",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "MajorRecordFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "Name",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "Floors",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "ScriptingAdapters.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      }
+    ],
+    "Errors": [],
+    "HasFailingFindings": true
+  },
+  {
+    "Sample": {
+      "Game": "Fallout4",
+      "RecordType": "KYWD",
+      "Plugin": "Fallout4.esm",
+      "FormKey": "119B9C:Fallout4.esm",
+      "EditorId": "02Metal03Misc",
+      "SpriggitFile": "Keywords/02Metal03Misc - 119B9C_Fallout4.esm.yaml",
+      "CoverageHints": [
+        "Name",
+        "Type",
+        "Color"
+      ],
+      "Notes": "Selected by feature scan for KYWD; score 4.1."
+    },
+    "Comparisons": [
+      {
+        "FieldPath": "Color",
+        "Category": "ValueMismatch",
+        "SpriggitValue": "#00FFFFFF",
+        "CreationsForgeValue": "Color [A=0, R=255, G=255, B=255]",
+        "NormalizedSpriggitValue": "#00FFFFFF",
+        "NormalizedCreationsForgeValue": "Color [A=0, R=255, G=255, B=255]",
+        "Notes": null
+      },
+      {
+        "FieldPath": "EditorID",
+        "Category": "Match",
+        "SpriggitValue": "02Metal03Misc",
+        "CreationsForgeValue": "02Metal03Misc",
+        "NormalizedSpriggitValue": "02Metal03Misc",
+        "NormalizedCreationsForgeValue": "02Metal03Misc",
+        "Notes": null
+      },
+      {
+        "FieldPath": "FormKey",
+        "Category": "Match",
+        "SpriggitValue": "119B9C:Fallout4.esm",
+        "CreationsForgeValue": "119B9C:Fallout4.esm",
+        "NormalizedSpriggitValue": "119B9C:FALLOUT4.ESM",
+        "NormalizedCreationsForgeValue": "119B9C:FALLOUT4.ESM",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Name.Count",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "11",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name.Count\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name.TargetLanguage",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name.TargetLanguage\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[0].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Chinese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[0].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[0].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u5176\u4ED6",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[0].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[10].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Russian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[10].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[10].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u0420\u0430\u0437\u043D\u043E\u0435",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[10].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[1].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "German",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[1].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[1].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Sonstiges",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[1].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[2].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[2].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[2].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Miscellaneous",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[2].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[3].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Spanish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[3].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[3].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Varios",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[3].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[4].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Spanish_Mexico",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[4].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[4].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Varios",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[4].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[5].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "French",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[5].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[5].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Divers",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[5].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[6].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Italian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[6].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[6].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Varie",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[6].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[7].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Japanese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[7].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[7].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u305D\u306E\u4ED6",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[7].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[8].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Polish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[8].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[8].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "R\u00F3\u017Cne",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[8].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[9].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Portuguese_Brazil",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[9].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[9].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Miscel\u00E2nea",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[9].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Type",
+        "Category": "Match",
+        "SpriggitValue": "RecipeFilter",
+        "CreationsForgeValue": "RecipeFilter",
+        "NormalizedSpriggitValue": "RecipeFilter",
+        "NormalizedCreationsForgeValue": "RecipeFilter",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Version2",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "2",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Version2\u0027 was not populated."
+      },
+      {
+        "FieldPath": "VersionControl",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "78993",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027VersionControl\u0027 was not populated."
+      },
+      {
+        "FieldPath": "FormVersion",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "131",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "MajorRecordFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "Name",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "Miscellaneous",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "ScriptingAdapters.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      }
+    ],
+    "Errors": [],
+    "HasFailingFindings": true
+  },
+  {
+    "Sample": {
+      "Game": "Fallout4",
+      "RecordType": "KYWD",
+      "Plugin": "Fallout4.esm",
+      "FormKey": "119B9D:Fallout4.esm",
+      "EditorId": "02Metal03Prefabs",
+      "SpriggitFile": "Keywords/02Metal03Prefabs - 119B9D_Fallout4.esm.yaml",
+      "CoverageHints": [
+        "Name",
+        "Type",
+        "Color"
+      ],
+      "Notes": "Selected by feature scan for KYWD; score 4.1."
+    },
+    "Comparisons": [
+      {
+        "FieldPath": "Color",
+        "Category": "ValueMismatch",
+        "SpriggitValue": "#00FFFFFF",
+        "CreationsForgeValue": "Color [A=0, R=255, G=255, B=255]",
+        "NormalizedSpriggitValue": "#00FFFFFF",
+        "NormalizedCreationsForgeValue": "Color [A=0, R=255, G=255, B=255]",
+        "Notes": null
+      },
+      {
+        "FieldPath": "EditorID",
+        "Category": "Match",
+        "SpriggitValue": "02Metal03Prefabs",
+        "CreationsForgeValue": "02Metal03Prefabs",
+        "NormalizedSpriggitValue": "02Metal03Prefabs",
+        "NormalizedCreationsForgeValue": "02Metal03Prefabs",
+        "Notes": null
+      },
+      {
+        "FieldPath": "FormKey",
+        "Category": "Match",
+        "SpriggitValue": "119B9D:Fallout4.esm",
+        "CreationsForgeValue": "119B9D:Fallout4.esm",
+        "NormalizedSpriggitValue": "119B9D:FALLOUT4.ESM",
+        "NormalizedCreationsForgeValue": "119B9D:FALLOUT4.ESM",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Name.Count",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "11",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name.Count\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name.TargetLanguage",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name.TargetLanguage\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[0].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Chinese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[0].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[0].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u5176\u4ED6",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[0].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[10].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Russian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[10].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[10].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u0420\u0430\u0437\u043D\u043E\u0435",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[10].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[1].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "German",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[1].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[1].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Sonstiges",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[1].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[2].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[2].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[2].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Miscellaneous",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[2].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[3].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Spanish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[3].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[3].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Varios",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[3].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[4].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Spanish_Mexico",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[4].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[4].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Varios",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[4].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[5].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "French",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[5].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[5].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Divers",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[5].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[6].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Italian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[6].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[6].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Varie",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[6].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[7].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Japanese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[7].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[7].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u305D\u306E\u4ED6",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[7].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[8].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Polish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[8].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[8].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "R\u00F3\u017Cne",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[8].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[9].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Portuguese_Brazil",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[9].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[9].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Miscel\u00E2nea",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[9].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Type",
+        "Category": "Match",
+        "SpriggitValue": "RecipeFilter",
+        "CreationsForgeValue": "RecipeFilter",
+        "NormalizedSpriggitValue": "RecipeFilter",
+        "NormalizedCreationsForgeValue": "RecipeFilter",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Version2",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "2",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Version2\u0027 was not populated."
+      },
+      {
+        "FieldPath": "VersionControl",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "78993",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027VersionControl\u0027 was not populated."
+      },
+      {
+        "FieldPath": "FormVersion",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "131",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "MajorRecordFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "Name",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "Miscellaneous",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "ScriptingAdapters.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      }
+    ],
+    "Errors": [],
+    "HasFailingFindings": true
+  },
+  {
+    "Sample": {
+      "Game": "Fallout4",
+      "RecordType": "KYWD",
+      "Plugin": "Fallout4.esm",
+      "FormKey": "0CF43E:Fallout4.esm",
+      "EditorId": "AO_BoS_ScribeCollectData",
+      "SpriggitFile": "Keywords/AO_BoS_ScribeCollectData - 0CF43E_Fallout4.esm.yaml",
+      "CoverageHints": [
+        "Type",
+        "Color",
+        "AttractionRule"
+      ],
+      "Notes": "Selected by feature scan for KYWD; score 3.0."
+    },
+    "Comparisons": [
+      {
+        "FieldPath": "AttractionRule",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "22CD85:Fallout4.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027AttractionRule\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Color",
+        "Category": "ValueMismatch",
+        "SpriggitValue": "#00FFFFFF",
+        "CreationsForgeValue": "Color [A=0, R=255, G=255, B=255]",
+        "NormalizedSpriggitValue": "#00FFFFFF",
+        "NormalizedCreationsForgeValue": "Color [A=0, R=255, G=255, B=255]",
+        "Notes": null
+      },
+      {
+        "FieldPath": "EditorID",
+        "Category": "Match",
+        "SpriggitValue": "AO_BoS_ScribeCollectData",
+        "CreationsForgeValue": "AO_BoS_ScribeCollectData",
+        "NormalizedSpriggitValue": "AO_BoS_ScribeCollectData",
+        "NormalizedCreationsForgeValue": "AO_BoS_ScribeCollectData",
+        "Notes": null
+      },
+      {
+        "FieldPath": "FormKey",
+        "Category": "Match",
+        "SpriggitValue": "0CF43E:Fallout4.esm",
+        "CreationsForgeValue": "0CF43E:Fallout4.esm",
+        "NormalizedSpriggitValue": "0CF43E:FALLOUT4.ESM",
+        "NormalizedCreationsForgeValue": "0CF43E:FALLOUT4.ESM",
+        "Notes": null
+      },
+      {
+        "FieldPath": "FormVersion",
+        "Category": "Match",
+        "SpriggitValue": "128",
+        "CreationsForgeValue": "128",
+        "NormalizedSpriggitValue": "128",
+        "NormalizedCreationsForgeValue": "128",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Notes",
+        "Category": "Match",
+        "SpriggitValue": "Keyword for BoS Scribes to use the CollectData furniture",
+        "CreationsForgeValue": "Keyword for BoS Scribes to use the CollectData furniture",
+        "NormalizedSpriggitValue": "Keyword for BoS Scribes to use the CollectData furniture",
+        "NormalizedCreationsForgeValue": "Keyword for BoS Scribes to use the CollectData furniture",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Type",
+        "Category": "Match",
+        "SpriggitValue": "AttractionType",
+        "CreationsForgeValue": "AttractionType",
+        "NormalizedSpriggitValue": "AttractionType",
+        "NormalizedCreationsForgeValue": "AttractionType",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Version2",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "2",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Version2\u0027 was not populated."
+      },
+      {
+        "FieldPath": "VersionControl",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "8855240",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027VersionControl\u0027 was not populated."
+      },
+      {
+        "FieldPath": "AttractionRuleFormKey",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "22CD85:Fallout4.esm",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "MajorRecordFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "ScriptingAdapters.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      }
+    ],
+    "Errors": [],
+    "HasFailingFindings": true
+  },
+  {
+    "Sample": {
+      "Game": "Fallout4",
+      "RecordType": "KYWD",
+      "Plugin": "Fallout4.esm",
+      "FormKey": "093BBE:Fallout4.esm",
+      "EditorId": "if_Armor_Combat_Freefall_Restricted",
+      "SpriggitFile": "Keywords/if_Armor_Combat_Freefall_Restricted - 093BBE_Fallout4.esm.yaml",
+      "CoverageHints": [
+        "Type",
+        "Color"
+      ],
+      "Notes": "Selected by feature scan for KYWD; score 2.2."
+    },
+    "Comparisons": [
+      {
+        "FieldPath": "Color",
+        "Category": "ValueMismatch",
+        "SpriggitValue": "#00FFFFFF",
+        "CreationsForgeValue": "Color [A=0, R=255, G=255, B=255]",
+        "NormalizedSpriggitValue": "#00FFFFFF",
+        "NormalizedCreationsForgeValue": "Color [A=0, R=255, G=255, B=255]",
+        "Notes": null
+      },
+      {
+        "FieldPath": "EditorID",
+        "Category": "Match",
+        "SpriggitValue": "if_Armor_Combat_Freefall_Restricted",
+        "CreationsForgeValue": "if_Armor_Combat_Freefall_Restricted",
+        "NormalizedSpriggitValue": "if_Armor_Combat_Freefall_Restricted",
+        "NormalizedCreationsForgeValue": "if_Armor_Combat_Freefall_Restricted",
+        "Notes": null
+      },
+      {
+        "FieldPath": "FormKey",
+        "Category": "Match",
+        "SpriggitValue": "093BBE:Fallout4.esm",
+        "CreationsForgeValue": "093BBE:Fallout4.esm",
+        "NormalizedSpriggitValue": "093BBE:FALLOUT4.ESM",
+        "NormalizedCreationsForgeValue": "093BBE:FALLOUT4.ESM",
+        "Notes": null
+      },
+      {
+        "FieldPath": "FormVersion",
+        "Category": "Match",
+        "SpriggitValue": "130",
+        "CreationsForgeValue": "130",
+        "NormalizedSpriggitValue": "130",
+        "NormalizedCreationsForgeValue": "130",
+        "Notes": null
+      },
+      {
+        "FieldPath": "MajorRecordFlagsRaw",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "32768",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027MajorRecordFlagsRaw\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Type",
+        "Category": "Match",
+        "SpriggitValue": "InstantiationFilter",
+        "CreationsForgeValue": "InstantiationFilter",
+        "NormalizedSpriggitValue": "InstantiationFilter",
+        "NormalizedCreationsForgeValue": "InstantiationFilter",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Version2",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "2",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Version2\u0027 was not populated."
+      },
+      {
+        "FieldPath": "VersionControl",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "4923101",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027VersionControl\u0027 was not populated."
+      },
+      {
+        "FieldPath": "MajorRecordFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "32768",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "ScriptingAdapters.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      }
+    ],
+    "Errors": [],
+    "HasFailingFindings": true
+  }
+]

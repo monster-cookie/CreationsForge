@@ -47,6 +47,9 @@ currently create/update the selected
   reader facade, and module types.
 - `CreationsForge.Migrations` owns DbUp migration execution and embedded SQL scripts.
 - `CreationsForge.UnitTests` owns xUnit tests for parser, dispatch, and shared service behavior.
+- `CreationsForge.DataValidationTests` owns manual xUnit/Shouldly Spriggit data validation. It reads local Spriggit
+  extraction roots, compares selected YAML samples against DTOs produced by the existing game record readers, and
+  writes Markdown/JSON reports for engineering review.
 
 ## Runtime Flow
 
@@ -113,6 +116,9 @@ types.
 - Provides an experimental asset preview pane in the Avalonia UI. Core resolves persisted model-path candidates through
   UI-neutral DTOs and services, while the presentation project owns Silk.NET-backed OpenGL rendering and external file
   launching.
+- Provides a manual Spriggit data validation project with project-local sample and approved-difference JSON
+  configuration. The validation project is not a CI gate and does not change production import, persistence, or UI
+  workflows.
 
 ## Current Limitations
 

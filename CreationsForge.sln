@@ -22,6 +22,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationsForge.Bethesda.Ass
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationsForge.PresentationTests", "CreationsForge.PresentationTests\CreationsForge.PresentationTests.csproj", "{7D535696-4A18-43A5-BE80-4A1720B54CE9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationsForge.DataValidationTests", "CreationsForge.DataValidationTests\CreationsForge.DataValidationTests.csproj", "{BACB876A-4B00-4714-BCF2-E0EB07BA65C2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -164,6 +166,18 @@ Global
 		{7D535696-4A18-43A5-BE80-4A1720B54CE9}.Release|x64.Build.0 = Release|Any CPU
 		{7D535696-4A18-43A5-BE80-4A1720B54CE9}.Release|x86.ActiveCfg = Release|Any CPU
 		{7D535696-4A18-43A5-BE80-4A1720B54CE9}.Release|x86.Build.0 = Release|Any CPU
+		{BACB876A-4B00-4714-BCF2-E0EB07BA65C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BACB876A-4B00-4714-BCF2-E0EB07BA65C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BACB876A-4B00-4714-BCF2-E0EB07BA65C2}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BACB876A-4B00-4714-BCF2-E0EB07BA65C2}.Debug|x64.Build.0 = Debug|Any CPU
+		{BACB876A-4B00-4714-BCF2-E0EB07BA65C2}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BACB876A-4B00-4714-BCF2-E0EB07BA65C2}.Debug|x86.Build.0 = Debug|Any CPU
+		{BACB876A-4B00-4714-BCF2-E0EB07BA65C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BACB876A-4B00-4714-BCF2-E0EB07BA65C2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BACB876A-4B00-4714-BCF2-E0EB07BA65C2}.Release|x64.ActiveCfg = Release|Any CPU
+		{BACB876A-4B00-4714-BCF2-E0EB07BA65C2}.Release|x64.Build.0 = Release|Any CPU
+		{BACB876A-4B00-4714-BCF2-E0EB07BA65C2}.Release|x86.ActiveCfg = Release|Any CPU
+		{BACB876A-4B00-4714-BCF2-E0EB07BA65C2}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

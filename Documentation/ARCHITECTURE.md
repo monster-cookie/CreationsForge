@@ -49,6 +49,11 @@ adapter projects rather than persisted game metadata paths.
 
 `CreationsForge.UnitTests` tests non-database logic only.
 
+`CreationsForge.DataValidationTests` is a manual validation test project. It references Core and the game adapter
+projects so it can call the existing record readers and compare their DTOs against selected Spriggit YAML samples.
+Its JSON configuration lives inside the test project under `Configuration`. It does not own production services,
+database schema, or UI behavior.
+
 ## Dependency Direction
 
 - CreationsForge depends on Bootstrap and Core.

@@ -1,5 +1,43 @@
 # Design Decisions
 
+## 2026-06-19 - Add Manual Spriggit DTO Validation Tests
+
+Status: Accepted
+
+Context: Creations Forge maps Bethesda records through Mutagen into project DTOs, repositories, and comparison
+surfaces. Existing unit and presentation tests cover focused behavior, but the project also needs a manual engineering
+tool that can compare representative Spriggit YAML extraction data against current DTO output across supported games
+and record types.
+
+Decision: Add `CreationsForge.DataValidationTests` as a manual xUnit/Shouldly test project rather than a console app.
+The project stores validation JSON under `CreationsForge.DataValidationTests/Configuration`, reads Spriggit extraction
+roots from environment variables with a read-only `.env` fallback, calls existing game record readers, and writes
+Markdown/JSON reports under `TestResults/SpriggitValidation/<timestamp>`.
+
+Rationale: Keeping the harness as a test project gives it Shouldly assertions, test filtering, and normal .NET test
+runner ergonomics while avoiding a second command-line app surface. Reusing existing game record readers keeps Mutagen
+mapping behavior in the game adapter projects and avoids a parallel Bethesda parser.
+
+Alternatives considered:
+
+- Add a standalone console validation harness.
+- Add validation commands to `CreationsForge.Console`.
+- Store validation sample configuration under `Documentation`.
+
+Consequences:
+
+- Manual validation can fail independently of normal unit and presentation test runs.
+- Sample and approved-difference configuration stays close to the validation code that consumes it.
+- Spriggit extraction files remain external local inputs and are not copied into the repository.
+- Database persistence and Avalonia comparison-row validation remain separate future validation slices.
+
+Related files:
+
+- `CreationsForge.DataValidationTests/CreationsForge.DataValidationTests.csproj`
+- `CreationsForge.DataValidationTests/Configuration/SpriggitValidationSamples.json`
+- `CreationsForge.DataValidationTests/Configuration/SpriggitApprovedDifferences.json`
+- `Documentation/Instructions/SpriggitManualValidation.md`
+
 ## 2026-06-12 - Harden Local Asset And Database Trust Boundaries
 
 Status: Accepted

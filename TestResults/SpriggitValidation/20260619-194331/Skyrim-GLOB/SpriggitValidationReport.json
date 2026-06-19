@@ -1,0 +1,317 @@
+[
+  {
+    "Sample": {
+      "Game": "Skyrim",
+      "RecordType": "GLOB",
+      "Plugin": "Skyrim.esm",
+      "FormKey": "10636A:Skyrim.esm",
+      "EditorId": "1stPKillCam",
+      "SpriggitFile": "Globals/1stPKillCam - 10636A_Skyrim.esm.yaml",
+      "CoverageHints": [
+        "Data"
+      ],
+      "Notes": "Selected by feature scan for GLOB; score 1.2."
+    },
+    "Comparisons": [
+      {
+        "FieldPath": "Data",
+        "Category": "Match",
+        "SpriggitValue": "0",
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": "0",
+        "NormalizedCreationsForgeValue": "0",
+        "Notes": null
+      },
+      {
+        "FieldPath": "EditorID",
+        "Category": "Match",
+        "SpriggitValue": "1stPKillCam",
+        "CreationsForgeValue": "1stPKillCam",
+        "NormalizedSpriggitValue": "1stPKillCam",
+        "NormalizedCreationsForgeValue": "1stPKillCam",
+        "Notes": null
+      },
+      {
+        "FieldPath": "FormKey",
+        "Category": "Match",
+        "SpriggitValue": "10636A:Skyrim.esm",
+        "CreationsForgeValue": "10636A:Skyrim.esm",
+        "NormalizedSpriggitValue": "10636A:SKYRIM.ESM",
+        "NormalizedCreationsForgeValue": "10636A:SKYRIM.ESM",
+        "Notes": null
+      },
+      {
+        "FieldPath": "FormVersion",
+        "Category": "Match",
+        "SpriggitValue": "37",
+        "CreationsForgeValue": "37",
+        "NormalizedSpriggitValue": "37",
+        "NormalizedCreationsForgeValue": "37",
+        "Notes": null
+      },
+      {
+        "FieldPath": "MajorRecordFlagsRaw",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "64",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027MajorRecordFlagsRaw\u0027 was not populated."
+      },
+      {
+        "FieldPath": "MutagenObjectType",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "GlobalShort",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027MutagenObjectType\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Version2",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Version2\u0027 was not populated."
+      },
+      {
+        "FieldPath": "VersionControl",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "2909725",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027VersionControl\u0027 was not populated."
+      },
+      {
+        "FieldPath": "MajorRecordFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "64",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "ScriptingAdapters.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      }
+    ],
+    "Errors": [],
+    "HasFailingFindings": true
+  },
+  {
+    "Sample": {
+      "Game": "Skyrim",
+      "RecordType": "GLOB",
+      "Plugin": "Skyrim.esm",
+      "FormKey": "050765:Skyrim.esm",
+      "EditorId": "CarriageCost",
+      "SpriggitFile": "Globals/CarriageCost - 050765_Skyrim.esm.yaml",
+      "CoverageHints": [
+        "Data"
+      ],
+      "Notes": "Selected by feature scan for GLOB; score 1.2."
+    },
+    "Comparisons": [
+      {
+        "FieldPath": "Data",
+        "Category": "Match",
+        "SpriggitValue": "20",
+        "CreationsForgeValue": "20",
+        "NormalizedSpriggitValue": "20",
+        "NormalizedCreationsForgeValue": "20",
+        "Notes": null
+      },
+      {
+        "FieldPath": "EditorID",
+        "Category": "Match",
+        "SpriggitValue": "CarriageCost",
+        "CreationsForgeValue": "CarriageCost",
+        "NormalizedSpriggitValue": "CarriageCost",
+        "NormalizedCreationsForgeValue": "CarriageCost",
+        "Notes": null
+      },
+      {
+        "FieldPath": "FormKey",
+        "Category": "Match",
+        "SpriggitValue": "050765:Skyrim.esm",
+        "CreationsForgeValue": "050765:Skyrim.esm",
+        "NormalizedSpriggitValue": "050765:SKYRIM.ESM",
+        "NormalizedCreationsForgeValue": "050765:SKYRIM.ESM",
+        "Notes": null
+      },
+      {
+        "FieldPath": "FormVersion",
+        "Category": "Match",
+        "SpriggitValue": "25",
+        "CreationsForgeValue": "25",
+        "NormalizedSpriggitValue": "25",
+        "NormalizedCreationsForgeValue": "25",
+        "Notes": null
+      },
+      {
+        "FieldPath": "MajorRecordFlagsRaw",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "64",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027MajorRecordFlagsRaw\u0027 was not populated."
+      },
+      {
+        "FieldPath": "MutagenObjectType",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "GlobalShort",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027MutagenObjectType\u0027 was not populated."
+      },
+      {
+        "FieldPath": "VersionControl",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "2316042",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027VersionControl\u0027 was not populated."
+      },
+      {
+        "FieldPath": "MajorRecordFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "64",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "ScriptingAdapters.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      }
+    ],
+    "Errors": [],
+    "HasFailingFindings": true
+  },
+  {
+    "Sample": {
+      "Game": "Skyrim",
+      "RecordType": "GLOB",
+      "Plugin": "Skyrim.esm",
+      "FormKey": "107702:Skyrim.esm",
+      "EditorId": "CarriageCostSmall",
+      "SpriggitFile": "Globals/CarriageCostSmall - 107702_Skyrim.esm.yaml",
+      "CoverageHints": [
+        "Data"
+      ],
+      "Notes": "Selected by feature scan for GLOB; score 1.2."
+    },
+    "Comparisons": [
+      {
+        "FieldPath": "Data",
+        "Category": "Match",
+        "SpriggitValue": "50",
+        "CreationsForgeValue": "50",
+        "NormalizedSpriggitValue": "50",
+        "NormalizedCreationsForgeValue": "50",
+        "Notes": null
+      },
+      {
+        "FieldPath": "EditorID",
+        "Category": "Match",
+        "SpriggitValue": "CarriageCostSmall",
+        "CreationsForgeValue": "CarriageCostSmall",
+        "NormalizedSpriggitValue": "CarriageCostSmall",
+        "NormalizedCreationsForgeValue": "CarriageCostSmall",
+        "Notes": null
+      },
+      {
+        "FieldPath": "FormKey",
+        "Category": "Match",
+        "SpriggitValue": "107702:Skyrim.esm",
+        "CreationsForgeValue": "107702:Skyrim.esm",
+        "NormalizedSpriggitValue": "107702:SKYRIM.ESM",
+        "NormalizedCreationsForgeValue": "107702:SKYRIM.ESM",
+        "Notes": null
+      },
+      {
+        "FieldPath": "FormVersion",
+        "Category": "Match",
+        "SpriggitValue": "37",
+        "CreationsForgeValue": "37",
+        "NormalizedSpriggitValue": "37",
+        "NormalizedCreationsForgeValue": "37",
+        "Notes": null
+      },
+      {
+        "FieldPath": "MajorRecordFlagsRaw",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "64",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027MajorRecordFlagsRaw\u0027 was not populated."
+      },
+      {
+        "FieldPath": "MutagenObjectType",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "GlobalShort",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027MutagenObjectType\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Version2",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "2",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Version2\u0027 was not populated."
+      },
+      {
+        "FieldPath": "VersionControl",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "2320130",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027VersionControl\u0027 was not populated."
+      },
+      {
+        "FieldPath": "MajorRecordFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "64",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "ScriptingAdapters.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      }
+    ],
+    "Errors": [],
+    "HasFailingFindings": true
+  }
+]

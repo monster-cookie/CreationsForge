@@ -1,0 +1,3947 @@
+[
+  {
+    "Sample": {
+      "Game": "Skyrim",
+      "RecordType": "PERK",
+      "Plugin": "Skyrim.esm",
+      "FormKey": "0A725C:Skyrim.esm",
+      "EditorId": "AlchemySkillBoosts",
+      "SpriggitFile": "Perks/AlchemySkillBoosts - 0A725C_Skyrim.esm.yaml",
+      "CoverageHints": [
+        "Flags",
+        "Ranks"
+      ],
+      "Notes": "Selected by feature scan for PERK; score 5.0."
+    },
+    "Comparisons": [
+      {
+        "FieldPath": "ActorValue[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "SmithingPowerModifier",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ActorValue[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ActorValue[10]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "IllusionPowerModifier",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ActorValue[10]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ActorValue[11]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HeavyArmorPowerModifier",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ActorValue[11]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ActorValue[12]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "DestructionPowerModifier",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ActorValue[12]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ActorValue[13]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ConjurationPowerModifier",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ActorValue[13]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ActorValue[14]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "BlockPowerModifier",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ActorValue[14]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ActorValue[15]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MarksmanPowerModifier",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ActorValue[15]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ActorValue[16]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "AlterationPowerModifier",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ActorValue[16]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ActorValue[17]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "AlchemyPowerModifier",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ActorValue[17]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ActorValue[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "TwoHandedPowerModifier",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ActorValue[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ActorValue[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "SpeechcraftPowerModifier",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ActorValue[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ActorValue[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "SpeechcraftPowerModifier",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ActorValue[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ActorValue[4]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "SneakingPowerModifier",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ActorValue[4]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ActorValue[5]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "RestorationPowerModifier",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ActorValue[5]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ActorValue[6]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "PickpocketPowerModifier",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ActorValue[6]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ActorValue[7]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "OneHandedPowerModifier",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ActorValue[7]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ActorValue[8]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "LockpickingPowerModifier",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ActorValue[8]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ActorValue[9]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "LightArmorPowerModifier",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ActorValue[9]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[10]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[10]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[11]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[11]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[4]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[4]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[5]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[5]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[6]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[6]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[7]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[7]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[8]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[8]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[9]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[9]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.ActorValue[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Restoration",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.ActorValue[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.ActorValue[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Illusion",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.ActorValue[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.ActorValue[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Destruction",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.ActorValue[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.ActorValue[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Conjuration",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.ActorValue[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.ActorValue[4]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Alteration",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.ActorValue[4]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Keyword[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "06D932:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Keyword[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Keyword[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "06D931:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Keyword[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Keyword[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "06D930:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Keyword[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Keyword[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "01E714:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Keyword[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Keyword[4]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "01E711:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Keyword[4]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Keyword[5]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "01E712:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Keyword[5]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Keyword[6]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "06BBD2:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Keyword[6]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HasKeywordConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[10]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "EPMagic_SpellHasSkillConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[10]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[11]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "EPMagic_SpellHasSkillConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[11]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HasKeywordConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HasKeywordConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "EPMagic_SpellHasSkillConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[4]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HasKeywordConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[4]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[5]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HasKeywordConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[5]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[6]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HasKeywordConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[6]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[7]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "EPMagic_SpellHasSkillConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[7]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[8]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "WornHasKeywordConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[8]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[9]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "EPMagic_SpellHasSkillConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[9]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description.Count",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "9",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description.Count\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description.TargetLanguage",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description.TargetLanguage\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[0].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Italian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[0].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[0].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Unified perk for applying alchemy effects",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[0].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[1].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Chinese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[1].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[1].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u7D71\u4E00perk for applying \u934A\u91D1\u8853\u6548\u679C",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[1].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[2].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Polish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[2].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[2].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Ujednolicona cecha do stosowania efekt\u00F3w alchemicznych",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[2].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[3].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Russian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[3].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[3].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Unified perk for applying alchemy effects",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[3].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[4].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "French",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[4].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[4].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Ajout unifi\u00E9 appliquant les effets de l\u0027alchimie",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[4].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[5].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Japanese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[5].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[5].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u932C\u91D1\u8853\u306E\u52B9\u679C\u306B\u9069\u7528\u3055\u308C\u308B\u3001\u7D71\u5408\u3055\u308C\u305F\u80FD\u529B",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[5].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[6].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "German",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[6].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[6].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Unified perk for applying alchemy effects",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[6].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[7].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[7].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[7].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Unified perk for applying alchemy effects",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[7].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[8].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Spanish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[8].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[8].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Ventaja unificada para aplicar efectos de alquimia.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[8].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EditorID",
+        "Category": "Match",
+        "SpriggitValue": "AlchemySkillBoosts",
+        "CreationsForgeValue": "AlchemySkillBoosts",
+        "NormalizedSpriggitValue": "AlchemySkillBoosts",
+        "NormalizedCreationsForgeValue": "AlchemySkillBoosts",
+        "Notes": null
+      },
+      {
+        "FieldPath": "EntryPoint[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModTemperingHealth",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[10]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModSpellMagnitude",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[10]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[11]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModIncomingDamage",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[11]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[12]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModSpellMagnitude",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[12]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[13]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModSpellDuration",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[13]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[14]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModPercentBlocked",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[14]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[15]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModAttackDamage",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[15]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[16]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModSpellDuration",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[16]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[17]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModAlchemyEffectiveness",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[17]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModAttackDamage",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModSellPrices",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModBuyPrices",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[4]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModDetectionSneakSkill",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[4]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[5]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModSpellMagnitude",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[5]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[6]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModPickpocketChance",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[6]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[7]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModAttackDamage",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[7]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[8]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModLockpickSweetSpot",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[8]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[9]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModIncomingDamage",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[9]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "FormKey",
+        "Category": "Match",
+        "SpriggitValue": "0A725C:Skyrim.esm",
+        "CreationsForgeValue": "0A725C:Skyrim.esm",
+        "NormalizedSpriggitValue": "0A725C:SKYRIM.ESM",
+        "NormalizedCreationsForgeValue": "0A725C:SKYRIM.ESM",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Modification[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MultiplyOnePlusAVMult",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[10]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MultiplyOnePlusAVMult",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[10]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[11]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MultiplyOnePlusAVMult",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[11]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[12]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MultiplyOnePlusAVMult",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[12]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[13]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MultiplyOnePlusAVMult",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[13]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[14]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MultiplyOnePlusAVMult",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[14]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[15]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MultiplyOnePlusAVMult",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[15]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[16]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MultiplyOnePlusAVMult",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[16]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[17]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MultiplyOnePlusAVMult",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[17]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MultiplyOnePlusAVMult",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MultiplyOnePlusAVMult",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MultiplyOnePlusAVMult",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[4]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MultiplyOnePlusAVMult",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[4]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[5]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MultiplyOnePlusAVMult",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[5]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[6]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MultiplyOnePlusAVMult",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[6]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[7]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MultiplyOnePlusAVMult",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[7]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[8]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MultiplyOnePlusAVMult",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[8]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[9]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "MultiplyOnePlusAVMult",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[9]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "NumRanks",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027NumRanks\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "2",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[10]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "3",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[10]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[11]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "3",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[11]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[12]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "3",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[12]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[13]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "3",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[13]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[14]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[14]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[15]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "3",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[15]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[16]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "3",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[16]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[17]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[17]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "3",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "2",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "2",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[4]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "2",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[4]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[5]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "3",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[5]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[6]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "3",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[6]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[7]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "3",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[7]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[8]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "2",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[8]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[9]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "3",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[9]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Playable",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "True",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Playable\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Priority[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "3",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Priority[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Priority[10]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "13",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Priority[10]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Priority[11]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "14",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Priority[11]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Priority[12]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "15",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Priority[12]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Priority[13]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "16",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Priority[13]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Priority[14]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "17",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Priority[14]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Priority[15]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "19",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Priority[15]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Priority[16]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "20",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Priority[16]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Priority[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "4",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Priority[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Priority[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "5",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Priority[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Priority[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "6",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Priority[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Priority[4]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "7",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Priority[4]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Priority[5]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "8",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Priority[5]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Priority[6]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "9",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Priority[6]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Priority[7]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "10",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Priority[7]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Priority[8]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "11",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Priority[8]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Priority[9]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "12",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Priority[9]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0.01",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[10]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0.01",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[10]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[11]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "-0.01",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[11]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[12]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0.01",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[12]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[13]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0.01",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[13]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[14]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0.01",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[14]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[15]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0.01",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[15]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[16]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0.01",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[16]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[17]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0.01",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[17]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0.01",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0.01",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "-0.01",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[4]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0.01",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[4]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[5]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0.01",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[5]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[6]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0.01",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[6]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[7]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0.01",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[7]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[8]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0.01",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[8]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[9]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "-0.01",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[9]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Version2",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "4",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Version2\u0027 was not populated."
+      },
+      {
+        "FieldPath": "VersionControl",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1978415",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027VersionControl\u0027 was not populated."
+      },
+      {
+        "FieldPath": "BackgroundSkills.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "Description",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "Unified perk for applying alchemy effects",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "Flags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "FormVersion",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "44",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "MajorFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "MajorRecordFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "Ranks.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "ScriptingAdapters.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      }
+    ],
+    "Errors": [],
+    "HasFailingFindings": true
+  },
+  {
+    "Sample": {
+      "Game": "Skyrim",
+      "RecordType": "PERK",
+      "Plugin": "Skyrim.esm",
+      "FormKey": "0BABE4:Skyrim.esm",
+      "EditorId": "Armsman00",
+      "SpriggitFile": "Perks/Armsman00 - 0BABE4_Skyrim.esm.yaml",
+      "CoverageHints": [
+        "Flags",
+        "Ranks"
+      ],
+      "Notes": "Selected by feature scan for PERK; score 5.0."
+    },
+    "Comparisons": [
+      {
+        "FieldPath": "ComparisonValue[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Keyword[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "01E714:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Keyword[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Keyword[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "01E711:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Keyword[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Keyword[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "01E712:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Keyword[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Keyword[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "01E713:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Keyword[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HasPerkConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HasKeywordConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HasKeywordConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HasKeywordConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[4]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HasKeywordConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[4]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Perk",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "079343:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Perk\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description.Count",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "9",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description.Count\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description.TargetLanguage",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description.TargetLanguage\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[0].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Italian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[0].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[0].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Le armi a una mano infliggono il 20% di danno in pi\u00F9.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[0].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[1].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Chinese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[1].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[1].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u55AE\u624B\u6B66\u5668\u9020\u6210\u7684\u50B7\u5BB3\u589E\u52A020%\u3002",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[1].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[2].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Polish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[2].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[2].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Bro\u0144 jednor\u0119czna zadaje obra\u017Cenia wi\u0119ksze o 20%.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[2].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[3].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Russian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[3].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[3].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u041E\u0434\u043D\u043E\u0440\u0443\u0447\u043D\u043E\u0435 \u043E\u0440\u0443\u0436\u0438\u0435 \u043D\u0430\u043D\u043E\u0441\u0438\u0442 \u043D\u0430 20% \u0431\u043E\u043B\u044C\u0448\u0435 \u0443\u0440\u043E\u043D\u0430.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[3].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[4].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "French",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[4].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[4].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Les armes \u00E0 une main infligent 20% de d\u00E9g\u00E2ts en plus.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[4].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[5].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Japanese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[5].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[5].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u7247\u624B\u6B66\u5668\u306E\u30C0\u30E1\u30FC\u30B8\u304C20%\u5897\u52A0\u3059\u308B\u3002",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[5].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[6].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "German",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[6].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[6].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Einhandwaffen verursachen 20 Prozent mehr Schaden.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[6].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[7].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[7].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[7].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "One-Handed weapons do 20% more damage.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[7].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[8].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Spanish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[8].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[8].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Las armas a una mano infligen un 20% de da\u00F1o adicional.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[8].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EditorID",
+        "Category": "Match",
+        "SpriggitValue": "Armsman00",
+        "CreationsForgeValue": "Armsman00",
+        "NormalizedSpriggitValue": "Armsman00",
+        "NormalizedCreationsForgeValue": "Armsman00",
+        "Notes": null
+      },
+      {
+        "FieldPath": "EntryPoint",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModAttackDamage",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint\u0027 was not populated."
+      },
+      {
+        "FieldPath": "FormKey",
+        "Category": "Match",
+        "SpriggitValue": "0BABE4:Skyrim.esm",
+        "CreationsForgeValue": "0BABE4:Skyrim.esm",
+        "NormalizedSpriggitValue": "0BABE4:SKYRIM.ESM",
+        "NormalizedCreationsForgeValue": "0BABE4:SKYRIM.ESM",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Modification",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Multiply",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name.Count",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "9",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name.Count\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name.TargetLanguage",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name.TargetLanguage\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[0].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "German",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[0].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[0].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Landsknecht",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[0].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[1].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[1].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[1].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Armsman",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[1].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[2].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Spanish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[2].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[2].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Hombre de armas",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[2].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[3].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Italian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[3].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[3].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Uomo d\u0027arme",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[3].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[4].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Chinese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[4].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[4].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u81C2\u529B\u904E\u4EBA",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[4].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[5].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Polish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[5].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[5].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Fechtmistrz",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[5].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[6].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Russian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[6].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[6].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u0421\u0438\u043B\u044C\u043D\u0430\u044F \u0440\u0443\u043A\u0430",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[6].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[7].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "French",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[7].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[7].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Homme d\u0027armes",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[7].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[8].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Japanese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[8].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[8].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u30A2\u30FC\u30E0\u30BA\u30DE\u30F3",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[8].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "NextPerk",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "079343:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027NextPerk\u0027 was not populated."
+      },
+      {
+        "FieldPath": "NumRanks",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027NumRanks\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "3",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Playable",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "True",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Playable\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1.2",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Version2",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "9",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Version2\u0027 was not populated."
+      },
+      {
+        "FieldPath": "VersionControl",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1978415",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027VersionControl\u0027 was not populated."
+      },
+      {
+        "FieldPath": "BackgroundSkills.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "Description",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "One-Handed weapons do 20% more damage.",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "Flags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "FormVersion",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "44",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "MajorFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "MajorRecordFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "Name",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "Armsman",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "Ranks.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "ScriptingAdapters.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      }
+    ],
+    "Errors": [],
+    "HasFailingFindings": true
+  },
+  {
+    "Sample": {
+      "Game": "Skyrim",
+      "RecordType": "PERK",
+      "Plugin": "Skyrim.esm",
+      "FormKey": "079343:Skyrim.esm",
+      "EditorId": "Armsman20",
+      "SpriggitFile": "Perks/Armsman20 - 079343_Skyrim.esm.yaml",
+      "CoverageHints": [
+        "Flags",
+        "Ranks"
+      ],
+      "Notes": "Selected by feature scan for PERK; score 5.0."
+    },
+    "Comparisons": [
+      {
+        "FieldPath": "CompareOperator",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "GreaterThanOrEqualTo",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027CompareOperator\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "20",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[4]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[4]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[5]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[5]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.ActorValue",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "OneHanded",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.ActorValue\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Keyword[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "01E713:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Keyword[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Keyword[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "01E714:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Keyword[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Keyword[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "01E711:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Keyword[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Keyword[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "01E712:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Keyword[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "GetBaseActorValueConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HasPerkConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HasPerkConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HasKeywordConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[4]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HasKeywordConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[4]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[5]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HasKeywordConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[5]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[6]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HasKeywordConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[6]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Perk[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0BABE4:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Perk[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Perk[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "079342:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Perk[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description.Count",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "9",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description.Count\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description.TargetLanguage",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description.TargetLanguage\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[0].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Italian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[0].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[0].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Le armi a una mano infliggono il 40% di danno in pi\u00F9.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[0].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[1].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Chinese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[1].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[1].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u55AE\u624B\u6B66\u5668\u9020\u6210\u7684\u50B7\u5BB3\u589E\u52A040%\u3002",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[1].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[2].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Polish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[2].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[2].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Bro\u0144 jednor\u0119czna zadaje obra\u017Cenia wi\u0119ksze o 40%.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[2].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[3].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Russian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[3].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[3].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u041E\u0434\u043D\u043E\u0440\u0443\u0447\u043D\u043E\u0435 \u043E\u0440\u0443\u0436\u0438\u0435 \u043D\u0430\u043D\u043E\u0441\u0438\u0442 \u043D\u0430 40% \u0431\u043E\u043B\u044C\u0448\u0435 \u0443\u0440\u043E\u043D\u0430.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[3].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[4].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "French",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[4].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[4].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Les armes \u00E0 une main infligent 40% de d\u00E9g\u00E2ts en plus.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[4].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[5].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Japanese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[5].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[5].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u7247\u624B\u6B66\u5668\u306E\u30C0\u30E1\u30FC\u30B8\u304C40%\u5897\u52A0\u3059\u308B\u3002",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[5].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[6].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "German",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[6].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[6].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Einhandwaffen verursachen 40 Prozent mehr Schaden.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[6].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[7].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[7].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[7].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "One-Handed weapons do 40% more damage.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[7].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[8].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Spanish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[8].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[8].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Las armas a una mano infligen un 40% de da\u00F1o adicional.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[8].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EditorID",
+        "Category": "Match",
+        "SpriggitValue": "Armsman20",
+        "CreationsForgeValue": "Armsman20",
+        "NormalizedSpriggitValue": "Armsman20",
+        "NormalizedCreationsForgeValue": "Armsman20",
+        "Notes": null
+      },
+      {
+        "FieldPath": "EntryPoint",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModAttackDamage",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint\u0027 was not populated."
+      },
+      {
+        "FieldPath": "FormKey",
+        "Category": "Match",
+        "SpriggitValue": "079343:Skyrim.esm",
+        "CreationsForgeValue": "079343:Skyrim.esm",
+        "NormalizedSpriggitValue": "079343:SKYRIM.ESM",
+        "NormalizedCreationsForgeValue": "079343:SKYRIM.ESM",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Modification",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Multiply",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name.Count",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "9",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name.Count\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name.TargetLanguage",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name.TargetLanguage\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[0].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "German",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[0].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[0].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Landsknecht",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[0].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[1].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[1].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[1].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Armsman",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[1].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[2].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Spanish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[2].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[2].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Hombre de armas",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[2].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[3].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Italian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[3].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[3].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Uomo d\u0027arme",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[3].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[4].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Chinese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[4].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[4].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u81C2\u529B\u904E\u4EBA",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[4].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[5].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Polish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[5].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[5].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Fechtmistrz",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[5].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[6].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Russian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[6].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[6].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u0421\u0438\u043B\u044C\u043D\u0430\u044F \u0440\u0443\u043A\u0430",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[6].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[7].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "French",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[7].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[7].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Homme d\u0027armes",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[7].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[8].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Japanese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[8].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[8].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u30A2\u30FC\u30E0\u30BA\u30DE\u30F3",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[8].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "NextPerk",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "079342:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027NextPerk\u0027 was not populated."
+      },
+      {
+        "FieldPath": "NumRanks",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027NumRanks\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "3",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Playable",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "True",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Playable\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1.4",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Version2",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "8",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Version2\u0027 was not populated."
+      },
+      {
+        "FieldPath": "VersionControl",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1978415",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027VersionControl\u0027 was not populated."
+      },
+      {
+        "FieldPath": "BackgroundSkills.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "Description",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "One-Handed weapons do 40% more damage.",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "Flags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "FormVersion",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "44",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "MajorFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "MajorRecordFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "Name",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "Armsman",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "Ranks.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "ScriptingAdapters.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      }
+    ],
+    "Errors": [],
+    "HasFailingFindings": true
+  },
+  {
+    "Sample": {
+      "Game": "Skyrim",
+      "RecordType": "PERK",
+      "Plugin": "Skyrim.esm",
+      "FormKey": "058F75:Skyrim.esm",
+      "EditorId": "Allure",
+      "SpriggitFile": "Perks/Allure - 058F75_Skyrim.esm.yaml",
+      "CoverageHints": [
+        "Ranks"
+      ],
+      "Notes": "Selected by feature scan for PERK; score 4.0."
+    },
+    "Comparisons": [
+      {
+        "FieldPath": "CompareOperator",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "GreaterThanOrEqualTo",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027CompareOperator\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "30",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[4]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[4]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[5]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[5]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[6]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[6]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[7]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[7]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[8]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[8]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "ComparisonValue[9]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027ComparisonValue[9]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.ActorValue",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Speech",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.ActorValue\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MaleFemaleGender[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Female",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MaleFemaleGender[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MaleFemaleGender[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Female",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MaleFemaleGender[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MaleFemaleGender[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Female",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MaleFemaleGender[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MaleFemaleGender[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Female",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MaleFemaleGender[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "HasPerkConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "GetBaseActorValueConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "GetIsSexConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "GetIsSexConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[4]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "GetIsSexConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[4]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[5]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "GetIsSexConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[5]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[6]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "GetIsSexConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[6]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[7]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "GetIsSexConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[7]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[8]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "GetIsSexConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[8]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.MutagenObjectType[9]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "GetIsSexConditionData",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.MutagenObjectType[9]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Data.Perk",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0BE128:Skyrim.esm",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Data.Perk\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description.Count",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "9",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description.Count\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description.TargetLanguage",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description.TargetLanguage\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[0].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Italian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[0].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[0].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Ottieni prezzi migliori del 10% con individui di sesso opposto.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[0].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[1].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Chinese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[1].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[1].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u5C0D\u7570\u6027\u4EA4\u6613\u6642\u7372\u5F9710%\u512A\u60E0\u3002",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[1].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[2].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Polish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[2].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[2].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "W interesach z p\u0142ci\u0105 przeciwn\u0105 dostaniesz o 10% korzystniejsze ceny.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[2].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[3].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Russian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[3].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[3].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u041F\u0440\u0438 \u0442\u043E\u0440\u0433\u043E\u0432\u043B\u0435 \u0441 \u043F\u0440\u0435\u0434\u0441\u0442\u0430\u0432\u0438\u0442\u0435\u043B\u0435\u043C \u043F\u0440\u043E\u0442\u0438\u0432\u043E\u043F\u043E\u043B\u043E\u0436\u043D\u043E\u0433\u043E \u043F\u043E\u043B\u0430 \u0446\u0435\u043D\u044B \u0432\u044B\u0433\u043E\u0434\u043D\u0435\u0435 \u043D\u0430 10%.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[3].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[4].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "French",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[4].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[4].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Prix 10% moins cher avec les personnes de l\u0027autre sexe.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[4].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[5].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Japanese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[5].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[5].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u7570\u6027\u76F8\u624B\u306B\u53D6\u5F15\u3059\u308B\u6642\u306E\u58F2\u8CB7\u4FA1\u683C\u304C10%\u826F\u304F\u306A\u308B\u3002",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[5].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[6].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "German",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[6].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[6].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "10 Prozent bessere Preise beim anderen Geschlecht.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[6].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[7].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[7].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[7].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "10% better prices with the opposite sex.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[7].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[8].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Spanish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[8].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Description[8].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Precios mejores en un 10% con el sexo opuesto.",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Description[8].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EditorID",
+        "Category": "Match",
+        "SpriggitValue": "Allure",
+        "CreationsForgeValue": "Allure",
+        "NormalizedSpriggitValue": "Allure",
+        "NormalizedCreationsForgeValue": "Allure",
+        "Notes": null
+      },
+      {
+        "FieldPath": "EntryPoint[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModBuyPrices",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModSellPrices",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModSellPrices",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "EntryPoint[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "ModBuyPrices",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027EntryPoint[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "FormKey",
+        "Category": "Match",
+        "SpriggitValue": "058F75:Skyrim.esm",
+        "CreationsForgeValue": "058F75:Skyrim.esm",
+        "NormalizedSpriggitValue": "058F75:SKYRIM.ESM",
+        "NormalizedCreationsForgeValue": "058F75:SKYRIM.ESM",
+        "Notes": null
+      },
+      {
+        "FieldPath": "Modification[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Multiply",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Multiply",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Multiply",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Modification[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Multiply",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Modification[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name.Count",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "9",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name.Count\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name.TargetLanguage",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name.TargetLanguage\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[0].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "German",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[0].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[0].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Verf\u00FChren",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[0].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[1].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "English",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[1].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[1].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Allure",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[1].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[2].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Spanish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[2].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[2].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Atracci\u00F3n",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[2].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[3].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Italian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[3].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[3].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Fascino",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[3].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[4].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Chinese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[4].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[4].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u9B45\u529B\u8A98\u60D1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[4].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[5].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Polish",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[5].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[5].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Atrakcyjno\u015B\u0107 ",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[5].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[6].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Russian",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[6].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[6].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u041E\u0447\u0430\u0440\u043E\u0432\u0430\u043D\u0438\u0435",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[6].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[7].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "French",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[7].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[7].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Charme",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[7].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[8].Language",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "Japanese",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[8].Language\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Name[8].String",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "\u9B45\u529B",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Name[8].String\u0027 was not populated."
+      },
+      {
+        "FieldPath": "NumRanks",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027NumRanks\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "2",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "2",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "2",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "PerkConditionTabCount[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "2",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027PerkConditionTabCount[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Playable",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "True",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Playable\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[0]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0.91",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[0]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[1]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1.1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[1]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[2]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1.1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[2]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Value[3]",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "0.91",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Value[3]\u0027 was not populated."
+      },
+      {
+        "FieldPath": "Version2",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027Version2\u0027 was not populated."
+      },
+      {
+        "FieldPath": "VersionControl",
+        "Category": "MissingInCreationsForge",
+        "SpriggitValue": "1978415",
+        "CreationsForgeValue": null,
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Expected DTO path \u0027VersionControl\u0027 was not populated."
+      },
+      {
+        "FieldPath": "BackgroundSkills.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "Description",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "10% better prices with the opposite sex.",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "Flags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "FormVersion",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "44",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "MajorFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "MajorRecordFlags",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "Name",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "Allure",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "Ranks.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      },
+      {
+        "FieldPath": "ScriptingAdapters.Count",
+        "Category": "MissingInSpriggit",
+        "SpriggitValue": null,
+        "CreationsForgeValue": "0",
+        "NormalizedSpriggitValue": null,
+        "NormalizedCreationsForgeValue": null,
+        "Notes": "Creations Forge exposes this DTO field, but the selected Spriggit sample does not contain a comparable path."
+      }
+    ],
+    "Errors": [],
+    "HasFailingFindings": true
+  }
+]

@@ -1,0 +1,327 @@
+# Spriggit Data Validation Report
+
+- Run date UTC: 2026-06-19T18:55:45.6535964Z
+- Records compared: 208
+- Field comparisons: 38640
+- JSON details: C:\Repositories\Personal\CreationsForge\TestResults\SpriggitValidation\20260619-185545\SpriggitValidationReport.json
+
+## Category Counts
+
+- Match: 1205
+- MissingInCreationsForge: 12090
+- MissingInSpriggit: 25239
+- ValueMismatch: 106
+
+## Failed Records
+
+- Fallout4 AVIF 0B287B:Fallout4.esm SentryBotMaxHeatLevel
+- Fallout4 AVIF 00080F:Fallout4.esm HC_Adrenaline
+- Fallout4 AVIF 1B88D8:Fallout4.esm Incendiary
+- Fallout4 AVIF 0002C7:Fallout4.esm Agility
+- Fallout4 AVIF 1EB998:Fallout4.esm AddictionCount
+- Fallout4 CLAS 1CD0A8:Fallout4.esm ZeroSPECIALclass
+- Fallout4 CLAS 01326B:Fallout4.esm Citizen
+- Fallout4 CLAS 031757:Fallout4.esm BloatflyClass
+- Fallout4 CLAS 20ED07:Fallout4.esm MQ203Class
+- Fallout4 CONT 1F2B6A:Fallout4.esm DN054Loot_Prewar_Safe
+- Fallout4 CONT 064A36:Fallout4.esm Loot_Raider_Safe
+- Fallout4 CONT 1C0292:Fallout4.esm TheaterTickerTape_Safe
+- Fallout4 CONT 06355F:Fallout4.esm Loot_Trunk_Boss
+- Fallout4 CONT 11CB14:Fallout4.esm DN123_SkylanesSecretCompartment
+- Fallout4 COBJ 0ADF6E:Fallout4.esm workshop_co_Artillery
+- Fallout4 COBJ 0CEA6F:Fallout4.esm workshop_co_MQ206BeamEmitter
+- Fallout4 COBJ 0CEA7B:Fallout4.esm workshop_co_MQ206Console
+- Fallout4 COBJ 05A0CD:Fallout4.esm workshop_co_WaterPurifier
+- Fallout4 COBJ 1889E3:Fallout4.esm co_mod_GatlingLaser_BarrelMingunLaser_Super
+- Fallout4 FACT 0975FC:Fallout4.esm DNFinancial_OpalVendorFaction
+- Fallout4 FACT 03E0C8:Fallout4.esm CaptiveFaction
+- Fallout4 FACT 01C21C:Fallout4.esm PlayerFaction
+- Fallout4 FACT 157ACE:Fallout4.esm DN049BakeryClerkFaction
+- Fallout4 FACT 14EB97:Fallout4.esm FarmVendorTheSlog
+- Fallout4 FLST 246EE7:Fallout4.esm CA_JunkItems
+- Fallout4 FLST 1A4AE8:Fallout4.esm ChargenOptionsSortList
+- Fallout4 FLST 2494E7:Fallout4.esm CompanionCrime__Common
+- Fallout4 FLST 14EC02:Fallout4.esm VoicesEmpty
+- Fallout4 GMST 0D4C40:Fallout4.esm sAbortText
+- Fallout4 GMST 0D4DC4:Fallout4.esm sAccept
+- Fallout4 GMST 0D4DFC:Fallout4.esm sActivate
+- Fallout4 GLOB 18E889:Fallout4.esm AO_Companion_Search_JunkThresholdValue
+- Fallout4 GLOB 176107:Fallout4.esm AO_Companion_Search_NextAllowedDaysUntil
+- Fallout4 GLOB 043F14:Fallout4.esm AO_Dogmeat_Container_Bailout_Dist
+- Fallout4 KYWD 119B9B:Fallout4.esm 02Metal03Floor
+- Fallout4 KYWD 119B9C:Fallout4.esm 02Metal03Misc
+- Fallout4 KYWD 119B9D:Fallout4.esm 02Metal03Prefabs
+- Fallout4 KYWD 0CF43E:Fallout4.esm AO_BoS_ScribeCollectData
+- Fallout4 KYWD 093BBE:Fallout4.esm if_Armor_Combat_Freefall_Restricted
+- Fallout4 MGEF 247A6C:Fallout4.esm CritCryoFreezeEffect
+- Fallout4 MGEF 18C354:Fallout4.esm CryoFreezeEffect01
+- Fallout4 MGEF 18C356:Fallout4.esm CryoFreezeEffect02
+- Fallout4 MGEF 171781:Fallout4.esm PerkPainTrainKnockbackEffect
+- Fallout4 MGEF 0AE04F:Fallout4.esm DN102_LabDemo3ParalyzeEffect
+- Fallout4 MISC 247E7F:Fallout4.esm Debug_Components
+- Fallout4 MISC 0A4754:Fallout4.esm FFDiamondCity07Paper
+- Fallout4 MISC 01F8F9:Fallout4.esm FireExtinguisher01
+- Fallout4 MISC 178B51:Fallout4.esm BobbleHead_Agility
+- Fallout4 MISC 04E3A2:Fallout4.esm MS11GuidanceChip
+- Fallout4 NPC_ 0FB232:Fallout4.esm BHExtBOSSoldier
+- Fallout4 NPC_ 0FB22E:Fallout4.esm BHExtBOSSoldier_PowerArmorAuto
+- Fallout4 NPC_ 1D58EA:Fallout4.esm BHExtBOSSoldier_PowerArmorBigGun
+- Fallout4 NPC_ 05E557:Fallout4.esm AllieFilmore
+- Fallout4 NPC_ 240C21:Fallout4.esm AudioTemplateSynthGen1
+- Fallout4 PERK 2458BA:Fallout4.esm AddictionManager
+- Fallout4 PERK 01E67F:Fallout4.esm AnimalFriend01
+- Fallout4 PERK 04A0D9:Fallout4.esm AnimalFriend02
+- Fallout4 PERK 0D979D:Fallout4.esm TrainingAG01
+- Fallout4 PERK 065DFA:Fallout4.esm Basher02
+- Fallout4 STAT 1B4AC0:Fallout4.esm workshop_JunkWallDoor01
+- Fallout4 STAT 1B4AC1:Fallout4.esm workshop_JunkWallDoor01A
+- Fallout4 STAT 0EC532:Fallout4.esm workshop_ShackBalconyStairs01
+- Fallout4 STAT 000032:Fallout4.esm COCMarkerHeading
+- Fallout4 STAT 000021:Fallout4.esm CollisionMarker
+- Skyrim AVIF 000456:Skyrim.esm AVAlchemy
+- Skyrim AVIF 000458:Skyrim.esm AVAlteration
+- Skyrim AVIF 00044F:Skyrim.esm AVBlock
+- Skyrim AVIF 0005F6:Skyrim.esm AVFavorActive
+- Skyrim CLAS 0E3A6E:Skyrim.esm TrainerAlchemyExpert
+- Skyrim CLAS 0E3A5D:Skyrim.esm TrainerAlchemyJourneyman
+- Skyrim CLAS 02F202:Skyrim.esm AAAPlayerSpellswordClass
+- Skyrim CLAS 013177:Skyrim.esm CombatSpellsword
+- Skyrim CLAS 01325D:Skyrim.esm Bard
+- Skyrim CONT 02065B:Skyrim.esm TreasFalmerChestBoss
+- Skyrim CONT 0B1176:Skyrim.esm TreasFalmerChestBossDwarven
+- Skyrim CONT 020659:Skyrim.esm TreasFalmerChest
+- Skyrim CONT 0A918C:Skyrim.esm BeeHive
+- Skyrim CONT 07434B:Skyrim.esm MerchantCaravanAChest
+- Skyrim COBJ 0DCA13:Skyrim.esm RecipeArmorDragonscaleBoots
+- Skyrim COBJ 0DCA14:Skyrim.esm RecipeArmorDragonscaleCuirass
+- Skyrim COBJ 0DCA15:Skyrim.esm RecipeArmorDragonscaleGauntlets
+- Skyrim COBJ 0DD982:Skyrim.esm RecipeArmorSteelPlateShield
+- Skyrim COBJ 0F431A:Skyrim.esm RecipeFoodSoupCabbagePotato
+- Skyrim FACT 103372:Skyrim.esm CollegeofWinterholdArchMageFaction
+- Skyrim FACT 01F259:Skyrim.esm CollegeofWinterholdFaction
+- Skyrim FACT 048362:Skyrim.esm CompanionsFaction
+- Skyrim FACT 0FFD65:Skyrim.esm DBSancBabetteBedFaction
+- Skyrim FACT 040B60:Skyrim.esm ArenaFaction
+- Skyrim FLST 06F3F7:Skyrim.esm AAAMothPlantTypes
+- Skyrim FLST 045C32:Skyrim.esm CityWindhelmResidentList
+- Skyrim FLST 026953:Skyrim.esm CrimeFactionsList
+- Skyrim FLST 000D14:Skyrim.esm DraugrWeapons
+- Skyrim GMST 0D4C40:Skyrim.esm sAbortText
+- Skyrim GMST 0D4DC4:Skyrim.esm sAccept
+- Skyrim GMST 0D4B96:Skyrim.esm sActionMapping
+- Skyrim GLOB 10636A:Skyrim.esm 1stPKillCam
+- Skyrim GLOB 050765:Skyrim.esm CarriageCost
+- Skyrim GLOB 107702:Skyrim.esm CarriageCostSmall
+- Skyrim KYWD 10EAD7:Skyrim.esm ActorTypeFamiliar
+- Skyrim KYWD 10E984:Skyrim.esm ActorTypeGiant
+- Skyrim KYWD 0F5D16:Skyrim.esm ActorTypeTroll
+- Skyrim KYWD 06DEAD:Skyrim.esm ActivatorLever
+- Skyrim MGEF 0D22FA:Skyrim.esm ShockDamageMassConcAimed
+- Skyrim MGEF 1019D6:Skyrim.esm dunVolunruudPickaxeEffect
+- Skyrim MGEF 0CDB75:Skyrim.esm ArmorFFSelf100
+- Skyrim MGEF 09B246:Skyrim.esm DA15WabbajackFF
+- Skyrim MGEF 0FB406:Skyrim.esm dunHalldirAggDownFFAimedArea
+- Skyrim MISC 0D0756:Skyrim.esm MGRDragonHeartScales
+- Skyrim MISC 06F993:Skyrim.esm Firewood01
+- Skyrim MISC 0D4BE7:Skyrim.esm FoxPeltSnow
+- Skyrim MISC 02996F:Skyrim.esm C04HagravenHead
+- Skyrim MISC 0B08C7:Skyrim.esm dunUniqueBeeInJar
+- Skyrim NPC_ 0F6F37:Skyrim.esm EncGuardImperialTemplate
+- Skyrim NPC_ 0F6F38:Skyrim.esm EncGuardSonsTemplate
+- Skyrim NPC_ 041B30:Skyrim.esm EncSiegeImperialSoldierTemplate
+- Skyrim NPC_ 01A696:Skyrim.esm AelaTheHuntress
+- Skyrim NPC_ 08E4F1:Skyrim.esm AlduinBase
+- Skyrim PERK 0A725C:Skyrim.esm AlchemySkillBoosts
+- Skyrim PERK 0BABE4:Skyrim.esm Armsman00
+- Skyrim PERK 079343:Skyrim.esm Armsman20
+- Skyrim PERK 058F75:Skyrim.esm Allure
+- Skyrim STAT 0D19F9:Skyrim.esm BlackreachECeiling01_GlowLichen
+- Skyrim STAT 06DD69:Skyrim.esm DweFacadeTowerSpacer01Snow
+- Skyrim STAT 090E82:Skyrim.esm HHMountainRidge01
+- Skyrim STAT 0946B2:Skyrim.esm CaveGRockPileS01IceBlend
+- Skyrim STAT 078DC0:Skyrim.esm XMarkerSnow
+- Starfield AVIF 05ACD4:Starfield.esm TargetingModeActionPoints_AV
+- Starfield AVIF 248D31:Starfield.esm ENV_Resist_Airborne
+- Starfield AVIF 248D30:Starfield.esm ENV_Resist_Corrosive
+- Starfield AVIF 2EE0BB:Starfield.esm PEO_CarryWeight
+- Starfield AVIF 0002D4:Starfield.esm Health
+- Starfield BOOK 165BF3:Starfield.esm NH_SouvenirSlate
+- Starfield BOOK 1F40EE:Starfield.esm UC07_ScrappingNiira
+- Starfield BOOK 26E6B1:Starfield.esm SQ_PlanetSurveySlate00_025
+- Starfield BOOK 070510:Starfield.esm _RENAME_TestDataslate
+- Starfield BOOK 045631:Starfield.esm TreasureMap_Resource_AnySystem_Unique_Aldumite
+- Starfield CLAS 01326B:Starfield.esm Citizen
+- Starfield CLAS 20F487:Starfield.esm CourserClass
+- Starfield CLAS 010B2F:Starfield.esm CrimsonFleetClass
+- Starfield CONT 277A73:Starfield.esm ShipOutpost_Loot_Storage_Safe_Floor_Reg_Common
+- Starfield CONT 277A81:Starfield.esm ShipOutpost_Loot_Storage_Safe_Floor_Tall_Rare
+- Starfield CONT 2779E9:Starfield.esm ShipOutpost_Loot_Storage_BossChest_Industrial_Rare
+- Starfield CONT 1A23DF:Starfield.esm Loot_Display_WeaponRack03_EMPTY
+- Starfield CONT 057C20:Starfield.esm Loot_Display_ArboronWeaponRackPanel02
+- Starfield CNDF 3C8F9C:Starfield.esm DebugMoveToPlanetConditions_Trait
+- Starfield CNDF 31982F:Starfield.esm SFBGS_CND_Placeholder01_ReservedForUse
+- Starfield CNDF 10460E:Starfield.esm SQ_TreasureMap_CND_IsResourceLocation
+- Starfield CNDF 0B1206:Starfield.esm ActorShouldShowSpacesuitGameplayFlashlight
+- Starfield COBJ 007F7C:Starfield.esm co_Outpost_Power_Reactor01
+- Starfield COBJ 1C5144:Starfield.esm co_Outpost_Power_Reactor02
+- Starfield COBJ 0C8720:Starfield.esm co_Chem_XenoAurora
+- Starfield COBJ 09DE67:Starfield.esm UC07_co_mfg_MicroCell_Old
+- Starfield COBJ 1DF844:Starfield.esm co_Outpost_Misc_MissionBoardConsole
+- Starfield DOOR 144F85:Starfield.esm ShipFloorLoadHatch
+- Starfield DOOR 205AA6:Starfield.esm ShipDockingHatchFloor
+- Starfield DOOR 19AFF6:Starfield.esm SftIntRmSmWallMid_DoorA00
+- Starfield DOOR 30D813:Starfield.esm SftIntRmSmWallMid_DoorA00_Loud
+- Starfield DOOR 31D042:Starfield.esm ShpGenIntPerSmWallMid_ExLg_DockingDoor02L_NonLoad
+- Starfield FACT 010B30:Starfield.esm CrimeFactionCrimsonFleet
+- Starfield FACT 03E0C8:Starfield.esm CaptiveFaction
+- Starfield FACT 01C21C:Starfield.esm PlayerFaction
+- Starfield FACT 1A2C9C:Starfield.esm LISTColonistFaction
+- Starfield FACT 3CAFBA:Starfield.esm Vendor_ShipServices_AkilaCityFaction
+- Starfield FLST 2117E6:Starfield.esm AkilaVendorVeryHighOrganicResources
+- Starfield FLST 2117EC:Starfield.esm AkilaVendorVeryLowOrganicResources
+- Starfield FLST 2117F0:Starfield.esm AlikaVendorLowOrganicResources
+- Starfield FLST 0C3830:Starfield.esm COND_imgui_1_Assorted
+- Starfield GMST 0657E0:Starfield.esm sAbort
+- Starfield GMST 0D4DFC:Starfield.esm sActivate
+- Starfield GMST 0D4DEB:Starfield.esm sActivateCreatureCalmed
+- Starfield GLOB 20C81D:Starfield.esm _UpdateShatteredSpaceMaster
+- Starfield GLOB 2B7FBD:Starfield.esm 2B7FBD_Starfield.esm
+- Starfield GLOB 2B91E0:Starfield.esm 2B91E0_Starfield.esm
+- Starfield KYWD 200AEB:Starfield.esm CCT_Enviro_AmbusherSurface
+- Starfield KYWD 145388:Starfield.esm CCT_Enviro_AmbusherUnderground
+- Starfield KYWD 200ADF:Starfield.esm CCT_Enviro_Basking
+- Starfield KYWD 1C84DD:Starfield.esm WeaponTypeDisplay_ElectromagneticRifle
+- Starfield KYWD 200AE9:Starfield.esm CCT_Enviro_Spook
+- Starfield MGEF 2C5392:Starfield.esm ArtifactPowerLifeForced_Effect
+- Starfield MGEF 2C7789:Starfield.esm ArtifactPowerParticleBeam_Effect
+- Starfield MGEF 23AF01:Starfield.esm ArtifactPowerSunlessSpace_AIUse
+- Starfield MGEF 22AC10:Starfield.esm ArtifactPowerSolarFlare_AIUse
+- Starfield MGEF 245B6F:Starfield.esm ENV_DMG_Airborne_Hazard_Damage_Effect
+- Starfield MISC 005591:Starfield.esm InorgCommonWater
+- Starfield MISC 00558C:Starfield.esm InorgExoticPlutonium
+- Starfield MISC 005DED:Starfield.esm InorgUniqueTasine
+- Starfield MISC 302791:Starfield.esm FFCydoniaZ07_HeartOfMarsTitanium
+- Starfield MISC 10A797:Starfield.esm ExoticPlayingCard_Diamond_Q
+- Starfield NPC_ 01539F:Starfield.esm CF_AludraTahan
+- Starfield NPC_ 0A0273:Starfield.esm CF_CESandin
+- Starfield NPC_ 09C32F:Starfield.esm CF_CPMurata
+- Starfield NPC_ 0B6667:Starfield.esm BE_FAB12_LvlCitizenChunks
+- Starfield NPC_ 17C10E:Starfield.esm BQ01_Actor_EllieYankton
+- Starfield PERK 08C3EE:Starfield.esm Skill_BoostAssaultTraining
+- Starfield PERK 146C2C:Starfield.esm Skill_BoostPackTraining
+- Starfield PERK 27CBBE:Starfield.esm TrainingTechnologyExpert
+- Starfield PERK 227FD5:Starfield.esm TRAIT_FreestarCollectiveSettler
+- Starfield PERK 22EC76:Starfield.esm BackgroundBigGameHunter
+- Starfield STAT 0514C6:Starfield.esm OpiExtPodAirlock01
+- Starfield STAT 036311:Starfield.esm OpmIntPodSmSide01
+- Starfield STAT 042AE4:Starfield.esm OpmIntPodSmSideWin01
+- Starfield STAT 03A1B4:Starfield.esm CatIndWalkSm2WayB01
+- Starfield STAT 04F391:Starfield.esm OpiExtPodAirlockStairs01
+- Starfield TERM 2D1D29:Starfield.esm AkilaLife04_Computer
+- Starfield TERM 2D2617:Starfield.esm AkilaLife08_FarmingComputer
+- Starfield TERM 386CD0:Starfield.esm BE_ShipComputer_BarStanding
+- Starfield TERM 261A51:Starfield.esm City_NA_Botany02Terminal
+- Starfield TERM 19F266:Starfield.esm TerminalSittingActivatorA01_Desk
+
+## Highest Priority Findings
+
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation.Count` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation.TargetLanguage` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[0].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[0].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[10].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[10].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[1].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[1].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[2].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[2].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[3].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[3].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[4].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[4].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[5].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[5].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[6].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[6].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[7].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[7].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[8].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[8].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[9].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Abbreviation[9].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description.Count` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description.TargetLanguage` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[0].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[0].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[10].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[10].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[1].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[1].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[2].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[2].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[3].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[3].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[4].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[4].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[5].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[5].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[6].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[6].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[7].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[7].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[8].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[8].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[9].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Description[9].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name.Count` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name.TargetLanguage` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[0].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[0].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[10].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[10].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[1].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[1].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[2].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[2].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[3].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[3].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[4].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[4].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[5].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[5].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[6].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[6].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[7].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[7].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[8].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[8].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[9].Language` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Name[9].String` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `Version2` MissingInCreationsForge
+- Fallout4 AVIF 0B287B:Fallout4.esm `VersionControl` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation.Count` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation.TargetLanguage` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[0].Language` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[0].String` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[10].Language` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[10].String` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[1].Language` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[1].String` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[2].Language` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[2].String` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[3].Language` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[3].String` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[4].Language` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[4].String` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[5].Language` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[5].String` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[6].Language` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[6].String` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[7].Language` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[7].String` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[8].Language` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[8].String` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[9].Language` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Abbreviation[9].String` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Description.Count` MissingInCreationsForge
+- Fallout4 AVIF 00080F:Fallout4.esm `Description.TargetLanguage` MissingInCreationsForge
