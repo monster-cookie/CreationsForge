@@ -3,7 +3,7 @@ using CreationsForge.Core.Enums;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class ConditionFormConditionParameterDTO
+public class ClassWeightDTO
 {
     public SupportedGame Game { get; set; }
 
@@ -15,15 +15,13 @@ public class ConditionFormConditionParameterDTO
         Id = 0
     };
 
-    public int ConditionIndex { get; set; }
+    public string WeightType { get; set; } = string.Empty;
 
-    public string ConditionSlot { get; set; } = "Conditions";
+    public int WeightIndex { get; set; }
 
-    public string ParameterName { get; set; } = string.Empty;
+    public string Key { get; set; } = string.Empty;
 
-    public string? ParameterValue { get; set; }
-
-    public FormKeyDTO? ParameterFormKey { get; set; }
+    public double? Value { get; set; }
 
     public DateTime ImportedAtUTC { get; set; }
 }

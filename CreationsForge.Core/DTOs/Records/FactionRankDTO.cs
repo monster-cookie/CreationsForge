@@ -3,7 +3,7 @@ using CreationsForge.Core.Enums;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class ConditionFormConditionParameterDTO
+public class FactionRankDTO
 {
     public SupportedGame Game { get; set; }
 
@@ -15,15 +15,13 @@ public class ConditionFormConditionParameterDTO
         Id = 0
     };
 
-    public int ConditionIndex { get; set; }
+    public int RankIndex { get; set; }
 
-    public string ConditionSlot { get; set; } = "Conditions";
+    public int? RankNumber { get; set; }
 
-    public string ParameterName { get; set; } = string.Empty;
+    public string? MaleTitle { get; set; }
 
-    public string? ParameterValue { get; set; }
-
-    public FormKeyDTO? ParameterFormKey { get; set; }
+    public string? FemaleTitle { get; set; }
 
     public DateTime ImportedAtUTC { get; set; }
 }

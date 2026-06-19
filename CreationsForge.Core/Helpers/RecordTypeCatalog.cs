@@ -23,6 +23,14 @@ public static class RecordTypeCatalog
         FriendlyName = "Book"
     };
 
+    public static readonly RecordTypeData Class = new()
+    {
+        TableName = "Classes",
+        RecordType = "Class",
+        RecordID = "CLAS",
+        FriendlyName = "Class"
+    };
+
     public static readonly RecordTypeData Container = new()
     {
         TableName = "Containers",
@@ -53,6 +61,14 @@ public static class RecordTypeCatalog
         RecordType = "Door",
         RecordID = "DOOR",
         FriendlyName = "Door"
+    };
+
+    public static readonly RecordTypeData Faction = new()
+    {
+        TableName = "Factions",
+        RecordType = "Faction",
+        RecordID = "FACT",
+        FriendlyName = "Faction"
     };
 
     public static readonly RecordTypeData FormList = new()
@@ -139,10 +155,12 @@ public static class RecordTypeCatalog
     [
         ActorValueInformation,
         Book,
+        Class,
         Container,
         ConditionForm,
         ConstructibleObject,
         Door,
+        Faction,
         FormList,
         GameSetting,
         Global,

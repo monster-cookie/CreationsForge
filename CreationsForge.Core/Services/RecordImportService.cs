@@ -39,6 +39,8 @@ public class RecordImportService : IRecordImportService
         ImportPluginRecordType(plugin, result, RecordTypeCatalog.FormList, recordSet.FormLists, progress, pluginIndex, pluginCount, cancellationToken);
         ImportPluginRecordType(plugin, result, RecordTypeCatalog.GameSetting, recordSet.GameSettings, progress, pluginIndex, pluginCount, cancellationToken);
         ImportPluginRecordType(plugin, result, RecordTypeCatalog.Global, recordSet.Globals, progress, pluginIndex, pluginCount, cancellationToken);
+        ImportPluginRecordType(plugin, result, RecordTypeCatalog.Class, recordSet.Classes, progress, pluginIndex, pluginCount, cancellationToken);
+        ImportPluginRecordType(plugin, result, RecordTypeCatalog.Faction, recordSet.Factions, progress, pluginIndex, pluginCount, cancellationToken);
         ImportPluginRecordType(plugin, result, RecordTypeCatalog.MiscObject, recordSet.MiscObjects, progress, pluginIndex, pluginCount, cancellationToken);
         ImportPluginRecordType(plugin, result, RecordTypeCatalog.Keyword, recordSet.Keywords, progress, pluginIndex, pluginCount, cancellationToken);
         ImportPluginRecordType(plugin, result, RecordTypeCatalog.ActorValueInformation, recordSet.ActorValueInformation, progress, pluginIndex, pluginCount, cancellationToken);

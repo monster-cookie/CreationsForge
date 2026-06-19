@@ -24,7 +24,11 @@ public class PluginRecordSetDTO
 
     public IReadOnlyList<BookDTO> Books { get; set; } = [];
 
+    public IReadOnlyList<ClassDTO> Classes { get; set; } = [];
+
     public IReadOnlyList<DoorDTO> Doors { get; set; } = [];
+
+    public IReadOnlyList<FactionDTO> Factions { get; set; } = [];
 
     public IReadOnlyList<ContainerDTO> Containers { get; set; } = [];
 

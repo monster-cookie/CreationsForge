@@ -3,7 +3,7 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class ConstructibleObjectDTO : RecordDTO, IHasScriptingAdaptersRecordDTO, IHasRawRecordPayloadsRecordDTO
+public class ConstructibleObjectDTO : RecordDTO, IHasScriptingAdaptersRecordDTO, IHasRawRecordPayloadsRecordDTO, IHasConditionsRecordDTO
 {
     public int? Version2 { get; set; }
 
@@ -28,6 +28,8 @@ public class ConstructibleObjectDTO : RecordDTO, IHasScriptingAdaptersRecordDTO,
     public IList<ConstructibleObjectCategoryDTO> Categories { get; set; } = new List<ConstructibleObjectCategoryDTO>();
 
     public IList<ConstructibleObjectRecipeFilterDTO> RecipeFilters { get; set; } = new List<ConstructibleObjectRecipeFilterDTO>();
+
+    public IList<ConditionFormConditionDTO> Conditions { get; set; } = new List<ConditionFormConditionDTO>();
 
     public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 

@@ -1,6 +1,6 @@
 namespace CreationsForge.Core.DTOs.Records;
 
-public class ConditionFormDTO : RecordDTO
+public class ConditionFormDTO : RecordDTO, Interfaces.IHasConditionsRecordDTO
 {
     public int? Version2 { get; set; }
 

@@ -17,6 +17,8 @@ public class ConditionFormConditionDTO
 
     public int ConditionIndex { get; set; }
 
+    public string ConditionSlot { get; set; } = "Conditions";
+
     public string MutagenObjectType { get; set; } = string.Empty;
 
     public string? DataMutagenObjectType { get; set; }

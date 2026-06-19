@@ -12,6 +12,7 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
     private static readonly IReadOnlySet<string> AllowedTableNames = new HashSet<string>(StringComparer.Ordinal)
     {
         RecordTypeCatalog.ActorValueInformation.TableName,
+        RecordTypeCatalog.Class.TableName,
         RecordTypeCatalog.Keyword.TableName,
         RecordTypeCatalog.MagicEffect.TableName,
         RecordTypeCatalog.MiscObject.TableName,
@@ -23,6 +24,7 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
         RecordTypeCatalog.Container.TableName,
         RecordTypeCatalog.ConstructibleObject.TableName,
         RecordTypeCatalog.ConditionForm.TableName,
+        RecordTypeCatalog.Faction.TableName,
         RecordTypeCatalog.Terminal.TableName
     };
 

@@ -384,7 +384,7 @@ public class RecordComparisonServiceTests
     }
 
     [Fact]
-    public void GetRecordComparison_ForConstructibleObject_MapsComponentsRecipeFiltersScriptsAndRawPayloads()
+    public void GetRecordComparison_ForConstructibleObject_MapsComponentsConditionsScriptsAndRawPayloads()
     {
         var formKey = CreateFormKey("Starfield.esm", 0x2500);
         var createdObjectFormKey = CreateFormKey("Starfield.esm", 0x111);
@@ -411,8 +411,8 @@ public class RecordComparisonServiceTests
         {
             Records =
             [
-                CreateRawRecordPayload("Base.esm", RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "Conditions", 0, "Conditions", "BaseCondition"),
-                CreateRawRecordPayload("Patch.esp", RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "Conditions", 0, "Conditions", "PatchCondition")
+                CreateRawRecordPayload("Base.esm", RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "CreatedObjectCounts", 0, "CreatedObjectCounts", "BaseCount"),
+                CreateRawRecordPayload("Patch.esp", RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "CreatedObjectCounts", 0, "CreatedObjectCounts", "PatchCount")
             ]
         };
         var service = CreateService(
@@ -433,12 +433,16 @@ public class RecordComparisonServiceTests
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Categories");
         var recipeFilters = comparison.Fields.Single(field => field.FieldName == "RecipeFilters");
         recipeFilters.Children.Single(field => field.FieldName == "RecipeFilter [0]").Children.Single(field => field.FieldName == "RecipeFilterFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000444", "Starfield.esm:00000444"]);
+        var conditions = comparison.Fields.Single(field => field.FieldName == "Conditions");
+        var condition = conditions.Children.Single(field => field.FieldName == "Condition [0]");
+        condition.Children.Single(field => field.FieldName == "CompareOperator").Values.Select(value => value.DisplayValue).ShouldBe(["EqualTo", "EqualTo"]);
+        condition.Children.Single(field => field.FieldName == "ComparisonValue").Values.Select(value => value.DisplayValue).ShouldBe(["2", "4"]);
         var scripts = comparison.Fields.Single(field => field.FieldName == "Scripts");
         scripts.Children.Single(field => field.FieldName == "Script [0]").Children.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["RecipeScript", "RecipeScript"]);
         var rawPayloads = comparison.Fields.Single(field => field.FieldName == "Raw Payloads");
-        var conditionValues = rawPayloads.Children.Single(field => field.FieldName == "Conditions").Children.Single(field => field.FieldName == "Value").Values;
-        conditionValues.Select(value => value.DisplayValue).ShouldBe(["[UNPARSEABLE REFLECTION DATA]", "[UNPARSEABLE REFLECTION DATA]"]);
-        conditionValues.Select(value => value.DetailValue).ShouldBe(["BaseCondition", "PatchCondition"]);
+        var countValues = rawPayloads.Children.Single(field => field.FieldName == "CreatedObjectCounts").Children.Single(field => field.FieldName == "Value").Values;
+        countValues.Select(value => value.DisplayValue).ShouldBe(["[UNPARSEABLE REFLECTION DATA]", "[UNPARSEABLE REFLECTION DATA]"]);
+        countValues.Select(value => value.DetailValue).ShouldBe(["BaseCount", "PatchCount"]);
     }
 
     [Fact]
@@ -632,6 +636,8 @@ public class RecordComparisonServiceTests
         TestFormListRepository? formListRepository = null,
         TestGameSettingRepository? gameSettingRepository = null,
         TestGlobalRepository? globalRepository = null,
+        TestClassRepository? classRepository = null,
+        TestFactionRepository? factionRepository = null,
         TestMiscObjectRepository? miscObjectRepository = null,
         TestKeywordRepository? keywordRepository = null,
         TestActorValueInformationRepository? actorValueInformationRepository = null,
@@ -655,6 +661,8 @@ public class RecordComparisonServiceTests
             formListRepository ?? new TestFormListRepository(),
             gameSettingRepository ?? new TestGameSettingRepository(),
             globalRepository ?? new TestGlobalRepository(),
+            classRepository ?? new TestClassRepository(),
+            factionRepository ?? new TestFactionRepository(),
             miscObjectRepository ?? new TestMiscObjectRepository(),
             keywordRepository ?? new TestKeywordRepository(),
             actorValueInformationRepository ?? new TestActorValueInformationRepository(),
@@ -984,6 +992,21 @@ public class RecordComparisonServiceTests
                     RecipeFilterIndex = 0,
                     ImportedAtUTC = DateTime.UtcNow
                 }
+            },
+            Conditions =
+            {
+                new ConditionFormConditionDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    ConditionIndex = 0,
+                    MutagenObjectType = "ConditionFloat",
+                    DataMutagenObjectType = "GetItemCountConditionData",
+                    CompareOperator = "EqualTo",
+                    ComparisonValue = amountProduced.ToString(),
+                    ImportedAtUTC = DateTime.UtcNow
+                }
             }
         };
     }
@@ -1297,6 +1320,62 @@ public class RecordComparisonServiceTests
         }
 
         public void Save(GlobalDTO dto)
+        { }
+
+        public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)
+        { }
+    }
+
+    private sealed class TestClassRepository : IClassRepository
+    {
+        public string RecordType => RecordTypeCatalog.Class.RecordID;
+
+        public IReadOnlyList<ClassDTO> Records { get; set; } = [];
+
+        public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntriesByPlugin(SupportedGame game, ModKeyDTO modKey)
+        {
+            return [];
+        }
+
+        public IReadOnlyDictionary<string, int> GetRecordPluginCountsByGame(SupportedGame game)
+        {
+            return new Dictionary<string, int>();
+        }
+
+        public IReadOnlyList<ClassDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        {
+            return Records;
+        }
+
+        public void Save(ClassDTO dto)
+        { }
+
+        public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)
+        { }
+    }
+
+    private sealed class TestFactionRepository : IFactionRepository
+    {
+        public string RecordType => RecordTypeCatalog.Faction.RecordID;
+
+        public IReadOnlyList<FactionDTO> Records { get; set; } = [];
+
+        public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntriesByPlugin(SupportedGame game, ModKeyDTO modKey)
+        {
+            return [];
+        }
+
+        public IReadOnlyDictionary<string, int> GetRecordPluginCountsByGame(SupportedGame game)
+        {
+            return new Dictionary<string, int>();
+        }
+
+        public IReadOnlyList<FactionDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        {
+            return Records;
+        }
+
+        public void Save(FactionDTO dto)
         { }
 
         public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)

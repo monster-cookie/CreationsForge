@@ -228,6 +228,8 @@ public class SpriggitComparisonHeadlessFixture
             repository,
             repository,
             repository,
+            repository,
+            repository,
             repository);
     }
 
@@ -243,6 +245,8 @@ public class SpriggitComparisonHeadlessFixture
         IFormListRepository,
         IGameSettingRepository,
         IGlobalRepository,
+        IClassRepository,
+        IFactionRepository,
         IMiscObjectRepository,
         IKeywordRepository,
         IActorValueInformationRepository,
@@ -258,6 +262,7 @@ public class SpriggitComparisonHeadlessFixture
         ITerminalRepository,
         IModelRepository,
         IRecordKeywordRepository,
+        IRecordComponentRepository,
         IRecordSoundRepository,
         IScriptingAdapterRepository,
         IRawRecordPayloadRepository
@@ -265,6 +270,8 @@ public class SpriggitComparisonHeadlessFixture
         private readonly IReadOnlyList<FormListDTO> formLists = [];
         private readonly IReadOnlyList<GameSettingDTO> gameSettings = [];
         private readonly IReadOnlyList<GlobalDTO> globals = [];
+        private readonly IReadOnlyList<ClassDTO> classes = [];
+        private readonly IReadOnlyList<FactionDTO> factions = [];
         private readonly IReadOnlyList<MiscObjectDTO> miscObjects = [];
         private readonly IReadOnlyList<KeywordDTO> keywords = [];
         private readonly IReadOnlyList<ActorValueInformationDTO> actorValueInformation = [];
@@ -280,6 +287,7 @@ public class SpriggitComparisonHeadlessFixture
         private readonly IReadOnlyList<TerminalDTO> terminals = [];
         private readonly IReadOnlyList<ModelDTO> models = [];
         private readonly IReadOnlyList<RecordKeywordDTO> recordKeywords = [];
+        private readonly IReadOnlyList<RecordComponentDTO> recordComponents = [];
         private readonly IReadOnlyList<RecordSoundDTO> recordSounds = [];
         private readonly IReadOnlyList<ScriptingAdapterDTO> scriptingAdapters = [];
         private readonly IReadOnlyList<RawRecordPayloadDTO> rawPayloads = [];
@@ -293,6 +301,12 @@ public class SpriggitComparisonHeadlessFixture
                     break;
                 case "GLOB":
                     globals = [RequireRecord<GlobalDTO>(record, recordType)];
+                    break;
+                case "CLAS":
+                    classes = [RequireRecord<ClassDTO>(record, recordType)];
+                    break;
+                case "FACT":
+                    factions = [RequireRecord<FactionDTO>(record, recordType)];
                     break;
                 case "MISC":
                     miscObjects = [RequireRecord<MiscObjectDTO>(record, recordType)];
@@ -316,6 +330,11 @@ public class SpriggitComparisonHeadlessFixture
             if (record is IHasKeywordsRecordDTO keywordRecord)
             {
                 recordKeywords = keywordRecord.Keywords.ToList();
+            }
+
+            if (record is IHasComponentsRecordDTO componentRecord)
+            {
+                recordComponents = componentRecord.Components.ToList();
             }
 
             if (record is IHasSoundsRecordDTO soundRecord)
@@ -359,6 +378,16 @@ public class SpriggitComparisonHeadlessFixture
         IReadOnlyList<GlobalDTO> IGlobalRepository.GetByFormKey(SupportedGame game, FormKeyDTO formKey)
         {
             return globals;
+        }
+
+        IReadOnlyList<ClassDTO> IClassRepository.GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        {
+            return classes;
+        }
+
+        IReadOnlyList<FactionDTO> IFactionRepository.GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        {
+            return factions;
         }
 
         IReadOnlyList<MiscObjectDTO> IMiscObjectRepository.GetByFormKey(SupportedGame game, FormKeyDTO formKey)
@@ -436,6 +465,11 @@ public class SpriggitComparisonHeadlessFixture
             return recordKeywords;
         }
 
+        IReadOnlyList<RecordComponentDTO> IRecordComponentRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+        {
+            return recordComponents;
+        }
+
         IReadOnlyList<RecordSoundDTO> IRecordSoundRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
         {
             return recordSounds;
@@ -458,6 +492,12 @@ public class SpriggitComparisonHeadlessFixture
         { }
 
         public void Save(GlobalDTO dto)
+        { }
+
+        public void Save(ClassDTO dto)
+        { }
+
+        public void Save(FactionDTO dto)
         { }
 
         public void Save(MiscObjectDTO dto)
@@ -503,6 +543,12 @@ public class SpriggitComparisonHeadlessFixture
         { }
 
         public void Save(RecordKeywordDTO dto)
+        { }
+
+        public void Save(RecordComponentDTO dto)
+        { }
+
+        public void ReplaceRecordComponents(IHasComponentsRecordDTO record, string recordType)
         { }
 
         public void Save(RecordSoundDTO dto)

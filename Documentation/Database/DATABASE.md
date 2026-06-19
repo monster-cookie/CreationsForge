@@ -15,11 +15,16 @@ The application uses a local SQLite database. The schema is defined by embedded 
   `ConstructibleObjectCategories`, and `ConstructibleObjectRecipeFilters` tables, adds
   `RawRecordPayloads.SourcePath`, adds plugin import diagnostic columns, and marks existing current or partially
   imported plugin rows as `Changed` so each supported game reimports cached plugin data after the migration.
+- `005_Migrations005.sql` adds the `Classes`, `ClassProperties`, `ClassWeights`, `Factions`,
+  `FactionRelations`, `FactionRanks`, `ConditionRules`, `ConditionRuleParameters`, `RecordComponents`, and
+  `RecordComponentItems` tables, migrates released CNDF condition rows into the shared condition-rule tables, drops
+  the old CNDF-specific condition tables, and marks existing current or partially imported plugin rows as `Changed`
+  so each supported game reimports cached plugin data after the migration.
 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains forty-four tables:
+The application schema contains fifty-two tables:
 
 - `Games`
 - `Plugins`
@@ -32,6 +37,14 @@ The application schema contains forty-four tables:
 - `FormListItems`
 - `GameSettings`
 - `Globals`
+- `Classes`
+- `ClassProperties`
+- `ClassWeights`
+- `Factions`
+- `FactionRelations`
+- `FactionRanks`
+- `ConditionRules`
+- `ConditionRuleParameters`
 - `MiscItems`
 - `Keywords`
 - `ActorValueInformation`
@@ -44,8 +57,6 @@ The application schema contains forty-four tables:
 - `Containers`
 - `ContainerItems`
 - `ConditionForms`
-- `ConditionFormConditions`
-- `ConditionFormConditionParameters`
 - `ConstructibleObjects`
 - `ConstructibleObjectComponents`
 - `ConstructibleObjectCategories`
@@ -53,6 +64,8 @@ The application schema contains forty-four tables:
 - `Terminals`
 - `TerminalMarkerParameters`
 - `RecordKeywords`
+- `RecordComponents`
+- `RecordComponentItems`
 - `PerkRanks`
 - `PerkRankEffects`
 - `PerkBackgroundSkills`
@@ -159,6 +172,9 @@ adapter table per record type.
 direct, slotted, and gendered model payloads can share one table family.
 `RecordKeywords` references the full `RecordInstances` key including `RecordType`, so keyword lists can be shared by
 record types that expose the same indexed keyword payload.
+`RecordComponents` references the full `RecordInstances` key including `RecordType`, so component payloads can be
+shared by record types that expose component subrecords. Starfield FACT components are currently stored through this
+shared component path.
 `RecordSounds` references the full `RecordInstances` key including `RecordType`, so named and indexed sound payloads
 can be shared by record types that expose the same Spriggit-style sound data.
 `RawRecordPayloads` references the full `RecordInstances` key including `RecordType`, so opaque payload bytes or
@@ -443,6 +459,277 @@ Persistence behavior:
 - Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful Global import batch
   are deleted as stale.
 
+### Classes
+
+Columns:
+
+- Common typed record key and metadata columns listed above
+- `Version2` (`INTEGER`, nullable)
+- `Name` and `Description` (`TEXT`, nullable)
+- `Teaches` (`TEXT`, nullable)
+- `MaxTrainingLevel` (`INTEGER`, nullable)
+- `BleedoutDefault`, `VoicePoints`, `Unknown`, and `Unknown2` (`REAL`, nullable)
+
+Foreign keys:
+
+- `Game` plus containing `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
+- Full common typed record key references `RecordInstances` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID` must be greater than or equal to zero.
+- `MaxTrainingLevel` must be null or greater than or equal to zero.
+
+Indexes:
+
+- `IX_Classes_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+- `IX_Classes_Game_Plugin` on `Game`, containing plugin ModKey columns, `EditorID`, and `FormKey_ID`
+- `IX_Classes_Game_FormKey_Collated` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted.
+- Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful Class import batch
+  are deleted as stale.
+- Stale parent Class deletion cascades to `ClassProperties` and `ClassWeights`.
+
+### ClassProperties
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `Property_Index` (`INTEGER`, `NOT NULL`, primary key)
+- nullable decomposed `ActorValue_*` FormKey columns
+- `Value` (`REAL`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `Classes` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID` and `Property_Index` must be greater than or equal to zero.
+- `ActorValue_FormKey_ID` must be null or greater than or equal to zero.
+
+Indexes:
+
+- `IX_ClassProperties_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning class row is saved.
+- Existing property rows for the same class are deleted before replacement.
+
+### ClassWeights
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `WeightType` (`TEXT`, `NOT NULL`, primary key)
+- `Weight_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `Key` (`TEXT`, `NOT NULL`)
+- `Value` (`REAL`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `Classes` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID` and `Weight_Index` must be greater than or equal to zero.
+- `WeightType` and `Key` must not be empty.
+
+Indexes:
+
+- `IX_ClassWeights_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning class row is saved.
+- Existing weight rows for the same class are deleted before replacement.
+- `WeightType` identifies whether the row came from skill weights or stat weights.
+- Current importers populate class weight rows only for games whose Spriggit CLAS exports expose `SkillWeights` and
+  `StatWeights`. Skyrim currently exposes those child rows; Starfield and Fallout 4 do not.
+
+### Factions
+
+Columns:
+
+- Common typed record key and metadata columns listed above
+- `Version2` (`INTEGER`, nullable)
+- `Name` and `Flags` (`TEXT`, nullable)
+- `FormationRadius` (`REAL`, nullable)
+- nullable decomposed FormKey columns for `Keyword`, `Herd`, `VoiceType`, `SharedCrimeFactionList`,
+  `VendorBuySellList`, `MerchantContainer`, `ExteriorJailMarker`, `FollowerWaitMarker`,
+  `StolenGoodsContainer`, `PlayerInventoryContainer`, `JailOutfit`, and `VendorLocationLink`
+- crime columns `CrimeArrest`, `CrimeAttackOnSight`, `CrimeMurder`, `CrimeAssault`, `CrimeTrespass`,
+  `CrimePickpocket`, `CrimeSteal`, `CrimeEscape`, `CrimeWerewolf`, and `CrimeUnknown` (`INTEGER`, nullable)
+- `CrimeStealMult` (`REAL`, nullable)
+- vendor columns `VendorStartHour`, `VendorEndHour` (`REAL`, nullable)
+- vendor columns `VendorRadius`, `VendorBuysStolenItems`, `VendorBuysNonStolenItems`, and
+  `VendorBuySellEverythingNotInList` (`INTEGER`, nullable)
+- `VendorLocationMutagenObjectType` and `VendorLocationType` (`TEXT`, nullable)
+
+Foreign keys:
+
+- `Game` plus containing `ModKey_*` references `Plugins` with `ON DELETE CASCADE`.
+- Full common typed record key references `RecordInstances` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID` must be greater than or equal to zero.
+
+Indexes:
+
+- `IX_Factions_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+- `IX_Factions_Game_Plugin` on `Game`, containing plugin ModKey columns, `EditorID`, and `FormKey_ID`
+- `IX_Factions_Game_FormKey_Collated` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted.
+- Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful Faction import
+  batch are deleted as stale.
+- Stale parent Faction deletion cascades to faction relation, rank, and condition rows.
+- Starfield FACT component rows are persisted through shared `RecordComponents` and `RecordComponentItems`.
+
+### FactionRelations
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `Relation_Index` (`INTEGER`, `NOT NULL`, primary key)
+- nullable decomposed `Target_*` FormKey columns
+- `Reaction` (`TEXT`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `Factions` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID` and `Relation_Index` must be greater than or equal to zero.
+- `Target_FormKey_ID` must be null or greater than or equal to zero.
+
+Indexes:
+
+- `IX_FactionRelations_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning faction row is saved.
+- Existing relation rows for the same faction are deleted before replacement.
+
+### FactionRanks
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `Rank_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `RankNumber` (`INTEGER`, nullable)
+- `MaleTitle` and `FemaleTitle` (`TEXT`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `Factions` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID` and `Rank_Index` must be greater than or equal to zero.
+
+Indexes:
+
+- `IX_FactionRanks_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning faction row is saved.
+- Existing rank rows for the same faction are deleted before replacement.
+
+### ConditionRules
+
+Shared condition rule rows for records with condition lists are stored here. Current users include `CNDF`, `COBJ`,
+and `FACT`. `ConditionSlot` identifies the owning condition list on records that expose more than one list.
+
+Columns:
+
+- Common containing plugin key columns listed above
+- `RecordType` (`TEXT`, `NOT NULL`, primary key)
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `ConditionSlot` (`TEXT`, `NOT NULL`, primary key)
+- `Condition_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `MutagenObjectType` (`TEXT`, `NOT NULL`)
+- `DataMutagenObjectType`, `CompareOperator`, and `ComparisonValue` (`TEXT`, nullable)
+- nullable decomposed FormKey columns for `ComparisonValue`
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key including `RecordType` references `RecordInstances` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `RecordType` and `ConditionSlot` must not be empty.
+- `FormKey_ID` and `Condition_Index` must be greater than or equal to zero.
+- `ComparisonValue_FormKey_ID` must be null or greater than or equal to zero.
+
+Indexes:
+
+- `IX_ConditionRules_Game_FormKey` on `Game`, `RecordType`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted through the shared condition-rule import service after the parent row is saved.
+- Existing condition rows for the same record are deleted before replacement.
+- Migration 005 copies released CNDF rows from `ConditionFormConditions` into this table and drops the old table.
+
+### ConditionRuleParameters
+
+Condition data fields such as `RunOnType`, `Reference`, `FirstParameter`, `SecondParameter`, `Unknown3`,
+`UseAliases`, and `VoiceTypeOrList` are stored here when Mutagen exposes them on the condition data object.
+
+Columns:
+
+- Common containing plugin key columns listed above
+- `RecordType` (`TEXT`, `NOT NULL`, primary key)
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `ConditionSlot` (`TEXT`, `NOT NULL`, primary key)
+- `Condition_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `Parameter_Name` (`TEXT`, `NOT NULL`, primary key)
+- `ParameterValue` (`TEXT`, nullable)
+- nullable decomposed FormKey columns for the parameter value
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full parent condition key references `ConditionRules` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `RecordType`, `ConditionSlot`, and `Parameter_Name` must not be empty.
+- `FormKey_ID` and `Condition_Index` must be greater than or equal to zero.
+- `Parameter_FormKey_ID` must be null or greater than or equal to zero.
+
+Indexes:
+
+- `IX_ConditionRuleParameters_Game_FormKey` on `Game`, `RecordType`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning condition rule row is saved.
+- Existing parameter rows for a replaced condition are deleted through the parent condition row replacement/delete
+  behavior.
+- Migration 005 copies released CNDF rows from `ConditionFormConditionParameters` into this table and drops the old
+  table.
+
 ### Shared scripted parent records
 
 `MiscItems`, `Keywords`, `ActorValueInformation`, `NPCs`, `MagicEffects`, `Perks`, `Statics`, `Books`, `Doors`,
@@ -628,75 +915,8 @@ Persistence behavior:
 - Existing item rows for the same container are deleted before replacement so removed items do not remain stale.
 - Stale typed-record deletion removes item rows through the declared `Containers` cascade.
 
-### ConditionFormConditions
-
-Starfield CNDF `Conditions` rows are stored here. The table stores the condition envelope shared by
-`ConditionFloat` and `ConditionGlobal` rows.
-
-Columns:
-
-- Common containing plugin key columns listed above
-- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
-- `Condition_Index` (`INTEGER`, `NOT NULL`, primary key)
-- `MutagenObjectType` (`TEXT`, `NOT NULL`)
-- `DataMutagenObjectType` (`TEXT`, nullable)
-- `CompareOperator` (`TEXT`, nullable)
-- `ComparisonValue` (`TEXT`, nullable)
-- nullable decomposed FormKey columns for `ComparisonValue`
-- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
-
-Foreign keys:
-
-- Full common typed record key references `ConditionForms` with `ON DELETE CASCADE`.
-
-Constraints:
-
-- `Condition_Index`, `FormKey_ID`, and non-null `ComparisonValue_FormKey_ID` must be greater than or equal to zero.
-
-Indexes:
-
-- `IX_ConditionFormConditions_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
-
-Persistence behavior:
-
-- Current imported rows are upserted after their owning condition form row is saved.
-- Existing condition rows for the same condition form are deleted before replacement so removed conditions do not
-  remain stale.
-- Stale typed-record deletion removes condition rows through the declared `ConditionForms` cascade.
-
-### ConditionFormConditionParameters
-
-Starfield CNDF condition data fields such as `RunOnType`, `Reference`, `FirstParameter`, `SecondParameter`,
-`Unknown3`, `UseAliases`, and `VoiceTypeOrList` are stored here.
-
-Columns:
-
-- Common containing plugin key columns listed above
-- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
-- `Condition_Index` (`INTEGER`, `NOT NULL`, primary key)
-- `Parameter_Name` (`TEXT`, `NOT NULL`, primary key)
-- `ParameterValue` (`TEXT`, nullable)
-- nullable decomposed FormKey columns for the parameter value
-- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
-
-Foreign keys:
-
-- Full parent condition key references `ConditionFormConditions` with `ON DELETE CASCADE`.
-
-Constraints:
-
-- `Condition_Index`, `FormKey_ID`, and non-null `Parameter_FormKey_ID` must be greater than or equal to zero.
-- `Parameter_Name` must not be empty.
-
-Indexes:
-
-- `IX_ConditionFormConditionParameters_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
-
-Persistence behavior:
-
-- Current imported rows are upserted after their owning condition row is saved.
-- Existing parameter rows for a replaced condition are deleted through the parent condition row replacement/delete
-  behavior.
+Condition form `Conditions` rows use the shared `ConditionRules` and `ConditionRuleParameters` tables with
+`RecordType = 'CNDF'` and `ConditionSlot = 'Conditions'`.
 
 ### ConstructibleObjectComponents
 
@@ -841,6 +1061,67 @@ Persistence behavior:
 - Existing keyword rows for the same record are deleted before replacement so removed keyword slots do not remain
   stale.
 - Stale typed-record deletion removes keyword rows through the declared `RecordInstances` cascade.
+
+### RecordComponents
+
+Columns:
+
+- Common containing plugin key columns listed above
+- `RecordType` (`TEXT`, `NOT NULL`, primary key)
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `Component_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `MutagenObjectType` (`TEXT`, `NOT NULL`)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key plus `RecordType` references `RecordInstances` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `RecordType` must not be empty.
+- `FormKey_ID` and `Component_Index` must be greater than or equal to zero.
+
+Indexes:
+
+- `IX_RecordComponents_Game_FormKey` on `Game`, `RecordType`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning typed record row is saved.
+- Existing component rows for the same record are deleted before replacement so removed component slots do not remain
+  stale.
+- Stale typed-record deletion removes component rows through the declared `RecordInstances` cascade.
+
+### RecordComponentItems
+
+Columns:
+
+- Full parent record-component key columns listed above
+- `Item_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `Unknown1`, `Unknown2`, `Unknown3`, `Unknown4`, and `Unknown5` (`REAL`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full parent key references `RecordComponents` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `RecordType` must not be empty.
+- `FormKey_ID`, `Component_Index`, and `Item_Index` must be greater than or equal to zero.
+
+Indexes:
+
+- `IX_RecordComponentItems_Game_FormKey` on `Game`, `RecordType`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning record-component row is saved.
+- Existing item rows for a replaced component are deleted through the parent component row replacement/delete
+  behavior.
+- Starfield FACT component item numeric fields are stored as named columns. They are not persisted as opaque raw
+  payloads.
 
 ### Perk child tables
 
@@ -1144,6 +1425,36 @@ These columns carry record-reference identity but do not declare SQLite foreign 
 - `Terminals.FurnitureTemplate_ModKey_Name`, `FurnitureTemplate_ModKey_Type`,
   `FurnitureTemplate_ModKey_FileName`, and `FurnitureTemplate_FormKey_ID`
 - `FormListItems.Item_ModKey_Name`, `Item_ModKey_Type`, `Item_ModKey_FileName`, and `Item_FormKey_ID`
+- `ClassProperties.ActorValue_ModKey_Name`, `ActorValue_ModKey_Type`, `ActorValue_ModKey_FileName`, and
+  `ActorValue_FormKey_ID`
+- `Factions.Keyword_ModKey_Name`, `Keyword_ModKey_Type`, `Keyword_ModKey_FileName`, and `Keyword_FormKey_ID`
+- `Factions.Herd_ModKey_Name`, `Herd_ModKey_Type`, `Herd_ModKey_FileName`, and `Herd_FormKey_ID`
+- `Factions.VoiceType_ModKey_Name`, `VoiceType_ModKey_Type`, `VoiceType_ModKey_FileName`, and
+  `VoiceType_FormKey_ID`
+- `Factions.SharedCrimeFactionList_ModKey_Name`, `SharedCrimeFactionList_ModKey_Type`,
+  `SharedCrimeFactionList_ModKey_FileName`, and `SharedCrimeFactionList_FormKey_ID`
+- `Factions.VendorBuySellList_ModKey_Name`, `VendorBuySellList_ModKey_Type`,
+  `VendorBuySellList_ModKey_FileName`, and `VendorBuySellList_FormKey_ID`
+- `Factions.MerchantContainer_ModKey_Name`, `MerchantContainer_ModKey_Type`,
+  `MerchantContainer_ModKey_FileName`, and `MerchantContainer_FormKey_ID`
+- `Factions.ExteriorJailMarker_ModKey_Name`, `ExteriorJailMarker_ModKey_Type`,
+  `ExteriorJailMarker_ModKey_FileName`, and `ExteriorJailMarker_FormKey_ID`
+- `Factions.FollowerWaitMarker_ModKey_Name`, `FollowerWaitMarker_ModKey_Type`,
+  `FollowerWaitMarker_ModKey_FileName`, and `FollowerWaitMarker_FormKey_ID`
+- `Factions.StolenGoodsContainer_ModKey_Name`, `StolenGoodsContainer_ModKey_Type`,
+  `StolenGoodsContainer_ModKey_FileName`, and `StolenGoodsContainer_FormKey_ID`
+- `Factions.PlayerInventoryContainer_ModKey_Name`, `PlayerInventoryContainer_ModKey_Type`,
+  `PlayerInventoryContainer_ModKey_FileName`, and `PlayerInventoryContainer_FormKey_ID`
+- `Factions.JailOutfit_ModKey_Name`, `JailOutfit_ModKey_Type`, `JailOutfit_ModKey_FileName`, and
+  `JailOutfit_FormKey_ID`
+- `Factions.VendorLocationLink_ModKey_Name`, `VendorLocationLink_ModKey_Type`,
+  `VendorLocationLink_ModKey_FileName`, and `VendorLocationLink_FormKey_ID`
+- `FactionRelations.Target_ModKey_Name`, `Target_ModKey_Type`, `Target_ModKey_FileName`, and
+  `Target_FormKey_ID`
+- `ConditionRules.ComparisonValue_ModKey_Name`, `ComparisonValue_ModKey_Type`,
+  `ComparisonValue_ModKey_FileName`, and `ComparisonValue_FormKey_ID`
+- `ConditionRuleParameters.Parameter_ModKey_Name`, `Parameter_ModKey_Type`, `Parameter_ModKey_FileName`, and
+  `Parameter_FormKey_ID`
 - `ConstructibleObjectComponents.Component_ModKey_Name`, `Component_ModKey_Type`,
   `Component_ModKey_FileName`, and `Component_FormKey_ID`
 - `ConstructibleObjectCategories.Category_ModKey_Name`, `Category_ModKey_Type`,

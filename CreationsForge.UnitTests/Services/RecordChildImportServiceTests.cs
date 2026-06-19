@@ -16,6 +16,8 @@ public class RecordChildImportServiceTests
     {
         var modelImportService = new TestModelImportService();
         var keywordImportService = new TestRecordKeywordImportService();
+        var componentImportService = new TestRecordComponentImportService();
+        var conditionRuleImportService = new TestConditionRuleImportService();
         var rawRecordPayloadImportService = new TestRawRecordPayloadImportService();
         var soundImportService = new TestRecordSoundImportService();
         var scriptingAdapterImportService = new TestScriptingAdapterImportService();
@@ -23,6 +25,8 @@ public class RecordChildImportServiceTests
         var service = new RecordChildImportService(
             modelImportService,
             keywordImportService,
+            componentImportService,
+            conditionRuleImportService,
             rawRecordPayloadImportService,
             soundImportService,
             scriptingAdapterImportService,
@@ -33,6 +37,8 @@ public class RecordChildImportServiceTests
 
         modelImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
         keywordImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
+        componentImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
+        conditionRuleImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
         rawRecordPayloadImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
         soundImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
         scriptingAdapterImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
@@ -44,6 +50,8 @@ public class RecordChildImportServiceTests
     {
         var modelImportService = new TestModelImportService();
         var keywordImportService = new TestRecordKeywordImportService();
+        var componentImportService = new TestRecordComponentImportService();
+        var conditionRuleImportService = new TestConditionRuleImportService();
         var rawRecordPayloadImportService = new TestRawRecordPayloadImportService();
         var soundImportService = new TestRecordSoundImportService();
         var scriptingAdapterImportService = new TestScriptingAdapterImportService();
@@ -51,6 +59,8 @@ public class RecordChildImportServiceTests
         var service = new RecordChildImportService(
             modelImportService,
             keywordImportService,
+            componentImportService,
+            conditionRuleImportService,
             rawRecordPayloadImportService,
             soundImportService,
             scriptingAdapterImportService,
@@ -60,6 +70,8 @@ public class RecordChildImportServiceTests
 
         modelImportService.ReplaceRequests.ShouldBeEmpty();
         keywordImportService.ReplaceRequests.ShouldBeEmpty();
+        componentImportService.ReplaceRequests.ShouldBeEmpty();
+        conditionRuleImportService.ReplaceRequests.ShouldBeEmpty();
         rawRecordPayloadImportService.ReplaceRequests.ShouldBeEmpty();
         soundImportService.ReplaceRequests.ShouldBeEmpty();
         scriptingAdapterImportService.ReplaceRequests.ShouldBeEmpty();
@@ -71,6 +83,8 @@ public class RecordChildImportServiceTests
     {
         var modelImportService = new TestModelImportService();
         var keywordImportService = new TestRecordKeywordImportService();
+        var componentImportService = new TestRecordComponentImportService();
+        var conditionRuleImportService = new TestConditionRuleImportService();
         var rawRecordPayloadImportService = new TestRawRecordPayloadImportService();
         var soundImportService = new TestRecordSoundImportService();
         var scriptingAdapterImportService = new TestScriptingAdapterImportService();
@@ -78,13 +92,18 @@ public class RecordChildImportServiceTests
         var service = new RecordChildImportService(
             modelImportService,
             keywordImportService,
+            componentImportService,
+            conditionRuleImportService,
             rawRecordPayloadImportService,
             soundImportService,
             scriptingAdapterImportService,
             terminalMarkerParameterImportService);
 
-        service.ReplaceRecordChildren(CreateConditionForm(), RecordTypeCatalog.ConditionForm.RecordID);
+        var conditionForm = CreateConditionForm();
 
+        service.ReplaceRecordChildren(conditionForm, RecordTypeCatalog.ConditionForm.RecordID);
+
+        conditionRuleImportService.ReplaceRequests.ShouldBe([(conditionForm, RecordTypeCatalog.ConditionForm.RecordID)]);
         rawRecordPayloadImportService.ReplaceRequests.ShouldBeEmpty();
     }
 
@@ -140,11 +159,15 @@ public class RecordChildImportServiceTests
         };
     }
 
-    private sealed class CompositeRecordDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO, IHasRawRecordPayloadsRecordDTO, IHasSoundsRecordDTO, IHasScriptingAdaptersRecordDTO, IHasTerminalMarkerParametersRecordDTO
+    private sealed class CompositeRecordDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO, IHasComponentsRecordDTO, IHasConditionsRecordDTO, IHasRawRecordPayloadsRecordDTO, IHasSoundsRecordDTO, IHasScriptingAdaptersRecordDTO, IHasTerminalMarkerParametersRecordDTO
     {
         public IList<ModelDTO> Models { get; set; } = new List<ModelDTO>();
 
         public IList<RecordKeywordDTO> Keywords { get; set; } = new List<RecordKeywordDTO>();
+
+        public IList<RecordComponentDTO> Components { get; set; } = new List<RecordComponentDTO>();
+
+        public IList<ConditionFormConditionDTO> Conditions { get; set; } = new List<ConditionFormConditionDTO>();
 
         public IList<RawRecordPayloadDTO> RawPayloads { get; set; } = new List<RawRecordPayloadDTO>();
 
@@ -183,6 +206,26 @@ public class RecordChildImportServiceTests
         public IList<(IHasRawRecordPayloadsRecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasRawRecordPayloadsRecordDTO Record, string RecordType)>();
 
         public void ReplaceRawRecordPayloads(IHasRawRecordPayloadsRecordDTO record, string recordType)
+        {
+            ReplaceRequests.Add((record, recordType));
+        }
+    }
+
+    private sealed class TestRecordComponentImportService : IRecordComponentImportService
+    {
+        public IList<(IHasComponentsRecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasComponentsRecordDTO Record, string RecordType)>();
+
+        public void ReplaceRecordComponents(IHasComponentsRecordDTO record, string recordType)
+        {
+            ReplaceRequests.Add((record, recordType));
+        }
+    }
+
+    private sealed class TestConditionRuleImportService : IConditionRuleImportService
+    {
+        public IList<(IHasConditionsRecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasConditionsRecordDTO Record, string RecordType)>();
+
+        public void ReplaceConditionRules(IHasConditionsRecordDTO record, string recordType)
         {
             ReplaceRequests.Add((record, recordType));
         }

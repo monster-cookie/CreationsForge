@@ -9,9 +9,16 @@ namespace CreationsForge.Core.Repositories;
 
 public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstructibleObjectRepository
 {
-    public ConstructibleObjectRepository(IDatabase database, IRecordInstanceRepository recordInstanceRepository)
+    private readonly IConditionRuleRepository ConditionRuleRepository;
+
+    public ConstructibleObjectRepository(
+        IDatabase database,
+        IRecordInstanceRepository recordInstanceRepository,
+        IConditionRuleRepository conditionRuleRepository)
         : base(database, recordInstanceRepository)
-    { }
+    {
+        ConditionRuleRepository = conditionRuleRepository;
+    }
 
     public override string RecordType => RecordTypeCatalog.ConstructibleObject.RecordID;
 
@@ -44,6 +51,7 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
         var components = FetchComponentsByFormKey(game, formKey);
         var categories = FetchCategoriesByFormKey(game, formKey);
         var recipeFilters = FetchRecipeFiltersByFormKey(game, formKey);
+        var conditions = ConditionRuleRepository.GetByFormKey(game, RecordTypeCatalog.ConstructibleObject.RecordID, formKey);
         foreach (var record in records)
         {
             record.Components = components
@@ -57,6 +65,10 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
             record.RecipeFilters = recipeFilters
                 .Where(recipeFilter => IsSameModKey(recipeFilter.ModKey, record.ModKey))
                 .OrderBy(recipeFilter => recipeFilter.RecipeFilterIndex)
+                .ToList();
+            record.Conditions = conditions
+                .Where(condition => IsSameModKey(condition.ModKey, record.ModKey) && string.Equals(condition.ConditionSlot, "Conditions", StringComparison.Ordinal))
+                .OrderBy(condition => condition.ConditionIndex)
                 .ToList();
         }
 

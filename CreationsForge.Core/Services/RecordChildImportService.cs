@@ -8,6 +8,8 @@ public class RecordChildImportService : IRecordChildImportService
 {
     private readonly IModelImportService ModelImportService;
     private readonly IRecordKeywordImportService RecordKeywordImportService;
+    private readonly IRecordComponentImportService RecordComponentImportService;
+    private readonly IConditionRuleImportService ConditionRuleImportService;
     private readonly IRawRecordPayloadImportService RawRecordPayloadImportService;
     private readonly IRecordSoundImportService RecordSoundImportService;
     private readonly IScriptingAdapterImportService ScriptingAdapterImportService;
@@ -16,6 +18,8 @@ public class RecordChildImportService : IRecordChildImportService
     public RecordChildImportService(
         IModelImportService modelImportService,
         IRecordKeywordImportService recordKeywordImportService,
+        IRecordComponentImportService recordComponentImportService,
+        IConditionRuleImportService conditionRuleImportService,
         IRawRecordPayloadImportService rawRecordPayloadImportService,
         IRecordSoundImportService recordSoundImportService,
         IScriptingAdapterImportService scriptingAdapterImportService,
@@ -23,6 +27,8 @@ public class RecordChildImportService : IRecordChildImportService
     {
         ModelImportService = modelImportService;
         RecordKeywordImportService = recordKeywordImportService;
+        RecordComponentImportService = recordComponentImportService;
+        ConditionRuleImportService = conditionRuleImportService;
         RawRecordPayloadImportService = rawRecordPayloadImportService;
         RecordSoundImportService = recordSoundImportService;
         ScriptingAdapterImportService = scriptingAdapterImportService;
@@ -39,6 +45,16 @@ public class RecordChildImportService : IRecordChildImportService
         if (record is IHasKeywordsRecordDTO keywordRecord)
         {
             RecordKeywordImportService.ReplaceRecordKeywords(keywordRecord, recordType);
+        }
+
+        if (record is IHasComponentsRecordDTO componentRecord)
+        {
+            RecordComponentImportService.ReplaceRecordComponents(componentRecord, recordType);
+        }
+
+        if (record is IHasConditionsRecordDTO conditionRecord)
+        {
+            ConditionRuleImportService.ReplaceConditionRules(conditionRecord, recordType);
         }
 
         if (record is IHasSoundsRecordDTO soundRecord)

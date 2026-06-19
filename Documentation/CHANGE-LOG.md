@@ -1,5 +1,11 @@
 ﻿# Change Log
 
+## Unreleased
+
+- Again with missing child data on NPCs.
+- Display UI for condition rules vs storing them as binary.
+- Added Additional Major Record Types: Class (CLAS), Faction (FACT)
+
 ## Version 1.1.9 - 2026-06-16
 
 - Moved the active game/plugin dropdowns in to an open plugin dialog.

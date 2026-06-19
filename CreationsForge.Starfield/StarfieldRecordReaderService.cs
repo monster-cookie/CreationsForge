@@ -34,6 +34,10 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         cancellationToken.ThrowIfCancellationRequested();
         var globals = MapGlobals(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
+        var classes = MapClasses(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
+        var factions = MapFactions(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
         var miscObjects = MapMiscObjects(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
         var keywords = MapKeywords(plugin, mod);
@@ -65,6 +69,8 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             FormLists = formLists,
             GameSettings = gameSettings,
             Globals = globals,
+            Classes = classes,
+            Factions = factions,
             MiscObjects = miscObjects,
             Keywords = keywords,
             ActorValueInformation = actorValueInformation,
@@ -184,6 +190,20 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 AttractionRuleFormKey = record.AttractionRule.IsNull ? null : MapFormKey(record.AttractionRule.FormKey),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Keyword.RecordID, record)
             })
+            .ToList();
+    }
+
+    private static IReadOnlyList<ClassDTO> MapClasses(PluginDTO plugin, IStarfieldModGetter mod)
+    {
+        return GetRecordCollection(mod, "Classes")
+            .Select(record => CreateClass(plugin, SupportedGame.Starfield, record, "StarfieldMajorRecordFlags"))
+            .ToList();
+    }
+
+    private static IReadOnlyList<FactionDTO> MapFactions(PluginDTO plugin, IStarfieldModGetter mod)
+    {
+        return GetRecordCollection(mod, "Factions")
+            .Select(record => CreateFaction(plugin, SupportedGame.Starfield, record, "StarfieldMajorRecordFlags"))
             .ToList();
     }
 
@@ -386,8 +406,8 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
                 Components = GetConstructibleObjectComponents(plugin, record.FormKey, GetPropertyValue(record, "ConstructableComponents")),
                 RecipeFilters = GetConstructibleObjectRecipeFilters(plugin, record.FormKey, GetPropertyValue(record, "RecipeFilters")),
-                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ConstructibleObject.RecordID, record),
-                RawPayloads = GetConstructibleObjectRawPayloads(plugin, record.FormKey, record)
+                Conditions = GetConditionRules(plugin, SupportedGame.Starfield, record.FormKey, GetPropertyValue(record, "Conditions")),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ConstructibleObject.RecordID, record)
             })
             .ToList();
     }
@@ -408,7 +428,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                     MajorRecordFlags = GetPropertyNullableInt(record, "StarfieldMajorRecordFlags") ?? 0,
                     ImportedAtUTC = DateTime.UtcNow,
                     Version2 = GetPropertyNullableInt(record, "Version2"),
-                    Conditions = GetConditionFormConditions(plugin, formKey, GetPropertyValue(record, "Conditions"))
+                    Conditions = GetConditionRules(plugin, SupportedGame.Starfield, formKey, GetPropertyValue(record, "Conditions"))
                 };
             })
             .ToList();
@@ -485,6 +505,195 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.NPC.RecordID, record)
             })
             .ToList();
+    }
+
+    private static ClassDTO CreateClass(PluginDTO plugin, SupportedGame game, object record, string majorFlagsProperty)
+    {
+        var formKey = GetRequiredFormKey(record);
+        return new ClassDTO
+        {
+            Game = game,
+            ModKey = plugin.ModKey,
+            FormKey = MapFormKey(formKey),
+            EditorID = GetPropertyValue(record, "EditorID")?.ToString() ?? string.Empty,
+            FormVersion = GetPropertyNullableInt(record, "FormVersion") ?? 0,
+            MajorRecordFlags = GetPropertyNullableInt(record, majorFlagsProperty) ?? 0,
+            ImportedAtUTC = DateTime.UtcNow,
+            Version2 = GetPropertyNullableInt(record, "Version2"),
+            Name = GetLocalizedEnglishText(GetPropertyValue(record, "Name")),
+            Description = GetLocalizedEnglishText(GetPropertyValue(record, "Description")),
+            Teaches = GetPropertyValue(record, "Teaches")?.ToString(),
+            MaxTrainingLevel = GetPropertyNullableInt(record, "MaxTrainingLevel"),
+            BleedoutDefault = GetPropertyNullableDouble(record, "BleedoutDefault"),
+            VoicePoints = GetPropertyNullableDouble(record, "VoicePoints"),
+            Unknown = GetPropertyNullableDouble(record, "Unknown"),
+            Unknown2 = GetPropertyNullableDouble(record, "Unknown2"),
+            Properties = GetClassProperties(plugin, game, formKey, GetPropertyValue(record, "Properties"))
+        };
+    }
+
+    private static FactionDTO CreateFaction(PluginDTO plugin, SupportedGame game, object record, string majorFlagsProperty)
+    {
+        var formKey = GetRequiredFormKey(record);
+        return new FactionDTO
+        {
+            Game = game,
+            ModKey = plugin.ModKey,
+            FormKey = MapFormKey(formKey),
+            EditorID = GetPropertyValue(record, "EditorID")?.ToString() ?? string.Empty,
+            FormVersion = GetPropertyNullableInt(record, "FormVersion") ?? 0,
+            MajorRecordFlags = GetPropertyNullableInt(record, majorFlagsProperty) ?? 0,
+            ImportedAtUTC = DateTime.UtcNow,
+            Version2 = GetPropertyNullableInt(record, "Version2"),
+            Name = GetLocalizedEnglishText(GetPropertyValue(record, "Name")),
+            Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
+            FormationRadius = GetPropertyNullableDouble(record, "FormationRadius"),
+            KeywordFormKey = GetFormKeyFromObject(GetPropertyValue(record, "Keyword")),
+            HerdFormKey = GetFormKeyFromObject(GetPropertyValue(record, "Herd")),
+            VoiceTypeFormKey = GetFormKeyFromObject(GetPropertyValue(record, "VoiceType")),
+            SharedCrimeFactionListFormKey = GetFormKeyFromObject(GetPropertyValue(record, "SharedCrimeFactionList")),
+            VendorBuySellListFormKey = GetFormKeyFromObject(GetPropertyValue(record, "VendorBuySellList")),
+            MerchantContainerFormKey = GetFormKeyFromObject(GetPropertyValue(record, "MerchantContainer")),
+            ExteriorJailMarkerFormKey = GetFormKeyFromObject(GetPropertyValue(record, "ExteriorJailMarker")),
+            FollowerWaitMarkerFormKey = GetFormKeyFromObject(GetPropertyValue(record, "FollowerWaitMarker")),
+            StolenGoodsContainerFormKey = GetFormKeyFromObject(GetPropertyValue(record, "StolenGoodsContainer")),
+            PlayerInventoryContainerFormKey = GetFormKeyFromObject(GetPropertyValue(record, "PlayerInventoryContainer")),
+            JailOutfitFormKey = GetFormKeyFromObject(GetPropertyValue(record, "JailOutfit")),
+            CrimeArrest = GetPropertyNullableBool(GetPropertyValue(record, "CrimeValues"), "Arrest"),
+            CrimeAttackOnSight = GetPropertyNullableBool(GetPropertyValue(record, "CrimeValues"), "AttackOnSight"),
+            CrimeMurder = GetPropertyNullableInt(GetPropertyValue(record, "CrimeValues"), "Murder"),
+            CrimeAssault = GetPropertyNullableInt(GetPropertyValue(record, "CrimeValues"), "Assault"),
+            CrimeTrespass = GetPropertyNullableInt(GetPropertyValue(record, "CrimeValues"), "Trespass"),
+            CrimePickpocket = GetPropertyNullableInt(GetPropertyValue(record, "CrimeValues"), "Pickpocket"),
+            CrimeSteal = GetPropertyNullableInt(GetPropertyValue(record, "CrimeValues"), "Steal"),
+            CrimeStealMult = GetPropertyNullableDouble(GetPropertyValue(record, "CrimeValues"), "StealMult"),
+            CrimeEscape = GetPropertyNullableInt(GetPropertyValue(record, "CrimeValues"), "Escape"),
+            CrimeWerewolf = GetPropertyNullableInt(GetPropertyValue(record, "CrimeValues"), "Werewolf"),
+            CrimeUnknown = GetPropertyNullableInt(GetPropertyValue(record, "CrimeValues"), "Unknown"),
+            VendorStartHour = GetPropertyNullableDouble(GetPropertyValue(record, "VendorValues"), "StartHour"),
+            VendorEndHour = GetPropertyNullableDouble(GetPropertyValue(record, "VendorValues"), "EndHour"),
+            VendorRadius = GetPropertyNullableInt(GetPropertyValue(record, "VendorValues"), "Radius"),
+            VendorBuysStolenItems = GetPropertyNullableBool(GetPropertyValue(record, "VendorValues"), "BuysStolenItems"),
+            VendorBuysNonStolenItems = GetPropertyNullableBool(GetPropertyValue(record, "VendorValues"), "BuysNonStolenItems"),
+            VendorBuySellEverythingNotInList = GetPropertyNullableBool(GetPropertyValue(record, "VendorValues"), "BuySellEverythingNotInList"),
+            VendorLocationMutagenObjectType = GetPropertyValue(GetPropertyValue(record, "VendorLocation"), "MutagenObjectType")?.ToString(),
+            VendorLocationType = GetPropertyValue(GetPropertyValue(GetPropertyValue(record, "VendorLocation"), "Target"), "Type")?.ToString(),
+            VendorLocationLinkFormKey = GetFormKeyFromObject(GetPropertyValue(GetPropertyValue(GetPropertyValue(record, "VendorLocation"), "Target"), "Link")),
+            Relations = GetFactionRelations(plugin, game, formKey, GetPropertyValue(record, "Relations")),
+            Ranks = GetFactionRanks(plugin, game, formKey, GetPropertyValue(record, "Ranks")),
+            Conditions = GetConditionRules(plugin, game, formKey, GetPropertyValue(record, "Conditions")),
+            Components = GetRecordComponents(plugin, game, RecordTypeCatalog.Faction.RecordID, formKey, GetPropertyValue(record, "Components")),
+            Keywords = GetSingleRecordKeyword(plugin, RecordTypeCatalog.Faction.RecordID, formKey, GetPropertyValue(record, "Keyword"))
+        };
+    }
+
+    private static List<ClassPropertyDTO> GetClassProperties(PluginDTO plugin, SupportedGame game, FormKey formKey, object? properties)
+    {
+        return properties is not IEnumerable enumerable
+            ? new List<ClassPropertyDTO>()
+            : enumerable.Cast<object>().Select((property, propertyIndex) => new ClassPropertyDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                PropertyIndex = propertyIndex,
+                ActorValueFormKey = GetFormKeyFromObject(GetPropertyValue(property, "ActorValue")),
+                Value = GetPropertyNullableDouble(property, "Value"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<FactionRelationDTO> GetFactionRelations(PluginDTO plugin, SupportedGame game, FormKey formKey, object? relations)
+    {
+        return relations is not IEnumerable enumerable
+            ? new List<FactionRelationDTO>()
+            : enumerable.Cast<object>().Select((relation, relationIndex) => new FactionRelationDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                RelationIndex = relationIndex,
+                TargetFormKey = GetFormKeyFromObject(GetPropertyValue(relation, "Target")),
+                Reaction = GetPropertyValue(relation, "Reaction")?.ToString(),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<FactionRankDTO> GetFactionRanks(PluginDTO plugin, SupportedGame game, FormKey formKey, object? ranks)
+    {
+        return ranks is not IEnumerable enumerable
+            ? new List<FactionRankDTO>()
+            : enumerable.Cast<object>().Select((rank, rankIndex) => new FactionRankDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                RankIndex = rankIndex,
+                RankNumber = GetPropertyNullableInt(rank, "Rank"),
+                MaleTitle = GetLocalizedEnglishText(GetPropertyValue(rank, "MaleTitle")),
+                FemaleTitle = GetLocalizedEnglishText(GetPropertyValue(rank, "FemaleTitle")),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<RecordComponentDTO> GetRecordComponents(PluginDTO plugin, SupportedGame game, string recordType, FormKey formKey, object? components)
+    {
+        return components is not IEnumerable enumerable
+            ? new List<RecordComponentDTO>()
+            : enumerable.Cast<object>().Select((component, componentIndex) => new RecordComponentDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                RecordType = recordType,
+                ComponentIndex = componentIndex,
+                MutagenObjectType = GetPropertyValue(component, "MutagenObjectType")?.ToString() ?? component.GetType().Name,
+                ImportedAtUTC = DateTime.UtcNow,
+                Items = GetRecordComponentItems(plugin, game, recordType, formKey, componentIndex, GetPropertyValue(component, "Items"))
+            }).ToList();
+    }
+
+    private static List<RecordComponentItemDTO> GetRecordComponentItems(PluginDTO plugin, SupportedGame game, string recordType, FormKey formKey, int componentIndex, object? items)
+    {
+        return items is not IEnumerable enumerable
+            ? new List<RecordComponentItemDTO>()
+            : enumerable.Cast<object>().Select((item, itemIndex) => new RecordComponentItemDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                RecordType = recordType,
+                ComponentIndex = componentIndex,
+                ItemIndex = itemIndex,
+                Unknown1 = GetPropertyNullableDouble(item, "Unknown1"),
+                Unknown2 = GetPropertyNullableDouble(item, "Unknown2"),
+                Unknown3 = GetPropertyNullableDouble(item, "Unknown3"),
+                Unknown4 = GetPropertyNullableDouble(item, "Unknown4"),
+                Unknown5 = GetPropertyNullableDouble(item, "Unknown5"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<RecordKeywordDTO> GetSingleRecordKeyword(PluginDTO plugin, string recordType, FormKey formKey, object? keyword)
+    {
+        if (GetFormKeyFromObject(keyword) is not { } keywordFormKey)
+        {
+            return new List<RecordKeywordDTO>();
+        }
+
+        return
+        [
+            new RecordKeywordDTO
+            {
+                Game = plugin.Game,
+                ModKey = plugin.ModKey,
+                RecordType = recordType,
+                FormKey = MapFormKey(formKey),
+                KeywordFormKey = keywordFormKey,
+                KeywordIndex = 0,
+                ImportedAtUTC = DateTime.UtcNow
+            }
+        ];
     }
 
     private static IReadOnlyList<MagicEffectDTO> MapMagicEffects(PluginDTO plugin, IStarfieldModGetter mod)
@@ -888,15 +1097,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             .ToList();
     }
 
-    private static List<RawRecordPayloadDTO> GetConstructibleObjectRawPayloads(PluginDTO plugin, FormKey formKey, object record)
-    {
-        var importedAtUTC = DateTime.UtcNow;
-        var payloads = new List<RawRecordPayloadDTO>();
-        AddRawPayload(payloads, plugin, RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "Conditions", 0, "Conditions", FormatEnumerable(GetPropertyValue(record, "Conditions")), importedAtUTC);
-        return payloads;
-    }
-
-    private static List<ConditionFormConditionDTO> GetConditionFormConditions(PluginDTO plugin, FormKey formKey, object? conditions)
+    private static List<ConditionFormConditionDTO> GetConditionRules(PluginDTO plugin, SupportedGame game, FormKey formKey, object? conditions)
     {
         if (conditions is not IEnumerable enumerable)
         {
@@ -912,7 +1113,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 var comparisonValue = GetPropertyValue(condition, "ComparisonValue");
                 return new ConditionFormConditionDTO
                 {
-                    Game = SupportedGame.Starfield,
+                    Game = game,
                     ModKey = plugin.ModKey,
                     FormKey = MapFormKey(formKey),
                     ConditionIndex = conditionIndex,
@@ -922,14 +1123,15 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                     ComparisonValue = FormatConditionValue(comparisonValue),
                     ComparisonValueFormKey = GetFormKeyFromObject(comparisonValue),
                     ImportedAtUTC = importedAtUTC,
-                    Parameters = GetConditionFormConditionParameters(plugin, formKey, conditionIndex, data, importedAtUTC)
+                    Parameters = GetConditionRuleParameters(plugin, game, formKey, conditionIndex, data, importedAtUTC)
                 };
             })
             .ToList();
     }
 
-    private static List<ConditionFormConditionParameterDTO> GetConditionFormConditionParameters(
+    private static List<ConditionFormConditionParameterDTO> GetConditionRuleParameters(
         PluginDTO plugin,
+        SupportedGame game,
         FormKey formKey,
         int conditionIndex,
         object? data,
@@ -952,7 +1154,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             .Where(parameter => !string.Equals(parameter.Name, "MutagenObjectType", StringComparison.Ordinal))
             .Select(parameter => new ConditionFormConditionParameterDTO
             {
-                Game = SupportedGame.Starfield,
+                Game = game,
                 ModKey = plugin.ModKey,
                 FormKey = MapFormKey(formKey),
                 ConditionIndex = conditionIndex,
@@ -1222,6 +1424,13 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
     {
         var value = GetPropertyValue(source, propertyName);
         return value == null ? null : Convert.ToDouble(value, CultureInfo.InvariantCulture);
+    }
+
+    private static bool? GetPropertyNullableBool(object? source, string propertyName)
+    {
+        var value = GetPropertyValue(source, propertyName);
+        if (value is bool boolValue) return boolValue;
+        return value == null ? null : Convert.ToBoolean(value, CultureInfo.InvariantCulture);
     }
 
     private static float? GetPropertyNullableFloat(object? source, string propertyName)

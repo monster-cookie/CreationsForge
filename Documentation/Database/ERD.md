@@ -164,6 +164,228 @@ erDiagram
         REAL Data
     }
 
+    Classes {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER MajorRecordFlags
+        TEXT ImportedAtUTC
+        INTEGER Version2
+        TEXT Name
+        TEXT Description
+        TEXT Teaches
+        INTEGER MaxTrainingLevel
+        REAL BleedoutDefault
+        REAL VoicePoints
+        REAL Unknown
+        REAL Unknown2
+    }
+
+    ClassProperties {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Property_Index PK
+        TEXT ActorValue_ModKey_Name
+        INTEGER ActorValue_ModKey_Type
+        TEXT ActorValue_ModKey_FileName
+        INTEGER ActorValue_FormKey_ID
+        REAL Value
+        TEXT ImportedAtUTC
+    }
+
+    ClassWeights {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT WeightType PK
+        INTEGER Weight_Index PK
+        TEXT Key
+        REAL Value
+        TEXT ImportedAtUTC
+    }
+
+    Factions {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT EditorID
+        INTEGER FormVersion
+        INTEGER MajorRecordFlags
+        TEXT ImportedAtUTC
+        INTEGER Version2
+        TEXT Name
+        TEXT Flags
+        REAL FormationRadius
+        TEXT Keyword_ModKey_Name
+        INTEGER Keyword_ModKey_Type
+        TEXT Keyword_ModKey_FileName
+        INTEGER Keyword_FormKey_ID
+        TEXT Herd_ModKey_Name
+        INTEGER Herd_ModKey_Type
+        TEXT Herd_ModKey_FileName
+        INTEGER Herd_FormKey_ID
+        TEXT VoiceType_ModKey_Name
+        INTEGER VoiceType_ModKey_Type
+        TEXT VoiceType_ModKey_FileName
+        INTEGER VoiceType_FormKey_ID
+        TEXT SharedCrimeFactionList_ModKey_Name
+        INTEGER SharedCrimeFactionList_ModKey_Type
+        TEXT SharedCrimeFactionList_ModKey_FileName
+        INTEGER SharedCrimeFactionList_FormKey_ID
+        TEXT VendorBuySellList_ModKey_Name
+        INTEGER VendorBuySellList_ModKey_Type
+        TEXT VendorBuySellList_ModKey_FileName
+        INTEGER VendorBuySellList_FormKey_ID
+        TEXT MerchantContainer_ModKey_Name
+        INTEGER MerchantContainer_ModKey_Type
+        TEXT MerchantContainer_ModKey_FileName
+        INTEGER MerchantContainer_FormKey_ID
+        TEXT ExteriorJailMarker_ModKey_Name
+        INTEGER ExteriorJailMarker_ModKey_Type
+        TEXT ExteriorJailMarker_ModKey_FileName
+        INTEGER ExteriorJailMarker_FormKey_ID
+        TEXT FollowerWaitMarker_ModKey_Name
+        INTEGER FollowerWaitMarker_ModKey_Type
+        TEXT FollowerWaitMarker_ModKey_FileName
+        INTEGER FollowerWaitMarker_FormKey_ID
+        TEXT StolenGoodsContainer_ModKey_Name
+        INTEGER StolenGoodsContainer_ModKey_Type
+        TEXT StolenGoodsContainer_ModKey_FileName
+        INTEGER StolenGoodsContainer_FormKey_ID
+        TEXT PlayerInventoryContainer_ModKey_Name
+        INTEGER PlayerInventoryContainer_ModKey_Type
+        TEXT PlayerInventoryContainer_ModKey_FileName
+        INTEGER PlayerInventoryContainer_FormKey_ID
+        TEXT JailOutfit_ModKey_Name
+        INTEGER JailOutfit_ModKey_Type
+        TEXT JailOutfit_ModKey_FileName
+        INTEGER JailOutfit_FormKey_ID
+        INTEGER CrimeArrest
+        INTEGER CrimeAttackOnSight
+        INTEGER CrimeMurder
+        INTEGER CrimeAssault
+        INTEGER CrimeTrespass
+        INTEGER CrimePickpocket
+        INTEGER CrimeSteal
+        REAL CrimeStealMult
+        INTEGER CrimeEscape
+        INTEGER CrimeWerewolf
+        INTEGER CrimeUnknown
+        REAL VendorStartHour
+        REAL VendorEndHour
+        INTEGER VendorRadius
+        INTEGER VendorBuysStolenItems
+        INTEGER VendorBuysNonStolenItems
+        INTEGER VendorBuySellEverythingNotInList
+        TEXT VendorLocationMutagenObjectType
+        TEXT VendorLocationType
+        TEXT VendorLocationLink_ModKey_Name
+        INTEGER VendorLocationLink_ModKey_Type
+        TEXT VendorLocationLink_ModKey_FileName
+        INTEGER VendorLocationLink_FormKey_ID
+    }
+
+    FactionRelations {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Relation_Index PK
+        TEXT Target_ModKey_Name
+        INTEGER Target_ModKey_Type
+        TEXT Target_ModKey_FileName
+        INTEGER Target_FormKey_ID
+        TEXT Reaction
+        TEXT ImportedAtUTC
+    }
+
+    FactionRanks {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Rank_Index PK
+        INTEGER RankNumber
+        TEXT MaleTitle
+        TEXT FemaleTitle
+        TEXT ImportedAtUTC
+    }
+
+    ConditionRules {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT RecordType PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT ConditionSlot PK
+        INTEGER Condition_Index PK
+        TEXT MutagenObjectType
+        TEXT DataMutagenObjectType
+        TEXT CompareOperator
+        TEXT ComparisonValue
+        TEXT ComparisonValue_ModKey_Name
+        INTEGER ComparisonValue_ModKey_Type
+        TEXT ComparisonValue_ModKey_FileName
+        INTEGER ComparisonValue_FormKey_ID
+        TEXT ImportedAtUTC
+    }
+
+    ConditionRuleParameters {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT RecordType PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT ConditionSlot PK, FK
+        INTEGER Condition_Index PK, FK
+        TEXT Parameter_Name PK
+        TEXT ParameterValue
+        TEXT Parameter_ModKey_Name
+        INTEGER Parameter_ModKey_Type
+        TEXT Parameter_ModKey_FileName
+        INTEGER Parameter_FormKey_ID
+        TEXT ImportedAtUTC
+    }
+
     MiscItems {
         TEXT Game PK, FK
         TEXT ModKey_Name PK, FK
@@ -534,46 +756,6 @@ erDiagram
         INTEGER Version2
     }
 
-    ConditionFormConditions {
-        TEXT Game PK, FK
-        TEXT ModKey_Name PK, FK
-        INTEGER ModKey_Type PK, FK
-        TEXT ModKey_FileName PK, FK
-        TEXT FormKey_ModKey_Name PK, FK
-        INTEGER FormKey_ModKey_Type PK, FK
-        TEXT FormKey_ModKey_FileName PK, FK
-        INTEGER FormKey_ID PK, FK
-        INTEGER Condition_Index PK
-        TEXT MutagenObjectType
-        TEXT DataMutagenObjectType
-        TEXT CompareOperator
-        TEXT ComparisonValue
-        TEXT ComparisonValue_ModKey_Name
-        INTEGER ComparisonValue_ModKey_Type
-        TEXT ComparisonValue_ModKey_FileName
-        INTEGER ComparisonValue_FormKey_ID
-        TEXT ImportedAtUTC
-    }
-
-    ConditionFormConditionParameters {
-        TEXT Game PK, FK
-        TEXT ModKey_Name PK, FK
-        INTEGER ModKey_Type PK, FK
-        TEXT ModKey_FileName PK, FK
-        TEXT FormKey_ModKey_Name PK, FK
-        INTEGER FormKey_ModKey_Type PK, FK
-        TEXT FormKey_ModKey_FileName PK, FK
-        INTEGER FormKey_ID PK, FK
-        INTEGER Condition_Index PK, FK
-        TEXT Parameter_Name PK
-        TEXT ParameterValue
-        TEXT Parameter_ModKey_Name
-        INTEGER Parameter_ModKey_Type
-        TEXT Parameter_ModKey_FileName
-        INTEGER Parameter_FormKey_ID
-        TEXT ImportedAtUTC
-    }
-
     ConstructibleObjects {
         TEXT Game PK, FK
         TEXT ModKey_Name PK, FK
@@ -722,6 +904,41 @@ erDiagram
         TEXT Keyword_ModKey_FileName
         INTEGER Keyword_FormKey_ID
         INTEGER Keyword_Index PK
+        TEXT ImportedAtUTC
+    }
+
+    RecordComponents {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT RecordType PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Component_Index PK
+        TEXT MutagenObjectType
+        TEXT ImportedAtUTC
+    }
+
+    RecordComponentItems {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT RecordType PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Component_Index PK, FK
+        INTEGER Item_Index PK
+        REAL Unknown1
+        REAL Unknown2
+        REAL Unknown3
+        REAL Unknown4
+        REAL Unknown5
         TEXT ImportedAtUTC
     }
 
@@ -966,6 +1183,14 @@ erDiagram
     FormLists ||--o{ FormListItems : contains
     RecordInstances ||--o| GameSettings : "typed detail"
     RecordInstances ||--o| Globals : "typed detail"
+    RecordInstances ||--o| Classes : "typed detail"
+    Classes ||--o{ ClassProperties : contains
+    Classes ||--o{ ClassWeights : contains
+    RecordInstances ||--o| Factions : "typed detail"
+    Factions ||--o{ FactionRelations : contains
+    Factions ||--o{ FactionRanks : contains
+    RecordInstances ||--o{ ConditionRules : contains
+    ConditionRules ||--o{ ConditionRuleParameters : contains
     RecordInstances ||--o| MiscItems : "typed detail"
     RecordInstances ||--o| Keywords : "typed detail"
     RecordInstances ||--o| ActorValueInformation : "typed detail"
@@ -978,8 +1203,6 @@ erDiagram
     RecordInstances ||--o| Containers : "typed detail"
     Containers ||--o{ ContainerItems : contains
     RecordInstances ||--o| ConditionForms : "typed detail"
-    ConditionForms ||--o{ ConditionFormConditions : contains
-    ConditionFormConditions ||--o{ ConditionFormConditionParameters : contains
     RecordInstances ||--o| ConstructibleObjects : "typed detail"
     ConstructibleObjects ||--o{ ConstructibleObjectComponents : contains
     ConstructibleObjects ||--o{ ConstructibleObjectCategories : contains
@@ -987,6 +1210,8 @@ erDiagram
     RecordInstances ||--o| Terminals : "typed detail"
     Terminals ||--o{ TerminalMarkerParameters : contains
     RecordInstances ||--o{ RecordKeywords : contains
+    RecordInstances ||--o{ RecordComponents : contains
+    RecordComponents ||--o{ RecordComponentItems : contains
     Perks ||--o{ PerkRanks : contains
     PerkRanks ||--o{ PerkRankEffects : contains
     Perks ||--o{ PerkBackgroundSkills : contains
@@ -1016,6 +1241,36 @@ These columns contain record-reference data but are not declared SQLite foreign 
 - `FormLists.AddToList_ModKey_Name`, `AddToList_ModKey_Type`, `AddToList_ModKey_FileName`,
   and `AddToList_FormKey_ID`
 - `FormListItems.Item_ModKey_Name`, `Item_ModKey_Type`, `Item_ModKey_FileName`, and `Item_FormKey_ID`
+- `ClassProperties.ActorValue_ModKey_Name`, `ActorValue_ModKey_Type`, `ActorValue_ModKey_FileName`, and
+  `ActorValue_FormKey_ID`
+- `Factions.Keyword_ModKey_Name`, `Keyword_ModKey_Type`, `Keyword_ModKey_FileName`, and `Keyword_FormKey_ID`
+- `Factions.Herd_ModKey_Name`, `Herd_ModKey_Type`, `Herd_ModKey_FileName`, and `Herd_FormKey_ID`
+- `Factions.VoiceType_ModKey_Name`, `VoiceType_ModKey_Type`, `VoiceType_ModKey_FileName`, and
+  `VoiceType_FormKey_ID`
+- `Factions.SharedCrimeFactionList_ModKey_Name`, `SharedCrimeFactionList_ModKey_Type`,
+  `SharedCrimeFactionList_ModKey_FileName`, and `SharedCrimeFactionList_FormKey_ID`
+- `Factions.VendorBuySellList_ModKey_Name`, `VendorBuySellList_ModKey_Type`,
+  `VendorBuySellList_ModKey_FileName`, and `VendorBuySellList_FormKey_ID`
+- `Factions.MerchantContainer_ModKey_Name`, `MerchantContainer_ModKey_Type`,
+  `MerchantContainer_ModKey_FileName`, and `MerchantContainer_FormKey_ID`
+- `Factions.ExteriorJailMarker_ModKey_Name`, `ExteriorJailMarker_ModKey_Type`,
+  `ExteriorJailMarker_ModKey_FileName`, and `ExteriorJailMarker_FormKey_ID`
+- `Factions.FollowerWaitMarker_ModKey_Name`, `FollowerWaitMarker_ModKey_Type`,
+  `FollowerWaitMarker_ModKey_FileName`, and `FollowerWaitMarker_FormKey_ID`
+- `Factions.StolenGoodsContainer_ModKey_Name`, `StolenGoodsContainer_ModKey_Type`,
+  `StolenGoodsContainer_ModKey_FileName`, and `StolenGoodsContainer_FormKey_ID`
+- `Factions.PlayerInventoryContainer_ModKey_Name`, `PlayerInventoryContainer_ModKey_Type`,
+  `PlayerInventoryContainer_ModKey_FileName`, and `PlayerInventoryContainer_FormKey_ID`
+- `Factions.JailOutfit_ModKey_Name`, `JailOutfit_ModKey_Type`, `JailOutfit_ModKey_FileName`, and
+  `JailOutfit_FormKey_ID`
+- `Factions.VendorLocationLink_ModKey_Name`, `VendorLocationLink_ModKey_Type`,
+  `VendorLocationLink_ModKey_FileName`, and `VendorLocationLink_FormKey_ID`
+- `FactionRelations.Target_ModKey_Name`, `Target_ModKey_Type`, `Target_ModKey_FileName`, and
+  `Target_FormKey_ID`
+- `ConditionRules.ComparisonValue_ModKey_Name`, `ComparisonValue_ModKey_Type`,
+  `ComparisonValue_ModKey_FileName`, and `ComparisonValue_FormKey_ID`
+- `ConditionRuleParameters.Parameter_ModKey_Name`, `Parameter_ModKey_Type`, `Parameter_ModKey_FileName`, and
+  `Parameter_FormKey_ID`
 - `MiscItems.FeaturedItemMessage_ModKey_Name`, `FeaturedItemMessage_ModKey_Type`,
   `FeaturedItemMessage_ModKey_FileName`, and `FeaturedItemMessage_FormKey_ID`
 - `Books.InventoryTransform_ModKey_Name`, `InventoryTransform_ModKey_Type`,

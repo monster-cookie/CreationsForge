@@ -26,6 +26,9 @@ REF: CreationsForge.Migrations\Sql\004_Migrations004.sql
 
 ## Migration 005 - UNRELEASED
 
-All current database work needs to use migration 005.
+All current database work needs to use migration 005. It currently adds Class and Faction typed records, shared
+Starfield component storage, and shared `ConditionRules` / `ConditionRuleParameters` storage for condition rule child
+systems. Migration 005 also migrates released CNDF rows out of the old `ConditionFormConditions` tables and drops those
+old CNDF-specific tables.
 
 REF: CreationsForge.Migrations\Sql\005_Migrations005.sql
