@@ -87,8 +87,9 @@ order, evaluates source fingerprints and plugin import state, persists all curre
 rows, removes stale master-reference rows after a successful master-reference refresh, and delegates typed record
 import to `RecordImportService` last. Import dispatch, plugin loops, master-reference loops, and record-detail loops
 accept cancellation and report Core `GameImportProgressDTO` snapshots so UI and CLI callers can observe long-running
-work without depending on UI binding primitives. The importer wraps the database write workflow in one NPoco
-transaction so large imports do not pay per-row SQLite autocommit cost.
+work without depending on UI binding primitives. The importer saves the selected game row before archive indexing,
+then scopes plugin metadata, extension rows, master references, typed records, and stale cleanup to one short NPoco
+transaction per plugin.
 
 The game plugin readers are thin Core-contract facades over game-specific plugin reader services. The services ask
 their game-specific metadata services for installed game metadata before returning the selected `GameDTO`. They expose
@@ -230,7 +231,8 @@ tasks.
 NPoco is used for application database access. Shared plugin, plugin-master-reference, and typed-record repositories
 use NPoco database models for save behavior. Explicit runtime SQL uses named parameterized queries and named parameter
 objects, not positional NPoco placeholders. Database-backed repositories, importers, and workflow services are
-registered per Autofac lifetime scope so they share the same scoped `IDatabase` and import transaction.
+registered per Autofac lifetime scope so they share the same scoped `IDatabase`. Game imports use short transaction
+boundaries: one archive-index transaction per refreshed archive and one plugin transaction per imported plugin.
 
 Typed record repositories upsert a shared `RecordInstances` row before saving type-specific detail rows.
 `RecordInstances` is the common persisted parent identity for imported record overrides and lets shared child tables

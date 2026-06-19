@@ -138,7 +138,24 @@ public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
             });
     }
 
+    public long RefreshArchiveIndex(AssetArchiveFileDTO archiveFile, IEnumerable<AssetArchiveEntryDTO> entries)
+    {
+        using var transaction = Database.GetTransaction();
+        SaveArchiveFile(archiveFile);
+        var insertedCount = ReplaceArchiveEntriesCore(archiveFile.Game, archiveFile.ArchivePath, entries);
+        transaction.Complete();
+        return insertedCount;
+    }
+
     public long ReplaceArchiveEntries(SupportedGame game, string archivePath, IEnumerable<AssetArchiveEntryDTO> entries)
+    {
+        using var transaction = Database.GetTransaction();
+        var insertedCount = ReplaceArchiveEntriesCore(game, archivePath, entries);
+        transaction.Complete();
+        return insertedCount;
+    }
+
+    private long ReplaceArchiveEntriesCore(SupportedGame game, string archivePath, IEnumerable<AssetArchiveEntryDTO> entries)
     {
         Database.Execute(
             """

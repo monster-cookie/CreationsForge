@@ -5,7 +5,9 @@ using CreationsForge.Core.DTOs.Results;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Repositories.Interfaces;
 using CreationsForge.Core.Services.Interfaces;
+using System.Data.Common;
 using System.Diagnostics;
+using System.Data.SQLite;
 using Serilog;
 
 namespace CreationsForge.Core.Services;
@@ -388,7 +390,7 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
                 archivePath,
                 entries.Count,
                 listStopwatch.ElapsedMilliseconds);
-            AssetArchiveIndexRepository.SaveArchiveFile(new AssetArchiveFileDTO
+            var archiveFile = new AssetArchiveFileDTO
             {
                 Game = game,
                 DataFolder = Path.GetFullPath(dataFolder),
@@ -399,9 +401,14 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
                 SourceLastWriteUTCTicks = fileInfo.LastWriteTimeUtc.Ticks,
                 SourceFileSizeBytes = fileInfo.Length,
                 IndexedAtUTC = DateTime.UtcNow
-            });
+            };
             var replaceStopwatch = Stopwatch.StartNew();
-            var entryCount = AssetArchiveIndexRepository.ReplaceArchiveEntries(game, Path.GetFullPath(archivePath), entries);
+            Logger.Information(
+                "Replacing asset archive index entries for {Game}; archive path: {ArchivePath}; entry count: {EntryCount}",
+                game,
+                archivePath,
+                entries.Count);
+            var entryCount = AssetArchiveIndexRepository.RefreshArchiveIndex(archiveFile, entries);
             replaceStopwatch.Stop();
             Logger.Information(
                 "Replaced asset archive index entries for {Game}; archive path: {ArchivePath}; entry count: {EntryCount}; elapsed ms: {ElapsedMilliseconds}",
@@ -416,7 +423,7 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
                 entryCount);
             return new AssetArchiveIndexAttemptResult(AssetArchiveIndexStatus.Indexed, entryCount, null);
         }
-        catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or OverflowException)
+        catch (Exception exception) when (IsArchiveIndexFailureException(exception))
         {
             AssetArchiveIndexRepository.DeleteArchive(game, archivePath);
             Logger.Warning(
@@ -426,6 +433,16 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
                 game);
             return new AssetArchiveIndexAttemptResult(AssetArchiveIndexStatus.Failed, 0, exception.Message);
         }
+    }
+
+    private static bool IsArchiveIndexFailureException(Exception exception)
+    {
+        return exception is IOException
+            or InvalidDataException
+            or UnauthorizedAccessException
+            or OverflowException
+            or DbException
+            or SQLiteException;
     }
 
     private static bool IsArchiveIndexCurrent(AssetArchiveFileDTO? archiveFile, string archivePath)

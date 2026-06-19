@@ -122,12 +122,15 @@ with a connection-string builder so configured database paths are treated as dat
 
 ## Import Transaction Behavior
 
-The shared game import workflow wraps database writes in one NPoco transaction. The transaction covers game row,
-plugin row, plugin extension, master-reference, typed-record, and stale-cleanup writes for the import run. The
-transaction is completed only after the shared import workflow finishes successfully.
+The shared game import workflow uses short NPoco transaction boundaries instead of one transaction for the whole game.
+The selected `Games` row is saved before archive indexing and plugin import work. Asset archive indexing refreshes
+one archive per transaction, covering the archive metadata row and replacement entry rows for that archive.
 
-This keeps large imports from paying SQLite autocommit cost for every saved row. If an uncaught exception or
-cancellation escapes the import workflow, the transaction is disposed without completion.
+Each imported plugin uses one transaction covering the plugin row, game-specific plugin extension row, master
+references, typed-record rows, and stale cleanup for that plugin. If a plugin import transaction fails, that
+transaction is disposed without completion and the plugin failure state is saved separately when possible. If archive
+indexing fails for one archive, its cache rows are removed when possible and the archive is counted as failed without
+rolling back already completed archive refreshes.
 
 ## Runtime SQL Parameterization
 
@@ -1358,6 +1361,7 @@ Persistence behavior:
 - Rows cache archive file metadata for asset lookup acceleration only.
 - Cache validity is based on matching archive last-write ticks and file size.
 - Cache rows do not store extracted archive bytes.
+- Archive file metadata and replacement entry rows are refreshed in one short transaction per archive.
 
 ### AssetArchiveEntries
 

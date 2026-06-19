@@ -717,6 +717,12 @@ public class AssetArchiveIndexServiceTests
             ArchiveFiles.Add(archiveFile);
         }
 
+        public long RefreshArchiveIndex(AssetArchiveFileDTO archiveFile, IEnumerable<AssetArchiveEntryDTO> entries)
+        {
+            SaveArchiveFile(archiveFile);
+            return ReplaceArchiveEntries(archiveFile.Game, archiveFile.ArchivePath, entries);
+        }
+
         public long ReplaceArchiveEntries(SupportedGame game, string archivePath, IEnumerable<AssetArchiveEntryDTO> entries)
         {
             Entries.RemoveAll(entry =>
