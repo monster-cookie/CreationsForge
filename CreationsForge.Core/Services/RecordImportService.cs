@@ -175,6 +175,7 @@ public class RecordImportService : IRecordImportService
     {
         progress?.Report(new GameImportProgressDTO
         {
+            Game = plugin.Game,
             StatusText = statusText,
             DetailText = detailText,
             ProgressValue = pluginIndex,

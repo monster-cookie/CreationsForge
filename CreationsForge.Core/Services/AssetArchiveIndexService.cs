@@ -113,6 +113,7 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
         {
             progress?.Report(new GameImportProgressDTO
             {
+                Game = game,
                 StatusText = $"No {game} asset archives found.",
                 DetailText = "Skipping asset archive index.",
                 ProgressValue = 0,
@@ -129,6 +130,7 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
             var fileInfo = new FileInfo(archivePath);
             var progressSnapshot = new GameImportProgressDTO
             {
+                Game = game,
                 StatusText = $"Indexing {game} asset archives",
                 DetailText = Path.GetFileName(archivePath),
                 ProgressValue = index + 1,

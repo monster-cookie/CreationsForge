@@ -24,6 +24,7 @@ public class ImportProgressViewModel : ViewModelBase
     private bool ImportStarted;
     private string StatusText = "Preparing import...";
     private string DetailText = string.Empty;
+    private string GameText = string.Empty;
     private double ProgressValue;
     private double ProgressMaximum = 100;
     private bool IsIndeterminate = true;
@@ -59,6 +60,12 @@ public class ImportProgressViewModel : ViewModelBase
         private set => SetProperty(ref DetailText, value);
     }
 
+    public string CurrentGameText
+    {
+        get => GameText;
+        private set => SetProperty(ref GameText, value);
+    }
+
     public double CurrentProgressValue
     {
         get => ProgressValue;
@@ -85,6 +92,7 @@ public class ImportProgressViewModel : ViewModelBase
         CurrentStatusText = forceFullReimport
             ? $"Preparing full {selectedGame.DisplayName} import..."
             : $"Preparing {selectedGame.DisplayName} import...";
+        CurrentGameText = FormatGameText(selectedGame.DisplayName);
         CurrentDetailText = string.Empty;
         CurrentProgressValue = 0;
         CurrentProgressMaximum = 100;
@@ -97,6 +105,7 @@ public class ImportProgressViewModel : ViewModelBase
         ForceFullReimport = true;
         ResetAndImportAll = true;
         CurrentStatusText = "Preparing Reset & Import All...";
+        CurrentGameText = "Current game: All games";
         CurrentDetailText = string.Empty;
         CurrentProgressValue = 0;
         CurrentProgressMaximum = 100;
@@ -189,9 +198,40 @@ public class ImportProgressViewModel : ViewModelBase
         }
 
         CurrentStatusText = progress.StatusText;
+        CurrentGameText = GetProgressGameText(progress);
         CurrentDetailText = progress.DetailText;
         CurrentProgressValue = progress.ProgressValue;
         CurrentProgressMaximum = progress.ProgressMaximum;
         CurrentIsIndeterminate = progress.IsIndeterminate;
+    }
+
+    private string GetProgressGameText(GameImportProgressDTO progress)
+    {
+        if (progress.Game.HasValue)
+        {
+            return FormatGameText(GetDisplayName(progress.Game.Value));
+        }
+
+        if (ResetAndImportAll)
+        {
+            return "Current game: All games";
+        }
+
+        return SelectedGame is null ? string.Empty : FormatGameText(SelectedGame.DisplayName);
+    }
+
+    private string GetDisplayName(Core.Enums.SupportedGame game)
+    {
+        if (SelectedGame is not null && SelectedGame.Game == game)
+        {
+            return SelectedGame.DisplayName;
+        }
+
+        return game.ToString();
+    }
+
+    private static string FormatGameText(string displayName)
+    {
+        return $"Current game: {displayName}";
     }
 }

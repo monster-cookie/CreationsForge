@@ -60,6 +60,28 @@ public class AllGamesImportWorkflowServiceTests
         result.DatabaseReset.ShouldBeFalse();
     }
 
+    [Fact]
+    public async Task ImportAllAsync_ReportsCurrentGameForGamePhases()
+    {
+        var progressReports = new List<GameImportProgressDTO>();
+        var callOrder = new List<string>();
+        var resetService = new TestDatabaseResetService(callOrder);
+        var schemaInitializer = new TestDatabaseSchemaInitializer(callOrder);
+        var dispatcher = new GameImportDispatcher(Enum.GetValues<SupportedGame>()
+            .Select(game => new TestGameImporter(game, callOrder)));
+        var workflowService = new AllGamesImportWorkflowService(resetService, schemaInitializer, dispatcher);
+
+        await workflowService.ImportAllAsync(
+            resetDatabase: false,
+            progress: new TestProgress<GameImportProgressDTO>(progressReports));
+
+        var gameReports = progressReports
+            .Where(progress => progress.Game.HasValue)
+            .Select(progress => progress.Game!.Value)
+            .ToList();
+        gameReports.ShouldBe(Enum.GetValues<SupportedGame>());
+    }
+
     private sealed class TestDatabaseResetService : IDatabaseResetService
     {
         private readonly IList<string> CallOrder;
@@ -135,6 +157,21 @@ public class AllGamesImportWorkflowServiceTests
         public void CollectAfterBulkImportPhase(string phaseName)
         {
             PhaseNames.Add(phaseName);
+        }
+    }
+
+    private sealed class TestProgress<T> : IProgress<T>
+    {
+        private readonly IList<T> Reports;
+
+        public TestProgress(IList<T> reports)
+        {
+            Reports = reports;
+        }
+
+        public void Report(T value)
+        {
+            Reports.Add(value);
         }
     }
 }

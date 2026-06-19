@@ -75,6 +75,7 @@ public class AllGamesImportWorkflowService : IAllGamesImportWorkflowService
                     var game = games[index];
                     reportingProgress.Report(new GameImportProgressDTO
                     {
+                        Game = game,
                         StatusText = $"Importing {game}...",
                         DetailText = $"Game {index + 1} of {games.Length}.",
                         ProgressValue = 10 + (index * 90 / games.Length),

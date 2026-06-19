@@ -37,6 +37,7 @@ public class GameImportWorkflowService : IGameImportWorkflowService
         var reportingProgress = CreateHeartbeatProgress($"Import {game}", progress);
         reportingProgress.Report(new GameImportProgressDTO
         {
+            Game = game,
             StatusText = $"Preparing {game} import...",
             DetailText = "Saving selected game.",
             ProgressValue = 0,
@@ -52,6 +53,7 @@ public class GameImportWorkflowService : IGameImportWorkflowService
                 Logger.Information("Starting UI import workflow for {Game}", game);
                 reportingProgress.Report(new GameImportProgressDTO
                 {
+                    Game = game,
                     StatusText = $"Initializing {game} database...",
                     DetailText = "Applying any pending migrations.",
                     ProgressValue = 25,
@@ -63,6 +65,7 @@ public class GameImportWorkflowService : IGameImportWorkflowService
                 cancellationToken.ThrowIfCancellationRequested();
                 reportingProgress.Report(new GameImportProgressDTO
                 {
+                    Game = game,
                     StatusText = $"Importing {game} plugins and records...",
                     DetailText = forceImport ? "Running a full reimport. This may take several minutes." : "Unchanged plugins will be skipped.",
                     ProgressValue = 50,
@@ -72,6 +75,7 @@ public class GameImportWorkflowService : IGameImportWorkflowService
                 Logger.Information("Completed UI import workflow for {Game}; plugins imported: {PluginsImported}", game, importResult.PluginsImported);
                 reportingProgress.Report(new GameImportProgressDTO
                 {
+                    Game = game,
                     StatusText = $"Completed {game} import.",
                     DetailText = $"Imported {importResult.PluginsImported} plugins.",
                     ProgressValue = 100,

@@ -93,6 +93,25 @@ public class GameImporterTests
     }
 
     [Fact]
+    public void Import_ReportsGameForPluginProgress()
+    {
+        var progressReports = new List<GameImportProgressDTO>();
+        var plugin = CreatePlugin(SupportedGame.Fallout4);
+        var importer = CreateImporter(
+            plugin,
+            new TestGameRepository(),
+            new TestPluginRepository(),
+            new TestPluginMasterReferenceRepository(),
+            [],
+            new TestRecordImportService());
+
+        importer.Import(progress: new TestProgress<GameImportProgressDTO>(progressReports));
+
+        progressReports.ShouldNotBeEmpty();
+        progressReports.ShouldAllBe(progress => progress.Game == SupportedGame.Fallout4);
+    }
+
+    [Fact]
     public void Import_WithMatchingPluginExtensionImporter_ImportsExtensionAfterBasePlugin()
     {
         var events = new List<string>();
@@ -647,6 +666,21 @@ public class GameImporterTests
             CancellationToken cancellationToken = default)
         {
             throw new InvalidOperationException("Record import failed.");
+        }
+    }
+
+    private sealed class TestProgress<T> : IProgress<T>
+    {
+        private readonly IList<T> Reports;
+
+        public TestProgress(IList<T> reports)
+        {
+            Reports = reports;
+        }
+
+        public void Report(T value)
+        {
+            Reports.Add(value);
         }
     }
 

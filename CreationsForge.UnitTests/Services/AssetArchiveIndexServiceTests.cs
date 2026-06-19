@@ -47,6 +47,7 @@ public class AssetArchiveIndexServiceTests
             result.EntriesIndexed.ShouldBe(1);
             repository.Entries.Count.ShouldBe(1);
             progressReports.Count.ShouldBe(1);
+            progressReports[0].Game.ShouldBe(SupportedGame.Starfield);
             progressReports[0].StatusText.ShouldBe("Indexing Starfield asset archives");
             progressReports[0].DetailText.ShouldBe("Starfield - Textures03.ba2");
         }

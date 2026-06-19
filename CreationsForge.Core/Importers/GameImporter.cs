@@ -72,6 +72,7 @@ public class GameImporter : IGameImporter
         result.PluginsDiscovered = loadOrderEntries.Count;
         progress?.Report(new GameImportProgressDTO
         {
+            Game = Game,
             StatusText = $"Discovered {loadOrderEntries.Count} {Game} plugins.",
             DetailText = forceFullReimport ? "Running full import." : "Unchanged plugins will be skipped.",
             ProgressValue = 0,
@@ -148,6 +149,7 @@ public class GameImporter : IGameImporter
     {
         progress?.Report(new GameImportProgressDTO
         {
+            Game = loadOrderEntry.Game,
             StatusText = $"{statusPrefix}: {loadOrderEntry.ModKey.FileName}",
             DetailText = detailText,
             ProgressValue = pluginIndex,
@@ -169,6 +171,7 @@ public class GameImporter : IGameImporter
     {
         progress?.Report(new GameImportProgressDTO
         {
+            Game = plugin.Game,
             StatusText = $"{statusPrefix}: {plugin.ModKey.FileName}",
             DetailText = detailText,
             ProgressValue = pluginIndex,
