@@ -111,11 +111,11 @@ by `SupportedGame` and record type ID, tracks unsupported typed detail importers
 aborting the full plugin import. The current cross-game shared record types are FormLists (`FLST`), GameSettings
 (`GMST`), Globals (`GLOB`), Classes (`CLAS`), Factions (`FACT`), MiscItems (`MISC`), Keywords (`KYWD`),
 ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), Perks (`PERK`), Statics (`STAT`),
-Containers (`CONT`), and ConstructibleObjects (`COBJ`).
+Books (`BOOK`), Doors (`DOOR`), Containers (`CONT`), and ConstructibleObjects (`COBJ`).
 Starfield, Fallout 4, and Skyrim map approved shared records inside their game adapters after loading the Mutagen
-plugin once for the Core-facing record-read call. Starfield also imports ConditionForms (`CNDF`), Books (`BOOK`),
-Doors (`DOOR`), and Terminals (`TERM`) through the same typed-record pipeline with type-specific detail tables and
-comparison fields. CNDF, FACT, and COBJ condition lists use shared condition-rule rows and generic condition-data
+plugin once for the Core-facing record-read call. Starfield also imports ConditionForms (`CNDF`) and Terminals (`TERM`)
+through the same typed-record pipeline with type-specific detail tables and comparison fields. CNDF, FACT, and COBJ
+condition lists use shared condition-rule rows and generic condition-data
 parameter rows, not raw condition payload rows, when Mutagen exposes the condition list as typed condition objects.
 All typed record importers save the record's parent row before dispatching shared child import by DTO capability.
 Records that expose models, keywords, condition rules, record components, sounds, or scripting adapters persist those
@@ -184,7 +184,8 @@ adapter rows as hierarchical child rows in the comparison `TreeDataGrid`. PERK c
 rank-effect rows, background skill rows, and shared scripting adapter rows. STAT comparison includes scalar fields,
 shared keyword rows, shared model rows, and raw payload rows. BOOK comparison includes scalar fields plus shared
 models, keywords, sounds, scripting adapters, and raw payload rows. DOOR comparison includes scalar fields plus shared
-models, keywords, sounds, and raw payload rows. CONT comparison includes scalar fields, item rows, shared keyword rows,
+models, keywords, sounds, scripting adapters, and raw payload rows. CONT comparison includes scalar fields, item rows,
+shared keyword rows,
 shared model rows, shared sound rows, and raw payload rows. TERM comparison includes scalar fields, shared models,
 keywords, scripting adapters, raw payload rows, and terminal marker parameter child rows. CNDF, FACT, and COBJ
 comparison includes structured condition rows and condition-data parameter rows. Raw payload values are
@@ -295,16 +296,17 @@ implements the scripting-adapter capability interface. Game adapters populate sc
 that expose virtual-machine adapters.
 The `MISC` slice currently persists parent scalar fields, keyword rows, model rows, sounds, and scripts. The `BOOK`
 slice persists parent scalar fields, keyword rows, model rows, sounds, scripts, and raw payloads. The `DOOR` slice
-persists parent scalar fields, keyword rows, model rows, sounds, and raw payloads. The `CONT` slice persists parent
-scalar fields, item rows, keyword rows, model rows, sounds, and raw payloads. The `CNDF` slice persists parent scalar
-fields, shared condition-rule rows, and generic condition-data parameter rows. The `COBJ` slice persists parent scalar
+persists parent scalar fields, keyword rows, model rows, sounds, scripts, and raw payloads. The `CONT` slice persists
+parent scalar fields, item rows, keyword rows, model rows, sounds, and raw payloads. The `CNDF` slice persists parent
+scalar fields, shared condition-rule rows, and generic condition-data parameter rows. The `COBJ` slice persists parent
+scalar
 fields, recipe component rows, Fallout 4 category rows, Starfield recipe-filter rows, shared condition-rule rows,
 scripts when present, and raw payloads for partially understood count/list data. The `TERM` slice persists parent
 scalar fields, keyword
 rows, model rows, scripts, raw payloads, and marker parameter rows. The old single-game app's deeper
 MiscObject child-detail tables are still a separate follow-up.
 Scripting adapters are persisted against the shared `RecordInstances` parent using record type IDs such as `GLOB`,
-`MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`.
+`MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `BOOK`, `DOOR`, and `TERM`.
 
 Keyword-list persistence is shared in Core through `IRecordKeywordImportService` and `RecordKeywords`.
 `IRecordChildImportService` invokes keyword persistence for any imported `RecordDTO` that implements the keyword-list

@@ -7,27 +7,6 @@ namespace CreationsForge.DataValidationTests.Validation.Tests.ActorValueInformat
 
 public class SkyrimActorValueInformationSpriggitDataValidationTests : SpriggitDataValidationTestBase
 {
-    private static readonly string[] UnsupportedSpriggitFields =
-    [
-        "AssociatedSkill",
-        "CNAM",
-        "Description",
-        "FNAM",
-        "HorizontalPosition",
-        "Index",
-        "PerkTree",
-        "PerkGridX",
-        "PerkGridY",
-        "Skill",
-        "VerticalPosition"
-    ];
-
-    private static readonly string[] UnsupportedDtoFields =
-    [
-        "FormVersion",
-        "Type"
-    ];
-
     [Fact]
     [Trait("Game", "Skyrim")]
     [Trait("RecordType", "AVIF")]
@@ -100,7 +79,7 @@ public class SkyrimActorValueInformationSpriggitDataValidationTests : SpriggitDa
             dtoFields["Flags"].ShouldNotBeNullOrEmpty();
         }
 
-        Helpers.GetUnmatchedSpriggitFields(spriggit, dto, UnsupportedSpriggitFields).ShouldBeEmpty();
-        Helpers.GetUnmatchedDtoFields(spriggit, dto, UnsupportedDtoFields).ShouldBeEmpty();
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 }

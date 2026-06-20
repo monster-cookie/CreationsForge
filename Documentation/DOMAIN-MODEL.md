@@ -34,8 +34,9 @@ Master reference: A relationship edge from a declaring plugin to a declared mast
 Record type: A Bethesda major-record type identified by a four-character record ID. The current cross-game shared
 record import workflow includes FormLists (`FLST`), GameSettings (`GMST`), Globals (`GLOB`), MiscItems (`MISC`),
 Classes (`CLAS`), Factions (`FACT`), Keywords (`KYWD`), ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects
-(`MGEF`), Perks (`PERK`), Statics (`STAT`), Containers (`CONT`), and ConstructibleObjects (`COBJ`). Starfield also
-persists typed detail rows for ConditionForms (`CNDF`), Books (`BOOK`), Doors (`DOOR`), and Terminals (`TERM`).
+(`MGEF`), Perks (`PERK`), Statics (`STAT`), Books (`BOOK`), Doors (`DOOR`), Containers (`CONT`), and
+ConstructibleObjects (`COBJ`). Starfield also persists typed detail rows for ConditionForms (`CNDF`) and Terminals
+(`TERM`).
 
 Starfield master references require special construction through Mutagen's separated-master-aware load-order paths.
 The Starfield reader prefers the full Mutagen environment load order's mod objects so split masters, medium masters,
@@ -143,7 +144,7 @@ translated text uses dotted or indexed source paths such as `Ranks[0].Descriptio
 The current readers save the selected game row, discover load-order plugins, read plugin source fingerprints, persist
 plugin metadata, persist declared master references, and run shared record import orchestration for approved record
 types. Starfield, Fallout 4, and Skyrim map `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`,
-`CLAS`, `FACT`, `STAT`, `CONT`, and `COBJ` records to shared DTO shapes. Starfield also maps `CNDF`, `BOOK`, `DOOR`,
+`CLAS`, `FACT`, `STAT`, `BOOK`, `DOOR`, `CONT`, and `COBJ` records to shared DTO shapes. Starfield also maps `CNDF`
 and `TERM` records to typed detail DTOs instead of model-only preview rows. Typed record repositories persist a shared
 record
 instance before saving type-specific detail rows, and typed importers dispatch shared child persistence from the record
@@ -159,7 +160,7 @@ identity shapes to presentation code.
 ## Shared Record Children
 
 Typed records currently include `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`,
-`CONT`, and `COBJ` across Starfield, Fallout 4, and Skyrim. Starfield also includes `CNDF`, `BOOK`, `DOOR`, and
+`BOOK`, `DOOR`, `CONT`, and `COBJ` across Starfield, Fallout 4, and Skyrim. Starfield also includes `CNDF` and
 `TERM`. Core
 exposes these through CreationsForge DTOs and primitive `FormKeyDTO`/`ModKeyDTO` identity shapes; direct Mutagen
 mapping remains in the game adapter projects.
@@ -185,7 +186,8 @@ populate this shared keyword shape when the source game exposes keyword lists.
 
 Sounds represent Spriggit-style sound payloads. Shared sound rows are linked to their owning `RecordInstances` row by
 record type and parent FormKey. `MISC` maps named scalar sounds such as `CraftingSound`, `PickupSound`, and
-`DropdownSound`; `MGEF` maps indexed typed sound entries such as `OnHit`, `Release`, and `Charge`.
+`DropdownSound`; `BOOK`, `DOOR`, and `CONT` map record-specific named scalar sounds; `MGEF` maps indexed typed sound
+entries such as `OnHit`, `Release`, and `Charge`.
 
 Constructible object components, categories, and recipe filters are stored in COBJ-specific child tables. Skyrim maps
 COBJ `Items`, Fallout 4 maps `Components` and `Categories`, and Starfield maps `ConstructableComponents` and

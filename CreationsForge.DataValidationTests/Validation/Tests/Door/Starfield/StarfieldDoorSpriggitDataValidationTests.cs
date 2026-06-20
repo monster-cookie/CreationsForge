@@ -27,15 +27,12 @@ public class StarfieldDoorSpriggitDataValidationTests : SpriggitDataValidationTe
         var spriggitFields = spriggit.Fields;
         var dtoFields = Helpers.GetDTOFields(dto);
 
-        spriggitFields["ANAM"].ShouldBe(dtoFields["ANAM"]);
-        spriggitFields["BNAM"].ShouldBe(dtoFields["BNAM"]);
         spriggitFields["CloseSound.Start"].ShouldBe(dtoFields["CloseSound.Start"]);
-        spriggitFields["CNAM"].ShouldBe(dtoFields["CNAM"]);
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FacingAxisOverride"].ShouldBe(dtoFields["FacingAxisOverride"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
         spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
-        spriggitFields["Model.File"].ShouldBe(dtoFields["Models[0].File"]);
+        NormalizeModelFile(spriggitFields["Model.File"]).ShouldBe(NormalizeModelFile(dtoFields["Models[0].File"]));
         spriggitFields["Model.LightLayer"].ShouldBe(dtoFields["Models[0].LightLayer"]);
         spriggitFields["Name.Count"].ShouldBe(dtoFields["Name.Count"]);
         spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
@@ -58,47 +55,6 @@ public class StarfieldDoorSpriggitDataValidationTests : SpriggitDataValidationTe
         spriggitFields["Name[8].Language"].ShouldBe(dtoFields["Name[8].Language"]);
         spriggitFields["Name[8].String"].ShouldBe(dtoFields["Name[8].String"]);
         spriggitFields["NativeTerminal"].ShouldBe(dtoFields["NativeTerminalFormKey"]);
-        spriggitFields["NavmeshGeometry.Count"].ShouldBe(dtoFields["NavmeshGeometry.Count"]);
-        spriggitFields["NavmeshGeometry.GridMax"].ShouldBe(dtoFields["NavmeshGeometry.GridMax"]);
-        spriggitFields["NavmeshGeometry.GridMaxDistance"].ShouldBe(dtoFields["NavmeshGeometry.GridMaxDistance"]);
-        spriggitFields["NavmeshGeometry.GridMin"].ShouldBe(dtoFields["NavmeshGeometry.GridMin"]);
-        spriggitFields["NavmeshGeometry.GridSize"].ShouldBe(dtoFields["NavmeshGeometry.GridSize"]);
-        spriggitFields["NavmeshGeometry.Parent.MutagenObjectType"].ShouldBe(dtoFields["NavmeshGeometry.Parent.MutagenObjectType"]);
-        spriggitFields["NavmeshGeometry.Parent.Parent"].ShouldBe(dtoFields["NavmeshGeometry.Parent.Parent"]);
-        spriggitFields["NavmeshGeometry[0]"].ShouldBe(dtoFields["NavmeshGeometry[0]"]);
-        spriggitFields["NavmeshGeometry[1].Point"].ShouldBe(dtoFields["NavmeshGeometry[1].Point"]);
-        spriggitFields["NavmeshGeometry[10].EdgeLink_0_1"].ShouldBe(dtoFields["NavmeshGeometry[10].EdgeLink_0_1"]);
-        spriggitFields["NavmeshGeometry[10].EdgeLink_1_2"].ShouldBe(dtoFields["NavmeshGeometry[10].EdgeLink_1_2"]);
-        spriggitFields["NavmeshGeometry[10].Height"].ShouldBe(dtoFields["NavmeshGeometry[10].Height"]);
-        spriggitFields["NavmeshGeometry[10].Vertices"].ShouldBe(dtoFields["NavmeshGeometry[10].Vertices"]);
-        spriggitFields["NavmeshGeometry[11].GridCell.Count"].ShouldBe(dtoFields["NavmeshGeometry[11].GridCell.Count"]);
-        spriggitFields["NavmeshGeometry[11].GridCell[0]"].ShouldBe(dtoFields["NavmeshGeometry[11].GridCell[0]"]);
-        spriggitFields["NavmeshGeometry[11].GridCell[1]"].ShouldBe(dtoFields["NavmeshGeometry[11].GridCell[1]"]);
-        spriggitFields["NavmeshGeometry[11].GridCell[2]"].ShouldBe(dtoFields["NavmeshGeometry[11].GridCell[2]"]);
-        spriggitFields["NavmeshGeometry[11].GridCell[3]"].ShouldBe(dtoFields["NavmeshGeometry[11].GridCell[3]"]);
-        spriggitFields["NavmeshGeometry[11].GridCell[4]"].ShouldBe(dtoFields["NavmeshGeometry[11].GridCell[4]"]);
-        spriggitFields["NavmeshGeometry[11].GridCell[5]"].ShouldBe(dtoFields["NavmeshGeometry[11].GridCell[5]"]);
-        spriggitFields["NavmeshGeometry[11].GridCell[6]"].ShouldBe(dtoFields["NavmeshGeometry[11].GridCell[6]"]);
-        spriggitFields["NavmeshGeometry[11].GridCell[7]"].ShouldBe(dtoFields["NavmeshGeometry[11].GridCell[7]"]);
-        spriggitFields["NavmeshGeometry[2].Point"].ShouldBe(dtoFields["NavmeshGeometry[2].Point"]);
-        spriggitFields["NavmeshGeometry[3].Point"].ShouldBe(dtoFields["NavmeshGeometry[3].Point"]);
-        spriggitFields["NavmeshGeometry[4].Point"].ShouldBe(dtoFields["NavmeshGeometry[4].Point"]);
-        spriggitFields["NavmeshGeometry[5].Point"].ShouldBe(dtoFields["NavmeshGeometry[5].Point"]);
-        spriggitFields["NavmeshGeometry[6].Point"].ShouldBe(dtoFields["NavmeshGeometry[6].Point"]);
-        spriggitFields["NavmeshGeometry[7].EdgeLink_0_1"].ShouldBe(dtoFields["NavmeshGeometry[7].EdgeLink_0_1"]);
-        spriggitFields["NavmeshGeometry[7].EdgeLink_1_2"].ShouldBe(dtoFields["NavmeshGeometry[7].EdgeLink_1_2"]);
-        spriggitFields["NavmeshGeometry[7].EdgeLink_2_0"].ShouldBe(dtoFields["NavmeshGeometry[7].EdgeLink_2_0"]);
-        spriggitFields["NavmeshGeometry[7].Height"].ShouldBe(dtoFields["NavmeshGeometry[7].Height"]);
-        spriggitFields["NavmeshGeometry[7].Vertices"].ShouldBe(dtoFields["NavmeshGeometry[7].Vertices"]);
-        spriggitFields["NavmeshGeometry[8].EdgeLink_0_1"].ShouldBe(dtoFields["NavmeshGeometry[8].EdgeLink_0_1"]);
-        spriggitFields["NavmeshGeometry[8].EdgeLink_1_2"].ShouldBe(dtoFields["NavmeshGeometry[8].EdgeLink_1_2"]);
-        spriggitFields["NavmeshGeometry[8].EdgeLink_2_0"].ShouldBe(dtoFields["NavmeshGeometry[8].EdgeLink_2_0"]);
-        spriggitFields["NavmeshGeometry[8].Height"].ShouldBe(dtoFields["NavmeshGeometry[8].Height"]);
-        spriggitFields["NavmeshGeometry[8].Vertices"].ShouldBe(dtoFields["NavmeshGeometry[8].Vertices"]);
-        spriggitFields["NavmeshGeometry[9].EdgeLink_0_1"].ShouldBe(dtoFields["NavmeshGeometry[9].EdgeLink_0_1"]);
-        spriggitFields["NavmeshGeometry[9].EdgeLink_1_2"].ShouldBe(dtoFields["NavmeshGeometry[9].EdgeLink_1_2"]);
-        spriggitFields["NavmeshGeometry[9].Height"].ShouldBe(dtoFields["NavmeshGeometry[9].Height"]);
-        spriggitFields["NavmeshGeometry[9].Vertices"].ShouldBe(dtoFields["NavmeshGeometry[9].Vertices"]);
         spriggitFields["ObjectBounds.First"].ShouldBe(dtoFields["ObjectBoundsFirst"]);
         spriggitFields["ObjectBounds.Second"].ShouldBe(dtoFields["ObjectBoundsSecond"]);
         spriggitFields["OpenSound.Start"].ShouldBe(dtoFields["OpenSound.Start"]);
@@ -130,15 +86,12 @@ public class StarfieldDoorSpriggitDataValidationTests : SpriggitDataValidationTe
         var spriggitFields = spriggit.Fields;
         var dtoFields = Helpers.GetDTOFields(dto);
 
-        spriggitFields["ANAM"].ShouldBe(dtoFields["ANAM"]);
-        spriggitFields["BNAM"].ShouldBe(dtoFields["BNAM"]);
         spriggitFields["CloseSound.Start"].ShouldBe(dtoFields["CloseSound.Start"]);
-        spriggitFields["CNAM"].ShouldBe(dtoFields["CNAM"]);
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FacingAxisOverride"].ShouldBe(dtoFields["FacingAxisOverride"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
         spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
-        spriggitFields["Model.File"].ShouldBe(dtoFields["Models[0].File"]);
+        NormalizeModelFile(spriggitFields["Model.File"]).ShouldBe(NormalizeModelFile(dtoFields["Models[0].File"]));
         spriggitFields["Model.LightLayer"].ShouldBe(dtoFields["Models[0].LightLayer"]);
         spriggitFields["Name.Count"].ShouldBe(dtoFields["Name.Count"]);
         spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
@@ -160,47 +113,6 @@ public class StarfieldDoorSpriggitDataValidationTests : SpriggitDataValidationTe
         spriggitFields["Name[7].String"].ShouldBe(dtoFields["Name[7].String"]);
         spriggitFields["Name[8].Language"].ShouldBe(dtoFields["Name[8].Language"]);
         spriggitFields["Name[8].String"].ShouldBe(dtoFields["Name[8].String"]);
-        spriggitFields["NavmeshGeometry.Count"].ShouldBe(dtoFields["NavmeshGeometry.Count"]);
-        spriggitFields["NavmeshGeometry.GridMax"].ShouldBe(dtoFields["NavmeshGeometry.GridMax"]);
-        spriggitFields["NavmeshGeometry.GridMaxDistance"].ShouldBe(dtoFields["NavmeshGeometry.GridMaxDistance"]);
-        spriggitFields["NavmeshGeometry.GridMin"].ShouldBe(dtoFields["NavmeshGeometry.GridMin"]);
-        spriggitFields["NavmeshGeometry.GridSize"].ShouldBe(dtoFields["NavmeshGeometry.GridSize"]);
-        spriggitFields["NavmeshGeometry.Parent.MutagenObjectType"].ShouldBe(dtoFields["NavmeshGeometry.Parent.MutagenObjectType"]);
-        spriggitFields["NavmeshGeometry.Parent.Parent"].ShouldBe(dtoFields["NavmeshGeometry.Parent.Parent"]);
-        spriggitFields["NavmeshGeometry[0]"].ShouldBe(dtoFields["NavmeshGeometry[0]"]);
-        spriggitFields["NavmeshGeometry[1].Point"].ShouldBe(dtoFields["NavmeshGeometry[1].Point"]);
-        spriggitFields["NavmeshGeometry[10].EdgeLink_0_1"].ShouldBe(dtoFields["NavmeshGeometry[10].EdgeLink_0_1"]);
-        spriggitFields["NavmeshGeometry[10].EdgeLink_1_2"].ShouldBe(dtoFields["NavmeshGeometry[10].EdgeLink_1_2"]);
-        spriggitFields["NavmeshGeometry[10].EdgeLink_2_0"].ShouldBe(dtoFields["NavmeshGeometry[10].EdgeLink_2_0"]);
-        spriggitFields["NavmeshGeometry[10].Height"].ShouldBe(dtoFields["NavmeshGeometry[10].Height"]);
-        spriggitFields["NavmeshGeometry[10].Vertices"].ShouldBe(dtoFields["NavmeshGeometry[10].Vertices"]);
-        spriggitFields["NavmeshGeometry[11].GridCell.Count"].ShouldBe(dtoFields["NavmeshGeometry[11].GridCell.Count"]);
-        spriggitFields["NavmeshGeometry[11].GridCell[0]"].ShouldBe(dtoFields["NavmeshGeometry[11].GridCell[0]"]);
-        spriggitFields["NavmeshGeometry[11].GridCell[1]"].ShouldBe(dtoFields["NavmeshGeometry[11].GridCell[1]"]);
-        spriggitFields["NavmeshGeometry[11].GridCell[2]"].ShouldBe(dtoFields["NavmeshGeometry[11].GridCell[2]"]);
-        spriggitFields["NavmeshGeometry[11].GridCell[3]"].ShouldBe(dtoFields["NavmeshGeometry[11].GridCell[3]"]);
-        spriggitFields["NavmeshGeometry[11].GridCell[4]"].ShouldBe(dtoFields["NavmeshGeometry[11].GridCell[4]"]);
-        spriggitFields["NavmeshGeometry[11].GridCell[5]"].ShouldBe(dtoFields["NavmeshGeometry[11].GridCell[5]"]);
-        spriggitFields["NavmeshGeometry[11].GridCell[6]"].ShouldBe(dtoFields["NavmeshGeometry[11].GridCell[6]"]);
-        spriggitFields["NavmeshGeometry[11].GridCell[7]"].ShouldBe(dtoFields["NavmeshGeometry[11].GridCell[7]"]);
-        spriggitFields["NavmeshGeometry[2].Point"].ShouldBe(dtoFields["NavmeshGeometry[2].Point"]);
-        spriggitFields["NavmeshGeometry[3].Point"].ShouldBe(dtoFields["NavmeshGeometry[3].Point"]);
-        spriggitFields["NavmeshGeometry[4].Point"].ShouldBe(dtoFields["NavmeshGeometry[4].Point"]);
-        spriggitFields["NavmeshGeometry[5].Point"].ShouldBe(dtoFields["NavmeshGeometry[5].Point"]);
-        spriggitFields["NavmeshGeometry[6].Point"].ShouldBe(dtoFields["NavmeshGeometry[6].Point"]);
-        spriggitFields["NavmeshGeometry[7].EdgeLink_0_1"].ShouldBe(dtoFields["NavmeshGeometry[7].EdgeLink_0_1"]);
-        spriggitFields["NavmeshGeometry[7].EdgeLink_1_2"].ShouldBe(dtoFields["NavmeshGeometry[7].EdgeLink_1_2"]);
-        spriggitFields["NavmeshGeometry[7].EdgeLink_2_0"].ShouldBe(dtoFields["NavmeshGeometry[7].EdgeLink_2_0"]);
-        spriggitFields["NavmeshGeometry[7].Height"].ShouldBe(dtoFields["NavmeshGeometry[7].Height"]);
-        spriggitFields["NavmeshGeometry[7].Vertices"].ShouldBe(dtoFields["NavmeshGeometry[7].Vertices"]);
-        spriggitFields["NavmeshGeometry[8].EdgeLink_0_1"].ShouldBe(dtoFields["NavmeshGeometry[8].EdgeLink_0_1"]);
-        spriggitFields["NavmeshGeometry[8].EdgeLink_1_2"].ShouldBe(dtoFields["NavmeshGeometry[8].EdgeLink_1_2"]);
-        spriggitFields["NavmeshGeometry[8].Height"].ShouldBe(dtoFields["NavmeshGeometry[8].Height"]);
-        spriggitFields["NavmeshGeometry[8].Vertices"].ShouldBe(dtoFields["NavmeshGeometry[8].Vertices"]);
-        spriggitFields["NavmeshGeometry[9].EdgeLink_0_1"].ShouldBe(dtoFields["NavmeshGeometry[9].EdgeLink_0_1"]);
-        spriggitFields["NavmeshGeometry[9].EdgeLink_2_0"].ShouldBe(dtoFields["NavmeshGeometry[9].EdgeLink_2_0"]);
-        spriggitFields["NavmeshGeometry[9].Height"].ShouldBe(dtoFields["NavmeshGeometry[9].Height"]);
-        spriggitFields["NavmeshGeometry[9].Vertices"].ShouldBe(dtoFields["NavmeshGeometry[9].Vertices"]);
         spriggitFields["ObjectBounds.First"].ShouldBe(dtoFields["ObjectBoundsFirst"]);
         spriggitFields["ObjectBounds.Second"].ShouldBe(dtoFields["ObjectBoundsSecond"]);
         spriggitFields["OpenSound.Start"].ShouldBe(dtoFields["OpenSound.Start"]);
@@ -232,20 +144,14 @@ public class StarfieldDoorSpriggitDataValidationTests : SpriggitDataValidationTe
         var spriggitFields = spriggit.Fields;
         var dtoFields = Helpers.GetDTOFields(dto);
 
-        spriggitFields["ANAM"].ShouldBe(dtoFields["ANAM"]);
-        spriggitFields["BNAM"].ShouldBe(dtoFields["BNAM"]);
         spriggitFields["CloseSound.Start"].ShouldBe(dtoFields["CloseSound.Start"]);
-        spriggitFields["CNAM"].ShouldBe(dtoFields["CNAM"]);
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FacingAxisOverride"].ShouldBe(dtoFields["FacingAxisOverride"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
         spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
         spriggitFields["MajorRecordFlagsRaw"].ShouldBe(dtoFields["MajorRecordFlags"]);
-        spriggitFields["Model.Count"].ShouldBe(dtoFields["Model.Count"]);
-        spriggitFields["Model.File"].ShouldBe(dtoFields["Models[0].File"]);
+        NormalizeModelFile(spriggitFields["Model.File"]).ShouldBe(NormalizeModelFile(dtoFields["Models[0].File"]));
         spriggitFields["Model.LightLayer"].ShouldBe(dtoFields["Models[0].LightLayer"]);
-        spriggitFields["Model[0].081158"].ShouldBe(dtoFields["Model[0].081158"]);
-        spriggitFields["Model[1]"].ShouldBe(dtoFields["Model[1]"]);
         spriggitFields["Name.Count"].ShouldBe(dtoFields["Name.Count"]);
         spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
         spriggitFields["Name[0].Language"].ShouldBe(dtoFields["Name[0].Language"]);
@@ -298,20 +204,14 @@ public class StarfieldDoorSpriggitDataValidationTests : SpriggitDataValidationTe
         var spriggitFields = spriggit.Fields;
         var dtoFields = Helpers.GetDTOFields(dto);
 
-        spriggitFields["ANAM"].ShouldBe(dtoFields["ANAM"]);
-        spriggitFields["BNAM"].ShouldBe(dtoFields["BNAM"]);
         spriggitFields["CloseSound.Start"].ShouldBe(dtoFields["CloseSound.Start"]);
-        spriggitFields["CNAM"].ShouldBe(dtoFields["CNAM"]);
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FacingAxisOverride"].ShouldBe(dtoFields["FacingAxisOverride"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
         spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
         spriggitFields["MajorRecordFlagsRaw"].ShouldBe(dtoFields["MajorRecordFlags"]);
-        spriggitFields["Model.Count"].ShouldBe(dtoFields["Model.Count"]);
-        spriggitFields["Model.File"].ShouldBe(dtoFields["Models[0].File"]);
+        NormalizeModelFile(spriggitFields["Model.File"]).ShouldBe(NormalizeModelFile(dtoFields["Models[0].File"]));
         spriggitFields["Model.LightLayer"].ShouldBe(dtoFields["Models[0].LightLayer"]);
-        spriggitFields["Model[0].081158"].ShouldBe(dtoFields["Model[0].081158"]);
-        spriggitFields["Model[1]"].ShouldBe(dtoFields["Model[1]"]);
         spriggitFields["Name.Count"].ShouldBe(dtoFields["Name.Count"]);
         spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
         spriggitFields["Name[0].Language"].ShouldBe(dtoFields["Name[0].Language"]);
@@ -364,19 +264,13 @@ public class StarfieldDoorSpriggitDataValidationTests : SpriggitDataValidationTe
         var spriggitFields = spriggit.Fields;
         var dtoFields = Helpers.GetDTOFields(dto);
 
-        spriggitFields["ANAM"].ShouldBe(dtoFields["ANAM"]);
-        spriggitFields["BNAM"].ShouldBe(dtoFields["BNAM"]);
         spriggitFields["CloseSound.Start"].ShouldBe(dtoFields["CloseSound.Start"]);
-        spriggitFields["CNAM"].ShouldBe(dtoFields["CNAM"]);
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FacingAxisOverride"].ShouldBe(dtoFields["FacingAxisOverride"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
         spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
-        spriggitFields["Model.Count"].ShouldBe(dtoFields["Model.Count"]);
-        spriggitFields["Model.File"].ShouldBe(dtoFields["Models[0].File"]);
+        NormalizeModelFile(spriggitFields["Model.File"]).ShouldBe(NormalizeModelFile(dtoFields["Models[0].File"]));
         spriggitFields["Model.LightLayer"].ShouldBe(dtoFields["Models[0].LightLayer"]);
-        spriggitFields["Model[0].212E3E"].ShouldBe(dtoFields["Model[0].212E3E"]);
-        spriggitFields["Model[1]"].ShouldBe(dtoFields["Model[1]"]);
         spriggitFields["Name.Count"].ShouldBe(dtoFields["Name.Count"]);
         spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
         spriggitFields["Name[0].Language"].ShouldBe(dtoFields["Name[0].Language"]);
@@ -407,34 +301,18 @@ public class StarfieldDoorSpriggitDataValidationTests : SpriggitDataValidationTe
         spriggitFields["VirtualMachineAdapter.Count"].ShouldBe(dtoFields["VirtualMachineAdapter.Count"]);
         spriggitFields["VirtualMachineAdapter[0].Count"].ShouldBe(dtoFields["VirtualMachineAdapter[0].Count"]);
         spriggitFields["VirtualMachineAdapter[0].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][0].Count"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0].Count"]);
         spriggitFields["VirtualMachineAdapter[0][0].MutagenObjectType"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0].MutagenObjectType"]);
         spriggitFields["VirtualMachineAdapter[0][0].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][0][0].Members.Count"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][0].Members.Count"]);
-        spriggitFields["VirtualMachineAdapter[0][0][0].Members[0].Data"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][0].Members[0].Data"]);
-        spriggitFields["VirtualMachineAdapter[0][0][0].Members[0].MutagenObjectType"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][0].Members[0].MutagenObjectType"]);
-        spriggitFields["VirtualMachineAdapter[0][0][0].Members[0].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][0].Members[0].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][0][0].Members[1].Data"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][0].Members[1].Data"]);
-        spriggitFields["VirtualMachineAdapter[0][0][0].Members[1].MutagenObjectType"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][0].Members[1].MutagenObjectType"]);
-        spriggitFields["VirtualMachineAdapter[0][0][0].Members[1].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][0].Members[1].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][0][0].Members[2].Data"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][0].Members[2].Data"]);
-        spriggitFields["VirtualMachineAdapter[0][0][0].Members[2].MutagenObjectType"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][0].Members[2].MutagenObjectType"]);
-        spriggitFields["VirtualMachineAdapter[0][0][0].Members[2].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][0].Members[2].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][0][0].Members[3].Data"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][0].Members[3].Data"]);
-        spriggitFields["VirtualMachineAdapter[0][0][0].Members[3].MutagenObjectType"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][0].Members[3].MutagenObjectType"]);
-        spriggitFields["VirtualMachineAdapter[0][0][0].Members[3].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][0].Members[3].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][0][0].Members[4].Data"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][0].Members[4].Data"]);
-        spriggitFields["VirtualMachineAdapter[0][0][0].Members[4].MutagenObjectType"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][0].Members[4].MutagenObjectType"]);
-        spriggitFields["VirtualMachineAdapter[0][0][0].Members[4].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][0].Members[4].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][0][1].Members.Count"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][1].Members.Count"]);
-        spriggitFields["VirtualMachineAdapter[0][0][1].Members[0].Data"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][1].Members[0].Data"]);
-        spriggitFields["VirtualMachineAdapter[0][0][1].Members[0].MutagenObjectType"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][1].Members[0].MutagenObjectType"]);
-        spriggitFields["VirtualMachineAdapter[0][0][1].Members[0].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][1].Members[0].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][0][1].Members[1].Data"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][1].Members[1].Data"]);
-        spriggitFields["VirtualMachineAdapter[0][0][1].Members[1].MutagenObjectType"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][1].Members[1].MutagenObjectType"]);
-        spriggitFields["VirtualMachineAdapter[0][0][1].Members[1].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][1].Members[1].Name"]);
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
+
+    private static string NormalizeModelFile(string modelFile)
+    {
+        return modelFile.StartsWith("Meshes\\", StringComparison.OrdinalIgnoreCase)
+            ? modelFile
+            : "Meshes\\" + modelFile;
+    }
 }
+

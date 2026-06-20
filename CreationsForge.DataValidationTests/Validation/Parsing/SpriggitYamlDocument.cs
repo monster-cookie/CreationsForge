@@ -163,9 +163,9 @@ public class SpriggitYamlDocument
         string path,
         string scalar)
     {
-        if (IsBlockScalar(scalar))
+        if (TryGetBlockScalar(scalar, out var blockScalarStyle, out var blockScalarChomping))
         {
-            AddValue(valuesByPath, path, ReadBlockScalar(lines, ref lineIndex, indent));
+            AddValue(valuesByPath, path, ReadBlockScalar(lines, ref lineIndex, indent, blockScalarStyle, blockScalarChomping));
             return;
         }
 
@@ -201,15 +201,29 @@ public class SpriggitYamlDocument
         return true;
     }
 
-    private static bool IsBlockScalar(string value)
+    private static bool TryGetBlockScalar(string value, out char style, out char chomping)
     {
-        return value is ">" or ">-" or "|" or "|-";
+        style = '\0';
+        chomping = '\0';
+
+        if (string.IsNullOrWhiteSpace(value) || value[0] is not ('>' or '|'))
+        {
+            return false;
+        }
+
+        style = value[0];
+        if (value.Length > 1 && value[1] is '-' or '+')
+        {
+            chomping = value[1];
+        }
+
+        return true;
     }
 
-    private static string ReadBlockScalar(IReadOnlyList<string> lines, ref int lineIndex, int parentIndent)
+    private static string ReadBlockScalar(IReadOnlyList<string> lines, ref int lineIndex, int parentIndent, char style, char chomping)
     {
         var buffer = new List<string>();
-        var firstLineIndent = parentIndent + 1;
+        var firstLineIndent = int.MaxValue;
 
         for (var nextIndex = lineIndex + 1; nextIndex < lines.Count; nextIndex++)
         {
@@ -232,11 +246,70 @@ public class SpriggitYamlDocument
             lineIndex = nextIndex;
         }
 
-        return string.Join(
-            "\n",
-            buffer.Select(line => string.IsNullOrWhiteSpace(line)
+        if (buffer.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        if (firstLineIndent == int.MaxValue)
+        {
+            firstLineIndent = 0;
+        }
+
+        var normalizedLines = buffer
+            .Select(line => string.IsNullOrWhiteSpace(line)
                 ? string.Empty
-                : line[Math.Min(firstLineIndent, line.Length)..].TrimEnd()));
+                : line[Math.Min(firstLineIndent, line.Length)..])
+            .ToList();
+        var value = style == '>'
+            ? FoldBlockScalar(normalizedLines)
+            : string.Join("\r\n", normalizedLines);
+
+        return chomping == '-'
+            ? value
+            : value + "\r\n";
+    }
+
+    private static string FoldBlockScalar(IReadOnlyList<string> lines)
+    {
+        var builder = new System.Text.StringBuilder();
+        var pendingBlankLines = 0;
+
+        foreach (var line in lines)
+        {
+            if (line.Length == 0)
+            {
+                if (builder.Length > 0)
+                {
+                    pendingBlankLines++;
+                }
+
+                continue;
+            }
+
+            if (builder.Length == 0)
+            {
+                builder.Append(line);
+                continue;
+            }
+
+            if (pendingBlankLines == 0)
+            {
+                builder.Append(' ');
+                builder.Append(line);
+                continue;
+            }
+
+            for (var index = 0; index < pendingBlankLines; index++)
+            {
+                builder.Append("\r\n");
+            }
+
+            builder.Append(line);
+            pendingBlankLines = 0;
+        }
+
+        return builder.ToString();
     }
 
     private static string NormalizeScalar(string value)

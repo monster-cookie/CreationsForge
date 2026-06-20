@@ -322,8 +322,8 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Value = GetPropertyNullableInt(record, "Value"),
                 Weight = GetPropertyNullableFloat(record, "Weight"),
                 Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
-                TeachesType = GetPropertyValue(GetPropertyValue(record, "Teaches"), "Type")?.ToString(),
-                TeachesRawContent = FormatEnumerable(GetPropertyValue(record, "Teaches")),
+                TeachesType = GetPropertyValue(GetPropertyValue(record, "Teaches"), "Type")?.ToString() ?? GetPropertyValue(record, "Teaches")?.GetType().Name,
+                TeachesRawContent = FormatEnumerable(GetPropertyValue(GetPropertyValue(record, "Teaches"), "RawContent")),
                 DataSlateType = GetPropertyValue(record, "DataSlateType")?.ToString(),
                 Description = GetTranslatedString(GetPropertyValue(record, "Description")),
                 DataSlateHeaderLeft = GetTranslatedString(GetPropertyValue(record, "DataSlateHeaderLeft")),
@@ -332,7 +332,8 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Book.RecordID, record.FormKey, record.Keywords),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.Book.RecordID, record.FormKey, record, "PickupSound", "DropdownSound"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Book.RecordID, record),
-                RawPayloads = GetBookRawPayloads(plugin, record.FormKey, record)
+                Components = GetRecordComponents(plugin, SupportedGame.Starfield, RecordTypeCatalog.Book.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
+                RawPayloads = GetBookRawPayloads(plugin, record.FormKey, record.Model, GetPropertyValue(record, "Components"))
             }, record))
             .ToList();
     }
@@ -361,6 +362,8 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Models = GetModels(plugin, RecordTypeCatalog.Door.RecordID, record.FormKey, record.Model),
                 Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Door.RecordID, record.FormKey, record.Keywords),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.Door.RecordID, record.FormKey, record, "OpenSound", "CloseSound"),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Door.RecordID, record),
+                Components = GetRecordComponents(plugin, SupportedGame.Starfield, RecordTypeCatalog.Door.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
                 RawPayloads = GetDoorRawPayloads(plugin, record.FormKey, record.Model, GetPropertyValue(record, "Components"))
             }, record))
             .ToList();
@@ -1024,12 +1027,12 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         return payloads;
     }
 
-    private static List<RawRecordPayloadDTO> GetBookRawPayloads(PluginDTO plugin, FormKey formKey, object record)
+    private static List<RawRecordPayloadDTO> GetBookRawPayloads(PluginDTO plugin, FormKey formKey, object? model, object? components)
     {
         var importedAtUTC = DateTime.UtcNow;
         var payloads = new List<RawRecordPayloadDTO>();
-        AddRawPayload(payloads, plugin, RecordTypeCatalog.Book.RecordID, formKey, "Model.Data", 0, record.GetType().Name, FormatHexValue(GetPropertyValue(GetPropertyValue(record, "Model"), "Data")), importedAtUTC);
-        AddRawPayload(payloads, plugin, RecordTypeCatalog.Book.RecordID, formKey, "BaseFormComponents", 0, "Components", FormatEnumerable(GetPropertyValue(record, "Components")), importedAtUTC, "Components");
+        AddRawPayload(payloads, plugin, RecordTypeCatalog.Book.RecordID, formKey, "Model.Data", 0, model?.GetType().Name ?? "Model", FormatHexValue(GetPropertyValue(model, "Data")), importedAtUTC);
+        AddBaseFormComponentRawPayloads(payloads, plugin, RecordTypeCatalog.Book.RecordID, formKey, components, importedAtUTC);
         return payloads;
     }
 
@@ -1285,7 +1288,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
 
     private static bool IsRawBaseFormComponentPayloadProperty(string propertyName)
     {
-        return propertyName is "ANAM" or "BNAM" or "CNAM" or "REFL";
+        return propertyName is "REFL";
     }
 
     private static void AddRawPayload(
@@ -1551,6 +1554,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
     private static List<ScriptingAdapterPropertyDTO> GetScriptingAdapterProperties(PluginDTO plugin, string recordType, FormKey formKey, IScriptEntryGetter script, DateTime importedAtUTC)
     {
         return script.Properties
+            .OrderBy(property => property.Name, StringComparer.Ordinal)
             .Select((property, propertyIndex) => CreateScriptingAdapterProperty(plugin, recordType, formKey, script.Name, property, propertyIndex, importedAtUTC))
             .Where(property => property != null)
             .Cast<ScriptingAdapterPropertyDTO>()

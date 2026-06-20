@@ -52,6 +52,10 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         cancellationToken.ThrowIfCancellationRequested();
         var statics = MapStatics(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
+        var books = MapBooks(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
+        var doors = MapDoors(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
         var containers = MapContainers(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
         var constructibleObjects = MapConstructibleObjects(plugin, mod);
@@ -70,6 +74,8 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             MagicEffects = magicEffects,
             Perks = perks,
             Statics = statics,
+            Books = books,
+            Doors = doors,
             Containers = containers,
             ConstructibleObjects = constructibleObjects
         };
@@ -621,6 +627,70 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             .ToList();
     }
 
+    private static IReadOnlyList<BookDTO> MapBooks(PluginDTO plugin, ISkyrimModGetter mod)
+    {
+        return GetRecordCollection(mod, "Books")
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new BookDTO
+            {
+                Game = SupportedGame.Skyrim,
+                ModKey = plugin.ModKey,
+                FormKey = GetRequiredFormKey(record),
+                EditorID = GetPropertyString(record, "EditorID"),
+                FormVersion = GetPropertyInt(record, "FormVersion"),
+                MajorRecordFlags = GetPropertyInt(record, "SkyrimMajorRecordFlags"),
+                Version2 = GetPropertyNullableInt(record, "Version2"),
+                VersionControl = GetPropertyNullableInt(record, "VersionControl"),
+                ImportedAtUTC = DateTime.UtcNow,
+                ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
+                ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
+                InventoryTransformFormKey = GetLinkedFormKey(record, "InventoryArt"),
+                Name = GetTranslatedString(record, "Name"),
+                Text = GetTranslatedString(record, "BookText") ?? GetTranslatedString(record, "Text"),
+                Value = GetPropertyNullableInt(record, "Value"),
+                Weight = GetPropertyNullableFloat(record, "Weight"),
+                Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
+                TeachesType = GetPropertyStringOrNull(GetPropertyValue(record, "Teaches"), "Type") ?? GetPropertyValue(record, "Teaches")?.GetType().Name,
+                TeachesRawContent = FormatEnumerable(GetPropertyValue(GetPropertyValue(record, "Teaches"), "RawContent")),
+                Description = GetTranslatedString(record, "Description"),
+                Models = GetModels(plugin, RecordTypeCatalog.Book.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model")),
+                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Book.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
+                Sounds = GetNamedSounds(plugin, RecordTypeCatalog.Book.RecordID, GetRequiredRawFormKey(record), record, "PickupSound", "PickUpSound", "DropdownSound", "PutdownSound"),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Book.RecordID, record),
+                RawPayloads = GetModelRawPayloads(plugin, RecordTypeCatalog.Book.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model"))
+            }, record))
+            .ToList();
+    }
+
+    private static IReadOnlyList<DoorDTO> MapDoors(PluginDTO plugin, ISkyrimModGetter mod)
+    {
+        return GetRecordCollection(mod, "Doors")
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new DoorDTO
+            {
+                Game = SupportedGame.Skyrim,
+                ModKey = plugin.ModKey,
+                FormKey = GetRequiredFormKey(record),
+                EditorID = GetPropertyString(record, "EditorID"),
+                FormVersion = GetPropertyInt(record, "FormVersion"),
+                MajorRecordFlags = GetPropertyInt(record, "SkyrimMajorRecordFlags"),
+                Version2 = GetPropertyNullableInt(record, "Version2"),
+                VersionControl = GetPropertyNullableInt(record, "VersionControl"),
+                ImportedAtUTC = DateTime.UtcNow,
+                ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
+                ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
+                Name = GetTranslatedString(record, "Name"),
+                Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
+                NativeTerminalFormKey = GetLinkedFormKey(record, "NativeTerminal"),
+                SoundLevel = GetPropertyStringOrNull(record, "SoundLevel"),
+                FacingAxisOverride = GetPropertyStringOrNull(record, "FacingAxisOverride"),
+                Models = GetModels(plugin, RecordTypeCatalog.Door.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model")),
+                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Door.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
+                Sounds = GetNamedSounds(plugin, RecordTypeCatalog.Door.RecordID, GetRequiredRawFormKey(record), record, "OpenSound", "CloseSound"),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Door.RecordID, record),
+                RawPayloads = GetModelRawPayloads(plugin, RecordTypeCatalog.Door.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model"))
+            }, record))
+            .ToList();
+    }
+
     private static IReadOnlyList<ConstructibleObjectDTO> MapConstructibleObjects(PluginDTO plugin, ISkyrimModGetter mod)
     {
         return GetRecordCollection(mod, "ConstructibleObjects")
@@ -964,6 +1034,11 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
 
     private static string? GetSoundStart(object soundSource)
     {
+        if (GetFormKeyFromObject(soundSource) is { } formKey)
+        {
+            return $"{formKey.Id:X6}:{formKey.ModKey.FileName}";
+        }
+
         var directStart = GetPropertyValue(soundSource, "Start")?.ToString();
         if (!string.IsNullOrWhiteSpace(directStart)) return directStart;
 
@@ -1226,7 +1301,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         return GetPropertyValue(source, propertyName)?.ToString() ?? string.Empty;
     }
 
-    private static string? GetPropertyStringOrNull(object source, string propertyName)
+    private static string? GetPropertyStringOrNull(object? source, string propertyName)
     {
         return GetPropertyValue(source, propertyName)?.ToString();
     }

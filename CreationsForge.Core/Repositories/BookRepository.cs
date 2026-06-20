@@ -9,9 +9,31 @@ namespace CreationsForge.Core.Repositories;
 
 public class BookRepository : TypedRecordRepositoryBase, IBookRepository
 {
-    public BookRepository(IDatabase database, IRecordInstanceRepository recordInstanceRepository)
+    private readonly IModelRepository ModelRepository;
+    private readonly IRecordKeywordRepository RecordKeywordRepository;
+    private readonly IRecordSoundRepository RecordSoundRepository;
+    private readonly IScriptingAdapterRepository ScriptingAdapterRepository;
+    private readonly IRecordComponentRepository RecordComponentRepository;
+    private readonly IRawRecordPayloadRepository RawRecordPayloadRepository;
+
+    public BookRepository(
+        IDatabase database,
+        IRecordInstanceRepository recordInstanceRepository,
+        IModelRepository modelRepository,
+        IRecordKeywordRepository recordKeywordRepository,
+        IRecordSoundRepository recordSoundRepository,
+        IScriptingAdapterRepository scriptingAdapterRepository,
+        IRecordComponentRepository recordComponentRepository,
+        IRawRecordPayloadRepository rawRecordPayloadRepository)
         : base(database, recordInstanceRepository)
-    { }
+    {
+        ModelRepository = modelRepository;
+        RecordKeywordRepository = recordKeywordRepository;
+        RecordSoundRepository = recordSoundRepository;
+        ScriptingAdapterRepository = scriptingAdapterRepository;
+        RecordComponentRepository = recordComponentRepository;
+        RawRecordPayloadRepository = rawRecordPayloadRepository;
+    }
 
     public override string RecordType => RecordTypeCatalog.Book.RecordID;
 
@@ -19,7 +41,7 @@ public class BookRepository : TypedRecordRepositoryBase, IBookRepository
 
     public IReadOnlyList<BookDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
     {
-        return FetchByFormKey<BookRow>(
+        var records = FetchByFormKey<BookRow>(
                 game,
                 formKey,
                 [
@@ -45,6 +67,23 @@ public class BookRepository : TypedRecordRepositoryBase, IBookRepository
                 ])
             .Select(record => ToDTO(record, game))
             .ToList();
+        var models = ModelRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey);
+        var keywords = RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey);
+        var sounds = RecordSoundRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey);
+        var scriptingAdapters = ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey);
+        var components = RecordComponentRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey);
+        var rawPayloads = RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey);
+        foreach (var record in records)
+        {
+            record.Models = models.Where(model => IsSameModKey(model.ModKey, record.ModKey)).OrderBy(model => model.ModelSlot).ThenBy(model => model.ModelGender).ToList();
+            record.Keywords = keywords.Where(keyword => IsSameModKey(keyword.ModKey, record.ModKey)).OrderBy(keyword => keyword.KeywordIndex).ToList();
+            record.Sounds = sounds.Where(sound => IsSameModKey(sound.ModKey, record.ModKey)).OrderBy(sound => sound.SoundIndex).ToList();
+            record.ScriptingAdapters = scriptingAdapters.Where(adapter => IsSameModKey(adapter.ModKey, record.ModKey)).OrderBy(adapter => adapter.ScriptIndex).ToList();
+            record.Components = components.Where(component => IsSameModKey(component.ModKey, record.ModKey)).OrderBy(component => component.ComponentIndex).ToList();
+            record.RawPayloads = rawPayloads.Where(payload => IsSameModKey(payload.ModKey, record.ModKey)).OrderBy(payload => payload.PayloadSlot).ThenBy(payload => payload.PayloadIndex).ToList();
+        }
+
+        return records;
     }
 
     public void Save(BookDTO dto)
@@ -170,5 +209,12 @@ public class BookRepository : TypedRecordRepositoryBase, IBookRepository
         public string? DataSlateHeaderLeft { get; set; }
 
         public string? DataSlateHeaderRight { get; set; }
+    }
+
+    private static bool IsSameModKey(ModKeyDTO first, ModKeyDTO second)
+    {
+        return string.Equals(first.Name, second.Name, StringComparison.Ordinal) &&
+               first.Type == second.Type &&
+               string.Equals(first.FileName, second.FileName, StringComparison.Ordinal);
     }
 }

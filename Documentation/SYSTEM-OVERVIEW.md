@@ -19,7 +19,7 @@ Plugin metadata import avoids typed record enumeration; record counts are read f
 extension importers persist audited scalar plugin header fields into extension tables. Starfield, Fallout 4, and
 Skyrim map the currently approved cross-game typed records: FormLists, GameSettings, Globals, Classes, Factions,
 MiscItems, Keywords, ActorValueInformation, NPCs, MagicEffects, Perks, Statics, Containers, and
-ConstructibleObjects. Starfield also maps ConditionForms, Books, Doors, and Terminals into typed detail rows. CNDF,
+ConstructibleObjects, Books, and Doors. Starfield also maps ConditionForms and Terminals into typed detail rows. CNDF,
 FACT, and COBJ condition lists use shared structured condition-rule rows and generic condition-data parameter rows,
 not raw condition payload rows. Factions can also persist shared component child rows for Starfield-only FACT component
 payloads. Imports
@@ -128,7 +128,7 @@ types.
 - Game-specific reader services currently return selected game metadata, load-order plugin metadata, header-stat
   record counts, declared master references, and audited scalar game-specific plugin header fields.
 - Starfield, Fallout 4, and Skyrim share `FLST`, `GMST`, `GLOB`, `CLAS`, `FACT`, `MISC`, `KYWD`, `AVIF`, `NPC_`,
-  `MGEF`, `PERK`, `STAT`, `CONT`, and `COBJ` typed-record mapping. Starfield also maps `CNDF`, `BOOK`, `DOOR`, and
+  `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, and `COBJ` typed-record mapping. Starfield also maps `CNDF` and
   `TERM`.
   Deeper game-specific fields are follow-up work.
 - Shared plugin, plugin-master-reference, and typed-record repositories use NPoco database models for save behavior.
@@ -143,12 +143,12 @@ types.
 
 Starfield, Fallout 4, and Skyrim import typed record parent rows for MiscItems (`MISC`), Keywords (`KYWD`),
 ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), Perks (`PERK`), Statics (`STAT`), Classes
-(`CLAS`), Factions (`FACT`), and Containers (`CONT`). Starfield also imports ConditionForms (`CNDF`), Books (`BOOK`),
-Doors (`DOOR`), and Terminals (`TERM`) into typed detail tables. These records are mapped in their game adapter
+(`CLAS`), Factions (`FACT`), Books (`BOOK`), Doors (`DOOR`), and Containers (`CONT`). Starfield also imports
+ConditionForms (`CNDF`) and Terminals (`TERM`) into typed detail tables. These records are mapped in their game adapter
 projects and persisted through Core DTOs, repositories, and
 typed importers. Scripting adapters are persisted for `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `BOOK`,
-and `TERM` when the source record exposes virtual-machine adapter data; `FLST`, `GMST`, and `DOOR` remain flat
-records without scripting adapter persistence. Shared child rows for models, keywords, record components, sounds, raw
+`DOOR`, and `TERM` when the source record exposes virtual-machine adapter data; `FLST` and `GMST` remain flat records
+without scripting adapter persistence. Shared child rows for models, keywords, record components, sounds, raw
 payloads, scripting adapters, and terminal marker parameters are dispatched by Core DTO capability interfaces and
 linked through the owning `RecordInstances` row or terminal parent row. Localized string rows are also dispatched from
 Core DTO capability interfaces and linked through the owning `RecordInstances` row.

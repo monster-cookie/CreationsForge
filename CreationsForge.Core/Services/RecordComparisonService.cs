@@ -493,6 +493,7 @@ public class RecordComparisonService : IRecordComparisonService
         AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
         AddSoundGroups(fields, baseRecords, RecordSoundRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
         AddScriptingAdapterGroups(fields, baseRecords, ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
+        AddRecordComponentGroups(fields, baseRecords, records.SelectMany(record => record.Components).ToList());
         AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.Book.RecordID, formKey, baseRecords, fields);
@@ -516,6 +517,8 @@ public class RecordComparisonService : IRecordComparisonService
         AddKeywordGroup(fields, baseRecords, RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
         AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
         AddSoundGroups(fields, baseRecords, RecordSoundRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
+        AddScriptingAdapterGroups(fields, baseRecords, ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
+        AddRecordComponentGroups(fields, baseRecords, records.SelectMany(record => record.Components).ToList());
         AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.Door.RecordID, formKey, baseRecords, fields);

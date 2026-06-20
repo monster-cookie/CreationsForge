@@ -7,16 +7,6 @@ namespace CreationsForge.DataValidationTests.Validation.Tests.ActorValueInformat
 
 public class Fallout4ActorValueInformationSpriggitDataValidationTests : SpriggitDataValidationTestBase
 {
-    private static readonly string[] UnsupportedSpriggitFields =
-    [
-        "Description"
-    ];
-
-    private static readonly string[] UnsupportedDtoFields =
-    [
-        "FormVersion"
-    ];
-
     [Fact]
     [Trait("Game", "Fallout4")]
     [Trait("RecordType", "AVIF")]
@@ -100,7 +90,7 @@ public class Fallout4ActorValueInformationSpriggitDataValidationTests : Spriggit
             dtoFields["Flags"].ShouldNotBeNullOrEmpty();
         }
 
-        Helpers.GetUnmatchedSpriggitFields(spriggit, dto, UnsupportedSpriggitFields).ShouldBeEmpty();
-        Helpers.GetUnmatchedDtoFields(spriggit, dto, UnsupportedDtoFields).ShouldBeEmpty();
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 }

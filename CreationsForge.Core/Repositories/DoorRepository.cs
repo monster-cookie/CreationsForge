@@ -9,9 +9,31 @@ namespace CreationsForge.Core.Repositories;
 
 public class DoorRepository : TypedRecordRepositoryBase, IDoorRepository
 {
-    public DoorRepository(IDatabase database, IRecordInstanceRepository recordInstanceRepository)
+    private readonly IModelRepository ModelRepository;
+    private readonly IRecordKeywordRepository RecordKeywordRepository;
+    private readonly IRecordSoundRepository RecordSoundRepository;
+    private readonly IScriptingAdapterRepository ScriptingAdapterRepository;
+    private readonly IRecordComponentRepository RecordComponentRepository;
+    private readonly IRawRecordPayloadRepository RawRecordPayloadRepository;
+
+    public DoorRepository(
+        IDatabase database,
+        IRecordInstanceRepository recordInstanceRepository,
+        IModelRepository modelRepository,
+        IRecordKeywordRepository recordKeywordRepository,
+        IRecordSoundRepository recordSoundRepository,
+        IScriptingAdapterRepository scriptingAdapterRepository,
+        IRecordComponentRepository recordComponentRepository,
+        IRawRecordPayloadRepository rawRecordPayloadRepository)
         : base(database, recordInstanceRepository)
-    { }
+    {
+        ModelRepository = modelRepository;
+        RecordKeywordRepository = recordKeywordRepository;
+        RecordSoundRepository = recordSoundRepository;
+        ScriptingAdapterRepository = scriptingAdapterRepository;
+        RecordComponentRepository = recordComponentRepository;
+        RawRecordPayloadRepository = rawRecordPayloadRepository;
+    }
 
     public override string RecordType => RecordTypeCatalog.Door.RecordID;
 
@@ -19,7 +41,7 @@ public class DoorRepository : TypedRecordRepositoryBase, IDoorRepository
 
     public IReadOnlyList<DoorDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
     {
-        return FetchByFormKey<DoorRow>(
+        var records = FetchByFormKey<DoorRow>(
                 game,
                 formKey,
                 [
@@ -37,6 +59,23 @@ public class DoorRepository : TypedRecordRepositoryBase, IDoorRepository
                 ])
             .Select(record => ToDTO(record, game))
             .ToList();
+        var models = ModelRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey);
+        var keywords = RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey);
+        var sounds = RecordSoundRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey);
+        var scriptingAdapters = ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey);
+        var components = RecordComponentRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey);
+        var rawPayloads = RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey);
+        foreach (var record in records)
+        {
+            record.Models = models.Where(model => IsSameModKey(model.ModKey, record.ModKey)).OrderBy(model => model.ModelSlot).ThenBy(model => model.ModelGender).ToList();
+            record.Keywords = keywords.Where(keyword => IsSameModKey(keyword.ModKey, record.ModKey)).OrderBy(keyword => keyword.KeywordIndex).ToList();
+            record.Sounds = sounds.Where(sound => IsSameModKey(sound.ModKey, record.ModKey)).OrderBy(sound => sound.SoundIndex).ToList();
+            record.ScriptingAdapters = scriptingAdapters.Where(adapter => IsSameModKey(adapter.ModKey, record.ModKey)).OrderBy(adapter => adapter.ScriptIndex).ToList();
+            record.Components = components.Where(component => IsSameModKey(component.ModKey, record.ModKey)).OrderBy(component => component.ComponentIndex).ToList();
+            record.RawPayloads = rawPayloads.Where(payload => IsSameModKey(payload.ModKey, record.ModKey)).OrderBy(payload => payload.PayloadSlot).ThenBy(payload => payload.PayloadIndex).ToList();
+        }
+
+        return records;
     }
 
     public void Save(DoorDTO dto)
@@ -105,6 +144,13 @@ public class DoorRepository : TypedRecordRepositoryBase, IDoorRepository
         };
         ApplyCommonFields(dto, record, game);
         return dto;
+    }
+
+    private static bool IsSameModKey(ModKeyDTO first, ModKeyDTO second)
+    {
+        return string.Equals(first.Name, second.Name, StringComparison.Ordinal) &&
+               first.Type == second.Type &&
+               string.Equals(first.FileName, second.FileName, StringComparison.Ordinal);
     }
 
     private sealed class DoorRow : RecordRow
