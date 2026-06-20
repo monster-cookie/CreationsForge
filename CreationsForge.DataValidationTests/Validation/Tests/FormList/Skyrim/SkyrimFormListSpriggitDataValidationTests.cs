@@ -24,14 +24,17 @@ public class SkyrimFormListSpriggitDataValidationTests : SpriggitDataValidationT
             RecordTypeCatalog.FormList,
             "06F3F7:Skyrim.esm");
 
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "FormVersion").ShouldBe(Helpers.GetDTOField(dto, "FormVersion"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "EditorID", "FormKey", "FormVersion", "Version2", "VersionControl");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "EditorID", "FormKey", "FormVersion", "Version2", "VersionControl");
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -51,14 +54,17 @@ public class SkyrimFormListSpriggitDataValidationTests : SpriggitDataValidationT
             RecordTypeCatalog.FormList,
             "045C32:Skyrim.esm");
 
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "FormVersion").ShouldBe(Helpers.GetDTOField(dto, "FormVersion"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "EditorID", "FormKey", "FormVersion", "Version2", "VersionControl");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "EditorID", "FormKey", "FormVersion", "Version2", "VersionControl");
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -78,14 +84,17 @@ public class SkyrimFormListSpriggitDataValidationTests : SpriggitDataValidationT
             RecordTypeCatalog.FormList,
             "026953:Skyrim.esm");
 
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "FormVersion").ShouldBe(Helpers.GetDTOField(dto, "FormVersion"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "EditorID", "FormKey", "FormVersion", "Version2", "VersionControl");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "EditorID", "FormKey", "FormVersion", "Version2", "VersionControl");
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -105,13 +114,16 @@ public class SkyrimFormListSpriggitDataValidationTests : SpriggitDataValidationT
             RecordTypeCatalog.FormList,
             "000D14:Skyrim.esm");
 
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "FormVersion").ShouldBe(Helpers.GetDTOField(dto, "FormVersion"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "EditorID", "FormKey", "FormVersion", "Version2", "VersionControl");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "EditorID", "FormKey", "FormVersion", "Version2", "VersionControl");
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 }

@@ -5,8 +5,6 @@ namespace CreationsForge.Core.DTOs.Records;
 
 public class FactionDTO : RecordDTO, IHasKeywordsRecordDTO, IHasComponentsRecordDTO, IHasConditionsRecordDTO
 {
-    public int? Version2 { get; set; }
-
     public TranslatedStringDTO? Name { get; set; }
 
     public string? Flags { get; set; }

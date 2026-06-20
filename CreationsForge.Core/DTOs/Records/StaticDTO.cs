@@ -4,8 +4,6 @@ namespace CreationsForge.Core.DTOs.Records;
 
 public class StaticDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO, IHasRawRecordPayloadsRecordDTO
 {
-    public int? Version2 { get; set; }
-
     public string? ObjectBoundsFirst { get; set; }
 
     public string? ObjectBoundsSecond { get; set; }

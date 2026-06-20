@@ -2,8 +2,6 @@ namespace CreationsForge.Core.DTOs.Records;
 
 public class ClassDTO : RecordDTO
 {
-    public int? Version2 { get; set; }
-
     public TranslatedStringDTO? Name { get; set; }
 
     public TranslatedStringDTO? Description { get; set; }

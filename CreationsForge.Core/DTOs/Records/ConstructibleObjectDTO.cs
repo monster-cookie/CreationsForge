@@ -5,8 +5,6 @@ namespace CreationsForge.Core.DTOs.Records;
 
 public class ConstructibleObjectDTO : RecordDTO, IHasScriptingAdaptersRecordDTO, IHasRawRecordPayloadsRecordDTO, IHasConditionsRecordDTO
 {
-    public int? Version2 { get; set; }
-
     public TranslatedStringDTO? Description { get; set; }
 
     public FormKeyDTO? CreatedObjectFormKey { get; set; }

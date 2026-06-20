@@ -5,8 +5,6 @@ namespace CreationsForge.Core.DTOs.Records;
 
 public class TerminalDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO, IHasScriptingAdaptersRecordDTO, IHasRawRecordPayloadsRecordDTO, IHasTerminalMarkerParametersRecordDTO
 {
-    public int? Version2 { get; set; }
-
     public string? ObjectBoundsFirst { get; set; }
 
     public string? ObjectBoundsSecond { get; set; }

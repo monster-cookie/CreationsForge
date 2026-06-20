@@ -24,39 +24,42 @@ public class Fallout4KeywordSpriggitDataValidationTests : SpriggitDataValidation
             RecordTypeCatalog.Keyword,
             "119B9B:Fallout4.esm");
 
-        Helpers.GetSpriggitField(spriggit, "Color").ShouldBe(Helpers.GetDTOField(dto, "Color"));
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "Name.Count").ShouldBe(Helpers.GetDTOField(dto, "Name.Count"));
-        Helpers.GetSpriggitField(spriggit, "Name.TargetLanguage").ShouldBe(Helpers.GetDTOField(dto, "Name.TargetLanguage"));
-        Helpers.GetSpriggitField(spriggit, "Name[0].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[0].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[0].String").ShouldBe(Helpers.GetDTOField(dto, "Name[0].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[1].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[1].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[1].String").ShouldBe(Helpers.GetDTOField(dto, "Name[1].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[10].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[10].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[10].String").ShouldBe(Helpers.GetDTOField(dto, "Name[10].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[2].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[2].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[2].String").ShouldBe(Helpers.GetDTOField(dto, "Name[2].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[3].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[3].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[3].String").ShouldBe(Helpers.GetDTOField(dto, "Name[3].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[4].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[4].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[4].String").ShouldBe(Helpers.GetDTOField(dto, "Name[4].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[5].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[5].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[5].String").ShouldBe(Helpers.GetDTOField(dto, "Name[5].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[6].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[6].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[6].String").ShouldBe(Helpers.GetDTOField(dto, "Name[6].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[7].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[7].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[7].String").ShouldBe(Helpers.GetDTOField(dto, "Name[7].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[8].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[8].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[8].String").ShouldBe(Helpers.GetDTOField(dto, "Name[8].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[9].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[9].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[9].String").ShouldBe(Helpers.GetDTOField(dto, "Name[9].String"));
-        Helpers.GetSpriggitField(spriggit, "Type").ShouldBe(Helpers.GetDTOField(dto, "Type"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "Color", "EditorID", "FormKey", "Name.Count", "Name.TargetLanguage", "Name[0].Language", "Name[0].String", "Name[1].Language", "Name[1].String", "Name[10].Language", "Name[10].String", "Name[2].Language", "Name[2].String", "Name[3].Language", "Name[3].String", "Name[4].Language", "Name[4].String", "Name[5].Language", "Name[5].String", "Name[6].Language", "Name[6].String", "Name[7].Language", "Name[7].String", "Name[8].Language", "Name[8].String", "Name[9].Language", "Name[9].String", "Type", "Version2", "VersionControl");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "Color", "EditorID", "FormKey", "Name.Count", "Name.TargetLanguage", "Name[0].Language", "Name[0].String", "Name[1].Language", "Name[1].String", "Name[10].Language", "Name[10].String", "Name[2].Language", "Name[2].String", "Name[3].Language", "Name[3].String", "Name[4].Language", "Name[4].String", "Name[5].Language", "Name[5].String", "Name[6].Language", "Name[6].String", "Name[7].Language", "Name[7].String", "Name[8].Language", "Name[8].String", "Name[9].Language", "Name[9].String", "Type", "Version2", "VersionControl");
+        spriggitFields["Color"].ShouldBe(dtoFields["Color"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["Name.Count"].ShouldBe(dtoFields["Name.Count"]);
+        spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
+        spriggitFields["Name[0].Language"].ShouldBe(dtoFields["Name[0].Language"]);
+        spriggitFields["Name[0].String"].ShouldBe(dtoFields["Name[0].String"]);
+        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[1].Language"]);
+        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[1].String"]);
+        spriggitFields["Name[10].Language"].ShouldBe(dtoFields["Name[10].Language"]);
+        spriggitFields["Name[10].String"].ShouldBe(dtoFields["Name[10].String"]);
+        spriggitFields["Name[2].Language"].ShouldBe(dtoFields["Name[2].Language"]);
+        spriggitFields["Name[2].String"].ShouldBe(dtoFields["Name[2].String"]);
+        spriggitFields["Name[3].Language"].ShouldBe(dtoFields["Name[3].Language"]);
+        spriggitFields["Name[3].String"].ShouldBe(dtoFields["Name[3].String"]);
+        spriggitFields["Name[4].Language"].ShouldBe(dtoFields["Name[4].Language"]);
+        spriggitFields["Name[4].String"].ShouldBe(dtoFields["Name[4].String"]);
+        spriggitFields["Name[5].Language"].ShouldBe(dtoFields["Name[5].Language"]);
+        spriggitFields["Name[5].String"].ShouldBe(dtoFields["Name[5].String"]);
+        spriggitFields["Name[6].Language"].ShouldBe(dtoFields["Name[6].Language"]);
+        spriggitFields["Name[6].String"].ShouldBe(dtoFields["Name[6].String"]);
+        spriggitFields["Name[7].Language"].ShouldBe(dtoFields["Name[7].Language"]);
+        spriggitFields["Name[7].String"].ShouldBe(dtoFields["Name[7].String"]);
+        spriggitFields["Name[8].Language"].ShouldBe(dtoFields["Name[8].Language"]);
+        spriggitFields["Name[8].String"].ShouldBe(dtoFields["Name[8].String"]);
+        spriggitFields["Name[9].Language"].ShouldBe(dtoFields["Name[9].Language"]);
+        spriggitFields["Name[9].String"].ShouldBe(dtoFields["Name[9].String"]);
+        spriggitFields["Type"].ShouldBe(dtoFields["Type"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -76,39 +79,42 @@ public class Fallout4KeywordSpriggitDataValidationTests : SpriggitDataValidation
             RecordTypeCatalog.Keyword,
             "119B9C:Fallout4.esm");
 
-        Helpers.GetSpriggitField(spriggit, "Color").ShouldBe(Helpers.GetDTOField(dto, "Color"));
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "Name.Count").ShouldBe(Helpers.GetDTOField(dto, "Name.Count"));
-        Helpers.GetSpriggitField(spriggit, "Name.TargetLanguage").ShouldBe(Helpers.GetDTOField(dto, "Name.TargetLanguage"));
-        Helpers.GetSpriggitField(spriggit, "Name[0].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[0].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[0].String").ShouldBe(Helpers.GetDTOField(dto, "Name[0].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[1].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[1].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[1].String").ShouldBe(Helpers.GetDTOField(dto, "Name[1].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[10].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[10].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[10].String").ShouldBe(Helpers.GetDTOField(dto, "Name[10].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[2].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[2].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[2].String").ShouldBe(Helpers.GetDTOField(dto, "Name[2].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[3].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[3].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[3].String").ShouldBe(Helpers.GetDTOField(dto, "Name[3].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[4].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[4].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[4].String").ShouldBe(Helpers.GetDTOField(dto, "Name[4].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[5].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[5].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[5].String").ShouldBe(Helpers.GetDTOField(dto, "Name[5].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[6].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[6].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[6].String").ShouldBe(Helpers.GetDTOField(dto, "Name[6].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[7].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[7].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[7].String").ShouldBe(Helpers.GetDTOField(dto, "Name[7].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[8].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[8].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[8].String").ShouldBe(Helpers.GetDTOField(dto, "Name[8].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[9].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[9].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[9].String").ShouldBe(Helpers.GetDTOField(dto, "Name[9].String"));
-        Helpers.GetSpriggitField(spriggit, "Type").ShouldBe(Helpers.GetDTOField(dto, "Type"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "Color", "EditorID", "FormKey", "Name.Count", "Name.TargetLanguage", "Name[0].Language", "Name[0].String", "Name[1].Language", "Name[1].String", "Name[10].Language", "Name[10].String", "Name[2].Language", "Name[2].String", "Name[3].Language", "Name[3].String", "Name[4].Language", "Name[4].String", "Name[5].Language", "Name[5].String", "Name[6].Language", "Name[6].String", "Name[7].Language", "Name[7].String", "Name[8].Language", "Name[8].String", "Name[9].Language", "Name[9].String", "Type", "Version2", "VersionControl");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "Color", "EditorID", "FormKey", "Name.Count", "Name.TargetLanguage", "Name[0].Language", "Name[0].String", "Name[1].Language", "Name[1].String", "Name[10].Language", "Name[10].String", "Name[2].Language", "Name[2].String", "Name[3].Language", "Name[3].String", "Name[4].Language", "Name[4].String", "Name[5].Language", "Name[5].String", "Name[6].Language", "Name[6].String", "Name[7].Language", "Name[7].String", "Name[8].Language", "Name[8].String", "Name[9].Language", "Name[9].String", "Type", "Version2", "VersionControl");
+        spriggitFields["Color"].ShouldBe(dtoFields["Color"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["Name.Count"].ShouldBe(dtoFields["Name.Count"]);
+        spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
+        spriggitFields["Name[0].Language"].ShouldBe(dtoFields["Name[0].Language"]);
+        spriggitFields["Name[0].String"].ShouldBe(dtoFields["Name[0].String"]);
+        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[1].Language"]);
+        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[1].String"]);
+        spriggitFields["Name[10].Language"].ShouldBe(dtoFields["Name[10].Language"]);
+        spriggitFields["Name[10].String"].ShouldBe(dtoFields["Name[10].String"]);
+        spriggitFields["Name[2].Language"].ShouldBe(dtoFields["Name[2].Language"]);
+        spriggitFields["Name[2].String"].ShouldBe(dtoFields["Name[2].String"]);
+        spriggitFields["Name[3].Language"].ShouldBe(dtoFields["Name[3].Language"]);
+        spriggitFields["Name[3].String"].ShouldBe(dtoFields["Name[3].String"]);
+        spriggitFields["Name[4].Language"].ShouldBe(dtoFields["Name[4].Language"]);
+        spriggitFields["Name[4].String"].ShouldBe(dtoFields["Name[4].String"]);
+        spriggitFields["Name[5].Language"].ShouldBe(dtoFields["Name[5].Language"]);
+        spriggitFields["Name[5].String"].ShouldBe(dtoFields["Name[5].String"]);
+        spriggitFields["Name[6].Language"].ShouldBe(dtoFields["Name[6].Language"]);
+        spriggitFields["Name[6].String"].ShouldBe(dtoFields["Name[6].String"]);
+        spriggitFields["Name[7].Language"].ShouldBe(dtoFields["Name[7].Language"]);
+        spriggitFields["Name[7].String"].ShouldBe(dtoFields["Name[7].String"]);
+        spriggitFields["Name[8].Language"].ShouldBe(dtoFields["Name[8].Language"]);
+        spriggitFields["Name[8].String"].ShouldBe(dtoFields["Name[8].String"]);
+        spriggitFields["Name[9].Language"].ShouldBe(dtoFields["Name[9].Language"]);
+        spriggitFields["Name[9].String"].ShouldBe(dtoFields["Name[9].String"]);
+        spriggitFields["Type"].ShouldBe(dtoFields["Type"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -128,39 +134,42 @@ public class Fallout4KeywordSpriggitDataValidationTests : SpriggitDataValidation
             RecordTypeCatalog.Keyword,
             "119B9D:Fallout4.esm");
 
-        Helpers.GetSpriggitField(spriggit, "Color").ShouldBe(Helpers.GetDTOField(dto, "Color"));
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "Name.Count").ShouldBe(Helpers.GetDTOField(dto, "Name.Count"));
-        Helpers.GetSpriggitField(spriggit, "Name.TargetLanguage").ShouldBe(Helpers.GetDTOField(dto, "Name.TargetLanguage"));
-        Helpers.GetSpriggitField(spriggit, "Name[0].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[0].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[0].String").ShouldBe(Helpers.GetDTOField(dto, "Name[0].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[1].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[1].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[1].String").ShouldBe(Helpers.GetDTOField(dto, "Name[1].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[10].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[10].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[10].String").ShouldBe(Helpers.GetDTOField(dto, "Name[10].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[2].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[2].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[2].String").ShouldBe(Helpers.GetDTOField(dto, "Name[2].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[3].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[3].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[3].String").ShouldBe(Helpers.GetDTOField(dto, "Name[3].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[4].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[4].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[4].String").ShouldBe(Helpers.GetDTOField(dto, "Name[4].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[5].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[5].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[5].String").ShouldBe(Helpers.GetDTOField(dto, "Name[5].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[6].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[6].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[6].String").ShouldBe(Helpers.GetDTOField(dto, "Name[6].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[7].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[7].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[7].String").ShouldBe(Helpers.GetDTOField(dto, "Name[7].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[8].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[8].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[8].String").ShouldBe(Helpers.GetDTOField(dto, "Name[8].String"));
-        Helpers.GetSpriggitField(spriggit, "Name[9].Language").ShouldBe(Helpers.GetDTOField(dto, "Name[9].Language"));
-        Helpers.GetSpriggitField(spriggit, "Name[9].String").ShouldBe(Helpers.GetDTOField(dto, "Name[9].String"));
-        Helpers.GetSpriggitField(spriggit, "Type").ShouldBe(Helpers.GetDTOField(dto, "Type"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "Color", "EditorID", "FormKey", "Name.Count", "Name.TargetLanguage", "Name[0].Language", "Name[0].String", "Name[1].Language", "Name[1].String", "Name[10].Language", "Name[10].String", "Name[2].Language", "Name[2].String", "Name[3].Language", "Name[3].String", "Name[4].Language", "Name[4].String", "Name[5].Language", "Name[5].String", "Name[6].Language", "Name[6].String", "Name[7].Language", "Name[7].String", "Name[8].Language", "Name[8].String", "Name[9].Language", "Name[9].String", "Type", "Version2", "VersionControl");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "Color", "EditorID", "FormKey", "Name.Count", "Name.TargetLanguage", "Name[0].Language", "Name[0].String", "Name[1].Language", "Name[1].String", "Name[10].Language", "Name[10].String", "Name[2].Language", "Name[2].String", "Name[3].Language", "Name[3].String", "Name[4].Language", "Name[4].String", "Name[5].Language", "Name[5].String", "Name[6].Language", "Name[6].String", "Name[7].Language", "Name[7].String", "Name[8].Language", "Name[8].String", "Name[9].Language", "Name[9].String", "Type", "Version2", "VersionControl");
+        spriggitFields["Color"].ShouldBe(dtoFields["Color"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["Name.Count"].ShouldBe(dtoFields["Name.Count"]);
+        spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
+        spriggitFields["Name[0].Language"].ShouldBe(dtoFields["Name[0].Language"]);
+        spriggitFields["Name[0].String"].ShouldBe(dtoFields["Name[0].String"]);
+        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[1].Language"]);
+        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[1].String"]);
+        spriggitFields["Name[10].Language"].ShouldBe(dtoFields["Name[10].Language"]);
+        spriggitFields["Name[10].String"].ShouldBe(dtoFields["Name[10].String"]);
+        spriggitFields["Name[2].Language"].ShouldBe(dtoFields["Name[2].Language"]);
+        spriggitFields["Name[2].String"].ShouldBe(dtoFields["Name[2].String"]);
+        spriggitFields["Name[3].Language"].ShouldBe(dtoFields["Name[3].Language"]);
+        spriggitFields["Name[3].String"].ShouldBe(dtoFields["Name[3].String"]);
+        spriggitFields["Name[4].Language"].ShouldBe(dtoFields["Name[4].Language"]);
+        spriggitFields["Name[4].String"].ShouldBe(dtoFields["Name[4].String"]);
+        spriggitFields["Name[5].Language"].ShouldBe(dtoFields["Name[5].Language"]);
+        spriggitFields["Name[5].String"].ShouldBe(dtoFields["Name[5].String"]);
+        spriggitFields["Name[6].Language"].ShouldBe(dtoFields["Name[6].Language"]);
+        spriggitFields["Name[6].String"].ShouldBe(dtoFields["Name[6].String"]);
+        spriggitFields["Name[7].Language"].ShouldBe(dtoFields["Name[7].Language"]);
+        spriggitFields["Name[7].String"].ShouldBe(dtoFields["Name[7].String"]);
+        spriggitFields["Name[8].Language"].ShouldBe(dtoFields["Name[8].Language"]);
+        spriggitFields["Name[8].String"].ShouldBe(dtoFields["Name[8].String"]);
+        spriggitFields["Name[9].Language"].ShouldBe(dtoFields["Name[9].Language"]);
+        spriggitFields["Name[9].String"].ShouldBe(dtoFields["Name[9].String"]);
+        spriggitFields["Type"].ShouldBe(dtoFields["Type"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -180,18 +189,21 @@ public class Fallout4KeywordSpriggitDataValidationTests : SpriggitDataValidation
             RecordTypeCatalog.Keyword,
             "0CF43E:Fallout4.esm");
 
-        Helpers.GetSpriggitField(spriggit, "AttractionRule").ShouldBe(Helpers.GetDTOField(dto, "AttractionRule"));
-        Helpers.GetSpriggitField(spriggit, "Color").ShouldBe(Helpers.GetDTOField(dto, "Color"));
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "FormVersion").ShouldBe(Helpers.GetDTOField(dto, "FormVersion"));
-        Helpers.GetSpriggitField(spriggit, "Notes").ShouldBe(Helpers.GetDTOField(dto, "Notes"));
-        Helpers.GetSpriggitField(spriggit, "Type").ShouldBe(Helpers.GetDTOField(dto, "Type"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "AttractionRule", "Color", "EditorID", "FormKey", "FormVersion", "Notes", "Type", "Version2", "VersionControl");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "AttractionRule", "Color", "EditorID", "FormKey", "FormVersion", "Notes", "Type", "Version2", "VersionControl");
+        spriggitFields["AttractionRule"].ShouldBe(dtoFields["AttractionRule"]);
+        spriggitFields["Color"].ShouldBe(dtoFields["Color"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["Notes"].ShouldBe(dtoFields["Notes"]);
+        spriggitFields["Type"].ShouldBe(dtoFields["Type"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -211,16 +223,19 @@ public class Fallout4KeywordSpriggitDataValidationTests : SpriggitDataValidation
             RecordTypeCatalog.Keyword,
             "093BBE:Fallout4.esm");
 
-        Helpers.GetSpriggitField(spriggit, "Color").ShouldBe(Helpers.GetDTOField(dto, "Color"));
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "FormVersion").ShouldBe(Helpers.GetDTOField(dto, "FormVersion"));
-        Helpers.GetSpriggitField(spriggit, "MajorRecordFlagsRaw").ShouldBe(Helpers.GetDTOField(dto, "MajorRecordFlags"));
-        Helpers.GetSpriggitField(spriggit, "Type").ShouldBe(Helpers.GetDTOField(dto, "Type"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "Color", "EditorID", "FormKey", "FormVersion", "MajorRecordFlagsRaw", "Type", "Version2", "VersionControl");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "Color", "EditorID", "FormKey", "FormVersion", "MajorRecordFlags", "Type", "Version2", "VersionControl");
+        spriggitFields["Color"].ShouldBe(dtoFields["Color"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["MajorRecordFlagsRaw"].ShouldBe(dtoFields["MajorRecordFlags"]);
+        spriggitFields["Type"].ShouldBe(dtoFields["Type"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 }

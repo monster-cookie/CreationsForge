@@ -24,26 +24,29 @@ public class SkyrimStaticSpriggitDataValidationTests : SpriggitDataValidationTes
             RecordTypeCatalog.Static,
             "0D19F9:Skyrim.esm");
 
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "FormVersion").ShouldBe(Helpers.GetDTOField(dto, "FormVersion"));
-        Helpers.GetSpriggitField(spriggit, "Lod.Level0").ShouldBe(Helpers.GetDTOField(dto, "Lod.Level0"));
-        Helpers.GetSpriggitField(spriggit, "Lod.Level1").ShouldBe(Helpers.GetDTOField(dto, "Lod.Level1"));
-        Helpers.GetSpriggitField(spriggit, "Lod.Level2").ShouldBe(Helpers.GetDTOField(dto, "Lod.Level2"));
-        Helpers.GetSpriggitField(spriggit, "Lod.Level3").ShouldBe(Helpers.GetDTOField(dto, "Lod.Level3"));
-        Helpers.GetSpriggitField(spriggit, "MajorRecordFlagsRaw").ShouldBe(Helpers.GetDTOField(dto, "MajorRecordFlags"));
-        Helpers.GetSpriggitField(spriggit, "Material").ShouldBe(Helpers.GetDTOField(dto, "Material"));
-        Helpers.GetSpriggitField(spriggit, "MaxAngle").ShouldBe(Helpers.GetDTOField(dto, "MaxAngle"));
-        Helpers.GetSpriggitField(spriggit, "Model.Data").ShouldBe(Helpers.GetDTOField(dto, "Model.Data"));
-        Helpers.GetSpriggitField(spriggit, "Model.File").ShouldBe(Helpers.GetDTOField(dto, "Models[0].File"));
-        Helpers.GetSpriggitField(spriggit, "ObjectBounds.First").ShouldBe(Helpers.GetDTOField(dto, "ObjectBoundsFirst"));
-        Helpers.GetSpriggitField(spriggit, "ObjectBounds.Second").ShouldBe(Helpers.GetDTOField(dto, "ObjectBoundsSecond"));
-        Helpers.GetSpriggitField(spriggit, "Unused").ShouldBe(Helpers.GetDTOField(dto, "Unused"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "EditorID", "FormKey", "FormVersion", "Lod.Level0", "Lod.Level1", "Lod.Level2", "Lod.Level3", "MajorRecordFlagsRaw", "Material", "MaxAngle", "Model.Data", "Model.File", "ObjectBounds.First", "ObjectBounds.Second", "Unused", "Version2", "VersionControl");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "EditorID", "FormKey", "FormVersion", "Lod.Level0", "Lod.Level1", "Lod.Level2", "Lod.Level3", "MajorRecordFlags", "Material", "MaxAngle", "Model.Data", "Models[0].File", "ObjectBoundsFirst", "ObjectBoundsSecond", "Unused", "Version2", "VersionControl");
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["Lod.Level0"].ShouldBe(dtoFields["Lod.Level0"]);
+        spriggitFields["Lod.Level1"].ShouldBe(dtoFields["Lod.Level1"]);
+        spriggitFields["Lod.Level2"].ShouldBe(dtoFields["Lod.Level2"]);
+        spriggitFields["Lod.Level3"].ShouldBe(dtoFields["Lod.Level3"]);
+        spriggitFields["MajorRecordFlagsRaw"].ShouldBe(dtoFields["MajorRecordFlags"]);
+        spriggitFields["Material"].ShouldBe(dtoFields["Material"]);
+        spriggitFields["MaxAngle"].ShouldBe(dtoFields["MaxAngle"]);
+        spriggitFields["Model.Data"].ShouldBe(dtoFields["Model.Data"]);
+        spriggitFields["Model.File"].ShouldBe(dtoFields["Models[0].File"]);
+        spriggitFields["ObjectBounds.First"].ShouldBe(dtoFields["ObjectBoundsFirst"]);
+        spriggitFields["ObjectBounds.Second"].ShouldBe(dtoFields["ObjectBoundsSecond"]);
+        spriggitFields["Unused"].ShouldBe(dtoFields["Unused"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -63,26 +66,29 @@ public class SkyrimStaticSpriggitDataValidationTests : SpriggitDataValidationTes
             RecordTypeCatalog.Static,
             "06DD69:Skyrim.esm");
 
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "FormVersion").ShouldBe(Helpers.GetDTOField(dto, "FormVersion"));
-        Helpers.GetSpriggitField(spriggit, "Lod.Level0").ShouldBe(Helpers.GetDTOField(dto, "Lod.Level0"));
-        Helpers.GetSpriggitField(spriggit, "Lod.Level1").ShouldBe(Helpers.GetDTOField(dto, "Lod.Level1"));
-        Helpers.GetSpriggitField(spriggit, "Lod.Level2").ShouldBe(Helpers.GetDTOField(dto, "Lod.Level2"));
-        Helpers.GetSpriggitField(spriggit, "Lod.Level3").ShouldBe(Helpers.GetDTOField(dto, "Lod.Level3"));
-        Helpers.GetSpriggitField(spriggit, "MajorRecordFlagsRaw").ShouldBe(Helpers.GetDTOField(dto, "MajorRecordFlags"));
-        Helpers.GetSpriggitField(spriggit, "Material").ShouldBe(Helpers.GetDTOField(dto, "Material"));
-        Helpers.GetSpriggitField(spriggit, "MaxAngle").ShouldBe(Helpers.GetDTOField(dto, "MaxAngle"));
-        Helpers.GetSpriggitField(spriggit, "Model.Data").ShouldBe(Helpers.GetDTOField(dto, "Model.Data"));
-        Helpers.GetSpriggitField(spriggit, "Model.File").ShouldBe(Helpers.GetDTOField(dto, "Models[0].File"));
-        Helpers.GetSpriggitField(spriggit, "ObjectBounds.First").ShouldBe(Helpers.GetDTOField(dto, "ObjectBoundsFirst"));
-        Helpers.GetSpriggitField(spriggit, "ObjectBounds.Second").ShouldBe(Helpers.GetDTOField(dto, "ObjectBoundsSecond"));
-        Helpers.GetSpriggitField(spriggit, "Unused").ShouldBe(Helpers.GetDTOField(dto, "Unused"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "EditorID", "FormKey", "FormVersion", "Lod.Level0", "Lod.Level1", "Lod.Level2", "Lod.Level3", "MajorRecordFlagsRaw", "Material", "MaxAngle", "Model.Data", "Model.File", "ObjectBounds.First", "ObjectBounds.Second", "Unused", "Version2", "VersionControl");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "EditorID", "FormKey", "FormVersion", "Lod.Level0", "Lod.Level1", "Lod.Level2", "Lod.Level3", "MajorRecordFlags", "Material", "MaxAngle", "Model.Data", "Models[0].File", "ObjectBoundsFirst", "ObjectBoundsSecond", "Unused", "Version2", "VersionControl");
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["Lod.Level0"].ShouldBe(dtoFields["Lod.Level0"]);
+        spriggitFields["Lod.Level1"].ShouldBe(dtoFields["Lod.Level1"]);
+        spriggitFields["Lod.Level2"].ShouldBe(dtoFields["Lod.Level2"]);
+        spriggitFields["Lod.Level3"].ShouldBe(dtoFields["Lod.Level3"]);
+        spriggitFields["MajorRecordFlagsRaw"].ShouldBe(dtoFields["MajorRecordFlags"]);
+        spriggitFields["Material"].ShouldBe(dtoFields["Material"]);
+        spriggitFields["MaxAngle"].ShouldBe(dtoFields["MaxAngle"]);
+        spriggitFields["Model.Data"].ShouldBe(dtoFields["Model.Data"]);
+        spriggitFields["Model.File"].ShouldBe(dtoFields["Models[0].File"]);
+        spriggitFields["ObjectBounds.First"].ShouldBe(dtoFields["ObjectBoundsFirst"]);
+        spriggitFields["ObjectBounds.Second"].ShouldBe(dtoFields["ObjectBoundsSecond"]);
+        spriggitFields["Unused"].ShouldBe(dtoFields["Unused"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -102,26 +108,29 @@ public class SkyrimStaticSpriggitDataValidationTests : SpriggitDataValidationTes
             RecordTypeCatalog.Static,
             "090E82:Skyrim.esm");
 
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "FormVersion").ShouldBe(Helpers.GetDTOField(dto, "FormVersion"));
-        Helpers.GetSpriggitField(spriggit, "Lod.Level0").ShouldBe(Helpers.GetDTOField(dto, "Lod.Level0"));
-        Helpers.GetSpriggitField(spriggit, "Lod.Level1").ShouldBe(Helpers.GetDTOField(dto, "Lod.Level1"));
-        Helpers.GetSpriggitField(spriggit, "Lod.Level2").ShouldBe(Helpers.GetDTOField(dto, "Lod.Level2"));
-        Helpers.GetSpriggitField(spriggit, "Lod.Level3").ShouldBe(Helpers.GetDTOField(dto, "Lod.Level3"));
-        Helpers.GetSpriggitField(spriggit, "MajorRecordFlagsRaw").ShouldBe(Helpers.GetDTOField(dto, "MajorRecordFlags"));
-        Helpers.GetSpriggitField(spriggit, "Material").ShouldBe(Helpers.GetDTOField(dto, "Material"));
-        Helpers.GetSpriggitField(spriggit, "MaxAngle").ShouldBe(Helpers.GetDTOField(dto, "MaxAngle"));
-        Helpers.GetSpriggitField(spriggit, "Model.Data").ShouldBe(Helpers.GetDTOField(dto, "Model.Data"));
-        Helpers.GetSpriggitField(spriggit, "Model.File").ShouldBe(Helpers.GetDTOField(dto, "Models[0].File"));
-        Helpers.GetSpriggitField(spriggit, "ObjectBounds.First").ShouldBe(Helpers.GetDTOField(dto, "ObjectBoundsFirst"));
-        Helpers.GetSpriggitField(spriggit, "ObjectBounds.Second").ShouldBe(Helpers.GetDTOField(dto, "ObjectBoundsSecond"));
-        Helpers.GetSpriggitField(spriggit, "Unused").ShouldBe(Helpers.GetDTOField(dto, "Unused"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "EditorID", "FormKey", "FormVersion", "Lod.Level0", "Lod.Level1", "Lod.Level2", "Lod.Level3", "MajorRecordFlagsRaw", "Material", "MaxAngle", "Model.Data", "Model.File", "ObjectBounds.First", "ObjectBounds.Second", "Unused", "Version2", "VersionControl");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "EditorID", "FormKey", "FormVersion", "Lod.Level0", "Lod.Level1", "Lod.Level2", "Lod.Level3", "MajorRecordFlags", "Material", "MaxAngle", "Model.Data", "Models[0].File", "ObjectBoundsFirst", "ObjectBoundsSecond", "Unused", "Version2", "VersionControl");
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["Lod.Level0"].ShouldBe(dtoFields["Lod.Level0"]);
+        spriggitFields["Lod.Level1"].ShouldBe(dtoFields["Lod.Level1"]);
+        spriggitFields["Lod.Level2"].ShouldBe(dtoFields["Lod.Level2"]);
+        spriggitFields["Lod.Level3"].ShouldBe(dtoFields["Lod.Level3"]);
+        spriggitFields["MajorRecordFlagsRaw"].ShouldBe(dtoFields["MajorRecordFlags"]);
+        spriggitFields["Material"].ShouldBe(dtoFields["Material"]);
+        spriggitFields["MaxAngle"].ShouldBe(dtoFields["MaxAngle"]);
+        spriggitFields["Model.Data"].ShouldBe(dtoFields["Model.Data"]);
+        spriggitFields["Model.File"].ShouldBe(dtoFields["Models[0].File"]);
+        spriggitFields["ObjectBounds.First"].ShouldBe(dtoFields["ObjectBoundsFirst"]);
+        spriggitFields["ObjectBounds.Second"].ShouldBe(dtoFields["ObjectBoundsSecond"]);
+        spriggitFields["Unused"].ShouldBe(dtoFields["Unused"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -141,21 +150,24 @@ public class SkyrimStaticSpriggitDataValidationTests : SpriggitDataValidationTes
             RecordTypeCatalog.Static,
             "0946B2:Skyrim.esm");
 
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "FormVersion").ShouldBe(Helpers.GetDTOField(dto, "FormVersion"));
-        Helpers.GetSpriggitField(spriggit, "MajorRecordFlagsRaw").ShouldBe(Helpers.GetDTOField(dto, "MajorRecordFlags"));
-        Helpers.GetSpriggitField(spriggit, "Material").ShouldBe(Helpers.GetDTOField(dto, "Material"));
-        Helpers.GetSpriggitField(spriggit, "Model.Data").ShouldBe(Helpers.GetDTOField(dto, "Model.Data"));
-        Helpers.GetSpriggitField(spriggit, "Model.File").ShouldBe(Helpers.GetDTOField(dto, "Models[0].File"));
-        Helpers.GetSpriggitField(spriggit, "ObjectBounds.First").ShouldBe(Helpers.GetDTOField(dto, "ObjectBoundsFirst"));
-        Helpers.GetSpriggitField(spriggit, "ObjectBounds.Second").ShouldBe(Helpers.GetDTOField(dto, "ObjectBoundsSecond"));
-        Helpers.GetSpriggitField(spriggit, "Unused").ShouldBe(Helpers.GetDTOField(dto, "Unused"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "EditorID", "FormKey", "FormVersion", "MajorRecordFlagsRaw", "Material", "Model.Data", "Model.File", "ObjectBounds.First", "ObjectBounds.Second", "Unused", "Version2", "VersionControl");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "EditorID", "FormKey", "FormVersion", "MajorRecordFlags", "Material", "Model.Data", "Models[0].File", "ObjectBoundsFirst", "ObjectBoundsSecond", "Unused", "Version2", "VersionControl");
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["MajorRecordFlagsRaw"].ShouldBe(dtoFields["MajorRecordFlags"]);
+        spriggitFields["Material"].ShouldBe(dtoFields["Material"]);
+        spriggitFields["Model.Data"].ShouldBe(dtoFields["Model.Data"]);
+        spriggitFields["Model.File"].ShouldBe(dtoFields["Models[0].File"]);
+        spriggitFields["ObjectBounds.First"].ShouldBe(dtoFields["ObjectBoundsFirst"]);
+        spriggitFields["ObjectBounds.Second"].ShouldBe(dtoFields["ObjectBoundsSecond"]);
+        spriggitFields["Unused"].ShouldBe(dtoFields["Unused"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -175,20 +187,23 @@ public class SkyrimStaticSpriggitDataValidationTests : SpriggitDataValidationTes
             RecordTypeCatalog.Static,
             "078DC0:Skyrim.esm");
 
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "FormVersion").ShouldBe(Helpers.GetDTOField(dto, "FormVersion"));
-        Helpers.GetSpriggitField(spriggit, "MajorRecordFlagsRaw").ShouldBe(Helpers.GetDTOField(dto, "MajorRecordFlags"));
-        Helpers.GetSpriggitField(spriggit, "Material").ShouldBe(Helpers.GetDTOField(dto, "Material"));
-        Helpers.GetSpriggitField(spriggit, "MaxAngle").ShouldBe(Helpers.GetDTOField(dto, "MaxAngle"));
-        Helpers.GetSpriggitField(spriggit, "Model.File").ShouldBe(Helpers.GetDTOField(dto, "Models[0].File"));
-        Helpers.GetSpriggitField(spriggit, "ObjectBounds.First").ShouldBe(Helpers.GetDTOField(dto, "ObjectBoundsFirst"));
-        Helpers.GetSpriggitField(spriggit, "ObjectBounds.Second").ShouldBe(Helpers.GetDTOField(dto, "ObjectBoundsSecond"));
-        Helpers.GetSpriggitField(spriggit, "Unused").ShouldBe(Helpers.GetDTOField(dto, "Unused"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "EditorID", "FormKey", "FormVersion", "MajorRecordFlagsRaw", "Material", "MaxAngle", "Model.File", "ObjectBounds.First", "ObjectBounds.Second", "Unused", "Version2", "VersionControl");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "EditorID", "FormKey", "FormVersion", "MajorRecordFlags", "Material", "MaxAngle", "Models[0].File", "ObjectBoundsFirst", "ObjectBoundsSecond", "Unused", "Version2", "VersionControl");
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["MajorRecordFlagsRaw"].ShouldBe(dtoFields["MajorRecordFlags"]);
+        spriggitFields["Material"].ShouldBe(dtoFields["Material"]);
+        spriggitFields["MaxAngle"].ShouldBe(dtoFields["MaxAngle"]);
+        spriggitFields["Model.File"].ShouldBe(dtoFields["Models[0].File"]);
+        spriggitFields["ObjectBounds.First"].ShouldBe(dtoFields["ObjectBoundsFirst"]);
+        spriggitFields["ObjectBounds.Second"].ShouldBe(dtoFields["ObjectBoundsSecond"]);
+        spriggitFields["Unused"].ShouldBe(dtoFields["Unused"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 }

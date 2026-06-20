@@ -18,6 +18,10 @@ public abstract class RecordDTO : IHasLocalizedStringsRecordDTO
 
     public required int MajorRecordFlags { get; set; }
 
+    public int? Version2 { get; set; }
+
+    public int? VersionControl { get; set; }
+
     public required DateTime ImportedAtUTC { get; set; }
 
     public IList<LocalizedStringDTO> LocalizedStrings { get; set; } = new List<LocalizedStringDTO>();

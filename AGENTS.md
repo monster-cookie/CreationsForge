@@ -242,6 +242,12 @@ schema documentation.
 - Presentation tests may cover view models, commands, selection/state logic, and pure render-data preparation.
 - Do not unit test live Avalonia windows, OpenGL contexts, GPU output, timing, focus, or pixel-perfect rendering.
 
+### Assertion placement
+
+- Test assertions must live in test methods or test-only assertion methods in test classes.
+- Shared helpers must not call assertion libraries such as Shouldly, xUnit Assert, or FluentAssertions.
+- Helper functions should return values, comparison results, diagnostics, or unmatched-field messages; the test method decides what to assert.
+
 ## DEFERRAL / INCOMPLETE WORK RULES
 
 - Codex must not mark any discovered missing behavior, child record family, UI surface, persistence read path, comparison row,

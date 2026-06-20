@@ -24,29 +24,32 @@ public class SkyrimConstructibleObjectSpriggitDataValidationTests : SpriggitData
             RecordTypeCatalog.ConstructibleObject,
             "0DCA13:Skyrim.esm");
 
-        Helpers.GetSpriggitField(spriggit, "ComparisonValue").ShouldBe(Helpers.GetDTOField(dto, "ComparisonValue"));
-        Helpers.GetSpriggitField(spriggit, "Count[0]").ShouldBe(Helpers.GetDTOField(dto, "Count[0]"));
-        Helpers.GetSpriggitField(spriggit, "Count[1]").ShouldBe(Helpers.GetDTOField(dto, "Count[1]"));
-        Helpers.GetSpriggitField(spriggit, "Count[2]").ShouldBe(Helpers.GetDTOField(dto, "Count[2]"));
-        Helpers.GetSpriggitField(spriggit, "Count[3]").ShouldBe(Helpers.GetDTOField(dto, "Count[3]"));
-        Helpers.GetSpriggitField(spriggit, "CreatedObject").ShouldBe(Helpers.GetDTOField(dto, "CreatedObjectFormKey"));
-        Helpers.GetSpriggitField(spriggit, "CreatedObjectCount").ShouldBe(Helpers.GetDTOField(dto, "CreatedObjectCount"));
-        Helpers.GetSpriggitField(spriggit, "Data.MutagenObjectType").ShouldBe(Helpers.GetDTOField(dto, "Data.MutagenObjectType"));
-        Helpers.GetSpriggitField(spriggit, "Data.Perk").ShouldBe(Helpers.GetDTOField(dto, "Data.Perk"));
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "FormVersion").ShouldBe(Helpers.GetDTOField(dto, "FormVersion"));
-        Helpers.GetSpriggitField(spriggit, "Item[0]").ShouldBe(Helpers.GetDTOField(dto, "Item[0]"));
-        Helpers.GetSpriggitField(spriggit, "Item[1]").ShouldBe(Helpers.GetDTOField(dto, "Item[1]"));
-        Helpers.GetSpriggitField(spriggit, "Item[2]").ShouldBe(Helpers.GetDTOField(dto, "Item[2]"));
-        Helpers.GetSpriggitField(spriggit, "Item[3]").ShouldBe(Helpers.GetDTOField(dto, "Item[3]"));
-        Helpers.GetSpriggitField(spriggit, "Unknown2").ShouldBe(Helpers.GetDTOField(dto, "Unknown2"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
-        Helpers.GetSpriggitField(spriggit, "WorkbenchKeyword").ShouldBe(Helpers.GetDTOField(dto, "WorkbenchKeywordFormKey"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "ComparisonValue", "Count[0]", "Count[1]", "Count[2]", "Count[3]", "CreatedObject", "CreatedObjectCount", "Data.MutagenObjectType", "Data.Perk", "EditorID", "FormKey", "FormVersion", "Item[0]", "Item[1]", "Item[2]", "Item[3]", "Unknown2", "Version2", "VersionControl", "WorkbenchKeyword");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "ComparisonValue", "Count[0]", "Count[1]", "Count[2]", "Count[3]", "CreatedObjectFormKey", "CreatedObjectCount", "Data.MutagenObjectType", "Data.Perk", "EditorID", "FormKey", "FormVersion", "Item[0]", "Item[1]", "Item[2]", "Item[3]", "Unknown2", "Version2", "VersionControl", "WorkbenchKeywordFormKey");
+        spriggitFields["ComparisonValue"].ShouldBe(dtoFields["ComparisonValue"]);
+        spriggitFields["Count[0]"].ShouldBe(dtoFields["Count[0]"]);
+        spriggitFields["Count[1]"].ShouldBe(dtoFields["Count[1]"]);
+        spriggitFields["Count[2]"].ShouldBe(dtoFields["Count[2]"]);
+        spriggitFields["Count[3]"].ShouldBe(dtoFields["Count[3]"]);
+        spriggitFields["CreatedObject"].ShouldBe(dtoFields["CreatedObjectFormKey"]);
+        spriggitFields["CreatedObjectCount"].ShouldBe(dtoFields["CreatedObjectCount"]);
+        spriggitFields["Data.MutagenObjectType"].ShouldBe(dtoFields["Data.MutagenObjectType"]);
+        spriggitFields["Data.Perk"].ShouldBe(dtoFields["Data.Perk"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["Item[0]"].ShouldBe(dtoFields["Item[0]"]);
+        spriggitFields["Item[1]"].ShouldBe(dtoFields["Item[1]"]);
+        spriggitFields["Item[2]"].ShouldBe(dtoFields["Item[2]"]);
+        spriggitFields["Item[3]"].ShouldBe(dtoFields["Item[3]"]);
+        spriggitFields["Unknown2"].ShouldBe(dtoFields["Unknown2"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+        spriggitFields["WorkbenchKeyword"].ShouldBe(dtoFields["WorkbenchKeywordFormKey"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -66,29 +69,32 @@ public class SkyrimConstructibleObjectSpriggitDataValidationTests : SpriggitData
             RecordTypeCatalog.ConstructibleObject,
             "0DCA14:Skyrim.esm");
 
-        Helpers.GetSpriggitField(spriggit, "ComparisonValue").ShouldBe(Helpers.GetDTOField(dto, "ComparisonValue"));
-        Helpers.GetSpriggitField(spriggit, "Count[0]").ShouldBe(Helpers.GetDTOField(dto, "Count[0]"));
-        Helpers.GetSpriggitField(spriggit, "Count[1]").ShouldBe(Helpers.GetDTOField(dto, "Count[1]"));
-        Helpers.GetSpriggitField(spriggit, "Count[2]").ShouldBe(Helpers.GetDTOField(dto, "Count[2]"));
-        Helpers.GetSpriggitField(spriggit, "Count[3]").ShouldBe(Helpers.GetDTOField(dto, "Count[3]"));
-        Helpers.GetSpriggitField(spriggit, "CreatedObject").ShouldBe(Helpers.GetDTOField(dto, "CreatedObjectFormKey"));
-        Helpers.GetSpriggitField(spriggit, "CreatedObjectCount").ShouldBe(Helpers.GetDTOField(dto, "CreatedObjectCount"));
-        Helpers.GetSpriggitField(spriggit, "Data.MutagenObjectType").ShouldBe(Helpers.GetDTOField(dto, "Data.MutagenObjectType"));
-        Helpers.GetSpriggitField(spriggit, "Data.Perk").ShouldBe(Helpers.GetDTOField(dto, "Data.Perk"));
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "FormVersion").ShouldBe(Helpers.GetDTOField(dto, "FormVersion"));
-        Helpers.GetSpriggitField(spriggit, "Item[0]").ShouldBe(Helpers.GetDTOField(dto, "Item[0]"));
-        Helpers.GetSpriggitField(spriggit, "Item[1]").ShouldBe(Helpers.GetDTOField(dto, "Item[1]"));
-        Helpers.GetSpriggitField(spriggit, "Item[2]").ShouldBe(Helpers.GetDTOField(dto, "Item[2]"));
-        Helpers.GetSpriggitField(spriggit, "Item[3]").ShouldBe(Helpers.GetDTOField(dto, "Item[3]"));
-        Helpers.GetSpriggitField(spriggit, "Unknown2").ShouldBe(Helpers.GetDTOField(dto, "Unknown2"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
-        Helpers.GetSpriggitField(spriggit, "WorkbenchKeyword").ShouldBe(Helpers.GetDTOField(dto, "WorkbenchKeywordFormKey"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "ComparisonValue", "Count[0]", "Count[1]", "Count[2]", "Count[3]", "CreatedObject", "CreatedObjectCount", "Data.MutagenObjectType", "Data.Perk", "EditorID", "FormKey", "FormVersion", "Item[0]", "Item[1]", "Item[2]", "Item[3]", "Unknown2", "Version2", "VersionControl", "WorkbenchKeyword");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "ComparisonValue", "Count[0]", "Count[1]", "Count[2]", "Count[3]", "CreatedObjectFormKey", "CreatedObjectCount", "Data.MutagenObjectType", "Data.Perk", "EditorID", "FormKey", "FormVersion", "Item[0]", "Item[1]", "Item[2]", "Item[3]", "Unknown2", "Version2", "VersionControl", "WorkbenchKeywordFormKey");
+        spriggitFields["ComparisonValue"].ShouldBe(dtoFields["ComparisonValue"]);
+        spriggitFields["Count[0]"].ShouldBe(dtoFields["Count[0]"]);
+        spriggitFields["Count[1]"].ShouldBe(dtoFields["Count[1]"]);
+        spriggitFields["Count[2]"].ShouldBe(dtoFields["Count[2]"]);
+        spriggitFields["Count[3]"].ShouldBe(dtoFields["Count[3]"]);
+        spriggitFields["CreatedObject"].ShouldBe(dtoFields["CreatedObjectFormKey"]);
+        spriggitFields["CreatedObjectCount"].ShouldBe(dtoFields["CreatedObjectCount"]);
+        spriggitFields["Data.MutagenObjectType"].ShouldBe(dtoFields["Data.MutagenObjectType"]);
+        spriggitFields["Data.Perk"].ShouldBe(dtoFields["Data.Perk"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["Item[0]"].ShouldBe(dtoFields["Item[0]"]);
+        spriggitFields["Item[1]"].ShouldBe(dtoFields["Item[1]"]);
+        spriggitFields["Item[2]"].ShouldBe(dtoFields["Item[2]"]);
+        spriggitFields["Item[3]"].ShouldBe(dtoFields["Item[3]"]);
+        spriggitFields["Unknown2"].ShouldBe(dtoFields["Unknown2"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+        spriggitFields["WorkbenchKeyword"].ShouldBe(dtoFields["WorkbenchKeywordFormKey"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -108,29 +114,32 @@ public class SkyrimConstructibleObjectSpriggitDataValidationTests : SpriggitData
             RecordTypeCatalog.ConstructibleObject,
             "0DCA15:Skyrim.esm");
 
-        Helpers.GetSpriggitField(spriggit, "ComparisonValue").ShouldBe(Helpers.GetDTOField(dto, "ComparisonValue"));
-        Helpers.GetSpriggitField(spriggit, "Count[0]").ShouldBe(Helpers.GetDTOField(dto, "Count[0]"));
-        Helpers.GetSpriggitField(spriggit, "Count[1]").ShouldBe(Helpers.GetDTOField(dto, "Count[1]"));
-        Helpers.GetSpriggitField(spriggit, "Count[2]").ShouldBe(Helpers.GetDTOField(dto, "Count[2]"));
-        Helpers.GetSpriggitField(spriggit, "Count[3]").ShouldBe(Helpers.GetDTOField(dto, "Count[3]"));
-        Helpers.GetSpriggitField(spriggit, "CreatedObject").ShouldBe(Helpers.GetDTOField(dto, "CreatedObjectFormKey"));
-        Helpers.GetSpriggitField(spriggit, "CreatedObjectCount").ShouldBe(Helpers.GetDTOField(dto, "CreatedObjectCount"));
-        Helpers.GetSpriggitField(spriggit, "Data.MutagenObjectType").ShouldBe(Helpers.GetDTOField(dto, "Data.MutagenObjectType"));
-        Helpers.GetSpriggitField(spriggit, "Data.Perk").ShouldBe(Helpers.GetDTOField(dto, "Data.Perk"));
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "FormVersion").ShouldBe(Helpers.GetDTOField(dto, "FormVersion"));
-        Helpers.GetSpriggitField(spriggit, "Item[0]").ShouldBe(Helpers.GetDTOField(dto, "Item[0]"));
-        Helpers.GetSpriggitField(spriggit, "Item[1]").ShouldBe(Helpers.GetDTOField(dto, "Item[1]"));
-        Helpers.GetSpriggitField(spriggit, "Item[2]").ShouldBe(Helpers.GetDTOField(dto, "Item[2]"));
-        Helpers.GetSpriggitField(spriggit, "Item[3]").ShouldBe(Helpers.GetDTOField(dto, "Item[3]"));
-        Helpers.GetSpriggitField(spriggit, "Unknown2").ShouldBe(Helpers.GetDTOField(dto, "Unknown2"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
-        Helpers.GetSpriggitField(spriggit, "WorkbenchKeyword").ShouldBe(Helpers.GetDTOField(dto, "WorkbenchKeywordFormKey"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "ComparisonValue", "Count[0]", "Count[1]", "Count[2]", "Count[3]", "CreatedObject", "CreatedObjectCount", "Data.MutagenObjectType", "Data.Perk", "EditorID", "FormKey", "FormVersion", "Item[0]", "Item[1]", "Item[2]", "Item[3]", "Unknown2", "Version2", "VersionControl", "WorkbenchKeyword");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "ComparisonValue", "Count[0]", "Count[1]", "Count[2]", "Count[3]", "CreatedObjectFormKey", "CreatedObjectCount", "Data.MutagenObjectType", "Data.Perk", "EditorID", "FormKey", "FormVersion", "Item[0]", "Item[1]", "Item[2]", "Item[3]", "Unknown2", "Version2", "VersionControl", "WorkbenchKeywordFormKey");
+        spriggitFields["ComparisonValue"].ShouldBe(dtoFields["ComparisonValue"]);
+        spriggitFields["Count[0]"].ShouldBe(dtoFields["Count[0]"]);
+        spriggitFields["Count[1]"].ShouldBe(dtoFields["Count[1]"]);
+        spriggitFields["Count[2]"].ShouldBe(dtoFields["Count[2]"]);
+        spriggitFields["Count[3]"].ShouldBe(dtoFields["Count[3]"]);
+        spriggitFields["CreatedObject"].ShouldBe(dtoFields["CreatedObjectFormKey"]);
+        spriggitFields["CreatedObjectCount"].ShouldBe(dtoFields["CreatedObjectCount"]);
+        spriggitFields["Data.MutagenObjectType"].ShouldBe(dtoFields["Data.MutagenObjectType"]);
+        spriggitFields["Data.Perk"].ShouldBe(dtoFields["Data.Perk"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["Item[0]"].ShouldBe(dtoFields["Item[0]"]);
+        spriggitFields["Item[1]"].ShouldBe(dtoFields["Item[1]"]);
+        spriggitFields["Item[2]"].ShouldBe(dtoFields["Item[2]"]);
+        spriggitFields["Item[3]"].ShouldBe(dtoFields["Item[3]"]);
+        spriggitFields["Unknown2"].ShouldBe(dtoFields["Unknown2"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+        spriggitFields["WorkbenchKeyword"].ShouldBe(dtoFields["WorkbenchKeywordFormKey"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -150,28 +159,31 @@ public class SkyrimConstructibleObjectSpriggitDataValidationTests : SpriggitData
             RecordTypeCatalog.ConstructibleObject,
             "0DD982:Skyrim.esm");
 
-        Helpers.GetSpriggitField(spriggit, "ComparisonValue").ShouldBe(Helpers.GetDTOField(dto, "ComparisonValue"));
-        Helpers.GetSpriggitField(spriggit, "Count[0]").ShouldBe(Helpers.GetDTOField(dto, "Count[0]"));
-        Helpers.GetSpriggitField(spriggit, "Count[1]").ShouldBe(Helpers.GetDTOField(dto, "Count[1]"));
-        Helpers.GetSpriggitField(spriggit, "Count[2]").ShouldBe(Helpers.GetDTOField(dto, "Count[2]"));
-        Helpers.GetSpriggitField(spriggit, "Count[3]").ShouldBe(Helpers.GetDTOField(dto, "Count[3]"));
-        Helpers.GetSpriggitField(spriggit, "CreatedObjectCount").ShouldBe(Helpers.GetDTOField(dto, "CreatedObjectCount"));
-        Helpers.GetSpriggitField(spriggit, "Data.MutagenObjectType").ShouldBe(Helpers.GetDTOField(dto, "Data.MutagenObjectType"));
-        Helpers.GetSpriggitField(spriggit, "Data.Perk").ShouldBe(Helpers.GetDTOField(dto, "Data.Perk"));
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "FormVersion").ShouldBe(Helpers.GetDTOField(dto, "FormVersion"));
-        Helpers.GetSpriggitField(spriggit, "Item[0]").ShouldBe(Helpers.GetDTOField(dto, "Item[0]"));
-        Helpers.GetSpriggitField(spriggit, "Item[1]").ShouldBe(Helpers.GetDTOField(dto, "Item[1]"));
-        Helpers.GetSpriggitField(spriggit, "Item[2]").ShouldBe(Helpers.GetDTOField(dto, "Item[2]"));
-        Helpers.GetSpriggitField(spriggit, "Item[3]").ShouldBe(Helpers.GetDTOField(dto, "Item[3]"));
-        Helpers.GetSpriggitField(spriggit, "Unknown2").ShouldBe(Helpers.GetDTOField(dto, "Unknown2"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
-        Helpers.GetSpriggitField(spriggit, "WorkbenchKeyword").ShouldBe(Helpers.GetDTOField(dto, "WorkbenchKeywordFormKey"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "ComparisonValue", "Count[0]", "Count[1]", "Count[2]", "Count[3]", "CreatedObjectCount", "Data.MutagenObjectType", "Data.Perk", "EditorID", "FormKey", "FormVersion", "Item[0]", "Item[1]", "Item[2]", "Item[3]", "Unknown2", "Version2", "VersionControl", "WorkbenchKeyword");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "ComparisonValue", "Count[0]", "Count[1]", "Count[2]", "Count[3]", "CreatedObjectCount", "Data.MutagenObjectType", "Data.Perk", "EditorID", "FormKey", "FormVersion", "Item[0]", "Item[1]", "Item[2]", "Item[3]", "Unknown2", "Version2", "VersionControl", "WorkbenchKeywordFormKey");
+        spriggitFields["ComparisonValue"].ShouldBe(dtoFields["ComparisonValue"]);
+        spriggitFields["Count[0]"].ShouldBe(dtoFields["Count[0]"]);
+        spriggitFields["Count[1]"].ShouldBe(dtoFields["Count[1]"]);
+        spriggitFields["Count[2]"].ShouldBe(dtoFields["Count[2]"]);
+        spriggitFields["Count[3]"].ShouldBe(dtoFields["Count[3]"]);
+        spriggitFields["CreatedObjectCount"].ShouldBe(dtoFields["CreatedObjectCount"]);
+        spriggitFields["Data.MutagenObjectType"].ShouldBe(dtoFields["Data.MutagenObjectType"]);
+        spriggitFields["Data.Perk"].ShouldBe(dtoFields["Data.Perk"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["Item[0]"].ShouldBe(dtoFields["Item[0]"]);
+        spriggitFields["Item[1]"].ShouldBe(dtoFields["Item[1]"]);
+        spriggitFields["Item[2]"].ShouldBe(dtoFields["Item[2]"]);
+        spriggitFields["Item[3]"].ShouldBe(dtoFields["Item[3]"]);
+        spriggitFields["Unknown2"].ShouldBe(dtoFields["Unknown2"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+        spriggitFields["WorkbenchKeyword"].ShouldBe(dtoFields["WorkbenchKeywordFormKey"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -191,24 +203,27 @@ public class SkyrimConstructibleObjectSpriggitDataValidationTests : SpriggitData
             RecordTypeCatalog.ConstructibleObject,
             "0F431A:Skyrim.esm");
 
-        Helpers.GetSpriggitField(spriggit, "Count[0]").ShouldBe(Helpers.GetDTOField(dto, "Count[0]"));
-        Helpers.GetSpriggitField(spriggit, "Count[1]").ShouldBe(Helpers.GetDTOField(dto, "Count[1]"));
-        Helpers.GetSpriggitField(spriggit, "Count[2]").ShouldBe(Helpers.GetDTOField(dto, "Count[2]"));
-        Helpers.GetSpriggitField(spriggit, "Count[3]").ShouldBe(Helpers.GetDTOField(dto, "Count[3]"));
-        Helpers.GetSpriggitField(spriggit, "CreatedObject").ShouldBe(Helpers.GetDTOField(dto, "CreatedObjectFormKey"));
-        Helpers.GetSpriggitField(spriggit, "CreatedObjectCount").ShouldBe(Helpers.GetDTOField(dto, "CreatedObjectCount"));
-        Helpers.GetSpriggitField(spriggit, "EditorID").ShouldBe(Helpers.GetDTOField(dto, "EditorID"));
-        Helpers.GetSpriggitField(spriggit, "FormKey").ShouldBe(Helpers.GetDTOField(dto, "FormKey"));
-        Helpers.GetSpriggitField(spriggit, "FormVersion").ShouldBe(Helpers.GetDTOField(dto, "FormVersion"));
-        Helpers.GetSpriggitField(spriggit, "Item[0]").ShouldBe(Helpers.GetDTOField(dto, "Item[0]"));
-        Helpers.GetSpriggitField(spriggit, "Item[1]").ShouldBe(Helpers.GetDTOField(dto, "Item[1]"));
-        Helpers.GetSpriggitField(spriggit, "Item[2]").ShouldBe(Helpers.GetDTOField(dto, "Item[2]"));
-        Helpers.GetSpriggitField(spriggit, "Item[3]").ShouldBe(Helpers.GetDTOField(dto, "Item[3]"));
-        Helpers.GetSpriggitField(spriggit, "Version2").ShouldBe(Helpers.GetDTOField(dto, "Version2"));
-        Helpers.GetSpriggitField(spriggit, "VersionControl").ShouldBe(Helpers.GetDTOField(dto, "VersionControl"));
-        Helpers.GetSpriggitField(spriggit, "WorkbenchKeyword").ShouldBe(Helpers.GetDTOField(dto, "WorkbenchKeywordFormKey"));
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, "Count[0]", "Count[1]", "Count[2]", "Count[3]", "CreatedObject", "CreatedObjectCount", "EditorID", "FormKey", "FormVersion", "Item[0]", "Item[1]", "Item[2]", "Item[3]", "Version2", "VersionControl", "WorkbenchKeyword");
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto, "Count[0]", "Count[1]", "Count[2]", "Count[3]", "CreatedObjectFormKey", "CreatedObjectCount", "EditorID", "FormKey", "FormVersion", "Item[0]", "Item[1]", "Item[2]", "Item[3]", "Version2", "VersionControl", "WorkbenchKeywordFormKey");
+        spriggitFields["Count[0]"].ShouldBe(dtoFields["Count[0]"]);
+        spriggitFields["Count[1]"].ShouldBe(dtoFields["Count[1]"]);
+        spriggitFields["Count[2]"].ShouldBe(dtoFields["Count[2]"]);
+        spriggitFields["Count[3]"].ShouldBe(dtoFields["Count[3]"]);
+        spriggitFields["CreatedObject"].ShouldBe(dtoFields["CreatedObjectFormKey"]);
+        spriggitFields["CreatedObjectCount"].ShouldBe(dtoFields["CreatedObjectCount"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["Item[0]"].ShouldBe(dtoFields["Item[0]"]);
+        spriggitFields["Item[1]"].ShouldBe(dtoFields["Item[1]"]);
+        spriggitFields["Item[2]"].ShouldBe(dtoFields["Item[2]"]);
+        spriggitFields["Item[3]"].ShouldBe(dtoFields["Item[3]"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+        spriggitFields["WorkbenchKeyword"].ShouldBe(dtoFields["WorkbenchKeywordFormKey"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 }

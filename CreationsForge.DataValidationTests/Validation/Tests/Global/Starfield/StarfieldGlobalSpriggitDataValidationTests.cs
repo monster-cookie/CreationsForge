@@ -29,8 +29,8 @@ public class StarfieldGlobalSpriggitDataValidationTests : SpriggitDataValidation
         spriggit.FormVersion.ShouldBe(dto.FormVersion);
         spriggit.Data.ShouldBe(dto.Data);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, dto);
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto);
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -55,8 +55,8 @@ public class StarfieldGlobalSpriggitDataValidationTests : SpriggitDataValidation
         spriggit.FormVersion.ShouldBe(dto.FormVersion);
         spriggit.Data.ShouldBe(dto.Data);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, dto);
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto);
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public class StarfieldGlobalSpriggitDataValidationTests : SpriggitDataValidation
         spriggit.FormVersion.ShouldBe(dto.FormVersion);
         spriggit.Data.ShouldBe(dto.Data);
 
-        Helpers.AssertNoUnmatchedSpriggitFields(spriggit, dto);
-        Helpers.AssertNoUnmatchedDtoFields(spriggit, dto);
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 }
