@@ -1,3 +1,4 @@
+using System.Globalization;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
@@ -29,10 +30,8 @@ public class SkyrimActorValueInformationSpriggitDataValidationTests : SpriggitDa
 
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        dtoFields["Name.Count"].ShouldBe("1");
-        spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
-        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[0].Language"]);
-        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[0].String"]);
+        AssertTranslatedField(spriggitFields, dtoFields, "Name");
+        AssertOptionalTranslatedField(spriggitFields, dtoFields, "Description");
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
@@ -60,10 +59,8 @@ public class SkyrimActorValueInformationSpriggitDataValidationTests : SpriggitDa
 
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        dtoFields["Name.Count"].ShouldBe("1");
-        spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
-        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[0].Language"]);
-        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[0].String"]);
+        AssertTranslatedField(spriggitFields, dtoFields, "Name");
+        AssertOptionalTranslatedField(spriggitFields, dtoFields, "Description");
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
@@ -91,10 +88,8 @@ public class SkyrimActorValueInformationSpriggitDataValidationTests : SpriggitDa
 
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        dtoFields["Name.Count"].ShouldBe("1");
-        spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
-        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[0].Language"]);
-        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[0].String"]);
+        AssertTranslatedField(spriggitFields, dtoFields, "Name");
+        AssertOptionalTranslatedField(spriggitFields, dtoFields, "Description");
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
@@ -122,8 +117,39 @@ public class SkyrimActorValueInformationSpriggitDataValidationTests : SpriggitDa
 
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        AssertOptionalTranslatedField(spriggitFields, dtoFields, "Name");
+        AssertOptionalTranslatedField(spriggitFields, dtoFields, "Description");
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
+    }
+
+    private static void AssertOptionalTranslatedField(
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields,
+        string fieldName)
+    {
+        if (!spriggitFields.ContainsKey(fieldName + ".Count"))
+        {
+            return;
+        }
+
+        AssertTranslatedField(spriggitFields, dtoFields, fieldName);
+    }
+
+    private static void AssertTranslatedField(
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields,
+        string fieldName)
+    {
+        spriggitFields[fieldName + ".Count"].ShouldBe(dtoFields[fieldName + ".Count"]);
+        spriggitFields[fieldName + ".TargetLanguage"].ShouldBe(dtoFields[fieldName + ".TargetLanguage"]);
+        var count = int.Parse(spriggitFields[fieldName + ".Count"], CultureInfo.InvariantCulture);
+        for (var index = 0; index < count; index++)
+        {
+            var entryPath = fieldName + "[" + index.ToString(CultureInfo.InvariantCulture) + "]";
+            spriggitFields[entryPath + ".Language"].ShouldBe(dtoFields[entryPath + ".Language"]);
+            spriggitFields[entryPath + ".String"].ShouldBe(dtoFields[entryPath + ".String"]);
+        }
     }
 }

@@ -18,14 +18,15 @@ The application uses a local SQLite database. The schema is defined by embedded 
 - `005_Migrations005.sql` adds the `Classes`, `ClassProperties`, `ClassWeights`, `Factions`,
   `FactionRelations`, `FactionRanks`, `ConditionRules`, `ConditionRuleParameters`, `RecordComponents`, and
   `RecordComponentItems` tables, adds the `LocalizedStrings` table for per-language record text values, adds Book
-  `PreviewTransform` columns, migrates released CNDF condition rows into the shared condition-rule tables, drops the
+  `PreviewTransform` columns, adds ActorValueInformation `Description`, skill/layout scalar columns, and typed
+  layout/perk-tree child tables, migrates released CNDF condition rows into the shared condition-rule tables, drops the
   old CNDF-specific condition tables, and marks existing current or partially imported plugin rows as `Changed` so
   each supported game reimports cached plugin data after the migration.
 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains fifty-three tables:
+The application schema contains fifty-five tables:
 
 - `Games`
 - `Plugins`
@@ -49,6 +50,8 @@ The application schema contains fifty-three tables:
 - `MiscItems`
 - `Keywords`
 - `ActorValueInformation`
+- `ActorValueInformationLayoutEntries`
+- `ActorValueInformationPerkTreeEntries`
 - `NPCs`
 - `MagicEffects`
 - `Perks`
@@ -772,12 +775,48 @@ the common typed record key and metadata columns.
 
 - `Name` (`TEXT`, nullable)
 - `Abbreviation` (`TEXT`, nullable)
+- `Description` (`TEXT`, nullable)
+- `CNAM` (`TEXT`, nullable)
+- `Skill_ImproveMult`, `Skill_ImproveOffset`, and `Skill_UseMult` (`REAL`, nullable)
 - `ContextNotes` (`TEXT`, nullable)
 - `DefaultValue` (`REAL`, nullable)
 - `Flags` (`TEXT`, nullable)
 - `Type` (`TEXT`, nullable)
 - `Min` (`REAL`, nullable)
 - `Max` (`REAL`, nullable)
+
+`ActorValueInformationLayoutEntries` stores indexed Skyrim AVIF layout values:
+
+- Full parent `ActorValueInformation` key columns
+- `Layout_Index` (`INTEGER`, `NOT NULL`, primary key)
+- nullable decomposed FormKey columns for `AssociatedSkill`
+- `FNAM` (`TEXT`, nullable)
+- `HorizontalPosition` and `VerticalPosition` (`REAL`, nullable)
+- `EntryIndex`, `PerkGridX`, and `PerkGridY` (`INTEGER`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full parent key references `ActorValueInformation` with `ON DELETE CASCADE`.
+
+Indexes:
+
+- `IX_ActorValueInformationLayoutEntries_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+`ActorValueInformationPerkTreeEntries` stores indexed Skyrim AVIF perk-tree values:
+
+- Full parent `ActorValueInformation` key columns
+- `PerkTree_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `FNAM` (`TEXT`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full parent key references `ActorValueInformation` with `ON DELETE CASCADE`.
+
+Indexes:
+
+- `IX_ActorValueInformationPerkTreeEntries_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
 
 `NPCs` additional columns:
 
@@ -1472,6 +1511,8 @@ These columns carry record-reference identity but do not declare SQLite foreign 
 - `FormListItems.Item_ModKey_Name`, `Item_ModKey_Type`, `Item_ModKey_FileName`, and `Item_FormKey_ID`
 - `ClassProperties.ActorValue_ModKey_Name`, `ActorValue_ModKey_Type`, `ActorValue_ModKey_FileName`, and
   `ActorValue_FormKey_ID`
+- `ActorValueInformationLayoutEntries.AssociatedSkill_ModKey_Name`, `AssociatedSkill_ModKey_Type`,
+  `AssociatedSkill_ModKey_FileName`, and `AssociatedSkill_FormKey_ID`
 - `Factions.Keyword_ModKey_Name`, `Keyword_ModKey_Type`, `Keyword_ModKey_FileName`, and `Keyword_FormKey_ID`
 - `Factions.Herd_ModKey_Name`, `Herd_ModKey_Type`, `Herd_ModKey_FileName`, and `Herd_FormKey_ID`
 - `Factions.VoiceType_ModKey_Name`, `VoiceType_ModKey_Type`, `VoiceType_ModKey_FileName`, and

@@ -347,12 +347,19 @@ public class RecordComparisonService : IRecordComparisonService
         var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
         fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
         fields.Add(CreateField("Abbreviation", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Abbreviation", recordTextLanguage, record.Abbreviation)));
+        fields.Add(CreateField("Description", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Description", recordTextLanguage, record.Description)));
+        fields.Add(CreateField("CNAM", records, record => record.Cnam ?? string.Empty));
+        fields.Add(CreateField("Skill.ImproveMult", records, record => record.SkillImproveMult?.ToString() ?? string.Empty));
+        fields.Add(CreateField("Skill.ImproveOffset", records, record => record.SkillImproveOffset?.ToString() ?? string.Empty));
+        fields.Add(CreateField("Skill.UseMult", records, record => record.SkillUseMult?.ToString() ?? string.Empty));
         fields.Add(CreateField("ContextNotes", records, record => record.ContextNotes ?? string.Empty));
         fields.Add(CreateField("DefaultValue", records, record => record.DefaultValue?.ToString() ?? string.Empty));
         fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
         fields.Add(CreateField("Type", records, record => record.Type ?? string.Empty));
         fields.Add(CreateField("Min", records, record => record.Min?.ToString() ?? string.Empty));
         fields.Add(CreateField("Max", records, record => record.Max?.ToString() ?? string.Empty));
+        AddActorValueInformationLayoutGroups(fields, records);
+        AddActorValueInformationPerkTreeGroups(fields, records);
 
         return CreateComparison(RecordTypeCatalog.ActorValueInformation.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
@@ -1270,6 +1277,86 @@ public class RecordComparisonService : IRecordComparisonService
         if (recipeFilterFields.Count > 0)
         {
             fields.Add(CreateGroupField("RecipeFilters", records.Cast<RecordDTO>().ToList(), recipeFilterFields));
+        }
+    }
+
+    private static void AddActorValueInformationLayoutGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<ActorValueInformationDTO> records)
+    {
+        var layoutIndexes = records
+            .SelectMany(record => record.LayoutEntries)
+            .Select(entry => entry.LayoutIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (layoutIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var layoutFields = new List<RecordComparisonFieldDTO>();
+        foreach (var layoutIndex in layoutIndexes)
+        {
+            var currentIndex = layoutIndex;
+            var layoutChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("AssociatedSkill", records, record => FormatFormKey(record.LayoutEntries.FirstOrDefault(entry => entry.LayoutIndex == currentIndex)?.AssociatedSkillFormKey)),
+                CreateField("FNAM", records, record => record.LayoutEntries.FirstOrDefault(entry => entry.LayoutIndex == currentIndex)?.Fnam ?? string.Empty),
+                CreateField("HorizontalPosition", records, record => record.LayoutEntries.FirstOrDefault(entry => entry.LayoutIndex == currentIndex)?.HorizontalPosition?.ToString() ?? string.Empty),
+                CreateField("Index", records, record => record.LayoutEntries.FirstOrDefault(entry => entry.LayoutIndex == currentIndex)?.Index?.ToString() ?? string.Empty),
+                CreateField("PerkGridX", records, record => record.LayoutEntries.FirstOrDefault(entry => entry.LayoutIndex == currentIndex)?.PerkGridX?.ToString() ?? string.Empty),
+                CreateField("PerkGridY", records, record => record.LayoutEntries.FirstOrDefault(entry => entry.LayoutIndex == currentIndex)?.PerkGridY?.ToString() ?? string.Empty),
+                CreateField("VerticalPosition", records, record => record.LayoutEntries.FirstOrDefault(entry => entry.LayoutIndex == currentIndex)?.VerticalPosition?.ToString() ?? string.Empty)
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (layoutChildren.Count > 0)
+            {
+                layoutFields.Add(CreateGroupField($"Layout [{layoutIndex}]", records.Cast<RecordDTO>().ToList(), layoutChildren));
+            }
+        }
+
+        if (layoutFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("Layout Entries", records.Cast<RecordDTO>().ToList(), layoutFields));
+        }
+    }
+
+    private static void AddActorValueInformationPerkTreeGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<ActorValueInformationDTO> records)
+    {
+        var perkTreeIndexes = records
+            .SelectMany(record => record.PerkTree)
+            .Select(entry => entry.PerkTreeIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (perkTreeIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var perkTreeFields = new List<RecordComparisonFieldDTO>();
+        foreach (var perkTreeIndex in perkTreeIndexes)
+        {
+            var currentIndex = perkTreeIndex;
+            var perkTreeChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("FNAM", records, record => record.PerkTree.FirstOrDefault(entry => entry.PerkTreeIndex == currentIndex)?.Fnam ?? string.Empty)
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (perkTreeChildren.Count > 0)
+            {
+                perkTreeFields.Add(CreateGroupField($"PerkTree [{perkTreeIndex}]", records.Cast<RecordDTO>().ToList(), perkTreeChildren));
+            }
+        }
+
+        if (perkTreeFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("PerkTree", records.Cast<RecordDTO>().ToList(), perkTreeFields));
         }
     }
 

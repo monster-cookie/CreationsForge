@@ -350,6 +350,69 @@ ALTER TABLE Books ADD COLUMN PreviewTransform_ModKey_Type INTEGER NULL;
 ALTER TABLE Books ADD COLUMN PreviewTransform_ModKey_FileName TEXT NULL;
 ALTER TABLE Books ADD COLUMN PreviewTransform_FormKey_ID INTEGER NULL;
 
+ALTER TABLE ActorValueInformation ADD COLUMN Description TEXT NULL;
+ALTER TABLE ActorValueInformation ADD COLUMN CNAM TEXT NULL;
+ALTER TABLE ActorValueInformation ADD COLUMN Skill_ImproveMult REAL NULL;
+ALTER TABLE ActorValueInformation ADD COLUMN Skill_ImproveOffset REAL NULL;
+ALTER TABLE ActorValueInformation ADD COLUMN Skill_UseMult REAL NULL;
+
+CREATE TABLE ActorValueInformationLayoutEntries
+(
+    Game                                TEXT    NOT NULL,
+    ModKey_Name                         TEXT    NOT NULL,
+    ModKey_Type                         INTEGER NOT NULL,
+    ModKey_FileName                     TEXT    NOT NULL,
+    FormKey_ModKey_Name                 TEXT    NOT NULL,
+    FormKey_ModKey_Type                 INTEGER NOT NULL,
+    FormKey_ModKey_FileName             TEXT    NOT NULL,
+    FormKey_ID                          INTEGER NOT NULL,
+    Layout_Index                        INTEGER NOT NULL,
+    AssociatedSkill_ModKey_Name         TEXT    NULL,
+    AssociatedSkill_ModKey_Type         INTEGER NULL,
+    AssociatedSkill_ModKey_FileName     TEXT    NULL,
+    AssociatedSkill_FormKey_ID          INTEGER NULL,
+    FNAM                                TEXT    NULL,
+    HorizontalPosition                  REAL    NULL,
+    EntryIndex                          INTEGER NULL,
+    PerkGridX                           INTEGER NULL,
+    PerkGridY                           INTEGER NULL,
+    VerticalPosition                    REAL    NULL,
+    ImportedAtUTC                       TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Layout_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES ActorValueInformation (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Layout_Index >= 0),
+    CHECK ((AssociatedSkill_ModKey_Name IS NULL AND AssociatedSkill_ModKey_Type IS NULL AND AssociatedSkill_ModKey_FileName IS NULL AND AssociatedSkill_FormKey_ID IS NULL) OR
+           (AssociatedSkill_ModKey_Name IS NOT NULL AND AssociatedSkill_ModKey_Type IS NOT NULL AND AssociatedSkill_ModKey_FileName IS NOT NULL AND AssociatedSkill_FormKey_ID IS NOT NULL))
+);
+
+CREATE INDEX IX_ActorValueInformationLayoutEntries_Game_FormKey
+    ON ActorValueInformationLayoutEntries (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+
+CREATE TABLE ActorValueInformationPerkTreeEntries
+(
+    Game                                TEXT    NOT NULL,
+    ModKey_Name                         TEXT    NOT NULL,
+    ModKey_Type                         INTEGER NOT NULL,
+    ModKey_FileName                     TEXT    NOT NULL,
+    FormKey_ModKey_Name                 TEXT    NOT NULL,
+    FormKey_ModKey_Type                 INTEGER NOT NULL,
+    FormKey_ModKey_FileName             TEXT    NOT NULL,
+    FormKey_ID                          INTEGER NOT NULL,
+    PerkTree_Index                      INTEGER NOT NULL,
+    FNAM                                TEXT    NULL,
+    ImportedAtUTC                       TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, PerkTree_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES ActorValueInformation (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (PerkTree_Index >= 0)
+);
+
+CREATE INDEX IX_ActorValueInformationPerkTreeEntries_Game_FormKey
+    ON ActorValueInformationPerkTreeEntries (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+
 CREATE TABLE LocalizedStrings
 (
     Game                                TEXT    NOT NULL,
@@ -404,5 +467,5 @@ UPDATE Plugins
 SET ImportState = 'Changed',
     InvalidatedAtUTC = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
     ImportMessage = 'Unreleased migration 005 schema changed; reimport required.',
-    ImportDetails = 'Migration 005 added shared Class/Faction tables, shared condition/component tables, LocalizedStrings child rows, and Book PreviewTransform columns.'
+    ImportDetails = 'Migration 005 added shared Class/Faction tables, shared condition/component tables, LocalizedStrings child rows, Book PreviewTransform columns, and ActorValueInformation Description/layout/perk tree fields.'
 WHERE ImportState IN ('Current', 'PartiallyImported');

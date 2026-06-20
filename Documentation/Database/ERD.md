@@ -450,12 +450,54 @@ erDiagram
         TEXT ImportedAtUTC
         TEXT Name
         TEXT Abbreviation
+        TEXT Description
+        TEXT CNAM
+        REAL Skill_ImproveMult
+        REAL Skill_ImproveOffset
+        REAL Skill_UseMult
         TEXT ContextNotes
         REAL DefaultValue
         TEXT Flags
         TEXT Type
         REAL Min
         REAL Max
+    }
+
+    ActorValueInformationLayoutEntries {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Layout_Index PK
+        TEXT AssociatedSkill_ModKey_Name
+        INTEGER AssociatedSkill_ModKey_Type
+        TEXT AssociatedSkill_ModKey_FileName
+        INTEGER AssociatedSkill_FormKey_ID
+        TEXT FNAM
+        REAL HorizontalPosition
+        INTEGER EntryIndex
+        INTEGER PerkGridX
+        INTEGER PerkGridY
+        REAL VerticalPosition
+        TEXT ImportedAtUTC
+    }
+
+    ActorValueInformationPerkTreeEntries {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER PerkTree_Index PK
+        TEXT FNAM
+        TEXT ImportedAtUTC
     }
 
     NPCs {
@@ -1214,6 +1256,8 @@ erDiagram
     RecordInstances ||--o| MiscItems : "typed detail"
     RecordInstances ||--o| Keywords : "typed detail"
     RecordInstances ||--o| ActorValueInformation : "typed detail"
+    ActorValueInformation ||--o{ ActorValueInformationLayoutEntries : contains
+    ActorValueInformation ||--o{ ActorValueInformationPerkTreeEntries : contains
     RecordInstances ||--o| NPCs : "typed detail"
     RecordInstances ||--o| MagicEffects : "typed detail"
     RecordInstances ||--o| Perks : "typed detail"
@@ -1250,7 +1294,8 @@ erDiagram
 
 Indexes are documented in `DATABASE.md`. Migration `002_AddAssetArchiveIndex.sql` adds active-plugin browse indexes
 for `RecordInstances` and typed parent tables, plus indexes for `Statics`, `Containers`, `ContainerItems`, and
-`RawRecordPayloads`. Migration `005_Migrations005.sql` adds the localized-string form-key lookup index.
+`RawRecordPayloads`. Migration `005_Migrations005.sql` adds the localized-string form-key lookup index and
+ActorValueInformation child-table form-key lookup indexes.
 
 `Plugins.ImportState` is constrained to `Current`, `Changed`, `PartiallyImported`, `Missing`, `Failed`, or
 `Unsupported`.
@@ -1264,6 +1309,8 @@ These columns contain record-reference data but are not declared SQLite foreign 
 - `FormListItems.Item_ModKey_Name`, `Item_ModKey_Type`, `Item_ModKey_FileName`, and `Item_FormKey_ID`
 - `ClassProperties.ActorValue_ModKey_Name`, `ActorValue_ModKey_Type`, `ActorValue_ModKey_FileName`, and
   `ActorValue_FormKey_ID`
+- `ActorValueInformationLayoutEntries.AssociatedSkill_ModKey_Name`, `AssociatedSkill_ModKey_Type`,
+  `AssociatedSkill_ModKey_FileName`, and `AssociatedSkill_FormKey_ID`
 - `Factions.Keyword_ModKey_Name`, `Keyword_ModKey_Type`, `Keyword_ModKey_FileName`, and `Keyword_FormKey_ID`
 - `Factions.Herd_ModKey_Name`, `Herd_ModKey_Type`, `Herd_ModKey_FileName`, and `Herd_FormKey_ID`
 - `Factions.VoiceType_ModKey_Name`, `VoiceType_ModKey_Type`, `VoiceType_ModKey_FileName`, and

@@ -1,3 +1,4 @@
+using System.Globalization;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
@@ -32,6 +33,7 @@ public class Fallout4ActorValueInformationSpriggitDataValidationTests : Spriggit
         spriggitFields["DefaultValue"].ShouldBe(dtoFields["DefaultValue"]);
         dtoFields["Flags"].ShouldNotBeNullOrEmpty();
         spriggitFields["Type"].ShouldBe(dtoFields["Type"]);
+        AssertOptionalTranslatedField(spriggitFields, dtoFields, "Description");
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
@@ -62,6 +64,7 @@ public class Fallout4ActorValueInformationSpriggitDataValidationTests : Spriggit
         spriggitFields["DefaultValue"].ShouldBe(dtoFields["DefaultValue"]);
         dtoFields["Flags"].ShouldNotBeNullOrEmpty();
         spriggitFields["Type"].ShouldBe(dtoFields["Type"]);
+        AssertOptionalTranslatedField(spriggitFields, dtoFields, "Description");
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
@@ -92,6 +95,7 @@ public class Fallout4ActorValueInformationSpriggitDataValidationTests : Spriggit
         spriggitFields["DefaultValue"].ShouldBe(dtoFields["DefaultValue"]);
         dtoFields["Flags"].ShouldNotBeNullOrEmpty();
         spriggitFields["Type"].ShouldBe(dtoFields["Type"]);
+        AssertOptionalTranslatedField(spriggitFields, dtoFields, "Description");
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
@@ -121,6 +125,7 @@ public class Fallout4ActorValueInformationSpriggitDataValidationTests : Spriggit
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
         spriggitFields["DefaultValue"].ShouldBe(dtoFields["DefaultValue"]);
         dtoFields["Flags"].ShouldNotBeNullOrEmpty();
+        AssertOptionalTranslatedField(spriggitFields, dtoFields, "Description");
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
@@ -151,8 +156,38 @@ public class Fallout4ActorValueInformationSpriggitDataValidationTests : Spriggit
         spriggitFields["DefaultValue"].ShouldBe(dtoFields["DefaultValue"]);
         dtoFields["Flags"].ShouldNotBeNullOrEmpty();
         spriggitFields["Type"].ShouldBe(dtoFields["Type"]);
+        AssertOptionalTranslatedField(spriggitFields, dtoFields, "Description");
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
+    }
+
+    private static void AssertOptionalTranslatedField(
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields,
+        string fieldName)
+    {
+        if (!spriggitFields.ContainsKey(fieldName + ".Count"))
+        {
+            return;
+        }
+
+        AssertTranslatedField(spriggitFields, dtoFields, fieldName);
+    }
+
+    private static void AssertTranslatedField(
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields,
+        string fieldName)
+    {
+        spriggitFields[fieldName + ".Count"].ShouldBe(dtoFields[fieldName + ".Count"]);
+        spriggitFields[fieldName + ".TargetLanguage"].ShouldBe(dtoFields[fieldName + ".TargetLanguage"]);
+        var count = int.Parse(spriggitFields[fieldName + ".Count"], CultureInfo.InvariantCulture);
+        for (var index = 0; index < count; index++)
+        {
+            var entryPath = fieldName + "[" + index.ToString(CultureInfo.InvariantCulture) + "]";
+            spriggitFields[entryPath + ".Language"].ShouldBe(dtoFields[entryPath + ".Language"]);
+            spriggitFields[entryPath + ".String"].ShouldBe(dtoFields[entryPath + ".String"]);
+        }
     }
 }

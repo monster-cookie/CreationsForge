@@ -253,6 +253,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 ImportedAtUTC = DateTime.UtcNow,
                 Name = GetTranslatedString(record, "Name"),
                 Abbreviation = GetTranslatedString(record, "Abbreviation"),
+                Description = GetTranslatedString(record, "Description"),
                 ContextNotes = GetPropertyStringOrNull(record, "ContextNotes"),
                 DefaultValue = GetPropertyNullableDouble(record, "DefaultValue"),
                 Flags = GetPropertyStringOrNull(record, "Flags"),

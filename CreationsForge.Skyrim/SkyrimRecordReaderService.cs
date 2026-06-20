@@ -253,13 +253,20 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 ImportedAtUTC = DateTime.UtcNow,
                 Name = GetTranslatedString(record, "Name"),
                 Abbreviation = GetTranslatedString(record, "Abbreviation"),
+                Description = GetTranslatedString(record, "Description"),
+                Cnam = FormatSpriggitHexValue(GetPropertyValue(record, "CNAM")),
+                SkillImproveMult = GetPropertyNullableDouble(GetPropertyValue(record, "Skill"), "ImproveMult"),
+                SkillImproveOffset = GetPropertyNullableDouble(GetPropertyValue(record, "Skill"), "ImproveOffset"),
+                SkillUseMult = GetPropertyNullableDouble(GetPropertyValue(record, "Skill"), "UseMult"),
                 ContextNotes = GetPropertyStringOrNull(record, "ContextNotes"),
                 DefaultValue = GetPropertyNullableDouble(record, "DefaultValue"),
                 Flags = GetPropertyStringOrNull(record, "Flags"),
                 Type = GetPropertyStringOrNull(record, "Type"),
                 Min = GetPropertyNullableDouble(record, "Min"),
                 Max = GetPropertyNullableDouble(record, "Max"),
-                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ActorValueInformation.RecordID, record)
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ActorValueInformation.RecordID, record),
+                LayoutEntries = GetActorValueInformationLayoutEntries(plugin, GetRequiredRawFormKey(record), record),
+                PerkTree = GetActorValueInformationPerkTreeEntries(plugin, GetRequiredRawFormKey(record), record)
             }, record))
             .ToList();
     }
@@ -931,6 +938,57 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         };
     }
 
+    private static List<ActorValueInformationLayoutEntryDTO> GetActorValueInformationLayoutEntries(PluginDTO plugin, FormKey formKey, object record)
+    {
+        var associatedSkills = GetEnumerableValues(GetPropertyValue(record, "AssociatedSkill"));
+        var fnamValues = GetEnumerableValues(GetPropertyValue(record, "FNAM"));
+        var horizontalPositions = GetEnumerableValues(GetPropertyValue(record, "HorizontalPosition"));
+        var indexes = GetEnumerableValues(GetPropertyValue(record, "Index"));
+        var perkGridXs = GetEnumerableValues(GetPropertyValue(record, "PerkGridX"));
+        var perkGridYs = GetEnumerableValues(GetPropertyValue(record, "PerkGridY"));
+        var verticalPositions = GetEnumerableValues(GetPropertyValue(record, "VerticalPosition"));
+        var count = new[] { associatedSkills.Count, fnamValues.Count, horizontalPositions.Count, indexes.Count, perkGridXs.Count, perkGridYs.Count, verticalPositions.Count }.Max();
+        var importedAtUTC = DateTime.UtcNow;
+        var entries = new List<ActorValueInformationLayoutEntryDTO>();
+        for (var index = 0; index < count; index++)
+        {
+            entries.Add(new ActorValueInformationLayoutEntryDTO
+            {
+                Game = SupportedGame.Skyrim,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                LayoutIndex = index,
+                AssociatedSkillFormKey = GetFormKeyFromObject(GetIndexedValue(associatedSkills, index)),
+                Fnam = FormatSpriggitHexValue(GetIndexedValue(fnamValues, index)),
+                HorizontalPosition = ConvertNullableDouble(GetIndexedValue(horizontalPositions, index)),
+                Index = ConvertNullableInt(GetIndexedValue(indexes, index)),
+                PerkGridX = ConvertNullableInt(GetIndexedValue(perkGridXs, index)),
+                PerkGridY = ConvertNullableInt(GetIndexedValue(perkGridYs, index)),
+                VerticalPosition = ConvertNullableDouble(GetIndexedValue(verticalPositions, index)),
+                ImportedAtUTC = importedAtUTC
+            });
+        }
+
+        return entries;
+    }
+
+    private static List<ActorValueInformationPerkTreeEntryDTO> GetActorValueInformationPerkTreeEntries(PluginDTO plugin, FormKey formKey, object record)
+    {
+        var perkTree = GetEnumerableValues(GetPropertyValue(record, "PerkTree"));
+        var importedAtUTC = DateTime.UtcNow;
+        return perkTree
+            .Select((entry, entryIndex) => new ActorValueInformationPerkTreeEntryDTO
+            {
+                Game = SupportedGame.Skyrim,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                PerkTreeIndex = entryIndex,
+                Fnam = FormatSpriggitHexValue(GetPropertyValue(entry, "FNAM")),
+                ImportedAtUTC = importedAtUTC
+            })
+            .ToList();
+    }
+
     private static List<RawRecordPayloadDTO> GetModelRawPayloads(PluginDTO plugin, string recordType, FormKey formKey, object? model)
     {
         var payloads = new List<RawRecordPayloadDTO>();
@@ -1367,6 +1425,28 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         return value is IEnumerable enumerable ? enumerable.Cast<object>().Count() : 0;
     }
 
+    private static IReadOnlyList<object> GetEnumerableValues(object? value)
+    {
+        return value is IEnumerable enumerable && value is not string
+            ? enumerable.Cast<object>().ToList()
+            : [];
+    }
+
+    private static object? GetIndexedValue(IReadOnlyList<object> values, int index)
+    {
+        return index < values.Count ? values[index] : null;
+    }
+
+    private static int? ConvertNullableInt(object? value)
+    {
+        return value == null ? null : Convert.ToInt32(value, CultureInfo.InvariantCulture);
+    }
+
+    private static double? ConvertNullableDouble(object? value)
+    {
+        return value == null ? null : Convert.ToDouble(value, CultureInfo.InvariantCulture);
+    }
+
     private static TranslatedStringDTO? GetTranslatedString(object source, string propertyName)
     {
         var value = GetPropertyValue(source, propertyName);
@@ -1429,6 +1509,17 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         }
 
         return value.ToString();
+    }
+
+    private static string? FormatSpriggitHexValue(object? value)
+    {
+        var hexValue = FormatHexValue(value);
+        if (string.IsNullOrWhiteSpace(hexValue) || hexValue.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+        {
+            return hexValue;
+        }
+
+        return "0x" + hexValue;
     }
 
     private static string GetGameSettingType(IGameSettingGetter record)
