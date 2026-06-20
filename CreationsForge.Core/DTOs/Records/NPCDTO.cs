@@ -5,11 +5,11 @@ namespace CreationsForge.Core.DTOs.Records;
 
 public class NPCDTO : RecordDTO, IHasScriptingAdaptersRecordDTO, IHasKeywordsRecordDTO
 {
-    public string? Name { get; set; }
+    public TranslatedStringDTO? Name { get; set; }
 
-    public string? ShortName { get; set; }
+    public TranslatedStringDTO? ShortName { get; set; }
 
-    public string? LongName { get; set; }
+    public TranslatedStringDTO? LongName { get; set; }
 
     public int DispositionBase { get; set; }
 

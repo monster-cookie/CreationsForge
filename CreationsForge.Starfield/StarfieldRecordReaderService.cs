@@ -176,7 +176,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
     private static IReadOnlyList<KeywordDTO> MapKeywords(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.Keywords
-            .Select(record => new KeywordDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new KeywordDTO
             {
                 Game = SupportedGame.Starfield,
                 ModKey = plugin.ModKey,
@@ -185,14 +185,14 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 FormVersion = record.FormVersion,
                 MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
                 ImportedAtUTC = DateTime.UtcNow,
-                Name = record.Name?.Lookup(Language.English),
+                Name = GetTranslatedString(record.Name),
                 Color = record.Color.ToString() ?? string.Empty,
                 Type = record.Type.ToString() ?? string.Empty,
                 Notes = record.Notes,
                 FlashLinkageName = record.FlashLinkageName,
                 AttractionRuleFormKey = record.AttractionRule.IsNull ? null : MapFormKey(record.AttractionRule.FormKey),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Keyword.RecordID, record)
-            })
+            }, record))
             .ToList();
     }
 
@@ -213,7 +213,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
     private static IReadOnlyList<MiscObjectDTO> MapMiscObjects(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.MiscItems
-            .Select(record => new MiscObjectDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new MiscObjectDTO
             {
                 Game = SupportedGame.Starfield,
                 ModKey = plugin.ModKey,
@@ -222,8 +222,8 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 FormVersion = record.FormVersion,
                 MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
                 ImportedAtUTC = DateTime.UtcNow,
-                Name = record.Name?.Lookup(Language.English),
-                ShortName = record.ShortName?.Lookup(Language.English),
+                Name = GetTranslatedString(record.Name),
+                ShortName = GetTranslatedString(record.ShortName),
                 Value = record.Value,
                 Weight = record.Weight,
                 DirtinessScale = (float)record.DirtinessScale,
@@ -233,14 +233,14 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.MiscObject.RecordID, record.FormKey, record.Keywords),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.MiscObject.RecordID, record.FormKey, record, "CraftingSound", "PickupSound", "DropdownSound"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MiscObject.RecordID, record)
-            })
+            }, record))
             .ToList();
     }
 
     private static IReadOnlyList<ActorValueInformationDTO> MapActorValueInformation(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.ActorValueInformation
-            .Select(record => new ActorValueInformationDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new ActorValueInformationDTO
             {
                 Game = SupportedGame.Starfield,
                 ModKey = plugin.ModKey,
@@ -249,8 +249,8 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 FormVersion = record.FormVersion,
                 MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
                 ImportedAtUTC = DateTime.UtcNow,
-                Name = record.Name?.Lookup(Language.English),
-                Abbreviation = record.Abbreviation?.Lookup(Language.English),
+                Name = GetTranslatedString(record.Name),
+                Abbreviation = GetTranslatedString(record.Abbreviation),
                 ContextNotes = record.ContextNotes,
                 DefaultValue = record.DefaultValue,
                 Flags = record.Flags.ToString(),
@@ -258,7 +258,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Min = record.Min,
                 Max = record.Max,
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ActorValueInformation.RecordID, record)
-            })
+            }, record))
             .ToList();
     }
 
@@ -290,7 +290,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
     private static IReadOnlyList<BookDTO> MapBooks(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.Books
-            .Select(record => new BookDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new BookDTO
             {
                 Game = SupportedGame.Starfield,
                 ModKey = plugin.ModKey,
@@ -304,31 +304,31 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
                 InventoryTransformFormKey = GetFormKeyFromObject(GetPropertyValue(GetPropertyValue(record, "Transforms"), "Inventory")),
                 Xalg = GetPropertyNullableInt(record, "XALG"),
-                Name = record.Name?.Lookup(Language.English),
-                Text = GetLocalizedEnglishText(GetPropertyValue(record, "BookTextOverride"))
-                    ?? GetLocalizedEnglishText(GetPropertyValue(record, "Text")),
+                Name = GetTranslatedString(record.Name),
+                Text = GetTranslatedString(GetPropertyValue(record, "BookTextOverride"))
+                    ?? GetTranslatedString(GetPropertyValue(record, "Text")),
                 Value = GetPropertyNullableInt(record, "Value"),
                 Weight = GetPropertyNullableFloat(record, "Weight"),
                 Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
                 TeachesType = GetPropertyValue(GetPropertyValue(record, "Teaches"), "Type")?.ToString(),
                 TeachesRawContent = FormatEnumerable(GetPropertyValue(record, "Teaches")),
                 DataSlateType = GetPropertyValue(record, "DataSlateType")?.ToString(),
-                Description = GetLocalizedEnglishText(GetPropertyValue(record, "Description")),
-                DataSlateHeaderLeft = GetLocalizedEnglishText(GetPropertyValue(record, "DataSlateHeaderLeft")),
-                DataSlateHeaderRight = GetLocalizedEnglishText(GetPropertyValue(record, "DataSlateHeaderRight")),
+                Description = GetTranslatedString(GetPropertyValue(record, "Description")),
+                DataSlateHeaderLeft = GetTranslatedString(GetPropertyValue(record, "DataSlateHeaderLeft")),
+                DataSlateHeaderRight = GetTranslatedString(GetPropertyValue(record, "DataSlateHeaderRight")),
                 Models = GetModels(plugin, RecordTypeCatalog.Book.RecordID, record.FormKey, record.Model),
                 Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Book.RecordID, record.FormKey, record.Keywords),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.Book.RecordID, record.FormKey, record, "PickupSound", "DropdownSound"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Book.RecordID, record),
                 RawPayloads = GetBookRawPayloads(plugin, record.FormKey, record)
-            })
+            }, record))
             .ToList();
     }
 
     private static IReadOnlyList<DoorDTO> MapDoors(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.Doors
-            .Select(record => new DoorDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new DoorDTO
             {
                 Game = SupportedGame.Starfield,
                 ModKey = plugin.ModKey,
@@ -340,7 +340,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Version2 = GetPropertyNullableInt(record, "Version2"),
                 ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
                 ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
-                Name = record.Name?.Lookup(Language.English),
+                Name = GetTranslatedString(record.Name),
                 Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
                 NativeTerminalFormKey = record.NativeTerminal.IsNull ? null : MapFormKey(record.NativeTerminal.FormKey),
                 SoundLevel = GetPropertyValue(record, "SoundLevel")?.ToString(),
@@ -349,14 +349,14 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Door.RecordID, record.FormKey, record.Keywords),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.Door.RecordID, record.FormKey, record, "OpenSound", "CloseSound"),
                 RawPayloads = GetDoorRawPayloads(plugin, record.FormKey, record.Model, GetPropertyValue(record, "Components"))
-            })
+            }, record))
             .ToList();
     }
 
     private static IReadOnlyList<ContainerDTO> MapContainers(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.Containers
-            .Select(record => new ContainerDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new ContainerDTO
             {
                 Game = SupportedGame.Starfield,
                 ModKey = plugin.ModKey,
@@ -368,7 +368,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Version2 = GetPropertyNullableInt(record, "Version2"),
                 ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
                 ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
-                Name = record.Name?.Lookup(Language.English),
+                Name = GetTranslatedString(record.Name),
                 Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
                 MajorFlags = FormatEnumerable(GetPropertyValue(record, "MajorFlags")),
                 NativeTerminalFormKey = record.NativeTerminal.IsNull ? null : MapFormKey(record.NativeTerminal.FormKey),
@@ -383,14 +383,14 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                     })
                     .ToList(),
                 RawPayloads = GetContainerRawPayloads(plugin, record.FormKey, record.Model, GetPropertyValue(record, "Components"))
-            })
+            }, record))
             .ToList();
     }
 
     private static IReadOnlyList<ConstructibleObjectDTO> MapConstructibleObjects(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.ConstructibleObjects
-            .Select(record => new ConstructibleObjectDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new ConstructibleObjectDTO
             {
                 Game = SupportedGame.Starfield,
                 ModKey = plugin.ModKey,
@@ -400,7 +400,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
                 ImportedAtUTC = DateTime.UtcNow,
                 Version2 = GetPropertyNullableInt(record, "Version2"),
-                Description = GetLocalizedEnglishText(GetPropertyValue(record, "Description")),
+                Description = GetTranslatedString(GetPropertyValue(record, "Description")),
                 CreatedObjectFormKey = GetFormKeyFromObject(GetPropertyValue(record, "CreatedObject")),
                 WorkbenchKeywordFormKey = GetFormKeyFromObject(GetPropertyValue(record, "WorkbenchKeyword")),
                 AmountProduced = GetPropertyNullableInt(record, "AmountProduced"),
@@ -411,7 +411,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 RecipeFilters = GetConstructibleObjectRecipeFilters(plugin, record.FormKey, GetPropertyValue(record, "RecipeFilters")),
                 Conditions = GetConditionRules(plugin, SupportedGame.Starfield, record.FormKey, GetPropertyValue(record, "Conditions")),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ConstructibleObject.RecordID, record)
-            })
+            }, record))
             .ToList();
     }
 
@@ -440,7 +440,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
     private static IReadOnlyList<TerminalDTO> MapTerminals(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.Terminals
-            .Select(record => new TerminalDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new TerminalDTO
             {
                 Game = SupportedGame.Starfield,
                 ModKey = plugin.ModKey,
@@ -454,7 +454,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
                 MenuFormKey = GetFormKeyFromObject(GetPropertyValue(record, "Menu")),
                 Background = GetPropertyValue(record, "Background")?.ToString(),
-                Name = record.Name?.Lookup(Language.English),
+                Name = GetTranslatedString(record.Name),
                 Pnam = GetPropertyValue(record, "PNAM")?.ToString(),
                 Fnam = GetPropertyValue(record, "FNAM")?.ToString(),
                 Jnam = GetPropertyValue(record, "JNAM")?.ToString(),
@@ -468,14 +468,14 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Terminal.RecordID, record),
                 RawPayloads = GetTerminalRawPayloads(plugin, record.FormKey, record.Model, GetPropertyValue(record, "Components")),
                 MarkerParameters = GetTerminalMarkerParameters(plugin, record.FormKey, GetPropertyValue(record, "MarkerParameters"))
-            })
+            }, record))
             .ToList();
     }
 
     private static IReadOnlyList<NPCDTO> MapNPCs(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.Npcs
-            .Select(record => new NPCDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new NPCDTO
             {
                 Game = SupportedGame.Starfield,
                 ModKey = plugin.ModKey,
@@ -484,9 +484,9 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 FormVersion = record.FormVersion,
                 MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
                 ImportedAtUTC = DateTime.UtcNow,
-                Name = record.Name?.Lookup(Language.English),
-                ShortName = record.ShortName?.Lookup(Language.English),
-                LongName = record.LongName?.Lookup(Language.English),
+                Name = GetTranslatedString(record.Name),
+                ShortName = GetTranslatedString(record.ShortName),
+                LongName = GetTranslatedString(record.LongName),
                 DispositionBase = record.DispositionBase,
                 Aggression = record.Aggression.ToString(),
                 Confidence = record.Confidence.ToString(),
@@ -506,14 +506,14 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 CrimeFactionFormKey = record.CrimeFaction.IsNull ? null : MapFormKey(record.CrimeFaction.FormKey),
                 Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.NPC.RecordID, record.FormKey, record.Keywords),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.NPC.RecordID, record)
-            })
+            }, record))
             .ToList();
     }
 
     private static ClassDTO CreateClass(PluginDTO plugin, SupportedGame game, object record, string majorFlagsProperty)
     {
         var formKey = GetRequiredFormKey(record);
-        return new ClassDTO
+        return LocalizedStringDTOMapper.AddLocalizedStrings(new ClassDTO
         {
             Game = game,
             ModKey = plugin.ModKey,
@@ -523,8 +523,8 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             MajorRecordFlags = GetPropertyNullableInt(record, majorFlagsProperty) ?? 0,
             ImportedAtUTC = DateTime.UtcNow,
             Version2 = GetPropertyNullableInt(record, "Version2"),
-            Name = GetLocalizedEnglishText(GetPropertyValue(record, "Name")),
-            Description = GetLocalizedEnglishText(GetPropertyValue(record, "Description")),
+            Name = GetTranslatedString(GetPropertyValue(record, "Name")),
+            Description = GetTranslatedString(GetPropertyValue(record, "Description")),
             Teaches = GetPropertyValue(record, "Teaches")?.ToString(),
             MaxTrainingLevel = GetPropertyNullableInt(record, "MaxTrainingLevel"),
             BleedoutDefault = GetPropertyNullableDouble(record, "BleedoutDefault"),
@@ -532,13 +532,13 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             Unknown = GetPropertyNullableDouble(record, "Unknown"),
             Unknown2 = GetPropertyNullableDouble(record, "Unknown2"),
             Properties = GetClassProperties(plugin, game, formKey, GetPropertyValue(record, "Properties"))
-        };
+        }, record);
     }
 
     private static FactionDTO CreateFaction(PluginDTO plugin, SupportedGame game, object record, string majorFlagsProperty)
     {
         var formKey = GetRequiredFormKey(record);
-        return new FactionDTO
+        return LocalizedStringDTOMapper.AddLocalizedStrings(new FactionDTO
         {
             Game = game,
             ModKey = plugin.ModKey,
@@ -548,7 +548,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             MajorRecordFlags = GetPropertyNullableInt(record, majorFlagsProperty) ?? 0,
             ImportedAtUTC = DateTime.UtcNow,
             Version2 = GetPropertyNullableInt(record, "Version2"),
-            Name = GetLocalizedEnglishText(GetPropertyValue(record, "Name")),
+            Name = GetTranslatedString(GetPropertyValue(record, "Name")),
             Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
             FormationRadius = GetPropertyNullableDouble(record, "FormationRadius"),
             KeywordFormKey = GetFormKeyFromObject(GetPropertyValue(record, "Keyword")),
@@ -587,7 +587,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             Conditions = GetConditionRules(plugin, game, formKey, GetPropertyValue(record, "Conditions")),
             Components = GetRecordComponents(plugin, game, RecordTypeCatalog.Faction.RecordID, formKey, GetPropertyValue(record, "Components")),
             Keywords = GetSingleRecordKeyword(plugin, RecordTypeCatalog.Faction.RecordID, formKey, GetPropertyValue(record, "Keyword"))
-        };
+        }, record);
     }
 
     private static List<ClassPropertyDTO> GetClassProperties(PluginDTO plugin, SupportedGame game, FormKey formKey, object? properties)
@@ -633,8 +633,8 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 FormKey = MapFormKey(formKey),
                 RankIndex = rankIndex,
                 RankNumber = GetPropertyNullableInt(rank, "Rank"),
-                MaleTitle = GetLocalizedEnglishText(GetPropertyValue(rank, "MaleTitle")),
-                FemaleTitle = GetLocalizedEnglishText(GetPropertyValue(rank, "FemaleTitle")),
+                MaleTitle = GetTranslatedString(GetPropertyValue(rank, "MaleTitle")),
+                FemaleTitle = GetTranslatedString(GetPropertyValue(rank, "FemaleTitle")),
                 ImportedAtUTC = DateTime.UtcNow
             }).ToList();
     }
@@ -702,7 +702,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
     private static IReadOnlyList<MagicEffectDTO> MapMagicEffects(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.MagicEffects
-            .Select(record => new MagicEffectDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new MagicEffectDTO
             {
                 Game = SupportedGame.Starfield,
                 ModKey = plugin.ModKey,
@@ -711,8 +711,8 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 FormVersion = record.FormVersion,
                 MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
                 ImportedAtUTC = DateTime.UtcNow,
-                Name = GetLocalizedEnglishText(() => record.Name),
-                Description = GetLocalizedEnglishText(() => record.Description),
+                Name = GetTranslatedString(() => record.Name),
+                Description = GetTranslatedString(() => record.Description),
                 Flags = record.Flags.ToString(),
                 CastType = record.CastType.ToString(),
                 TargetType = record.TargetType.ToString(),
@@ -736,14 +736,14 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.MagicEffect.RecordID, record.FormKey, record.Keywords),
                 Sounds = GetIndexedSounds(plugin, RecordTypeCatalog.MagicEffect.RecordID, record.FormKey, record),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MagicEffect.RecordID, record)
-            })
+            }, record))
             .ToList();
     }
 
     private static IReadOnlyList<PerkDTO> MapPerks(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.Perks
-            .Select(record => new PerkDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new PerkDTO
             {
                 Game = SupportedGame.Starfield,
                 ModKey = plugin.ModKey,
@@ -752,8 +752,8 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 FormVersion = record.FormVersion,
                 MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
                 ImportedAtUTC = DateTime.UtcNow,
-                Name = record.Name?.Lookup(Language.English),
-                Description = record.Description?.Lookup(Language.English),
+                Name = GetTranslatedString(record.Name),
+                Description = GetTranslatedString(record.Description),
                 Flags = record.Flags.ToString(),
                 SkillGroup = record.SkillGroup.ToString(),
                 CrewAssignment = record.CrewAssignment.ToString(),
@@ -765,7 +765,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Ranks = GetPerkRanks(plugin, record),
                 BackgroundSkills = GetPerkBackgroundSkills(plugin, record),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Perk.RecordID, record)
-            })
+            }, record))
             .ToList();
     }
 
@@ -778,7 +778,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 ModKey = plugin.ModKey,
                 FormKey = MapFormKey(record.FormKey),
                 RankIndex = rankIndex,
-                Description = GetLocalizedEnglishText(() => rank.Description),
+                Description = GetTranslatedString(() => rank.Description),
                 UnknownStaticFormKey = rank.UnknownStatic.IsNull ? null : MapFormKey(rank.UnknownStatic.FormKey),
                 ConditionCount = rank.Conditions?.Count ?? 0,
                 ActivityCount = rank.Activities?.Count ?? 0,
@@ -804,7 +804,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                     Priority = effect.Priority,
                     PerkEntryId = effect.PerkEntryID,
                     Flags = effect.Flags?.ToString(),
-                    ButtonLabel = GetLocalizedEnglishText(() => effect.ButtonLabel),
+                    ButtonLabel = GetTranslatedString(() => effect.ButtonLabel),
                     ConditionCount = effect.Conditions.Count,
                     ImportedAtUTC = importedAtUTC
                 };
@@ -841,11 +841,11 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             .ToList();
     }
 
-    private static string? GetLocalizedEnglishText(Func<ITranslatedStringGetter?> valueFactory)
+    private static TranslatedStringDTO? GetTranslatedString(Func<ITranslatedStringGetter?> valueFactory)
     {
         try
         {
-            return valueFactory()?.Lookup(Language.English);
+            return LocalizedStringDTOMapper.ToTranslatedStringDTO(valueFactory());
         }
         catch (ArgumentException)
         {
@@ -853,11 +853,9 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         }
     }
 
-    private static string? GetLocalizedEnglishText(object? value)
+    private static TranslatedStringDTO? GetTranslatedString(object? value)
     {
-        return value is ITranslatedStringGetter translatedString
-            ? GetLocalizedEnglishText(() => translatedString)
-            : value?.ToString();
+        return LocalizedStringDTOMapper.ToTranslatedStringDTO(value);
     }
 
     private static List<ScriptingAdapterDTO> GetScriptingAdapters(PluginDTO plugin, string recordType, IHaveVirtualMachineAdapterGetter record)

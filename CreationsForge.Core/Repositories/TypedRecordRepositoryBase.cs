@@ -2,6 +2,7 @@ using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
+using CreationsForge.Core.Utilities;
 using CreationsForge.Core.Repositories.Interfaces;
 using NPoco;
 
@@ -317,6 +318,16 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
             },
             Id = (uint)formKeyId.Value
         };
+    }
+
+    protected static string? GetEnglishText(TranslatedStringDTO? translatedString)
+    {
+        return LocalizedStringDTOMapper.GetEnglishText(translatedString);
+    }
+
+    protected static TranslatedStringDTO? FromEnglish(string? value)
+    {
+        return LocalizedStringDTOMapper.FromEnglish(value);
     }
 
     private RecordTreeEntryDTO ToRecordTreeEntry(RecordTreeEntryRow record, SupportedGame game)

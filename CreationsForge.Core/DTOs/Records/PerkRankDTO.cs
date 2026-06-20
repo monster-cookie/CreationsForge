@@ -10,7 +10,7 @@ public class PerkRankDTO
 
     public int RankIndex { get; set; }
 
-    public string? Description { get; set; }
+    public TranslatedStringDTO? Description { get; set; }
 
     public FormKeyDTO? UnknownStaticFormKey { get; set; }
 

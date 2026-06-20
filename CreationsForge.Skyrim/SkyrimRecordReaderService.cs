@@ -162,7 +162,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
     private static IReadOnlyList<KeywordDTO> MapKeywords(PluginDTO plugin, ISkyrimModGetter mod)
     {
         return GetRecordCollection(mod, "Keywords")
-            .Select(record => new KeywordDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new KeywordDTO
             {
                 Game = SupportedGame.Skyrim,
                 ModKey = plugin.ModKey,
@@ -171,14 +171,14 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 FormVersion = GetPropertyInt(record, "FormVersion"),
                 MajorRecordFlags = GetPropertyInt(record, "SkyrimMajorRecordFlags"),
                 ImportedAtUTC = DateTime.UtcNow,
-                Name = GetLocalizedEnglishText(record, "Name"),
+                Name = GetTranslatedString(record, "Name"),
                 Color = GetPropertyString(record, "Color"),
                 Type = GetPropertyString(record, "Type"),
                 Notes = GetPropertyStringOrNull(record, "Notes"),
                 FlashLinkageName = GetPropertyStringOrNull(record, "FlashLinkageName"),
                 AttractionRuleFormKey = GetLinkedFormKey(record, "AttractionRule"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Keyword.RecordID, record)
-            })
+            }, record))
             .ToList();
     }
 
@@ -199,7 +199,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
     private static IReadOnlyList<MiscObjectDTO> MapMiscObjects(PluginDTO plugin, ISkyrimModGetter mod)
     {
         return GetRecordCollection(mod, "MiscItems", "MiscObjects")
-            .Select(record => new MiscObjectDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new MiscObjectDTO
             {
                 Game = SupportedGame.Skyrim,
                 ModKey = plugin.ModKey,
@@ -208,8 +208,8 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 FormVersion = GetPropertyInt(record, "FormVersion"),
                 MajorRecordFlags = GetPropertyInt(record, "SkyrimMajorRecordFlags"),
                 ImportedAtUTC = DateTime.UtcNow,
-                Name = GetLocalizedEnglishText(record, "Name"),
-                ShortName = GetLocalizedEnglishText(record, "ShortName"),
+                Name = GetTranslatedString(record, "Name"),
+                ShortName = GetTranslatedString(record, "ShortName"),
                 Value = GetPropertyNullableInt(record, "Value"),
                 Weight = GetPropertyNullableFloat(record, "Weight"),
                 DirtinessScale = GetPropertyNullableFloat(record, "DirtinessScale"),
@@ -219,14 +219,14 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.MiscObject.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.MiscObject.RecordID, GetRequiredRawFormKey(record), record, "CraftingSound", "PickupSound", "PutdownSound", "DropdownSound"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MiscObject.RecordID, record)
-            })
+            }, record))
             .ToList();
     }
 
     private static IReadOnlyList<ActorValueInformationDTO> MapActorValueInformation(PluginDTO plugin, ISkyrimModGetter mod)
     {
         return GetRecordCollection(mod, "ActorValueInformation", "ActorValues")
-            .Select(record => new ActorValueInformationDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new ActorValueInformationDTO
             {
                 Game = SupportedGame.Skyrim,
                 ModKey = plugin.ModKey,
@@ -235,8 +235,8 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 FormVersion = GetPropertyInt(record, "FormVersion"),
                 MajorRecordFlags = GetPropertyInt(record, "SkyrimMajorRecordFlags"),
                 ImportedAtUTC = DateTime.UtcNow,
-                Name = GetLocalizedEnglishText(record, "Name"),
-                Abbreviation = GetLocalizedEnglishText(record, "Abbreviation"),
+                Name = GetTranslatedString(record, "Name"),
+                Abbreviation = GetTranslatedString(record, "Abbreviation"),
                 ContextNotes = GetPropertyStringOrNull(record, "ContextNotes"),
                 DefaultValue = GetPropertyNullableDouble(record, "DefaultValue"),
                 Flags = GetPropertyStringOrNull(record, "Flags"),
@@ -244,14 +244,14 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 Min = GetPropertyNullableDouble(record, "Min"),
                 Max = GetPropertyNullableDouble(record, "Max"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ActorValueInformation.RecordID, record)
-            })
+            }, record))
             .ToList();
     }
 
     private static IReadOnlyList<NPCDTO> MapNPCs(PluginDTO plugin, ISkyrimModGetter mod)
     {
         return GetRecordCollection(mod, "Npcs", "NPCs")
-            .Select(record => new NPCDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new NPCDTO
             {
                 Game = SupportedGame.Skyrim,
                 ModKey = plugin.ModKey,
@@ -260,9 +260,9 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 FormVersion = GetPropertyInt(record, "FormVersion"),
                 MajorRecordFlags = GetPropertyInt(record, "SkyrimMajorRecordFlags"),
                 ImportedAtUTC = DateTime.UtcNow,
-                Name = GetLocalizedEnglishText(record, "Name"),
-                ShortName = GetLocalizedEnglishText(record, "ShortName"),
-                LongName = GetLocalizedEnglishText(record, "LongName"),
+                Name = GetTranslatedString(record, "Name"),
+                ShortName = GetTranslatedString(record, "ShortName"),
+                LongName = GetTranslatedString(record, "LongName"),
                 DispositionBase = GetPropertyInt(record, "DispositionBase"),
                 Aggression = GetPropertyString(record, "Aggression"),
                 Confidence = GetPropertyString(record, "Confidence"),
@@ -282,14 +282,14 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 CrimeFactionFormKey = GetLinkedFormKey(record, "CrimeFaction"),
                 Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.NPC.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.NPC.RecordID, record)
-            })
+            }, record))
             .ToList();
     }
 
     private static ClassDTO CreateClass(PluginDTO plugin, SupportedGame game, object record, string majorFlagsProperty)
     {
         var formKey = GetRequiredRawFormKey(record);
-        return new ClassDTO
+        return LocalizedStringDTOMapper.AddLocalizedStrings(new ClassDTO
         {
             Game = game,
             ModKey = plugin.ModKey,
@@ -299,8 +299,8 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             MajorRecordFlags = GetPropertyInt(record, majorFlagsProperty),
             ImportedAtUTC = DateTime.UtcNow,
             Version2 = GetPropertyNullableInt(record, "Version2"),
-            Name = GetLocalizedEnglishText(record, "Name"),
-            Description = GetLocalizedEnglishText(record, "Description"),
+            Name = GetTranslatedString(record, "Name"),
+            Description = GetTranslatedString(record, "Description"),
             Teaches = GetPropertyValue(record, "Teaches")?.ToString(),
             MaxTrainingLevel = GetPropertyNullableInt(record, "MaxTrainingLevel"),
             BleedoutDefault = GetPropertyNullableDouble(record, "BleedoutDefault"),
@@ -310,7 +310,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             Properties = GetClassProperties(plugin, game, formKey, GetPropertyValue(record, "Properties")),
             SkillWeights = GetClassWeights(plugin, game, formKey, "Skill", GetPropertyValue(record, "SkillWeights")),
             StatWeights = GetClassWeights(plugin, game, formKey, "Stat", GetPropertyValue(record, "StatWeights"))
-        };
+        }, record);
     }
 
     private static FactionDTO CreateFaction(PluginDTO plugin, SupportedGame game, object record, string majorFlagsProperty)
@@ -320,7 +320,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         var vendorValues = GetPropertyValue(record, "VendorValues");
         var vendorLocation = GetPropertyValue(record, "VendorLocation");
         var vendorLocationTarget = GetPropertyValue(vendorLocation, "Target");
-        return new FactionDTO
+        return LocalizedStringDTOMapper.AddLocalizedStrings(new FactionDTO
         {
             Game = game,
             ModKey = plugin.ModKey,
@@ -330,7 +330,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             MajorRecordFlags = GetPropertyInt(record, majorFlagsProperty),
             ImportedAtUTC = DateTime.UtcNow,
             Version2 = GetPropertyNullableInt(record, "Version2"),
-            Name = GetLocalizedEnglishText(record, "Name"),
+            Name = GetTranslatedString(record, "Name"),
             Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
             FormationRadius = GetPropertyNullableDouble(record, "FormationRadius"),
             KeywordFormKey = GetFormKeyFromObject(GetPropertyValue(record, "Keyword")),
@@ -368,7 +368,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             Ranks = GetFactionRanks(plugin, game, formKey, GetPropertyValue(record, "Ranks")),
             Conditions = GetConditionRules(plugin, game, formKey, GetPropertyValue(record, "Conditions")),
             Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Faction.RecordID, formKey, GetPropertyValue(record, "Keyword") is null ? null : new[] { GetPropertyValue(record, "Keyword")! })
-        };
+        }, record);
     }
 
     private static List<ClassPropertyDTO> GetClassProperties(PluginDTO plugin, SupportedGame game, FormKey formKey, object? properties)
@@ -431,8 +431,8 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 FormKey = MapFormKey(formKey),
                 RankIndex = rankIndex,
                 RankNumber = GetPropertyNullableInt(rank, "Rank"),
-                MaleTitle = GetLocalizedEnglishText(rank, "MaleTitle"),
-                FemaleTitle = GetLocalizedEnglishText(rank, "FemaleTitle"),
+                MaleTitle = GetTranslatedString(rank, "MaleTitle"),
+                FemaleTitle = GetTranslatedString(rank, "FemaleTitle"),
                 ImportedAtUTC = DateTime.UtcNow
             }).ToList();
     }
@@ -483,7 +483,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
     private static IReadOnlyList<MagicEffectDTO> MapMagicEffects(PluginDTO plugin, ISkyrimModGetter mod)
     {
         return GetRecordCollection(mod, "MagicEffects")
-            .Select(record => new MagicEffectDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new MagicEffectDTO
             {
                 Game = SupportedGame.Skyrim,
                 ModKey = plugin.ModKey,
@@ -492,8 +492,8 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 FormVersion = GetPropertyInt(record, "FormVersion"),
                 MajorRecordFlags = GetPropertyInt(record, "SkyrimMajorRecordFlags"),
                 ImportedAtUTC = DateTime.UtcNow,
-                Name = GetLocalizedEnglishText(record, "Name"),
-                Description = GetLocalizedEnglishText(record, "Description"),
+                Name = GetTranslatedString(record, "Name"),
+                Description = GetTranslatedString(record, "Description"),
                 Flags = GetPropertyString(record, "Flags"),
                 CastType = GetPropertyStringOrNull(record, "CastType"),
                 TargetType = GetPropertyStringOrNull(record, "TargetType"),
@@ -517,14 +517,14 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.MagicEffect.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
                 Sounds = GetIndexedSounds(plugin, RecordTypeCatalog.MagicEffect.RecordID, GetRequiredRawFormKey(record), record),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MagicEffect.RecordID, record)
-            })
+            }, record))
             .ToList();
     }
 
     private static IReadOnlyList<PerkDTO> MapPerks(PluginDTO plugin, ISkyrimModGetter mod)
     {
         return GetRecordCollection(mod, "Perks")
-            .Select(record => new PerkDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new PerkDTO
             {
                 Game = SupportedGame.Skyrim,
                 ModKey = plugin.ModKey,
@@ -533,8 +533,8 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 FormVersion = GetPropertyInt(record, "FormVersion"),
                 MajorRecordFlags = GetPropertyInt(record, "SkyrimMajorRecordFlags"),
                 ImportedAtUTC = DateTime.UtcNow,
-                Name = GetLocalizedEnglishText(record, "Name"),
-                Description = GetLocalizedEnglishText(record, "Description"),
+                Name = GetTranslatedString(record, "Name"),
+                Description = GetTranslatedString(record, "Description"),
                 Flags = GetPropertyString(record, "Flags"),
                 SkillGroup = GetPropertyStringOrNull(record, "SkillGroup"),
                 CrewAssignment = GetPropertyStringOrNull(record, "CrewAssignment"),
@@ -546,7 +546,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 Ranks = GetPerkRanks(plugin, record),
                 BackgroundSkills = GetPerkBackgroundSkills(plugin, record),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Perk.RecordID, record)
-            })
+            }, record))
             .ToList();
     }
 
@@ -577,7 +577,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
     private static IReadOnlyList<ContainerDTO> MapContainers(PluginDTO plugin, ISkyrimModGetter mod)
     {
         return GetRecordCollection(mod, "Containers")
-            .Select(record => new ContainerDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new ContainerDTO
             {
                 Game = SupportedGame.Skyrim,
                 ModKey = plugin.ModKey,
@@ -589,7 +589,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 Version2 = GetPropertyNullableInt(record, "Version2"),
                 ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
                 ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
-                Name = GetLocalizedEnglishText(record, "Name"),
+                Name = GetTranslatedString(record, "Name"),
                 Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
                 MajorFlags = GetPropertyStringOrNull(record, "MajorFlags"),
                 Items = GetContainerItems(plugin, GetRequiredRawFormKey(record), GetPropertyValue(record, "Items")),
@@ -597,14 +597,14 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Container.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.Container.RecordID, GetRequiredRawFormKey(record), record, "OpenSound", "CloseSound"),
                 RawPayloads = GetModelRawPayloads(plugin, RecordTypeCatalog.Container.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model"))
-            })
+            }, record))
             .ToList();
     }
 
     private static IReadOnlyList<ConstructibleObjectDTO> MapConstructibleObjects(PluginDTO plugin, ISkyrimModGetter mod)
     {
         return GetRecordCollection(mod, "ConstructibleObjects")
-            .Select(record => new ConstructibleObjectDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new ConstructibleObjectDTO
             {
                 Game = SupportedGame.Skyrim,
                 ModKey = plugin.ModKey,
@@ -614,14 +614,14 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 MajorRecordFlags = GetPropertyInt(record, "SkyrimMajorRecordFlags"),
                 ImportedAtUTC = DateTime.UtcNow,
                 Version2 = GetPropertyNullableInt(record, "Version2"),
-                Description = GetLocalizedEnglishText(record, "Description"),
+                Description = GetTranslatedString(record, "Description"),
                 CreatedObjectFormKey = GetLinkedFormKey(record, "CreatedObject"),
                 WorkbenchKeywordFormKey = GetLinkedFormKey(record, "WorkbenchKeyword"),
                 CreatedObjectCount = GetPropertyNullableInt(record, "CreatedObjectCount"),
                 Components = GetConstructibleObjectComponents(plugin, GetRequiredRawFormKey(record), GetPropertyValue(record, "Items")),
                 Conditions = GetConditionRules(plugin, SupportedGame.Skyrim, GetRequiredRawFormKey(record), GetPropertyValue(record, "Conditions")),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ConstructibleObject.RecordID, record)
-            })
+            }, record))
             .ToList();
     }
 
@@ -639,7 +639,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 ModKey = plugin.ModKey,
                 FormKey = MapFormKey(formKey),
                 RankIndex = rankIndex,
-                Description = GetLocalizedEnglishText(rank, "Description"),
+                Description = GetTranslatedString(rank, "Description"),
                 UnknownStaticFormKey = GetLinkedFormKey(rank, "UnknownStatic"),
                 ConditionCount = GetEnumerableCount(GetPropertyValue(rank, "Conditions")),
                 ActivityCount = GetEnumerableCount(GetPropertyValue(rank, "Activities")),
@@ -663,7 +663,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 Priority = GetPropertyInt(effect, "Priority"),
                 PerkEntryId = GetPropertyNullableInt(effect, "PerkEntryID"),
                 Flags = GetPropertyStringOrNull(effect, "Flags"),
-                ButtonLabel = GetLocalizedEnglishText(effect, "ButtonLabel"),
+                ButtonLabel = GetTranslatedString(effect, "ButtonLabel"),
                 ConditionCount = GetEnumerableCount(GetPropertyValue(effect, "Conditions")),
                 EntryPoint = GetPropertyStringOrNull(effect, "EntryPoint"),
                 PerkConditionTabCount = GetPropertyNullableInt(effect, "PerkConditionTabCount"),
@@ -1270,15 +1270,14 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         return value is IEnumerable enumerable ? enumerable.Cast<object>().Count() : 0;
     }
 
-    private static string? GetLocalizedEnglishText(object source, string propertyName)
+    private static TranslatedStringDTO? GetTranslatedString(object source, string propertyName)
     {
         var value = GetPropertyValue(source, propertyName);
         if (value == null) return null;
 
         try
         {
-            var lookup = value.GetType().GetMethod("Lookup", new[] { typeof(Language) });
-            return lookup?.Invoke(value, new object[] { Language.English })?.ToString() ?? value.ToString();
+            return LocalizedStringDTOMapper.ToTranslatedStringDTO(value);
         }
         catch (ArgumentException)
         {

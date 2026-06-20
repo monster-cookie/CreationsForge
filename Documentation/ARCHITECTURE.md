@@ -338,9 +338,10 @@ typed sound entries such as OnHit, Release, and Charge into the same table shape
 
 Localized string persistence is shared in Core through `IRecordLocalizedStringImportService` and `LocalizedStrings`.
 `RecordDTO` exposes localized strings as a shared child collection, and `IRecordChildImportService` replaces those
-rows for imported records. GameSetting import populates translated `Data` rows when Mutagen exposes
-translation-table values. The Settings screen owns the persisted record text language selection; the command bar does
-not expose a language dropdown.
+rows for imported records. DTO fields that map to Mutagen translation-table-backed strings use `TranslatedStringDTO`
+so import and future editing preserve the per-language table shape. GameSetting `Data` still uses its scalar DTO value
+with localized child rows because the field also carries setting-type semantics. The Settings screen owns the
+persisted record text language selection; the command bar does not expose a language dropdown.
 
 Starfield `MiscItem`, `Static`, `Book`, `Door`, `Container`, and `Terminal` expose a direct `Model : IModelGetter`
 shape and currently map that direct model to `ModelSlot = Model`. `Terminal.MarkerModel` is a separate

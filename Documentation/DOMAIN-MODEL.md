@@ -98,11 +98,11 @@ columns represent plugin overrides, and comparison rows represent fields exposed
 
 The first comparison slice displays common fields (`EditorID`, `FormVersion`, and `MajorRecordFlags`) for all approved
 records. FormLists also display `AddToListFormKey` and indexed `Items[n]` rows. GameSettings display `SettingType`
-and the generic `Data` value. Localized GameSetting `Data` uses the Settings-selected record text language when a
-persisted localized value exists, then falls back to English and the scalar `Data` value. Globals display `Data`.
-`MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`,
-`CLAS`, `FACT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM` comparisons display their currently persisted scalar
-parent fields and record-reference fields. CLAS comparison displays class property rows and skill-weight or stat-weight
+and the generic `Data` value. Localized text rows use the Settings-selected record text language when a persisted
+localized value exists, then fall back to English and the DTO or scalar database fallback. Globals display `Data`.
+`MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `CLAS`, `FACT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM`
+comparisons display their currently persisted parent fields and record-reference fields. CLAS comparison displays
+class property rows and skill-weight or stat-weight
 rows when those child rows are present. FACT comparison displays relation, rank, shared condition-rule, and Starfield
 component rows when those payloads are persisted. PERK comparison displays rank rows, nested rank-effect
 rows, background skill rows, and shared scripting adapter rows. `MISC`, `NPC_`, `MGEF`, `BOOK`, `DOOR`, `CONT`,
@@ -128,12 +128,15 @@ Mutagen APIs directly.
 ## Localized Record Text
 
 Localized record text is persisted as record-owned child data in `LocalizedStrings`. Each row identifies the owning
-record, source DTO field, language name, translated value, and import timestamp. Imported record DTOs keep their
-English scalar string fields for compatibility, while localized child rows preserve alternate language values that
-Mutagen exposes through translation-table-backed strings.
+record, source DTO field, language name, translated value, and import timestamp. DTO fields that map directly to
+Mutagen translation-table-backed strings use `TranslatedStringDTO`, which preserves the imported language table in the
+DTO contract. Type-specific scalar database columns remain a compatibility and fallback persistence layer for existing
+repository rows; they are not the authoritative DTO shape for translated fields.
 
 The Settings screen stores the preferred record text language. Core comparison services use that setting when
-rendering localized comparison rows and fall back to English when the selected language is unavailable.
+rendering localized comparison rows and fall back to English when the selected language is unavailable. Child
+translated text uses dotted or indexed source paths such as `Ranks[0].Description` and
+`Ranks[0].Effects[0].ButtonLabel`.
 
 ## Current Import Data
 

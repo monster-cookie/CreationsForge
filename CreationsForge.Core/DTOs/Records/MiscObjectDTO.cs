@@ -5,9 +5,9 @@ namespace CreationsForge.Core.DTOs.Records;
 
 public class MiscObjectDTO : RecordDTO, IHasScriptingAdaptersRecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO, IHasSoundsRecordDTO
 {
-    public string? Name { get; set; }
+    public TranslatedStringDTO? Name { get; set; }
 
-    public string? ShortName { get; set; }
+    public TranslatedStringDTO? ShortName { get; set; }
 
     public int? Value { get; set; }
 

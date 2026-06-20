@@ -4,9 +4,9 @@ public class ClassDTO : RecordDTO
 {
     public int? Version2 { get; set; }
 
-    public string? Name { get; set; }
+    public TranslatedStringDTO? Name { get; set; }
 
-    public string? Description { get; set; }
+    public TranslatedStringDTO? Description { get; set; }
 
     public string? Teaches { get; set; }
 

@@ -4,9 +4,9 @@ namespace CreationsForge.Core.DTOs.Records;
 
 public class ActorValueInformationDTO : RecordDTO, IHasScriptingAdaptersRecordDTO
 {
-    public string? Name { get; set; }
+    public TranslatedStringDTO? Name { get; set; }
 
-    public string? Abbreviation { get; set; }
+    public TranslatedStringDTO? Abbreviation { get; set; }
 
     public string? ContextNotes { get; set; }
 

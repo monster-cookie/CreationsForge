@@ -85,17 +85,17 @@ public class BookRepository : TypedRecordRepositoryBase, IBookRepository
                 InventoryTransformModKeyFileName = dto.InventoryTransformFormKey?.ModKey.FileName,
                 InventoryTransformFormKeyId = dto.InventoryTransformFormKey?.Id,
                 dto.Xalg,
-                dto.Name,
-                dto.Text,
+                Name = GetEnglishText(dto.Name),
+                Text = GetEnglishText(dto.Text),
                 dto.Value,
                 dto.Weight,
                 dto.Flags,
                 dto.TeachesType,
                 dto.TeachesRawContent,
                 dto.DataSlateType,
-                dto.Description,
-                dto.DataSlateHeaderLeft,
-                dto.DataSlateHeaderRight
+                Description = GetEnglishText(dto.Description),
+                DataSlateHeaderLeft = GetEnglishText(dto.DataSlateHeaderLeft),
+                DataSlateHeaderRight = GetEnglishText(dto.DataSlateHeaderRight)
             });
     }
 
@@ -115,17 +115,17 @@ public class BookRepository : TypedRecordRepositoryBase, IBookRepository
             ObjectBoundsSecond = record.ObjectBoundsSecond,
             InventoryTransformFormKey = CreateNullableFormKey(record.InventoryTransformModKeyName, record.InventoryTransformModKeyType, record.InventoryTransformModKeyFileName, record.InventoryTransformFormKeyId),
             Xalg = record.Xalg,
-            Name = record.Name,
-            Text = record.Text,
+            Name = FromEnglish(record.Name),
+            Text = FromEnglish(record.Text),
             Value = record.Value,
             Weight = record.Weight,
             Flags = record.Flags,
             TeachesType = record.TeachesType,
             TeachesRawContent = record.TeachesRawContent,
             DataSlateType = record.DataSlateType,
-            Description = record.Description,
-            DataSlateHeaderLeft = record.DataSlateHeaderLeft,
-            DataSlateHeaderRight = record.DataSlateHeaderRight
+            Description = FromEnglish(record.Description),
+            DataSlateHeaderLeft = FromEnglish(record.DataSlateHeaderLeft),
+            DataSlateHeaderRight = FromEnglish(record.DataSlateHeaderRight)
         };
         ApplyCommonFields(dto, record, game);
         return dto;

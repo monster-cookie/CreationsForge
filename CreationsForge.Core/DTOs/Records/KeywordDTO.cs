@@ -5,7 +5,7 @@ namespace CreationsForge.Core.DTOs.Records;
 
 public class KeywordDTO : RecordDTO, IHasScriptingAdaptersRecordDTO
 {
-    public string? Name { get; set; }
+    public TranslatedStringDTO? Name { get; set; }
 
     public required string Color { get; set; }
 

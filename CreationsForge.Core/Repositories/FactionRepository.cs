@@ -275,8 +275,8 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
                     FormKeyId = rank.FormKey.Id,
                     rank.RankIndex,
                     rank.RankNumber,
-                    rank.MaleTitle,
-                    rank.FemaleTitle,
+                    MaleTitle = GetEnglishText(rank.MaleTitle),
+                    FemaleTitle = GetEnglishText(rank.FemaleTitle),
                     rank.ImportedAtUTC
                 });
         }
@@ -316,7 +316,7 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
             dto.MajorRecordFlags,
             dto.ImportedAtUTC,
             dto.Version2,
-            dto.Name,
+            Name = GetEnglishText(dto.Name),
             dto.Flags,
             dto.FormationRadius,
             KeywordModKeyName = dto.KeywordFormKey?.ModKey.Name,
@@ -401,7 +401,7 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
             MajorRecordFlags = 0,
             ImportedAtUTC = record.ImportedAtUTC,
             Version2 = record.Version2,
-            Name = record.Name,
+            Name = FromEnglish(record.Name),
             Flags = record.Flags,
             FormationRadius = record.FormationRadius,
             KeywordFormKey = CreateNullableFormKey(record.KeywordModKeyName, record.KeywordModKeyType, record.KeywordModKeyFileName, record.KeywordFormKeyId),
@@ -463,8 +463,8 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
             FormKey = CreateFormKey(row.FormKeyModKeyName, row.FormKeyModKeyType, row.FormKeyModKeyFileName, row.FormKeyId),
             RankIndex = row.RankIndex,
             RankNumber = row.RankNumber,
-            MaleTitle = row.MaleTitle,
-            FemaleTitle = row.FemaleTitle,
+            MaleTitle = FromEnglish(row.MaleTitle),
+            FemaleTitle = FromEnglish(row.FemaleTitle),
             ImportedAtUTC = row.ImportedAtUTC
         };
     }

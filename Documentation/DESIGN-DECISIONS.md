@@ -5,15 +5,17 @@
 Status: Accepted
 
 Context: Mutagen can expose localized text values through translation-table-backed strings, but CreationsForge was
-collapsing imported string data to English scalar values. Manual Spriggit validation showed this most clearly on
-GameSettings, where Spriggit preserves language-specific values and English-only DTO comparison can report false
-differences.
+collapsing imported string data to English scalar values. Manual Spriggit validation showed the same problem anywhere
+Spriggit preserves language-specific values: English-only DTOs can report false differences and would corrupt plugin
+text on future edit/export paths by writing English into translated fields.
 
 Decision: Add shared localized string persistence under `LocalizedStrings`, owned by `RecordInstances`. `RecordDTO`
 exposes localized strings as shared child data, imported records replace those rows through
-`IRecordLocalizedStringImportService`, and GameSetting import stores localized `Data` values when available. The
-Settings screen stores the preferred record text language. Comparison resolves GameSetting `Data` through the selected
-language, then English, then the scalar fallback. The command bar does not expose a language selector.
+`IRecordLocalizedStringImportService`, and DTO fields that map directly to Mutagen translation-table-backed strings
+use `TranslatedStringDTO`. GameSetting import stores localized `Data` values when available while keeping the scalar
+`Data` DTO value because the field also carries setting-type semantics. The Settings screen stores the preferred
+record text language. Comparison resolves localized fields through the selected language, then English, then the DTO or
+scalar database fallback. The command bar does not expose a language selector.
 
 Rationale: Localized text is record-owned data and needs the same stale-row behavior as other shared child payloads.
 Keeping language selection in Settings avoids crowding the command bar and gives comparison a stable persisted display
@@ -28,13 +30,17 @@ Alternatives considered:
 Consequences:
 
 - Plugins must be reimported after migration 006 so localized string rows are populated.
-- Comparison can display localized GameSetting text without direct Mutagen access from the UI.
+- Comparison can display localized record text without direct Mutagen access from the UI.
+- Translated DTO fields preserve the Mutagen/Spriggit language-table shape instead of exposing English as the public
+  contract.
 - Additional localized fields can use the shared child table without adding new schema tables.
 
 Related files:
 
 - `CreationsForge.Migrations/Sql/006_AddLocalizedStrings.sql`
 - `CreationsForge.Core/DTOs/Records/LocalizedStringDTO.cs`
+- `CreationsForge.Core/DTOs/Records/TranslatedStringDTO.cs`
+- `CreationsForge.Core/DTOs/Records/TranslatedStringValueDTO.cs`
 - `CreationsForge.Core/Repositories/RecordLocalizedStringRepository.cs`
 - `CreationsForge.Core/Services/RecordLocalizedStringImportService.cs`
 - `CreationsForge.Core/Utilities/LocalizedStringDTOMapper.cs`

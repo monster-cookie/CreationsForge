@@ -22,7 +22,7 @@ public class PerkRankEffectDTO
 
     public string? Flags { get; set; }
 
-    public string? ButtonLabel { get; set; }
+    public TranslatedStringDTO? ButtonLabel { get; set; }
 
     public int ConditionCount { get; set; }
 

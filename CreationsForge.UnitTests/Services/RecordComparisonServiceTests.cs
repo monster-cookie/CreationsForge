@@ -770,6 +770,21 @@ public class RecordComparisonServiceTests
         };
     }
 
+    private static TranslatedStringDTO Text(string value)
+    {
+        return new TranslatedStringDTO
+        {
+            Strings =
+            [
+                new TranslatedStringValueDTO
+                {
+                    Language = "English",
+                    String = value
+                }
+            ]
+        };
+    }
+
     private static GlobalDTO CreateGlobal(string fileName, FormKeyDTO formKey, string editorID, double data)
     {
         return new GlobalDTO
@@ -867,8 +882,8 @@ public class RecordComparisonServiceTests
             FormVersion = 1,
             MajorRecordFlags = 2,
             ImportedAtUTC = DateTime.UtcNow,
-            Name = name,
-            ShortName = "ShortName",
+            Name = Text(name),
+            ShortName = Text("ShortName"),
             Value = value,
             Weight = weight,
             DirtinessScale = 1,
@@ -932,17 +947,17 @@ public class RecordComparisonServiceTests
             ObjectBoundsSecond = "1, 1, 1",
             InventoryTransformFormKey = CreateFormKey("Starfield.esm", 0x999),
             Xalg = 7,
-            Name = name,
-            Text = fileName.StartsWith("Base", StringComparison.Ordinal) ? "Base text" : "Patch text",
+            Name = Text(name),
+            Text = Text(fileName.StartsWith("Base", StringComparison.Ordinal) ? "Base text" : "Patch text"),
             Value = value,
             Weight = 1.25f,
             Flags = "Takeable",
             TeachesType = "Skill",
             TeachesRawContent = "Piloting",
             DataSlateType = "None",
-            Description = "Book description",
-            DataSlateHeaderLeft = "Left",
-            DataSlateHeaderRight = "Right"
+            Description = Text("Book description"),
+            DataSlateHeaderLeft = Text("Left"),
+            DataSlateHeaderRight = Text("Right")
         };
     }
 
@@ -960,7 +975,7 @@ public class RecordComparisonServiceTests
             Version2 = 1,
             ObjectBoundsFirst = "0, 0, 0",
             ObjectBoundsSecond = "1, 1, 1",
-            Name = name,
+            Name = Text(name),
             Flags = "Automatic",
             NativeTerminalFormKey = nativeTerminalFormKey,
             SoundLevel = "Normal",
@@ -982,7 +997,7 @@ public class RecordComparisonServiceTests
             Version2 = 15,
             ObjectBoundsFirst = "0, 0, 0",
             ObjectBoundsSecond = "1, 1, 1",
-            Name = name,
+            Name = Text(name),
             Flags = "Respawns",
             NativeTerminalFormKey = nativeTerminalFormKey,
             Items = items
@@ -1005,7 +1020,7 @@ public class RecordComparisonServiceTests
             ObjectBoundsSecond = "1, 1, 1",
             MenuFormKey = CreateFormKey("Starfield.esm", 0x111),
             Background = "BackgroundA",
-            Name = name,
+            Name = Text(name),
             Pnam = "PNAM",
             Fnam = "FNAM",
             Jnam = "JNAM",
@@ -1050,7 +1065,7 @@ public class RecordComparisonServiceTests
             MajorRecordFlags = 2,
             ImportedAtUTC = DateTime.UtcNow,
             Version2 = 2,
-            Description = "Recipe description",
+            Description = Text("Recipe description"),
             CreatedObjectFormKey = createdObjectFormKey,
             WorkbenchKeywordFormKey = workbenchKeywordFormKey,
             AmountProduced = amountProduced,
@@ -1351,7 +1366,7 @@ public class RecordComparisonServiceTests
             FormVersion = 1,
             MajorRecordFlags = 2,
             ImportedAtUTC = DateTime.UtcNow,
-            Name = name,
+            Name = Text(name),
             Archetype = archetype,
             UnknownInt2 = unknownInt2,
             Flags = "None"
@@ -1369,8 +1384,8 @@ public class RecordComparisonServiceTests
             FormVersion = 1,
             MajorRecordFlags = 2,
             ImportedAtUTC = DateTime.UtcNow,
-            Name = name,
-            Description = "Perk description",
+            Name = Text(name),
+            Description = Text("Perk description"),
             Flags = "PcPlayable",
             SkillGroup = "Expert",
             CrewAssignment = "None",
@@ -1384,7 +1399,7 @@ public class RecordComparisonServiceTests
                     ModKey = CreateModKey(fileName),
                     FormKey = formKey,
                     RankIndex = 0,
-                    Description = rankDescription,
+                    Description = Text(rankDescription),
                     UnknownStaticFormKey = unknownStaticFormKey,
                     ConditionCount = 1,
                     ActivityCount = 2,
@@ -1402,7 +1417,7 @@ public class RecordComparisonServiceTests
                             Priority = 10,
                             PerkEntryId = 20,
                             Flags = "None",
-                            ButtonLabel = buttonLabel,
+                            ButtonLabel = Text(buttonLabel),
                             ConditionCount = 3,
                             EntryPoint = "ModSkillUse",
                             PerkConditionTabCount = 4,

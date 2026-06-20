@@ -7,7 +7,7 @@ public class ConstructibleObjectDTO : RecordDTO, IHasScriptingAdaptersRecordDTO,
 {
     public int? Version2 { get; set; }
 
-    public string? Description { get; set; }
+    public TranslatedStringDTO? Description { get; set; }
 
     public FormKeyDTO? CreatedObjectFormKey { get; set; }
 

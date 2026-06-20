@@ -19,10 +19,8 @@ The configured paths must point at the extracted base-game Spriggit roots, such 
 `GameSettings`, `Globals`, and the other Spriggit record folders. The test project reads `.env` only; it does not
 create or update that file.
 
-Project-local validation configuration lives in `CreationsForge.DataValidationTests/Configuration`:
-
-- `SpriggitValidationSamples.json` contains selected sample records for the manifest-backed validation tests.
-- `SpriggitApprovedDifferences.json` contains accepted differences and exclusions.
+Selected sample metadata lives directly in the explicit xUnit facts through `Game`, `RecordType`, `FormKey`,
+`EditorID`, and `SpriggitFile` traits.
 
 ## Running
 
@@ -33,10 +31,9 @@ dotnet test ./CreationsForge.DataValidationTests/CreationsForge.DataValidationTe
   --filter Category=SpriggitDataValidation
 ```
 
-Global (`GLOB`) samples currently use explicit xUnit facts, such as
+Each selected sample has its own explicit xUnit fact, such as
 `Starfield_GLOB_ShouldMatchSpriggitSample_2B7FBD_Starfield_esm`, with visible field-by-field Shouldly assertions in
-the test body. Other record types still use one manifest-backed xUnit fact per supported game and record type, such
-as `Fallout4_NPC_ShouldMatchSpriggitSamples` or `Starfield_BOOK_ShouldMatchSpriggitSamples`.
+the test body.
 
 You can also filter from the CLI:
 
@@ -45,11 +42,8 @@ dotnet test ./CreationsForge.DataValidationTests/CreationsForge.DataValidationTe
   --filter "Category=SpriggitDataValidation&Game=Starfield&RecordType=NPC_"
 ```
 
-Global tests fail directly through visible Shouldly assertions. Other record-type tests write scoped reports before
-failing on real mismatches:
-
-- `TestResults/SpriggitValidation/<timestamp>/<game-record-type>/SpriggitValidationReport.md`
-- `TestResults/SpriggitValidation/<timestamp>/<game-record-type>/SpriggitValidationReport.json`
+Tests fail directly through visible Shouldly assertions. Failure messages identify the specific field assertion or
+unmatched field that failed.
 
 ## Sample Selection
 
@@ -58,38 +52,24 @@ five YAML records per supported record type and game. Selection favors files wit
 collections, references, models, keywords, sounds, conditions, raw payload markers, or other edge-case paths currently
 relevant to Creations Forge DTOs.
 
-When refreshing manifest-backed samples, keep the manifest deterministic:
+When refreshing samples, keep the explicit test set deterministic:
 
 - Keep paths relative to the configured Spriggit root.
 - Prefer base-game plugin samples.
 - Keep three to five samples per supported record type and game unless an approved plan expands the count.
-- For `GLOB`, add the sample as an explicit `[Fact]` with `Game`, `RecordType`, `FormKey`, `EditorID`, and
-  `SpriggitFile` traits.
+- Add the sample as an explicit `[Fact]` with `Game`, `RecordType`, `FormKey`, `EditorID`, and `SpriggitFile` traits.
 - Do not copy external Spriggit YAML files into the repository.
 
-## Approved Differences
+## Assertion Interpretation
 
-Use `SpriggitApprovedDifferences.json` only for differences that are understood and intentionally accepted. Each entry
-should identify the game, record type, optional form key, field path, category, reason, date added, and notes.
-
-Good candidates include known FormKey or ModKey formatting differences, Spriggit-omitted binary payloads, internal
-Creations Forge metadata, or fields deliberately unsupported by the current mapping design.
-
-Do not use approved differences to hide unknown mapping bugs. If the harness reports a mismatch and the behavior is
-not understood, fix the mapping or keep the validation failure visible.
-
-## Report And Assertion Interpretation
-
-Global tests load the selected Spriggit YAML file and the real DTO produced by the matching game reader, then assert
-mapped fields directly in the test body before checking unmatched fields. The manifest-backed tests flatten Spriggit
-fields and DTO fields, map known equivalent field paths, normalize comparable values, and write Markdown/JSON reports.
+Each test loads the selected Spriggit YAML file and the real DTO produced by the matching game reader, then asserts
+mapped fields directly in the test body before checking unmatched fields.
 
 Important failure shapes:
 
 - No matching CreationsForge reader DTO data was found for a Spriggit field.
 - No matching Spriggit field was found for a CreationsForge reader DTO field.
 - Spriggit and Creations Forge both exposed a value, but normalized values still differed.
-- An approved difference matched the configured reason.
 
 ## Limitations
 
@@ -97,4 +77,4 @@ The harness compares DTO data from existing game record readers. It does not val
 readback, or Avalonia comparison rows. Those can be added later through a separately approved validation slice.
 
 The YAML parser is intentionally small and shaped around Spriggit's current extraction output. If Spriggit changes its
-YAML shape, update the parser, manifest-backed samples, and explicit Global sample tests together.
+YAML shape, update the parser and explicit sample tests together.

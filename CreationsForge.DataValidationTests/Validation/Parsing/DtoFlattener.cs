@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Reflection;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
+using CreationsForge.Core.Enums;
 
 namespace CreationsForge.DataValidationTests.Validation.Parsing;
 
@@ -18,11 +19,11 @@ public class DtoFlattener
     public IReadOnlyDictionary<string, string> Flatten(object instance)
     {
         var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        FlattenValue(values, string.Empty, instance);
+        FlattenValue(values, string.Empty, instance is RecordDTO record ? record.Game : null, instance);
         return values;
     }
 
-    private static void FlattenValue(IDictionary<string, string> values, string path, object? value)
+    private static void FlattenValue(IDictionary<string, string> values, string path, SupportedGame? game, object? value)
     {
         if (string.IsNullOrWhiteSpace(path) && value is not null)
         {
@@ -39,7 +40,7 @@ public class DtoFlattener
                     continue;
                 }
 
-                FlattenValue(values, property.Name, property.GetValue(value));
+                FlattenValue(values, property.Name, game, property.GetValue(value));
             }
 
             return;
@@ -53,6 +54,12 @@ public class DtoFlattener
         if (value is FormKeyDTO formKey)
         {
             values[path] = FormatFormKey(formKey);
+            return;
+        }
+
+        if (value is TranslatedStringDTO translatedString)
+        {
+            FlattenTranslatedString(values, path, translatedString, game);
             return;
         }
 
@@ -73,7 +80,7 @@ public class DtoFlattener
             var index = 0;
             foreach (var item in enumerable)
             {
-                FlattenValue(values, path + "[" + index.ToString(CultureInfo.InvariantCulture) + "]", item);
+                FlattenValue(values, path + "[" + index.ToString(CultureInfo.InvariantCulture) + "]", game, item);
                 index++;
             }
 
@@ -83,7 +90,24 @@ public class DtoFlattener
 
         foreach (var property in GetReadableProperties(value.GetType()))
         {
-            FlattenValue(values, path + "." + property.Name, property.GetValue(value));
+            FlattenValue(values, path + "." + property.Name, game, property.GetValue(value));
+        }
+    }
+
+    private static void FlattenTranslatedString(IDictionary<string, string> values, string path, TranslatedStringDTO translatedString, SupportedGame? game)
+    {
+        var entries = translatedString.Strings
+            .OrderBy(entry => GetSpriggitLanguageOrder(entry.Language, game))
+            .ThenBy(entry => entry.Language, StringComparer.Ordinal)
+            .ToList();
+
+        values[path + ".Count"] = entries.Count.ToString(CultureInfo.InvariantCulture);
+        values[path + ".TargetLanguage"] = translatedString.TargetLanguage;
+
+        for (var entryIndex = 0; entryIndex < entries.Count; entryIndex++)
+        {
+            values[path + "[" + entryIndex.ToString(CultureInfo.InvariantCulture) + "].Language"] = entries[entryIndex].Language;
+            values[path + "[" + entryIndex.ToString(CultureInfo.InvariantCulture) + "].String"] = entries[entryIndex].String;
         }
     }
 
@@ -125,6 +149,20 @@ public class DtoFlattener
         };
 
         return order.TryGetValue(localizedString.Language, out var index)
+            ? index
+            : int.MaxValue;
+    }
+
+    private static int GetSpriggitLanguageOrder(string language, SupportedGame? game)
+    {
+        var order = game switch
+        {
+            SupportedGame.Fallout4 => Fallout4SpriggitLanguageOrder,
+            SupportedGame.Skyrim => SkyrimSpriggitLanguageOrder,
+            _ => StarfieldSpriggitLanguageOrder
+        };
+
+        return order.TryGetValue(language, out var index)
             ? index
             : int.MaxValue;
     }

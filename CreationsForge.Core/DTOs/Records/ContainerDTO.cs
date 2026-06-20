@@ -11,7 +11,7 @@ public class ContainerDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDT
 
     public string? ObjectBoundsSecond { get; set; }
 
-    public string? Name { get; set; }
+    public TranslatedStringDTO? Name { get; set; }
 
     public string? Flags { get; set; }
 

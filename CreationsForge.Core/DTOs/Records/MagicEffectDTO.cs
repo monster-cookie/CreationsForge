@@ -5,9 +5,9 @@ namespace CreationsForge.Core.DTOs.Records;
 
 public class MagicEffectDTO : RecordDTO, IHasScriptingAdaptersRecordDTO, IHasKeywordsRecordDTO, IHasSoundsRecordDTO
 {
-    public string? Name { get; set; }
+    public TranslatedStringDTO? Name { get; set; }
 
-    public string? Description { get; set; }
+    public TranslatedStringDTO? Description { get; set; }
 
     public required string Flags { get; set; }
 

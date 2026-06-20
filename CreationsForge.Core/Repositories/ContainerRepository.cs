@@ -79,7 +79,7 @@ public class ContainerRepository : TypedRecordRepositoryBase, IContainerReposito
                 dto.Version2,
                 dto.ObjectBoundsFirst,
                 dto.ObjectBoundsSecond,
-                dto.Name,
+                Name = GetEnglishText(dto.Name),
                 dto.Flags,
                 dto.MajorFlags,
                 NativeTerminalModKeyName = dto.NativeTerminalFormKey?.ModKey.Name,
@@ -188,7 +188,7 @@ public class ContainerRepository : TypedRecordRepositoryBase, IContainerReposito
             Version2 = record.Version2,
             ObjectBoundsFirst = record.ObjectBoundsFirst,
             ObjectBoundsSecond = record.ObjectBoundsSecond,
-            Name = record.Name,
+            Name = FromEnglish(record.Name),
             Flags = record.Flags,
             MajorFlags = record.MajorFlags,
             NativeTerminalFormKey = CreateNullableFormKey(record.NativeTerminalModKeyName, record.NativeTerminalModKeyType, record.NativeTerminalModKeyFileName, record.NativeTerminalFormKeyId)

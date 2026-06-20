@@ -14,6 +14,7 @@ Multi-game Bethesda plugin import and record persistence prototype. The current 
 - CreationsForge.Migrations (DbUp migrations)
 - CreationsForge.UnitTests (Unit tests)
 - CreationsForge.PresentationTests (Presentation-layer unit tests for pure UI services, view models, commands, and render-data preparation. Do not start windows, app lifetimes, or GPU/OpenGL contexts in these tests.)
+- CreationsForge.DataValidationTests (Data validation tests comparing spriggit records with our DTOs and UI Layer)
 
 ## HARD RULES
 
@@ -29,6 +30,7 @@ Multi-game Bethesda plugin import and record persistence prototype. The current 
   - /CreationsForge.Skyrim/**/*
   - /CreationsForge.Migrations/**/*
   - /CreationsForge.UnitTests/**/*
+  - /CreationsForge.DataValidationTests/**/*
   - /Documentation/**/*
 - Do not edit files outside these projects unless explicitly approved in the PLAN.
 - ALWAYS show a PLAN first and wait for explicit approval before making the first repository edit for a task.

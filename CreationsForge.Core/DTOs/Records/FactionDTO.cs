@@ -7,7 +7,7 @@ public class FactionDTO : RecordDTO, IHasKeywordsRecordDTO, IHasComponentsRecord
 {
     public int? Version2 { get; set; }
 
-    public string? Name { get; set; }
+    public TranslatedStringDTO? Name { get; set; }
 
     public string? Flags { get; set; }
 

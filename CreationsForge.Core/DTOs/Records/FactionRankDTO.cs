@@ -19,9 +19,9 @@ public class FactionRankDTO
 
     public int? RankNumber { get; set; }
 
-    public string? MaleTitle { get; set; }
+    public TranslatedStringDTO? MaleTitle { get; set; }
 
-    public string? FemaleTitle { get; set; }
+    public TranslatedStringDTO? FemaleTitle { get; set; }
 
     public DateTime ImportedAtUTC { get; set; }
 }

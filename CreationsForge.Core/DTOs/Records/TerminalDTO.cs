@@ -15,7 +15,7 @@ public class TerminalDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO
 
     public string? Background { get; set; }
 
-    public string? Name { get; set; }
+    public TranslatedStringDTO? Name { get; set; }
 
     public string? Pnam { get; set; }
 

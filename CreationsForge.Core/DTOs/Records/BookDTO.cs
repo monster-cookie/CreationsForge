@@ -15,9 +15,9 @@ public class BookDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO, IH
 
     public int? Xalg { get; set; }
 
-    public string? Name { get; set; }
+    public TranslatedStringDTO? Name { get; set; }
 
-    public string? Text { get; set; }
+    public TranslatedStringDTO? Text { get; set; }
 
     public int? Value { get; set; }
 
@@ -31,11 +31,11 @@ public class BookDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO, IH
 
     public string? DataSlateType { get; set; }
 
-    public string? Description { get; set; }
+    public TranslatedStringDTO? Description { get; set; }
 
-    public string? DataSlateHeaderLeft { get; set; }
+    public TranslatedStringDTO? DataSlateHeaderLeft { get; set; }
 
-    public string? DataSlateHeaderRight { get; set; }
+    public TranslatedStringDTO? DataSlateHeaderRight { get; set; }
 
     public IList<ModelDTO> Models { get; set; } = new List<ModelDTO>();
 

@@ -5,6 +5,7 @@ using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Repositories.Interfaces;
 using CreationsForge.Core.Services.Interfaces;
+using CreationsForge.Core.Utilities;
 
 namespace CreationsForge.Core.Services;
 
@@ -232,10 +233,12 @@ public class RecordComparisonService : IRecordComparisonService
     private RecordComparisonDTO CreateClassComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = ClassRepository.GetByFormKey(game, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Class.RecordID, formKey);
+        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
         fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Name", records, record => record.Name ?? string.Empty));
-        fields.Add(CreateField("Description", records, record => record.Description ?? string.Empty));
+        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
+        fields.Add(CreateField("Description", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Description", recordTextLanguage, record.Description)));
         fields.Add(CreateField("Teaches", records, record => record.Teaches ?? string.Empty));
         fields.Add(CreateField("MaxTrainingLevel", records, record => record.MaxTrainingLevel?.ToString() ?? string.Empty));
         fields.Add(CreateField("BleedoutDefault", records, record => record.BleedoutDefault?.ToString() ?? string.Empty));
@@ -252,9 +255,11 @@ public class RecordComparisonService : IRecordComparisonService
     private RecordComparisonDTO CreateFactionComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = FactionRepository.GetByFormKey(game, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Faction.RecordID, formKey);
+        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
         fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Name", records, record => record.Name ?? string.Empty));
+        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
         fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
         fields.Add(CreateField("FormationRadius", records, record => record.FormationRadius?.ToString() ?? string.Empty));
         fields.Add(CreateField("KeywordFormKey", records, record => FormatFormKey(record.KeywordFormKey)));
@@ -289,7 +294,7 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("VendorLocationType", records, record => record.VendorLocationType ?? string.Empty));
         fields.Add(CreateField("VendorLocationLinkFormKey", records, record => FormatFormKey(record.VendorLocationLinkFormKey)));
         AddFactionRelationGroups(fields, records);
-        AddFactionRankGroups(fields, records);
+        AddFactionRankGroups(fields, records, localizedStrings, recordTextLanguage);
         AddConditionRuleGroups(fields, records.Cast<RecordDTO>().ToList(), records.Cast<IHasConditionsRecordDTO>().ToList());
         AddRecordComponentGroups(fields, records.Cast<RecordDTO>().ToList(), records.SelectMany(record => record.Components).ToList());
         AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.Faction.RecordID, formKey));
@@ -300,9 +305,11 @@ public class RecordComparisonService : IRecordComparisonService
     private RecordComparisonDTO CreateMiscObjectComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = MiscObjectRepository.GetByFormKey(game, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.MiscObject.RecordID, formKey);
+        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("Name", records, record => record.Name ?? string.Empty));
-        fields.Add(CreateField("ShortName", records, record => record.ShortName ?? string.Empty));
+        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
+        fields.Add(CreateField("ShortName", records, record => GetTranslatedDisplayValue(localizedStrings, record, "ShortName", recordTextLanguage, record.ShortName)));
         fields.Add(CreateField("Value", records, record => record.Value?.ToString() ?? string.Empty));
         fields.Add(CreateField("Weight", records, record => record.Weight?.ToString() ?? string.Empty));
         fields.Add(CreateField("DirtinessScale", records, record => record.DirtinessScale?.ToString() ?? string.Empty));
@@ -319,8 +326,10 @@ public class RecordComparisonService : IRecordComparisonService
     private RecordComparisonDTO CreateKeywordComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = KeywordRepository.GetByFormKey(game, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Keyword.RecordID, formKey);
+        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("Name", records, record => record.Name ?? string.Empty));
+        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
         fields.Add(CreateField("Color", records, record => record.Color));
         fields.Add(CreateField("Type", records, record => record.Type));
         fields.Add(CreateField("Notes", records, record => record.Notes ?? string.Empty));
@@ -333,9 +342,11 @@ public class RecordComparisonService : IRecordComparisonService
     private RecordComparisonDTO CreateActorValueInformationComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = ActorValueInformationRepository.GetByFormKey(game, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.ActorValueInformation.RecordID, formKey);
+        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("Name", records, record => record.Name ?? string.Empty));
-        fields.Add(CreateField("Abbreviation", records, record => record.Abbreviation ?? string.Empty));
+        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
+        fields.Add(CreateField("Abbreviation", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Abbreviation", recordTextLanguage, record.Abbreviation)));
         fields.Add(CreateField("ContextNotes", records, record => record.ContextNotes ?? string.Empty));
         fields.Add(CreateField("DefaultValue", records, record => record.DefaultValue?.ToString() ?? string.Empty));
         fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
@@ -349,10 +360,12 @@ public class RecordComparisonService : IRecordComparisonService
     private RecordComparisonDTO CreateNPCComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = NPCRepository.GetByFormKey(game, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey);
+        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("Name", records, record => record.Name ?? string.Empty));
-        fields.Add(CreateField("ShortName", records, record => record.ShortName ?? string.Empty));
-        fields.Add(CreateField("LongName", records, record => record.LongName ?? string.Empty));
+        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
+        fields.Add(CreateField("ShortName", records, record => GetTranslatedDisplayValue(localizedStrings, record, "ShortName", recordTextLanguage, record.ShortName)));
+        fields.Add(CreateField("LongName", records, record => GetTranslatedDisplayValue(localizedStrings, record, "LongName", recordTextLanguage, record.LongName)));
         fields.Add(CreateField("DispositionBase", records, record => record.DispositionBase.ToString()));
         fields.Add(CreateField("Aggression", records, record => record.Aggression));
         fields.Add(CreateField("Confidence", records, record => record.Confidence));
@@ -378,9 +391,11 @@ public class RecordComparisonService : IRecordComparisonService
     private RecordComparisonDTO CreateMagicEffectComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = MagicEffectRepository.GetByFormKey(game, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey);
+        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("Name", records, record => record.Name ?? string.Empty));
-        fields.Add(CreateField("Description", records, record => record.Description ?? string.Empty));
+        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
+        fields.Add(CreateField("Description", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Description", recordTextLanguage, record.Description)));
         fields.Add(CreateField("Flags", records, record => record.Flags));
         fields.Add(CreateField("CastType", records, record => record.CastType ?? string.Empty));
         fields.Add(CreateField("TargetType", records, record => record.TargetType ?? string.Empty));
@@ -411,9 +426,11 @@ public class RecordComparisonService : IRecordComparisonService
     private RecordComparisonDTO CreatePerkComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = PerkRepository.GetByFormKey(game, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Perk.RecordID, formKey);
+        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("Name", records, record => record.Name ?? string.Empty));
-        fields.Add(CreateField("Description", records, record => record.Description ?? string.Empty));
+        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
+        fields.Add(CreateField("Description", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Description", recordTextLanguage, record.Description)));
         fields.Add(CreateField("Flags", records, record => record.Flags));
         fields.Add(CreateField("SkillGroup", records, record => record.SkillGroup ?? string.Empty));
         fields.Add(CreateField("CrewAssignment", records, record => record.CrewAssignment ?? string.Empty));
@@ -422,7 +439,7 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("RestrictionFormKey", records, record => FormatFormKey(record.RestrictionFormKey)));
         fields.Add(CreateField("TrainingFormKey", records, record => FormatFormKey(record.TrainingFormKey)));
         fields.Add(CreateField("MajorFlags", records, record => record.MajorFlags ?? string.Empty));
-        AddPerkRankGroups(fields, records);
+        AddPerkRankGroups(fields, records, localizedStrings, recordTextLanguage);
         AddPerkBackgroundSkillGroup(fields, records);
         AddScriptingAdapterGroups(fields, records.Cast<RecordDTO>().ToList(), ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Perk.RecordID, formKey));
 
@@ -452,6 +469,8 @@ public class RecordComparisonService : IRecordComparisonService
     private RecordComparisonDTO CreateBookComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = BookRepository.GetByFormKey(game, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey);
+        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var baseRecords = records.Cast<RecordDTO>().ToList();
         var fields = CreateCommonFields(baseRecords);
         fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
@@ -459,17 +478,17 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBoundsSecond ?? string.Empty));
         fields.Add(CreateField("InventoryTransformFormKey", records, record => FormatFormKey(record.InventoryTransformFormKey)));
         fields.Add(CreateField("Xalg", records, record => record.Xalg?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Name", records, record => record.Name ?? string.Empty));
-        fields.Add(CreateField("Text", records, record => record.Text ?? string.Empty));
+        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
+        fields.Add(CreateField("Text", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Text", recordTextLanguage, record.Text)));
         fields.Add(CreateField("Value", records, record => record.Value?.ToString() ?? string.Empty));
         fields.Add(CreateField("Weight", records, record => record.Weight?.ToString() ?? string.Empty));
         fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
         fields.Add(CreateField("TeachesType", records, record => record.TeachesType ?? string.Empty));
         fields.Add(CreateField("TeachesRawContent", records, record => record.TeachesRawContent ?? string.Empty));
         fields.Add(CreateField("DataSlateType", records, record => record.DataSlateType ?? string.Empty));
-        fields.Add(CreateField("Description", records, record => record.Description ?? string.Empty));
-        fields.Add(CreateField("DataSlateHeaderLeft", records, record => record.DataSlateHeaderLeft ?? string.Empty));
-        fields.Add(CreateField("DataSlateHeaderRight", records, record => record.DataSlateHeaderRight ?? string.Empty));
+        fields.Add(CreateField("Description", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Description", recordTextLanguage, record.Description)));
+        fields.Add(CreateField("DataSlateHeaderLeft", records, record => GetTranslatedDisplayValue(localizedStrings, record, "DataSlateHeaderLeft", recordTextLanguage, record.DataSlateHeaderLeft)));
+        fields.Add(CreateField("DataSlateHeaderRight", records, record => GetTranslatedDisplayValue(localizedStrings, record, "DataSlateHeaderRight", recordTextLanguage, record.DataSlateHeaderRight)));
         AddKeywordGroup(fields, baseRecords, RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
         AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
         AddSoundGroups(fields, baseRecords, RecordSoundRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
@@ -482,12 +501,14 @@ public class RecordComparisonService : IRecordComparisonService
     private RecordComparisonDTO CreateDoorComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = DoorRepository.GetByFormKey(game, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey);
+        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var baseRecords = records.Cast<RecordDTO>().ToList();
         var fields = CreateCommonFields(baseRecords);
         fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
         fields.Add(CreateField("ObjectBoundsFirst", records, record => record.ObjectBoundsFirst ?? string.Empty));
         fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBoundsSecond ?? string.Empty));
-        fields.Add(CreateField("Name", records, record => record.Name ?? string.Empty));
+        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
         fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
         fields.Add(CreateField("NativeTerminalFormKey", records, record => FormatFormKey(record.NativeTerminalFormKey)));
         fields.Add(CreateField("SoundLevel", records, record => record.SoundLevel ?? string.Empty));
@@ -503,12 +524,14 @@ public class RecordComparisonService : IRecordComparisonService
     private RecordComparisonDTO CreateContainerComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = ContainerRepository.GetByFormKey(game, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey);
+        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var baseRecords = records.Cast<RecordDTO>().ToList();
         var fields = CreateCommonFields(baseRecords);
         fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
         fields.Add(CreateField("ObjectBoundsFirst", records, record => record.ObjectBoundsFirst ?? string.Empty));
         fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBoundsSecond ?? string.Empty));
-        fields.Add(CreateField("Name", records, record => record.Name ?? string.Empty));
+        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
         fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
         fields.Add(CreateField("MajorFlags", records, record => record.MajorFlags ?? string.Empty));
         fields.Add(CreateField("NativeTerminalFormKey", records, record => FormatFormKey(record.NativeTerminalFormKey)));
@@ -524,10 +547,12 @@ public class RecordComparisonService : IRecordComparisonService
     private RecordComparisonDTO CreateConstructibleObjectComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = ConstructibleObjectRepository.GetByFormKey(game, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.ConstructibleObject.RecordID, formKey);
+        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var baseRecords = records.Cast<RecordDTO>().ToList();
         var fields = CreateCommonFields(baseRecords);
         fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Description", records, record => record.Description ?? string.Empty));
+        fields.Add(CreateField("Description", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Description", recordTextLanguage, record.Description)));
         fields.Add(CreateField("CreatedObjectFormKey", records, record => FormatFormKey(record.CreatedObjectFormKey)));
         fields.Add(CreateField("WorkbenchKeywordFormKey", records, record => FormatFormKey(record.WorkbenchKeywordFormKey)));
         fields.Add(CreateField("CreatedObjectCount", records, record => record.CreatedObjectCount?.ToString() ?? string.Empty));
@@ -559,6 +584,8 @@ public class RecordComparisonService : IRecordComparisonService
     private RecordComparisonDTO CreateTerminalComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = TerminalRepository.GetByFormKey(game, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey);
+        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var baseRecords = records.Cast<RecordDTO>().ToList();
         var fields = CreateCommonFields(baseRecords);
         fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
@@ -566,7 +593,7 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBoundsSecond ?? string.Empty));
         fields.Add(CreateField("MenuFormKey", records, record => FormatFormKey(record.MenuFormKey)));
         fields.Add(CreateField("Background", records, record => record.Background ?? string.Empty));
-        fields.Add(CreateField("Name", records, record => record.Name ?? string.Empty));
+        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
         fields.Add(CreateField("Pnam", records, record => record.Pnam ?? string.Empty));
         fields.Add(CreateField("Fnam", records, record => record.Fnam ?? string.Empty));
         fields.Add(CreateField("Jnam", records, record => record.Jnam ?? string.Empty));
@@ -794,7 +821,9 @@ public class RecordComparisonService : IRecordComparisonService
 
     private static void AddPerkRankGroups(
         IList<RecordComparisonFieldDTO> fields,
-        IReadOnlyList<PerkDTO> records)
+        IReadOnlyList<PerkDTO> records,
+        IReadOnlyList<LocalizedStringDTO> localizedStrings,
+        string recordTextLanguage)
     {
         var rankIndexes = records
             .SelectMany(record => record.Ranks)
@@ -813,14 +842,14 @@ public class RecordComparisonService : IRecordComparisonService
             var currentRankIndex = rankIndex;
             var rankChildren = new List<RecordComparisonFieldDTO>
             {
-                CreateField("Description", records, record => FindPerkRank(record, currentRankIndex)?.Description ?? string.Empty),
+                CreateField("Description", records, record => GetTranslatedDisplayValue(localizedStrings, record, $"Ranks[{currentRankIndex}].Description", recordTextLanguage, FindPerkRank(record, currentRankIndex)?.Description)),
                 CreateField("UnknownStaticFormKey", records, record => FormatFormKey(FindPerkRank(record, currentRankIndex)?.UnknownStaticFormKey)),
                 CreateField("ConditionCount", records, record => FindPerkRank(record, currentRankIndex)?.ConditionCount.ToString() ?? string.Empty),
                 CreateField("ActivityCount", records, record => FindPerkRank(record, currentRankIndex)?.ActivityCount.ToString() ?? string.Empty)
             }
                 .Where(HasVisibleValue)
                 .ToList();
-            AddPerkRankEffectGroups(rankChildren, records, currentRankIndex);
+            AddPerkRankEffectGroups(rankChildren, records, localizedStrings, recordTextLanguage, currentRankIndex);
             if (rankChildren.Count > 0)
             {
                 rankFields.Add(CreateGroupField($"Rank [{rankIndex}]", records.Cast<RecordDTO>().ToList(), rankChildren));
@@ -836,6 +865,8 @@ public class RecordComparisonService : IRecordComparisonService
     private static void AddPerkRankEffectGroups(
         IList<RecordComparisonFieldDTO> fields,
         IReadOnlyList<PerkDTO> records,
+        IReadOnlyList<LocalizedStringDTO> localizedStrings,
+        string recordTextLanguage,
         int rankIndex)
     {
         var effectIndexes = records
@@ -861,7 +892,7 @@ public class RecordComparisonService : IRecordComparisonService
                 CreateField("Priority", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.Priority.ToString() ?? string.Empty),
                 CreateField("PerkEntryID", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.PerkEntryId?.ToString() ?? string.Empty),
                 CreateField("Flags", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.Flags ?? string.Empty),
-                CreateField("ButtonLabel", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.ButtonLabel ?? string.Empty),
+                CreateField("ButtonLabel", records, record => GetTranslatedDisplayValue(localizedStrings, record, $"Ranks[{rankIndex}].Effects[{currentEffectIndex}].ButtonLabel", recordTextLanguage, FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.ButtonLabel)),
                 CreateField("ConditionCount", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.ConditionCount.ToString() ?? string.Empty),
                 CreateField("EntryPoint", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.EntryPoint ?? string.Empty),
                 CreateField("PerkConditionTabCount", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.PerkConditionTabCount?.ToString() ?? string.Empty),
@@ -1060,7 +1091,7 @@ public class RecordComparisonService : IRecordComparisonService
         }
     }
 
-    private static void AddFactionRankGroups(IList<RecordComparisonFieldDTO> fields, IReadOnlyList<FactionDTO> records)
+    private static void AddFactionRankGroups(IList<RecordComparisonFieldDTO> fields, IReadOnlyList<FactionDTO> records, IReadOnlyList<LocalizedStringDTO> localizedStrings, string recordTextLanguage)
     {
         var rankIndexes = records.SelectMany(record => record.Ranks).Select(rank => rank.RankIndex).Distinct().Order().ToList();
         if (rankIndexes.Count == 0) return;
@@ -1071,8 +1102,8 @@ public class RecordComparisonService : IRecordComparisonService
             var children = new List<RecordComparisonFieldDTO>
             {
                 CreateField("RankNumber", records, record => record.Ranks.FirstOrDefault(rank => rank.RankIndex == currentIndex)?.RankNumber?.ToString() ?? string.Empty),
-                CreateField("MaleTitle", records, record => record.Ranks.FirstOrDefault(rank => rank.RankIndex == currentIndex)?.MaleTitle ?? string.Empty),
-                CreateField("FemaleTitle", records, record => record.Ranks.FirstOrDefault(rank => rank.RankIndex == currentIndex)?.FemaleTitle ?? string.Empty)
+                CreateField("MaleTitle", records, record => GetTranslatedDisplayValue(localizedStrings, record, $"Ranks[{currentIndex}].MaleTitle", recordTextLanguage, record.Ranks.FirstOrDefault(rank => rank.RankIndex == currentIndex)?.MaleTitle)),
+                CreateField("FemaleTitle", records, record => GetTranslatedDisplayValue(localizedStrings, record, $"Ranks[{currentIndex}].FemaleTitle", recordTextLanguage, record.Ranks.FirstOrDefault(rank => rank.RankIndex == currentIndex)?.FemaleTitle))
             }.Where(HasVisibleValue).ToList();
             if (children.Count > 0)
             {
@@ -1734,6 +1765,21 @@ public class RecordComparisonService : IRecordComparisonService
                    string.Equals(localizedString.Language, "English", StringComparison.OrdinalIgnoreCase))?.Value ??
                fallback ??
                string.Empty;
+    }
+
+    private static string GetTranslatedDisplayValue(
+        IReadOnlyList<LocalizedStringDTO> localizedStrings,
+        RecordDTO record,
+        string sourceField,
+        string recordTextLanguage,
+        TranslatedStringDTO? fallback)
+    {
+        return GetLocalizedDisplayValue(localizedStrings, record, sourceField, recordTextLanguage, LocalizedStringDTOMapper.GetEnglishText(fallback));
+    }
+
+    private static string GetTranslatedDisplayValue(TranslatedStringDTO? translatedString)
+    {
+        return LocalizedStringDTOMapper.GetEnglishText(translatedString) ?? string.Empty;
     }
 
     private static bool IsModelKey(ModelDTO model, ModelKey modelKey)
