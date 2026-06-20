@@ -84,6 +84,8 @@ public class AssetArchiveIndexServiceTests
             result.EntriesIndexed.ShouldBe(1200);
             repository.Entries.Count.ShouldBe(1200);
             repository.LastReplaceEntryCount.ShouldBe(1200);
+            repository.RefreshProgressCallbackWasProvided.ShouldBeTrue();
+            repository.RefreshProgressCounts.ShouldBe([1200]);
         }
         finally
         {
@@ -718,10 +720,22 @@ public class AssetArchiveIndexServiceTests
             ArchiveFiles.Add(archiveFile);
         }
 
-        public long RefreshArchiveIndex(AssetArchiveFileDTO archiveFile, IEnumerable<AssetArchiveEntryDTO> entries)
+        public bool RefreshProgressCallbackWasProvided { get; private set; }
+
+        public List<long> RefreshProgressCounts { get; } = new();
+
+        public long RefreshArchiveIndex(AssetArchiveFileDTO archiveFile, IEnumerable<AssetArchiveEntryDTO> entries, Action<long>? insertedCountProgress = null)
         {
+            RefreshProgressCallbackWasProvided = insertedCountProgress != null;
             SaveArchiveFile(archiveFile);
-            return ReplaceArchiveEntries(archiveFile.Game, archiveFile.ArchivePath, entries);
+            var insertedCount = ReplaceArchiveEntries(archiveFile.Game, archiveFile.ArchivePath, entries);
+            if (insertedCountProgress != null)
+            {
+                RefreshProgressCounts.Add(insertedCount);
+                insertedCountProgress(insertedCount);
+            }
+
+            return insertedCount;
         }
 
         public long ReplaceArchiveEntries(SupportedGame game, string archivePath, IEnumerable<AssetArchiveEntryDTO> entries)

@@ -8,6 +8,8 @@ using CreationsForge.Core.Database.Interfaces;
 using CreationsForge.Core.Importers;
 using CreationsForge.Core.Services.Interfaces;
 using Serilog;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 var bootstrapConfigurationStore = new ApplicationConfigurationStore();
 SerilogConfigurator.Configure(bootstrapConfigurationStore, writeToConsole: true);
@@ -28,6 +30,8 @@ try
         SerilogConfigurator.Configure(configurationStore, writeToConsole: true);
         var terminationDiagnosticsService = container.Resolve<IProcessTerminationDiagnosticsService>();
         terminationDiagnosticsService.StartSession("CLI", SerilogConfigurator.CurrentLogPath);
+        var sqliteConnectionFactory = container.Resolve<ISqliteConnectionFactory>();
+        LogCliStartupDiagnostics(configurationStore, sqliteConnectionFactory);
 
         if (parseResult.ResetAll)
         {
@@ -39,7 +43,9 @@ try
                 "CreationsForge Reset & Import All completed; games imported: {GamesImported}; plugins imported: {PluginsImported}",
                 allGamesResult.ImportResults.Count,
                 allGamesResult.ImportResults.Sum(result => result.PluginsImported));
+            Log.Information("Marking CLI reset-all session as clean shutdown");
             terminationDiagnosticsService.MarkCleanShutdown("CLI reset-all completed");
+            Log.Information("CLI reset-all completed; returning success exit code");
             return 0;
         }
 
@@ -74,10 +80,39 @@ catch (Exception ex)
 }
 finally
 {
+    Log.Information("Closing and flushing CreationsForge CLI log");
     await Log.CloseAndFlushAsync();
 }
 
 static void RegisterConsoleServices(ContainerBuilder builder)
 {
     builder.RegisterType<GameArgumentParser>().SingleInstance();
+}
+
+static void LogCliStartupDiagnostics(
+    IApplicationConfigurationStore configurationStore,
+    ISqliteConnectionFactory sqliteConnectionFactory)
+{
+    using var process = Process.GetCurrentProcess();
+    Log.Information(
+        "CreationsForge CLI diagnostics; process id: {ProcessId}; process name: {ProcessName}; command line: {CommandLine}; current directory: {CurrentDirectory}; runtime: {RuntimeDescription}; OS: {OSDescription}; 64-bit process: {Is64BitProcess}; output redirected: {IsOutputRedirected}; error redirected: {IsErrorRedirected}; input redirected: {IsInputRedirected}; log path: {LogPath}; database path: {DatabasePath}; application data directory: {ApplicationDataDirectory}; logging directory: {LoggingDirectory}; managed bytes: {ManagedBytes}; working set bytes: {WorkingSetBytes}; private bytes: {PrivateBytes}; handle count: {HandleCount}; thread count: {ThreadCount}",
+        Environment.ProcessId,
+        process.ProcessName,
+        Environment.CommandLine,
+        Environment.CurrentDirectory,
+        RuntimeInformation.FrameworkDescription,
+        RuntimeInformation.OSDescription,
+        Environment.Is64BitProcess,
+        System.Console.IsOutputRedirected,
+        System.Console.IsErrorRedirected,
+        System.Console.IsInputRedirected,
+        SerilogConfigurator.CurrentLogPath,
+        sqliteConnectionFactory.DatabasePath,
+        configurationStore.Current.ApplicationDataDirectory,
+        configurationStore.Current.LoggingDirectory,
+        GC.GetTotalMemory(forceFullCollection: false),
+        process.WorkingSet64,
+        process.PrivateMemorySize64,
+        process.HandleCount,
+        process.Threads.Count);
 }

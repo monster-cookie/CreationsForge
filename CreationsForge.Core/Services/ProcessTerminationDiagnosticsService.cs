@@ -146,6 +146,18 @@ public class ProcessTerminationDiagnosticsService : IProcessTerminationDiagnosti
                 CurrentSession.ShutdownReason = "process exit";
                 UpdateProcessSnapshot(CurrentSession);
                 WriteSession();
+                Logger.Warning(
+                    "Process exit observed before clean shutdown; pid: {ProcessId}; surface: {SurfaceName}; phase: {LastPhase}; status: {LastStatusText}; detail: {LastDetailText}; managed bytes: {ManagedBytes}; working set bytes: {WorkingSetBytes}; private bytes: {PrivateBytes}; handle count: {HandleCount}; thread count: {ThreadCount}",
+                    CurrentSession.ProcessId,
+                    CurrentSession.SurfaceName,
+                    CurrentSession.LastPhase,
+                    CurrentSession.LastStatusText,
+                    CurrentSession.LastDetailText,
+                    CurrentSession.ManagedBytes,
+                    CurrentSession.WorkingSetBytes,
+                    CurrentSession.PrivateBytes,
+                    CurrentSession.HandleCount,
+                    CurrentSession.ThreadCount);
             }
         }
     }
@@ -159,8 +171,17 @@ public class ProcessTerminationDiagnosticsService : IProcessTerminationDiagnosti
             {
                 CurrentSession.LastUnhandledException = message;
                 CurrentSession.LastHeartbeatUTC = DateTime.UtcNow;
+                CurrentSession.ShutdownReason = "unhandled exception";
                 UpdateProcessSnapshot(CurrentSession);
                 WriteSession();
+                Logger.Fatal(
+                    "Unhandled exception observed before clean shutdown; pid: {ProcessId}; surface: {SurfaceName}; phase: {LastPhase}; status: {LastStatusText}; detail: {LastDetailText}; exception: {UnhandledException}",
+                    CurrentSession.ProcessId,
+                    CurrentSession.SurfaceName,
+                    CurrentSession.LastPhase,
+                    CurrentSession.LastStatusText,
+                    CurrentSession.LastDetailText,
+                    message);
             }
         }
     }
@@ -173,8 +194,17 @@ public class ProcessTerminationDiagnosticsService : IProcessTerminationDiagnosti
             {
                 CurrentSession.LastUnhandledException = e.Exception.ToString();
                 CurrentSession.LastHeartbeatUTC = DateTime.UtcNow;
+                CurrentSession.ShutdownReason = "unobserved task exception";
                 UpdateProcessSnapshot(CurrentSession);
                 WriteSession();
+                Logger.Error(
+                    e.Exception,
+                    "Unobserved task exception observed; pid: {ProcessId}; surface: {SurfaceName}; phase: {LastPhase}; status: {LastStatusText}; detail: {LastDetailText}",
+                    CurrentSession.ProcessId,
+                    CurrentSession.SurfaceName,
+                    CurrentSession.LastPhase,
+                    CurrentSession.LastStatusText,
+                    CurrentSession.LastDetailText);
             }
         }
     }

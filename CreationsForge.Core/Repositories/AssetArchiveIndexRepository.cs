@@ -138,11 +138,11 @@ public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
             });
     }
 
-    public long RefreshArchiveIndex(AssetArchiveFileDTO archiveFile, IEnumerable<AssetArchiveEntryDTO> entries)
+    public long RefreshArchiveIndex(AssetArchiveFileDTO archiveFile, IEnumerable<AssetArchiveEntryDTO> entries, Action<long>? insertedCountProgress = null)
     {
         using var transaction = Database.GetTransaction();
         SaveArchiveFile(archiveFile);
-        var insertedCount = ReplaceArchiveEntriesCore(archiveFile.Game, archiveFile.ArchivePath, entries);
+        var insertedCount = ReplaceArchiveEntriesCore(archiveFile.Game, archiveFile.ArchivePath, entries, insertedCountProgress);
         transaction.Complete();
         return insertedCount;
     }
@@ -150,12 +150,12 @@ public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
     public long ReplaceArchiveEntries(SupportedGame game, string archivePath, IEnumerable<AssetArchiveEntryDTO> entries)
     {
         using var transaction = Database.GetTransaction();
-        var insertedCount = ReplaceArchiveEntriesCore(game, archivePath, entries);
+        var insertedCount = ReplaceArchiveEntriesCore(game, archivePath, entries, null);
         transaction.Complete();
         return insertedCount;
     }
 
-    private long ReplaceArchiveEntriesCore(SupportedGame game, string archivePath, IEnumerable<AssetArchiveEntryDTO> entries)
+    private long ReplaceArchiveEntriesCore(SupportedGame game, string archivePath, IEnumerable<AssetArchiveEntryDTO> entries, Action<long>? insertedCountProgress)
     {
         Database.Execute(
             """
@@ -178,6 +178,7 @@ public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
             {
                 InsertArchiveEntryBatch(batch);
                 insertedCount += batch.Count;
+                insertedCountProgress?.Invoke(insertedCount);
                 batch.Clear();
             }
         }
@@ -186,6 +187,7 @@ public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
         {
             InsertArchiveEntryBatch(batch);
             insertedCount += batch.Count;
+            insertedCountProgress?.Invoke(insertedCount);
         }
 
         return insertedCount;

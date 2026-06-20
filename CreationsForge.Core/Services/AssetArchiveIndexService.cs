@@ -14,6 +14,8 @@ namespace CreationsForge.Core.Services;
 
 public class AssetArchiveIndexService : IAssetArchiveIndexService
 {
+    private const long ArchiveRefreshProgressLogInterval = 5000;
+
     private static readonly string[] ArchiveExtensions =
     {
         ".ba2",
@@ -405,19 +407,44 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
                 IndexedAtUTC = DateTime.UtcNow
             };
             var replaceStopwatch = Stopwatch.StartNew();
+            var beforeReplaceSnapshot = GetProcessSnapshot();
             Logger.Information(
-                "Replacing asset archive index entries for {Game}; archive path: {ArchivePath}; entry count: {EntryCount}",
+                "Replacing asset archive index entries for {Game}; archive path: {ArchivePath}; entry count: {EntryCount}; managed bytes: {ManagedBytes}; working set bytes: {WorkingSetBytes}; private bytes: {PrivateBytes}; handle count: {HandleCount}; thread count: {ThreadCount}",
                 game,
                 archivePath,
-                entries.Count);
-            var entryCount = AssetArchiveIndexRepository.RefreshArchiveIndex(archiveFile, entries);
+                entries.Count,
+                beforeReplaceSnapshot.ManagedBytes,
+                beforeReplaceSnapshot.WorkingSetBytes,
+                beforeReplaceSnapshot.PrivateBytes,
+                beforeReplaceSnapshot.HandleCount,
+                beforeReplaceSnapshot.ThreadCount);
+            long lastRefreshProgressLogged = 0;
+            var entryCount = AssetArchiveIndexRepository.RefreshArchiveIndex(
+                archiveFile,
+                entries,
+                insertedCount =>
+                {
+                    if (!ShouldLogArchiveRefreshProgress(insertedCount, entries.Count, lastRefreshProgressLogged))
+                    {
+                        return;
+                    }
+
+                    lastRefreshProgressLogged = insertedCount;
+                    ReportArchiveRefreshProgress(game, archivePath, entries.Count, insertedCount, replaceStopwatch.ElapsedMilliseconds);
+                });
             replaceStopwatch.Stop();
+            var afterReplaceSnapshot = GetProcessSnapshot();
             Logger.Information(
-                "Replaced asset archive index entries for {Game}; archive path: {ArchivePath}; entry count: {EntryCount}; elapsed ms: {ElapsedMilliseconds}",
+                "Replaced asset archive index entries for {Game}; archive path: {ArchivePath}; entry count: {EntryCount}; elapsed ms: {ElapsedMilliseconds}; managed bytes: {ManagedBytes}; working set bytes: {WorkingSetBytes}; private bytes: {PrivateBytes}; handle count: {HandleCount}; thread count: {ThreadCount}",
                 game,
                 archivePath,
                 entryCount,
-                replaceStopwatch.ElapsedMilliseconds);
+                replaceStopwatch.ElapsedMilliseconds,
+                afterReplaceSnapshot.ManagedBytes,
+                afterReplaceSnapshot.WorkingSetBytes,
+                afterReplaceSnapshot.PrivateBytes,
+                afterReplaceSnapshot.HandleCount,
+                afterReplaceSnapshot.ThreadCount);
             Logger.Information(
                 "Indexed asset archive {ArchivePath} for {Game} with {EntryCount} entries",
                 archivePath,
@@ -435,6 +462,57 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
                 game);
             return new AssetArchiveIndexAttemptResult(AssetArchiveIndexStatus.Failed, 0, exception.Message);
         }
+    }
+
+    private void ReportArchiveRefreshProgress(
+        SupportedGame game,
+        string archivePath,
+        int totalEntryCount,
+        long insertedEntryCount,
+        long elapsedMilliseconds)
+    {
+        var snapshot = GetProcessSnapshot();
+        Logger.Information(
+            "Asset archive index refresh progress for {Game}; archive path: {ArchivePath}; inserted entries: {InsertedEntryCount}/{TotalEntryCount}; elapsed ms: {ElapsedMilliseconds}; managed bytes: {ManagedBytes}; working set bytes: {WorkingSetBytes}; private bytes: {PrivateBytes}; handle count: {HandleCount}; thread count: {ThreadCount}",
+            game,
+            archivePath,
+            insertedEntryCount,
+            totalEntryCount,
+            elapsedMilliseconds,
+            snapshot.ManagedBytes,
+            snapshot.WorkingSetBytes,
+            snapshot.PrivateBytes,
+            snapshot.HandleCount,
+            snapshot.ThreadCount);
+        ProcessTerminationDiagnosticsService?.UpdateHeartbeat($"{game} asset archive index refresh", new GameImportProgressDTO
+        {
+            Game = game,
+            StatusText = $"Replacing {game} asset archive index entries",
+            DetailText = $"{Path.GetFileName(archivePath)} ({insertedEntryCount:N0}/{totalEntryCount:N0})",
+            ProgressValue = insertedEntryCount,
+            ProgressMaximum = Math.Max(totalEntryCount, 1),
+            IsIndeterminate = totalEntryCount == 0
+        });
+    }
+
+    private static bool ShouldLogArchiveRefreshProgress(long insertedEntryCount, int totalEntryCount, long lastLoggedEntryCount)
+    {
+        return lastLoggedEntryCount == 0 ||
+            insertedEntryCount == totalEntryCount ||
+            insertedEntryCount - lastLoggedEntryCount >= ArchiveRefreshProgressLogInterval;
+    }
+
+    private static ProcessSnapshot GetProcessSnapshot()
+    {
+        using var process = Process.GetCurrentProcess();
+        return new ProcessSnapshot
+        {
+            ManagedBytes = GC.GetTotalMemory(forceFullCollection: false),
+            WorkingSetBytes = process.WorkingSet64,
+            PrivateBytes = process.PrivateMemorySize64,
+            HandleCount = process.HandleCount,
+            ThreadCount = process.Threads.Count
+        };
     }
 
     private static bool IsArchiveIndexFailureException(Exception exception)
@@ -683,6 +761,19 @@ public class AssetArchiveIndexService : IAssetArchiveIndexService
     private static string GetArchiveType(string archiveExtension)
     {
         return string.Equals(archiveExtension, ".ba2", StringComparison.OrdinalIgnoreCase) ? "BA2" : "BSA";
+    }
+
+    private sealed class ProcessSnapshot
+    {
+        public long ManagedBytes { get; set; }
+
+        public long WorkingSetBytes { get; set; }
+
+        public long PrivateBytes { get; set; }
+
+        public int HandleCount { get; set; }
+
+        public int ThreadCount { get; set; }
     }
 
     private enum AssetArchiveIndexStatus
