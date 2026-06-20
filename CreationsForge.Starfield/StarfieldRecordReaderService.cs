@@ -315,6 +315,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
                 ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
                 InventoryTransformFormKey = GetFormKeyFromObject(GetPropertyValue(GetPropertyValue(record, "Transforms"), "Inventory")),
+                PreviewTransformFormKey = GetFormKeyFromObject(GetPropertyValue(record, "PreviewTransform")),
                 Xalg = GetPropertyNullableInt(record, "XALG"),
                 Name = GetTranslatedString(record.Name),
                 Text = GetTranslatedString(GetPropertyValue(record, "BookTextOverride"))

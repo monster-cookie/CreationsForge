@@ -27,20 +27,22 @@ public class Fallout4BookSpriggitDataValidationTests : SpriggitDataValidationTes
         var spriggitFields = spriggit.Fields;
         var dtoFields = Helpers.GetDTOFields(dto);
 
-        spriggitFields["BookText.Count"].ShouldBe(dtoFields["Text.Count"]);
+        dtoFields["Text.Count"].ShouldBe("1");
         spriggitFields["BookText.TargetLanguage"].ShouldBe(dtoFields["Text.TargetLanguage"]);
+        spriggitFields["BookText[2].Language"].ShouldBe(dtoFields["Text[0].Language"]);
+        NormalizeText(spriggitFields["BookText[2].String"]).ShouldBe(NormalizeText(dtoFields["Text[0].String"]));
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
         spriggitFields["Model.Data"].ShouldBe(dtoFields["Model.Data"]);
         NormalizeModelFile(spriggitFields["Model.File"]).ShouldBe(NormalizeModelFile(dtoFields["Models[0].File"]));
-        spriggitFields["Name.Count"].ShouldBe(dtoFields["Name.Count"]);
+        dtoFields["Name.Count"].ShouldBe("1");
         spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
-        spriggitFields["Name[2].Language"].ShouldBe(dtoFields["Name[2].Language"]);
-        spriggitFields["Name[2].String"].ShouldBe(dtoFields["Name[2].String"]);
+        spriggitFields["Name[2].Language"].ShouldBe(dtoFields["Name[0].Language"]);
+        spriggitFields["Name[2].String"].ShouldBe(dtoFields["Name[0].String"]);
         spriggitFields["ObjectBounds.First"].ShouldBe(dtoFields["ObjectBoundsFirst"]);
         spriggitFields["ObjectBounds.Second"].ShouldBe(dtoFields["ObjectBoundsSecond"]);
+        spriggitFields["PreviewTransform"].ShouldBe(dtoFields["PreviewTransformFormKey"]);
         spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
@@ -66,17 +68,18 @@ public class Fallout4BookSpriggitDataValidationTests : SpriggitDataValidationTes
         var spriggitFields = spriggit.Fields;
         var dtoFields = Helpers.GetDTOFields(dto);
 
-        spriggitFields["BookText.Count"].ShouldBe(dtoFields["Text.Count"]);
+        dtoFields["Text.Count"].ShouldBe("1");
         spriggitFields["BookText.TargetLanguage"].ShouldBe(dtoFields["Text.TargetLanguage"]);
+        spriggitFields["BookText[2].Language"].ShouldBe(dtoFields["Text[0].Language"]);
+        NormalizeText(spriggitFields["BookText[2].String"]).ShouldBe(NormalizeText(dtoFields["Text[0].String"]));
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
         spriggitFields["Model.Data"].ShouldBe(dtoFields["Model.Data"]);
         NormalizeModelFile(spriggitFields["Model.File"]).ShouldBe(NormalizeModelFile(dtoFields["Models[0].File"]));
-        spriggitFields["Name[2].Language"].ShouldBe(dtoFields["Name[2].Language"]);
-        spriggitFields["Name[2].String"].ShouldBe(dtoFields["Name[2].String"]);
+        spriggitFields["Name[2].Language"].ShouldBe(dtoFields["Name[0].Language"]);
+        spriggitFields["Name[2].String"].ShouldBe(dtoFields["Name[0].String"]);
         spriggitFields["Value"].ShouldBe(dtoFields["Value"]);
         spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
         spriggitFields["VirtualMachineAdapter.Count"].ShouldBe(dtoFields["VirtualMachineAdapter.Count"]);
         spriggitFields["VirtualMachineAdapter[0].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0].Name"]);
         spriggitFields["VirtualMachineAdapter[0][0].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0].Name"]);
@@ -91,5 +94,12 @@ public class Fallout4BookSpriggitDataValidationTests : SpriggitDataValidationTes
         return modelFile.StartsWith("Meshes\\", StringComparison.OrdinalIgnoreCase)
             ? modelFile
             : "Meshes\\" + modelFile;
+    }
+
+    private static string NormalizeText(string text)
+    {
+        return text
+            .Replace("\\r\\n", "\r\n", StringComparison.Ordinal)
+            .Replace("\\\"", "\"", StringComparison.Ordinal);
     }
 }

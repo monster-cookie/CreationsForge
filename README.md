@@ -102,6 +102,7 @@ Run the console harness from the repository with:
 dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --game Starfield
 dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --game Fallout4
 dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --game Skyrim
+dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --reset-all
 ```
 
 Useful import options:

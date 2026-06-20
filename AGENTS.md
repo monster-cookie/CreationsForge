@@ -248,6 +248,21 @@ schema documentation.
 - Shared helpers must not call assertion libraries such as Shouldly, xUnit Assert, or FluentAssertions.
 - Helper functions should return values, comparison results, diagnostics, or unmatched-field messages; the test method decides what to assert.
 
+### Data validation test assertions
+
+Spriggit-to-DTO comparisons in data validation test methods must be explicit and sample-specific.
+
+- Do not use loops, dictionary iteration, reflection, or broad helper assertions to compare matching Spriggit and DTO
+  fields inside individual validation tests.
+- Each expected field mapping must be asserted by name, for example:
+  `spriggit.Fields["EditorID"].ShouldBe(dtoFields["EditorID"]);`
+- Collection fields must assert expected counts and indexed values explicitly for the sample being tested.
+- Optional fields must assert the expected presence or absence explicitly for that sample.
+- The only approved generic unmatched-field coverage helpers are `Helpers.GetUnmatchedSpriggitFields(...)` and
+  `Helpers.GetUnmatchedDtoFields(...)`.
+- Those unmatched-field helpers are a coverage backstop only. They must not replace explicit field-by-field assertions
+  in the test method.
+
 ## DEFERRAL / INCOMPLETE WORK RULES
 
 - Codex must not mark any discovered missing behavior, child record family, UI surface, persistence read path, comparison row,

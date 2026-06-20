@@ -1,105 +1,51 @@
+using Autofac;
+using CreationsForge.Bootstrap.Composition;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
-using CreationsForge.Core.Importers.Interfaces;
-using CreationsForge.Fallout4;
-using CreationsForge.Skyrim;
-using CreationsForge.Starfield;
+using CreationsForge.Core.Repositories.Interfaces;
 
 namespace CreationsForge.DataValidationTests.Validation.Services;
 
 public class GameRecordSetProvider
 {
-    private readonly Lazy<PluginRecordSetDTO> fallout4RecordSet;
-    private readonly Lazy<PluginRecordSetDTO> skyrimRecordSet;
-    private readonly Lazy<PluginRecordSetDTO> starfieldRecordSet;
-
-    public GameRecordSetProvider()
-    {
-        fallout4RecordSet = new Lazy<PluginRecordSetDTO>(() => CreateReader(SupportedGame.Fallout4).ReadPluginRecords(CreatePlugin(SupportedGame.Fallout4, "Fallout4.esm")));
-        skyrimRecordSet = new Lazy<PluginRecordSetDTO>(() => CreateReader(SupportedGame.Skyrim).ReadPluginRecords(CreatePlugin(SupportedGame.Skyrim, "Skyrim.esm")));
-        starfieldRecordSet = new Lazy<PluginRecordSetDTO>(() => CreateReader(SupportedGame.Starfield).ReadPluginRecords(CreatePlugin(SupportedGame.Starfield, "Starfield.esm")));
-    }
+    private static readonly Lazy<IContainer> Container = new(() => AutofacConfigurator.Configure());
 
     public RecordDTO GetRecord(SupportedGame game, string recordType, string rawFormKey)
     {
         var expectedFormKey = ParseFormKey(rawFormKey);
-        var record = GetRecords(GetRecordSet(game), recordType)
-            .FirstOrDefault(candidate => FormKeysMatch(candidate.FormKey, expectedFormKey));
+        using var scope = Container.Value.BeginLifetimeScope();
+        var record = GetRecords(scope, game, recordType, expectedFormKey)
+            .FirstOrDefault(candidate => FormKeysMatch(candidate.FormKey, expectedFormKey) &&
+                                         string.Equals(candidate.ModKey.FileName, expectedFormKey.ModKey.FileName, StringComparison.OrdinalIgnoreCase));
 
         return record ?? throw new InvalidOperationException(
             $"Unable to find record '{rawFormKey}' for record type '{recordType}' in game '{game}'.");
     }
 
-    private PluginRecordSetDTO GetRecordSet(SupportedGame game)
-    {
-        return game switch
-        {
-            SupportedGame.Fallout4 => fallout4RecordSet.Value,
-            SupportedGame.Skyrim => skyrimRecordSet.Value,
-            SupportedGame.Starfield => starfieldRecordSet.Value,
-            _ => throw new InvalidOperationException($"Unsupported game '{game}'.")
-        };
-    }
-
-    private static IGameRecordReader CreateReader(SupportedGame game)
-    {
-        return game switch
-        {
-            SupportedGame.Fallout4 => new Fallout4RecordReader(new Fallout4RecordReaderService(new Fallout4GameMetadataService())),
-            SupportedGame.Skyrim => new SkyrimRecordReader(new SkyrimRecordReaderService(new SkyrimGameMetadataService())),
-            SupportedGame.Starfield => new StarfieldRecordReader(new StarfieldRecordReaderService(new StarfieldGameMetadataService())),
-            _ => throw new InvalidOperationException($"Unsupported game '{game}'.")
-        };
-    }
-
-    private static IEnumerable<RecordDTO> GetRecords(PluginRecordSetDTO recordSet, string recordType)
+    private static IEnumerable<RecordDTO> GetRecords(ILifetimeScope scope, SupportedGame game, string recordType, FormKeyDTO formKey)
     {
         return recordType switch
         {
-            "AVIF" => recordSet.ActorValueInformation,
-            "BOOK" => recordSet.Books,
-            "CLAS" => recordSet.Classes,
-            "CONT" => recordSet.Containers,
-            "CNDF" => recordSet.ConditionForms,
-            "COBJ" => recordSet.ConstructibleObjects,
-            "DOOR" => recordSet.Doors,
-            "FACT" => recordSet.Factions,
-            "FLST" => recordSet.FormLists,
-            "GMST" => recordSet.GameSettings,
-            "GLOB" => recordSet.Globals,
-            "KYWD" => recordSet.Keywords,
-            "MGEF" => recordSet.MagicEffects,
-            "MISC" => recordSet.MiscObjects,
-            "NPC_" => recordSet.NPCs,
-            "PERK" => recordSet.Perks,
-            "STAT" => recordSet.Statics,
-            "TERM" => recordSet.Terminals,
+            "AVIF" => scope.Resolve<IActorValueInformationRepository>().GetByFormKey(game, formKey),
+            "BOOK" => scope.Resolve<IBookRepository>().GetByFormKey(game, formKey),
+            "CLAS" => scope.Resolve<IClassRepository>().GetByFormKey(game, formKey),
+            "CONT" => scope.Resolve<IContainerRepository>().GetByFormKey(game, formKey),
+            "CNDF" => scope.Resolve<IConditionFormRepository>().GetByFormKey(game, formKey),
+            "COBJ" => scope.Resolve<IConstructibleObjectRepository>().GetByFormKey(game, formKey),
+            "DOOR" => scope.Resolve<IDoorRepository>().GetByFormKey(game, formKey),
+            "FACT" => scope.Resolve<IFactionRepository>().GetByFormKey(game, formKey),
+            "FLST" => scope.Resolve<IFormListRepository>().GetByFormKey(game, formKey),
+            "GMST" => scope.Resolve<IGameSettingRepository>().GetByFormKey(game, formKey),
+            "GLOB" => scope.Resolve<IGlobalRepository>().GetByFormKey(game, formKey),
+            "KYWD" => scope.Resolve<IKeywordRepository>().GetByFormKey(game, formKey),
+            "MGEF" => scope.Resolve<IMagicEffectRepository>().GetByFormKey(game, formKey),
+            "MISC" => scope.Resolve<IMiscObjectRepository>().GetByFormKey(game, formKey),
+            "NPC_" => scope.Resolve<INPCRepository>().GetByFormKey(game, formKey),
+            "PERK" => scope.Resolve<IPerkRepository>().GetByFormKey(game, formKey),
+            "STAT" => scope.Resolve<IStaticRepository>().GetByFormKey(game, formKey),
+            "TERM" => scope.Resolve<ITerminalRepository>().GetByFormKey(game, formKey),
             _ => throw new InvalidOperationException($"Unsupported record type '{recordType}'.")
-        };
-    }
-
-    private static PluginDTO CreatePlugin(SupportedGame game, string fileName)
-    {
-        return new PluginDTO
-        {
-            Game = game,
-            ModKey = new ModKeyDTO
-            {
-                Name = Path.GetFileNameWithoutExtension(fileName),
-                FileName = fileName,
-                Type = 0
-            },
-            LoadOrderIndex = 0,
-            Enabled = true,
-            ExistsOnDisk = true,
-            ImportState = PluginImportState.Current,
-            HeaderFlags = 0,
-            FormVersion = 0,
-            RecordCount = 0,
-            SourceLastWriteUTCTicks = 0,
-            SourceFileSizeBytes = 0,
-            LastCheckedUTC = DateTime.UtcNow
         };
     }
 

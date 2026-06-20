@@ -477,6 +477,7 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("ObjectBoundsFirst", records, record => record.ObjectBoundsFirst ?? string.Empty));
         fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBoundsSecond ?? string.Empty));
         fields.Add(CreateField("InventoryTransformFormKey", records, record => FormatFormKey(record.InventoryTransformFormKey)));
+        fields.Add(CreateField("PreviewTransformFormKey", records, record => FormatFormKey(record.PreviewTransformFormKey)));
         fields.Add(CreateField("Xalg", records, record => record.Xalg?.ToString() ?? string.Empty));
         fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
         fields.Add(CreateField("Text", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Text", recordTextLanguage, record.Text)));

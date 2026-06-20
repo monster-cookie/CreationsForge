@@ -52,6 +52,10 @@ public class BookRepository : TypedRecordRepositoryBase, IBookRepository
                     SelectColumn("InventoryTransform_ModKey_Type", "InventoryTransformModKeyType"),
                     SelectColumn("InventoryTransform_ModKey_FileName", "InventoryTransformModKeyFileName"),
                     SelectColumn("InventoryTransform_FormKey_ID", "InventoryTransformFormKeyId"),
+                    SelectColumn("PreviewTransform_ModKey_Name", "PreviewTransformModKeyName"),
+                    SelectColumn("PreviewTransform_ModKey_Type", "PreviewTransformModKeyType"),
+                    SelectColumn("PreviewTransform_ModKey_FileName", "PreviewTransformModKeyFileName"),
+                    SelectColumn("PreviewTransform_FormKey_ID", "PreviewTransformFormKeyId"),
                     SelectColumn("XALG"),
                     SelectColumn("Name"),
                     SelectColumn("Text"),
@@ -95,11 +99,13 @@ public class BookRepository : TypedRecordRepositoryBase, IBookRepository
                 Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
                 EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Version2, ObjectBounds_First, ObjectBounds_Second,
                 InventoryTransform_ModKey_Name, InventoryTransform_ModKey_Type, InventoryTransform_ModKey_FileName, InventoryTransform_FormKey_ID,
+                PreviewTransform_ModKey_Name, PreviewTransform_ModKey_Type, PreviewTransform_ModKey_FileName, PreviewTransform_FormKey_ID,
                 XALG, Name, Text, Value, Weight, Flags, TeachesType, TeachesRawContent, DataSlateType, Description, DataSlateHeaderLeft, DataSlateHeaderRight)
             VALUES (
                 @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
                 @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Version2, @ObjectBoundsFirst, @ObjectBoundsSecond,
                 @InventoryTransformModKeyName, @InventoryTransformModKeyType, @InventoryTransformModKeyFileName, @InventoryTransformFormKeyId,
+                @PreviewTransformModKeyName, @PreviewTransformModKeyType, @PreviewTransformModKeyFileName, @PreviewTransformFormKeyId,
                 @Xalg, @Name, @Text, @Value, @Weight, @Flags, @TeachesType, @TeachesRawContent, @DataSlateType, @Description, @DataSlateHeaderLeft, @DataSlateHeaderRight);
             """,
             new
@@ -123,6 +129,10 @@ public class BookRepository : TypedRecordRepositoryBase, IBookRepository
                 InventoryTransformModKeyType = dto.InventoryTransformFormKey?.ModKey.Type,
                 InventoryTransformModKeyFileName = dto.InventoryTransformFormKey?.ModKey.FileName,
                 InventoryTransformFormKeyId = dto.InventoryTransformFormKey?.Id,
+                PreviewTransformModKeyName = dto.PreviewTransformFormKey?.ModKey.Name,
+                PreviewTransformModKeyType = dto.PreviewTransformFormKey?.ModKey.Type,
+                PreviewTransformModKeyFileName = dto.PreviewTransformFormKey?.ModKey.FileName,
+                PreviewTransformFormKeyId = dto.PreviewTransformFormKey?.Id,
                 dto.Xalg,
                 Name = GetEnglishText(dto.Name),
                 Text = GetEnglishText(dto.Text),
@@ -153,6 +163,7 @@ public class BookRepository : TypedRecordRepositoryBase, IBookRepository
             ObjectBoundsFirst = record.ObjectBoundsFirst,
             ObjectBoundsSecond = record.ObjectBoundsSecond,
             InventoryTransformFormKey = CreateNullableFormKey(record.InventoryTransformModKeyName, record.InventoryTransformModKeyType, record.InventoryTransformModKeyFileName, record.InventoryTransformFormKeyId),
+            PreviewTransformFormKey = CreateNullableFormKey(record.PreviewTransformModKeyName, record.PreviewTransformModKeyType, record.PreviewTransformModKeyFileName, record.PreviewTransformFormKeyId),
             Xalg = record.Xalg,
             Name = FromEnglish(record.Name),
             Text = FromEnglish(record.Text),
@@ -185,6 +196,14 @@ public class BookRepository : TypedRecordRepositoryBase, IBookRepository
         public string? InventoryTransformModKeyFileName { get; set; }
 
         public long? InventoryTransformFormKeyId { get; set; }
+
+        public string? PreviewTransformModKeyName { get; set; }
+
+        public int? PreviewTransformModKeyType { get; set; }
+
+        public string? PreviewTransformModKeyFileName { get; set; }
+
+        public long? PreviewTransformFormKeyId { get; set; }
 
         public int? Xalg { get; set; }
 

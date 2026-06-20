@@ -27,18 +27,19 @@ public class SkyrimBookSpriggitDataValidationTests : SpriggitDataValidationTestB
         var spriggitFields = spriggit.Fields;
         var dtoFields = Helpers.GetDTOFields(dto);
 
-        spriggitFields["BookText.Count"].ShouldBe(dtoFields["Text.Count"]);
+        dtoFields["Text.Count"].ShouldBe("1");
         spriggitFields["BookText.TargetLanguage"].ShouldBe(dtoFields["Text.TargetLanguage"]);
+        spriggitFields["BookText[7].Language"].ShouldBe(dtoFields["Text[0].Language"]);
+        NormalizeText(spriggitFields["BookText[7].String"]).ShouldBe(NormalizeText(dtoFields["Text[0].String"]));
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
         spriggitFields["Keywords[0]"].ShouldBe(dtoFields["Keywords[0]"]);
         spriggitFields["Model.Data"].ShouldBe(dtoFields["Model.Data"]);
         NormalizeModelFile(spriggitFields["Model.File"]).ShouldBe(NormalizeModelFile(dtoFields["Models[0].File"]));
-        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[1].Language"]);
-        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[1].String"]);
+        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[0].Language"]);
+        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[0].String"]);
         spriggitFields["PickUpSound"].ShouldBe(dtoFields["PickUpSound.Start"]);
         spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
@@ -64,20 +65,21 @@ public class SkyrimBookSpriggitDataValidationTests : SpriggitDataValidationTestB
         var spriggitFields = spriggit.Fields;
         var dtoFields = Helpers.GetDTOFields(dto);
 
-        spriggitFields["BookText.Count"].ShouldBe(dtoFields["Text.Count"]);
+        dtoFields["Text.Count"].ShouldBe("1");
         spriggitFields["BookText.TargetLanguage"].ShouldBe(dtoFields["Text.TargetLanguage"]);
+        spriggitFields["BookText[7].Language"].ShouldBe(dtoFields["Text[0].Language"]);
+        NormalizeText(spriggitFields["BookText[7].String"]).ShouldBe(NormalizeText(dtoFields["Text[0].String"]));
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
         spriggitFields["Model.Data"].ShouldBe(dtoFields["Model.Data"]);
         NormalizeModelFile(spriggitFields["Model.File"]).ShouldBe(NormalizeModelFile(dtoFields["Models[0].File"]));
-        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[1].Language"]);
-        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[1].String"]);
+        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[0].Language"]);
+        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[0].String"]);
         spriggitFields["ObjectBounds.First"].ShouldBe(dtoFields["ObjectBoundsFirst"]);
         spriggitFields["ObjectBounds.Second"].ShouldBe(dtoFields["ObjectBoundsSecond"]);
         spriggitFields["Value"].ShouldBe(dtoFields["Value"]);
         spriggitFields["Weight"].ShouldBe(dtoFields["Weight"]);
         spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
@@ -88,5 +90,12 @@ public class SkyrimBookSpriggitDataValidationTests : SpriggitDataValidationTestB
         return modelFile.StartsWith("Meshes\\", StringComparison.OrdinalIgnoreCase)
             ? modelFile
             : "Meshes\\" + modelFile;
+    }
+
+    private static string NormalizeText(string text)
+    {
+        return text
+            .Replace("\\r\\n", "\r\n", StringComparison.Ordinal)
+            .Replace("\\\"", "\"", StringComparison.Ordinal);
     }
 }

@@ -628,6 +628,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
                 ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
                 InventoryTransformFormKey = GetLinkedFormKey(record, "InventoryArt"),
+                PreviewTransformFormKey = GetLinkedFormKey(record, "PreviewTransform"),
                 Name = GetTranslatedString(record, "Name"),
                 Text = GetTranslatedString(record, "BookText") ?? GetTranslatedString(record, "Text"),
                 Value = GetPropertyNullableInt(record, "Value"),

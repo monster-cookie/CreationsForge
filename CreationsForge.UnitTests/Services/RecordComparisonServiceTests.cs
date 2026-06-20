@@ -594,6 +594,7 @@ public class RecordComparisonServiceTests
         comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["Captain's Log", "Captain's Log"]);
         comparison.Fields.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["100", "150"]);
         comparison.Fields.Single(field => field.FieldName == "InventoryTransformFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000999", "Starfield.esm:00000999"]);
+        comparison.Fields.Single(field => field.FieldName == "PreviewTransformFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000888", "Starfield.esm:00000888"]);
         comparison.Fields.Single(field => field.FieldName == "Text").Values.Select(value => value.DisplayValue).ShouldBe(["Base text", "Patch text"]);
         comparison.Fields.Single(field => field.FieldName == "TeachesType").Values.Select(value => value.DisplayValue).ShouldBe(["Skill", "Skill"]);
     }
@@ -946,6 +947,7 @@ public class RecordComparisonServiceTests
             ObjectBoundsFirst = "0, 0, 0",
             ObjectBoundsSecond = "1, 1, 1",
             InventoryTransformFormKey = CreateFormKey("Starfield.esm", 0x999),
+            PreviewTransformFormKey = CreateFormKey("Starfield.esm", 0x888),
             Xalg = 7,
             Name = Text(name),
             Text = Text(fileName.StartsWith("Base", StringComparison.Ordinal) ? "Base text" : "Patch text"),

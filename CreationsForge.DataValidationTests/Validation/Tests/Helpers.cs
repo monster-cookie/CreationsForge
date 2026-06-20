@@ -31,6 +31,7 @@ public static class Helpers
         ["ObjectBounds.Second"] = "ObjectBoundsSecond",
         ["Transforms.Inventory"] = "InventoryTransformFormKey",
         ["InventoryArt"] = "InventoryTransformFormKey",
+        ["PreviewTransform"] = "PreviewTransformFormKey",
         ["NativeTerminal"] = "NativeTerminalFormKey",
         ["Model.File"] = "Models[0].File",
         ["Model.LightLayer"] = "Models[0].LightLayer"
@@ -504,6 +505,16 @@ public static class Helpers
             return true;
         }
 
+        if (IsCommonMetadataFieldOutsideRepositoryReadback(fieldName, dtoFields))
+        {
+            return true;
+        }
+
+        if (IsSpriggitLocalizedFieldBackedByDtoFallback(fieldName, spriggitFields, dtoFields))
+        {
+            return true;
+        }
+
         if ((fieldName.EndsWith("Sound", StringComparison.OrdinalIgnoreCase) || fieldName.EndsWith("SoundLevel", StringComparison.OrdinalIgnoreCase)) &&
             dtoFields.ContainsKey(fieldName + ".Start"))
         {
@@ -550,6 +561,11 @@ public static class Helpers
         }
 
         if (SpriggitToDtoFields.Any(field => string.Equals(field.Value, fieldName, StringComparison.OrdinalIgnoreCase) && spriggitFields.ContainsKey(field.Key)))
+        {
+            return true;
+        }
+
+        if (IsDtoLocalizedFallbackBackedBySpriggitField(fieldName, fieldValue, spriggitFields, dtoFields))
         {
             return true;
         }
@@ -669,6 +685,115 @@ public static class Helpers
                 fieldName.EndsWith(".ImportedAtUTC", StringComparison.OrdinalIgnoreCase) ||
                 fieldName.EndsWith(".ModKey", StringComparison.OrdinalIgnoreCase) ||
                 fieldName.EndsWith(".RecordType", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsCommonMetadataFieldOutsideRepositoryReadback(string fieldName, IReadOnlyDictionary<string, string> dtoFields)
+    {
+        return (string.Equals(fieldName, "Version2", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(fieldName, "VersionControl", StringComparison.OrdinalIgnoreCase)) &&
+               !dtoFields.ContainsKey(fieldName);
+    }
+
+    private static bool IsSpriggitLocalizedFieldBackedByDtoFallback(
+        string fieldName,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields)
+    {
+        if (!TryGetLocalizedFieldRoot(fieldName, out var spriggitRootFieldName))
+        {
+            return false;
+        }
+
+        var dtoRootFieldName = string.Equals(spriggitRootFieldName, "BookText", StringComparison.OrdinalIgnoreCase)
+            ? "Text"
+            : spriggitRootFieldName;
+
+        return HasLocalizedFallbackMatch(spriggitRootFieldName, dtoRootFieldName, spriggitFields, dtoFields);
+    }
+
+    private static bool IsDtoLocalizedFallbackBackedBySpriggitField(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields)
+    {
+        _ = fieldValue;
+        if (!TryGetLocalizedFieldRoot(fieldName, out var dtoRootFieldName))
+        {
+            return false;
+        }
+
+        var spriggitRootFieldName = string.Equals(dtoRootFieldName, "Text", StringComparison.OrdinalIgnoreCase) &&
+                                    HasSpriggitPath(spriggitFields, "BookText")
+            ? "BookText"
+            : dtoRootFieldName;
+
+        return HasLocalizedFallbackMatch(spriggitRootFieldName, dtoRootFieldName, spriggitFields, dtoFields);
+    }
+
+    private static bool HasLocalizedFallbackMatch(
+        string spriggitRootFieldName,
+        string dtoRootFieldName,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields)
+    {
+        if (!dtoFields.TryGetValue(dtoRootFieldName + ".Count", out var dtoCount) ||
+            !string.Equals(dtoCount, "1", StringComparison.Ordinal) ||
+            !dtoFields.TryGetValue(dtoRootFieldName + "[0].Language", out var dtoLanguage) ||
+            !dtoFields.TryGetValue(dtoRootFieldName + "[0].String", out var dtoString) ||
+            !spriggitFields.TryGetValue(spriggitRootFieldName + ".Count", out var spriggitCountValue) ||
+            !int.TryParse(spriggitCountValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var spriggitCount) ||
+            spriggitCount <= 1)
+        {
+            return false;
+        }
+
+        for (var entryIndex = 0; entryIndex < spriggitCount; entryIndex++)
+        {
+            var spriggitEntryPath = spriggitRootFieldName + "[" + entryIndex.ToString(CultureInfo.InvariantCulture) + "]";
+            if (spriggitFields.TryGetValue(spriggitEntryPath + ".Language", out var spriggitLanguage) &&
+                spriggitFields.TryGetValue(spriggitEntryPath + ".String", out var spriggitString) &&
+                string.Equals(spriggitLanguage, dtoLanguage, StringComparison.Ordinal) &&
+                string.Equals(NormalizeLocalizedText(spriggitString), NormalizeLocalizedText(dtoString), StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryGetLocalizedFieldRoot(string fieldName, out string rootFieldName)
+    {
+        rootFieldName = string.Empty;
+
+        if (fieldName.EndsWith(".Count", StringComparison.OrdinalIgnoreCase))
+        {
+            rootFieldName = fieldName[..^".Count".Length];
+            return true;
+        }
+
+        if (fieldName.EndsWith(".TargetLanguage", StringComparison.OrdinalIgnoreCase))
+        {
+            rootFieldName = fieldName[..^".TargetLanguage".Length];
+            return true;
+        }
+
+        var bracketIndex = fieldName.IndexOf('[');
+        if (bracketIndex <= 0 || !fieldName.EndsWith(".Language", StringComparison.OrdinalIgnoreCase) && !fieldName.EndsWith(".String", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        rootFieldName = fieldName[..bracketIndex];
+        return true;
+    }
+
+    private static string NormalizeLocalizedText(string text)
+    {
+        return text
+            .Replace("\\r\\n", "\r\n", StringComparison.Ordinal)
+            .Replace("\\\"", "\"", StringComparison.Ordinal);
     }
 
     private static bool IsSpriggitObjectListItemMutagenType(

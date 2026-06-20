@@ -345,6 +345,38 @@ CREATE INDEX IX_ConditionRuleParameters_Game_FormKey ON ConditionRuleParameters 
 CREATE INDEX IX_RecordComponents_Game_FormKey ON RecordComponents (Game, RecordType, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_RecordComponentItems_Game_FormKey ON RecordComponentItems (Game, RecordType, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 
+ALTER TABLE Books ADD COLUMN PreviewTransform_ModKey_Name TEXT NULL;
+ALTER TABLE Books ADD COLUMN PreviewTransform_ModKey_Type INTEGER NULL;
+ALTER TABLE Books ADD COLUMN PreviewTransform_ModKey_FileName TEXT NULL;
+ALTER TABLE Books ADD COLUMN PreviewTransform_FormKey_ID INTEGER NULL;
+
+CREATE TABLE LocalizedStrings
+(
+    Game                                TEXT    NOT NULL,
+    ModKey_Name                         TEXT    NOT NULL,
+    ModKey_Type                         INTEGER NOT NULL,
+    ModKey_FileName                     TEXT    NOT NULL,
+    RecordType                          TEXT    NOT NULL,
+    FormKey_ModKey_Name                 TEXT    NOT NULL,
+    FormKey_ModKey_Type                 INTEGER NOT NULL,
+    FormKey_ModKey_FileName             TEXT    NOT NULL,
+    FormKey_ID                          INTEGER NOT NULL,
+    SourceField                         TEXT    NOT NULL,
+    Language                            TEXT    NOT NULL,
+    Value                               TEXT    NOT NULL,
+    ImportedAtUTC                       TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, SourceField, Language),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES RecordInstances (Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (RecordType <> ''),
+    CHECK (FormKey_ID >= 0),
+    CHECK (SourceField <> ''),
+    CHECK (Language <> '')
+);
+
+CREATE INDEX IX_LocalizedStrings_Game_Record_FormKey
+    ON LocalizedStrings (Game, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
+
 INSERT OR REPLACE INTO ConditionRules (
     Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName,
     FormKey_ID, ConditionSlot, Condition_Index, MutagenObjectType, DataMutagenObjectType, CompareOperator, ComparisonValue,
@@ -370,5 +402,7 @@ DROP TABLE ConditionFormConditions;
 
 UPDATE Plugins
 SET ImportState = 'Changed',
-    InvalidatedAtUTC = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+    InvalidatedAtUTC = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
+    ImportMessage = 'Unreleased migration 005 schema changed; reimport required.',
+    ImportDetails = 'Migration 005 added shared Class/Faction tables, shared condition/component tables, LocalizedStrings child rows, and Book PreviewTransform columns.'
 WHERE ImportState IN ('Current', 'PartiallyImported');

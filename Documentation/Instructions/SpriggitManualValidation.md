@@ -1,7 +1,7 @@
 # Spriggit Manual Validation
 
 `CreationsForge.DataValidationTests` is a manual xUnit validation project for comparing Spriggit YAML extraction data
-against the DTOs produced by the current Creations Forge game record readers.
+against DTOs read back from the current Creations Forge database after import.
 
 The project is intentionally not a normal CI gate. It depends on local game installations and local Spriggit extraction
 folders, and it is expected to expose real mapping gaps while record support is still growing.
@@ -19,6 +19,10 @@ The configured paths must point at the extracted base-game Spriggit roots, such 
 `GameSettings`, `Globals`, and the other Spriggit record folders. The test project reads `.env` only; it does not
 create or update that file.
 
+When database schema or import behavior changed, run the console harness with `--reset-all` before sample assertions
+run. This deletes the currently configured `CreationsForge.sqlite` database and SQLite sidecar files, applies
+migrations, and imports every supported game.
+
 Selected sample metadata lives directly in the explicit xUnit facts through `Game`, `RecordType`, `FormKey`,
 `EditorID`, and `SpriggitFile` traits.
 
@@ -30,6 +34,14 @@ Run the manual validation project directly:
 dotnet test ./CreationsForge.DataValidationTests/CreationsForge.DataValidationTests.csproj `
   --filter Category=SpriggitDataValidation
 ```
+
+When the current database needs to be rebuilt, run:
+
+```powershell
+dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --reset-all
+```
+
+The validation test process does not run reset/import automatically.
 
 Each selected sample has its own explicit xUnit fact, such as
 `Starfield_GLOB_ShouldMatchSpriggitSample_2B7FBD_Starfield_esm`, with visible field-by-field Shouldly assertions in
@@ -62,8 +74,13 @@ When refreshing samples, keep the explicit test set deterministic:
 
 ## Assertion Interpretation
 
-Each test loads the selected Spriggit YAML file and the real DTO produced by the matching game reader, then asserts
-mapped fields directly in the test body before checking unmatched fields.
+Each test loads the selected Spriggit YAML file and the imported DTO read back through the matching repository, then
+asserts mapped fields directly in the test body before checking unmatched fields.
+
+Spriggit-to-DTO comparisons in validation test methods must be explicit and sample-specific. Do not use loops,
+dictionary iteration, reflection, or broad helper assertions to compare matching Spriggit and DTO fields inside
+individual validation tests. The only approved generic coverage checks are `Helpers.GetUnmatchedSpriggitFields(...)`
+and `Helpers.GetUnmatchedDtoFields(...)`.
 
 Important failure shapes:
 
@@ -73,8 +90,8 @@ Important failure shapes:
 
 ## Limitations
 
-The harness compares DTO data from existing game record readers. It does not validate database persistence, repository
-readback, or Avalonia comparison rows. Those can be added later through a separately approved validation slice.
+The harness validates database persistence and repository readback for selected Spriggit samples. It does not validate
+Avalonia comparison rows. Those can be added later through a separately approved validation slice.
 
 The YAML parser is intentionally small and shaped around Spriggit's current extraction output. If Spriggit changes its
 YAML shape, update the parser and explicit sample tests together.

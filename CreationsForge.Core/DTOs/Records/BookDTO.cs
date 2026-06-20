@@ -11,6 +11,8 @@ public class BookDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO, IH
 
     public FormKeyDTO? InventoryTransformFormKey { get; set; }
 
+    public FormKeyDTO? PreviewTransformFormKey { get; set; }
+
     public int? Xalg { get; set; }
 
     public TranslatedStringDTO? Name { get; set; }

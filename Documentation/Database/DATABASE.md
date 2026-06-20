@@ -17,12 +17,10 @@ The application uses a local SQLite database. The schema is defined by embedded 
   imported plugin rows as `Changed` so each supported game reimports cached plugin data after the migration.
 - `005_Migrations005.sql` adds the `Classes`, `ClassProperties`, `ClassWeights`, `Factions`,
   `FactionRelations`, `FactionRanks`, `ConditionRules`, `ConditionRuleParameters`, `RecordComponents`, and
-  `RecordComponentItems` tables, migrates released CNDF condition rows into the shared condition-rule tables, drops
-  the old CNDF-specific condition tables, and marks existing current or partially imported plugin rows as `Changed`
-  so each supported game reimports cached plugin data after the migration.
-- `006_AddLocalizedStrings.sql` adds the `LocalizedStrings` table for per-language record text values and marks
-  existing current or partially imported plugin rows as `Changed` so each supported game reimports cached plugin data
-  after the migration.
+  `RecordComponentItems` tables, adds the `LocalizedStrings` table for per-language record text values, adds Book
+  `PreviewTransform` columns, migrates released CNDF condition rows into the shared condition-rule tables, drops the
+  old CNDF-specific condition tables, and marks existing current or partially imported plugin rows as `Changed` so
+  each supported game reimports cached plugin data after the migration.
 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
@@ -824,6 +822,7 @@ the common typed record key and metadata columns.
 - `Version2` (`INTEGER`, nullable)
 - `ObjectBounds_First` and `ObjectBounds_Second` (`TEXT`, nullable)
 - nullable decomposed FormKey columns for `InventoryTransform`
+- nullable decomposed FormKey columns for `PreviewTransform`
 - `XALG` (`INTEGER`, nullable)
 - `Name`, `Text`, `Flags`, `TeachesType`, `TeachesRawContent`, `DataSlateType`, `Description`,
   `DataSlateHeaderLeft`, and `DataSlateHeaderRight` (`TEXT`, nullable)
@@ -1457,6 +1456,8 @@ These columns carry record-reference identity but do not declare SQLite foreign 
 - `Perks.Restriction_*` and `Training_*`
 - `Books.InventoryTransform_ModKey_Name`, `InventoryTransform_ModKey_Type`,
   `InventoryTransform_ModKey_FileName`, and `InventoryTransform_FormKey_ID`
+- `Books.PreviewTransform_ModKey_Name`, `PreviewTransform_ModKey_Type`,
+  `PreviewTransform_ModKey_FileName`, and `PreviewTransform_FormKey_ID`
 - `Doors.NativeTerminal_ModKey_Name`, `NativeTerminal_ModKey_Type`, `NativeTerminal_ModKey_FileName`,
   and `NativeTerminal_FormKey_ID`
 - `Containers.NativeTerminal_ModKey_Name`, `NativeTerminal_ModKey_Type`, `NativeTerminal_ModKey_FileName`,

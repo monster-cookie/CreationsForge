@@ -15,7 +15,27 @@ public class SkyrimActorValueInformationSpriggitDataValidationTests : SpriggitDa
     [Trait("SpriggitFile", "ActorValueInformation/AVAlchemy - 000456_Skyrim.esm.yaml")]
     public void Skyrim_AVIF_ShouldMatchSpriggitSample_AVAlchemy()
     {
-        AssertSharedFieldsMatch("AVAlchemy", "000456:Skyrim.esm");
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
+            SupportedGame.Skyrim,
+            RecordTypeCatalog.ActorValueInformation,
+            "AVAlchemy");
+        var dto = Helpers.GetDTO<ActorValueInformationDTO>(
+            SupportedGame.Skyrim,
+            RecordTypeCatalog.ActorValueInformation,
+            "000456:Skyrim.esm");
+
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
+
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        dtoFields["Name.Count"].ShouldBe("1");
+        spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
+        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[0].Language"]);
+        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[0].String"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -26,7 +46,27 @@ public class SkyrimActorValueInformationSpriggitDataValidationTests : SpriggitDa
     [Trait("SpriggitFile", "ActorValueInformation/AVAlteration - 000458_Skyrim.esm.yaml")]
     public void Skyrim_AVIF_ShouldMatchSpriggitSample_AVAlteration()
     {
-        AssertSharedFieldsMatch("AVAlteration", "000458:Skyrim.esm");
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
+            SupportedGame.Skyrim,
+            RecordTypeCatalog.ActorValueInformation,
+            "AVAlteration");
+        var dto = Helpers.GetDTO<ActorValueInformationDTO>(
+            SupportedGame.Skyrim,
+            RecordTypeCatalog.ActorValueInformation,
+            "000458:Skyrim.esm");
+
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
+
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        dtoFields["Name.Count"].ShouldBe("1");
+        spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
+        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[0].Language"]);
+        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[0].String"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -37,7 +77,27 @@ public class SkyrimActorValueInformationSpriggitDataValidationTests : SpriggitDa
     [Trait("SpriggitFile", "ActorValueInformation/AVBlock - 00044F_Skyrim.esm.yaml")]
     public void Skyrim_AVIF_ShouldMatchSpriggitSample_AVBlock()
     {
-        AssertSharedFieldsMatch("AVBlock", "00044F:Skyrim.esm");
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
+            SupportedGame.Skyrim,
+            RecordTypeCatalog.ActorValueInformation,
+            "AVBlock");
+        var dto = Helpers.GetDTO<ActorValueInformationDTO>(
+            SupportedGame.Skyrim,
+            RecordTypeCatalog.ActorValueInformation,
+            "00044F:Skyrim.esm");
+
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
+
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        dtoFields["Name.Count"].ShouldBe("1");
+        spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
+        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[0].Language"]);
+        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[0].String"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -48,36 +108,20 @@ public class SkyrimActorValueInformationSpriggitDataValidationTests : SpriggitDa
     [Trait("SpriggitFile", "ActorValueInformation/AVFavorActive - 0005F6_Skyrim.esm.yaml")]
     public void Skyrim_AVIF_ShouldMatchSpriggitSample_AVFavorActive()
     {
-        AssertSharedFieldsMatch("AVFavorActive", "0005F6:Skyrim.esm");
-    }
-
-    private static void AssertSharedFieldsMatch(string spriggitSampleName, string formKey)
-    {
         var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
             SupportedGame.Skyrim,
             RecordTypeCatalog.ActorValueInformation,
-            spriggitSampleName);
+            "AVFavorActive");
         var dto = Helpers.GetDTO<ActorValueInformationDTO>(
             SupportedGame.Skyrim,
             RecordTypeCatalog.ActorValueInformation,
-            formKey);
+            "0005F6:Skyrim.esm");
 
+        var spriggitFields = spriggit.Fields;
         var dtoFields = Helpers.GetDTOFields(dto);
 
-        foreach (var field in spriggit.Fields.OrderBy(field => field.Key, StringComparer.OrdinalIgnoreCase))
-        {
-            if (dtoFields.TryGetValue(field.Key, out var dtoValue))
-            {
-                field.Value.ShouldBe(dtoValue);
-            }
-        }
-
-        spriggit.Fields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        spriggit.Fields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        if (Helpers.GetSpriggitListValues(spriggit, "Flags").Count > 0)
-        {
-            dtoFields["Flags"].ShouldNotBeNullOrEmpty();
-        }
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();

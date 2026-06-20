@@ -657,6 +657,10 @@ erDiagram
         INTEGER InventoryTransform_ModKey_Type
         TEXT InventoryTransform_ModKey_FileName
         INTEGER InventoryTransform_FormKey_ID
+        TEXT PreviewTransform_ModKey_Name
+        INTEGER PreviewTransform_ModKey_Type
+        TEXT PreviewTransform_ModKey_FileName
+        INTEGER PreviewTransform_FormKey_ID
         INTEGER XALG
         TEXT Name
         TEXT Text
@@ -1246,7 +1250,7 @@ erDiagram
 
 Indexes are documented in `DATABASE.md`. Migration `002_AddAssetArchiveIndex.sql` adds active-plugin browse indexes
 for `RecordInstances` and typed parent tables, plus indexes for `Statics`, `Containers`, `ContainerItems`, and
-`RawRecordPayloads`. Migration `006_AddLocalizedStrings.sql` adds the localized-string form-key lookup index.
+`RawRecordPayloads`. Migration `005_Migrations005.sql` adds the localized-string form-key lookup index.
 
 `Plugins.ImportState` is constrained to `Current`, `Changed`, `PartiallyImported`, `Missing`, `Failed`, or
 `Unsupported`.
@@ -1292,6 +1296,8 @@ These columns contain record-reference data but are not declared SQLite foreign 
   `FeaturedItemMessage_ModKey_FileName`, and `FeaturedItemMessage_FormKey_ID`
 - `Books.InventoryTransform_ModKey_Name`, `InventoryTransform_ModKey_Type`,
   `InventoryTransform_ModKey_FileName`, and `InventoryTransform_FormKey_ID`
+- `Books.PreviewTransform_ModKey_Name`, `PreviewTransform_ModKey_Type`,
+  `PreviewTransform_ModKey_FileName`, and `PreviewTransform_FormKey_ID`
 - `Doors.NativeTerminal_ModKey_Name`, `NativeTerminal_ModKey_Type`, `NativeTerminal_ModKey_FileName`, and
   `NativeTerminal_FormKey_ID`
 - `Containers.NativeTerminal_ModKey_Name`, `NativeTerminal_ModKey_Type`, `NativeTerminal_ModKey_FileName`, and

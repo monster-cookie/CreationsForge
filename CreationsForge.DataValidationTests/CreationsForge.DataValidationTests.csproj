@@ -23,6 +23,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\CreationsForge.Bootstrap\CreationsForge.Bootstrap.csproj" />
         <ProjectReference Include="..\CreationsForge.Core\CreationsForge.Core.csproj" />
         <ProjectReference Include="..\CreationsForge.Fallout4\CreationsForge.Fallout4.csproj" />
         <ProjectReference Include="..\CreationsForge.Skyrim\CreationsForge.Skyrim.csproj" />

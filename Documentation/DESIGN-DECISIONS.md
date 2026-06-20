@@ -29,7 +29,7 @@ Alternatives considered:
 
 Consequences:
 
-- Plugins must be reimported after migration 006 so localized string rows are populated.
+- Plugins must be reimported after migration 005 so localized string rows are populated.
 - Comparison can display localized record text without direct Mutagen access from the UI.
 - Translated DTO fields preserve the Mutagen/Spriggit language-table shape instead of exposing English as the public
   contract.
@@ -37,7 +37,7 @@ Consequences:
 
 Related files:
 
-- `CreationsForge.Migrations/Sql/006_AddLocalizedStrings.sql`
+- `CreationsForge.Migrations/Sql/005_Migrations005.sql`
 - `CreationsForge.Core/DTOs/Records/LocalizedStringDTO.cs`
 - `CreationsForge.Core/DTOs/Records/TranslatedStringDTO.cs`
 - `CreationsForge.Core/DTOs/Records/TranslatedStringValueDTO.cs`
@@ -59,12 +59,12 @@ and record types.
 
 Decision: Add `CreationsForge.DataValidationTests` as a manual xUnit/Shouldly test project rather than a console app.
 The project stores validation JSON under `CreationsForge.DataValidationTests/Configuration`, reads Spriggit extraction
-roots from environment variables with a read-only `.env` fallback, calls existing game record readers, and writes
-Markdown/JSON reports under `TestResults/SpriggitValidation/<timestamp>`.
+roots from environment variables with a read-only `.env` fallback, and compares selected samples against imported DTOs
+read back through repositories from the currently configured database.
 
 Rationale: Keeping the harness as a test project gives it Shouldly assertions, test filtering, and normal .NET test
-runner ergonomics while avoiding a second command-line app surface. Reusing existing game record readers keeps Mutagen
-mapping behavior in the game adapter projects and avoids a parallel Bethesda parser.
+runner ergonomics while avoiding a second command-line app surface. Reusing the CLI import path validates Mutagen
+mapping, persistence, and repository readback without a parallel Bethesda parser.
 
 Alternatives considered:
 
@@ -75,9 +75,11 @@ Alternatives considered:
 Consequences:
 
 - Manual validation can fail independently of normal unit and presentation test runs.
+- Spriggit validation reads the configured local database; schema or import changes should be validated after a
+  manual CLI reset/import.
 - Sample and approved-difference configuration stays close to the validation code that consumes it.
 - Spriggit extraction files remain external local inputs and are not copied into the repository.
-- Database persistence and Avalonia comparison-row validation remain separate future validation slices.
+- Avalonia comparison-row validation remains a separate validation slice.
 
 Related files:
 
