@@ -261,7 +261,8 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 ContextNotes = GetPropertyStringOrNull(record, "ContextNotes"),
                 DefaultValue = GetPropertyNullableDouble(record, "DefaultValue"),
                 Flags = GetPropertyStringOrNull(record, "Flags"),
-                Type = GetPropertyStringOrNull(record, "Type"),
+                // Skyrim AVIF has no data Type property; reflected "Type" is runtime metadata.
+                Type = null,
                 Min = GetPropertyNullableDouble(record, "Min"),
                 Max = GetPropertyNullableDouble(record, "Max"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ActorValueInformation.RecordID, record),

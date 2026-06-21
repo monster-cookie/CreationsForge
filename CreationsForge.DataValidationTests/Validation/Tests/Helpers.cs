@@ -668,6 +668,11 @@ public static class Helpers
             return true;
         }
 
+        if (IsMissingDefaultActorValueInformationSkillOffset(fieldName, fieldValue, spriggitFields))
+        {
+            return true;
+        }
+
         if (IsDtoChildInfrastructureField(fieldName))
         {
             return true;
@@ -752,7 +757,7 @@ public static class Helpers
         if (!string.IsNullOrEmpty(scalarFieldName))
         {
             return spriggitFields.TryGetValue(scalarFieldName, out var value) &&
-                   string.Equals(fieldValue, value, StringComparison.Ordinal);
+                   AreEquivalentSpriggitValues(fieldValue, value);
         }
 
         if (string.Equals(fieldName, "LayoutEntries.Count", StringComparison.OrdinalIgnoreCase))
@@ -828,6 +833,13 @@ public static class Helpers
             !TryGetIndexedPath(fieldName, "PerkTree", out var perkTreeIndex, out var perkTreeRemainder))
         {
             return false;
+        }
+
+        if (string.IsNullOrEmpty(perkTreeRemainder))
+        {
+            var index = perkTreeIndex.ToString(CultureInfo.InvariantCulture);
+            return dtoFields.ContainsKey("LayoutEntries[" + index + "].Fnam") ||
+                   dtoFields.ContainsKey("PerkTree[" + index + "].Fnam");
         }
 
         var dtoLayoutFieldName = perkTreeRemainder switch
@@ -1215,6 +1227,17 @@ public static class Helpers
                 string.Equals(fieldValue, uint.MaxValue.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal)) ||
                (string.Equals(fieldName, "DataSlateType", StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(fieldValue, "None", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsMissingDefaultActorValueInformationSkillOffset(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> spriggitFields)
+    {
+        return (string.Equals(fieldName, "SkillImproveOffset", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(fieldName, "Skill.ImproveOffset", StringComparison.OrdinalIgnoreCase)) &&
+               IsZero(fieldValue) &&
+               !spriggitFields.ContainsKey("Skill.ImproveOffset");
     }
 
     private static bool IsAlternativeRootFieldBackedByDtoField(
