@@ -203,6 +203,8 @@ After approval:
 - ERD relationship lines must show declared SQLite foreign keys only.
 - DbUp-owned tables, including SchemaVersions, must not be treated as application-schema tables.
 
+When a task changes import mapping or persisted read-back behavior, the agent must say whether existing local SQLite data is stale and whether reset/reimport is needed before validation tests can reflect the code change.
+
 ## Testing rules
 
 - Use xUnit, Moq, and Shouldly according to existing patterns.

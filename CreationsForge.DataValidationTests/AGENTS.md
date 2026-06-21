@@ -22,3 +22,18 @@ Spriggit-to-DTO comparisons in data validation test methods must be explicit and
 - Optional fields must assert the expected presence or absence explicitly for that sample.
 - The only approved generic unmatched-field coverage helpers are `Helpers.GetUnmatchedSpriggitFields(...)` and `Helpers.GetUnmatchedDtoFields(...)`.
 - Those unmatched-field helpers are a coverage backstop only. They must not replace explicit field-by-field assertions in the test method.
+
+## Imported validation database freshness
+
+Data validation tests read DTOs from the imported SQLite database, not directly from the current mapper code.
+
+When production import mapping, repository read-back, DTO persistence, migrations, or validation schema assumptions change, the agent must explicitly state whether the existing validation database can be reused or must be reset/reimported.
+
+A database reset/reimport is required when:
+
+- a mapper fix changes values already persisted in typed record tables;
+- a migration is amended before release and an existing local database already recorded that migration as applied;
+- repository read-back depends on newly added tables or columns;
+- validation failures may be caused by stale imported rows rather than current code.
+
+The agent must call this out in the plan and final validation notes. Building the solution is not enough to refresh imported DTO data.
