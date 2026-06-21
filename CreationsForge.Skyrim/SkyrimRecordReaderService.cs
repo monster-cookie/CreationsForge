@@ -940,36 +940,25 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
 
     private static List<ActorValueInformationLayoutEntryDTO> GetActorValueInformationLayoutEntries(PluginDTO plugin, FormKey formKey, object record)
     {
-        var associatedSkills = GetEnumerableValues(GetPropertyValue(record, "AssociatedSkill"));
-        var fnamValues = GetEnumerableValues(GetPropertyValue(record, "FNAM"));
-        var horizontalPositions = GetEnumerableValues(GetPropertyValue(record, "HorizontalPosition"));
-        var indexes = GetEnumerableValues(GetPropertyValue(record, "Index"));
-        var perkGridXs = GetEnumerableValues(GetPropertyValue(record, "PerkGridX"));
-        var perkGridYs = GetEnumerableValues(GetPropertyValue(record, "PerkGridY"));
-        var verticalPositions = GetEnumerableValues(GetPropertyValue(record, "VerticalPosition"));
-        var count = new[] { associatedSkills.Count, fnamValues.Count, horizontalPositions.Count, indexes.Count, perkGridXs.Count, perkGridYs.Count, verticalPositions.Count }.Max();
+        var perkTree = GetEnumerableValues(GetPropertyValue(record, "PerkTree"));
         var importedAtUTC = DateTime.UtcNow;
-        var entries = new List<ActorValueInformationLayoutEntryDTO>();
-        for (var index = 0; index < count; index++)
-        {
-            entries.Add(new ActorValueInformationLayoutEntryDTO
+        return perkTree
+            .Select((entry, entryIndex) => new ActorValueInformationLayoutEntryDTO
             {
                 Game = SupportedGame.Skyrim,
                 ModKey = plugin.ModKey,
                 FormKey = MapFormKey(formKey),
-                LayoutIndex = index,
-                AssociatedSkillFormKey = GetFormKeyFromObject(GetIndexedValue(associatedSkills, index)),
-                Fnam = FormatSpriggitHexValue(GetIndexedValue(fnamValues, index)),
-                HorizontalPosition = ConvertNullableDouble(GetIndexedValue(horizontalPositions, index)),
-                Index = ConvertNullableInt(GetIndexedValue(indexes, index)),
-                PerkGridX = ConvertNullableInt(GetIndexedValue(perkGridXs, index)),
-                PerkGridY = ConvertNullableInt(GetIndexedValue(perkGridYs, index)),
-                VerticalPosition = ConvertNullableDouble(GetIndexedValue(verticalPositions, index)),
+                LayoutIndex = entryIndex,
+                AssociatedSkillFormKey = GetFormKeyFromObject(GetPropertyValue(entry, "AssociatedSkill")),
+                Fnam = FormatSpriggitHexValue(GetPropertyValue(entry, "FNAM")),
+                HorizontalPosition = GetPropertyNullableDouble(entry, "HorizontalPosition"),
+                Index = GetPropertyNullableInt(entry, "Index"),
+                PerkGridX = GetPropertyNullableInt(entry, "PerkGridX"),
+                PerkGridY = GetPropertyNullableInt(entry, "PerkGridY"),
+                VerticalPosition = GetPropertyNullableDouble(entry, "VerticalPosition"),
                 ImportedAtUTC = importedAtUTC
-            });
-        }
-
-        return entries;
+            })
+            .ToList();
     }
 
     private static List<ActorValueInformationPerkTreeEntryDTO> GetActorValueInformationPerkTreeEntries(PluginDTO plugin, FormKey formKey, object record)
@@ -1430,21 +1419,6 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         return value is IEnumerable enumerable && value is not string
             ? enumerable.Cast<object>().ToList()
             : [];
-    }
-
-    private static object? GetIndexedValue(IReadOnlyList<object> values, int index)
-    {
-        return index < values.Count ? values[index] : null;
-    }
-
-    private static int? ConvertNullableInt(object? value)
-    {
-        return value == null ? null : Convert.ToInt32(value, CultureInfo.InvariantCulture);
-    }
-
-    private static double? ConvertNullableDouble(object? value)
-    {
-        return value == null ? null : Convert.ToDouble(value, CultureInfo.InvariantCulture);
     }
 
     private static TranslatedStringDTO? GetTranslatedString(object source, string propertyName)

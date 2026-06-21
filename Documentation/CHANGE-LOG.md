@@ -6,6 +6,7 @@
 - Display UI for condition rules vs storing them as binary.
 - On multiple game imports the progress bar reliably shows which game it is currently processing.
 - Added data validation test harness and all current record types now match base game spriggit data.
+- Might finally have the fix for the random killed application. Nice side effect we can do larger batch inserts again.
 - Added Additional Major Record Types: Class (CLAS), Faction (FACT)
 
 ## Version 1.1.9 - 2026-06-16

@@ -2,13 +2,12 @@ using CreationsForge.Core.DTOs.Assets;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Repositories.Interfaces;
 using NPoco;
-using System.Text;
 
 namespace CreationsForge.Core.Repositories;
 
 public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
 {
-    private const int InsertBatchSize = 100;
+    private const int InsertBatchSize = 500;
     private readonly IDatabase Database;
 
     public AssetArchiveIndexRepository(IDatabase database)
@@ -203,7 +202,7 @@ public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
 
         using var command = npocoDatabase.Connection.CreateCommand();
         command.Transaction = npocoDatabase.Transaction;
-        var sql = new StringBuilder("""
+        command.CommandText = """
             INSERT INTO AssetArchiveEntries (
                 Game,
                 ArchivePath,
@@ -213,52 +212,38 @@ public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
                 PackedSize,
                 UnpackedSize)
             VALUES
-            """);
+                (@Game, @ArchivePath, @NormalizedEntryPath, @RootFolder, @Extension, @PackedSize, @UnpackedSize);
+            """;
 
-        for (var index = 0; index < entries.Count; index++)
+        var gameParameter = AddParameter(command, "@Game");
+        var archivePathParameter = AddParameter(command, "@ArchivePath");
+        var normalizedEntryPathParameter = AddParameter(command, "@NormalizedEntryPath");
+        var rootFolderParameter = AddParameter(command, "@RootFolder");
+        var extensionParameter = AddParameter(command, "@Extension");
+        var packedSizeParameter = AddParameter(command, "@PackedSize");
+        var unpackedSizeParameter = AddParameter(command, "@UnpackedSize");
+
+        command.Prepare();
+        foreach (var entry in entries)
         {
-            var entry = entries[index];
-            if (index > 0)
-            {
-                sql.Append(",");
-            }
+            gameParameter.Value = entry.Game.ToString();
+            archivePathParameter.Value = entry.ArchivePath;
+            normalizedEntryPathParameter.Value = entry.NormalizedEntryPath;
+            rootFolderParameter.Value = entry.RootFolder;
+            extensionParameter.Value = entry.Extension;
+            packedSizeParameter.Value = entry.PackedSize;
+            unpackedSizeParameter.Value = entry.UnpackedSize;
 
-            sql.AppendLine();
-            sql.Append("(@Game");
-            sql.Append(index);
-            sql.Append(", @ArchivePath");
-            sql.Append(index);
-            sql.Append(", @NormalizedEntryPath");
-            sql.Append(index);
-            sql.Append(", @RootFolder");
-            sql.Append(index);
-            sql.Append(", @Extension");
-            sql.Append(index);
-            sql.Append(", @PackedSize");
-            sql.Append(index);
-            sql.Append(", @UnpackedSize");
-            sql.Append(index);
-            sql.Append(')');
-
-            AddParameter(command, "@Game" + index, entry.Game.ToString());
-            AddParameter(command, "@ArchivePath" + index, entry.ArchivePath);
-            AddParameter(command, "@NormalizedEntryPath" + index, entry.NormalizedEntryPath);
-            AddParameter(command, "@RootFolder" + index, entry.RootFolder);
-            AddParameter(command, "@Extension" + index, entry.Extension);
-            AddParameter(command, "@PackedSize" + index, entry.PackedSize);
-            AddParameter(command, "@UnpackedSize" + index, entry.UnpackedSize);
+            command.ExecuteNonQuery();
         }
-
-        command.CommandText = sql.ToString();
-        command.ExecuteNonQuery();
     }
 
-    private static void AddParameter(System.Data.Common.DbCommand command, string name, object value)
+    private static System.Data.Common.DbParameter AddParameter(System.Data.Common.DbCommand command, string name)
     {
         var parameter = command.CreateParameter();
         parameter.ParameterName = name;
-        parameter.Value = value;
         command.Parameters.Add(parameter);
+        return parameter;
     }
 
     public void DeleteArchive(SupportedGame game, string archivePath)
