@@ -481,18 +481,21 @@ public class RecordComparisonService : IRecordComparisonService
         var baseRecords = records.Cast<RecordDTO>().ToList();
         var fields = CreateCommonFields(baseRecords);
         fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
-        fields.Add(CreateField("ObjectBoundsFirst", records, record => record.ObjectBoundsFirst ?? string.Empty));
-        fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBoundsSecond ?? string.Empty));
-        fields.Add(CreateField("InventoryTransformFormKey", records, record => FormatFormKey(record.InventoryTransformFormKey)));
-        fields.Add(CreateField("PreviewTransformFormKey", records, record => FormatFormKey(record.PreviewTransformFormKey)));
-        fields.Add(CreateField("Xalg", records, record => record.Xalg?.ToString() ?? string.Empty));
+        fields.Add(CreateField("ObjectBounds.First", records, record => record.ObjectBounds?.First ?? string.Empty));
+        fields.Add(CreateField("ObjectBounds.Second", records, record => record.ObjectBounds?.Second ?? string.Empty));
+        fields.Add(CreateField("Transforms.Inventory", records, record => FormatFormKey(record.Transforms?.Inventory)));
+        fields.Add(CreateField("InventoryArt", records, record => FormatFormKey(record.InventoryArt)));
+        fields.Add(CreateField("PreviewTransform", records, record => FormatFormKey(record.PreviewTransform)));
+        fields.Add(CreateField("FeaturedItemMessage", records, record => FormatFormKey(record.FeaturedItemMessage)));
+        fields.Add(CreateField("XALG", records, record => record.XALG?.ToString() ?? string.Empty));
         fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
-        fields.Add(CreateField("Text", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Text", recordTextLanguage, record.Text)));
+        fields.Add(CreateField("Text", records, record => GetTranslatedDisplayValue(localizedStrings, record, GetBookTextSourceField(record), recordTextLanguage, record.Text)));
         fields.Add(CreateField("Value", records, record => record.Value?.ToString() ?? string.Empty));
         fields.Add(CreateField("Weight", records, record => record.Weight?.ToString() ?? string.Empty));
         fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
-        fields.Add(CreateField("TeachesType", records, record => record.TeachesType ?? string.Empty));
-        fields.Add(CreateField("TeachesRawContent", records, record => record.TeachesRawContent ?? string.Empty));
+        fields.Add(CreateField("Teaches.MutagenObjectType", records, record => record.Teaches?.MutagenObjectType ?? string.Empty));
+        fields.Add(CreateField("Teaches.Perk", records, record => FormatFormKey(record.Teaches?.Perk)));
+        fields.Add(CreateField("Teaches.RawContent", records, record => record.Teaches?.RawContent ?? string.Empty));
         fields.Add(CreateField("DataSlateType", records, record => record.DataSlateType ?? string.Empty));
         fields.Add(CreateField("Description", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Description", recordTextLanguage, record.Description)));
         fields.Add(CreateField("DataSlateHeaderLeft", records, record => GetTranslatedDisplayValue(localizedStrings, record, "DataSlateHeaderLeft", recordTextLanguage, record.DataSlateHeaderLeft)));
@@ -505,6 +508,11 @@ public class RecordComparisonService : IRecordComparisonService
         AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.Book.RecordID, formKey, baseRecords, fields);
+    }
+
+    private static string GetBookTextSourceField(BookDTO record)
+    {
+        return record.Game == SupportedGame.Starfield ? "Text" : "BookText";
     }
 
     private RecordComparisonDTO CreateDoorComparison(SupportedGame game, FormKeyDTO formKey)
@@ -648,6 +656,7 @@ public class RecordComparisonService : IRecordComparisonService
         [
             CreateField("EditorID", records, record => record.EditorID),
             CreateField("FormVersion", records, record => record.FormVersion.ToString(), isComparable: false),
+            CreateField("VersionControl", records, record => record.VersionControl?.ToString() ?? string.Empty, isComparable: false),
             CreateField("MajorRecordFlags", records, record => record.MajorRecordFlags.ToString(), isComparable: false)
         ];
     }

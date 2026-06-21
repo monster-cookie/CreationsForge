@@ -39,10 +39,11 @@ public class Fallout4BookSpriggitDataValidationTests : SpriggitDataValidationTes
         spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
         spriggitFields["Name[2].Language"].ShouldBe(dtoFields["Name[0].Language"]);
         spriggitFields["Name[2].String"].ShouldBe(dtoFields["Name[0].String"]);
-        spriggitFields["ObjectBounds.First"].ShouldBe(dtoFields["ObjectBoundsFirst"]);
-        spriggitFields["ObjectBounds.Second"].ShouldBe(dtoFields["ObjectBoundsSecond"]);
-        spriggitFields["PreviewTransform"].ShouldBe(dtoFields["PreviewTransformFormKey"]);
+        spriggitFields["ObjectBounds.First"].ShouldBe(dtoFields["ObjectBounds.First"]);
+        spriggitFields["ObjectBounds.Second"].ShouldBe(dtoFields["ObjectBounds.Second"]);
+        spriggitFields["PreviewTransform"].ShouldBe(dtoFields["PreviewTransform"]);
         spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
         spriggitFields.ContainsKey("VirtualMachineAdapter.Scripts.Count").ShouldBeFalse();
         dtoFields["ScriptingAdapters.Count"].ShouldBe("0");
 
@@ -82,6 +83,7 @@ public class Fallout4BookSpriggitDataValidationTests : SpriggitDataValidationTes
         spriggitFields["Name[2].String"].ShouldBe(dtoFields["Name[0].String"]);
         spriggitFields["Value"].ShouldBe(dtoFields["Value"]);
         spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
         spriggitFields["VirtualMachineAdapter.Scripts.Count"].ShouldBe(dtoFields["ScriptingAdapters.Count"]);
         spriggitFields["VirtualMachineAdapter.Scripts[0].Name"].ShouldBe(dtoFields["ScriptingAdapters[0].Name"]);
         spriggitFields["VirtualMachineAdapter.Scripts[0].Properties.Count"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties.Count"]);
@@ -89,6 +91,42 @@ public class Fallout4BookSpriggitDataValidationTests : SpriggitDataValidationTes
         spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[0].Object"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[0].ObjectFormKey"]);
         spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[1].Name"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[1].Name"]);
         spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[1].Object"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[1].ObjectFormKey"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
+    }
+
+    [Fact]
+    [Trait("Game", "Fallout4")]
+    [Trait("RecordType", "BOOK")]
+    [Trait("FormKey", "092A8C:Fallout4.esm")]
+    [Trait("EditorID", "PerkMagGunsAndBullets07")]
+    [Trait("SpriggitFile", "Books/PerkMagGunsAndBullets07 - 092A8C_Fallout4.esm.yaml")]
+    public void Fallout4_BOOK_ShouldMatchSpriggitSample_PerkMagGunsAndBullets07()
+    {
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
+            SupportedGame.Fallout4,
+            RecordTypeCatalog.Book,
+            "PerkMagGunsAndBullets07");
+        var dto = Helpers.GetDTO<BookDTO>(
+            SupportedGame.Fallout4,
+            RecordTypeCatalog.Book,
+            "092A8C:Fallout4.esm");
+
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
+
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FeaturedItemMessage"].ShouldBe(dtoFields["FeaturedItemMessage"]);
+        spriggitFields["InventoryArt"].ShouldBe(dtoFields["InventoryArt"]);
+        spriggitFields["ObjectBounds.First"].ShouldBe(dtoFields["ObjectBounds.First"]);
+        spriggitFields["ObjectBounds.Second"].ShouldBe(dtoFields["ObjectBounds.Second"]);
+        spriggitFields["PreviewTransform"].ShouldBe(dtoFields["PreviewTransform"]);
+        spriggitFields["Teaches.MutagenObjectType"].ShouldBe(dtoFields["Teaches.MutagenObjectType"]);
+        spriggitFields["Teaches.Perk"].ShouldBe(dtoFields["Teaches.Perk"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();

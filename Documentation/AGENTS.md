@@ -4,7 +4,7 @@ This folder contains durable project knowledge. Documentation should describe th
 
 ## Primary documentation files
 
-- /Documentation/NAMING-CONVENTIONS.md - Naming conventions
+- /Documentation/NAMING-CONVENTIONS.md - Human-maintained naming conventions. Do not modify this file unless the user explicitly asks.
 - /Documentation/ARCHITECTURE.md - Layering rules, Core vs presentation responsibilities, dependency direction, DI composition, persistence boundaries, and logging conventions.
 - /Documentation/SYSTEM-OVERVIEW.md - Current system purpose, major workflows, project boundaries, and high-level architecture.
 - /Documentation/DESIGN-DECISIONS.md - Important design decisions, tradeoffs, rejected alternatives, and rationale.
@@ -22,7 +22,7 @@ This folder contains durable project knowledge. Documentation should describe th
 - Do not duplicate large code blocks. Reference paths, classes, interfaces, services, migrations, and tests instead.
 - If documentation and code conflict, call out the conflict in the plan before editing either side.
 - Do not create new documentation files unless they are listed in the approved plan.
-- Do not modify /Documentation/CHANGE-LOG.md or /Documentation/KNOWN-ISSUES.md unless the user explicitly asks.
+- Do not modify /Documentation/CHANGE-LOG.md, /Documentation/KNOWN-ISSUES.md, or /Documentation/NAMING-CONVENTIONS.md unless the user explicitly asks for and approved of in a plan.
 
 ## Required updates
 

@@ -312,19 +312,31 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Version2 = GetPropertyNullableInt(record, "Version2"),
                 VersionControl = GetPropertyNullableInt(record, "VersionControl"),
                 ImportedAtUTC = DateTime.UtcNow,
-                ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
-                ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
-                InventoryTransformFormKey = GetFormKeyFromObject(GetPropertyValue(GetPropertyValue(record, "Transforms"), "Inventory")),
-                PreviewTransformFormKey = GetFormKeyFromObject(GetPropertyValue(record, "PreviewTransform")),
-                Xalg = GetPropertyNullableInt(record, "XALG"),
+                ObjectBounds = new ObjectBoundsDTO
+                {
+                    First = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
+                    Second = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second")
+                },
+                Transforms = new BookTransformsDTO
+                {
+                    Inventory = GetFormKeyFromObject(GetPropertyValue(GetPropertyValue(record, "Transforms"), "Inventory"))
+                },
+                InventoryArt = GetFormKeyFromObject(GetPropertyValue(record, "InventoryArt")),
+                PreviewTransform = GetFormKeyFromObject(GetPropertyValue(record, "PreviewTransform")),
+                FeaturedItemMessage = GetFormKeyFromObject(GetPropertyValue(record, "FeaturedItemMessage")),
+                XALG = GetPropertyNullableInt(record, "XALG"),
                 Name = GetTranslatedString(record.Name),
                 Text = GetTranslatedString(GetPropertyValue(record, "BookTextOverride"))
                     ?? GetTranslatedString(GetPropertyValue(record, "Text")),
                 Value = GetPropertyNullableInt(record, "Value"),
                 Weight = GetPropertyNullableFloat(record, "Weight"),
                 Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
-                TeachesType = GetPropertyValue(GetPropertyValue(record, "Teaches"), "Type")?.ToString() ?? GetPropertyValue(record, "Teaches")?.GetType().Name,
-                TeachesRawContent = FormatEnumerable(GetPropertyValue(GetPropertyValue(record, "Teaches"), "RawContent")),
+                Teaches = new BookTeachesDTO
+                {
+                    MutagenObjectType = GetPropertyValue(GetPropertyValue(record, "Teaches"), "Type")?.ToString() ?? GetPropertyValue(record, "Teaches")?.GetType().Name,
+                    Perk = GetFormKeyFromObject(GetPropertyValue(GetPropertyValue(record, "Teaches"), "Perk")),
+                    RawContent = FormatEnumerable(GetPropertyValue(GetPropertyValue(record, "Teaches"), "RawContent"))
+                },
                 DataSlateType = GetPropertyValue(record, "DataSlateType")?.ToString(),
                 Description = GetTranslatedString(GetPropertyValue(record, "Description")),
                 DataSlateHeaderLeft = GetTranslatedString(GetPropertyValue(record, "DataSlateHeaderLeft")),

@@ -593,10 +593,13 @@ public class RecordComparisonServiceTests
 
         comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["Captain's Log", "Captain's Log"]);
         comparison.Fields.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["100", "150"]);
-        comparison.Fields.Single(field => field.FieldName == "InventoryTransformFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000999", "Starfield.esm:00000999"]);
-        comparison.Fields.Single(field => field.FieldName == "PreviewTransformFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000888", "Starfield.esm:00000888"]);
+        comparison.Fields.Single(field => field.FieldName == "Transforms.Inventory").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000999", "Starfield.esm:00000999"]);
+        comparison.Fields.Single(field => field.FieldName == "InventoryArt").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000998", "Starfield.esm:00000998"]);
+        comparison.Fields.Single(field => field.FieldName == "PreviewTransform").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000888", "Starfield.esm:00000888"]);
+        comparison.Fields.Single(field => field.FieldName == "FeaturedItemMessage").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000777", "Starfield.esm:00000777"]);
         comparison.Fields.Single(field => field.FieldName == "Text").Values.Select(value => value.DisplayValue).ShouldBe(["Base text", "Patch text"]);
-        comparison.Fields.Single(field => field.FieldName == "TeachesType").Values.Select(value => value.DisplayValue).ShouldBe(["Skill", "Skill"]);
+        comparison.Fields.Single(field => field.FieldName == "Teaches.MutagenObjectType").Values.Select(value => value.DisplayValue).ShouldBe(["Skill", "Skill"]);
+        comparison.Fields.Single(field => field.FieldName == "Teaches.Perk").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000666", "Starfield.esm:00000666"]);
     }
 
     [Fact]
@@ -944,18 +947,30 @@ public class RecordComparisonServiceTests
             MajorRecordFlags = 2,
             ImportedAtUTC = DateTime.UtcNow,
             Version2 = 3,
-            ObjectBoundsFirst = "0, 0, 0",
-            ObjectBoundsSecond = "1, 1, 1",
-            InventoryTransformFormKey = CreateFormKey("Starfield.esm", 0x999),
-            PreviewTransformFormKey = CreateFormKey("Starfield.esm", 0x888),
-            Xalg = 7,
+            ObjectBounds = new ObjectBoundsDTO
+            {
+                First = "0, 0, 0",
+                Second = "1, 1, 1"
+            },
+            Transforms = new BookTransformsDTO
+            {
+                Inventory = CreateFormKey("Starfield.esm", 0x999)
+            },
+            InventoryArt = CreateFormKey("Starfield.esm", 0x998),
+            PreviewTransform = CreateFormKey("Starfield.esm", 0x888),
+            FeaturedItemMessage = CreateFormKey("Starfield.esm", 0x777),
+            XALG = 7,
             Name = Text(name),
             Text = Text(fileName.StartsWith("Base", StringComparison.Ordinal) ? "Base text" : "Patch text"),
             Value = value,
             Weight = 1.25f,
             Flags = "Takeable",
-            TeachesType = "Skill",
-            TeachesRawContent = "Piloting",
+            Teaches = new BookTeachesDTO
+            {
+                MutagenObjectType = "Skill",
+                Perk = CreateFormKey("Starfield.esm", 0x666),
+                RawContent = "Piloting"
+            },
             DataSlateType = "None",
             Description = Text("Book description"),
             DataSlateHeaderLeft = Text("Left"),

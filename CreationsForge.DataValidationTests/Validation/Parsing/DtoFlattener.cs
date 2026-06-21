@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Reflection;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
+using CreationsForge.Core.DTOs.Records.Metadata;
 using CreationsForge.Core.Enums;
 
 namespace CreationsForge.DataValidationTests.Validation.Parsing;
@@ -40,7 +41,9 @@ public class DtoFlattener
                     continue;
                 }
 
-                FlattenValue(values, property.Name, game, property.GetValue(value));
+                var propertyValue = property.GetValue(value);
+                FlattenValue(values, property.Name, game, propertyValue);
+                AddSpriggitPathAliases(values, property, property.Name, game, propertyValue);
             }
 
             return;
@@ -90,7 +93,47 @@ public class DtoFlattener
 
         foreach (var property in GetReadableProperties(value.GetType()))
         {
-            FlattenValue(values, path + "." + property.Name, game, property.GetValue(value));
+            var propertyPath = path + "." + property.Name;
+            var propertyValue = property.GetValue(value);
+            FlattenValue(values, propertyPath, game, propertyValue);
+            AddSpriggitPathAliases(values, property, propertyPath, game, propertyValue);
+        }
+    }
+
+    private static void AddSpriggitPathAliases(
+        IDictionary<string, string> values,
+        PropertyInfo property,
+        string propertyPath,
+        SupportedGame? game,
+        object? propertyValue)
+    {
+        var attributes = property.GetCustomAttributes<SpriggitPathAttribute>()
+            .Where(attribute => attribute.AppliesTo(game))
+            .ToList();
+        if (attributes.Count == 0 || propertyValue is null)
+        {
+            return;
+        }
+
+        var aliasValues = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        FlattenValue(aliasValues, propertyPath, game, propertyValue);
+
+        foreach (var attribute in attributes)
+        {
+            foreach (var pair in aliasValues.ToList())
+            {
+                if (string.Equals(pair.Key, propertyPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    values[attribute.Path] = pair.Value;
+                    continue;
+                }
+
+                if (pair.Key.StartsWith(propertyPath + ".", StringComparison.OrdinalIgnoreCase) ||
+                    pair.Key.StartsWith(propertyPath + "[", StringComparison.OrdinalIgnoreCase))
+                {
+                    values[attribute.Path + pair.Key[propertyPath.Length..]] = pair.Value;
+                }
+            }
         }
     }
 

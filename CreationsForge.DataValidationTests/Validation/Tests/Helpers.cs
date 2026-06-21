@@ -29,9 +29,9 @@ public static class Helpers
         ["MajorRecordFlagsRaw"] = "MajorRecordFlags",
         ["ObjectBounds.First"] = "ObjectBoundsFirst",
         ["ObjectBounds.Second"] = "ObjectBoundsSecond",
-        ["Transforms.Inventory"] = "InventoryTransformFormKey",
-        ["InventoryArt"] = "InventoryTransformFormKey",
-        ["PreviewTransform"] = "PreviewTransformFormKey",
+        ["Transforms.Inventory"] = "Transforms.Inventory",
+        ["InventoryArt"] = "InventoryArt",
+        ["PreviewTransform"] = "PreviewTransform",
         ["NativeTerminal"] = "NativeTerminalFormKey",
         ["Model.File"] = "Models[0].File",
         ["Model.LightLayer"] = "Models[0].LightLayer"
@@ -197,10 +197,7 @@ public static class Helpers
         var fields = new Dictionary<string, string>(DtoFlattener.Flatten(dto), StringComparer.OrdinalIgnoreCase);
         AddSpriggitFieldAlias(fields, "ObjectBoundsFirst", "ObjectBounds.First");
         AddSpriggitFieldAlias(fields, "ObjectBoundsSecond", "ObjectBounds.Second");
-        AddSpriggitFieldAlias(fields, "InventoryTransformFormKey", "Transforms.Inventory");
-        AddSpriggitFieldAlias(fields, "TeachesType", "Teaches.MutagenObjectType");
-        AddSpriggitFieldAlias(fields, "TeachesRawContent", "Teaches.RawContent");
-        AddSpriggitFieldAlias(fields, "Xalg", "XALG");
+        AddSpriggitFieldAlias(fields, "XALG", "XALG");
         AddSpriggitFieldAlias(fields, "Models[0].File", "Model.File");
         AddSpriggitFieldAlias(fields, "Models[0].LightLayer", "Model.LightLayer");
         AddSpriggitFieldAlias(fields, "Models[0].Flags", "Model.Flags");
@@ -306,6 +303,11 @@ public static class Helpers
                 fields,
                 "Models[0].MaterialSwaps[" + index.ToString(CultureInfo.InvariantCulture) + "].MaterialSwapFormKey",
                 "Model.MaterialSwaps[" + index.ToString(CultureInfo.InvariantCulture) + "]");
+        }
+
+        if (count == 1)
+        {
+            AddSpriggitFieldAlias(fields, "Models[0].MaterialSwaps[0].MaterialSwapFormKey", "Model.MaterialSwap");
         }
     }
 
@@ -641,7 +643,12 @@ public static class Helpers
             return true;
         }
 
-        if (string.Equals(fieldName, "InventoryTransformFormKey", StringComparison.OrdinalIgnoreCase) && spriggitFields.ContainsKey("InventoryArt"))
+        if (string.Equals(fieldName, "InventoryArt", StringComparison.OrdinalIgnoreCase) && spriggitFields.ContainsKey("InventoryArt"))
+        {
+            return true;
+        }
+
+        if (string.Equals(fieldName, "InventoryArt", StringComparison.OrdinalIgnoreCase) && spriggitFields.ContainsKey("Transforms.Inventory"))
         {
             return true;
         }
@@ -651,14 +658,14 @@ public static class Helpers
             return true;
         }
 
-        if ((string.Equals(fieldName, "TeachesRawContent", StringComparison.OrdinalIgnoreCase) ||
-             string.Equals(fieldName, "Teaches.RawContent", StringComparison.OrdinalIgnoreCase)) &&
+        if (string.Equals(fieldName, "Teaches.RawContent", StringComparison.OrdinalIgnoreCase) &&
             spriggitFields.ContainsKey("Teaches.RawContent"))
         {
             return true;
         }
 
-        if (string.Equals(fieldName, "TeachesType", StringComparison.OrdinalIgnoreCase) && spriggitFields.ContainsKey("Teaches.MutagenObjectType"))
+        if (string.Equals(fieldName, "Teaches.MutagenObjectType", StringComparison.OrdinalIgnoreCase) &&
+            spriggitFields.ContainsKey("Teaches.MutagenObjectType"))
         {
             return true;
         }
@@ -737,6 +744,11 @@ public static class Helpers
             return true;
         }
 
+        if (IsDtoModelMaterialSwapBackedBySpriggitScalar(fieldName, fieldValue, spriggitFields))
+        {
+            return true;
+        }
+
         if (IsDtoScriptingAdapterBackedBySpriggitField(fieldName, fieldValue, spriggitFields, dtoFields))
         {
             return true;
@@ -763,6 +775,46 @@ public static class Helpers
         }
 
         return IsSpriggitListBackedDtoScalar(fieldName, spriggitFields, dtoFields, "Flags");
+    }
+
+    private static bool IsDtoModelMaterialSwapBackedBySpriggitScalar(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> spriggitFields)
+    {
+        if (!spriggitFields.TryGetValue("Model.MaterialSwap", out var materialSwap))
+        {
+            return false;
+        }
+
+        if ((string.Equals(fieldName, "Model.MaterialSwaps.Count", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "Models[0].MaterialSwaps.Count", StringComparison.OrdinalIgnoreCase)) &&
+            string.Equals(fieldValue, "1", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if ((string.Equals(fieldName, "Model.MaterialSwaps[0]", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "Models[0].MaterialSwaps[0].MaterialSwapFormKey", StringComparison.OrdinalIgnoreCase)) &&
+            string.Equals(fieldValue, materialSwap, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (string.Equals(fieldName, "Models[0].MaterialSwaps[0].MaterialSwapIndex", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(fieldValue, "0", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (string.Equals(fieldName, "Models[0].MaterialSwaps[0].ModelSlot", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(fieldValue, "Model", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        return string.Equals(fieldName, "Models[0].MaterialSwaps[0].ModelGender", StringComparison.OrdinalIgnoreCase) &&
+               string.IsNullOrEmpty(fieldValue);
     }
 
     private static bool IsDtoActorValueInformationFieldBackedBySpriggitField(
@@ -1251,8 +1303,7 @@ public static class Helpers
                  string.Equals(fieldName, "ObjectBounds.Second", StringComparison.OrdinalIgnoreCase)) &&
                 string.Equals(fieldValue, "0, 0, 0", StringComparison.Ordinal)) ||
                (string.Equals(fieldName, "Flags", StringComparison.OrdinalIgnoreCase) && IsZero(fieldValue)) ||
-               ((string.Equals(fieldName, "TeachesRawContent", StringComparison.OrdinalIgnoreCase) ||
-                 string.Equals(fieldName, "Teaches.RawContent", StringComparison.OrdinalIgnoreCase)) &&
+               (string.Equals(fieldName, "Teaches.RawContent", StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(fieldValue, uint.MaxValue.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal)) ||
                (string.Equals(fieldName, "DataSlateType", StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(fieldValue, "None", StringComparison.OrdinalIgnoreCase));

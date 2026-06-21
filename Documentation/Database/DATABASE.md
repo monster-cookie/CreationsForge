@@ -5,23 +5,7 @@
 The application uses a local SQLite database. The schema is defined by embedded DbUp scripts in
 `CreationsForge.Migrations/Sql`:
 
-- `001_CreateMultiGameImportSchema.sql` creates the application tables, keys, indexes, constraints, and views.
-- `002_AddAssetArchiveIndex.sql` adds the metadata-only asset archive index/cache tables, the `Statics` and
-  `Containers` typed record tables, `ContainerItems`, and `RawRecordPayloads`.
-- `003_Migrations003.sql` renames `MiscObjects` to `MiscItems` and adds the `Books`, `Doors`, `Terminals`, and
-  `TerminalMarkerParameters` tables.
-- `004_Migrations004.sql` adds the `ConditionForms`, `ConditionFormConditions`,
-  `ConditionFormConditionParameters`, `ConstructibleObjects`, `ConstructibleObjectComponents`,
-  `ConstructibleObjectCategories`, and `ConstructibleObjectRecipeFilters` tables, adds
-  `RawRecordPayloads.SourcePath`, adds plugin import diagnostic columns, and marks existing current or partially
-  imported plugin rows as `Changed` so each supported game reimports cached plugin data after the migration.
-- `005_Migrations005.sql` adds the `Classes`, `ClassProperties`, `ClassWeights`, `Factions`,
-  `FactionRelations`, `FactionRanks`, `ConditionRules`, `ConditionRuleParameters`, `RecordComponents`, and
-  `RecordComponentItems` tables, adds the `LocalizedStrings` table for per-language record text values, adds Book
-  `PreviewTransform` columns, adds ActorValueInformation `Description`, skill/layout scalar columns, typed layout and
-  perk-tree child tables, and perk-tree connection-line child rows, migrates released CNDF condition rows into the
-  shared condition-rule tables, drops the old CNDF-specific condition tables, and marks existing current or partially
-  imported plugin rows as `Changed` so each supported game reimports cached plugin data after the migration.
+- `100_ResetSchema.sql` creates the reset application schema for the current unreleased database cache shape.
 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
@@ -877,12 +861,16 @@ Indexes:
 `Books` additional columns:
 
 - `Version2` (`INTEGER`, nullable)
+- `VersionControl` (`INTEGER`, nullable)
 - `ObjectBounds_First` and `ObjectBounds_Second` (`TEXT`, nullable)
-- nullable decomposed FormKey columns for `InventoryTransform`
+- nullable decomposed FormKey columns for `Transforms_Inventory`
+- nullable decomposed FormKey columns for `InventoryArt`
 - nullable decomposed FormKey columns for `PreviewTransform`
+- nullable decomposed FormKey columns for `FeaturedItemMessage`
 - `XALG` (`INTEGER`, nullable)
-- `Name`, `Text`, `Flags`, `TeachesType`, `TeachesRawContent`, `DataSlateType`, `Description`,
+- `Name`, `Text`, `Flags`, `Teaches_MutagenObjectType`, `Teaches_RawContent`, `DataSlateType`, `Description`,
   `DataSlateHeaderLeft`, and `DataSlateHeaderRight` (`TEXT`, nullable)
+- nullable decomposed FormKey columns for `Teaches_Perk`
 - `Value` (`INTEGER`, nullable)
 - `Weight` (`REAL`, nullable)
 
@@ -1511,10 +1499,16 @@ These columns carry record-reference identity but do not declare SQLite foreign 
 - `MagicEffects.ActorValue2_*`, `ResistValue_*`, `PerkToApply_*`, `EquipAbility_*`, `Explosion_*`,
   `CastingArt_*`, `HitEffectArt_*`, `HitShader_*`, `ImageSpaceModifier_*`, `ImpactData_*`, and `Projectile_*`
 - `Perks.Restriction_*` and `Training_*`
-- `Books.InventoryTransform_ModKey_Name`, `InventoryTransform_ModKey_Type`,
-  `InventoryTransform_ModKey_FileName`, and `InventoryTransform_FormKey_ID`
+- `Books.Transforms_Inventory_ModKey_Name`, `Transforms_Inventory_ModKey_Type`,
+  `Transforms_Inventory_ModKey_FileName`, and `Transforms_Inventory_FormKey_ID`
+- `Books.InventoryArt_ModKey_Name`, `InventoryArt_ModKey_Type`, `InventoryArt_ModKey_FileName`,
+  and `InventoryArt_FormKey_ID`
 - `Books.PreviewTransform_ModKey_Name`, `PreviewTransform_ModKey_Type`,
   `PreviewTransform_ModKey_FileName`, and `PreviewTransform_FormKey_ID`
+- `Books.FeaturedItemMessage_ModKey_Name`, `FeaturedItemMessage_ModKey_Type`,
+  `FeaturedItemMessage_ModKey_FileName`, and `FeaturedItemMessage_FormKey_ID`
+- `Books.Teaches_Perk_ModKey_Name`, `Teaches_Perk_ModKey_Type`, `Teaches_Perk_ModKey_FileName`,
+  and `Teaches_Perk_FormKey_ID`
 - `Doors.NativeTerminal_ModKey_Name`, `NativeTerminal_ModKey_Type`, `NativeTerminal_ModKey_FileName`,
   and `NativeTerminal_FormKey_ID`
 - `Containers.NativeTerminal_ModKey_Name`, `NativeTerminal_ModKey_Type`, `NativeTerminal_ModKey_FileName`,

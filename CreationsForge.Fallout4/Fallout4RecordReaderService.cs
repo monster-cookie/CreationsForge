@@ -626,17 +626,25 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 Version2 = GetPropertyNullableInt(record, "Version2"),
                 VersionControl = GetPropertyNullableInt(record, "VersionControl"),
                 ImportedAtUTC = DateTime.UtcNow,
-                ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
-                ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
-                InventoryTransformFormKey = GetLinkedFormKey(record, "InventoryArt"),
-                PreviewTransformFormKey = GetLinkedFormKey(record, "PreviewTransform"),
+                ObjectBounds = new ObjectBoundsDTO
+                {
+                    First = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
+                    Second = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second")
+                },
+                InventoryArt = GetLinkedFormKey(record, "InventoryArt"),
+                PreviewTransform = GetLinkedFormKey(record, "PreviewTransform"),
+                FeaturedItemMessage = GetLinkedFormKey(record, "FeaturedItemMessage"),
                 Name = GetTranslatedString(record, "Name"),
                 Text = GetTranslatedString(record, "BookText") ?? GetTranslatedString(record, "Text"),
                 Value = GetPropertyNullableInt(record, "Value"),
                 Weight = GetPropertyNullableFloat(record, "Weight"),
                 Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
-                TeachesType = GetPropertyStringOrNull(GetPropertyValue(record, "Teaches"), "Type") ?? GetPropertyValue(record, "Teaches")?.GetType().Name,
-                TeachesRawContent = FormatEnumerable(GetPropertyValue(GetPropertyValue(record, "Teaches"), "RawContent")),
+                Teaches = new BookTeachesDTO
+                {
+                    MutagenObjectType = GetPropertyStringOrNull(GetPropertyValue(record, "Teaches"), "Type") ?? GetPropertyValue(record, "Teaches")?.GetType().Name,
+                    Perk = GetFormKeyFromObject(GetPropertyValue(GetPropertyValue(record, "Teaches"), "Perk")),
+                    RawContent = FormatEnumerable(GetPropertyValue(GetPropertyValue(record, "Teaches"), "RawContent"))
+                },
                 Description = GetTranslatedString(record, "Description"),
                 Models = GetModels(plugin, RecordTypeCatalog.Book.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model")),
                 Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Book.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
@@ -806,7 +814,14 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
 
     private static List<ModelMaterialSwapDTO> GetModelMaterialSwaps(PluginDTO plugin, string recordType, FormKey formKey, object model, DateTime importedAtUTC)
     {
-        return (GetPropertyValue(model, "MaterialSwaps") as IEnumerable)?.Cast<object>()
+        var materialSwaps = (GetPropertyValue(model, "MaterialSwaps") as IEnumerable)?.Cast<object>().ToList() ?? new List<object>();
+        var materialSwap = GetPropertyValue(model, "MaterialSwap");
+        if (materialSwap != null)
+        {
+            materialSwaps.Add(materialSwap);
+        }
+
+        return materialSwaps
             .Select((materialSwap, materialSwapIndex) => GetFormKeyFromObject(materialSwap) is { } materialSwapFormKey
                 ? new ModelMaterialSwapDTO
                 {
@@ -823,7 +838,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 : null)
             .Where(materialSwap => materialSwap != null)
             .Cast<ModelMaterialSwapDTO>()
-            .ToList() ?? new List<ModelMaterialSwapDTO>();
+            .ToList();
     }
 
     private static List<RecordKeywordDTO> GetRecordKeywords(PluginDTO plugin, string recordType, FormKey formKey, object? keywords)

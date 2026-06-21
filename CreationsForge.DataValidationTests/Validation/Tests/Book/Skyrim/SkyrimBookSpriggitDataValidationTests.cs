@@ -40,6 +40,7 @@ public class SkyrimBookSpriggitDataValidationTests : SpriggitDataValidationTestB
         spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[0].String"]);
         spriggitFields["PickUpSound"].ShouldBe(dtoFields["PickUpSound.Start"]);
         spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
@@ -76,11 +77,12 @@ public class SkyrimBookSpriggitDataValidationTests : SpriggitDataValidationTestB
         NormalizeModelFile(spriggitFields["Model.File"]).ShouldBe(NormalizeModelFile(dtoFields["Models[0].File"]));
         spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[0].Language"]);
         spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[0].String"]);
-        spriggitFields["ObjectBounds.First"].ShouldBe(dtoFields["ObjectBoundsFirst"]);
-        spriggitFields["ObjectBounds.Second"].ShouldBe(dtoFields["ObjectBoundsSecond"]);
+        spriggitFields["ObjectBounds.First"].ShouldBe(dtoFields["ObjectBounds.First"]);
+        spriggitFields["ObjectBounds.Second"].ShouldBe(dtoFields["ObjectBounds.Second"]);
         spriggitFields["Value"].ShouldBe(dtoFields["Value"]);
         spriggitFields["Weight"].ShouldBe(dtoFields["Weight"]);
         spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();

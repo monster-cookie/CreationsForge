@@ -4,7 +4,7 @@ using CreationsForge.Core.Enums;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public abstract class RecordDTO : IHasLocalizedStringsRecordDTO
+public abstract class RecordDTO : IHasModKey, IHasFormKey, IHasEditorID, IHasLocalizedStringsRecordDTO
 {
     public required SupportedGame Game { get; set; }
 

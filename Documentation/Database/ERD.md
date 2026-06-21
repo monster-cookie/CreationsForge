@@ -712,24 +712,37 @@ erDiagram
         INTEGER MajorRecordFlags
         TEXT ImportedAtUTC
         INTEGER Version2
+        INTEGER VersionControl
         TEXT ObjectBounds_First
         TEXT ObjectBounds_Second
-        TEXT InventoryTransform_ModKey_Name
-        INTEGER InventoryTransform_ModKey_Type
-        TEXT InventoryTransform_ModKey_FileName
-        INTEGER InventoryTransform_FormKey_ID
+        TEXT Transforms_Inventory_ModKey_Name
+        INTEGER Transforms_Inventory_ModKey_Type
+        TEXT Transforms_Inventory_ModKey_FileName
+        INTEGER Transforms_Inventory_FormKey_ID
+        TEXT InventoryArt_ModKey_Name
+        INTEGER InventoryArt_ModKey_Type
+        TEXT InventoryArt_ModKey_FileName
+        INTEGER InventoryArt_FormKey_ID
         TEXT PreviewTransform_ModKey_Name
         INTEGER PreviewTransform_ModKey_Type
         TEXT PreviewTransform_ModKey_FileName
         INTEGER PreviewTransform_FormKey_ID
+        TEXT FeaturedItemMessage_ModKey_Name
+        INTEGER FeaturedItemMessage_ModKey_Type
+        TEXT FeaturedItemMessage_ModKey_FileName
+        INTEGER FeaturedItemMessage_FormKey_ID
         INTEGER XALG
         TEXT Name
         TEXT Text
         INTEGER Value
         REAL Weight
         TEXT Flags
-        TEXT TeachesType
-        TEXT TeachesRawContent
+        TEXT Teaches_MutagenObjectType
+        TEXT Teaches_Perk_ModKey_Name
+        INTEGER Teaches_Perk_ModKey_Type
+        TEXT Teaches_Perk_ModKey_FileName
+        INTEGER Teaches_Perk_FormKey_ID
+        TEXT Teaches_RawContent
         TEXT DataSlateType
         TEXT Description
         TEXT DataSlateHeaderLeft
@@ -1312,10 +1325,9 @@ erDiagram
 
 ## Index Notes
 
-Indexes are documented in `DATABASE.md`. Migration `002_AddAssetArchiveIndex.sql` adds active-plugin browse indexes
-for `RecordInstances` and typed parent tables, plus indexes for `Statics`, `Containers`, `ContainerItems`, and
-`RawRecordPayloads`. Migration `005_Migrations005.sql` adds the localized-string form-key lookup index and
-ActorValueInformation child-table form-key lookup indexes.
+Indexes are documented in `DATABASE.md`. Migration `100_ResetSchema.sql` creates active-plugin browse indexes for
+`RecordInstances` and typed parent tables, indexes for child lookup tables, the localized-string form-key lookup index,
+and ActorValueInformation child-table form-key lookup indexes.
 
 `Plugins.ImportState` is constrained to `Current`, `Changed`, `PartiallyImported`, `Missing`, `Failed`, or
 `Unsupported`.
@@ -1363,10 +1375,16 @@ These columns contain record-reference data but are not declared SQLite foreign 
   `Parameter_FormKey_ID`
 - `MiscItems.FeaturedItemMessage_ModKey_Name`, `FeaturedItemMessage_ModKey_Type`,
   `FeaturedItemMessage_ModKey_FileName`, and `FeaturedItemMessage_FormKey_ID`
-- `Books.InventoryTransform_ModKey_Name`, `InventoryTransform_ModKey_Type`,
-  `InventoryTransform_ModKey_FileName`, and `InventoryTransform_FormKey_ID`
+- `Books.Transforms_Inventory_ModKey_Name`, `Transforms_Inventory_ModKey_Type`,
+  `Transforms_Inventory_ModKey_FileName`, and `Transforms_Inventory_FormKey_ID`
+- `Books.InventoryArt_ModKey_Name`, `InventoryArt_ModKey_Type`, `InventoryArt_ModKey_FileName`,
+  and `InventoryArt_FormKey_ID`
 - `Books.PreviewTransform_ModKey_Name`, `PreviewTransform_ModKey_Type`,
   `PreviewTransform_ModKey_FileName`, and `PreviewTransform_FormKey_ID`
+- `Books.FeaturedItemMessage_ModKey_Name`, `FeaturedItemMessage_ModKey_Type`,
+  `FeaturedItemMessage_ModKey_FileName`, and `FeaturedItemMessage_FormKey_ID`
+- `Books.Teaches_Perk_ModKey_Name`, `Teaches_Perk_ModKey_Type`, `Teaches_Perk_ModKey_FileName`,
+  and `Teaches_Perk_FormKey_ID`
 - `Doors.NativeTerminal_ModKey_Name`, `NativeTerminal_ModKey_Type`, `NativeTerminal_ModKey_FileName`, and
   `NativeTerminal_FormKey_ID`
 - `Containers.NativeTerminal_ModKey_Name`, `NativeTerminal_ModKey_Type`, `NativeTerminal_ModKey_FileName`, and

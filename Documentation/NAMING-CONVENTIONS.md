@@ -98,7 +98,8 @@ The source field path should remain canonical:
 
 - `Name` should map to localized source field `Name`.
 - `Description` should map to localized source field `Description`.
-- If the source field is `BookText`, the DTO should use `BookText` unless the approved plan documents why a different domain name is more appropriate.
+- If the source field is `BookText` but the shared capability is book/body text, the DTO may use `Text` with
+  localized-field and Spriggit-path metadata mapping non-Starfield sources back to `BookText`.
 
 Localized string persistence should store the source field path needed to round-trip or compare against Spriggit. If a UI label needs friendlier wording, keep that label in presentation code rather than renaming the DTO field.
 
@@ -114,6 +115,22 @@ For FormKey references, use decomposed columns based on the canonical source fie
 - `Race_FormKey_ID`
 
 Avoid making DTOs adopt database-specific suffixes solely because the database decomposes a value.
+
+Avoid prefixing table names with `Record` unless the table stores generic record infrastructure, such as
+`RecordInstances`.
+
+Shared child tables should use the capability name:
+
+- `Components`
+- `ComponentItems`
+- `Models`
+- `RawRecordPayloads`
+
+Use a `Mappings` suffix when the table primarily associates a parent record with another record/form key rather than
+owning the child data:
+
+- `KeywordMappings`
+- `SoundMappings`
 
 Imported plugin and typed-record data is currently cache data that can be rebuilt from source plugins. Future user-authored data must be kept separate from imported cache data so cache schema resets do not destroy user content.
 
@@ -140,3 +157,6 @@ The UI may display `Race` as `Race`, `BookText` as `Book Text`, or a grouped chi
 For v2 reset work, prefer renaming the core contract toward canonical source names rather than adding more aliases. Use attributes and interfaces to describe mappings and shared behavior. Do not use them to preserve stale names as the primary model.
 
 When a reset changes imported cache schema or persisted read-back behavior, existing local SQLite cache data should be treated as stale and reset or reimported before validation results are considered meaningful.
+
+Reset migrations must create the final schema directly. Do not carry forward `ALTER TABLE`, data-copy, invalidation
+`UPDATE`, or compatibility cleanup statements from earlier migrations unless the reset intentionally seeds data.

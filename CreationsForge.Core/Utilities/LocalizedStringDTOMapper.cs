@@ -1,6 +1,8 @@
 using System.Reflection;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
+using CreationsForge.Core.DTOs.Records.Interfaces;
+using CreationsForge.Core.DTOs.Records.Metadata;
 using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Core.Utilities;
@@ -124,6 +126,13 @@ public static class LocalizedStringDTOMapper
 
     private static IReadOnlyList<LocalizedStringDTO> CreateLocalizedStrings(RecordDTO dto)
     {
+        if (dto is IHasTranslatedFields translatedFields)
+        {
+            return translatedFields.GetTranslatedFields()
+                .SelectMany(field => CreateLocalizedStrings(dto, field.SourceField, field.Value))
+                .ToList();
+        }
+
         return EnumerateTranslatedStringFields(dto, string.Empty)
             .SelectMany(field => CreateLocalizedStrings(dto, field.SourceField, field.Value))
             .ToList();
@@ -218,14 +227,31 @@ public static class LocalizedStringDTOMapper
                      .Where(property => property.GetIndexParameters().Length == 0)
                      .Where(property => !string.Equals(property.Name, nameof(RecordDTO.LocalizedStrings), StringComparison.Ordinal)))
         {
-            var propertyPath = string.IsNullOrEmpty(path)
-                ? property.Name
-                : path + "." + property.Name;
+            var propertyPath = GetLocalizedSourceField(value, property, path);
             foreach (var translatedStringField in EnumerateTranslatedStringFields(property.GetValue(value), propertyPath))
             {
                 yield return translatedStringField;
             }
         }
+    }
+
+    private static string GetLocalizedSourceField(object owner, PropertyInfo property, string path)
+    {
+        if (owner is RecordDTO record)
+        {
+            var attribute = property.GetCustomAttributes<LocalizedFieldAttribute>()
+                .FirstOrDefault(item => item.AppliesTo(record.Game));
+            if (attribute != null)
+            {
+                return string.IsNullOrEmpty(path)
+                    ? attribute.SourceField
+                    : path + "." + attribute.SourceField;
+            }
+        }
+
+        return string.IsNullOrEmpty(path)
+            ? property.Name
+            : path + "." + property.Name;
     }
 
     private static bool IsScalar(object value)

@@ -1,34 +1,11 @@
 # Migrations Status
 
-## Migration 001 - Released Version 1.1.1
+## Migration 100 - Unreleased Reset
 
-This was released with version 1.1.1 on 2026-06-07
+All current database work uses the reset migration script:
 
-REF: CreationsForge.Migrations\Sql\001_CreateMultiGameImportSchema.sql
+REF: CreationsForge.Migrations\Sql\100_ResetSchema.sql
 
-## Migration 002 - Released Version 1.1.7
-
-This was released with version 1.1.7 on 2026-06-13
-
-REF: CreationsForge.Migrations\Sql\002_AddAssetArchiveIndex.sql
-
-## Migration 003 - Released Version 1.1.8
-
-This was released with version 1.1.8 on 2026-06-14
-
-REF: CreationsForge.Migrations\Sql\003_Migrations003.sql
-
-## Migration 004 - Released Version 1.1.9
-
-This was released with version 1.1.9 on 2026-06-16
-
-REF: CreationsForge.Migrations\Sql\004_Migrations004.sql
-
-## Migration 005 - UNRELEASED
-
-All current database work needs to use migration 005. It currently adds Class and Faction typed records, shared
-Starfield component storage, shared `ConditionRules` / `ConditionRuleParameters` storage for condition rule child
-systems, `LocalizedStrings` child rows, and Book `PreviewTransform` columns. Migration 005 also migrates released CNDF
-rows out of the old `ConditionFormConditions` tables and drops those old CNDF-specific tables.
-
-REF: CreationsForge.Migrations\Sql\005_Migrations005.sql
+This repository is in a pre-release reset window for the local cache database. Existing local SQLite databases must be
+deleted manually and rebuilt from migration 100; released migration-history continuity is intentionally not preserved
+for this reset.
