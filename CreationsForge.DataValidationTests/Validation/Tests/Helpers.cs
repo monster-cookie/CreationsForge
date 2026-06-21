@@ -133,7 +133,7 @@ public static class Helpers
 
         foreach (var field in spriggit.Fields.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase))
         {
-            if (!IsMatchedSpriggitField(field.Key, spriggit.Fields, dtoFields))
+            if (!IsMatchedSpriggitField(field.Key, field.Value, spriggit.Fields, dtoFields))
             {
                 unmatchedFields.Add(
                     "No matching CreationsForge reader DTO field was found for Spriggit field '" + field.Key + "'." +
@@ -534,6 +534,7 @@ public static class Helpers
 
     private static bool IsMatchedSpriggitField(
         string fieldName,
+        string fieldValue,
         IReadOnlyDictionary<string, string> spriggitFields,
         IReadOnlyDictionary<string, string> dtoFields)
     {
@@ -589,6 +590,11 @@ public static class Helpers
         }
 
         if (IsSpriggitActorValueInformationFieldBackedByDtoField(fieldName, spriggitFields, dtoFields))
+        {
+            return true;
+        }
+
+        if (IsSpriggitInlineFormKeyListItemBackedByDtoScalar(fieldName, fieldValue, dtoFields, "Keywords"))
         {
             return true;
         }
@@ -1672,6 +1678,35 @@ public static class Helpers
         var spriggitFieldName = GetSpriggitRawPayloadFieldName(dtoFields, payloadPath);
         return !string.IsNullOrWhiteSpace(spriggitFieldName) &&
                spriggitFields.ContainsKey(spriggitFieldName);
+    }
+
+    private static bool IsSpriggitInlineFormKeyListItemBackedByDtoScalar(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> dtoFields,
+        string rootFieldName)
+    {
+        if (!TryGetIndexedPath(fieldName, rootFieldName, out var index, out var remainder) ||
+            !remainder.StartsWith(".", StringComparison.Ordinal) ||
+            remainder.Length == 1)
+        {
+            return false;
+        }
+
+        var formKeyId = remainder[1..];
+        if (formKeyId.Contains('.', StringComparison.Ordinal) ||
+            formKeyId.Contains('[', StringComparison.Ordinal) ||
+            formKeyId.Contains(']', StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var formKey = formKeyId + ":" + fieldValue;
+        var dtoPath = rootFieldName + "[" + index.ToString(CultureInfo.InvariantCulture) + "]";
+        return (dtoFields.TryGetValue(dtoPath, out var dtoValue) &&
+                string.Equals(formKey, dtoValue, StringComparison.Ordinal)) ||
+               (dtoFields.TryGetValue(dtoPath + ".KeywordFormKey", out var dtoKeywordValue) &&
+                string.Equals(formKey, dtoKeywordValue, StringComparison.Ordinal));
     }
 
     private static bool IsSpriggitListBackedDtoScalar(

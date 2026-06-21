@@ -71,6 +71,7 @@ public class SkyrimBookSpriggitDataValidationTests : SpriggitDataValidationTestB
         NormalizeText(spriggitFields["BookText[7].String"]).ShouldBe(NormalizeText(dtoFields["Text[0].String"]));
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["Keywords[0]"].ShouldBe(dtoFields["Keywords[0]"]);
         spriggitFields["Model.Data"].ShouldBe(dtoFields["Model.Data"]);
         NormalizeModelFile(spriggitFields["Model.File"]).ShouldBe(NormalizeModelFile(dtoFields["Models[0].File"]));
         spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[0].Language"]);
