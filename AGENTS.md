@@ -58,7 +58,8 @@ You must treat repo documentation as durable project knowledge.
 
 Primary project knowledge files:
 
-- /Documentation/NAMING-CONVENTIONS.md - Naming conventions
+- /Documentation/NAMING-CONVENTIONS.md - Naming conventions and required project knowledge for record model, DTO, importer, validation,
+  comparison, or schema work.
 - /Documentation/ARCHITECTURE.md - Layering rules, Core vs presentation responsibilities, dependency direction, DI composition, persistence boundaries, and logging conventions.
 - /Documentation/SYSTEM-OVERVIEW.md - Current system purpose, major workflows, project boundaries, and high-level architecture.
 - /Documentation/DESIGN-DECISIONS.md - Important design decisions, tradeoffs, rejected alternatives, and rationale.
@@ -160,6 +161,15 @@ After approval:
   Spriggit output before mapping records.
 - Keep UI framework code out of CreationsForge.Core.
 - Keep game-specific behavior out of CreationsForge.Core unless it is truly shared across supported games.
+- Game-specific fields should stay game-specific unless shared infrastructure consumes the capability.
+- New or rebuilt record DTOs must use Spriggit/Mutagen/xEdit/SFCK canonical field names unless the approved plan
+  documents a conflict.
+- Do not suffix DTO or model properties with storage/type details such as FormKey when the property type already communicates
+  the shape.
+- Shared interfaces must represent behavior consumed by shared infrastructure; do not add decorative one-off
+  interfaces.
+- Mapping attributes are boundary metadata for Spriggit paths, localization, and persistence columns. They must not be
+  used to keep alias drift as permanent model vocabulary.
 
 ## Deferral / incomplete work rules
 
