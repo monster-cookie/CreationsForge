@@ -2,6 +2,7 @@ using CreationsForge.Core.DTOs.Assets;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Repositories.Interfaces;
 using NPoco;
+using System.Text;
 
 namespace CreationsForge.Core.Repositories;
 
@@ -195,7 +196,14 @@ public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
 
     private void InsertArchiveEntryBatch(IReadOnlyList<AssetArchiveEntryDTO> entries)
     {
-        var sql = new Sql("""
+        if (Database is not NPoco.Database npocoDatabase)
+        {
+            throw new InvalidOperationException("Asset archive index repository requires an NPoco Database instance.");
+        }
+
+        using var command = npocoDatabase.Connection.CreateCommand();
+        command.Transaction = npocoDatabase.Transaction;
+        var sql = new StringBuilder("""
             INSERT INTO AssetArchiveEntries (
                 Game,
                 ArchivePath,
@@ -215,21 +223,42 @@ public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
                 sql.Append(",");
             }
 
-            sql.Append(
-                "(@Game, @ArchivePath, @NormalizedEntryPath, @RootFolder, @Extension, @PackedSize, @UnpackedSize)",
-                new
-                {
-                    Game = entry.Game.ToString(),
-                    entry.ArchivePath,
-                    entry.NormalizedEntryPath,
-                    entry.RootFolder,
-                    entry.Extension,
-                    entry.PackedSize,
-                    entry.UnpackedSize
-                });
+            sql.AppendLine();
+            sql.Append("(@Game");
+            sql.Append(index);
+            sql.Append(", @ArchivePath");
+            sql.Append(index);
+            sql.Append(", @NormalizedEntryPath");
+            sql.Append(index);
+            sql.Append(", @RootFolder");
+            sql.Append(index);
+            sql.Append(", @Extension");
+            sql.Append(index);
+            sql.Append(", @PackedSize");
+            sql.Append(index);
+            sql.Append(", @UnpackedSize");
+            sql.Append(index);
+            sql.Append(')');
+
+            AddParameter(command, "@Game" + index, entry.Game.ToString());
+            AddParameter(command, "@ArchivePath" + index, entry.ArchivePath);
+            AddParameter(command, "@NormalizedEntryPath" + index, entry.NormalizedEntryPath);
+            AddParameter(command, "@RootFolder" + index, entry.RootFolder);
+            AddParameter(command, "@Extension" + index, entry.Extension);
+            AddParameter(command, "@PackedSize" + index, entry.PackedSize);
+            AddParameter(command, "@UnpackedSize" + index, entry.UnpackedSize);
         }
 
-        Database.Execute(sql);
+        command.CommandText = sql.ToString();
+        command.ExecuteNonQuery();
+    }
+
+    private static void AddParameter(System.Data.Common.DbCommand command, string name, object value)
+    {
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = name;
+        parameter.Value = value;
+        command.Parameters.Add(parameter);
     }
 
     public void DeleteArchive(SupportedGame game, string archivePath)
