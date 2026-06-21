@@ -43,7 +43,11 @@ public class StarfieldBookSpriggitDataValidationTests : SpriggitDataValidationTe
         NormalizeModelFile(spriggitFields["Model.File"]).ShouldBe(NormalizeModelFile(dtoFields["Models[0].File"]));
         spriggitFields["Model.LightLayer"].ShouldBe(dtoFields["Models[0].LightLayer"]);
         spriggitFields["Components.Count"].ShouldBe(dtoFields["Components.Count"]);
-        spriggitFields["REFL"].ShouldBe(dtoFields["REFL"]);
+        dtoFields["RawPayloads.Count"].ShouldBe("1");
+        dtoFields["RawPayloads[0].PayloadSlot"].ShouldBe("BaseFormComponents.LodOwnerComponentBinaryOverlay.REFL");
+        dtoFields["RawPayloads[0].PayloadType"].ShouldBe("LodOwnerComponentBinaryOverlay");
+        dtoFields["RawPayloads[0].SourcePath"].ShouldBe("Components.LodOwnerComponentBinaryOverlay.REFL");
+        NormalizeHexPayload(spriggitFields["Components[0].REFL"]).ShouldBe(NormalizeHexPayload(dtoFields["RawPayloads[0].PayloadValue"]));
         dtoFields["Name.Count"].ShouldBe("1");
         spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
         spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[0].Language"]);
@@ -92,7 +96,11 @@ public class StarfieldBookSpriggitDataValidationTests : SpriggitDataValidationTe
         NormalizeModelFile(spriggitFields["Model.File"]).ShouldBe(NormalizeModelFile(dtoFields["Models[0].File"]));
         spriggitFields["Model.LightLayer"].ShouldBe(dtoFields["Models[0].LightLayer"]);
         spriggitFields["Components.Count"].ShouldBe(dtoFields["Components.Count"]);
-        spriggitFields["REFL"].ShouldBe(dtoFields["REFL"]);
+        dtoFields["RawPayloads.Count"].ShouldBe("1");
+        dtoFields["RawPayloads[0].PayloadSlot"].ShouldBe("BaseFormComponents.LodOwnerComponentBinaryOverlay.REFL");
+        dtoFields["RawPayloads[0].PayloadType"].ShouldBe("LodOwnerComponentBinaryOverlay");
+        dtoFields["RawPayloads[0].SourcePath"].ShouldBe("Components.LodOwnerComponentBinaryOverlay.REFL");
+        NormalizeHexPayload(spriggitFields["Components[0].REFL"]).ShouldBe(NormalizeHexPayload(dtoFields["RawPayloads[0].PayloadValue"]));
         dtoFields["Name.Count"].ShouldBe("1");
         spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
         spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[0].Language"]);
@@ -107,19 +115,19 @@ public class StarfieldBookSpriggitDataValidationTests : SpriggitDataValidationTe
         spriggitFields["Transforms.Inventory"].ShouldBe(dtoFields["Transforms.Inventory"]);
         spriggitFields["Value"].ShouldBe(dtoFields["Value"]);
         spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VirtualMachineAdapter.Count"].ShouldBe(dtoFields["VirtualMachineAdapter.Count"]);
-        spriggitFields["VirtualMachineAdapter[0].Count"].ShouldBe(dtoFields["VirtualMachineAdapter[0].Count"]);
-        spriggitFields["VirtualMachineAdapter[0].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][0].Count"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0].Count"]);
-        spriggitFields["VirtualMachineAdapter[0][0].MutagenObjectType"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0].MutagenObjectType"]);
-        spriggitFields["VirtualMachineAdapter[0][0].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][0][0].Object"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][0].Object"]);
-        spriggitFields["VirtualMachineAdapter[0][0][1].Object"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][1].Object"]);
-        spriggitFields["VirtualMachineAdapter[0][0][2].Object"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][2].Object"]);
-        spriggitFields["VirtualMachineAdapter[0][0][3].Object"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0][3].Object"]);
-        spriggitFields["VirtualMachineAdapter[0][1].MutagenObjectType"].ShouldBe(dtoFields["VirtualMachineAdapter[0][1].MutagenObjectType"]);
-        spriggitFields["VirtualMachineAdapter[0][1].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][1].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][1].Object"].ShouldBe(dtoFields["VirtualMachineAdapter[0][1].Object"]);
+        spriggitFields["VirtualMachineAdapter.Scripts.Count"].ShouldBe(dtoFields["ScriptingAdapters.Count"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties.Count"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties.Count"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Name"].ShouldBe(dtoFields["ScriptingAdapters[0].Name"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[0].Objects.Count"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[0].ListItems.Count"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[0].MutagenObjectType"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[0].MutagenObjectType"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[0].Name"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[0].Name"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[0].Objects[0].Object"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[0].ListItems[0].ObjectFormKey"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[0].Objects[1].Object"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[0].ListItems[1].ObjectFormKey"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[0].Objects[2].Object"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[0].ListItems[2].ObjectFormKey"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[0].Objects[3].Object"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[0].ListItems[3].ObjectFormKey"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[1].MutagenObjectType"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[1].MutagenObjectType"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[1].Name"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[1].Name"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[1].Object"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[1].ObjectFormKey"]);
         spriggitFields["XALG"].ShouldBe(dtoFields["XALG"]);
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
@@ -154,7 +162,11 @@ public class StarfieldBookSpriggitDataValidationTests : SpriggitDataValidationTe
         NormalizeModelFile(spriggitFields["Model.File"]).ShouldBe(NormalizeModelFile(dtoFields["Models[0].File"]));
         spriggitFields["Model.LightLayer"].ShouldBe(dtoFields["Models[0].LightLayer"]);
         spriggitFields["Components.Count"].ShouldBe(dtoFields["Components.Count"]);
-        spriggitFields["REFL"].ShouldBe(dtoFields["REFL"]);
+        dtoFields["RawPayloads.Count"].ShouldBe("1");
+        dtoFields["RawPayloads[0].PayloadSlot"].ShouldBe("BaseFormComponents.LodOwnerComponentBinaryOverlay.REFL");
+        dtoFields["RawPayloads[0].PayloadType"].ShouldBe("LodOwnerComponentBinaryOverlay");
+        dtoFields["RawPayloads[0].SourcePath"].ShouldBe("Components.LodOwnerComponentBinaryOverlay.REFL");
+        NormalizeHexPayload(spriggitFields["Components[0].REFL"]).ShouldBe(NormalizeHexPayload(dtoFields["RawPayloads[0].PayloadValue"]));
         dtoFields["Name.Count"].ShouldBe("1");
         spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
         spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[0].Language"]);
@@ -169,8 +181,9 @@ public class StarfieldBookSpriggitDataValidationTests : SpriggitDataValidationTe
         spriggitFields["Transforms.Inventory"].ShouldBe(dtoFields["Transforms.Inventory"]);
         spriggitFields["Value"].ShouldBe(dtoFields["Value"]);
         spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VirtualMachineAdapter.Count"].ShouldBe(dtoFields["VirtualMachineAdapter.Count"]);
-        spriggitFields["VirtualMachineAdapter[0].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0].Name"]);
+        spriggitFields["VirtualMachineAdapter.Scripts.Count"].ShouldBe(dtoFields["ScriptingAdapters.Count"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Name"].ShouldBe(dtoFields["ScriptingAdapters[0].Name"]);
+        dtoFields["ScriptingAdapters[0].Properties.Count"].ShouldBe("0");
         spriggitFields["XALG"].ShouldBe(dtoFields["XALG"]);
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
@@ -213,7 +226,11 @@ public class StarfieldBookSpriggitDataValidationTests : SpriggitDataValidationTe
         NormalizeModelFile(spriggitFields["Model.File"]).ShouldBe(NormalizeModelFile(dtoFields["Models[0].File"]));
         spriggitFields["Model.LightLayer"].ShouldBe(dtoFields["Models[0].LightLayer"]);
         spriggitFields["Components.Count"].ShouldBe(dtoFields["Components.Count"]);
-        spriggitFields["REFL"].ShouldBe(dtoFields["REFL"]);
+        dtoFields["RawPayloads.Count"].ShouldBe("1");
+        dtoFields["RawPayloads[0].PayloadSlot"].ShouldBe("BaseFormComponents.LodOwnerComponentBinaryOverlay.REFL");
+        dtoFields["RawPayloads[0].PayloadType"].ShouldBe("LodOwnerComponentBinaryOverlay");
+        dtoFields["RawPayloads[0].SourcePath"].ShouldBe("Components.LodOwnerComponentBinaryOverlay.REFL");
+        NormalizeHexPayload(spriggitFields["Components[0].REFL"]).ShouldBe(NormalizeHexPayload(dtoFields["RawPayloads[0].PayloadValue"]));
         dtoFields["Name.Count"].ShouldBe("1");
         spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
         spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[0].Language"]);
@@ -260,7 +277,11 @@ public class StarfieldBookSpriggitDataValidationTests : SpriggitDataValidationTe
         NormalizeModelFile(spriggitFields["Model.File"]).ShouldBe(NormalizeModelFile(dtoFields["Models[0].File"]));
         spriggitFields["Model.LightLayer"].ShouldBe(dtoFields["Models[0].LightLayer"]);
         spriggitFields["Components.Count"].ShouldBe(dtoFields["Components.Count"]);
-        spriggitFields["REFL"].ShouldBe(dtoFields["REFL"]);
+        dtoFields["RawPayloads.Count"].ShouldBe("1");
+        dtoFields["RawPayloads[0].PayloadSlot"].ShouldBe("BaseFormComponents.LodOwnerComponentBinaryOverlay.REFL");
+        dtoFields["RawPayloads[0].PayloadType"].ShouldBe("LodOwnerComponentBinaryOverlay");
+        dtoFields["RawPayloads[0].SourcePath"].ShouldBe("Components.LodOwnerComponentBinaryOverlay.REFL");
+        NormalizeHexPayload(spriggitFields["Components[0].REFL"]).ShouldBe(NormalizeHexPayload(dtoFields["RawPayloads[0].PayloadValue"]));
         dtoFields["Name.Count"].ShouldBe("1");
         spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
         spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[0].Language"]);
@@ -275,30 +296,30 @@ public class StarfieldBookSpriggitDataValidationTests : SpriggitDataValidationTe
         spriggitFields["Transforms.Inventory"].ShouldBe(dtoFields["Transforms.Inventory"]);
         spriggitFields["Value"].ShouldBe(dtoFields["Value"]);
         spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VirtualMachineAdapter.Count"].ShouldBe(dtoFields["VirtualMachineAdapter.Count"]);
-        spriggitFields["VirtualMachineAdapter[0].Count"].ShouldBe(dtoFields["VirtualMachineAdapter[0].Count"]);
-        spriggitFields["VirtualMachineAdapter[0].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][0].MutagenObjectType"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0].MutagenObjectType"]);
-        spriggitFields["VirtualMachineAdapter[0][0].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][0].Object"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0].Object"]);
-        spriggitFields["VirtualMachineAdapter[0][1].MutagenObjectType"].ShouldBe(dtoFields["VirtualMachineAdapter[0][1].MutagenObjectType"]);
-        spriggitFields["VirtualMachineAdapter[0][1].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][1].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][1].Object"].ShouldBe(dtoFields["VirtualMachineAdapter[0][1].Object"]);
-        spriggitFields["VirtualMachineAdapter[0][2].MutagenObjectType"].ShouldBe(dtoFields["VirtualMachineAdapter[0][2].MutagenObjectType"]);
-        spriggitFields["VirtualMachineAdapter[0][2].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][2].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][2].Object"].ShouldBe(dtoFields["VirtualMachineAdapter[0][2].Object"]);
-        spriggitFields["VirtualMachineAdapter[0][3].Data"].ShouldBe(dtoFields["VirtualMachineAdapter[0][3].Data"]);
-        spriggitFields["VirtualMachineAdapter[0][3].MutagenObjectType"].ShouldBe(dtoFields["VirtualMachineAdapter[0][3].MutagenObjectType"]);
-        spriggitFields["VirtualMachineAdapter[0][3].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][3].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][4].Data"].ShouldBe(dtoFields["VirtualMachineAdapter[0][4].Data"]);
-        spriggitFields["VirtualMachineAdapter[0][4].MutagenObjectType"].ShouldBe(dtoFields["VirtualMachineAdapter[0][4].MutagenObjectType"]);
-        spriggitFields["VirtualMachineAdapter[0][4].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][4].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][5].Data"].ShouldBe(dtoFields["VirtualMachineAdapter[0][5].Data"]);
-        spriggitFields["VirtualMachineAdapter[0][5].MutagenObjectType"].ShouldBe(dtoFields["VirtualMachineAdapter[0][5].MutagenObjectType"]);
-        spriggitFields["VirtualMachineAdapter[0][5].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][5].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][6].Data"].ShouldBe(dtoFields["VirtualMachineAdapter[0][6].Data"]);
-        spriggitFields["VirtualMachineAdapter[0][6].MutagenObjectType"].ShouldBe(dtoFields["VirtualMachineAdapter[0][6].MutagenObjectType"]);
-        spriggitFields["VirtualMachineAdapter[0][6].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][6].Name"]);
+        spriggitFields["VirtualMachineAdapter.Scripts.Count"].ShouldBe(dtoFields["ScriptingAdapters.Count"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties.Count"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties.Count"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Name"].ShouldBe(dtoFields["ScriptingAdapters[0].Name"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[0].MutagenObjectType"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[0].MutagenObjectType"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[0].Name"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[0].Name"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[0].Object"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[0].ObjectFormKey"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[1].MutagenObjectType"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[1].MutagenObjectType"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[1].Name"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[1].Name"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[1].Object"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[1].ObjectFormKey"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[2].MutagenObjectType"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[2].MutagenObjectType"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[2].Name"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[2].Name"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[2].Object"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[2].ObjectFormKey"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[3].Data"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[3].DataInt"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[3].MutagenObjectType"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[3].MutagenObjectType"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[3].Name"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[3].Name"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[4].Data"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[4].DataInt"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[4].MutagenObjectType"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[4].MutagenObjectType"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[4].Name"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[4].Name"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[5].Data"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[5].DataInt"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[5].MutagenObjectType"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[5].MutagenObjectType"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[5].Name"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[5].Name"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[6].Data"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[6].DataInt"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[6].MutagenObjectType"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[6].MutagenObjectType"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[6].Name"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[6].Name"]);
         spriggitFields["XALG"].ShouldBe(dtoFields["XALG"]);
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
@@ -310,5 +331,12 @@ public class StarfieldBookSpriggitDataValidationTests : SpriggitDataValidationTe
         return modelFile.StartsWith("Meshes\\", StringComparison.OrdinalIgnoreCase)
             ? modelFile
             : "Meshes\\" + modelFile;
+    }
+
+    private static string NormalizeHexPayload(string payload)
+    {
+        return payload.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+            ? payload[2..]
+            : payload;
     }
 }

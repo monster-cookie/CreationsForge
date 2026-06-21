@@ -430,6 +430,14 @@ public static class Helpers
         return string.Empty;
     }
 
+    private static bool HasSpriggitRawPayloadField(IReadOnlyDictionary<string, string> spriggitFields, string fieldName)
+    {
+        return spriggitFields.ContainsKey(fieldName) ||
+               spriggitFields.Keys.Any(field =>
+                   field.EndsWith("." + fieldName, StringComparison.OrdinalIgnoreCase) &&
+                   TryGetIndexedPath(field, "Components", out _, out _));
+    }
+
     private static bool TryGetRawPayloadLeafField(string path, out string fieldName)
     {
         if (string.Equals(path, "Model.Data", StringComparison.OrdinalIgnoreCase))
@@ -501,13 +509,18 @@ public static class Helpers
             return;
         }
 
+        fields[spriggitPropertyPath + ".Objects.Count"] = listItemCount.ToString(CultureInfo.InvariantCulture);
         for (var listItemIndex = 0; listItemIndex < listItemCount; listItemIndex++)
         {
             var dtoListItemPath = dtoPropertyPath + ".ListItems[" + listItemIndex.ToString(CultureInfo.InvariantCulture) + "]";
             var spriggitListItemPath = spriggitPropertyPath + "[" + listItemIndex.ToString(CultureInfo.InvariantCulture) + "]";
+            var spriggitObjectListItemPath = spriggitPropertyPath + ".Objects[" + listItemIndex.ToString(CultureInfo.InvariantCulture) + "]";
             AddSpriggitFieldAlias(fields, dtoListItemPath + ".MutagenObjectType", spriggitListItemPath + ".MutagenObjectType");
             AddSpriggitFieldAlias(fields, dtoListItemPath + ".ObjectFormKey", spriggitListItemPath + ".Object");
+            AddSpriggitFieldAlias(fields, dtoListItemPath + ".MutagenObjectType", spriggitObjectListItemPath + ".MutagenObjectType");
+            AddSpriggitFieldAlias(fields, dtoListItemPath + ".ObjectFormKey", spriggitObjectListItemPath + ".Object");
             AddSpriggitScriptingAdapterDataAlias(fields, dtoListItemPath, spriggitListItemPath);
+            AddSpriggitScriptingAdapterDataAlias(fields, dtoListItemPath, spriggitObjectListItemPath);
         }
     }
 
@@ -1199,11 +1212,9 @@ public static class Helpers
             return false;
         }
 
-        var spriggitTypeName = componentTypeValue["MutagenObjectType:".Length..].Trim();
         return dtoFields
             .Where(field => field.Key.StartsWith("RawPayloads[", StringComparison.OrdinalIgnoreCase) &&
-                            field.Key.EndsWith("].PayloadType", StringComparison.OrdinalIgnoreCase) &&
-                            string.Equals(field.Value, spriggitTypeName, StringComparison.Ordinal))
+                            field.Key.EndsWith("].PayloadType", StringComparison.OrdinalIgnoreCase))
             .Any(field =>
             {
                 var payloadPath = field.Key[..^".PayloadType".Length];
@@ -1211,6 +1222,7 @@ public static class Helpers
                        int.TryParse(payloadIndexValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var payloadIndex) &&
                        payloadIndex == componentIndex &&
                        dtoFields.TryGetValue(payloadPath + ".SourcePath", out var sourcePath) &&
+                       sourcePath.StartsWith("Components.", StringComparison.Ordinal) &&
                        sourcePath.EndsWith("." + componentFieldName, StringComparison.Ordinal);
             });
     }
@@ -1454,7 +1466,7 @@ public static class Helpers
 
         if (string.Equals(propertyRemainder, ".ListItems.Count", StringComparison.OrdinalIgnoreCase))
         {
-            return spriggitFields.TryGetValue(spriggitPropertyPath + ".Count", out var listItemCount)
+            return TryGetScriptingAdapterListItemCount(spriggitFields, spriggitPropertyPath, out var listItemCount)
                 ? string.Equals(fieldValue, listItemCount, StringComparison.Ordinal)
                 : IsZero(fieldValue);
         }
@@ -1463,7 +1475,7 @@ public static class Helpers
         if (propertyRemainder.StartsWith(listItemsPrefix + "[", StringComparison.OrdinalIgnoreCase) &&
             TryGetIndexedPath(propertyRemainder, listItemsPrefix, out var listItemIndex, out var listItemRemainder))
         {
-            var spriggitListItemPath = spriggitPropertyPath + "[" + listItemIndex.ToString(CultureInfo.InvariantCulture) + "]";
+            var spriggitListItemPath = GetScriptingAdapterListItemPath(spriggitFields, spriggitPropertyPath, listItemIndex);
             if (IsScriptingAdapterListItemInfrastructureField(listItemRemainder, fieldValue, propertyIndex, listItemIndex))
             {
                 return true;
@@ -1480,14 +1492,18 @@ public static class Helpers
         string fieldValue,
         IReadOnlyDictionary<string, string> spriggitFields)
     {
-        if (string.Equals(fieldName, "VirtualMachineAdapter.Count", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(fieldName, "VirtualMachineAdapter.Count", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(fieldName, "VirtualMachineAdapter.Scripts.Count", StringComparison.OrdinalIgnoreCase))
         {
             return TryGetScriptingAdapterCount(spriggitFields, out var scriptCount) &&
                    string.Equals(fieldValue, scriptCount, StringComparison.Ordinal);
         }
 
-        if (!fieldName.StartsWith("VirtualMachineAdapter[", StringComparison.OrdinalIgnoreCase) ||
-            !TryGetIndexedPath(fieldName, "VirtualMachineAdapter", out var scriptIndex, out var scriptRemainder))
+        var rootFieldName = fieldName.StartsWith("VirtualMachineAdapter.Scripts[", StringComparison.OrdinalIgnoreCase)
+            ? "VirtualMachineAdapter.Scripts"
+            : "VirtualMachineAdapter";
+        if (!fieldName.StartsWith(rootFieldName + "[", StringComparison.OrdinalIgnoreCase) ||
+            !TryGetIndexedPath(fieldName, rootFieldName, out var scriptIndex, out var scriptRemainder))
         {
             return false;
         }
@@ -1505,12 +1521,40 @@ public static class Helpers
                    string.Equals(fieldValue, propertyCount, StringComparison.Ordinal);
         }
 
-        if (!TryGetIndexedPath(scriptRemainder, string.Empty, out var propertyIndex, out var propertyRemainder))
+        int propertyIndex;
+        string propertyRemainder;
+        if (scriptRemainder.StartsWith(".Properties[", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!TryGetIndexedPath(scriptRemainder, ".Properties", out propertyIndex, out propertyRemainder))
+            {
+                return false;
+            }
+        }
+        else if (!TryGetIndexedPath(scriptRemainder, string.Empty, out propertyIndex, out propertyRemainder))
         {
             return false;
         }
 
         var spriggitPropertyPath = GetScriptingAdapterPropertyPath(spriggitFields, spriggitScriptPath, propertyIndex);
+        if (string.Equals(propertyRemainder, ".Count", StringComparison.OrdinalIgnoreCase))
+        {
+            return TryGetScriptingAdapterListItemCount(spriggitFields, spriggitPropertyPath, out var listItemCount) &&
+                   string.Equals(fieldValue, listItemCount, StringComparison.Ordinal);
+        }
+
+        if (propertyRemainder.StartsWith(".Objects[", StringComparison.OrdinalIgnoreCase) &&
+            TryGetIndexedPath(propertyRemainder, ".Objects", out var objectIndex, out var objectRemainder))
+        {
+            var spriggitListItemPath = GetScriptingAdapterListItemPath(spriggitFields, spriggitPropertyPath, objectIndex);
+            return IsDtoScriptingAdapterLeafBackedBySpriggitField(objectRemainder, fieldValue, spriggitListItemPath, spriggitFields);
+        }
+
+        if (TryGetIndexedPath(propertyRemainder, string.Empty, out var listItemIndex, out var listItemRemainder))
+        {
+            var spriggitListItemPath = GetScriptingAdapterListItemPath(spriggitFields, spriggitPropertyPath, listItemIndex);
+            return IsDtoScriptingAdapterLeafBackedBySpriggitField(listItemRemainder, fieldValue, spriggitListItemPath, spriggitFields);
+        }
+
         return IsDtoScriptingAdapterLeafBackedBySpriggitField(propertyRemainder, fieldValue, spriggitPropertyPath, spriggitFields);
     }
 
@@ -1586,6 +1630,38 @@ public static class Helpers
             : spriggitScriptPath + "[" + propertyIndex.ToString(CultureInfo.InvariantCulture) + "]";
     }
 
+    private static string GetScriptingAdapterListItemPath(
+        IReadOnlyDictionary<string, string> spriggitFields,
+        string spriggitPropertyPath,
+        int listItemIndex)
+    {
+        var objectPath = spriggitPropertyPath + ".Objects[" + listItemIndex.ToString(CultureInfo.InvariantCulture) + "]";
+        return HasSpriggitPath(spriggitFields, objectPath)
+            ? objectPath
+            : spriggitPropertyPath + "[" + listItemIndex.ToString(CultureInfo.InvariantCulture) + "]";
+    }
+
+    private static bool TryGetScriptingAdapterListItemCount(
+        IReadOnlyDictionary<string, string> spriggitFields,
+        string spriggitPropertyPath,
+        out string listItemCount)
+    {
+        if (spriggitFields.TryGetValue(spriggitPropertyPath + ".Objects.Count", out var objectListItemCount))
+        {
+            listItemCount = objectListItemCount;
+            return true;
+        }
+
+        if (spriggitFields.TryGetValue(spriggitPropertyPath + ".Count", out var directListItemCount))
+        {
+            listItemCount = directListItemCount;
+            return true;
+        }
+
+        listItemCount = string.Empty;
+        return false;
+    }
+
     private static bool IsScriptingAdapterPropertyInfrastructureField(
         string propertyRemainder,
         string fieldValue,
@@ -1657,6 +1733,11 @@ public static class Helpers
         IReadOnlyDictionary<string, string> spriggitFields,
         IReadOnlyDictionary<string, string> dtoFields)
     {
+        if (string.Equals(fieldName, "REFL", StringComparison.OrdinalIgnoreCase))
+        {
+            return HasSpriggitRawPayloadField(spriggitFields, fieldName);
+        }
+
         if (string.Equals(fieldName, "RawPayloads.Count", StringComparison.OrdinalIgnoreCase))
         {
             return dtoFields.Keys.Any(field => field.StartsWith("RawPayloads[", StringComparison.OrdinalIgnoreCase) &&
@@ -1676,8 +1757,17 @@ public static class Helpers
 
         var payloadPath = fieldName[..(payloadPathEnd + 1)];
         var spriggitFieldName = GetSpriggitRawPayloadFieldName(dtoFields, payloadPath);
-        return !string.IsNullOrWhiteSpace(spriggitFieldName) &&
-               spriggitFields.ContainsKey(spriggitFieldName);
+        if (string.IsNullOrWhiteSpace(spriggitFieldName) ||
+            !HasSpriggitRawPayloadField(spriggitFields, spriggitFieldName))
+        {
+            return false;
+        }
+
+        return fieldName.EndsWith(".PayloadIndex", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.EndsWith(".PayloadSlot", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.EndsWith(".PayloadType", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.EndsWith(".PayloadValue", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.EndsWith(".SourcePath", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsSpriggitInlineFormKeyListItemBackedByDtoScalar(
@@ -1760,8 +1850,10 @@ public static class Helpers
         string fieldName,
         IReadOnlyDictionary<string, string> spriggitFields)
     {
-        return fieldName.StartsWith("VirtualMachineAdapter[", StringComparison.OrdinalIgnoreCase) &&
-               fieldName.Count(character => character == '[') == 3 &&
+        return (fieldName.StartsWith("VirtualMachineAdapter[", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.StartsWith("VirtualMachineAdapter.Scripts[", StringComparison.OrdinalIgnoreCase)) &&
+               (fieldName.Count(character => character == '[') == 3 ||
+                fieldName.Contains(".Objects[", StringComparison.OrdinalIgnoreCase)) &&
                fieldName.EndsWith("].Name", StringComparison.OrdinalIgnoreCase) &&
                spriggitFields.TryGetValue(fieldName, out var value) &&
                string.IsNullOrEmpty(value);
