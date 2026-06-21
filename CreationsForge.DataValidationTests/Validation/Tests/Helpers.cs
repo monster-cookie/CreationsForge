@@ -455,6 +455,7 @@ public static class Helpers
         }
 
         fields["VirtualMachineAdapter.Count"] = count.ToString(CultureInfo.InvariantCulture);
+        fields["VirtualMachineAdapter.Scripts.Count"] = count.ToString(CultureInfo.InvariantCulture);
         for (var index = 0; index < count; index++)
         {
             AddSpriggitScriptingAdapterAlias(fields, index);
@@ -465,8 +466,11 @@ public static class Helpers
     {
         var dtoScriptPath = "ScriptingAdapters[" + scriptIndex.ToString(CultureInfo.InvariantCulture) + "]";
         var spriggitScriptPath = "VirtualMachineAdapter[" + scriptIndex.ToString(CultureInfo.InvariantCulture) + "]";
+        var spriggitScriptsPath = "VirtualMachineAdapter.Scripts[" + scriptIndex.ToString(CultureInfo.InvariantCulture) + "]";
         AddSpriggitFieldAlias(fields, dtoScriptPath + ".Name", spriggitScriptPath + ".Name");
+        AddSpriggitFieldAlias(fields, dtoScriptPath + ".Name", spriggitScriptsPath + ".Name");
         AddSpriggitFieldAlias(fields, dtoScriptPath + ".Properties.Count", spriggitScriptPath + ".Count");
+        AddSpriggitFieldAlias(fields, dtoScriptPath + ".Properties.Count", spriggitScriptsPath + ".Properties.Count");
 
         if (!fields.TryGetValue(dtoScriptPath + ".Properties.Count", out var propertyCountValue) ||
             !int.TryParse(propertyCountValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var propertyCount))
@@ -477,6 +481,7 @@ public static class Helpers
         for (var propertyIndex = 0; propertyIndex < propertyCount; propertyIndex++)
         {
             AddSpriggitScriptingAdapterPropertyAlias(fields, dtoScriptPath, spriggitScriptPath, propertyIndex);
+            AddSpriggitScriptingAdapterPropertyAlias(fields, dtoScriptPath, spriggitScriptsPath + ".Properties", propertyIndex);
         }
     }
 
@@ -714,6 +719,11 @@ public static class Helpers
         }
 
         if (IsDtoScriptingAdapterBackedBySpriggitField(fieldName, fieldValue, spriggitFields, dtoFields))
+        {
+            return true;
+        }
+
+        if (IsDtoVirtualMachineAdapterAliasBackedBySpriggitField(fieldName, fieldValue, spriggitFields))
         {
             return true;
         }
@@ -1135,8 +1145,9 @@ public static class Helpers
         string fieldName,
         IReadOnlyDictionary<string, string> spriggitFields)
     {
-        if (!fieldName.StartsWith("VirtualMachineAdapter[", StringComparison.OrdinalIgnoreCase) ||
-            !fieldName.EndsWith(".MutagenObjectType", StringComparison.OrdinalIgnoreCase))
+        if ((!fieldName.StartsWith("VirtualMachineAdapter[", StringComparison.OrdinalIgnoreCase) &&
+             !fieldName.StartsWith("VirtualMachineAdapter.Scripts[", StringComparison.OrdinalIgnoreCase)) ||
+             !fieldName.EndsWith(".MutagenObjectType", StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
@@ -1393,9 +1404,9 @@ public static class Helpers
     {
         if (string.Equals(fieldName, "ScriptingAdapters.Count", StringComparison.OrdinalIgnoreCase))
         {
-            return spriggitFields.TryGetValue("VirtualMachineAdapter.Count", out var scriptCount)
+            return TryGetScriptingAdapterCount(spriggitFields, out var scriptCount)
                 ? string.Equals(fieldValue, scriptCount, StringComparison.Ordinal)
-                : GetTopLevelIndexedPathCount(spriggitFields, "VirtualMachineAdapter").ToString(CultureInfo.InvariantCulture) == fieldValue;
+                : IsZero(fieldValue);
         }
 
         if (!fieldName.StartsWith("ScriptingAdapters[", StringComparison.OrdinalIgnoreCase) ||
@@ -1404,7 +1415,7 @@ public static class Helpers
             return false;
         }
 
-        var spriggitScriptPath = "VirtualMachineAdapter[" + scriptIndex.ToString(CultureInfo.InvariantCulture) + "]";
+        var spriggitScriptPath = GetScriptingAdapterScriptPath(spriggitFields, scriptIndex);
         if (string.Equals(scriptRemainder, ".ScriptIndex", StringComparison.OrdinalIgnoreCase))
         {
             return string.Equals(fieldValue, scriptIndex.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
@@ -1418,7 +1429,7 @@ public static class Helpers
 
         if (string.Equals(scriptRemainder, ".Properties.Count", StringComparison.OrdinalIgnoreCase))
         {
-            return spriggitFields.TryGetValue(spriggitScriptPath + ".Count", out var propertyCount) &&
+            return TryGetScriptingAdapterPropertyCount(spriggitFields, spriggitScriptPath, out var propertyCount) &&
                    string.Equals(fieldValue, propertyCount, StringComparison.Ordinal);
         }
 
@@ -1429,7 +1440,7 @@ public static class Helpers
             return false;
         }
 
-        var spriggitPropertyPath = spriggitScriptPath + "[" + propertyIndex.ToString(CultureInfo.InvariantCulture) + "]";
+        var spriggitPropertyPath = GetScriptingAdapterPropertyPath(spriggitFields, spriggitScriptPath, propertyIndex);
         if (IsScriptingAdapterPropertyInfrastructureField(propertyRemainder, fieldValue, propertyIndex, spriggitScriptPath, spriggitFields))
         {
             return true;
@@ -1456,6 +1467,117 @@ public static class Helpers
         }
 
         return IsDtoScriptingAdapterLeafBackedBySpriggitField(propertyRemainder, fieldValue, spriggitPropertyPath, spriggitFields);
+    }
+
+    private static bool IsDtoVirtualMachineAdapterAliasBackedBySpriggitField(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> spriggitFields)
+    {
+        if (string.Equals(fieldName, "VirtualMachineAdapter.Count", StringComparison.OrdinalIgnoreCase))
+        {
+            return TryGetScriptingAdapterCount(spriggitFields, out var scriptCount) &&
+                   string.Equals(fieldValue, scriptCount, StringComparison.Ordinal);
+        }
+
+        if (!fieldName.StartsWith("VirtualMachineAdapter[", StringComparison.OrdinalIgnoreCase) ||
+            !TryGetIndexedPath(fieldName, "VirtualMachineAdapter", out var scriptIndex, out var scriptRemainder))
+        {
+            return false;
+        }
+
+        var spriggitScriptPath = GetScriptingAdapterScriptPath(spriggitFields, scriptIndex);
+        if (string.Equals(scriptRemainder, ".Name", StringComparison.OrdinalIgnoreCase))
+        {
+            return spriggitFields.TryGetValue(spriggitScriptPath + ".Name", out var scriptName) &&
+                   string.Equals(fieldValue, scriptName, StringComparison.Ordinal);
+        }
+
+        if (string.Equals(scriptRemainder, ".Count", StringComparison.OrdinalIgnoreCase))
+        {
+            return TryGetScriptingAdapterPropertyCount(spriggitFields, spriggitScriptPath, out var propertyCount) &&
+                   string.Equals(fieldValue, propertyCount, StringComparison.Ordinal);
+        }
+
+        if (!TryGetIndexedPath(scriptRemainder, string.Empty, out var propertyIndex, out var propertyRemainder))
+        {
+            return false;
+        }
+
+        var spriggitPropertyPath = GetScriptingAdapterPropertyPath(spriggitFields, spriggitScriptPath, propertyIndex);
+        return IsDtoScriptingAdapterLeafBackedBySpriggitField(propertyRemainder, fieldValue, spriggitPropertyPath, spriggitFields);
+    }
+
+    private static bool TryGetScriptingAdapterCount(IReadOnlyDictionary<string, string> spriggitFields, out string scriptCount)
+    {
+        if (spriggitFields.TryGetValue("VirtualMachineAdapter.Scripts.Count", out var nestedScriptCount))
+        {
+            scriptCount = nestedScriptCount;
+            return true;
+        }
+
+        if (spriggitFields.TryGetValue("VirtualMachineAdapter.Count", out var rootScriptCount))
+        {
+            scriptCount = rootScriptCount;
+            return true;
+        }
+
+        var nestedCount = GetTopLevelIndexedPathCount(spriggitFields, "VirtualMachineAdapter.Scripts");
+        if (nestedCount > 0)
+        {
+            scriptCount = nestedCount.ToString(CultureInfo.InvariantCulture);
+            return true;
+        }
+
+        var rootCount = GetTopLevelIndexedPathCount(spriggitFields, "VirtualMachineAdapter");
+        if (rootCount > 0)
+        {
+            scriptCount = rootCount.ToString(CultureInfo.InvariantCulture);
+            return true;
+        }
+
+        scriptCount = string.Empty;
+        return false;
+    }
+
+    private static string GetScriptingAdapterScriptPath(IReadOnlyDictionary<string, string> spriggitFields, int scriptIndex)
+    {
+        var nestedPath = "VirtualMachineAdapter.Scripts[" + scriptIndex.ToString(CultureInfo.InvariantCulture) + "]";
+        return HasSpriggitPath(spriggitFields, nestedPath)
+            ? nestedPath
+            : "VirtualMachineAdapter[" + scriptIndex.ToString(CultureInfo.InvariantCulture) + "]";
+    }
+
+    private static bool TryGetScriptingAdapterPropertyCount(
+        IReadOnlyDictionary<string, string> spriggitFields,
+        string spriggitScriptPath,
+        out string propertyCount)
+    {
+        if (spriggitFields.TryGetValue(spriggitScriptPath + ".Properties.Count", out var nestedPropertyCount))
+        {
+            propertyCount = nestedPropertyCount;
+            return true;
+        }
+
+        if (spriggitFields.TryGetValue(spriggitScriptPath + ".Count", out var rootPropertyCount))
+        {
+            propertyCount = rootPropertyCount;
+            return true;
+        }
+
+        propertyCount = string.Empty;
+        return false;
+    }
+
+    private static string GetScriptingAdapterPropertyPath(
+        IReadOnlyDictionary<string, string> spriggitFields,
+        string spriggitScriptPath,
+        int propertyIndex)
+    {
+        var nestedPath = spriggitScriptPath + ".Properties[" + propertyIndex.ToString(CultureInfo.InvariantCulture) + "]";
+        return HasSpriggitPath(spriggitFields, nestedPath)
+            ? nestedPath
+            : spriggitScriptPath + "[" + propertyIndex.ToString(CultureInfo.InvariantCulture) + "]";
     }
 
     private static bool IsScriptingAdapterPropertyInfrastructureField(

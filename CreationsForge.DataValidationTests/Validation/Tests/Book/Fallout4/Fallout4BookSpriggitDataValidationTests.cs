@@ -43,6 +43,8 @@ public class Fallout4BookSpriggitDataValidationTests : SpriggitDataValidationTes
         spriggitFields["ObjectBounds.Second"].ShouldBe(dtoFields["ObjectBoundsSecond"]);
         spriggitFields["PreviewTransform"].ShouldBe(dtoFields["PreviewTransformFormKey"]);
         spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields.ContainsKey("VirtualMachineAdapter.Scripts.Count").ShouldBeFalse();
+        dtoFields["ScriptingAdapters.Count"].ShouldBe("0");
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
@@ -80,10 +82,13 @@ public class Fallout4BookSpriggitDataValidationTests : SpriggitDataValidationTes
         spriggitFields["Name[2].String"].ShouldBe(dtoFields["Name[0].String"]);
         spriggitFields["Value"].ShouldBe(dtoFields["Value"]);
         spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VirtualMachineAdapter.Count"].ShouldBe(dtoFields["VirtualMachineAdapter.Count"]);
-        spriggitFields["VirtualMachineAdapter[0].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][0].Name"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0].Name"]);
-        spriggitFields["VirtualMachineAdapter[0][0].Object"].ShouldBe(dtoFields["VirtualMachineAdapter[0][0].Object"]);
+        spriggitFields["VirtualMachineAdapter.Scripts.Count"].ShouldBe(dtoFields["ScriptingAdapters.Count"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Name"].ShouldBe(dtoFields["ScriptingAdapters[0].Name"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties.Count"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties.Count"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[0].Name"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[0].Name"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[0].Object"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[0].ObjectFormKey"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[1].Name"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[1].Name"]);
+        spriggitFields["VirtualMachineAdapter.Scripts[0].Properties[1].Object"].ShouldBe(dtoFields["ScriptingAdapters[0].Properties[1].ObjectFormKey"]);
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
