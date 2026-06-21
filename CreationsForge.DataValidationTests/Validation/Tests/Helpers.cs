@@ -322,13 +322,14 @@ public static class Helpers
             for (var index = 0; index < layoutCount; index++)
             {
                 var layoutPath = "LayoutEntries[" + index.ToString(CultureInfo.InvariantCulture) + "]";
-                AddSpriggitFieldAlias(fields, layoutPath + ".AssociatedSkillFormKey", "AssociatedSkill[" + index.ToString(CultureInfo.InvariantCulture) + "]");
-                AddSpriggitFieldAlias(fields, layoutPath + ".Fnam", "FNAM[" + index.ToString(CultureInfo.InvariantCulture) + "]");
-                AddSpriggitFieldAlias(fields, layoutPath + ".HorizontalPosition", "HorizontalPosition[" + index.ToString(CultureInfo.InvariantCulture) + "]");
-                AddSpriggitFieldAlias(fields, layoutPath + ".Index", "Index[" + index.ToString(CultureInfo.InvariantCulture) + "]");
-                AddSpriggitFieldAlias(fields, layoutPath + ".PerkGridX", "PerkGridX[" + index.ToString(CultureInfo.InvariantCulture) + "]");
-                AddSpriggitFieldAlias(fields, layoutPath + ".PerkGridY", "PerkGridY[" + index.ToString(CultureInfo.InvariantCulture) + "]");
-                AddSpriggitFieldAlias(fields, layoutPath + ".VerticalPosition", "VerticalPosition[" + index.ToString(CultureInfo.InvariantCulture) + "]");
+                var spriggitPath = "PerkTree[" + index.ToString(CultureInfo.InvariantCulture) + "]";
+                AddSpriggitFieldAlias(fields, layoutPath + ".AssociatedSkillFormKey", spriggitPath + ".AssociatedSkill");
+                AddSpriggitFieldAlias(fields, layoutPath + ".Fnam", spriggitPath + ".FNAM");
+                AddSpriggitFieldAlias(fields, layoutPath + ".HorizontalPosition", spriggitPath + ".HorizontalPosition");
+                AddSpriggitFieldAlias(fields, layoutPath + ".Index", spriggitPath + ".Index");
+                AddSpriggitFieldAlias(fields, layoutPath + ".PerkGridX", spriggitPath + ".PerkGridX");
+                AddSpriggitFieldAlias(fields, layoutPath + ".PerkGridY", spriggitPath + ".PerkGridY");
+                AddSpriggitFieldAlias(fields, layoutPath + ".VerticalPosition", spriggitPath + ".VerticalPosition");
             }
         }
 
@@ -337,11 +338,9 @@ public static class Helpers
         {
             for (var index = 0; index < perkTreeCount; index++)
             {
-                var dtoFieldName = "PerkTree[" + index.ToString(CultureInfo.InvariantCulture) + "].Fnam";
-                if (fields.TryGetValue(dtoFieldName, out var fnam))
-                {
-                    fields["PerkTree[" + index.ToString(CultureInfo.InvariantCulture) + "]"] = "FNAM: " + fnam;
-                }
+                var perkTreePath = "PerkTree[" + index.ToString(CultureInfo.InvariantCulture) + "]";
+                AddSpriggitFieldAlias(fields, perkTreePath + ".Fnam", perkTreePath + ".FNAM");
+                AddSpriggitFieldAlias(fields, perkTreePath + ".PerkFormKey", perkTreePath + ".Perk");
             }
         }
     }
@@ -584,6 +583,11 @@ public static class Helpers
             return true;
         }
 
+        if (IsSpriggitActorValueInformationFieldBackedByDtoField(fieldName, spriggitFields, dtoFields))
+        {
+            return true;
+        }
+
         return IsSpriggitListBackedDtoScalar(fieldName, spriggitFields, dtoFields, "Flags");
     }
 
@@ -766,19 +770,19 @@ public static class Helpers
 
             var spriggitFieldName = layoutRemainder switch
             {
-                ".AssociatedSkillFormKey" => "AssociatedSkill[" + layoutIndex.ToString(CultureInfo.InvariantCulture) + "]",
-                ".Fnam" => "FNAM[" + layoutIndex.ToString(CultureInfo.InvariantCulture) + "]",
-                ".HorizontalPosition" => "HorizontalPosition[" + layoutIndex.ToString(CultureInfo.InvariantCulture) + "]",
-                ".Index" => "Index[" + layoutIndex.ToString(CultureInfo.InvariantCulture) + "]",
-                ".PerkGridX" => "PerkGridX[" + layoutIndex.ToString(CultureInfo.InvariantCulture) + "]",
-                ".PerkGridY" => "PerkGridY[" + layoutIndex.ToString(CultureInfo.InvariantCulture) + "]",
-                ".VerticalPosition" => "VerticalPosition[" + layoutIndex.ToString(CultureInfo.InvariantCulture) + "]",
+                ".AssociatedSkillFormKey" => "PerkTree[" + layoutIndex.ToString(CultureInfo.InvariantCulture) + "].AssociatedSkill",
+                ".Fnam" => "PerkTree[" + layoutIndex.ToString(CultureInfo.InvariantCulture) + "].FNAM",
+                ".HorizontalPosition" => "PerkTree[" + layoutIndex.ToString(CultureInfo.InvariantCulture) + "].HorizontalPosition",
+                ".Index" => "PerkTree[" + layoutIndex.ToString(CultureInfo.InvariantCulture) + "].Index",
+                ".PerkGridX" => "PerkTree[" + layoutIndex.ToString(CultureInfo.InvariantCulture) + "].PerkGridX",
+                ".PerkGridY" => "PerkTree[" + layoutIndex.ToString(CultureInfo.InvariantCulture) + "].PerkGridY",
+                ".VerticalPosition" => "PerkTree[" + layoutIndex.ToString(CultureInfo.InvariantCulture) + "].VerticalPosition",
                 _ => string.Empty
             };
 
             return !string.IsNullOrEmpty(spriggitFieldName) &&
                    spriggitFields.TryGetValue(spriggitFieldName, out var value) &&
-                   string.Equals(fieldValue, value, StringComparison.Ordinal);
+                   AreEquivalentSpriggitValues(fieldValue, value);
         }
 
         if (fieldName.StartsWith("PerkTree[", StringComparison.OrdinalIgnoreCase) &&
@@ -789,12 +793,133 @@ public static class Helpers
                 return string.Equals(fieldValue, perkTreeIndex.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
             }
 
-            return string.Equals(perkTreeRemainder, ".Fnam", StringComparison.OrdinalIgnoreCase) &&
-                   spriggitFields.TryGetValue("PerkTree[" + perkTreeIndex.ToString(CultureInfo.InvariantCulture) + "]", out var value) &&
-                   string.Equals("FNAM: " + fieldValue, value, StringComparison.Ordinal);
+            if (string.Equals(perkTreeRemainder, ".PerkFormKey", StringComparison.OrdinalIgnoreCase))
+            {
+                return spriggitFields.TryGetValue("PerkTree[" + perkTreeIndex.ToString(CultureInfo.InvariantCulture) + "].Perk", out var value) &&
+                       string.Equals(fieldValue, value, StringComparison.Ordinal);
+            }
+
+            if (string.Equals(perkTreeRemainder, ".Fnam", StringComparison.OrdinalIgnoreCase))
+            {
+                return spriggitFields.TryGetValue("PerkTree[" + perkTreeIndex.ToString(CultureInfo.InvariantCulture) + "].FNAM", out var value) &&
+                       string.Equals(fieldValue, value, StringComparison.Ordinal);
+            }
+
+            if (perkTreeRemainder.StartsWith(".ConnectionLineToIndices", StringComparison.OrdinalIgnoreCase))
+            {
+                return IsDtoActorValueInformationConnectionLineBackedBySpriggitField(
+                    fieldName,
+                    fieldValue,
+                    spriggitFields,
+                    perkTreeIndex,
+                    perkTreeRemainder);
+            }
         }
 
         return false;
+    }
+
+    private static bool IsSpriggitActorValueInformationFieldBackedByDtoField(
+        string fieldName,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields)
+    {
+        if (!fieldName.StartsWith("PerkTree[", StringComparison.OrdinalIgnoreCase) ||
+            !TryGetIndexedPath(fieldName, "PerkTree", out var perkTreeIndex, out var perkTreeRemainder))
+        {
+            return false;
+        }
+
+        var dtoLayoutFieldName = perkTreeRemainder switch
+        {
+            ".AssociatedSkill" => "LayoutEntries[" + perkTreeIndex.ToString(CultureInfo.InvariantCulture) + "].AssociatedSkillFormKey",
+            ".HorizontalPosition" => "LayoutEntries[" + perkTreeIndex.ToString(CultureInfo.InvariantCulture) + "].HorizontalPosition",
+            ".Index" => "LayoutEntries[" + perkTreeIndex.ToString(CultureInfo.InvariantCulture) + "].Index",
+            ".PerkGridX" => "LayoutEntries[" + perkTreeIndex.ToString(CultureInfo.InvariantCulture) + "].PerkGridX",
+            ".PerkGridY" => "LayoutEntries[" + perkTreeIndex.ToString(CultureInfo.InvariantCulture) + "].PerkGridY",
+            ".VerticalPosition" => "LayoutEntries[" + perkTreeIndex.ToString(CultureInfo.InvariantCulture) + "].VerticalPosition",
+            _ => string.Empty
+        };
+        if (!string.IsNullOrEmpty(dtoLayoutFieldName))
+        {
+            return spriggitFields.TryGetValue(fieldName, out var spriggitValue) &&
+                   dtoFields.TryGetValue(dtoLayoutFieldName, out var dtoValue) &&
+                   AreEquivalentSpriggitValues(dtoValue, spriggitValue);
+        }
+
+        if (string.Equals(perkTreeRemainder, ".Perk", StringComparison.OrdinalIgnoreCase))
+        {
+            return dtoFields.ContainsKey("PerkTree[" + perkTreeIndex.ToString(CultureInfo.InvariantCulture) + "].PerkFormKey");
+        }
+
+        if (perkTreeRemainder.StartsWith(".ConnectionLineToIndices", StringComparison.OrdinalIgnoreCase))
+        {
+            return IsSpriggitActorValueInformationConnectionLineBackedByDtoField(
+                fieldName,
+                spriggitFields,
+                dtoFields,
+                perkTreeIndex,
+                perkTreeRemainder);
+        }
+
+        return false;
+    }
+
+    private static bool IsSpriggitActorValueInformationConnectionLineBackedByDtoField(
+        string fieldName,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields,
+        int perkTreeIndex,
+        string perkTreeRemainder)
+    {
+        var connectionLineRoot = "PerkTree[" + perkTreeIndex.ToString(CultureInfo.InvariantCulture) + "].ConnectionLineToIndices";
+        if (string.Equals(perkTreeRemainder, ".ConnectionLineToIndices.Count", StringComparison.OrdinalIgnoreCase))
+        {
+            return dtoFields.ContainsKey(connectionLineRoot + ".Count");
+        }
+
+        if (!TryGetIndexedPath(fieldName, connectionLineRoot, out var connectionLineIndex, out var connectionLineRemainder) ||
+            !string.IsNullOrEmpty(connectionLineRemainder))
+        {
+            return false;
+        }
+
+        return spriggitFields.TryGetValue(fieldName, out var spriggitValue) &&
+               dtoFields.TryGetValue(connectionLineRoot + "[" + connectionLineIndex.ToString(CultureInfo.InvariantCulture) + "].TargetIndex", out var dtoValue) &&
+               string.Equals(dtoValue, spriggitValue, StringComparison.Ordinal);
+    }
+
+    private static bool IsDtoActorValueInformationConnectionLineBackedBySpriggitField(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        int perkTreeIndex,
+        string perkTreeRemainder)
+    {
+        var connectionLineRoot = "PerkTree[" + perkTreeIndex.ToString(CultureInfo.InvariantCulture) + "].ConnectionLineToIndices";
+        if (string.Equals(perkTreeRemainder, ".ConnectionLineToIndices.Count", StringComparison.OrdinalIgnoreCase))
+        {
+            return spriggitFields.ContainsKey(connectionLineRoot + ".Count");
+        }
+
+        if (!TryGetIndexedPath(fieldName, connectionLineRoot, out var connectionLineIndex, out var connectionLineRemainder))
+        {
+            return false;
+        }
+
+        if (string.Equals(connectionLineRemainder, ".ConnectionLineIndex", StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Equals(fieldValue, connectionLineIndex.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        }
+
+        if (string.Equals(connectionLineRemainder, ".PerkTreeIndex", StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Equals(fieldValue, perkTreeIndex.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        }
+
+        return string.Equals(connectionLineRemainder, ".TargetIndex", StringComparison.OrdinalIgnoreCase) &&
+               spriggitFields.TryGetValue(connectionLineRoot + "[" + connectionLineIndex.ToString(CultureInfo.InvariantCulture) + "]", out var value) &&
+               string.Equals(fieldValue, value, StringComparison.Ordinal);
     }
 
     private static bool IsDtoChildInfrastructureField(string fieldName)
@@ -1550,6 +1675,18 @@ public static class Helpers
     private static bool IsZero(string value)
     {
         return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number) && number == 0;
+    }
+
+    private static bool AreEquivalentSpriggitValues(string dtoValue, string spriggitValue)
+    {
+        if (string.Equals(dtoValue, spriggitValue, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        return double.TryParse(dtoValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var dtoNumber) &&
+               double.TryParse(spriggitValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var spriggitNumber) &&
+               Math.Abs(dtoNumber - spriggitNumber) <= 0.000001;
     }
 
     private static IReadOnlyDictionary<string, string> AddRootScalarLists(string path, IReadOnlyDictionary<string, string> fields)

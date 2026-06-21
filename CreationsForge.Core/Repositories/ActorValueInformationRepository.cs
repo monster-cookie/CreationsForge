@@ -48,11 +48,21 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
             .ToList();
         var layoutEntries = FetchLayoutEntriesByFormKey(game, formKey);
         var perkTreeEntries = FetchPerkTreeEntriesByFormKey(game, formKey);
+        var connectionLineIndices = FetchConnectionLineIndicesByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.ActorValueInformation.RecordID, formKey);
         foreach (var record in records)
         {
             record.LayoutEntries = layoutEntries.Where(entry => IsSameModKey(entry.ModKey, record.ModKey)).OrderBy(entry => entry.LayoutIndex).ToList();
             record.PerkTree = perkTreeEntries.Where(entry => IsSameModKey(entry.ModKey, record.ModKey)).OrderBy(entry => entry.PerkTreeIndex).ToList();
+            foreach (var perkTreeEntry in record.PerkTree)
+            {
+                perkTreeEntry.ConnectionLineToIndices = connectionLineIndices
+                    .Where(connectionLineIndex => IsSameModKey(connectionLineIndex.ModKey, record.ModKey) &&
+                                                  connectionLineIndex.PerkTreeIndex == perkTreeEntry.PerkTreeIndex)
+                    .OrderBy(connectionLineIndex => connectionLineIndex.ConnectionLineIndex)
+                    .ToList();
+            }
+
             ApplyLocalizedStrings(record, localizedStrings.Where(localizedString => IsSameModKey(localizedString.ModKey, record.ModKey)).ToList());
         }
 
@@ -155,6 +165,31 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
             .ToList();
     }
 
+    private IReadOnlyList<ActorValueInformationConnectionLineIndexDTO> FetchConnectionLineIndicesByFormKey(SupportedGame game, FormKeyDTO formKey)
+    {
+        return Database.Fetch<ActorValueInformationConnectionLineIndexRow>(
+                """
+                SELECT *
+                FROM ActorValueInformationPerkTreeConnectionLineIndices
+                WHERE Game = @Game
+                  AND FormKey_ModKey_Name = @FormKeyModKeyName COLLATE NOCASE
+                  AND FormKey_ModKey_Type = @FormKeyModKeyType
+                  AND FormKey_ModKey_FileName = @FormKeyModKeyFileName COLLATE NOCASE
+                  AND FormKey_ID = @FormKeyId
+                ORDER BY ModKey_FileName COLLATE NOCASE, PerkTree_Index, ConnectionLine_Index;
+                """,
+                new
+                {
+                    Game = game.ToString(),
+                    FormKeyModKeyName = formKey.ModKey.Name,
+                    FormKeyModKeyType = formKey.ModKey.Type,
+                    FormKeyModKeyFileName = formKey.ModKey.FileName,
+                    FormKeyId = formKey.Id
+                })
+            .Select(row => ToDTO(row, game))
+            .ToList();
+    }
+
     private void ReplaceLayoutEntries(ActorValueInformationDTO dto)
     {
         Database.Execute(
@@ -234,10 +269,10 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
                 """
                 INSERT OR REPLACE INTO ActorValueInformationPerkTreeEntries (
                     Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                    PerkTree_Index, FNAM, ImportedAtUTC)
+                    PerkTree_Index, Perk_ModKey_Name, Perk_ModKey_Type, Perk_ModKey_FileName, Perk_FormKey_ID, FNAM, ImportedAtUTC)
                 VALUES (
                     @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                    @PerkTreeIndex, @Fnam, @ImportedAtUTC);
+                    @PerkTreeIndex, @PerkModKeyName, @PerkModKeyType, @PerkModKeyFileName, @PerkFormKeyId, @Fnam, @ImportedAtUTC);
                 """,
                 new
                 {
@@ -250,8 +285,49 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
                     FormKeyModKeyFileName = entry.FormKey.ModKey.FileName,
                     FormKeyId = entry.FormKey.Id,
                     entry.PerkTreeIndex,
+                    PerkModKeyName = entry.PerkFormKey?.ModKey.Name,
+                    PerkModKeyType = entry.PerkFormKey?.ModKey.Type,
+                    PerkModKeyFileName = entry.PerkFormKey?.ModKey.FileName,
+                    PerkFormKeyId = entry.PerkFormKey?.Id,
                     entry.Fnam,
                     entry.ImportedAtUTC
+                });
+            ReplaceConnectionLineIndices(entry);
+        }
+    }
+
+    private void ReplaceConnectionLineIndices(ActorValueInformationPerkTreeEntryDTO entry)
+    {
+        foreach (var connectionLineIndex in entry.ConnectionLineToIndices)
+        {
+            connectionLineIndex.Game = entry.Game;
+            connectionLineIndex.ModKey = entry.ModKey;
+            connectionLineIndex.FormKey = entry.FormKey;
+            connectionLineIndex.PerkTreeIndex = entry.PerkTreeIndex;
+            connectionLineIndex.ImportedAtUTC = entry.ImportedAtUTC;
+            Database.Execute(
+                """
+                INSERT OR REPLACE INTO ActorValueInformationPerkTreeConnectionLineIndices (
+                    Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
+                    PerkTree_Index, ConnectionLine_Index, TargetIndex, ImportedAtUTC)
+                VALUES (
+                    @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
+                    @PerkTreeIndex, @ConnectionLineIndex, @TargetIndex, @ImportedAtUTC);
+                """,
+                new
+                {
+                    Game = connectionLineIndex.Game.ToString(),
+                    ModKeyName = connectionLineIndex.ModKey.Name,
+                    ModKeyType = connectionLineIndex.ModKey.Type,
+                    ModKeyFileName = connectionLineIndex.ModKey.FileName,
+                    FormKeyModKeyName = connectionLineIndex.FormKey.ModKey.Name,
+                    FormKeyModKeyType = connectionLineIndex.FormKey.ModKey.Type,
+                    FormKeyModKeyFileName = connectionLineIndex.FormKey.ModKey.FileName,
+                    FormKeyId = connectionLineIndex.FormKey.Id,
+                    connectionLineIndex.PerkTreeIndex,
+                    connectionLineIndex.ConnectionLineIndex,
+                    connectionLineIndex.TargetIndex,
+                    connectionLineIndex.ImportedAtUTC
                 });
         }
     }
@@ -312,7 +388,22 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
             ModKey = CreateModKey(row.ModKeyName, row.ModKeyType, row.ModKeyFileName),
             FormKey = CreateFormKey(row.FormKeyModKeyName, row.FormKeyModKeyType, row.FormKeyModKeyFileName, row.FormKeyId),
             PerkTreeIndex = row.PerkTreeIndex,
+            PerkFormKey = CreateNullableFormKey(row.PerkModKeyName, row.PerkModKeyType, row.PerkModKeyFileName, row.PerkFormKeyId),
             Fnam = row.Fnam,
+            ImportedAtUTC = row.ImportedAtUTC
+        };
+    }
+
+    private static ActorValueInformationConnectionLineIndexDTO ToDTO(ActorValueInformationConnectionLineIndexRow row, SupportedGame game)
+    {
+        return new ActorValueInformationConnectionLineIndexDTO
+        {
+            Game = game,
+            ModKey = CreateModKey(row.ModKeyName, row.ModKeyType, row.ModKeyFileName),
+            FormKey = CreateFormKey(row.FormKeyModKeyName, row.FormKeyModKeyType, row.FormKeyModKeyFileName, row.FormKeyId),
+            PerkTreeIndex = row.PerkTreeIndex,
+            ConnectionLineIndex = row.ConnectionLineIndex,
+            TargetIndex = row.TargetIndex,
             ImportedAtUTC = row.ImportedAtUTC
         };
     }
@@ -405,7 +496,26 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
         public string FormKeyModKeyFileName { get; set; } = string.Empty;
         public long FormKeyId { get; set; }
         public int PerkTreeIndex { get; set; }
+        public string? PerkModKeyName { get; set; }
+        public int? PerkModKeyType { get; set; }
+        public string? PerkModKeyFileName { get; set; }
+        public long? PerkFormKeyId { get; set; }
         public string? Fnam { get; set; }
+        public DateTime ImportedAtUTC { get; set; }
+    }
+
+    private sealed class ActorValueInformationConnectionLineIndexRow
+    {
+        public string ModKeyName { get; set; } = string.Empty;
+        public int ModKeyType { get; set; }
+        public string ModKeyFileName { get; set; } = string.Empty;
+        public string FormKeyModKeyName { get; set; } = string.Empty;
+        public int FormKeyModKeyType { get; set; }
+        public string FormKeyModKeyFileName { get; set; } = string.Empty;
+        public long FormKeyId { get; set; }
+        public int PerkTreeIndex { get; set; }
+        public int ConnectionLineIndex { get; set; }
+        public int TargetIndex { get; set; }
         public DateTime ImportedAtUTC { get; set; }
     }
 

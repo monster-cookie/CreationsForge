@@ -111,7 +111,8 @@ rows, background skill rows, and shared scripting adapter rows. `MISC`, `NPC_`, 
 child rows when those payloads are persisted. `CNDF` and `COBJ` comparison displays shared condition-rule rows and
 generic condition-data parameter rows when those payloads are persisted. `COBJ` comparison displays component,
 Fallout 4 category, and Starfield recipe-filter rows.
-`TERM` comparison also displays marker parameter child rows.
+`AVIF` comparison displays Skyrim layout and perk-tree rows, including perk references and connection-line target
+indices when they are present. `TERM` comparison also displays marker parameter child rows.
 MGEF DATA follows Mutagen/Spriggit's flattened record shape and displays as flat rows. Child comparison data such as
 keywords, models, sounds, scripts, raw payloads, items, shared condition rules, condition-rule parameters,
 constructible object components, Fallout 4 COBJ category links, Starfield COBJ recipe-filter links, perk ranks, perk
@@ -197,6 +198,10 @@ Condition rules represent indexed condition rows plus generic parameter rows for
 Current users are `CNDF`, `FACT`, and `COBJ`. The condition data function is stored as `DataMutagenObjectType`, and
 parameter values retain a decomposed FormKey when the Mutagen value exposes one. Condition rules are not raw payloads
 when Mutagen exposes structured condition fields.
+
+Actor Value Information uses AVIF-specific child tables for Skyrim layout and perk-tree data. Layout rows retain
+associated skill references and grid placement values. Perk-tree rows retain optional perk references and indexed
+connection-line target indices so imported Skyrim perk graph shape can be read back and compared.
 
 Shared Bethesda base-form component payloads use the internal `BaseFormComponents` name when persisted as raw payload
 slots. The original Mutagen/Spriggit source path, such as `Components.AnimationGraphComponent.ANAM`, is retained in

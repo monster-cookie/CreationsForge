@@ -180,9 +180,10 @@ slice covers common record header fields plus scalar persisted fields for `FLST`
 `Data` row instead of duplicating the Mutagen-derived typed data helper fields. MISC, NPC_, and MGEF comparison
 includes shared keyword rows.
 MISC and MGEF comparison includes shared sound rows. MISC comparison also includes persisted model rows and scripting
-adapter rows as hierarchical child rows in the comparison `TreeDataGrid`. PERK comparison includes rank rows, nested
-rank-effect rows, background skill rows, and shared scripting adapter rows. STAT comparison includes scalar fields,
-shared keyword rows, shared model rows, and raw payload rows. BOOK comparison includes scalar fields plus shared
+adapter rows as hierarchical child rows in the comparison `TreeDataGrid`. AVIF comparison includes Skyrim layout rows,
+perk-tree rows, optional perk references, and connection-line target indices. PERK comparison includes rank rows,
+nested rank-effect rows, background skill rows, and shared scripting adapter rows. STAT comparison includes scalar
+fields, shared keyword rows, shared model rows, and raw payload rows. BOOK comparison includes scalar fields plus shared
 models, keywords, sounds, scripting adapters, and raw payload rows. DOOR comparison includes scalar fields plus shared
 models, keywords, sounds, scripting adapters, and raw payload rows. CONT comparison includes scalar fields, item rows,
 shared keyword rows,

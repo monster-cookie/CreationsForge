@@ -496,7 +496,26 @@ erDiagram
         TEXT FormKey_ModKey_FileName PK, FK
         INTEGER FormKey_ID PK, FK
         INTEGER PerkTree_Index PK
+        TEXT Perk_ModKey_Name
+        INTEGER Perk_ModKey_Type
+        TEXT Perk_ModKey_FileName
+        INTEGER Perk_FormKey_ID
         TEXT FNAM
+        TEXT ImportedAtUTC
+    }
+
+    ActorValueInformationPerkTreeConnectionLineIndices {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER PerkTree_Index PK, FK
+        INTEGER ConnectionLine_Index PK
+        INTEGER TargetIndex
         TEXT ImportedAtUTC
     }
 
@@ -1258,6 +1277,7 @@ erDiagram
     RecordInstances ||--o| ActorValueInformation : "typed detail"
     ActorValueInformation ||--o{ ActorValueInformationLayoutEntries : contains
     ActorValueInformation ||--o{ ActorValueInformationPerkTreeEntries : contains
+    ActorValueInformationPerkTreeEntries ||--o{ ActorValueInformationPerkTreeConnectionLineIndices : contains
     RecordInstances ||--o| NPCs : "typed detail"
     RecordInstances ||--o| MagicEffects : "typed detail"
     RecordInstances ||--o| Perks : "typed detail"
@@ -1311,6 +1331,8 @@ These columns contain record-reference data but are not declared SQLite foreign 
   `ActorValue_FormKey_ID`
 - `ActorValueInformationLayoutEntries.AssociatedSkill_ModKey_Name`, `AssociatedSkill_ModKey_Type`,
   `AssociatedSkill_ModKey_FileName`, and `AssociatedSkill_FormKey_ID`
+- `ActorValueInformationPerkTreeEntries.Perk_ModKey_Name`, `Perk_ModKey_Type`, `Perk_ModKey_FileName`, and
+  `Perk_FormKey_ID`
 - `Factions.Keyword_ModKey_Name`, `Keyword_ModKey_Type`, `Keyword_ModKey_FileName`, and `Keyword_FormKey_ID`
 - `Factions.Herd_ModKey_Name`, `Herd_ModKey_Type`, `Herd_ModKey_FileName`, and `Herd_FormKey_ID`
 - `Factions.VoiceType_ModKey_Name`, `VoiceType_ModKey_Type`, `VoiceType_ModKey_FileName`, and

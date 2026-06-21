@@ -3,7 +3,7 @@ using CreationsForge.Core.Enums;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class ActorValueInformationPerkTreeEntryDTO
+public class ActorValueInformationConnectionLineIndexDTO
 {
     public SupportedGame Game { get; set; }
 
@@ -17,11 +17,9 @@ public class ActorValueInformationPerkTreeEntryDTO
 
     public int PerkTreeIndex { get; set; }
 
-    public FormKeyDTO? PerkFormKey { get; set; }
+    public int ConnectionLineIndex { get; set; }
 
-    public string? Fnam { get; set; }
-
-    public IList<ActorValueInformationConnectionLineIndexDTO> ConnectionLineToIndices { get; set; } = new List<ActorValueInformationConnectionLineIndexDTO>();
+    public int TargetIndex { get; set; }
 
     public DateTime ImportedAtUTC { get; set; }
 }

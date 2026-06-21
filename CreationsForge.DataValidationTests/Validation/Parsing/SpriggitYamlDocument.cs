@@ -45,12 +45,13 @@ public class SpriggitYamlDocument
                 continue;
             }
 
-            while (frames.Count > 0 && indent <= frames[^1].Indent)
+            var isListLine = trimmed.StartsWith("- ", StringComparison.Ordinal);
+            while (frames.Count > 0 && ShouldPopFrame(frames[^1], indent, isListLine))
             {
                 frames.RemoveAt(frames.Count - 1);
             }
 
-            if (trimmed.StartsWith("- ", StringComparison.Ordinal))
+            if (isListLine)
             {
                 ReadListLine(lines, valuesByPath, listCountsByPath, frames, ref lineIndex, indent, trimmed);
                 continue;
@@ -141,7 +142,7 @@ public class SpriggitYamlDocument
             : 0;
         listCountsByPath[listPath] = itemIndex + 1;
         var itemPath = listPath + "[" + itemIndex.ToString(CultureInfo.InvariantCulture) + "]";
-        frames.Add(new YamlFrame(indent, itemPath));
+        frames.Add(new YamlFrame(indent, itemPath, true));
 
         var listValue = trimmed[2..].Trim();
         if (TrySplitKeyValue(listValue, out var listKey, out var listScalar))
@@ -171,7 +172,7 @@ public class SpriggitYamlDocument
 
         if (string.IsNullOrWhiteSpace(scalar))
         {
-            frames.Add(new YamlFrame(indent, path));
+            frames.Add(new YamlFrame(indent, path, false));
             return;
         }
 
@@ -334,6 +335,24 @@ public class SpriggitYamlDocument
         return index;
     }
 
+    private static bool ShouldPopFrame(YamlFrame frame, int indent, bool isListLine)
+    {
+        if (indent > frame.Indent)
+        {
+            return false;
+        }
+
+        return !isListLine ||
+               indent != frame.Indent ||
+               frame.IsListItem ||
+               IsTransparentSpriggitListWrapper(frame.Path);
+    }
+
+    private static bool IsTransparentSpriggitListWrapper(string path)
+    {
+        return path.EndsWith(".Values", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static void AddValue(IDictionary<string, List<string>> valuesByPath, string path, string value)
     {
         if (!valuesByPath.TryGetValue(path, out var values))
@@ -347,14 +366,17 @@ public class SpriggitYamlDocument
 
     private sealed class YamlFrame
     {
-        public YamlFrame(int indent, string path)
+        public YamlFrame(int indent, string path, bool isListItem)
         {
             Indent = indent;
             Path = path;
+            IsListItem = isListItem;
         }
 
         public int Indent { get; }
 
         public string Path { get; }
+
+        public bool IsListItem { get; }
     }
 }

@@ -18,15 +18,15 @@ The application uses a local SQLite database. The schema is defined by embedded 
 - `005_Migrations005.sql` adds the `Classes`, `ClassProperties`, `ClassWeights`, `Factions`,
   `FactionRelations`, `FactionRanks`, `ConditionRules`, `ConditionRuleParameters`, `RecordComponents`, and
   `RecordComponentItems` tables, adds the `LocalizedStrings` table for per-language record text values, adds Book
-  `PreviewTransform` columns, adds ActorValueInformation `Description`, skill/layout scalar columns, and typed
-  layout/perk-tree child tables, migrates released CNDF condition rows into the shared condition-rule tables, drops the
-  old CNDF-specific condition tables, and marks existing current or partially imported plugin rows as `Changed` so
-  each supported game reimports cached plugin data after the migration.
+  `PreviewTransform` columns, adds ActorValueInformation `Description`, skill/layout scalar columns, typed layout and
+  perk-tree child tables, and perk-tree connection-line child rows, migrates released CNDF condition rows into the
+  shared condition-rule tables, drops the old CNDF-specific condition tables, and marks existing current or partially
+  imported plugin rows as `Changed` so each supported game reimports cached plugin data after the migration.
 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains fifty-five tables:
+The application schema contains fifty-six tables:
 
 - `Games`
 - `Plugins`
@@ -52,6 +52,7 @@ The application schema contains fifty-five tables:
 - `ActorValueInformation`
 - `ActorValueInformationLayoutEntries`
 - `ActorValueInformationPerkTreeEntries`
+- `ActorValueInformationPerkTreeConnectionLineIndices`
 - `NPCs`
 - `MagicEffects`
 - `Perks`
@@ -807,6 +808,7 @@ Indexes:
 
 - Full parent `ActorValueInformation` key columns
 - `PerkTree_Index` (`INTEGER`, `NOT NULL`, primary key)
+- nullable decomposed FormKey columns for `Perk`
 - `FNAM` (`TEXT`, nullable)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
@@ -817,6 +819,22 @@ Foreign keys:
 Indexes:
 
 - `IX_ActorValueInformationPerkTreeEntries_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+`ActorValueInformationPerkTreeConnectionLineIndices` stores indexed Skyrim AVIF perk-tree connection targets:
+
+- Full parent `ActorValueInformationPerkTreeEntries` key columns
+- `ConnectionLine_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `TargetIndex` (`INTEGER`, `NOT NULL`)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full parent key references `ActorValueInformationPerkTreeEntries` with `ON DELETE CASCADE`.
+
+Indexes:
+
+- `IX_ActorValueInformationPerkTreeConnectionLineIndices_Game_FormKey` on `Game`, origin FormKey ModKey columns, and
+  `FormKey_ID`
 
 `NPCs` additional columns:
 
@@ -1513,6 +1531,8 @@ These columns carry record-reference identity but do not declare SQLite foreign 
   `ActorValue_FormKey_ID`
 - `ActorValueInformationLayoutEntries.AssociatedSkill_ModKey_Name`, `AssociatedSkill_ModKey_Type`,
   `AssociatedSkill_ModKey_FileName`, and `AssociatedSkill_FormKey_ID`
+- `ActorValueInformationPerkTreeEntries.Perk_ModKey_Name`, `Perk_ModKey_Type`, `Perk_ModKey_FileName`, and
+  `Perk_FormKey_ID`
 - `Factions.Keyword_ModKey_Name`, `Keyword_ModKey_Type`, `Keyword_ModKey_FileName`, and `Keyword_FormKey_ID`
 - `Factions.Herd_ModKey_Name`, `Herd_ModKey_Type`, `Herd_ModKey_FileName`, and `Herd_FormKey_ID`
 - `Factions.VoiceType_ModKey_Name`, `VoiceType_ModKey_Type`, `VoiceType_ModKey_FileName`, and

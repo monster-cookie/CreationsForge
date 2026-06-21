@@ -1344,6 +1344,8 @@ public class RecordComparisonService : IRecordComparisonService
             var currentIndex = perkTreeIndex;
             var perkTreeChildren = new List<RecordComparisonFieldDTO>
             {
+                CreateField("Perk", records, record => FormatFormKey(record.PerkTree.FirstOrDefault(entry => entry.PerkTreeIndex == currentIndex)?.PerkFormKey)),
+                CreateField("ConnectionLineToIndices", records, record => FormatActorValueInformationConnectionLineIndices(record.PerkTree.FirstOrDefault(entry => entry.PerkTreeIndex == currentIndex))),
                 CreateField("FNAM", records, record => record.PerkTree.FirstOrDefault(entry => entry.PerkTreeIndex == currentIndex)?.Fnam ?? string.Empty)
             }
                 .Where(HasVisibleValue)
@@ -1358,6 +1360,13 @@ public class RecordComparisonService : IRecordComparisonService
         {
             fields.Add(CreateGroupField("PerkTree", records.Cast<RecordDTO>().ToList(), perkTreeFields));
         }
+    }
+
+    private static string FormatActorValueInformationConnectionLineIndices(ActorValueInformationPerkTreeEntryDTO? entry)
+    {
+        return entry == null
+            ? string.Empty
+            : string.Join(", ", entry.ConnectionLineToIndices.OrderBy(connectionLineIndex => connectionLineIndex.ConnectionLineIndex).Select(connectionLineIndex => connectionLineIndex.TargetIndex.ToString()));
     }
 
     private static void AddRawPayloadGroups(

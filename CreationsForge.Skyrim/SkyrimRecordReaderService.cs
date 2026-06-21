@@ -972,7 +972,30 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 ModKey = plugin.ModKey,
                 FormKey = MapFormKey(formKey),
                 PerkTreeIndex = entryIndex,
+                PerkFormKey = GetFormKeyFromObject(GetPropertyValue(entry, "Perk")),
                 Fnam = FormatSpriggitHexValue(GetPropertyValue(entry, "FNAM")),
+                ConnectionLineToIndices = GetActorValueInformationConnectionLineIndices(plugin, formKey, entry, entryIndex, importedAtUTC),
+                ImportedAtUTC = importedAtUTC
+            })
+            .ToList();
+    }
+
+    private static List<ActorValueInformationConnectionLineIndexDTO> GetActorValueInformationConnectionLineIndices(
+        PluginDTO plugin,
+        FormKey formKey,
+        object entry,
+        int perkTreeIndex,
+        DateTime importedAtUTC)
+    {
+        return GetEnumerableValues(GetPropertyValue(entry, "ConnectionLineToIndices"))
+            .Select((connectionLineIndex, index) => new ActorValueInformationConnectionLineIndexDTO
+            {
+                Game = SupportedGame.Skyrim,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                PerkTreeIndex = perkTreeIndex,
+                ConnectionLineIndex = index,
+                TargetIndex = Convert.ToInt32(connectionLineIndex, CultureInfo.InvariantCulture),
                 ImportedAtUTC = importedAtUTC
             })
             .ToList();

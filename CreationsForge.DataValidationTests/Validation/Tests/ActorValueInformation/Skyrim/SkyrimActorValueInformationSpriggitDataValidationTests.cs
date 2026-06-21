@@ -77,8 +77,6 @@ public class SkyrimActorValueInformationSpriggitDataValidationTests : SpriggitDa
             .ShouldBe(double.Parse(dtoFields["SkillImproveMult"], CultureInfo.InvariantCulture), 0.000001);
         double.Parse(spriggitFields["Skill.ImproveOffset"], CultureInfo.InvariantCulture)
             .ShouldBe(double.Parse(dtoFields["SkillImproveOffset"], CultureInfo.InvariantCulture), 0.000001);
-        spriggitFields["PerkTree.Count"].ShouldBe(dtoFields["LayoutEntries.Count"]);
-        spriggitFields["PerkTree.Count"].ShouldBe(dtoFields["PerkTree.Count"]);
         spriggitFields["PerkTree[0].FNAM"].ShouldBe(dtoFields["LayoutEntries[0].Fnam"]);
         spriggitFields["PerkTree[0].PerkGridX"].ShouldBe(dtoFields["LayoutEntries[0].PerkGridX"]);
         spriggitFields["PerkTree[0].PerkGridY"].ShouldBe(dtoFields["LayoutEntries[0].PerkGridY"]);
@@ -179,6 +177,39 @@ public class SkyrimActorValueInformationSpriggitDataValidationTests : SpriggitDa
         spriggitFields["PerkTree[9].AssociatedSkill"].ShouldBe(dtoFields["LayoutEntries[9].AssociatedSkillFormKey"]);
         spriggitFields["PerkTree[9].Index"].ShouldBe(dtoFields["LayoutEntries[9].Index"]);
         spriggitFields["PerkTree[9].FNAM"].ShouldBe(dtoFields["PerkTree[9].Fnam"]);
+        spriggitFields.ContainsKey("PerkTree[0].Perk").ShouldBeFalse();
+        dtoFields.ContainsKey("PerkTree[0].PerkFormKey").ShouldBeFalse();
+        spriggitFields["PerkTree[1].Perk"].ShouldBe(dtoFields["PerkTree[1].PerkFormKey"]);
+        spriggitFields["PerkTree[2].Perk"].ShouldBe(dtoFields["PerkTree[2].PerkFormKey"]);
+        spriggitFields["PerkTree[3].Perk"].ShouldBe(dtoFields["PerkTree[3].PerkFormKey"]);
+        spriggitFields["PerkTree[4].Perk"].ShouldBe(dtoFields["PerkTree[4].PerkFormKey"]);
+        spriggitFields["PerkTree[5].Perk"].ShouldBe(dtoFields["PerkTree[5].PerkFormKey"]);
+        spriggitFields["PerkTree[6].Perk"].ShouldBe(dtoFields["PerkTree[6].PerkFormKey"]);
+        spriggitFields["PerkTree[7].Perk"].ShouldBe(dtoFields["PerkTree[7].PerkFormKey"]);
+        spriggitFields["PerkTree[8].Perk"].ShouldBe(dtoFields["PerkTree[8].PerkFormKey"]);
+        spriggitFields["PerkTree[9].Perk"].ShouldBe(dtoFields["PerkTree[9].PerkFormKey"]);
+        spriggitFields["PerkTree[0].ConnectionLineToIndices.Count"].ShouldBe(dtoFields["PerkTree[0].ConnectionLineToIndices.Count"]);
+        spriggitFields["PerkTree[0].ConnectionLineToIndices[0]"].ShouldBe(dtoFields["PerkTree[0].ConnectionLineToIndices[0].TargetIndex"]);
+        spriggitFields["PerkTree[1].ConnectionLineToIndices.Count"].ShouldBe(dtoFields["PerkTree[1].ConnectionLineToIndices.Count"]);
+        spriggitFields["PerkTree[1].ConnectionLineToIndices[0]"].ShouldBe(dtoFields["PerkTree[1].ConnectionLineToIndices[0].TargetIndex"]);
+        spriggitFields["PerkTree[2].ConnectionLineToIndices.Count"].ShouldBe(dtoFields["PerkTree[2].ConnectionLineToIndices.Count"]);
+        spriggitFields["PerkTree[2].ConnectionLineToIndices[0]"].ShouldBe(dtoFields["PerkTree[2].ConnectionLineToIndices[0].TargetIndex"]);
+        spriggitFields["PerkTree[2].ConnectionLineToIndices[1]"].ShouldBe(dtoFields["PerkTree[2].ConnectionLineToIndices[1].TargetIndex"]);
+        spriggitFields["PerkTree[3].ConnectionLineToIndices.Count"].ShouldBe(dtoFields["PerkTree[3].ConnectionLineToIndices.Count"]);
+        spriggitFields["PerkTree[3].ConnectionLineToIndices[0]"].ShouldBe(dtoFields["PerkTree[3].ConnectionLineToIndices[0].TargetIndex"]);
+        spriggitFields["PerkTree[4].ConnectionLineToIndices.Count"].ShouldBe(dtoFields["PerkTree[4].ConnectionLineToIndices.Count"]);
+        spriggitFields["PerkTree[4].ConnectionLineToIndices[0]"].ShouldBe(dtoFields["PerkTree[4].ConnectionLineToIndices[0].TargetIndex"]);
+        spriggitFields["PerkTree[5].ConnectionLineToIndices.Count"].ShouldBe(dtoFields["PerkTree[5].ConnectionLineToIndices.Count"]);
+        spriggitFields["PerkTree[5].ConnectionLineToIndices[0]"].ShouldBe(dtoFields["PerkTree[5].ConnectionLineToIndices[0].TargetIndex"]);
+        spriggitFields.ContainsKey("PerkTree[6].ConnectionLineToIndices.Count").ShouldBeFalse();
+        dtoFields["PerkTree[6].ConnectionLineToIndices.Count"].ShouldBe("0");
+        spriggitFields["PerkTree[7].ConnectionLineToIndices.Count"].ShouldBe(dtoFields["PerkTree[7].ConnectionLineToIndices.Count"]);
+        spriggitFields["PerkTree[7].ConnectionLineToIndices[0]"].ShouldBe(dtoFields["PerkTree[7].ConnectionLineToIndices[0].TargetIndex"]);
+        spriggitFields["PerkTree[8].ConnectionLineToIndices.Count"].ShouldBe(dtoFields["PerkTree[8].ConnectionLineToIndices.Count"]);
+        spriggitFields["PerkTree[8].ConnectionLineToIndices[0]"].ShouldBe(dtoFields["PerkTree[8].ConnectionLineToIndices[0].TargetIndex"]);
+        spriggitFields["PerkTree[8].ConnectionLineToIndices[1]"].ShouldBe(dtoFields["PerkTree[8].ConnectionLineToIndices[1].TargetIndex"]);
+        spriggitFields.ContainsKey("PerkTree[9].ConnectionLineToIndices.Count").ShouldBeFalse();
+        dtoFields["PerkTree[9].ConnectionLineToIndices.Count"].ShouldBe("0");
 
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();

@@ -401,17 +401,49 @@ CREATE TABLE ActorValueInformationPerkTreeEntries
     FormKey_ModKey_FileName             TEXT    NOT NULL,
     FormKey_ID                          INTEGER NOT NULL,
     PerkTree_Index                      INTEGER NOT NULL,
+    Perk_ModKey_Name                    TEXT    NULL,
+    Perk_ModKey_Type                    INTEGER NULL,
+    Perk_ModKey_FileName                TEXT    NULL,
+    Perk_FormKey_ID                     INTEGER NULL,
     FNAM                                TEXT    NULL,
     ImportedAtUTC                       TEXT    NOT NULL,
     PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, PerkTree_Index),
     FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
         REFERENCES ActorValueInformation (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
     CHECK (FormKey_ID >= 0),
-    CHECK (PerkTree_Index >= 0)
+    CHECK (PerkTree_Index >= 0),
+    CHECK ((Perk_ModKey_Name IS NULL AND Perk_ModKey_Type IS NULL AND Perk_ModKey_FileName IS NULL AND Perk_FormKey_ID IS NULL) OR
+           (Perk_ModKey_Name IS NOT NULL AND Perk_ModKey_Type IS NOT NULL AND Perk_ModKey_FileName IS NOT NULL AND Perk_FormKey_ID IS NOT NULL))
 );
 
 CREATE INDEX IX_ActorValueInformationPerkTreeEntries_Game_FormKey
     ON ActorValueInformationPerkTreeEntries (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+
+CREATE TABLE ActorValueInformationPerkTreeConnectionLineIndices
+(
+    Game                                TEXT    NOT NULL,
+    ModKey_Name                         TEXT    NOT NULL,
+    ModKey_Type                         INTEGER NOT NULL,
+    ModKey_FileName                     TEXT    NOT NULL,
+    FormKey_ModKey_Name                 TEXT    NOT NULL,
+    FormKey_ModKey_Type                 INTEGER NOT NULL,
+    FormKey_ModKey_FileName             TEXT    NOT NULL,
+    FormKey_ID                          INTEGER NOT NULL,
+    PerkTree_Index                      INTEGER NOT NULL,
+    ConnectionLine_Index                INTEGER NOT NULL,
+    TargetIndex                         INTEGER NOT NULL,
+    ImportedAtUTC                       TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, PerkTree_Index, ConnectionLine_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, PerkTree_Index)
+        REFERENCES ActorValueInformationPerkTreeEntries (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, PerkTree_Index) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (PerkTree_Index >= 0),
+    CHECK (ConnectionLine_Index >= 0),
+    CHECK (TargetIndex >= 0)
+);
+
+CREATE INDEX IX_ActorValueInformationPerkTreeConnectionLineIndices_Game_FormKey
+    ON ActorValueInformationPerkTreeConnectionLineIndices (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 
 CREATE TABLE LocalizedStrings
 (
