@@ -4,8 +4,9 @@ This folder contains durable project knowledge. Documentation should describe th
 
 ## Primary documentation files
 
-- /Documentation/SYSTEM-OVERVIEW.md - Current system purpose, major workflows, project boundaries, and high-level architecture.
+- /Documentation/NAMING-CONVENTIONS.md - Naming conventions
 - /Documentation/ARCHITECTURE.md - Layering rules, Core vs presentation responsibilities, dependency direction, DI composition, persistence boundaries, and logging conventions.
+- /Documentation/SYSTEM-OVERVIEW.md - Current system purpose, major workflows, project boundaries, and high-level architecture.
 - /Documentation/DESIGN-DECISIONS.md - Important design decisions, tradeoffs, rejected alternatives, and rationale.
 - /Documentation/DOMAIN-MODEL.md - Important domain concepts, record comparison terminology, Mutagen concepts used by the app, and project-specific naming.
 - /Documentation/Database/DATABASE.md - SQLite, NPoco, DbUp migration behavior, schema ownership, and persistence conventions.
@@ -16,7 +17,7 @@ This folder contains durable project knowledge. Documentation should describe th
 ## General documentation
 
 - Use Markdown.
-- Wrap documentation prose at 120 characters.
+- Do not wrap documentation prose as Markdown natively handles this.
 - Keep documentation concise, factual, and tied to observed repository behavior.
 - Do not duplicate large code blocks. Reference paths, classes, interfaces, services, migrations, and tests instead.
 - If documentation and code conflict, call out the conflict in the plan before editing either side.

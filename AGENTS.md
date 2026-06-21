@@ -58,21 +58,15 @@ You must treat repo documentation as durable project knowledge.
 
 Primary project knowledge files:
 
-- /Documentation/SYSTEM-OVERVIEW.md - Current system purpose, major workflows, project boundaries, and high-level
-  architecture.
-- /Documentation/ARCHITECTURE.md - Layering rules, Core vs presentation responsibilities, dependency direction, DI
-  composition, persistence boundaries, and logging conventions.
+- /Documentation/NAMING-CONVENTIONS.md - Naming conventions
+- /Documentation/ARCHITECTURE.md - Layering rules, Core vs presentation responsibilities, dependency direction, DI composition, persistence boundaries, and logging conventions.
+- /Documentation/SYSTEM-OVERVIEW.md - Current system purpose, major workflows, project boundaries, and high-level architecture.
 - /Documentation/DESIGN-DECISIONS.md - Important design decisions, tradeoffs, rejected alternatives, and rationale.
-- /Documentation/DOMAIN-MODEL.md - Important domain concepts, record comparison terminology, Mutagen concepts used by
-  the app, and project-specific naming.
-- /Documentation/Database/DATABASE.md - SQLite, NPoco, DbUp migration behavior, schema ownership, and persistence
-  conventions.
-- /Documentation/Database/ERD.md - Entity-Relationship Diagram (ERD) of the database schema, including tables,
-  relationships, and constraints.
-- /Documentation/CHANGE-LOG.md - Log of the high level changes for each release. Do not modify or maintain this file;
-  human project managers will maintain this file.
-- /Documentation/KNOWN-ISSUES.md - List of current known issues and workarounds. Do not modify or maintain this file;
-  human project managers will maintain this file.
+- /Documentation/DOMAIN-MODEL.md - Important domain concepts, record comparison terminology, Mutagen concepts used by the app, and project-specific naming.
+- /Documentation/Database/DATABASE.md - SQLite, NPoco, DbUp migration behavior, schema ownership, and persistence conventions.
+- /Documentation/Database/ERD.md - Entity-Relationship Diagram (ERD) of the database schema, including tables, relationships, and constraints.
+- /Documentation/CHANGE-LOG.md - Log of the high level changes for each release. Do not modify or maintain this file; human project managers will maintain this file.
+- /Documentation/KNOWN-ISSUES.md - List of current known issues and workarounds. Do not modify or maintain this file; human project managers will maintain this file.
 
 Before planning a non-trivial change, you must read the relevant docs in /Documentation in addition to AGENTS.md.
 
