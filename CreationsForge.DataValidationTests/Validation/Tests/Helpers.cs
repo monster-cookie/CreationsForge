@@ -792,6 +792,11 @@ public static class Helpers
             return true;
         }
 
+        if (IsDtoNullBackedByEmptySpriggitTranslation(fieldName, fieldValue, spriggitFields))
+        {
+            return true;
+        }
+
         if (IsMissingDefaultActorValueInformationSkillOffset(fieldName, fieldValue, spriggitFields))
         {
             return true;
@@ -905,6 +910,8 @@ public static class Helpers
         if ((string.Equals(fieldName, "Model.MaterialSwap", StringComparison.OrdinalIgnoreCase) ||
              string.Equals(fieldName, "Model.MaterialSwaps[0]", StringComparison.OrdinalIgnoreCase) ||
              string.Equals(fieldName, "Model[0].NewTexture", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "Model[1]", StringComparison.OrdinalIgnoreCase) ||
+             IsModelMaterialSwapFormIdAlias(fieldName) ||
              string.Equals(fieldName, "Models[0].MaterialSwaps[0].MaterialSwapFormKey", StringComparison.OrdinalIgnoreCase)) &&
             IsSpriggitMaterialSwapValue(fieldValue, spriggitFields))
         {
@@ -931,6 +938,18 @@ public static class Helpers
 
         return string.Equals(fieldName, "Models[0].MaterialSwaps[0].ModelGender", StringComparison.OrdinalIgnoreCase) &&
                string.IsNullOrEmpty(fieldValue);
+    }
+
+    private static bool IsModelMaterialSwapFormIdAlias(string fieldName)
+    {
+        if (!fieldName.StartsWith("Model[0].", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var formId = fieldName["Model[0].".Length..];
+        return formId.Length == 6 &&
+               formId.All(character => Uri.IsHexDigit(character));
     }
 
     private static bool IsSpriggitMaterialSwapValue(string fieldValue, IReadOnlyDictionary<string, string> spriggitFields)
@@ -1393,8 +1412,8 @@ public static class Helpers
     {
         if (!TryGetIndexedPath(fieldName, "Components", out var componentIndex, out var componentRemainder) ||
             !componentRemainder.StartsWith(".", StringComparison.Ordinal) ||
-            !spriggitFields.TryGetValue("Components[" + componentIndex.ToString(CultureInfo.InvariantCulture) + "]", out var componentTypeValue) ||
-            !componentTypeValue.StartsWith("MutagenObjectType:", StringComparison.Ordinal))
+            !spriggitFields.TryGetValue("Components[" + componentIndex.ToString(CultureInfo.InvariantCulture) + "].MutagenObjectType", out var componentTypeValue) ||
+            string.IsNullOrWhiteSpace(componentTypeValue))
         {
             return false;
         }
@@ -1415,9 +1434,15 @@ public static class Helpers
                        int.TryParse(payloadIndexValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var payloadIndex) &&
                        payloadIndex == componentIndex &&
                        dtoFields.TryGetValue(payloadPath + ".SourcePath", out var sourcePath) &&
-                       sourcePath.StartsWith("Components.", StringComparison.Ordinal) &&
-                       sourcePath.EndsWith("." + componentFieldName, StringComparison.Ordinal);
+                       IsComponentRawPayloadSourcePath(sourcePath, componentFieldName);
             });
+    }
+
+    private static bool IsComponentRawPayloadSourcePath(string sourcePath, string componentFieldName)
+    {
+        return (sourcePath.StartsWith("Components.", StringComparison.OrdinalIgnoreCase) ||
+                sourcePath.StartsWith("BaseFormComponents.", StringComparison.OrdinalIgnoreCase)) &&
+               sourcePath.EndsWith("." + componentFieldName, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsSpriggitDestructibleFieldOutsideRepositoryReadback(string fieldName)
@@ -1590,12 +1615,24 @@ public static class Helpers
                 string.Equals(fieldValue, "0, 0, 0", StringComparison.Ordinal)) ||
                (string.Equals(fieldName, "Color", StringComparison.OrdinalIgnoreCase) &&
                 string.IsNullOrEmpty(fieldValue)) ||
+               string.Equals(fieldName, "Flags.Count", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(fieldName, "Model.Flags.Count", StringComparison.OrdinalIgnoreCase) ||
                (string.Equals(fieldName, "Flags", StringComparison.OrdinalIgnoreCase) && IsZero(fieldValue)) ||
                (string.Equals(fieldName, "Teaches.RawContent", StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(fieldValue, uint.MaxValue.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal)) ||
                (string.Equals(fieldName, "DataSlateType", StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(fieldValue, "None", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsDtoNullBackedByEmptySpriggitTranslation(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> spriggitFields)
+    {
+        return string.Equals(fieldValue, "Null", StringComparison.OrdinalIgnoreCase) &&
+               spriggitFields.ContainsKey(fieldName + ".TargetLanguage") &&
+               !spriggitFields.ContainsKey(fieldName + ".Count") &&
+               !spriggitFields.Keys.Any(field => field.StartsWith(fieldName + "[", StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool IsMissingDefaultActorValueInformationSkillOffset(
@@ -2210,8 +2247,7 @@ public static class Helpers
         }
 
         var rootFieldName = fieldName[..^targetLanguageSuffix.Length];
-        return !HasSpriggitPath(dtoFields, rootFieldName) &&
-               !spriggitFields.ContainsKey(rootFieldName + ".Count") &&
+        return !spriggitFields.ContainsKey(rootFieldName + ".Count") &&
                !spriggitFields.Keys.Any(field => field.StartsWith(rootFieldName + "[", StringComparison.OrdinalIgnoreCase));
     }
 

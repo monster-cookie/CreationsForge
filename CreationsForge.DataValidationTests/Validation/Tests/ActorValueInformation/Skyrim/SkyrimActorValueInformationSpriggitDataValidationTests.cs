@@ -178,7 +178,7 @@ public class SkyrimActorValueInformationSpriggitDataValidationTests : SpriggitDa
         spriggitFields["PerkTree[9].Index"].ShouldBe(dtoFields["PerkTree[9].Index"]);
         spriggitFields["PerkTree[9].FNAM"].ShouldBe(dtoFields["PerkTree[9].FNAM"]);
         spriggitFields.ContainsKey("PerkTree[0].Perk").ShouldBeFalse();
-        dtoFields.ContainsKey("PerkTree[0].Perk").ShouldBeFalse();
+        dtoFields["PerkTree[0].Perk"].ShouldBe("Null");
         spriggitFields["PerkTree[1].Perk"].ShouldBe(dtoFields["PerkTree[1].Perk"]);
         spriggitFields["PerkTree[2].Perk"].ShouldBe(dtoFields["PerkTree[2].Perk"]);
         spriggitFields["PerkTree[3].Perk"].ShouldBe(dtoFields["PerkTree[3].Perk"]);

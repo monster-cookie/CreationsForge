@@ -1134,11 +1134,30 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 PerkGridX = GetPropertyNullableInt(entry, "PerkGridX"),
                 PerkGridY = GetPropertyNullableInt(entry, "PerkGridY"),
                 VerticalPosition = GetPropertyNullableDouble(entry, "VerticalPosition"),
-                Perk = GetFormKeyFromObject(GetPropertyValue(entry, "Perk")),
+                Perk = GetActorValueInformationPerkTreePerk(entry),
                 ConnectionLineToIndices = GetActorValueInformationConnectionLineIndices(plugin, formKey, entry, entryIndex, importedAtUTC),
                 ImportedAtUTC = importedAtUTC
             })
             .ToList();
+    }
+
+    private static FormKeyDTO? GetActorValueInformationPerkTreePerk(object entry)
+    {
+        var perk = GetFormKeyFromObject(GetPropertyValue(entry, "Perk"));
+        if (perk == null)
+        {
+            return null;
+        }
+
+        var associatedSkill = GetFormKeyFromObject(GetPropertyValue(entry, "AssociatedSkill"));
+        if (SameFormKey(perk, associatedSkill) &&
+            GetPropertyNullableInt(entry, "Index") == 0 &&
+            string.Equals(FormatSpriggitHexValue(GetPropertyValue(entry, "FNAM")), "0x0046554C", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return perk;
     }
 
     private static List<ActorValueInformationConnectionLineIndexDTO> GetActorValueInformationConnectionLineIndices(
@@ -1470,6 +1489,14 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
     private static FormKeyDTO? GetFormKeyFromObject(object? value)
     {
         return GetFormKeyFromObject(value, 0);
+    }
+
+    private static bool SameFormKey(FormKeyDTO? left, FormKeyDTO? right)
+    {
+        return left != null &&
+               right != null &&
+               left.Id == right.Id &&
+               string.Equals(left.ModKey.FileName, right.ModKey.FileName, StringComparison.OrdinalIgnoreCase);
     }
 
     private static FormKeyDTO? GetFormKeyFromObject(object? value, int depth)

@@ -41,6 +41,7 @@ public class BookDTO : RecordDTO, IHasName, IHasText, IHasTranslatedFields, IHas
 
     public string? DataSlateType { get; set; }
 
+    [LocalizedField("Description")]
     public TranslatedStringDTO? Description { get; set; }
 
     public TranslatedStringDTO? DataSlateHeaderLeft { get; set; }
