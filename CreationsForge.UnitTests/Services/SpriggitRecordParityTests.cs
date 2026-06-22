@@ -122,8 +122,8 @@ public class SpriggitRecordParityTests
         var keywordCount = sample.GetListItemCount("Keywords");
         if (keywordCount > 0)
         {
-            (record is IHasKeywordsRecordDTO).ShouldBeTrue($"Record '{record.EditorID}' should expose keywords.");
-            var keywordRecord = (IHasKeywordsRecordDTO)record;
+            (record is IKeywords).ShouldBeTrue($"Record '{record.EditorID}' should expose keywords.");
+            var keywordRecord = (IKeywords)record;
             keywordRecord.Keywords.Count.ShouldBeGreaterThanOrEqualTo(keywordCount, $"Record '{record.EditorID}' should preserve Spriggit keywords.");
         }
 
@@ -132,8 +132,8 @@ public class SpriggitRecordParityTests
             .ToList();
         if (soundSlots.Count > 0)
         {
-            (record is IHasSoundsRecordDTO).ShouldBeTrue($"Record '{record.EditorID}' should expose sounds.");
-            var soundRecord = (IHasSoundsRecordDTO)record;
+            (record is ISounds).ShouldBeTrue($"Record '{record.EditorID}' should expose sounds.");
+            var soundRecord = (ISounds)record;
             foreach (var soundSlot in soundSlots)
             {
                 soundRecord.Sounds.Any(sound => string.Equals(sound.SoundSlot, soundSlot, StringComparison.OrdinalIgnoreCase))

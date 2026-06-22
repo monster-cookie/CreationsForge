@@ -5,23 +5,23 @@ using CreationsForge.Core.Services.Interfaces;
 
 namespace CreationsForge.Core.Services;
 
-public class RecordKeywordImportService : IRecordKeywordImportService
+public class KeywordMappingImportService : IKeywordMappingImportService
 {
-    private readonly IRecordKeywordRepository RecordKeywordRepository;
+    private readonly IKeywordMappingRepository KeywordMappingRepository;
 
-    public RecordKeywordImportService(IRecordKeywordRepository recordKeywordRepository)
+    public KeywordMappingImportService(IKeywordMappingRepository keywordMappingRepository)
     {
-        RecordKeywordRepository = recordKeywordRepository;
+        KeywordMappingRepository = keywordMappingRepository;
     }
 
-    public void ReplaceRecordKeywords(IHasKeywordsRecordDTO record, string recordType)
+    public void ReplaceKeywordMappings(IKeywords record, string recordType)
     {
         if (record is not RecordDTO recordDTO)
         {
             throw new ArgumentException($"Expected {nameof(RecordDTO)}.", nameof(record));
         }
 
-        RecordKeywordRepository.DeleteByRecord(recordDTO.Game, recordDTO.ModKey, recordType, recordDTO.FormKey);
+        KeywordMappingRepository.DeleteByRecord(recordDTO.Game, recordDTO.ModKey, recordType, recordDTO.FormKey);
 
         foreach (var keyword in record.Keywords)
         {
@@ -30,7 +30,7 @@ public class RecordKeywordImportService : IRecordKeywordImportService
             keyword.RecordType = recordType;
             keyword.FormKey = recordDTO.FormKey;
             keyword.ImportedAtUTC = recordDTO.ImportedAtUTC;
-            RecordKeywordRepository.Save(keyword);
+            KeywordMappingRepository.Save(keyword);
         }
     }
 }

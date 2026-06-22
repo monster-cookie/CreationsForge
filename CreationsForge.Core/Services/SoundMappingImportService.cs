@@ -5,23 +5,23 @@ using CreationsForge.Core.Services.Interfaces;
 
 namespace CreationsForge.Core.Services;
 
-public class RecordSoundImportService : IRecordSoundImportService
+public class SoundMappingImportService : ISoundMappingImportService
 {
-    private readonly IRecordSoundRepository RecordSoundRepository;
+    private readonly ISoundMappingRepository SoundMappingRepository;
 
-    public RecordSoundImportService(IRecordSoundRepository recordSoundRepository)
+    public SoundMappingImportService(ISoundMappingRepository soundMappingRepository)
     {
-        RecordSoundRepository = recordSoundRepository;
+        SoundMappingRepository = soundMappingRepository;
     }
 
-    public void ReplaceRecordSounds(IHasSoundsRecordDTO record, string recordType)
+    public void ReplaceSoundMappings(ISounds record, string recordType)
     {
         if (record is not RecordDTO recordDTO)
         {
             throw new ArgumentException($"Expected {nameof(RecordDTO)}.", nameof(record));
         }
 
-        RecordSoundRepository.DeleteByRecord(recordDTO.Game, recordDTO.ModKey, recordType, recordDTO.FormKey);
+        SoundMappingRepository.DeleteByRecord(recordDTO.Game, recordDTO.ModKey, recordType, recordDTO.FormKey);
 
         foreach (var sound in record.Sounds)
         {
@@ -30,7 +30,7 @@ public class RecordSoundImportService : IRecordSoundImportService
             sound.RecordType = recordType;
             sound.FormKey = recordDTO.FormKey;
             sound.ImportedAtUTC = recordDTO.ImportedAtUTC;
-            RecordSoundRepository.Save(sound);
+            SoundMappingRepository.Save(sound);
         }
     }
 }

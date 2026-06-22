@@ -1,4 +1,4 @@
--- Reset schema section 1
+-- CreationsForge v2 reset baseline schema
 CREATE TABLE Games -- noqa: 
 (
     Game               TEXT NOT NULL,
@@ -24,6 +24,8 @@ CREATE TABLE Plugins
     FormVersion             INTEGER NOT NULL,
     Author                  TEXT    NULL,
     Description             TEXT    NULL,
+    ImportMessage           TEXT    NULL,
+    ImportDetails           TEXT    NULL,
     RecordCount             INTEGER NOT NULL DEFAULT 0,
     SourceLastWriteUTCTicks INTEGER NOT NULL,
     SourceFileSizeBytes     INTEGER NOT NULL,
@@ -34,7 +36,7 @@ CREATE TABLE Plugins
     FOREIGN KEY (Game) REFERENCES Games (Game) ON DELETE CASCADE,
     CHECK (Enabled IN (0, 1)),
     CHECK (ExistsOnDisk IN (0, 1)),
-    CHECK (ImportState IN ('Current', 'Changed', 'Missing', 'Failed', 'Unsupported')),
+    CHECK (ImportState IN ('Current', 'Changed', 'PartiallyImported', 'Missing', 'Failed', 'Unsupported')),
     CHECK (RecordCount >= 0)
 );
 
@@ -281,6 +283,11 @@ CREATE TABLE ActorValueInformation
     ImportedAtUTC           TEXT    NOT NULL,
     Name                    TEXT    NULL,
     Abbreviation            TEXT    NULL,
+    Description             TEXT    NULL,
+    CNAM                    TEXT    NULL,
+    Skill_ImproveMult       REAL    NULL,
+    Skill_ImproveOffset     REAL    NULL,
+    Skill_UseMult           REAL    NULL,
     ContextNotes            TEXT    NULL,
     DefaultValue            REAL    NULL,
     Flags                   TEXT    NULL,
@@ -435,7 +442,7 @@ CREATE TABLE MagicEffects
 
 CREATE INDEX IX_MagicEffects_FormKey ON MagicEffects (Game, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
 
-CREATE TABLE MiscObjects
+CREATE TABLE MiscItems
 (
     Game                                  TEXT    NOT NULL,
     ModKey_Name                           TEXT    NOT NULL,
@@ -466,7 +473,7 @@ CREATE TABLE MiscObjects
     CHECK (FormKey_ID >= 0)
 );
 
-CREATE INDEX IX_MiscObjects_FormKey ON MiscObjects (Game, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
+CREATE INDEX IX_MiscItems_FormKey ON MiscItems (Game, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
 
 CREATE TABLE Perks
 (
@@ -507,7 +514,7 @@ CREATE TABLE Perks
 
 CREATE INDEX IX_Perks_FormKey ON Perks (Game, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
 
-CREATE TABLE RecordKeywords
+CREATE TABLE KeywordMappings
 (
     Game                    TEXT    NOT NULL,
     ModKey_Name             TEXT    NOT NULL,
@@ -669,7 +676,7 @@ CREATE TABLE ModelMaterialSwaps
     CHECK (MaterialSwap_Index >= 0)
 );
 
-CREATE TABLE RecordSounds
+CREATE TABLE SoundMappings
 (
     Game                    TEXT    NOT NULL,
     ModKey_Name             TEXT    NOT NULL,
@@ -876,20 +883,6 @@ INNER JOIN SkyrimPlugins sky
     AND sky.ModKey_FileName = p.ModKey_FileName
 WHERE p.Game = 'Skyrim';
 
--- Reset schema section 2
-PRAGMA writable_schema = ON;
-
-UPDATE sqlite_schema
-SET sql = REPLACE(
-    sql,
-    'CHECK (ImportState IN (''Current'', ''Changed'', ''Missing'', ''Failed'', ''Unsupported''))',
-    'CHECK (ImportState IN (''Current'', ''Changed'', ''PartiallyImported'', ''Missing'', ''Failed'', ''Unsupported''))')
-WHERE type = 'table'
-  AND name = 'Plugins'
-  AND sql LIKE '%CHECK (ImportState IN (%Unsupported%';
-
-PRAGMA writable_schema = OFF;
-
 CREATE TABLE AssetArchiveFiles
 (
     Game                    TEXT    NOT NULL,
@@ -971,6 +964,7 @@ CREATE TABLE RawRecordPayloads
     PayloadSlot             TEXT    NOT NULL,
     Payload_Index           INTEGER NOT NULL,
     PayloadType             TEXT    NOT NULL,
+    SourcePath              TEXT    NULL,
     PayloadValue            TEXT    NULL,
     ImportedAtUTC           TEXT    NOT NULL,
     PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, PayloadSlot, Payload_Index),
@@ -1054,8 +1048,8 @@ CREATE INDEX IX_NPCs_Game_Plugin ON NPCs (Game, ModKey_Name COLLATE NOCASE, ModK
 CREATE INDEX IX_NPCs_Game_FormKey_Collated ON NPCs (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_MagicEffects_Game_Plugin ON MagicEffects (Game, ModKey_Name COLLATE NOCASE, ModKey_Type, ModKey_FileName COLLATE NOCASE, EditorID COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_MagicEffects_Game_FormKey_Collated ON MagicEffects (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
-CREATE INDEX IX_MiscObjects_Game_Plugin ON MiscObjects (Game, ModKey_Name COLLATE NOCASE, ModKey_Type, ModKey_FileName COLLATE NOCASE, EditorID COLLATE NOCASE, FormKey_ID);
-CREATE INDEX IX_MiscObjects_Game_FormKey_Collated ON MiscObjects (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+CREATE INDEX IX_MiscItems_Game_Plugin ON MiscItems (Game, ModKey_Name COLLATE NOCASE, ModKey_Type, ModKey_FileName COLLATE NOCASE, EditorID COLLATE NOCASE, FormKey_ID);
+CREATE INDEX IX_MiscItems_Game_FormKey_Collated ON MiscItems (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_Perks_Game_Plugin ON Perks (Game, ModKey_Name COLLATE NOCASE, ModKey_Type, ModKey_FileName COLLATE NOCASE, EditorID COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_Perks_Game_FormKey_Collated ON Perks (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_Statics_FormKey ON Statics (Game, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
@@ -1065,15 +1059,6 @@ CREATE INDEX IX_RawRecordPayloads_Game_Record_FormKey ON RawRecordPayloads (Game
 CREATE INDEX IX_Containers_Game_Plugin ON Containers (Game, ModKey_Name COLLATE NOCASE, ModKey_Type, ModKey_FileName COLLATE NOCASE, EditorID COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_Containers_Game_FormKey_Collated ON Containers (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_ContainerItems_Game_FormKey ON ContainerItems (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
-
--- Reset schema section 3
-ALTER TABLE MiscObjects RENAME TO MiscItems;
-
-DROP INDEX IF EXISTS IX_MiscObjects_Game_Plugin;
-DROP INDEX IF EXISTS IX_MiscObjects_Game_FormKey_Collated;
-
-CREATE INDEX IX_MiscItems_Game_Plugin ON MiscItems (Game, ModKey_Name COLLATE NOCASE, ModKey_Type, ModKey_FileName COLLATE NOCASE, EditorID COLLATE NOCASE, FormKey_ID);
-CREATE INDEX IX_MiscItems_Game_FormKey_Collated ON MiscItems (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 
 CREATE TABLE Books
 (
@@ -1241,7 +1226,6 @@ CREATE TABLE TerminalMarkerParameters
 
 CREATE INDEX IX_TerminalMarkerParameters_Game_FormKey ON TerminalMarkerParameters (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 
--- Reset schema section 4
 CREATE TABLE ConstructibleObjects
 (
     Game                                TEXT    NOT NULL,
@@ -1376,65 +1360,6 @@ CREATE TABLE ConditionForms
     CHECK (FormKey_ID >= 0)
 );
 
-CREATE TABLE ConditionFormConditions
-(
-    Game                                      TEXT    NOT NULL,
-    ModKey_Name                               TEXT    NOT NULL,
-    ModKey_Type                               INTEGER NOT NULL,
-    ModKey_FileName                           TEXT    NOT NULL,
-    FormKey_ModKey_Name                       TEXT    NOT NULL,
-    FormKey_ModKey_Type                       INTEGER NOT NULL,
-    FormKey_ModKey_FileName                   TEXT    NOT NULL,
-    FormKey_ID                                INTEGER NOT NULL,
-    Condition_Index                           INTEGER NOT NULL,
-    MutagenObjectType                         TEXT    NOT NULL,
-    DataMutagenObjectType                     TEXT    NULL,
-    CompareOperator                           TEXT    NULL,
-    ComparisonValue                           TEXT    NULL,
-    ComparisonValue_ModKey_Name               TEXT    NULL,
-    ComparisonValue_ModKey_Type               INTEGER NULL,
-    ComparisonValue_ModKey_FileName           TEXT    NULL,
-    ComparisonValue_FormKey_ID                INTEGER NULL,
-    ImportedAtUTC                             TEXT    NOT NULL,
-    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Condition_Index),
-    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
-        REFERENCES ConditionForms (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
-    CHECK (FormKey_ID >= 0),
-    CHECK (Condition_Index >= 0),
-    CHECK (ComparisonValue_FormKey_ID IS NULL OR ComparisonValue_FormKey_ID >= 0)
-);
-
-CREATE TABLE ConditionFormConditionParameters
-(
-    Game                                      TEXT    NOT NULL,
-    ModKey_Name                               TEXT    NOT NULL,
-    ModKey_Type                               INTEGER NOT NULL,
-    ModKey_FileName                           TEXT    NOT NULL,
-    FormKey_ModKey_Name                       TEXT    NOT NULL,
-    FormKey_ModKey_Type                       INTEGER NOT NULL,
-    FormKey_ModKey_FileName                   TEXT    NOT NULL,
-    FormKey_ID                                INTEGER NOT NULL,
-    Condition_Index                           INTEGER NOT NULL,
-    Parameter_Name                            TEXT    NOT NULL,
-    ParameterValue                            TEXT    NULL,
-    Parameter_ModKey_Name                     TEXT    NULL,
-    Parameter_ModKey_Type                     INTEGER NULL,
-    Parameter_ModKey_FileName                 TEXT    NULL,
-    Parameter_FormKey_ID                      INTEGER NULL,
-    ImportedAtUTC                             TEXT    NOT NULL,
-    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Condition_Index, Parameter_Name),
-    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Condition_Index)
-        REFERENCES ConditionFormConditions (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Condition_Index) ON DELETE CASCADE,
-    CHECK (FormKey_ID >= 0),
-    CHECK (Condition_Index >= 0),
-    CHECK (Parameter_Name <> ''),
-    CHECK (Parameter_FormKey_ID IS NULL OR Parameter_FormKey_ID >= 0)
-);
-
-ALTER TABLE RawRecordPayloads ADD COLUMN SourcePath TEXT NULL;
-ALTER TABLE Plugins ADD COLUMN ImportMessage TEXT NULL;
-ALTER TABLE Plugins ADD COLUMN ImportDetails TEXT NULL;
-
 CREATE INDEX IX_ConstructibleObjects_FormKey ON ConstructibleObjects (Game, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
 CREATE INDEX IX_ConstructibleObjects_Game_Plugin ON ConstructibleObjects (Game, ModKey_Name COLLATE NOCASE, ModKey_Type, ModKey_FileName COLLATE NOCASE, EditorID COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_ConstructibleObjects_Game_FormKey_Collated ON ConstructibleObjects (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
@@ -1444,15 +1369,6 @@ CREATE INDEX IX_ConstructibleObjectRecipeFilters_Game_FormKey ON ConstructibleOb
 CREATE INDEX IX_ConditionForms_FormKey ON ConditionForms (Game, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
 CREATE INDEX IX_ConditionForms_Game_Plugin ON ConditionForms (Game, ModKey_Name COLLATE NOCASE, ModKey_Type, ModKey_FileName COLLATE NOCASE, EditorID COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_ConditionForms_Game_FormKey_Collated ON ConditionForms (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
-CREATE INDEX IX_ConditionFormConditions_Game_FormKey ON ConditionFormConditions (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
-CREATE INDEX IX_ConditionFormConditionParameters_Game_FormKey ON ConditionFormConditionParameters (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
-
-UPDATE Plugins
-SET ImportState = 'Changed',
-    InvalidatedAtUTC = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-WHERE ImportState IN ('Current', 'PartiallyImported');
-
--- Reset schema section 5
 CREATE TABLE Classes
 (
     Game                                TEXT    NOT NULL,
@@ -1735,7 +1651,7 @@ CREATE TABLE ConditionRuleParameters
     CHECK (Parameter_FormKey_ID IS NULL OR Parameter_FormKey_ID >= 0)
 );
 
-CREATE TABLE RecordComponents
+CREATE TABLE Components
 (
     Game                                TEXT    NOT NULL,
     ModKey_Name                         TEXT    NOT NULL,
@@ -1757,7 +1673,7 @@ CREATE TABLE RecordComponents
     CHECK (Component_Index >= 0)
 );
 
-CREATE TABLE RecordComponentItems
+CREATE TABLE ComponentItems
 (
     Game                                TEXT    NOT NULL,
     ModKey_Name                         TEXT    NOT NULL,
@@ -1778,7 +1694,7 @@ CREATE TABLE RecordComponentItems
     ImportedAtUTC                       TEXT    NOT NULL,
     PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Component_Index, Item_Index),
     FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Component_Index)
-        REFERENCES RecordComponents (Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Component_Index) ON DELETE CASCADE,
+        REFERENCES Components (Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Component_Index) ON DELETE CASCADE,
     CHECK (RecordType <> ''),
     CHECK (FormKey_ID >= 0),
     CHECK (Component_Index >= 0),
@@ -1797,14 +1713,8 @@ CREATE INDEX IX_FactionRelations_Game_FormKey ON FactionRelations (Game, FormKey
 CREATE INDEX IX_FactionRanks_Game_FormKey ON FactionRanks (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_ConditionRules_Game_FormKey ON ConditionRules (Game, RecordType, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_ConditionRuleParameters_Game_FormKey ON ConditionRuleParameters (Game, RecordType, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
-CREATE INDEX IX_RecordComponents_Game_FormKey ON RecordComponents (Game, RecordType, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
-CREATE INDEX IX_RecordComponentItems_Game_FormKey ON RecordComponentItems (Game, RecordType, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
-
-ALTER TABLE ActorValueInformation ADD COLUMN Description TEXT NULL;
-ALTER TABLE ActorValueInformation ADD COLUMN CNAM TEXT NULL;
-ALTER TABLE ActorValueInformation ADD COLUMN Skill_ImproveMult REAL NULL;
-ALTER TABLE ActorValueInformation ADD COLUMN Skill_ImproveOffset REAL NULL;
-ALTER TABLE ActorValueInformation ADD COLUMN Skill_UseMult REAL NULL;
+CREATE INDEX IX_Components_Game_FormKey ON Components (Game, RecordType, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+CREATE INDEX IX_ComponentItems_Game_FormKey ON ComponentItems (Game, RecordType, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 
 CREATE TABLE ActorValueInformationLayoutEntries
 (
@@ -1921,34 +1831,3 @@ CREATE TABLE LocalizedStrings
 
 CREATE INDEX IX_LocalizedStrings_Game_Record_FormKey
     ON LocalizedStrings (Game, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
-
-INSERT OR REPLACE INTO ConditionRules (
-    Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName,
-    FormKey_ID, ConditionSlot, Condition_Index, MutagenObjectType, DataMutagenObjectType, CompareOperator, ComparisonValue,
-    ComparisonValue_ModKey_Name, ComparisonValue_ModKey_Type, ComparisonValue_ModKey_FileName, ComparisonValue_FormKey_ID, ImportedAtUTC)
-SELECT
-    Game, ModKey_Name, ModKey_Type, ModKey_FileName, 'CNDF', FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName,
-    FormKey_ID, 'Conditions', Condition_Index, MutagenObjectType, DataMutagenObjectType, CompareOperator, ComparisonValue,
-    ComparisonValue_ModKey_Name, ComparisonValue_ModKey_Type, ComparisonValue_ModKey_FileName, ComparisonValue_FormKey_ID, ImportedAtUTC
-FROM ConditionFormConditions;
-
-INSERT OR REPLACE INTO ConditionRuleParameters (
-    Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName,
-    FormKey_ID, ConditionSlot, Condition_Index, Parameter_Name, ParameterValue, Parameter_ModKey_Name, Parameter_ModKey_Type,
-    Parameter_ModKey_FileName, Parameter_FormKey_ID, ImportedAtUTC)
-SELECT
-    Game, ModKey_Name, ModKey_Type, ModKey_FileName, 'CNDF', FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName,
-    FormKey_ID, 'Conditions', Condition_Index, Parameter_Name, ParameterValue, Parameter_ModKey_Name, Parameter_ModKey_Type,
-    Parameter_ModKey_FileName, Parameter_FormKey_ID, ImportedAtUTC
-FROM ConditionFormConditionParameters;
-
-DROP TABLE ConditionFormConditionParameters;
-DROP TABLE ConditionFormConditions;
-
-UPDATE Plugins
-SET ImportState = 'Changed',
-    InvalidatedAtUTC = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
-    ImportMessage = 'Unreleased migration 005 schema changed; reimport required.',
-    ImportDetails = 'Migration 005 added shared Class/Faction tables, shared condition/component tables, LocalizedStrings child rows, Book Spriggit-aligned columns, Book PreviewTransform columns, and ActorValueInformation Description/layout/perk tree fields.'
-WHERE ImportState IN ('Current', 'PartiallyImported');
-

@@ -3,7 +3,7 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class MiscObjectDTO : RecordDTO, IHasScriptingAdaptersRecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO, IHasSoundsRecordDTO
+public class MiscObjectDTO : RecordDTO, IHasScriptingAdaptersRecordDTO, IHasModelsRecordDTO, IKeywords, ISounds
 {
     public TranslatedStringDTO? Name { get; set; }
 
@@ -21,9 +21,9 @@ public class MiscObjectDTO : RecordDTO, IHasScriptingAdaptersRecordDTO, IHasMode
 
     public IList<ModelDTO> Models { get; set; } = new List<ModelDTO>();
 
-    public IList<RecordKeywordDTO> Keywords { get; set; } = new List<RecordKeywordDTO>();
+    public IList<KeywordMappingDTO> Keywords { get; set; } = new List<KeywordMappingDTO>();
 
-    public IList<RecordSoundDTO> Sounds { get; set; } = new List<RecordSoundDTO>();
+    public IList<SoundMappingDTO> Sounds { get; set; } = new List<SoundMappingDTO>();
 
     public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 }

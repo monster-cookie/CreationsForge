@@ -5,7 +5,7 @@ using CreationsForge.Core.Enums;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class BookDTO : RecordDTO, IHasName, IHasText, IHasTranslatedFields, IHasModelsRecordDTO, IHasKeywordsRecordDTO, IHasSoundsRecordDTO, IHasScriptingAdaptersRecordDTO, IHasComponentsRecordDTO, IHasRawRecordPayloadsRecordDTO
+public class BookDTO : RecordDTO, IHasName, IHasText, IHasTranslatedFields, IHasModelsRecordDTO, IKeywords, ISounds, IHasScriptingAdaptersRecordDTO, IHasComponentsRecordDTO, IHasRawRecordPayloadsRecordDTO
 {
     public ObjectBoundsDTO? ObjectBounds { get; set; }
 
@@ -49,9 +49,9 @@ public class BookDTO : RecordDTO, IHasName, IHasText, IHasTranslatedFields, IHas
 
     public IList<ModelDTO> Models { get; set; } = new List<ModelDTO>();
 
-    public IList<RecordKeywordDTO> Keywords { get; set; } = new List<RecordKeywordDTO>();
+    public IList<KeywordMappingDTO> Keywords { get; set; } = new List<KeywordMappingDTO>();
 
-    public IList<RecordSoundDTO> Sounds { get; set; } = new List<RecordSoundDTO>();
+    public IList<SoundMappingDTO> Sounds { get; set; } = new List<SoundMappingDTO>();
 
     public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 

@@ -230,7 +230,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 FeaturedItemMessageFormKey = GetLinkedFormKey(record, "FeaturedItemMessage"),
                 Flag = FormatHexValue(GetPropertyValue(record, "FLAG")),
                 Models = GetModels(plugin, RecordTypeCatalog.MiscObject.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model")),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.MiscObject.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
+                Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.MiscObject.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.MiscObject.RecordID, GetRequiredRawFormKey(record), record, "CraftingSound", "PickupSound", "PutdownSound", "DropdownSound"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MiscObject.RecordID, record)
             }, record))
@@ -306,7 +306,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 CombatStyleFormKey = GetLinkedFormKey(record, "CombatStyle"),
                 DefaultPackageListFormKey = GetLinkedFormKey(record, "DefaultPackageList"),
                 CrimeFactionFormKey = GetLinkedFormKey(record, "CrimeFaction"),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.NPC.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
+                Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.NPC.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.NPC.RecordID, record)
             }, record))
             .ToList();
@@ -395,7 +395,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             Relations = GetFactionRelations(plugin, game, formKey, GetPropertyValue(record, "Relations")),
             Ranks = GetFactionRanks(plugin, game, formKey, GetPropertyValue(record, "Ranks")),
             Conditions = GetConditionRules(plugin, game, formKey, GetPropertyValue(record, "Conditions")),
-            Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Faction.RecordID, formKey, GetPropertyValue(record, "Keyword") is null ? null : new[] { GetPropertyValue(record, "Keyword")! })
+            Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.Faction.RecordID, formKey, GetPropertyValue(record, "Keyword") is null ? null : new[] { GetPropertyValue(record, "Keyword")! })
         }, record);
     }
 
@@ -544,7 +544,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 Unknown = FormatHexValue(GetPropertyValue(record, "Unknown")),
                 Unknown2 = FormatHexValue(GetPropertyValue(record, "Unknown2")),
                 DataTypeState = GetPropertyStringOrNull(record, "DATADataTypeState"),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.MagicEffect.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
+                Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.MagicEffect.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
                 Sounds = GetIndexedSounds(plugin, RecordTypeCatalog.MagicEffect.RecordID, GetRequiredRawFormKey(record), record),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MagicEffect.RecordID, record)
             }, record))
@@ -628,7 +628,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 MajorFlags = GetPropertyStringOrNull(record, "MajorFlags"),
                 Items = GetContainerItems(plugin, GetRequiredRawFormKey(record), GetPropertyValue(record, "Items")),
                 Models = GetModels(plugin, RecordTypeCatalog.Container.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model")),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Container.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
+                Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.Container.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.Container.RecordID, GetRequiredRawFormKey(record), record, "OpenSound", "CloseSound"),
                 RawPayloads = GetModelRawPayloads(plugin, RecordTypeCatalog.Container.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model"))
             }, record))
@@ -670,7 +670,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 },
                 Description = GetTranslatedString(record, "Description"),
                 Models = GetModels(plugin, RecordTypeCatalog.Book.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model")),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Book.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
+                Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.Book.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.Book.RecordID, GetRequiredRawFormKey(record), record, "PickupSound", "PickUpSound", "DropdownSound", "PutdownSound"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Book.RecordID, record),
                 RawPayloads = GetModelRawPayloads(plugin, RecordTypeCatalog.Book.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model"))
@@ -700,7 +700,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 SoundLevel = GetPropertyStringOrNull(record, "SoundLevel"),
                 FacingAxisOverride = GetPropertyStringOrNull(record, "FacingAxisOverride"),
                 Models = GetModels(plugin, RecordTypeCatalog.Door.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model")),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Door.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
+                Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.Door.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.Door.RecordID, GetRequiredRawFormKey(record), record, "OpenSound", "CloseSound"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Door.RecordID, record),
                 RawPayloads = GetModelRawPayloads(plugin, RecordTypeCatalog.Door.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model"))
@@ -862,15 +862,15 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             .ToList();
     }
 
-    private static List<RecordKeywordDTO> GetRecordKeywords(PluginDTO plugin, string recordType, FormKey formKey, object? keywords)
+    private static List<KeywordMappingDTO> GetKeywordMappings(PluginDTO plugin, string recordType, FormKey formKey, object? keywords)
     {
-        if (keywords is not IEnumerable enumerable) return new List<RecordKeywordDTO>();
+        if (keywords is not IEnumerable enumerable) return new List<KeywordMappingDTO>();
 
         var importedAtUTC = DateTime.UtcNow;
         return enumerable
             .Cast<object>()
             .Select((keyword, keywordIndex) => GetFormKeyFromObject(keyword) is { } keywordFormKey
-                ? new RecordKeywordDTO
+                ? new KeywordMappingDTO
                 {
                     Game = SupportedGame.Skyrim,
                     ModKey = plugin.ModKey,
@@ -882,7 +882,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 }
                 : null)
             .Where(keyword => keyword != null)
-            .Cast<RecordKeywordDTO>()
+            .Cast<KeywordMappingDTO>()
             .ToList();
     }
 
@@ -1073,38 +1073,38 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         });
     }
 
-    private static List<RecordSoundDTO> GetNamedSounds(PluginDTO plugin, string recordType, FormKey formKey, object record, params string[] soundSlots)
+    private static List<SoundMappingDTO> GetNamedSounds(PluginDTO plugin, string recordType, FormKey formKey, object record, params string[] soundSlots)
     {
         var importedAtUTC = DateTime.UtcNow;
         return soundSlots
-            .Select((soundSlot, soundIndex) => CreateRecordSound(plugin, recordType, formKey, soundSlot, soundIndex, GetPropertyValue(record, soundSlot), importedAtUTC))
+            .Select((soundSlot, soundIndex) => CreateSoundMapping(plugin, recordType, formKey, soundSlot, soundIndex, GetPropertyValue(record, soundSlot), importedAtUTC))
             .Where(sound => sound != null)
-            .Cast<RecordSoundDTO>()
+            .Cast<SoundMappingDTO>()
             .ToList();
     }
 
-    private static List<RecordSoundDTO> GetIndexedSounds(PluginDTO plugin, string recordType, FormKey formKey, object record)
+    private static List<SoundMappingDTO> GetIndexedSounds(PluginDTO plugin, string recordType, FormKey formKey, object record)
     {
         var sounds = GetPropertyValue(record, "Sounds") as IEnumerable;
-        if (sounds == null) return new List<RecordSoundDTO>();
+        if (sounds == null) return new List<SoundMappingDTO>();
 
         var importedAtUTC = DateTime.UtcNow;
         return sounds
             .Cast<object>()
-            .Select((sound, soundIndex) => CreateRecordSound(plugin, recordType, formKey, GetPropertyValue(sound, "Type")?.ToString() ?? $"Sound [{soundIndex}]", soundIndex, sound, importedAtUTC))
+            .Select((sound, soundIndex) => CreateSoundMapping(plugin, recordType, formKey, GetPropertyValue(sound, "Type")?.ToString() ?? $"Sound [{soundIndex}]", soundIndex, sound, importedAtUTC))
             .Where(sound => sound != null)
-            .Cast<RecordSoundDTO>()
+            .Cast<SoundMappingDTO>()
             .ToList();
     }
 
-    private static RecordSoundDTO? CreateRecordSound(PluginDTO plugin, string recordType, FormKey formKey, string soundSlot, int soundIndex, object? soundSource, DateTime importedAtUTC)
+    private static SoundMappingDTO? CreateSoundMapping(PluginDTO plugin, string recordType, FormKey formKey, string soundSlot, int soundIndex, object? soundSource, DateTime importedAtUTC)
     {
         if (soundSource == null) return null;
 
         var start = GetSoundStart(soundSource);
         if (string.IsNullOrWhiteSpace(start)) return null;
 
-        return new RecordSoundDTO
+        return new SoundMappingDTO
         {
             Game = SupportedGame.Skyrim,
             ModKey = plugin.ModKey,

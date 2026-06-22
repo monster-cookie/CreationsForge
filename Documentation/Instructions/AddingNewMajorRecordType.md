@@ -331,8 +331,8 @@ If the record has child data, implement the matching child interfaces:
 
 ```csharp
 IHasModelsRecordDTO
-IHasKeywordsRecordDTO
-IHasSoundsRecordDTO
+IKeywords
+ISounds
 IHasRawRecordPayloadsRecordDTO
 IHasScriptingAdaptersRecordDTO
 ```
@@ -344,11 +344,11 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class SomeRecordDTO : RecordDTO, IHasKeywordsRecordDTO, IHasScriptingAdaptersRecordDTO
+public class SomeRecordDTO : RecordDTO, IKeywords, IHasScriptingAdaptersRecordDTO
 {
     public string? Name { get; set; }
 
-    public IList<RecordKeywordDTO> Keywords { get; set; } = new List<RecordKeywordDTO>();
+    public IList<KeywordMappingDTO> Keywords { get; set; } = new List<KeywordMappingDTO>();
 
     public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 }
@@ -906,9 +906,9 @@ private RecordComparisonDTO CreateSomeRecordComparison(SupportedGame game, FormK
 For child records, also add the relevant child groups:
 
 ```csharp
-AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.SomeRecord.RecordID, formKey));
+AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.SomeRecord.RecordID, formKey));
 AddModelGroups(fields, records.Cast<RecordDTO>().ToList(), ModelRepository.GetByFormKey(game, RecordTypeCatalog.SomeRecord.RecordID, formKey));
-AddSoundGroups(fields, records.Cast<RecordDTO>().ToList(), RecordSoundRepository.GetByFormKey(game, RecordTypeCatalog.SomeRecord.RecordID, formKey));
+AddSoundGroups(fields, records.Cast<RecordDTO>().ToList(), SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.SomeRecord.RecordID, formKey));
 AddScriptingAdapterGroups(fields, records.Cast<RecordDTO>().ToList(), ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.SomeRecord.RecordID, formKey));
 ```
 

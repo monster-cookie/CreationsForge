@@ -15,11 +15,11 @@ public class RecordChildImportServiceTests
     public void ReplaceRecordChildren_DispatchesByRecordCapabilities()
     {
         var modelImportService = new TestModelImportService();
-        var keywordImportService = new TestRecordKeywordImportService();
+        var keywordImportService = new TestKeywordMappingImportService();
         var componentImportService = new TestRecordComponentImportService();
         var conditionRuleImportService = new TestConditionRuleImportService();
         var rawRecordPayloadImportService = new TestRawRecordPayloadImportService();
-        var soundImportService = new TestRecordSoundImportService();
+        var soundImportService = new TestSoundMappingImportService();
         var scriptingAdapterImportService = new TestScriptingAdapterImportService();
         var terminalMarkerParameterImportService = new TestTerminalMarkerParameterImportService();
         var localizedStringImportService = new TestRecordLocalizedStringImportService();
@@ -52,11 +52,11 @@ public class RecordChildImportServiceTests
     public void ReplaceRecordChildren_WhenRecordHasOnlyLocalizedStrings_DispatchesOnlyLocalizedStrings()
     {
         var modelImportService = new TestModelImportService();
-        var keywordImportService = new TestRecordKeywordImportService();
+        var keywordImportService = new TestKeywordMappingImportService();
         var componentImportService = new TestRecordComponentImportService();
         var conditionRuleImportService = new TestConditionRuleImportService();
         var rawRecordPayloadImportService = new TestRawRecordPayloadImportService();
-        var soundImportService = new TestRecordSoundImportService();
+        var soundImportService = new TestSoundMappingImportService();
         var scriptingAdapterImportService = new TestScriptingAdapterImportService();
         var terminalMarkerParameterImportService = new TestTerminalMarkerParameterImportService();
         var localizedStringImportService = new TestRecordLocalizedStringImportService();
@@ -90,11 +90,11 @@ public class RecordChildImportServiceTests
     public void ReplaceRecordChildren_WhenConditionForm_DoesNotDispatchRawPayloads()
     {
         var modelImportService = new TestModelImportService();
-        var keywordImportService = new TestRecordKeywordImportService();
+        var keywordImportService = new TestKeywordMappingImportService();
         var componentImportService = new TestRecordComponentImportService();
         var conditionRuleImportService = new TestConditionRuleImportService();
         var rawRecordPayloadImportService = new TestRawRecordPayloadImportService();
-        var soundImportService = new TestRecordSoundImportService();
+        var soundImportService = new TestSoundMappingImportService();
         var scriptingAdapterImportService = new TestScriptingAdapterImportService();
         var terminalMarkerParameterImportService = new TestTerminalMarkerParameterImportService();
         var localizedStringImportService = new TestRecordLocalizedStringImportService();
@@ -169,11 +169,11 @@ public class RecordChildImportServiceTests
         };
     }
 
-    private sealed class CompositeRecordDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO, IHasComponentsRecordDTO, IHasConditionsRecordDTO, IHasRawRecordPayloadsRecordDTO, IHasSoundsRecordDTO, IHasScriptingAdaptersRecordDTO, IHasTerminalMarkerParametersRecordDTO
+    private sealed class CompositeRecordDTO : RecordDTO, IHasModelsRecordDTO, IKeywords, IHasComponentsRecordDTO, IHasConditionsRecordDTO, IHasRawRecordPayloadsRecordDTO, ISounds, IHasScriptingAdaptersRecordDTO, IHasTerminalMarkerParametersRecordDTO
     {
         public IList<ModelDTO> Models { get; set; } = new List<ModelDTO>();
 
-        public IList<RecordKeywordDTO> Keywords { get; set; } = new List<RecordKeywordDTO>();
+        public IList<KeywordMappingDTO> Keywords { get; set; } = new List<KeywordMappingDTO>();
 
         public IList<RecordComponentDTO> Components { get; set; } = new List<RecordComponentDTO>();
 
@@ -181,7 +181,7 @@ public class RecordChildImportServiceTests
 
         public IList<RawRecordPayloadDTO> RawPayloads { get; set; } = new List<RawRecordPayloadDTO>();
 
-        public IList<RecordSoundDTO> Sounds { get; set; } = new List<RecordSoundDTO>();
+        public IList<SoundMappingDTO> Sounds { get; set; } = new List<SoundMappingDTO>();
 
         public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 
@@ -201,11 +201,11 @@ public class RecordChildImportServiceTests
         }
     }
 
-    private sealed class TestRecordKeywordImportService : IRecordKeywordImportService
+    private sealed class TestKeywordMappingImportService : IKeywordMappingImportService
     {
-        public IList<(IHasKeywordsRecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasKeywordsRecordDTO Record, string RecordType)>();
+        public IList<(IKeywords Record, string RecordType)> ReplaceRequests { get; } = new List<(IKeywords Record, string RecordType)>();
 
-        public void ReplaceRecordKeywords(IHasKeywordsRecordDTO record, string recordType)
+        public void ReplaceKeywordMappings(IKeywords record, string recordType)
         {
             ReplaceRequests.Add((record, recordType));
         }
@@ -241,11 +241,11 @@ public class RecordChildImportServiceTests
         }
     }
 
-    private sealed class TestRecordSoundImportService : IRecordSoundImportService
+    private sealed class TestSoundMappingImportService : ISoundMappingImportService
     {
-        public IList<(IHasSoundsRecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasSoundsRecordDTO Record, string RecordType)>();
+        public IList<(ISounds Record, string RecordType)> ReplaceRequests { get; } = new List<(ISounds Record, string RecordType)>();
 
-        public void ReplaceRecordSounds(IHasSoundsRecordDTO record, string recordType)
+        public void ReplaceSoundMappings(ISounds record, string recordType)
         {
             ReplaceRequests.Add((record, recordType));
         }

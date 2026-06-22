@@ -265,9 +265,9 @@ public class SpriggitComparisonHeadlessFixture
         IConditionFormRepository,
         ITerminalRepository,
         IModelRepository,
-        IRecordKeywordRepository,
+        IKeywordMappingRepository,
         IRecordComponentRepository,
-        IRecordSoundRepository,
+        ISoundMappingRepository,
         IScriptingAdapterRepository,
         IRawRecordPayloadRepository,
         IRecordLocalizedStringRepository
@@ -291,9 +291,9 @@ public class SpriggitComparisonHeadlessFixture
         private readonly IReadOnlyList<ConditionFormDTO> conditionForms = [];
         private readonly IReadOnlyList<TerminalDTO> terminals = [];
         private readonly IReadOnlyList<ModelDTO> models = [];
-        private readonly IReadOnlyList<RecordKeywordDTO> recordKeywords = [];
+        private readonly IReadOnlyList<KeywordMappingDTO> keywordMappings = [];
         private readonly IReadOnlyList<RecordComponentDTO> recordComponents = [];
-        private readonly IReadOnlyList<RecordSoundDTO> recordSounds = [];
+        private readonly IReadOnlyList<SoundMappingDTO> soundMappings = [];
         private readonly IReadOnlyList<ScriptingAdapterDTO> scriptingAdapters = [];
         private readonly IReadOnlyList<RawRecordPayloadDTO> rawPayloads = [];
         private readonly IReadOnlyList<LocalizedStringDTO> localizedStrings = [];
@@ -333,9 +333,9 @@ public class SpriggitComparisonHeadlessFixture
                 models = modelRecord.Models.ToList();
             }
 
-            if (record is IHasKeywordsRecordDTO keywordRecord)
+            if (record is IKeywords keywordRecord)
             {
-                recordKeywords = keywordRecord.Keywords.ToList();
+                keywordMappings = keywordRecord.Keywords.ToList();
             }
 
             if (record is IHasComponentsRecordDTO componentRecord)
@@ -343,9 +343,9 @@ public class SpriggitComparisonHeadlessFixture
                 recordComponents = componentRecord.Components.ToList();
             }
 
-            if (record is IHasSoundsRecordDTO soundRecord)
+            if (record is ISounds soundRecord)
             {
-                recordSounds = soundRecord.Sounds.ToList();
+                soundMappings = soundRecord.Sounds.ToList();
             }
 
             if (record is IHasScriptingAdaptersRecordDTO scriptingAdapterRecord)
@@ -471,9 +471,9 @@ public class SpriggitComparisonHeadlessFixture
             return models;
         }
 
-        IReadOnlyList<RecordKeywordDTO> IRecordKeywordRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+        IReadOnlyList<KeywordMappingDTO> IKeywordMappingRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
         {
-            return recordKeywords;
+            return keywordMappings;
         }
 
         IReadOnlyList<RecordComponentDTO> IRecordComponentRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
@@ -481,9 +481,9 @@ public class SpriggitComparisonHeadlessFixture
             return recordComponents;
         }
 
-        IReadOnlyList<RecordSoundDTO> IRecordSoundRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+        IReadOnlyList<SoundMappingDTO> ISoundMappingRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
         {
-            return recordSounds;
+            return soundMappings;
         }
 
         IReadOnlyList<ScriptingAdapterDTO> IScriptingAdapterRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
@@ -558,7 +558,7 @@ public class SpriggitComparisonHeadlessFixture
         public void Save(ModelDTO dto)
         { }
 
-        public void Save(RecordKeywordDTO dto)
+        public void Save(KeywordMappingDTO dto)
         { }
 
         public void Save(RecordComponentDTO dto)
@@ -567,7 +567,7 @@ public class SpriggitComparisonHeadlessFixture
         public void ReplaceRecordComponents(IHasComponentsRecordDTO record, string recordType)
         { }
 
-        public void Save(RecordSoundDTO dto)
+        public void Save(SoundMappingDTO dto)
         { }
 
         public void Save(ScriptingAdapterDTO dto)

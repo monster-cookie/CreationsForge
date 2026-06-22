@@ -238,7 +238,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 FeaturedItemMessageFormKey = record.FeaturedItemMessage.IsNull ? null : MapFormKey(record.FeaturedItemMessage.FormKey),
                 Flag = record.FLAG == null ? null : Convert.ToHexString(record.FLAG.Value.ToArray()),
                 Models = GetModels(plugin, RecordTypeCatalog.MiscObject.RecordID, record.FormKey, record.Model),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.MiscObject.RecordID, record.FormKey, record.Keywords),
+                Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.MiscObject.RecordID, record.FormKey, record.Keywords),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.MiscObject.RecordID, record.FormKey, record, "CraftingSound", "PickupSound", "DropdownSound"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MiscObject.RecordID, record)
             }, record))
@@ -292,7 +292,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 UnknownDNAMFloat = GetPropertyNullableDouble(record, "UnknownDNAMFloat"),
                 DNAMDataTypeState = FormatEnumerable(GetPropertyValue(record, "DNAMDataTypeState")),
                 Models = GetModels(plugin, RecordTypeCatalog.Static.RecordID, record.FormKey, record.Model),
-                Keywords = GetRecordKeywordsFromNestedKeywordLists(plugin, RecordTypeCatalog.Static.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
+                Keywords = GetKeywordMappingsFromNestedKeywordLists(plugin, RecordTypeCatalog.Static.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
                 RawPayloads = GetStaticRawPayloads(plugin, record.FormKey, record.Model, GetPropertyValue(record, "Components"))
             })
             .ToList();
@@ -342,7 +342,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 DataSlateHeaderLeft = GetTranslatedString(GetPropertyValue(record, "DataSlateHeaderLeft")),
                 DataSlateHeaderRight = GetTranslatedString(GetPropertyValue(record, "DataSlateHeaderRight")),
                 Models = GetModels(plugin, RecordTypeCatalog.Book.RecordID, record.FormKey, record.Model),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Book.RecordID, record.FormKey, record.Keywords),
+                Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.Book.RecordID, record.FormKey, record.Keywords),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.Book.RecordID, record.FormKey, record, "PickupSound", "DropdownSound"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Book.RecordID, record),
                 Components = GetRecordComponents(plugin, SupportedGame.Starfield, RecordTypeCatalog.Book.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
@@ -373,7 +373,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 SoundLevel = GetPropertyValue(record, "SoundLevel")?.ToString(),
                 FacingAxisOverride = GetPropertyValue(record, "FacingAxisOverride")?.ToString(),
                 Models = GetModels(plugin, RecordTypeCatalog.Door.RecordID, record.FormKey, record.Model),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Door.RecordID, record.FormKey, record.Keywords),
+                Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.Door.RecordID, record.FormKey, record.Keywords),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.Door.RecordID, record.FormKey, record, "OpenSound", "CloseSound"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Door.RecordID, record),
                 Components = GetRecordComponents(plugin, SupportedGame.Starfield, RecordTypeCatalog.Door.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
@@ -404,8 +404,8 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 NativeTerminalFormKey = record.NativeTerminal.IsNull ? null : MapFormKey(record.NativeTerminal.FormKey),
                 Items = GetContainerItems(plugin, record.FormKey, GetPropertyValue(record, "Items")),
                 Models = GetModels(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, record.Model),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, record.Keywords)
-                    .Concat(GetRecordKeywordsFromNestedKeywordLists(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, GetPropertyValue(record, "Components")))
+                Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, record.Keywords)
+                    .Concat(GetKeywordMappingsFromNestedKeywordLists(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, GetPropertyValue(record, "Components")))
                     .Select((keyword, keywordIndex) =>
                     {
                         keyword.KeywordIndex = keywordIndex;
@@ -497,7 +497,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 FurnitureTemplateFormKey = GetFormKeyFromObject(GetPropertyValue(record, "FurnitureTemplate")),
                 MarkerModel = GetPropertyValue(record, "MarkerModel")?.ToString(),
                 Models = GetModels(plugin, RecordTypeCatalog.Terminal.RecordID, record.FormKey, record.Model),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.Terminal.RecordID, record.FormKey, record.Keywords),
+                Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.Terminal.RecordID, record.FormKey, record.Keywords),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Terminal.RecordID, record),
                 RawPayloads = GetTerminalRawPayloads(plugin, record.FormKey, record.Model, GetPropertyValue(record, "Components")),
                 MarkerParameters = GetTerminalMarkerParameters(plugin, record.FormKey, GetPropertyValue(record, "MarkerParameters"))
@@ -539,7 +539,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 CombatStyleFormKey = record.CombatStyle.IsNull ? null : MapFormKey(record.CombatStyle.FormKey),
                 DefaultPackageListFormKey = record.DefaultPackageList.IsNull ? null : MapFormKey(record.DefaultPackageList.FormKey),
                 CrimeFactionFormKey = record.CrimeFaction.IsNull ? null : MapFormKey(record.CrimeFaction.FormKey),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.NPC.RecordID, record.FormKey, record.Keywords),
+                Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.NPC.RecordID, record.FormKey, record.Keywords),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.NPC.RecordID, record)
             }, record))
             .ToList();
@@ -623,7 +623,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             Ranks = GetFactionRanks(plugin, game, formKey, GetPropertyValue(record, "Ranks")),
             Conditions = GetConditionRules(plugin, game, formKey, GetPropertyValue(record, "Conditions")),
             Components = GetRecordComponents(plugin, game, RecordTypeCatalog.Faction.RecordID, formKey, GetPropertyValue(record, "Components")),
-            Keywords = GetSingleRecordKeyword(plugin, RecordTypeCatalog.Faction.RecordID, formKey, GetPropertyValue(record, "Keyword"))
+            Keywords = GetSingleKeywordMapping(plugin, RecordTypeCatalog.Faction.RecordID, formKey, GetPropertyValue(record, "Keyword"))
         }, record);
     }
 
@@ -714,16 +714,16 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             }).ToList();
     }
 
-    private static List<RecordKeywordDTO> GetSingleRecordKeyword(PluginDTO plugin, string recordType, FormKey formKey, object? keyword)
+    private static List<KeywordMappingDTO> GetSingleKeywordMapping(PluginDTO plugin, string recordType, FormKey formKey, object? keyword)
     {
         if (GetFormKeyFromObject(keyword) is not { } keywordFormKey)
         {
-            return new List<RecordKeywordDTO>();
+            return new List<KeywordMappingDTO>();
         }
 
         return
         [
-            new RecordKeywordDTO
+            new KeywordMappingDTO
             {
                 Game = plugin.Game,
                 ModKey = plugin.ModKey,
@@ -772,7 +772,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Unknown = Convert.ToHexString(record.Unknown.ToArray()),
                 Unknown2 = Convert.ToHexString(record.Unknown2.ToArray()),
                 DataTypeState = record.DATADataTypeState.ToString(),
-                Keywords = GetRecordKeywords(plugin, RecordTypeCatalog.MagicEffect.RecordID, record.FormKey, record.Keywords),
+                Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.MagicEffect.RecordID, record.FormKey, record.Keywords),
                 Sounds = GetIndexedSounds(plugin, RecordTypeCatalog.MagicEffect.RecordID, record.FormKey, record),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MagicEffect.RecordID, record)
             }, record))
@@ -957,13 +957,13 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         };
     }
 
-    private static List<RecordKeywordDTO> GetRecordKeywords(PluginDTO plugin, string recordType, FormKey formKey, IEnumerable<IFormLinkGetter<IKeywordGetter>>? keywords)
+    private static List<KeywordMappingDTO> GetKeywordMappings(PluginDTO plugin, string recordType, FormKey formKey, IEnumerable<IFormLinkGetter<IKeywordGetter>>? keywords)
     {
-        if (keywords == null) return new List<RecordKeywordDTO>();
+        if (keywords == null) return new List<KeywordMappingDTO>();
 
         var importedAtUTC = DateTime.UtcNow;
         return keywords
-            .Select((keyword, keywordIndex) => new RecordKeywordDTO
+            .Select((keyword, keywordIndex) => new KeywordMappingDTO
             {
                 Game = SupportedGame.Starfield,
                 ModKey = plugin.ModKey,
@@ -976,12 +976,12 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             .ToList();
     }
 
-    private static List<RecordKeywordDTO> GetRecordKeywordsFromNestedKeywordLists(PluginDTO plugin, string recordType, FormKey formKey, object? keywordSources)
+    private static List<KeywordMappingDTO> GetKeywordMappingsFromNestedKeywordLists(PluginDTO plugin, string recordType, FormKey formKey, object? keywordSources)
     {
-        if (keywordSources is not IEnumerable enumerable) return new List<RecordKeywordDTO>();
+        if (keywordSources is not IEnumerable enumerable) return new List<KeywordMappingDTO>();
 
         var importedAtUTC = DateTime.UtcNow;
-        var keywords = new List<RecordKeywordDTO>();
+        var keywords = new List<KeywordMappingDTO>();
         foreach (var keywordSource in enumerable.Cast<object>())
         {
             var nestedKeywords = GetPropertyValue(keywordSource, "Keywords") as IEnumerable;
@@ -997,7 +997,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                     continue;
                 }
 
-                keywords.Add(new RecordKeywordDTO
+                keywords.Add(new KeywordMappingDTO
                 {
                     Game = SupportedGame.Starfield,
                     ModKey = plugin.ModKey,
@@ -1336,31 +1336,31 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         });
     }
 
-    private static List<RecordSoundDTO> GetNamedSounds(PluginDTO plugin, string recordType, FormKey formKey, object record, params string[] soundSlots)
+    private static List<SoundMappingDTO> GetNamedSounds(PluginDTO plugin, string recordType, FormKey formKey, object record, params string[] soundSlots)
     {
         var importedAtUTC = DateTime.UtcNow;
         return soundSlots
-            .Select((soundSlot, soundIndex) => CreateRecordSound(plugin, recordType, formKey, soundSlot, soundIndex, GetPropertyValue(record, soundSlot), importedAtUTC))
+            .Select((soundSlot, soundIndex) => CreateSoundMapping(plugin, recordType, formKey, soundSlot, soundIndex, GetPropertyValue(record, soundSlot), importedAtUTC))
             .Where(sound => sound != null)
-            .Cast<RecordSoundDTO>()
+            .Cast<SoundMappingDTO>()
             .ToList();
     }
 
-    private static List<RecordSoundDTO> GetIndexedSounds(PluginDTO plugin, string recordType, FormKey formKey, object record)
+    private static List<SoundMappingDTO> GetIndexedSounds(PluginDTO plugin, string recordType, FormKey formKey, object record)
     {
         var sounds = GetPropertyValue(record, "Sounds") as IEnumerable;
-        if (sounds == null) return new List<RecordSoundDTO>();
+        if (sounds == null) return new List<SoundMappingDTO>();
 
         var importedAtUTC = DateTime.UtcNow;
         return sounds
             .Cast<object>()
-            .Select((sound, soundIndex) => CreateRecordSound(plugin, recordType, formKey, GetPropertyValue(sound, "Type")?.ToString() ?? $"Sound [{soundIndex}]", soundIndex, sound, importedAtUTC))
+            .Select((sound, soundIndex) => CreateSoundMapping(plugin, recordType, formKey, GetPropertyValue(sound, "Type")?.ToString() ?? $"Sound [{soundIndex}]", soundIndex, sound, importedAtUTC))
             .Where(sound => sound != null)
-            .Cast<RecordSoundDTO>()
+            .Cast<SoundMappingDTO>()
             .ToList();
     }
 
-    private static RecordSoundDTO? CreateRecordSound(PluginDTO plugin, string recordType, FormKey formKey, string soundSlot, int soundIndex, object? soundSource, DateTime importedAtUTC)
+    private static SoundMappingDTO? CreateSoundMapping(PluginDTO plugin, string recordType, FormKey formKey, string soundSlot, int soundIndex, object? soundSource, DateTime importedAtUTC)
     {
         if (soundSource == null)
         {
@@ -1373,7 +1373,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             return null;
         }
 
-        return new RecordSoundDTO
+        return new SoundMappingDTO
         {
             Game = SupportedGame.Starfield,
             ModKey = plugin.ModKey,

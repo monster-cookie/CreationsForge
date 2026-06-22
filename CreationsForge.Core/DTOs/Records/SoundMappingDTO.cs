@@ -3,7 +3,7 @@ using CreationsForge.Core.Enums;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class RecordSoundDTO
+public class SoundMappingDTO
 {
     public required SupportedGame Game { get; set; }
 

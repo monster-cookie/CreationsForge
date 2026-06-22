@@ -10,8 +10,8 @@ namespace CreationsForge.Core.Repositories;
 public class DoorRepository : TypedRecordRepositoryBase, IDoorRepository
 {
     private readonly IModelRepository ModelRepository;
-    private readonly IRecordKeywordRepository RecordKeywordRepository;
-    private readonly IRecordSoundRepository RecordSoundRepository;
+    private readonly IKeywordMappingRepository KeywordMappingRepository;
+    private readonly ISoundMappingRepository SoundMappingRepository;
     private readonly IScriptingAdapterRepository ScriptingAdapterRepository;
     private readonly IRecordComponentRepository RecordComponentRepository;
     private readonly IRawRecordPayloadRepository RawRecordPayloadRepository;
@@ -20,16 +20,16 @@ public class DoorRepository : TypedRecordRepositoryBase, IDoorRepository
         IDatabase database,
         IRecordInstanceRepository recordInstanceRepository,
         IModelRepository modelRepository,
-        IRecordKeywordRepository recordKeywordRepository,
-        IRecordSoundRepository recordSoundRepository,
+        IKeywordMappingRepository keywordMappingRepository,
+        ISoundMappingRepository soundMappingRepository,
         IScriptingAdapterRepository scriptingAdapterRepository,
         IRecordComponentRepository recordComponentRepository,
         IRawRecordPayloadRepository rawRecordPayloadRepository)
         : base(database, recordInstanceRepository)
     {
         ModelRepository = modelRepository;
-        RecordKeywordRepository = recordKeywordRepository;
-        RecordSoundRepository = recordSoundRepository;
+        KeywordMappingRepository = keywordMappingRepository;
+        SoundMappingRepository = soundMappingRepository;
         ScriptingAdapterRepository = scriptingAdapterRepository;
         RecordComponentRepository = recordComponentRepository;
         RawRecordPayloadRepository = rawRecordPayloadRepository;
@@ -60,8 +60,8 @@ public class DoorRepository : TypedRecordRepositoryBase, IDoorRepository
             .Select(record => ToDTO(record, game))
             .ToList();
         var models = ModelRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey);
-        var keywords = RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey);
-        var sounds = RecordSoundRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey);
+        var keywords = KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey);
+        var sounds = SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey);
         var scriptingAdapters = ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey);
         var components = RecordComponentRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey);
         var rawPayloads = RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey);

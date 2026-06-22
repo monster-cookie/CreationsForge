@@ -148,27 +148,27 @@ public class RecordComparisonServiceTests
                 CreateScriptingAdapter("Patch.esp", formKey, "DefaultScript", "PropertyName", "PatchValue")
             ]
         };
-        var recordKeywordRepository = new TestRecordKeywordRepository
+        var keywordMappingRepository = new TestKeywordMappingRepository
         {
             Records =
             [
-                CreateRecordKeyword("Base.esm", RecordTypeCatalog.MiscObject.RecordID, formKey, CreateFormKey("Starfield.esm", 0x555), 0),
-                CreateRecordKeyword("Patch.esp", RecordTypeCatalog.MiscObject.RecordID, formKey, CreateFormKey("Starfield.esm", 0x555), 0)
+                CreateKeywordMapping("Base.esm", RecordTypeCatalog.MiscObject.RecordID, formKey, CreateFormKey("Starfield.esm", 0x555), 0),
+                CreateKeywordMapping("Patch.esp", RecordTypeCatalog.MiscObject.RecordID, formKey, CreateFormKey("Starfield.esm", 0x555), 0)
             ]
         };
-        var recordSoundRepository = new TestRecordSoundRepository
+        var soundMappingRepository = new TestSoundMappingRepository
         {
             Records =
             [
-                CreateRecordSound("Base.esm", RecordTypeCatalog.MiscObject.RecordID, formKey, "PickupSound", 1, "ff0b45e7-a8ae-a30f-390b-d0cd2b6933a6"),
-                CreateRecordSound("Patch.esp", RecordTypeCatalog.MiscObject.RecordID, formKey, "PickupSound", 1, "ff0b45e7-a8ae-a30f-390b-d0cd2b6933a6")
+                CreateSoundMapping("Base.esm", RecordTypeCatalog.MiscObject.RecordID, formKey, "PickupSound", 1, "ff0b45e7-a8ae-a30f-390b-d0cd2b6933a6"),
+                CreateSoundMapping("Patch.esp", RecordTypeCatalog.MiscObject.RecordID, formKey, "PickupSound", 1, "ff0b45e7-a8ae-a30f-390b-d0cd2b6933a6")
             ]
         };
         var service = CreateService(
             miscObjectRepository: miscObjectRepository,
             modelRepository: modelRepository,
-            recordKeywordRepository: recordKeywordRepository,
-            recordSoundRepository: recordSoundRepository,
+            keywordMappingRepository: keywordMappingRepository,
+            soundMappingRepository: soundMappingRepository,
             scriptingAdapterRepository: scriptingAdapterRepository);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.MiscObject.RecordID, formKey);
@@ -206,12 +206,12 @@ public class RecordComparisonServiceTests
                 CreateMagicEffect("Patch.esp", formKey, "Elemental Blast", "52", 7)
             ]
         };
-        var recordKeywordRepository = new TestRecordKeywordRepository
+        var keywordMappingRepository = new TestKeywordMappingRepository
         {
             Records =
             [
-                CreateRecordKeyword("Base.esm", RecordTypeCatalog.MagicEffect.RecordID, formKey, CreateFormKey("Starfield.esm", 0x111), 0),
-                CreateRecordKeyword("Patch.esp", RecordTypeCatalog.MagicEffect.RecordID, formKey, CreateFormKey("Patch.esp", 0x222), 0)
+                CreateKeywordMapping("Base.esm", RecordTypeCatalog.MagicEffect.RecordID, formKey, CreateFormKey("Starfield.esm", 0x111), 0),
+                CreateKeywordMapping("Patch.esp", RecordTypeCatalog.MagicEffect.RecordID, formKey, CreateFormKey("Patch.esp", 0x222), 0)
             ]
         };
         var scriptingAdapterRepository = new TestScriptingAdapterRepository
@@ -222,18 +222,18 @@ public class RecordComparisonServiceTests
                 CreateScriptingAdapter("Patch.esp", RecordTypeCatalog.MagicEffect.RecordID, formKey, "FXScripts:FXResourceCollectionVisuals", "TargetVFX", "PatchVFX")
             ]
         };
-        var recordSoundRepository = new TestRecordSoundRepository
+        var soundMappingRepository = new TestSoundMappingRepository
         {
             Records =
             [
-                CreateRecordSound("Base.esm", RecordTypeCatalog.MagicEffect.RecordID, formKey, "Charge", 2, "a328413d-b619-45b5-0d9e-aa9d0ade8280", "Break0", "000000"),
-                CreateRecordSound("Patch.esp", RecordTypeCatalog.MagicEffect.RecordID, formKey, "Charge", 2, "a328413d-b619-45b5-0d9e-aa9d0ade8280", "Break0", "000000")
+                CreateSoundMapping("Base.esm", RecordTypeCatalog.MagicEffect.RecordID, formKey, "Charge", 2, "a328413d-b619-45b5-0d9e-aa9d0ade8280", "Break0", "000000"),
+                CreateSoundMapping("Patch.esp", RecordTypeCatalog.MagicEffect.RecordID, formKey, "Charge", 2, "a328413d-b619-45b5-0d9e-aa9d0ade8280", "Break0", "000000")
             ]
         };
         var service = CreateService(
             magicEffectRepository: magicEffectRepository,
-            recordKeywordRepository: recordKeywordRepository,
-            recordSoundRepository: recordSoundRepository,
+            keywordMappingRepository: keywordMappingRepository,
+            soundMappingRepository: soundMappingRepository,
             scriptingAdapterRepository: scriptingAdapterRepository);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.MagicEffect.RecordID, formKey);
@@ -324,12 +324,12 @@ public class RecordComparisonServiceTests
                 CreateModel("Patch.esp", RecordTypeCatalog.Static.RecordID, formKey, "Meshes\\SetDressing\\Rock01.nif")
             ]
         };
-        var recordKeywordRepository = new TestRecordKeywordRepository
+        var keywordMappingRepository = new TestKeywordMappingRepository
         {
             Records =
             [
-                CreateRecordKeyword("Base.esm", RecordTypeCatalog.Static.RecordID, formKey, CreateFormKey("Starfield.esm", 0x555), 0),
-                CreateRecordKeyword("Patch.esp", RecordTypeCatalog.Static.RecordID, formKey, CreateFormKey("Starfield.esm", 0x666), 0)
+                CreateKeywordMapping("Base.esm", RecordTypeCatalog.Static.RecordID, formKey, CreateFormKey("Starfield.esm", 0x555), 0),
+                CreateKeywordMapping("Patch.esp", RecordTypeCatalog.Static.RecordID, formKey, CreateFormKey("Starfield.esm", 0x666), 0)
             ]
         };
         var rawRecordPayloadRepository = new TestRawRecordPayloadRepository
@@ -343,7 +343,7 @@ public class RecordComparisonServiceTests
         var service = CreateService(
             staticRepository: staticRepository,
             modelRepository: modelRepository,
-            recordKeywordRepository: recordKeywordRepository,
+            keywordMappingRepository: keywordMappingRepository,
             rawRecordPayloadRepository: rawRecordPayloadRepository);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Static.RecordID, formKey);
@@ -567,27 +567,27 @@ public class RecordComparisonServiceTests
                 CreateModel("Patch.esp", RecordTypeCatalog.Book.RecordID, formKey, "Meshes\\SetDressing\\Books\\Book01.nif")
             ]
         };
-        var recordKeywordRepository = new TestRecordKeywordRepository
+        var keywordMappingRepository = new TestKeywordMappingRepository
         {
             Records =
             [
-                CreateRecordKeyword("Base.esm", RecordTypeCatalog.Book.RecordID, formKey, CreateFormKey("Starfield.esm", 0x101), 0),
-                CreateRecordKeyword("Patch.esp", RecordTypeCatalog.Book.RecordID, formKey, CreateFormKey("Starfield.esm", 0x101), 0)
+                CreateKeywordMapping("Base.esm", RecordTypeCatalog.Book.RecordID, formKey, CreateFormKey("Starfield.esm", 0x101), 0),
+                CreateKeywordMapping("Patch.esp", RecordTypeCatalog.Book.RecordID, formKey, CreateFormKey("Starfield.esm", 0x101), 0)
             ]
         };
-        var recordSoundRepository = new TestRecordSoundRepository
+        var soundMappingRepository = new TestSoundMappingRepository
         {
             Records =
             [
-                CreateRecordSound("Base.esm", RecordTypeCatalog.Book.RecordID, formKey, "PickupSound", 0, "pickup"),
-                CreateRecordSound("Patch.esp", RecordTypeCatalog.Book.RecordID, formKey, "PickupSound", 0, "pickup")
+                CreateSoundMapping("Base.esm", RecordTypeCatalog.Book.RecordID, formKey, "PickupSound", 0, "pickup"),
+                CreateSoundMapping("Patch.esp", RecordTypeCatalog.Book.RecordID, formKey, "PickupSound", 0, "pickup")
             ]
         };
         var service = CreateService(
             bookRepository: bookRepository,
             modelRepository: modelRepository,
-            recordKeywordRepository: recordKeywordRepository,
-            recordSoundRepository: recordSoundRepository);
+            keywordMappingRepository: keywordMappingRepository,
+            soundMappingRepository: soundMappingRepository);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Book.RecordID, formKey);
 
@@ -720,8 +720,8 @@ public class RecordComparisonServiceTests
         TestConditionFormRepository? conditionFormRepository = null,
         TestTerminalRepository? terminalRepository = null,
         TestModelRepository? modelRepository = null,
-        TestRecordKeywordRepository? recordKeywordRepository = null,
-        TestRecordSoundRepository? recordSoundRepository = null,
+        TestKeywordMappingRepository? keywordMappingRepository = null,
+        TestSoundMappingRepository? soundMappingRepository = null,
         TestScriptingAdapterRepository? scriptingAdapterRepository = null,
         TestRawRecordPayloadRepository? rawRecordPayloadRepository = null,
         TestRecordLocalizedStringRepository? recordLocalizedStringRepository = null,
@@ -747,8 +747,8 @@ public class RecordComparisonServiceTests
             conditionFormRepository ?? new TestConditionFormRepository(),
             terminalRepository ?? new TestTerminalRepository(),
             modelRepository ?? new TestModelRepository(),
-            recordKeywordRepository ?? new TestRecordKeywordRepository(),
-            recordSoundRepository ?? new TestRecordSoundRepository(),
+            keywordMappingRepository ?? new TestKeywordMappingRepository(),
+            soundMappingRepository ?? new TestSoundMappingRepository(),
             scriptingAdapterRepository ?? new TestScriptingAdapterRepository(),
             rawRecordPayloadRepository ?? new TestRawRecordPayloadRepository(),
             recordLocalizedStringRepository ?? new TestRecordLocalizedStringRepository(),
@@ -1341,9 +1341,9 @@ public class RecordComparisonServiceTests
         };
     }
 
-    private static RecordKeywordDTO CreateRecordKeyword(string fileName, string recordType, FormKeyDTO formKey, FormKeyDTO keywordFormKey, int keywordIndex)
+    private static KeywordMappingDTO CreateKeywordMapping(string fileName, string recordType, FormKeyDTO formKey, FormKeyDTO keywordFormKey, int keywordIndex)
     {
-        return new RecordKeywordDTO
+        return new KeywordMappingDTO
         {
             Game = SupportedGame.Starfield,
             ModKey = CreateModKey(fileName),
@@ -1355,9 +1355,9 @@ public class RecordComparisonServiceTests
         };
     }
 
-    private static RecordSoundDTO CreateRecordSound(string fileName, string recordType, FormKeyDTO formKey, string soundSlot, int soundIndex, string start, string? versioning = null, string? unknown = null)
+    private static SoundMappingDTO CreateSoundMapping(string fileName, string recordType, FormKeyDTO formKey, string soundSlot, int soundIndex, string start, string? versioning = null, string? unknown = null)
     {
-        return new RecordSoundDTO
+        return new SoundMappingDTO
         {
             Game = SupportedGame.Starfield,
             ModKey = CreateModKey(fileName),
@@ -1976,14 +1976,14 @@ public class RecordComparisonServiceTests
         { }
     }
 
-    private sealed class TestRecordKeywordRepository : IRecordKeywordRepository
+    private sealed class TestKeywordMappingRepository : IKeywordMappingRepository
     {
-        public IReadOnlyList<RecordKeywordDTO> Records { get; set; } = [];
+        public IReadOnlyList<KeywordMappingDTO> Records { get; set; } = [];
 
-        public void Save(RecordKeywordDTO dto)
+        public void Save(KeywordMappingDTO dto)
         { }
 
-        public IReadOnlyList<RecordKeywordDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+        public IReadOnlyList<KeywordMappingDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
         {
             return Records;
         }
@@ -1995,14 +1995,14 @@ public class RecordComparisonServiceTests
         { }
     }
 
-    private sealed class TestRecordSoundRepository : IRecordSoundRepository
+    private sealed class TestSoundMappingRepository : ISoundMappingRepository
     {
-        public IReadOnlyList<RecordSoundDTO> Records { get; set; } = [];
+        public IReadOnlyList<SoundMappingDTO> Records { get; set; } = [];
 
-        public void Save(RecordSoundDTO dto)
+        public void Save(SoundMappingDTO dto)
         { }
 
-        public IReadOnlyList<RecordSoundDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+        public IReadOnlyList<SoundMappingDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
         {
             return Records;
         }

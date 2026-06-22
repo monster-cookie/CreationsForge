@@ -4,11 +4,11 @@ using CreationsForge.Core.Enums;
 
 namespace CreationsForge.Core.Repositories.Interfaces;
 
-public interface IRecordSoundRepository
+public interface IKeywordMappingRepository
 {
-    void Save(RecordSoundDTO dto);
+    void Save(KeywordMappingDTO dto);
 
-    IReadOnlyList<RecordSoundDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey);
+    IReadOnlyList<KeywordMappingDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey);
 
     void DeleteByRecord(SupportedGame game, ModKeyDTO modKey, string recordType, FormKeyDTO formKey);
 

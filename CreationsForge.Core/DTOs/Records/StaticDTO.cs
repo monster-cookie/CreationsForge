@@ -2,7 +2,7 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class StaticDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO, IHasRawRecordPayloadsRecordDTO
+public class StaticDTO : RecordDTO, IHasModelsRecordDTO, IKeywords, IHasRawRecordPayloadsRecordDTO
 {
     public string? ObjectBoundsFirst { get; set; }
 
@@ -22,7 +22,7 @@ public class StaticDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO, 
 
     public IList<ModelDTO> Models { get; set; } = new List<ModelDTO>();
 
-    public IList<RecordKeywordDTO> Keywords { get; set; } = new List<RecordKeywordDTO>();
+    public IList<KeywordMappingDTO> Keywords { get; set; } = new List<KeywordMappingDTO>();
 
     public IList<RawRecordPayloadDTO> RawPayloads { get; set; } = new List<RawRecordPayloadDTO>();
 }

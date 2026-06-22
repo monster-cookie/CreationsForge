@@ -31,8 +31,8 @@ public class RecordComparisonService : IRecordComparisonService
     private readonly IConditionFormRepository ConditionFormRepository;
     private readonly ITerminalRepository TerminalRepository;
     private readonly IModelRepository ModelRepository;
-    private readonly IRecordKeywordRepository RecordKeywordRepository;
-    private readonly IRecordSoundRepository RecordSoundRepository;
+    private readonly IKeywordMappingRepository KeywordMappingRepository;
+    private readonly ISoundMappingRepository SoundMappingRepository;
     private readonly IScriptingAdapterRepository ScriptingAdapterRepository;
     private readonly IRawRecordPayloadRepository RawRecordPayloadRepository;
     private readonly IRecordLocalizedStringRepository RecordLocalizedStringRepository;
@@ -58,8 +58,8 @@ public class RecordComparisonService : IRecordComparisonService
         IConditionFormRepository conditionFormRepository,
         ITerminalRepository terminalRepository,
         IModelRepository modelRepository,
-        IRecordKeywordRepository recordKeywordRepository,
-        IRecordSoundRepository recordSoundRepository,
+        IKeywordMappingRepository keywordMappingRepository,
+        ISoundMappingRepository soundMappingRepository,
         IScriptingAdapterRepository scriptingAdapterRepository,
         IRawRecordPayloadRepository rawRecordPayloadRepository,
         IRecordLocalizedStringRepository recordLocalizedStringRepository,
@@ -84,8 +84,8 @@ public class RecordComparisonService : IRecordComparisonService
         ConditionFormRepository = conditionFormRepository;
         TerminalRepository = terminalRepository;
         ModelRepository = modelRepository;
-        RecordKeywordRepository = recordKeywordRepository;
-        RecordSoundRepository = recordSoundRepository;
+        KeywordMappingRepository = keywordMappingRepository;
+        SoundMappingRepository = soundMappingRepository;
         ScriptingAdapterRepository = scriptingAdapterRepository;
         RawRecordPayloadRepository = rawRecordPayloadRepository;
         RecordLocalizedStringRepository = recordLocalizedStringRepository;
@@ -297,7 +297,7 @@ public class RecordComparisonService : IRecordComparisonService
         AddFactionRankGroups(fields, records, localizedStrings, recordTextLanguage);
         AddConditionRuleGroups(fields, records.Cast<RecordDTO>().ToList(), records.Cast<IHasConditionsRecordDTO>().ToList());
         AddRecordComponentGroups(fields, records.Cast<RecordDTO>().ToList(), records.SelectMany(record => record.Components).ToList());
-        AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.Faction.RecordID, formKey));
+        AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Faction.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.Faction.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
@@ -315,9 +315,9 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("DirtinessScale", records, record => record.DirtinessScale?.ToString() ?? string.Empty));
         fields.Add(CreateField("FeaturedItemMessageFormKey", records, record => FormatFormKey(record.FeaturedItemMessageFormKey)));
         fields.Add(CreateField("Flag", records, record => record.Flag ?? string.Empty));
-        AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.MiscObject.RecordID, formKey));
+        AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.MiscObject.RecordID, formKey));
         AddModelGroups(fields, records.Cast<RecordDTO>().ToList(), ModelRepository.GetByFormKey(game, RecordTypeCatalog.MiscObject.RecordID, formKey));
-        AddSoundGroups(fields, records.Cast<RecordDTO>().ToList(), RecordSoundRepository.GetByFormKey(game, RecordTypeCatalog.MiscObject.RecordID, formKey));
+        AddSoundGroups(fields, records.Cast<RecordDTO>().ToList(), SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.MiscObject.RecordID, formKey));
         AddScriptingAdapterGroups(fields, records.Cast<RecordDTO>().ToList(), ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.MiscObject.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.MiscObject.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
@@ -390,7 +390,7 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("CombatStyleFormKey", records, record => FormatFormKey(record.CombatStyleFormKey)));
         fields.Add(CreateField("DefaultPackageListFormKey", records, record => FormatFormKey(record.DefaultPackageListFormKey)));
         fields.Add(CreateField("CrimeFactionFormKey", records, record => FormatFormKey(record.CrimeFactionFormKey)));
-        AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey));
+        AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.NPC.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
@@ -423,8 +423,8 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("Unknown", records, record => record.Unknown ?? string.Empty));
         fields.Add(CreateField("Unknown2", records, record => record.Unknown2 ?? string.Empty));
         fields.Add(CreateField("DataTypeState", records, record => record.DataTypeState ?? string.Empty));
-        AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey));
-        AddSoundGroups(fields, records.Cast<RecordDTO>().ToList(), RecordSoundRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey));
+        AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey));
+        AddSoundGroups(fields, records.Cast<RecordDTO>().ToList(), SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey));
         AddScriptingAdapterGroups(fields, records.Cast<RecordDTO>().ToList(), ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.MagicEffect.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
@@ -466,7 +466,7 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("LeafFrequency", records, record => record.LeafFrequency?.ToString() ?? string.Empty));
         fields.Add(CreateField("Unused", records, record => record.Unused ?? string.Empty));
         fields.Add(CreateField("DNAMDataTypeState", records, record => record.DNAMDataTypeState ?? string.Empty));
-        AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey));
+        AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey));
         AddModelGroups(fields, records.Cast<RecordDTO>().ToList(), ModelRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey));
         AddRawPayloadGroups(fields, records.Cast<RecordDTO>().ToList(), RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey));
 
@@ -500,9 +500,9 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("Description", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Description", recordTextLanguage, record.Description)));
         fields.Add(CreateField("DataSlateHeaderLeft", records, record => GetTranslatedDisplayValue(localizedStrings, record, "DataSlateHeaderLeft", recordTextLanguage, record.DataSlateHeaderLeft)));
         fields.Add(CreateField("DataSlateHeaderRight", records, record => GetTranslatedDisplayValue(localizedStrings, record, "DataSlateHeaderRight", recordTextLanguage, record.DataSlateHeaderRight)));
-        AddKeywordGroup(fields, baseRecords, RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
+        AddKeywordGroup(fields, baseRecords, KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
         AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
-        AddSoundGroups(fields, baseRecords, RecordSoundRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
+        AddSoundGroups(fields, baseRecords, SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
         AddScriptingAdapterGroups(fields, baseRecords, ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
         AddRecordComponentGroups(fields, baseRecords, records.SelectMany(record => record.Components).ToList());
         AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
@@ -530,9 +530,9 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("NativeTerminalFormKey", records, record => FormatFormKey(record.NativeTerminalFormKey)));
         fields.Add(CreateField("SoundLevel", records, record => record.SoundLevel ?? string.Empty));
         fields.Add(CreateField("FacingAxisOverride", records, record => record.FacingAxisOverride ?? string.Empty));
-        AddKeywordGroup(fields, baseRecords, RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
+        AddKeywordGroup(fields, baseRecords, KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
         AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
-        AddSoundGroups(fields, baseRecords, RecordSoundRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
+        AddSoundGroups(fields, baseRecords, SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
         AddScriptingAdapterGroups(fields, baseRecords, ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
         AddRecordComponentGroups(fields, baseRecords, records.SelectMany(record => record.Components).ToList());
         AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
@@ -555,9 +555,9 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("MajorFlags", records, record => record.MajorFlags ?? string.Empty));
         fields.Add(CreateField("NativeTerminalFormKey", records, record => FormatFormKey(record.NativeTerminalFormKey)));
         AddContainerItemGroups(fields, records);
-        AddKeywordGroup(fields, baseRecords, RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey));
+        AddKeywordGroup(fields, baseRecords, KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey));
         AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey));
-        AddSoundGroups(fields, baseRecords, RecordSoundRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey));
+        AddSoundGroups(fields, baseRecords, SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey));
         AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.Container.RecordID, formKey, baseRecords, fields);
@@ -621,7 +621,7 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("WorkbenchData", records, record => record.WorkbenchData ?? string.Empty));
         fields.Add(CreateField("FurnitureTemplateFormKey", records, record => FormatFormKey(record.FurnitureTemplateFormKey)));
         fields.Add(CreateField("MarkerModel", records, record => record.MarkerModel ?? string.Empty));
-        AddKeywordGroup(fields, baseRecords, RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
+        AddKeywordGroup(fields, baseRecords, KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
         AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
         AddScriptingAdapterGroups(fields, baseRecords, ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
         AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
@@ -737,7 +737,7 @@ public class RecordComparisonService : IRecordComparisonService
     private static void AddKeywordGroup(
         IList<RecordComparisonFieldDTO> fields,
         IReadOnlyList<RecordDTO> records,
-        IReadOnlyList<RecordKeywordDTO> keywords)
+        IReadOnlyList<KeywordMappingDTO> keywords)
     {
         var keywordIndexes = keywords
             .Select(keyword => keyword.KeywordIndex)
@@ -765,7 +765,7 @@ public class RecordComparisonService : IRecordComparisonService
     private static void AddSoundGroups(
         IList<RecordComparisonFieldDTO> fields,
         IReadOnlyList<RecordDTO> records,
-        IReadOnlyList<RecordSoundDTO> sounds)
+        IReadOnlyList<SoundMappingDTO> sounds)
     {
         var soundKeys = sounds
             .Select(sound => new SoundKey(sound.SoundSlot, sound.SoundIndex))
@@ -1565,12 +1565,12 @@ public class RecordComparisonService : IRecordComparisonService
         return models.FirstOrDefault(model => IsSameModKey(model.ModKey, modKey) && IsModelKey(model, modelKey));
     }
 
-    private static RecordKeywordDTO? FindKeyword(IReadOnlyList<RecordKeywordDTO> keywords, ModKeyDTO modKey, int keywordIndex)
+    private static KeywordMappingDTO? FindKeyword(IReadOnlyList<KeywordMappingDTO> keywords, ModKeyDTO modKey, int keywordIndex)
     {
         return keywords.FirstOrDefault(keyword => IsSameModKey(keyword.ModKey, modKey) && keyword.KeywordIndex == keywordIndex);
     }
 
-    private static RecordSoundDTO? FindSound(IReadOnlyList<RecordSoundDTO> sounds, ModKeyDTO modKey, SoundKey soundKey)
+    private static SoundMappingDTO? FindSound(IReadOnlyList<SoundMappingDTO> sounds, ModKeyDTO modKey, SoundKey soundKey)
     {
         return sounds.FirstOrDefault(sound => IsSameModKey(sound.ModKey, modKey) &&
             string.Equals(sound.SoundSlot, soundKey.Slot, StringComparison.Ordinal) &&

@@ -967,7 +967,7 @@ erDiagram
         TEXT ImportedAtUTC
     }
 
-    RecordKeywords {
+    KeywordMappings {
         TEXT Game PK, FK
         TEXT ModKey_Name PK, FK
         INTEGER ModKey_Type PK, FK
@@ -985,7 +985,7 @@ erDiagram
         TEXT ImportedAtUTC
     }
 
-    RecordComponents {
+    Components {
         TEXT Game PK, FK
         TEXT ModKey_Name PK, FK
         INTEGER ModKey_Type PK, FK
@@ -1000,7 +1000,7 @@ erDiagram
         TEXT ImportedAtUTC
     }
 
-    RecordComponentItems {
+    ComponentItems {
         TEXT Game PK, FK
         TEXT ModKey_Name PK, FK
         INTEGER ModKey_Type PK, FK
@@ -1123,7 +1123,7 @@ erDiagram
         TEXT ImportedAtUTC
     }
 
-    RecordSounds {
+    SoundMappings {
         TEXT Game PK, FK
         TEXT ModKey_Name PK, FK
         INTEGER ModKey_Type PK, FK
@@ -1306,15 +1306,15 @@ erDiagram
     ConstructibleObjects ||--o{ ConstructibleObjectRecipeFilters : contains
     RecordInstances ||--o| Terminals : "typed detail"
     Terminals ||--o{ TerminalMarkerParameters : contains
-    RecordInstances ||--o{ RecordKeywords : contains
-    RecordInstances ||--o{ RecordComponents : contains
-    RecordComponents ||--o{ RecordComponentItems : contains
+    RecordInstances ||--o{ KeywordMappings : contains
+    RecordInstances ||--o{ Components : contains
+    Components ||--o{ ComponentItems : contains
     Perks ||--o{ PerkRanks : contains
     PerkRanks ||--o{ PerkRankEffects : contains
     Perks ||--o{ PerkBackgroundSkills : contains
     RecordInstances ||--o{ Models : contains
     Models ||--o{ ModelMaterialSwaps : contains
-    RecordInstances ||--o{ RecordSounds : contains
+    RecordInstances ||--o{ SoundMappings : contains
     RecordInstances ||--o{ RawRecordPayloads : contains
     RecordInstances ||--o{ LocalizedStrings : contains
     RecordInstances ||--o{ ScriptingAdapters : contains
@@ -1325,7 +1325,7 @@ erDiagram
 
 ## Index Notes
 
-Indexes are documented in `DATABASE.md`. Migration `100_ResetSchema.sql` creates active-plugin browse indexes for
+Indexes are documented in `DATABASE.md`. Migration `001_ResetSchemaForV2.sql` creates active-plugin browse indexes for
 `RecordInstances` and typed parent tables, indexes for child lookup tables, the localized-string form-key lookup index,
 and ActorValueInformation child-table form-key lookup indexes.
 
@@ -1405,6 +1405,6 @@ These columns contain record-reference data but are not declared SQLite foreign 
   `RecipeFilter_ModKey_FileName`, and `RecipeFilter_FormKey_ID`
 - `ModelMaterialSwaps.MaterialSwap_ModKey_Name`, `MaterialSwap_ModKey_Type`, `MaterialSwap_ModKey_FileName`,
   and `MaterialSwap_FormKey_ID`
-- `RecordKeywords.Keyword_ModKey_Name`, `Keyword_ModKey_Type`, `Keyword_ModKey_FileName`, and `Keyword_FormKey_ID`
+- `KeywordMappings.Keyword_ModKey_Name`, `Keyword_ModKey_Type`, `Keyword_ModKey_FileName`, and `Keyword_FormKey_ID`
 - New Starfield record-reference columns on `MiscItems`, `Keywords`, `NPCs`, `MagicEffects`, `Perks`,
   `PerkRanks`, `PerkBackgroundSkills`, `ScriptingAdapterProperties`, and `ScriptingAdapterPropertyListItems`

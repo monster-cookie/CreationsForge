@@ -309,7 +309,7 @@ MiscObject child-detail tables are still a separate follow-up.
 Scripting adapters are persisted against the shared `RecordInstances` parent using record type IDs such as `GLOB`,
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `BOOK`, `DOOR`, and `TERM`.
 
-Keyword-list persistence is shared in Core through `IRecordKeywordImportService` and `RecordKeywords`.
+Keyword-list persistence is shared in Core through `IKeywordMappingImportService` and `KeywordMappings`.
 `IRecordChildImportService` invokes keyword persistence for any imported `RecordDTO` that implements the keyword-list
 capability interface. Magic Effect DATA fields are persisted directly on `MagicEffects` because Mutagen/Spriggit
 expose them as flattened MGEF properties.
@@ -331,10 +331,10 @@ rows, so condition data should not be added as raw payloads when Mutagen exposes
 Starfield `CONT` import stores shared Bethesda base-form component payloads under internal
 `BaseFormComponents.*` slots while preserving the source Mutagen/Spriggit `Components.*` path in
 `RawRecordPayloads.SourcePath`. Ordinary keyword rows discovered through nested component-shaped objects remain
-`RecordKeywords`; they are not treated as base-form component payload rows. Comparison DTOs keep the full payload value
+`KeywordMappings`; they are not treated as base-form component payload rows. Comparison DTOs keep the full payload value
 as detail data while exposing a summarized display label for the UI hex viewer.
 
-Sound persistence is shared in Core through `IRecordSoundImportService` and `RecordSounds`. `IRecordChildImportService`
+Sound persistence is shared in Core through `ISoundMappingImportService` and `SoundMappings`. `IRecordChildImportService`
 invokes sound persistence for any imported `RecordDTO` that implements the sound capability interface. `MISC` maps
 named scalar sounds such as crafting, pickup, putdown, and dropdown sounds when present, while `MGEF` maps indexed
 typed sound entries such as OnHit, Release, and Charge into the same table shape when present.

@@ -7,32 +7,32 @@ namespace CreationsForge.Core.Services;
 public class RecordChildImportService : IRecordChildImportService
 {
     private readonly IModelImportService ModelImportService;
-    private readonly IRecordKeywordImportService RecordKeywordImportService;
+    private readonly IKeywordMappingImportService KeywordMappingImportService;
     private readonly IRecordComponentImportService RecordComponentImportService;
     private readonly IConditionRuleImportService ConditionRuleImportService;
     private readonly IRawRecordPayloadImportService RawRecordPayloadImportService;
-    private readonly IRecordSoundImportService RecordSoundImportService;
+    private readonly ISoundMappingImportService SoundMappingImportService;
     private readonly IScriptingAdapterImportService ScriptingAdapterImportService;
     private readonly ITerminalMarkerParameterImportService TerminalMarkerParameterImportService;
     private readonly IRecordLocalizedStringImportService RecordLocalizedStringImportService;
 
     public RecordChildImportService(
         IModelImportService modelImportService,
-        IRecordKeywordImportService recordKeywordImportService,
+        IKeywordMappingImportService keywordMappingImportService,
         IRecordComponentImportService recordComponentImportService,
         IConditionRuleImportService conditionRuleImportService,
         IRawRecordPayloadImportService rawRecordPayloadImportService,
-        IRecordSoundImportService recordSoundImportService,
+        ISoundMappingImportService soundMappingImportService,
         IScriptingAdapterImportService scriptingAdapterImportService,
         ITerminalMarkerParameterImportService terminalMarkerParameterImportService,
         IRecordLocalizedStringImportService recordLocalizedStringImportService)
     {
         ModelImportService = modelImportService;
-        RecordKeywordImportService = recordKeywordImportService;
+        KeywordMappingImportService = keywordMappingImportService;
         RecordComponentImportService = recordComponentImportService;
         ConditionRuleImportService = conditionRuleImportService;
         RawRecordPayloadImportService = rawRecordPayloadImportService;
-        RecordSoundImportService = recordSoundImportService;
+        SoundMappingImportService = soundMappingImportService;
         ScriptingAdapterImportService = scriptingAdapterImportService;
         TerminalMarkerParameterImportService = terminalMarkerParameterImportService;
         RecordLocalizedStringImportService = recordLocalizedStringImportService;
@@ -45,9 +45,9 @@ public class RecordChildImportService : IRecordChildImportService
             ModelImportService.ReplaceRecordModels(modelRecord, recordType);
         }
 
-        if (record is IHasKeywordsRecordDTO keywordRecord)
+        if (record is IKeywords keywordRecord)
         {
-            RecordKeywordImportService.ReplaceRecordKeywords(keywordRecord, recordType);
+            KeywordMappingImportService.ReplaceKeywordMappings(keywordRecord, recordType);
         }
 
         if (record is IHasComponentsRecordDTO componentRecord)
@@ -60,9 +60,9 @@ public class RecordChildImportService : IRecordChildImportService
             ConditionRuleImportService.ReplaceConditionRules(conditionRecord, recordType);
         }
 
-        if (record is IHasSoundsRecordDTO soundRecord)
+        if (record is ISounds soundRecord)
         {
-            RecordSoundImportService.ReplaceRecordSounds(soundRecord, recordType);
+            SoundMappingImportService.ReplaceSoundMappings(soundRecord, recordType);
         }
 
         if (record is IHasRawRecordPayloadsRecordDTO rawPayloadRecord)

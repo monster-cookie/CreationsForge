@@ -3,7 +3,7 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class NPCDTO : RecordDTO, IHasScriptingAdaptersRecordDTO, IHasKeywordsRecordDTO
+public class NPCDTO : RecordDTO, IHasScriptingAdaptersRecordDTO, IKeywords
 {
     public TranslatedStringDTO? Name { get; set; }
 
@@ -45,7 +45,7 @@ public class NPCDTO : RecordDTO, IHasScriptingAdaptersRecordDTO, IHasKeywordsRec
 
     public FormKeyDTO? CrimeFactionFormKey { get; set; }
 
-    public IList<RecordKeywordDTO> Keywords { get; set; } = new List<RecordKeywordDTO>();
+    public IList<KeywordMappingDTO> Keywords { get; set; } = new List<KeywordMappingDTO>();
 
     public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 }

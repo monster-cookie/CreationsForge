@@ -5,7 +5,7 @@
 The application uses a local SQLite database. The schema is defined by embedded DbUp scripts in
 `CreationsForge.Migrations/Sql`:
 
-- `100_ResetSchema.sql` creates the reset application schema for the current unreleased database cache shape.
+- `001_ResetSchemaForV2.sql` creates the reset application schema for the current unreleased database cache shape.
 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
@@ -52,15 +52,15 @@ The application schema contains fifty-six tables:
 - `ConstructibleObjectRecipeFilters`
 - `Terminals`
 - `TerminalMarkerParameters`
-- `RecordKeywords`
-- `RecordComponents`
-- `RecordComponentItems`
+- `KeywordMappings`
+- `Components`
+- `ComponentItems`
 - `PerkRanks`
 - `PerkRankEffects`
 - `PerkBackgroundSkills`
 - `Models`
 - `ModelMaterialSwaps`
-- `RecordSounds`
+- `SoundMappings`
 - `ScriptingAdapters`
 - `ScriptingAdapterProperties`
 - `ScriptingAdapterPropertyListItems`
@@ -163,12 +163,12 @@ full `RecordInstances` key including `RecordType`, so scripting adapters remain 
 adapter table per record type.
 `Models` also references the full `RecordInstances` key including `RecordType`, plus a model slot and model gender so
 direct, slotted, and gendered model payloads can share one table family.
-`RecordKeywords` references the full `RecordInstances` key including `RecordType`, so keyword lists can be shared by
+`KeywordMappings` references the full `RecordInstances` key including `RecordType`, so keyword lists can be shared by
 record types that expose the same indexed keyword payload.
-`RecordComponents` references the full `RecordInstances` key including `RecordType`, so component payloads can be
+`Components` references the full `RecordInstances` key including `RecordType`, so component payloads can be
 shared by record types that expose component subrecords. Starfield FACT components are currently stored through this
 shared component path.
-`RecordSounds` references the full `RecordInstances` key including `RecordType`, so named and indexed sound payloads
+`SoundMappings` references the full `RecordInstances` key including `RecordType`, so named and indexed sound payloads
 can be shared by record types that expose the same Spriggit-style sound data.
 `RawRecordPayloads` references the full `RecordInstances` key including `RecordType`, so opaque payload bytes or
 strings can be retained for future parsing without adding one table per record type.
@@ -590,7 +590,7 @@ Persistence behavior:
 - Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful Faction import
   batch are deleted as stale.
 - Stale parent Faction deletion cascades to faction relation, rank, and condition rows.
-- Starfield FACT component rows are persisted through shared `RecordComponents` and `RecordComponentItems`.
+- Starfield FACT component rows are persisted through shared `Components` and `ComponentItems`.
 
 ### FactionRelations
 
@@ -684,7 +684,6 @@ Persistence behavior:
 
 - Current imported rows are upserted through the shared condition-rule import service after the parent row is saved.
 - Existing condition rows for the same record are deleted before replacement.
-- Migration 005 copies released CNDF rows from `ConditionFormConditions` into this table and drops the old table.
 
 ### ConditionRuleParameters
 
@@ -722,8 +721,6 @@ Persistence behavior:
 - Current imported rows are upserted after their owning condition rule row is saved.
 - Existing parameter rows for a replaced condition are deleted through the parent condition row replacement/delete
   behavior.
-- Migration 005 copies released CNDF rows from `ConditionFormConditionParameters` into this table and drops the old
-  table.
 
 ### Shared scripted parent records
 
@@ -1093,7 +1090,7 @@ Persistence behavior:
   remain stale.
 - Stale typed-record deletion removes marker-parameter rows through the declared `Terminals` cascade.
 
-### RecordKeywords
+### KeywordMappings
 
 Columns:
 
@@ -1115,7 +1112,7 @@ Persistence behavior:
   stale.
 - Stale typed-record deletion removes keyword rows through the declared `RecordInstances` cascade.
 
-### RecordComponents
+### Components
 
 Columns:
 
@@ -1137,7 +1134,7 @@ Constraints:
 
 Indexes:
 
-- `IX_RecordComponents_Game_FormKey` on `Game`, `RecordType`, origin FormKey ModKey columns, and `FormKey_ID`
+- `IX_Components_Game_FormKey` on `Game`, `RecordType`, origin FormKey ModKey columns, and `FormKey_ID`
 
 Persistence behavior:
 
@@ -1146,7 +1143,7 @@ Persistence behavior:
   stale.
 - Stale typed-record deletion removes component rows through the declared `RecordInstances` cascade.
 
-### RecordComponentItems
+### ComponentItems
 
 Columns:
 
@@ -1157,7 +1154,7 @@ Columns:
 
 Foreign keys:
 
-- Full parent key references `RecordComponents` with `ON DELETE CASCADE`.
+- Full parent key references `Components` with `ON DELETE CASCADE`.
 
 Constraints:
 
@@ -1166,7 +1163,7 @@ Constraints:
 
 Indexes:
 
-- `IX_RecordComponentItems_Game_FormKey` on `Game`, `RecordType`, origin FormKey ModKey columns, and `FormKey_ID`
+- `IX_ComponentItems_Game_FormKey` on `Game`, `RecordType`, origin FormKey ModKey columns, and `FormKey_ID`
 
 Persistence behavior:
 
@@ -1262,7 +1259,7 @@ Persistence behavior:
 - Existing material-swap rows for a replaced model are deleted through the parent `Models` row replacement/delete
   behavior.
 
-### RecordSounds
+### SoundMappings
 
 Columns:
 
@@ -1563,6 +1560,6 @@ These columns carry record-reference identity but do not declare SQLite foreign 
   `RecipeFilter_ModKey_FileName`, and `RecipeFilter_FormKey_ID`
 - `ModelMaterialSwaps.MaterialSwap_ModKey_Name`, `MaterialSwap_ModKey_Type`, `MaterialSwap_ModKey_FileName`,
   and `MaterialSwap_FormKey_ID`
-- `RecordKeywords.Keyword_ModKey_Name`, `Keyword_ModKey_Type`, `Keyword_ModKey_FileName`, and `Keyword_FormKey_ID`
+- `KeywordMappings.Keyword_ModKey_Name`, `Keyword_ModKey_Type`, `Keyword_ModKey_FileName`, and `Keyword_FormKey_ID`
 
 These inferred references are intentionally not shown as Mermaid relationship lines in the ERD.

@@ -21,7 +21,7 @@ public class RecordComponentRepository : IRecordComponentRepository
         var components = Database.Fetch<RecordComponentRow>(
                 """
                 SELECT *
-                FROM RecordComponents
+                FROM Components
                 WHERE Game = @Game
                   AND RecordType = @RecordType
                   AND FormKey_ModKey_Name = @FormKeyModKeyName COLLATE NOCASE
@@ -62,7 +62,7 @@ public class RecordComponentRepository : IRecordComponentRepository
 
         Database.Execute(
             """
-            DELETE FROM RecordComponents
+            DELETE FROM Components
             WHERE Game = @Game
               AND ModKey_Name = @ModKeyName
               AND ModKey_Type = @ModKeyType
@@ -91,7 +91,7 @@ public class RecordComponentRepository : IRecordComponentRepository
             component.ImportedAtUTC = recordDTO.ImportedAtUTC;
             Database.Execute(
                 """
-                INSERT OR REPLACE INTO RecordComponents (
+                INSERT OR REPLACE INTO Components (
                     Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName,
                     FormKey_ID, Component_Index, MutagenObjectType, ImportedAtUTC)
                 VALUES (
@@ -119,7 +119,7 @@ public class RecordComponentRepository : IRecordComponentRepository
                 item.ImportedAtUTC = recordDTO.ImportedAtUTC;
                 Database.Execute(
                     """
-                    INSERT OR REPLACE INTO RecordComponentItems (
+                    INSERT OR REPLACE INTO ComponentItems (
                         Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName,
                         FormKey_ID, Component_Index, Item_Index, Unknown1, Unknown2, Unknown3, Unknown4, Unknown5, ImportedAtUTC)
                     VALUES (
@@ -155,7 +155,7 @@ public class RecordComponentRepository : IRecordComponentRepository
         return Database.Fetch<RecordComponentItemRow>(
                 """
                 SELECT *
-                FROM RecordComponentItems
+                FROM ComponentItems
                 WHERE Game = @Game
                   AND RecordType = @RecordType
                   AND FormKey_ModKey_Name = @FormKeyModKeyName COLLATE NOCASE

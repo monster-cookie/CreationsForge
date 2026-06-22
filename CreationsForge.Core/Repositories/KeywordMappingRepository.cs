@@ -3,37 +3,37 @@ using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Repositories.Interfaces;
 using NPoco;
-using RecordSoundDatabase = CreationsForge.Core.Models.Database.RecordSound;
+using KeywordMappingModel = CreationsForge.Core.Models.Database.KeywordMapping;
 
 namespace CreationsForge.Core.Repositories;
 
-public class RecordSoundRepository : IRecordSoundRepository
+public class KeywordMappingRepository : IKeywordMappingRepository
 {
     private readonly IDatabase Database;
 
-    public RecordSoundRepository(IDatabase database)
+    public KeywordMappingRepository(IDatabase database)
     {
         Database = database;
     }
 
-    public void Save(RecordSoundDTO dto)
+    public void Save(KeywordMappingDTO dto)
     {
-        Database.Save(new RecordSoundDatabase(dto));
+        Database.Save(new KeywordMappingModel(dto));
     }
 
-    public IReadOnlyList<RecordSoundDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+    public IReadOnlyList<KeywordMappingDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
     {
-        return Database.Fetch<RecordSoundDatabase>(
+        return Database.Fetch<KeywordMappingModel>(
                 """
                 SELECT *
-                FROM RecordSounds
+                FROM KeywordMappings
                 WHERE Game = @Game
                   AND RecordType = @RecordType
                   AND FormKey_ModKey_Name = @FormKeyModKeyName
                   AND FormKey_ModKey_Type = @FormKeyModKeyType
                   AND FormKey_ModKey_FileName = @FormKeyModKeyFileName
                   AND FormKey_ID = @FormKeyId
-                ORDER BY ModKey_FileName COLLATE NOCASE, SoundSlot COLLATE NOCASE, Sound_Index;
+                ORDER BY ModKey_FileName COLLATE NOCASE, Keyword_Index;
                 """,
                 new
                 {
@@ -44,7 +44,7 @@ public class RecordSoundRepository : IRecordSoundRepository
                     FormKeyModKeyFileName = formKey.ModKey.FileName,
                     FormKeyId = formKey.Id
                 })
-            .Select(sound => ToDTO(game, sound))
+            .Select(row => ToDTO(game, row))
             .ToList();
     }
 
@@ -52,7 +52,7 @@ public class RecordSoundRepository : IRecordSoundRepository
     {
         Database.Execute(
             """
-            DELETE FROM RecordSounds
+            DELETE FROM KeywordMappings
             WHERE Game = @Game
               AND ModKey_Name = @ModKeyName
               AND ModKey_Type = @ModKeyType
@@ -81,7 +81,7 @@ public class RecordSoundRepository : IRecordSoundRepository
     {
         Database.Execute(
             """
-            DELETE FROM RecordSounds
+            DELETE FROM KeywordMappings
             WHERE Game = @Game
               AND ModKey_Name = @ModKeyName
               AND ModKey_Type = @ModKeyType
@@ -98,34 +98,40 @@ public class RecordSoundRepository : IRecordSoundRepository
             });
     }
 
-    private static RecordSoundDTO ToDTO(SupportedGame game, RecordSoundDatabase sound)
+    private static KeywordMappingDTO ToDTO(SupportedGame game, KeywordMappingModel row)
     {
-        return new RecordSoundDTO
+        return new KeywordMappingDTO
         {
             Game = game,
             ModKey = new ModKeyDTO
             {
-                Name = sound.ModKeyName,
-                Type = sound.ModKeyType,
-                FileName = sound.ModKeyFileName
+                Name = row.ModKeyName,
+                Type = row.ModKeyType,
+                FileName = row.ModKeyFileName
             },
-            RecordType = sound.RecordType,
+            RecordType = row.RecordType,
             FormKey = new FormKeyDTO
             {
                 ModKey = new ModKeyDTO
                 {
-                    Name = sound.FormKeyModKeyName,
-                    Type = sound.FormKeyModKeyType,
-                    FileName = sound.FormKeyModKeyFileName
+                    Name = row.FormKeyModKeyName,
+                    Type = row.FormKeyModKeyType,
+                    FileName = row.FormKeyModKeyFileName
                 },
-                Id = (uint)sound.FormKeyId
+                Id = (uint)row.FormKeyId
             },
-            SoundSlot = sound.SoundSlot,
-            SoundIndex = sound.SoundIndex,
-            Start = sound.Start,
-            Versioning = sound.Versioning,
-            Unknown = sound.Unknown,
-            ImportedAtUTC = sound.ImportedAtUTC
+            KeywordFormKey = new FormKeyDTO
+            {
+                ModKey = new ModKeyDTO
+                {
+                    Name = row.KeywordModKeyName,
+                    Type = row.KeywordModKeyType,
+                    FileName = row.KeywordModKeyFileName
+                },
+                Id = (uint)row.KeywordFormKeyId
+            },
+            KeywordIndex = row.KeywordIndex,
+            ImportedAtUTC = row.ImportedAtUTC
         };
     }
 }

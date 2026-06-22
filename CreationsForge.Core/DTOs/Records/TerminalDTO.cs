@@ -3,7 +3,7 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class TerminalDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO, IHasScriptingAdaptersRecordDTO, IHasRawRecordPayloadsRecordDTO, IHasTerminalMarkerParametersRecordDTO
+public class TerminalDTO : RecordDTO, IHasModelsRecordDTO, IKeywords, IHasScriptingAdaptersRecordDTO, IHasRawRecordPayloadsRecordDTO, IHasTerminalMarkerParametersRecordDTO
 {
     public string? ObjectBoundsFirst { get; set; }
 
@@ -33,7 +33,7 @@ public class TerminalDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO
 
     public IList<ModelDTO> Models { get; set; } = new List<ModelDTO>();
 
-    public IList<RecordKeywordDTO> Keywords { get; set; } = new List<RecordKeywordDTO>();
+    public IList<KeywordMappingDTO> Keywords { get; set; } = new List<KeywordMappingDTO>();
 
     public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 

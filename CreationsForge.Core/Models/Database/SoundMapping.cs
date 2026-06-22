@@ -3,14 +3,14 @@ using NPoco;
 
 namespace CreationsForge.Core.Models.Database;
 
-[TableName("RecordKeywords")]
-[PrimaryKey("Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Keyword_Index", AutoIncrement = false)]
-public class RecordKeyword
+[TableName("SoundMappings")]
+[PrimaryKey("Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, SoundSlot, Sound_Index", AutoIncrement = false)]
+public class SoundMapping
 {
-    public RecordKeyword()
+    public SoundMapping()
     { }
 
-    public RecordKeyword(RecordKeywordDTO dto)
+    public SoundMapping(SoundMappingDTO dto)
     {
         Game = dto.Game.ToString();
         ModKeyName = dto.ModKey.Name;
@@ -21,11 +21,11 @@ public class RecordKeyword
         FormKeyModKeyType = dto.FormKey.ModKey.Type;
         FormKeyModKeyFileName = dto.FormKey.ModKey.FileName;
         FormKeyId = dto.FormKey.Id;
-        KeywordModKeyName = dto.KeywordFormKey.ModKey.Name;
-        KeywordModKeyType = dto.KeywordFormKey.ModKey.Type;
-        KeywordModKeyFileName = dto.KeywordFormKey.ModKey.FileName;
-        KeywordFormKeyId = dto.KeywordFormKey.Id;
-        KeywordIndex = dto.KeywordIndex;
+        SoundSlot = dto.SoundSlot;
+        SoundIndex = dto.SoundIndex;
+        Start = dto.Start;
+        Versioning = dto.Versioning;
+        Unknown = dto.Unknown;
         ImportedAtUTC = dto.ImportedAtUTC;
     }
 
@@ -47,15 +47,15 @@ public class RecordKeyword
 
     [Column("FormKey_ID")] public long FormKeyId { get; set; }
 
-    [Column("Keyword_ModKey_Name")] public string KeywordModKeyName { get; set; } = string.Empty;
+    [Column("SoundSlot")] public string SoundSlot { get; set; } = string.Empty;
 
-    [Column("Keyword_ModKey_Type")] public int KeywordModKeyType { get; set; }
+    [Column("Sound_Index")] public int SoundIndex { get; set; }
 
-    [Column("Keyword_ModKey_FileName")] public string KeywordModKeyFileName { get; set; } = string.Empty;
+    [Column("Start")] public string? Start { get; set; }
 
-    [Column("Keyword_FormKey_ID")] public long KeywordFormKeyId { get; set; }
+    [Column("Versioning")] public string? Versioning { get; set; }
 
-    [Column("Keyword_Index")] public int KeywordIndex { get; set; }
+    [Column("Unknown")] public string? Unknown { get; set; }
 
     [Column("ImportedAtUTC")] public DateTime ImportedAtUTC { get; set; }
 }

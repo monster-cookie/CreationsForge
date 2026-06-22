@@ -3,7 +3,7 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class ContainerDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDTO, IHasSoundsRecordDTO, IHasRawRecordPayloadsRecordDTO
+public class ContainerDTO : RecordDTO, IHasModelsRecordDTO, IKeywords, ISounds, IHasRawRecordPayloadsRecordDTO
 {
     public string? ObjectBoundsFirst { get; set; }
 
@@ -21,9 +21,9 @@ public class ContainerDTO : RecordDTO, IHasModelsRecordDTO, IHasKeywordsRecordDT
 
     public IList<ModelDTO> Models { get; set; } = new List<ModelDTO>();
 
-    public IList<RecordKeywordDTO> Keywords { get; set; } = new List<RecordKeywordDTO>();
+    public IList<KeywordMappingDTO> Keywords { get; set; } = new List<KeywordMappingDTO>();
 
-    public IList<RecordSoundDTO> Sounds { get; set; } = new List<RecordSoundDTO>();
+    public IList<SoundMappingDTO> Sounds { get; set; } = new List<SoundMappingDTO>();
 
     public IList<RawRecordPayloadDTO> RawPayloads { get; set; } = new List<RawRecordPayloadDTO>();
 }
