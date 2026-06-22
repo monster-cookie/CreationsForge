@@ -23,6 +23,18 @@ Spriggit-to-DTO comparisons in data validation test methods must be explicit and
 - The only approved generic unmatched-field coverage helpers are `Helpers.GetUnmatchedSpriggitFields(...)` and `Helpers.GetUnmatchedDtoFields(...)`.
 - Those unmatched-field helpers are a coverage backstop only. They must not replace explicit field-by-field assertions in the test method.
 
+### Spec-driven Validation Tests (Preview)
+
+NOTE: This is currently in preview but will eventually replace most rules in this document.
+
+Spec-driven validation tests may use an approved validation spec runner that loads raw Spriggit YAML fields and reflected DTO fields, then returns diagnostics for the test method to assert.
+
+Spec rules must name intentional path differences explicitly. They must preserve unmatched Spriggit and DTO coverage so missing source fields and hallucinated DTO fields remain visible.
+
+Spec runners and helpers must not call assertion libraries. The test method remains responsible for asserting returned diagnostics.
+
+Spec-driven validation tests may iterate assertion cases returned by an approved spec runner when each case contains explicit Spriggit path, DTO path, expected value, actual value, and failure message. The runner must not call assertion libraries.
+
 ## Imported validation database freshness
 
 Data validation tests read DTOs from the imported SQLite database, not directly from the current mapper code.
