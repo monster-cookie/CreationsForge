@@ -139,6 +139,8 @@ CREATE TABLE FormLists
     EditorID                  TEXT    NOT NULL,
     FormVersion               INTEGER NOT NULL,
     MajorRecordFlags          INTEGER NOT NULL,
+    Version2                  INTEGER NULL,
+    VersionControl            INTEGER NULL,
     ImportedAtUTC             TEXT    NOT NULL,
     AddToList_ModKey_Name     TEXT    NULL,
     AddToList_ModKey_Type     INTEGER NULL,
@@ -255,10 +257,15 @@ CREATE TABLE Keywords
     MajorRecordFlags             INTEGER NOT NULL,
     ImportedAtUTC                TEXT    NOT NULL,
     Name                         TEXT    NULL,
-    Color                        TEXT    NOT NULL,
-    Type                         TEXT    NOT NULL,
+    Color                        TEXT    NULL,
+    Type                         TEXT    NULL,
     Notes                        TEXT    NULL,
     FlashLinkageName             TEXT    NULL,
+    Version2                     INTEGER NULL,
+    VersionControl               INTEGER NULL,
+    FNAM                         TEXT    NULL,
+    WAIM                         TEXT    NULL,
+    WFIR                         TEXT    NULL,
     AttractionRule_ModKey_Name   TEXT    NULL,
     AttractionRule_ModKey_Type   INTEGER NULL,
     AttractionRule_ModKey_FileName TEXT  NULL,
@@ -463,6 +470,18 @@ CREATE TABLE MiscItems
     FormVersion                           INTEGER NOT NULL,
     MajorRecordFlags                      INTEGER NOT NULL,
     ImportedAtUTC                         TEXT    NOT NULL,
+    Version2                              INTEGER NULL,
+    VersionControl                        INTEGER NULL,
+    ObjectBounds_First                    TEXT    NULL,
+    ObjectBounds_Second                   TEXT    NULL,
+    Transforms_Inventory_ModKey_Name      TEXT    NULL,
+    Transforms_Inventory_ModKey_Type      INTEGER NULL,
+    Transforms_Inventory_ModKey_FileName  TEXT    NULL,
+    Transforms_Inventory_FormKey_ID       INTEGER NULL,
+    PreviewTransform_ModKey_Name          TEXT    NULL,
+    PreviewTransform_ModKey_Type          INTEGER NULL,
+    PreviewTransform_ModKey_FileName      TEXT    NULL,
+    PreviewTransform_FormKey_ID           INTEGER NULL,
     Name                                  TEXT    NULL,
     ShortName                             TEXT    NULL,
     Value                                 INTEGER NULL,
@@ -477,10 +496,64 @@ CREATE TABLE MiscItems
     FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName) REFERENCES Plugins (Game, ModKey_Name, ModKey_Type, ModKey_FileName) ON DELETE CASCADE,
     FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
         REFERENCES RecordInstances (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
-    CHECK (FormKey_ID >= 0)
+    CHECK (FormKey_ID >= 0),
+    CHECK ((Transforms_Inventory_ModKey_Name IS NULL AND Transforms_Inventory_ModKey_Type IS NULL AND Transforms_Inventory_ModKey_FileName IS NULL AND Transforms_Inventory_FormKey_ID IS NULL) OR
+           (Transforms_Inventory_ModKey_Name IS NOT NULL AND Transforms_Inventory_ModKey_Type IS NOT NULL AND Transforms_Inventory_ModKey_FileName IS NOT NULL AND Transforms_Inventory_FormKey_ID IS NOT NULL)),
+    CHECK ((PreviewTransform_ModKey_Name IS NULL AND PreviewTransform_ModKey_Type IS NULL AND PreviewTransform_ModKey_FileName IS NULL AND PreviewTransform_FormKey_ID IS NULL) OR
+           (PreviewTransform_ModKey_Name IS NOT NULL AND PreviewTransform_ModKey_Type IS NOT NULL AND PreviewTransform_ModKey_FileName IS NOT NULL AND PreviewTransform_FormKey_ID IS NOT NULL))
 );
 
 CREATE INDEX IX_MiscItems_FormKey ON MiscItems (Game, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
+
+CREATE TABLE MiscItemComponents
+(
+    Game                           TEXT    NOT NULL,
+    ModKey_Name                    TEXT    NOT NULL,
+    ModKey_Type                    INTEGER NOT NULL,
+    ModKey_FileName                TEXT    NOT NULL,
+    FormKey_ModKey_Name            TEXT    NOT NULL,
+    FormKey_ModKey_Type            INTEGER NOT NULL,
+    FormKey_ModKey_FileName        TEXT    NOT NULL,
+    FormKey_ID                     INTEGER NOT NULL,
+    Component_ModKey_Name          TEXT    NOT NULL,
+    Component_ModKey_Type          INTEGER NOT NULL,
+    Component_ModKey_FileName      TEXT    NOT NULL,
+    Component_FormKey_ID           INTEGER NOT NULL,
+    Component_Index                INTEGER NOT NULL,
+    Count                          INTEGER NULL,
+    ImportedAtUTC                  TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Component_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES MiscItems (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Component_FormKey_ID >= 0),
+    CHECK (Component_Index >= 0)
+);
+
+CREATE TABLE MiscItemResources
+(
+    Game                          TEXT    NOT NULL,
+    ModKey_Name                   TEXT    NOT NULL,
+    ModKey_Type                   INTEGER NOT NULL,
+    ModKey_FileName               TEXT    NOT NULL,
+    FormKey_ModKey_Name           TEXT    NOT NULL,
+    FormKey_ModKey_Type           INTEGER NOT NULL,
+    FormKey_ModKey_FileName       TEXT    NOT NULL,
+    FormKey_ID                    INTEGER NOT NULL,
+    Resource_ModKey_Name          TEXT    NOT NULL,
+    Resource_ModKey_Type          INTEGER NOT NULL,
+    Resource_ModKey_FileName      TEXT    NOT NULL,
+    Resource_FormKey_ID           INTEGER NOT NULL,
+    Resource_Index                INTEGER NOT NULL,
+    Count                         INTEGER NULL,
+    ImportedAtUTC                 TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Resource_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES MiscItems (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Resource_FormKey_ID >= 0),
+    CHECK (Resource_Index >= 0)
+);
 
 CREATE TABLE Perks
 (
@@ -668,6 +741,7 @@ CREATE TABLE ModelMaterialSwaps
     FormKey_ID                      INTEGER NOT NULL,
     ModelSlot                       TEXT    NOT NULL,
     ModelGender                     TEXT    NOT NULL,
+    Name                            TEXT    NULL,
     MaterialSwap_ModKey_Name        TEXT    NOT NULL,
     MaterialSwap_ModKey_Type        INTEGER NOT NULL,
     MaterialSwap_ModKey_FileName    TEXT    NOT NULL,

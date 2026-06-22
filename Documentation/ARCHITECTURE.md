@@ -305,7 +305,7 @@ fields, recipe component rows, Fallout 4 category rows, Starfield recipe-filter 
 scripts when present, and raw payloads for partially understood count/list data. The `TERM` slice persists parent
 scalar fields, keyword
 rows, model rows, scripts, raw payloads, and marker parameter rows. The old single-game app's deeper
-MiscObject child-detail tables are still a separate follow-up.
+MiscItem child-detail tables are still a separate follow-up.
 Scripting adapters are persisted against the shared `RecordInstances` parent using record type IDs such as `GLOB`,
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `BOOK`, `DOOR`, and `TERM`.
 

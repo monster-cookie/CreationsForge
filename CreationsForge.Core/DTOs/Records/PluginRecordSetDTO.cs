@@ -8,7 +8,7 @@ public class PluginRecordSetDTO
 
     public IReadOnlyList<GlobalDTO> Globals { get; set; } = [];
 
-    public IReadOnlyList<MiscObjectDTO> MiscObjects { get; set; } = [];
+    public IReadOnlyList<MiscItemDTO> MiscItems { get; set; } = [];
 
     public IReadOnlyList<KeywordDTO> Keywords { get; set; } = [];
 

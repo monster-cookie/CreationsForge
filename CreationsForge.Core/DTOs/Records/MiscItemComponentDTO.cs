@@ -3,7 +3,7 @@ using CreationsForge.Core.Enums;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class FormListItemDTO
+public class MiscItemComponentDTO
 {
     public required SupportedGame Game { get; set; }
 
@@ -11,9 +11,11 @@ public class FormListItemDTO
 
     public required FormKeyDTO FormKey { get; set; }
 
-    public required FormKeyDTO Item { get; set; }
+    public required FormKeyDTO Component { get; set; }
 
-    public required int ItemIndex { get; set; }
+    public int ComponentIndex { get; set; }
 
-    public required DateTime ImportedAtUTC { get; set; }
+    public int? Count { get; set; }
+
+    public DateTime ImportedAtUTC { get; set; }
 }

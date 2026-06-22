@@ -3,7 +3,7 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class DoorDTO : RecordDTO, IHasModelsRecordDTO, IKeywords, ISounds, IHasScriptingAdaptersRecordDTO, IHasComponentsRecordDTO, IHasRawRecordPayloadsRecordDTO
+public class DoorDTO : RecordDTO, IHasModelsDTO, IKeywords, ISounds, IHasScriptingAdaptersDTO, IHasComponentsDTO, IHasRawRecordPayloadsDTO
 {
     public string? ObjectBoundsFirst { get; set; }
 

@@ -2,7 +2,7 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class StaticDTO : RecordDTO, IHasModelsRecordDTO, IKeywords, IHasRawRecordPayloadsRecordDTO
+public class StaticDTO : RecordDTO, IHasModelsDTO, IKeywords, IHasRawRecordPayloadsDTO
 {
     public string? ObjectBoundsFirst { get; set; }
 

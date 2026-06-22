@@ -153,7 +153,7 @@ It has:
 Global stores a numeric value and can support scripting adapters:
 
 ```csharp
-public class GlobalDTO : RecordDTO, IHasScriptingAdaptersRecordDTO
+public class GlobalDTO : RecordDTO, IHasScriptingAdaptersDTO
 {
     public double? Data { get; set; }
 
@@ -183,7 +183,7 @@ It has:
 AVIF stores several typed fields and supports scripting adapters:
 
 ```csharp
-public class ActorValueInformationDTO : RecordDTO, IHasScriptingAdaptersRecordDTO
+public class ActorValueInformationDTO : RecordDTO, IHasScriptingAdaptersDTO
 {
     public string? Name { get; set; }
 
@@ -326,11 +326,11 @@ Do not mirror the entire Mutagen object. The DTO should represent the subset Cre
 If the record has child data, implement the matching child interfaces:
 
 ```csharp
-IHasModelsRecordDTO
+IHasModelsDTO
 IKeywords
 ISounds
-IHasRawRecordPayloadsRecordDTO
-IHasScriptingAdaptersRecordDTO
+IHasRawRecordPayloadsDTO
+IHasScriptingAdaptersDTO
 ```
 
 Example with child data:
@@ -340,7 +340,7 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class SomeRecordDTO : RecordDTO, IKeywords, IHasScriptingAdaptersRecordDTO
+public class SomeRecordDTO : RecordDTO, IKeywords, IHasScriptingAdaptersDTO
 {
     public string? Name { get; set; }
 

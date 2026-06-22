@@ -14,7 +14,7 @@ public class RecordComponentImportService : IRecordComponentImportService
         RecordComponentRepository = recordComponentRepository;
     }
 
-    public void ReplaceRecordComponents(IHasComponentsRecordDTO record, string recordType)
+    public void ReplaceRecordComponents(IHasComponentsDTO record, string recordType)
     {
         foreach (var component in record.Components)
         {

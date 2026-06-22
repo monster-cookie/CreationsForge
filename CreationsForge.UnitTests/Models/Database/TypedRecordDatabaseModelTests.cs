@@ -12,7 +12,7 @@ namespace CreationsForge.UnitTests.Models.Database;
 public class TypedRecordDatabaseModelTests
 {
     [Fact]
-    public void FormList_MapsCommonRecordFieldsAndNullAddToListFormKey()
+    public void FormList_MapsCommonRecordFieldsAndNullAddToList()
     {
         var dto = CreateFormListDTO(null);
 
@@ -26,7 +26,7 @@ public class TypedRecordDatabaseModelTests
     }
 
     [Fact]
-    public void FormList_MapsPopulatedAddToListFormKey()
+    public void FormList_MapsPopulatedAddToList()
     {
         var addToListFormKey = CreateFormKey("AddToList", 2, "AddToList.esm", 5678);
         var dto = CreateFormListDTO(addToListFormKey);
@@ -47,7 +47,7 @@ public class TypedRecordDatabaseModelTests
             Game = SupportedGame.Fallout4,
             ModKey = CreateModKey("Container", 1, "Container.esm"),
             FormKey = CreateFormKey("Parent", 2, "Parent.esm", 100),
-            ItemFormKey = CreateFormKey("Item", 3, "Item.esm", 200),
+            Item = CreateFormKey("Item", 3, "Item.esm", 200),
             ItemIndex = 7,
             ImportedAtUTC = new DateTime(2026, 6, 5, 18, 30, 0, DateTimeKind.Utc)
         };
@@ -219,7 +219,7 @@ public class TypedRecordDatabaseModelTests
             FormVersion = 12,
             MajorRecordFlags = 34,
             ImportedAtUTC = new DateTime(2026, 6, 5, 18, 0, 0, DateTimeKind.Utc),
-            AddToListFormKey = addToListFormKey
+            AddToList = addToListFormKey
         };
     }
 

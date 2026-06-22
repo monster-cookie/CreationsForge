@@ -21,10 +21,10 @@ public class KeywordMapping
         FormKeyModKeyType = dto.FormKey.ModKey.Type;
         FormKeyModKeyFileName = dto.FormKey.ModKey.FileName;
         FormKeyId = dto.FormKey.Id;
-        KeywordModKeyName = dto.KeywordFormKey.ModKey.Name;
-        KeywordModKeyType = dto.KeywordFormKey.ModKey.Type;
-        KeywordModKeyFileName = dto.KeywordFormKey.ModKey.FileName;
-        KeywordFormKeyId = dto.KeywordFormKey.Id;
+        KeywordModKeyName = dto.Keyword.ModKey.Name;
+        KeywordModKeyType = dto.Keyword.ModKey.Type;
+        KeywordModKeyFileName = dto.Keyword.ModKey.FileName;
+        KeywordFormKeyId = dto.Keyword.Id;
         KeywordIndex = dto.KeywordIndex;
         ImportedAtUTC = dto.ImportedAtUTC;
     }

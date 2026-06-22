@@ -27,7 +27,7 @@ public class StarfieldFormListSpriggitDataValidationTests : SpriggitDataValidati
         var spriggitFields = spriggit.Fields;
         var dtoFields = Helpers.GetDTOFields(dto);
 
-        spriggitFields["AddToList"].ShouldBe(dtoFields["AddToListFormKey"]);
+        spriggitFields["AddToList"].ShouldBe(dtoFields["AddToList"]);
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
         spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
@@ -58,7 +58,7 @@ public class StarfieldFormListSpriggitDataValidationTests : SpriggitDataValidati
         var spriggitFields = spriggit.Fields;
         var dtoFields = Helpers.GetDTOFields(dto);
 
-        spriggitFields["AddToList"].ShouldBe(dtoFields["AddToListFormKey"]);
+        spriggitFields["AddToList"].ShouldBe(dtoFields["AddToList"]);
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
         spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
@@ -89,7 +89,7 @@ public class StarfieldFormListSpriggitDataValidationTests : SpriggitDataValidati
         var spriggitFields = spriggit.Fields;
         var dtoFields = Helpers.GetDTOFields(dto);
 
-        spriggitFields["AddToList"].ShouldBe(dtoFields["AddToListFormKey"]);
+        spriggitFields["AddToList"].ShouldBe(dtoFields["AddToList"]);
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
         spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
@@ -120,7 +120,7 @@ public class StarfieldFormListSpriggitDataValidationTests : SpriggitDataValidati
         var spriggitFields = spriggit.Fields;
         var dtoFields = Helpers.GetDTOFields(dto);
 
-        spriggitFields["AddToList"].ShouldBe(dtoFields["AddToListFormKey"]);
+        spriggitFields["AddToList"].ShouldBe(dtoFields["AddToList"]);
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
         spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);

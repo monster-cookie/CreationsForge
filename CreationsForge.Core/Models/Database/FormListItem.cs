@@ -20,10 +20,10 @@ public class FormListItem
         FormKeyModKeyType = dto.FormKey.ModKey.Type;
         FormKeyModKeyFileName = dto.FormKey.ModKey.FileName;
         FormKeyId = dto.FormKey.Id;
-        ItemModKeyName = dto.ItemFormKey.ModKey.Name;
-        ItemModKeyType = dto.ItemFormKey.ModKey.Type;
-        ItemModKeyFileName = dto.ItemFormKey.ModKey.FileName;
-        ItemFormKeyId = dto.ItemFormKey.Id;
+        ItemModKeyName = dto.Item.ModKey.Name;
+        ItemModKeyType = dto.Item.ModKey.Type;
+        ItemModKeyFileName = dto.Item.ModKey.FileName;
+        ItemFormKeyId = dto.Item.Id;
         ItemIndex = dto.ItemIndex;
         ImportedAtUTC = dto.ImportedAtUTC;
     }

@@ -21,7 +21,7 @@ public class ScriptingAdapterImportService : IScriptingAdapterImportService
         ScriptingAdapterPropertyListItemRepository = scriptingAdapterPropertyListItemRepository;
     }
 
-    public void ReplaceRecordScriptingAdapters(IHasScriptingAdaptersRecordDTO record, string recordType)
+    public void ReplaceRecordScriptingAdapters(IHasScriptingAdaptersDTO record, string recordType)
     {
         if (record is not RecordDTO recordDTO)
         {

@@ -53,7 +53,7 @@ public class RecordComponentRepository : IRecordComponentRepository
         return components;
     }
 
-    public void ReplaceRecordComponents(IHasComponentsRecordDTO record, string recordType)
+    public void ReplaceRecordComponents(IHasComponentsDTO record, string recordType)
     {
         if (record is not RecordDTO recordDTO)
         {

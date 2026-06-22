@@ -18,7 +18,7 @@ public class TypedRecordRepositoryBaseTests
             RecordTypeCatalog.Door.TableName,
             RecordTypeCatalog.Keyword.TableName,
             RecordTypeCatalog.MagicEffect.TableName,
-            RecordTypeCatalog.MiscObject.TableName,
+            RecordTypeCatalog.MiscItem.TableName,
             RecordTypeCatalog.NPC.TableName,
             RecordTypeCatalog.Perk.TableName,
             RecordTypeCatalog.Static.TableName,
@@ -59,7 +59,7 @@ public class TypedRecordRepositoryBaseTests
     [Fact]
     public void SelectColumn_RendersSimpleColumn()
     {
-        var repository = new TestTypedRecordRepository(RecordTypeCatalog.MiscObject.TableName);
+        var repository = new TestTypedRecordRepository(RecordTypeCatalog.MiscItem.TableName);
 
         repository.RenderColumn("Name").ShouldBe(", CurrentRecord.Name");
     }
@@ -67,7 +67,7 @@ public class TypedRecordRepositoryBaseTests
     [Fact]
     public void SelectColumn_RendersAliasedColumn()
     {
-        var repository = new TestTypedRecordRepository(RecordTypeCatalog.MiscObject.TableName);
+        var repository = new TestTypedRecordRepository(RecordTypeCatalog.MiscItem.TableName);
 
         repository.RenderColumn("FeaturedItemMessage_FormKey_ID", "FeaturedItemMessageFormKeyId")
             .ShouldBe(", CurrentRecord.FeaturedItemMessage_FormKey_ID AS FeaturedItemMessageFormKeyId");
@@ -77,7 +77,7 @@ public class TypedRecordRepositoryBaseTests
     [MemberData(nameof(UnsafeIdentifiers))]
     public void SelectColumn_RejectsUnsafeColumnNames(string columnName)
     {
-        var repository = new TestTypedRecordRepository(RecordTypeCatalog.MiscObject.TableName);
+        var repository = new TestTypedRecordRepository(RecordTypeCatalog.MiscItem.TableName);
 
         Should.Throw<ArgumentException>(() => repository.RenderColumn(columnName));
     }
@@ -86,7 +86,7 @@ public class TypedRecordRepositoryBaseTests
     [MemberData(nameof(UnsafeIdentifiers))]
     public void SelectColumn_RejectsUnsafeAliases(string alias)
     {
-        var repository = new TestTypedRecordRepository(RecordTypeCatalog.MiscObject.TableName);
+        var repository = new TestTypedRecordRepository(RecordTypeCatalog.MiscItem.TableName);
 
         Should.Throw<ArgumentException>(() => repository.RenderColumn("Name", alias));
     }

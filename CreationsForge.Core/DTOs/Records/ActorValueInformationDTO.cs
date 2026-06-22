@@ -3,7 +3,7 @@ using CreationsForge.Core.DTOs.Records.Metadata;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class ActorValueInformationDTO : RecordDTO, IHasName, IHasTranslatedFields, IHasScriptingAdaptersRecordDTO
+public class ActorValueInformationDTO : RecordDTO, IHasName, IHasTranslatedFields, IHasScriptingAdaptersDTO
 {
     [LocalizedField("Name")]
     public TranslatedStringDTO? Name { get; set; }

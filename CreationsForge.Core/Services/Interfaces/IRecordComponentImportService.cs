@@ -5,5 +5,5 @@ namespace CreationsForge.Core.Services.Interfaces;
 
 public interface IRecordComponentImportService
 {
-    void ReplaceRecordComponents(IHasComponentsRecordDTO record, string recordType);
+    void ReplaceRecordComponents(IHasComponentsDTO record, string recordType);
 }

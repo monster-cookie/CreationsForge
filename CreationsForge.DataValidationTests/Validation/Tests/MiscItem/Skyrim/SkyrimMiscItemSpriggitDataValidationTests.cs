@@ -17,11 +17,11 @@ public class SkyrimMiscItemSpriggitDataValidationTests : SpriggitDataValidationT
     {
         var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
             SupportedGame.Skyrim,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "MGRDragonHeartScales");
-        var dto = Helpers.GetDTO<MiscObjectDTO>(
+        var dto = Helpers.GetDTO<MiscItemDTO>(
             SupportedGame.Skyrim,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "0D0756:Skyrim.esm");
 
         var spriggitFields = spriggit.Fields;
@@ -81,11 +81,11 @@ public class SkyrimMiscItemSpriggitDataValidationTests : SpriggitDataValidationT
     {
         var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
             SupportedGame.Skyrim,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "Firewood01");
-        var dto = Helpers.GetDTO<MiscObjectDTO>(
+        var dto = Helpers.GetDTO<MiscItemDTO>(
             SupportedGame.Skyrim,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "06F993:Skyrim.esm");
 
         var spriggitFields = spriggit.Fields;
@@ -136,11 +136,11 @@ public class SkyrimMiscItemSpriggitDataValidationTests : SpriggitDataValidationT
     {
         var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
             SupportedGame.Skyrim,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "FoxPeltSnow");
-        var dto = Helpers.GetDTO<MiscObjectDTO>(
+        var dto = Helpers.GetDTO<MiscItemDTO>(
             SupportedGame.Skyrim,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "0D4BE7:Skyrim.esm");
 
         var spriggitFields = spriggit.Fields;
@@ -192,11 +192,11 @@ public class SkyrimMiscItemSpriggitDataValidationTests : SpriggitDataValidationT
     {
         var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
             SupportedGame.Skyrim,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "C04HagravenHead");
-        var dto = Helpers.GetDTO<MiscObjectDTO>(
+        var dto = Helpers.GetDTO<MiscItemDTO>(
             SupportedGame.Skyrim,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "02996F:Skyrim.esm");
 
         var spriggitFields = spriggit.Fields;
@@ -262,11 +262,11 @@ public class SkyrimMiscItemSpriggitDataValidationTests : SpriggitDataValidationT
     {
         var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
             SupportedGame.Skyrim,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "dunUniqueBeeInJar");
-        var dto = Helpers.GetDTO<MiscObjectDTO>(
+        var dto = Helpers.GetDTO<MiscItemDTO>(
             SupportedGame.Skyrim,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "0B08C7:Skyrim.esm");
 
         var spriggitFields = spriggit.Fields;

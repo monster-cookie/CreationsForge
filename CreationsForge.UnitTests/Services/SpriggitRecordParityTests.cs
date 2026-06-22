@@ -42,7 +42,7 @@ public class SpriggitRecordParityTests
         yield return [SupportedGame.Fallout4, RecordTypeCatalog.Global.RecordID];
         yield return [SupportedGame.Fallout4, RecordTypeCatalog.Keyword.RecordID];
         yield return [SupportedGame.Fallout4, RecordTypeCatalog.MagicEffect.RecordID];
-        yield return [SupportedGame.Fallout4, RecordTypeCatalog.MiscObject.RecordID];
+        yield return [SupportedGame.Fallout4, RecordTypeCatalog.MiscItem.RecordID];
         yield return [SupportedGame.Fallout4, RecordTypeCatalog.NPC.RecordID];
         yield return [SupportedGame.Fallout4, RecordTypeCatalog.Perk.RecordID];
         yield return [SupportedGame.Fallout4, RecordTypeCatalog.Static.RecordID];
@@ -54,7 +54,7 @@ public class SpriggitRecordParityTests
         yield return [SupportedGame.Skyrim, RecordTypeCatalog.Global.RecordID];
         yield return [SupportedGame.Skyrim, RecordTypeCatalog.Keyword.RecordID];
         yield return [SupportedGame.Skyrim, RecordTypeCatalog.MagicEffect.RecordID];
-        yield return [SupportedGame.Skyrim, RecordTypeCatalog.MiscObject.RecordID];
+        yield return [SupportedGame.Skyrim, RecordTypeCatalog.MiscItem.RecordID];
         yield return [SupportedGame.Skyrim, RecordTypeCatalog.NPC.RecordID];
         yield return [SupportedGame.Skyrim, RecordTypeCatalog.Perk.RecordID];
         yield return [SupportedGame.Skyrim, RecordTypeCatalog.Static.RecordID];
@@ -69,7 +69,7 @@ public class SpriggitRecordParityTests
         yield return [SupportedGame.Starfield, RecordTypeCatalog.Global.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.Keyword.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.MagicEffect.RecordID];
-        yield return [SupportedGame.Starfield, RecordTypeCatalog.MiscObject.RecordID];
+        yield return [SupportedGame.Starfield, RecordTypeCatalog.MiscItem.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.NPC.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.Perk.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.Static.RecordID];
@@ -113,8 +113,8 @@ public class SpriggitRecordParityTests
     {
         if (sample.TryGetScalar("Model.File", out var modelFile))
         {
-            (record is IHasModelsRecordDTO).ShouldBeTrue($"Record '{record.EditorID}' should expose models.");
-            var modelRecord = (IHasModelsRecordDTO)record;
+            (record is IHasModelsDTO).ShouldBeTrue($"Record '{record.EditorID}' should expose models.");
+            var modelRecord = (IHasModelsDTO)record;
             var normalizedExpectedModelFile = NormalizeSpriggitModelFilePath(modelFile);
             modelRecord.Models.Any(model => string.Equals(NormalizeMutagenModelFilePath(model.File), normalizedExpectedModelFile, StringComparison.OrdinalIgnoreCase))
                 .ShouldBeTrue($"Record '{record.EditorID}' should contain model '{modelFile}'.");
@@ -147,9 +147,9 @@ public class SpriggitRecordParityTests
              sample.HasPath("Components[].BNAM") ||
              sample.HasPath("Components[].CNAM") ||
              sample.HasPath("Components[].REFL")) &&
-            record is IHasRawRecordPayloadsRecordDTO)
+            record is IHasRawRecordPayloadsDTO)
         {
-            var rawPayloadRecord = (IHasRawRecordPayloadsRecordDTO)record;
+            var rawPayloadRecord = (IHasRawRecordPayloadsDTO)record;
             rawPayloadRecord.RawPayloads.Count.ShouldBeGreaterThan(0, $"Record '{record.EditorID}' should preserve raw payloads.");
         }
     }
@@ -270,7 +270,7 @@ public class SpriggitRecordParityTests
                 if (sample.TryGetScalar("AddToList", out var addToListValue) &&
                     !string.Equals(addToListValue?.Trim(), "Null", StringComparison.OrdinalIgnoreCase))
                 {
-                    formListRecord.AddToListFormKey.ShouldNotBeNull($"FormList '{record.EditorID}' should preserve AddToList.");
+                    formListRecord.AddToList.ShouldNotBeNull($"FormList '{record.EditorID}' should preserve AddToList.");
                 }
 
                 break;

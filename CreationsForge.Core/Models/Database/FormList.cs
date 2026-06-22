@@ -23,11 +23,13 @@ public class FormList
         EditorId = dto.EditorID;
         FormVersion = dto.FormVersion;
         MajorRecordFlags = dto.MajorRecordFlags;
+        Version2 = dto.Version2;
+        VersionControl = dto.VersionControl;
         ImportedAtUTC = dto.ImportedAtUTC;
-        AddToListModKeyName = dto.AddToListFormKey?.ModKey.Name;
-        AddToListModKeyType = dto.AddToListFormKey?.ModKey.Type;
-        AddToListModKeyFileName = dto.AddToListFormKey?.ModKey.FileName;
-        AddToListFormKeyId = dto.AddToListFormKey?.Id;
+        AddToListModKeyName = dto.AddToList?.ModKey.Name;
+        AddToListModKeyType = dto.AddToList?.ModKey.Type;
+        AddToListModKeyFileName = dto.AddToList?.ModKey.FileName;
+        AddToListFormKeyId = dto.AddToList?.Id;
     }
 
     [Column("Game")] public string Game { get; set; } = string.Empty;
@@ -51,6 +53,10 @@ public class FormList
     [Column("FormVersion")] public int FormVersion { get; set; }
 
     [Column("MajorRecordFlags")] public int MajorRecordFlags { get; set; }
+
+    [Column("Version2")] public int? Version2 { get; set; }
+
+    [Column("VersionControl")] public int? VersionControl { get; set; }
 
     [Column("ImportedAtUTC")] public DateTime ImportedAtUTC { get; set; }
 

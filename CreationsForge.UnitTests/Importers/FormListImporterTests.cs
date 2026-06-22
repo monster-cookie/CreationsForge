@@ -155,7 +155,7 @@ public class FormListImporterTests
             Game = plugin.Game,
             ModKey = plugin.ModKey,
             FormKey = formKey,
-            ItemFormKey = CreateFormKey(plugin.ModKey, itemId),
+            Item = CreateFormKey(plugin.ModKey, itemId),
             ItemIndex = -1,
             ImportedAtUTC = default
         };

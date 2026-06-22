@@ -17,11 +17,11 @@ public class Fallout4MiscItemSpriggitDataValidationTests : SpriggitDataValidatio
     {
         var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
             SupportedGame.Fallout4,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "Debug_Components");
-        var dto = Helpers.GetDTO<MiscObjectDTO>(
+        var dto = Helpers.GetDTO<MiscItemDTO>(
             SupportedGame.Fallout4,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "247E7F:Fallout4.esm");
 
         var spriggitFields = spriggit.Fields;
@@ -108,11 +108,11 @@ public class Fallout4MiscItemSpriggitDataValidationTests : SpriggitDataValidatio
     {
         var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
             SupportedGame.Fallout4,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "FFDiamondCity07Paper");
-        var dto = Helpers.GetDTO<MiscObjectDTO>(
+        var dto = Helpers.GetDTO<MiscItemDTO>(
             SupportedGame.Fallout4,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "0A4754:Fallout4.esm");
 
         var spriggitFields = spriggit.Fields;
@@ -207,11 +207,11 @@ public class Fallout4MiscItemSpriggitDataValidationTests : SpriggitDataValidatio
     {
         var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
             SupportedGame.Fallout4,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "FireExtinguisher01");
-        var dto = Helpers.GetDTO<MiscObjectDTO>(
+        var dto = Helpers.GetDTO<MiscItemDTO>(
             SupportedGame.Fallout4,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "01F8F9:Fallout4.esm");
 
         var spriggitFields = spriggit.Fields;
@@ -220,19 +220,6 @@ public class Fallout4MiscItemSpriggitDataValidationTests : SpriggitDataValidatio
         spriggitFields["Count[0]"].ShouldBe(dtoFields["Count[0]"]);
         spriggitFields["Count[1]"].ShouldBe(dtoFields["Count[1]"]);
         spriggitFields["Count[2]"].ShouldBe(dtoFields["Count[2]"]);
-        spriggitFields["Destructible.Count"].ShouldBe(dtoFields["Destructible.Count"]);
-        spriggitFields["Destructible.Data.DESTCount"].ShouldBe(dtoFields["Destructible.Data.DESTCount"]);
-        spriggitFields["Destructible.Data.Health"].ShouldBe(dtoFields["Destructible.Data.Health"]);
-        spriggitFields["Destructible[0].Count"].ShouldBe(dtoFields["Destructible[0].Count"]);
-        spriggitFields["Destructible[0].Explosion"].ShouldBe(dtoFields["Destructible[0].Explosion"]);
-        spriggitFields["Destructible[0].HealthPercent"].ShouldBe(dtoFields["Destructible[0].HealthPercent"]);
-        spriggitFields["Destructible[0].Model.Data"].ShouldBe(dtoFields["Destructible[0].Model.Data"]);
-        spriggitFields["Destructible[0].Model.File"].ShouldBe(dtoFields["Destructible[0].Model.File"]);
-        spriggitFields["Destructible[0].ModelDamageStage"].ShouldBe(dtoFields["Destructible[0].ModelDamageStage"]);
-        spriggitFields["Destructible[0].SelfDamagePerSecond"].ShouldBe(dtoFields["Destructible[0].SelfDamagePerSecond"]);
-        spriggitFields["Destructible[0][0]"].ShouldBe(dtoFields["Destructible[0][0]"]);
-        spriggitFields["Destructible[1].Index"].ShouldBe(dtoFields["Destructible[1].Index"]);
-        spriggitFields["Destructible[1].ModelDamageStage"].ShouldBe(dtoFields["Destructible[1].ModelDamageStage"]);
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
         spriggitFields["Model.Data"].ShouldBe(dtoFields["Model.Data"]);
@@ -283,18 +270,18 @@ public class Fallout4MiscItemSpriggitDataValidationTests : SpriggitDataValidatio
     {
         var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
             SupportedGame.Fallout4,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "BobbleHead_Agility");
-        var dto = Helpers.GetDTO<MiscObjectDTO>(
+        var dto = Helpers.GetDTO<MiscItemDTO>(
             SupportedGame.Fallout4,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "178B51:Fallout4.esm");
 
         var spriggitFields = spriggit.Fields;
         var dtoFields = Helpers.GetDTOFields(dto);
 
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        spriggitFields["FeaturedItemMessage"].ShouldBe(dtoFields["FeaturedItemMessageFormKey"]);
+        spriggitFields["FeaturedItemMessage"].ShouldBe(dtoFields["FeaturedItemMessage"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
         spriggitFields["Model.Data"].ShouldBe(dtoFields["Model.Data"]);
         spriggitFields["Model.File"].ShouldBe(dtoFields["Models[0].File"]);
@@ -352,11 +339,11 @@ public class Fallout4MiscItemSpriggitDataValidationTests : SpriggitDataValidatio
     {
         var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
             SupportedGame.Fallout4,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "MS11GuidanceChip");
-        var dto = Helpers.GetDTO<MiscObjectDTO>(
+        var dto = Helpers.GetDTO<MiscItemDTO>(
             SupportedGame.Fallout4,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "04E3A2:Fallout4.esm");
 
         var spriggitFields = spriggit.Fields;

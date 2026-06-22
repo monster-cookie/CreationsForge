@@ -17,11 +17,11 @@ public class StarfieldMiscItemSpriggitDataValidationTests : SpriggitDataValidati
     {
         var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
             SupportedGame.Starfield,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "InorgCommonWater");
-        var dto = Helpers.GetDTO<MiscObjectDTO>(
+        var dto = Helpers.GetDTO<MiscItemDTO>(
             SupportedGame.Starfield,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "005591:Starfield.esm");
 
         var spriggitFields = spriggit.Fields;
@@ -102,11 +102,11 @@ public class StarfieldMiscItemSpriggitDataValidationTests : SpriggitDataValidati
     {
         var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
             SupportedGame.Starfield,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "InorgExoticPlutonium");
-        var dto = Helpers.GetDTO<MiscObjectDTO>(
+        var dto = Helpers.GetDTO<MiscItemDTO>(
             SupportedGame.Starfield,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "00558C:Starfield.esm");
 
         var spriggitFields = spriggit.Fields;
@@ -184,11 +184,11 @@ public class StarfieldMiscItemSpriggitDataValidationTests : SpriggitDataValidati
     {
         var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
             SupportedGame.Starfield,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "InorgUniqueTasine");
-        var dto = Helpers.GetDTO<MiscObjectDTO>(
+        var dto = Helpers.GetDTO<MiscItemDTO>(
             SupportedGame.Starfield,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "005DED:Starfield.esm");
 
         var spriggitFields = spriggit.Fields;
@@ -269,11 +269,11 @@ public class StarfieldMiscItemSpriggitDataValidationTests : SpriggitDataValidati
     {
         var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
             SupportedGame.Starfield,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "FFCydoniaZ07_HeartOfMarsTitanium");
-        var dto = Helpers.GetDTO<MiscObjectDTO>(
+        var dto = Helpers.GetDTO<MiscItemDTO>(
             SupportedGame.Starfield,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "302791:Starfield.esm");
 
         var spriggitFields = spriggit.Fields;
@@ -347,11 +347,11 @@ public class StarfieldMiscItemSpriggitDataValidationTests : SpriggitDataValidati
     {
         var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
             SupportedGame.Starfield,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "ExoticPlayingCard_Diamond_Q");
-        var dto = Helpers.GetDTO<MiscObjectDTO>(
+        var dto = Helpers.GetDTO<MiscItemDTO>(
             SupportedGame.Starfield,
-            RecordTypeCatalog.MiscObject,
+            RecordTypeCatalog.MiscItem,
             "10A797:Starfield.esm");
 
         var spriggitFields = spriggit.Fields;

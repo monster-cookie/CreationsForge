@@ -4,11 +4,11 @@ using CreationsForge.Core.Enums;
 
 namespace CreationsForge.Core.Repositories.Interfaces;
 
-public interface IMiscObjectRepository : IRecordTreeRepository
+public interface IMiscItemRepository : IRecordTreeRepository
 {
-    void Save(MiscObjectDTO dto);
+    void Save(MiscItemDTO dto);
 
-    IReadOnlyList<MiscObjectDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey);
+    IReadOnlyList<MiscItemDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey);
 
     void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC);
 }

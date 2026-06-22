@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Collections;
+using System.Reflection;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
@@ -38,7 +39,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         cancellationToken.ThrowIfCancellationRequested();
         var factions = MapFactions(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
-        var miscObjects = MapMiscObjects(plugin, mod);
+        var miscItems = MapMiscItems(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
         var keywords = MapKeywords(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
@@ -67,7 +68,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             Globals = globals,
             Classes = classes,
             Factions = factions,
-            MiscObjects = miscObjects,
+            MiscItems = miscItems,
             Keywords = keywords,
             ActorValueInformation = actorValueInformation,
             NPCs = npcs,
@@ -90,7 +91,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
     private static IReadOnlyList<FormListDTO> MapFormLists(PluginDTO plugin, ISkyrimModGetter mod)
     {
         return mod.FormLists
-            .Select(record => new FormListDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new FormListDTO
             {
                 Game = SupportedGame.Skyrim,
                 ModKey = plugin.ModKey,
@@ -100,17 +101,18 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 MajorRecordFlags = (int)record.SkyrimMajorRecordFlags,
                 Version2 = GetPropertyNullableInt(record, "Version2"),
                 VersionControl = GetPropertyNullableInt(record, "VersionControl"),
+                Name = LocalizedStringDTOMapper.ToTranslatedStringDTO(GetPropertyValue(record, "Name")),
                 ImportedAtUTC = DateTime.UtcNow,
                 Items = record.Items.Select((item, itemIndex) => new FormListItemDTO
                 {
                     Game = SupportedGame.Skyrim,
                     ModKey = plugin.ModKey,
                     FormKey = MapFormKey(record.FormKey),
-                    ItemFormKey = MapFormKey(item.FormKey),
+                    Item = MapFormKey(item.FormKey),
                     ItemIndex = itemIndex,
                     ImportedAtUTC = DateTime.UtcNow
                 }).ToList()
-            })
+            }, record))
             .ToList();
     }
 
@@ -180,11 +182,11 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 VersionControl = GetPropertyNullableInt(record, "VersionControl"),
                 ImportedAtUTC = DateTime.UtcNow,
                 Name = GetTranslatedString(record, "Name"),
-                Color = GetPropertyString(record, "Color"),
-                Type = GetPropertyString(record, "Type"),
+                Color = FormatSpriggitColor(GetPropertyValue(record, "Color")),
+                Type = null,
                 Notes = GetPropertyStringOrNull(record, "Notes"),
                 FlashLinkageName = GetPropertyStringOrNull(record, "FlashLinkageName"),
-                AttractionRuleFormKey = GetLinkedFormKey(record, "AttractionRule"),
+                AttractionRule = GetLinkedFormKey(record, "AttractionRule"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Keyword.RecordID, record)
             }, record))
             .ToList();
@@ -204,10 +206,10 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             .ToList();
     }
 
-    private static IReadOnlyList<MiscObjectDTO> MapMiscObjects(PluginDTO plugin, ISkyrimModGetter mod)
+    private static IReadOnlyList<MiscItemDTO> MapMiscItems(PluginDTO plugin, ISkyrimModGetter mod)
     {
-        return GetRecordCollection(mod, "MiscItems", "MiscObjects")
-            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new MiscObjectDTO
+        return GetRecordCollection(mod, "MiscItems")
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new MiscItemDTO
             {
                 Game = SupportedGame.Skyrim,
                 ModKey = plugin.ModKey,
@@ -218,17 +220,25 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 Version2 = GetPropertyNullableInt(record, "Version2"),
                 VersionControl = GetPropertyNullableInt(record, "VersionControl"),
                 ImportedAtUTC = DateTime.UtcNow,
+                ObjectBounds = new ObjectBoundsDTO
+                {
+                    First = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
+                    Second = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second")
+                },
+                PreviewTransform = GetLinkedFormKey(record, "PreviewTransform"),
                 Name = GetTranslatedString(record, "Name"),
                 ShortName = GetTranslatedString(record, "ShortName"),
                 Value = GetPropertyNullableInt(record, "Value"),
                 Weight = GetPropertyNullableFloat(record, "Weight"),
                 DirtinessScale = GetPropertyNullableFloat(record, "DirtinessScale"),
-                FeaturedItemMessageFormKey = GetLinkedFormKey(record, "FeaturedItemMessage"),
+                FeaturedItemMessage = GetLinkedFormKey(record, "FeaturedItemMessage"),
                 Flag = FormatHexValue(GetPropertyValue(record, "FLAG")),
-                Models = GetModels(plugin, RecordTypeCatalog.MiscObject.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model")),
-                Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.MiscObject.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
-                Sounds = GetNamedSounds(plugin, RecordTypeCatalog.MiscObject.RecordID, GetRequiredRawFormKey(record), record, "CraftingSound", "PickupSound", "PutdownSound", "DropdownSound"),
-                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MiscObject.RecordID, record)
+                Models = GetModels(plugin, RecordTypeCatalog.MiscItem.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model")),
+                Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.MiscItem.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
+                Sounds = GetNamedSounds(plugin, RecordTypeCatalog.MiscItem.RecordID, GetRequiredRawFormKey(record), record, "CraftingSound", "PickupSound", "PutdownSound", "DropdownSound"),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MiscItem.RecordID, record),
+                Components = GetMiscItemComponents(plugin, GetRequiredRawFormKey(record), record),
+                RawPayloads = GetModelRawPayloads(plugin, RecordTypeCatalog.MiscItem.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model"))
             }, record))
             .ToList();
     }
@@ -814,7 +824,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 FormKey = MapFormKey(formKey),
                 ModelSlot = "Model",
                 ModelGender = string.Empty,
-                  File = GetPropertyValue(model, "File")?.ToString(),
+                File = FormatSpriggitModelFilePath(GetPropertyValue(model, "File")?.ToString()),
                 TextureFileHashes = FormatHexValue(GetPropertyValue(model, "TextureFileHashes")),
                 LightLayer = GetPropertyNullableUInt(model, "LightLayer"),
                 Flags = GetPropertyStringOrNull(model, "Flags"),
@@ -826,9 +836,27 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         };
     }
 
+    private static string? FormatSpriggitModelFilePath(string? file)
+    {
+        if (file == null)
+        {
+            return null;
+        }
+
+        return file.StartsWith("Meshes\\", StringComparison.OrdinalIgnoreCase) ||
+               file.StartsWith("Meshes/", StringComparison.OrdinalIgnoreCase)
+            ? file[7..]
+            : file;
+    }
+
     private static List<ModelMaterialSwapDTO> GetModelMaterialSwaps(PluginDTO plugin, string recordType, FormKey formKey, object model, DateTime importedAtUTC)
     {
         var materialSwaps = (GetPropertyValue(model, "MaterialSwaps") as IEnumerable)?.Cast<object>().ToList() ?? new List<object>();
+        if (GetPropertyValue(model, "AlternateTextures") is IEnumerable alternateTextures)
+        {
+            materialSwaps.AddRange(alternateTextures.Cast<object>());
+        }
+
         var materialSwap = GetPropertyValue(model, "MaterialSwap");
         if (materialSwap != null)
         {
@@ -836,7 +864,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         }
 
         return materialSwaps
-            .Select((materialSwap, materialSwapIndex) => GetFormKeyFromObject(materialSwap) is { } materialSwapFormKey
+            .Select((materialSwap, materialSwapIndex) => (GetFormKeyFromObject(GetPropertyValue(materialSwap, "NewTexture")) ?? GetFormKeyFromObject(materialSwap)) is { } materialSwapFormKey
                 ? new ModelMaterialSwapDTO
                 {
                     Game = SupportedGame.Skyrim,
@@ -845,6 +873,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                     FormKey = MapFormKey(formKey),
                     ModelSlot = "Model",
                     ModelGender = string.Empty,
+                    Name = GetPropertyStringOrNull(materialSwap, "Name"),
                     MaterialSwapFormKey = materialSwapFormKey,
                     MaterialSwapIndex = materialSwapIndex,
                     ImportedAtUTC = importedAtUTC
@@ -869,7 +898,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                     ModKey = plugin.ModKey,
                     RecordType = recordType,
                     FormKey = MapFormKey(formKey),
-                    KeywordFormKey = keywordFormKey,
+                    Keyword = keywordFormKey,
                     KeywordIndex = keywordIndex,
                     ImportedAtUTC = importedAtUTC
                 }
@@ -945,6 +974,130 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             Count = GetPropertyNullableInt(component, "Count") ?? GetPropertyNullableInt(componentData, "Count") ?? GetPropertyNullableInt(component, "RequiredCount"),
             ImportedAtUTC = importedAtUTC
         };
+    }
+
+    private static List<MiscItemComponentDTO> GetMiscItemComponents(PluginDTO plugin, FormKey formKey, object record)
+    {
+        var importedAtUTC = DateTime.UtcNow;
+        return GetChildObjects(record, "Components")
+            .Select((component, componentIndex) => CreateMiscItemComponent(plugin, formKey, component, componentIndex, importedAtUTC))
+            .Where(component => component != null)
+            .Cast<MiscItemComponentDTO>()
+            .ToList();
+    }
+
+    private static MiscItemComponentDTO? CreateMiscItemComponent(PluginDTO plugin, FormKey formKey, object component, int componentIndex, DateTime importedAtUTC)
+    {
+        var componentData = GetPropertyValue(component, "Component") ?? component;
+        var componentFormKey = GetFormKeyFromObject(GetPropertyValue(componentData, "Component")) ?? GetFormKeyFromObject(componentData);
+        if (componentFormKey == null)
+        {
+            return null;
+        }
+
+        return new MiscItemComponentDTO
+        {
+            Game = SupportedGame.Skyrim,
+            ModKey = plugin.ModKey,
+            FormKey = MapFormKey(formKey),
+            Component = componentFormKey,
+            ComponentIndex = componentIndex,
+            Count = GetPropertyNullableInt(component, "Count") ?? GetPropertyNullableInt(componentData, "Count"),
+            ImportedAtUTC = importedAtUTC
+        };
+    }
+
+    private static IReadOnlyList<object> GetChildObjects(object record, string preferredPropertyName)
+    {
+        var objects = new List<object>();
+        AddEnumerablePropertyObjects(objects, GetPropertyValue(record, preferredPropertyName));
+        if (objects.Count > 0)
+        {
+            return objects;
+        }
+
+        AddMatchingChildObjects(objects, record, item => GetPropertyValue(item, "Component") != null && GetPropertyValue(item, "Count") != null, 0);
+
+        return objects;
+    }
+
+    private static void AddMatchingChildObjects(ICollection<object> objects, object? source, Func<object, bool> isMatch, int depth)
+    {
+        if (source == null || source is string || IsSimpleReflectionValue(source) || depth > 3)
+        {
+            return;
+        }
+
+        foreach (var item in GetEnumerableObjects(source))
+        {
+            AddMatchingChildObject(objects, item, isMatch, depth);
+        }
+
+        foreach (var property in source.GetType().GetProperties())
+        {
+            if (property.GetIndexParameters().Length > 0)
+            {
+                continue;
+            }
+
+            object? value;
+            try
+            {
+                value = property.GetValue(source);
+            }
+            catch (TargetInvocationException)
+            {
+                continue;
+            }
+
+            foreach (var item in GetEnumerableObjects(value))
+            {
+                AddMatchingChildObject(objects, item, isMatch, depth + 1);
+            }
+        }
+    }
+
+    private static void AddMatchingChildObject(ICollection<object> objects, object item, Func<object, bool> isMatch, int depth)
+    {
+        if (IsSimpleReflectionValue(item))
+        {
+            return;
+        }
+
+        if (isMatch(item))
+        {
+            objects.Add(item);
+            return;
+        }
+
+        AddMatchingChildObjects(objects, item, isMatch, depth + 1);
+    }
+
+    private static void AddEnumerablePropertyObjects(ICollection<object> objects, object? value)
+    {
+        foreach (var item in GetEnumerableObjects(value))
+        {
+            objects.Add(item);
+        }
+    }
+
+    private static IEnumerable<object> GetEnumerableObjects(object? value)
+    {
+        return value is IEnumerable enumerable && value is not string
+            ? enumerable.Cast<object>()
+            : [];
+    }
+
+    private static bool IsSimpleReflectionValue(object value)
+    {
+        var type = value.GetType();
+        return type.IsPrimitive ||
+               type.IsEnum ||
+               type == typeof(decimal) ||
+               type == typeof(DateTime) ||
+               type == typeof(Guid) ||
+               type == typeof(FormKey) ||
+               type == typeof(ModKey);
     }
 
     private static ActorValueInformationSkillDTO? GetActorValueInformationSkill(object record)
@@ -1127,7 +1280,9 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
 
     private static List<ScriptingAdapterDTO> GetScriptingAdapters(PluginDTO plugin, string recordType, object record)
     {
-        var virtualMachineAdapter = GetPropertyValue(record, "VirtualMachineAdapter");
+        var virtualMachineAdapter = record is IHaveVirtualMachineAdapterGetter scriptedRecord
+            ? scriptedRecord.VirtualMachineAdapter
+            : GetPropertyValue(record, "VirtualMachineAdapter");
         var scripts = GetPropertyValue(virtualMachineAdapter, "Scripts") as IEnumerable;
         if (scripts == null) return new List<ScriptingAdapterDTO>();
 
@@ -1152,6 +1307,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
     private static List<ScriptingAdapterPropertyDTO> GetScriptingAdapterProperties(PluginDTO plugin, string recordType, FormKey formKey, object script, DateTime importedAtUTC)
     {
         return (GetPropertyValue(script, "Properties") as IEnumerable)?.Cast<object>()
+            .OrderBy(property => GetPropertyString(property, "Name"), StringComparer.OrdinalIgnoreCase)
             .Select((property, propertyIndex) => CreateScriptingAdapterProperty(plugin, recordType, formKey, GetPropertyString(script, "Name"), property, propertyIndex, importedAtUTC))
             .Where(property => property != null)
             .Cast<ScriptingAdapterPropertyDTO>()
@@ -1484,6 +1640,22 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         return value is IEnumerable enumerable
             ? string.Join(", ", enumerable.Cast<object>().Select(item => item.ToString()))
             : value?.ToString();
+    }
+
+    private static string FormatSpriggitColor(object? value)
+    {
+        var text = value?.ToString() ?? string.Empty;
+        if (text.Length == 9 &&
+            text[0] == '#' &&
+            byte.TryParse(text.AsSpan(1, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var alpha) &&
+            byte.TryParse(text.AsSpan(3, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var red) &&
+            byte.TryParse(text.AsSpan(5, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var green) &&
+            byte.TryParse(text.AsSpan(7, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var blue))
+        {
+            return $"Color [A={alpha}, R={red}, G={green}, B={blue}]";
+        }
+
+        return text;
     }
 
     private static string? FormatConditionValue(object? value)

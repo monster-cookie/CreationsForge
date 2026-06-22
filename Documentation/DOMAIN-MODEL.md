@@ -98,7 +98,7 @@ Record comparison groups persisted records by origin FormKey across imported plu
 columns represent plugin overrides, and comparison rows represent fields exposed by Core DTOs.
 
 The first comparison slice displays common fields (`EditorID`, `FormVersion`, and `MajorRecordFlags`) for all approved
-records. FormLists also display `AddToListFormKey` and indexed `Items[n]` rows. GameSettings display `MutagenObjectType`
+records. FormLists also display `AddToList` and indexed `Items[n]` rows. GameSettings display `MutagenObjectType`
 and the active typed `Data` value. Localized text rows use the Settings-selected record text language when a persisted
 localized value exists, then fall back to English and the DTO or scalar database fallback. Globals display `Data`.
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `CLAS`, `FACT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM`

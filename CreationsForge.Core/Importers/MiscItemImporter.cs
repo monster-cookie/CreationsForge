@@ -9,37 +9,37 @@ using CreationsForge.Core.Services.Interfaces;
 
 namespace CreationsForge.Core.Importers;
 
-public class MiscObjectImporter : ITypedRecordImporter
+public class MiscItemImporter : ITypedRecordImporter
 {
-    private readonly IMiscObjectRepository MiscObjectRepository;
+    private readonly IMiscItemRepository MiscItemRepository;
     private readonly IRecordChildImportService RecordChildImportService;
 
-    public MiscObjectImporter(
-        IMiscObjectRepository miscObjectRepository,
+    public MiscItemImporter(
+        IMiscItemRepository miscItemRepository,
         IRecordChildImportService recordChildImportService)
     {
-        MiscObjectRepository = miscObjectRepository;
+        MiscItemRepository = miscItemRepository;
         RecordChildImportService = recordChildImportService;
     }
 
-    public string RecordType => RecordTypeCatalog.MiscObject.RecordID;
+    public string RecordType => RecordTypeCatalog.MiscItem.RecordID;
 
-    public string TableName => RecordTypeCatalog.MiscObject.TableName;
+    public string TableName => RecordTypeCatalog.MiscItem.TableName;
 
     public IReadOnlySet<SupportedGame> SupportedGames { get; } = new HashSet<SupportedGame> { SupportedGame.Starfield, SupportedGame.Fallout4, SupportedGame.Skyrim };
 
     public void Import(object recordDTO, RecordTypeImportResultDTO result, DateTime importedAtUTC)
     {
-        if (recordDTO is not MiscObjectDTO miscObject) throw new ArgumentException($"Expected {nameof(MiscObjectDTO)}.", nameof(recordDTO));
+        if (recordDTO is not MiscItemDTO miscItem) throw new ArgumentException($"Expected {nameof(MiscItemDTO)}.", nameof(recordDTO));
 
-        miscObject.ImportedAtUTC = importedAtUTC;
-        MiscObjectRepository.Save(miscObject);
-        RecordChildImportService.ReplaceRecordChildren(miscObject, RecordTypeCatalog.MiscObject.RecordID);
+        miscItem.ImportedAtUTC = importedAtUTC;
+        MiscItemRepository.Save(miscItem);
+        RecordChildImportService.ReplaceRecordChildren(miscItem, RecordTypeCatalog.MiscItem.RecordID);
         result.DetailRowsImported++;
     }
 
     public void DeleteStaleRecords(PluginDTO plugin, DateTime importedAtUTC)
     {
-        MiscObjectRepository.DeleteStaleByPlugin(plugin.Game, plugin.ModKey, importedAtUTC);
+        MiscItemRepository.DeleteStaleByPlugin(plugin.Game, plugin.ModKey, importedAtUTC);
     }
 }

@@ -2,7 +2,7 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class GlobalDTO : RecordDTO, IHasScriptingAdaptersRecordDTO
+public class GlobalDTO : RecordDTO, IHasScriptingAdaptersDTO
 {
     public double? Data { get; set; }
 

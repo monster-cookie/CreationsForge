@@ -40,7 +40,7 @@ public class RecordChildImportService : IRecordChildImportService
 
     public void ReplaceRecordChildren(RecordDTO record, string recordType)
     {
-        if (record is IHasModelsRecordDTO modelRecord)
+        if (record is IHasModelsDTO modelRecord)
         {
             ModelImportService.ReplaceRecordModels(modelRecord, recordType);
         }
@@ -50,12 +50,12 @@ public class RecordChildImportService : IRecordChildImportService
             KeywordMappingImportService.ReplaceKeywordMappings(keywordRecord, recordType);
         }
 
-        if (record is IHasComponentsRecordDTO componentRecord)
+        if (record is IHasComponentsDTO componentRecord)
         {
             RecordComponentImportService.ReplaceRecordComponents(componentRecord, recordType);
         }
 
-        if (record is IHasConditionsRecordDTO conditionRecord)
+        if (record is IHasConditionsDTO conditionRecord)
         {
             ConditionRuleImportService.ReplaceConditionRules(conditionRecord, recordType);
         }
@@ -65,12 +65,12 @@ public class RecordChildImportService : IRecordChildImportService
             SoundMappingImportService.ReplaceSoundMappings(soundRecord, recordType);
         }
 
-        if (record is IHasRawRecordPayloadsRecordDTO rawPayloadRecord)
+        if (record is IHasRawRecordPayloadsDTO rawPayloadRecord)
         {
             RawRecordPayloadImportService.ReplaceRawRecordPayloads(rawPayloadRecord, recordType);
         }
 
-        if (record is IHasScriptingAdaptersRecordDTO scriptingAdapterRecord)
+        if (record is IHasScriptingAdaptersDTO scriptingAdapterRecord)
         {
             ScriptingAdapterImportService.ReplaceRecordScriptingAdapters(scriptingAdapterRecord, recordType);
         }

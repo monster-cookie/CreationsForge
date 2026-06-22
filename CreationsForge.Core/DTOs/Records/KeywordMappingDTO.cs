@@ -13,7 +13,7 @@ public class KeywordMappingDTO
 
     public required FormKeyDTO FormKey { get; set; }
 
-    public required FormKeyDTO KeywordFormKey { get; set; }
+    public required FormKeyDTO Keyword { get; set; }
 
     public required int KeywordIndex { get; set; }
 

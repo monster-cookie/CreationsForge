@@ -111,10 +111,10 @@ public static class RecordTypeCatalog
         FriendlyName = "Magic Effect"
     };
 
-    public static readonly RecordTypeData MiscObject = new()
+    public static readonly RecordTypeData MiscItem = new()
     {
         TableName = "MiscItems",
-        RecordType = "MiscItems",
+        RecordType = "MiscItem",
         RecordID = "MISC",
         FriendlyName = "Misc Item"
     };
@@ -166,7 +166,7 @@ public static class RecordTypeCatalog
         Global,
         Keyword,
         MagicEffect,
-        MiscObject,
+        MiscItem,
         NPC,
         Perk,
         Static,

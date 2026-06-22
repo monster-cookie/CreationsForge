@@ -187,6 +187,7 @@ public class ModelRepository : IModelRepository
             },
             ModelSlot = materialSwap.ModelSlot,
             ModelGender = materialSwap.ModelGender,
+            Name = materialSwap.Name,
             MaterialSwapFormKey = new FormKeyDTO
             {
                 ModKey = new ModKeyDTO

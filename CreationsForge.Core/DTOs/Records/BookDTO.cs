@@ -5,7 +5,7 @@ using CreationsForge.Core.Enums;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class BookDTO : RecordDTO, IHasName, IHasText, IHasTranslatedFields, IHasModelsRecordDTO, IKeywords, ISounds, IHasScriptingAdaptersRecordDTO, IHasComponentsRecordDTO, IHasRawRecordPayloadsRecordDTO
+public class BookDTO : RecordDTO, IHasName, IHasText, IHasTranslatedFields, IHasModelsDTO, IKeywords, ISounds, IHasScriptingAdaptersDTO, IHasComponentsDTO, IHasRawRecordPayloadsDTO
 {
     public ObjectBoundsDTO? ObjectBounds { get; set; }
 

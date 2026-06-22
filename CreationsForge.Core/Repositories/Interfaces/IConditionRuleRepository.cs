@@ -7,7 +7,7 @@ namespace CreationsForge.Core.Repositories.Interfaces;
 
 public interface IConditionRuleRepository
 {
-    void ReplaceConditionRules(IHasConditionsRecordDTO record, string recordType);
+    void ReplaceConditionRules(IHasConditionsDTO record, string recordType);
 
     IReadOnlyList<ConditionFormConditionDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey);
 }

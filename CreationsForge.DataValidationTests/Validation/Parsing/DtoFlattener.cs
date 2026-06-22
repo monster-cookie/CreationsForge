@@ -56,6 +56,11 @@ public class DtoFlattener
 
         if (value is null)
         {
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                values[path] = "Null";
+            }
+
             return;
         }
 

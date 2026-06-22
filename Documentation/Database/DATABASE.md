@@ -10,7 +10,7 @@ The application uses a local SQLite database. The schema is defined by embedded 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains fifty-six tables:
+The application schema contains fifty-eight tables:
 
 - `Games`
 - `Plugins`
@@ -32,6 +32,8 @@ The application schema contains fifty-six tables:
 - `ConditionRules`
 - `ConditionRuleParameters`
 - `MiscItems`
+- `MiscItemComponents`
+- `MiscItemResources`
 - `Keywords`
 - `ActorValueInformation`
 - `ActorValueInformationPerkTreeEntries`
@@ -354,6 +356,8 @@ Persistence behavior:
 Columns:
 
 - Common typed record key and metadata columns listed above
+- `Version2` (`INTEGER`, nullable)
+- `VersionControl` (`INTEGER`, nullable)
 - `AddToList_ModKey_Name` (`TEXT`, nullable)
 - `AddToList_ModKey_Type` (`INTEGER`, nullable)
 - `AddToList_ModKey_FileName` (`TEXT`, nullable)
@@ -734,6 +738,11 @@ the common typed record key and metadata columns.
 
 - `Name` (`TEXT`, nullable)
 - `ShortName` (`TEXT`, nullable)
+- `Version2` (`INTEGER`, nullable)
+- `VersionControl` (`INTEGER`, nullable)
+- `ObjectBounds_First` and `ObjectBounds_Second` (`TEXT`, nullable)
+- nullable decomposed FormKey columns for `Transforms_Inventory`
+- nullable decomposed FormKey columns for `PreviewTransform`
 - `Value` (`INTEGER`, nullable)
 - `Weight` (`REAL`, nullable)
 - `DirtinessScale` (`REAL`, nullable)
@@ -746,10 +755,15 @@ the common typed record key and metadata columns.
 `Keywords` additional columns:
 
 - `Name` (`TEXT`, nullable)
-- `Color` (`TEXT`, `NOT NULL`)
-- `Type` (`TEXT`, `NOT NULL`)
+- `Color` (`TEXT`, nullable)
+- `Type` (`TEXT`, nullable)
 - `Notes` (`TEXT`, nullable)
 - `FlashLinkageName` (`TEXT`, nullable)
+- `Version2` (`INTEGER`, nullable)
+- `VersionControl` (`INTEGER`, nullable)
+- `FNAM` (`TEXT`, nullable)
+- `WAIM` (`TEXT`, nullable)
+- `WFIR` (`TEXT`, nullable)
 - `AttractionRule_ModKey_Name` (`TEXT`, nullable)
 - `AttractionRule_ModKey_Type` (`INTEGER`, nullable)
 - `AttractionRule_ModKey_FileName` (`TEXT`, nullable)
@@ -911,10 +925,11 @@ Persistence behavior:
 - Current imported rows are upserted.
 - Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful typed-record import
   batch are deleted as stale.
-- `MiscItems` currently persists the parent scalar row, shared keyword rows, shared model rows, shared sound rows,
-  and scripting adapters. `Statics` persists parent scalar rows, shared model rows, shared keyword rows when present,
-  and raw opaque payload rows. `Books` persist parent scalar rows, shared model rows, shared keyword rows, shared
-  sound rows, scripting adapters, and raw payload rows. `Doors` persist parent scalar rows, shared model rows,
+- `MiscItems` currently persists the parent scalar row, FO4/Skyrim component rows, Starfield resource rows, shared
+  keyword rows, shared model rows, shared sound rows, and scripting adapters. `Statics` persists parent scalar rows,
+  shared model rows, shared keyword rows when present, and raw opaque payload rows. `Books` persist parent scalar rows,
+  shared model rows, shared keyword rows, shared sound rows, scripting adapters, and raw payload rows. `Doors` persist
+  parent scalar rows, shared model rows,
   shared keyword rows, shared sound rows, and raw payload rows. `Containers` persist parent scalar rows, child item
   rows, shared model rows, shared keyword rows when present, shared sound rows when present, and raw opaque payload
   rows. `ConditionForms` persist parent scalar rows and structured Starfield condition rows with generic parameter
@@ -924,6 +939,56 @@ Persistence behavior:
   `Terminals` persist parent scalar rows, shared model rows, shared keyword rows, scripting adapters, raw payload rows,
   and `TerminalMarkerParameters` rows. `NPCs` and `MagicEffects` persist shared keyword rows.
   `MagicEffects` persists shared sound rows and Spriggit-flattened DATA fields directly on the parent row.
+
+### MiscItemComponents
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- decomposed `Component_*` FormKey columns (`NOT NULL`)
+- `Component_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `Count` (`INTEGER`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `MiscItems` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID`, `Component_FormKey_ID`, and `Component_Index` must be greater than or equal to zero.
+
+Persistence behavior:
+
+- Existing component rows for the same MISC record/plugin are deleted before replacement rows are inserted.
+- Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful MISC import batch are
+  deleted as stale.
+
+### MiscItemResources
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- decomposed `Resource_*` FormKey columns (`NOT NULL`)
+- `Resource_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `Count` (`INTEGER`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `MiscItems` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID`, `Resource_FormKey_ID`, and `Resource_Index` must be greater than or equal to zero.
+
+Persistence behavior:
+
+- Existing resource rows for the same MISC record/plugin are deleted before replacement rows are inserted.
+- Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful MISC import batch are
+  deleted as stale.
 
 ### ContainerItems
 
@@ -1234,6 +1299,7 @@ Persistence behavior:
 Columns:
 
 - Full parent model key columns listed above
+- `Name` (`TEXT`, nullable)
 - decomposed `MaterialSwap_*` FormKey columns (`NOT NULL`)
 - `MaterialSwap_Index` (`INTEGER`, `NOT NULL`, primary key)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
@@ -1478,6 +1544,14 @@ These columns carry record-reference identity but do not declare SQLite foreign 
   and `AddToList_FormKey_ID`
 - `MiscItems.FeaturedItemMessage_ModKey_Name`, `FeaturedItemMessage_ModKey_Type`,
   `FeaturedItemMessage_ModKey_FileName`, and `FeaturedItemMessage_FormKey_ID`
+- `MiscItems.Transforms_Inventory_ModKey_Name`, `Transforms_Inventory_ModKey_Type`,
+  `Transforms_Inventory_ModKey_FileName`, and `Transforms_Inventory_FormKey_ID`
+- `MiscItems.PreviewTransform_ModKey_Name`, `PreviewTransform_ModKey_Type`,
+  `PreviewTransform_ModKey_FileName`, and `PreviewTransform_FormKey_ID`
+- `MiscItemComponents.Component_ModKey_Name`, `Component_ModKey_Type`, `Component_ModKey_FileName`, and
+  `Component_FormKey_ID`
+- `MiscItemResources.Resource_ModKey_Name`, `Resource_ModKey_Type`, `Resource_ModKey_FileName`, and
+  `Resource_FormKey_ID`
 - `Keywords.AttractionRule_ModKey_Name`, `AttractionRule_ModKey_Type`, `AttractionRule_ModKey_FileName`,
   and `AttractionRule_FormKey_ID`
 - `NPCs.Voice_*`, `Race_*`, `CombatOverridePackageList_*`, `CombatStyle_*`, `DefaultPackageList_*`,

@@ -378,7 +378,7 @@ Related files:
 - `AGENTS.md`
 - `CreationsForge.Fallout4/Fallout4RecordReaderService.cs`
 - `CreationsForge.Skyrim/SkyrimRecordReaderService.cs`
-- `CreationsForge.Core/Importers/MiscObjectImporter.cs`
+- `CreationsForge.Core/Importers/MiscItemImporter.cs`
 - `CreationsForge.Core/Importers/KeywordImporter.cs`
 - `CreationsForge.Core/Importers/ActorValueInformationImporter.cs`
 - `CreationsForge.Core/Importers/NPCImporter.cs`

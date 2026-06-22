@@ -179,6 +179,8 @@ erDiagram
         TEXT EditorID
         INTEGER FormVersion
         INTEGER MajorRecordFlags
+        INTEGER Version2
+        INTEGER VersionControl
         TEXT ImportedAtUTC
         INTEGER Version2
         TEXT Name
@@ -404,6 +406,16 @@ erDiagram
         TEXT ImportedAtUTC
         INTEGER Version2
         INTEGER VersionControl
+        TEXT ObjectBounds_First
+        TEXT ObjectBounds_Second
+        TEXT Transforms_Inventory_ModKey_Name
+        INTEGER Transforms_Inventory_ModKey_Type
+        TEXT Transforms_Inventory_ModKey_FileName
+        INTEGER Transforms_Inventory_FormKey_ID
+        TEXT PreviewTransform_ModKey_Name
+        INTEGER PreviewTransform_ModKey_Type
+        TEXT PreviewTransform_ModKey_FileName
+        INTEGER PreviewTransform_FormKey_ID
         TEXT Name
         TEXT ShortName
         INTEGER Value
@@ -414,6 +426,42 @@ erDiagram
         TEXT FeaturedItemMessage_ModKey_FileName
         INTEGER FeaturedItemMessage_FormKey_ID
         TEXT FLAG
+    }
+
+    MiscItemComponents {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT Component_ModKey_Name
+        INTEGER Component_ModKey_Type
+        TEXT Component_ModKey_FileName
+        INTEGER Component_FormKey_ID
+        INTEGER Component_Index PK
+        INTEGER Count
+        TEXT ImportedAtUTC
+    }
+
+    MiscItemResources {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT Resource_ModKey_Name
+        INTEGER Resource_ModKey_Type
+        TEXT Resource_ModKey_FileName
+        INTEGER Resource_FormKey_ID
+        INTEGER Resource_Index PK
+        INTEGER Count
+        TEXT ImportedAtUTC
     }
 
     Keywords {
@@ -434,6 +482,11 @@ erDiagram
         TEXT Type
         TEXT Notes
         TEXT FlashLinkageName
+        INTEGER Version2
+        INTEGER VersionControl
+        TEXT FNAM
+        TEXT WAIM
+        TEXT WFIR
         TEXT AttractionRule_ModKey_Name
         INTEGER AttractionRule_ModKey_Type
         TEXT AttractionRule_ModKey_FileName
@@ -1106,6 +1159,7 @@ erDiagram
         INTEGER FormKey_ID PK, FK
         TEXT ModelSlot PK, FK
         TEXT ModelGender PK, FK
+        TEXT Name
         TEXT MaterialSwap_ModKey_Name
         INTEGER MaterialSwap_ModKey_Type
         TEXT MaterialSwap_ModKey_FileName
@@ -1277,6 +1331,8 @@ erDiagram
     RecordInstances ||--o{ ConditionRules : contains
     ConditionRules ||--o{ ConditionRuleParameters : contains
     RecordInstances ||--o| MiscItems : "typed detail"
+    MiscItems ||--o{ MiscItemComponents : contains
+    MiscItems ||--o{ MiscItemResources : contains
     RecordInstances ||--o| Keywords : "typed detail"
     RecordInstances ||--o| ActorValueInformation : "typed detail"
     ActorValueInformation ||--o{ ActorValueInformationPerkTreeEntries : contains
@@ -1365,6 +1421,14 @@ These columns contain record-reference data but are not declared SQLite foreign 
   `Parameter_FormKey_ID`
 - `MiscItems.FeaturedItemMessage_ModKey_Name`, `FeaturedItemMessage_ModKey_Type`,
   `FeaturedItemMessage_ModKey_FileName`, and `FeaturedItemMessage_FormKey_ID`
+- `MiscItems.Transforms_Inventory_ModKey_Name`, `Transforms_Inventory_ModKey_Type`,
+  `Transforms_Inventory_ModKey_FileName`, and `Transforms_Inventory_FormKey_ID`
+- `MiscItems.PreviewTransform_ModKey_Name`, `PreviewTransform_ModKey_Type`,
+  `PreviewTransform_ModKey_FileName`, and `PreviewTransform_FormKey_ID`
+- `MiscItemComponents.Component_ModKey_Name`, `Component_ModKey_Type`, `Component_ModKey_FileName`, and
+  `Component_FormKey_ID`
+- `MiscItemResources.Resource_ModKey_Name`, `Resource_ModKey_Type`, `Resource_ModKey_FileName`, and
+  `Resource_FormKey_ID`
 - `Books.Transforms_Inventory_ModKey_Name`, `Transforms_Inventory_ModKey_Type`,
   `Transforms_Inventory_ModKey_FileName`, and `Transforms_Inventory_FormKey_ID`
 - `Books.InventoryArt_ModKey_Name`, `InventoryArt_ModKey_Type`, `InventoryArt_ModKey_FileName`,

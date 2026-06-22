@@ -1,6 +1,6 @@
 namespace CreationsForge.Core.DTOs.Records.Interfaces;
 
-public interface IHasRawRecordPayloadsRecordDTO
+public interface IHasRawRecordPayloadsDTO
 {
     IList<RawRecordPayloadDTO> RawPayloads { get; set; }
 }

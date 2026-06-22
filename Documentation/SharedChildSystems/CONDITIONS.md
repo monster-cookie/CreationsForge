@@ -14,7 +14,7 @@ records.
 
 ## Current DTO Path
 
-Records that expose condition rules implement `IHasConditionsRecordDTO`. The current shared DTO shape uses
+Records that expose condition rules implement `IHasConditionsDTO`. The current shared DTO shape uses
 `ConditionFormConditionDTO` and `ConditionFormConditionParameterDTO` because those DTOs existed before the storage was
 generalized. The persistence and import service names are intentionally `ConditionRules` and
 `ConditionRuleParameters`.
@@ -39,7 +39,7 @@ Condition import must preserve every entry in a condition list by `Condition_Ind
 `ActorIsPrey` (`CNDF:00246E86`) has two `HasKeyword` rules: one for `ActorTypePrey` and one for
 `ActorTypePredator`. Both rules must persist and render independently.
 
-Shared/Core workflow code should call `IRecordChildImportService`; that service dispatches `IHasConditionsRecordDTO`
+Shared/Core workflow code should call `IRecordChildImportService`; that service dispatches `IHasConditionsDTO`
 records to `IConditionRuleImportService`. New condition-bearing record types should use this path rather than adding
 record-specific condition repositories or tables.
 

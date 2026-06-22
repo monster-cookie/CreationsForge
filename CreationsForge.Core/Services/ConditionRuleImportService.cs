@@ -14,7 +14,7 @@ public class ConditionRuleImportService : IConditionRuleImportService
         ConditionRuleRepository = conditionRuleRepository;
     }
 
-    public void ReplaceConditionRules(IHasConditionsRecordDTO record, string recordType)
+    public void ReplaceConditionRules(IHasConditionsDTO record, string recordType)
     {
         if (record is not RecordDTO)
         {

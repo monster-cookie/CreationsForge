@@ -169,7 +169,7 @@ public class RecordChildImportServiceTests
         };
     }
 
-    private sealed class CompositeRecordDTO : RecordDTO, IHasModelsRecordDTO, IKeywords, IHasComponentsRecordDTO, IHasConditionsRecordDTO, IHasRawRecordPayloadsRecordDTO, ISounds, IHasScriptingAdaptersRecordDTO, IHasTerminalMarkerParametersRecordDTO
+    private sealed class CompositeRecordDTO : RecordDTO, IHasModelsDTO, IKeywords, IHasComponentsDTO, IHasConditionsDTO, IHasRawRecordPayloadsDTO, ISounds, IHasScriptingAdaptersDTO, IHasTerminalMarkerParametersRecordDTO
     {
         public IList<ModelDTO> Models { get; set; } = new List<ModelDTO>();
 
@@ -193,9 +193,9 @@ public class RecordChildImportServiceTests
 
     private sealed class TestModelImportService : IModelImportService
     {
-        public IList<(IHasModelsRecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasModelsRecordDTO Record, string RecordType)>();
+        public IList<(IHasModelsDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasModelsDTO Record, string RecordType)>();
 
-        public void ReplaceRecordModels(IHasModelsRecordDTO record, string recordType)
+        public void ReplaceRecordModels(IHasModelsDTO record, string recordType)
         {
             ReplaceRequests.Add((record, recordType));
         }
@@ -213,9 +213,9 @@ public class RecordChildImportServiceTests
 
     private sealed class TestRawRecordPayloadImportService : IRawRecordPayloadImportService
     {
-        public IList<(IHasRawRecordPayloadsRecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasRawRecordPayloadsRecordDTO Record, string RecordType)>();
+        public IList<(IHasRawRecordPayloadsDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasRawRecordPayloadsDTO Record, string RecordType)>();
 
-        public void ReplaceRawRecordPayloads(IHasRawRecordPayloadsRecordDTO record, string recordType)
+        public void ReplaceRawRecordPayloads(IHasRawRecordPayloadsDTO record, string recordType)
         {
             ReplaceRequests.Add((record, recordType));
         }
@@ -223,9 +223,9 @@ public class RecordChildImportServiceTests
 
     private sealed class TestRecordComponentImportService : IRecordComponentImportService
     {
-        public IList<(IHasComponentsRecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasComponentsRecordDTO Record, string RecordType)>();
+        public IList<(IHasComponentsDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasComponentsDTO Record, string RecordType)>();
 
-        public void ReplaceRecordComponents(IHasComponentsRecordDTO record, string recordType)
+        public void ReplaceRecordComponents(IHasComponentsDTO record, string recordType)
         {
             ReplaceRequests.Add((record, recordType));
         }
@@ -233,9 +233,9 @@ public class RecordChildImportServiceTests
 
     private sealed class TestConditionRuleImportService : IConditionRuleImportService
     {
-        public IList<(IHasConditionsRecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasConditionsRecordDTO Record, string RecordType)>();
+        public IList<(IHasConditionsDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasConditionsDTO Record, string RecordType)>();
 
-        public void ReplaceConditionRules(IHasConditionsRecordDTO record, string recordType)
+        public void ReplaceConditionRules(IHasConditionsDTO record, string recordType)
         {
             ReplaceRequests.Add((record, recordType));
         }
@@ -253,9 +253,9 @@ public class RecordChildImportServiceTests
 
     private sealed class TestScriptingAdapterImportService : IScriptingAdapterImportService
     {
-        public IList<(IHasScriptingAdaptersRecordDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasScriptingAdaptersRecordDTO Record, string RecordType)>();
+        public IList<(IHasScriptingAdaptersDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasScriptingAdaptersDTO Record, string RecordType)>();
 
-        public void ReplaceRecordScriptingAdapters(IHasScriptingAdaptersRecordDTO record, string recordType)
+        public void ReplaceRecordScriptingAdapters(IHasScriptingAdaptersDTO record, string recordType)
         {
             ReplaceRequests.Add((record, recordType));
         }

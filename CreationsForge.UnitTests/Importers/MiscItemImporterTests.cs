@@ -10,27 +10,27 @@ using Shouldly;
 
 namespace CreationsForge.UnitTests.Importers;
 
-public class MiscObjectImporterTests
+public class MiscItemImporterTests
 {
     [Fact]
-    public void Import_SavesMiscObjectAndReplacesModelsAndScripts()
+    public void Import_SavesMiscItemAndReplacesModelsAndScripts()
     {
         var plugin = CreatePlugin();
-        var miscObject = CreateMiscObject(plugin);
-        var repository = new TestMiscObjectRepository();
+        var miscItem = CreateMiscItem(plugin);
+        var repository = new TestMiscItemRepository();
         var childImportService = new TestRecordChildImportService();
-        var importer = new MiscObjectImporter(repository, childImportService);
-        var result = new RecordTypeImportResultDTO { RecordType = RecordTypeCatalog.MiscObject.RecordID };
+        var importer = new MiscItemImporter(repository, childImportService);
+        var result = new RecordTypeImportResultDTO { RecordType = RecordTypeCatalog.MiscItem.RecordID };
 
         var importedAtUTC = DateTime.UtcNow;
-        importer.Import(miscObject, result, importedAtUTC);
+        importer.Import(miscItem, result, importedAtUTC);
 
         importer.RecordType.ShouldBe("MISC");
         importer.TableName.ShouldBe("MiscItems");
         importer.SupportedGames.ShouldBe([SupportedGame.Starfield, SupportedGame.Fallout4, SupportedGame.Skyrim], ignoreOrder: true);
-        repository.Saved.ShouldBe([miscObject]);
-        childImportService.ReplaceRequests.ShouldBe([(miscObject, RecordTypeCatalog.MiscObject.RecordID)]);
-        miscObject.ImportedAtUTC.ShouldBe(importedAtUTC);
+        repository.Saved.ShouldBe([miscItem]);
+        childImportService.ReplaceRequests.ShouldBe([(miscItem, RecordTypeCatalog.MiscItem.RecordID)]);
+        miscItem.ImportedAtUTC.ShouldBe(importedAtUTC);
         result.DetailRowsImported.ShouldBe(1);
     }
 
@@ -53,14 +53,14 @@ public class MiscObjectImporterTests
         };
     }
 
-    private static MiscObjectDTO CreateMiscObject(PluginDTO plugin)
+    private static MiscItemDTO CreateMiscItem(PluginDTO plugin)
     {
-        return new MiscObjectDTO
+        return new MiscItemDTO
         {
             Game = plugin.Game,
             ModKey = plugin.ModKey,
             FormKey = new FormKeyDTO { ModKey = plugin.ModKey, Id = 10 },
-            EditorID = "MiscObject",
+            EditorID = "MiscItem",
             FormVersion = 1,
             MajorRecordFlags = 0,
             ImportedAtUTC = default
@@ -77,11 +77,11 @@ public class MiscObjectImporterTests
         };
     }
 
-    private sealed class TestMiscObjectRepository : IMiscObjectRepository
+    private sealed class TestMiscItemRepository : IMiscItemRepository
     {
         public string RecordType => "MISC";
 
-        public IList<MiscObjectDTO> Saved { get; } = new List<MiscObjectDTO>();
+        public IList<MiscItemDTO> Saved { get; } = new List<MiscItemDTO>();
 
         public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntriesByPlugin(SupportedGame game, ModKeyDTO modKey)
         {
@@ -93,12 +93,12 @@ public class MiscObjectImporterTests
             return new Dictionary<string, int>();
         }
 
-        public IReadOnlyList<MiscObjectDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        public IReadOnlyList<MiscItemDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
         {
             return [];
         }
 
-        public void Save(MiscObjectDTO dto)
+        public void Save(MiscItemDTO dto)
         {
             Saved.Add(dto);
         }

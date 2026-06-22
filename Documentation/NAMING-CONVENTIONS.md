@@ -160,6 +160,22 @@ Comparison row names should follow canonical DTO field names unless the UI inten
 
 The UI may display `Race` as `Race`, `BookText` as `Book Text`, or a grouped child section as `Models`. Those are presentation choices. Core record contracts should keep source-aligned names.
 
+### DTO Capability Interfaces
+
+Capability interfaces must be named for the capability they expose, not for where they are used.
+
+Use:
+
+- `IHasModelsDTO`
+- `IHasConditionsDTO`
+- `IHasScriptingAdaptersDTO`
+- `IHasComponentsDTO`
+- `IHasRawRecordPayloadsDTO`
+
+Do not include redundant `Record` wording such as `IHasModelsRecordDTO`. The DTO namespace, record DTO implementations, and consuming services already provide that context.
+
+Use `Mapping` only for DTOs, tables, repositories, or services that represent persisted mapping rows, such as `KeywordMappingDTO` or `SoundMappingDTO`. Do not add `Mapping` to a capability interface unless the exposed property itself is a mapping collection and that wording improves clarity.
+
 ## Reset Guidance
 
 For v2 reset work, prefer renaming the core contract toward canonical source names rather than adding more aliases. Use attributes and interfaces to describe mappings and shared behavior. Do not use them to preserve stale names as the primary model.

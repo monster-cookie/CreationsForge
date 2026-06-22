@@ -120,7 +120,7 @@ public class KeywordMappingRepository : IKeywordMappingRepository
                 },
                 Id = (uint)row.FormKeyId
             },
-            KeywordFormKey = new FormKeyDTO
+            Keyword = new FormKeyDTO
             {
                 ModKey = new ModKeyDTO
                 {

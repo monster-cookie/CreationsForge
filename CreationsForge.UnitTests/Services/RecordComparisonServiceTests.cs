@@ -122,16 +122,16 @@ public class RecordComparisonServiceTests
     }
 
     [Fact]
-    public void GetRecordComparison_ForMiscObject_MapsTypedScalarFields()
+    public void GetRecordComparison_ForMiscItem_MapsTypedScalarFields()
     {
         var formKey = CreateFormKey("Starfield.esm", 0x818);
         var messageFormKey = CreateFormKey("Starfield.esm", 0x444);
-        var miscObjectRepository = new TestMiscObjectRepository
+        var miscItemRepository = new TestMiscItemRepository
         {
             Records =
             [
-                CreateMiscObject("Base.esm", formKey, "Digipick", 35, 0.1f, null),
-                CreateMiscObject("Patch.esp", formKey, "Digipick", 50, 0.2f, messageFormKey)
+                CreateMiscItem("Base.esm", formKey, "Digipick", 35, 0.1f, null),
+                CreateMiscItem("Patch.esp", formKey, "Digipick", 50, 0.2f, messageFormKey)
             ]
         };
         var modelRepository = new TestModelRepository
@@ -154,32 +154,32 @@ public class RecordComparisonServiceTests
         {
             Records =
             [
-                CreateKeywordMapping("Base.esm", RecordTypeCatalog.MiscObject.RecordID, formKey, CreateFormKey("Starfield.esm", 0x555), 0),
-                CreateKeywordMapping("Patch.esp", RecordTypeCatalog.MiscObject.RecordID, formKey, CreateFormKey("Starfield.esm", 0x555), 0)
+                CreateKeywordMapping("Base.esm", RecordTypeCatalog.MiscItem.RecordID, formKey, CreateFormKey("Starfield.esm", 0x555), 0),
+                CreateKeywordMapping("Patch.esp", RecordTypeCatalog.MiscItem.RecordID, formKey, CreateFormKey("Starfield.esm", 0x555), 0)
             ]
         };
         var soundMappingRepository = new TestSoundMappingRepository
         {
             Records =
             [
-                CreateSoundMapping("Base.esm", RecordTypeCatalog.MiscObject.RecordID, formKey, "PickupSound", 1, "ff0b45e7-a8ae-a30f-390b-d0cd2b6933a6"),
-                CreateSoundMapping("Patch.esp", RecordTypeCatalog.MiscObject.RecordID, formKey, "PickupSound", 1, "ff0b45e7-a8ae-a30f-390b-d0cd2b6933a6")
+                CreateSoundMapping("Base.esm", RecordTypeCatalog.MiscItem.RecordID, formKey, "PickupSound", 1, "ff0b45e7-a8ae-a30f-390b-d0cd2b6933a6"),
+                CreateSoundMapping("Patch.esp", RecordTypeCatalog.MiscItem.RecordID, formKey, "PickupSound", 1, "ff0b45e7-a8ae-a30f-390b-d0cd2b6933a6")
             ]
         };
         var service = CreateService(
-            miscObjectRepository: miscObjectRepository,
+            miscItemRepository: miscItemRepository,
             modelRepository: modelRepository,
             keywordMappingRepository: keywordMappingRepository,
             soundMappingRepository: soundMappingRepository,
             scriptingAdapterRepository: scriptingAdapterRepository);
 
-        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.MiscObject.RecordID, formKey);
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.MiscItem.RecordID, formKey);
 
         comparison.Columns.Select(column => column.Header).ShouldBe(["Base.esm", "Patch.esp"]);
         comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["Digipick", "Digipick"]);
         comparison.Fields.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["35", "50"]);
         comparison.Fields.Single(field => field.FieldName == "Weight").Values.Select(value => value.DisplayValue).ShouldBe(["0.1", "0.2"]);
-        comparison.Fields.Single(field => field.FieldName == "FeaturedItemMessageFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["", "Starfield.esm:00000444"]);
+        comparison.Fields.Single(field => field.FieldName == "FeaturedItemMessage").Values.Select(value => value.DisplayValue).ShouldBe(["", "Starfield.esm:00000444"]);
         var keywords = comparison.Fields.Single(field => field.FieldName == "Keywords");
         keywords.Children.Single(field => field.FieldName == "Keyword [0]").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000555", "Starfield.esm:00000555"]);
         var model = comparison.Fields.Single(field => field.FieldName == "Model");
@@ -708,7 +708,7 @@ public class RecordComparisonServiceTests
         TestGlobalRepository? globalRepository = null,
         TestClassRepository? classRepository = null,
         TestFactionRepository? factionRepository = null,
-        TestMiscObjectRepository? miscObjectRepository = null,
+        TestMiscItemRepository? miscItemRepository = null,
         TestKeywordRepository? keywordRepository = null,
         TestActorValueInformationRepository? actorValueInformationRepository = null,
         TestNPCRepository? npcRepository = null,
@@ -735,7 +735,7 @@ public class RecordComparisonServiceTests
             globalRepository ?? new TestGlobalRepository(),
             classRepository ?? new TestClassRepository(),
             factionRepository ?? new TestFactionRepository(),
-            miscObjectRepository ?? new TestMiscObjectRepository(),
+            miscItemRepository ?? new TestMiscItemRepository(),
             keywordRepository ?? new TestKeywordRepository(),
             actorValueInformationRepository ?? new TestActorValueInformationRepository(),
             npcRepository ?? new TestNPCRepository(),
@@ -875,20 +875,20 @@ public class RecordComparisonServiceTests
             Game = SupportedGame.Starfield,
             ModKey = CreateModKey(fileName),
             FormKey = formKey,
-            ItemFormKey = itemFormKey,
+            Item = itemFormKey,
             ItemIndex = itemIndex,
             ImportedAtUTC = DateTime.UtcNow
         };
     }
 
-    private static MiscObjectDTO CreateMiscObject(string fileName, FormKeyDTO formKey, string name, int value, float weight, FormKeyDTO? featuredItemMessageFormKey)
+    private static MiscItemDTO CreateMiscItem(string fileName, FormKeyDTO formKey, string name, int value, float weight, FormKeyDTO? featuredItemMessageFormKey)
     {
-        return new MiscObjectDTO
+        return new MiscItemDTO
         {
             Game = SupportedGame.Starfield,
             ModKey = CreateModKey(fileName),
             FormKey = formKey,
-            EditorID = "MyMiscObject",
+            EditorID = "MyMiscItem",
             FormVersion = 1,
             MajorRecordFlags = 2,
             ImportedAtUTC = DateTime.UtcNow,
@@ -897,14 +897,14 @@ public class RecordComparisonServiceTests
             Value = value,
             Weight = weight,
             DirtinessScale = 1,
-            FeaturedItemMessageFormKey = featuredItemMessageFormKey,
+            FeaturedItemMessage = featuredItemMessageFormKey,
             Flag = "None"
         };
     }
 
     private static ModelDTO CreateModel(string fileName, FormKeyDTO formKey, string file)
     {
-        return CreateModel(fileName, RecordTypeCatalog.MiscObject.RecordID, formKey, file);
+        return CreateModel(fileName, RecordTypeCatalog.MiscItem.RecordID, formKey, file);
     }
 
     private static ModelDTO CreateModel(string fileName, string recordType, FormKeyDTO formKey, string file)
@@ -1314,7 +1314,7 @@ public class RecordComparisonServiceTests
 
     private static ScriptingAdapterDTO CreateScriptingAdapter(string fileName, FormKeyDTO formKey, string name, string propertyName, string propertyValue)
     {
-        return CreateScriptingAdapter(fileName, RecordTypeCatalog.MiscObject.RecordID, formKey, name, propertyName, propertyValue);
+        return CreateScriptingAdapter(fileName, RecordTypeCatalog.MiscItem.RecordID, formKey, name, propertyName, propertyValue);
     }
 
     private static ScriptingAdapterDTO CreateScriptingAdapter(string fileName, string recordType, FormKeyDTO formKey, string name, string propertyName, string propertyValue)
@@ -1356,7 +1356,7 @@ public class RecordComparisonServiceTests
             RecordType = recordType,
             FormKey = formKey,
             KeywordIndex = keywordIndex,
-            KeywordFormKey = keywordFormKey,
+            Keyword = keywordFormKey,
             ImportedAtUTC = DateTime.UtcNow
         };
     }
@@ -1599,11 +1599,11 @@ public class RecordComparisonServiceTests
         { }
     }
 
-    private sealed class TestMiscObjectRepository : IMiscObjectRepository
+    private sealed class TestMiscItemRepository : IMiscItemRepository
     {
-        public string RecordType => RecordTypeCatalog.MiscObject.RecordID;
+        public string RecordType => RecordTypeCatalog.MiscItem.RecordID;
 
-        public IReadOnlyList<MiscObjectDTO> Records { get; set; } = [];
+        public IReadOnlyList<MiscItemDTO> Records { get; set; } = [];
 
         public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntriesByPlugin(SupportedGame game, ModKeyDTO modKey)
         {
@@ -1615,12 +1615,12 @@ public class RecordComparisonServiceTests
             return new Dictionary<string, int>();
         }
 
-        public IReadOnlyList<MiscObjectDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        public IReadOnlyList<MiscItemDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
         {
             return Records;
         }
 
-        public void Save(MiscObjectDTO dto)
+        public void Save(MiscItemDTO dto)
         { }
 
         public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)

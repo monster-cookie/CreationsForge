@@ -57,7 +57,7 @@ public class ConditionRuleRepository : IConditionRuleRepository
         return conditionRules;
     }
 
-    public void ReplaceConditionRules(IHasConditionsRecordDTO record, string recordType)
+    public void ReplaceConditionRules(IHasConditionsDTO record, string recordType)
     {
         if (record is not RecordDTO recordDTO)
         {

@@ -19,8 +19,11 @@ public static class Helpers
     private static readonly IReadOnlyDictionary<string, string> GlobalSpriggitToDtoFields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
     {
         ["FormKey"] = "FormKey",
+        ["EditorID"] = "EditorID",
         ["MajorRecordFlagsRaw"] = "MajorRecordFlags",
         ["FormVersion"] = "FormVersion",
+        ["Version2"] = "Version2",
+        ["VersionControl"] = "VersionControl",
         ["Data"] = "Data"
     };
 
@@ -90,7 +93,7 @@ public static class Helpers
     {
         var path = FindSpriggitFile(game, recordType.TableName, sampleName);
         var document = SpriggitYamlDocument.Load(path);
-        var fields = AddRootScalarLists(path, document.FlattenScalars());
+        var fields = NormalizeSpriggitFields(game, recordType, AddRootScalarLists(path, document.FlattenScalars()));
 
         return new SpriggitRecordDTO
         {
@@ -111,7 +114,8 @@ public static class Helpers
 
         foreach (var field in spriggit.Fields.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase))
         {
-            if (!GlobalSpriggitToDtoFields.ContainsKey(field.Key))
+            if (!GlobalSpriggitToDtoFields.ContainsKey(field.Key) &&
+                !IsGlobalMetadataFieldOutsideRepositoryReadback(field.Key))
             {
                 unmatchedFields.Add(
                     "No matching CreationsForge reader DTO data was found for Spriggit field '" + field.Key + "'." +
@@ -155,6 +159,11 @@ public static class Helpers
 
         foreach (var field in dtoFields.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase))
         {
+            if (string.Equals(field.Key, "ScriptingAdapters.Count", StringComparison.OrdinalIgnoreCase) && IsZero(field.Value))
+            {
+                continue;
+            }
+
             if (!matchedDtoFields.Contains(field.Key))
             {
                 unmatchedFields.Add(
@@ -195,20 +204,38 @@ public static class Helpers
         where TRecord : RecordDTO
     {
         var fields = new Dictionary<string, string>(DtoFlattener.Flatten(dto), StringComparer.OrdinalIgnoreCase);
+        NormalizeDtoModelFields(dto.Game, fields);
         AddSpriggitFieldAlias(fields, "ObjectBoundsFirst", "ObjectBounds.First");
         AddSpriggitFieldAlias(fields, "ObjectBoundsSecond", "ObjectBounds.Second");
+        AddSpriggitFieldAlias(fields, "ObjectBounds.First", "ObjectBoundsFirst");
+        AddSpriggitFieldAlias(fields, "ObjectBounds.Second", "ObjectBoundsSecond");
         AddSpriggitFieldAlias(fields, "XALG", "XALG");
+        AddSpriggitFieldAlias(fields, "Models.Count", "Model.Count");
         AddSpriggitFieldAlias(fields, "Models[0].File", "Model.File");
         AddSpriggitFieldAlias(fields, "Models[0].LightLayer", "Model.LightLayer");
         AddSpriggitFieldAlias(fields, "Models[0].Flags", "Model.Flags");
         AddSpriggitScalarListAliases(fields, "Flags");
         AddSpriggitScalarListAliases(fields, "Model.Flags");
         AddSpriggitKeywordAliases(fields);
+        AddSpriggitMiscComponentAliases(fields);
+        AddSpriggitMiscResourceAliases(fields);
+        AddSpriggitDestructibleAliases(fields);
         AddSpriggitModelMaterialSwapAliases(fields);
         AddSpriggitRawPayloadAliases(fields);
         AddSpriggitSoundAliases(fields);
         AddSpriggitScriptingAdapterAliases(fields);
         return fields;
+    }
+
+    private static void NormalizeDtoModelFields(SupportedGame game, Dictionary<string, string> fields)
+    {
+        var modelCount = GetIndexedPathCount(fields, "Models");
+        if (modelCount > 0)
+        {
+            fields["Models.Count"] = modelCount.ToString(CultureInfo.InvariantCulture);
+            fields["Model.Count"] = modelCount.ToString(CultureInfo.InvariantCulture);
+        }
+
     }
 
     private static void AddSpriggitFieldAlias(IDictionary<string, string> fields, string dtoFieldName, string spriggitFieldName)
@@ -282,7 +309,7 @@ public static class Helpers
         {
             AddSpriggitFieldAlias(
                 fields,
-                "Keywords[" + index.ToString(CultureInfo.InvariantCulture) + "].KeywordFormKey",
+                "Keywords[" + index.ToString(CultureInfo.InvariantCulture) + "].Keyword",
                 "Keywords[" + index.ToString(CultureInfo.InvariantCulture) + "]");
         }
     }
@@ -302,11 +329,68 @@ public static class Helpers
                 fields,
                 "Models[0].MaterialSwaps[" + index.ToString(CultureInfo.InvariantCulture) + "].MaterialSwapFormKey",
                 "Model.MaterialSwaps[" + index.ToString(CultureInfo.InvariantCulture) + "]");
+            AddSpriggitFieldAlias(
+                fields,
+                "Models[0].MaterialSwaps[" + index.ToString(CultureInfo.InvariantCulture) + "].Name",
+                "Model[" + index.ToString(CultureInfo.InvariantCulture) + "].Name");
+            AddSpriggitFieldAlias(
+                fields,
+                "Models[0].MaterialSwaps[" + index.ToString(CultureInfo.InvariantCulture) + "].MaterialSwapFormKey",
+                "Model[" + index.ToString(CultureInfo.InvariantCulture) + "].NewTexture");
+
+            if (fields.TryGetValue("Models[0].MaterialSwaps[" + index.ToString(CultureInfo.InvariantCulture) + "].MaterialSwapFormKey", out var materialSwapFormKey))
+            {
+                var formIdSeparator = materialSwapFormKey.IndexOf(':', StringComparison.Ordinal);
+                if (formIdSeparator > 0)
+                {
+                    fields["Model[" + index.ToString(CultureInfo.InvariantCulture) + "]." + materialSwapFormKey[..formIdSeparator]] = materialSwapFormKey;
+                }
+            }
         }
 
         if (count == 1)
         {
             AddSpriggitFieldAlias(fields, "Models[0].MaterialSwaps[0].MaterialSwapFormKey", "Model.MaterialSwap");
+            AddSpriggitFieldAlias(fields, "Models[0].MaterialSwaps[0].MaterialSwapFormKey", "Model[1]");
+        }
+    }
+
+    private static void AddSpriggitMiscComponentAliases(IDictionary<string, string> fields)
+    {
+        if (!fields.TryGetValue("Components.Count", out var countValue) ||
+            !int.TryParse(countValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
+        {
+            return;
+        }
+
+        for (var index = 0; index < count; index++)
+        {
+            AddSpriggitFieldAlias(
+                fields,
+                "Components[" + index.ToString(CultureInfo.InvariantCulture) + "].Count",
+                "Count[" + index.ToString(CultureInfo.InvariantCulture) + "]");
+        }
+    }
+
+    private static void AddSpriggitMiscResourceAliases(IDictionary<string, string> fields)
+    {
+        if (!fields.TryGetValue("Resources.Count", out var countValue) ||
+            !int.TryParse(countValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
+        {
+            return;
+        }
+
+        if (count == 1)
+        {
+            AddSpriggitFieldAlias(fields, "Resources[0].Count", "Count");
+        }
+
+        for (var index = 0; index < count; index++)
+        {
+            AddSpriggitFieldAlias(
+                fields,
+                "Resources[" + index.ToString(CultureInfo.InvariantCulture) + "].Count",
+                "Count[" + index.ToString(CultureInfo.InvariantCulture) + "]");
         }
     }
 
@@ -427,6 +511,11 @@ public static class Helpers
             return;
         }
 
+        if (count == 0)
+        {
+            return;
+        }
+
         fields["VirtualMachineAdapter.Count"] = count.ToString(CultureInfo.InvariantCulture);
         fields["VirtualMachineAdapter.Scripts.Count"] = count.ToString(CultureInfo.InvariantCulture);
         for (var index = 0; index < count; index++)
@@ -465,6 +554,8 @@ public static class Helpers
         AddSpriggitFieldAlias(fields, dtoPropertyPath + ".MutagenObjectType", spriggitPropertyPath + ".MutagenObjectType");
         AddSpriggitFieldAlias(fields, dtoPropertyPath + ".Name", spriggitPropertyPath + ".Name");
         AddSpriggitFieldAlias(fields, dtoPropertyPath + ".ObjectFormKey", spriggitPropertyPath + ".Object");
+        AddSpriggitFieldAlias(fields, dtoPropertyPath + ".ObjectAlias", spriggitPropertyPath + ".Alias");
+        AddSpriggitFieldAlias(fields, dtoPropertyPath + ".ObjectUnused", spriggitPropertyPath + ".Unused");
         AddSpriggitScriptingAdapterDataAlias(fields, dtoPropertyPath, spriggitPropertyPath);
         AddSpriggitFieldAlias(fields, dtoPropertyPath + ".ListItems.Count", spriggitPropertyPath + ".Count");
 
@@ -491,10 +582,19 @@ public static class Helpers
 
     private static void AddSpriggitScriptingAdapterDataAlias(IDictionary<string, string> fields, string dtoPath, string spriggitPath)
     {
-        AddSpriggitFieldAlias(fields, dtoPath + ".DataBool", spriggitPath + ".Data");
-        AddSpriggitFieldAlias(fields, dtoPath + ".DataFloat", spriggitPath + ".Data");
-        AddSpriggitFieldAlias(fields, dtoPath + ".DataInt", spriggitPath + ".Data");
-        AddSpriggitFieldAlias(fields, dtoPath + ".DataString", spriggitPath + ".Data");
+        AddSpriggitDataAlias(fields, dtoPath + ".DataBool", spriggitPath + ".Data");
+        AddSpriggitDataAlias(fields, dtoPath + ".DataFloat", spriggitPath + ".Data");
+        AddSpriggitDataAlias(fields, dtoPath + ".DataInt", spriggitPath + ".Data");
+        AddSpriggitDataAlias(fields, dtoPath + ".DataString", spriggitPath + ".Data");
+    }
+
+    private static void AddSpriggitDataAlias(IDictionary<string, string> fields, string dtoFieldName, string spriggitFieldName)
+    {
+        if (fields.TryGetValue(dtoFieldName, out var value) &&
+            !string.Equals(value, "Null", StringComparison.OrdinalIgnoreCase))
+        {
+            fields[spriggitFieldName] = value;
+        }
     }
 
     public static IReadOnlyList<string> GetSpriggitListValues(SpriggitRecordDTO spriggit, string fieldName)
@@ -562,7 +662,27 @@ public static class Helpers
             return true;
         }
 
+        if (IsSpriggitDestructibleFieldOutsideRepositoryReadback(fieldName))
+        {
+            return true;
+        }
+
         if (IsSpriggitComponentRawPayloadBackedByDtoRawPayload(fieldName, spriggitFields, dtoFields))
+        {
+            return true;
+        }
+
+        if (IsSpriggitKeywordComponentFieldBackedByDtoScalar(fieldName, spriggitFields, dtoFields))
+        {
+            return true;
+        }
+
+        if (IsSpriggitModelMaterialSwapFieldBackedByDtoField(fieldName, fieldValue, dtoFields))
+        {
+            return true;
+        }
+
+        if (IsSpriggitResourceInlineObjectBackedByDtoField(fieldName, fieldValue, dtoFields))
         {
             return true;
         }
@@ -572,7 +692,12 @@ public static class Helpers
             return true;
         }
 
-        if (IsSpriggitInlineFormKeyListItemBackedByDtoScalar(fieldName, fieldValue, dtoFields, "Keywords"))
+        if (IsSpriggitInlineFormKeyListItemBackedByDtoScalar(fieldName, fieldValue, dtoFields, "Keywords", "Keyword"))
+        {
+            return true;
+        }
+
+        if (IsSpriggitInlineFormKeyListItemBackedByDtoScalar(fieldName, fieldValue, dtoFields, "Items", "Item"))
         {
             return true;
         }
@@ -657,6 +782,11 @@ public static class Helpers
             return true;
         }
 
+        if (string.Equals(fieldName, "ScriptingAdapters.Count", StringComparison.OrdinalIgnoreCase) && IsZero(fieldValue))
+        {
+            return true;
+        }
+
         if (IsMissingDefaultDtoField(fieldName, fieldValue, spriggitFields))
         {
             return true;
@@ -672,12 +802,22 @@ public static class Helpers
             return true;
         }
 
-        if (IsDtoIndexedPropertyBackedBySpriggitScalarList(fieldName, spriggitFields, "Keywords", "KeywordFormKey"))
+        if (IsDtoIndexedPropertyBackedBySpriggitScalarList(fieldName, spriggitFields, "Keywords", "Keyword"))
+        {
+            return true;
+        }
+
+        if (IsDtoIndexedPropertyBackedBySpriggitScalarList(fieldName, spriggitFields, "Items", "Item"))
         {
             return true;
         }
 
         if (IsDtoIndexedMetadataBackedBySpriggitScalarList(fieldName, fieldValue, spriggitFields, "Keywords", "KeywordIndex"))
+        {
+            return true;
+        }
+
+        if (IsDtoIndexedMetadataBackedBySpriggitScalarList(fieldName, fieldValue, spriggitFields, "Items", "ItemIndex"))
         {
             return true;
         }
@@ -712,6 +852,11 @@ public static class Helpers
             return true;
         }
 
+        if (IsDtoResourceMetadataBackedBySpriggitField(fieldName, fieldValue, spriggitFields))
+        {
+            return true;
+        }
+
         if (IsDtoScriptingAdapterBackedBySpriggitField(fieldName, fieldValue, spriggitFields, dtoFields))
         {
             return true;
@@ -737,7 +882,10 @@ public static class Helpers
             return true;
         }
 
-        return IsSpriggitListBackedDtoScalar(fieldName, spriggitFields, dtoFields, "Flags");
+        return IsSpriggitListBackedDtoScalar(fieldName, spriggitFields, dtoFields, "Flags") ||
+               IsSpriggitListBackedDtoScalar(fieldName, spriggitFields, dtoFields, "Model.Flags") ||
+               (string.Equals(fieldName, "Models[0].Flags", StringComparison.OrdinalIgnoreCase) &&
+                IsSpriggitListBackedDtoScalar("Model.Flags", spriggitFields, dtoFields, "Model.Flags"));
     }
 
     private static bool IsDtoModelMaterialSwapBackedBySpriggitScalar(
@@ -745,23 +893,28 @@ public static class Helpers
         string fieldValue,
         IReadOnlyDictionary<string, string> spriggitFields)
     {
-        if (!spriggitFields.TryGetValue("Model.MaterialSwap", out var materialSwap))
-        {
-            return false;
-        }
-
         if ((string.Equals(fieldName, "Model.MaterialSwaps.Count", StringComparison.OrdinalIgnoreCase) ||
              string.Equals(fieldName, "Models[0].MaterialSwaps.Count", StringComparison.OrdinalIgnoreCase)) &&
             string.Equals(fieldValue, "1", StringComparison.Ordinal))
         {
+            return spriggitFields.ContainsKey("Model.MaterialSwap") ||
+                   spriggitFields.ContainsKey("Model.MaterialSwaps[0]") ||
+                   spriggitFields.ContainsKey("Models[0].MaterialSwaps[0].MaterialSwapFormKey");
+        }
+
+        if ((string.Equals(fieldName, "Model.MaterialSwap", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "Model.MaterialSwaps[0]", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "Model[0].NewTexture", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "Models[0].MaterialSwaps[0].MaterialSwapFormKey", StringComparison.OrdinalIgnoreCase)) &&
+            IsSpriggitMaterialSwapValue(fieldValue, spriggitFields))
+        {
             return true;
         }
 
-        if ((string.Equals(fieldName, "Model.MaterialSwaps[0]", StringComparison.OrdinalIgnoreCase) ||
-             string.Equals(fieldName, "Models[0].MaterialSwaps[0].MaterialSwapFormKey", StringComparison.OrdinalIgnoreCase)) &&
-            string.Equals(fieldValue, materialSwap, StringComparison.Ordinal))
+        if (string.Equals(fieldName, "Models[0].MaterialSwaps[0].Name", StringComparison.OrdinalIgnoreCase))
         {
-            return true;
+            return spriggitFields.TryGetValue("Models[0].MaterialSwaps[0].Name", out var name) &&
+                   string.Equals(fieldValue, name, StringComparison.Ordinal);
         }
 
         if (string.Equals(fieldName, "Models[0].MaterialSwaps[0].MaterialSwapIndex", StringComparison.OrdinalIgnoreCase) &&
@@ -778,6 +931,30 @@ public static class Helpers
 
         return string.Equals(fieldName, "Models[0].MaterialSwaps[0].ModelGender", StringComparison.OrdinalIgnoreCase) &&
                string.IsNullOrEmpty(fieldValue);
+    }
+
+    private static bool IsSpriggitMaterialSwapValue(string fieldValue, IReadOnlyDictionary<string, string> spriggitFields)
+    {
+        return (spriggitFields.TryGetValue("Model.MaterialSwap", out var materialSwap) &&
+                string.Equals(fieldValue, materialSwap, StringComparison.Ordinal)) ||
+               (spriggitFields.TryGetValue("Model.MaterialSwaps[0]", out var materialSwapListItem) &&
+                string.Equals(fieldValue, materialSwapListItem, StringComparison.Ordinal)) ||
+               (spriggitFields.TryGetValue("Model[0].NewTexture", out var newTexture) &&
+                string.Equals(fieldValue, newTexture, StringComparison.Ordinal)) ||
+               (spriggitFields.TryGetValue("Models[0].MaterialSwaps[0].MaterialSwapFormKey", out var materialSwapFormKey) &&
+                string.Equals(fieldValue, materialSwapFormKey, StringComparison.Ordinal));
+    }
+
+    private static bool IsDtoResourceMetadataBackedBySpriggitField(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> spriggitFields)
+    {
+        return fieldName.StartsWith("Resources[", StringComparison.OrdinalIgnoreCase) &&
+               fieldName.EndsWith("].ResourceIndex", StringComparison.OrdinalIgnoreCase) &&
+               TryGetIndexedPath(fieldName, "Resources", out var resourceIndex, out _) &&
+               string.Equals(fieldValue, resourceIndex.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal) &&
+               HasSpriggitPath(spriggitFields, "Resources[" + resourceIndex.ToString(CultureInfo.InvariantCulture) + "]");
     }
 
     private static bool IsDtoActorValueInformationFieldBackedBySpriggitField(
@@ -966,9 +1143,34 @@ public static class Helpers
 
     private static bool IsCommonMetadataFieldOutsideRepositoryReadback(string fieldName, IReadOnlyDictionary<string, string> dtoFields)
     {
+        if (string.Equals(fieldName, "MajorFlags.Count", StringComparison.OrdinalIgnoreCase) ||
+            fieldName.StartsWith("MajorFlags[", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(fieldName, "StarfieldMajorRecordFlags.Count", StringComparison.OrdinalIgnoreCase) ||
+            fieldName.StartsWith("StarfieldMajorRecordFlags[", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(fieldName, "Fallout4MajorRecordFlags.Count", StringComparison.OrdinalIgnoreCase) ||
+            fieldName.StartsWith("Fallout4MajorRecordFlags[", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(fieldName, "SkyrimMajorRecordFlags.Count", StringComparison.OrdinalIgnoreCase) ||
+            fieldName.StartsWith("SkyrimMajorRecordFlags[", StringComparison.OrdinalIgnoreCase))
+        {
+            return dtoFields.ContainsKey("MajorRecordFlags");
+        }
+
         return (string.Equals(fieldName, "Version2", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(fieldName, "VersionControl", StringComparison.OrdinalIgnoreCase)) &&
                !dtoFields.ContainsKey(fieldName);
+    }
+
+    private static bool IsGlobalMetadataFieldOutsideRepositoryReadback(string fieldName)
+    {
+        return string.Equals(fieldName, "MutagenObjectType", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(fieldName, "MajorFlags.Count", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.StartsWith("MajorFlags[", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(fieldName, "StarfieldMajorRecordFlags.Count", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.StartsWith("StarfieldMajorRecordFlags[", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(fieldName, "Fallout4MajorRecordFlags.Count", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.StartsWith("Fallout4MajorRecordFlags[", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(fieldName, "SkyrimMajorRecordFlags.Count", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.StartsWith("SkyrimMajorRecordFlags[", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsSpriggitLocalizedFieldBackedByDtoFallback(
@@ -1218,6 +1420,146 @@ public static class Helpers
             });
     }
 
+    private static bool IsSpriggitDestructibleFieldOutsideRepositoryReadback(string fieldName)
+    {
+        return fieldName.StartsWith("Destructible", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.StartsWith("ComponentDisplayIndices", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsSpriggitKeywordComponentFieldBackedByDtoScalar(
+        string fieldName,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields)
+    {
+        if (!fieldName.StartsWith("Components", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (!dtoFields.ContainsKey("WAIM") && !dtoFields.ContainsKey("WFIR"))
+        {
+            return false;
+        }
+
+        if (string.Equals(fieldName, "Components.Count", StringComparison.OrdinalIgnoreCase))
+        {
+            return spriggitFields.Keys.Any(field =>
+                field.StartsWith("Components[", StringComparison.OrdinalIgnoreCase) &&
+                (field.EndsWith(".WAIM", StringComparison.OrdinalIgnoreCase) ||
+                 field.EndsWith(".WFIR", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        if (!TryGetIndexedPath(fieldName, "Components", out _, out var remainder))
+        {
+            return false;
+        }
+
+        if (string.IsNullOrEmpty(remainder) || string.Equals(remainder, ".MutagenObjectType", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (string.Equals(remainder, ".WAIM", StringComparison.OrdinalIgnoreCase))
+        {
+            return dtoFields.TryGetValue("WAIM", out var dtoValue) &&
+                   spriggitFields.TryGetValue(fieldName, out var spriggitValue) &&
+                   string.Equals(dtoValue, NormalizeHexPrefix(spriggitValue), StringComparison.Ordinal);
+        }
+
+        if (string.Equals(remainder, ".WFIR", StringComparison.OrdinalIgnoreCase))
+        {
+            return dtoFields.TryGetValue("WFIR", out var dtoValue) &&
+                   spriggitFields.TryGetValue(fieldName, out var spriggitValue) &&
+                   string.Equals(dtoValue, NormalizeHexPrefix(spriggitValue), StringComparison.Ordinal);
+        }
+
+        return false;
+    }
+
+    private static bool IsSpriggitModelMaterialSwapFieldBackedByDtoField(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> dtoFields)
+    {
+        if (string.Equals(fieldName, "Model.MaterialSwaps.Count", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(fieldName, "Model.AlternateTextures.Count", StringComparison.OrdinalIgnoreCase))
+        {
+            return (dtoFields.TryGetValue("Models[0].MaterialSwaps.Count", out var nestedCount) &&
+                    string.Equals(fieldValue, nestedCount, StringComparison.Ordinal)) ||
+                   (dtoFields.TryGetValue("Model.MaterialSwaps.Count", out var count) &&
+                    string.Equals(fieldValue, count, StringComparison.Ordinal));
+        }
+
+        if (TryGetIndexedPath(fieldName, "Model.MaterialSwaps", out var materialSwapIndex, out var materialSwapRemainder) &&
+            !string.IsNullOrEmpty(materialSwapRemainder))
+        {
+            var formKeyId = materialSwapRemainder[1..];
+            if (formKeyId.Contains('.', StringComparison.Ordinal) ||
+                formKeyId.Contains('[', StringComparison.Ordinal) ||
+                formKeyId.Contains(']', StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var formKey = formKeyId + ":" + fieldValue;
+            return IsDtoMaterialSwapFormKey(materialSwapIndex, formKey, dtoFields);
+        }
+
+        if (!TryGetIndexedPath(fieldName, "Model.AlternateTextures", out materialSwapIndex, out materialSwapRemainder))
+        {
+            return false;
+        }
+
+        var dtoPath = "Models[0].MaterialSwaps[" + materialSwapIndex.ToString(CultureInfo.InvariantCulture) + "]";
+        if (string.Equals(materialSwapRemainder, ".Name", StringComparison.OrdinalIgnoreCase))
+        {
+            return dtoFields.TryGetValue(dtoPath + ".Name", out var name) &&
+                   string.Equals(fieldValue, name, StringComparison.Ordinal);
+        }
+
+        if (string.Equals(materialSwapRemainder, ".NewTexture", StringComparison.OrdinalIgnoreCase))
+        {
+            return IsDtoMaterialSwapFormKey(materialSwapIndex, fieldValue, dtoFields);
+        }
+
+        return false;
+    }
+
+    private static bool IsSpriggitResourceInlineObjectBackedByDtoField(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> dtoFields)
+    {
+        if (!TryGetIndexedPath(fieldName, "Resources", out var resourceIndex, out var resourceRemainder) ||
+            !string.IsNullOrEmpty(resourceRemainder) ||
+            !fieldValue.StartsWith("Resource: ", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return dtoFields.TryGetValue("Resources[" + resourceIndex.ToString(CultureInfo.InvariantCulture) + "].Resource", out var resource) &&
+               string.Equals(fieldValue["Resource: ".Length..], resource, StringComparison.Ordinal);
+    }
+
+    private static bool IsDtoMaterialSwapFormKey(
+        int materialSwapIndex,
+        string formKey,
+        IReadOnlyDictionary<string, string> dtoFields)
+    {
+        var dtoPath = "Models[0].MaterialSwaps[" + materialSwapIndex.ToString(CultureInfo.InvariantCulture) + "]";
+        return (dtoFields.TryGetValue(dtoPath + ".MaterialSwapFormKey", out var nestedFormKey) &&
+                string.Equals(formKey, nestedFormKey, StringComparison.Ordinal)) ||
+               (dtoFields.TryGetValue("Model.MaterialSwaps[" + materialSwapIndex.ToString(CultureInfo.InvariantCulture) + "]", out var flatFormKey) &&
+                string.Equals(formKey, flatFormKey, StringComparison.Ordinal));
+    }
+
+    private static string NormalizeHexPrefix(string value)
+    {
+        return value.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+            ? value[2..]
+            : value;
+    }
+
     private static bool IsSameTypeName(string spriggitTypeName, string dtoTypeName)
     {
         return string.Equals(spriggitTypeName, dtoTypeName, StringComparison.Ordinal) ||
@@ -1234,13 +1576,21 @@ public static class Helpers
             return false;
         }
 
-        return (fieldName is "Value" or "Weight" && IsZero(fieldValue)) ||
+        if (string.Equals(fieldValue, "Null", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return (fieldName is "Value" or "Weight" or "DirtinessScale" && IsZero(fieldValue)) ||
                string.Equals(fieldName, "FormVersion", StringComparison.OrdinalIgnoreCase) ||
                ((string.Equals(fieldName, "ObjectBoundsFirst", StringComparison.OrdinalIgnoreCase) ||
                  string.Equals(fieldName, "ObjectBoundsSecond", StringComparison.OrdinalIgnoreCase) ||
                  string.Equals(fieldName, "ObjectBounds.First", StringComparison.OrdinalIgnoreCase) ||
                  string.Equals(fieldName, "ObjectBounds.Second", StringComparison.OrdinalIgnoreCase)) &&
                 string.Equals(fieldValue, "0, 0, 0", StringComparison.Ordinal)) ||
+               (string.Equals(fieldName, "Color", StringComparison.OrdinalIgnoreCase) &&
+                string.IsNullOrEmpty(fieldValue)) ||
+               string.Equals(fieldName, "Model.Flags.Count", StringComparison.OrdinalIgnoreCase) ||
                (string.Equals(fieldName, "Flags", StringComparison.OrdinalIgnoreCase) && IsZero(fieldValue)) ||
                (string.Equals(fieldName, "Teaches.RawContent", StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(fieldValue, uint.MaxValue.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal)) ||
@@ -1670,7 +2020,9 @@ public static class Helpers
         }
 
         return (string.Equals(propertyRemainder, ".ObjectAlias", StringComparison.OrdinalIgnoreCase) && string.Equals(fieldValue, "-1", StringComparison.Ordinal)) ||
-               (string.Equals(propertyRemainder, ".ObjectUnused", StringComparison.OrdinalIgnoreCase) && IsZero(fieldValue));
+               (string.Equals(propertyRemainder, ".Alias", StringComparison.OrdinalIgnoreCase) && string.Equals(fieldValue, "-1", StringComparison.Ordinal)) ||
+               (string.Equals(propertyRemainder, ".ObjectUnused", StringComparison.OrdinalIgnoreCase) && IsZero(fieldValue)) ||
+               (string.Equals(propertyRemainder, ".Unused", StringComparison.OrdinalIgnoreCase) && IsZero(fieldValue));
     }
 
     private static bool IsScriptingAdapterListItemInfrastructureField(
@@ -1697,6 +2049,8 @@ public static class Helpers
         var spriggitFieldName = fieldRemainder switch
         {
             ".ObjectFormKey" => spriggitPath + ".Object",
+            ".ObjectAlias" => spriggitPath + ".Alias",
+            ".ObjectUnused" => spriggitPath + ".Unused",
             ".DataBool" or ".DataFloat" or ".DataInt" or ".DataString" => spriggitPath + ".Data",
             _ => spriggitPath + fieldRemainder
         };
@@ -1709,6 +2063,20 @@ public static class Helpers
 
         if (string.Equals(fieldRemainder, ".MutagenObjectType", StringComparison.OrdinalIgnoreCase) &&
             HasSpriggitPath(spriggitFields, spriggitPath))
+        {
+            return true;
+        }
+
+        if ((string.Equals(fieldRemainder, ".Alias", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldRemainder, ".ObjectAlias", StringComparison.OrdinalIgnoreCase)) &&
+            string.Equals(fieldValue, "-1", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if ((string.Equals(fieldRemainder, ".Unused", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldRemainder, ".ObjectUnused", StringComparison.OrdinalIgnoreCase)) &&
+            IsZero(fieldValue))
         {
             return true;
         }
@@ -1763,11 +2131,23 @@ public static class Helpers
         string fieldName,
         string fieldValue,
         IReadOnlyDictionary<string, string> dtoFields,
-        string rootFieldName)
+        string rootFieldName,
+        string dtoPropertyName)
     {
         if (!TryGetIndexedPath(fieldName, rootFieldName, out var index, out var remainder) ||
-            !remainder.StartsWith(".", StringComparison.Ordinal) ||
-            remainder.Length == 1)
+            (remainder.Length != 0 && !remainder.StartsWith(".", StringComparison.Ordinal)))
+        {
+            return false;
+        }
+
+        if (remainder.Length == 0)
+        {
+            var dtoScalarPath = rootFieldName + "[" + index.ToString(CultureInfo.InvariantCulture) + "]." + dtoPropertyName;
+            return dtoFields.TryGetValue(dtoScalarPath, out var directDtoValue) &&
+                   string.Equals(fieldValue, directDtoValue, StringComparison.Ordinal);
+        }
+
+        if (remainder.Length == 1)
         {
             return false;
         }
@@ -1784,8 +2164,8 @@ public static class Helpers
         var dtoPath = rootFieldName + "[" + index.ToString(CultureInfo.InvariantCulture) + "]";
         return (dtoFields.TryGetValue(dtoPath, out var dtoValue) &&
                 string.Equals(formKey, dtoValue, StringComparison.Ordinal)) ||
-               (dtoFields.TryGetValue(dtoPath + ".KeywordFormKey", out var dtoKeywordValue) &&
-                string.Equals(formKey, dtoKeywordValue, StringComparison.Ordinal));
+               (dtoFields.TryGetValue(dtoPath + "." + dtoPropertyName, out var dtoScalarValue) &&
+                string.Equals(formKey, dtoScalarValue, StringComparison.Ordinal));
     }
 
     private static bool IsSpriggitListBackedDtoScalar(
@@ -1919,6 +2299,15 @@ public static class Helpers
             .Count();
     }
 
+    private static int GetIndexedPathCount(IReadOnlyDictionary<string, string> fields, string rootFieldName)
+    {
+        return fields.Keys
+            .Select(field => TryGetIndexedPath(field, rootFieldName, out var index, out _) ? index : -1)
+            .Where(index => index >= 0)
+            .Distinct()
+            .Count();
+    }
+
     private static bool TryGetTopLevelIndexedPath(string path, string rootFieldName, out int index)
     {
         index = 0;
@@ -1992,6 +2381,11 @@ public static class Helpers
                 continue;
             }
 
+            if (values.Any(value => value.Contains(": ", StringComparison.Ordinal)))
+            {
+                continue;
+            }
+
             mergedFields[fieldName + ".Count"] = values.Count.ToString(CultureInfo.InvariantCulture);
             for (var valueIndex = 0; valueIndex < values.Count; valueIndex++)
             {
@@ -2019,6 +2413,304 @@ public static class Helpers
             ((value.StartsWith('\'') && value.EndsWith('\'')) || (value.StartsWith('"') && value.EndsWith('"'))))
         {
             return value[1..^1];
+        }
+
+        return value;
+    }
+
+    private static IReadOnlyDictionary<string, string> NormalizeSpriggitFields(SupportedGame game, RecordTypeData recordType, IReadOnlyDictionary<string, string> fields)
+    {
+        var normalizedFields = new Dictionary<string, string>(fields, StringComparer.OrdinalIgnoreCase);
+        if (normalizedFields.TryGetValue("Color", out var color))
+        {
+            normalizedFields["Color"] = FormatSpriggitColor(color);
+        }
+
+        NormalizeSpriggitPathValue(normalizedFields, "Model.File");
+        NormalizeSpriggitHexValue(normalizedFields, "FNAM");
+        AddSpriggitComponentHexAlias(normalizedFields, "WAIM");
+        AddSpriggitComponentHexAlias(normalizedFields, "WFIR");
+        NormalizeSpriggitHexValue(normalizedFields, "WAIM");
+        NormalizeSpriggitHexValue(normalizedFields, "WFIR");
+        NormalizeSpriggitHexValue(normalizedFields, "FLAG");
+        AddSpriggitComponentCountAliases(normalizedFields);
+        AddSpriggitResourceCountAliases(normalizedFields);
+        AddSpriggitDestructibleAliases(normalizedFields);
+        AddSpriggitVirtualMachineAdapterAliases(normalizedFields);
+        AddSpriggitMaterialSwapAliases(normalizedFields);
+        if (normalizedFields.ContainsKey("Model.File") &&
+            !normalizedFields.ContainsKey("Model.Count"))
+        {
+            normalizedFields["Model.Count"] = "1";
+        }
+
+        return normalizedFields;
+    }
+
+    private static void AddSpriggitComponentHexAlias(IDictionary<string, string> fields, string fieldName)
+    {
+        if (fields.ContainsKey(fieldName) ||
+            !fields.TryGetValue("Components.Count", out var countValue) ||
+            !int.TryParse(countValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
+        {
+            return;
+        }
+
+        for (var index = 0; index < count; index++)
+        {
+            var componentFieldName = "Components[" + index.ToString(CultureInfo.InvariantCulture) + "]." + fieldName;
+            if (fields.TryGetValue(componentFieldName, out var value))
+            {
+                fields[fieldName] = value;
+                return;
+            }
+        }
+    }
+
+    private static void AddSpriggitComponentCountAliases(IDictionary<string, string> fields)
+    {
+        if (!fields.TryGetValue("Components.Count", out var countValue) ||
+            !int.TryParse(countValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
+        {
+            return;
+        }
+
+        for (var index = 0; index < count; index++)
+        {
+            AddSpriggitFieldAlias(
+                fields,
+                "Components[" + index.ToString(CultureInfo.InvariantCulture) + "].Count",
+                "Count[" + index.ToString(CultureInfo.InvariantCulture) + "]");
+        }
+    }
+
+    private static void AddSpriggitResourceCountAliases(IDictionary<string, string> fields)
+    {
+        if (!fields.TryGetValue("Resources.Count", out var countValue) ||
+            !int.TryParse(countValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
+        {
+            return;
+        }
+
+        if (count == 1)
+        {
+            AddSpriggitFieldAlias(fields, "Resources[0].Count", "Count");
+        }
+
+        for (var index = 0; index < count; index++)
+        {
+            AddSpriggitFieldAlias(
+                fields,
+                "Resources[" + index.ToString(CultureInfo.InvariantCulture) + "].Count",
+                "Count[" + index.ToString(CultureInfo.InvariantCulture) + "]");
+        }
+    }
+
+    private static void AddSpriggitDestructibleAliases(IDictionary<string, string> fields)
+    {
+        AddSpriggitFieldAlias(fields, "Destructible.Stages.Count", "Destructible.Count");
+        if (!fields.TryGetValue("Destructible.Stages.Count", out var countValue) ||
+            !int.TryParse(countValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
+        {
+            return;
+        }
+
+        for (var index = 0; index < count; index++)
+        {
+            var stagePath = "Destructible.Stages[" + index.ToString(CultureInfo.InvariantCulture) + "]";
+            var aliasPath = "Destructible[" + index.ToString(CultureInfo.InvariantCulture) + "]";
+            foreach (var field in fields.Where(field => field.Key.StartsWith(stagePath + ".", StringComparison.OrdinalIgnoreCase)).ToList())
+            {
+                fields[aliasPath + field.Key[stagePath.Length..]] = field.Value;
+            }
+
+            AddSpriggitFieldAlias(fields, stagePath + ".Flags.Count", aliasPath + ".Count");
+            if (!fields.TryGetValue(stagePath + ".Flags.Count", out var flagsCountValue) ||
+                !int.TryParse(flagsCountValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var flagsCount))
+            {
+                continue;
+            }
+
+            for (var flagIndex = 0; flagIndex < flagsCount; flagIndex++)
+            {
+                AddSpriggitFieldAlias(
+                    fields,
+                    stagePath + ".Flags[" + flagIndex.ToString(CultureInfo.InvariantCulture) + "]",
+                    aliasPath + "[" + flagIndex.ToString(CultureInfo.InvariantCulture) + "]");
+            }
+        }
+    }
+
+    private static void AddSpriggitVirtualMachineAdapterAliases(IDictionary<string, string> fields)
+    {
+        if (!fields.TryGetValue("VirtualMachineAdapter.Scripts.Count", out var countValue) ||
+            !int.TryParse(countValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
+        {
+            return;
+        }
+
+        fields["VirtualMachineAdapter.Count"] = count.ToString(CultureInfo.InvariantCulture);
+        for (var index = 0; index < count; index++)
+        {
+            var scriptIndex = index.ToString(CultureInfo.InvariantCulture);
+            var scriptPath = "VirtualMachineAdapter.Scripts[" + scriptIndex + "]";
+            var aliasPath = "VirtualMachineAdapter[" + scriptIndex + "]";
+            AddSpriggitFieldAlias(fields, scriptPath + ".Name", aliasPath + ".Name");
+            AddSpriggitFieldAlias(fields, scriptPath + ".Properties.Count", aliasPath + ".Count");
+
+            if (!fields.TryGetValue(scriptPath + ".Properties.Count", out var propertyCountValue) ||
+                !int.TryParse(propertyCountValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var propertyCount))
+            {
+                continue;
+            }
+
+            for (var propertyIndex = 0; propertyIndex < propertyCount; propertyIndex++)
+            {
+                var propertyIndexText = propertyIndex.ToString(CultureInfo.InvariantCulture);
+                var propertyPath = scriptPath + ".Properties[" + propertyIndexText + "]";
+                var propertyAliasPath = aliasPath + "[" + propertyIndexText + "]";
+                foreach (var field in fields.Where(field => field.Key.StartsWith(propertyPath + ".", StringComparison.OrdinalIgnoreCase)).ToList())
+                {
+                    fields[propertyAliasPath + field.Key[propertyPath.Length..]] = field.Value;
+                }
+            }
+        }
+    }
+
+    private static void AddSpriggitMaterialSwapAliases(IDictionary<string, string> fields)
+    {
+        AddSpriggitMaterialSwapListAliases(fields, "Model.MaterialSwaps");
+        AddSpriggitMaterialSwapObjectAliases(fields, "Model.AlternateTextures");
+    }
+
+    private static void AddSpriggitMaterialSwapListAliases(IDictionary<string, string> fields, string fieldPath)
+    {
+        if (!fields.TryGetValue(fieldPath + ".Count", out var countValue) ||
+            !int.TryParse(countValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
+        {
+            return;
+        }
+
+        fields["Model.MaterialSwaps.Count"] = count.ToString(CultureInfo.InvariantCulture);
+        fields["Models[0].MaterialSwaps.Count"] = count.ToString(CultureInfo.InvariantCulture);
+        for (var index = 0; index < count; index++)
+        {
+            var materialSwapPath = fieldPath + "[" + index.ToString(CultureInfo.InvariantCulture) + "]";
+            var materialSwapFormKey = string.Empty;
+            if (fields.TryGetValue(materialSwapPath, out materialSwapFormKey))
+            {
+                AddSpriggitMaterialSwapFormKeyAliases(fields, index, materialSwapFormKey);
+                continue;
+            }
+
+            foreach (var field in fields.Where(field => field.Key.StartsWith(materialSwapPath + ".", StringComparison.OrdinalIgnoreCase)).ToList())
+            {
+                var materialSwapFormId = field.Key[(materialSwapPath.Length + 1)..];
+                if (!materialSwapFormId.Contains('.', StringComparison.Ordinal) &&
+                    !materialSwapFormId.Contains('[', StringComparison.Ordinal) &&
+                    !materialSwapFormId.Contains(']', StringComparison.Ordinal))
+                {
+                    materialSwapFormKey = materialSwapFormId + ":" + field.Value;
+                    AddSpriggitMaterialSwapFormKeyAliases(fields, index, materialSwapFormKey);
+                    break;
+                }
+            }
+        }
+
+        if (count == 1)
+        {
+            AddSpriggitFieldAlias(fields, fieldPath + "[0]", "Model[1]");
+            if (!fields.ContainsKey("Model[1]") &&
+                fields.TryGetValue("Model.MaterialSwaps[0]", out var materialSwapFormKey))
+            {
+                fields["Model[1]"] = materialSwapFormKey;
+            }
+        }
+    }
+
+    private static void AddSpriggitMaterialSwapObjectAliases(IDictionary<string, string> fields, string fieldPath)
+    {
+        if (!fields.TryGetValue(fieldPath + ".Count", out var countValue) ||
+            !int.TryParse(countValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
+        {
+            return;
+        }
+
+        for (var index = 0; index < count; index++)
+        {
+            var materialSwapPath = fieldPath + "[" + index.ToString(CultureInfo.InvariantCulture) + "]";
+            AddSpriggitFieldAlias(fields, materialSwapPath + ".Name", "Model[" + index.ToString(CultureInfo.InvariantCulture) + "].Name");
+            AddSpriggitFieldAlias(fields, materialSwapPath + ".Name", "Models[0].MaterialSwaps[" + index.ToString(CultureInfo.InvariantCulture) + "].Name");
+            AddSpriggitFieldAlias(fields, materialSwapPath + ".NewTexture", "Model[" + index.ToString(CultureInfo.InvariantCulture) + "].NewTexture");
+            if (fields.TryGetValue(materialSwapPath + ".NewTexture", out var materialSwapFormKey))
+            {
+                AddSpriggitMaterialSwapFormKeyAliases(fields, index, materialSwapFormKey);
+            }
+        }
+
+        fields["Model.MaterialSwaps.Count"] = count.ToString(CultureInfo.InvariantCulture);
+        fields["Models[0].MaterialSwaps.Count"] = count.ToString(CultureInfo.InvariantCulture);
+        if (count == 1)
+        {
+            AddSpriggitFieldAlias(fields, fieldPath + "[0].NewTexture", "Model[1]");
+            AddSpriggitFieldAlias(fields, fieldPath + "[0].NewTexture", "Model.MaterialSwap");
+            AddSpriggitFieldAlias(fields, fieldPath + "[0].NewTexture", "Model.MaterialSwaps[0]");
+        }
+    }
+
+    private static void AddSpriggitMaterialSwapFormKeyAliases(IDictionary<string, string> fields, int index, string materialSwapFormKey)
+    {
+        fields["Model.MaterialSwap"] = materialSwapFormKey;
+        fields["Model.MaterialSwaps[" + index.ToString(CultureInfo.InvariantCulture) + "]"] = materialSwapFormKey;
+        fields["Model[" + index.ToString(CultureInfo.InvariantCulture) + "].NewTexture"] = materialSwapFormKey;
+        fields["Models[0].MaterialSwaps[" + index.ToString(CultureInfo.InvariantCulture) + "].MaterialSwapFormKey"] = materialSwapFormKey;
+        fields["Models[0].MaterialSwaps[" + index.ToString(CultureInfo.InvariantCulture) + "].MaterialSwapIndex"] = index.ToString(CultureInfo.InvariantCulture);
+        fields["Models[0].MaterialSwaps[" + index.ToString(CultureInfo.InvariantCulture) + "].ModelGender"] = string.Empty;
+        fields["Models[0].MaterialSwaps[" + index.ToString(CultureInfo.InvariantCulture) + "].ModelSlot"] = "Model";
+
+        var formIdSeparator = materialSwapFormKey.IndexOf(':', StringComparison.Ordinal);
+        if (formIdSeparator > 0)
+        {
+            fields["Model[" + index.ToString(CultureInfo.InvariantCulture) + "]." + materialSwapFormKey[..formIdSeparator]] = materialSwapFormKey;
+        }
+    }
+
+    private static void NormalizeSpriggitHexValue(IDictionary<string, string> fields, string fieldName)
+    {
+        if (fields.TryGetValue(fieldName, out var value) &&
+            value.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+        {
+            fields[fieldName] = value[2..];
+        }
+    }
+
+    private static void NormalizeSpriggitPathValue(IDictionary<string, string> fields, string fieldName)
+    {
+        if (fields.TryGetValue(fieldName, out var value))
+        {
+            fields[fieldName] = value.Replace('/', '\\');
+        }
+    }
+
+    private static string FormatSpriggitColor(string value)
+    {
+        if (value.Length == 7 &&
+            value[0] == '#' &&
+            byte.TryParse(value.AsSpan(1, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var redOnly) &&
+            byte.TryParse(value.AsSpan(3, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var greenOnly) &&
+            byte.TryParse(value.AsSpan(5, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var blueOnly))
+        {
+            return $"Color [A=255, R={redOnly}, G={greenOnly}, B={blueOnly}]";
+        }
+
+        if (value.Length == 9 &&
+            value[0] == '#' &&
+            byte.TryParse(value.AsSpan(1, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var alpha) &&
+            byte.TryParse(value.AsSpan(3, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var red) &&
+            byte.TryParse(value.AsSpan(5, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var green) &&
+            byte.TryParse(value.AsSpan(7, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var blue))
+        {
+            return $"Color [A={alpha}, R={red}, G={green}, B={blue}]";
         }
 
         return value;

@@ -4,5 +4,5 @@ namespace CreationsForge.Core.Services.Interfaces;
 
 public interface IConditionRuleImportService
 {
-    void ReplaceConditionRules(IHasConditionsRecordDTO record, string recordType);
+    void ReplaceConditionRules(IHasConditionsDTO record, string recordType);
 }

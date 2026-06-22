@@ -16,7 +16,7 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
         RecordTypeCatalog.Class.TableName,
         RecordTypeCatalog.Keyword.TableName,
         RecordTypeCatalog.MagicEffect.TableName,
-        RecordTypeCatalog.MiscObject.TableName,
+        RecordTypeCatalog.MiscItem.TableName,
         RecordTypeCatalog.NPC.TableName,
         RecordTypeCatalog.Perk.TableName,
         RecordTypeCatalog.Book.TableName,
@@ -328,6 +328,35 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
     protected static TranslatedStringDTO? FromEnglish(string? value)
     {
         return LocalizedStringDTOMapper.FromEnglish(value);
+    }
+
+    protected static TranslatedStringDTO? BuildTranslatedString(IReadOnlyList<LocalizedStringDTO> localizedStrings, string sourceField, TranslatedStringDTO? fallback)
+    {
+        var strings = localizedStrings
+            .Where(localizedString => string.Equals(localizedString.SourceField, sourceField, StringComparison.OrdinalIgnoreCase))
+            .GroupBy(localizedString => localizedString.Language, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .Select(localizedString => new TranslatedStringValueDTO
+            {
+                Language = localizedString.Language,
+                String = localizedString.Value
+            })
+            .ToList();
+
+        return strings.Count == 0
+            ? fallback
+            : new TranslatedStringDTO
+            {
+                TargetLanguage = fallback?.TargetLanguage ?? "English",
+                Strings = strings
+            };
+    }
+
+    protected static bool RecordModKeysMatch(ModKeyDTO first, ModKeyDTO second)
+    {
+        return first.Type == second.Type &&
+            string.Equals(first.Name, second.Name, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(first.FileName, second.FileName, StringComparison.OrdinalIgnoreCase);
     }
 
     private RecordTreeEntryDTO ToRecordTreeEntry(RecordTreeEntryRow record, SupportedGame game)

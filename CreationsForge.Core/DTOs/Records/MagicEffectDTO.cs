@@ -3,7 +3,7 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class MagicEffectDTO : RecordDTO, IHasScriptingAdaptersRecordDTO, IKeywords, ISounds
+public class MagicEffectDTO : RecordDTO, IHasScriptingAdaptersDTO, IKeywords, ISounds
 {
     public TranslatedStringDTO? Name { get; set; }
 

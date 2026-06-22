@@ -7,7 +7,7 @@ namespace CreationsForge.Core.Repositories.Interfaces;
 
 public interface IRecordComponentRepository
 {
-    void ReplaceRecordComponents(IHasComponentsRecordDTO record, string recordType);
+    void ReplaceRecordComponents(IHasComponentsDTO record, string recordType);
 
     IReadOnlyList<RecordComponentDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey);
 }

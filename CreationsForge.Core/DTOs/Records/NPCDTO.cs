@@ -3,7 +3,7 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class NPCDTO : RecordDTO, IHasScriptingAdaptersRecordDTO, IKeywords
+public class NPCDTO : RecordDTO, IHasScriptingAdaptersDTO, IKeywords
 {
     public TranslatedStringDTO? Name { get; set; }
 

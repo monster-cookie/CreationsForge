@@ -18,7 +18,7 @@ public class RecordComparisonService : IRecordComparisonService
     private readonly IGlobalRepository GlobalRepository;
     private readonly IClassRepository ClassRepository;
     private readonly IFactionRepository FactionRepository;
-    private readonly IMiscObjectRepository MiscObjectRepository;
+    private readonly IMiscItemRepository MiscItemRepository;
     private readonly IKeywordRepository KeywordRepository;
     private readonly IActorValueInformationRepository ActorValueInformationRepository;
     private readonly INPCRepository NPCRepository;
@@ -45,7 +45,7 @@ public class RecordComparisonService : IRecordComparisonService
         IGlobalRepository globalRepository,
         IClassRepository classRepository,
         IFactionRepository factionRepository,
-        IMiscObjectRepository miscObjectRepository,
+        IMiscItemRepository miscItemRepository,
         IKeywordRepository keywordRepository,
         IActorValueInformationRepository actorValueInformationRepository,
         INPCRepository npcRepository,
@@ -71,7 +71,7 @@ public class RecordComparisonService : IRecordComparisonService
         GlobalRepository = globalRepository;
         ClassRepository = classRepository;
         FactionRepository = factionRepository;
-        MiscObjectRepository = miscObjectRepository;
+        MiscItemRepository = miscItemRepository;
         KeywordRepository = keywordRepository;
         ActorValueInformationRepository = actorValueInformationRepository;
         NPCRepository = npcRepository;
@@ -120,9 +120,9 @@ public class RecordComparisonService : IRecordComparisonService
             return CreateFactionComparison(game, formKey);
         }
 
-        if (recordType == RecordTypeCatalog.MiscObject.RecordID)
+        if (recordType == RecordTypeCatalog.MiscItem.RecordID)
         {
-            return CreateMiscObjectComparison(game, formKey);
+            return CreateMiscItemComparison(game, formKey);
         }
 
         if (recordType == RecordTypeCatalog.Keyword.RecordID)
@@ -200,11 +200,11 @@ public class RecordComparisonService : IRecordComparisonService
             .DefaultIfEmpty()
             .Max();
         var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("AddToListFormKey", records, record => FormatFormKey(record.AddToListFormKey)));
+        fields.Add(CreateField("AddToList", records, record => FormatFormKey(record.AddToList)));
         for (var itemIndex = 0; itemIndex < maxItemCount; itemIndex++)
         {
             var currentIndex = itemIndex;
-            fields.Add(CreateField($"Items[{itemIndex}]", records, record => FormatFormKey(record.Items.FirstOrDefault(item => item.ItemIndex == currentIndex)?.ItemFormKey)));
+            fields.Add(CreateField($"Items[{itemIndex}]", records, record => FormatFormKey(record.Items.FirstOrDefault(item => item.ItemIndex == currentIndex)?.Item)));
         }
 
         return CreateComparison(RecordTypeCatalog.FormList.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
@@ -296,32 +296,38 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("VendorLocationLinkFormKey", records, record => FormatFormKey(record.VendorLocationLinkFormKey)));
         AddFactionRelationGroups(fields, records);
         AddFactionRankGroups(fields, records, localizedStrings, recordTextLanguage);
-        AddConditionRuleGroups(fields, records.Cast<RecordDTO>().ToList(), records.Cast<IHasConditionsRecordDTO>().ToList());
+        AddConditionRuleGroups(fields, records.Cast<RecordDTO>().ToList(), records.Cast<IHasConditionsDTO>().ToList());
         AddRecordComponentGroups(fields, records.Cast<RecordDTO>().ToList(), records.SelectMany(record => record.Components).ToList());
         AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Faction.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.Faction.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
 
-    private RecordComparisonDTO CreateMiscObjectComparison(SupportedGame game, FormKeyDTO formKey)
+    private RecordComparisonDTO CreateMiscItemComparison(SupportedGame game, FormKeyDTO formKey)
     {
-        var records = MiscObjectRepository.GetByFormKey(game, formKey);
-        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.MiscObject.RecordID, formKey);
+        var records = MiscItemRepository.GetByFormKey(game, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.MiscItem.RecordID, formKey);
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
+        fields.Add(CreateField("ObjectBoundsFirst", records, record => record.ObjectBounds?.First ?? string.Empty));
+        fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBounds?.Second ?? string.Empty));
+        fields.Add(CreateField("Transforms.Inventory", records, record => FormatFormKey(record.Transforms?.Inventory)));
+        fields.Add(CreateField("PreviewTransform", records, record => FormatFormKey(record.PreviewTransform)));
         fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
         fields.Add(CreateField("ShortName", records, record => GetTranslatedDisplayValue(localizedStrings, record, "ShortName", recordTextLanguage, record.ShortName)));
         fields.Add(CreateField("Value", records, record => record.Value?.ToString() ?? string.Empty));
         fields.Add(CreateField("Weight", records, record => record.Weight?.ToString() ?? string.Empty));
         fields.Add(CreateField("DirtinessScale", records, record => record.DirtinessScale?.ToString() ?? string.Empty));
-        fields.Add(CreateField("FeaturedItemMessageFormKey", records, record => FormatFormKey(record.FeaturedItemMessageFormKey)));
+        fields.Add(CreateField("FeaturedItemMessage", records, record => FormatFormKey(record.FeaturedItemMessage)));
         fields.Add(CreateField("Flag", records, record => record.Flag ?? string.Empty));
-        AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.MiscObject.RecordID, formKey));
-        AddModelGroups(fields, records.Cast<RecordDTO>().ToList(), ModelRepository.GetByFormKey(game, RecordTypeCatalog.MiscObject.RecordID, formKey));
-        AddSoundGroups(fields, records.Cast<RecordDTO>().ToList(), SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.MiscObject.RecordID, formKey));
-        AddScriptingAdapterGroups(fields, records.Cast<RecordDTO>().ToList(), ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.MiscObject.RecordID, formKey));
+        AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.MiscItem.RecordID, formKey));
+        AddModelGroups(fields, records.Cast<RecordDTO>().ToList(), ModelRepository.GetByFormKey(game, RecordTypeCatalog.MiscItem.RecordID, formKey));
+        AddSoundGroups(fields, records.Cast<RecordDTO>().ToList(), SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.MiscItem.RecordID, formKey));
+        AddScriptingAdapterGroups(fields, records.Cast<RecordDTO>().ToList(), ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.MiscItem.RecordID, formKey));
+        AddMiscItemComponentGroups(fields, records);
+        AddMiscItemResourceGroups(fields, records);
 
-        return CreateComparison(RecordTypeCatalog.MiscObject.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
+        return CreateComparison(RecordTypeCatalog.MiscItem.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
 
     private RecordComparisonDTO CreateKeywordComparison(SupportedGame game, FormKeyDTO formKey)
@@ -331,11 +337,14 @@ public class RecordComparisonService : IRecordComparisonService
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
         fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
-        fields.Add(CreateField("Color", records, record => record.Color));
-        fields.Add(CreateField("Type", records, record => record.Type));
+        fields.Add(CreateField("Color", records, record => record.Color ?? string.Empty));
+        fields.Add(CreateField("Type", records, record => record.Type ?? string.Empty));
         fields.Add(CreateField("Notes", records, record => record.Notes ?? string.Empty));
         fields.Add(CreateField("FlashLinkageName", records, record => record.FlashLinkageName ?? string.Empty));
-        fields.Add(CreateField("AttractionRuleFormKey", records, record => FormatFormKey(record.AttractionRuleFormKey)));
+        fields.Add(CreateField("FNAM", records, record => record.FNAM ?? string.Empty));
+        fields.Add(CreateField("WAIM", records, record => record.WAIM ?? string.Empty));
+        fields.Add(CreateField("WFIR", records, record => record.WFIR ?? string.Empty));
+        fields.Add(CreateField("AttractionRule", records, record => FormatFormKey(record.AttractionRule)));
 
         return CreateComparison(RecordTypeCatalog.Keyword.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
@@ -582,7 +591,7 @@ public class RecordComparisonService : IRecordComparisonService
         AddConstructibleObjectComponentGroups(fields, records);
         AddConstructibleObjectCategoryGroups(fields, records);
         AddConstructibleObjectRecipeFilterGroups(fields, records);
-        AddConditionRuleGroups(fields, baseRecords, records.Cast<IHasConditionsRecordDTO>().ToList());
+        AddConditionRuleGroups(fields, baseRecords, records.Cast<IHasConditionsDTO>().ToList());
         AddScriptingAdapterGroups(fields, baseRecords, ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.ConstructibleObject.RecordID, formKey));
         AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.ConstructibleObject.RecordID, formKey));
 
@@ -595,7 +604,7 @@ public class RecordComparisonService : IRecordComparisonService
         var baseRecords = records.Cast<RecordDTO>().ToList();
         var fields = CreateCommonFields(baseRecords);
         fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
-        AddConditionRuleGroups(fields, baseRecords, records.Cast<IHasConditionsRecordDTO>().ToList());
+        AddConditionRuleGroups(fields, baseRecords, records.Cast<IHasConditionsDTO>().ToList());
 
         return CreateComparison(RecordTypeCatalog.ConditionForm.RecordID, formKey, baseRecords, fields);
     }
@@ -756,7 +765,7 @@ public class RecordComparisonService : IRecordComparisonService
             keywordFields.Add(CreateChildField(
                 $"Keyword [{keywordIndex}]",
                 records,
-                record => FormatFormKey(FindKeyword(keywords, record.ModKey, currentIndex)?.KeywordFormKey)));
+                record => FormatFormKey(FindKeyword(keywords, record.ModKey, currentIndex)?.Keyword)));
         }
 
         fields.Add(CreateGroupField("Keywords", records, keywordFields));
@@ -1035,6 +1044,82 @@ public class RecordComparisonService : IRecordComparisonService
         }
     }
 
+    private static void AddMiscItemComponentGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<MiscItemDTO> records)
+    {
+        var componentIndexes = records
+            .SelectMany(record => record.Components)
+            .Select(component => component.ComponentIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (componentIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var componentFields = new List<RecordComparisonFieldDTO>();
+        foreach (var componentIndex in componentIndexes)
+        {
+            var currentIndex = componentIndex;
+            var componentChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("Component", records, record => FormatFormKey(record.Components.FirstOrDefault(component => component.ComponentIndex == currentIndex)?.Component)),
+                CreateField("Count", records, record => record.Components.FirstOrDefault(component => component.ComponentIndex == currentIndex)?.Count?.ToString() ?? string.Empty)
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (componentChildren.Count > 0)
+            {
+                componentFields.Add(CreateGroupField($"Component [{componentIndex}]", records.Cast<RecordDTO>().ToList(), componentChildren));
+            }
+        }
+
+        if (componentFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("Components", records.Cast<RecordDTO>().ToList(), componentFields));
+        }
+    }
+
+    private static void AddMiscItemResourceGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<MiscItemDTO> records)
+    {
+        var resourceIndexes = records
+            .SelectMany(record => record.Resources)
+            .Select(resource => resource.ResourceIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (resourceIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var resourceFields = new List<RecordComparisonFieldDTO>();
+        foreach (var resourceIndex in resourceIndexes)
+        {
+            var currentIndex = resourceIndex;
+            var resourceChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("Resource", records, record => FormatFormKey(record.Resources.FirstOrDefault(resource => resource.ResourceIndex == currentIndex)?.Resource)),
+                CreateField("Count", records, record => record.Resources.FirstOrDefault(resource => resource.ResourceIndex == currentIndex)?.Count?.ToString() ?? string.Empty)
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (resourceChildren.Count > 0)
+            {
+                resourceFields.Add(CreateGroupField($"Resource [{resourceIndex}]", records.Cast<RecordDTO>().ToList(), resourceChildren));
+            }
+        }
+
+        if (resourceFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("Resources", records.Cast<RecordDTO>().ToList(), resourceFields));
+        }
+    }
+
     private static void AddClassPropertyGroups(IList<RecordComparisonFieldDTO> fields, IReadOnlyList<ClassDTO> records)
     {
         var propertyIndexes = records.SelectMany(record => record.Properties).Select(property => property.PropertyIndex).Distinct().Order().ToList();
@@ -1140,7 +1225,7 @@ public class RecordComparisonService : IRecordComparisonService
     private static void AddConditionRuleGroups(
         IList<RecordComparisonFieldDTO> fields,
         IReadOnlyList<RecordDTO> baseRecords,
-        IReadOnlyList<IHasConditionsRecordDTO> records)
+        IReadOnlyList<IHasConditionsDTO> records)
     {
         var conditionKeys = records
             .SelectMany(record => record.Conditions)
@@ -1563,14 +1648,14 @@ public class RecordComparisonService : IRecordComparisonService
             payload.PayloadIndex == payloadKey.Index);
     }
 
-    private static ConditionFormConditionDTO? FindConditionRule(IHasConditionsRecordDTO record, ConditionRuleKey conditionKey)
+    private static ConditionFormConditionDTO? FindConditionRule(IHasConditionsDTO record, ConditionRuleKey conditionKey)
     {
         return record.Conditions.FirstOrDefault(condition => string.Equals(condition.ConditionSlot, conditionKey.Slot, StringComparison.Ordinal) &&
             condition.ConditionIndex == conditionKey.Index);
     }
 
     private static ConditionFormConditionDTO? FindConditionRule(
-        IReadOnlyList<IHasConditionsRecordDTO> records,
+        IReadOnlyList<IHasConditionsDTO> records,
         IReadOnlyList<RecordDTO> baseRecords,
         ModKeyDTO modKey,
         ConditionRuleKey conditionKey)

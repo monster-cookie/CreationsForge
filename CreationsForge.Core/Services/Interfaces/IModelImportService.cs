@@ -4,5 +4,5 @@ namespace CreationsForge.Core.Services.Interfaces;
 
 public interface IModelImportService
 {
-    void ReplaceRecordModels(IHasModelsRecordDTO record, string recordType);
+    void ReplaceRecordModels(IHasModelsDTO record, string recordType);
 }

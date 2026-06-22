@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Collections;
+using System.Reflection;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
@@ -38,7 +39,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         cancellationToken.ThrowIfCancellationRequested();
         var factions = MapFactions(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
-        var miscObjects = MapMiscObjects(plugin, mod);
+        var miscItems = MapMiscItems(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
         var keywords = MapKeywords(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
@@ -71,7 +72,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             Globals = globals,
             Classes = classes,
             Factions = factions,
-            MiscObjects = miscObjects,
+            MiscItems = miscItems,
             Keywords = keywords,
             ActorValueInformation = actorValueInformation,
             NPCs = npcs,
@@ -96,7 +97,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
     private static IReadOnlyList<FormListDTO> MapFormLists(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.FormLists
-            .Select(record => new FormListDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new FormListDTO
             {
                 Game = SupportedGame.Starfield,
                 ModKey = plugin.ModKey,
@@ -106,18 +107,19 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
                 Version2 = GetPropertyNullableInt(record, "Version2"),
                 VersionControl = GetPropertyNullableInt(record, "VersionControl"),
+                Name = LocalizedStringDTOMapper.ToTranslatedStringDTO(GetPropertyValue(record, "Name")),
                 ImportedAtUTC = DateTime.UtcNow,
-                AddToListFormKey = GetFormKeyFromObject(GetPropertyValue(record, "AddToList")),
+                AddToList = GetFormKeyFromObject(GetPropertyValue(record, "AddToList")),
                 Items = record.Items.Select((item, itemIndex) => new FormListItemDTO
                 {
                     Game = SupportedGame.Starfield,
                     ModKey = plugin.ModKey,
                     FormKey = MapFormKey(record.FormKey),
-                    ItemFormKey = MapFormKey(item.FormKey),
+                    Item = MapFormKey(item.FormKey),
                     ItemIndex = itemIndex,
                     ImportedAtUTC = DateTime.UtcNow
                 }).ToList()
-            })
+            }, record))
             .ToList();
     }
 
@@ -188,11 +190,14 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 VersionControl = GetPropertyNullableInt(record, "VersionControl"),
                 ImportedAtUTC = DateTime.UtcNow,
                 Name = GetTranslatedString(record.Name),
-                Color = record.Color.ToString() ?? string.Empty,
+                Color = FormatSpriggitColor(record.Color),
                 Type = record.Type.ToString() ?? string.Empty,
                 Notes = record.Notes,
                 FlashLinkageName = record.FlashLinkageName,
-                AttractionRuleFormKey = record.AttractionRule.IsNull ? null : MapFormKey(record.AttractionRule.FormKey),
+                FNAM = FormatSpriggitHexValue(GetPropertyValue(record, "FNAM")),
+                WAIM = GetFirstComponentHexValue(record, "WAIM"),
+                WFIR = GetFirstComponentHexValue(record, "WFIR"),
+                AttractionRule = record.AttractionRule.IsNull ? null : MapFormKey(record.AttractionRule.FormKey),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Keyword.RecordID, record)
             }, record))
             .ToList();
@@ -212,10 +217,10 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             .ToList();
     }
 
-    private static IReadOnlyList<MiscObjectDTO> MapMiscObjects(PluginDTO plugin, IStarfieldModGetter mod)
+    private static IReadOnlyList<MiscItemDTO> MapMiscItems(PluginDTO plugin, IStarfieldModGetter mod)
     {
         return mod.MiscItems
-            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new MiscObjectDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new MiscItemDTO
             {
                 Game = SupportedGame.Starfield,
                 ModKey = plugin.ModKey,
@@ -226,17 +231,28 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Version2 = GetPropertyNullableInt(record, "Version2"),
                 VersionControl = GetPropertyNullableInt(record, "VersionControl"),
                 ImportedAtUTC = DateTime.UtcNow,
+                ObjectBounds = new ObjectBoundsDTO
+                {
+                    First = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
+                    Second = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second")
+                },
+                Transforms = new BookTransformsDTO
+                {
+                    Inventory = GetFormKeyFromObject(GetPropertyValue(GetPropertyValue(record, "Transforms"), "Inventory"))
+                },
                 Name = GetTranslatedString(record.Name),
                 ShortName = GetTranslatedString(record.ShortName),
                 Value = record.Value,
                 Weight = record.Weight,
                 DirtinessScale = (float)record.DirtinessScale,
-                FeaturedItemMessageFormKey = record.FeaturedItemMessage.IsNull ? null : MapFormKey(record.FeaturedItemMessage.FormKey),
+                FeaturedItemMessage = record.FeaturedItemMessage.IsNull ? null : MapFormKey(record.FeaturedItemMessage.FormKey),
                 Flag = record.FLAG == null ? null : Convert.ToHexString(record.FLAG.Value.ToArray()),
-                Models = GetModels(plugin, RecordTypeCatalog.MiscObject.RecordID, record.FormKey, record.Model),
-                Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.MiscObject.RecordID, record.FormKey, record.Keywords),
-                Sounds = GetNamedSounds(plugin, RecordTypeCatalog.MiscObject.RecordID, record.FormKey, record, "CraftingSound", "PickupSound", "DropdownSound"),
-                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MiscObject.RecordID, record)
+                Models = GetModels(plugin, RecordTypeCatalog.MiscItem.RecordID, record.FormKey, record.Model),
+                Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.MiscItem.RecordID, record.FormKey, record.Keywords),
+                Sounds = GetNamedSounds(plugin, RecordTypeCatalog.MiscItem.RecordID, record.FormKey, record, "CraftingSound", "PickupSound", "DropdownSound"),
+                ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.MiscItem.RecordID, record),
+                Resources = GetMiscItemResources(plugin, record.FormKey, record),
+                RawPayloads = GetMiscItemRawPayloads(plugin, record.FormKey, record.Model)
             }, record))
             .ToList();
     }
@@ -710,6 +726,36 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             }).ToList();
     }
 
+    private static List<MiscItemResourceDTO> GetMiscItemResources(PluginDTO plugin, FormKey formKey, object record)
+    {
+        return GetChildObjects(record, "Resources", "Resource")
+            .Select((resource, resourceIndex) => CreateMiscItemResource(plugin, formKey, resource, resourceIndex))
+            .Where(resource => resource != null)
+            .Cast<MiscItemResourceDTO>()
+            .ToList();
+    }
+
+    private static MiscItemResourceDTO? CreateMiscItemResource(PluginDTO plugin, FormKey formKey, object resource, int resourceIndex)
+    {
+        var resourceData = GetPropertyValue(resource, "Resource") ?? resource;
+        var resourceFormKey = GetFormKeyFromObject(GetPropertyValue(resourceData, "Resource")) ?? GetFormKeyFromObject(resourceData);
+        if (resourceFormKey == null)
+        {
+            return null;
+        }
+
+        return new MiscItemResourceDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = plugin.ModKey,
+            FormKey = MapFormKey(formKey),
+            Resource = resourceFormKey,
+            ResourceIndex = resourceIndex,
+            Count = GetPropertyNullableInt(resource, "Count") ?? GetPropertyNullableInt(resourceData, "Count"),
+            ImportedAtUTC = DateTime.UtcNow
+        };
+    }
+
     private static List<KeywordMappingDTO> GetSingleKeywordMapping(PluginDTO plugin, string recordType, FormKey formKey, object? keyword)
     {
         if (GetFormKeyFromObject(keyword) is not { } keywordFormKey)
@@ -725,7 +771,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 ModKey = plugin.ModKey,
                 RecordType = recordType,
                 FormKey = MapFormKey(formKey),
-                KeywordFormKey = keywordFormKey,
+                Keyword = keywordFormKey,
                 KeywordIndex = 0,
                 ImportedAtUTC = DateTime.UtcNow
             }
@@ -930,14 +976,35 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 FormKey = MapFormKey(formKey),
                 ModelSlot = "Model",
                 ModelGender = string.Empty,
-                  File = model.File?.ToString(),
+                File = FormatSpriggitModelFilePath(model.File?.ToString()),
                 TextureFileHashes = model.TextureFileHashes == null ? null : Convert.ToHexString(model.TextureFileHashes.Value.ToArray()),
                 LightLayer = model.LightLayer,
                 Flags = model.Flags?.ToString(),
                 ColorRemappingIndex = model.ColorRemappingIndex,
                 FlagsVestigial = model.FlagsVestigial?.ToString(),
                 ImportedAtUTC = importedAtUTC,
-                MaterialSwaps = (model.MaterialSwaps ?? []).Select((materialSwap, materialSwapIndex) => new ModelMaterialSwapDTO
+                MaterialSwaps = GetModelMaterialSwaps(plugin, recordType, formKey, model, importedAtUTC)
+            }
+        };
+    }
+
+    private static List<ModelMaterialSwapDTO> GetModelMaterialSwaps(PluginDTO plugin, string recordType, FormKey formKey, object model, DateTime importedAtUTC)
+    {
+        var materialSwaps = (GetPropertyValue(model, "MaterialSwaps") as IEnumerable)?.Cast<object>().ToList() ?? new List<object>();
+        if (GetPropertyValue(model, "AlternateTextures") is IEnumerable alternateTextures)
+        {
+            materialSwaps.AddRange(alternateTextures.Cast<object>());
+        }
+
+        var materialSwap = GetPropertyValue(model, "MaterialSwap");
+        if (materialSwap != null)
+        {
+            materialSwaps.Add(materialSwap);
+        }
+
+        return materialSwaps
+            .Select((materialSwap, materialSwapIndex) => (GetFormKeyFromObject(GetPropertyValue(materialSwap, "NewTexture")) ?? GetFormKeyFromObject(materialSwap)) is { } materialSwapFormKey
+                ? new ModelMaterialSwapDTO
                 {
                     Game = SupportedGame.Starfield,
                     ModKey = plugin.ModKey,
@@ -945,12 +1012,28 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                     FormKey = MapFormKey(formKey),
                     ModelSlot = "Model",
                     ModelGender = string.Empty,
-                    MaterialSwapFormKey = MapFormKey(materialSwap.FormKey),
+                    Name = GetPropertyValue(materialSwap, "Name")?.ToString(),
+                    MaterialSwapFormKey = materialSwapFormKey,
                     MaterialSwapIndex = materialSwapIndex,
                     ImportedAtUTC = importedAtUTC
-                }).ToList()
-            }
-        };
+                }
+                : null)
+            .Where(materialSwap => materialSwap != null)
+            .Cast<ModelMaterialSwapDTO>()
+            .ToList();
+    }
+
+    private static string? FormatSpriggitModelFilePath(string? file)
+    {
+        if (file == null)
+        {
+            return null;
+        }
+
+        return file.StartsWith("Meshes\\", StringComparison.OrdinalIgnoreCase) ||
+               file.StartsWith("Meshes/", StringComparison.OrdinalIgnoreCase)
+            ? file[7..]
+            : file;
     }
 
     private static List<KeywordMappingDTO> GetKeywordMappings(PluginDTO plugin, string recordType, FormKey formKey, IEnumerable<IFormLinkGetter<IKeywordGetter>>? keywords)
@@ -965,7 +1048,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 ModKey = plugin.ModKey,
                 RecordType = recordType,
                 FormKey = MapFormKey(formKey),
-                KeywordFormKey = MapFormKey(keyword.FormKey),
+                Keyword = MapFormKey(keyword.FormKey),
                 KeywordIndex = keywordIndex,
                 ImportedAtUTC = importedAtUTC
             })
@@ -999,7 +1082,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                     ModKey = plugin.ModKey,
                     RecordType = recordType,
                     FormKey = MapFormKey(formKey),
-                    KeywordFormKey = keywordFormKey,
+                    Keyword = keywordFormKey,
                     KeywordIndex = keywords.Count,
                     ImportedAtUTC = importedAtUTC
                 });
@@ -1042,6 +1125,13 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         var payloads = new List<RawRecordPayloadDTO>();
         AddRawPayload(payloads, plugin, RecordTypeCatalog.Book.RecordID, formKey, "Model.Data", 0, model?.GetType().Name ?? "Model", FormatHexValue(GetPropertyValue(model, "Data")), importedAtUTC);
         AddBaseFormComponentRawPayloads(payloads, plugin, RecordTypeCatalog.Book.RecordID, formKey, components, importedAtUTC);
+        return payloads;
+    }
+
+    private static List<RawRecordPayloadDTO> GetMiscItemRawPayloads(PluginDTO plugin, FormKey formKey, object? model)
+    {
+        var payloads = new List<RawRecordPayloadDTO>();
+        AddRawPayload(payloads, plugin, RecordTypeCatalog.MiscItem.RecordID, formKey, "Model.Data", 0, model?.GetType().Name ?? "Model", FormatHexValue(GetPropertyValue(model, "Data")), DateTime.UtcNow);
         return payloads;
     }
 
@@ -1509,6 +1599,22 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             : value?.ToString();
     }
 
+    private static string FormatSpriggitColor(object? value)
+    {
+        var text = value?.ToString() ?? string.Empty;
+        if (text.Length == 9 &&
+            text[0] == '#' &&
+            byte.TryParse(text.AsSpan(1, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var alpha) &&
+            byte.TryParse(text.AsSpan(3, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var red) &&
+            byte.TryParse(text.AsSpan(5, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var green) &&
+            byte.TryParse(text.AsSpan(7, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var blue))
+        {
+            return $"Color [A={alpha}, R={red}, G={green}, B={blue}]";
+        }
+
+        return text;
+    }
+
     private static string? FormatHexValue(object? value)
     {
         if (value == null)
@@ -1533,6 +1639,155 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         }
 
         return value.ToString();
+    }
+
+    private static string? GetFirstComponentHexValue(object record, string propertyName)
+    {
+        foreach (var component in GetComponentObjects(record))
+        {
+            var value = GetPropertyValue(component, propertyName);
+            if (value != null)
+            {
+                return FormatSpriggitHexValue(value);
+            }
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<object> GetComponentObjects(object record)
+    {
+        var directComponents = (GetPropertyValue(record, "Components") as IEnumerable)?.Cast<object>().ToList();
+        if (directComponents != null)
+        {
+            foreach (var component in directComponents)
+            {
+                yield return component;
+            }
+        }
+
+        var nestedComponents = new List<object>();
+        AddMatchingChildObjects(
+            nestedComponents,
+            record,
+            item => item.GetType().Name.Contains("Component", StringComparison.OrdinalIgnoreCase) ||
+                    GetPropertyValue(item, "WAIM") != null ||
+                    GetPropertyValue(item, "WFIR") != null,
+            0);
+
+        foreach (var component in nestedComponents)
+        {
+            if (directComponents == null || directComponents.All(directComponent => !ReferenceEquals(directComponent, component)))
+            {
+                yield return component;
+            }
+        }
+    }
+
+    private static IReadOnlyList<object> GetChildObjects(object record, string preferredPropertyName, string linkPropertyName)
+    {
+        var objects = new List<object>();
+        AddEnumerablePropertyObjects(objects, GetPropertyValue(record, preferredPropertyName));
+        if (objects.Count > 0)
+        {
+            return objects;
+        }
+
+        AddMatchingChildObjects(objects, record, item => GetPropertyValue(item, linkPropertyName) != null && GetPropertyValue(item, "Count") != null, 0);
+
+        return objects;
+    }
+
+    private static void AddMatchingChildObjects(ICollection<object> objects, object? source, Func<object, bool> isMatch, int depth)
+    {
+        if (source == null || source is string || IsSimpleReflectionValue(source) || depth > 3)
+        {
+            return;
+        }
+
+        foreach (var item in GetEnumerableObjects(source))
+        {
+            AddMatchingChildObject(objects, item, isMatch, depth);
+        }
+
+        foreach (var property in source.GetType().GetProperties())
+        {
+            if (property.GetIndexParameters().Length > 0)
+            {
+                continue;
+            }
+
+            object? value;
+            try
+            {
+                value = property.GetValue(source);
+            }
+            catch (TargetInvocationException)
+            {
+                continue;
+            }
+
+            foreach (var item in GetEnumerableObjects(value))
+            {
+                AddMatchingChildObject(objects, item, isMatch, depth + 1);
+            }
+        }
+    }
+
+    private static void AddMatchingChildObject(ICollection<object> objects, object item, Func<object, bool> isMatch, int depth)
+    {
+        if (IsSimpleReflectionValue(item))
+        {
+            return;
+        }
+
+        if (isMatch(item))
+        {
+            objects.Add(item);
+            return;
+        }
+
+        AddMatchingChildObjects(objects, item, isMatch, depth + 1);
+    }
+
+    private static void AddEnumerablePropertyObjects(ICollection<object> objects, object? value)
+    {
+        foreach (var item in GetEnumerableObjects(value))
+        {
+            objects.Add(item);
+        }
+    }
+
+    private static IEnumerable<object> GetEnumerableObjects(object? value)
+    {
+        return value is IEnumerable enumerable && value is not string
+            ? enumerable.Cast<object>()
+            : [];
+    }
+
+    private static bool IsSimpleReflectionValue(object value)
+    {
+        var type = value.GetType();
+        return type.IsPrimitive ||
+               type.IsEnum ||
+               type == typeof(decimal) ||
+               type == typeof(DateTime) ||
+               type == typeof(Guid) ||
+               type == typeof(FormKey) ||
+               type == typeof(ModKey);
+    }
+
+    private static string? FormatSpriggitHexValue(object? value)
+    {
+        var hexValue = FormatHexValue(value)?.Trim();
+        if (hexValue == null)
+        {
+            return null;
+        }
+
+        return hexValue.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+            ? hexValue[2..]
+            : hexValue;
     }
 
     private static string? FormatConditionValue(object? value)
@@ -1563,7 +1818,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
     private static List<ScriptingAdapterPropertyDTO> GetScriptingAdapterProperties(PluginDTO plugin, string recordType, FormKey formKey, IScriptEntryGetter script, DateTime importedAtUTC)
     {
         return script.Properties
-            .OrderBy(property => property.Name, StringComparer.Ordinal)
+            .OrderBy(property => property.Name, StringComparer.OrdinalIgnoreCase)
             .Select((property, propertyIndex) => CreateScriptingAdapterProperty(plugin, recordType, formKey, script.Name, property, propertyIndex, importedAtUTC))
             .Where(property => property != null)
             .Cast<ScriptingAdapterPropertyDTO>()

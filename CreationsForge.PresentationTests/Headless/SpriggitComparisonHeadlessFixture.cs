@@ -139,7 +139,7 @@ public class SpriggitComparisonHeadlessFixture
         {
             "GMST" => recordSet.GameSettings,
             "GLOB" => recordSet.Globals,
-            "MISC" => recordSet.MiscObjects,
+            "MISC" => recordSet.MiscItems,
             "COBJ" => recordSet.ConstructibleObjects,
             "PERK" => recordSet.Perks,
             _ => throw new InvalidOperationException($"Unsupported headless comparison record type '{recordType}'.")
@@ -252,7 +252,7 @@ public class SpriggitComparisonHeadlessFixture
         IGlobalRepository,
         IClassRepository,
         IFactionRepository,
-        IMiscObjectRepository,
+        IMiscItemRepository,
         IKeywordRepository,
         IActorValueInformationRepository,
         INPCRepository,
@@ -278,7 +278,7 @@ public class SpriggitComparisonHeadlessFixture
         private readonly IReadOnlyList<GlobalDTO> globals = [];
         private readonly IReadOnlyList<ClassDTO> classes = [];
         private readonly IReadOnlyList<FactionDTO> factions = [];
-        private readonly IReadOnlyList<MiscObjectDTO> miscObjects = [];
+        private readonly IReadOnlyList<MiscItemDTO> miscItems = [];
         private readonly IReadOnlyList<KeywordDTO> keywords = [];
         private readonly IReadOnlyList<ActorValueInformationDTO> actorValueInformation = [];
         private readonly IReadOnlyList<NPCDTO> npcs = [];
@@ -316,7 +316,7 @@ public class SpriggitComparisonHeadlessFixture
                     factions = [RequireRecord<FactionDTO>(record, recordType)];
                     break;
                 case "MISC":
-                    miscObjects = [RequireRecord<MiscObjectDTO>(record, recordType)];
+                    miscItems = [RequireRecord<MiscItemDTO>(record, recordType)];
                     break;
                 case "COBJ":
                     constructibleObjects = [RequireRecord<ConstructibleObjectDTO>(record, recordType)];
@@ -329,7 +329,7 @@ public class SpriggitComparisonHeadlessFixture
                     break;
             }
 
-            if (record is IHasModelsRecordDTO modelRecord)
+            if (record is IHasModelsDTO modelRecord)
             {
                 models = modelRecord.Models.ToList();
             }
@@ -339,7 +339,7 @@ public class SpriggitComparisonHeadlessFixture
                 keywordMappings = keywordRecord.Keywords.ToList();
             }
 
-            if (record is IHasComponentsRecordDTO componentRecord)
+            if (record is IHasComponentsDTO componentRecord)
             {
                 recordComponents = componentRecord.Components.ToList();
             }
@@ -349,12 +349,12 @@ public class SpriggitComparisonHeadlessFixture
                 soundMappings = soundRecord.Sounds.ToList();
             }
 
-            if (record is IHasScriptingAdaptersRecordDTO scriptingAdapterRecord)
+            if (record is IHasScriptingAdaptersDTO scriptingAdapterRecord)
             {
                 scriptingAdapters = scriptingAdapterRecord.ScriptingAdapters.ToList();
             }
 
-            if (record is IHasRawRecordPayloadsRecordDTO rawPayloadRecord)
+            if (record is IHasRawRecordPayloadsDTO rawPayloadRecord)
             {
                 rawPayloads = rawPayloadRecord.RawPayloads.ToList();
             }
@@ -402,9 +402,9 @@ public class SpriggitComparisonHeadlessFixture
             return factions;
         }
 
-        IReadOnlyList<MiscObjectDTO> IMiscObjectRepository.GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        IReadOnlyList<MiscItemDTO> IMiscItemRepository.GetByFormKey(SupportedGame game, FormKeyDTO formKey)
         {
-            return miscObjects;
+            return miscItems;
         }
 
         IReadOnlyList<KeywordDTO> IKeywordRepository.GetByFormKey(SupportedGame game, FormKeyDTO formKey)
@@ -517,7 +517,7 @@ public class SpriggitComparisonHeadlessFixture
         public void Save(FactionDTO dto)
         { }
 
-        public void Save(MiscObjectDTO dto)
+        public void Save(MiscItemDTO dto)
         { }
 
         public void Save(KeywordDTO dto)
@@ -565,7 +565,7 @@ public class SpriggitComparisonHeadlessFixture
         public void Save(RecordComponentDTO dto)
         { }
 
-        public void ReplaceRecordComponents(IHasComponentsRecordDTO record, string recordType)
+        public void ReplaceRecordComponents(IHasComponentsDTO record, string recordType)
         { }
 
         public void Save(SoundMappingDTO dto)

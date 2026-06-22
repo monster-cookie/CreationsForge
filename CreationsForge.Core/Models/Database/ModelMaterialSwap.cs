@@ -23,6 +23,7 @@ public class ModelMaterialSwap
         FormKeyId = dto.FormKey.Id;
         ModelSlot = dto.ModelSlot;
         ModelGender = dto.ModelGender;
+        Name = dto.Name;
         MaterialSwapModKeyName = dto.MaterialSwapFormKey.ModKey.Name;
         MaterialSwapModKeyType = dto.MaterialSwapFormKey.ModKey.Type;
         MaterialSwapModKeyFileName = dto.MaterialSwapFormKey.ModKey.FileName;
@@ -52,6 +53,8 @@ public class ModelMaterialSwap
     [Column("ModelSlot")] public string ModelSlot { get; set; } = string.Empty;
 
     [Column("ModelGender")] public string ModelGender { get; set; } = string.Empty;
+
+    [Column("Name")] public string? Name { get; set; }
 
     [Column("MaterialSwap_ModKey_Name")] public string MaterialSwapModKeyName { get; set; } = string.Empty;
 

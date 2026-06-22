@@ -1,6 +1,6 @@
 namespace CreationsForge.Core.DTOs.Records.Interfaces;
 
-public interface IHasScriptingAdaptersRecordDTO
+public interface IHasScriptingAdaptersDTO
 {
     IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; }
 }

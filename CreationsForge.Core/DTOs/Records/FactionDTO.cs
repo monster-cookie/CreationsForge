@@ -3,7 +3,7 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class FactionDTO : RecordDTO, IKeywords, IHasComponentsRecordDTO, IHasConditionsRecordDTO
+public class FactionDTO : RecordDTO, IKeywords, IHasComponentsDTO, IHasConditionsDTO
 {
     public TranslatedStringDTO? Name { get; set; }
 

@@ -40,7 +40,7 @@ public class GameRecordSetProvider
             "GLOB" => scope.Resolve<IGlobalRepository>().GetByFormKey(game, formKey),
             "KYWD" => scope.Resolve<IKeywordRepository>().GetByFormKey(game, formKey),
             "MGEF" => scope.Resolve<IMagicEffectRepository>().GetByFormKey(game, formKey),
-            "MISC" => scope.Resolve<IMiscObjectRepository>().GetByFormKey(game, formKey),
+            "MISC" => scope.Resolve<IMiscItemRepository>().GetByFormKey(game, formKey),
             "NPC_" => scope.Resolve<INPCRepository>().GetByFormKey(game, formKey),
             "PERK" => scope.Resolve<IPerkRepository>().GetByFormKey(game, formKey),
             "STAT" => scope.Resolve<IStaticRepository>().GetByFormKey(game, formKey),

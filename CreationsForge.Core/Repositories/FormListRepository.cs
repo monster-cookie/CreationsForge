@@ -12,11 +12,16 @@ public class FormListRepository : IFormListRepository, IRecordTreeRepository
 {
     private readonly IDatabase Database;
     private readonly IRecordInstanceRepository RecordInstanceRepository;
+    private readonly IRecordLocalizedStringRepository RecordLocalizedStringRepository;
 
-    public FormListRepository(IDatabase database, IRecordInstanceRepository recordInstanceRepository)
+    public FormListRepository(
+        IDatabase database,
+        IRecordInstanceRepository recordInstanceRepository,
+        IRecordLocalizedStringRepository recordLocalizedStringRepository)
     {
         Database = database;
         RecordInstanceRepository = recordInstanceRepository;
+        RecordLocalizedStringRepository = recordLocalizedStringRepository;
     }
 
     public string RecordType => RecordTypeCatalog.FormList.RecordID;
@@ -141,10 +146,13 @@ public class FormListRepository : IFormListRepository, IRecordTreeRepository
         var itemsByPlugin = items
             .GroupBy(item => GetPluginKey(item.ModKeyName, item.ModKeyType, item.ModKeyFileName))
             .ToDictionary(group => group.Key, group => group.Select(ToDTO).ToList());
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordType, formKey);
         return records
             .Select(record =>
             {
                 var dto = ToDTO(record, game);
+                dto.LocalizedStrings = localizedStrings.Where(localizedString => IsSameModKey(localizedString.ModKey, dto.ModKey)).ToList();
+                dto.Name = BuildTranslatedString(dto.LocalizedStrings, nameof(FormListDTO.Name), dto.Name);
                 if (itemsByPlugin.TryGetValue(GetPluginKey(record.ModKeyName, record.ModKeyType, record.ModKeyFileName), out var pluginItems))
                 {
                     dto.Items = pluginItems;
@@ -239,8 +247,10 @@ public class FormListRepository : IFormListRepository, IRecordTreeRepository
             EditorID = record.EditorId,
             FormVersion = record.FormVersion,
             MajorRecordFlags = record.MajorRecordFlags,
+            Version2 = record.Version2,
+            VersionControl = record.VersionControl,
             ImportedAtUTC = record.ImportedAtUTC,
-            AddToListFormKey = CreateNullableFormKey(
+            AddToList = CreateNullableFormKey(
                 record.AddToListModKeyName,
                 record.AddToListModKeyType,
                 record.AddToListModKeyFileName,
@@ -269,7 +279,7 @@ public class FormListRepository : IFormListRepository, IRecordTreeRepository
                 },
                 Id = (uint)record.FormKeyId
             },
-            ItemFormKey = new FormKeyDTO
+            Item = new FormKeyDTO
             {
                 ModKey = new ModKeyDTO
                 {
@@ -306,6 +316,29 @@ public class FormListRepository : IFormListRepository, IRecordTreeRepository
     private static string GetPluginKey(string modKeyName, int modKeyType, string modKeyFileName)
     {
         return $"{modKeyName}|{modKeyType}|{modKeyFileName}".ToUpperInvariant();
+    }
+
+    private static bool IsSameModKey(ModKeyDTO first, ModKeyDTO second)
+    {
+        return first.Type == second.Type &&
+            string.Equals(first.Name, second.Name, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(first.FileName, second.FileName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static TranslatedStringDTO? BuildTranslatedString(IEnumerable<LocalizedStringDTO> localizedStrings, string sourceField, TranslatedStringDTO? fallback)
+    {
+        var strings = localizedStrings
+            .Where(localizedString => string.Equals(localizedString.SourceField, sourceField, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(localizedString => localizedString.Language, StringComparer.OrdinalIgnoreCase)
+            .Select(localizedString => new TranslatedStringValueDTO
+            {
+                Language = localizedString.Language,
+                String = localizedString.Value
+            })
+            .ToList();
+        return strings.Count == 0
+            ? fallback
+            : new TranslatedStringDTO { Strings = strings };
     }
 
     private static RecordTreeEntryDTO ToRecordTreeEntry(RecordTreeEntryRow record, SupportedGame game)
