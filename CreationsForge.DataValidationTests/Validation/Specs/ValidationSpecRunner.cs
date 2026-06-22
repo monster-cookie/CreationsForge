@@ -662,11 +662,41 @@ public class ValidationSpecRunner
             ValidationValueNormalizer.ModelFile => value.StartsWith("Meshes\\", StringComparison.OrdinalIgnoreCase)
                 ? value
                 : "Meshes\\" + value,
+            ValidationValueNormalizer.Color => FormatSpriggitColor(value),
             ValidationValueNormalizer.DecimalNumber => double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue)
                 ? Math.Round(doubleValue, 6).ToString("0.######", CultureInfo.InvariantCulture)
                 : value,
             _ => value
         };
+    }
+
+    private static string FormatSpriggitColor(string value)
+    {
+        if (value.Length == 7 &&
+            value[0] == '#' &&
+            byte.TryParse(value.AsSpan(1, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var redOnly) &&
+            byte.TryParse(value.AsSpan(3, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var greenOnly) &&
+            byte.TryParse(value.AsSpan(5, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var blueOnly))
+        {
+            return "Color [A=255, R=" + redOnly.ToString(CultureInfo.InvariantCulture) +
+                   ", G=" + greenOnly.ToString(CultureInfo.InvariantCulture) +
+                   ", B=" + blueOnly.ToString(CultureInfo.InvariantCulture) + "]";
+        }
+
+        if (value.Length == 9 &&
+            value[0] == '#' &&
+            byte.TryParse(value.AsSpan(1, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var alpha) &&
+            byte.TryParse(value.AsSpan(3, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var red) &&
+            byte.TryParse(value.AsSpan(5, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var green) &&
+            byte.TryParse(value.AsSpan(7, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var blue))
+        {
+            return "Color [A=" + alpha.ToString(CultureInfo.InvariantCulture) +
+                   ", R=" + red.ToString(CultureInfo.InvariantCulture) +
+                   ", G=" + green.ToString(CultureInfo.InvariantCulture) +
+                   ", B=" + blue.ToString(CultureInfo.InvariantCulture) + "]";
+        }
+
+        return value;
     }
 
     private static bool IsUnderPath(string fieldName, string path)

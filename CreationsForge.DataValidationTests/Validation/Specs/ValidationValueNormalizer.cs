@@ -31,6 +31,11 @@ public enum ValidationValueNormalizer
     ModelFile,
 
     /// <summary>
+    /// Compare Spriggit hexadecimal color values against the DTO's Mutagen color display string.
+    /// </summary>
+    Color,
+
+    /// <summary>
     /// Compare numeric values using a six-decimal invariant representation for fields that were previously asserted
     /// with floating-point tolerance.
     /// </summary>
