@@ -1,39 +1,65 @@
 # CreationsForge.DataValidationTests rules
 
-This folder contains data validation tests for validating that the mutagen/sqlite loaded DTOs match the known good data from Spriggit.
+This folder contains data validation tests for validating that the Mutagen/SQLite-loaded DTOs match known-good Spriggit YAML data.
 
 ## Test scope
 
 - Use xUnit and Shouldly according to existing patterns.
 - Avoid sleeps, timing-sensitive tests, and tests that depend on file ordering unless ordering is part of the behavior.
-- Test assertions must live directly in the `[Fact]` / `[Theory]` test method body. Do not put `ShouldBe`, `ShouldBeEmpty`, xUnit `Assert`, FluentAssertions, or other assertion-library calls in helper methods, local functions, shared helpers, test-only assertion methods, or loops hidden behind helpers.
-- Shared helpers must not call assertion libraries such as Shouldly, xUnit Assert, or FluentAssertions.
-- Helper functions should return values, comparison results, diagnostics, or unmatched-field messages; the test method decides what to assert.
+- Data validation tests must use spec-driven validation for Spriggit-to-DTO comparisons.
+- Do not add new hand-written field-by-field Spriggit comparison tests.
+- Existing non-spec validation tests should be converted to spec-driven validation when touched for record-shape, mapper, DTO, repository, schema, or validation-harness work.
 
-## Data Validation Test Assertions
+## Spec-driven validation
 
-Spriggit-to-DTO comparisons in data validation test methods must be explicit and sample-specific.
+Spec-driven validation tests define sample-specific mapping rules in validation specs and execute those specs through
+an approved validation spec runner.
 
-- Do not use loops, dictionary iteration, reflection, or broad helper assertions to compare matching Spriggit and DTO fields inside individual validation tests.
-- Each expected field mapping must be asserted by name, for example: `spriggit.Fields["EditorID"].ShouldBe(dtoFields["EditorID"]);`
-- Data validation tests must not use private assertion helpers such as `AssertTranslatedField`, `AssertOptionalField`, or `AssertRecordMatches`. Inline the assertion statements in the test method that owns the sample.
-- Repeated Spriggit translated-string fields must be asserted explicitly by key in the test body. Do not use loops or helper methods to assert translated field counts, target language, entry language, or entry string values.
-- Collection fields must assert expected counts and indexed values explicitly for the sample being tested.
-- Optional fields must assert the expected presence or absence explicitly for that sample.
-- The only approved generic unmatched-field coverage helpers are `Helpers.GetUnmatchedSpriggitFields(...)` and `Helpers.GetUnmatchedDtoFields(...)`.
-- Those unmatched-field helpers are a coverage backstop only. They must not replace explicit field-by-field assertions in the test method.
+- Specs must name intentional Spriggit-to-DTO path differences explicitly.
+- Specs must preserve unmatched Spriggit and DTO coverage so missing source fields and hallucinated DTO fields remain visible.
+- Specs should be sample-specific when optional fields, collections, localized strings, unions, or game-specific fields vary by sample.
+- Specs may use shared builders when the builder keeps rule definitions explicit and readable.
+- Spec builders and validators may enforce required fields, duplicate rules, malformed paths, missing sample metadata, and other harness invariants.
+- Spec runners may use reflection and raw Spriggit YAML field loading to produce comparison data.
+- Spec runners must not call assertion libraries.
 
-### Spec-driven Validation Tests (Preview)
+## Test assertions
 
-NOTE: This is currently in preview but will eventually replace most rules in this document.
+Test assertions must live directly in the `[Fact]` / `[Theory]` test method body.
 
-Spec-driven validation tests may use an approved validation spec runner that loads raw Spriggit YAML fields and reflected DTO fields, then returns diagnostics for the test method to assert.
+- Do not put `ShouldBe`, `ShouldBeEmpty`, xUnit `Assert`, FluentAssertions, or other assertion-library calls in shared helpers, spec runners, validators, builders, or test-only assertion helper methods.
+- Shared helpers must return values, assertion cases, comparison results, diagnostics, or unmatched-field messages.
+- The test method decides what to assert.
+- Spec-driven tests may iterate assertion cases returned by an approved spec runner when each case contains:
+  - Spriggit path
+  - DTO path
+  - expected value
+  - actual value
+  - failure message
+- Coverage diagnostics returned by the spec runner must be asserted in the test method.
+- If legacy unmatched-field helpers are still used for a record type, they are coverage backstops only and must not replace spec assertion cases.
 
-Spec rules must name intentional path differences explicitly. They must preserve unmatched Spriggit and DTO coverage so missing source fields and hallucinated DTO fields remain visible.
+## Approved validation shape
 
-Spec runners and helpers must not call assertion libraries. The test method remains responsible for asserting returned diagnostics.
+A typical spec-driven validation test should follow this shape:
 
-Spec-driven validation tests may iterate assertion cases returned by an approved spec runner when each case contains explicit Spriggit path, DTO path, expected value, actual value, and failure message. The runner must not call assertion libraries.
+```csharp
+var spec = BookValidationSpecs.Starfield_NH_SouvenirSlate();
+var dto = Helpers.GetDTO<BookDTO>(spec.Game, spec.RecordType, spec.FormKey);
+var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
+
+var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+foreach (var assertion in assertions)
+{
+    assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+}
+
+ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
+Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
+```
+
+When a record type no longer needs the legacy unmatched-field helpers because equivalent spec-runner coverage exists, the plan must call that out explicitly before removing them.
 
 ## Imported validation database freshness
 
@@ -49,3 +75,4 @@ A database reset/reimport is required when:
 - validation failures may be caused by stale imported rows rather than current code.
 
 The agent must call this out in the plan and final validation notes. Building the solution is not enough to refresh imported DTO data.
+
