@@ -6,6 +6,7 @@ using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Repositories.Interfaces;
 using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Core.Utilities;
+using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Core.Services;
 
@@ -215,8 +216,8 @@ public class RecordComparisonService : IRecordComparisonService
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.GameSetting.RecordID, formKey);
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("SettingType", records, record => record.SettingType ?? string.Empty));
-        fields.Add(CreateField("Data", records, record => GetLocalizedDisplayValue(localizedStrings, record, "Data", recordTextLanguage, record.Data)));
+        fields.Add(CreateField("MutagenObjectType", records, record => record.MutagenObjectType));
+        fields.Add(CreateField("Data", records, record => GetGameSettingDisplayValue(localizedStrings, record, recordTextLanguage)));
 
         return CreateComparison(RecordTypeCatalog.GameSetting.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
@@ -348,17 +349,16 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
         fields.Add(CreateField("Abbreviation", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Abbreviation", recordTextLanguage, record.Abbreviation)));
         fields.Add(CreateField("Description", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Description", recordTextLanguage, record.Description)));
-        fields.Add(CreateField("CNAM", records, record => record.Cnam ?? string.Empty));
-        fields.Add(CreateField("Skill.ImproveMult", records, record => record.SkillImproveMult?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Skill.ImproveOffset", records, record => record.SkillImproveOffset?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Skill.UseMult", records, record => record.SkillUseMult?.ToString() ?? string.Empty));
+        fields.Add(CreateField("CNAM", records, record => record.CNAM ?? string.Empty));
+        fields.Add(CreateField("Skill.ImproveMult", records, record => record.Skill?.ImproveMult?.ToString() ?? string.Empty));
+        fields.Add(CreateField("Skill.ImproveOffset", records, record => record.Skill?.ImproveOffset?.ToString() ?? string.Empty));
+        fields.Add(CreateField("Skill.UseMult", records, record => record.Skill?.UseMult?.ToString() ?? string.Empty));
         fields.Add(CreateField("ContextNotes", records, record => record.ContextNotes ?? string.Empty));
         fields.Add(CreateField("DefaultValue", records, record => record.DefaultValue?.ToString() ?? string.Empty));
         fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
         fields.Add(CreateField("Type", records, record => record.Type ?? string.Empty));
         fields.Add(CreateField("Min", records, record => record.Min?.ToString() ?? string.Empty));
         fields.Add(CreateField("Max", records, record => record.Max?.ToString() ?? string.Empty));
-        AddActorValueInformationLayoutGroups(fields, records);
         AddActorValueInformationPerkTreeGroups(fields, records);
 
         return CreateComparison(RecordTypeCatalog.ActorValueInformation.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
@@ -843,7 +843,7 @@ public class RecordComparisonService : IRecordComparisonService
         IList<RecordComparisonFieldDTO> fields,
         IReadOnlyList<PerkDTO> records,
         IReadOnlyList<LocalizedStringDTO> localizedStrings,
-        string recordTextLanguage)
+        Language recordTextLanguage)
     {
         var rankIndexes = records
             .SelectMany(record => record.Ranks)
@@ -886,7 +886,7 @@ public class RecordComparisonService : IRecordComparisonService
         IList<RecordComparisonFieldDTO> fields,
         IReadOnlyList<PerkDTO> records,
         IReadOnlyList<LocalizedStringDTO> localizedStrings,
-        string recordTextLanguage,
+        Language recordTextLanguage,
         int rankIndex)
     {
         var effectIndexes = records
@@ -1111,7 +1111,7 @@ public class RecordComparisonService : IRecordComparisonService
         }
     }
 
-    private static void AddFactionRankGroups(IList<RecordComparisonFieldDTO> fields, IReadOnlyList<FactionDTO> records, IReadOnlyList<LocalizedStringDTO> localizedStrings, string recordTextLanguage)
+    private static void AddFactionRankGroups(IList<RecordComparisonFieldDTO> fields, IReadOnlyList<FactionDTO> records, IReadOnlyList<LocalizedStringDTO> localizedStrings, Language recordTextLanguage)
     {
         var rankIndexes = records.SelectMany(record => record.Ranks).Select(rank => rank.RankIndex).Distinct().Order().ToList();
         if (rankIndexes.Count == 0) return;
@@ -1289,49 +1289,6 @@ public class RecordComparisonService : IRecordComparisonService
         }
     }
 
-    private static void AddActorValueInformationLayoutGroups(
-        IList<RecordComparisonFieldDTO> fields,
-        IReadOnlyList<ActorValueInformationDTO> records)
-    {
-        var layoutIndexes = records
-            .SelectMany(record => record.LayoutEntries)
-            .Select(entry => entry.LayoutIndex)
-            .Distinct()
-            .Order()
-            .ToList();
-        if (layoutIndexes.Count == 0)
-        {
-            return;
-        }
-
-        var layoutFields = new List<RecordComparisonFieldDTO>();
-        foreach (var layoutIndex in layoutIndexes)
-        {
-            var currentIndex = layoutIndex;
-            var layoutChildren = new List<RecordComparisonFieldDTO>
-            {
-                CreateField("AssociatedSkill", records, record => FormatFormKey(record.LayoutEntries.FirstOrDefault(entry => entry.LayoutIndex == currentIndex)?.AssociatedSkillFormKey)),
-                CreateField("FNAM", records, record => record.LayoutEntries.FirstOrDefault(entry => entry.LayoutIndex == currentIndex)?.Fnam ?? string.Empty),
-                CreateField("HorizontalPosition", records, record => record.LayoutEntries.FirstOrDefault(entry => entry.LayoutIndex == currentIndex)?.HorizontalPosition?.ToString() ?? string.Empty),
-                CreateField("Index", records, record => record.LayoutEntries.FirstOrDefault(entry => entry.LayoutIndex == currentIndex)?.Index?.ToString() ?? string.Empty),
-                CreateField("PerkGridX", records, record => record.LayoutEntries.FirstOrDefault(entry => entry.LayoutIndex == currentIndex)?.PerkGridX?.ToString() ?? string.Empty),
-                CreateField("PerkGridY", records, record => record.LayoutEntries.FirstOrDefault(entry => entry.LayoutIndex == currentIndex)?.PerkGridY?.ToString() ?? string.Empty),
-                CreateField("VerticalPosition", records, record => record.LayoutEntries.FirstOrDefault(entry => entry.LayoutIndex == currentIndex)?.VerticalPosition?.ToString() ?? string.Empty)
-            }
-                .Where(HasVisibleValue)
-                .ToList();
-            if (layoutChildren.Count > 0)
-            {
-                layoutFields.Add(CreateGroupField($"Layout [{layoutIndex}]", records.Cast<RecordDTO>().ToList(), layoutChildren));
-            }
-        }
-
-        if (layoutFields.Count > 0)
-        {
-            fields.Add(CreateGroupField("Layout Entries", records.Cast<RecordDTO>().ToList(), layoutFields));
-        }
-    }
-
     private static void AddActorValueInformationPerkTreeGroups(
         IList<RecordComparisonFieldDTO> fields,
         IReadOnlyList<ActorValueInformationDTO> records)
@@ -1353,9 +1310,15 @@ public class RecordComparisonService : IRecordComparisonService
             var currentIndex = perkTreeIndex;
             var perkTreeChildren = new List<RecordComparisonFieldDTO>
             {
-                CreateField("Perk", records, record => FormatFormKey(record.PerkTree.FirstOrDefault(entry => entry.PerkTreeIndex == currentIndex)?.PerkFormKey)),
-                CreateField("ConnectionLineToIndices", records, record => FormatActorValueInformationConnectionLineIndices(record.PerkTree.FirstOrDefault(entry => entry.PerkTreeIndex == currentIndex))),
-                CreateField("FNAM", records, record => record.PerkTree.FirstOrDefault(entry => entry.PerkTreeIndex == currentIndex)?.Fnam ?? string.Empty)
+                CreateField("AssociatedSkill", records, record => FormatFormKey(record.PerkTree.FirstOrDefault(entry => entry.PerkTreeIndex == currentIndex)?.AssociatedSkill)),
+                CreateField("FNAM", records, record => record.PerkTree.FirstOrDefault(entry => entry.PerkTreeIndex == currentIndex)?.FNAM ?? string.Empty),
+                CreateField("HorizontalPosition", records, record => record.PerkTree.FirstOrDefault(entry => entry.PerkTreeIndex == currentIndex)?.HorizontalPosition?.ToString() ?? string.Empty),
+                CreateField("Index", records, record => record.PerkTree.FirstOrDefault(entry => entry.PerkTreeIndex == currentIndex)?.Index?.ToString() ?? string.Empty),
+                CreateField("PerkGridX", records, record => record.PerkTree.FirstOrDefault(entry => entry.PerkTreeIndex == currentIndex)?.PerkGridX?.ToString() ?? string.Empty),
+                CreateField("PerkGridY", records, record => record.PerkTree.FirstOrDefault(entry => entry.PerkTreeIndex == currentIndex)?.PerkGridY?.ToString() ?? string.Empty),
+                CreateField("VerticalPosition", records, record => record.PerkTree.FirstOrDefault(entry => entry.PerkTreeIndex == currentIndex)?.VerticalPosition?.ToString() ?? string.Empty),
+                CreateField("Perk", records, record => FormatFormKey(record.PerkTree.FirstOrDefault(entry => entry.PerkTreeIndex == currentIndex)?.Perk)),
+                CreateField("ConnectionLineToIndices", records, record => FormatActorValueInformationConnectionLineIndices(record.PerkTree.FirstOrDefault(entry => entry.PerkTreeIndex == currentIndex)))
             }
                 .Where(HasVisibleValue)
                 .ToList();
@@ -1861,13 +1824,13 @@ public class RecordComparisonService : IRecordComparisonService
         IReadOnlyList<LocalizedStringDTO> localizedStrings,
         RecordDTO record,
         string sourceField,
-        string recordTextLanguage,
+        Language recordTextLanguage,
         string? fallback)
     {
         return localizedStrings.FirstOrDefault(localizedString =>
                    IsSameModKey(localizedString.ModKey, record.ModKey) &&
                    string.Equals(localizedString.SourceField, sourceField, StringComparison.Ordinal) &&
-                   string.Equals(localizedString.Language, recordTextLanguage, StringComparison.OrdinalIgnoreCase))?.Value ??
+                   string.Equals(localizedString.Language, recordTextLanguage.ToString(), StringComparison.OrdinalIgnoreCase))?.Value ??
                localizedStrings.FirstOrDefault(localizedString =>
                    IsSameModKey(localizedString.ModKey, record.ModKey) &&
                    string.Equals(localizedString.SourceField, sourceField, StringComparison.Ordinal) &&
@@ -1880,10 +1843,20 @@ public class RecordComparisonService : IRecordComparisonService
         IReadOnlyList<LocalizedStringDTO> localizedStrings,
         RecordDTO record,
         string sourceField,
-        string recordTextLanguage,
+        Language recordTextLanguage,
         TranslatedStringDTO? fallback)
     {
-        return GetLocalizedDisplayValue(localizedStrings, record, sourceField, recordTextLanguage, LocalizedStringDTOMapper.GetEnglishText(fallback));
+        return GetLocalizedDisplayValue(localizedStrings, record, sourceField, recordTextLanguage, LocalizedStringDTOMapper.GetLocalizedText(fallback, recordTextLanguage));
+    }
+
+    private static string GetGameSettingDisplayValue(
+        IReadOnlyList<LocalizedStringDTO> localizedStrings,
+        GameSettingDTO record,
+        Language recordTextLanguage)
+    {
+        return record.DataType == GameSettingDataType.String
+            ? GetTranslatedDisplayValue(localizedStrings, record, "Data", recordTextLanguage, record.Data.String)
+            : record.Data.GetScalarDisplayValue(record.DataType) ?? string.Empty;
     }
 
     private static string GetTranslatedDisplayValue(TranslatedStringDTO? translatedString)

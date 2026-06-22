@@ -34,7 +34,6 @@ The application schema contains fifty-six tables:
 - `MiscItems`
 - `Keywords`
 - `ActorValueInformation`
-- `ActorValueInformationLayoutEntries`
 - `ActorValueInformationPerkTreeEntries`
 - `ActorValueInformationPerkTreeConnectionLineIndices`
 - `NPCs`
@@ -407,10 +406,13 @@ Persistence behavior:
 Columns:
 
 - Common typed record key and metadata columns listed above
-- `SettingType` (`TEXT`, nullable)
+- `Version2` (`INTEGER`, nullable)
+- `VersionControl` (`INTEGER`, nullable)
+- `DataType` (`TEXT`, `NOT NULL`)
 - `Data` (`TEXT`, nullable)
-- `NumericData` (`REAL`, nullable)
+- `FloatData` (`REAL`, nullable)
 - `IntegerData` (`INTEGER`, nullable)
+- `UnsignedIntegerData` (`INTEGER`, nullable)
 - `BooleanData` (`INTEGER`, nullable)
 
 Foreign keys:
@@ -755,6 +757,8 @@ the common typed record key and metadata columns.
 
 `ActorValueInformation` additional columns:
 
+- `Version2` (`INTEGER`, nullable)
+- `VersionControl` (`INTEGER`, nullable)
 - `Name` (`TEXT`, nullable)
 - `Abbreviation` (`TEXT`, nullable)
 - `Description` (`TEXT`, nullable)
@@ -767,30 +771,15 @@ the common typed record key and metadata columns.
 - `Min` (`REAL`, nullable)
 - `Max` (`REAL`, nullable)
 
-`ActorValueInformationLayoutEntries` stores indexed Skyrim AVIF layout values:
-
-- Full parent `ActorValueInformation` key columns
-- `Layout_Index` (`INTEGER`, `NOT NULL`, primary key)
-- nullable decomposed FormKey columns for `AssociatedSkill`
-- `FNAM` (`TEXT`, nullable)
-- `HorizontalPosition` and `VerticalPosition` (`REAL`, nullable)
-- `EntryIndex`, `PerkGridX`, and `PerkGridY` (`INTEGER`, nullable)
-- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
-
-Foreign keys:
-
-- Full parent key references `ActorValueInformation` with `ON DELETE CASCADE`.
-
-Indexes:
-
-- `IX_ActorValueInformationLayoutEntries_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
-
 `ActorValueInformationPerkTreeEntries` stores indexed Skyrim AVIF perk-tree values:
 
 - Full parent `ActorValueInformation` key columns
 - `PerkTree_Index` (`INTEGER`, `NOT NULL`, primary key)
-- nullable decomposed FormKey columns for `Perk`
+- nullable decomposed FormKey columns for `AssociatedSkill`
 - `FNAM` (`TEXT`, nullable)
+- `HorizontalPosition` and `VerticalPosition` (`REAL`, nullable)
+- `EntryIndex`, `PerkGridX`, and `PerkGridY` (`INTEGER`, nullable)
+- nullable decomposed FormKey columns for `Perk`
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
 Foreign keys:
@@ -1520,7 +1509,7 @@ These columns carry record-reference identity but do not declare SQLite foreign 
 - `FormListItems.Item_ModKey_Name`, `Item_ModKey_Type`, `Item_ModKey_FileName`, and `Item_FormKey_ID`
 - `ClassProperties.ActorValue_ModKey_Name`, `ActorValue_ModKey_Type`, `ActorValue_ModKey_FileName`, and
   `ActorValue_FormKey_ID`
-- `ActorValueInformationLayoutEntries.AssociatedSkill_ModKey_Name`, `AssociatedSkill_ModKey_Type`,
+- `ActorValueInformationPerkTreeEntries.AssociatedSkill_ModKey_Name`, `AssociatedSkill_ModKey_Type`,
   `AssociatedSkill_ModKey_FileName`, and `AssociatedSkill_FormKey_ID`
 - `ActorValueInformationPerkTreeEntries.Perk_ModKey_Name`, `Perk_ModKey_Type`, `Perk_ModKey_FileName`, and
   `Perk_FormKey_ID`

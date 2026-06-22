@@ -134,12 +134,8 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 Version2 = GetPropertyNullableInt(record, "Version2"),
                 VersionControl = GetPropertyNullableInt(record, "VersionControl"),
                 ImportedAtUTC = DateTime.UtcNow,
-                MutagenObjectType = GetGameSettingType(record),
-                SettingType = GetGameSettingType(record),
-                Data = GetGameSettingData(record),
-                NumericData = GetGameSettingNumericData(record),
-                IntegerData = GetGameSettingIntegerData(record),
-                BooleanData = GetGameSettingBooleanData(record)
+                DataType = GetGameSettingDataType(record),
+                Data = GetGameSettingData(record)
             }, record))
             .ToList();
     }
@@ -1474,56 +1470,31 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         return value.ToString();
     }
 
-    private static string GetGameSettingType(IGameSettingGetter record)
+    private static GameSettingDataType GetGameSettingDataType(IGameSettingGetter record)
     {
         return record switch
         {
-            IGameSettingBoolGetter => "GameSettingBool",
-            IGameSettingFloatGetter => "GameSettingFloat",
-            IGameSettingIntGetter => "GameSettingInt",
-            IGameSettingStringGetter => "GameSettingString",
-            IGameSettingUIntGetter => "GameSettingUInt",
-            _ => record.GetType().Name
+            IGameSettingBoolGetter => GameSettingDataType.Boolean,
+            IGameSettingFloatGetter => GameSettingDataType.Float,
+            IGameSettingIntGetter => GameSettingDataType.Integer,
+            IGameSettingStringGetter => GameSettingDataType.String,
+            IGameSettingUIntGetter => GameSettingDataType.UnsignedInteger,
+            _ => throw new NotSupportedException($"Unsupported game setting type '{record.GetType().Name}'.")
         };
     }
 
-    private static string? GetGameSettingData(IGameSettingGetter record)
+    private static GameSettingDataDTO GetGameSettingData(IGameSettingGetter record)
     {
+        var dataType = GetGameSettingDataType(record);
         return record switch
         {
-            IGameSettingBoolGetter gameSetting => Convert.ToString(gameSetting.Data, CultureInfo.InvariantCulture),
-            IGameSettingFloatGetter gameSetting => Convert.ToString(gameSetting.Data, CultureInfo.InvariantCulture),
-            IGameSettingIntGetter gameSetting => Convert.ToString(gameSetting.Data, CultureInfo.InvariantCulture),
-            IGameSettingStringGetter gameSetting => LocalizedStringDTOMapper.GetLocalizedText(gameSetting.Data, Language.English),
-            IGameSettingUIntGetter gameSetting => Convert.ToString(gameSetting.Data, CultureInfo.InvariantCulture),
-            _ => null
+            IGameSettingBoolGetter gameSetting => new GameSettingDataDTO { DataType = dataType, Boolean = gameSetting.Data },
+            IGameSettingFloatGetter gameSetting => new GameSettingDataDTO { DataType = dataType, Float = gameSetting.Data },
+            IGameSettingIntGetter gameSetting => new GameSettingDataDTO { DataType = dataType, Integer = gameSetting.Data },
+            IGameSettingStringGetter gameSetting => new GameSettingDataDTO { DataType = dataType, String = LocalizedStringDTOMapper.ToTranslatedStringDTO(gameSetting.Data) },
+            IGameSettingUIntGetter gameSetting => new GameSettingDataDTO { DataType = dataType, UnsignedInteger = gameSetting.Data },
+            _ => new GameSettingDataDTO { DataType = dataType }
         };
-    }
-
-    private static double? GetGameSettingNumericData(IGameSettingGetter record)
-    {
-        return record switch
-        {
-            IGameSettingFloatGetter gameSetting => gameSetting.Data,
-            IGameSettingIntGetter gameSetting => gameSetting.Data,
-            IGameSettingUIntGetter gameSetting => gameSetting.Data,
-            _ => null
-        };
-    }
-
-    private static int? GetGameSettingIntegerData(IGameSettingGetter record)
-    {
-        return record switch
-        {
-            IGameSettingIntGetter gameSetting => gameSetting.Data,
-            IGameSettingUIntGetter gameSetting when gameSetting.Data <= int.MaxValue => (int)gameSetting.Data,
-            _ => null
-        };
-    }
-
-    private static bool? GetGameSettingBooleanData(IGameSettingGetter record)
-    {
-        return record is IGameSettingBoolGetter gameSetting ? gameSetting.Data : null;
     }
 
     private static double? GetGlobalData(IGlobalGetter record)

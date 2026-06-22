@@ -4,6 +4,7 @@ using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.DTOs.Records.Interfaces;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
+using CreationsForge.Core.Utilities;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Services;
@@ -349,28 +350,37 @@ public class SpriggitRecordParityTests
         sample.TryGetScalar("Data", out var expectedData).ShouldBeTrue($"GameSetting sample '{sample.FilePath}' should contain Data.");
         expectedData.ShouldNotBeNullOrWhiteSpace();
 
-        if (bool.TryParse(expectedData, out var expectedBoolean))
+        if (record.DataType == GameSettingDataType.Boolean && bool.TryParse(expectedData, out var expectedBoolean))
         {
-            record.BooleanData.ShouldBe(expectedBoolean, $"GameSetting '{record.EditorID}' should preserve boolean Data.");
+            record.Data.Boolean.ShouldBe(expectedBoolean, $"GameSetting '{record.EditorID}' should preserve boolean Data.");
             return;
         }
 
-        if (int.TryParse(expectedData, NumberStyles.Integer, CultureInfo.InvariantCulture, out var expectedInteger))
+        if (record.DataType == GameSettingDataType.Integer &&
+            int.TryParse(expectedData, NumberStyles.Integer, CultureInfo.InvariantCulture, out var expectedInteger))
         {
-            record.IntegerData.ShouldBe(expectedInteger, $"GameSetting '{record.EditorID}' should preserve integer Data.");
+            record.Data.Integer.ShouldBe(expectedInteger, $"GameSetting '{record.EditorID}' should preserve integer Data.");
             return;
         }
 
-        if (double.TryParse(expectedData, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var expectedNumeric))
+        if (record.DataType == GameSettingDataType.UnsignedInteger &&
+            uint.TryParse(expectedData, NumberStyles.Integer, CultureInfo.InvariantCulture, out var expectedUnsignedInteger))
         {
-            record.NumericData.ShouldNotBeNull($"GameSetting '{record.EditorID}' should preserve numeric Data.");
-            Math.Abs(record.NumericData!.Value - expectedNumeric).ShouldBeLessThanOrEqualTo(
+            record.Data.UnsignedInteger.ShouldBe(expectedUnsignedInteger, $"GameSetting '{record.EditorID}' should preserve unsigned integer Data.");
+            return;
+        }
+
+        if (record.DataType == GameSettingDataType.Float &&
+            double.TryParse(expectedData, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var expectedNumeric))
+        {
+            record.Data.Float.ShouldNotBeNull($"GameSetting '{record.EditorID}' should preserve numeric Data.");
+            Math.Abs(record.Data.Float!.Value - expectedNumeric).ShouldBeLessThanOrEqualTo(
                 0.0001,
                 $"GameSetting '{record.EditorID}' should preserve numeric Data.");
             return;
         }
 
-        record.Data.ShouldBe(expectedData, $"GameSetting '{record.EditorID}' should preserve string Data.");
+        LocalizedStringDTOMapper.GetEnglishText(record.Data.String).ShouldBe(expectedData, $"GameSetting '{record.EditorID}' should preserve string Data.");
     }
 
     private static void AssertLocalizedStringProperty(RecordDTO record, SpriggitYamlDocument sample, string propertyName, string path)

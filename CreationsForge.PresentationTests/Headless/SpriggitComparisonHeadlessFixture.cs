@@ -11,6 +11,7 @@ using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Fallout4;
 using CreationsForge.Skyrim;
 using CreationsForge.Starfield;
+using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.PresentationTests.Headless;
 
@@ -619,9 +620,9 @@ public class SpriggitComparisonHeadlessFixture
             return ApplicationThemeFamily.Semi;
         }
 
-        public string GetRecordTextLanguage()
+        public Language GetRecordTextLanguage()
         {
-            return ApplicationConfiguration.DefaultRecordTextLanguage;
+            return Language.English;
         }
 
         public void SetActiveGame(SupportedGame game)

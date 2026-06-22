@@ -85,20 +85,26 @@ public class TypedRecordDatabaseModelTests
             FormVersion = 44,
             MajorRecordFlags = 55,
             ImportedAtUTC = new DateTime(2026, 6, 5, 19, 0, 0, DateTimeKind.Utc),
-            SettingType = "Float",
-            Data = "3.14",
-            NumericData = 3.14,
-            IntegerData = 3,
-            BooleanData = booleanData
+            Version2 = 66,
+            VersionControl = 77,
+            DataType = GameSettingDataType.Boolean,
+            Data = new GameSettingDataDTO
+            {
+                DataType = GameSettingDataType.Boolean,
+                Boolean = booleanData
+            }
         };
 
         var model = new GameSetting(dto);
 
         AssertCommonRecordFields(model.Game, model.ModKeyName, model.ModKeyType, model.ModKeyFileName, model.FormKeyModKeyName, model.FormKeyModKeyType, model.FormKeyModKeyFileName, model.FormKeyId, model.EditorId, model.FormVersion, model.MajorRecordFlags, model.ImportedAtUTC, dto);
-        model.SettingType.ShouldBe("Float");
-        model.Data.ShouldBe("3.14");
-        model.NumericData.ShouldBe(3.14);
-        model.IntegerData.ShouldBe(3);
+        model.Version2.ShouldBe(66);
+        model.VersionControl.ShouldBe(77);
+        model.DataType.ShouldBe(GameSettingDataType.Boolean.ToString());
+        model.Data.ShouldBeNull();
+        model.FloatData.ShouldBeNull();
+        model.IntegerData.ShouldBeNull();
+        model.UnsignedIntegerData.ShouldBeNull();
         model.BooleanData.ShouldBe(expectedBooleanData);
     }
 

@@ -1,5 +1,6 @@
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.Enums;
+using CreationsForge.Core.DTOs.Records.Metadata;
 
 namespace CreationsForge.Core.DTOs.Records;
 
@@ -17,9 +18,23 @@ public class ActorValueInformationPerkTreeEntryDTO
 
     public int PerkTreeIndex { get; set; }
 
-    public FormKeyDTO? PerkFormKey { get; set; }
+    [FormKeyColumnPrefix("AssociatedSkill")]
+    public FormKeyDTO? AssociatedSkill { get; set; }
 
-    public string? Fnam { get; set; }
+    public string? FNAM { get; set; }
+
+    public double? HorizontalPosition { get; set; }
+
+    public int? Index { get; set; }
+
+    public int? PerkGridX { get; set; }
+
+    public int? PerkGridY { get; set; }
+
+    public double? VerticalPosition { get; set; }
+
+    [FormKeyColumnPrefix("Perk")]
+    public FormKeyDTO? Perk { get; set; }
 
     public IList<ActorValueInformationConnectionLineIndexDTO> ConnectionLineToIndices { get; set; } = new List<ActorValueInformationConnectionLineIndexDTO>();
 

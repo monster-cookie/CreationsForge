@@ -1,6 +1,7 @@
 using CreationsForge.Core.DTOs.Games;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Models.Configuration;
+using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Core.Services.Interfaces;
 
@@ -14,14 +15,14 @@ public interface IGameSelectionService
 
     ApplicationThemeFamily GetThemeFamily();
 
-    IReadOnlyList<string> GetRecordTextLanguages()
+    IReadOnlyList<Language> GetRecordTextLanguages()
     {
-        return [ApplicationConfiguration.DefaultRecordTextLanguage];
+        return [Language.English];
     }
 
-    string GetRecordTextLanguage()
+    Language GetRecordTextLanguage()
     {
-        return ApplicationConfiguration.DefaultRecordTextLanguage;
+        return Language.English;
     }
 
     string? GetNifSkopeExecutablePath()
@@ -41,7 +42,7 @@ public interface IGameSelectionService
 
     void SetTheme(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode);
 
-    void SetThemeRecordTextLanguageAndNifSkopeExecutablePath(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, string recordTextLanguage, string? nifSkopeExecutablePath)
+    void SetThemeRecordTextLanguageAndNifSkopeExecutablePath(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, Language recordTextLanguage, string? nifSkopeExecutablePath)
     {
         SetTheme(themeFamily, themeMode);
     }
@@ -51,7 +52,7 @@ public interface IGameSelectionService
         SetActiveGameAndTheme(game, themeFamily, themeMode);
     }
 
-    void SetActiveGameThemeRecordTextLanguageAndNifSkopeExecutablePath(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, string recordTextLanguage, string? nifSkopeExecutablePath)
+    void SetActiveGameThemeRecordTextLanguageAndNifSkopeExecutablePath(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, Language recordTextLanguage, string? nifSkopeExecutablePath)
     {
         SetActiveGameAndTheme(game, themeFamily, themeMode);
     }

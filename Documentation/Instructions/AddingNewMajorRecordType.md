@@ -123,15 +123,11 @@ GameSetting stores scalar values:
 ```csharp
 public class GameSettingDTO : RecordDTO
 {
-    public string? SettingType { get; set; }
+    public GameSettingDataType DataType { get; set; }
 
-    public string? Data { get; set; }
+    public string MutagenObjectType => GameSettingDataDTO.GetMutagenObjectType(DataType);
 
-    public double? NumericData { get; set; }
-
-    public int? IntegerData { get; set; }
-
-    public bool? BooleanData { get; set; }
+    public GameSettingDataDTO Data { get; set; } = new();
 }
 ```
 

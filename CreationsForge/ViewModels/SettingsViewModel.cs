@@ -4,6 +4,7 @@ using CreationsForge.Core.DTOs.Games;
 using CreationsForge.Core.Models.Configuration;
 using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Services.Interfaces;
+using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.ViewModels;
 
@@ -31,12 +32,12 @@ public class SettingsViewModel : ViewModelBase
         GameOptions = SupportedGames.Select(game => game.DisplayName).ToList();
         ThemeFamilyOptions = ["Semi", "Fluent"];
         ThemeModeOptions = ["Dark", "Light"];
-        RecordTextLanguageOptions = GameSelectionService.GetRecordTextLanguages().ToList();
+        RecordTextLanguageOptions = GameSelectionService.GetRecordTextLanguages().Select(language => language.ToString()).ToList();
         InitialSelectedGame = GetConfiguredGame();
         SelectedGameDisplayNameValue = InitialSelectedGame?.DisplayName;
         SelectedThemeFamilyValue = GameSelectionService.GetThemeFamily().ToString();
         SelectedThemeModeValue = GameSelectionService.GetThemeMode().ToString();
-        SelectedRecordTextLanguageValue = GameSelectionService.GetRecordTextLanguage();
+        SelectedRecordTextLanguageValue = GameSelectionService.GetRecordTextLanguage().ToString();
         NifSkopeExecutablePathValue = GameSelectionService.GetNifSkopeExecutablePath();
         SaveCommand = new RelayCommand(Save);
         BrowseNifSkopeExecutableCommand = new AsyncRelayCommand(BrowseNifSkopeExecutableAsync, () => IsNifSkopeSettingVisible);
@@ -157,11 +158,11 @@ public class SettingsViewModel : ViewModelBase
             : ApplicationThemeMode.Dark;
     }
 
-    private string GetSelectedRecordTextLanguage()
+    private Language GetSelectedRecordTextLanguage()
     {
-        return string.IsNullOrWhiteSpace(SelectedRecordTextLanguage)
-            ? ApplicationConfiguration.DefaultRecordTextLanguage
-            : SelectedRecordTextLanguage.Trim();
+        return Enum.TryParse<Language>(SelectedRecordTextLanguage, true, out var language)
+            ? language
+            : Language.English;
     }
 
     private string? GetSelectedNifSkopeExecutablePath()

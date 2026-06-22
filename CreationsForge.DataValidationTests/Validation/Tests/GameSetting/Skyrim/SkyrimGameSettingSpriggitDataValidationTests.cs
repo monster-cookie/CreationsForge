@@ -1,3 +1,4 @@
+using System.Globalization;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
@@ -149,6 +150,167 @@ public class SkyrimGameSettingSpriggitDataValidationTests : SpriggitDataValidati
         spriggitFields["Data[8].String"].ShouldBe(dtoFields["Data[8].String"]);
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
+    }
+
+    [Fact]
+    [Trait("Game", "Skyrim")]
+    [Trait("RecordType", "GMST")]
+    [Trait("FormKey", "0B3D8A:Skyrim.esm")]
+    [Trait("EditorID", "bRegenNPCMagickaDuringCast")]
+    [Trait("SpriggitFile", "GameSettings/bRegenNPCMagickaDuringCast - 0B3D8A_Skyrim.esm.yaml")]
+    public void Skyrim_GMST_ShouldMatchSpriggitSample_bRegenNPCMagickaDuringCast()
+    {
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
+            SupportedGame.Skyrim,
+            RecordTypeCatalog.GameSetting,
+            "bRegenNPCMagickaDuringCast");
+        var dto = Helpers.GetDTO<GameSettingDTO>(
+            SupportedGame.Skyrim,
+            RecordTypeCatalog.GameSetting,
+            "0B3D8A:Skyrim.esm");
+
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
+
+        spriggitFields["Data"].ShouldBe(dtoFields["Data"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
+    }
+
+    [Fact]
+    [Trait("Game", "Skyrim")]
+    [Trait("RecordType", "GMST")]
+    [Trait("FormKey", "01A144:Skyrim.esm")]
+    [Trait("EditorID", "fActionPointsAimAdjustment")]
+    [Trait("SpriggitFile", "GameSettings/fActionPointsAimAdjustment - 01A144_Skyrim.esm.yaml")]
+    public void Skyrim_GMST_ShouldMatchSpriggitSample_fActionPointsAimAdjustment()
+    {
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
+            SupportedGame.Skyrim,
+            RecordTypeCatalog.GameSetting,
+            "fActionPointsAimAdjustment");
+        var dto = Helpers.GetDTO<GameSettingDTO>(
+            SupportedGame.Skyrim,
+            RecordTypeCatalog.GameSetting,
+            "01A144:Skyrim.esm");
+
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
+
+        double.Parse(spriggitFields["Data"], CultureInfo.InvariantCulture)
+            .ShouldBe(double.Parse(dtoFields["Data"], CultureInfo.InvariantCulture), 0.000001);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
+    }
+
+    [Fact]
+    [Trait("Game", "Skyrim")]
+    [Trait("RecordType", "GMST")]
+    [Trait("FormKey", "01A145:Skyrim.esm")]
+    [Trait("EditorID", "fActionPointsAttackOneHandMelee")]
+    [Trait("SpriggitFile", "GameSettings/fActionPointsAttackOneHandMelee - 01A145_Skyrim.esm.yaml")]
+    public void Skyrim_GMST_ShouldMatchSpriggitSample_fActionPointsAttackOneHandMelee()
+    {
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
+            SupportedGame.Skyrim,
+            RecordTypeCatalog.GameSetting,
+            "fActionPointsAttackOneHandMelee");
+        var dto = Helpers.GetDTO<GameSettingDTO>(
+            SupportedGame.Skyrim,
+            RecordTypeCatalog.GameSetting,
+            "01A145:Skyrim.esm");
+
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
+
+        double.Parse(spriggitFields["Data"], CultureInfo.InvariantCulture)
+            .ShouldBe(double.Parse(dtoFields["Data"], CultureInfo.InvariantCulture), 0.000001);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
+    }
+
+    [Fact]
+    [Trait("Game", "Skyrim")]
+    [Trait("RecordType", "GMST")]
+    [Trait("FormKey", "01A237:Skyrim.esm")]
+    [Trait("EditorID", "iAICombatRestoreHealthPercentage")]
+    [Trait("SpriggitFile", "GameSettings/iAICombatRestoreHealthPercentage - 01A237_Skyrim.esm.yaml")]
+    public void Skyrim_GMST_ShouldMatchSpriggitSample_iAICombatRestoreHealthPercentage()
+    {
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
+            SupportedGame.Skyrim,
+            RecordTypeCatalog.GameSetting,
+            "iAICombatRestoreHealthPercentage");
+        var dto = Helpers.GetDTO<GameSettingDTO>(
+            SupportedGame.Skyrim,
+            RecordTypeCatalog.GameSetting,
+            "01A237:Skyrim.esm");
+
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
+
+        spriggitFields["Data"].ShouldBe(dtoFields["Data"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
+    }
+
+    [Fact]
+    [Trait("Game", "Skyrim")]
+    [Trait("RecordType", "GMST")]
+    [Trait("FormKey", "01A83A:Skyrim.esm")]
+    [Trait("EditorID", "iAISocialDistanceToTriggerEvent")]
+    [Trait("SpriggitFile", "GameSettings/iAISocialDistanceToTriggerEvent - 01A83A_Skyrim.esm.yaml")]
+    public void Skyrim_GMST_ShouldMatchSpriggitSample_iAISocialDistanceToTriggerEvent()
+    {
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
+            SupportedGame.Skyrim,
+            RecordTypeCatalog.GameSetting,
+            "iAISocialDistanceToTriggerEvent");
+        var dto = Helpers.GetDTO<GameSettingDTO>(
+            SupportedGame.Skyrim,
+            RecordTypeCatalog.GameSetting,
+            "01A83A:Skyrim.esm");
+
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
+
+        spriggitFields["Data"].ShouldBe(dtoFields["Data"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
         spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
         spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
         spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);

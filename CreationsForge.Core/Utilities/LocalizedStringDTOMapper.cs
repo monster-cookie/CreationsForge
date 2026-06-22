@@ -92,7 +92,12 @@ public static class LocalizedStringDTOMapper
 
     public static string? GetEnglishText(TranslatedStringDTO? translatedString)
     {
-        return GetLocalizedText(translatedString, "English");
+        return GetLocalizedText(translatedString, Language.English);
+    }
+
+    public static string? GetLocalizedText(TranslatedStringDTO? translatedString, Language language)
+    {
+        return GetLocalizedText(translatedString, language.ToString());
     }
 
     public static string? GetLocalizedText(TranslatedStringDTO? translatedString, string language)

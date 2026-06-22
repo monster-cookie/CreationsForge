@@ -7,6 +7,7 @@ using CreationsForge.Core.Models.Configuration;
 using CreationsForge.Core.Repositories.Interfaces;
 using CreationsForge.Core.Services;
 using CreationsForge.Core.Services.Interfaces;
+using Mutagen.Bethesda.Strings;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Services;
@@ -44,8 +45,8 @@ public class RecordComparisonServiceTests
         {
             Records =
             [
-                CreateGameSetting("Base.esm", formKey, "fSetting", "Float", "1.25", numericData: 1.25),
-                CreateGameSetting("Patch.esp", formKey, "fSetting", "Float", "1.75", numericData: 1.75)
+                CreateGameSetting("Base.esm", formKey, "fSetting", GameSettingDataType.Float, floatData: 1.25),
+                CreateGameSetting("Patch.esp", formKey, "fSetting", GameSettingDataType.Float, floatData: 1.75)
             ]
         };
         var service = CreateService(gameSettingRepository: gameSettingRepository);
@@ -53,10 +54,11 @@ public class RecordComparisonServiceTests
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.GameSetting.RecordID, formKey);
 
         comparison.Columns.Select(column => column.Header).ShouldBe(["Base.esm", "Patch.esp"]);
-        comparison.Fields.Single(field => field.FieldName == "SettingType").Values.Select(value => value.DisplayValue).ShouldBe(["Float", "Float"]);
+        comparison.Fields.Single(field => field.FieldName == "MutagenObjectType").Values.Select(value => value.DisplayValue).ShouldBe(["GameSettingFloat", "GameSettingFloat"]);
         comparison.Fields.Single(field => field.FieldName == "Data").Values.Select(value => value.DisplayValue).ShouldBe(["1.25", "1.75"]);
-        comparison.Fields.ShouldNotContain(field => field.FieldName == "NumericData");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "FloatData");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "IntegerData");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "UnsignedIntegerData");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "BooleanData");
     }
 
@@ -68,8 +70,8 @@ public class RecordComparisonServiceTests
         {
             Records =
             [
-                CreateGameSetting("Base.esm", formKey, "sSetting", "String", "Base English"),
-                CreateGameSetting("Patch.esp", formKey, "sSetting", "String", "Patch English")
+                CreateGameSetting("Base.esm", formKey, "sSetting", GameSettingDataType.String, stringData: "Base English"),
+                CreateGameSetting("Patch.esp", formKey, "sSetting", GameSettingDataType.String, stringData: "Patch English")
             ]
         };
         var localizedStringRepository = new TestRecordLocalizedStringRepository
@@ -82,7 +84,7 @@ public class RecordComparisonServiceTests
                 CreateLocalizedString("Patch.esp", formKey, "Data", "German", "Patch German")
             ]
         };
-        var gameSelectionService = new TestGameSelectionService { RecordTextLanguage = "German" };
+        var gameSelectionService = new TestGameSelectionService { RecordTextLanguage = Language.German };
         var service = CreateService(
             gameSettingRepository: gameSettingRepository,
             recordLocalizedStringRepository: localizedStringRepository,
@@ -808,9 +810,9 @@ public class RecordComparisonServiceTests
         string fileName,
         FormKeyDTO formKey,
         string editorID,
-        string settingType,
-        string data,
-        double? numericData = null)
+        GameSettingDataType dataType,
+        string? stringData = null,
+        double? floatData = null)
     {
         return new GameSettingDTO
         {
@@ -821,9 +823,13 @@ public class RecordComparisonServiceTests
             FormVersion = 1,
             MajorRecordFlags = 2,
             ImportedAtUTC = DateTime.UtcNow,
-            SettingType = settingType,
-            Data = data,
-            NumericData = numericData
+            DataType = dataType,
+            Data = new GameSettingDataDTO
+            {
+                DataType = dataType,
+                String = dataType == GameSettingDataType.String ? Text(stringData ?? string.Empty) : null,
+                Float = dataType == GameSettingDataType.Float ? floatData : null
+            }
         };
     }
 
@@ -2051,7 +2057,7 @@ public class RecordComparisonServiceTests
 
     private sealed class TestGameSelectionService : IGameSelectionService
     {
-        public string RecordTextLanguage { get; set; } = ApplicationConfiguration.DefaultRecordTextLanguage;
+        public Language RecordTextLanguage { get; set; } = Language.English;
 
         public IReadOnlyList<SupportedGameDTO> GetSupportedGames()
         {
@@ -2073,12 +2079,12 @@ public class RecordComparisonServiceTests
             return ApplicationThemeFamily.Semi;
         }
 
-        public IReadOnlyList<string> GetRecordTextLanguages()
+        public IReadOnlyList<Language> GetRecordTextLanguages()
         {
             return [RecordTextLanguage];
         }
 
-        public string GetRecordTextLanguage()
+        public Language GetRecordTextLanguage()
         {
             return RecordTextLanguage;
         }

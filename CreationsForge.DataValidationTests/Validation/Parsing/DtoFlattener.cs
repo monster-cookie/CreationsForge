@@ -35,6 +35,11 @@ public class DtoFlattener
                     continue;
                 }
 
+                if (value is GameSettingDTO && string.Equals(property.Name, nameof(GameSettingDTO.DataType), StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
                 if (property.GetValue(value) is IEnumerable<LocalizedStringDTO> localizedStrings)
                 {
                     FlattenLocalizedStrings(values, localizedStrings);
@@ -63,6 +68,12 @@ public class DtoFlattener
         if (value is TranslatedStringDTO translatedString)
         {
             FlattenTranslatedString(values, path, translatedString, game);
+            return;
+        }
+
+        if (value is GameSettingDataDTO gameSettingData)
+        {
+            FlattenGameSettingData(values, path, game, gameSettingData);
             return;
         }
 
@@ -151,6 +162,28 @@ public class DtoFlattener
         {
             values[path + "[" + entryIndex.ToString(CultureInfo.InvariantCulture) + "].Language"] = entries[entryIndex].Language;
             values[path + "[" + entryIndex.ToString(CultureInfo.InvariantCulture) + "].String"] = entries[entryIndex].String;
+        }
+    }
+
+    private static void FlattenGameSettingData(IDictionary<string, string> values, string path, SupportedGame? game, GameSettingDataDTO gameSettingData)
+    {
+        switch (gameSettingData.DataType)
+        {
+            case GameSettingDataType.Boolean:
+                FlattenValue(values, path, game, gameSettingData.Boolean);
+                break;
+            case GameSettingDataType.Float:
+                FlattenValue(values, path, game, gameSettingData.Float);
+                break;
+            case GameSettingDataType.Integer:
+                FlattenValue(values, path, game, gameSettingData.Integer);
+                break;
+            case GameSettingDataType.String:
+                FlattenValue(values, path, game, gameSettingData.String);
+                break;
+            case GameSettingDataType.UnsignedInteger:
+                FlattenValue(values, path, game, gameSettingData.UnsignedInteger);
+                break;
         }
     }
 

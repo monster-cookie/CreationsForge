@@ -70,124 +70,124 @@ public class SkyrimActorValueInformationSpriggitDataValidationTests : SpriggitDa
         spriggitFields["Description[4].String"].ShouldBe(dtoFields["Description[7].String"]);
         spriggitFields["Description[5].Language"].ShouldBe(dtoFields["Description[8].Language"]);
         spriggitFields["Description[5].String"].ShouldBe(dtoFields["Description[8].String"]);
-        spriggitFields["CNAM"].ShouldBe(dtoFields["Cnam"]);
+        spriggitFields["CNAM"].ShouldBe(dtoFields["CNAM"]);
         double.Parse(spriggitFields["Skill.UseMult"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["SkillUseMult"], CultureInfo.InvariantCulture), 0.000001);
+            .ShouldBe(double.Parse(dtoFields["Skill.UseMult"], CultureInfo.InvariantCulture), 0.000001);
         double.Parse(spriggitFields["Skill.ImproveMult"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["SkillImproveMult"], CultureInfo.InvariantCulture), 0.000001);
+            .ShouldBe(double.Parse(dtoFields["Skill.ImproveMult"], CultureInfo.InvariantCulture), 0.000001);
         double.Parse(spriggitFields["Skill.ImproveOffset"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["SkillImproveOffset"], CultureInfo.InvariantCulture), 0.000001);
-        spriggitFields["PerkTree[0].FNAM"].ShouldBe(dtoFields["LayoutEntries[0].Fnam"]);
-        spriggitFields["PerkTree[0].PerkGridX"].ShouldBe(dtoFields["LayoutEntries[0].PerkGridX"]);
-        spriggitFields["PerkTree[0].PerkGridY"].ShouldBe(dtoFields["LayoutEntries[0].PerkGridY"]);
+            .ShouldBe(double.Parse(dtoFields["Skill.ImproveOffset"], CultureInfo.InvariantCulture), 0.000001);
+        spriggitFields["PerkTree[0].FNAM"].ShouldBe(dtoFields["PerkTree[0].FNAM"]);
+        spriggitFields["PerkTree[0].PerkGridX"].ShouldBe(dtoFields["PerkTree[0].PerkGridX"]);
+        spriggitFields["PerkTree[0].PerkGridY"].ShouldBe(dtoFields["PerkTree[0].PerkGridY"]);
         double.Parse(spriggitFields["PerkTree[0].HorizontalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[0].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[0].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
         double.Parse(spriggitFields["PerkTree[0].VerticalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[0].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
-        spriggitFields["PerkTree[0].AssociatedSkill"].ShouldBe(dtoFields["LayoutEntries[0].AssociatedSkillFormKey"]);
-        spriggitFields["PerkTree[0].Index"].ShouldBe(dtoFields["LayoutEntries[0].Index"]);
-        spriggitFields["PerkTree[0].FNAM"].ShouldBe(dtoFields["PerkTree[0].Fnam"]);
-        spriggitFields["PerkTree[1].FNAM"].ShouldBe(dtoFields["LayoutEntries[1].Fnam"]);
-        spriggitFields["PerkTree[1].PerkGridX"].ShouldBe(dtoFields["LayoutEntries[1].PerkGridX"]);
-        spriggitFields["PerkTree[1].PerkGridY"].ShouldBe(dtoFields["LayoutEntries[1].PerkGridY"]);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[0].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
+        spriggitFields["PerkTree[0].AssociatedSkill"].ShouldBe(dtoFields["PerkTree[0].AssociatedSkill"]);
+        spriggitFields["PerkTree[0].Index"].ShouldBe(dtoFields["PerkTree[0].Index"]);
+        spriggitFields["PerkTree[0].FNAM"].ShouldBe(dtoFields["PerkTree[0].FNAM"]);
+        spriggitFields["PerkTree[1].FNAM"].ShouldBe(dtoFields["PerkTree[1].FNAM"]);
+        spriggitFields["PerkTree[1].PerkGridX"].ShouldBe(dtoFields["PerkTree[1].PerkGridX"]);
+        spriggitFields["PerkTree[1].PerkGridY"].ShouldBe(dtoFields["PerkTree[1].PerkGridY"]);
         double.Parse(spriggitFields["PerkTree[1].HorizontalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[1].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[1].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
         double.Parse(spriggitFields["PerkTree[1].VerticalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[1].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
-        spriggitFields["PerkTree[1].AssociatedSkill"].ShouldBe(dtoFields["LayoutEntries[1].AssociatedSkillFormKey"]);
-        spriggitFields["PerkTree[1].Index"].ShouldBe(dtoFields["LayoutEntries[1].Index"]);
-        spriggitFields["PerkTree[1].FNAM"].ShouldBe(dtoFields["PerkTree[1].Fnam"]);
-        spriggitFields["PerkTree[2].FNAM"].ShouldBe(dtoFields["LayoutEntries[2].Fnam"]);
-        spriggitFields["PerkTree[2].PerkGridX"].ShouldBe(dtoFields["LayoutEntries[2].PerkGridX"]);
-        spriggitFields["PerkTree[2].PerkGridY"].ShouldBe(dtoFields["LayoutEntries[2].PerkGridY"]);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[1].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
+        spriggitFields["PerkTree[1].AssociatedSkill"].ShouldBe(dtoFields["PerkTree[1].AssociatedSkill"]);
+        spriggitFields["PerkTree[1].Index"].ShouldBe(dtoFields["PerkTree[1].Index"]);
+        spriggitFields["PerkTree[1].FNAM"].ShouldBe(dtoFields["PerkTree[1].FNAM"]);
+        spriggitFields["PerkTree[2].FNAM"].ShouldBe(dtoFields["PerkTree[2].FNAM"]);
+        spriggitFields["PerkTree[2].PerkGridX"].ShouldBe(dtoFields["PerkTree[2].PerkGridX"]);
+        spriggitFields["PerkTree[2].PerkGridY"].ShouldBe(dtoFields["PerkTree[2].PerkGridY"]);
         double.Parse(spriggitFields["PerkTree[2].HorizontalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[2].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[2].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
         double.Parse(spriggitFields["PerkTree[2].VerticalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[2].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
-        spriggitFields["PerkTree[2].AssociatedSkill"].ShouldBe(dtoFields["LayoutEntries[2].AssociatedSkillFormKey"]);
-        spriggitFields["PerkTree[2].Index"].ShouldBe(dtoFields["LayoutEntries[2].Index"]);
-        spriggitFields["PerkTree[2].FNAM"].ShouldBe(dtoFields["PerkTree[2].Fnam"]);
-        spriggitFields["PerkTree[3].FNAM"].ShouldBe(dtoFields["LayoutEntries[3].Fnam"]);
-        spriggitFields["PerkTree[3].PerkGridX"].ShouldBe(dtoFields["LayoutEntries[3].PerkGridX"]);
-        spriggitFields["PerkTree[3].PerkGridY"].ShouldBe(dtoFields["LayoutEntries[3].PerkGridY"]);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[2].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
+        spriggitFields["PerkTree[2].AssociatedSkill"].ShouldBe(dtoFields["PerkTree[2].AssociatedSkill"]);
+        spriggitFields["PerkTree[2].Index"].ShouldBe(dtoFields["PerkTree[2].Index"]);
+        spriggitFields["PerkTree[2].FNAM"].ShouldBe(dtoFields["PerkTree[2].FNAM"]);
+        spriggitFields["PerkTree[3].FNAM"].ShouldBe(dtoFields["PerkTree[3].FNAM"]);
+        spriggitFields["PerkTree[3].PerkGridX"].ShouldBe(dtoFields["PerkTree[3].PerkGridX"]);
+        spriggitFields["PerkTree[3].PerkGridY"].ShouldBe(dtoFields["PerkTree[3].PerkGridY"]);
         double.Parse(spriggitFields["PerkTree[3].HorizontalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[3].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[3].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
         double.Parse(spriggitFields["PerkTree[3].VerticalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[3].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
-        spriggitFields["PerkTree[3].AssociatedSkill"].ShouldBe(dtoFields["LayoutEntries[3].AssociatedSkillFormKey"]);
-        spriggitFields["PerkTree[3].Index"].ShouldBe(dtoFields["LayoutEntries[3].Index"]);
-        spriggitFields["PerkTree[3].FNAM"].ShouldBe(dtoFields["PerkTree[3].Fnam"]);
-        spriggitFields["PerkTree[4].FNAM"].ShouldBe(dtoFields["LayoutEntries[4].Fnam"]);
-        spriggitFields["PerkTree[4].PerkGridX"].ShouldBe(dtoFields["LayoutEntries[4].PerkGridX"]);
-        spriggitFields["PerkTree[4].PerkGridY"].ShouldBe(dtoFields["LayoutEntries[4].PerkGridY"]);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[3].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
+        spriggitFields["PerkTree[3].AssociatedSkill"].ShouldBe(dtoFields["PerkTree[3].AssociatedSkill"]);
+        spriggitFields["PerkTree[3].Index"].ShouldBe(dtoFields["PerkTree[3].Index"]);
+        spriggitFields["PerkTree[3].FNAM"].ShouldBe(dtoFields["PerkTree[3].FNAM"]);
+        spriggitFields["PerkTree[4].FNAM"].ShouldBe(dtoFields["PerkTree[4].FNAM"]);
+        spriggitFields["PerkTree[4].PerkGridX"].ShouldBe(dtoFields["PerkTree[4].PerkGridX"]);
+        spriggitFields["PerkTree[4].PerkGridY"].ShouldBe(dtoFields["PerkTree[4].PerkGridY"]);
         double.Parse(spriggitFields["PerkTree[4].HorizontalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[4].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[4].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
         double.Parse(spriggitFields["PerkTree[4].VerticalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[4].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
-        spriggitFields["PerkTree[4].AssociatedSkill"].ShouldBe(dtoFields["LayoutEntries[4].AssociatedSkillFormKey"]);
-        spriggitFields["PerkTree[4].Index"].ShouldBe(dtoFields["LayoutEntries[4].Index"]);
-        spriggitFields["PerkTree[4].FNAM"].ShouldBe(dtoFields["PerkTree[4].Fnam"]);
-        spriggitFields["PerkTree[5].FNAM"].ShouldBe(dtoFields["LayoutEntries[5].Fnam"]);
-        spriggitFields["PerkTree[5].PerkGridX"].ShouldBe(dtoFields["LayoutEntries[5].PerkGridX"]);
-        spriggitFields["PerkTree[5].PerkGridY"].ShouldBe(dtoFields["LayoutEntries[5].PerkGridY"]);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[4].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
+        spriggitFields["PerkTree[4].AssociatedSkill"].ShouldBe(dtoFields["PerkTree[4].AssociatedSkill"]);
+        spriggitFields["PerkTree[4].Index"].ShouldBe(dtoFields["PerkTree[4].Index"]);
+        spriggitFields["PerkTree[4].FNAM"].ShouldBe(dtoFields["PerkTree[4].FNAM"]);
+        spriggitFields["PerkTree[5].FNAM"].ShouldBe(dtoFields["PerkTree[5].FNAM"]);
+        spriggitFields["PerkTree[5].PerkGridX"].ShouldBe(dtoFields["PerkTree[5].PerkGridX"]);
+        spriggitFields["PerkTree[5].PerkGridY"].ShouldBe(dtoFields["PerkTree[5].PerkGridY"]);
         double.Parse(spriggitFields["PerkTree[5].HorizontalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[5].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[5].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
         double.Parse(spriggitFields["PerkTree[5].VerticalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[5].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
-        spriggitFields["PerkTree[5].AssociatedSkill"].ShouldBe(dtoFields["LayoutEntries[5].AssociatedSkillFormKey"]);
-        spriggitFields["PerkTree[5].Index"].ShouldBe(dtoFields["LayoutEntries[5].Index"]);
-        spriggitFields["PerkTree[5].FNAM"].ShouldBe(dtoFields["PerkTree[5].Fnam"]);
-        spriggitFields["PerkTree[6].FNAM"].ShouldBe(dtoFields["LayoutEntries[6].Fnam"]);
-        spriggitFields["PerkTree[6].PerkGridX"].ShouldBe(dtoFields["LayoutEntries[6].PerkGridX"]);
-        spriggitFields["PerkTree[6].PerkGridY"].ShouldBe(dtoFields["LayoutEntries[6].PerkGridY"]);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[5].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
+        spriggitFields["PerkTree[5].AssociatedSkill"].ShouldBe(dtoFields["PerkTree[5].AssociatedSkill"]);
+        spriggitFields["PerkTree[5].Index"].ShouldBe(dtoFields["PerkTree[5].Index"]);
+        spriggitFields["PerkTree[5].FNAM"].ShouldBe(dtoFields["PerkTree[5].FNAM"]);
+        spriggitFields["PerkTree[6].FNAM"].ShouldBe(dtoFields["PerkTree[6].FNAM"]);
+        spriggitFields["PerkTree[6].PerkGridX"].ShouldBe(dtoFields["PerkTree[6].PerkGridX"]);
+        spriggitFields["PerkTree[6].PerkGridY"].ShouldBe(dtoFields["PerkTree[6].PerkGridY"]);
         double.Parse(spriggitFields["PerkTree[6].HorizontalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[6].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[6].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
         double.Parse(spriggitFields["PerkTree[6].VerticalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[6].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
-        spriggitFields["PerkTree[6].AssociatedSkill"].ShouldBe(dtoFields["LayoutEntries[6].AssociatedSkillFormKey"]);
-        spriggitFields["PerkTree[6].Index"].ShouldBe(dtoFields["LayoutEntries[6].Index"]);
-        spriggitFields["PerkTree[6].FNAM"].ShouldBe(dtoFields["PerkTree[6].Fnam"]);
-        spriggitFields["PerkTree[7].FNAM"].ShouldBe(dtoFields["LayoutEntries[7].Fnam"]);
-        spriggitFields["PerkTree[7].PerkGridX"].ShouldBe(dtoFields["LayoutEntries[7].PerkGridX"]);
-        spriggitFields["PerkTree[7].PerkGridY"].ShouldBe(dtoFields["LayoutEntries[7].PerkGridY"]);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[6].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
+        spriggitFields["PerkTree[6].AssociatedSkill"].ShouldBe(dtoFields["PerkTree[6].AssociatedSkill"]);
+        spriggitFields["PerkTree[6].Index"].ShouldBe(dtoFields["PerkTree[6].Index"]);
+        spriggitFields["PerkTree[6].FNAM"].ShouldBe(dtoFields["PerkTree[6].FNAM"]);
+        spriggitFields["PerkTree[7].FNAM"].ShouldBe(dtoFields["PerkTree[7].FNAM"]);
+        spriggitFields["PerkTree[7].PerkGridX"].ShouldBe(dtoFields["PerkTree[7].PerkGridX"]);
+        spriggitFields["PerkTree[7].PerkGridY"].ShouldBe(dtoFields["PerkTree[7].PerkGridY"]);
         double.Parse(spriggitFields["PerkTree[7].HorizontalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[7].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[7].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
         double.Parse(spriggitFields["PerkTree[7].VerticalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[7].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
-        spriggitFields["PerkTree[7].AssociatedSkill"].ShouldBe(dtoFields["LayoutEntries[7].AssociatedSkillFormKey"]);
-        spriggitFields["PerkTree[7].Index"].ShouldBe(dtoFields["LayoutEntries[7].Index"]);
-        spriggitFields["PerkTree[7].FNAM"].ShouldBe(dtoFields["PerkTree[7].Fnam"]);
-        spriggitFields["PerkTree[8].FNAM"].ShouldBe(dtoFields["LayoutEntries[8].Fnam"]);
-        spriggitFields["PerkTree[8].PerkGridX"].ShouldBe(dtoFields["LayoutEntries[8].PerkGridX"]);
-        spriggitFields["PerkTree[8].PerkGridY"].ShouldBe(dtoFields["LayoutEntries[8].PerkGridY"]);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[7].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
+        spriggitFields["PerkTree[7].AssociatedSkill"].ShouldBe(dtoFields["PerkTree[7].AssociatedSkill"]);
+        spriggitFields["PerkTree[7].Index"].ShouldBe(dtoFields["PerkTree[7].Index"]);
+        spriggitFields["PerkTree[7].FNAM"].ShouldBe(dtoFields["PerkTree[7].FNAM"]);
+        spriggitFields["PerkTree[8].FNAM"].ShouldBe(dtoFields["PerkTree[8].FNAM"]);
+        spriggitFields["PerkTree[8].PerkGridX"].ShouldBe(dtoFields["PerkTree[8].PerkGridX"]);
+        spriggitFields["PerkTree[8].PerkGridY"].ShouldBe(dtoFields["PerkTree[8].PerkGridY"]);
         double.Parse(spriggitFields["PerkTree[8].HorizontalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[8].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[8].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
         double.Parse(spriggitFields["PerkTree[8].VerticalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[8].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
-        spriggitFields["PerkTree[8].AssociatedSkill"].ShouldBe(dtoFields["LayoutEntries[8].AssociatedSkillFormKey"]);
-        spriggitFields["PerkTree[8].Index"].ShouldBe(dtoFields["LayoutEntries[8].Index"]);
-        spriggitFields["PerkTree[8].FNAM"].ShouldBe(dtoFields["PerkTree[8].Fnam"]);
-        spriggitFields["PerkTree[9].FNAM"].ShouldBe(dtoFields["LayoutEntries[9].Fnam"]);
-        spriggitFields["PerkTree[9].PerkGridX"].ShouldBe(dtoFields["LayoutEntries[9].PerkGridX"]);
-        spriggitFields["PerkTree[9].PerkGridY"].ShouldBe(dtoFields["LayoutEntries[9].PerkGridY"]);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[8].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
+        spriggitFields["PerkTree[8].AssociatedSkill"].ShouldBe(dtoFields["PerkTree[8].AssociatedSkill"]);
+        spriggitFields["PerkTree[8].Index"].ShouldBe(dtoFields["PerkTree[8].Index"]);
+        spriggitFields["PerkTree[8].FNAM"].ShouldBe(dtoFields["PerkTree[8].FNAM"]);
+        spriggitFields["PerkTree[9].FNAM"].ShouldBe(dtoFields["PerkTree[9].FNAM"]);
+        spriggitFields["PerkTree[9].PerkGridX"].ShouldBe(dtoFields["PerkTree[9].PerkGridX"]);
+        spriggitFields["PerkTree[9].PerkGridY"].ShouldBe(dtoFields["PerkTree[9].PerkGridY"]);
         double.Parse(spriggitFields["PerkTree[9].HorizontalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[9].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[9].HorizontalPosition"], CultureInfo.InvariantCulture), 0.000001);
         double.Parse(spriggitFields["PerkTree[9].VerticalPosition"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["LayoutEntries[9].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
-        spriggitFields["PerkTree[9].AssociatedSkill"].ShouldBe(dtoFields["LayoutEntries[9].AssociatedSkillFormKey"]);
-        spriggitFields["PerkTree[9].Index"].ShouldBe(dtoFields["LayoutEntries[9].Index"]);
-        spriggitFields["PerkTree[9].FNAM"].ShouldBe(dtoFields["PerkTree[9].Fnam"]);
+            .ShouldBe(double.Parse(dtoFields["PerkTree[9].VerticalPosition"], CultureInfo.InvariantCulture), 0.000001);
+        spriggitFields["PerkTree[9].AssociatedSkill"].ShouldBe(dtoFields["PerkTree[9].AssociatedSkill"]);
+        spriggitFields["PerkTree[9].Index"].ShouldBe(dtoFields["PerkTree[9].Index"]);
+        spriggitFields["PerkTree[9].FNAM"].ShouldBe(dtoFields["PerkTree[9].FNAM"]);
         spriggitFields.ContainsKey("PerkTree[0].Perk").ShouldBeFalse();
-        dtoFields.ContainsKey("PerkTree[0].PerkFormKey").ShouldBeFalse();
-        spriggitFields["PerkTree[1].Perk"].ShouldBe(dtoFields["PerkTree[1].PerkFormKey"]);
-        spriggitFields["PerkTree[2].Perk"].ShouldBe(dtoFields["PerkTree[2].PerkFormKey"]);
-        spriggitFields["PerkTree[3].Perk"].ShouldBe(dtoFields["PerkTree[3].PerkFormKey"]);
-        spriggitFields["PerkTree[4].Perk"].ShouldBe(dtoFields["PerkTree[4].PerkFormKey"]);
-        spriggitFields["PerkTree[5].Perk"].ShouldBe(dtoFields["PerkTree[5].PerkFormKey"]);
-        spriggitFields["PerkTree[6].Perk"].ShouldBe(dtoFields["PerkTree[6].PerkFormKey"]);
-        spriggitFields["PerkTree[7].Perk"].ShouldBe(dtoFields["PerkTree[7].PerkFormKey"]);
-        spriggitFields["PerkTree[8].Perk"].ShouldBe(dtoFields["PerkTree[8].PerkFormKey"]);
-        spriggitFields["PerkTree[9].Perk"].ShouldBe(dtoFields["PerkTree[9].PerkFormKey"]);
+        dtoFields.ContainsKey("PerkTree[0].Perk").ShouldBeFalse();
+        spriggitFields["PerkTree[1].Perk"].ShouldBe(dtoFields["PerkTree[1].Perk"]);
+        spriggitFields["PerkTree[2].Perk"].ShouldBe(dtoFields["PerkTree[2].Perk"]);
+        spriggitFields["PerkTree[3].Perk"].ShouldBe(dtoFields["PerkTree[3].Perk"]);
+        spriggitFields["PerkTree[4].Perk"].ShouldBe(dtoFields["PerkTree[4].Perk"]);
+        spriggitFields["PerkTree[5].Perk"].ShouldBe(dtoFields["PerkTree[5].Perk"]);
+        spriggitFields["PerkTree[6].Perk"].ShouldBe(dtoFields["PerkTree[6].Perk"]);
+        spriggitFields["PerkTree[7].Perk"].ShouldBe(dtoFields["PerkTree[7].Perk"]);
+        spriggitFields["PerkTree[8].Perk"].ShouldBe(dtoFields["PerkTree[8].Perk"]);
+        spriggitFields["PerkTree[9].Perk"].ShouldBe(dtoFields["PerkTree[9].Perk"]);
         spriggitFields["PerkTree[0].ConnectionLineToIndices.Count"].ShouldBe(dtoFields["PerkTree[0].ConnectionLineToIndices.Count"]);
         spriggitFields["PerkTree[0].ConnectionLineToIndices[0]"].ShouldBe(dtoFields["PerkTree[0].ConnectionLineToIndices[0].TargetIndex"]);
         spriggitFields["PerkTree[1].ConnectionLineToIndices.Count"].ShouldBe(dtoFields["PerkTree[1].ConnectionLineToIndices.Count"]);

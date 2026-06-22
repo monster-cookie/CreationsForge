@@ -141,10 +141,13 @@ erDiagram
         INTEGER FormVersion
         INTEGER MajorRecordFlags
         TEXT ImportedAtUTC
-        TEXT SettingType
+        INTEGER Version2
+        INTEGER VersionControl
+        TEXT DataType
         TEXT Data
-        REAL NumericData
+        REAL FloatData
         INTEGER IntegerData
+        INTEGER UnsignedIntegerData
         INTEGER BooleanData
     }
 
@@ -399,6 +402,8 @@ erDiagram
         INTEGER FormVersion
         INTEGER MajorRecordFlags
         TEXT ImportedAtUTC
+        INTEGER Version2
+        INTEGER VersionControl
         TEXT Name
         TEXT ShortName
         INTEGER Value
@@ -463,29 +468,6 @@ erDiagram
         REAL Max
     }
 
-    ActorValueInformationLayoutEntries {
-        TEXT Game PK, FK
-        TEXT ModKey_Name PK, FK
-        INTEGER ModKey_Type PK, FK
-        TEXT ModKey_FileName PK, FK
-        TEXT FormKey_ModKey_Name PK, FK
-        INTEGER FormKey_ModKey_Type PK, FK
-        TEXT FormKey_ModKey_FileName PK, FK
-        INTEGER FormKey_ID PK, FK
-        INTEGER Layout_Index PK
-        TEXT AssociatedSkill_ModKey_Name
-        INTEGER AssociatedSkill_ModKey_Type
-        TEXT AssociatedSkill_ModKey_FileName
-        INTEGER AssociatedSkill_FormKey_ID
-        TEXT FNAM
-        REAL HorizontalPosition
-        INTEGER EntryIndex
-        INTEGER PerkGridX
-        INTEGER PerkGridY
-        REAL VerticalPosition
-        TEXT ImportedAtUTC
-    }
-
     ActorValueInformationPerkTreeEntries {
         TEXT Game PK, FK
         TEXT ModKey_Name PK, FK
@@ -496,11 +478,20 @@ erDiagram
         TEXT FormKey_ModKey_FileName PK, FK
         INTEGER FormKey_ID PK, FK
         INTEGER PerkTree_Index PK
+        TEXT AssociatedSkill_ModKey_Name
+        INTEGER AssociatedSkill_ModKey_Type
+        TEXT AssociatedSkill_ModKey_FileName
+        INTEGER AssociatedSkill_FormKey_ID
+        TEXT FNAM
+        REAL HorizontalPosition
+        INTEGER EntryIndex
+        INTEGER PerkGridX
+        INTEGER PerkGridY
+        REAL VerticalPosition
         TEXT Perk_ModKey_Name
         INTEGER Perk_ModKey_Type
         TEXT Perk_ModKey_FileName
         INTEGER Perk_FormKey_ID
-        TEXT FNAM
         TEXT ImportedAtUTC
     }
 
@@ -1288,7 +1279,6 @@ erDiagram
     RecordInstances ||--o| MiscItems : "typed detail"
     RecordInstances ||--o| Keywords : "typed detail"
     RecordInstances ||--o| ActorValueInformation : "typed detail"
-    ActorValueInformation ||--o{ ActorValueInformationLayoutEntries : contains
     ActorValueInformation ||--o{ ActorValueInformationPerkTreeEntries : contains
     ActorValueInformationPerkTreeEntries ||--o{ ActorValueInformationPerkTreeConnectionLineIndices : contains
     RecordInstances ||--o| NPCs : "typed detail"
@@ -1341,7 +1331,7 @@ These columns contain record-reference data but are not declared SQLite foreign 
 - `FormListItems.Item_ModKey_Name`, `Item_ModKey_Type`, `Item_ModKey_FileName`, and `Item_FormKey_ID`
 - `ClassProperties.ActorValue_ModKey_Name`, `ActorValue_ModKey_Type`, `ActorValue_ModKey_FileName`, and
   `ActorValue_FormKey_ID`
-- `ActorValueInformationLayoutEntries.AssociatedSkill_ModKey_Name`, `AssociatedSkill_ModKey_Type`,
+- `ActorValueInformationPerkTreeEntries.AssociatedSkill_ModKey_Name`, `AssociatedSkill_ModKey_Type`,
   `AssociatedSkill_ModKey_FileName`, and `AssociatedSkill_FormKey_ID`
 - `ActorValueInformationPerkTreeEntries.Perk_ModKey_Name`, `Perk_ModKey_Type`, `Perk_ModKey_FileName`, and
   `Perk_FormKey_ID`

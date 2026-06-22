@@ -103,6 +103,14 @@ The source field path should remain canonical:
 
 Localized string persistence should store the source field path needed to round-trip or compare against Spriggit. If a UI label needs friendlier wording, keep that label in presentation code rather than renaming the DTO field.
 
+## Language Values
+
+Use `Mutagen.Bethesda.Strings.Language` for in-code language selection, localized DTO helper APIs, comparison logic, and localization-aware domain behavior.
+
+Raw language strings are allowed only at external boundaries, such as persisted configuration, database rows, serialized DTO values, UI display options, and imported Spriggit/YAML field values. Convert boundary strings to `Language` before using them in core logic.
+
+Scalar values are not localized. Only translated string fields should accept a language when producing display text. Typed scalar helpers should expose language-free display or formatting APIs.
+
 ## Database Naming
 
 DTO and domain names should stay canonical. Database names may reflect relational storage needs.

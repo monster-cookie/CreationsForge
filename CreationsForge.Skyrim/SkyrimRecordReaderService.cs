@@ -134,12 +134,8 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 Version2 = GetPropertyNullableInt(record, "Version2"),
                 VersionControl = GetPropertyNullableInt(record, "VersionControl"),
                 ImportedAtUTC = DateTime.UtcNow,
-                MutagenObjectType = GetGameSettingType(record),
-                SettingType = GetGameSettingType(record),
-                Data = GetGameSettingData(record),
-                NumericData = GetGameSettingNumericData(record),
-                IntegerData = GetGameSettingIntegerData(record),
-                BooleanData = GetGameSettingBooleanData(record)
+                DataType = GetGameSettingDataType(record),
+                Data = GetGameSettingData(record)
             }, record))
             .ToList();
     }
@@ -254,10 +250,8 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 Name = GetTranslatedString(record, "Name"),
                 Abbreviation = GetTranslatedString(record, "Abbreviation"),
                 Description = GetTranslatedString(record, "Description"),
-                Cnam = FormatSpriggitHexValue(GetPropertyValue(record, "CNAM")),
-                SkillImproveMult = GetPropertyNullableDouble(GetPropertyValue(record, "Skill"), "ImproveMult"),
-                SkillImproveOffset = GetPropertyNullableDouble(GetPropertyValue(record, "Skill"), "ImproveOffset"),
-                SkillUseMult = GetPropertyNullableDouble(GetPropertyValue(record, "Skill"), "UseMult"),
+                CNAM = FormatSpriggitHexValue(GetPropertyValue(record, "CNAM")),
+                Skill = GetActorValueInformationSkill(record),
                 ContextNotes = GetPropertyStringOrNull(record, "ContextNotes"),
                 DefaultValue = GetPropertyNullableDouble(record, "DefaultValue"),
                 Flags = GetPropertyStringOrNull(record, "Flags"),
@@ -266,7 +260,6 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 Min = GetPropertyNullableDouble(record, "Min"),
                 Max = GetPropertyNullableDouble(record, "Max"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.ActorValueInformation.RecordID, record),
-                LayoutEntries = GetActorValueInformationLayoutEntries(plugin, GetRequiredRawFormKey(record), record),
                 PerkTree = GetActorValueInformationPerkTreeEntries(plugin, GetRequiredRawFormKey(record), record)
             }, record))
             .ToList();
@@ -954,27 +947,20 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         };
     }
 
-    private static List<ActorValueInformationLayoutEntryDTO> GetActorValueInformationLayoutEntries(PluginDTO plugin, FormKey formKey, object record)
+    private static ActorValueInformationSkillDTO? GetActorValueInformationSkill(object record)
     {
-        var perkTree = GetEnumerableValues(GetPropertyValue(record, "PerkTree"));
-        var importedAtUTC = DateTime.UtcNow;
-        return perkTree
-            .Select((entry, entryIndex) => new ActorValueInformationLayoutEntryDTO
-            {
-                Game = SupportedGame.Skyrim,
-                ModKey = plugin.ModKey,
-                FormKey = MapFormKey(formKey),
-                LayoutIndex = entryIndex,
-                AssociatedSkillFormKey = GetFormKeyFromObject(GetPropertyValue(entry, "AssociatedSkill")),
-                Fnam = FormatSpriggitHexValue(GetPropertyValue(entry, "FNAM")),
-                HorizontalPosition = GetPropertyNullableDouble(entry, "HorizontalPosition"),
-                Index = GetPropertyNullableInt(entry, "Index"),
-                PerkGridX = GetPropertyNullableInt(entry, "PerkGridX"),
-                PerkGridY = GetPropertyNullableInt(entry, "PerkGridY"),
-                VerticalPosition = GetPropertyNullableDouble(entry, "VerticalPosition"),
-                ImportedAtUTC = importedAtUTC
-            })
-            .ToList();
+        var skill = GetPropertyValue(record, "Skill");
+        if (skill is null)
+        {
+            return null;
+        }
+
+        return new ActorValueInformationSkillDTO
+        {
+            UseMult = GetPropertyNullableDouble(skill, "UseMult"),
+            ImproveMult = GetPropertyNullableDouble(skill, "ImproveMult"),
+            ImproveOffset = GetPropertyNullableDouble(skill, "ImproveOffset")
+        };
     }
 
     private static List<ActorValueInformationPerkTreeEntryDTO> GetActorValueInformationPerkTreeEntries(PluginDTO plugin, FormKey formKey, object record)
@@ -988,8 +974,14 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 ModKey = plugin.ModKey,
                 FormKey = MapFormKey(formKey),
                 PerkTreeIndex = entryIndex,
-                PerkFormKey = GetFormKeyFromObject(GetPropertyValue(entry, "Perk")),
-                Fnam = FormatSpriggitHexValue(GetPropertyValue(entry, "FNAM")),
+                AssociatedSkill = GetFormKeyFromObject(GetPropertyValue(entry, "AssociatedSkill")),
+                FNAM = FormatSpriggitHexValue(GetPropertyValue(entry, "FNAM")),
+                HorizontalPosition = GetPropertyNullableDouble(entry, "HorizontalPosition"),
+                Index = GetPropertyNullableInt(entry, "Index"),
+                PerkGridX = GetPropertyNullableInt(entry, "PerkGridX"),
+                PerkGridY = GetPropertyNullableInt(entry, "PerkGridY"),
+                VerticalPosition = GetPropertyNullableDouble(entry, "VerticalPosition"),
+                Perk = GetFormKeyFromObject(GetPropertyValue(entry, "Perk")),
                 ConnectionLineToIndices = GetActorValueInformationConnectionLineIndices(plugin, formKey, entry, entryIndex, importedAtUTC),
                 ImportedAtUTC = importedAtUTC
             })
@@ -1535,48 +1527,29 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         return "0x" + hexValue;
     }
 
-    private static string GetGameSettingType(IGameSettingGetter record)
+    private static GameSettingDataType GetGameSettingDataType(IGameSettingGetter record)
     {
         return record switch
         {
-            IGameSettingBoolGetter => "GameSettingBool",
-            IGameSettingFloatGetter => "GameSettingFloat",
-            IGameSettingIntGetter => "GameSettingInt",
-            IGameSettingStringGetter => "GameSettingString",
-            _ => record.GetType().Name
+            IGameSettingBoolGetter => GameSettingDataType.Boolean,
+            IGameSettingFloatGetter => GameSettingDataType.Float,
+            IGameSettingIntGetter => GameSettingDataType.Integer,
+            IGameSettingStringGetter => GameSettingDataType.String,
+            _ => throw new NotSupportedException($"Unsupported game setting type '{record.GetType().Name}'.")
         };
     }
 
-    private static string? GetGameSettingData(IGameSettingGetter record)
+    private static GameSettingDataDTO GetGameSettingData(IGameSettingGetter record)
     {
+        var dataType = GetGameSettingDataType(record);
         return record switch
         {
-            IGameSettingBoolGetter gameSetting => Convert.ToString(gameSetting.Data, CultureInfo.InvariantCulture),
-            IGameSettingFloatGetter gameSetting => Convert.ToString(gameSetting.Data, CultureInfo.InvariantCulture),
-            IGameSettingIntGetter gameSetting => Convert.ToString(gameSetting.Data, CultureInfo.InvariantCulture),
-            IGameSettingStringGetter gameSetting => LocalizedStringDTOMapper.GetLocalizedText(gameSetting.Data, Language.English),
-            _ => null
+            IGameSettingBoolGetter gameSetting => new GameSettingDataDTO { DataType = dataType, Boolean = gameSetting.Data },
+            IGameSettingFloatGetter gameSetting => new GameSettingDataDTO { DataType = dataType, Float = gameSetting.Data },
+            IGameSettingIntGetter gameSetting => new GameSettingDataDTO { DataType = dataType, Integer = gameSetting.Data },
+            IGameSettingStringGetter gameSetting => new GameSettingDataDTO { DataType = dataType, String = LocalizedStringDTOMapper.ToTranslatedStringDTO(gameSetting.Data) },
+            _ => new GameSettingDataDTO { DataType = dataType }
         };
-    }
-
-    private static double? GetGameSettingNumericData(IGameSettingGetter record)
-    {
-        return record switch
-        {
-            IGameSettingFloatGetter gameSetting => gameSetting.Data,
-            IGameSettingIntGetter gameSetting => gameSetting.Data,
-            _ => null
-        };
-    }
-
-    private static int? GetGameSettingIntegerData(IGameSettingGetter record)
-    {
-        return record is IGameSettingIntGetter gameSetting ? gameSetting.Data : null;
-    }
-
-    private static bool? GetGameSettingBooleanData(IGameSettingGetter record)
-    {
-        return record is IGameSettingBoolGetter gameSetting ? gameSetting.Data : null;
     }
 
     private static double? GetGlobalData(IGlobalGetter record)

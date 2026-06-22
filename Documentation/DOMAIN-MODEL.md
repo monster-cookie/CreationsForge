@@ -98,8 +98,8 @@ Record comparison groups persisted records by origin FormKey across imported plu
 columns represent plugin overrides, and comparison rows represent fields exposed by Core DTOs.
 
 The first comparison slice displays common fields (`EditorID`, `FormVersion`, and `MajorRecordFlags`) for all approved
-records. FormLists also display `AddToListFormKey` and indexed `Items[n]` rows. GameSettings display `SettingType`
-and the generic `Data` value. Localized text rows use the Settings-selected record text language when a persisted
+records. FormLists also display `AddToListFormKey` and indexed `Items[n]` rows. GameSettings display `MutagenObjectType`
+and the active typed `Data` value. Localized text rows use the Settings-selected record text language when a persisted
 localized value exists, then fall back to English and the DTO or scalar database fallback. Globals display `Data`.
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `CLAS`, `FACT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM`
 comparisons display their currently persisted parent fields and record-reference fields. CLAS comparison displays
@@ -111,8 +111,8 @@ rows, background skill rows, and shared scripting adapter rows. `MISC`, `NPC_`, 
 child rows when those payloads are persisted. `CNDF` and `COBJ` comparison displays shared condition-rule rows and
 generic condition-data parameter rows when those payloads are persisted. `COBJ` comparison displays component,
 Fallout 4 category, and Starfield recipe-filter rows.
-`AVIF` comparison displays Skyrim layout and perk-tree rows, including perk references and connection-line target
-indices when they are present. `TERM` comparison also displays marker parameter child rows.
+`AVIF` comparison displays Skyrim perk-tree rows, including associated skill, grid placement, perk references, and
+connection-line target indices when they are present. `TERM` comparison also displays marker parameter child rows.
 MGEF DATA follows Mutagen/Spriggit's flattened record shape and displays as flat rows. Child comparison data such as
 keywords, models, sounds, scripts, raw payloads, items, shared condition rules, condition-rule parameters,
 constructible object components, Fallout 4 COBJ category links, Starfield COBJ recipe-filter links, perk ranks, perk
@@ -134,6 +134,8 @@ record, source DTO field, language name, translated value, and import timestamp.
 Mutagen translation-table-backed strings use `TranslatedStringDTO`, which preserves the imported language table in the
 DTO contract. Type-specific scalar database columns remain a compatibility and fallback persistence layer for existing
 repository rows; they are not the authoritative DTO shape for translated fields.
+
+Localized record text uses Mutagen `Language` in core logic; strings are boundary values for configuration, persistence, and imported/exported data.
 
 The Settings screen stores the preferred record text language. Core comparison services use that setting when
 rendering localized comparison rows and fall back to English when the selected language is unavailable. Child
@@ -199,9 +201,9 @@ Current users are `CNDF`, `FACT`, and `COBJ`. The condition data function is sto
 parameter values retain a decomposed FormKey when the Mutagen value exposes one. Condition rules are not raw payloads
 when Mutagen exposes structured condition fields.
 
-Actor Value Information uses AVIF-specific child tables for Skyrim layout and perk-tree data. Layout rows retain
-associated skill references and grid placement values. Perk-tree rows retain optional perk references and indexed
-connection-line target indices so imported Skyrim perk graph shape can be read back and compared.
+Actor Value Information uses AVIF-specific child tables for Skyrim perk-tree data. Perk-tree rows retain associated
+skill references, grid placement values, optional perk references, and indexed connection-line target indices so
+imported Skyrim perk graph shape can be read back and compared.
 
 Shared Bethesda base-form component payloads use the internal `BaseFormComponents` name when persisted as raw payload
 slots. The original Mutagen/Spriggit source path, such as `Components.AnimationGraphComponent.ANAM`, is retained in

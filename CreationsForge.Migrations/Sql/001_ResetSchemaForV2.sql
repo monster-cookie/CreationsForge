@@ -196,16 +196,21 @@ CREATE TABLE GameSettings
     FormVersion             INTEGER NOT NULL,
     MajorRecordFlags        INTEGER NOT NULL,
     ImportedAtUTC           TEXT    NOT NULL,
-    SettingType             TEXT    NULL,
+    Version2                INTEGER NULL,
+    VersionControl          INTEGER NULL,
+    DataType                TEXT    NOT NULL,
     Data                    TEXT    NULL,
-    NumericData             REAL    NULL,
+    FloatData               REAL    NULL,
     IntegerData             INTEGER NULL,
+    UnsignedIntegerData     INTEGER NULL,
     BooleanData             INTEGER NULL,
     PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID),
     FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName) REFERENCES Plugins (Game, ModKey_Name, ModKey_Type, ModKey_FileName) ON DELETE CASCADE,
     FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
         REFERENCES RecordInstances (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
     CHECK (FormKey_ID >= 0),
+    CHECK (DataType IN ('Boolean', 'Float', 'Integer', 'String', 'UnsignedInteger')),
+    CHECK (UnsignedIntegerData IS NULL OR UnsignedIntegerData >= 0),
     CHECK (BooleanData IS NULL OR BooleanData IN (0, 1))
 );
 
@@ -281,6 +286,8 @@ CREATE TABLE ActorValueInformation
     FormVersion             INTEGER NOT NULL,
     MajorRecordFlags        INTEGER NOT NULL,
     ImportedAtUTC           TEXT    NOT NULL,
+    Version2                INTEGER NULL,
+    VersionControl          INTEGER NULL,
     Name                    TEXT    NULL,
     Abbreviation            TEXT    NULL,
     Description             TEXT    NULL,
@@ -1716,40 +1723,6 @@ CREATE INDEX IX_ConditionRuleParameters_Game_FormKey ON ConditionRuleParameters 
 CREATE INDEX IX_Components_Game_FormKey ON Components (Game, RecordType, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_ComponentItems_Game_FormKey ON ComponentItems (Game, RecordType, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 
-CREATE TABLE ActorValueInformationLayoutEntries
-(
-    Game                                TEXT    NOT NULL,
-    ModKey_Name                         TEXT    NOT NULL,
-    ModKey_Type                         INTEGER NOT NULL,
-    ModKey_FileName                     TEXT    NOT NULL,
-    FormKey_ModKey_Name                 TEXT    NOT NULL,
-    FormKey_ModKey_Type                 INTEGER NOT NULL,
-    FormKey_ModKey_FileName             TEXT    NOT NULL,
-    FormKey_ID                          INTEGER NOT NULL,
-    Layout_Index                        INTEGER NOT NULL,
-    AssociatedSkill_ModKey_Name         TEXT    NULL,
-    AssociatedSkill_ModKey_Type         INTEGER NULL,
-    AssociatedSkill_ModKey_FileName     TEXT    NULL,
-    AssociatedSkill_FormKey_ID          INTEGER NULL,
-    FNAM                                TEXT    NULL,
-    HorizontalPosition                  REAL    NULL,
-    EntryIndex                          INTEGER NULL,
-    PerkGridX                           INTEGER NULL,
-    PerkGridY                           INTEGER NULL,
-    VerticalPosition                    REAL    NULL,
-    ImportedAtUTC                       TEXT    NOT NULL,
-    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Layout_Index),
-    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
-        REFERENCES ActorValueInformation (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
-    CHECK (FormKey_ID >= 0),
-    CHECK (Layout_Index >= 0),
-    CHECK ((AssociatedSkill_ModKey_Name IS NULL AND AssociatedSkill_ModKey_Type IS NULL AND AssociatedSkill_ModKey_FileName IS NULL AND AssociatedSkill_FormKey_ID IS NULL) OR
-           (AssociatedSkill_ModKey_Name IS NOT NULL AND AssociatedSkill_ModKey_Type IS NOT NULL AND AssociatedSkill_ModKey_FileName IS NOT NULL AND AssociatedSkill_FormKey_ID IS NOT NULL))
-);
-
-CREATE INDEX IX_ActorValueInformationLayoutEntries_Game_FormKey
-    ON ActorValueInformationLayoutEntries (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
-
 CREATE TABLE ActorValueInformationPerkTreeEntries
 (
     Game                                TEXT    NOT NULL,
@@ -1761,17 +1734,28 @@ CREATE TABLE ActorValueInformationPerkTreeEntries
     FormKey_ModKey_FileName             TEXT    NOT NULL,
     FormKey_ID                          INTEGER NOT NULL,
     PerkTree_Index                      INTEGER NOT NULL,
+    AssociatedSkill_ModKey_Name         TEXT    NULL,
+    AssociatedSkill_ModKey_Type         INTEGER NULL,
+    AssociatedSkill_ModKey_FileName     TEXT    NULL,
+    AssociatedSkill_FormKey_ID          INTEGER NULL,
+    FNAM                                TEXT    NULL,
+    HorizontalPosition                  REAL    NULL,
+    EntryIndex                          INTEGER NULL,
+    PerkGridX                           INTEGER NULL,
+    PerkGridY                           INTEGER NULL,
+    VerticalPosition                    REAL    NULL,
     Perk_ModKey_Name                    TEXT    NULL,
     Perk_ModKey_Type                    INTEGER NULL,
     Perk_ModKey_FileName                TEXT    NULL,
     Perk_FormKey_ID                     INTEGER NULL,
-    FNAM                                TEXT    NULL,
     ImportedAtUTC                       TEXT    NOT NULL,
     PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, PerkTree_Index),
     FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
         REFERENCES ActorValueInformation (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
     CHECK (FormKey_ID >= 0),
     CHECK (PerkTree_Index >= 0),
+    CHECK ((AssociatedSkill_ModKey_Name IS NULL AND AssociatedSkill_ModKey_Type IS NULL AND AssociatedSkill_ModKey_FileName IS NULL AND AssociatedSkill_FormKey_ID IS NULL) OR
+           (AssociatedSkill_ModKey_Name IS NOT NULL AND AssociatedSkill_ModKey_Type IS NOT NULL AND AssociatedSkill_ModKey_FileName IS NOT NULL AND AssociatedSkill_FormKey_ID IS NOT NULL)),
     CHECK ((Perk_ModKey_Name IS NULL AND Perk_ModKey_Type IS NULL AND Perk_ModKey_FileName IS NULL AND Perk_FormKey_ID IS NULL) OR
            (Perk_ModKey_Name IS NOT NULL AND Perk_ModKey_Type IS NOT NULL AND Perk_ModKey_FileName IS NOT NULL AND Perk_FormKey_ID IS NOT NULL))
 );

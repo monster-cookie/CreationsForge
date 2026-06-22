@@ -33,7 +33,9 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
                     SelectColumn("Name"),
                     SelectColumn("Abbreviation"),
                     SelectColumn("Description"),
-                    SelectColumn("CNAM", "Cnam"),
+                    SelectColumn("Version2"),
+                    SelectColumn("VersionControl"),
+                    SelectColumn("CNAM"),
                     SelectColumn("Skill_ImproveMult", "SkillImproveMult"),
                     SelectColumn("Skill_ImproveOffset", "SkillImproveOffset"),
                     SelectColumn("Skill_UseMult", "SkillUseMult"),
@@ -46,13 +48,11 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
                 ])
             .Select(record => ToDTO(record, game))
             .ToList();
-        var layoutEntries = FetchLayoutEntriesByFormKey(game, formKey);
         var perkTreeEntries = FetchPerkTreeEntriesByFormKey(game, formKey);
         var connectionLineIndices = FetchConnectionLineIndicesByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.ActorValueInformation.RecordID, formKey);
         foreach (var record in records)
         {
-            record.LayoutEntries = layoutEntries.Where(entry => IsSameModKey(entry.ModKey, record.ModKey)).OrderBy(entry => entry.LayoutIndex).ToList();
             record.PerkTree = perkTreeEntries.Where(entry => IsSameModKey(entry.ModKey, record.ModKey)).OrderBy(entry => entry.PerkTreeIndex).ToList();
             foreach (var perkTreeEntry in record.PerkTree)
             {
@@ -76,11 +76,11 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
             """
             INSERT OR REPLACE INTO ActorValueInformation (
                 Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Name, Abbreviation, Description, CNAM, Skill_ImproveMult, Skill_ImproveOffset,
+                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Version2, VersionControl, Name, Abbreviation, Description, CNAM, Skill_ImproveMult, Skill_ImproveOffset,
                 Skill_UseMult, ContextNotes, DefaultValue, Flags, Type, Min, Max)
             VALUES (
                 @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Name, @Abbreviation, @Description, @Cnam, @SkillImproveMult, @SkillImproveOffset,
+                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Version2, @VersionControl, @Name, @Abbreviation, @Description, @CNAM, @SkillImproveMult, @SkillImproveOffset,
                 @SkillUseMult, @ContextNotes, @DefaultValue, @Flags, @Type, @Min, @Max);
             """,
             new
@@ -97,13 +97,15 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
                 dto.FormVersion,
                 dto.MajorRecordFlags,
                 dto.ImportedAtUTC,
+                dto.Version2,
+                dto.VersionControl,
                 Name = GetEnglishText(dto.Name),
                 Abbreviation = GetEnglishText(dto.Abbreviation),
                 Description = GetEnglishText(dto.Description),
-                dto.Cnam,
-                dto.SkillImproveMult,
-                dto.SkillImproveOffset,
-                dto.SkillUseMult,
+                dto.CNAM,
+                SkillImproveMult = dto.Skill?.ImproveMult,
+                SkillImproveOffset = dto.Skill?.ImproveOffset,
+                SkillUseMult = dto.Skill?.UseMult,
                 dto.ContextNotes,
                 dto.DefaultValue,
                 dto.Flags,
@@ -111,33 +113,7 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
                 dto.Min,
                 dto.Max
             });
-        ReplaceLayoutEntries(dto);
         ReplacePerkTreeEntries(dto);
-    }
-
-    private IReadOnlyList<ActorValueInformationLayoutEntryDTO> FetchLayoutEntriesByFormKey(SupportedGame game, FormKeyDTO formKey)
-    {
-        return Database.Fetch<ActorValueInformationLayoutEntryRow>(
-                """
-                SELECT *
-                FROM ActorValueInformationLayoutEntries
-                WHERE Game = @Game
-                  AND FormKey_ModKey_Name = @FormKeyModKeyName COLLATE NOCASE
-                  AND FormKey_ModKey_Type = @FormKeyModKeyType
-                  AND FormKey_ModKey_FileName = @FormKeyModKeyFileName COLLATE NOCASE
-                  AND FormKey_ID = @FormKeyId
-                ORDER BY ModKey_FileName COLLATE NOCASE, Layout_Index;
-                """,
-                new
-                {
-                    Game = game.ToString(),
-                    FormKeyModKeyName = formKey.ModKey.Name,
-                    FormKeyModKeyType = formKey.ModKey.Type,
-                    FormKeyModKeyFileName = formKey.ModKey.FileName,
-                    FormKeyId = formKey.Id
-                })
-            .Select(row => ToDTO(row, game))
-            .ToList();
     }
 
     private IReadOnlyList<ActorValueInformationPerkTreeEntryDTO> FetchPerkTreeEntriesByFormKey(SupportedGame game, FormKeyDTO formKey)
@@ -190,62 +166,6 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
             .ToList();
     }
 
-    private void ReplaceLayoutEntries(ActorValueInformationDTO dto)
-    {
-        Database.Execute(
-            """
-            DELETE FROM ActorValueInformationLayoutEntries
-            WHERE Game = @Game
-              AND ModKey_Name = @ModKeyName
-              AND ModKey_Type = @ModKeyType
-              AND ModKey_FileName = @ModKeyFileName
-              AND FormKey_ModKey_Name = @FormKeyModKeyName
-              AND FormKey_ModKey_Type = @FormKeyModKeyType
-              AND FormKey_ModKey_FileName = @FormKeyModKeyFileName
-              AND FormKey_ID = @FormKeyId;
-            """,
-            CommonParameters(dto));
-
-        foreach (var entry in dto.LayoutEntries)
-        {
-            entry.ImportedAtUTC = dto.ImportedAtUTC;
-            Database.Execute(
-                """
-                INSERT OR REPLACE INTO ActorValueInformationLayoutEntries (
-                    Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                    Layout_Index, AssociatedSkill_ModKey_Name, AssociatedSkill_ModKey_Type, AssociatedSkill_ModKey_FileName, AssociatedSkill_FormKey_ID,
-                    FNAM, HorizontalPosition, EntryIndex, PerkGridX, PerkGridY, VerticalPosition, ImportedAtUTC)
-                VALUES (
-                    @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                    @LayoutIndex, @AssociatedSkillModKeyName, @AssociatedSkillModKeyType, @AssociatedSkillModKeyFileName, @AssociatedSkillFormKeyId,
-                    @Fnam, @HorizontalPosition, @EntryIndex, @PerkGridX, @PerkGridY, @VerticalPosition, @ImportedAtUTC);
-                """,
-                new
-                {
-                    Game = entry.Game.ToString(),
-                    ModKeyName = entry.ModKey.Name,
-                    ModKeyType = entry.ModKey.Type,
-                    ModKeyFileName = entry.ModKey.FileName,
-                    FormKeyModKeyName = entry.FormKey.ModKey.Name,
-                    FormKeyModKeyType = entry.FormKey.ModKey.Type,
-                    FormKeyModKeyFileName = entry.FormKey.ModKey.FileName,
-                    FormKeyId = entry.FormKey.Id,
-                    entry.LayoutIndex,
-                    AssociatedSkillModKeyName = entry.AssociatedSkillFormKey?.ModKey.Name,
-                    AssociatedSkillModKeyType = entry.AssociatedSkillFormKey?.ModKey.Type,
-                    AssociatedSkillModKeyFileName = entry.AssociatedSkillFormKey?.ModKey.FileName,
-                    AssociatedSkillFormKeyId = entry.AssociatedSkillFormKey?.Id,
-                    entry.Fnam,
-                    entry.HorizontalPosition,
-                    EntryIndex = entry.Index,
-                    entry.PerkGridX,
-                    entry.PerkGridY,
-                    entry.VerticalPosition,
-                    entry.ImportedAtUTC
-                });
-        }
-    }
-
     private void ReplacePerkTreeEntries(ActorValueInformationDTO dto)
     {
         Database.Execute(
@@ -269,10 +189,14 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
                 """
                 INSERT OR REPLACE INTO ActorValueInformationPerkTreeEntries (
                     Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                    PerkTree_Index, Perk_ModKey_Name, Perk_ModKey_Type, Perk_ModKey_FileName, Perk_FormKey_ID, FNAM, ImportedAtUTC)
+                    PerkTree_Index, AssociatedSkill_ModKey_Name, AssociatedSkill_ModKey_Type, AssociatedSkill_ModKey_FileName, AssociatedSkill_FormKey_ID,
+                    FNAM, HorizontalPosition, EntryIndex, PerkGridX, PerkGridY, VerticalPosition,
+                    Perk_ModKey_Name, Perk_ModKey_Type, Perk_ModKey_FileName, Perk_FormKey_ID, ImportedAtUTC)
                 VALUES (
                     @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                    @PerkTreeIndex, @PerkModKeyName, @PerkModKeyType, @PerkModKeyFileName, @PerkFormKeyId, @Fnam, @ImportedAtUTC);
+                    @PerkTreeIndex, @AssociatedSkillModKeyName, @AssociatedSkillModKeyType, @AssociatedSkillModKeyFileName, @AssociatedSkillFormKeyId,
+                    @FNAM, @HorizontalPosition, @EntryIndex, @PerkGridX, @PerkGridY, @VerticalPosition,
+                    @PerkModKeyName, @PerkModKeyType, @PerkModKeyFileName, @PerkFormKeyId, @ImportedAtUTC);
                 """,
                 new
                 {
@@ -285,11 +209,20 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
                     FormKeyModKeyFileName = entry.FormKey.ModKey.FileName,
                     FormKeyId = entry.FormKey.Id,
                     entry.PerkTreeIndex,
-                    PerkModKeyName = entry.PerkFormKey?.ModKey.Name,
-                    PerkModKeyType = entry.PerkFormKey?.ModKey.Type,
-                    PerkModKeyFileName = entry.PerkFormKey?.ModKey.FileName,
-                    PerkFormKeyId = entry.PerkFormKey?.Id,
-                    entry.Fnam,
+                    AssociatedSkillModKeyName = entry.AssociatedSkill?.ModKey.Name,
+                    AssociatedSkillModKeyType = entry.AssociatedSkill?.ModKey.Type,
+                    AssociatedSkillModKeyFileName = entry.AssociatedSkill?.ModKey.FileName,
+                    AssociatedSkillFormKeyId = entry.AssociatedSkill?.Id,
+                    entry.FNAM,
+                    entry.HorizontalPosition,
+                    EntryIndex = entry.Index,
+                    entry.PerkGridX,
+                    entry.PerkGridY,
+                    entry.VerticalPosition,
+                    PerkModKeyName = entry.Perk?.ModKey.Name,
+                    PerkModKeyType = entry.Perk?.ModKey.Type,
+                    PerkModKeyFileName = entry.Perk?.ModKey.FileName,
+                    PerkFormKeyId = entry.Perk?.Id,
                     entry.ImportedAtUTC
                 });
             ReplaceConnectionLineIndices(entry);
@@ -346,10 +279,10 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
             Name = FromEnglish(record.Name),
             Abbreviation = FromEnglish(record.Abbreviation),
             Description = FromEnglish(record.Description),
-            Cnam = record.Cnam,
-            SkillImproveMult = record.SkillImproveMult,
-            SkillImproveOffset = record.SkillImproveOffset,
-            SkillUseMult = record.SkillUseMult,
+            Version2 = record.Version2,
+            VersionControl = record.VersionControl,
+            CNAM = record.CNAM,
+            Skill = CreateSkill(record.SkillUseMult, record.SkillImproveMult, record.SkillImproveOffset),
             ContextNotes = record.ContextNotes,
             DefaultValue = record.DefaultValue,
             Flags = record.Flags,
@@ -361,25 +294,6 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
         return dto;
     }
 
-    private static ActorValueInformationLayoutEntryDTO ToDTO(ActorValueInformationLayoutEntryRow row, SupportedGame game)
-    {
-        return new ActorValueInformationLayoutEntryDTO
-        {
-            Game = game,
-            ModKey = CreateModKey(row.ModKeyName, row.ModKeyType, row.ModKeyFileName),
-            FormKey = CreateFormKey(row.FormKeyModKeyName, row.FormKeyModKeyType, row.FormKeyModKeyFileName, row.FormKeyId),
-            LayoutIndex = row.LayoutIndex,
-            AssociatedSkillFormKey = CreateNullableFormKey(row.AssociatedSkillModKeyName, row.AssociatedSkillModKeyType, row.AssociatedSkillModKeyFileName, row.AssociatedSkillFormKeyId),
-            Fnam = row.Fnam,
-            HorizontalPosition = row.HorizontalPosition,
-            Index = row.EntryIndex,
-            PerkGridX = row.PerkGridX,
-            PerkGridY = row.PerkGridY,
-            VerticalPosition = row.VerticalPosition,
-            ImportedAtUTC = row.ImportedAtUTC
-        };
-    }
-
     private static ActorValueInformationPerkTreeEntryDTO ToDTO(ActorValueInformationPerkTreeEntryRow row, SupportedGame game)
     {
         return new ActorValueInformationPerkTreeEntryDTO
@@ -388,8 +302,14 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
             ModKey = CreateModKey(row.ModKeyName, row.ModKeyType, row.ModKeyFileName),
             FormKey = CreateFormKey(row.FormKeyModKeyName, row.FormKeyModKeyType, row.FormKeyModKeyFileName, row.FormKeyId),
             PerkTreeIndex = row.PerkTreeIndex,
-            PerkFormKey = CreateNullableFormKey(row.PerkModKeyName, row.PerkModKeyType, row.PerkModKeyFileName, row.PerkFormKeyId),
-            Fnam = row.Fnam,
+            AssociatedSkill = CreateNullableFormKey(row.AssociatedSkillModKeyName, row.AssociatedSkillModKeyType, row.AssociatedSkillModKeyFileName, row.AssociatedSkillFormKeyId),
+            FNAM = row.FNAM,
+            HorizontalPosition = row.HorizontalPosition,
+            Index = row.EntryIndex,
+            PerkGridX = row.PerkGridX,
+            PerkGridY = row.PerkGridY,
+            VerticalPosition = row.VerticalPosition,
+            Perk = CreateNullableFormKey(row.PerkModKeyName, row.PerkModKeyType, row.PerkModKeyFileName, row.PerkFormKeyId),
             ImportedAtUTC = row.ImportedAtUTC
         };
     }
@@ -434,6 +354,21 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
             : new TranslatedStringDTO { Strings = strings };
     }
 
+    private static ActorValueInformationSkillDTO? CreateSkill(double? useMult, double? improveMult, double? improveOffset)
+    {
+        if (useMult is null && improveMult is null && improveOffset is null)
+        {
+            return null;
+        }
+
+        return new ActorValueInformationSkillDTO
+        {
+            UseMult = useMult,
+            ImproveMult = improveMult,
+            ImproveOffset = improveOffset
+        };
+    }
+
     private sealed class ActorValueInformationRow : RecordRow
     {
         public string? Name { get; set; }
@@ -442,7 +377,11 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
 
         public string? Description { get; set; }
 
-        public string? Cnam { get; set; }
+        public int? Version2 { get; set; }
+
+        public int? VersionControl { get; set; }
+
+        public string? CNAM { get; set; }
 
         public double? SkillImproveMult { get; set; }
 
@@ -463,29 +402,6 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
         public double? Max { get; set; }
     }
 
-    private sealed class ActorValueInformationLayoutEntryRow
-    {
-        public string ModKeyName { get; set; } = string.Empty;
-        public int ModKeyType { get; set; }
-        public string ModKeyFileName { get; set; } = string.Empty;
-        public string FormKeyModKeyName { get; set; } = string.Empty;
-        public int FormKeyModKeyType { get; set; }
-        public string FormKeyModKeyFileName { get; set; } = string.Empty;
-        public long FormKeyId { get; set; }
-        public int LayoutIndex { get; set; }
-        public string? AssociatedSkillModKeyName { get; set; }
-        public int? AssociatedSkillModKeyType { get; set; }
-        public string? AssociatedSkillModKeyFileName { get; set; }
-        public long? AssociatedSkillFormKeyId { get; set; }
-        public string? Fnam { get; set; }
-        public double? HorizontalPosition { get; set; }
-        public int? EntryIndex { get; set; }
-        public int? PerkGridX { get; set; }
-        public int? PerkGridY { get; set; }
-        public double? VerticalPosition { get; set; }
-        public DateTime ImportedAtUTC { get; set; }
-    }
-
     private sealed class ActorValueInformationPerkTreeEntryRow
     {
         public string ModKeyName { get; set; } = string.Empty;
@@ -496,11 +412,20 @@ public class ActorValueInformationRepository : TypedRecordRepositoryBase, IActor
         public string FormKeyModKeyFileName { get; set; } = string.Empty;
         public long FormKeyId { get; set; }
         public int PerkTreeIndex { get; set; }
+        public string? AssociatedSkillModKeyName { get; set; }
+        public int? AssociatedSkillModKeyType { get; set; }
+        public string? AssociatedSkillModKeyFileName { get; set; }
+        public long? AssociatedSkillFormKeyId { get; set; }
+        public string? FNAM { get; set; }
+        public double? HorizontalPosition { get; set; }
+        public int? EntryIndex { get; set; }
+        public int? PerkGridX { get; set; }
+        public int? PerkGridY { get; set; }
+        public double? VerticalPosition { get; set; }
         public string? PerkModKeyName { get; set; }
         public int? PerkModKeyType { get; set; }
         public string? PerkModKeyFileName { get; set; }
         public long? PerkFormKeyId { get; set; }
-        public string? Fnam { get; set; }
         public DateTime ImportedAtUTC { get; set; }
     }
 

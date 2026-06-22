@@ -9,6 +9,10 @@
 - Might finally have the fix for the random killed application. Nice side effect we can do larger batch inserts again.
 - Added Additional Major Record Types: Class (CLAS), Faction (FACT)
 
+### BREAKING CHANGES
+
+- Somewhere in the conversion to Creations Forge DB, Models, DTOs, etc. stopped being based on the spriggit/mutagen names and became based on generic gaming naming. ONce we support editing this would have been a disaster. I've made the decision while still small to reset to spriggit naming this also makes the data validation harness less of a nightmare.
+
 ## Version 1.1.9 - 2026-06-16
 
 - Moved the active game/plugin dropdowns in to an open plugin dialog.

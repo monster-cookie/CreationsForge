@@ -1,3 +1,4 @@
+using System.Globalization;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
@@ -149,6 +150,263 @@ public class StarfieldGameSettingSpriggitDataValidationTests : SpriggitDataValid
         spriggitFields["Data[7].String"].ShouldBe(dtoFields["Data[7].String"]);
         spriggitFields["Data[8].Language"].ShouldBe(dtoFields["Data[8].Language"]);
         spriggitFields["Data[8].String"].ShouldBe(dtoFields["Data[8].String"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
+    }
+
+    [Fact]
+    [Trait("Game", "Starfield")]
+    [Trait("RecordType", "GMST")]
+    [Trait("FormKey", "0F9CFD:Starfield.esm")]
+    [Trait("EditorID", "bAllowBlinksDuringSpeech")]
+    [Trait("SpriggitFile", "GameSettings/bAllowBlinksDuringSpeech - 0F9CFD_Starfield.esm.yaml")]
+    public void Starfield_GMST_ShouldMatchSpriggitSample_bAllowBlinksDuringSpeech()
+    {
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
+            SupportedGame.Starfield,
+            RecordTypeCatalog.GameSetting,
+            "bAllowBlinksDuringSpeech");
+        var dto = Helpers.GetDTO<GameSettingDTO>(
+            SupportedGame.Starfield,
+            RecordTypeCatalog.GameSetting,
+            "0F9CFD:Starfield.esm");
+
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
+
+        spriggitFields["Data"].ShouldBe(dtoFields["Data"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
+    }
+
+    [Fact]
+    [Trait("Game", "Starfield")]
+    [Trait("RecordType", "GMST")]
+    [Trait("FormKey", "024CA5:Starfield.esm")]
+    [Trait("EditorID", "bBoostpackInitialThrustOnlyOnTakeoff")]
+    [Trait("SpriggitFile", "GameSettings/bBoostpackInitialThrustOnlyOnTakeoff - 024CA5_Starfield.esm.yaml")]
+    public void Starfield_GMST_ShouldMatchSpriggitSample_bBoostpackInitialThrustOnlyOnTakeoff()
+    {
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
+            SupportedGame.Starfield,
+            RecordTypeCatalog.GameSetting,
+            "bBoostpackInitialThrustOnlyOnTakeoff");
+        var dto = Helpers.GetDTO<GameSettingDTO>(
+            SupportedGame.Starfield,
+            RecordTypeCatalog.GameSetting,
+            "024CA5:Starfield.esm");
+
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
+
+        spriggitFields["Data"].ShouldBe(dtoFields["Data"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
+    }
+
+    [Fact]
+    [Trait("Game", "Starfield")]
+    [Trait("RecordType", "GMST")]
+    [Trait("FormKey", "101046:Starfield.esm")]
+    [Trait("EditorID", "fActorDefaultTurningSpeed")]
+    [Trait("SpriggitFile", "GameSettings/fActorDefaultTurningSpeed - 101046_Starfield.esm.yaml")]
+    public void Starfield_GMST_ShouldMatchSpriggitSample_fActorDefaultTurningSpeed()
+    {
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
+            SupportedGame.Starfield,
+            RecordTypeCatalog.GameSetting,
+            "fActorDefaultTurningSpeed");
+        var dto = Helpers.GetDTO<GameSettingDTO>(
+            SupportedGame.Starfield,
+            RecordTypeCatalog.GameSetting,
+            "101046:Starfield.esm");
+
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
+
+        double.Parse(spriggitFields["Data"], CultureInfo.InvariantCulture)
+            .ShouldBe(double.Parse(dtoFields["Data"], CultureInfo.InvariantCulture), 0.000001);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
+    }
+
+    [Fact]
+    [Trait("Game", "Starfield")]
+    [Trait("RecordType", "GMST")]
+    [Trait("FormKey", "097F48:Starfield.esm")]
+    [Trait("EditorID", "fActorSwimBreathDamage")]
+    [Trait("SpriggitFile", "GameSettings/fActorSwimBreathDamage - 097F48_Starfield.esm.yaml")]
+    public void Starfield_GMST_ShouldMatchSpriggitSample_fActorSwimBreathDamage()
+    {
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
+            SupportedGame.Starfield,
+            RecordTypeCatalog.GameSetting,
+            "fActorSwimBreathDamage");
+        var dto = Helpers.GetDTO<GameSettingDTO>(
+            SupportedGame.Starfield,
+            RecordTypeCatalog.GameSetting,
+            "097F48:Starfield.esm");
+
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
+
+        double.Parse(spriggitFields["Data"], CultureInfo.InvariantCulture)
+            .ShouldBe(double.Parse(dtoFields["Data"], CultureInfo.InvariantCulture), 0.000001);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
+    }
+
+    [Fact]
+    [Trait("Game", "Starfield")]
+    [Trait("RecordType", "GMST")]
+    [Trait("FormKey", "01A237:Starfield.esm")]
+    [Trait("EditorID", "iAICombatRestoreHealthPercentage")]
+    [Trait("SpriggitFile", "GameSettings/iAICombatRestoreHealthPercentage - 01A237_Starfield.esm.yaml")]
+    public void Starfield_GMST_ShouldMatchSpriggitSample_iAICombatRestoreHealthPercentage()
+    {
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
+            SupportedGame.Starfield,
+            RecordTypeCatalog.GameSetting,
+            "iAICombatRestoreHealthPercentage");
+        var dto = Helpers.GetDTO<GameSettingDTO>(
+            SupportedGame.Starfield,
+            RecordTypeCatalog.GameSetting,
+            "01A237:Starfield.esm");
+
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
+
+        spriggitFields["Data"].ShouldBe(dtoFields["Data"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
+    }
+
+    [Fact]
+    [Trait("Game", "Starfield")]
+    [Trait("RecordType", "GMST")]
+    [Trait("FormKey", "003207:Starfield.esm")]
+    [Trait("EditorID", "iAIMaxSocialDistanceToTriggerEvent")]
+    [Trait("SpriggitFile", "GameSettings/iAIMaxSocialDistanceToTriggerEvent - 003207_Starfield.esm.yaml")]
+    public void Starfield_GMST_ShouldMatchSpriggitSample_iAIMaxSocialDistanceToTriggerEvent()
+    {
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
+            SupportedGame.Starfield,
+            RecordTypeCatalog.GameSetting,
+            "iAIMaxSocialDistanceToTriggerEvent");
+        var dto = Helpers.GetDTO<GameSettingDTO>(
+            SupportedGame.Starfield,
+            RecordTypeCatalog.GameSetting,
+            "003207:Starfield.esm");
+
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
+
+        spriggitFields["Data"].ShouldBe(dtoFields["Data"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
+    }
+
+    [Fact]
+    [Trait("Game", "Starfield")]
+    [Trait("RecordType", "GMST")]
+    [Trait("FormKey", "246BD8:Starfield.esm")]
+    [Trait("EditorID", "uDefaultLevelZone01max")]
+    [Trait("SpriggitFile", "GameSettings/uDefaultLevelZone01max - 246BD8_Starfield.esm.yaml")]
+    public void Starfield_GMST_ShouldMatchSpriggitSample_uDefaultLevelZone01max()
+    {
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
+            SupportedGame.Starfield,
+            RecordTypeCatalog.GameSetting,
+            "uDefaultLevelZone01max");
+        var dto = Helpers.GetDTO<GameSettingDTO>(
+            SupportedGame.Starfield,
+            RecordTypeCatalog.GameSetting,
+            "246BD8:Starfield.esm");
+
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
+
+        spriggitFields["Data"].ShouldBe(dtoFields["Data"]);
+        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
+        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
+        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
+        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
+        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
+        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
+
+        Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
+        Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
+    }
+
+    [Fact]
+    [Trait("Game", "Starfield")]
+    [Trait("RecordType", "GMST")]
+    [Trait("FormKey", "246BD9:Starfield.esm")]
+    [Trait("EditorID", "uDefaultLevelZone02min")]
+    [Trait("SpriggitFile", "GameSettings/uDefaultLevelZone02min - 246BD9_Starfield.esm.yaml")]
+    public void Starfield_GMST_ShouldMatchSpriggitSample_uDefaultLevelZone02min()
+    {
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
+            SupportedGame.Starfield,
+            RecordTypeCatalog.GameSetting,
+            "uDefaultLevelZone02min");
+        var dto = Helpers.GetDTO<GameSettingDTO>(
+            SupportedGame.Starfield,
+            RecordTypeCatalog.GameSetting,
+            "246BD9:Starfield.esm");
+
+        var spriggitFields = spriggit.Fields;
+        var dtoFields = Helpers.GetDTOFields(dto);
+
+        spriggitFields["Data"].ShouldBe(dtoFields["Data"]);
         spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
         spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
         spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
