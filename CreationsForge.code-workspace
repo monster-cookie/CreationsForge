@@ -51,6 +51,7 @@
 			"reimports",
 			"runuser",
 			"Serilog",
+			"SFCK",
 			"Shouldly",
 			"Skia",
 			"Skyrim",

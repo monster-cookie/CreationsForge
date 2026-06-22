@@ -75,4 +75,3 @@ A database reset/reimport is required when:
 - validation failures may be caused by stale imported rows rather than current code.
 
 The agent must call this out in the plan and final validation notes. Building the solution is not enough to refresh imported DTO data.
-

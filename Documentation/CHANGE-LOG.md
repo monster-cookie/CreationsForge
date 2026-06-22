@@ -46,7 +46,7 @@
 - Added missing child schemas for Perks (Ranks, Skills, etc.)
 - Added missing child schemas for MiscItems (Transforms, models, sounds).
 
-### BREAKING CHANGES
+### BREAKING CHANGES FOR v1.1.1
 
 - This is a completely new application and data model. You should uninstall/remove the old SFRecordComparisonEngine
   version.
