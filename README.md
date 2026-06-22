@@ -55,11 +55,15 @@ Cross-game record types:
 12. NPCs (NPC_)
 13. Perks (PERK)
 14. Statics (STAT)
-15. Terminals (TERM)
+
+Additional Fallout 4 record types:
+
+1. Terminals (TERM)
 
 Additional Starfield record types:
 
 1. Condition Forms (CNDF)
+2. Terminals (TERM)
 
 ## Planned Roadmap
 
