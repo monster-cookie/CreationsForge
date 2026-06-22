@@ -72,6 +72,9 @@ public class ValidationSpecRunner
                 case ValidationRuleKind.DtoExpectedValue:
                     ApplyDtoExpectedValueRule(rule, dtoFields, matchedDtoFields, diagnostics, assertionCases);
                     break;
+                case ValidationRuleKind.DtoNonEmpty:
+                    ApplyDtoNonEmptyRule(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, diagnostics);
+                    break;
                 case ValidationRuleKind.SpriggitAbsent:
                     ApplySpriggitAbsentRule(rule, spriggitFields, diagnostics);
                     break;
@@ -80,6 +83,9 @@ public class ValidationSpecRunner
                     break;
                 case ValidationRuleKind.IgnoreDto:
                     ignoredDtoFields.Add(rule.DtoPath);
+                    break;
+                case ValidationRuleKind.IgnoreDtoPrefix:
+                    AddIgnoredDtoPrefix(rule, dtoFields, ignoredDtoFields);
                     break;
                 default:
                     throw new InvalidOperationException("Unsupported validation rule kind '" + rule.Kind + "'.");
@@ -237,6 +243,19 @@ public class ValidationSpecRunner
         MarkTranslatedField(matchedSpriggitFields, spriggitFields, rule.SpriggitPath);
         MarkTranslatedField(matchedDtoFields, dtoFields, rule.DtoPath);
 
+        if (rule.RequireAllTranslatedLanguages &&
+            spriggitFields.TryGetValue(rule.SpriggitPath + ".Count", out var spriggitCount) &&
+            dtoFields.TryGetValue(rule.DtoPath + ".Count", out var dtoCount))
+        {
+            AddAssertionCase(
+                rule.SpriggitPath + ".Count",
+                spriggitCount,
+                rule.DtoPath + ".Count",
+                dtoCount,
+                ValidationValueNormalizer.None,
+                assertionCases);
+        }
+
         if (spriggitFields.TryGetValue(rule.SpriggitPath + ".TargetLanguage", out var spriggitTargetLanguage) &&
             dtoFields.TryGetValue(rule.DtoPath + ".TargetLanguage", out var dtoTargetLanguage))
         {
@@ -249,23 +268,38 @@ public class ValidationSpecRunner
                 assertionCases);
         }
 
+        if (rule.RequireAllTranslatedLanguages)
+        {
+            foreach (var spriggitEntry in spriggitEntries.OrderBy(entry => entry.Language, StringComparer.OrdinalIgnoreCase))
+            {
+                var dtoEntry = dtoEntries.FirstOrDefault(entry =>
+                    string.Equals(entry.Language, spriggitEntry.Language, StringComparison.OrdinalIgnoreCase));
+                if (dtoEntry == null)
+                {
+                    diagnostics.Add("DTO translated field '" + rule.DtoPath + "' was missing language '" + spriggitEntry.Language + "'.");
+                    continue;
+                }
+
+                AddAssertionCase(
+                    spriggitEntry.StringPath,
+                    spriggitEntry.Value,
+                    dtoEntry.StringPath,
+                    dtoEntry.Value,
+                    rule.Normalizer,
+                    assertionCases);
+            }
+
+            return;
+        }
+
         foreach (var dtoEntry in dtoEntries.OrderBy(entry => entry.Language, StringComparer.OrdinalIgnoreCase))
         {
-            var spriggitEntry = spriggitEntries.FirstOrDefault(entry =>
-                string.Equals(entry.Language, dtoEntry.Language, StringComparison.OrdinalIgnoreCase));
-            if (spriggitEntry == null)
+            if (spriggitEntries.Any(entry => string.Equals(entry.Language, dtoEntry.Language, StringComparison.OrdinalIgnoreCase)))
             {
-                diagnostics.Add("Spriggit translated field '" + rule.SpriggitPath + "' was missing language '" + dtoEntry.Language + "'.");
                 continue;
             }
 
-            AddAssertionCase(
-                spriggitEntry.StringPath,
-                spriggitEntry.Value,
-                dtoEntry.StringPath,
-                dtoEntry.Value,
-                rule.Normalizer,
-                assertionCases);
+            diagnostics.Add("Spriggit translated field '" + rule.SpriggitPath + "' was missing language '" + dtoEntry.Language + "'.");
         }
     }
 
@@ -336,6 +370,46 @@ public class ValidationSpecRunner
         if (spriggitFields.ContainsKey(rule.SpriggitPath))
         {
             diagnostics.Add("Spriggit field '" + rule.SpriggitPath + "' was expected to be absent.");
+        }
+    }
+
+    private static void ApplyDtoNonEmptyRule(
+        ValidationFieldRule rule,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields,
+        ISet<string> matchedSpriggitFields,
+        ISet<string> matchedDtoFields,
+        IList<string> diagnostics)
+    {
+        if (!dtoFields.TryGetValue(rule.DtoPath, out var dtoValue))
+        {
+            diagnostics.Add("DTO field '" + rule.DtoPath + "' was missing.");
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(rule.SpriggitPath))
+        {
+            foreach (var field in spriggitFields.Keys.Where(field => IsUnderPath(field, rule.SpriggitPath)))
+            {
+                MarkMatched(matchedSpriggitFields, field);
+            }
+        }
+
+        MarkMatched(matchedDtoFields, rule.DtoPath);
+        if (string.IsNullOrWhiteSpace(dtoValue))
+        {
+            diagnostics.Add("DTO field '" + rule.DtoPath + "' was expected to be non-empty.");
+        }
+    }
+
+    private static void AddIgnoredDtoPrefix(
+        ValidationFieldRule rule,
+        IReadOnlyDictionary<string, string> dtoFields,
+        ISet<string> ignoredDtoFields)
+    {
+        foreach (var field in dtoFields.Keys.Where(field => IsUnderPath(field, rule.DtoPath)))
+        {
+            ignoredDtoFields.Add(field);
         }
     }
 
@@ -558,6 +632,9 @@ public class ValidationSpecRunner
             ValidationValueNormalizer.ModelFile => value.StartsWith("Meshes\\", StringComparison.OrdinalIgnoreCase)
                 ? value
                 : "Meshes\\" + value,
+            ValidationValueNormalizer.DecimalNumber => double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue)
+                ? Math.Round(doubleValue, 6).ToString("0.######", CultureInfo.InvariantCulture)
+                : value,
             _ => value
         };
     }

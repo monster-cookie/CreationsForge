@@ -8,7 +8,9 @@ public enum ValidationRuleKind
     TranslatedField,
     SoundSlot,
     DtoExpectedValue,
+    DtoNonEmpty,
     SpriggitAbsent,
     IgnoreSpriggit,
-    IgnoreDto
+    IgnoreDto,
+    IgnoreDtoPrefix
 }

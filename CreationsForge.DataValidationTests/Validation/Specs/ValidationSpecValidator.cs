@@ -63,6 +63,9 @@ public static class ValidationSpecValidator
                     RequireDtoPath(rule, ruleName, diagnostics);
                     RequireExpectedValue(rule, ruleName, "expected value", diagnostics);
                     break;
+                case ValidationRuleKind.DtoNonEmpty:
+                    RequireDtoPath(rule, ruleName, diagnostics);
+                    break;
                 case ValidationRuleKind.SpriggitAbsent:
                     RequireSpriggitPath(rule, ruleName, diagnostics);
                     break;
@@ -71,6 +74,10 @@ public static class ValidationSpecValidator
                     RequireReason(rule, ruleName, diagnostics);
                     break;
                 case ValidationRuleKind.IgnoreDto:
+                    RequireDtoPath(rule, ruleName, diagnostics);
+                    RequireReason(rule, ruleName, diagnostics);
+                    break;
+                case ValidationRuleKind.IgnoreDtoPrefix:
                     RequireDtoPath(rule, ruleName, diagnostics);
                     RequireReason(rule, ruleName, diagnostics);
                     break;

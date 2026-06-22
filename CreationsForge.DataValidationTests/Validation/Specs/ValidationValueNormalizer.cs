@@ -28,5 +28,11 @@ public enum ValidationValueNormalizer
     /// <summary>
     /// Compare model paths when the reader DTO includes the implicit Meshes\ prefix that Spriggit omits.
     /// </summary>
-    ModelFile
+    ModelFile,
+
+    /// <summary>
+    /// Compare numeric values using a six-decimal invariant representation for fields that were previously asserted
+    /// with floating-point tolerance.
+    /// </summary>
+    DecimalNumber
 }

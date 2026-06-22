@@ -14,6 +14,8 @@ public class ValidationFieldRule
 
     public ValidationValueNormalizer Normalizer { get; private init; }
 
+    public bool RequireAllTranslatedLanguages { get; private init; }
+
     public IReadOnlyDictionary<string, string> PathReplacements { get; private init; } =
         new Dictionary<string, string>(StringComparer.Ordinal);
 
@@ -59,14 +61,16 @@ public class ValidationFieldRule
     public static ValidationFieldRule TranslatedField(
         string spriggitPath,
         string dtoPath,
-        ValidationValueNormalizer normalizer = ValidationValueNormalizer.None)
+        ValidationValueNormalizer normalizer = ValidationValueNormalizer.None,
+        bool requireAllLanguages = false)
     {
         return new ValidationFieldRule
         {
             Kind = ValidationRuleKind.TranslatedField,
             SpriggitPath = spriggitPath,
             DtoPath = dtoPath,
-            Normalizer = normalizer
+            Normalizer = normalizer,
+            RequireAllTranslatedLanguages = requireAllLanguages
         };
     }
 
@@ -88,6 +92,25 @@ public class ValidationFieldRule
             Kind = ValidationRuleKind.DtoExpectedValue,
             DtoPath = dtoPath,
             ExpectedValue = expectedValue
+        };
+    }
+
+    public static ValidationFieldRule DtoNonEmpty(string dtoPath)
+    {
+        return new ValidationFieldRule
+        {
+            Kind = ValidationRuleKind.DtoNonEmpty,
+            DtoPath = dtoPath
+        };
+    }
+
+    public static ValidationFieldRule DtoNonEmpty(string spriggitPath, string dtoPath)
+    {
+        return new ValidationFieldRule
+        {
+            Kind = ValidationRuleKind.DtoNonEmpty,
+            SpriggitPath = spriggitPath,
+            DtoPath = dtoPath
         };
     }
 
@@ -115,6 +138,16 @@ public class ValidationFieldRule
         return new ValidationFieldRule
         {
             Kind = ValidationRuleKind.IgnoreDto,
+            DtoPath = dtoPath,
+            Reason = reason
+        };
+    }
+
+    public static ValidationFieldRule IgnoreDtoPrefix(string dtoPath, string reason)
+    {
+        return new ValidationFieldRule
+        {
+            Kind = ValidationRuleKind.IgnoreDtoPrefix,
             DtoPath = dtoPath,
             Reason = reason
         };

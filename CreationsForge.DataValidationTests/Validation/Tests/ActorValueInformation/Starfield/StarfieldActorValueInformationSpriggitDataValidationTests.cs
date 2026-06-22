@@ -1,6 +1,6 @@
 using CreationsForge.Core.DTOs.Records;
-using CreationsForge.Core.Enums;
-using CreationsForge.Core.Helpers;
+using CreationsForge.DataValidationTests.Validation.Specs;
+using CreationsForge.DataValidationTests.Validation.Specs.ActorValueInformation;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.Tests.ActorValueInformation.Starfield;
@@ -15,68 +15,17 @@ public class StarfieldActorValueInformationSpriggitDataValidationTests : Spriggi
     [Trait("SpriggitFile", "ActorValueInformation/TargetingModeActionPoints_AV - 05ACD4_Starfield.esm.yaml")]
     public void Starfield_AVIF_ShouldMatchSpriggitSample_TargetingModeActionPoints_AV()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Starfield,
-            RecordTypeCatalog.ActorValueInformation,
-            "TargetingModeActionPoints_AV");
-        var dto = Helpers.GetDTO<ActorValueInformationDTO>(
-            SupportedGame.Starfield,
-            RecordTypeCatalog.ActorValueInformation,
-            "05ACD4:Starfield.esm");
+        var spec = ActorValueInformationValidationSpecs.Starfield_TargetingModeActionPoints_AV();
+        var dto = Helpers.GetDTO<ActorValueInformationDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["Abbreviation.Count"].ShouldBe(dtoFields["Abbreviation.Count"]);
-        spriggitFields["Abbreviation.TargetLanguage"].ShouldBe(dtoFields["Abbreviation.TargetLanguage"]);
-        spriggitFields["Abbreviation[0].Language"].ShouldBe(dtoFields["Abbreviation[0].Language"]);
-        spriggitFields["Abbreviation[0].String"].ShouldBe(dtoFields["Abbreviation[0].String"]);
-        spriggitFields["Abbreviation[1].Language"].ShouldBe(dtoFields["Abbreviation[1].Language"]);
-        spriggitFields["Abbreviation[1].String"].ShouldBe(dtoFields["Abbreviation[1].String"]);
-        spriggitFields["Abbreviation[2].Language"].ShouldBe(dtoFields["Abbreviation[2].Language"]);
-        spriggitFields["Abbreviation[2].String"].ShouldBe(dtoFields["Abbreviation[2].String"]);
-        spriggitFields["Abbreviation[3].Language"].ShouldBe(dtoFields["Abbreviation[3].Language"]);
-        spriggitFields["Abbreviation[3].String"].ShouldBe(dtoFields["Abbreviation[3].String"]);
-        spriggitFields["Abbreviation[4].Language"].ShouldBe(dtoFields["Abbreviation[4].Language"]);
-        spriggitFields["Abbreviation[4].String"].ShouldBe(dtoFields["Abbreviation[4].String"]);
-        spriggitFields["Abbreviation[5].Language"].ShouldBe(dtoFields["Abbreviation[5].Language"]);
-        spriggitFields["Abbreviation[5].String"].ShouldBe(dtoFields["Abbreviation[5].String"]);
-        spriggitFields["Abbreviation[6].Language"].ShouldBe(dtoFields["Abbreviation[6].Language"]);
-        spriggitFields["Abbreviation[6].String"].ShouldBe(dtoFields["Abbreviation[6].String"]);
-        spriggitFields["Abbreviation[7].Language"].ShouldBe(dtoFields["Abbreviation[7].Language"]);
-        spriggitFields["Abbreviation[7].String"].ShouldBe(dtoFields["Abbreviation[7].String"]);
-        spriggitFields["Abbreviation[8].Language"].ShouldBe(dtoFields["Abbreviation[8].Language"]);
-        spriggitFields["Abbreviation[8].String"].ShouldBe(dtoFields["Abbreviation[8].String"]);
-        spriggitFields["ContextNotes"].ShouldBe(dtoFields["ContextNotes"]);
-        spriggitFields["DefaultValue"].ShouldBe(dtoFields["DefaultValue"]);
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        dtoFields["Flags"].ShouldNotBeNullOrEmpty();
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
-        spriggitFields["Max"].ShouldBe(dtoFields["Max"]);
-        spriggitFields["Min"].ShouldBe(dtoFields["Min"]);
-        spriggitFields["Name.Count"].ShouldBe(dtoFields["Name.Count"]);
-        spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
-        spriggitFields["Name[0].Language"].ShouldBe(dtoFields["Name[0].Language"]);
-        spriggitFields["Name[0].String"].ShouldBe(dtoFields["Name[0].String"]);
-        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[1].Language"]);
-        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[1].String"]);
-        spriggitFields["Name[2].Language"].ShouldBe(dtoFields["Name[2].Language"]);
-        spriggitFields["Name[2].String"].ShouldBe(dtoFields["Name[2].String"]);
-        spriggitFields["Name[3].Language"].ShouldBe(dtoFields["Name[3].Language"]);
-        spriggitFields["Name[3].String"].ShouldBe(dtoFields["Name[3].String"]);
-        spriggitFields["Name[4].Language"].ShouldBe(dtoFields["Name[4].Language"]);
-        spriggitFields["Name[4].String"].ShouldBe(dtoFields["Name[4].String"]);
-        spriggitFields["Name[5].Language"].ShouldBe(dtoFields["Name[5].Language"]);
-        spriggitFields["Name[5].String"].ShouldBe(dtoFields["Name[5].String"]);
-        spriggitFields["Name[6].Language"].ShouldBe(dtoFields["Name[6].Language"]);
-        spriggitFields["Name[6].String"].ShouldBe(dtoFields["Name[6].String"]);
-        spriggitFields["Name[7].Language"].ShouldBe(dtoFields["Name[7].Language"]);
-        spriggitFields["Name[7].String"].ShouldBe(dtoFields["Name[7].String"]);
-        spriggitFields["Name[8].Language"].ShouldBe(dtoFields["Name[8].Language"]);
-        spriggitFields["Name[8].String"].ShouldBe(dtoFields["Name[8].String"]);
-        spriggitFields["Type"].ShouldBe(dtoFields["Type"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -89,68 +38,17 @@ public class StarfieldActorValueInformationSpriggitDataValidationTests : Spriggi
     [Trait("SpriggitFile", "ActorValueInformation/ENV_Resist_Airborne - 248D31_Starfield.esm.yaml")]
     public void Starfield_AVIF_ShouldMatchSpriggitSample_ENV_Resist_Airborne()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Starfield,
-            RecordTypeCatalog.ActorValueInformation,
-            "ENV_Resist_Airborne");
-        var dto = Helpers.GetDTO<ActorValueInformationDTO>(
-            SupportedGame.Starfield,
-            RecordTypeCatalog.ActorValueInformation,
-            "248D31:Starfield.esm");
+        var spec = ActorValueInformationValidationSpecs.Starfield_ENV_Resist_Airborne();
+        var dto = Helpers.GetDTO<ActorValueInformationDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["Abbreviation.Count"].ShouldBe(dtoFields["Abbreviation.Count"]);
-        spriggitFields["Abbreviation.TargetLanguage"].ShouldBe(dtoFields["Abbreviation.TargetLanguage"]);
-        spriggitFields["Abbreviation[0].Language"].ShouldBe(dtoFields["Abbreviation[0].Language"]);
-        spriggitFields["Abbreviation[0].String"].ShouldBe(dtoFields["Abbreviation[0].String"]);
-        spriggitFields["Abbreviation[1].Language"].ShouldBe(dtoFields["Abbreviation[1].Language"]);
-        spriggitFields["Abbreviation[1].String"].ShouldBe(dtoFields["Abbreviation[1].String"]);
-        spriggitFields["Abbreviation[2].Language"].ShouldBe(dtoFields["Abbreviation[2].Language"]);
-        spriggitFields["Abbreviation[2].String"].ShouldBe(dtoFields["Abbreviation[2].String"]);
-        spriggitFields["Abbreviation[3].Language"].ShouldBe(dtoFields["Abbreviation[3].Language"]);
-        spriggitFields["Abbreviation[3].String"].ShouldBe(dtoFields["Abbreviation[3].String"]);
-        spriggitFields["Abbreviation[4].Language"].ShouldBe(dtoFields["Abbreviation[4].Language"]);
-        spriggitFields["Abbreviation[4].String"].ShouldBe(dtoFields["Abbreviation[4].String"]);
-        spriggitFields["Abbreviation[5].Language"].ShouldBe(dtoFields["Abbreviation[5].Language"]);
-        spriggitFields["Abbreviation[5].String"].ShouldBe(dtoFields["Abbreviation[5].String"]);
-        spriggitFields["Abbreviation[6].Language"].ShouldBe(dtoFields["Abbreviation[6].Language"]);
-        spriggitFields["Abbreviation[6].String"].ShouldBe(dtoFields["Abbreviation[6].String"]);
-        spriggitFields["Abbreviation[7].Language"].ShouldBe(dtoFields["Abbreviation[7].Language"]);
-        spriggitFields["Abbreviation[7].String"].ShouldBe(dtoFields["Abbreviation[7].String"]);
-        spriggitFields["Abbreviation[8].Language"].ShouldBe(dtoFields["Abbreviation[8].Language"]);
-        spriggitFields["Abbreviation[8].String"].ShouldBe(dtoFields["Abbreviation[8].String"]);
-        spriggitFields["ContextNotes"].ShouldBe(dtoFields["ContextNotes"]);
-        spriggitFields["DefaultValue"].ShouldBe(dtoFields["DefaultValue"]);
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        dtoFields["Flags"].ShouldNotBeNullOrEmpty();
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
-        spriggitFields["Max"].ShouldBe(dtoFields["Max"]);
-        spriggitFields["Min"].ShouldBe(dtoFields["Min"]);
-        spriggitFields["Name.Count"].ShouldBe(dtoFields["Name.Count"]);
-        spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
-        spriggitFields["Name[0].Language"].ShouldBe(dtoFields["Name[0].Language"]);
-        spriggitFields["Name[0].String"].ShouldBe(dtoFields["Name[0].String"]);
-        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[1].Language"]);
-        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[1].String"]);
-        spriggitFields["Name[2].Language"].ShouldBe(dtoFields["Name[2].Language"]);
-        spriggitFields["Name[2].String"].ShouldBe(dtoFields["Name[2].String"]);
-        spriggitFields["Name[3].Language"].ShouldBe(dtoFields["Name[3].Language"]);
-        spriggitFields["Name[3].String"].ShouldBe(dtoFields["Name[3].String"]);
-        spriggitFields["Name[4].Language"].ShouldBe(dtoFields["Name[4].Language"]);
-        spriggitFields["Name[4].String"].ShouldBe(dtoFields["Name[4].String"]);
-        spriggitFields["Name[5].Language"].ShouldBe(dtoFields["Name[5].Language"]);
-        spriggitFields["Name[5].String"].ShouldBe(dtoFields["Name[5].String"]);
-        spriggitFields["Name[6].Language"].ShouldBe(dtoFields["Name[6].Language"]);
-        spriggitFields["Name[6].String"].ShouldBe(dtoFields["Name[6].String"]);
-        spriggitFields["Name[7].Language"].ShouldBe(dtoFields["Name[7].Language"]);
-        spriggitFields["Name[7].String"].ShouldBe(dtoFields["Name[7].String"]);
-        spriggitFields["Name[8].Language"].ShouldBe(dtoFields["Name[8].Language"]);
-        spriggitFields["Name[8].String"].ShouldBe(dtoFields["Name[8].String"]);
-        spriggitFields["Type"].ShouldBe(dtoFields["Type"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -163,68 +61,17 @@ public class StarfieldActorValueInformationSpriggitDataValidationTests : Spriggi
     [Trait("SpriggitFile", "ActorValueInformation/ENV_Resist_Corrosive - 248D30_Starfield.esm.yaml")]
     public void Starfield_AVIF_ShouldMatchSpriggitSample_ENV_Resist_Corrosive()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Starfield,
-            RecordTypeCatalog.ActorValueInformation,
-            "ENV_Resist_Corrosive");
-        var dto = Helpers.GetDTO<ActorValueInformationDTO>(
-            SupportedGame.Starfield,
-            RecordTypeCatalog.ActorValueInformation,
-            "248D30:Starfield.esm");
+        var spec = ActorValueInformationValidationSpecs.Starfield_ENV_Resist_Corrosive();
+        var dto = Helpers.GetDTO<ActorValueInformationDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["Abbreviation.Count"].ShouldBe(dtoFields["Abbreviation.Count"]);
-        spriggitFields["Abbreviation.TargetLanguage"].ShouldBe(dtoFields["Abbreviation.TargetLanguage"]);
-        spriggitFields["Abbreviation[0].Language"].ShouldBe(dtoFields["Abbreviation[0].Language"]);
-        spriggitFields["Abbreviation[0].String"].ShouldBe(dtoFields["Abbreviation[0].String"]);
-        spriggitFields["Abbreviation[1].Language"].ShouldBe(dtoFields["Abbreviation[1].Language"]);
-        spriggitFields["Abbreviation[1].String"].ShouldBe(dtoFields["Abbreviation[1].String"]);
-        spriggitFields["Abbreviation[2].Language"].ShouldBe(dtoFields["Abbreviation[2].Language"]);
-        spriggitFields["Abbreviation[2].String"].ShouldBe(dtoFields["Abbreviation[2].String"]);
-        spriggitFields["Abbreviation[3].Language"].ShouldBe(dtoFields["Abbreviation[3].Language"]);
-        spriggitFields["Abbreviation[3].String"].ShouldBe(dtoFields["Abbreviation[3].String"]);
-        spriggitFields["Abbreviation[4].Language"].ShouldBe(dtoFields["Abbreviation[4].Language"]);
-        spriggitFields["Abbreviation[4].String"].ShouldBe(dtoFields["Abbreviation[4].String"]);
-        spriggitFields["Abbreviation[5].Language"].ShouldBe(dtoFields["Abbreviation[5].Language"]);
-        spriggitFields["Abbreviation[5].String"].ShouldBe(dtoFields["Abbreviation[5].String"]);
-        spriggitFields["Abbreviation[6].Language"].ShouldBe(dtoFields["Abbreviation[6].Language"]);
-        spriggitFields["Abbreviation[6].String"].ShouldBe(dtoFields["Abbreviation[6].String"]);
-        spriggitFields["Abbreviation[7].Language"].ShouldBe(dtoFields["Abbreviation[7].Language"]);
-        spriggitFields["Abbreviation[7].String"].ShouldBe(dtoFields["Abbreviation[7].String"]);
-        spriggitFields["Abbreviation[8].Language"].ShouldBe(dtoFields["Abbreviation[8].Language"]);
-        spriggitFields["Abbreviation[8].String"].ShouldBe(dtoFields["Abbreviation[8].String"]);
-        spriggitFields["ContextNotes"].ShouldBe(dtoFields["ContextNotes"]);
-        spriggitFields["DefaultValue"].ShouldBe(dtoFields["DefaultValue"]);
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        dtoFields["Flags"].ShouldNotBeNullOrEmpty();
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
-        spriggitFields["Max"].ShouldBe(dtoFields["Max"]);
-        spriggitFields["Min"].ShouldBe(dtoFields["Min"]);
-        spriggitFields["Name.Count"].ShouldBe(dtoFields["Name.Count"]);
-        spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
-        spriggitFields["Name[0].Language"].ShouldBe(dtoFields["Name[0].Language"]);
-        spriggitFields["Name[0].String"].ShouldBe(dtoFields["Name[0].String"]);
-        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[1].Language"]);
-        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[1].String"]);
-        spriggitFields["Name[2].Language"].ShouldBe(dtoFields["Name[2].Language"]);
-        spriggitFields["Name[2].String"].ShouldBe(dtoFields["Name[2].String"]);
-        spriggitFields["Name[3].Language"].ShouldBe(dtoFields["Name[3].Language"]);
-        spriggitFields["Name[3].String"].ShouldBe(dtoFields["Name[3].String"]);
-        spriggitFields["Name[4].Language"].ShouldBe(dtoFields["Name[4].Language"]);
-        spriggitFields["Name[4].String"].ShouldBe(dtoFields["Name[4].String"]);
-        spriggitFields["Name[5].Language"].ShouldBe(dtoFields["Name[5].Language"]);
-        spriggitFields["Name[5].String"].ShouldBe(dtoFields["Name[5].String"]);
-        spriggitFields["Name[6].Language"].ShouldBe(dtoFields["Name[6].Language"]);
-        spriggitFields["Name[6].String"].ShouldBe(dtoFields["Name[6].String"]);
-        spriggitFields["Name[7].Language"].ShouldBe(dtoFields["Name[7].Language"]);
-        spriggitFields["Name[7].String"].ShouldBe(dtoFields["Name[7].String"]);
-        spriggitFields["Name[8].Language"].ShouldBe(dtoFields["Name[8].Language"]);
-        spriggitFields["Name[8].String"].ShouldBe(dtoFields["Name[8].String"]);
-        spriggitFields["Type"].ShouldBe(dtoFields["Type"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -237,65 +84,17 @@ public class StarfieldActorValueInformationSpriggitDataValidationTests : Spriggi
     [Trait("SpriggitFile", "ActorValueInformation/PEO_CarryWeight - 2EE0BB_Starfield.esm.yaml")]
     public void Starfield_AVIF_ShouldMatchSpriggitSample_PEO_CarryWeight()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Starfield,
-            RecordTypeCatalog.ActorValueInformation,
-            "PEO_CarryWeight");
-        var dto = Helpers.GetDTO<ActorValueInformationDTO>(
-            SupportedGame.Starfield,
-            RecordTypeCatalog.ActorValueInformation,
-            "2EE0BB:Starfield.esm");
+        var spec = ActorValueInformationValidationSpecs.Starfield_PEO_CarryWeight();
+        var dto = Helpers.GetDTO<ActorValueInformationDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["Abbreviation.Count"].ShouldBe(dtoFields["Abbreviation.Count"]);
-        spriggitFields["Abbreviation.TargetLanguage"].ShouldBe(dtoFields["Abbreviation.TargetLanguage"]);
-        spriggitFields["Abbreviation[0].Language"].ShouldBe(dtoFields["Abbreviation[0].Language"]);
-        spriggitFields["Abbreviation[0].String"].ShouldBe(dtoFields["Abbreviation[0].String"]);
-        spriggitFields["Abbreviation[1].Language"].ShouldBe(dtoFields["Abbreviation[1].Language"]);
-        spriggitFields["Abbreviation[1].String"].ShouldBe(dtoFields["Abbreviation[1].String"]);
-        spriggitFields["Abbreviation[2].Language"].ShouldBe(dtoFields["Abbreviation[2].Language"]);
-        spriggitFields["Abbreviation[2].String"].ShouldBe(dtoFields["Abbreviation[2].String"]);
-        spriggitFields["Abbreviation[3].Language"].ShouldBe(dtoFields["Abbreviation[3].Language"]);
-        spriggitFields["Abbreviation[3].String"].ShouldBe(dtoFields["Abbreviation[3].String"]);
-        spriggitFields["Abbreviation[4].Language"].ShouldBe(dtoFields["Abbreviation[4].Language"]);
-        spriggitFields["Abbreviation[4].String"].ShouldBe(dtoFields["Abbreviation[4].String"]);
-        spriggitFields["Abbreviation[5].Language"].ShouldBe(dtoFields["Abbreviation[5].Language"]);
-        spriggitFields["Abbreviation[5].String"].ShouldBe(dtoFields["Abbreviation[5].String"]);
-        spriggitFields["Abbreviation[6].Language"].ShouldBe(dtoFields["Abbreviation[6].Language"]);
-        spriggitFields["Abbreviation[6].String"].ShouldBe(dtoFields["Abbreviation[6].String"]);
-        spriggitFields["Abbreviation[7].Language"].ShouldBe(dtoFields["Abbreviation[7].Language"]);
-        spriggitFields["Abbreviation[7].String"].ShouldBe(dtoFields["Abbreviation[7].String"]);
-        spriggitFields["Abbreviation[8].Language"].ShouldBe(dtoFields["Abbreviation[8].Language"]);
-        spriggitFields["Abbreviation[8].String"].ShouldBe(dtoFields["Abbreviation[8].String"]);
-        spriggitFields["DefaultValue"].ShouldBe(dtoFields["DefaultValue"]);
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        dtoFields["Flags"].ShouldNotBeNullOrEmpty();
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
-        spriggitFields["Name.Count"].ShouldBe(dtoFields["Name.Count"]);
-        spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
-        spriggitFields["Name[0].Language"].ShouldBe(dtoFields["Name[0].Language"]);
-        spriggitFields["Name[0].String"].ShouldBe(dtoFields["Name[0].String"]);
-        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[1].Language"]);
-        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[1].String"]);
-        spriggitFields["Name[2].Language"].ShouldBe(dtoFields["Name[2].Language"]);
-        spriggitFields["Name[2].String"].ShouldBe(dtoFields["Name[2].String"]);
-        spriggitFields["Name[3].Language"].ShouldBe(dtoFields["Name[3].Language"]);
-        spriggitFields["Name[3].String"].ShouldBe(dtoFields["Name[3].String"]);
-        spriggitFields["Name[4].Language"].ShouldBe(dtoFields["Name[4].Language"]);
-        spriggitFields["Name[4].String"].ShouldBe(dtoFields["Name[4].String"]);
-        spriggitFields["Name[5].Language"].ShouldBe(dtoFields["Name[5].Language"]);
-        spriggitFields["Name[5].String"].ShouldBe(dtoFields["Name[5].String"]);
-        spriggitFields["Name[6].Language"].ShouldBe(dtoFields["Name[6].Language"]);
-        spriggitFields["Name[6].String"].ShouldBe(dtoFields["Name[6].String"]);
-        spriggitFields["Name[7].Language"].ShouldBe(dtoFields["Name[7].Language"]);
-        spriggitFields["Name[7].String"].ShouldBe(dtoFields["Name[7].String"]);
-        spriggitFields["Name[8].Language"].ShouldBe(dtoFields["Name[8].Language"]);
-        spriggitFields["Name[8].String"].ShouldBe(dtoFields["Name[8].String"]);
-        spriggitFields["Type"].ShouldBe(dtoFields["Type"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -308,64 +107,17 @@ public class StarfieldActorValueInformationSpriggitDataValidationTests : Spriggi
     [Trait("SpriggitFile", "ActorValueInformation/Health - 0002D4_Starfield.esm.yaml")]
     public void Starfield_AVIF_ShouldMatchSpriggitSample_Health()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Starfield,
-            RecordTypeCatalog.ActorValueInformation,
-            "Health");
-        var dto = Helpers.GetDTO<ActorValueInformationDTO>(
-            SupportedGame.Starfield,
-            RecordTypeCatalog.ActorValueInformation,
-            "0002D4:Starfield.esm");
+        var spec = ActorValueInformationValidationSpecs.Starfield_Health();
+        var dto = Helpers.GetDTO<ActorValueInformationDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["Abbreviation.Count"].ShouldBe(dtoFields["Abbreviation.Count"]);
-        spriggitFields["Abbreviation.TargetLanguage"].ShouldBe(dtoFields["Abbreviation.TargetLanguage"]);
-        spriggitFields["Abbreviation[0].Language"].ShouldBe(dtoFields["Abbreviation[0].Language"]);
-        spriggitFields["Abbreviation[0].String"].ShouldBe(dtoFields["Abbreviation[0].String"]);
-        spriggitFields["Abbreviation[1].Language"].ShouldBe(dtoFields["Abbreviation[1].Language"]);
-        spriggitFields["Abbreviation[1].String"].ShouldBe(dtoFields["Abbreviation[1].String"]);
-        spriggitFields["Abbreviation[2].Language"].ShouldBe(dtoFields["Abbreviation[2].Language"]);
-        spriggitFields["Abbreviation[2].String"].ShouldBe(dtoFields["Abbreviation[2].String"]);
-        spriggitFields["Abbreviation[3].Language"].ShouldBe(dtoFields["Abbreviation[3].Language"]);
-        spriggitFields["Abbreviation[3].String"].ShouldBe(dtoFields["Abbreviation[3].String"]);
-        spriggitFields["Abbreviation[4].Language"].ShouldBe(dtoFields["Abbreviation[4].Language"]);
-        spriggitFields["Abbreviation[4].String"].ShouldBe(dtoFields["Abbreviation[4].String"]);
-        spriggitFields["Abbreviation[5].Language"].ShouldBe(dtoFields["Abbreviation[5].Language"]);
-        spriggitFields["Abbreviation[5].String"].ShouldBe(dtoFields["Abbreviation[5].String"]);
-        spriggitFields["Abbreviation[6].Language"].ShouldBe(dtoFields["Abbreviation[6].Language"]);
-        spriggitFields["Abbreviation[6].String"].ShouldBe(dtoFields["Abbreviation[6].String"]);
-        spriggitFields["Abbreviation[7].Language"].ShouldBe(dtoFields["Abbreviation[7].Language"]);
-        spriggitFields["Abbreviation[7].String"].ShouldBe(dtoFields["Abbreviation[7].String"]);
-        spriggitFields["Abbreviation[8].Language"].ShouldBe(dtoFields["Abbreviation[8].Language"]);
-        spriggitFields["Abbreviation[8].String"].ShouldBe(dtoFields["Abbreviation[8].String"]);
-        spriggitFields["DefaultValue"].ShouldBe(dtoFields["DefaultValue"]);
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        dtoFields["Flags"].ShouldNotBeNullOrEmpty();
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
-        spriggitFields["Name.Count"].ShouldBe(dtoFields["Name.Count"]);
-        spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
-        spriggitFields["Name[0].Language"].ShouldBe(dtoFields["Name[0].Language"]);
-        spriggitFields["Name[0].String"].ShouldBe(dtoFields["Name[0].String"]);
-        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[1].Language"]);
-        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[1].String"]);
-        spriggitFields["Name[2].Language"].ShouldBe(dtoFields["Name[2].Language"]);
-        spriggitFields["Name[2].String"].ShouldBe(dtoFields["Name[2].String"]);
-        spriggitFields["Name[3].Language"].ShouldBe(dtoFields["Name[3].Language"]);
-        spriggitFields["Name[3].String"].ShouldBe(dtoFields["Name[3].String"]);
-        spriggitFields["Name[4].Language"].ShouldBe(dtoFields["Name[4].Language"]);
-        spriggitFields["Name[4].String"].ShouldBe(dtoFields["Name[4].String"]);
-        spriggitFields["Name[5].Language"].ShouldBe(dtoFields["Name[5].Language"]);
-        spriggitFields["Name[5].String"].ShouldBe(dtoFields["Name[5].String"]);
-        spriggitFields["Name[6].Language"].ShouldBe(dtoFields["Name[6].Language"]);
-        spriggitFields["Name[6].String"].ShouldBe(dtoFields["Name[6].String"]);
-        spriggitFields["Name[7].Language"].ShouldBe(dtoFields["Name[7].Language"]);
-        spriggitFields["Name[7].String"].ShouldBe(dtoFields["Name[7].String"]);
-        spriggitFields["Name[8].Language"].ShouldBe(dtoFields["Name[8].Language"]);
-        spriggitFields["Name[8].String"].ShouldBe(dtoFields["Name[8].String"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
