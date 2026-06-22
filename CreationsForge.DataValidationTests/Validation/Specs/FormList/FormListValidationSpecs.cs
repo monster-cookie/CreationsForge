@@ -101,6 +101,11 @@ public static class FormListValidationSpecs
             .ForRecord(game, RecordTypeCatalog.FormList)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                "MajorRecordFlags",
+                "MajorRecordFlags",
+                "0",
+                "Mutagen exposes the default MajorRecordFlags value when Spriggit omits the zero-valued field."))
             .AddRule(ValidationFieldRule.FormKeyList("Items", "Items", "Item"));
     }
 }

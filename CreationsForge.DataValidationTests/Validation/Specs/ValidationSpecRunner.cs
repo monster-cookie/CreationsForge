@@ -72,6 +72,9 @@ public class ValidationSpecRunner
                 case ValidationRuleKind.DtoExpectedValue:
                     ApplyDtoExpectedValueRule(rule, dtoFields, matchedDtoFields, diagnostics, assertionCases);
                     break;
+                case ValidationRuleKind.DtoDefaultWhenSpriggitAbsent:
+                    ApplyDtoDefaultWhenSpriggitAbsentRule(rule, spriggitFields, dtoFields, matchedDtoFields, diagnostics, assertionCases);
+                    break;
                 case ValidationRuleKind.DtoNonEmpty:
                     ApplyDtoNonEmptyRule(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, diagnostics);
                     break;
@@ -362,6 +365,39 @@ public class ValidationSpecRunner
         });
     }
 
+    private static void ApplyDtoDefaultWhenSpriggitAbsentRule(
+        ValidationFieldRule rule,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields,
+        ISet<string> matchedDtoFields,
+        IList<string> diagnostics,
+        IList<ValidationAssertionCase> assertionCases)
+    {
+        if (spriggitFields.Keys.Any(field => IsUnderPath(field, rule.SpriggitPath)))
+        {
+            return;
+        }
+
+        if (!dtoFields.TryGetValue(rule.DtoPath, out var dtoValue))
+        {
+            diagnostics.Add("DTO field '" + rule.DtoPath + "' was missing for omitted Spriggit default field '" + rule.SpriggitPath + "'.");
+            return;
+        }
+
+        MarkMatched(matchedDtoFields, rule.DtoPath);
+        assertionCases.Add(new ValidationAssertionCase
+        {
+            SpriggitPath = rule.SpriggitPath,
+            DtoPath = rule.DtoPath,
+            Expected = rule.ExpectedValue,
+            Actual = dtoValue,
+            Message = "DTO field '" + rule.DtoPath + "' should match default value '" + rule.ExpectedValue +
+                      "' because Spriggit field '" + rule.SpriggitPath + "' was omitted." +
+                      System.Environment.NewLine +
+                      "Reason: " + rule.Reason
+        });
+    }
+
     private static void ApplySpriggitAbsentRule(
         ValidationFieldRule rule,
         IReadOnlyDictionary<string, string> spriggitFields,
@@ -532,12 +568,6 @@ public class ValidationSpecRunner
         if (spriggitFields.ContainsKey(fieldName))
         {
             return false;
-        }
-
-        if (fieldName is "MajorRecordFlags" or "Flags" or "Value" or "Weight" or "Version2" &&
-            string.Equals(fieldValue, "0", StringComparison.Ordinal))
-        {
-            return true;
         }
 
         if (string.Equals(fieldName, "FormVersion", StringComparison.OrdinalIgnoreCase))

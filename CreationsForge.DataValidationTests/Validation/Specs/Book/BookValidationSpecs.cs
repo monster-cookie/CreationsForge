@@ -150,6 +150,26 @@ public static class BookValidationSpecs
         return ValidationSpecBuilder
             .ForRecord(game, RecordTypeCatalog.Book)
             .Sample(sampleName)
-            .FormKey(formKey);
+            .FormKey(formKey)
+            .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                "MajorRecordFlags",
+                "MajorRecordFlags",
+                "0",
+                "Mutagen exposes the default MajorRecordFlags value when Spriggit omits the zero-valued field."))
+            .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                "Flags",
+                "Flags",
+                "0",
+                "Mutagen exposes the default Flags value when Spriggit omits the zero-valued field."))
+            .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                "Value",
+                "Value",
+                "0",
+                "Mutagen exposes the default Value when Spriggit omits the zero-valued field."))
+            .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                "Weight",
+                "Weight",
+                "0",
+                "Mutagen exposes the default Weight when Spriggit omits the zero-valued field."));
     }
 }

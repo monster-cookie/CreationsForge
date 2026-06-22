@@ -197,6 +197,11 @@ public static class ActorValueInformationValidationSpecs
         return ValidationSpecBuilder
             .ForRecord(game, RecordTypeCatalog.ActorValueInformation)
             .Sample(sampleName)
-            .FormKey(formKey);
+            .FormKey(formKey)
+            .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                "MajorRecordFlags",
+                "MajorRecordFlags",
+                "0",
+                "Mutagen exposes the default MajorRecordFlags value when Spriggit omits the zero-valued field."));
     }
 }

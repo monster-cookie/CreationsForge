@@ -160,6 +160,16 @@ public static class GameSettingValidationSpecs
             .ForRecord(game, RecordTypeCatalog.GameSetting)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                "MajorRecordFlags",
+                "MajorRecordFlags",
+                "0",
+                "Mutagen exposes the default MajorRecordFlags value when Spriggit omits the zero-valued field."))
+            .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                "Version2",
+                "Version2",
+                "0",
+                "Mutagen exposes the default Version2 value when Spriggit omits the zero-valued field."))
             .AddRule(ValidationFieldRule.DtoExpectedValue("DataType", dataType.ToString()))
             .AddRule(ValidationFieldRule.DtoExpectedValue("Data.DataType", dataType.ToString()))
             .AddRule(ValidationFieldRule.DtoExpectedValue("Data.MutagenObjectType", GetMutagenObjectType(dataType)));

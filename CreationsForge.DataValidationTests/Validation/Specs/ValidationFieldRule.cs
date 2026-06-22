@@ -95,6 +95,22 @@ public class ValidationFieldRule
         };
     }
 
+    public static ValidationFieldRule DtoDefaultWhenSpriggitAbsent(
+        string spriggitPath,
+        string dtoPath,
+        string expectedValue,
+        string reason)
+    {
+        return new ValidationFieldRule
+        {
+            Kind = ValidationRuleKind.DtoDefaultWhenSpriggitAbsent,
+            SpriggitPath = spriggitPath,
+            DtoPath = dtoPath,
+            ExpectedValue = expectedValue,
+            Reason = reason
+        };
+    }
+
     public static ValidationFieldRule DtoNonEmpty(string dtoPath)
     {
         return new ValidationFieldRule
