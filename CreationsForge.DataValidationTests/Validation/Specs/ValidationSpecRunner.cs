@@ -534,7 +534,7 @@ public class ValidationSpecRunner
             return false;
         }
 
-        if (fieldName is "MajorRecordFlags" or "Flags" or "Value" or "Weight" &&
+        if (fieldName is "MajorRecordFlags" or "Flags" or "Value" or "Weight" or "Version2" &&
             string.Equals(fieldValue, "0", StringComparison.Ordinal))
         {
             return true;

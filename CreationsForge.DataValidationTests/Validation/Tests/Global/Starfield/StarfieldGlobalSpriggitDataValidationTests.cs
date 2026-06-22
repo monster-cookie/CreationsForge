@@ -1,6 +1,6 @@
 using CreationsForge.Core.DTOs.Records;
-using CreationsForge.Core.Enums;
-using CreationsForge.Core.Helpers;
+using CreationsForge.DataValidationTests.Validation.Specs;
+using CreationsForge.DataValidationTests.Validation.Specs.Global;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.Tests.Global.Starfield;
@@ -15,20 +15,17 @@ public class StarfieldGlobalSpriggitDataValidationTests : SpriggitDataValidation
     [Trait("SpriggitFile", "Globals/_UpdateShatteredSpaceMaster - 20C81D_Starfield.esm.yaml")]
     public void Starfield_GLOB_ShouldMatchSpriggitSample_UpdateShatteredSpaceMaster()
     {
-        var spriggit = Helpers.GetSpriggit<GlobalSpriggitDTO>(
-            SupportedGame.Starfield,
-            RecordTypeCatalog.Global,
-            "_UpdateShatteredSpaceMaster");
-        var dto = Helpers.GetDTO<GlobalDTO>(
-            SupportedGame.Starfield,
-            RecordTypeCatalog.Global,
-            "20C81D:Starfield.esm");
+        var spec = GlobalValidationSpecs.Starfield_UpdateShatteredSpaceMaster();
+        var dto = Helpers.GetDTO<GlobalDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        spriggit.FormKey.ShouldBe(Helpers.FormatFormKey(dto.FormKey));
-        spriggit.MajorRecordFlagsRaw.ShouldBe(dto.MajorRecordFlags);
-        spriggit.FormVersion.ShouldBe(dto.FormVersion);
-        spriggit.Data.ShouldBe(dto.Data);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -41,20 +38,17 @@ public class StarfieldGlobalSpriggitDataValidationTests : SpriggitDataValidation
     [Trait("SpriggitFile", "Globals/2B7FBD_Starfield.esm.yaml")]
     public void Starfield_GLOB_ShouldMatchSpriggitSample_2B7FBD_Starfield_esm()
     {
-        var spriggit = Helpers.GetSpriggit<GlobalSpriggitDTO>(
-            SupportedGame.Starfield,
-            RecordTypeCatalog.Global,
-            "2B7FBD_Starfield.esm");
-        var dto = Helpers.GetDTO<GlobalDTO>(
-            SupportedGame.Starfield,
-            RecordTypeCatalog.Global,
-            "2B7FBD:Starfield.esm");
+        var spec = GlobalValidationSpecs.Starfield_2B7FBD_Starfield_esm();
+        var dto = Helpers.GetDTO<GlobalDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        spriggit.FormKey.ShouldBe(Helpers.FormatFormKey(dto.FormKey));
-        spriggit.MajorRecordFlagsRaw.ShouldBe(dto.MajorRecordFlags);
-        spriggit.FormVersion.ShouldBe(dto.FormVersion);
-        spriggit.Data.ShouldBe(dto.Data);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -67,20 +61,17 @@ public class StarfieldGlobalSpriggitDataValidationTests : SpriggitDataValidation
     [Trait("SpriggitFile", "Globals/2B91E0_Starfield.esm.yaml")]
     public void Starfield_GLOB_ShouldMatchSpriggitSample_2B91E0_Starfield_esm()
     {
-        var spriggit = Helpers.GetSpriggit<GlobalSpriggitDTO>(
-            SupportedGame.Starfield,
-            RecordTypeCatalog.Global,
-            "2B91E0_Starfield.esm");
-        var dto = Helpers.GetDTO<GlobalDTO>(
-            SupportedGame.Starfield,
-            RecordTypeCatalog.Global,
-            "2B91E0:Starfield.esm");
+        var spec = GlobalValidationSpecs.Starfield_2B91E0_Starfield_esm();
+        var dto = Helpers.GetDTO<GlobalDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        spriggit.FormKey.ShouldBe(Helpers.FormatFormKey(dto.FormKey));
-        spriggit.MajorRecordFlagsRaw.ShouldBe(dto.MajorRecordFlags);
-        spriggit.FormVersion.ShouldBe(dto.FormVersion);
-        spriggit.Data.ShouldBe(dto.Data);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }

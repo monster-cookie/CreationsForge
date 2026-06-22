@@ -1,7 +1,6 @@
-using System.Globalization;
 using CreationsForge.Core.DTOs.Records;
-using CreationsForge.Core.Enums;
-using CreationsForge.Core.Helpers;
+using CreationsForge.DataValidationTests.Validation.Specs;
+using CreationsForge.DataValidationTests.Validation.Specs.GameSetting;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.Tests.GameSetting.Skyrim;
@@ -16,44 +15,17 @@ public class SkyrimGameSettingSpriggitDataValidationTests : SpriggitDataValidati
     [Trait("SpriggitFile", "GameSettings/sAbortText - 0D4C40_Skyrim.esm.yaml")]
     public void Skyrim_GMST_ShouldMatchSpriggitSample_sAbortText()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.GameSetting,
-            "sAbortText");
-        var dto = Helpers.GetDTO<GameSettingDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.GameSetting,
-            "0D4C40:Skyrim.esm");
+        var spec = GameSettingValidationSpecs.Skyrim_sAbortText();
+        var dto = Helpers.GetDTO<GameSettingDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["Data.Count"].ShouldBe(dtoFields["Data.Count"]);
-        spriggitFields["Data.TargetLanguage"].ShouldBe(dtoFields["Data.TargetLanguage"]);
-        spriggitFields["Data[0].Language"].ShouldBe(dtoFields["Data[0].Language"]);
-        spriggitFields["Data[0].String"].ShouldBe(dtoFields["Data[0].String"]);
-        spriggitFields["Data[1].Language"].ShouldBe(dtoFields["Data[1].Language"]);
-        spriggitFields["Data[1].String"].ShouldBe(dtoFields["Data[1].String"]);
-        spriggitFields["Data[2].Language"].ShouldBe(dtoFields["Data[2].Language"]);
-        spriggitFields["Data[2].String"].ShouldBe(dtoFields["Data[2].String"]);
-        spriggitFields["Data[3].Language"].ShouldBe(dtoFields["Data[3].Language"]);
-        spriggitFields["Data[3].String"].ShouldBe(dtoFields["Data[3].String"]);
-        spriggitFields["Data[4].Language"].ShouldBe(dtoFields["Data[4].Language"]);
-        spriggitFields["Data[4].String"].ShouldBe(dtoFields["Data[4].String"]);
-        spriggitFields["Data[5].Language"].ShouldBe(dtoFields["Data[5].Language"]);
-        spriggitFields["Data[5].String"].ShouldBe(dtoFields["Data[5].String"]);
-        spriggitFields["Data[6].Language"].ShouldBe(dtoFields["Data[6].Language"]);
-        spriggitFields["Data[6].String"].ShouldBe(dtoFields["Data[6].String"]);
-        spriggitFields["Data[7].Language"].ShouldBe(dtoFields["Data[7].Language"]);
-        spriggitFields["Data[7].String"].ShouldBe(dtoFields["Data[7].String"]);
-        spriggitFields["Data[8].Language"].ShouldBe(dtoFields["Data[8].Language"]);
-        spriggitFields["Data[8].String"].ShouldBe(dtoFields["Data[8].String"]);
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
-        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -66,44 +38,17 @@ public class SkyrimGameSettingSpriggitDataValidationTests : SpriggitDataValidati
     [Trait("SpriggitFile", "GameSettings/sAccept - 0D4DC4_Skyrim.esm.yaml")]
     public void Skyrim_GMST_ShouldMatchSpriggitSample_sAccept()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.GameSetting,
-            "sAccept");
-        var dto = Helpers.GetDTO<GameSettingDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.GameSetting,
-            "0D4DC4:Skyrim.esm");
+        var spec = GameSettingValidationSpecs.Skyrim_sAccept();
+        var dto = Helpers.GetDTO<GameSettingDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["Data.Count"].ShouldBe(dtoFields["Data.Count"]);
-        spriggitFields["Data.TargetLanguage"].ShouldBe(dtoFields["Data.TargetLanguage"]);
-        spriggitFields["Data[0].Language"].ShouldBe(dtoFields["Data[0].Language"]);
-        spriggitFields["Data[0].String"].ShouldBe(dtoFields["Data[0].String"]);
-        spriggitFields["Data[1].Language"].ShouldBe(dtoFields["Data[1].Language"]);
-        spriggitFields["Data[1].String"].ShouldBe(dtoFields["Data[1].String"]);
-        spriggitFields["Data[2].Language"].ShouldBe(dtoFields["Data[2].Language"]);
-        spriggitFields["Data[2].String"].ShouldBe(dtoFields["Data[2].String"]);
-        spriggitFields["Data[3].Language"].ShouldBe(dtoFields["Data[3].Language"]);
-        spriggitFields["Data[3].String"].ShouldBe(dtoFields["Data[3].String"]);
-        spriggitFields["Data[4].Language"].ShouldBe(dtoFields["Data[4].Language"]);
-        spriggitFields["Data[4].String"].ShouldBe(dtoFields["Data[4].String"]);
-        spriggitFields["Data[5].Language"].ShouldBe(dtoFields["Data[5].Language"]);
-        spriggitFields["Data[5].String"].ShouldBe(dtoFields["Data[5].String"]);
-        spriggitFields["Data[6].Language"].ShouldBe(dtoFields["Data[6].Language"]);
-        spriggitFields["Data[6].String"].ShouldBe(dtoFields["Data[6].String"]);
-        spriggitFields["Data[7].Language"].ShouldBe(dtoFields["Data[7].Language"]);
-        spriggitFields["Data[7].String"].ShouldBe(dtoFields["Data[7].String"]);
-        spriggitFields["Data[8].Language"].ShouldBe(dtoFields["Data[8].Language"]);
-        spriggitFields["Data[8].String"].ShouldBe(dtoFields["Data[8].String"]);
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
-        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -116,44 +61,17 @@ public class SkyrimGameSettingSpriggitDataValidationTests : SpriggitDataValidati
     [Trait("SpriggitFile", "GameSettings/sActionMapping - 0D4B96_Skyrim.esm.yaml")]
     public void Skyrim_GMST_ShouldMatchSpriggitSample_sActionMapping()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.GameSetting,
-            "sActionMapping");
-        var dto = Helpers.GetDTO<GameSettingDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.GameSetting,
-            "0D4B96:Skyrim.esm");
+        var spec = GameSettingValidationSpecs.Skyrim_sActionMapping();
+        var dto = Helpers.GetDTO<GameSettingDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["Data.Count"].ShouldBe(dtoFields["Data.Count"]);
-        spriggitFields["Data.TargetLanguage"].ShouldBe(dtoFields["Data.TargetLanguage"]);
-        spriggitFields["Data[0].Language"].ShouldBe(dtoFields["Data[0].Language"]);
-        spriggitFields["Data[0].String"].ShouldBe(dtoFields["Data[0].String"]);
-        spriggitFields["Data[1].Language"].ShouldBe(dtoFields["Data[1].Language"]);
-        spriggitFields["Data[1].String"].ShouldBe(dtoFields["Data[1].String"]);
-        spriggitFields["Data[2].Language"].ShouldBe(dtoFields["Data[2].Language"]);
-        spriggitFields["Data[2].String"].ShouldBe(dtoFields["Data[2].String"]);
-        spriggitFields["Data[3].Language"].ShouldBe(dtoFields["Data[3].Language"]);
-        spriggitFields["Data[3].String"].ShouldBe(dtoFields["Data[3].String"]);
-        spriggitFields["Data[4].Language"].ShouldBe(dtoFields["Data[4].Language"]);
-        spriggitFields["Data[4].String"].ShouldBe(dtoFields["Data[4].String"]);
-        spriggitFields["Data[5].Language"].ShouldBe(dtoFields["Data[5].Language"]);
-        spriggitFields["Data[5].String"].ShouldBe(dtoFields["Data[5].String"]);
-        spriggitFields["Data[6].Language"].ShouldBe(dtoFields["Data[6].Language"]);
-        spriggitFields["Data[6].String"].ShouldBe(dtoFields["Data[6].String"]);
-        spriggitFields["Data[7].Language"].ShouldBe(dtoFields["Data[7].Language"]);
-        spriggitFields["Data[7].String"].ShouldBe(dtoFields["Data[7].String"]);
-        spriggitFields["Data[8].Language"].ShouldBe(dtoFields["Data[8].Language"]);
-        spriggitFields["Data[8].String"].ShouldBe(dtoFields["Data[8].String"]);
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
-        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -166,25 +84,17 @@ public class SkyrimGameSettingSpriggitDataValidationTests : SpriggitDataValidati
     [Trait("SpriggitFile", "GameSettings/bRegenNPCMagickaDuringCast - 0B3D8A_Skyrim.esm.yaml")]
     public void Skyrim_GMST_ShouldMatchSpriggitSample_bRegenNPCMagickaDuringCast()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.GameSetting,
-            "bRegenNPCMagickaDuringCast");
-        var dto = Helpers.GetDTO<GameSettingDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.GameSetting,
-            "0B3D8A:Skyrim.esm");
+        var spec = GameSettingValidationSpecs.Skyrim_bRegenNPCMagickaDuringCast();
+        var dto = Helpers.GetDTO<GameSettingDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["Data"].ShouldBe(dtoFields["Data"]);
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
-        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -197,27 +107,17 @@ public class SkyrimGameSettingSpriggitDataValidationTests : SpriggitDataValidati
     [Trait("SpriggitFile", "GameSettings/fActionPointsAimAdjustment - 01A144_Skyrim.esm.yaml")]
     public void Skyrim_GMST_ShouldMatchSpriggitSample_fActionPointsAimAdjustment()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.GameSetting,
-            "fActionPointsAimAdjustment");
-        var dto = Helpers.GetDTO<GameSettingDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.GameSetting,
-            "01A144:Skyrim.esm");
+        var spec = GameSettingValidationSpecs.Skyrim_fActionPointsAimAdjustment();
+        var dto = Helpers.GetDTO<GameSettingDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        double.Parse(spriggitFields["Data"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["Data"], CultureInfo.InvariantCulture), 0.000001);
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
-        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
-        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -230,27 +130,17 @@ public class SkyrimGameSettingSpriggitDataValidationTests : SpriggitDataValidati
     [Trait("SpriggitFile", "GameSettings/fActionPointsAttackOneHandMelee - 01A145_Skyrim.esm.yaml")]
     public void Skyrim_GMST_ShouldMatchSpriggitSample_fActionPointsAttackOneHandMelee()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.GameSetting,
-            "fActionPointsAttackOneHandMelee");
-        var dto = Helpers.GetDTO<GameSettingDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.GameSetting,
-            "01A145:Skyrim.esm");
+        var spec = GameSettingValidationSpecs.Skyrim_fActionPointsAttackOneHandMelee();
+        var dto = Helpers.GetDTO<GameSettingDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        double.Parse(spriggitFields["Data"], CultureInfo.InvariantCulture)
-            .ShouldBe(double.Parse(dtoFields["Data"], CultureInfo.InvariantCulture), 0.000001);
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
-        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
-        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -263,26 +153,17 @@ public class SkyrimGameSettingSpriggitDataValidationTests : SpriggitDataValidati
     [Trait("SpriggitFile", "GameSettings/iAICombatRestoreHealthPercentage - 01A237_Skyrim.esm.yaml")]
     public void Skyrim_GMST_ShouldMatchSpriggitSample_iAICombatRestoreHealthPercentage()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.GameSetting,
-            "iAICombatRestoreHealthPercentage");
-        var dto = Helpers.GetDTO<GameSettingDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.GameSetting,
-            "01A237:Skyrim.esm");
+        var spec = GameSettingValidationSpecs.Skyrim_iAICombatRestoreHealthPercentage();
+        var dto = Helpers.GetDTO<GameSettingDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["Data"].ShouldBe(dtoFields["Data"]);
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
-        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
-        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -295,26 +176,17 @@ public class SkyrimGameSettingSpriggitDataValidationTests : SpriggitDataValidati
     [Trait("SpriggitFile", "GameSettings/iAISocialDistanceToTriggerEvent - 01A83A_Skyrim.esm.yaml")]
     public void Skyrim_GMST_ShouldMatchSpriggitSample_iAISocialDistanceToTriggerEvent()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.GameSetting,
-            "iAISocialDistanceToTriggerEvent");
-        var dto = Helpers.GetDTO<GameSettingDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.GameSetting,
-            "01A83A:Skyrim.esm");
+        var spec = GameSettingValidationSpecs.Skyrim_iAISocialDistanceToTriggerEvent();
+        var dto = Helpers.GetDTO<GameSettingDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["Data"].ShouldBe(dtoFields["Data"]);
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
-        spriggitFields["MutagenObjectType"].ShouldBe(dtoFields["MutagenObjectType"]);
-        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }

@@ -24,6 +24,8 @@ public class Global
         FormVersion = dto.FormVersion;
         MajorRecordFlags = dto.MajorRecordFlags;
         ImportedAtUTC = dto.ImportedAtUTC;
+        Version2 = dto.Version2;
+        VersionControl = dto.VersionControl;
         Data = dto.Data;
     }
 
@@ -50,6 +52,10 @@ public class Global
     [Column("MajorRecordFlags")] public int MajorRecordFlags { get; set; }
 
     [Column("ImportedAtUTC")] public DateTime ImportedAtUTC { get; set; }
+
+    [Column("Version2")] public int? Version2 { get; set; }
+
+    [Column("VersionControl")] public int? VersionControl { get; set; }
 
     [Column("Data")] public double? Data { get; set; }
 }

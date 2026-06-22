@@ -1,6 +1,6 @@
 using CreationsForge.Core.DTOs.Records;
-using CreationsForge.Core.Enums;
-using CreationsForge.Core.Helpers;
+using CreationsForge.DataValidationTests.Validation.Specs;
+using CreationsForge.DataValidationTests.Validation.Specs.Global;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.Tests.Global.Fallout4;
@@ -15,20 +15,17 @@ public class Fallout4GlobalSpriggitDataValidationTests : SpriggitDataValidationT
     [Trait("SpriggitFile", "Globals/AO_Companion_Search_JunkThresholdValue - 18E889_Fallout4.esm.yaml")]
     public void Fallout4_GLOB_ShouldMatchSpriggitSample_AO_Companion_Search_JunkThresholdValue()
     {
-        var spriggit = Helpers.GetSpriggit<GlobalSpriggitDTO>(
-            SupportedGame.Fallout4,
-            RecordTypeCatalog.Global,
-            "AO_Companion_Search_JunkThresholdValue");
-        var dto = Helpers.GetDTO<GlobalDTO>(
-            SupportedGame.Fallout4,
-            RecordTypeCatalog.Global,
-            "18E889:Fallout4.esm");
+        var spec = GlobalValidationSpecs.Fallout4_AO_Companion_Search_JunkThresholdValue();
+        var dto = Helpers.GetDTO<GlobalDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        spriggit.FormKey.ShouldBe(Helpers.FormatFormKey(dto.FormKey));
-        spriggit.MajorRecordFlagsRaw.ShouldBe(dto.MajorRecordFlags);
-        spriggit.FormVersion.ShouldBe(dto.FormVersion);
-        spriggit.Data.ShouldBe(dto.Data);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -41,20 +38,17 @@ public class Fallout4GlobalSpriggitDataValidationTests : SpriggitDataValidationT
     [Trait("SpriggitFile", "Globals/AO_Companion_Search_NextAllowedDaysUntil - 176107_Fallout4.esm.yaml")]
     public void Fallout4_GLOB_ShouldMatchSpriggitSample_AO_Companion_Search_NextAllowedDaysUntil()
     {
-        var spriggit = Helpers.GetSpriggit<GlobalSpriggitDTO>(
-            SupportedGame.Fallout4,
-            RecordTypeCatalog.Global,
-            "AO_Companion_Search_NextAllowedDaysUntil");
-        var dto = Helpers.GetDTO<GlobalDTO>(
-            SupportedGame.Fallout4,
-            RecordTypeCatalog.Global,
-            "176107:Fallout4.esm");
+        var spec = GlobalValidationSpecs.Fallout4_AO_Companion_Search_NextAllowedDaysUntil();
+        var dto = Helpers.GetDTO<GlobalDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        spriggit.FormKey.ShouldBe(Helpers.FormatFormKey(dto.FormKey));
-        spriggit.MajorRecordFlagsRaw.ShouldBe(dto.MajorRecordFlags);
-        spriggit.FormVersion.ShouldBe(dto.FormVersion);
-        spriggit.Data.ShouldBe(dto.Data);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -67,20 +61,17 @@ public class Fallout4GlobalSpriggitDataValidationTests : SpriggitDataValidationT
     [Trait("SpriggitFile", "Globals/AO_Dogmeat_Container_Bailout_Dist - 043F14_Fallout4.esm.yaml")]
     public void Fallout4_GLOB_ShouldMatchSpriggitSample_AO_Dogmeat_Container_Bailout_Dist()
     {
-        var spriggit = Helpers.GetSpriggit<GlobalSpriggitDTO>(
-            SupportedGame.Fallout4,
-            RecordTypeCatalog.Global,
-            "AO_Dogmeat_Container_Bailout_Dist");
-        var dto = Helpers.GetDTO<GlobalDTO>(
-            SupportedGame.Fallout4,
-            RecordTypeCatalog.Global,
-            "043F14:Fallout4.esm");
+        var spec = GlobalValidationSpecs.Fallout4_AO_Dogmeat_Container_Bailout_Dist();
+        var dto = Helpers.GetDTO<GlobalDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        spriggit.FormKey.ShouldBe(Helpers.FormatFormKey(dto.FormKey));
-        spriggit.MajorRecordFlagsRaw.ShouldBe(dto.MajorRecordFlags);
-        spriggit.FormVersion.ShouldBe(dto.FormVersion);
-        spriggit.Data.ShouldBe(dto.Data);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }

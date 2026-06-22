@@ -1,6 +1,6 @@
 using CreationsForge.Core.DTOs.Records;
-using CreationsForge.Core.Enums;
-using CreationsForge.Core.Helpers;
+using CreationsForge.DataValidationTests.Validation.Specs;
+using CreationsForge.DataValidationTests.Validation.Specs.Global;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.Tests.Global.Skyrim;
@@ -15,20 +15,17 @@ public class SkyrimGlobalSpriggitDataValidationTests : SpriggitDataValidationTes
     [Trait("SpriggitFile", "Globals/1stPKillCam - 10636A_Skyrim.esm.yaml")]
     public void Skyrim_GLOB_ShouldMatchSpriggitSample_1stPKillCam()
     {
-        var spriggit = Helpers.GetSpriggit<GlobalSpriggitDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.Global,
-            "1stPKillCam");
-        var dto = Helpers.GetDTO<GlobalDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.Global,
-            "10636A:Skyrim.esm");
+        var spec = GlobalValidationSpecs.Skyrim_1stPKillCam();
+        var dto = Helpers.GetDTO<GlobalDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        spriggit.FormKey.ShouldBe(Helpers.FormatFormKey(dto.FormKey));
-        spriggit.MajorRecordFlagsRaw.ShouldBe(dto.MajorRecordFlags);
-        spriggit.FormVersion.ShouldBe(dto.FormVersion);
-        spriggit.Data.ShouldBe(dto.Data);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -41,20 +38,17 @@ public class SkyrimGlobalSpriggitDataValidationTests : SpriggitDataValidationTes
     [Trait("SpriggitFile", "Globals/CarriageCost - 050765_Skyrim.esm.yaml")]
     public void Skyrim_GLOB_ShouldMatchSpriggitSample_CarriageCost()
     {
-        var spriggit = Helpers.GetSpriggit<GlobalSpriggitDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.Global,
-            "CarriageCost");
-        var dto = Helpers.GetDTO<GlobalDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.Global,
-            "050765:Skyrim.esm");
+        var spec = GlobalValidationSpecs.Skyrim_CarriageCost();
+        var dto = Helpers.GetDTO<GlobalDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        spriggit.FormKey.ShouldBe(Helpers.FormatFormKey(dto.FormKey));
-        spriggit.MajorRecordFlagsRaw.ShouldBe(dto.MajorRecordFlags);
-        spriggit.FormVersion.ShouldBe(dto.FormVersion);
-        spriggit.Data.ShouldBe(dto.Data);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -67,20 +61,17 @@ public class SkyrimGlobalSpriggitDataValidationTests : SpriggitDataValidationTes
     [Trait("SpriggitFile", "Globals/CarriageCostSmall - 107702_Skyrim.esm.yaml")]
     public void Skyrim_GLOB_ShouldMatchSpriggitSample_CarriageCostSmall()
     {
-        var spriggit = Helpers.GetSpriggit<GlobalSpriggitDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.Global,
-            "CarriageCostSmall");
-        var dto = Helpers.GetDTO<GlobalDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.Global,
-            "107702:Skyrim.esm");
+        var spec = GlobalValidationSpecs.Skyrim_CarriageCostSmall();
+        var dto = Helpers.GetDTO<GlobalDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        spriggit.FormKey.ShouldBe(Helpers.FormatFormKey(dto.FormKey));
-        spriggit.MajorRecordFlagsRaw.ShouldBe(dto.MajorRecordFlags);
-        spriggit.FormVersion.ShouldBe(dto.FormVersion);
-        spriggit.Data.ShouldBe(dto.Data);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }

@@ -1,6 +1,6 @@
 using CreationsForge.Core.DTOs.Records;
-using CreationsForge.Core.Enums;
-using CreationsForge.Core.Helpers;
+using CreationsForge.DataValidationTests.Validation.Specs;
+using CreationsForge.DataValidationTests.Validation.Specs.FormList;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.Tests.FormList.Skyrim;
@@ -15,24 +15,17 @@ public class SkyrimFormListSpriggitDataValidationTests : SpriggitDataValidationT
     [Trait("SpriggitFile", "FormLists/AAAMothPlantTypes - 06F3F7_Skyrim.esm.yaml")]
     public void Skyrim_FLST_ShouldMatchSpriggitSample_AAAMothPlantTypes()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.FormList,
-            "AAAMothPlantTypes");
-        var dto = Helpers.GetDTO<FormListDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.FormList,
-            "06F3F7:Skyrim.esm");
+        var spec = FormListValidationSpecs.Skyrim_AAAMothPlantTypes();
+        var dto = Helpers.GetDTO<FormListDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
-        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -45,24 +38,17 @@ public class SkyrimFormListSpriggitDataValidationTests : SpriggitDataValidationT
     [Trait("SpriggitFile", "FormLists/CityWindhelmResidentList - 045C32_Skyrim.esm.yaml")]
     public void Skyrim_FLST_ShouldMatchSpriggitSample_CityWindhelmResidentList()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.FormList,
-            "CityWindhelmResidentList");
-        var dto = Helpers.GetDTO<FormListDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.FormList,
-            "045C32:Skyrim.esm");
+        var spec = FormListValidationSpecs.Skyrim_CityWindhelmResidentList();
+        var dto = Helpers.GetDTO<FormListDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
-        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -75,24 +61,17 @@ public class SkyrimFormListSpriggitDataValidationTests : SpriggitDataValidationT
     [Trait("SpriggitFile", "FormLists/CrimeFactionsList - 026953_Skyrim.esm.yaml")]
     public void Skyrim_FLST_ShouldMatchSpriggitSample_CrimeFactionsList()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.FormList,
-            "CrimeFactionsList");
-        var dto = Helpers.GetDTO<FormListDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.FormList,
-            "026953:Skyrim.esm");
+        var spec = FormListValidationSpecs.Skyrim_CrimeFactionsList();
+        var dto = Helpers.GetDTO<FormListDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
-        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -105,24 +84,17 @@ public class SkyrimFormListSpriggitDataValidationTests : SpriggitDataValidationT
     [Trait("SpriggitFile", "FormLists/DraugrWeapons - 000D14_Skyrim.esm.yaml")]
     public void Skyrim_FLST_ShouldMatchSpriggitSample_DraugrWeapons()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.FormList,
-            "DraugrWeapons");
-        var dto = Helpers.GetDTO<FormListDTO>(
-            SupportedGame.Skyrim,
-            RecordTypeCatalog.FormList,
-            "000D14:Skyrim.esm");
+        var spec = FormListValidationSpecs.Skyrim_DraugrWeapons();
+        var dto = Helpers.GetDTO<FormListDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
-        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }

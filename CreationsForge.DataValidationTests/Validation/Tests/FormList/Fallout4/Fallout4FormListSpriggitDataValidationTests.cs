@@ -1,6 +1,6 @@
 using CreationsForge.Core.DTOs.Records;
-using CreationsForge.Core.Enums;
-using CreationsForge.Core.Helpers;
+using CreationsForge.DataValidationTests.Validation.Specs;
+using CreationsForge.DataValidationTests.Validation.Specs.FormList;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.Tests.FormList.Fallout4;
@@ -15,47 +15,17 @@ public class Fallout4FormListSpriggitDataValidationTests : SpriggitDataValidatio
     [Trait("SpriggitFile", "FormLists/CA_JunkItems - 246EE7_Fallout4.esm.yaml")]
     public void Fallout4_FLST_ShouldMatchSpriggitSample_CA_JunkItems()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Fallout4,
-            RecordTypeCatalog.FormList,
-            "CA_JunkItems");
-        var dto = Helpers.GetDTO<FormListDTO>(
-            SupportedGame.Fallout4,
-            RecordTypeCatalog.FormList,
-            "246EE7:Fallout4.esm");
+        var spec = FormListValidationSpecs.Fallout4_CA_JunkItems();
+        var dto = Helpers.GetDTO<FormListDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["Name.Count"].ShouldBe(dtoFields["Name.Count"]);
-        spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
-        spriggitFields["Name[0].Language"].ShouldBe(dtoFields["Name[0].Language"]);
-        spriggitFields["Name[0].String"].ShouldBe(dtoFields["Name[0].String"]);
-        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[1].Language"]);
-        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[1].String"]);
-        spriggitFields["Name[10].Language"].ShouldBe(dtoFields["Name[10].Language"]);
-        spriggitFields["Name[10].String"].ShouldBe(dtoFields["Name[10].String"]);
-        spriggitFields["Name[2].Language"].ShouldBe(dtoFields["Name[2].Language"]);
-        spriggitFields["Name[2].String"].ShouldBe(dtoFields["Name[2].String"]);
-        spriggitFields["Name[3].Language"].ShouldBe(dtoFields["Name[3].Language"]);
-        spriggitFields["Name[3].String"].ShouldBe(dtoFields["Name[3].String"]);
-        spriggitFields["Name[4].Language"].ShouldBe(dtoFields["Name[4].Language"]);
-        spriggitFields["Name[4].String"].ShouldBe(dtoFields["Name[4].String"]);
-        spriggitFields["Name[5].Language"].ShouldBe(dtoFields["Name[5].Language"]);
-        spriggitFields["Name[5].String"].ShouldBe(dtoFields["Name[5].String"]);
-        spriggitFields["Name[6].Language"].ShouldBe(dtoFields["Name[6].Language"]);
-        spriggitFields["Name[6].String"].ShouldBe(dtoFields["Name[6].String"]);
-        spriggitFields["Name[7].Language"].ShouldBe(dtoFields["Name[7].Language"]);
-        spriggitFields["Name[7].String"].ShouldBe(dtoFields["Name[7].String"]);
-        spriggitFields["Name[8].Language"].ShouldBe(dtoFields["Name[8].Language"]);
-        spriggitFields["Name[8].String"].ShouldBe(dtoFields["Name[8].String"]);
-        spriggitFields["Name[9].Language"].ShouldBe(dtoFields["Name[9].Language"]);
-        spriggitFields["Name[9].String"].ShouldBe(dtoFields["Name[9].String"]);
-        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -68,24 +38,17 @@ public class Fallout4FormListSpriggitDataValidationTests : SpriggitDataValidatio
     [Trait("SpriggitFile", "FormLists/ChargenOptionsSortList - 1A4AE8_Fallout4.esm.yaml")]
     public void Fallout4_FLST_ShouldMatchSpriggitSample_ChargenOptionsSortList()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Fallout4,
-            RecordTypeCatalog.FormList,
-            "ChargenOptionsSortList");
-        var dto = Helpers.GetDTO<FormListDTO>(
-            SupportedGame.Fallout4,
-            RecordTypeCatalog.FormList,
-            "1A4AE8:Fallout4.esm");
+        var spec = FormListValidationSpecs.Fallout4_ChargenOptionsSortList();
+        var dto = Helpers.GetDTO<FormListDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["FormVersion"].ShouldBe(dtoFields["FormVersion"]);
-        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -98,23 +61,17 @@ public class Fallout4FormListSpriggitDataValidationTests : SpriggitDataValidatio
     [Trait("SpriggitFile", "FormLists/CompanionCrime__Common - 2494E7_Fallout4.esm.yaml")]
     public void Fallout4_FLST_ShouldMatchSpriggitSample_CompanionCrime__Common()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Fallout4,
-            RecordTypeCatalog.FormList,
-            "CompanionCrime__Common");
-        var dto = Helpers.GetDTO<FormListDTO>(
-            SupportedGame.Fallout4,
-            RecordTypeCatalog.FormList,
-            "2494E7:Fallout4.esm");
+        var spec = FormListValidationSpecs.Fallout4_CompanionCrime__Common();
+        var dto = Helpers.GetDTO<FormListDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
@@ -127,47 +84,17 @@ public class Fallout4FormListSpriggitDataValidationTests : SpriggitDataValidatio
     [Trait("SpriggitFile", "FormLists/VoicesEmpty - 14EC02_Fallout4.esm.yaml")]
     public void Fallout4_FLST_ShouldMatchSpriggitSample_VoicesEmpty()
     {
-        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(
-            SupportedGame.Fallout4,
-            RecordTypeCatalog.FormList,
-            "VoicesEmpty");
-        var dto = Helpers.GetDTO<FormListDTO>(
-            SupportedGame.Fallout4,
-            RecordTypeCatalog.FormList,
-            "14EC02:Fallout4.esm");
+        var spec = FormListValidationSpecs.Fallout4_VoicesEmpty();
+        var dto = Helpers.GetDTO<FormListDTO>(spec.Game, spec.RecordType, spec.FormKey);
+        var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
 
-        var spriggitFields = spriggit.Fields;
-        var dtoFields = Helpers.GetDTOFields(dto);
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
 
-        spriggitFields["EditorID"].ShouldBe(dtoFields["EditorID"]);
-        spriggitFields["FormKey"].ShouldBe(dtoFields["FormKey"]);
-        spriggitFields["Name.Count"].ShouldBe(dtoFields["Name.Count"]);
-        spriggitFields["Name.TargetLanguage"].ShouldBe(dtoFields["Name.TargetLanguage"]);
-        spriggitFields["Name[0].Language"].ShouldBe(dtoFields["Name[0].Language"]);
-        spriggitFields["Name[0].String"].ShouldBe(dtoFields["Name[0].String"]);
-        spriggitFields["Name[1].Language"].ShouldBe(dtoFields["Name[1].Language"]);
-        spriggitFields["Name[1].String"].ShouldBe(dtoFields["Name[1].String"]);
-        spriggitFields["Name[10].Language"].ShouldBe(dtoFields["Name[10].Language"]);
-        spriggitFields["Name[10].String"].ShouldBe(dtoFields["Name[10].String"]);
-        spriggitFields["Name[2].Language"].ShouldBe(dtoFields["Name[2].Language"]);
-        spriggitFields["Name[2].String"].ShouldBe(dtoFields["Name[2].String"]);
-        spriggitFields["Name[3].Language"].ShouldBe(dtoFields["Name[3].Language"]);
-        spriggitFields["Name[3].String"].ShouldBe(dtoFields["Name[3].String"]);
-        spriggitFields["Name[4].Language"].ShouldBe(dtoFields["Name[4].Language"]);
-        spriggitFields["Name[4].String"].ShouldBe(dtoFields["Name[4].String"]);
-        spriggitFields["Name[5].Language"].ShouldBe(dtoFields["Name[5].Language"]);
-        spriggitFields["Name[5].String"].ShouldBe(dtoFields["Name[5].String"]);
-        spriggitFields["Name[6].Language"].ShouldBe(dtoFields["Name[6].Language"]);
-        spriggitFields["Name[6].String"].ShouldBe(dtoFields["Name[6].String"]);
-        spriggitFields["Name[7].Language"].ShouldBe(dtoFields["Name[7].Language"]);
-        spriggitFields["Name[7].String"].ShouldBe(dtoFields["Name[7].String"]);
-        spriggitFields["Name[8].Language"].ShouldBe(dtoFields["Name[8].Language"]);
-        spriggitFields["Name[8].String"].ShouldBe(dtoFields["Name[8].String"]);
-        spriggitFields["Name[9].Language"].ShouldBe(dtoFields["Name[9].Language"]);
-        spriggitFields["Name[9].String"].ShouldBe(dtoFields["Name[9].String"]);
-        spriggitFields["Version2"].ShouldBe(dtoFields["Version2"]);
-        spriggitFields["VersionControl"].ShouldBe(dtoFields["VersionControl"]);
-
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedSpriggitFields(spriggit, dto).ShouldBeEmpty();
         Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
     }
