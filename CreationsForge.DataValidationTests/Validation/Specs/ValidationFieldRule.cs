@@ -33,6 +33,16 @@ public class ValidationFieldRule
         };
     }
 
+    public static ValidationFieldRule FormKeyObjectField(string spriggitPath, string dtoPath)
+    {
+        return new ValidationFieldRule
+        {
+            Kind = ValidationRuleKind.FormKeyObjectField,
+            SpriggitPath = spriggitPath,
+            DtoPath = dtoPath
+        };
+    }
+
     public static ValidationFieldRule PathPrefix(
         string spriggitPath,
         string dtoPath,

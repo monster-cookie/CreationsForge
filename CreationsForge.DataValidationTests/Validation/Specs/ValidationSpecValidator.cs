@@ -41,6 +41,11 @@ public static class ValidationSpecValidator
                     RequireDtoPath(rule, ruleName, diagnostics);
                     ValidateDuplicateFieldMapping(rule, ruleName, fieldMappings, diagnostics);
                     break;
+                case ValidationRuleKind.FormKeyObjectField:
+                    RequireSpriggitPath(rule, ruleName, diagnostics);
+                    RequireDtoPath(rule, ruleName, diagnostics);
+                    ValidateDuplicateFieldMapping(rule, ruleName, fieldMappings, diagnostics);
+                    break;
                 case ValidationRuleKind.PathPrefix:
                     RequireSpriggitPath(rule, ruleName, diagnostics);
                     RequireDtoPath(rule, ruleName, diagnostics);

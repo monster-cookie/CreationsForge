@@ -30,10 +30,10 @@ public class DtoReflectionFieldReader
         "MaterialSwapIndex",
         "ModelGender",
         "ModelSlot",
-        "ObjectAlias",
         "ObjectUnused",
         "PayloadIndex",
         "PropertyIndex",
+        "ResourceIndex",
         "ScriptIndex",
         "ScriptingAdapterName",
         "SoundIndex"

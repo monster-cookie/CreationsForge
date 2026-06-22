@@ -57,6 +57,9 @@ public class ValidationSpecRunner
                 case ValidationRuleKind.Field:
                     ApplyFieldRule(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, diagnostics, assertionCases);
                     break;
+                case ValidationRuleKind.FormKeyObjectField:
+                    ApplyFormKeyObjectFieldRule(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, diagnostics, assertionCases);
+                    break;
                 case ValidationRuleKind.PathPrefix:
                     ApplyPathPrefixRule(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, diagnostics, assertionCases);
                     break;
@@ -144,6 +147,52 @@ public class ValidationSpecRunner
         AddAssertionCase(rule.SpriggitPath, spriggitValue!, rule.DtoPath, dtoValue!, rule.Normalizer, assertionCases);
     }
 
+    private static void ApplyFormKeyObjectFieldRule(
+        ValidationFieldRule rule,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields,
+        ISet<string> matchedSpriggitFields,
+        ISet<string> matchedDtoFields,
+        IList<string> diagnostics,
+        IList<ValidationAssertionCase> assertionCases)
+    {
+        var hasSpriggitValue = spriggitFields.TryGetValue(rule.SpriggitPath, out var spriggitValue);
+        var hasDtoValue = dtoFields.TryGetValue(rule.DtoPath, out var dtoValue);
+        if (!hasSpriggitValue && !hasDtoValue)
+        {
+            return;
+        }
+
+        if (!hasSpriggitValue)
+        {
+            diagnostics.Add("Spriggit field '" + rule.SpriggitPath + "' was missing for DTO field '" + rule.DtoPath + "'.");
+            return;
+        }
+
+        if (!hasDtoValue)
+        {
+            diagnostics.Add("DTO field '" + rule.DtoPath + "' was missing for Spriggit field '" + rule.SpriggitPath + "'.");
+            return;
+        }
+
+        var formId = GetPathLeaf(rule.SpriggitPath);
+        var expectedValue = formId + ":" + spriggitValue;
+        MarkMatched(matchedSpriggitFields, rule.SpriggitPath);
+        MarkMatched(matchedDtoFields, rule.DtoPath);
+        assertionCases.Add(new ValidationAssertionCase
+        {
+            SpriggitPath = rule.SpriggitPath,
+            DtoPath = rule.DtoPath,
+            Expected = expectedValue,
+            Actual = dtoValue!,
+            Message = "Expected Spriggit form-key object field '" + rule.SpriggitPath + "' to match DTO field '" + rule.DtoPath + "'." +
+            System.Environment.NewLine +
+            "Spriggit value: " + expectedValue +
+            System.Environment.NewLine +
+            "DTO value: " + dtoValue
+        });
+    }
+
     private static void ApplyPathPrefixRule(
         ValidationFieldRule rule,
         IReadOnlyDictionary<string, string> spriggitFields,
@@ -167,7 +216,16 @@ public class ValidationSpecRunner
             }
 
             MarkMatched(matchedSpriggitFields, spriggitField.Key);
-            if (!dtoFields.TryGetValue(dtoPath, out var dtoValue))
+            var hasDtoValue = dtoFields.TryGetValue(dtoPath, out var dtoValue);
+            if ((!hasDtoValue || string.Equals(dtoValue, "Null", StringComparison.OrdinalIgnoreCase)) &&
+                TryGetScriptingAdapterDataValue(dtoFields, dtoPath, out var scriptingDataDtoPath, out var scriptingDataDtoValue))
+            {
+                dtoPath = scriptingDataDtoPath;
+                dtoValue = scriptingDataDtoValue;
+                hasDtoValue = true;
+            }
+
+            if (!hasDtoValue)
             {
                 if (IsSpriggitScriptingListItemNameWithoutDtoShape(spriggitField.Key))
                 {
@@ -179,7 +237,7 @@ public class ValidationSpecRunner
             }
 
             MarkMatched(matchedDtoFields, dtoPath);
-            AddAssertionCase(spriggitField.Key, spriggitField.Value, dtoPath, dtoValue, ValidationValueNormalizer.None, assertionCases);
+            AddAssertionCase(spriggitField.Key, spriggitField.Value, dtoPath, dtoValue!, ValidationValueNormalizer.None, assertionCases);
         }
     }
 
@@ -599,6 +657,13 @@ public class ValidationSpecRunner
             return true;
         }
 
+        if (fieldName.Contains(".Properties[", StringComparison.OrdinalIgnoreCase) &&
+            fieldName.EndsWith(".ObjectAlias", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(fieldValue, "-1", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
         return false;
     }
 
@@ -660,8 +725,8 @@ public class ValidationSpecRunner
                 ? value[2..]
                 : value,
             ValidationValueNormalizer.ModelFile => value.StartsWith("Meshes\\", StringComparison.OrdinalIgnoreCase)
-                ? value
-                : "Meshes\\" + value,
+                ? value.Replace('/', '\\')
+                : "Meshes\\" + value.Replace('/', '\\'),
             ValidationValueNormalizer.Color => FormatSpriggitColor(value),
             ValidationValueNormalizer.DecimalNumber => double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue)
                 ? Math.Round(doubleValue, 6).ToString("0.######", CultureInfo.InvariantCulture)
@@ -704,6 +769,14 @@ public class ValidationSpecRunner
         return string.Equals(fieldName, path, StringComparison.OrdinalIgnoreCase) ||
                fieldName.StartsWith(path + ".", StringComparison.OrdinalIgnoreCase) ||
                fieldName.StartsWith(path + "[", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string GetPathLeaf(string path)
+    {
+        var separatorIndex = path.LastIndexOf('.');
+        return separatorIndex < 0
+            ? path
+            : path[(separatorIndex + 1)..];
     }
 
     private static void MarkMatched(ISet<string> fields, string path)
@@ -765,6 +838,46 @@ public class ValidationSpecRunner
     {
         return fieldName.Contains(".Objects[", StringComparison.OrdinalIgnoreCase) &&
                fieldName.EndsWith(".Name", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool TryGetScriptingAdapterDataValue(
+        IReadOnlyDictionary<string, string> dtoFields,
+        string dtoPath,
+        out string matchedDtoPath,
+        out string? value)
+    {
+        matchedDtoPath = dtoPath;
+        value = null;
+
+        var dataIndex = dtoPath.LastIndexOf(".Data", StringComparison.Ordinal);
+        if (dataIndex < 0)
+        {
+            return false;
+        }
+
+        var basePath = dtoPath[..dataIndex] + ".";
+        var candidatePaths = new[]
+        {
+            basePath + "DataBool",
+            basePath + "DataInt",
+            basePath + "DataFloat",
+            basePath + "DataString"
+        };
+
+        foreach (var candidatePath in candidatePaths)
+        {
+            if (!dtoFields.TryGetValue(candidatePath, out var candidateValue) ||
+                string.Equals(candidateValue, "Null", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            matchedDtoPath = candidatePath;
+            value = candidateValue;
+            return true;
+        }
+
+        return false;
     }
 
     private static IReadOnlyList<TranslatedFieldEntry> GetTranslatedEntries(
