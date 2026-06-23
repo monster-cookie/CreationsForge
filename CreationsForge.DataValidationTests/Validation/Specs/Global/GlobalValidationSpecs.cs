@@ -52,11 +52,31 @@ public static class GlobalValidationSpecs
 
     private static ValidationSpec Global(SupportedGame game, string sampleName, string formKey)
     {
+        var gameMajorRecordFlags = game switch
+        {
+            SupportedGame.Fallout4 => "Fallout4MajorRecordFlags",
+            SupportedGame.Skyrim => "SkyrimMajorRecordFlags",
+            _ => "StarfieldMajorRecordFlags"
+        };
+
         return ValidationSpecBuilder
             .ForRecord(game, RecordTypeCatalog.Global)
             .Sample(sampleName)
             .FormKey(formKey)
             .AddRule(ValidationFieldRule.Field("MajorRecordFlagsRaw", "MajorRecordFlags"))
+            .AddRule(ValidationFieldRule.ScalarList("MajorFlags", "MajorFlags"))
+            .AddRule(ValidationFieldRule.ScalarList(gameMajorRecordFlags, "MajorRecordFlags", ValidationValueNormalizer.HexInteger))
+            .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                "EditorID",
+                "EditorID",
+                string.Empty,
+                "Mutagen exposes an empty EditorID string when Spriggit omits the field.",
+                allowEmptyExpectedValue: true))
+            .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                "Version2",
+                "Version2",
+                "0",
+                "Mutagen exposes the default Version2 value when Spriggit omits the zero-valued field."))
             .Build();
     }
 }

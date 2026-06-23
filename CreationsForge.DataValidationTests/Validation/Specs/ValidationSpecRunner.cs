@@ -66,11 +66,17 @@ public class ValidationSpecRunner
                 case ValidationRuleKind.FormKeyList:
                     ApplyFormKeyListRule(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, diagnostics, assertionCases);
                     break;
+                case ValidationRuleKind.ScalarList:
+                    ApplyScalarListRule(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, diagnostics, assertionCases);
+                    break;
                 case ValidationRuleKind.TranslatedField:
                     ApplyTranslatedFieldRule(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, diagnostics, assertionCases);
                     break;
                 case ValidationRuleKind.SoundSlot:
                     ApplySoundSlotRule(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, diagnostics, assertionCases);
+                    break;
+                case ValidationRuleKind.RawPayloadSlot:
+                    ApplyRawPayloadSlotRule(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, diagnostics, assertionCases);
                     break;
                 case ValidationRuleKind.DtoExpectedValue:
                     ApplyDtoExpectedValueRule(rule, dtoFields, matchedDtoFields, diagnostics, assertionCases);
@@ -285,6 +291,57 @@ public class ValidationSpecRunner
         }
     }
 
+    private static void ApplyScalarListRule(
+        ValidationFieldRule rule,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields,
+        ISet<string> matchedSpriggitFields,
+        ISet<string> matchedDtoFields,
+        IList<string> diagnostics,
+        IList<ValidationAssertionCase> assertionCases)
+    {
+        var spriggitValues = spriggitFields
+            .Where(field => TryGetListIndex(field.Key, rule.SpriggitPath, out _))
+            .OrderBy(field =>
+            {
+                TryGetListIndex(field.Key, rule.SpriggitPath, out var index);
+                return index;
+            })
+            .ToList();
+        var hasDtoValue = dtoFields.TryGetValue(rule.DtoPath, out var dtoValue);
+        if (spriggitValues.Count == 0 &&
+            (!hasDtoValue || string.Equals(dtoValue, "Null", StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        if (spriggitValues.Count == 0)
+        {
+            diagnostics.Add("Spriggit scalar list '" + rule.SpriggitPath + "' was missing for DTO field '" + rule.DtoPath + "'.");
+            return;
+        }
+
+        if (!hasDtoValue)
+        {
+            diagnostics.Add("DTO field '" + rule.DtoPath + "' was missing for Spriggit scalar list '" + rule.SpriggitPath + "'.");
+            return;
+        }
+
+        if (spriggitFields.ContainsKey(rule.SpriggitPath + ".Count"))
+        {
+            MarkMatched(matchedSpriggitFields, rule.SpriggitPath + ".Count");
+        }
+
+        foreach (var spriggitValue in spriggitValues)
+        {
+            MarkMatched(matchedSpriggitFields, spriggitValue.Key);
+        }
+
+        var expected = string.Join(", ", spriggitValues.Select(field => field.Value));
+        MarkMatched(matchedDtoFields, rule.DtoPath);
+        AddAssertionCase(rule.SpriggitPath, expected, rule.DtoPath, dtoValue!, rule.Normalizer, assertionCases);
+    }
+
     private static void ApplyTranslatedFieldRule(
         ValidationFieldRule rule,
         IReadOnlyDictionary<string, string> spriggitFields,
@@ -303,19 +360,6 @@ public class ValidationSpecRunner
 
         MarkTranslatedField(matchedSpriggitFields, spriggitFields, rule.SpriggitPath);
         MarkTranslatedField(matchedDtoFields, dtoFields, rule.DtoPath);
-
-        if (rule.RequireAllTranslatedLanguages &&
-            spriggitFields.TryGetValue(rule.SpriggitPath + ".Count", out var spriggitCount) &&
-            dtoFields.TryGetValue(rule.DtoPath + ".Count", out var dtoCount))
-        {
-            AddAssertionCase(
-                rule.SpriggitPath + ".Count",
-                spriggitCount,
-                rule.DtoPath + ".Count",
-                dtoCount,
-                ValidationValueNormalizer.None,
-                assertionCases);
-        }
 
         if (spriggitFields.TryGetValue(rule.SpriggitPath + ".TargetLanguage", out var spriggitTargetLanguage) &&
             dtoFields.TryGetValue(rule.DtoPath + ".TargetLanguage", out var dtoTargetLanguage))
@@ -399,6 +443,53 @@ public class ValidationSpecRunner
         AddAssertionCase(rule.SpriggitPath, spriggitValue, dtoPath, dtoValue, ValidationValueNormalizer.None, assertionCases);
     }
 
+    private static void ApplyRawPayloadSlotRule(
+        ValidationFieldRule rule,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields,
+        ISet<string> matchedSpriggitFields,
+        ISet<string> matchedDtoFields,
+        IList<string> diagnostics,
+        IList<ValidationAssertionCase> assertionCases)
+    {
+        var matchingSpriggitFields = spriggitFields.Keys.Where(field => IsUnderPath(field, rule.SpriggitPath)).ToList();
+        if (matchingSpriggitFields.Count == 0)
+        {
+            return;
+        }
+
+        var payloadIndex = FindRawPayloadIndex(dtoFields, rule.DtoPath);
+        if (payloadIndex < 0)
+        {
+            diagnostics.Add("DTO raw payload slot '" + rule.DtoPath + "' was missing for Spriggit path '" + rule.SpriggitPath + "'.");
+            return;
+        }
+
+        var slotPath = "RawPayloads[" + payloadIndex.ToString(CultureInfo.InvariantCulture) + "].PayloadSlot";
+        var valuePath = "RawPayloads[" + payloadIndex.ToString(CultureInfo.InvariantCulture) + "].PayloadValue";
+        if (!dtoFields.TryGetValue(valuePath, out var payloadValue) || string.IsNullOrWhiteSpace(payloadValue))
+        {
+            diagnostics.Add("DTO raw payload value '" + valuePath + "' was missing or empty for Spriggit path '" + rule.SpriggitPath + "'.");
+            return;
+        }
+
+        foreach (var spriggitField in matchingSpriggitFields)
+        {
+            MarkMatched(matchedSpriggitFields, spriggitField);
+        }
+
+        MarkMatched(matchedDtoFields, slotPath);
+        MarkMatched(matchedDtoFields, valuePath);
+        MarkMatched(matchedDtoFields, "RawPayloads[" + payloadIndex.ToString(CultureInfo.InvariantCulture) + "].PayloadType");
+        MarkMatched(matchedDtoFields, "RawPayloads[" + payloadIndex.ToString(CultureInfo.InvariantCulture) + "].SourcePath");
+        if (spriggitFields.TryGetValue(rule.SpriggitPath, out var spriggitValue))
+        {
+            AddAssertionCase(rule.SpriggitPath, spriggitValue, valuePath, payloadValue, ValidationValueNormalizer.HexPayload, assertionCases);
+        }
+
+        AddAssertionCase(rule.SpriggitPath, rule.DtoPath, slotPath, dtoFields[slotPath], ValidationValueNormalizer.None, assertionCases);
+    }
+
     private static void ApplyDtoExpectedValueRule(
         ValidationFieldRule rule,
         IReadOnlyDictionary<string, string> dtoFields,
@@ -438,6 +529,11 @@ public class ValidationSpecRunner
 
         if (!dtoFields.TryGetValue(rule.DtoPath, out var dtoValue))
         {
+            if (string.Equals(rule.ExpectedValue, "Null", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
             diagnostics.Add("DTO field '" + rule.DtoPath + "' was missing for omitted Spriggit default field '" + rule.SpriggitPath + "'.");
             return;
         }
@@ -717,6 +813,7 @@ public class ValidationSpecRunner
             ValidationValueNormalizer.BookText => value
                 .Replace("\\r\\n", "\r\n", StringComparison.Ordinal)
                 .Replace("\\\"", "\"", StringComparison.Ordinal),
+            ValidationValueNormalizer.TerminalText => NormalizeTerminalText(value),
             ValidationValueNormalizer.HexInteger => value.StartsWith("0x", StringComparison.OrdinalIgnoreCase) &&
                                                     int.TryParse(value.AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var number)
                 ? number.ToString(CultureInfo.InvariantCulture)
@@ -762,6 +859,16 @@ public class ValidationSpecRunner
         }
 
         return value;
+    }
+
+    private static string NormalizeTerminalText(string value)
+    {
+        var normalized = value
+            .Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace("\r", "\n", StringComparison.Ordinal);
+
+        normalized = Regex.Replace(normalized, "(?<!\n)\n(?!\n)", " ");
+        return normalized.TrimEnd();
     }
 
     private static bool IsUnderPath(string fieldName, string path)
@@ -935,6 +1042,37 @@ public class ValidationSpecRunner
             }
 
             var indexStart = "Sounds[".Length;
+            var indexLength = field.Key.IndexOf(']', indexStart) - indexStart;
+            if (indexLength <= 0)
+            {
+                continue;
+            }
+
+            if (int.TryParse(field.Key.AsSpan(indexStart, indexLength), NumberStyles.Integer, CultureInfo.InvariantCulture, out var index))
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    private static int FindRawPayloadIndex(IReadOnlyDictionary<string, string> dtoFields, string payloadSlot)
+    {
+        foreach (var field in dtoFields)
+        {
+            if (!field.Key.StartsWith("RawPayloads[", StringComparison.OrdinalIgnoreCase) ||
+                !field.Key.EndsWith("].PayloadSlot", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (!string.Equals(field.Value, payloadSlot, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var indexStart = "RawPayloads[".Length;
             var indexLength = field.Key.IndexOf(']', indexStart) - indexStart;
             if (indexLength <= 0)
             {

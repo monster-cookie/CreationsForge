@@ -136,6 +136,11 @@ public class SpriggitYamlDocument
             return;
         }
 
+        if (!frames[^1].ListIndent.HasValue)
+        {
+            frames[^1] = frames[^1].WithListIndent(indent);
+        }
+
         var listPath = frames[^1].Path;
         var itemIndex = listCountsByPath.TryGetValue(listPath, out var currentListCount)
             ? currentListCount
@@ -147,6 +152,12 @@ public class SpriggitYamlDocument
         var listValue = trimmed[2..].Trim();
         if (TrySplitKeyValue(listValue, out var listKey, out var listScalar))
         {
+            if (string.IsNullOrWhiteSpace(listScalar))
+            {
+                frames.Add(new YamlFrame(indent + 2, itemPath + "." + listKey, false));
+                return;
+            }
+
             ReadValue(lines, valuesByPath, frames, ref lineIndex, indent, itemPath + "." + listKey, listScalar);
         }
         else if (!string.IsNullOrWhiteSpace(listValue))
@@ -342,6 +353,11 @@ public class SpriggitYamlDocument
             return false;
         }
 
+        if (isListLine && frame.ListIndent.HasValue)
+        {
+            return indent != frame.ListIndent.Value || frame.IsListItem;
+        }
+
         return !isListLine ||
                indent != frame.Indent ||
                frame.IsListItem ||
@@ -366,11 +382,12 @@ public class SpriggitYamlDocument
 
     private sealed class YamlFrame
     {
-        public YamlFrame(int indent, string path, bool isListItem)
+        public YamlFrame(int indent, string path, bool isListItem, int? listIndent = null)
         {
             Indent = indent;
             Path = path;
             IsListItem = isListItem;
+            ListIndent = listIndent;
         }
 
         public int Indent { get; }
@@ -378,5 +395,12 @@ public class SpriggitYamlDocument
         public string Path { get; }
 
         public bool IsListItem { get; }
+
+        public int? ListIndent { get; }
+
+        public YamlFrame WithListIndent(int listIndent)
+        {
+            return new YamlFrame(Indent, Path, IsListItem, listIndent);
+        }
     }
 }

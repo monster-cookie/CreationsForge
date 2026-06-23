@@ -27,6 +27,8 @@ public class MiscItemDTO : RecordDTO, IHasScriptingAdaptersDTO, IHasModelsDTO, I
 
     public string? Flag { get; set; }
 
+    public MiscItemDestructibleDTO? Destructible { get; set; }
+
     public IList<ModelDTO> Models { get; set; } = new List<ModelDTO>();
 
     public IList<KeywordMappingDTO> Keywords { get; set; } = new List<KeywordMappingDTO>();

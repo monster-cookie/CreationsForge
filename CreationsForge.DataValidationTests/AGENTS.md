@@ -10,6 +10,17 @@ This folder contains data validation tests for validating that the Mutagen/SQLit
 - Do not add new hand-written field-by-field Spriggit comparison tests.
 - Existing non-spec validation tests should be converted to spec-driven validation when touched for record-shape, mapper, DTO, repository, schema, or validation-harness work.
 
+## Spriggit validation coverage rules
+
+- Unmatched Spriggit fields reported by validation specs must be treated as missing implementation by default.
+- Do not fix validation failures by adding broad Spriggit ignore rules, prefix suppressions, or “currently unmodeled” exemptions.
+- A Spriggit field may only be marked covered-by-alias/duplicate when the PLAN lists:
+  - the exact Spriggit path,
+  - the DTO/import/persistence/readback path preserving the same data,
+  - why the Spriggit path is a duplicate representation rather than missing data.
+- If no preserving path exists, the field must be modeled end-to-end: DTO, importer, persistence, readback, comparison/render path where applicable, and validation coverage.
+- Do not delete modeled record data and replace it with validation ignores unless the user explicitly approves that exact removal.
+
 ## Spec-driven validation
 
 Spec-driven validation tests define sample-specific mapping rules in validation specs and execute those specs through
@@ -61,17 +72,20 @@ Helpers.GetUnmatchedDtoFields(spriggit, dto).ShouldBeEmpty();
 
 When a record type no longer needs the legacy unmatched-field helpers because equivalent spec-runner coverage exists, the plan must call that out explicitly before removing them.
 
+When GetCoverageDiagnostics reports unmatched Spriggit fields, first trace importer, DTO, repository save/readback,
+comparison output, and validation spec coverage. Ignore rules are not an acceptable first fix for missing Spriggit data.
+
 ## Imported validation database freshness
 
 Data validation tests read DTOs from the imported SQLite database, not directly from the current mapper code.
 
-When production import mapping, repository read-back, DTO persistence, migrations, or validation schema assumptions change, the agent must explicitly state whether the existing validation database can be reused or must be reset/reimported.
+When production import mapping, repository readback, DTO persistence, migrations, or validation schema assumptions change, the agent must explicitly state whether the existing validation database can be reused or must be reset/reimported.
 
 A database reset/reimport is required when:
 
 - a mapper fix changes values already persisted in typed record tables;
 - a migration is amended before release and an existing local database already recorded that migration as applied;
-- repository read-back depends on newly added tables or columns;
+- repository readback depends on newly added tables or columns;
 - validation failures may be caused by stale imported rows rather than current code.
 
 The agent must call this out in the plan and final validation notes. Building the solution is not enough to refresh imported DTO data.

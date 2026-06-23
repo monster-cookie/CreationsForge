@@ -21,6 +21,8 @@ public static class Helpers
         ["FormKey"] = "FormKey",
         ["EditorID"] = "EditorID",
         ["MajorRecordFlagsRaw"] = "MajorRecordFlags",
+        ["MutagenObjectType"] = "MutagenObjectType",
+        ["MajorFlags"] = "MajorFlags",
         ["FormVersion"] = "FormVersion",
         ["Version2"] = "Version2",
         ["VersionControl"] = "VersionControl",
@@ -159,6 +161,13 @@ public static class Helpers
 
         foreach (var field in dtoFields.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase))
         {
+            if (string.Equals(field.Key, "EditorID", StringComparison.OrdinalIgnoreCase) &&
+                string.IsNullOrWhiteSpace(field.Value) &&
+                !spriggit.Fields.ContainsKey(field.Key))
+            {
+                continue;
+            }
+
             if (string.Equals(field.Key, "ScriptingAdapters.Count", StringComparison.OrdinalIgnoreCase) && IsZero(field.Value))
             {
                 continue;
@@ -363,12 +372,26 @@ public static class Helpers
             return;
         }
 
+        var hasComponentDisplayIndices = fields.Keys.Any(field =>
+            field.StartsWith("Components[", StringComparison.OrdinalIgnoreCase) &&
+            field.EndsWith("].DisplayIndex", StringComparison.OrdinalIgnoreCase) &&
+            fields.TryGetValue(field, out var displayIndex) &&
+            !string.Equals(displayIndex, "Null", StringComparison.OrdinalIgnoreCase));
+        if (hasComponentDisplayIndices)
+        {
+            AddSpriggitFieldAlias(fields, "Components.Count", "ComponentDisplayIndices.Count");
+        }
+
         for (var index = 0; index < count; index++)
         {
             AddSpriggitFieldAlias(
                 fields,
                 "Components[" + index.ToString(CultureInfo.InvariantCulture) + "].Count",
                 "Count[" + index.ToString(CultureInfo.InvariantCulture) + "]");
+            AddSpriggitFieldAlias(
+                fields,
+                "Components[" + index.ToString(CultureInfo.InvariantCulture) + "].DisplayIndex",
+                "ComponentDisplayIndices[" + index.ToString(CultureInfo.InvariantCulture) + "]");
         }
     }
 
@@ -662,7 +685,7 @@ public static class Helpers
             return true;
         }
 
-        if (IsSpriggitDestructibleFieldOutsideRepositoryReadback(fieldName))
+        if (IsSpriggitDestructibleFieldBackedByDtoField(fieldName, spriggitFields, dtoFields))
         {
             return true;
         }
@@ -702,7 +725,13 @@ public static class Helpers
             return true;
         }
 
-        return IsSpriggitListBackedDtoScalar(fieldName, spriggitFields, dtoFields, "Flags");
+        if (IsSpriggitInlineFormKeyListItemBackedByDtoScalar(fieldName, fieldValue, dtoFields, "ForcedLocations", string.Empty))
+        {
+            return true;
+        }
+
+        return IsSpriggitListBackedDtoScalar(fieldName, spriggitFields, dtoFields, "Flags") ||
+               IsSpriggitListBackedDtoScalar(fieldName, spriggitFields, dtoFields, "MajorFlags");
     }
 
     private static bool IsMatchedDtoField(
@@ -862,6 +891,16 @@ public static class Helpers
             return true;
         }
 
+        if (IsDtoMiscComponentDisplayIndexBackedBySpriggitField(fieldName, fieldValue, spriggitFields))
+        {
+            return true;
+        }
+
+        if (IsDtoDestructibleFieldBackedBySpriggitField(fieldName, fieldValue, spriggitFields))
+        {
+            return true;
+        }
+
         if (IsDtoScriptingAdapterBackedBySpriggitField(fieldName, fieldValue, spriggitFields, dtoFields))
         {
             return true;
@@ -888,6 +927,7 @@ public static class Helpers
         }
 
         return IsSpriggitListBackedDtoScalar(fieldName, spriggitFields, dtoFields, "Flags") ||
+               IsSpriggitListBackedDtoScalar(fieldName, spriggitFields, dtoFields, "MajorFlags") ||
                IsSpriggitListBackedDtoScalar(fieldName, spriggitFields, dtoFields, "Model.Flags") ||
                (string.Equals(fieldName, "Models[0].Flags", StringComparison.OrdinalIgnoreCase) &&
                 IsSpriggitListBackedDtoScalar("Model.Flags", spriggitFields, dtoFields, "Model.Flags"));
@@ -974,6 +1014,113 @@ public static class Helpers
                TryGetIndexedPath(fieldName, "Resources", out var resourceIndex, out _) &&
                string.Equals(fieldValue, resourceIndex.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal) &&
                HasSpriggitPath(spriggitFields, "Resources[" + resourceIndex.ToString(CultureInfo.InvariantCulture) + "]");
+    }
+
+    private static bool IsDtoMiscComponentDisplayIndexBackedBySpriggitField(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> spriggitFields)
+    {
+        return TryGetIndexedPath(fieldName, "Components", out var componentIndex, out var componentRemainder) &&
+               string.Equals(componentRemainder, ".DisplayIndex", StringComparison.OrdinalIgnoreCase) &&
+               spriggitFields.TryGetValue("ComponentDisplayIndices[" + componentIndex.ToString(CultureInfo.InvariantCulture) + "]", out var displayIndex) &&
+               AreEquivalentSpriggitValues(fieldValue, displayIndex);
+    }
+
+    private static bool IsDtoDestructibleFieldBackedBySpriggitField(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> spriggitFields)
+    {
+        if (!TryGetDestructibleStagePath(fieldName, out var stageIndex, out var stageRemainder))
+        {
+            return false;
+        }
+
+        var spriggitStagePath = "Destructible.Stages[" + stageIndex.ToString(CultureInfo.InvariantCulture) + "]";
+        if (string.Equals(stageRemainder, ".StageIndex", StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Equals(fieldValue, stageIndex.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal) &&
+                   HasSpriggitPath(spriggitFields, spriggitStagePath);
+        }
+
+        if (string.Equals(stageRemainder, ".Flags", StringComparison.OrdinalIgnoreCase))
+        {
+            return IsDtoScalarValueBackedBySpriggitList(fieldValue, spriggitFields, spriggitStagePath + ".Flags") ||
+                   (IsZero(fieldValue) && HasSpriggitPath(spriggitFields, spriggitStagePath));
+        }
+
+        if (spriggitFields.TryGetValue(spriggitStagePath + stageRemainder, out var spriggitValue))
+        {
+            return AreEquivalentSpriggitValues(fieldValue, spriggitValue);
+        }
+
+        return IsDefaultDestructibleStageValue(stageRemainder, fieldValue) &&
+               HasSpriggitPath(spriggitFields, spriggitStagePath);
+    }
+
+    private static bool IsSpriggitDestructibleFieldBackedByDtoField(
+        string fieldName,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields)
+    {
+        if (!TryGetDestructibleStagePath(fieldName, out var stageIndex, out var stageRemainder))
+        {
+            return false;
+        }
+
+        var dtoStagePath = "Destructible.Stages[" + stageIndex.ToString(CultureInfo.InvariantCulture) + "]";
+        if (stageRemainder.StartsWith(".Flags[", StringComparison.OrdinalIgnoreCase) &&
+            dtoFields.TryGetValue(dtoStagePath + ".Flags", out var dtoFlags))
+        {
+            return IsDtoScalarValueBackedBySpriggitList(
+                dtoFlags,
+                spriggitFields,
+                "Destructible.Stages[" + stageIndex.ToString(CultureInfo.InvariantCulture) + "].Flags");
+        }
+
+        if (stageRemainder.StartsWith("[", StringComparison.OrdinalIgnoreCase) &&
+            dtoFields.TryGetValue(dtoStagePath + ".Flags", out dtoFlags))
+        {
+            return IsDtoScalarValueBackedBySpriggitList(
+                dtoFlags,
+                spriggitFields,
+                "Destructible.Stages[" + stageIndex.ToString(CultureInfo.InvariantCulture) + "].Flags");
+        }
+
+        if ((string.Equals(stageRemainder, ".Flags.Count", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(stageRemainder, ".Count", StringComparison.OrdinalIgnoreCase)) &&
+            dtoFields.ContainsKey(dtoStagePath + ".Flags"))
+        {
+            return GetListValues(
+                spriggitFields,
+                "Destructible.Stages[" + stageIndex.ToString(CultureInfo.InvariantCulture) + "].Flags").Count > 0;
+        }
+
+        return dtoFields.ContainsKey(dtoStagePath + stageRemainder);
+    }
+
+    private static bool IsDefaultDestructibleStageValue(string stageRemainder, string fieldValue)
+    {
+        return (string.Equals(stageRemainder, ".Index", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(stageRemainder, ".HealthPercent", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(stageRemainder, ".SelfDamagePerSecond", StringComparison.OrdinalIgnoreCase)) &&
+               IsZero(fieldValue);
+    }
+
+    private static bool IsDtoScalarValueBackedBySpriggitList(
+        string fieldValue,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        string spriggitListPath)
+    {
+        return GetListValues(spriggitFields, spriggitListPath)
+            .Any(value => AreEquivalentSpriggitValues(fieldValue, value));
+    }
+
+    private static bool TryGetDestructibleStagePath(string fieldName, out int stageIndex, out string stageRemainder)
+    {
+        return TryGetIndexedPath(fieldName, "Destructible.Stages", out stageIndex, out stageRemainder) ||
+               TryGetIndexedPath(fieldName, "Destructible", out stageIndex, out stageRemainder);
     }
 
     private static bool IsDtoActorValueInformationFieldBackedBySpriggitField(
@@ -1399,7 +1546,8 @@ public static class Helpers
                        int.TryParse(payloadIndexValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var payloadIndex) &&
                        payloadIndex == componentIndex &&
                        dtoFields.TryGetValue(payloadPath + ".SourcePath", out var sourcePath) &&
-                       sourcePath.StartsWith("Components.", StringComparison.OrdinalIgnoreCase) &&
+                       (sourcePath.StartsWith("Components.", StringComparison.OrdinalIgnoreCase) ||
+                        sourcePath.StartsWith("BaseFormComponents.", StringComparison.OrdinalIgnoreCase)) &&
                        (IsSameTypeName(spriggitTypeName, field.Value) ||
                         sourcePath.Contains("." + spriggitTypeName + ".", StringComparison.Ordinal));
             });
@@ -1410,6 +1558,12 @@ public static class Helpers
         IReadOnlyDictionary<string, string> spriggitFields,
         IReadOnlyDictionary<string, string> dtoFields)
     {
+        if (string.Equals(fieldName, "Components.Count", StringComparison.OrdinalIgnoreCase))
+        {
+            return dtoFields.Keys.Any(field => field.StartsWith("RawPayloads[", StringComparison.OrdinalIgnoreCase) &&
+                                               field.EndsWith("].PayloadType", StringComparison.OrdinalIgnoreCase));
+        }
+
         if (!TryGetIndexedPath(fieldName, "Components", out var componentIndex, out var componentRemainder) ||
             !componentRemainder.StartsWith(".", StringComparison.Ordinal) ||
             !spriggitFields.TryGetValue("Components[" + componentIndex.ToString(CultureInfo.InvariantCulture) + "].MutagenObjectType", out var componentTypeValue) ||
@@ -1419,7 +1573,12 @@ public static class Helpers
         }
 
         var componentFieldName = componentRemainder[1..];
-        if (!string.Equals(componentFieldName, "REFL", StringComparison.Ordinal))
+        if (string.Equals(componentFieldName, "MutagenObjectType", StringComparison.OrdinalIgnoreCase))
+        {
+            return IsComponentRawPayloadTypeMatch(dtoFields, componentIndex, componentTypeValue);
+        }
+
+        if (componentFieldName is not ("ANAM" or "BNAM" or "CNAM" or "REFL"))
         {
             return false;
         }
@@ -1443,12 +1602,6 @@ public static class Helpers
         return (sourcePath.StartsWith("Components.", StringComparison.OrdinalIgnoreCase) ||
                 sourcePath.StartsWith("BaseFormComponents.", StringComparison.OrdinalIgnoreCase)) &&
                sourcePath.EndsWith("." + componentFieldName, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static bool IsSpriggitDestructibleFieldOutsideRepositoryReadback(string fieldName)
-    {
-        return fieldName.StartsWith("Destructible", StringComparison.OrdinalIgnoreCase) ||
-               fieldName.StartsWith("ComponentDisplayIndices", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsSpriggitKeywordComponentFieldBackedByDtoScalar(
@@ -1607,6 +1760,8 @@ public static class Helpers
         }
 
         return (fieldName is "Value" or "Weight" or "DirtinessScale" && IsZero(fieldValue)) ||
+               (string.Equals(fieldName, "EditorID", StringComparison.OrdinalIgnoreCase) &&
+                string.IsNullOrWhiteSpace(fieldValue)) ||
                string.Equals(fieldName, "FormVersion", StringComparison.OrdinalIgnoreCase) ||
                ((string.Equals(fieldName, "ObjectBoundsFirst", StringComparison.OrdinalIgnoreCase) ||
                  string.Equals(fieldName, "ObjectBoundsSecond", StringComparison.OrdinalIgnoreCase) ||

@@ -1,4 +1,5 @@
 using CreationsForge.Core.DTOs.Plugins;
+using System.Globalization;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.DTOs.Records.Interfaces;
 using CreationsForge.Core.Enums;
@@ -226,6 +227,8 @@ public class RecordComparisonService : IRecordComparisonService
     {
         var records = GlobalRepository.GetByFormKey(game, formKey);
         var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
+        fields.Add(CreateField("MutagenObjectType", records, record => record.MutagenObjectType ?? string.Empty));
+        fields.Add(CreateField("MajorFlags", records, record => record.MajorFlags ?? string.Empty));
         fields.Add(CreateField("Data", records, record => record.Data?.ToString() ?? string.Empty));
 
         return CreateComparison(RecordTypeCatalog.Global.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
@@ -320,6 +323,7 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("DirtinessScale", records, record => record.DirtinessScale?.ToString() ?? string.Empty));
         fields.Add(CreateField("FeaturedItemMessage", records, record => FormatFormKey(record.FeaturedItemMessage)));
         fields.Add(CreateField("Flag", records, record => record.Flag ?? string.Empty));
+        AddMiscItemDestructibleGroups(fields, records);
         AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.MiscItem.RecordID, formKey));
         AddModelGroups(fields, records.Cast<RecordDTO>().ToList(), ModelRepository.GetByFormKey(game, RecordTypeCatalog.MiscItem.RecordID, formKey));
         AddSoundGroups(fields, records.Cast<RecordDTO>().ToList(), SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.MiscItem.RecordID, formKey));
@@ -621,20 +625,27 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBoundsSecond ?? string.Empty));
         fields.Add(CreateField("MenuFormKey", records, record => FormatFormKey(record.MenuFormKey)));
         fields.Add(CreateField("Background", records, record => record.Background ?? string.Empty));
+        fields.Add(CreateField("HeaderText", records, record => GetTranslatedDisplayValue(localizedStrings, record, "HeaderText", recordTextLanguage, record.HeaderText)));
+        fields.Add(CreateField("WelcomeText", records, record => GetTranslatedDisplayValue(localizedStrings, record, "WelcomeText", recordTextLanguage, record.WelcomeText)));
         fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
         fields.Add(CreateField("Pnam", records, record => record.Pnam ?? string.Empty));
         fields.Add(CreateField("Fnam", records, record => record.Fnam ?? string.Empty));
+        fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
+        fields.Add(CreateField("MajorFlags", records, record => record.MajorFlags ?? string.Empty));
         fields.Add(CreateField("Jnam", records, record => record.Jnam ?? string.Empty));
-        fields.Add(CreateField("MarkerFlags", records, record => record.MarkerFlags?.ToString() ?? string.Empty));
+        fields.Add(CreateField("MarkerFlags", records, record => FormatHexIntegerString(record.MarkerFlags)));
         fields.Add(CreateField("Gnam", records, record => record.Gnam ?? string.Empty));
         fields.Add(CreateField("WorkbenchData", records, record => record.WorkbenchData ?? string.Empty));
         fields.Add(CreateField("FurnitureTemplateFormKey", records, record => FormatFormKey(record.FurnitureTemplateFormKey)));
         fields.Add(CreateField("MarkerModel", records, record => record.MarkerModel ?? string.Empty));
+        AddTerminalForcedLocationGroups(fields, records);
         AddKeywordGroup(fields, baseRecords, KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
         AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
         AddScriptingAdapterGroups(fields, baseRecords, ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
         AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
         AddTerminalMarkerParameterGroups(fields, records);
+        AddTerminalBodyTextGroups(fields, records, localizedStrings, recordTextLanguage);
+        AddTerminalMenuItemGroups(fields, records, localizedStrings, recordTextLanguage);
 
         return CreateComparison(RecordTypeCatalog.Terminal.RecordID, formKey, baseRecords, fields);
     }
@@ -990,7 +1001,9 @@ public class RecordComparisonService : IRecordComparisonService
             {
                 CreateField("Offset", records, record => record.MarkerParameters.FirstOrDefault(parameter => parameter.ParameterIndex == currentIndex)?.Offset ?? string.Empty),
                 CreateField("EntryTypes", records, record => record.MarkerParameters.FirstOrDefault(parameter => parameter.ParameterIndex == currentIndex)?.EntryTypes ?? string.Empty),
-                CreateField("ExitTypes", records, record => record.MarkerParameters.FirstOrDefault(parameter => parameter.ParameterIndex == currentIndex)?.ExitTypes ?? string.Empty)
+                CreateField("ExitTypes", records, record => record.MarkerParameters.FirstOrDefault(parameter => parameter.ParameterIndex == currentIndex)?.ExitTypes ?? string.Empty),
+                CreateField("Enabled", records, record => record.MarkerParameters.FirstOrDefault(parameter => parameter.ParameterIndex == currentIndex)?.Enabled?.ToString() ?? string.Empty),
+                CreateField("Unknown", records, record => record.MarkerParameters.FirstOrDefault(parameter => parameter.ParameterIndex == currentIndex)?.Unknown ?? string.Empty)
             }
                 .Where(HasVisibleValue)
                 .ToList();
@@ -1003,6 +1016,118 @@ public class RecordComparisonService : IRecordComparisonService
         if (parameterFields.Count > 0)
         {
             fields.Add(CreateGroupField("Marker Parameters", records.Cast<RecordDTO>().ToList(), parameterFields));
+        }
+    }
+
+    private static void AddTerminalForcedLocationGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<TerminalDTO> records)
+    {
+        var maxForcedLocationCount = records
+            .Select(record => record.ForcedLocations.Count)
+            .DefaultIfEmpty()
+            .Max();
+        for (var forcedLocationIndex = 0; forcedLocationIndex < maxForcedLocationCount; forcedLocationIndex++)
+        {
+            var currentIndex = forcedLocationIndex;
+            fields.Add(CreateField($"ForcedLocations[{forcedLocationIndex}]", records, record => FormatFormKey(record.ForcedLocations.ElementAtOrDefault(currentIndex))));
+        }
+    }
+
+    private static void AddTerminalBodyTextGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<TerminalDTO> records,
+        IReadOnlyList<LocalizedStringDTO> localizedStrings,
+        Language recordTextLanguage)
+    {
+        var bodyTextIndexes = records
+            .SelectMany(record => record.BodyTexts)
+            .Select(bodyText => bodyText.BodyTextIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (bodyTextIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var bodyTextFields = new List<RecordComparisonFieldDTO>();
+        foreach (var bodyTextIndex in bodyTextIndexes)
+        {
+            var currentIndex = bodyTextIndex;
+            var bodyTextChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("Text", records, record => GetTranslatedDisplayValue(
+                    localizedStrings,
+                    record,
+                    $"BodyTexts[{currentIndex}].Text",
+                    recordTextLanguage,
+                    record.BodyTexts.FirstOrDefault(bodyText => bodyText.BodyTextIndex == currentIndex)?.Text))
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (bodyTextChildren.Count > 0)
+            {
+                bodyTextFields.Add(CreateGroupField($"BodyText [{bodyTextIndex}]", records.Cast<RecordDTO>().ToList(), bodyTextChildren));
+            }
+        }
+
+        if (bodyTextFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("BodyTexts", records.Cast<RecordDTO>().ToList(), bodyTextFields));
+        }
+    }
+
+    private static void AddTerminalMenuItemGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<TerminalDTO> records,
+        IReadOnlyList<LocalizedStringDTO> localizedStrings,
+        Language recordTextLanguage)
+    {
+        var menuItemIndexes = records
+            .SelectMany(record => record.MenuItems)
+            .Select(menuItem => menuItem.MenuItemIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (menuItemIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var menuItemFields = new List<RecordComparisonFieldDTO>();
+        foreach (var menuItemIndex in menuItemIndexes)
+        {
+            var currentIndex = menuItemIndex;
+            var menuItemChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("ItemText", records, record => GetTranslatedDisplayValue(
+                    localizedStrings,
+                    record,
+                    $"MenuItems[{currentIndex}].ItemText",
+                    recordTextLanguage,
+                    record.MenuItems.FirstOrDefault(menuItem => menuItem.MenuItemIndex == currentIndex)?.ItemText)),
+                CreateField("Type", records, record => record.MenuItems.FirstOrDefault(menuItem => menuItem.MenuItemIndex == currentIndex)?.Type ?? string.Empty),
+                CreateField("ItemId", records, record => record.MenuItems.FirstOrDefault(menuItem => menuItem.MenuItemIndex == currentIndex)?.ItemId?.ToString() ?? string.Empty),
+                CreateField("Submenu", records, record => FormatFormKey(record.MenuItems.FirstOrDefault(menuItem => menuItem.MenuItemIndex == currentIndex)?.Submenu)),
+                CreateField("DisplayText", records, record => GetTranslatedDisplayValue(
+                    localizedStrings,
+                    record,
+                    $"MenuItems[{currentIndex}].DisplayText",
+                    recordTextLanguage,
+                    record.MenuItems.FirstOrDefault(menuItem => menuItem.MenuItemIndex == currentIndex)?.DisplayText))
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (menuItemChildren.Count > 0)
+            {
+                menuItemFields.Add(CreateGroupField($"MenuItem [{menuItemIndex}]", records.Cast<RecordDTO>().ToList(), menuItemChildren));
+            }
+        }
+
+        if (menuItemFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("MenuItems", records.Cast<RecordDTO>().ToList(), menuItemFields));
         }
     }
 
@@ -1066,6 +1191,7 @@ public class RecordComparisonService : IRecordComparisonService
             var componentChildren = new List<RecordComparisonFieldDTO>
             {
                 CreateField("Component", records, record => FormatFormKey(record.Components.FirstOrDefault(component => component.ComponentIndex == currentIndex)?.Component)),
+                CreateField("DisplayIndex", records, record => record.Components.FirstOrDefault(component => component.ComponentIndex == currentIndex)?.DisplayIndex?.ToString() ?? string.Empty),
                 CreateField("Count", records, record => record.Components.FirstOrDefault(component => component.ComponentIndex == currentIndex)?.Count?.ToString() ?? string.Empty)
             }
                 .Where(HasVisibleValue)
@@ -1117,6 +1243,59 @@ public class RecordComparisonService : IRecordComparisonService
         if (resourceFields.Count > 0)
         {
             fields.Add(CreateGroupField("Resources", records.Cast<RecordDTO>().ToList(), resourceFields));
+        }
+    }
+
+    private static void AddMiscItemDestructibleGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<MiscItemDTO> records)
+    {
+        if (records.All(record => record.Destructible == null))
+        {
+            return;
+        }
+
+        var baseRecords = records.Cast<RecordDTO>().ToList();
+        var children = new List<RecordComparisonFieldDTO>
+        {
+            CreateField("Health", records, record => record.Destructible?.Data?.Health?.ToString() ?? string.Empty),
+            CreateField("DESTCount", records, record => record.Destructible?.Data?.DESTCount?.ToString() ?? string.Empty)
+        };
+
+        var stageIndexes = records
+            .SelectMany(record => record.Destructible?.Stages ?? [])
+            .Select(stage => stage.StageIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        foreach (var stageIndex in stageIndexes)
+        {
+            var currentIndex = stageIndex;
+            var stageChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("Index", records, record => record.Destructible?.Stages.FirstOrDefault(stage => stage.StageIndex == currentIndex)?.Index?.ToString() ?? string.Empty),
+                CreateField("HealthPercent", records, record => record.Destructible?.Stages.FirstOrDefault(stage => stage.StageIndex == currentIndex)?.HealthPercent?.ToString() ?? string.Empty),
+                CreateField("ModelDamageStage", records, record => record.Destructible?.Stages.FirstOrDefault(stage => stage.StageIndex == currentIndex)?.ModelDamageStage?.ToString() ?? string.Empty),
+                CreateField("Flags", records, record => record.Destructible?.Stages.FirstOrDefault(stage => stage.StageIndex == currentIndex)?.Flags ?? string.Empty),
+                CreateField("SelfDamagePerSecond", records, record => record.Destructible?.Stages.FirstOrDefault(stage => stage.StageIndex == currentIndex)?.SelfDamagePerSecond?.ToString() ?? string.Empty),
+                CreateField("Explosion", records, record => FormatFormKey(record.Destructible?.Stages.FirstOrDefault(stage => stage.StageIndex == currentIndex)?.Explosion)),
+                CreateField("Model.File", records, record => record.Destructible?.Stages.FirstOrDefault(stage => stage.StageIndex == currentIndex)?.Model?.File ?? string.Empty),
+                CreateField("Model.Data", records, record => record.Destructible?.Stages.FirstOrDefault(stage => stage.StageIndex == currentIndex)?.Model?.Data ?? string.Empty)
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (stageChildren.Count > 0)
+            {
+                children.Add(CreateGroupField($"Stage [{stageIndex}]", baseRecords, stageChildren));
+            }
+        }
+
+        var visibleChildren = children
+            .Where(field => field.Children.Count > 0 || HasVisibleValue(field))
+            .ToList();
+        if (visibleChildren.Count > 0)
+        {
+            fields.Add(CreateGroupField("Destructible", baseRecords, visibleChildren));
         }
     }
 
@@ -1606,6 +1785,19 @@ public class RecordComparisonService : IRecordComparisonService
         return formKey is null
             ? string.Empty
             : $"{formKey.ModKey.FileName}:{formKey.Id:X8}";
+    }
+
+    private static string FormatHexIntegerString(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        return value.StartsWith("0x", StringComparison.OrdinalIgnoreCase) &&
+               int.TryParse(value.AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var number)
+            ? number.ToString(CultureInfo.InvariantCulture)
+            : value;
     }
 
     private static ModelDTO? FindModel(IReadOnlyList<ModelDTO> models, ModKeyDTO modKey, ModelKey modelKey)

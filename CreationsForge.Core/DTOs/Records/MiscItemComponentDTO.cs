@@ -15,6 +15,8 @@ public class MiscItemComponentDTO
 
     public int ComponentIndex { get; set; }
 
+    public int? DisplayIndex { get; set; }
+
     public int? Count { get; set; }
 
     public DateTime ImportedAtUTC { get; set; }

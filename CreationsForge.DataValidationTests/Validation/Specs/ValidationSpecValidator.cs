@@ -55,6 +55,10 @@ public static class ValidationSpecValidator
                     RequireDtoPath(rule, ruleName, diagnostics);
                     RequireExpectedValue(rule, ruleName, "DTO leaf path", diagnostics);
                     break;
+                case ValidationRuleKind.ScalarList:
+                    RequireSpriggitPath(rule, ruleName, diagnostics);
+                    RequireDtoPath(rule, ruleName, diagnostics);
+                    break;
                 case ValidationRuleKind.TranslatedField:
                     RequireSpriggitPath(rule, ruleName, diagnostics);
                     RequireDtoPath(rule, ruleName, diagnostics);
@@ -63,6 +67,10 @@ public static class ValidationSpecValidator
                     RequireSpriggitPath(rule, ruleName, diagnostics);
                     RequireDtoPath(rule, ruleName, diagnostics);
                     RequireExpectedValue(rule, ruleName, "DTO sound field name", diagnostics);
+                    break;
+                case ValidationRuleKind.RawPayloadSlot:
+                    RequireSpriggitPath(rule, ruleName, diagnostics);
+                    RequireDtoPath(rule, ruleName, diagnostics);
                     break;
                 case ValidationRuleKind.DtoExpectedValue:
                     RequireDtoPath(rule, ruleName, diagnostics);
@@ -147,7 +155,7 @@ public static class ValidationSpecValidator
         string valueName,
         IList<string> diagnostics)
     {
-        if (string.IsNullOrWhiteSpace(rule.ExpectedValue))
+        if (string.IsNullOrWhiteSpace(rule.ExpectedValue) && !rule.AllowEmptyExpectedValue)
         {
             diagnostics.Add(ruleName + " is missing a " + valueName + ".");
         }

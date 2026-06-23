@@ -25,7 +25,13 @@ public static class MiscItemValidationSpecs
 
     public static ValidationSpec Fallout4_FireExtinguisher01()
     {
-        return Fallout4MiscItem("FireExtinguisher01", "01F8F9:Fallout4.esm", withComponents: true, withScriptingAdapters: false);
+        return Fallout4MiscItem(
+            "FireExtinguisher01",
+            "01F8F9:Fallout4.esm",
+            withComponents: true,
+            withComponentDisplayIndices: true,
+            withDestructible: true,
+            withScriptingAdapters: false);
     }
 
     public static ValidationSpec Fallout4_BobbleHead_Agility()
@@ -131,7 +137,9 @@ public static class MiscItemValidationSpecs
         string sampleName,
         string formKey,
         bool withComponents,
-        bool withScriptingAdapters)
+        bool withScriptingAdapters,
+        bool withComponentDisplayIndices = false,
+        bool withDestructible = false)
     {
         var spec = BaseMiscItem(SupportedGame.Fallout4, sampleName, formKey)
             .AddRule(ValidationFieldRule.Field("Model.Data", "RawPayloads[0].PayloadValue", ValidationValueNormalizer.HexPayload))
@@ -139,6 +147,45 @@ public static class MiscItemValidationSpecs
             .AddRule(ValidationFieldRule.DtoExpectedValue("RawPayloads[0].PayloadType", "ModelBinaryOverlay"))
             .AddRule(ValidationFieldRule.DtoExpectedValue("RawPayloads[0].SourcePath", "Model.Data"))
             .AddRule(ValidationFieldRule.Field("Model.File", "Models[0].File", ValidationValueNormalizer.ModelFile));
+
+        if (withComponentDisplayIndices)
+        {
+            spec
+                .AddRule(ValidationFieldRule.Field("ComponentDisplayIndices.Count", "Components.Count"))
+                .AddRule(ValidationFieldRule.Field("ComponentDisplayIndices[0]", "Components[0].DisplayIndex"))
+                .AddRule(ValidationFieldRule.Field("ComponentDisplayIndices[1]", "Components[1].DisplayIndex"))
+                .AddRule(ValidationFieldRule.Field("ComponentDisplayIndices[2]", "Components[2].DisplayIndex"));
+        }
+
+        if (withDestructible)
+        {
+            spec
+                .AddRule(ValidationFieldRule.ScalarList("Destructible.Stages[0].Flags", "Destructible.Stages[0].Flags"))
+                .AddRule(ValidationFieldRule.Field(
+                    "Destructible.Stages[0].Model.Data",
+                    "Destructible.Stages[0].Model.Data",
+                    ValidationValueNormalizer.HexPayload))
+                .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                    "Destructible.Stages[0].Index",
+                    "Destructible.Stages[0].Index",
+                    "0",
+                    "Mutagen exposes the default destructible stage index when Spriggit omits the zero-valued field."))
+                .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                    "Destructible.Stages[1].Flags",
+                    "Destructible.Stages[1].Flags",
+                    "0",
+                    "Mutagen exposes default destructible stage flags when Spriggit omits the zero-valued field."))
+                .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                    "Destructible.Stages[1].HealthPercent",
+                    "Destructible.Stages[1].HealthPercent",
+                    "0",
+                    "Mutagen exposes the default destructible stage health percent when Spriggit omits the zero-valued field."))
+                .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                    "Destructible.Stages[1].SelfDamagePerSecond",
+                    "Destructible.Stages[1].SelfDamagePerSecond",
+                    "0",
+                    "Mutagen exposes the default destructible stage self damage value when Spriggit omits the zero-valued field."));
+        }
 
         AddOptionalCollectionRules(spec, withComponents, withResources: false, withScriptingAdapters);
         return spec.Build();

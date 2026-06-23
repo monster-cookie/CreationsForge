@@ -16,6 +16,11 @@ public enum ValidationValueNormalizer
     BookText,
 
     /// <summary>
+    /// Compare terminal body/menu text when Spriggit folded YAML scalars serialize single line breaks as spaces.
+    /// </summary>
+    TerminalText,
+
+    /// <summary>
     /// Compare a Spriggit hexadecimal scalar, such as 0x20, against the DTO's decimal value, such as 32.
     /// </summary>
     HexInteger,

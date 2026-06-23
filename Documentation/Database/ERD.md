@@ -164,6 +164,10 @@ erDiagram
         INTEGER FormVersion
         INTEGER MajorRecordFlags
         TEXT ImportedAtUTC
+        INTEGER Version2
+        INTEGER VersionControl
+        TEXT MutagenObjectType
+        TEXT MajorFlags
         REAL Data
     }
 
@@ -442,7 +446,46 @@ erDiagram
         TEXT Component_ModKey_FileName
         INTEGER Component_FormKey_ID
         INTEGER Component_Index PK
+        INTEGER DisplayIndex
         INTEGER Count
+        TEXT ImportedAtUTC
+    }
+
+    MiscItemDestructibles {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Health
+        INTEGER DESTCount
+        TEXT ImportedAtUTC
+    }
+
+    MiscItemDestructibleStages {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Stage_Index PK
+        INTEGER StageRecordIndex
+        INTEGER HealthPercent
+        INTEGER ModelDamageStage
+        TEXT Flags
+        INTEGER SelfDamagePerSecond
+        TEXT Explosion_ModKey_Name
+        INTEGER Explosion_ModKey_Type
+        TEXT Explosion_ModKey_FileName
+        INTEGER Explosion_FormKey_ID
+        TEXT Model_File
+        TEXT Model_Data
         TEXT ImportedAtUTC
     }
 
@@ -974,6 +1017,7 @@ erDiagram
         INTEGER MajorRecordFlags
         TEXT ImportedAtUTC
         INTEGER Version2
+        INTEGER VersionControl
         TEXT ObjectBounds_First
         TEXT ObjectBounds_Second
         TEXT Menu_ModKey_Name
@@ -981,11 +1025,15 @@ erDiagram
         TEXT Menu_ModKey_FileName
         INTEGER Menu_FormKey_ID
         TEXT Background
+        TEXT HeaderText
+        TEXT WelcomeText
         TEXT Name
         TEXT PNAM
         TEXT FNAM
+        TEXT Flags
+        TEXT MajorFlags
         TEXT JNAM
-        INTEGER MarkerFlags
+        TEXT MarkerFlags
         TEXT GNAM
         TEXT WorkbenchData
         TEXT FurnitureTemplate_ModKey_Name
@@ -993,6 +1041,23 @@ erDiagram
         TEXT FurnitureTemplate_ModKey_FileName
         INTEGER FurnitureTemplate_FormKey_ID
         TEXT MarkerModel
+    }
+
+    TerminalForcedLocations {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT ForcedLocation_ModKey_Name
+        INTEGER ForcedLocation_ModKey_Type
+        TEXT ForcedLocation_ModKey_FileName
+        INTEGER ForcedLocation_FormKey_ID
+        INTEGER ForcedLocation_Index PK
+        TEXT ImportedAtUTC
     }
 
     TerminalMarkerParameters {
@@ -1005,9 +1070,46 @@ erDiagram
         TEXT FormKey_ModKey_FileName PK, FK
         INTEGER FormKey_ID PK, FK
         INTEGER Parameter_Index PK
+        INTEGER Enabled
         TEXT Offset
         TEXT EntryTypes
         TEXT ExitTypes
+        TEXT Unknown
+        TEXT ImportedAtUTC
+    }
+
+    TerminalBodyTexts {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER BodyText_Index PK
+        TEXT Text
+        TEXT ImportedAtUTC
+    }
+
+    TerminalMenuItems {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER MenuItem_Index PK
+        TEXT ItemText
+        TEXT Type
+        INTEGER ItemId
+        TEXT Submenu_ModKey_Name
+        INTEGER Submenu_ModKey_Type
+        TEXT Submenu_ModKey_FileName
+        INTEGER Submenu_FormKey_ID
+        TEXT DisplayText
         TEXT ImportedAtUTC
     }
 
@@ -1332,6 +1434,8 @@ erDiagram
     ConditionRules ||--o{ ConditionRuleParameters : contains
     RecordInstances ||--o| MiscItems : "typed detail"
     MiscItems ||--o{ MiscItemComponents : contains
+    MiscItems ||--o| MiscItemDestructibles : contains
+    MiscItemDestructibles ||--o{ MiscItemDestructibleStages : contains
     MiscItems ||--o{ MiscItemResources : contains
     RecordInstances ||--o| Keywords : "typed detail"
     RecordInstances ||--o| ActorValueInformation : "typed detail"
@@ -1351,7 +1455,10 @@ erDiagram
     ConstructibleObjects ||--o{ ConstructibleObjectCategories : contains
     ConstructibleObjects ||--o{ ConstructibleObjectRecipeFilters : contains
     RecordInstances ||--o| Terminals : "typed detail"
+    Terminals ||--o{ TerminalForcedLocations : contains
     Terminals ||--o{ TerminalMarkerParameters : contains
+    Terminals ||--o{ TerminalBodyTexts : contains
+    Terminals ||--o{ TerminalMenuItems : contains
     RecordInstances ||--o{ KeywordMappings : contains
     RecordInstances ||--o{ Components : contains
     Components ||--o{ ComponentItems : contains
@@ -1427,6 +1534,8 @@ These columns contain record-reference data but are not declared SQLite foreign 
   `PreviewTransform_ModKey_FileName`, and `PreviewTransform_FormKey_ID`
 - `MiscItemComponents.Component_ModKey_Name`, `Component_ModKey_Type`, `Component_ModKey_FileName`, and
   `Component_FormKey_ID`
+- `MiscItemDestructibleStages.Explosion_ModKey_Name`, `Explosion_ModKey_Type`, `Explosion_ModKey_FileName`, and
+  `Explosion_FormKey_ID`
 - `MiscItemResources.Resource_ModKey_Name`, `Resource_ModKey_Type`, `Resource_ModKey_FileName`, and
   `Resource_FormKey_ID`
 - `Books.Transforms_Inventory_ModKey_Name`, `Transforms_Inventory_ModKey_Type`,
@@ -1450,6 +1559,10 @@ These columns contain record-reference data but are not declared SQLite foreign 
 - `Terminals.Menu_ModKey_Name`, `Menu_ModKey_Type`, `Menu_ModKey_FileName`, and `Menu_FormKey_ID`
 - `Terminals.FurnitureTemplate_ModKey_Name`, `FurnitureTemplate_ModKey_Type`,
   `FurnitureTemplate_ModKey_FileName`, and `FurnitureTemplate_FormKey_ID`
+- `TerminalForcedLocations.ForcedLocation_ModKey_Name`, `ForcedLocation_ModKey_Type`,
+  `ForcedLocation_ModKey_FileName`, and `ForcedLocation_FormKey_ID`
+- `TerminalMenuItems.Submenu_ModKey_Name`, `Submenu_ModKey_Type`, `Submenu_ModKey_FileName`, and
+  `Submenu_FormKey_ID`
 - `ContainerItems.Item_ModKey_Name`, `Item_ModKey_Type`, `Item_ModKey_FileName`, and `Item_FormKey_ID`
 - `ConstructibleObjectComponents.Component_ModKey_Name`, `Component_ModKey_Type`,
   `Component_ModKey_FileName`, and `Component_FormKey_ID`

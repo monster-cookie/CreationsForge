@@ -10,6 +10,8 @@ public class ValidationFieldRule
 
     public string ExpectedValue { get; private init; } = string.Empty;
 
+    public bool AllowEmptyExpectedValue { get; private init; }
+
     public string Reason { get; private init; } = string.Empty;
 
     public ValidationValueNormalizer Normalizer { get; private init; }
@@ -68,6 +70,20 @@ public class ValidationFieldRule
         };
     }
 
+    public static ValidationFieldRule ScalarList(
+        string spriggitPath,
+        string dtoPath,
+        ValidationValueNormalizer normalizer = ValidationValueNormalizer.None)
+    {
+        return new ValidationFieldRule
+        {
+            Kind = ValidationRuleKind.ScalarList,
+            SpriggitPath = spriggitPath,
+            DtoPath = dtoPath,
+            Normalizer = normalizer
+        };
+    }
+
     public static ValidationFieldRule TranslatedField(
         string spriggitPath,
         string dtoPath,
@@ -95,6 +111,16 @@ public class ValidationFieldRule
         };
     }
 
+    public static ValidationFieldRule RawPayloadSlot(string spriggitPath, string payloadSlot)
+    {
+        return new ValidationFieldRule
+        {
+            Kind = ValidationRuleKind.RawPayloadSlot,
+            SpriggitPath = spriggitPath,
+            DtoPath = payloadSlot
+        };
+    }
+
     public static ValidationFieldRule DtoExpectedValue(string dtoPath, string expectedValue)
     {
         return new ValidationFieldRule
@@ -109,7 +135,8 @@ public class ValidationFieldRule
         string spriggitPath,
         string dtoPath,
         string expectedValue,
-        string reason)
+        string reason,
+        bool allowEmptyExpectedValue = false)
     {
         return new ValidationFieldRule
         {
@@ -117,6 +144,7 @@ public class ValidationFieldRule
             SpriggitPath = spriggitPath,
             DtoPath = dtoPath,
             ExpectedValue = expectedValue,
+            AllowEmptyExpectedValue = allowEmptyExpectedValue,
             Reason = reason
         };
     }

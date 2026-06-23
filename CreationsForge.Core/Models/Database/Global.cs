@@ -26,6 +26,8 @@ public class Global
         ImportedAtUTC = dto.ImportedAtUTC;
         Version2 = dto.Version2;
         VersionControl = dto.VersionControl;
+        MutagenObjectType = dto.MutagenObjectType;
+        MajorFlags = dto.MajorFlags;
         Data = dto.Data;
     }
 
@@ -56,6 +58,10 @@ public class Global
     [Column("Version2")] public int? Version2 { get; set; }
 
     [Column("VersionControl")] public int? VersionControl { get; set; }
+
+    [Column("MutagenObjectType")] public string? MutagenObjectType { get; set; }
+
+    [Column("MajorFlags")] public string? MajorFlags { get; set; }
 
     [Column("Data")] public double? Data { get; set; }
 }

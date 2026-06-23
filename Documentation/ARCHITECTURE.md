@@ -113,8 +113,9 @@ aborting the full plugin import. The current cross-game shared record types are 
 ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), Perks (`PERK`), Statics (`STAT`),
 Books (`BOOK`), Doors (`DOOR`), Containers (`CONT`), and ConstructibleObjects (`COBJ`).
 Starfield, Fallout 4, and Skyrim map approved shared records inside their game adapters after loading the Mutagen
-plugin once for the Core-facing record-read call. Starfield also imports ConditionForms (`CNDF`) and Terminals (`TERM`)
-through the same typed-record pipeline with type-specific detail tables and comparison fields. CNDF, FACT, and COBJ
+plugin once for the Core-facing record-read call. Starfield also imports ConditionForms (`CNDF`), and Starfield plus
+Fallout 4 import Terminals (`TERM`) through the same typed-record pipeline with type-specific detail tables and
+comparison fields. CNDF, FACT, and COBJ
 condition lists use shared condition-rule rows and generic condition-data
 parameter rows, not raw condition payload rows, when Mutagen exposes the condition list as typed condition objects.
 All typed record importers save the record's parent row before dispatching shared child import by DTO capability.
@@ -176,11 +177,13 @@ with plugin columns, field rows, and display values. The presentation project re
 `TreeDataGrid` and does not query repositories, database tables, or Mutagen directly. The active plugin record browser
 renders record-type groups as expander sections with flat `TreeDataGrid` controls for record rows. The comparison
 slice covers common record header fields plus scalar persisted fields for `FLST`, `GMST`, `GLOB`, `CLAS`, `FACT`,
-`MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, and `CONT`. GameSetting comparison displays the generic
+`MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, and `CONT`. Global comparison displays `MutagenObjectType`,
+named `MajorFlags`, and `Data` when those values are persisted. GameSetting comparison displays the generic
 `Data` row instead of duplicating the Mutagen-derived typed data helper fields. MISC, NPC_, and MGEF comparison
 includes shared keyword rows.
-MISC and MGEF comparison includes shared sound rows. MISC comparison also includes persisted model rows and scripting
-adapter rows as hierarchical child rows in the comparison `TreeDataGrid`. AVIF comparison includes Skyrim layout rows,
+MISC and MGEF comparison includes shared sound rows. MISC comparison also includes persisted model rows, component
+display indices, destructible data and stages, and scripting adapter rows as hierarchical child rows in the comparison
+`TreeDataGrid`. AVIF comparison includes Skyrim layout rows,
 perk-tree rows, optional perk references, and connection-line target indices. PERK comparison includes rank rows,
 nested rank-effect rows, background skill rows, and shared scripting adapter rows. STAT comparison includes scalar
 fields, shared keyword rows, shared model rows, and raw payload rows. BOOK comparison includes scalar fields plus shared
@@ -188,7 +191,8 @@ models, keywords, sounds, scripting adapters, and raw payload rows. DOOR compari
 models, keywords, sounds, scripting adapters, and raw payload rows. CONT comparison includes scalar fields, item rows,
 shared keyword rows,
 shared model rows, shared sound rows, and raw payload rows. TERM comparison includes scalar fields, shared models,
-keywords, scripting adapters, raw payload rows, and terminal marker parameter child rows. CNDF, FACT, and COBJ
+keywords, scripting adapters, raw payload rows, forced locations, marker parameters, body texts, and menu items.
+CNDF, FACT, and COBJ
 comparison includes structured condition rows and condition-data parameter rows. Raw payload values are
 compared by their retained full value but are summarized in the grid as `[UNPARSEABLE REFLECTION DATA]`; the
 presentation layer opens the full value in a hex-view dialog when the user selects the summarized value. MGEF DATA
@@ -295,7 +299,9 @@ Scripting adapter persistence is shared in Core through `IScriptingAdapterImport
 repositories. `IRecordChildImportService` invokes scripting adapter persistence for any imported `RecordDTO` that
 implements the scripting-adapter capability interface. Game adapters populate scripting adapter DTOs for record types
 that expose virtual-machine adapters.
-The `MISC` slice currently persists parent scalar fields, keyword rows, model rows, sounds, and scripts. The `BOOK`
+The `MISC` slice currently persists parent scalar fields, keyword rows, model rows, sounds, scripts, FO4/Skyrim
+components with display indices, Starfield resources, and destructible data/stages when Mutagen exposes them. The
+`BOOK`
 slice persists parent scalar fields, keyword rows, model rows, sounds, scripts, and raw payloads. The `DOOR` slice
 persists parent scalar fields, keyword rows, model rows, sounds, scripts, and raw payloads. The `CONT` slice persists
 parent scalar fields, item rows, keyword rows, model rows, sounds, and raw payloads. The `CNDF` slice persists parent
@@ -303,9 +309,8 @@ scalar fields, shared condition-rule rows, and generic condition-data parameter 
 scalar
 fields, recipe component rows, Fallout 4 category rows, Starfield recipe-filter rows, shared condition-rule rows,
 scripts when present, and raw payloads for partially understood count/list data. The `TERM` slice persists parent
-scalar fields, keyword
-rows, model rows, scripts, raw payloads, and marker parameter rows. The old single-game app's deeper
-MiscItem child-detail tables are still a separate follow-up.
+scalar fields, keyword rows, model rows, scripts, raw payloads, forced locations, marker parameters, body texts, and
+menu items.
 Scripting adapters are persisted against the shared `RecordInstances` parent using record type IDs such as `GLOB`,
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `BOOK`, `DOOR`, and `TERM`.
 

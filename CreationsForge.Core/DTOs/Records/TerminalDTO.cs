@@ -13,15 +13,23 @@ public class TerminalDTO : RecordDTO, IHasModelsDTO, IKeywords, IHasScriptingAda
 
     public string? Background { get; set; }
 
+    public TranslatedStringDTO? HeaderText { get; set; }
+
+    public TranslatedStringDTO? WelcomeText { get; set; }
+
     public TranslatedStringDTO? Name { get; set; }
 
     public string? Pnam { get; set; }
 
     public string? Fnam { get; set; }
 
+    public string? Flags { get; set; }
+
+    public string? MajorFlags { get; set; }
+
     public string? Jnam { get; set; }
 
-    public long? MarkerFlags { get; set; }
+    public string? MarkerFlags { get; set; }
 
     public string? Gnam { get; set; }
 
@@ -40,4 +48,10 @@ public class TerminalDTO : RecordDTO, IHasModelsDTO, IKeywords, IHasScriptingAda
     public IList<RawRecordPayloadDTO> RawPayloads { get; set; } = new List<RawRecordPayloadDTO>();
 
     public IList<TerminalMarkerParameterDTO> MarkerParameters { get; set; } = new List<TerminalMarkerParameterDTO>();
+
+    public IList<FormKeyDTO> ForcedLocations { get; set; } = new List<FormKeyDTO>();
+
+    public IList<TerminalBodyTextDTO> BodyTexts { get; set; } = new List<TerminalBodyTextDTO>();
+
+    public IList<TerminalMenuItemDTO> MenuItems { get; set; } = new List<TerminalMenuItemDTO>();
 }

@@ -76,6 +76,7 @@ public class MiscItemRepository : TypedRecordRepositoryBase, IMiscItemRepository
         var rawPayloads = RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.MiscItem.RecordID, formKey);
         var components = GetComponentsByFormKey(game, formKey);
         var resources = GetResourcesByFormKey(game, formKey);
+        var destructibles = GetDestructiblesByFormKey(game, formKey);
         foreach (var record in records)
         {
             ApplyLocalizedStrings(record, localizedStrings.Where(localizedString => RecordModKeysMatch(localizedString.ModKey, record.ModKey)).ToList());
@@ -86,6 +87,7 @@ public class MiscItemRepository : TypedRecordRepositoryBase, IMiscItemRepository
             record.Components = components.Where(component => RecordModKeysMatch(component.ModKey, record.ModKey)).OrderBy(component => component.ComponentIndex).ToList();
             record.Resources = resources.Where(resource => RecordModKeysMatch(resource.ModKey, record.ModKey)).OrderBy(resource => resource.ResourceIndex).ToList();
             record.RawPayloads = rawPayloads.Where(payload => RecordModKeysMatch(payload.ModKey, record.ModKey)).OrderBy(payload => payload.PayloadSlot).ThenBy(payload => payload.PayloadIndex).ToList();
+            record.Destructible = destructibles.FirstOrDefault(destructible => RecordModKeysMatch(destructible.ModKey, record.ModKey))?.Destructible;
         }
 
         return records;
@@ -149,12 +151,14 @@ public class MiscItemRepository : TypedRecordRepositoryBase, IMiscItemRepository
                 dto.Flag
             });
         ReplaceMiscItemComponents(dto);
+        ReplaceMiscItemDestructible(dto);
         ReplaceMiscItemResources(dto);
     }
 
     public new void DeleteStaleByPlugin(CreationsForge.Core.Enums.SupportedGame game, CreationsForge.Core.DTOs.Plugins.ModKeyDTO modKey, DateTime importedAtUTC)
     {
         DeleteStaleComponentsByPlugin(game, modKey, importedAtUTC);
+        DeleteStaleDestructiblesByPlugin(game, modKey, importedAtUTC);
         DeleteStaleResourcesByPlugin(game, modKey, importedAtUTC);
         base.DeleteStaleByPlugin(game, modKey, importedAtUTC);
     }
@@ -176,6 +180,7 @@ public class MiscItemRepository : TypedRecordRepositoryBase, IMiscItemRepository
                     Component_ModKey_FileName AS ComponentModKeyFileName,
                     Component_FormKey_ID AS ComponentFormKeyId,
                     Component_Index AS ComponentIndex,
+                    DisplayIndex,
                     Count,
                     ImportedAtUTC
                 FROM MiscItemComponents
@@ -201,8 +206,130 @@ public class MiscItemRepository : TypedRecordRepositoryBase, IMiscItemRepository
                 FormKey = CreateFormKey(row.FormKeyModKeyName, row.FormKeyModKeyType, row.FormKeyModKeyFileName, row.FormKeyId),
                 Component = CreateFormKey(row.ComponentModKeyName, row.ComponentModKeyType, row.ComponentModKeyFileName, row.ComponentFormKeyId),
                 ComponentIndex = row.ComponentIndex,
+                DisplayIndex = row.DisplayIndex,
                 Count = row.Count,
                 ImportedAtUTC = row.ImportedAtUTC
+            })
+            .ToList();
+    }
+
+    private IReadOnlyList<MiscItemDestructibleRowAggregate> GetDestructiblesByFormKey(CreationsForge.Core.Enums.SupportedGame game, CreationsForge.Core.DTOs.Plugins.FormKeyDTO formKey)
+    {
+        var rows = Database.Fetch<MiscItemDestructibleRow>(
+            """
+            SELECT
+                ModKey_Name AS ModKeyName,
+                ModKey_Type AS ModKeyType,
+                ModKey_FileName AS ModKeyFileName,
+                FormKey_ModKey_Name AS FormKeyModKeyName,
+                FormKey_ModKey_Type AS FormKeyModKeyType,
+                FormKey_ModKey_FileName AS FormKeyModKeyFileName,
+                FormKey_ID AS FormKeyId,
+                Health,
+                DESTCount,
+                ImportedAtUTC
+            FROM MiscItemDestructibles
+            WHERE Game = @Game
+              AND FormKey_ModKey_Name = @FormKeyModKeyName COLLATE NOCASE
+              AND FormKey_ModKey_Type = @FormKeyModKeyType
+              AND FormKey_ModKey_FileName = @FormKeyModKeyFileName COLLATE NOCASE
+              AND FormKey_ID = @FormKeyId
+            ORDER BY ModKey_FileName COLLATE NOCASE;
+            """,
+            new
+            {
+                Game = game.ToString(),
+                FormKeyModKeyName = formKey.ModKey.Name,
+                FormKeyModKeyType = formKey.ModKey.Type,
+                FormKeyModKeyFileName = formKey.ModKey.FileName,
+                FormKeyId = formKey.Id
+            });
+        var stages = GetDestructibleStagesByFormKey(game, formKey);
+
+        return rows
+            .Select(row => new MiscItemDestructibleRowAggregate
+            {
+                ModKey = new CreationsForge.Core.DTOs.Plugins.ModKeyDTO { Name = row.ModKeyName, Type = row.ModKeyType, FileName = row.ModKeyFileName },
+                Destructible = new MiscItemDestructibleDTO
+                {
+                    Data = new MiscItemDestructibleDataDTO
+                    {
+                        Health = row.Health,
+                        DESTCount = row.DESTCount
+                    },
+                    Stages = stages
+                        .Where(stage => string.Equals(stage.ModKey.FileName, row.ModKeyFileName, StringComparison.OrdinalIgnoreCase) &&
+                                        string.Equals(stage.ModKey.Name, row.ModKeyName, StringComparison.OrdinalIgnoreCase) &&
+                                        stage.ModKey.Type == row.ModKeyType)
+                        .OrderBy(stage => stage.Stage.StageIndex)
+                        .Select(stage => stage.Stage)
+                        .ToList()
+                }
+            })
+            .ToList();
+    }
+
+    private IReadOnlyList<MiscItemDestructibleStageRowAggregate> GetDestructibleStagesByFormKey(CreationsForge.Core.Enums.SupportedGame game, CreationsForge.Core.DTOs.Plugins.FormKeyDTO formKey)
+    {
+        return Database.Fetch<MiscItemDestructibleStageRow>(
+                """
+                SELECT
+                    ModKey_Name AS ModKeyName,
+                    ModKey_Type AS ModKeyType,
+                    ModKey_FileName AS ModKeyFileName,
+                    FormKey_ModKey_Name AS FormKeyModKeyName,
+                    FormKey_ModKey_Type AS FormKeyModKeyType,
+                    FormKey_ModKey_FileName AS FormKeyModKeyFileName,
+                    FormKey_ID AS FormKeyId,
+                    Stage_Index AS StageIndex,
+                    StageRecordIndex,
+                    HealthPercent,
+                    ModelDamageStage,
+                    Flags,
+                    SelfDamagePerSecond,
+                    Explosion_ModKey_Name AS ExplosionModKeyName,
+                    Explosion_ModKey_Type AS ExplosionModKeyType,
+                    Explosion_ModKey_FileName AS ExplosionModKeyFileName,
+                    Explosion_FormKey_ID AS ExplosionFormKeyId,
+                    Model_File AS ModelFile,
+                    Model_Data AS ModelData,
+                    ImportedAtUTC
+                FROM MiscItemDestructibleStages
+                WHERE Game = @Game
+                  AND FormKey_ModKey_Name = @FormKeyModKeyName COLLATE NOCASE
+                  AND FormKey_ModKey_Type = @FormKeyModKeyType
+                  AND FormKey_ModKey_FileName = @FormKeyModKeyFileName COLLATE NOCASE
+                  AND FormKey_ID = @FormKeyId
+                ORDER BY ModKey_FileName COLLATE NOCASE, Stage_Index;
+                """,
+                new
+                {
+                    Game = game.ToString(),
+                    FormKeyModKeyName = formKey.ModKey.Name,
+                    FormKeyModKeyType = formKey.ModKey.Type,
+                    FormKeyModKeyFileName = formKey.ModKey.FileName,
+                    FormKeyId = formKey.Id
+                })
+            .Select(row => new MiscItemDestructibleStageRowAggregate
+            {
+                ModKey = new CreationsForge.Core.DTOs.Plugins.ModKeyDTO { Name = row.ModKeyName, Type = row.ModKeyType, FileName = row.ModKeyFileName },
+                Stage = new MiscItemDestructibleStageDTO
+                {
+                    StageIndex = row.StageIndex,
+                    Index = row.StageRecordIndex,
+                    HealthPercent = row.HealthPercent,
+                    ModelDamageStage = row.ModelDamageStage,
+                    Flags = row.Flags,
+                    SelfDamagePerSecond = row.SelfDamagePerSecond,
+                    Explosion = CreateNullableFormKey(row.ExplosionModKeyName, row.ExplosionModKeyType, row.ExplosionModKeyFileName, row.ExplosionFormKeyId),
+                    Model = row.ModelFile == null && row.ModelData == null
+                        ? null
+                        : new MiscItemDestructibleStageModelDTO
+                        {
+                            File = row.ModelFile,
+                            Data = row.ModelData
+                        }
+                }
             })
             .ToList();
     }
@@ -288,10 +415,10 @@ public class MiscItemRepository : TypedRecordRepositoryBase, IMiscItemRepository
                 """
                 INSERT OR REPLACE INTO MiscItemComponents (
                     Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                    Component_ModKey_Name, Component_ModKey_Type, Component_ModKey_FileName, Component_FormKey_ID, Component_Index, Count, ImportedAtUTC)
+                    Component_ModKey_Name, Component_ModKey_Type, Component_ModKey_FileName, Component_FormKey_ID, Component_Index, DisplayIndex, Count, ImportedAtUTC)
                 VALUES (
                     @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                    @ComponentModKeyName, @ComponentModKeyType, @ComponentModKeyFileName, @ComponentFormKeyId, @ComponentIndex, @Count, @ImportedAtUTC);
+                    @ComponentModKeyName, @ComponentModKeyType, @ComponentModKeyFileName, @ComponentFormKeyId, @ComponentIndex, @DisplayIndex, @Count, @ImportedAtUTC);
                 """,
                 new
                 {
@@ -308,8 +435,130 @@ public class MiscItemRepository : TypedRecordRepositoryBase, IMiscItemRepository
                     ComponentModKeyFileName = component.Component.ModKey.FileName,
                     ComponentFormKeyId = component.Component.Id,
                     component.ComponentIndex,
+                    component.DisplayIndex,
                     component.Count,
                     component.ImportedAtUTC
+                });
+        }
+    }
+
+    private void ReplaceMiscItemDestructible(MiscItemDTO dto)
+    {
+        Database.Execute(
+            """
+            DELETE FROM MiscItemDestructibleStages
+            WHERE Game = @Game
+              AND ModKey_Name = @ModKeyName
+              AND ModKey_Type = @ModKeyType
+              AND ModKey_FileName = @ModKeyFileName
+              AND FormKey_ModKey_Name = @FormKeyModKeyName
+              AND FormKey_ModKey_Type = @FormKeyModKeyType
+              AND FormKey_ModKey_FileName = @FormKeyModKeyFileName
+              AND FormKey_ID = @FormKeyId;
+            """,
+            new
+            {
+                Game = dto.Game.ToString(),
+                ModKeyName = dto.ModKey.Name,
+                ModKeyType = dto.ModKey.Type,
+                ModKeyFileName = dto.ModKey.FileName,
+                FormKeyModKeyName = dto.FormKey.ModKey.Name,
+                FormKeyModKeyType = dto.FormKey.ModKey.Type,
+                FormKeyModKeyFileName = dto.FormKey.ModKey.FileName,
+                FormKeyId = dto.FormKey.Id
+            });
+
+        Database.Execute(
+            """
+            DELETE FROM MiscItemDestructibles
+            WHERE Game = @Game
+              AND ModKey_Name = @ModKeyName
+              AND ModKey_Type = @ModKeyType
+              AND ModKey_FileName = @ModKeyFileName
+              AND FormKey_ModKey_Name = @FormKeyModKeyName
+              AND FormKey_ModKey_Type = @FormKeyModKeyType
+              AND FormKey_ModKey_FileName = @FormKeyModKeyFileName
+              AND FormKey_ID = @FormKeyId;
+            """,
+            new
+            {
+                Game = dto.Game.ToString(),
+                ModKeyName = dto.ModKey.Name,
+                ModKeyType = dto.ModKey.Type,
+                ModKeyFileName = dto.ModKey.FileName,
+                FormKeyModKeyName = dto.FormKey.ModKey.Name,
+                FormKeyModKeyType = dto.FormKey.ModKey.Type,
+                FormKeyModKeyFileName = dto.FormKey.ModKey.FileName,
+                FormKeyId = dto.FormKey.Id
+            });
+
+        if (dto.Destructible == null)
+        {
+            return;
+        }
+
+        Database.Execute(
+            """
+            INSERT OR REPLACE INTO MiscItemDestructibles (
+                Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
+                Health, DESTCount, ImportedAtUTC)
+            VALUES (
+                @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
+                @Health, @DESTCount, @ImportedAtUTC);
+            """,
+            new
+            {
+                Game = dto.Game.ToString(),
+                ModKeyName = dto.ModKey.Name,
+                ModKeyType = dto.ModKey.Type,
+                ModKeyFileName = dto.ModKey.FileName,
+                FormKeyModKeyName = dto.FormKey.ModKey.Name,
+                FormKeyModKeyType = dto.FormKey.ModKey.Type,
+                FormKeyModKeyFileName = dto.FormKey.ModKey.FileName,
+                FormKeyId = dto.FormKey.Id,
+                Health = dto.Destructible.Data?.Health,
+                DESTCount = dto.Destructible.Data?.DESTCount,
+                dto.ImportedAtUTC
+            });
+
+        foreach (var stage in dto.Destructible.Stages)
+        {
+            Database.Execute(
+                """
+                INSERT OR REPLACE INTO MiscItemDestructibleStages (
+                    Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
+                    Stage_Index, StageRecordIndex, HealthPercent, ModelDamageStage, Flags, SelfDamagePerSecond,
+                    Explosion_ModKey_Name, Explosion_ModKey_Type, Explosion_ModKey_FileName, Explosion_FormKey_ID,
+                    Model_File, Model_Data, ImportedAtUTC)
+                VALUES (
+                    @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
+                    @StageIndex, @StageRecordIndex, @HealthPercent, @ModelDamageStage, @Flags, @SelfDamagePerSecond,
+                    @ExplosionModKeyName, @ExplosionModKeyType, @ExplosionModKeyFileName, @ExplosionFormKeyId,
+                    @ModelFile, @ModelData, @ImportedAtUTC);
+                """,
+                new
+                {
+                    Game = dto.Game.ToString(),
+                    ModKeyName = dto.ModKey.Name,
+                    ModKeyType = dto.ModKey.Type,
+                    ModKeyFileName = dto.ModKey.FileName,
+                    FormKeyModKeyName = dto.FormKey.ModKey.Name,
+                    FormKeyModKeyType = dto.FormKey.ModKey.Type,
+                    FormKeyModKeyFileName = dto.FormKey.ModKey.FileName,
+                    FormKeyId = dto.FormKey.Id,
+                    stage.StageIndex,
+                    StageRecordIndex = stage.Index,
+                    stage.HealthPercent,
+                    stage.ModelDamageStage,
+                    stage.Flags,
+                    stage.SelfDamagePerSecond,
+                    ExplosionModKeyName = stage.Explosion?.ModKey.Name,
+                    ExplosionModKeyType = stage.Explosion?.ModKey.Type,
+                    ExplosionModKeyFileName = stage.Explosion?.ModKey.FileName,
+                    ExplosionFormKeyId = stage.Explosion?.Id,
+                    ModelFile = stage.Model?.File,
+                    ModelData = stage.Model?.Data,
+                    dto.ImportedAtUTC
                 });
         }
     }
@@ -392,6 +641,20 @@ public class MiscItemRepository : TypedRecordRepositoryBase, IMiscItemRepository
         Database.Execute(
             """
             DELETE FROM MiscItemResources
+            WHERE Game = @Game
+              AND ModKey_Name = @ModKeyName
+              AND ModKey_Type = @ModKeyType
+              AND ModKey_FileName = @ModKeyFileName
+              AND ImportedAtUTC <> @ImportedAtUTC;
+            """,
+            new { Game = game.ToString(), ModKeyName = modKey.Name, ModKeyType = modKey.Type, ModKeyFileName = modKey.FileName, ImportedAtUTC = importedAtUTC });
+    }
+
+    private void DeleteStaleDestructiblesByPlugin(CreationsForge.Core.Enums.SupportedGame game, CreationsForge.Core.DTOs.Plugins.ModKeyDTO modKey, DateTime importedAtUTC)
+    {
+        Database.Execute(
+            """
+            DELETE FROM MiscItemDestructibles
             WHERE Game = @Game
               AND ModKey_Name = @ModKeyName
               AND ModKey_Type = @ModKeyType
@@ -530,9 +793,75 @@ public class MiscItemRepository : TypedRecordRepositoryBase, IMiscItemRepository
 
         public int ComponentIndex { get; set; }
 
+        public int? DisplayIndex { get; set; }
+
         public int? Count { get; set; }
 
         public DateTime ImportedAtUTC { get; set; }
+    }
+
+    private sealed class MiscItemDestructibleRow
+    {
+        public string ModKeyName { get; set; } = string.Empty;
+
+        public int ModKeyType { get; set; }
+
+        public string ModKeyFileName { get; set; } = string.Empty;
+
+        public int? Health { get; set; }
+
+        public int? DESTCount { get; set; }
+
+        public DateTime ImportedAtUTC { get; set; }
+    }
+
+    private sealed class MiscItemDestructibleStageRow
+    {
+        public string ModKeyName { get; set; } = string.Empty;
+
+        public int ModKeyType { get; set; }
+
+        public string ModKeyFileName { get; set; } = string.Empty;
+
+        public int StageIndex { get; set; }
+
+        public int? StageRecordIndex { get; set; }
+
+        public int? HealthPercent { get; set; }
+
+        public int? ModelDamageStage { get; set; }
+
+        public string? Flags { get; set; }
+
+        public int? SelfDamagePerSecond { get; set; }
+
+        public string? ExplosionModKeyName { get; set; }
+
+        public int? ExplosionModKeyType { get; set; }
+
+        public string? ExplosionModKeyFileName { get; set; }
+
+        public long? ExplosionFormKeyId { get; set; }
+
+        public string? ModelFile { get; set; }
+
+        public string? ModelData { get; set; }
+
+        public DateTime ImportedAtUTC { get; set; }
+    }
+
+    private sealed class MiscItemDestructibleRowAggregate
+    {
+        public required CreationsForge.Core.DTOs.Plugins.ModKeyDTO ModKey { get; set; }
+
+        public required MiscItemDestructibleDTO Destructible { get; set; }
+    }
+
+    private sealed class MiscItemDestructibleStageRowAggregate
+    {
+        public required CreationsForge.Core.DTOs.Plugins.ModKeyDTO ModKey { get; set; }
+
+        public required MiscItemDestructibleStageDTO Stage { get; set; }
     }
 
     private sealed class MiscItemResourceRow

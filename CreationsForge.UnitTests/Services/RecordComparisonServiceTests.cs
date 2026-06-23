@@ -22,8 +22,8 @@ public class RecordComparisonServiceTests
         {
             Records =
             [
-                CreateGlobal("Base.esm", formKey, "MyGlobal", 1.5),
-                CreateGlobal("Patch.esp", formKey, "MyGlobal", 2.5)
+                CreateGlobal("Base.esm", formKey, "MyGlobal", 1.5, "GlobalShort", "Constant"),
+                CreateGlobal("Patch.esp", formKey, "MyGlobal", 2.5, "GlobalFloat", "Constant")
             ]
         };
         var service = CreateService(globalRepository: globalRepository);
@@ -32,6 +32,8 @@ public class RecordComparisonServiceTests
 
         comparison.RecordType.ShouldBe(RecordTypeCatalog.Global.RecordID);
         comparison.Columns.Select(column => column.Header).ShouldBe(["Base.esm", "Patch.esp"]);
+        comparison.Fields.Single(field => field.FieldName == "MutagenObjectType").Values.Select(value => value.DisplayValue).ShouldBe(["GlobalShort", "GlobalFloat"]);
+        comparison.Fields.Single(field => field.FieldName == "MajorFlags").Values.Select(value => value.DisplayValue).ShouldBe(["Constant", "Constant"]);
         comparison.Fields.Single(field => field.FieldName == "Data").Values.Select(value => value.DisplayValue).ShouldBe(["1.5", "2.5"]);
         comparison.Fields.Single(field => field.FieldName == "Data").State.ShouldBe(RecordComparisonValueState.Conflict);
         comparison.Fields.Single(field => field.FieldName == "Data").Values.Select(value => value.State).ShouldBe([RecordComparisonValueState.Conflict, RecordComparisonValueState.WinningOverride]);
@@ -126,12 +128,18 @@ public class RecordComparisonServiceTests
     {
         var formKey = CreateFormKey("Starfield.esm", 0x818);
         var messageFormKey = CreateFormKey("Starfield.esm", 0x444);
+        var baseItem = CreateMiscItem("Base.esm", formKey, "Digipick", 35, 0.1f, null);
+        baseItem.Components.Add(CreateMiscItemComponent("Base.esm", formKey, CreateFormKey("Starfield.esm", 0x777), 0, 0, 2));
+        baseItem.Destructible = CreateMiscItemDestructible(CreateFormKey("Starfield.esm", 0x888), 100, 2, "BaseStage.nif", "AABB");
+        var patchItem = CreateMiscItem("Patch.esp", formKey, "Digipick", 50, 0.2f, messageFormKey);
+        patchItem.Components.Add(CreateMiscItemComponent("Patch.esp", formKey, CreateFormKey("Starfield.esm", 0x777), 0, 2, 4));
+        patchItem.Destructible = CreateMiscItemDestructible(CreateFormKey("Starfield.esm", 0x999), 90, 3, "PatchStage.nif", "CCDD");
         var miscItemRepository = new TestMiscItemRepository
         {
             Records =
             [
-                CreateMiscItem("Base.esm", formKey, "Digipick", 35, 0.1f, null),
-                CreateMiscItem("Patch.esp", formKey, "Digipick", 50, 0.2f, messageFormKey)
+                baseItem,
+                patchItem
             ]
         };
         var modelRepository = new TestModelRepository
@@ -187,6 +195,17 @@ public class RecordComparisonServiceTests
         var sounds = comparison.Fields.Single(field => field.FieldName == "Sounds");
         var pickupSound = sounds.Children.Single(field => field.FieldName == "PickupSound [1]");
         pickupSound.Children.Single(field => field.FieldName == "Start").Values.Select(value => value.DisplayValue).ShouldBe(["ff0b45e7-a8ae-a30f-390b-d0cd2b6933a6", "ff0b45e7-a8ae-a30f-390b-d0cd2b6933a6"]);
+        var components = comparison.Fields.Single(field => field.FieldName == "Components");
+        var component = components.Children.Single(field => field.FieldName == "Component [0]");
+        component.Children.Single(field => field.FieldName == "DisplayIndex").Values.Select(value => value.DisplayValue).ShouldBe(["0", "2"]);
+        component.Children.Single(field => field.FieldName == "Count").Values.Select(value => value.DisplayValue).ShouldBe(["2", "4"]);
+        var destructible = comparison.Fields.Single(field => field.FieldName == "Destructible");
+        destructible.Children.Single(field => field.FieldName == "Health").Values.Select(value => value.DisplayValue).ShouldBe(["100", "90"]);
+        destructible.Children.Single(field => field.FieldName == "DESTCount").Values.Select(value => value.DisplayValue).ShouldBe(["2", "3"]);
+        var stage = destructible.Children.Single(field => field.FieldName == "Stage [0]");
+        stage.Children.Single(field => field.FieldName == "Explosion").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000888", "Starfield.esm:00000999"]);
+        stage.Children.Single(field => field.FieldName == "Model.File").Values.Select(value => value.DisplayValue).ShouldBe(["BaseStage.nif", "PatchStage.nif"]);
+        stage.Children.Single(field => field.FieldName == "Model.Data").Values.Select(value => value.DisplayValue).ShouldBe(["AABB", "CCDD"]);
 
         var scripts = comparison.Fields.Single(field => field.FieldName == "Scripts");
         var script = scripts.Children.Single(field => field.FieldName == "Script [0]");
@@ -791,7 +810,13 @@ public class RecordComparisonServiceTests
         };
     }
 
-    private static GlobalDTO CreateGlobal(string fileName, FormKeyDTO formKey, string editorID, double data)
+    private static GlobalDTO CreateGlobal(
+        string fileName,
+        FormKeyDTO formKey,
+        string editorID,
+        double data,
+        string? mutagenObjectType = null,
+        string? majorFlags = null)
     {
         return new GlobalDTO
         {
@@ -802,6 +827,8 @@ public class RecordComparisonServiceTests
             FormVersion = 1,
             MajorRecordFlags = 2,
             ImportedAtUTC = DateTime.UtcNow,
+            MutagenObjectType = mutagenObjectType,
+            MajorFlags = majorFlags,
             Data = data
         };
     }
@@ -899,6 +926,61 @@ public class RecordComparisonServiceTests
             DirtinessScale = 1,
             FeaturedItemMessage = featuredItemMessageFormKey,
             Flag = "None"
+        };
+    }
+
+    private static MiscItemComponentDTO CreateMiscItemComponent(
+        string fileName,
+        FormKeyDTO formKey,
+        FormKeyDTO componentFormKey,
+        int componentIndex,
+        int displayIndex,
+        int count)
+    {
+        return new MiscItemComponentDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            Component = componentFormKey,
+            ComponentIndex = componentIndex,
+            DisplayIndex = displayIndex,
+            Count = count,
+            ImportedAtUTC = DateTime.UtcNow
+        };
+    }
+
+    private static MiscItemDestructibleDTO CreateMiscItemDestructible(
+        FormKeyDTO explosionFormKey,
+        int health,
+        int destCount,
+        string modelFile,
+        string modelData)
+    {
+        return new MiscItemDestructibleDTO
+        {
+            Data = new MiscItemDestructibleDataDTO
+            {
+                Health = health,
+                DESTCount = destCount
+            },
+            Stages =
+            {
+                new MiscItemDestructibleStageDTO
+                {
+                    StageIndex = 0,
+                    HealthPercent = 90,
+                    ModelDamageStage = 1,
+                    Flags = "CapDamage",
+                    SelfDamagePerSecond = 45,
+                    Explosion = explosionFormKey,
+                    Model = new MiscItemDestructibleStageModelDTO
+                    {
+                        File = modelFile,
+                        Data = modelData
+                    }
+                }
+            }
         };
     }
 
@@ -1047,7 +1129,7 @@ public class RecordComparisonServiceTests
             Pnam = "PNAM",
             Fnam = "FNAM",
             Jnam = "JNAM",
-            MarkerFlags = long.Parse(markerFlags.Replace("0x", string.Empty), System.Globalization.NumberStyles.HexNumber),
+            MarkerFlags = markerFlags,
             Gnam = "GNAM",
             WorkbenchData = "WorkbenchData",
             FurnitureTemplateFormKey = CreateFormKey("Starfield.esm", 0x222),

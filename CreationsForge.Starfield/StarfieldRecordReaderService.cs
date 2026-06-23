@@ -168,6 +168,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
                 Version2 = GetPropertyNullableInt(record, "Version2"),
                 VersionControl = GetPropertyNullableInt(record, "VersionControl"),
+                MajorFlags = FormatEnumerable(GetPropertyValue(record, "MajorFlags")),
                 ImportedAtUTC = DateTime.UtcNow,
                 Data = record.Data,
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Global.RecordID, record)
@@ -500,19 +501,21 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 MenuFormKey = GetFormKeyFromObject(GetPropertyValue(record, "Menu")),
                 Background = GetPropertyValue(record, "Background")?.ToString(),
                 Name = GetTranslatedString(record.Name),
-                Pnam = GetPropertyValue(record, "PNAM")?.ToString(),
-                Fnam = GetPropertyValue(record, "FNAM")?.ToString(),
-                Jnam = GetPropertyValue(record, "JNAM")?.ToString(),
-                MarkerFlags = GetPropertyNullableLong(record, "MarkerFlags"),
-                Gnam = GetPropertyValue(record, "GNAM")?.ToString(),
-                WorkbenchData = FormatEnumerable(GetPropertyValue(record, "WorkbenchData")),
+                Pnam = FormatHexValue(GetPropertyValue(record, "PNAM")),
+                Fnam = FormatHexValue(GetPropertyValue(record, "FNAM")),
+                MajorFlags = FormatMajorFlags(GetPropertyValue(record, "MajorFlags")),
+                Jnam = FormatHexValue(GetPropertyValue(record, "JNAM")),
+                MarkerFlags = GetPropertyValue(record, "MarkerFlags")?.ToString(),
+                Gnam = FormatHexValue(GetPropertyValue(record, "GNAM")),
+                WorkbenchData = FormatHexValue(GetPropertyValue(record, "WorkbenchData")),
                 FurnitureTemplateFormKey = GetFormKeyFromObject(GetPropertyValue(record, "FurnitureTemplate")),
                 MarkerModel = GetPropertyValue(record, "MarkerModel")?.ToString(),
                 Models = GetModels(plugin, RecordTypeCatalog.Terminal.RecordID, record.FormKey, record.Model),
                 Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.Terminal.RecordID, record.FormKey, record.Keywords),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Terminal.RecordID, record),
                 RawPayloads = GetTerminalRawPayloads(plugin, record.FormKey, record.Model, GetPropertyValue(record, "Components")),
-                MarkerParameters = GetTerminalMarkerParameters(plugin, record.FormKey, GetPropertyValue(record, "MarkerParameters"))
+                MarkerParameters = GetTerminalMarkerParameters(plugin, record.FormKey, GetPropertyValue(record, "MarkerParameters")),
+                ForcedLocations = GetFormKeys(GetPropertyValue(record, "ForcedLocations"))
             }, record))
             .ToList();
     }
@@ -1387,7 +1390,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
 
     private static bool IsRawBaseFormComponentPayloadProperty(string propertyName)
     {
-        return propertyName is "REFL";
+        return propertyName is "ANAM" or "BNAM" or "CNAM" or "REFL";
     }
 
     private static void AddRawPayload(
@@ -1531,6 +1534,15 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         return GetFormKeyFromObject(value, 0);
     }
 
+    private static List<FormKeyDTO> GetFormKeys(object? value)
+    {
+        return (value as IEnumerable)?.Cast<object>()
+            .Select(item => GetFormKeyFromObject(item))
+            .Where(formKey => formKey != null)
+            .Cast<FormKeyDTO>()
+            .ToList() ?? new List<FormKeyDTO>();
+    }
+
     private static FormKeyDTO? GetFormKeyFromObject(object? value, int depth)
     {
         if (value == null) return null;
@@ -1597,6 +1609,90 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         return value is IEnumerable enumerable
             ? string.Join(", ", enumerable.Cast<object>().Select(item => item.ToString()))
             : value?.ToString();
+    }
+
+    private static string? FormatMajorFlags(object? value)
+    {
+        if (value == null)
+        {
+            return null;
+        }
+
+        if (value is IEnumerable enumerable && value is not string)
+        {
+            var flags = enumerable
+                .Cast<object>()
+                .Select(FormatSingleMajorFlag)
+                .Where(flag => !string.IsNullOrWhiteSpace(flag))
+                .ToList();
+            return flags.Count == 0 ? null : string.Join(", ", flags);
+        }
+
+        if (!TryConvertToUInt64(value, out var numericValue) || numericValue == 0)
+        {
+            return null;
+        }
+
+        return FormatMajorFlagBits(numericValue);
+    }
+
+    private static string? FormatMajorFlagBits(ulong value)
+    {
+        var flags = new List<string>();
+        for (var bit = 0; bit < 64; bit++)
+        {
+            var flag = 1UL << bit;
+            if ((value & flag) != 0)
+            {
+                flags.Add("0x" + flag.ToString("X8", CultureInfo.InvariantCulture));
+            }
+        }
+
+        return flags.Count == 0 ? null : string.Join(", ", flags);
+    }
+
+    private static string? FormatSingleMajorFlag(object value)
+    {
+        if (!TryConvertToUInt64(value, out var numericValue) || numericValue == 0)
+        {
+            return null;
+        }
+
+        return "0x" + numericValue.ToString("X8", CultureInfo.InvariantCulture);
+    }
+
+    private static bool TryConvertToUInt64(object value, out ulong result)
+    {
+        if (value is string text)
+        {
+            if (text.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            {
+                return ulong.TryParse(text[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out result);
+            }
+
+            return ulong.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        try
+        {
+            result = Convert.ToUInt64(value, CultureInfo.InvariantCulture);
+            return true;
+        }
+        catch (InvalidCastException)
+        {
+            result = 0;
+            return false;
+        }
+        catch (FormatException)
+        {
+            result = 0;
+            return false;
+        }
+        catch (OverflowException)
+        {
+            result = 0;
+            return false;
+        }
     }
 
     private static string FormatSpriggitColor(object? value)

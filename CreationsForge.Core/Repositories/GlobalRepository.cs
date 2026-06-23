@@ -210,6 +210,8 @@ public class GlobalRepository : IGlobalRepository, IRecordTreeRepository
             ImportedAtUTC = record.ImportedAtUTC,
             Version2 = record.Version2,
             VersionControl = record.VersionControl,
+            MutagenObjectType = record.MutagenObjectType,
+            MajorFlags = record.MajorFlags,
             Data = record.Data
         };
     }

@@ -161,6 +161,8 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 MajorRecordFlags = (int)record.SkyrimMajorRecordFlags,
                 Version2 = GetPropertyNullableInt(record, "Version2"),
                 VersionControl = GetPropertyNullableInt(record, "VersionControl"),
+                MutagenObjectType = GetSpriggitMutagenObjectType(record),
+                MajorFlags = FormatEnumerable(GetPropertyValue(record, "MajorFlags")),
                 ImportedAtUTC = DateTime.UtcNow,
                 Data = GetGlobalData(record)
             })
@@ -233,6 +235,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 DirtinessScale = GetPropertyNullableFloat(record, "DirtinessScale"),
                 FeaturedItemMessage = GetLinkedFormKey(record, "FeaturedItemMessage"),
                 Flag = FormatHexValue(GetPropertyValue(record, "FLAG")),
+                Destructible = GetMiscItemDestructible(record),
                 Models = GetModels(plugin, RecordTypeCatalog.MiscItem.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model")),
                 Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.MiscItem.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.MiscItem.RecordID, GetRequiredRawFormKey(record), record, "CraftingSound", "PickupSound", "PutdownSound", "DropdownSound"),
@@ -979,14 +982,27 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
     private static List<MiscItemComponentDTO> GetMiscItemComponents(PluginDTO plugin, FormKey formKey, object record)
     {
         var importedAtUTC = DateTime.UtcNow;
+        var displayIndices = GetIndexedNullableInts(GetPropertyValue(record, "ComponentDisplayIndices"));
         return GetChildObjects(record, "Components")
-            .Select((component, componentIndex) => CreateMiscItemComponent(plugin, formKey, component, componentIndex, importedAtUTC))
+            .Select((component, componentIndex) => CreateMiscItemComponent(
+                plugin,
+                formKey,
+                component,
+                componentIndex,
+                displayIndices.TryGetValue(componentIndex, out var displayIndex) ? displayIndex : null,
+                importedAtUTC))
             .Where(component => component != null)
             .Cast<MiscItemComponentDTO>()
             .ToList();
     }
 
-    private static MiscItemComponentDTO? CreateMiscItemComponent(PluginDTO plugin, FormKey formKey, object component, int componentIndex, DateTime importedAtUTC)
+    private static MiscItemComponentDTO? CreateMiscItemComponent(
+        PluginDTO plugin,
+        FormKey formKey,
+        object component,
+        int componentIndex,
+        int? displayIndex,
+        DateTime importedAtUTC)
     {
         var componentData = GetPropertyValue(component, "Component") ?? component;
         var componentFormKey = GetFormKeyFromObject(GetPropertyValue(componentData, "Component")) ?? GetFormKeyFromObject(componentData);
@@ -1002,9 +1018,68 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             FormKey = MapFormKey(formKey),
             Component = componentFormKey,
             ComponentIndex = componentIndex,
+            DisplayIndex = displayIndex,
             Count = GetPropertyNullableInt(component, "Count") ?? GetPropertyNullableInt(componentData, "Count"),
             ImportedAtUTC = importedAtUTC
         };
+    }
+
+    private static MiscItemDestructibleDTO? GetMiscItemDestructible(object record)
+    {
+        var destructible = GetPropertyValue(record, "Destructible");
+        if (destructible == null)
+        {
+            return null;
+        }
+
+        var data = GetPropertyValue(destructible, "Data");
+        var stages = GetEnumerableObjects(GetPropertyValue(destructible, "Stages"))
+            .Select((stage, stageIndex) => new MiscItemDestructibleStageDTO
+            {
+                StageIndex = stageIndex,
+                Index = GetPropertyNullableInt(stage, "Index"),
+                HealthPercent = GetPropertyNullableInt(stage, "HealthPercent"),
+                ModelDamageStage = GetPropertyNullableInt(stage, "ModelDamageStage"),
+                Flags = FormatEnumerable(GetPropertyValue(stage, "Flags")),
+                SelfDamagePerSecond = GetPropertyNullableInt(stage, "SelfDamagePerSecond"),
+                Explosion = GetFormKeyFromObject(GetPropertyValue(stage, "Explosion")),
+                Model = GetMiscItemDestructibleStageModel(stage)
+            })
+            .ToList();
+
+        return new MiscItemDestructibleDTO
+        {
+            Data = data == null
+                ? null
+                : new MiscItemDestructibleDataDTO
+                {
+                    Health = GetPropertyNullableInt(data, "Health"),
+                    DESTCount = GetPropertyNullableInt(data, "DESTCount")
+                },
+            Stages = stages
+        };
+    }
+
+    private static MiscItemDestructibleStageModelDTO? GetMiscItemDestructibleStageModel(object stage)
+    {
+        var model = GetPropertyValue(stage, "Model");
+        if (model == null)
+        {
+            return null;
+        }
+
+        return new MiscItemDestructibleStageModelDTO
+        {
+            File = FormatSpriggitModelFilePath(GetPropertyValue(model, "File")?.ToString()),
+            Data = FormatHexValue(GetPropertyValue(model, "Data"))
+        };
+    }
+
+    private static IReadOnlyDictionary<int, int?> GetIndexedNullableInts(object? value)
+    {
+        return GetEnumerableObjects(value)
+            .Select((item, index) => new { Index = index, Value = item == null ? (int?)null : Convert.ToInt32(item, CultureInfo.InvariantCulture) })
+            .ToDictionary(item => item.Index, item => item.Value);
     }
 
     private static IReadOnlyList<object> GetChildObjects(object record, string preferredPropertyName)
@@ -1667,6 +1742,15 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         return value is IEnumerable enumerable
             ? string.Join(", ", enumerable.Cast<object>().Select(item => item.ToString()))
             : value?.ToString();
+    }
+
+    private static string GetSpriggitMutagenObjectType(object record)
+    {
+        var typeName = record.GetType().Name;
+        const string binaryOverlaySuffix = "BinaryOverlay";
+        return typeName.EndsWith(binaryOverlaySuffix, StringComparison.Ordinal)
+            ? typeName[..^binaryOverlaySuffix.Length]
+            : typeName;
     }
 
     private static string FormatSpriggitColor(object? value)

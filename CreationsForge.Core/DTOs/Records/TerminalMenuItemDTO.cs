@@ -3,7 +3,7 @@ using CreationsForge.Core.Enums;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class TerminalMarkerParameterDTO
+public class TerminalMenuItemDTO
 {
     public SupportedGame Game { get; set; }
 
@@ -15,17 +15,17 @@ public class TerminalMarkerParameterDTO
         Id = 0
     };
 
-    public int ParameterIndex { get; set; }
+    public int MenuItemIndex { get; set; }
 
-    public bool? Enabled { get; set; }
+    public TranslatedStringDTO? ItemText { get; set; }
 
-    public string? Offset { get; set; }
+    public string? Type { get; set; }
 
-    public string? EntryTypes { get; set; }
+    public int? ItemId { get; set; }
 
-    public string? ExitTypes { get; set; }
+    public FormKeyDTO? Submenu { get; set; }
 
-    public string? Unknown { get; set; }
+    public TranslatedStringDTO? DisplayText { get; set; }
 
     public DateTime ImportedAtUTC { get; set; }
 }

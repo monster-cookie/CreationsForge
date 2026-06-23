@@ -60,6 +60,8 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         var containers = MapContainers(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
         var constructibleObjects = MapConstructibleObjects(plugin, mod);
+        cancellationToken.ThrowIfCancellationRequested();
+        var terminals = MapTerminals(plugin, mod);
 
         return new PluginRecordSetDTO
         {
@@ -78,7 +80,8 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             Books = books,
             Doors = doors,
             Containers = containers,
-            ConstructibleObjects = constructibleObjects
+            ConstructibleObjects = constructibleObjects,
+            Terminals = terminals
         };
     }
 
@@ -161,6 +164,8 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 MajorRecordFlags = (int)record.Fallout4MajorRecordFlags,
                 Version2 = GetPropertyNullableInt(record, "Version2"),
                 VersionControl = GetPropertyNullableInt(record, "VersionControl"),
+                MutagenObjectType = GetSpriggitMutagenObjectType(record),
+                MajorFlags = FormatEnumerable(GetPropertyValue(record, "MajorFlags")),
                 ImportedAtUTC = DateTime.UtcNow,
                 Data = GetGlobalData(record)
             })
@@ -233,6 +238,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 DirtinessScale = GetPropertyNullableFloat(record, "DirtinessScale"),
                 FeaturedItemMessage = GetLinkedFormKey(record, "FeaturedItemMessage"),
                 Flag = FormatHexValue(GetPropertyValue(record, "FLAG")),
+                Destructible = GetMiscItemDestructible(record),
                 Models = GetModels(plugin, RecordTypeCatalog.MiscItem.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model")),
                 Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.MiscItem.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.MiscItem.RecordID, GetRequiredRawFormKey(record), record, "CraftingSound", "PickupSound", "PutdownSound", "DropdownSound"),
@@ -691,6 +697,184 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             .ToList();
     }
 
+    private static IReadOnlyList<TerminalDTO> MapTerminals(PluginDTO plugin, IFallout4ModGetter mod)
+    {
+        return GetRecordCollection(mod, "Terminals")
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(CreateTerminal(plugin, record), record))
+            .ToList();
+    }
+
+    private static TerminalDTO CreateTerminal(PluginDTO plugin, object record)
+    {
+        var formKey = GetRequiredRawFormKey(record);
+        var model = GetPropertyValue(record, "Model");
+        var bodyTexts = GetTerminalBodyTexts(plugin, formKey, GetPropertyValue(record, "BodyTexts"));
+        var menuItems = GetTerminalMenuItems(plugin, formKey, GetPropertyValue(record, "MenuItems"));
+        var dto = new TerminalDTO
+        {
+            Game = SupportedGame.Fallout4,
+            ModKey = plugin.ModKey,
+            FormKey = MapFormKey(formKey),
+            EditorID = GetPropertyString(record, "EditorID"),
+            FormVersion = GetPropertyInt(record, "FormVersion"),
+            MajorRecordFlags = GetPropertyInt(record, "Fallout4MajorRecordFlags"),
+            Version2 = GetPropertyNullableInt(record, "Version2"),
+            VersionControl = GetPropertyNullableInt(record, "VersionControl"),
+            ImportedAtUTC = DateTime.UtcNow,
+            ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
+            ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
+            HeaderText = GetTranslatedString(record, "HeaderText"),
+            WelcomeText = GetTranslatedString(record, "WelcomeText"),
+            Name = GetTranslatedString(record, "Name"),
+            Pnam = FormatHexValue(GetPropertyValue(record, "PNAM")),
+            Fnam = FormatHexValue(GetPropertyValue(record, "FNAM")),
+            Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
+            MajorFlags = FormatMajorFlags(GetPropertyValue(record, "MajorFlags")),
+            WorkbenchData = FormatHexValue(GetPropertyValue(record, "WorkbenchData")),
+            Models = GetModels(plugin, RecordTypeCatalog.Terminal.RecordID, formKey, model),
+            Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.Terminal.RecordID, formKey, GetPropertyValue(record, "Keywords")),
+            ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Terminal.RecordID, record),
+            MarkerParameters = GetTerminalMarkerParameters(plugin, formKey, GetPropertyValue(record, "MarkerParameters")),
+            ForcedLocations = GetFormKeys(GetPropertyValue(record, "ForcedLocations")),
+            BodyTexts = bodyTexts,
+            MenuItems = menuItems
+        };
+
+        dto.RawPayloads = GetTerminalRawPayloads(plugin, formKey, record, model);
+        return dto;
+    }
+
+    private static List<TerminalMarkerParameterDTO> GetTerminalMarkerParameters(PluginDTO plugin, FormKey formKey, object? markerParameters)
+    {
+        var importedAtUTC = DateTime.UtcNow;
+        return (markerParameters as IEnumerable)?.Cast<object>()
+            .Select((parameter, parameterIndex) => new TerminalMarkerParameterDTO
+            {
+                Game = SupportedGame.Fallout4,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                ParameterIndex = parameterIndex,
+                Enabled = GetPropertyNullableBool(parameter, "Enabled"),
+                Offset = GetPropertyValue(parameter, "Offset")?.ToString(),
+                EntryTypes = FormatEnumerable(GetPropertyValue(parameter, "EntryTypes")),
+                ExitTypes = FormatEnumerable(GetPropertyValue(parameter, "ExitTypes")),
+                Unknown = FormatHexValue(GetPropertyValue(parameter, "Unknown")),
+                ImportedAtUTC = importedAtUTC
+            })
+            .ToList() ?? new List<TerminalMarkerParameterDTO>();
+    }
+
+    private static List<TerminalBodyTextDTO> GetTerminalBodyTexts(PluginDTO plugin, FormKey formKey, object? bodyTexts)
+    {
+        var importedAtUTC = DateTime.UtcNow;
+        return (bodyTexts as IEnumerable)?.Cast<object>()
+            .Select((bodyText, bodyTextIndex) => new TerminalBodyTextDTO
+            {
+                Game = SupportedGame.Fallout4,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                BodyTextIndex = bodyTextIndex,
+                Text = GetTranslatedString(bodyText, "Text"),
+                ImportedAtUTC = importedAtUTC
+            })
+            .ToList() ?? new List<TerminalBodyTextDTO>();
+    }
+
+    private static List<TerminalMenuItemDTO> GetTerminalMenuItems(PluginDTO plugin, FormKey formKey, object? menuItems)
+    {
+        var importedAtUTC = DateTime.UtcNow;
+        return (menuItems as IEnumerable)?.Cast<object>()
+            .Select((menuItem, menuItemIndex) => new TerminalMenuItemDTO
+            {
+                Game = SupportedGame.Fallout4,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                MenuItemIndex = menuItemIndex,
+                ItemText = GetTranslatedString(menuItem, "ItemText"),
+                Type = GetPropertyStringOrNull(menuItem, "Type"),
+                ItemId = GetPropertyNullableInt(menuItem, "ItemId") ?? GetPropertyNullableInt(menuItem, "ItemID"),
+                Submenu = GetLinkedFormKey(menuItem, "Submenu"),
+                DisplayText = GetTranslatedString(menuItem, "DisplayText"),
+                ImportedAtUTC = importedAtUTC
+            })
+            .ToList() ?? new List<TerminalMenuItemDTO>();
+    }
+
+    private static List<RawRecordPayloadDTO> GetTerminalRawPayloads(PluginDTO plugin, FormKey formKey, object record, object? model)
+    {
+        var importedAtUTC = DateTime.UtcNow;
+        var payloads = GetModelRawPayloads(plugin, RecordTypeCatalog.Terminal.RecordID, formKey, model);
+
+        var scriptFragments = GetPropertyValue(GetPropertyValue(record, "VirtualMachineAdapter"), "ScriptFragments");
+        if (scriptFragments is IEnumerable scriptFragmentList and not string)
+        {
+            foreach (var scriptFragment in scriptFragmentList.Cast<object>().Select((value, index) => new { value, index }))
+            {
+                AddRawRecordPayload(
+                    payloads,
+                    plugin,
+                    RecordTypeCatalog.Terminal.RecordID,
+                    formKey,
+                    $"VirtualMachineAdapter.ScriptFragments[{scriptFragment.index}]",
+                    0,
+                    scriptFragment.value.GetType().Name,
+                    FormatReflectionPayload(scriptFragment.value),
+                    importedAtUTC);
+            }
+        }
+        else if (scriptFragments != null)
+        {
+            AddRawRecordPayload(
+                payloads,
+                plugin,
+                RecordTypeCatalog.Terminal.RecordID,
+                formKey,
+                "VirtualMachineAdapter.ScriptFragments",
+                0,
+                scriptFragments.GetType().Name,
+                FormatReflectionPayload(scriptFragments),
+                importedAtUTC);
+        }
+
+        AddTerminalConditionPayloads(payloads, plugin, formKey, "BodyTexts", GetPropertyValue(record, "BodyTexts"), importedAtUTC);
+        AddTerminalConditionPayloads(payloads, plugin, formKey, "MenuItems", GetPropertyValue(record, "MenuItems"), importedAtUTC);
+        return payloads;
+    }
+
+    private static void AddTerminalConditionPayloads(
+        ICollection<RawRecordPayloadDTO> payloads,
+        PluginDTO plugin,
+        FormKey formKey,
+        string collectionName,
+        object? collection,
+        DateTime importedAtUTC)
+    {
+        if (collection is not IEnumerable enumerable)
+        {
+            return;
+        }
+
+        foreach (var item in enumerable.Cast<object>().Select((value, index) => new { value, index }))
+        {
+            var conditions = GetPropertyValue(item.value, "Conditions");
+            if (GetEnumerableCount(conditions) == 0)
+            {
+                continue;
+            }
+
+            AddRawRecordPayload(
+                payloads,
+                plugin,
+                RecordTypeCatalog.Terminal.RecordID,
+                formKey,
+                $"{collectionName}[{item.index}].Conditions",
+                0,
+                conditions?.GetType().Name ?? "Conditions",
+                FormatReflectionPayload(conditions),
+                importedAtUTC);
+        }
+    }
+
     private static IReadOnlyList<ConstructibleObjectDTO> MapConstructibleObjects(PluginDTO plugin, IFallout4ModGetter mod)
     {
         return GetRecordCollection(mod, "ConstructibleObjects")
@@ -961,14 +1145,27 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
     private static List<MiscItemComponentDTO> GetMiscItemComponents(PluginDTO plugin, FormKey formKey, object record)
     {
         var importedAtUTC = DateTime.UtcNow;
+        var displayIndices = GetIndexedNullableInts(GetPropertyValue(record, "ComponentDisplayIndices"));
         return GetChildObjects(record, "Components")
-            .Select((component, componentIndex) => CreateMiscItemComponent(plugin, formKey, component, componentIndex, importedAtUTC))
+            .Select((component, componentIndex) => CreateMiscItemComponent(
+                plugin,
+                formKey,
+                component,
+                componentIndex,
+                displayIndices.TryGetValue(componentIndex, out var displayIndex) ? displayIndex : null,
+                importedAtUTC))
             .Where(component => component != null)
             .Cast<MiscItemComponentDTO>()
             .ToList();
     }
 
-    private static MiscItemComponentDTO? CreateMiscItemComponent(PluginDTO plugin, FormKey formKey, object component, int componentIndex, DateTime importedAtUTC)
+    private static MiscItemComponentDTO? CreateMiscItemComponent(
+        PluginDTO plugin,
+        FormKey formKey,
+        object component,
+        int componentIndex,
+        int? displayIndex,
+        DateTime importedAtUTC)
     {
         var componentData = GetPropertyValue(component, "Component") ?? component;
         var componentFormKey = GetFormKeyFromObject(GetPropertyValue(componentData, "Component")) ?? GetFormKeyFromObject(componentData);
@@ -984,9 +1181,68 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             FormKey = MapFormKey(formKey),
             Component = componentFormKey,
             ComponentIndex = componentIndex,
+            DisplayIndex = displayIndex,
             Count = GetPropertyNullableInt(component, "Count") ?? GetPropertyNullableInt(componentData, "Count"),
             ImportedAtUTC = importedAtUTC
         };
+    }
+
+    private static MiscItemDestructibleDTO? GetMiscItemDestructible(object record)
+    {
+        var destructible = GetPropertyValue(record, "Destructible");
+        if (destructible == null)
+        {
+            return null;
+        }
+
+        var data = GetPropertyValue(destructible, "Data");
+        var stages = GetEnumerableObjects(GetPropertyValue(destructible, "Stages"))
+            .Select((stage, stageIndex) => new MiscItemDestructibleStageDTO
+            {
+                StageIndex = stageIndex,
+                Index = GetPropertyNullableInt(stage, "Index"),
+                HealthPercent = GetPropertyNullableInt(stage, "HealthPercent"),
+                ModelDamageStage = GetPropertyNullableInt(stage, "ModelDamageStage"),
+                Flags = FormatEnumerable(GetPropertyValue(stage, "Flags")),
+                SelfDamagePerSecond = GetPropertyNullableInt(stage, "SelfDamagePerSecond"),
+                Explosion = GetFormKeyFromObject(GetPropertyValue(stage, "Explosion")),
+                Model = GetMiscItemDestructibleStageModel(stage)
+            })
+            .ToList();
+
+        return new MiscItemDestructibleDTO
+        {
+            Data = data == null
+                ? null
+                : new MiscItemDestructibleDataDTO
+                {
+                    Health = GetPropertyNullableInt(data, "Health"),
+                    DESTCount = GetPropertyNullableInt(data, "DESTCount")
+                },
+            Stages = stages
+        };
+    }
+
+    private static MiscItemDestructibleStageModelDTO? GetMiscItemDestructibleStageModel(object stage)
+    {
+        var model = GetPropertyValue(stage, "Model");
+        if (model == null)
+        {
+            return null;
+        }
+
+        return new MiscItemDestructibleStageModelDTO
+        {
+            File = FormatSpriggitModelFilePath(GetPropertyValue(model, "File")?.ToString()),
+            Data = FormatHexValue(GetPropertyValue(model, "Data"))
+        };
+    }
+
+    private static IReadOnlyDictionary<int, int?> GetIndexedNullableInts(object? value)
+    {
+        return GetEnumerableObjects(value)
+            .Select((item, index) => new { Index = index, Value = item == null ? (int?)null : Convert.ToInt32(item, CultureInfo.InvariantCulture) })
+            .ToDictionary(item => item.Index, item => item.Value);
     }
 
     private static IReadOnlyList<object> GetChildObjects(object record, string preferredPropertyName)
@@ -1433,6 +1689,15 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         return GetFormKeyFromObject(value, 0);
     }
 
+    private static List<FormKeyDTO> GetFormKeys(object? value)
+    {
+        return (value as IEnumerable)?.Cast<object>()
+            .Select(item => GetFormKeyFromObject(item))
+            .Where(formKey => formKey != null)
+            .Cast<FormKeyDTO>()
+            .ToList() ?? new List<FormKeyDTO>();
+    }
+
     private static FormKeyDTO? GetFormKeyFromObject(object? value, int depth)
     {
         if (value == null) return null;
@@ -1475,7 +1740,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
 
         var sourceType = source.GetType();
         var property = sourceType.GetProperty(propertyName);
-        if (property != null)
+        if (property != null && property.GetIndexParameters().Length == 0)
         {
             return property.GetValue(source);
         }
@@ -1483,7 +1748,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         foreach (var interfaceType in sourceType.GetInterfaces())
         {
             property = interfaceType.GetProperty(propertyName);
-            if (property != null)
+            if (property != null && property.GetIndexParameters().Length == 0)
             {
                 return property.GetValue(source);
             }
@@ -1596,6 +1861,99 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             : value?.ToString();
     }
 
+    private static string GetSpriggitMutagenObjectType(object record)
+    {
+        var typeName = record.GetType().Name;
+        const string binaryOverlaySuffix = "BinaryOverlay";
+        return typeName.EndsWith(binaryOverlaySuffix, StringComparison.Ordinal)
+            ? typeName[..^binaryOverlaySuffix.Length]
+            : typeName;
+    }
+
+    private static string? FormatMajorFlags(object? value)
+    {
+        if (value == null)
+        {
+            return null;
+        }
+
+        if (value is IEnumerable enumerable && value is not string)
+        {
+            var flags = enumerable
+                .Cast<object>()
+                .Select(FormatSingleMajorFlag)
+                .Where(flag => !string.IsNullOrWhiteSpace(flag))
+                .ToList();
+            return flags.Count == 0 ? null : string.Join(", ", flags);
+        }
+
+        if (!TryConvertToUInt64(value, out var numericValue) || numericValue == 0)
+        {
+            return null;
+        }
+
+        return FormatMajorFlagBits(numericValue);
+    }
+
+    private static string? FormatMajorFlagBits(ulong value)
+    {
+        var flags = new List<string>();
+        for (var bit = 0; bit < 64; bit++)
+        {
+            var flag = 1UL << bit;
+            if ((value & flag) != 0)
+            {
+                flags.Add("0x" + flag.ToString("X8", CultureInfo.InvariantCulture));
+            }
+        }
+
+        return flags.Count == 0 ? null : string.Join(", ", flags);
+    }
+
+    private static string? FormatSingleMajorFlag(object value)
+    {
+        if (!TryConvertToUInt64(value, out var numericValue) || numericValue == 0)
+        {
+            return null;
+        }
+
+        return "0x" + numericValue.ToString("X8", CultureInfo.InvariantCulture);
+    }
+
+    private static bool TryConvertToUInt64(object value, out ulong result)
+    {
+        if (value is string text)
+        {
+            if (text.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            {
+                return ulong.TryParse(text[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out result);
+            }
+
+            return ulong.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        try
+        {
+            result = Convert.ToUInt64(value, CultureInfo.InvariantCulture);
+            return true;
+        }
+        catch (InvalidCastException)
+        {
+            result = 0;
+            return false;
+        }
+        catch (FormatException)
+        {
+            result = 0;
+            return false;
+        }
+        catch (OverflowException)
+        {
+            result = 0;
+            return false;
+        }
+    }
+
     private static string FormatSpriggitColor(object? value)
     {
         var text = value?.ToString() ?? string.Empty;
@@ -1620,6 +1978,53 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         if (value is byte[] bytes) return Convert.ToHexString(bytes);
         if (value is IEnumerable enumerable) return string.Join(", ", enumerable.Cast<object>().Select(item => FormatConditionValue(item) ?? string.Empty));
         return value.ToString();
+    }
+
+    private static string? FormatReflectionPayload(object? value, int depth = 0)
+    {
+        if (value == null) return null;
+        if (depth > 3) return value.GetType().Name;
+        if (GetFormKeyFromObject(value) is { } formKey) return $"{formKey.ModKey.FileName}:{formKey.Id:X8}";
+        if (value is string text) return text;
+        if (value is byte[] bytes) return Convert.ToHexString(bytes);
+
+        var type = value.GetType();
+        if (type.IsPrimitive || value is decimal || value is DateTime || value is Guid || type.IsEnum)
+        {
+            return Convert.ToString(value, CultureInfo.InvariantCulture);
+        }
+
+        if (value is IEnumerable enumerable)
+        {
+            return string.Join(
+                "; ",
+                enumerable.Cast<object>()
+                    .Select((item, index) => "[" + index.ToString(CultureInfo.InvariantCulture) + "]=" + (FormatReflectionPayload(item, depth + 1) ?? string.Empty)));
+        }
+
+        var parts = new List<string>();
+        foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                     .Where(property => property.GetIndexParameters().Length == 0)
+                     .OrderBy(property => property.Name, StringComparer.Ordinal))
+        {
+            object? propertyValue;
+            try
+            {
+                propertyValue = property.GetValue(value);
+            }
+            catch (TargetInvocationException)
+            {
+                continue;
+            }
+
+            var formattedValue = FormatReflectionPayload(propertyValue, depth + 1);
+            if (!string.IsNullOrWhiteSpace(formattedValue))
+            {
+                parts.Add(property.Name + "=" + formattedValue);
+            }
+        }
+
+        return parts.Count == 0 ? value.ToString() : string.Join("; ", parts);
     }
 
     private static string? FormatObjectBoundsPoint(object? objectBounds, string propertyName)

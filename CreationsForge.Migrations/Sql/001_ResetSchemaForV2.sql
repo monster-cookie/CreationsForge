@@ -232,6 +232,10 @@ CREATE TABLE Globals
     FormVersion             INTEGER NOT NULL,
     MajorRecordFlags        INTEGER NOT NULL,
     ImportedAtUTC           TEXT    NOT NULL,
+    Version2                INTEGER NULL,
+    VersionControl          INTEGER NULL,
+    MutagenObjectType       TEXT    NULL,
+    MajorFlags              TEXT    NULL,
     Data                    REAL    NULL,
     PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID),
     FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName) REFERENCES Plugins (Game, ModKey_Name, ModKey_Type, ModKey_FileName) ON DELETE CASCADE,
@@ -520,6 +524,7 @@ CREATE TABLE MiscItemComponents
     Component_ModKey_FileName      TEXT    NOT NULL,
     Component_FormKey_ID           INTEGER NOT NULL,
     Component_Index                INTEGER NOT NULL,
+    DisplayIndex                   INTEGER NULL,
     Count                          INTEGER NULL,
     ImportedAtUTC                  TEXT    NOT NULL,
     PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Component_Index),
@@ -528,6 +533,57 @@ CREATE TABLE MiscItemComponents
     CHECK (FormKey_ID >= 0),
     CHECK (Component_FormKey_ID >= 0),
     CHECK (Component_Index >= 0)
+);
+
+CREATE TABLE MiscItemDestructibles
+(
+    Game                    TEXT    NOT NULL,
+    ModKey_Name             TEXT    NOT NULL,
+    ModKey_Type             INTEGER NOT NULL,
+    ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ModKey_Name     TEXT    NOT NULL,
+    FormKey_ModKey_Type     INTEGER NOT NULL,
+    FormKey_ModKey_FileName TEXT    NOT NULL,
+    FormKey_ID              INTEGER NOT NULL,
+    Health                  INTEGER NULL,
+    DESTCount               INTEGER NULL,
+    ImportedAtUTC           TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES MiscItems (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0)
+);
+
+CREATE TABLE MiscItemDestructibleStages
+(
+    Game                    TEXT    NOT NULL,
+    ModKey_Name             TEXT    NOT NULL,
+    ModKey_Type             INTEGER NOT NULL,
+    ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ModKey_Name     TEXT    NOT NULL,
+    FormKey_ModKey_Type     INTEGER NOT NULL,
+    FormKey_ModKey_FileName TEXT    NOT NULL,
+    FormKey_ID              INTEGER NOT NULL,
+    Stage_Index             INTEGER NOT NULL,
+    StageRecordIndex        INTEGER NULL,
+    HealthPercent           INTEGER NULL,
+    ModelDamageStage        INTEGER NULL,
+    Flags                   TEXT    NULL,
+    SelfDamagePerSecond     INTEGER NULL,
+    Explosion_ModKey_Name   TEXT    NULL,
+    Explosion_ModKey_Type   INTEGER NULL,
+    Explosion_ModKey_FileName TEXT  NULL,
+    Explosion_FormKey_ID    INTEGER NULL,
+    Model_File              TEXT    NULL,
+    Model_Data              TEXT    NULL,
+    ImportedAtUTC           TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Stage_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES MiscItemDestructibles (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Stage_Index >= 0),
+    CHECK ((Explosion_ModKey_Name IS NULL AND Explosion_ModKey_Type IS NULL AND Explosion_ModKey_FileName IS NULL AND Explosion_FormKey_ID IS NULL) OR
+           (Explosion_ModKey_Name IS NOT NULL AND Explosion_ModKey_Type IS NOT NULL AND Explosion_ModKey_FileName IS NOT NULL AND Explosion_FormKey_ID IS NOT NULL))
 );
 
 CREATE TABLE MiscItemResources
@@ -1253,6 +1309,7 @@ CREATE TABLE Terminals
     MajorRecordFlags                    INTEGER NOT NULL,
     ImportedAtUTC                       TEXT    NOT NULL,
     Version2                            INTEGER NULL,
+    VersionControl                      INTEGER NULL,
     ObjectBounds_First                  TEXT    NULL,
     ObjectBounds_Second                 TEXT    NULL,
     Menu_ModKey_Name                    TEXT    NULL,
@@ -1260,11 +1317,15 @@ CREATE TABLE Terminals
     Menu_ModKey_FileName                TEXT    NULL,
     Menu_FormKey_ID                     INTEGER NULL,
     Background                          TEXT    NULL,
+    HeaderText                          TEXT    NULL,
+    WelcomeText                         TEXT    NULL,
     Name                                TEXT    NULL,
     PNAM                                TEXT    NULL,
     FNAM                                TEXT    NULL,
+    Flags                               TEXT    NULL,
+    MajorFlags                          TEXT    NULL,
     JNAM                                TEXT    NULL,
-    MarkerFlags                         INTEGER NULL,
+    MarkerFlags                         TEXT    NULL,
     GNAM                                TEXT    NULL,
     WorkbenchData                       TEXT    NULL,
     FurnitureTemplate_ModKey_Name       TEXT    NULL,
@@ -1283,6 +1344,32 @@ CREATE INDEX IX_Terminals_FormKey ON Terminals (Game, FormKey_ModKey_Name, FormK
 CREATE INDEX IX_Terminals_Game_Plugin ON Terminals (Game, ModKey_Name COLLATE NOCASE, ModKey_Type, ModKey_FileName COLLATE NOCASE, EditorID COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_Terminals_Game_FormKey_Collated ON Terminals (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 
+CREATE TABLE TerminalForcedLocations
+(
+    Game                            TEXT    NOT NULL,
+    ModKey_Name                     TEXT    NOT NULL,
+    ModKey_Type                     INTEGER NOT NULL,
+    ModKey_FileName                 TEXT    NOT NULL,
+    FormKey_ModKey_Name             TEXT    NOT NULL,
+    FormKey_ModKey_Type             INTEGER NOT NULL,
+    FormKey_ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ID                      INTEGER NOT NULL,
+    ForcedLocation_ModKey_Name      TEXT    NOT NULL,
+    ForcedLocation_ModKey_Type      INTEGER NOT NULL,
+    ForcedLocation_ModKey_FileName  TEXT    NOT NULL,
+    ForcedLocation_FormKey_ID       INTEGER NOT NULL,
+    ForcedLocation_Index            INTEGER NOT NULL,
+    ImportedAtUTC                   TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, ForcedLocation_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES Terminals (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (ForcedLocation_FormKey_ID >= 0),
+    CHECK (ForcedLocation_Index >= 0)
+);
+
+CREATE INDEX IX_TerminalForcedLocations_Game_FormKey ON TerminalForcedLocations (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+
 CREATE TABLE TerminalMarkerParameters
 (
     Game                            TEXT    NOT NULL,
@@ -1294,9 +1381,11 @@ CREATE TABLE TerminalMarkerParameters
     FormKey_ModKey_FileName         TEXT    NOT NULL,
     FormKey_ID                      INTEGER NOT NULL,
     Parameter_Index                 INTEGER NOT NULL,
+    Enabled                         INTEGER NULL,
     Offset                          TEXT    NULL,
     EntryTypes                      TEXT    NULL,
     ExitTypes                       TEXT    NULL,
+    Unknown                         TEXT    NULL,
     ImportedAtUTC                   TEXT    NOT NULL,
     PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Parameter_Index),
     FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
@@ -1306,6 +1395,59 @@ CREATE TABLE TerminalMarkerParameters
 );
 
 CREATE INDEX IX_TerminalMarkerParameters_Game_FormKey ON TerminalMarkerParameters (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+
+CREATE TABLE TerminalBodyTexts
+(
+    Game                            TEXT    NOT NULL,
+    ModKey_Name                     TEXT    NOT NULL,
+    ModKey_Type                     INTEGER NOT NULL,
+    ModKey_FileName                 TEXT    NOT NULL,
+    FormKey_ModKey_Name             TEXT    NOT NULL,
+    FormKey_ModKey_Type             INTEGER NOT NULL,
+    FormKey_ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ID                      INTEGER NOT NULL,
+    BodyText_Index                  INTEGER NOT NULL,
+    Text                            TEXT    NULL,
+    ImportedAtUTC                   TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, BodyText_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES Terminals (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (BodyText_Index >= 0)
+);
+
+CREATE INDEX IX_TerminalBodyTexts_Game_FormKey ON TerminalBodyTexts (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+
+CREATE TABLE TerminalMenuItems
+(
+    Game                            TEXT    NOT NULL,
+    ModKey_Name                     TEXT    NOT NULL,
+    ModKey_Type                     INTEGER NOT NULL,
+    ModKey_FileName                 TEXT    NOT NULL,
+    FormKey_ModKey_Name             TEXT    NOT NULL,
+    FormKey_ModKey_Type             INTEGER NOT NULL,
+    FormKey_ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ID                      INTEGER NOT NULL,
+    MenuItem_Index                  INTEGER NOT NULL,
+    ItemText                        TEXT    NULL,
+    Type                            TEXT    NULL,
+    ItemId                          INTEGER NULL,
+    Submenu_ModKey_Name             TEXT    NULL,
+    Submenu_ModKey_Type             INTEGER NULL,
+    Submenu_ModKey_FileName         TEXT    NULL,
+    Submenu_FormKey_ID              INTEGER NULL,
+    DisplayText                     TEXT    NULL,
+    ImportedAtUTC                   TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, MenuItem_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES Terminals (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (MenuItem_Index >= 0),
+    CHECK (ItemId IS NULL OR ItemId >= 0),
+    CHECK (Submenu_FormKey_ID IS NULL OR Submenu_FormKey_ID >= 0)
+);
+
+CREATE INDEX IX_TerminalMenuItems_Game_FormKey ON TerminalMenuItems (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 
 CREATE TABLE ConstructibleObjects
 (

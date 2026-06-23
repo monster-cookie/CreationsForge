@@ -10,7 +10,7 @@ The application uses a local SQLite database. The schema is defined by embedded 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains fifty-eight tables:
+The application schema contains sixty tables:
 
 - `Games`
 - `Plugins`
@@ -33,6 +33,8 @@ The application schema contains fifty-eight tables:
 - `ConditionRuleParameters`
 - `MiscItems`
 - `MiscItemComponents`
+- `MiscItemDestructibles`
+- `MiscItemDestructibleStages`
 - `MiscItemResources`
 - `Keywords`
 - `ActorValueInformation`
@@ -52,7 +54,10 @@ The application schema contains fifty-eight tables:
 - `ConstructibleObjectCategories`
 - `ConstructibleObjectRecipeFilters`
 - `Terminals`
+- `TerminalForcedLocations`
 - `TerminalMarkerParameters`
+- `TerminalBodyTexts`
+- `TerminalMenuItems`
 - `KeywordMappings`
 - `Components`
 - `ComponentItems`
@@ -441,6 +446,10 @@ Persistence behavior:
 Columns:
 
 - Common typed record key and metadata columns listed above
+- `Version2` (`INTEGER`, nullable)
+- `VersionControl` (`INTEGER`, nullable)
+- `MutagenObjectType` (`TEXT`, nullable)
+- `MajorFlags` (`TEXT`, nullable)
 - `Data` (`REAL`, nullable)
 
 Foreign keys:
@@ -901,11 +910,11 @@ Indexes:
 
 `Terminals` additional columns:
 
-- `Version2` (`INTEGER`, nullable)
+- `Version2` and `VersionControl` (`INTEGER`, nullable)
 - `ObjectBounds_First` and `ObjectBounds_Second` (`TEXT`, nullable)
 - nullable decomposed FormKey columns for `Menu` and `FurnitureTemplate`
-- `Background`, `Name`, `PNAM`, `FNAM`, `JNAM`, `GNAM`, `WorkbenchData`, and `MarkerModel` (`TEXT`, nullable)
-- `MarkerFlags` (`INTEGER`, nullable)
+- `Background`, `HeaderText`, `WelcomeText`, `Name`, `PNAM`, `FNAM`, `Flags`, `MajorFlags`, `JNAM`,
+  `MarkerFlags`, `GNAM`, `WorkbenchData`, and `MarkerModel` (`TEXT`, nullable)
 
 Foreign keys:
 
@@ -925,8 +934,9 @@ Persistence behavior:
 - Current imported rows are upserted.
 - Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful typed-record import
   batch are deleted as stale.
-- `MiscItems` currently persists the parent scalar row, FO4/Skyrim component rows, Starfield resource rows, shared
-  keyword rows, shared model rows, shared sound rows, and scripting adapters. `Statics` persists parent scalar rows,
+- `MiscItems` currently persists the parent scalar row, FO4/Skyrim component rows including display indices, Fallout 4
+  and Skyrim destructible rows when Mutagen exposes them, Starfield resource rows, shared keyword rows, shared model
+  rows, shared sound rows, and scripting adapters. `Statics` persists parent scalar rows,
   shared model rows, shared keyword rows when present, and raw opaque payload rows. `Books` persist parent scalar rows,
   shared model rows, shared keyword rows, shared sound rows, scripting adapters, and raw payload rows. `Doors` persist
   parent scalar rows, shared model rows,
@@ -937,7 +947,8 @@ Persistence behavior:
   `ConstructibleObjects` persist parent scalar rows, component rows, Fallout 4 category rows, Starfield recipe-filter
   rows, scripting adapters when present, and raw opaque payload rows such as conditions and multi-count data.
   `Terminals` persist parent scalar rows, shared model rows, shared keyword rows, scripting adapters, raw payload rows,
-  and `TerminalMarkerParameters` rows. `NPCs` and `MagicEffects` persist shared keyword rows.
+  forced-location rows, marker-parameter rows, body-text rows, and menu-item rows. `NPCs` and `MagicEffects` persist
+  shared keyword rows.
   `MagicEffects` persists shared sound rows and Spriggit-flattened DATA fields directly on the parent row.
 
 ### MiscItemComponents
@@ -948,6 +959,7 @@ Columns:
 - typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
 - decomposed `Component_*` FormKey columns (`NOT NULL`)
 - `Component_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `DisplayIndex` (`INTEGER`, nullable)
 - `Count` (`INTEGER`, nullable)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
@@ -964,6 +976,57 @@ Persistence behavior:
 - Existing component rows for the same MISC record/plugin are deleted before replacement rows are inserted.
 - Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful MISC import batch are
   deleted as stale.
+
+### MiscItemDestructibles
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `Health` (`INTEGER`, nullable)
+- `DESTCount` (`INTEGER`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `MiscItems` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID` must be greater than or equal to zero.
+
+Persistence behavior:
+
+- Existing destructible rows for the same MISC record/plugin are deleted before replacement rows are inserted.
+- Rows for the same game/plugin whose `ImportedAtUTC` was not refreshed by the current successful MISC import batch are
+  deleted as stale.
+- Deleting a destructible row cascades to its stage rows through the declared foreign key.
+
+### MiscItemDestructibleStages
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `Stage_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `StageRecordIndex`, `HealthPercent`, `ModelDamageStage`, and `SelfDamagePerSecond` (`INTEGER`, nullable)
+- `Flags` (`TEXT`, nullable)
+- nullable decomposed FormKey columns for `Explosion`
+- `Model_File` and `Model_Data` (`TEXT`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `MiscItemDestructibles` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID` and `Stage_Index` must be greater than or equal to zero.
+- `Explosion_*` columns must be all null or all non-null.
+
+Persistence behavior:
+
+- Existing stage rows for the same MISC record/plugin are deleted before replacement rows are inserted.
 
 ### MiscItemResources
 
@@ -1115,6 +1178,35 @@ Persistence behavior:
   filter links do not remain stale.
 - Stale typed-record deletion removes recipe-filter rows through the declared `ConstructibleObjects` cascade.
 
+### TerminalForcedLocations
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- decomposed `ForcedLocation_*` FormKey columns (`NOT NULL`)
+- `ForcedLocation_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `Terminals` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `ForcedLocation_Index`, `ForcedLocation_FormKey_ID`, and `FormKey_ID` must be greater than or equal to zero.
+
+Indexes:
+
+- `IX_TerminalForcedLocations_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning terminal row is saved.
+- Existing forced-location rows for the same terminal are deleted before replacement so removed location links do not
+  remain stale.
+- Stale typed-record deletion removes forced-location rows through the declared `Terminals` cascade.
+
 ### TerminalMarkerParameters
 
 Columns:
@@ -1122,7 +1214,8 @@ Columns:
 - Common containing plugin key columns listed above
 - typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
 - `Parameter_Index` (`INTEGER`, `NOT NULL`, primary key)
-- `Offset`, `EntryTypes`, and `ExitTypes` (`TEXT`, nullable)
+- `Enabled` (`INTEGER`, nullable)
+- `Offset`, `EntryTypes`, `ExitTypes`, and `Unknown` (`TEXT`, nullable)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
 Foreign keys:
@@ -1143,6 +1236,67 @@ Persistence behavior:
 - Existing marker-parameter rows for the same terminal are deleted before replacement so removed parameter slots do not
   remain stale.
 - Stale typed-record deletion removes marker-parameter rows through the declared `Terminals` cascade.
+
+### TerminalBodyTexts
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `BodyText_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `Text` (`TEXT`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `Terminals` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `BodyText_Index` and `FormKey_ID` must be greater than or equal to zero.
+
+Indexes:
+
+- `IX_TerminalBodyTexts_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning terminal row is saved.
+- Existing body-text rows for the same terminal are deleted before replacement so removed text entries do not remain
+  stale.
+- Stale typed-record deletion removes body-text rows through the declared `Terminals` cascade.
+
+### TerminalMenuItems
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `MenuItem_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `ItemText`, `Type`, and `DisplayText` (`TEXT`, nullable)
+- `ItemId` (`INTEGER`, nullable)
+- nullable decomposed FormKey columns for `Submenu`
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `Terminals` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `MenuItem_Index` and `FormKey_ID` must be greater than or equal to zero.
+- `ItemId` and `Submenu_FormKey_ID` must be null or greater than or equal to zero.
+
+Indexes:
+
+- `IX_TerminalMenuItems_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning terminal row is saved.
+- Existing menu-item rows for the same terminal are deleted before replacement so removed menu items do not remain
+  stale.
+- Stale typed-record deletion removes menu-item rows through the declared `Terminals` cascade.
 
 ### KeywordMappings
 
@@ -1550,6 +1704,8 @@ These columns carry record-reference identity but do not declare SQLite foreign 
   `PreviewTransform_ModKey_FileName`, and `PreviewTransform_FormKey_ID`
 - `MiscItemComponents.Component_ModKey_Name`, `Component_ModKey_Type`, `Component_ModKey_FileName`, and
   `Component_FormKey_ID`
+- `MiscItemDestructibleStages.Explosion_ModKey_Name`, `Explosion_ModKey_Type`, `Explosion_ModKey_FileName`, and
+  `Explosion_FormKey_ID`
 - `MiscItemResources.Resource_ModKey_Name`, `Resource_ModKey_Type`, `Resource_ModKey_FileName`, and
   `Resource_FormKey_ID`
 - `Keywords.AttractionRule_ModKey_Name`, `AttractionRule_ModKey_Type`, `AttractionRule_ModKey_FileName`,
@@ -1580,6 +1736,10 @@ These columns carry record-reference identity but do not declare SQLite foreign 
 - `Terminals.Menu_ModKey_Name`, `Menu_ModKey_Type`, `Menu_ModKey_FileName`, and `Menu_FormKey_ID`
 - `Terminals.FurnitureTemplate_ModKey_Name`, `FurnitureTemplate_ModKey_Type`,
   `FurnitureTemplate_ModKey_FileName`, and `FurnitureTemplate_FormKey_ID`
+- `TerminalForcedLocations.ForcedLocation_ModKey_Name`, `ForcedLocation_ModKey_Type`,
+  `ForcedLocation_ModKey_FileName`, and `ForcedLocation_FormKey_ID`
+- `TerminalMenuItems.Submenu_ModKey_Name`, `Submenu_ModKey_Type`, `Submenu_ModKey_FileName`, and
+  `Submenu_FormKey_ID`
 - `FormListItems.Item_ModKey_Name`, `Item_ModKey_Type`, `Item_ModKey_FileName`, and `Item_FormKey_ID`
 - `ClassProperties.ActorValue_ModKey_Name`, `ActorValue_ModKey_Type`, `ActorValue_ModKey_FileName`, and
   `ActorValue_FormKey_ID`

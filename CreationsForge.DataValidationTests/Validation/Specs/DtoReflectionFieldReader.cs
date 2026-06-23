@@ -23,20 +23,24 @@ public class DtoReflectionFieldReader
         "RecordType",
         "FormKey",
         "ImportedAtUTC",
+        "BodyTextIndex",
         "ComponentIndex",
         "ItemIndex",
         "KeywordIndex",
         "ListItemIndex",
         "MaterialSwapIndex",
+        "MenuItemIndex",
         "ModelGender",
         "ModelSlot",
         "ObjectUnused",
         "PayloadIndex",
+        "ParameterIndex",
         "PropertyIndex",
         "ResourceIndex",
         "ScriptIndex",
         "ScriptingAdapterName",
-        "SoundIndex"
+        "SoundIndex",
+        "StageIndex"
     };
 
     public IReadOnlyDictionary<string, string> Read(RecordDTO record)
