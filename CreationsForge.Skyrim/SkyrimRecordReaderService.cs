@@ -471,7 +471,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             }).ToList();
     }
 
-    private static List<ConditionFormConditionDTO> GetConditionRules(PluginDTO plugin, SupportedGame game, FormKey formKey, object? conditions)
+    private static List<ConditionFormConditionDTO> GetConditionRules(PluginDTO plugin, SupportedGame game, FormKey formKey, object? conditions, string conditionSlot = "Conditions")
     {
         if (conditions is not IEnumerable enumerable) return new List<ConditionFormConditionDTO>();
         var importedAtUTC = DateTime.UtcNow;
@@ -485,18 +485,21 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 ModKey = plugin.ModKey,
                 FormKey = MapFormKey(formKey),
                 ConditionIndex = conditionIndex,
+                ConditionSlot = conditionSlot,
                 MutagenObjectType = condition.GetType().Name,
                 DataMutagenObjectType = data?.GetType().Name,
                 CompareOperator = GetPropertyValue(condition, "CompareOperator")?.ToString(),
+                Flags = FormatEnumerable(GetPropertyValue(condition, "Flags")),
+                Unknown2 = GetPropertyNullableInt(condition, "Unknown2"),
                 ComparisonValue = FormatConditionValue(comparisonValue),
                 ComparisonValueFormKey = GetFormKeyFromObject(comparisonValue),
                 ImportedAtUTC = importedAtUTC,
-                Parameters = GetConditionRuleParameters(plugin, game, formKey, conditionIndex, data, importedAtUTC)
+                Parameters = GetConditionRuleParameters(plugin, game, formKey, conditionSlot, conditionIndex, data, importedAtUTC)
             };
         }).ToList();
     }
 
-    private static List<ConditionFormConditionParameterDTO> GetConditionRuleParameters(PluginDTO plugin, SupportedGame game, FormKey formKey, int conditionIndex, object? data, DateTime importedAtUTC)
+    private static List<ConditionFormConditionParameterDTO> GetConditionRuleParameters(PluginDTO plugin, SupportedGame game, FormKey formKey, string conditionSlot, int conditionIndex, object? data, DateTime importedAtUTC)
     {
         return data?.GetType().GetProperties()
             .Select(property => new ConditionFormConditionParameterDTO
@@ -505,6 +508,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 ModKey = plugin.ModKey,
                 FormKey = MapFormKey(formKey),
                 ConditionIndex = conditionIndex,
+                ConditionSlot = conditionSlot,
                 ParameterName = property.Name,
                 ParameterValue = FormatConditionValue(property.GetValue(data)),
                 ParameterFormKey = GetFormKeyFromObject(property.GetValue(data)),
@@ -581,8 +585,17 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 RestrictionFormKey = GetLinkedFormKey(record, "Restriction"),
                 TrainingFormKey = GetLinkedFormKey(record, "Training"),
                 MajorFlags = GetPropertyStringOrNull(record, "MajorFlags"),
+                Level = GetPropertyNullableInt(record, "Level"),
+                NumRanks = GetPropertyNullableInt(record, "NumRanks"),
+                Playable = GetPropertyNullableBool(record, "Playable"),
+                Hidden = GetPropertyNullableBool(record, "Hidden"),
+                NextPerk = GetLinkedFormKey(record, "NextPerk"),
+                Effects = GetPerkEffects(plugin, SupportedGame.Skyrim, GetRequiredRawFormKey(record), record),
                 Ranks = GetPerkRanks(plugin, record),
                 BackgroundSkills = GetPerkBackgroundSkills(plugin, record),
+                Conditions = GetPerkConditionRules(plugin, SupportedGame.Skyrim, GetRequiredRawFormKey(record), record),
+                Sounds = GetNamedSounds(plugin, RecordTypeCatalog.Perk.RecordID, GetRequiredRawFormKey(record), record, "Sound"),
+                RawPayloads = GetPerkRawPayloads(plugin, GetRequiredRawFormKey(record), record),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Perk.RecordID, record)
             }, record))
             .ToList();
@@ -591,7 +604,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
     private static IReadOnlyList<StaticDTO> MapStatics(PluginDTO plugin, ISkyrimModGetter mod)
     {
         return GetRecordCollection(mod, "Statics")
-            .Select(record => new StaticDTO
+            .Select(record => LocalizedStringDTOMapper.AddLocalizedStrings(new StaticDTO
             {
                 Game = SupportedGame.Skyrim,
                 ModKey = plugin.ModKey,
@@ -599,17 +612,24 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 EditorID = GetPropertyString(record, "EditorID"),
                 FormVersion = GetPropertyInt(record, "FormVersion"),
                 MajorRecordFlags = GetPropertyInt(record, "SkyrimMajorRecordFlags"),
+                Name = GetTranslatedString(record, "Name"),
                 Version2 = GetPropertyNullableInt(record, "Version2"),
                 VersionControl = GetPropertyNullableInt(record, "VersionControl"),
                 ImportedAtUTC = DateTime.UtcNow,
                 ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
                 ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
                 MaxAngle = GetPropertyNullableDouble(record, "MaxAngle"),
-                Unused = FormatEnumerable(GetPropertyValue(record, "Unused")),
+                Unused = FormatEnumerableOrEmptyList(GetPropertyValue(record, "Unused")),
                 DNAMDataTypeState = FormatEnumerable(GetPropertyValue(record, "DNAMDataTypeState")),
+                PreviewTransform = GetLinkedFormKey(record, "PreviewTransform"),
+                Material = GetLinkedFormKey(record, "Material"),
+                LodLevel0 = GetPropertyStringOrNull(GetPropertyValue(record, "Lod"), "Level0"),
+                LodLevel1 = GetPropertyStringOrNull(GetPropertyValue(record, "Lod"), "Level1"),
+                LodLevel2 = GetPropertyStringOrNull(GetPropertyValue(record, "Lod"), "Level2"),
+                LodLevel3 = GetPropertyStringOrNull(GetPropertyValue(record, "Lod"), "Level3"),
                 Models = GetModels(plugin, RecordTypeCatalog.Static.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model")),
-                RawPayloads = GetModelRawPayloads(plugin, RecordTypeCatalog.Static.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model"))
-            })
+                RawPayloads = GetStaticRawPayloads(plugin, GetRequiredRawFormKey(record), record)
+            }, record))
             .ToList();
     }
 
@@ -757,6 +777,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 UnknownStaticFormKey = GetLinkedFormKey(rank, "UnknownStatic"),
                 ConditionCount = GetEnumerableCount(GetPropertyValue(rank, "Conditions")),
                 ActivityCount = GetEnumerableCount(GetPropertyValue(rank, "Activities")),
+                Conditions = GetConditionRules(plugin, SupportedGame.Skyrim, formKey, GetPropertyValue(rank, "Conditions"), GetPerkRankConditionSlot(rankIndex)),
                 ImportedAtUTC = importedAtUTC,
                 Effects = GetPerkRankEffects(plugin, formKey, rank, rankIndex, importedAtUTC)
             })
@@ -776,16 +797,166 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 Rank = GetPropertyInt(effect, "Rank"),
                 Priority = GetPropertyInt(effect, "Priority"),
                 PerkEntryId = GetPropertyNullableInt(effect, "PerkEntryID"),
-                Flags = GetPropertyStringOrNull(effect, "Flags"),
+                Flags = FormatEnumerable(GetPropertyValue(effect, "Flags")),
                 ButtonLabel = GetTranslatedString(effect, "ButtonLabel"),
                 ConditionCount = GetEnumerableCount(GetPropertyValue(effect, "Conditions")),
                 EntryPoint = GetPropertyStringOrNull(effect, "EntryPoint"),
                 PerkConditionTabCount = GetPropertyNullableInt(effect, "PerkConditionTabCount"),
                 Modification = GetPropertyStringOrNull(effect, "Modification"),
                 Value = GetPropertyNullableDouble(effect, "Value"),
+                ActorValue = GetFormKeyOrString(effect, "ActorValue"),
+                Spell = GetFormKeyOrString(effect, "Spell"),
+                Quest = GetFormKeyOrString(effect, "Quest"),
+                Stage = GetPropertyNullableInt(effect, "Stage"),
+                Conditions = GetPerkEffectConditionTabs(plugin, SupportedGame.Skyrim, formKey, rankIndex, effectIndex, effect, importedAtUTC),
                 ImportedAtUTC = importedAtUTC
             })
             .ToList() ?? new List<PerkRankEffectDTO>();
+    }
+
+    private static List<PerkEffectDTO> GetPerkEffects(PluginDTO plugin, SupportedGame game, FormKey formKey, object record)
+    {
+        var effects = GetOrderedPerkEffects(GetPropertyValue(record, "Effects"));
+        if (effects.Count == 0) return new List<PerkEffectDTO>();
+
+        var importedAtUTC = DateTime.UtcNow;
+        return effects
+            .Select((effect, effectIndex) => new PerkEffectDTO
+            {
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                EffectIndex = effectIndex,
+                MutagenObjectType = effect.GetType().Name,
+                Rank = GetPropertyNullableInt(effect, "Rank"),
+                Priority = GetPropertyNullableInt(effect, "Priority"),
+                PerkEntryId = GetPropertyNullableInt(effect, "PerkEntryID"),
+                Flags = FormatEnumerable(GetPropertyValue(effect, "Flags")),
+                ButtonLabel = GetTranslatedString(effect, "ButtonLabel"),
+                ConditionCount = GetEnumerableCount(GetPropertyValue(effect, "Conditions")),
+                EntryPoint = GetPropertyStringOrNull(effect, "EntryPoint"),
+                PerkConditionTabCount = GetPropertyNullableInt(effect, "PerkConditionTabCount"),
+                Modification = GetPropertyStringOrNull(effect, "Modification"),
+                Value = GetPropertyNullableDouble(effect, "Value"),
+                ActorValue = GetFormKeyOrString(effect, "ActorValue"),
+                Spell = GetFormKeyOrString(effect, "Spell"),
+                Quest = GetFormKeyOrString(effect, "Quest"),
+                Stage = GetPropertyNullableInt(effect, "Stage"),
+                Conditions = GetPerkEffectConditionTabs(plugin, game, formKey, null, effectIndex, effect, importedAtUTC),
+                ImportedAtUTC = importedAtUTC
+            })
+            .ToList();
+    }
+
+    private static List<PerkEffectConditionTabDTO> GetPerkEffectConditionTabs(
+        PluginDTO plugin,
+        SupportedGame game,
+        FormKey formKey,
+        int? rankIndex,
+        int effectIndex,
+        object effect,
+        DateTime importedAtUTC)
+    {
+        return (GetPropertyValue(effect, "Conditions") as IEnumerable)?.Cast<object>()
+            .Select((conditionTab, conditionTabIndex) =>
+            {
+                var slot = GetPerkEffectConditionSlot(rankIndex, effectIndex, conditionTabIndex);
+                return new PerkEffectConditionTabDTO
+                {
+                    ModKey = plugin.ModKey,
+                    FormKey = MapFormKey(formKey),
+                    RankIndex = rankIndex,
+                    EffectIndex = effectIndex,
+                    ConditionTabIndex = conditionTabIndex,
+                    RunOnTabIndex = GetPropertyNullableInt(conditionTab, "RunOnTabIndex"),
+                    ConditionCount = GetEnumerableCount(GetPropertyValue(conditionTab, "Conditions")),
+                    Conditions = GetConditionRules(plugin, game, formKey, GetPropertyValue(conditionTab, "Conditions"), slot),
+                    ImportedAtUTC = importedAtUTC
+                };
+            })
+            .ToList() ?? new List<PerkEffectConditionTabDTO>();
+    }
+
+    private static List<ConditionFormConditionDTO> GetPerkConditionRules(PluginDTO plugin, SupportedGame game, FormKey formKey, object record)
+    {
+        var conditions = GetConditionRules(plugin, game, formKey, GetPropertyValue(record, "Conditions"));
+        AddPerkEffectConditionRules(conditions, plugin, game, formKey, null, GetPropertyValue(record, "Effects"));
+
+        var ranks = GetPropertyValue(record, "Ranks") as IEnumerable;
+        if (ranks != null)
+        {
+            foreach (var rank in ranks.Cast<object>().Select((value, index) => new { value, index }))
+            {
+                conditions.AddRange(GetConditionRules(plugin, game, formKey, GetPropertyValue(rank.value, "Conditions"), GetPerkRankConditionSlot(rank.index)));
+                AddPerkEffectConditionRules(conditions, plugin, game, formKey, rank.index, GetPropertyValue(rank.value, "Effects"));
+            }
+        }
+
+        return conditions;
+    }
+
+    private static void AddPerkEffectConditionRules(
+        ICollection<ConditionFormConditionDTO> conditions,
+        PluginDTO plugin,
+        SupportedGame game,
+        FormKey formKey,
+        int? rankIndex,
+        object? effects)
+    {
+        var effectList = rankIndex.HasValue
+            ? (effects as IEnumerable)?.Cast<object>().ToList() ?? new List<object>()
+            : GetOrderedPerkEffects(effects);
+        if (effectList.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var effect in effectList.Select((value, index) => new { value, index }))
+        {
+            var conditionTabs = GetPropertyValue(effect.value, "Conditions") as IEnumerable;
+            if (conditionTabs == null)
+            {
+                continue;
+            }
+
+            foreach (var conditionTab in conditionTabs.Cast<object>().Select((value, index) => new { value, index }))
+            {
+                var slot = GetPerkEffectConditionSlot(rankIndex, effect.index, conditionTab.index);
+                foreach (var condition in GetConditionRules(plugin, game, formKey, GetPropertyValue(conditionTab.value, "Conditions"), slot))
+                {
+                    conditions.Add(condition);
+                }
+            }
+        }
+    }
+
+    private static string GetPerkEffectConditionSlot(int? rankIndex, int effectIndex, int conditionTabIndex)
+    {
+        return rankIndex.HasValue
+            ? $"Ranks[{rankIndex.Value}].Effects[{effectIndex}].Conditions[{conditionTabIndex}].Conditions"
+            : $"Effects[{effectIndex}].Conditions[{conditionTabIndex}].Conditions";
+    }
+
+    private static List<object> GetOrderedPerkEffects(object? effects)
+    {
+        return (effects as IEnumerable)?.Cast<object>()
+            .Select((value, originalIndex) => new { value, originalIndex })
+            .OrderBy(effect => GetPropertyNullableInt(effect.value, "Priority") ?? 0)
+            .ThenBy(effect => effect.originalIndex)
+            .Select(effect => effect.value)
+            .ToList() ?? new List<object>();
+    }
+
+    private static string GetPerkRankConditionSlot(int rankIndex)
+    {
+        return $"Ranks[{rankIndex}].Conditions";
+    }
+
+    private static List<RawRecordPayloadDTO> GetPerkRawPayloads(PluginDTO plugin, FormKey formKey, object record)
+    {
+        var importedAtUTC = DateTime.UtcNow;
+        var payloads = new List<RawRecordPayloadDTO>();
+        AddScriptFragmentRawPayloads(payloads, plugin, RecordTypeCatalog.Perk.RecordID, formKey, record, importedAtUTC);
+        return payloads;
     }
 
     private static List<PerkBackgroundSkillDTO> GetPerkBackgroundSkills(PluginDTO plugin, object record)
@@ -1281,6 +1452,22 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         return payloads;
     }
 
+    private static List<RawRecordPayloadDTO> GetStaticRawPayloads(PluginDTO plugin, FormKey formKey, object record)
+    {
+        var payloads = GetModelRawPayloads(plugin, RecordTypeCatalog.Static.RecordID, formKey, GetPropertyValue(record, "Model"));
+        AddRawRecordPayload(
+            payloads,
+            plugin,
+            RecordTypeCatalog.Static.RecordID,
+            formKey,
+            "NavmeshGeometry",
+            0,
+            GetPropertyValue(record, "NavmeshGeometry")?.GetType().Name ?? "NavmeshGeometry",
+            FormatReflectionPayload(GetPropertyValue(record, "NavmeshGeometry")),
+            DateTime.UtcNow);
+        return payloads;
+    }
+
     private static void AddRawRecordPayload(
         ICollection<RawRecordPayloadDTO> payloads,
         PluginDTO plugin,
@@ -1310,6 +1497,49 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             PayloadValue = payloadValue,
             ImportedAtUTC = importedAtUTC
         });
+    }
+
+    private static void AddScriptFragmentRawPayloads(
+        ICollection<RawRecordPayloadDTO> payloads,
+        PluginDTO plugin,
+        string recordType,
+        FormKey formKey,
+        object record,
+        DateTime importedAtUTC)
+    {
+        var scriptFragments = GetPropertyValue(GetPropertyValue(record, "VirtualMachineAdapter"), "ScriptFragments");
+        if (scriptFragments is IEnumerable scriptFragmentList and not string)
+        {
+            foreach (var scriptFragment in scriptFragmentList.Cast<object>().Select((value, index) => new { value, index }))
+            {
+                AddRawRecordPayload(
+                    payloads,
+                    plugin,
+                    recordType,
+                    formKey,
+                    $"VirtualMachineAdapter.ScriptFragments[{scriptFragment.index}]",
+                    0,
+                    scriptFragment.value.GetType().Name,
+                    FormatReflectionPayload(scriptFragment.value),
+                    importedAtUTC);
+            }
+
+            return;
+        }
+
+        if (scriptFragments != null)
+        {
+            AddRawRecordPayload(
+                payloads,
+                plugin,
+                recordType,
+                formKey,
+                "VirtualMachineAdapter.ScriptFragments",
+                0,
+                scriptFragments.GetType().Name,
+                FormatReflectionPayload(scriptFragments),
+                importedAtUTC);
+        }
     }
 
     private static List<SoundMappingDTO> GetNamedSounds(PluginDTO plugin, string recordType, FormKey formKey, object record, params string[] soundSlots)
@@ -1616,7 +1846,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
 
         var sourceType = source.GetType();
         var property = sourceType.GetProperty(propertyName);
-        if (property != null)
+        if (property != null && property.GetIndexParameters().Length == 0)
         {
             return property.GetValue(source);
         }
@@ -1624,7 +1854,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         foreach (var interfaceType in sourceType.GetInterfaces())
         {
             property = interfaceType.GetProperty(propertyName);
-            if (property != null)
+            if (property != null && property.GetIndexParameters().Length == 0)
             {
                 return property.GetValue(source);
             }
@@ -1641,6 +1871,22 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
     private static string? GetPropertyStringOrNull(object? source, string propertyName)
     {
         return GetPropertyValue(source, propertyName)?.ToString();
+    }
+
+    private static string? GetFormKeyOrString(object source, string propertyName)
+    {
+        var value = GetPropertyValue(source, propertyName);
+        if (GetFormKeyFromObject(value) is { } formKey)
+        {
+            return FormatFormKey(formKey);
+        }
+
+        return value?.ToString();
+    }
+
+    private static string FormatFormKey(FormKeyDTO formKey)
+    {
+        return formKey.Id.ToString("X6", CultureInfo.InvariantCulture) + ":" + formKey.ModKey.FileName;
     }
 
     private static int GetPropertyInt(object source, string propertyName)
@@ -1739,9 +1985,69 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
     private static string? FormatEnumerable(object? value)
     {
         if (value is string text) return text;
+        if (TryFormatFlagObject(value, out var flagText)) return flagText;
         return value is IEnumerable enumerable
             ? string.Join(", ", enumerable.Cast<object>().Select(item => item.ToString()))
             : value?.ToString();
+    }
+
+    private static bool TryFormatFlagObject(object? value, out string? flagText)
+    {
+        flagText = null;
+        if (value == null || value is string || value is IEnumerable || value.GetType().IsEnum || value.GetType().IsPrimitive)
+        {
+            return false;
+        }
+
+        var type = value.GetType();
+        if (!type.Name.Contains("Flag", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var flags = new List<string>();
+        foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(property => property.GetIndexParameters().Length == 0))
+        {
+            var propertyValue = property.GetValue(value);
+            if (propertyValue is bool boolValue)
+            {
+                if (boolValue)
+                {
+                    flags.Add(property.Name);
+                }
+
+                continue;
+            }
+
+            if (propertyValue is Enum enumValue && Convert.ToUInt64(enumValue, CultureInfo.InvariantCulture) != 0)
+            {
+                flags.Add(enumValue.ToString());
+                continue;
+            }
+
+            if (propertyValue is IEnumerable enumerableValue and not string)
+            {
+                foreach (var item in enumerableValue.Cast<object>().Select(item => item.ToString()).Where(item => !string.IsNullOrWhiteSpace(item)))
+                {
+                    flags.Add(item!);
+                }
+            }
+        }
+
+        flagText = flags.Count == 0 ? null : string.Join(", ", flags);
+        return true;
+    }
+
+    private static string? FormatEnumerableOrEmptyList(object? value)
+    {
+        if (value is string text) return text;
+        if (value is IEnumerable enumerable)
+        {
+            var values = enumerable.Cast<object>().Select(item => item.ToString()).ToList();
+            return values.Count == 0 ? "[]" : string.Join(", ", values);
+        }
+
+        return value?.ToString();
     }
 
     private static string GetSpriggitMutagenObjectType(object record)
@@ -1777,6 +2083,57 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         if (value is byte[] bytes) return Convert.ToHexString(bytes);
         if (value is IEnumerable enumerable) return string.Join(", ", enumerable.Cast<object>().Select(item => FormatConditionValue(item) ?? string.Empty));
         return value.ToString();
+    }
+
+    private static string? FormatReflectionPayload(object? value, int depth = 0)
+    {
+        if (value == null) return null;
+        if (depth > 3) return value.GetType().Name;
+        if (GetFormKeyFromObject(value) is { } formKey) return $"{formKey.ModKey.FileName}:{formKey.Id:X8}";
+        if (value is string text) return text;
+        if (value is byte[] bytes) return Convert.ToHexString(bytes);
+
+        var type = value.GetType();
+        if (type.IsPrimitive || value is decimal || value is DateTime || value is Guid || type.IsEnum)
+        {
+            return Convert.ToString(value, CultureInfo.InvariantCulture);
+        }
+
+        if (value is IEnumerable enumerable)
+        {
+            return string.Join(
+                "; ",
+                enumerable.Cast<object>()
+                    .Select((item, index) => "[" + index.ToString(CultureInfo.InvariantCulture) + "]=" + (FormatReflectionPayload(item, depth + 1) ?? string.Empty)));
+        }
+
+        var parts = new List<string>();
+        foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                     .Where(property => property.GetIndexParameters().Length == 0)
+                     .OrderBy(property => property.Name, StringComparer.Ordinal))
+        {
+            object? propertyValue;
+            try
+            {
+                propertyValue = property.GetValue(value);
+            }
+            catch (TargetInvocationException)
+            {
+                continue;
+            }
+            catch (TargetParameterCountException)
+            {
+                continue;
+            }
+
+            var formattedValue = FormatReflectionPayload(propertyValue, depth + 1);
+            if (!string.IsNullOrWhiteSpace(formattedValue))
+            {
+                parts.Add(property.Name + "=" + formattedValue);
+            }
+        }
+
+        return parts.Count == 0 ? value.ToString() : string.Join("; ", parts);
     }
 
     private static string? FormatObjectBoundsPoint(object? objectBounds, string propertyName)

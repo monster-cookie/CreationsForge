@@ -15,6 +15,7 @@ public class GameRecordSetProvider
     {
         var expectedFormKey = ParseFormKey(rawFormKey);
         using var scope = Container.Value.BeginLifetimeScope();
+        expectedFormKey.ModKey = ResolveImportedModKey(scope, game, expectedFormKey.ModKey);
         var record = GetRecords(scope, game, recordType, expectedFormKey)
             .FirstOrDefault(candidate => FormKeysMatch(candidate.FormKey, expectedFormKey) &&
                                          string.Equals(candidate.ModKey.FileName, expectedFormKey.ModKey.FileName, StringComparison.OrdinalIgnoreCase));
@@ -47,6 +48,15 @@ public class GameRecordSetProvider
             "TERM" => scope.Resolve<ITerminalRepository>().GetByFormKey(game, formKey),
             _ => throw new InvalidOperationException($"Unsupported record type '{recordType}'.")
         };
+    }
+
+    private static ModKeyDTO ResolveImportedModKey(ILifetimeScope scope, SupportedGame game, ModKeyDTO parsedModKey)
+    {
+        var plugin = scope.Resolve<IPluginRepository>()
+            .SearchOpenablePluginsByFilename(game, parsedModKey.FileName)
+            .FirstOrDefault(candidate => string.Equals(candidate.ModKey.FileName, parsedModKey.FileName, StringComparison.OrdinalIgnoreCase));
+
+        return plugin?.ModKey ?? parsedModKey;
     }
 
     private static FormKeyDTO ParseFormKey(string rawFormKey)

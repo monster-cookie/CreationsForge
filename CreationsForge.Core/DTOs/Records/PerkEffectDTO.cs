@@ -2,21 +2,19 @@ using CreationsForge.Core.DTOs.Plugins;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class PerkRankEffectDTO
+public class PerkEffectDTO
 {
     public required ModKeyDTO ModKey { get; set; }
 
     public required FormKeyDTO FormKey { get; set; }
 
-    public int RankIndex { get; set; }
-
     public int EffectIndex { get; set; }
 
     public required string MutagenObjectType { get; set; }
 
-    public int Rank { get; set; }
+    public int? Rank { get; set; }
 
-    public int Priority { get; set; }
+    public int? Priority { get; set; }
 
     public int? PerkEntryId { get; set; }
 
@@ -24,7 +22,7 @@ public class PerkRankEffectDTO
 
     public TranslatedStringDTO? ButtonLabel { get; set; }
 
-    public int ConditionCount { get; set; }
+    public int? ConditionCount { get; set; }
 
     public string? EntryPoint { get; set; }
 

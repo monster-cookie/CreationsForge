@@ -47,7 +47,109 @@ public class DtoReflectionFieldReader
     {
         var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         FlattenValue(values, string.Empty, record.Game, record);
+        NormalizeConditionFields(values);
         return values;
+    }
+
+    private static void NormalizeConditionFields(IDictionary<string, string> values)
+    {
+        foreach (var field in values.Keys.Where(field => field.EndsWith(".DataMutagenObjectType", StringComparison.OrdinalIgnoreCase)).ToList())
+        {
+            var basePath = field[..^".DataMutagenObjectType".Length];
+            if (values.TryGetValue(field, out var value) && !IsNullValue(value))
+            {
+                values[basePath + ".Data.MutagenObjectType"] = NormalizeMutagenObjectTypeName(value);
+            }
+
+            AddConditionComparisonValueAlias(values, basePath);
+            AddConditionFlagAliases(values, basePath);
+            AddConditionParameterAliases(values, basePath);
+            RemoveConditionInternalFields(values, basePath);
+        }
+
+        foreach (var field in values.Keys.Where(field => field.EndsWith(".MutagenObjectType", StringComparison.OrdinalIgnoreCase)).ToList())
+        {
+            values[field] = NormalizeMutagenObjectTypeName(values[field]);
+        }
+    }
+
+    private static void AddConditionComparisonValueAlias(IDictionary<string, string> values, string basePath)
+    {
+        if (values.TryGetValue(basePath + ".ComparisonValueFormKey", out var formKey) && !IsNullValue(formKey))
+        {
+            values[basePath + ".ComparisonValue"] = formKey;
+        }
+    }
+
+    private static void AddConditionFlagAliases(IDictionary<string, string> values, string basePath)
+    {
+        if (!values.TryGetValue(basePath + ".Flags", out var flags) || IsNullValue(flags) || string.IsNullOrWhiteSpace(flags))
+        {
+            return;
+        }
+
+        var flagValues = flags.Split(", ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        values[basePath + ".Flags.Count"] = flagValues.Length.ToString(CultureInfo.InvariantCulture);
+        for (var index = 0; index < flagValues.Length; index++)
+        {
+            values[basePath + ".Flags[" + index.ToString(CultureInfo.InvariantCulture) + "]"] = flagValues[index];
+        }
+    }
+
+    private static void AddConditionParameterAliases(IDictionary<string, string> values, string basePath)
+    {
+        if (!values.TryGetValue(basePath + ".Parameters.Count", out var countValue) ||
+            !int.TryParse(countValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
+        {
+            return;
+        }
+
+        for (var index = 0; index < count; index++)
+        {
+            var parameterPath = basePath + ".Parameters[" + index.ToString(CultureInfo.InvariantCulture) + "]";
+            if (!values.TryGetValue(parameterPath + ".ParameterName", out var parameterName) || string.IsNullOrWhiteSpace(parameterName))
+            {
+                continue;
+            }
+
+            if (values.TryGetValue(parameterPath + ".ParameterFormKey", out var parameterFormKey) && !IsNullValue(parameterFormKey))
+            {
+                values[basePath + ".Data." + parameterName] = parameterFormKey;
+                continue;
+            }
+
+            if (values.TryGetValue(parameterPath + ".ParameterValue", out var parameterValue) && !IsNullValue(parameterValue))
+            {
+                values[basePath + ".Data." + parameterName] = parameterValue;
+            }
+        }
+    }
+
+    private static void RemoveConditionInternalFields(IDictionary<string, string> values, string basePath)
+    {
+        foreach (var field in values.Keys
+            .Where(field => string.Equals(field, basePath + ".ConditionSlot", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(field, basePath + ".DataMutagenObjectType", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(field, basePath + ".ComparisonValueFormKey", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(field, basePath + ".Flags", StringComparison.OrdinalIgnoreCase) ||
+                field.StartsWith(basePath + ".Parameters", StringComparison.OrdinalIgnoreCase))
+            .ToList())
+        {
+            values.Remove(field);
+        }
+    }
+
+    private static bool IsNullValue(string value)
+    {
+        return string.Equals(value, "Null", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string NormalizeMutagenObjectTypeName(string value)
+    {
+        const string binaryOverlaySuffix = "BinaryOverlay";
+        return value.EndsWith(binaryOverlaySuffix, StringComparison.Ordinal)
+            ? value[..^binaryOverlaySuffix.Length]
+            : value;
     }
 
     private static void FlattenValue(IDictionary<string, string> values, string path, SupportedGame game, object? value)

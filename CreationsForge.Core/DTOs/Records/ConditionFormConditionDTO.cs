@@ -25,6 +25,10 @@ public class ConditionFormConditionDTO
 
     public string? CompareOperator { get; set; }
 
+    public string? Flags { get; set; }
+
+    public int? Unknown2 { get; set; }
+
     public string? ComparisonValue { get; set; }
 
     public FormKeyDTO? ComparisonValueFormKey { get; set; }

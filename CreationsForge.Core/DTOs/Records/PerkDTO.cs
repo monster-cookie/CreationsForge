@@ -3,7 +3,7 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class PerkDTO : RecordDTO, IHasScriptingAdaptersDTO
+public class PerkDTO : RecordDTO, IHasConditionsDTO, ISounds, IHasRawRecordPayloadsDTO, IHasScriptingAdaptersDTO
 {
     public TranslatedStringDTO? Name { get; set; }
 
@@ -25,9 +25,27 @@ public class PerkDTO : RecordDTO, IHasScriptingAdaptersDTO
 
     public string? MajorFlags { get; set; }
 
+    public int? Level { get; set; }
+
+    public int? NumRanks { get; set; }
+
+    public bool? Playable { get; set; }
+
+    public bool? Hidden { get; set; }
+
+    public FormKeyDTO? NextPerk { get; set; }
+
+    public IList<PerkEffectDTO> Effects { get; set; } = new List<PerkEffectDTO>();
+
     public IList<PerkRankDTO> Ranks { get; set; } = new List<PerkRankDTO>();
 
     public IList<PerkBackgroundSkillDTO> BackgroundSkills { get; set; } = new List<PerkBackgroundSkillDTO>();
+
+    public IList<ConditionFormConditionDTO> Conditions { get; set; } = new List<ConditionFormConditionDTO>();
+
+    public IList<SoundMappingDTO> Sounds { get; set; } = new List<SoundMappingDTO>();
+
+    public IList<RawRecordPayloadDTO> RawPayloads { get; set; } = new List<RawRecordPayloadDTO>();
 
     public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 }

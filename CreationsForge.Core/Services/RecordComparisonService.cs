@@ -458,9 +458,18 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("Category", records, record => record.Category ?? string.Empty));
         fields.Add(CreateField("RestrictionFormKey", records, record => FormatFormKey(record.RestrictionFormKey)));
         fields.Add(CreateField("TrainingFormKey", records, record => FormatFormKey(record.TrainingFormKey)));
+        fields.Add(CreateField("Level", records, record => record.Level?.ToString() ?? string.Empty));
+        fields.Add(CreateField("NumRanks", records, record => record.NumRanks?.ToString() ?? string.Empty));
+        fields.Add(CreateField("Playable", records, record => record.Playable?.ToString() ?? string.Empty));
+        fields.Add(CreateField("Hidden", records, record => record.Hidden?.ToString() ?? string.Empty));
+        fields.Add(CreateField("NextPerk", records, record => FormatFormKey(record.NextPerk)));
         fields.Add(CreateField("MajorFlags", records, record => record.MajorFlags ?? string.Empty));
+        AddPerkEffectGroups(fields, records, localizedStrings, recordTextLanguage);
         AddPerkRankGroups(fields, records, localizedStrings, recordTextLanguage);
         AddPerkBackgroundSkillGroup(fields, records);
+        AddConditionRuleGroups(fields, records.Cast<RecordDTO>().ToList(), records.Cast<IHasConditionsDTO>().ToList());
+        AddSoundGroups(fields, records.Cast<RecordDTO>().ToList(), SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.Perk.RecordID, formKey));
+        AddRawPayloadGroups(fields, records.Cast<RecordDTO>().ToList(), RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Perk.RecordID, formKey));
         AddScriptingAdapterGroups(fields, records.Cast<RecordDTO>().ToList(), ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Perk.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.Perk.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
@@ -469,7 +478,10 @@ public class RecordComparisonService : IRecordComparisonService
     private RecordComparisonDTO CreateStaticComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = StaticRepository.GetByFormKey(game, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey);
+        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
+        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
         fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
         fields.Add(CreateField("ObjectBoundsFirst", records, record => record.ObjectBoundsFirst ?? string.Empty));
         fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBoundsSecond ?? string.Empty));
@@ -479,11 +491,47 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("LeafFrequency", records, record => record.LeafFrequency?.ToString() ?? string.Empty));
         fields.Add(CreateField("Unused", records, record => record.Unused ?? string.Empty));
         fields.Add(CreateField("DNAMDataTypeState", records, record => record.DNAMDataTypeState ?? string.Empty));
+        fields.Add(CreateField("DirtinessScale", records, record => record.DirtinessScale?.ToString() ?? string.Empty));
+        fields.Add(CreateField("SnapTemplate", records, record => FormatFormKey(record.SnapTemplate)));
+        fields.Add(CreateField("PreviewTransform", records, record => FormatFormKey(record.PreviewTransform)));
+        fields.Add(CreateField("Material", records, record => FormatFormKey(record.Material)));
+        fields.Add(CreateField("Lod.Level0", records, record => record.LodLevel0 ?? string.Empty));
+        fields.Add(CreateField("Lod.Level1", records, record => record.LodLevel1 ?? string.Empty));
+        fields.Add(CreateField("Lod.Level2", records, record => record.LodLevel2 ?? string.Empty));
+        fields.Add(CreateField("Lod.Level3", records, record => record.LodLevel3 ?? string.Empty));
         AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey));
+        AddStaticPropertyGroups(fields, records);
         AddModelGroups(fields, records.Cast<RecordDTO>().ToList(), ModelRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey));
         AddRawPayloadGroups(fields, records.Cast<RecordDTO>().ToList(), RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.Static.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
+    }
+
+    private static void AddStaticPropertyGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<StaticDTO> records)
+    {
+        var propertyIndexes = records
+            .SelectMany(record => record.Properties)
+            .Select(property => property.PropertyIndex)
+            .Distinct()
+            .OrderBy(index => index)
+            .ToList();
+
+        foreach (var propertyIndex in propertyIndexes)
+        {
+            var currentIndex = propertyIndex;
+            fields.Add(CreateGroupField(
+                $"Property [{currentIndex}]",
+                records.Cast<RecordDTO>().ToList(),
+                [
+                    CreateField("ActorValue", records, record => FormatFormKey(FindStaticProperty(record, currentIndex)?.ActorValue)),
+                    CreateField("Value", records, record => FindStaticProperty(record, currentIndex)?.Value?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty)
+                ]));
+        }
+    }
+
+    private static StaticPropertyDTO? FindStaticProperty(StaticDTO record, int propertyIndex)
+    {
+        return record.Properties.FirstOrDefault(property => property.PropertyIndex == propertyIndex);
     }
 
     private RecordComparisonDTO CreateBookComparison(SupportedGame game, FormKeyDTO formKey)
@@ -890,6 +938,7 @@ public class RecordComparisonService : IRecordComparisonService
                 .Where(HasVisibleValue)
                 .ToList();
             AddPerkRankEffectGroups(rankChildren, records, localizedStrings, recordTextLanguage, currentRankIndex);
+            AddPerkRankActivityGroups(rankChildren, records, localizedStrings, recordTextLanguage, currentRankIndex);
             if (rankChildren.Count > 0)
             {
                 rankFields.Add(CreateGroupField($"Rank [{rankIndex}]", records.Cast<RecordDTO>().ToList(), rankChildren));
@@ -899,6 +948,47 @@ public class RecordComparisonService : IRecordComparisonService
         if (rankFields.Count > 0)
         {
             fields.Add(CreateGroupField("Ranks", records.Cast<RecordDTO>().ToList(), rankFields));
+        }
+    }
+
+    private static void AddPerkEffectGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<PerkDTO> records,
+        IReadOnlyList<LocalizedStringDTO> localizedStrings,
+        Language recordTextLanguage)
+    {
+        var effectIndexes = records
+            .SelectMany(record => record.Effects)
+            .Select(effect => effect.EffectIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (effectIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var effectFields = new List<RecordComparisonFieldDTO>();
+        foreach (var effectIndex in effectIndexes)
+        {
+            var currentEffectIndex = effectIndex;
+            var effectChildren = CreatePerkEffectFields(
+                    records,
+                    localizedStrings,
+                    recordTextLanguage,
+                    $"Effects[{currentEffectIndex}].ButtonLabel",
+                    record => FindPerkEffect(record, currentEffectIndex))
+                .ToList();
+            AddPerkEffectConditionTabGroups(effectChildren, records, record => FindPerkEffect(record, currentEffectIndex)?.Conditions);
+            if (effectChildren.Count > 0)
+            {
+                effectFields.Add(CreateGroupField($"Effect [{effectIndex}]", records.Cast<RecordDTO>().ToList(), effectChildren));
+            }
+        }
+
+        if (effectFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("Effects", records.Cast<RecordDTO>().ToList(), effectFields));
         }
     }
 
@@ -925,22 +1015,14 @@ public class RecordComparisonService : IRecordComparisonService
         foreach (var effectIndex in effectIndexes)
         {
             var currentEffectIndex = effectIndex;
-            var effectChildren = new List<RecordComparisonFieldDTO>
-            {
-                CreateField("MutagenObjectType", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.MutagenObjectType ?? string.Empty),
-                CreateField("Rank", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.Rank.ToString() ?? string.Empty),
-                CreateField("Priority", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.Priority.ToString() ?? string.Empty),
-                CreateField("PerkEntryID", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.PerkEntryId?.ToString() ?? string.Empty),
-                CreateField("Flags", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.Flags ?? string.Empty),
-                CreateField("ButtonLabel", records, record => GetTranslatedDisplayValue(localizedStrings, record, $"Ranks[{rankIndex}].Effects[{currentEffectIndex}].ButtonLabel", recordTextLanguage, FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.ButtonLabel)),
-                CreateField("ConditionCount", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.ConditionCount.ToString() ?? string.Empty),
-                CreateField("EntryPoint", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.EntryPoint ?? string.Empty),
-                CreateField("PerkConditionTabCount", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.PerkConditionTabCount?.ToString() ?? string.Empty),
-                CreateField("Modification", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.Modification ?? string.Empty),
-                CreateField("Value", records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.Value?.ToString() ?? string.Empty)
-            }
-                .Where(HasVisibleValue)
+            var effectChildren = CreatePerkEffectFields(
+                    records,
+                    localizedStrings,
+                    recordTextLanguage,
+                    $"Ranks[{rankIndex}].Effects[{currentEffectIndex}].ButtonLabel",
+                    record => FindPerkRankEffect(record, rankIndex, currentEffectIndex))
                 .ToList();
+            AddPerkEffectConditionTabGroups(effectChildren, records, record => FindPerkRankEffect(record, rankIndex, currentEffectIndex)?.Conditions);
             if (effectChildren.Count > 0)
             {
                 effectFields.Add(CreateGroupField($"Effect [{effectIndex}]", records.Cast<RecordDTO>().ToList(), effectChildren));
@@ -950,6 +1032,117 @@ public class RecordComparisonService : IRecordComparisonService
         if (effectFields.Count > 0)
         {
             fields.Add(CreateGroupField("Effects", records.Cast<RecordDTO>().ToList(), effectFields));
+        }
+    }
+
+    private static void AddPerkRankActivityGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<PerkDTO> records,
+        IReadOnlyList<LocalizedStringDTO> localizedStrings,
+        Language recordTextLanguage,
+        int rankIndex)
+    {
+        var activityIndexes = records
+            .SelectMany(record => record.Ranks.Where(rank => rank.RankIndex == rankIndex))
+            .SelectMany(rank => rank.Activities)
+            .Select(activity => activity.ActivityIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (activityIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var activityFields = new List<RecordComparisonFieldDTO>();
+        foreach (var activityIndex in activityIndexes)
+        {
+            var currentActivityIndex = activityIndex;
+            var activityChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("ATAN", records, record => FindPerkRankActivity(record, rankIndex, currentActivityIndex)?.ATAN ?? string.Empty),
+                CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, $"Ranks[{rankIndex}].Activities[{currentActivityIndex}].Name", recordTextLanguage, FindPerkRankActivity(record, rankIndex, currentActivityIndex)?.Name)),
+                CreateField("Description", records, record => GetTranslatedDisplayValue(localizedStrings, record, $"Ranks[{rankIndex}].Activities[{currentActivityIndex}].Description", recordTextLanguage, FindPerkRankActivity(record, rankIndex, currentActivityIndex)?.Description)),
+                CreateField("ANAM", records, record => FindPerkRankActivity(record, rankIndex, currentActivityIndex)?.ANAM ?? string.Empty),
+                CreateField("Configuration", records, record => FindPerkRankActivity(record, rankIndex, currentActivityIndex)?.Configuration ?? string.Empty)
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            AddPerkRankActivityEvaluatorGroups(activityChildren, records, rankIndex, currentActivityIndex);
+            if (activityChildren.Count > 0)
+            {
+                activityFields.Add(CreateGroupField($"Activity [{activityIndex}]", records.Cast<RecordDTO>().ToList(), activityChildren));
+            }
+        }
+
+        if (activityFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("Activities", records.Cast<RecordDTO>().ToList(), activityFields));
+        }
+    }
+
+    private static void AddPerkRankActivityEvaluatorGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<PerkDTO> records,
+        int rankIndex,
+        int activityIndex)
+    {
+        var evaluatorIndexes = records
+            .SelectMany(record => FindPerkRankActivity(record, rankIndex, activityIndex)?.ProgressionEvalutor ?? [])
+            .Select(evaluator => evaluator.EvaluatorIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (evaluatorIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var evaluatorFields = new List<RecordComparisonFieldDTO>();
+        foreach (var evaluatorIndex in evaluatorIndexes)
+        {
+            var currentEvaluatorIndex = evaluatorIndex;
+            var evaluatorChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("Name", records, record => FindPerkRankActivityEvaluator(record, rankIndex, activityIndex, currentEvaluatorIndex)?.Name ?? string.Empty),
+                CreateField("ConditionCount", records, record => FindPerkRankActivityEvaluator(record, rankIndex, activityIndex, currentEvaluatorIndex)?.Conditions.Count.ToString() ?? string.Empty)
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            AddPerkRankActivityEvaluatorConditionGroups(evaluatorChildren, records, rankIndex, activityIndex, currentEvaluatorIndex);
+            if (evaluatorChildren.Count > 0)
+            {
+                evaluatorFields.Add(CreateGroupField($"Evaluator [{evaluatorIndex}]", records.Cast<RecordDTO>().ToList(), evaluatorChildren));
+            }
+        }
+
+        if (evaluatorFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("ProgressionEvalutor", records.Cast<RecordDTO>().ToList(), evaluatorFields));
+        }
+    }
+
+    private static void AddPerkRankActivityEvaluatorConditionGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<PerkDTO> records,
+        int rankIndex,
+        int activityIndex,
+        int evaluatorIndex)
+    {
+        var conditionIndexes = records
+            .SelectMany(record => FindPerkRankActivityEvaluator(record, rankIndex, activityIndex, evaluatorIndex)?.Conditions ?? [])
+            .Select(condition => condition.ConditionIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        foreach (var conditionIndex in conditionIndexes)
+        {
+            var currentConditionIndex = conditionIndex;
+            fields.Add(CreateField($"Condition [{conditionIndex}]", records, record =>
+            {
+                var condition = FindPerkRankActivityEvaluator(record, rankIndex, activityIndex, evaluatorIndex)?.Conditions.FirstOrDefault(item => item.ConditionIndex == currentConditionIndex);
+                return FormatConditionRuleSummary(condition);
+            }));
         }
     }
 
@@ -1016,6 +1209,95 @@ public class RecordComparisonService : IRecordComparisonService
         if (parameterFields.Count > 0)
         {
             fields.Add(CreateGroupField("Marker Parameters", records.Cast<RecordDTO>().ToList(), parameterFields));
+        }
+    }
+
+    private static IEnumerable<RecordComparisonFieldDTO> CreatePerkEffectFields<TEffect>(
+        IReadOnlyList<PerkDTO> records,
+        IReadOnlyList<LocalizedStringDTO> localizedStrings,
+        Language recordTextLanguage,
+        string buttonLabelSourceField,
+        Func<PerkDTO, TEffect?> findEffect)
+        where TEffect : class
+    {
+        return new List<RecordComparisonFieldDTO>
+        {
+            CreateField("MutagenObjectType", records, record => GetPerkEffectValue(findEffect(record), effect => effect.MutagenObjectType)),
+            CreateField("Rank", records, record => GetPerkEffectValue(findEffect(record), effect => effect.Rank?.ToString() ?? string.Empty)),
+            CreateField("Priority", records, record => GetPerkEffectValue(findEffect(record), effect => effect.Priority?.ToString() ?? string.Empty)),
+            CreateField("PerkEntryID", records, record => GetPerkEffectValue(findEffect(record), effect => effect.PerkEntryId?.ToString() ?? string.Empty)),
+            CreateField("Flags", records, record => GetPerkEffectValue(findEffect(record), effect => effect.Flags ?? string.Empty)),
+            CreateField("ButtonLabel", records, record => GetTranslatedDisplayValue(localizedStrings, record, buttonLabelSourceField, recordTextLanguage, GetPerkEffectTranslatedValue(findEffect(record)))),
+            CreateField("ConditionCount", records, record => GetPerkEffectValue(findEffect(record), effect => effect.ConditionCount?.ToString() ?? string.Empty)),
+            CreateField("EntryPoint", records, record => GetPerkEffectValue(findEffect(record), effect => effect.EntryPoint ?? string.Empty)),
+            CreateField("PerkConditionTabCount", records, record => GetPerkEffectValue(findEffect(record), effect => effect.PerkConditionTabCount?.ToString() ?? string.Empty)),
+            CreateField("Modification", records, record => GetPerkEffectValue(findEffect(record), effect => effect.Modification ?? string.Empty)),
+            CreateField("Value", records, record => GetPerkEffectValue(findEffect(record), effect => effect.Value?.ToString() ?? string.Empty)),
+            CreateField("ActorValue", records, record => GetPerkEffectValue(findEffect(record), effect => effect.ActorValue ?? string.Empty)),
+            CreateField("Spell", records, record => GetPerkEffectValue(findEffect(record), effect => effect.Spell ?? string.Empty)),
+            CreateField("Quest", records, record => GetPerkEffectValue(findEffect(record), effect => effect.Quest ?? string.Empty)),
+            CreateField("Stage", records, record => GetPerkEffectValue(findEffect(record), effect => effect.Stage?.ToString() ?? string.Empty))
+        }.Where(HasVisibleValue);
+    }
+
+    private static void AddPerkEffectConditionTabGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<PerkDTO> records,
+        Func<PerkDTO, IList<PerkEffectConditionTabDTO>?> findConditionTabs)
+    {
+        var conditionTabIndexes = records
+            .SelectMany(record => findConditionTabs(record) ?? [])
+            .Select(conditionTab => conditionTab.ConditionTabIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        if (conditionTabIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var conditionTabFields = new List<RecordComparisonFieldDTO>();
+        foreach (var conditionTabIndex in conditionTabIndexes)
+        {
+            var currentConditionTabIndex = conditionTabIndex;
+            var children = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("RunOnTabIndex", records, record => FindConditionTab(findConditionTabs(record), currentConditionTabIndex)?.RunOnTabIndex?.ToString() ?? string.Empty),
+                CreateField("ConditionCount", records, record => FindConditionTab(findConditionTabs(record), currentConditionTabIndex)?.ConditionCount.ToString() ?? string.Empty)
+            }.Where(HasVisibleValue).ToList();
+            AddPerkEffectConditionRuleGroups(children, records, findConditionTabs, currentConditionTabIndex);
+            if (children.Count > 0)
+            {
+                conditionTabFields.Add(CreateGroupField($"Condition Tab [{conditionTabIndex}]", records.Cast<RecordDTO>().ToList(), children));
+            }
+        }
+
+        if (conditionTabFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("Conditions", records.Cast<RecordDTO>().ToList(), conditionTabFields));
+        }
+    }
+
+    private static void AddPerkEffectConditionRuleGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<PerkDTO> records,
+        Func<PerkDTO, IList<PerkEffectConditionTabDTO>?> findConditionTabs,
+        int conditionTabIndex)
+    {
+        var conditionIndexes = records
+            .SelectMany(record => FindConditionTab(findConditionTabs(record), conditionTabIndex)?.Conditions ?? [])
+            .Select(condition => condition.ConditionIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        foreach (var conditionIndex in conditionIndexes)
+        {
+            var currentConditionIndex = conditionIndex;
+            fields.Add(CreateField($"Condition [{conditionIndex}]", records, record =>
+            {
+                var condition = FindConditionTab(findConditionTabs(record), conditionTabIndex)?.Conditions.FirstOrDefault(item => item.ConditionIndex == currentConditionIndex);
+                return FormatConditionRuleSummary(condition);
+            }));
         }
     }
 
@@ -1997,9 +2279,84 @@ public class RecordComparisonService : IRecordComparisonService
         return record.Ranks.FirstOrDefault(rank => rank.RankIndex == rankIndex);
     }
 
+    private static PerkEffectDTO? FindPerkEffect(PerkDTO record, int effectIndex)
+    {
+        return record.Effects.FirstOrDefault(effect => effect.EffectIndex == effectIndex);
+    }
+
     private static PerkRankEffectDTO? FindPerkRankEffect(PerkDTO record, int rankIndex, int effectIndex)
     {
         return FindPerkRank(record, rankIndex)?.Effects.FirstOrDefault(effect => effect.EffectIndex == effectIndex);
+    }
+
+    private static PerkRankActivityDTO? FindPerkRankActivity(PerkDTO record, int rankIndex, int activityIndex)
+    {
+        return FindPerkRank(record, rankIndex)?.Activities.FirstOrDefault(activity => activity.ActivityIndex == activityIndex);
+    }
+
+    private static PerkRankActivityProgressionEvaluatorDTO? FindPerkRankActivityEvaluator(PerkDTO record, int rankIndex, int activityIndex, int evaluatorIndex)
+    {
+        return FindPerkRankActivity(record, rankIndex, activityIndex)?.ProgressionEvalutor.FirstOrDefault(evaluator => evaluator.EvaluatorIndex == evaluatorIndex);
+    }
+
+    private static PerkEffectConditionTabDTO? FindConditionTab(IList<PerkEffectConditionTabDTO>? conditionTabs, int conditionTabIndex)
+    {
+        return conditionTabs?.FirstOrDefault(conditionTab => conditionTab.ConditionTabIndex == conditionTabIndex);
+    }
+
+    private static string GetPerkEffectValue(object? effect, Func<PerkEffectComparisonValue, string> getValue)
+    {
+        var comparisonValue = ToPerkEffectComparisonValue(effect);
+        return comparisonValue == null ? string.Empty : getValue(comparisonValue);
+    }
+
+    private static TranslatedStringDTO? GetPerkEffectTranslatedValue(object? effect)
+    {
+        return ToPerkEffectComparisonValue(effect)?.ButtonLabel;
+    }
+
+    private static PerkEffectComparisonValue? ToPerkEffectComparisonValue(object? effect)
+    {
+        return effect switch
+        {
+            PerkEffectDTO rootEffect => new PerkEffectComparisonValue
+            {
+                MutagenObjectType = rootEffect.MutagenObjectType,
+                Rank = rootEffect.Rank,
+                Priority = rootEffect.Priority,
+                PerkEntryId = rootEffect.PerkEntryId,
+                Flags = rootEffect.Flags,
+                ButtonLabel = rootEffect.ButtonLabel,
+                ConditionCount = rootEffect.ConditionCount,
+                EntryPoint = rootEffect.EntryPoint,
+                PerkConditionTabCount = rootEffect.PerkConditionTabCount,
+                Modification = rootEffect.Modification,
+                Value = rootEffect.Value,
+                ActorValue = rootEffect.ActorValue,
+                Spell = rootEffect.Spell,
+                Quest = rootEffect.Quest,
+                Stage = rootEffect.Stage
+            },
+            PerkRankEffectDTO rankEffect => new PerkEffectComparisonValue
+            {
+                MutagenObjectType = rankEffect.MutagenObjectType,
+                Rank = rankEffect.Rank,
+                Priority = rankEffect.Priority,
+                PerkEntryId = rankEffect.PerkEntryId,
+                Flags = rankEffect.Flags,
+                ButtonLabel = rankEffect.ButtonLabel,
+                ConditionCount = rankEffect.ConditionCount,
+                EntryPoint = rankEffect.EntryPoint,
+                PerkConditionTabCount = rankEffect.PerkConditionTabCount,
+                Modification = rankEffect.Modification,
+                Value = rankEffect.Value,
+                ActorValue = rankEffect.ActorValue,
+                Spell = rankEffect.Spell,
+                Quest = rankEffect.Quest,
+                Stage = rankEffect.Stage
+            },
+            _ => null
+        };
     }
 
     private static PerkBackgroundSkillDTO? FindPerkBackgroundSkill(PerkDTO record, int skillIndex)
@@ -2194,5 +2551,38 @@ public class RecordComparisonService : IRecordComparisonService
     private sealed record RawPayloadKey(string Slot, int Index);
 
     private sealed record ConditionRuleKey(string Slot, int Index);
+
+    private sealed class PerkEffectComparisonValue
+    {
+        public string MutagenObjectType { get; set; } = string.Empty;
+
+        public int? Rank { get; set; }
+
+        public int? Priority { get; set; }
+
+        public int? PerkEntryId { get; set; }
+
+        public string? Flags { get; set; }
+
+        public TranslatedStringDTO? ButtonLabel { get; set; }
+
+        public int? ConditionCount { get; set; }
+
+        public string? EntryPoint { get; set; }
+
+        public int? PerkConditionTabCount { get; set; }
+
+        public string? Modification { get; set; }
+
+        public double? Value { get; set; }
+
+        public string? ActorValue { get; set; }
+
+        public string? Spell { get; set; }
+
+        public string? Quest { get; set; }
+
+        public int? Stage { get; set; }
+    }
 
 }

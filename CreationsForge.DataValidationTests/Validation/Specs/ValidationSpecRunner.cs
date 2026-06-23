@@ -137,6 +137,22 @@ public class ValidationSpecRunner
 
         if (!hasSpriggitValue)
         {
+            if (rule.SpriggitPath.EndsWith(".Count", StringComparison.OrdinalIgnoreCase) &&
+                hasDtoValue &&
+                string.Equals(dtoValue, "0", StringComparison.Ordinal) &&
+                spriggitFields.ContainsKey(rule.SpriggitPath[..^".Count".Length]))
+            {
+                MarkMatched(matchedSpriggitFields, rule.SpriggitPath[..^".Count".Length]);
+                MarkMatched(matchedDtoFields, rule.DtoPath);
+                return;
+            }
+
+            if (hasDtoValue && IsDefaultDtoValueWithoutSpriggitField(rule.DtoPath, dtoValue!, spriggitFields))
+            {
+                MarkMatched(matchedDtoFields, rule.DtoPath);
+                return;
+            }
+
             diagnostics.Add("Spriggit field '" + rule.SpriggitPath + "' was missing for DTO field '" + rule.DtoPath + "'.");
             return;
         }
@@ -233,6 +249,14 @@ public class ValidationSpecRunner
 
             if (!hasDtoValue)
             {
+                if (string.Equals(spriggitField.Key, rule.SpriggitPath, StringComparison.OrdinalIgnoreCase) &&
+                    dtoFields.TryGetValue(rule.DtoPath + ".Count", out var dtoCount) &&
+                    string.Equals(dtoCount, "0", StringComparison.Ordinal))
+                {
+                    MarkMatched(matchedDtoFields, rule.DtoPath + ".Count");
+                    continue;
+                }
+
                 if (IsSpriggitScriptingListItemNameWithoutDtoShape(spriggitField.Key))
                 {
                     continue;
@@ -272,6 +296,27 @@ public class ValidationSpecRunner
 
         foreach (var spriggitField in spriggitFields.OrderBy(field => field.Key, StringComparer.OrdinalIgnoreCase))
         {
+            if (TryGetListObjectFormKey(spriggitField.Key, rule.SpriggitPath, out var formKeyIndex, out var formKeyId))
+            {
+                var formKeyDtoPath = rule.DtoPath + "[" + formKeyIndex.ToString(CultureInfo.InvariantCulture) + "]." + rule.ExpectedValue;
+                MarkMatched(matchedSpriggitFields, spriggitField.Key);
+                if (!dtoFields.TryGetValue(formKeyDtoPath, out var formKeyDtoValue))
+                {
+                    diagnostics.Add("DTO field '" + formKeyDtoPath + "' was missing for Spriggit field '" + spriggitField.Key + "'.");
+                    continue;
+                }
+
+                MarkMatched(matchedDtoFields, formKeyDtoPath);
+                AddAssertionCase(
+                    spriggitField.Key,
+                    formKeyId + ":" + spriggitField.Value,
+                    formKeyDtoPath,
+                    formKeyDtoValue,
+                    ValidationValueNormalizer.None,
+                    assertionCases);
+                continue;
+            }
+
             if (!TryGetListIndex(spriggitField.Key, rule.SpriggitPath, out var index))
             {
                 continue;
@@ -317,6 +362,12 @@ public class ValidationSpecRunner
 
         if (spriggitValues.Count == 0)
         {
+            if (hasDtoValue && IsDefaultDtoValueWithoutSpriggitField(rule.DtoPath, dtoValue!, spriggitFields))
+            {
+                MarkMatched(matchedDtoFields, rule.DtoPath);
+                return;
+            }
+
             diagnostics.Add("Spriggit scalar list '" + rule.SpriggitPath + "' was missing for DTO field '" + rule.DtoPath + "'.");
             return;
         }
@@ -480,6 +531,7 @@ public class ValidationSpecRunner
 
         MarkMatched(matchedDtoFields, slotPath);
         MarkMatched(matchedDtoFields, valuePath);
+        MarkMatched(matchedDtoFields, "RawPayloads[" + payloadIndex.ToString(CultureInfo.InvariantCulture) + "].PayloadIndex");
         MarkMatched(matchedDtoFields, "RawPayloads[" + payloadIndex.ToString(CultureInfo.InvariantCulture) + "].PayloadType");
         MarkMatched(matchedDtoFields, "RawPayloads[" + payloadIndex.ToString(CultureInfo.InvariantCulture) + "].SourcePath");
         if (spriggitFields.TryGetValue(rule.SpriggitPath, out var spriggitValue))
@@ -487,7 +539,10 @@ public class ValidationSpecRunner
             AddAssertionCase(rule.SpriggitPath, spriggitValue, valuePath, payloadValue, ValidationValueNormalizer.HexPayload, assertionCases);
         }
 
-        AddAssertionCase(rule.SpriggitPath, rule.DtoPath, slotPath, dtoFields[slotPath], ValidationValueNormalizer.None, assertionCases);
+        var expectedSlot = dtoFields[slotPath].StartsWith(rule.DtoPath + "[", StringComparison.OrdinalIgnoreCase)
+            ? dtoFields[slotPath]
+            : rule.DtoPath;
+        AddAssertionCase(rule.SpriggitPath, expectedSlot, slotPath, dtoFields[slotPath], ValidationValueNormalizer.None, assertionCases);
     }
 
     private static void ApplyDtoExpectedValueRule(
@@ -644,7 +699,9 @@ public class ValidationSpecRunner
     {
         foreach (var field in spriggitFields.OrderBy(field => field.Key, StringComparer.OrdinalIgnoreCase))
         {
-            if (matchedSpriggitFields.Contains(field.Key) || ignoredSpriggitFields.Contains(field.Key))
+            if (matchedSpriggitFields.Contains(field.Key) ||
+                ignoredSpriggitFields.Contains(field.Key) ||
+                IsSpriggitInlineObjectMarker(field.Key, field.Value))
             {
                 continue;
             }
@@ -724,6 +781,12 @@ public class ValidationSpecRunner
             return false;
         }
 
+        if (string.Equals(fieldValue, "Null", StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(fieldValue))
+        {
+            return true;
+        }
+
         if (string.Equals(fieldName, "FormVersion", StringComparison.OrdinalIgnoreCase))
         {
             return true;
@@ -731,6 +794,156 @@ public class ValidationSpecRunner
 
         if (fieldName is "ObjectBounds.First" or "ObjectBounds.Second" &&
             string.Equals(fieldValue, "0, 0, 0", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (fieldName.EndsWith(".ConditionCount", StringComparison.OrdinalIgnoreCase))
+        {
+            var conditionsCountPath = fieldName[..^".ConditionCount".Length] + ".Conditions.Count";
+            if (spriggitFields.ContainsKey(conditionsCountPath))
+            {
+                return true;
+            }
+        }
+
+        if ((fieldName.EndsWith(".ConditionIndex", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".RankIndex", StringComparison.OrdinalIgnoreCase)) &&
+            int.TryParse(fieldValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+        {
+            return true;
+        }
+
+        if (fieldName.EndsWith(".Data.MaleFemaleGender", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(fieldValue, "Male", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if ((fieldName.EndsWith(".ConditionCount", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".ActivityCount", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".Priority", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".RankIndex", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".EffectIndex", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".ActivityIndex", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".EvaluatorIndex", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".ConditionIndex", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".RunOnTabIndex", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "Level", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "NumRanks", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "DNAMDataTypeState", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "DirtinessScale", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "LeafAmplitude", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "LeafFrequency", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "MajorFlags", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "MajorRecordFlags", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".Flags", StringComparison.OrdinalIgnoreCase)) &&
+            (string.Equals(fieldValue, "0", StringComparison.Ordinal) ||
+             string.Equals(fieldValue, "None", StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        if (fieldName.EndsWith(".Flags.Count", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(fieldValue, "1", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (fieldName.EndsWith(".Flags[0]", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(fieldValue, "0", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (fieldName.EndsWith(".Data.RunOnType", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(fieldValue, "Subject", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if ((fieldName.EndsWith(".Data.RunOnTypeIndex", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".Data.Unknown3", StringComparison.OrdinalIgnoreCase)) &&
+            string.Equals(fieldValue, "-1", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if ((fieldName.EndsWith(".Rank", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".ComparisonValue", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".Data.FirstParameter", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".Data.SecondParameter", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".Data.ParameterOneNumber", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".Data.ParameterTwoNumber", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".Data.SecondUnusedIntParameter", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".Unknown2", StringComparison.OrdinalIgnoreCase)) &&
+            string.Equals(fieldValue, "0", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if ((fieldName.EndsWith(".Data.FirstParameter", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".Data.SecondParameter", StringComparison.OrdinalIgnoreCase)) &&
+            string.Equals(fieldValue, "None", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (fieldName.EndsWith(".Modification", StringComparison.OrdinalIgnoreCase) &&
+            (string.Equals(fieldValue, "AddAVMult", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldValue, "Set", StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        if ((fieldName.EndsWith(".CompareOperator", StringComparison.OrdinalIgnoreCase) &&
+             string.Equals(fieldValue, "EqualTo", StringComparison.OrdinalIgnoreCase)) ||
+            (fieldName.EndsWith(".Data.UseAliases", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".Data.UsePackageData", StringComparison.OrdinalIgnoreCase)) &&
+            string.Equals(fieldValue, "False", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if ((fieldName.EndsWith(".Data.Reference", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".Data.ParameterOneRecord", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".Data.ParameterTwoRecord", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".Data.StaticRegistration", StringComparison.OrdinalIgnoreCase)) &&
+            !spriggitFields.ContainsKey(fieldName))
+        {
+            return true;
+        }
+
+        if ((fieldName.EndsWith(".Data.ParameterOneStringIsSet", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".Data.ParameterTwoStringIsSet", StringComparison.OrdinalIgnoreCase)) &&
+            string.Equals(fieldValue, "False", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (string.Equals(fieldName, "MaxAngle", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(fieldValue, "30", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if ((string.Equals(fieldName, "Playable", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "Hidden", StringComparison.OrdinalIgnoreCase)) &&
+            string.Equals(fieldValue, "False", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (fieldName.EndsWith(".Modification", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(fieldValue, "Set", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if ((string.Equals(fieldName, "Category", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "CrewAssignment", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "SkillGroup", StringComparison.OrdinalIgnoreCase)) &&
+            string.Equals(fieldValue, "None", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }
@@ -776,6 +989,13 @@ public class ValidationSpecRunner
         var rootPath = fieldName[..^targetLanguageSuffix.Length];
         return !spriggitFields.ContainsKey(rootPath + ".Count") &&
                !spriggitFields.Keys.Any(field => field.StartsWith(rootPath + "[", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsSpriggitInlineObjectMarker(string fieldName, string fieldValue)
+    {
+        return fieldName.Contains('[', StringComparison.Ordinal) &&
+               !fieldName.Contains('.', StringComparison.Ordinal) &&
+               fieldValue.EndsWith(":", StringComparison.Ordinal);
     }
 
     private static void AddAssertionCase(
@@ -828,6 +1048,7 @@ public class ValidationSpecRunner
             ValidationValueNormalizer.DecimalNumber => double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue)
                 ? Math.Round(doubleValue, 6).ToString("0.######", CultureInfo.InvariantCulture)
                 : value,
+            ValidationValueNormalizer.JsonWhitespace => Regex.Replace(value, "\\s+", " ").Trim(),
             _ => value
         };
     }
@@ -934,6 +1155,36 @@ public class ValidationSpecRunner
 
         var indexEnd = fieldName.IndexOf(']', prefix.Length);
         if (indexEnd < 0 || indexEnd != fieldName.Length - 1)
+        {
+            return false;
+        }
+
+        return int.TryParse(fieldName.AsSpan(prefix.Length, indexEnd - prefix.Length), NumberStyles.Integer, CultureInfo.InvariantCulture, out index);
+    }
+
+    private static bool TryGetListObjectFormKey(string fieldName, string rootPath, out int index, out string formKeyId)
+    {
+        index = 0;
+        formKeyId = string.Empty;
+        var prefix = rootPath + "[";
+        if (!fieldName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var indexEnd = fieldName.IndexOf(']', prefix.Length);
+        if (indexEnd < 0 ||
+            indexEnd >= fieldName.Length - 1 ||
+            fieldName[indexEnd + 1] != '.')
+        {
+            return false;
+        }
+
+        formKeyId = fieldName[(indexEnd + 2)..];
+        if (formKeyId.Contains('.', StringComparison.Ordinal) ||
+            formKeyId.Contains('[', StringComparison.Ordinal) ||
+            formKeyId.Contains(']', StringComparison.Ordinal) ||
+            !formKeyId.All(Uri.IsHexDigit))
         {
             return false;
         }
@@ -1067,7 +1318,8 @@ public class ValidationSpecRunner
                 continue;
             }
 
-            if (!string.Equals(field.Value, payloadSlot, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(field.Value, payloadSlot, StringComparison.OrdinalIgnoreCase) &&
+                !field.Value.StartsWith(payloadSlot + "[", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }

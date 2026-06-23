@@ -1,6 +1,6 @@
 # Condition Rules
 
-Condition rules are a shared Bethesda child-record system, not a `CNDF`, `FACT`, or `COBJ`-specific persistence
+Condition rules are a shared Bethesda child-record system, not a `CNDF`, `FACT`, `COBJ`, or `PERK`-specific persistence
 shape. Starfield condition forms are game-specific, but condition rule lists also exist on Fallout 4 and Skyrim
 records.
 
@@ -8,6 +8,7 @@ records.
 
 - Persist condition envelopes in `ConditionRules`.
 - Persist condition data fields in `ConditionRuleParameters`.
+- Persist condition flags and `Unknown2` on `ConditionRules` when Mutagen exposes them on the condition envelope.
 - Use `RecordType` to identify the owning parent record type.
 - Use `ConditionSlot` to identify the owning condition list on parent records. The default slot is `Conditions`.
 - Do not persist condition rule data as raw binary or opaque raw payload rows when Mutagen exposes structured fields.
@@ -24,6 +25,9 @@ generalized. The persistence and import service names are intentionally `Conditi
 - `CNDF` uses `RecordType = 'CNDF'` and `ConditionSlot = 'Conditions'`.
 - `FACT` uses `RecordType = 'FACT'` and `ConditionSlot = 'Conditions'`.
 - `COBJ` uses `RecordType = 'COBJ'` and `ConditionSlot = 'Conditions'`.
+- `PERK` uses `RecordType = 'PERK'` with root `Conditions`, `Ranks[n].Conditions`,
+  `Effects[n].Conditions[m].Conditions`, `Ranks[n].Effects[n].Conditions[m].Conditions`, and
+  `Ranks[n].Activities[n].ProgressionEvalutor[n].Conditions` slots.
 
 ## Import Rules
 

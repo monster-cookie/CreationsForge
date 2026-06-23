@@ -115,8 +115,7 @@ Books (`BOOK`), Doors (`DOOR`), Containers (`CONT`), and ConstructibleObjects (`
 Starfield, Fallout 4, and Skyrim map approved shared records inside their game adapters after loading the Mutagen
 plugin once for the Core-facing record-read call. Starfield also imports ConditionForms (`CNDF`), and Starfield plus
 Fallout 4 import Terminals (`TERM`) through the same typed-record pipeline with type-specific detail tables and
-comparison fields. CNDF, FACT, and COBJ
-condition lists use shared condition-rule rows and generic condition-data
+comparison fields. CNDF, FACT, COBJ, and PERK condition lists use shared condition-rule rows and generic condition-data
 parameter rows, not raw condition payload rows, when Mutagen exposes the condition list as typed condition objects.
 All typed record importers save the record's parent row before dispatching shared child import by DTO capability.
 Records that expose models, keywords, condition rules, record components, sounds, or scripting adapters persist those
@@ -183,10 +182,12 @@ named `MajorFlags`, and `Data` when those values are persisted. GameSetting comp
 includes shared keyword rows.
 MISC and MGEF comparison includes shared sound rows. MISC comparison also includes persisted model rows, component
 display indices, destructible data and stages, and scripting adapter rows as hierarchical child rows in the comparison
-`TreeDataGrid`. AVIF comparison includes Skyrim layout rows,
-perk-tree rows, optional perk references, and connection-line target indices. PERK comparison includes rank rows,
-nested rank-effect rows, background skill rows, and shared scripting adapter rows. STAT comparison includes scalar
-fields, shared keyword rows, shared model rows, and raw payload rows. BOOK comparison includes scalar fields plus shared
+`TreeDataGrid`. AVIF comparison includes Skyrim layout rows, perk-tree rows, optional perk references, and
+connection-line target indices. PERK comparison includes root effect rows, rank rows, nested rank-effect rows, rank
+activity rows, progression evaluator rows, condition-tab rows, background skill rows, shared condition rows, shared
+sound rows, shared scripting adapter rows, and raw payload rows. STAT comparison includes scalar fields, shared keyword
+rows, shared model rows, and raw payload rows.
+BOOK comparison includes scalar fields plus shared
 models, keywords, sounds, scripting adapters, and raw payload rows. DOOR comparison includes scalar fields plus shared
 models, keywords, sounds, scripting adapters, and raw payload rows. CONT comparison includes scalar fields, item rows,
 shared keyword rows,
@@ -301,8 +302,9 @@ implements the scripting-adapter capability interface. Game adapters populate sc
 that expose virtual-machine adapters.
 The `MISC` slice currently persists parent scalar fields, keyword rows, model rows, sounds, scripts, FO4/Skyrim
 components with display indices, Starfield resources, and destructible data/stages when Mutagen exposes them. The
-`BOOK`
-slice persists parent scalar fields, keyword rows, model rows, sounds, scripts, and raw payloads. The `DOOR` slice
+`PERK` slice persists parent scalar fields, root effects, ranks, rank effects, effect condition tabs, background
+skills, shared condition rows, sounds, scripts, and raw payloads for script fragments. The `BOOK` slice
+persists parent scalar fields, keyword rows, model rows, sounds, scripts, and raw payloads. The `DOOR` slice
 persists parent scalar fields, keyword rows, model rows, sounds, scripts, and raw payloads. The `CONT` slice persists
 parent scalar fields, item rows, keyword rows, model rows, sounds, and raw payloads. The `CNDF` slice persists parent
 scalar fields, shared condition-rule rows, and generic condition-data parameter rows. The `COBJ` slice persists parent
@@ -328,12 +330,13 @@ empty `ModelGender`.
 
 Raw payload persistence is shared in Core through `IRawRecordPayloadImportService` and `RawRecordPayloads`.
 `IRecordChildImportService` invokes raw payload persistence for any imported `RecordDTO` that implements the raw
-payload capability interface. The current populated slices are `STAT`, `CONT`, `BOOK`, `DOOR`, `TERM`, and `COBJ`:
+payload capability interface. The current populated slices are `PERK`, `STAT`, `CONT`, `BOOK`, `DOOR`, `TERM`, and
+`COBJ`:
 Starfield, Fallout 4, and Skyrim preserve opaque `Model.Data` payloads where present. Fallout 4 COBJ preserves
 partially understood `CreatedObjectCounts` data as raw payloads. Starfield also preserves shared base-form component
-payload bytes when present. CNDF, FACT, and COBJ condition rules are modeled as structured condition and parameter
+payload bytes when present. CNDF, FACT, COBJ, and PERK condition rules are modeled as structured condition and parameter
 rows, so condition data should not be added as raw payloads when Mutagen exposes structured fields.
-Starfield `CONT` import stores shared Bethesda base-form component payloads under internal
+Starfield `STAT` and `CONT` imports store shared Bethesda base-form component payloads under internal
 `BaseFormComponents.*` slots while preserving the source Mutagen/Spriggit `Components.*` path in
 `RawRecordPayloads.SourcePath`. Ordinary keyword rows discovered through nested component-shaped objects remain
 `KeywordMappings`; they are not treated as base-form component payload rows. Comparison DTOs keep the full payload value
@@ -341,8 +344,9 @@ as detail data while exposing a summarized display label for the UI hex viewer.
 
 Sound persistence is shared in Core through `ISoundMappingImportService` and `SoundMappings`. `IRecordChildImportService`
 invokes sound persistence for any imported `RecordDTO` that implements the sound capability interface. `MISC` maps
-named scalar sounds such as crafting, pickup, putdown, and dropdown sounds when present, while `MGEF` maps indexed
-typed sound entries such as OnHit, Release, and Charge into the same table shape when present.
+named scalar sounds such as crafting, pickup, putdown, and dropdown sounds when present, `PERK` maps its exposed sound
+list, and `MGEF` maps indexed typed sound entries such as OnHit, Release, and Charge into the same table shape when
+present.
 
 Localized string persistence is shared in Core through `IRecordLocalizedStringImportService` and `LocalizedStrings`.
 `RecordDTO` exposes localized strings as a shared child collection, and `IRecordChildImportService` replaces those

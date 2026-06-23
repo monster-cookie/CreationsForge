@@ -640,6 +640,14 @@ CREATE TABLE Perks
     Training_ModKey_Type            INTEGER NULL,
     Training_ModKey_FileName        TEXT    NULL,
     Training_FormKey_ID             INTEGER NULL,
+    Level                           INTEGER NULL,
+    NumRanks                        INTEGER NULL,
+    Playable                        INTEGER NULL,
+    Hidden                          INTEGER NULL,
+    NextPerk_ModKey_Name            TEXT    NULL,
+    NextPerk_ModKey_Type            INTEGER NULL,
+    NextPerk_ModKey_FileName        TEXT    NULL,
+    NextPerk_FormKey_ID             INTEGER NULL,
     MajorFlags                      TEXT    NULL,
     PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID),
     FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName) REFERENCES Plugins (Game, ModKey_Name, ModKey_Type, ModKey_FileName) ON DELETE CASCADE,
@@ -724,6 +732,10 @@ CREATE TABLE PerkRankEffects
     PerkConditionTabCount   INTEGER NULL,
     Modification            TEXT    NULL,
     Value                   REAL    NULL,
+    ActorValue              TEXT    NULL,
+    Spell                   TEXT    NULL,
+    Quest                   TEXT    NULL,
+    Stage                   INTEGER NULL,
     ImportedAtUTC           TEXT    NOT NULL,
     PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Rank_Index, Effect_Index),
     FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Rank_Index)
@@ -731,6 +743,115 @@ CREATE TABLE PerkRankEffects
     CHECK (FormKey_ID >= 0),
     CHECK (Rank_Index >= 0),
     CHECK (Effect_Index >= 0)
+);
+
+CREATE TABLE PerkRankActivities
+(
+    Game                    TEXT    NOT NULL,
+    ModKey_Name             TEXT    NOT NULL,
+    ModKey_Type             INTEGER NOT NULL,
+    ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ModKey_Name     TEXT    NOT NULL,
+    FormKey_ModKey_Type     INTEGER NOT NULL,
+    FormKey_ModKey_FileName TEXT    NOT NULL,
+    FormKey_ID              INTEGER NOT NULL,
+    Rank_Index              INTEGER NOT NULL,
+    Activity_Index          INTEGER NOT NULL,
+    ATAN                    TEXT    NULL,
+    Name                    TEXT    NULL,
+    Description             TEXT    NULL,
+    ANAM                    TEXT    NULL,
+    Configuration           TEXT    NULL,
+    ImportedAtUTC           TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Rank_Index, Activity_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Rank_Index)
+        REFERENCES PerkRanks (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Rank_Index) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Rank_Index >= 0),
+    CHECK (Activity_Index >= 0)
+);
+
+CREATE TABLE PerkRankActivityProgressionEvaluators
+(
+    Game                    TEXT    NOT NULL,
+    ModKey_Name             TEXT    NOT NULL,
+    ModKey_Type             INTEGER NOT NULL,
+    ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ModKey_Name     TEXT    NOT NULL,
+    FormKey_ModKey_Type     INTEGER NOT NULL,
+    FormKey_ModKey_FileName TEXT    NOT NULL,
+    FormKey_ID              INTEGER NOT NULL,
+    Rank_Index              INTEGER NOT NULL,
+    Activity_Index          INTEGER NOT NULL,
+    Evaluator_Index         INTEGER NOT NULL,
+    Name                    TEXT    NULL,
+    ImportedAtUTC           TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Rank_Index, Activity_Index, Evaluator_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Rank_Index, Activity_Index)
+        REFERENCES PerkRankActivities (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Rank_Index, Activity_Index) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Rank_Index >= 0),
+    CHECK (Activity_Index >= 0),
+    CHECK (Evaluator_Index >= 0)
+);
+
+CREATE TABLE PerkEffects
+(
+    Game                    TEXT    NOT NULL,
+    ModKey_Name             TEXT    NOT NULL,
+    ModKey_Type             INTEGER NOT NULL,
+    ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ModKey_Name     TEXT    NOT NULL,
+    FormKey_ModKey_Type     INTEGER NOT NULL,
+    FormKey_ModKey_FileName TEXT    NOT NULL,
+    FormKey_ID              INTEGER NOT NULL,
+    Effect_Index            INTEGER NOT NULL,
+    MutagenObjectType       TEXT    NOT NULL,
+    Rank                    INTEGER NULL,
+    Priority                INTEGER NULL,
+    PerkEntryID             INTEGER NULL,
+    Flags                   TEXT    NULL,
+    ButtonLabel             TEXT    NULL,
+    ConditionCount          INTEGER NULL,
+    EntryPoint              TEXT    NULL,
+    PerkConditionTabCount   INTEGER NULL,
+    Modification            TEXT    NULL,
+    Value                   REAL    NULL,
+    ActorValue              TEXT    NULL,
+    Spell                   TEXT    NULL,
+    Quest                   TEXT    NULL,
+    Stage                   INTEGER NULL,
+    ImportedAtUTC           TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Effect_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES Perks (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Effect_Index >= 0)
+);
+
+CREATE TABLE PerkEffectConditionTabs
+(
+    Game                    TEXT    NOT NULL,
+    ModKey_Name             TEXT    NOT NULL,
+    ModKey_Type             INTEGER NOT NULL,
+    ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ModKey_Name     TEXT    NOT NULL,
+    FormKey_ModKey_Type     INTEGER NOT NULL,
+    FormKey_ModKey_FileName TEXT    NOT NULL,
+    FormKey_ID              INTEGER NOT NULL,
+    Rank_Index              INTEGER NOT NULL,
+    Effect_Index            INTEGER NOT NULL,
+    ConditionTab_Index      INTEGER NOT NULL,
+    RunOnTabIndex           INTEGER NULL,
+    ConditionCount          INTEGER NOT NULL,
+    ImportedAtUTC           TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Rank_Index, Effect_Index, ConditionTab_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES Perks (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Rank_Index >= -1),
+    CHECK (Effect_Index >= 0),
+    CHECK (ConditionTab_Index >= 0)
 );
 
 CREATE TABLE PerkBackgroundSkills
@@ -1071,6 +1192,7 @@ CREATE TABLE Statics
     FormVersion             INTEGER NOT NULL,
     MajorRecordFlags        INTEGER NOT NULL,
     ImportedAtUTC           TEXT    NOT NULL,
+    Name                    TEXT    NULL,
     Version2                INTEGER NULL,
     ObjectBounds_First      TEXT    NULL,
     ObjectBounds_Second     TEXT    NULL,
@@ -1080,11 +1202,53 @@ CREATE TABLE Statics
     LeafFrequency           REAL    NULL,
     Unused                  TEXT    NULL,
     DNAMDataTypeState       TEXT    NULL,
+    DirtinessScale          REAL    NULL,
+    SnapTemplate_ModKey_Name     TEXT    NULL,
+    SnapTemplate_ModKey_Type     INTEGER NULL,
+    SnapTemplate_ModKey_FileName TEXT    NULL,
+    SnapTemplate_FormKey_ID      INTEGER NULL,
+    PreviewTransform_ModKey_Name     TEXT    NULL,
+    PreviewTransform_ModKey_Type     INTEGER NULL,
+    PreviewTransform_ModKey_FileName TEXT    NULL,
+    PreviewTransform_FormKey_ID      INTEGER NULL,
+    Material_ModKey_Name     TEXT    NULL,
+    Material_ModKey_Type     INTEGER NULL,
+    Material_ModKey_FileName TEXT    NULL,
+    Material_FormKey_ID      INTEGER NULL,
+    Lod_Level0              TEXT    NULL,
+    Lod_Level1              TEXT    NULL,
+    Lod_Level2              TEXT    NULL,
+    Lod_Level3              TEXT    NULL,
     PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID),
     FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName) REFERENCES Plugins (Game, ModKey_Name, ModKey_Type, ModKey_FileName) ON DELETE CASCADE,
     FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
         REFERENCES RecordInstances (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
     CHECK (FormKey_ID >= 0)
+);
+
+CREATE TABLE StaticProperties
+(
+    Game                                TEXT    NOT NULL,
+    ModKey_Name                         TEXT    NOT NULL,
+    ModKey_Type                         INTEGER NOT NULL,
+    ModKey_FileName                     TEXT    NOT NULL,
+    FormKey_ModKey_Name                 TEXT    NOT NULL,
+    FormKey_ModKey_Type                 INTEGER NOT NULL,
+    FormKey_ModKey_FileName             TEXT    NOT NULL,
+    FormKey_ID                          INTEGER NOT NULL,
+    Property_Index                      INTEGER NOT NULL,
+    ActorValue_ModKey_Name              TEXT    NULL,
+    ActorValue_ModKey_Type              INTEGER NULL,
+    ActorValue_ModKey_FileName          TEXT    NULL,
+    ActorValue_FormKey_ID               INTEGER NULL,
+    Value                               REAL    NULL,
+    ImportedAtUTC                       TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Property_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES Statics (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Property_Index >= 0),
+    CHECK (ActorValue_FormKey_ID IS NULL OR ActorValue_FormKey_ID >= 0)
 );
 
 CREATE TABLE RawRecordPayloads
@@ -1192,6 +1356,7 @@ CREATE INDEX IX_Perks_Game_FormKey_Collated ON Perks (Game, FormKey_ModKey_Name 
 CREATE INDEX IX_Statics_FormKey ON Statics (Game, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
 CREATE INDEX IX_Statics_Game_Plugin ON Statics (Game, ModKey_Name COLLATE NOCASE, ModKey_Type, ModKey_FileName COLLATE NOCASE, EditorID COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_Statics_Game_FormKey_Collated ON Statics (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+CREATE INDEX IX_StaticProperties_Game_FormKey ON StaticProperties (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_RawRecordPayloads_Game_Record_FormKey ON RawRecordPayloads (Game, RecordType, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_Containers_Game_Plugin ON Containers (Game, ModKey_Name COLLATE NOCASE, ModKey_Type, ModKey_FileName COLLATE NOCASE, EditorID COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_Containers_Game_FormKey_Collated ON Containers (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
@@ -1827,6 +1992,8 @@ CREATE TABLE ConditionRules
     MutagenObjectType                         TEXT    NOT NULL,
     DataMutagenObjectType                     TEXT    NULL,
     CompareOperator                           TEXT    NULL,
+    Flags                                     TEXT    NULL,
+    Unknown2                                  INTEGER NULL,
     ComparisonValue                           TEXT    NULL,
     ComparisonValue_ModKey_Name               TEXT    NULL,
     ComparisonValue_ModKey_Type               INTEGER NULL,

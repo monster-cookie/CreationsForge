@@ -44,5 +44,10 @@ public enum ValidationValueNormalizer
     /// Compare numeric values using a six-decimal invariant representation for fields that were previously asserted
     /// with floating-point tolerance.
     /// </summary>
-    DecimalNumber
+    DecimalNumber,
+
+    /// <summary>
+    /// Compare structured JSON-like payloads when Spriggit folded YAML scalar formatting differs from DTO formatting.
+    /// </summary>
+    JsonWhitespace
 }

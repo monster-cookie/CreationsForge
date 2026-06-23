@@ -10,7 +10,7 @@ The application uses a local SQLite database. The schema is defined by embedded 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains sixty tables:
+The application schema contains sixty-one tables:
 
 - `Games`
 - `Plugins`
@@ -44,6 +44,7 @@ The application schema contains sixty tables:
 - `MagicEffects`
 - `Perks`
 - `Statics`
+- `StaticProperties`
 - `Books`
 - `Doors`
 - `Containers`
@@ -63,6 +64,8 @@ The application schema contains sixty tables:
 - `ComponentItems`
 - `PerkRanks`
 - `PerkRankEffects`
+- `PerkRankActivities`
+- `PerkRankActivityProgressionEvaluators`
 - `PerkBackgroundSkills`
 - `Models`
 - `ModelMaterialSwaps`
@@ -667,7 +670,7 @@ Persistence behavior:
 ### ConditionRules
 
 Shared condition rule rows for records with condition lists are stored here. Current users include `CNDF`, `COBJ`,
-and `FACT`. `ConditionSlot` identifies the owning condition list on records that expose more than one list.
+`FACT`, and `PERK`. `ConditionSlot` identifies the owning condition list on records that expose more than one list.
 
 Columns:
 
@@ -677,7 +680,8 @@ Columns:
 - `ConditionSlot` (`TEXT`, `NOT NULL`, primary key)
 - `Condition_Index` (`INTEGER`, `NOT NULL`, primary key)
 - `MutagenObjectType` (`TEXT`, `NOT NULL`)
-- `DataMutagenObjectType`, `CompareOperator`, and `ComparisonValue` (`TEXT`, nullable)
+- `DataMutagenObjectType`, `CompareOperator`, `Flags`, and `ComparisonValue` (`TEXT`, nullable)
+- `Unknown2` (`INTEGER`, nullable)
 - nullable decomposed FormKey columns for `ComparisonValue`
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
@@ -857,15 +861,50 @@ Indexes:
 - `Name`, `Description`, `SkillGroup`, `CrewAssignment`, `PerkIcon`, `Category`, and `MajorFlags`
   (`TEXT`, nullable)
 - `Flags` (`TEXT`, `NOT NULL`)
-- nullable decomposed FormKey columns for `Restriction` and `Training`
+- `Level`, `NumRanks`, `Playable`, and `Hidden` (`INTEGER`, nullable)
+- nullable decomposed FormKey columns for `Restriction`, `Training`, and `NextPerk`
 
 `Statics` additional columns:
 
+- `Name` (`TEXT`, nullable)
 - `Version2` (`INTEGER`, nullable)
 - `ObjectBounds_First` and `ObjectBounds_Second` (`TEXT`, nullable)
 - `MaxAngle`, `UnknownDNAMFloat`, `LeafAmplitude`, and `LeafFrequency` (`REAL`, nullable)
 - `Unused` (`TEXT`, nullable)
 - `DNAMDataTypeState` (`TEXT`, nullable)
+- `DirtinessScale` (`REAL`, nullable)
+- nullable decomposed FormKey columns for `SnapTemplate`, `PreviewTransform`, and `Material`
+- `Lod_Level0`, `Lod_Level1`, `Lod_Level2`, and `Lod_Level3` (`TEXT`, nullable)
+
+### StaticProperties
+
+`StaticProperties` stores Fallout STAT property rows keyed by the owning Static record and `Property_Index`.
+
+Columns:
+
+- common child identity columns: `Game`, containing plugin `ModKey_*`, origin FormKey `FormKey_*`, `FormKey_ID`,
+  and `ImportedAtUTC`
+- `Property_Index` (`INTEGER`, `NOT NULL`)
+- nullable decomposed FormKey columns for `ActorValue`
+- `Value` (`REAL`, nullable)
+
+Primary key:
+
+- `Game`, containing plugin `ModKey_*`, origin FormKey `FormKey_*`, `FormKey_ID`, and `Property_Index`
+
+Foreign keys:
+
+- Full parent key references `Statics` with `ON DELETE CASCADE`.
+
+Checks:
+
+- `FormKey_ID >= 0`
+- `Property_Index >= 0`
+- `ActorValue_FormKey_ID IS NULL OR ActorValue_FormKey_ID >= 0`
+
+Indexes:
+
+- `IX_StaticProperties_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
 
 `Books` additional columns:
 
@@ -1383,8 +1422,9 @@ Persistence behavior:
 
 ### Perk child tables
 
-`PerkRanks`, `PerkRankEffects`, and `PerkBackgroundSkills` use the same containing plugin and parent FormKey columns
-as `Perks`.
+`PerkRanks`, `PerkRankEffects`, `PerkRankActivities`, `PerkRankActivityProgressionEvaluators`, `PerkEffects`,
+`PerkEffectConditionTabs`, and `PerkBackgroundSkills` use the same containing plugin and parent FormKey columns as
+`Perks`.
 
 `PerkRanks` additional columns:
 
@@ -1407,6 +1447,42 @@ as `Perks`.
 - `ConditionCount` (`INTEGER`, `NOT NULL`)
 - `PerkConditionTabCount` (`INTEGER`, nullable)
 - `Value` (`REAL`, nullable)
+- `ActorValue`, `Spell`, and `Quest` (`TEXT`, nullable)
+- `Stage` (`INTEGER`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+`PerkRankActivities` additional columns:
+
+- `Rank_Index` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `Activity_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `ATAN`, `Name`, `Description`, `ANAM`, and `Configuration` (`TEXT`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+`PerkRankActivityProgressionEvaluators` additional columns:
+
+- `Rank_Index` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `Activity_Index` (`INTEGER`, `NOT NULL`, primary key, foreign key)
+- `Evaluator_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `Name` (`TEXT`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+`PerkEffects` additional columns:
+
+- `Effect_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `MutagenObjectType` (`TEXT`, `NOT NULL`)
+- `Rank`, `Priority`, `PerkEntryID`, `ConditionCount`, and `PerkConditionTabCount` (`INTEGER`, nullable)
+- `Flags`, `ButtonLabel`, `EntryPoint`, `Modification`, `ActorValue`, `Spell`, and `Quest` (`TEXT`, nullable)
+- `Value` (`REAL`, nullable)
+- `Stage` (`INTEGER`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+`PerkEffectConditionTabs` additional columns:
+
+- `Rank_Index` (`INTEGER`, `NOT NULL`, primary key); `-1` identifies root `PerkEffects`
+- `Effect_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `ConditionTab_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `RunOnTabIndex` (`INTEGER`, nullable)
+- `ConditionCount` (`INTEGER`, `NOT NULL`)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
 `PerkBackgroundSkills` additional columns:
@@ -1419,6 +1495,10 @@ Foreign keys:
 
 - `PerkRanks` references `Perks` with `ON DELETE CASCADE`.
 - `PerkRankEffects` references `PerkRanks` with `ON DELETE CASCADE`.
+- `PerkRankActivities` references `PerkRanks` with `ON DELETE CASCADE`.
+- `PerkRankActivityProgressionEvaluators` references `PerkRankActivities` with `ON DELETE CASCADE`.
+- `PerkEffects` references `Perks` with `ON DELETE CASCADE`.
+- `PerkEffectConditionTabs` references `Perks` with `ON DELETE CASCADE`.
 - `PerkBackgroundSkills` references `Perks` with `ON DELETE CASCADE`.
 
 ### Models
@@ -1526,7 +1606,7 @@ Persistence behavior:
 - Existing raw payload rows for the same record are deleted before replacement so removed payload slots do not remain
   stale.
 - Stale typed-record deletion removes raw payload rows through the declared `RecordInstances` cascade.
-- Current importers populate raw payload rows for Static model/component reflection payloads and Container
+- Current importers populate Static property rows, raw payload rows for Static model/component reflection payloads, and Container
   model/base-form-component reflection payloads, including Starfield container `ANAM`, `BNAM`, `CNAM`, and `REFL`
   base-form-component subfields when Mutagen exposes them through reflection.
 - `PayloadSlot` stores the internal comparison/storage name. `SourcePath` stores the source Mutagen/Spriggit path

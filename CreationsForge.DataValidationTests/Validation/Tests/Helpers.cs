@@ -38,8 +38,15 @@ public static class Helpers
         ["InventoryArt"] = "InventoryArt",
         ["PreviewTransform"] = "PreviewTransform",
         ["NativeTerminal"] = "NativeTerminalFormKey",
+        ["Categroy"] = "Category",
+        ["Restriction"] = "RestrictionFormKey",
+        ["Training"] = "TrainingFormKey",
         ["Model.File"] = "Models[0].File",
-        ["Model.LightLayer"] = "Models[0].LightLayer"
+        ["Model.LightLayer"] = "Models[0].LightLayer",
+        ["Lod.Level0"] = "LodLevel0",
+        ["Lod.Level1"] = "LodLevel1",
+        ["Lod.Level2"] = "LodLevel2",
+        ["Lod.Level3"] = "LodLevel3"
     };
 
     public static TSpriggit GetSpriggit<TSpriggit>(SupportedGame game, RecordTypeData recordType, string sampleName)
@@ -223,9 +230,15 @@ public static class Helpers
         AddSpriggitFieldAlias(fields, "Models[0].File", "Model.File");
         AddSpriggitFieldAlias(fields, "Models[0].LightLayer", "Model.LightLayer");
         AddSpriggitFieldAlias(fields, "Models[0].Flags", "Model.Flags");
+        AddSpriggitFieldAlias(fields, "LodLevel0", "Lod.Level0");
+        AddSpriggitFieldAlias(fields, "LodLevel1", "Lod.Level1");
+        AddSpriggitFieldAlias(fields, "LodLevel2", "Lod.Level2");
+        AddSpriggitFieldAlias(fields, "LodLevel3", "Lod.Level3");
         AddSpriggitScalarListAliases(fields, "Flags");
         AddSpriggitScalarListAliases(fields, "Model.Flags");
+        AddSpriggitScalarListAliases(fields, "DNAMDataTypeState");
         AddSpriggitKeywordAliases(fields);
+        AddSpriggitPerkAliases(fields);
         AddSpriggitMiscComponentAliases(fields);
         AddSpriggitMiscResourceAliases(fields);
         AddSpriggitDestructibleAliases(fields);
@@ -233,7 +246,104 @@ public static class Helpers
         AddSpriggitRawPayloadAliases(fields);
         AddSpriggitSoundAliases(fields);
         AddSpriggitScriptingAdapterAliases(fields);
+        NormalizeConditionFields(fields);
         return fields;
+    }
+
+    private static void NormalizeConditionFields(IDictionary<string, string> fields)
+    {
+        foreach (var field in fields.Keys.Where(field => field.EndsWith(".DataMutagenObjectType", StringComparison.OrdinalIgnoreCase)).ToList())
+        {
+            var basePath = field[..^".DataMutagenObjectType".Length];
+            if (fields.TryGetValue(field, out var value) && !IsNull(value))
+            {
+            fields[basePath + ".Data.MutagenObjectType"] = NormalizeMutagenObjectTypeName(value);
+            }
+
+            AddConditionComparisonValueAlias(fields, basePath);
+            AddConditionFlagAliases(fields, basePath);
+            AddConditionParameterAliases(fields, basePath);
+            RemoveConditionInternalFields(fields, basePath);
+        }
+
+        foreach (var field in fields.Keys.Where(field => field.EndsWith(".MutagenObjectType", StringComparison.OrdinalIgnoreCase)).ToList())
+        {
+            fields[field] = NormalizeMutagenObjectTypeName(fields[field]);
+        }
+    }
+
+    private static void AddConditionComparisonValueAlias(IDictionary<string, string> fields, string basePath)
+    {
+        if (fields.TryGetValue(basePath + ".ComparisonValueFormKey", out var formKey) && !IsNull(formKey))
+        {
+            fields[basePath + ".ComparisonValue"] = formKey;
+        }
+    }
+
+    private static void AddConditionFlagAliases(IDictionary<string, string> fields, string basePath)
+    {
+        if (!fields.TryGetValue(basePath + ".Flags", out var flags) || IsNull(flags) || string.IsNullOrWhiteSpace(flags))
+        {
+            return;
+        }
+
+        var flagValues = flags.Split(", ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        fields[basePath + ".Flags.Count"] = flagValues.Length.ToString(CultureInfo.InvariantCulture);
+        for (var index = 0; index < flagValues.Length; index++)
+        {
+            fields[basePath + ".Flags[" + index.ToString(CultureInfo.InvariantCulture) + "]"] = flagValues[index];
+        }
+    }
+
+    private static void AddConditionParameterAliases(IDictionary<string, string> fields, string basePath)
+    {
+        if (!fields.TryGetValue(basePath + ".Parameters.Count", out var countValue) ||
+            !int.TryParse(countValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
+        {
+            return;
+        }
+
+        for (var index = 0; index < count; index++)
+        {
+            var parameterPath = basePath + ".Parameters[" + index.ToString(CultureInfo.InvariantCulture) + "]";
+            if (!fields.TryGetValue(parameterPath + ".ParameterName", out var parameterName) || string.IsNullOrWhiteSpace(parameterName))
+            {
+                continue;
+            }
+
+            if (fields.TryGetValue(parameterPath + ".ParameterFormKey", out var parameterFormKey) && !IsNull(parameterFormKey))
+            {
+                fields[basePath + ".Data." + parameterName] = parameterFormKey;
+                continue;
+            }
+
+            if (fields.TryGetValue(parameterPath + ".ParameterValue", out var parameterValue) && !IsNull(parameterValue))
+            {
+                fields[basePath + ".Data." + parameterName] = parameterValue;
+            }
+        }
+    }
+
+    private static void RemoveConditionInternalFields(IDictionary<string, string> fields, string basePath)
+    {
+        foreach (var field in fields.Keys
+            .Where(field => string.Equals(field, basePath + ".ConditionSlot", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(field, basePath + ".DataMutagenObjectType", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(field, basePath + ".ComparisonValueFormKey", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(field, basePath + ".Flags", StringComparison.OrdinalIgnoreCase) ||
+                field.StartsWith(basePath + ".Parameters", StringComparison.OrdinalIgnoreCase))
+            .ToList())
+        {
+            fields.Remove(field);
+        }
+    }
+
+    private static string NormalizeMutagenObjectTypeName(string value)
+    {
+        const string binaryOverlaySuffix = "BinaryOverlay";
+        return value.EndsWith(binaryOverlaySuffix, StringComparison.Ordinal)
+            ? value[..^binaryOverlaySuffix.Length]
+            : value;
     }
 
     private static void NormalizeDtoModelFields(SupportedGame game, Dictionary<string, string> fields)
@@ -320,6 +430,18 @@ public static class Helpers
                 fields,
                 "Keywords[" + index.ToString(CultureInfo.InvariantCulture) + "].Keyword",
                 "Keywords[" + index.ToString(CultureInfo.InvariantCulture) + "]");
+        }
+    }
+
+    private static void AddSpriggitPerkAliases(Dictionary<string, string> fields)
+    {
+        var rankCount = GetIndexedPathCount(fields, "Ranks");
+        for (var rankIndex = 0; rankIndex < rankCount; rankIndex++)
+        {
+            AddSpriggitFieldAlias(
+                fields,
+                "Ranks[" + rankIndex.ToString(CultureInfo.InvariantCulture) + "].UnknownStaticFormKey",
+                "Ranks[" + rankIndex.ToString(CultureInfo.InvariantCulture) + "].UnknownStatic");
         }
     }
 
@@ -505,6 +627,7 @@ public static class Helpers
     private static bool HasSpriggitRawPayloadField(IReadOnlyDictionary<string, string> spriggitFields, string fieldName)
     {
         return spriggitFields.ContainsKey(fieldName) ||
+               spriggitFields.Keys.Any(field => field.StartsWith(fieldName + ".", StringComparison.OrdinalIgnoreCase)) ||
                spriggitFields.Keys.Any(field =>
                    field.EndsWith("." + fieldName, StringComparison.OrdinalIgnoreCase) &&
                    TryGetIndexedPath(field, "Components", out _, out _));
@@ -518,12 +641,18 @@ public static class Helpers
             return true;
         }
 
+        if (path.StartsWith("VirtualMachineAdapter.ScriptFragments", StringComparison.OrdinalIgnoreCase))
+        {
+            fieldName = "VirtualMachineAdapter.ScriptFragments";
+            return true;
+        }
+
         var separatorIndex = path.LastIndexOf('.');
         fieldName = separatorIndex < 0
             ? path
             : path[(separatorIndex + 1)..];
 
-        return fieldName is "ANAM" or "BNAM" or "CNAM" or "REFL";
+        return fieldName is "ANAM" or "BNAM" or "CNAM" or "REFL" or "NavmeshGeometry";
     }
 
     private static void AddSpriggitScriptingAdapterAliases(IDictionary<string, string> fields)
@@ -644,6 +773,20 @@ public static class Helpers
             return true;
         }
 
+        if (fieldName.Contains('[', StringComparison.Ordinal) &&
+            !fieldName.Contains('.', StringComparison.Ordinal) &&
+            fieldValue.EndsWith(":", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (string.Equals(fieldValue, "[]", StringComparison.Ordinal) &&
+            dtoFields.TryGetValue(fieldName + ".Count", out var dtoCount) &&
+            IsZero(dtoCount))
+        {
+            return true;
+        }
+
         if (SpriggitToDtoFields.TryGetValue(fieldName, out var dtoFieldName) && dtoFields.ContainsKey(dtoFieldName))
         {
             return true;
@@ -695,6 +838,16 @@ public static class Helpers
             return true;
         }
 
+        if (IsSpriggitRawPayloadPathBackedByDtoRawPayload(fieldName, dtoFields, "NavmeshGeometry"))
+        {
+            return true;
+        }
+
+        if (IsSpriggitRawPayloadPathBackedByDtoRawPayload(fieldName, dtoFields, "VirtualMachineAdapter.ScriptFragments"))
+        {
+            return true;
+        }
+
         if (IsSpriggitKeywordComponentFieldBackedByDtoScalar(fieldName, spriggitFields, dtoFields))
         {
             return true;
@@ -720,12 +873,22 @@ public static class Helpers
             return true;
         }
 
+        if (IsSpriggitInlineFormKeyListItemBackedByDtoScalar(fieldName, fieldValue, dtoFields, "BackgroundSkills", "SkillFormKey"))
+        {
+            return true;
+        }
+
         if (IsSpriggitInlineFormKeyListItemBackedByDtoScalar(fieldName, fieldValue, dtoFields, "Items", "Item"))
         {
             return true;
         }
 
         if (IsSpriggitInlineFormKeyListItemBackedByDtoScalar(fieldName, fieldValue, dtoFields, "ForcedLocations", string.Empty))
+        {
+            return true;
+        }
+
+        if (IsSpriggitNestedListBackedDtoScalar(fieldName, fieldValue, dtoFields, "Flags"))
         {
             return true;
         }
@@ -741,6 +904,11 @@ public static class Helpers
         IReadOnlyDictionary<string, string> dtoFields)
     {
         if (spriggitFields.ContainsKey(fieldName))
+        {
+            return true;
+        }
+
+        if (IsDtoCollectionMetadataField(fieldName))
         {
             return true;
         }
@@ -841,12 +1009,27 @@ public static class Helpers
             return true;
         }
 
+        if (IsDtoIndexedPropertyBackedBySpriggitScalarList(fieldName, spriggitFields, "BackgroundSkills", "SkillFormKey"))
+        {
+            return true;
+        }
+
+        if (IsDtoKeywordBackedBySpriggitComponentKeyword(fieldName, fieldValue, spriggitFields, dtoFields))
+        {
+            return true;
+        }
+
         if (IsDtoIndexedPropertyBackedBySpriggitScalarList(fieldName, spriggitFields, "Items", "Item"))
         {
             return true;
         }
 
         if (IsDtoIndexedMetadataBackedBySpriggitScalarList(fieldName, fieldValue, spriggitFields, "Keywords", "KeywordIndex"))
+        {
+            return true;
+        }
+
+        if (IsDtoIndexedMetadataBackedBySpriggitScalarList(fieldName, fieldValue, spriggitFields, "BackgroundSkills", "SkillIndex"))
         {
             return true;
         }
@@ -921,6 +1104,17 @@ public static class Helpers
             return true;
         }
 
+        if (IsDtoNestedScalarBackedBySpriggitList(fieldName, fieldValue, spriggitFields, "Flags"))
+        {
+            return true;
+        }
+
+        if (fieldName.EndsWith(".UnknownStaticFormKey", StringComparison.OrdinalIgnoreCase) &&
+            spriggitFields.ContainsKey(fieldName[..^"FormKey".Length]))
+        {
+            return true;
+        }
+
         if (IsDtoSoundFieldBackedBySpriggitNamedSound(fieldName, fieldValue, spriggitFields, dtoFields))
         {
             return true;
@@ -928,6 +1122,7 @@ public static class Helpers
 
         return IsSpriggitListBackedDtoScalar(fieldName, spriggitFields, dtoFields, "Flags") ||
                IsSpriggitListBackedDtoScalar(fieldName, spriggitFields, dtoFields, "MajorFlags") ||
+               IsSpriggitListBackedDtoScalar(fieldName, spriggitFields, dtoFields, "DNAMDataTypeState") ||
                IsSpriggitListBackedDtoScalar(fieldName, spriggitFields, dtoFields, "Model.Flags") ||
                (string.Equals(fieldName, "Models[0].Flags", StringComparison.OrdinalIgnoreCase) &&
                 IsSpriggitListBackedDtoScalar("Model.Flags", spriggitFields, dtoFields, "Model.Flags"));
@@ -1307,6 +1502,18 @@ public static class Helpers
                 fieldName.EndsWith(".RecordType", StringComparison.OrdinalIgnoreCase));
     }
 
+    private static bool IsDtoCollectionMetadataField(string fieldName)
+    {
+        return fieldName.Contains('[', StringComparison.Ordinal) &&
+               (fieldName.EndsWith(".RankIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".ActivityIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".EvaluatorIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".EffectIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".PropertyIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".SkillIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".ConditionTabIndex", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static bool IsCommonMetadataFieldOutsideRepositoryReadback(string fieldName, IReadOnlyDictionary<string, string> dtoFields)
     {
         if (string.Equals(fieldName, "MajorFlags.Count", StringComparison.OrdinalIgnoreCase) ||
@@ -1614,17 +1821,15 @@ public static class Helpers
             return false;
         }
 
-        if (!dtoFields.ContainsKey("WAIM") && !dtoFields.ContainsKey("WFIR"))
-        {
-            return false;
-        }
-
         if (string.Equals(fieldName, "Components.Count", StringComparison.OrdinalIgnoreCase))
         {
             return spriggitFields.Keys.Any(field =>
                 field.StartsWith("Components[", StringComparison.OrdinalIgnoreCase) &&
                 (field.EndsWith(".WAIM", StringComparison.OrdinalIgnoreCase) ||
-                 field.EndsWith(".WFIR", StringComparison.OrdinalIgnoreCase)));
+                 field.EndsWith(".WFIR", StringComparison.OrdinalIgnoreCase))) ||
+                 spriggitFields.Keys.Any(field =>
+                     field.StartsWith("Components[", StringComparison.OrdinalIgnoreCase) &&
+                     field.Contains(".Keywords[", StringComparison.OrdinalIgnoreCase));
         }
 
         if (!TryGetIndexedPath(fieldName, "Components", out _, out var remainder))
@@ -1635,6 +1840,11 @@ public static class Helpers
         if (string.IsNullOrEmpty(remainder) || string.Equals(remainder, ".MutagenObjectType", StringComparison.OrdinalIgnoreCase))
         {
             return true;
+        }
+
+        if (string.Equals(remainder, ".Keywords.Count", StringComparison.OrdinalIgnoreCase))
+        {
+            return dtoFields.ContainsKey("Keywords.Count");
         }
 
         if (string.Equals(remainder, ".WAIM", StringComparison.OrdinalIgnoreCase))
@@ -1651,7 +1861,140 @@ public static class Helpers
                    string.Equals(dtoValue, NormalizeHexPrefix(spriggitValue), StringComparison.Ordinal);
         }
 
-        return false;
+        return IsSpriggitComponentKeywordBackedByDtoKeyword(remainder, fieldName, spriggitFields, dtoFields);
+    }
+
+    private static bool IsSpriggitComponentKeywordBackedByDtoKeyword(
+        string componentRemainder,
+        string fieldName,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields)
+    {
+        const string keywordPrefix = ".Keywords[";
+        if (!componentRemainder.StartsWith(keywordPrefix, StringComparison.OrdinalIgnoreCase) ||
+            !spriggitFields.TryGetValue(fieldName, out var modName))
+        {
+            return false;
+        }
+
+        var formKeySeparator = componentRemainder.LastIndexOf('.');
+        if (formKeySeparator < 0)
+        {
+            return false;
+        }
+
+        var formKey = componentRemainder[(formKeySeparator + 1)..] + ":" + modName;
+        return dtoFields
+            .Where(field => field.Key.StartsWith("Keywords[", StringComparison.OrdinalIgnoreCase) &&
+                            field.Key.EndsWith("].Keyword", StringComparison.OrdinalIgnoreCase))
+            .Any(field => string.Equals(field.Value, formKey, StringComparison.Ordinal));
+    }
+
+    private static bool IsDtoKeywordBackedBySpriggitComponentKeyword(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields)
+    {
+        if (!fieldName.StartsWith("Keywords", StringComparison.OrdinalIgnoreCase) ||
+            !dtoFields.TryGetValue("Keywords.Count", out var keywordCount))
+        {
+            return false;
+        }
+
+        var componentKeywordFields = GetComponentKeywordFormKeys(spriggitFields).ToList();
+        if (componentKeywordFields.Count == 0)
+        {
+            return false;
+        }
+
+        if (string.Equals(fieldName, "Keywords.Count", StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Equals(fieldValue, componentKeywordFields.Count.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal) &&
+                   string.Equals(keywordCount, fieldValue, StringComparison.Ordinal);
+        }
+
+        if (!TryGetIndexedPath(fieldName, "Keywords", out var keywordIndex, out var remainder) ||
+            keywordIndex >= componentKeywordFields.Count)
+        {
+            return false;
+        }
+
+        var formKey = componentKeywordFields[keywordIndex];
+        if (string.IsNullOrEmpty(remainder))
+        {
+            return string.Equals(fieldValue, formKey, StringComparison.Ordinal);
+        }
+
+        if (string.Equals(remainder, ".Keyword", StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Equals(fieldValue, formKey, StringComparison.Ordinal);
+        }
+
+        return string.Equals(remainder, ".KeywordIndex", StringComparison.OrdinalIgnoreCase) &&
+               string.Equals(fieldValue, keywordIndex.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+    }
+
+    private static IEnumerable<string> GetComponentKeywordFormKeys(IReadOnlyDictionary<string, string> spriggitFields)
+    {
+        return spriggitFields
+            .Where(field => TryGetComponentKeywordFormKey(field.Key, field.Value, out _))
+            .OrderBy(field =>
+            {
+                TryGetIndexedPath(field.Key, "Components", out var componentIndex, out var componentRemainder);
+                TryGetIndexedPath("Keywords" + componentRemainder[".Keywords".Length..], "Keywords", out var keywordIndex, out _);
+                return componentIndex * 1000 + keywordIndex;
+            })
+            .Select(field =>
+            {
+                TryGetComponentKeywordFormKey(field.Key, field.Value, out var formKey);
+                return formKey;
+            });
+    }
+
+    private static bool TryGetComponentKeywordFormKey(string fieldName, string fieldValue, out string formKey)
+    {
+        formKey = string.Empty;
+        if (!TryGetIndexedPath(fieldName, "Components", out _, out var componentRemainder) ||
+            !componentRemainder.StartsWith(".Keywords[", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var separatorIndex = componentRemainder.LastIndexOf('.');
+        if (separatorIndex < 0)
+        {
+            return false;
+        }
+
+        var formId = componentRemainder[(separatorIndex + 1)..];
+        if (formId.Contains('.', StringComparison.Ordinal) ||
+            formId.Contains('[', StringComparison.Ordinal) ||
+            formId.Contains(']', StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        formKey = formId + ":" + fieldValue;
+        return true;
+    }
+
+    private static bool IsSpriggitRawPayloadPathBackedByDtoRawPayload(
+        string fieldName,
+        IReadOnlyDictionary<string, string> dtoFields,
+        string sourcePath)
+    {
+        if (!string.Equals(fieldName, sourcePath, StringComparison.OrdinalIgnoreCase) &&
+            !fieldName.StartsWith(sourcePath + ".", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return dtoFields
+            .Where(field => field.Key.StartsWith("RawPayloads[", StringComparison.OrdinalIgnoreCase) &&
+                            field.Key.EndsWith("].SourcePath", StringComparison.OrdinalIgnoreCase))
+            .Any(field => string.Equals(field.Value, sourcePath, StringComparison.OrdinalIgnoreCase) ||
+                          field.Value.StartsWith(sourcePath + "[", StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool IsSpriggitModelMaterialSwapFieldBackedByDtoField(
@@ -1754,12 +2097,53 @@ public static class Helpers
             return false;
         }
 
-        if (string.Equals(fieldValue, "Null", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(fieldValue, "Null", StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(fieldValue))
         {
             return true;
         }
 
-        return (fieldName is "Value" or "Weight" or "DirtinessScale" && IsZero(fieldValue)) ||
+        if (fieldName.EndsWith(".ConditionCount", StringComparison.OrdinalIgnoreCase))
+        {
+            var conditionsCountPath = fieldName[..^".ConditionCount".Length] + ".Conditions.Count";
+            if (spriggitFields.ContainsKey(conditionsCountPath))
+            {
+                return true;
+            }
+        }
+
+        if (fieldName.EndsWith(".Data.MaleFemaleGender", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(fieldValue, "Male", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (fieldName.EndsWith(".ActivityCount", StringComparison.OrdinalIgnoreCase))
+        {
+            var activitiesCountPath = fieldName[..^".ActivityCount".Length] + ".Activities.Count";
+            if (spriggitFields.ContainsKey(activitiesCountPath))
+            {
+                return true;
+            }
+        }
+
+        if ((fieldName.EndsWith(".Data.FirstParameter", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".Data.SecondParameter", StringComparison.OrdinalIgnoreCase)) &&
+            string.Equals(fieldValue, "None", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (fieldName.EndsWith(".Modification", StringComparison.OrdinalIgnoreCase) &&
+            (string.Equals(fieldValue, "AddAVMult", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldValue, "Set", StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        return (fieldName is "Value" or "Weight" or "DirtinessScale" or "LeafAmplitude" or "LeafFrequency" or "DNAMDataTypeState" && IsZero(fieldValue)) ||
+               (string.Equals(fieldName, "MaxAngle", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(fieldValue, "30", StringComparison.Ordinal)) ||
                (string.Equals(fieldName, "EditorID", StringComparison.OrdinalIgnoreCase) &&
                 string.IsNullOrWhiteSpace(fieldValue)) ||
                string.Equals(fieldName, "FormVersion", StringComparison.OrdinalIgnoreCase) ||
@@ -1773,6 +2157,54 @@ public static class Helpers
                string.Equals(fieldName, "Flags.Count", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(fieldName, "Model.Flags.Count", StringComparison.OrdinalIgnoreCase) ||
                (string.Equals(fieldName, "Flags", StringComparison.OrdinalIgnoreCase) && IsZero(fieldValue)) ||
+               (fieldName.EndsWith(".Flags", StringComparison.OrdinalIgnoreCase) &&
+                (IsZero(fieldValue) || string.Equals(fieldValue, "None", StringComparison.OrdinalIgnoreCase))) ||
+               (fieldName.EndsWith(".Flags.Count", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(fieldValue, "1", StringComparison.Ordinal)) ||
+               (fieldName.EndsWith(".Flags[0]", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(fieldValue, "0", StringComparison.Ordinal)) ||
+               fieldName.EndsWith(".RankIndex", StringComparison.OrdinalIgnoreCase) ||
+               (fieldName.EndsWith(".Rank", StringComparison.OrdinalIgnoreCase) && IsZero(fieldValue)) ||
+               (fieldName.EndsWith(".Priority", StringComparison.OrdinalIgnoreCase) && IsZero(fieldValue)) ||
+               fieldName.EndsWith(".EffectIndex", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.EndsWith(".ConditionIndex", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.EndsWith(".RunOnTabIndex", StringComparison.OrdinalIgnoreCase) ||
+               (fieldName.EndsWith(".ActivityCount", StringComparison.OrdinalIgnoreCase) && IsZero(fieldValue)) ||
+               (fieldName.EndsWith(".ConditionCount", StringComparison.OrdinalIgnoreCase) && IsZero(fieldValue)) ||
+               (fieldName.EndsWith(".CompareOperator", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(fieldValue, "EqualTo", StringComparison.OrdinalIgnoreCase)) ||
+               (fieldName.EndsWith(".Data.RunOnType", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(fieldValue, "Subject", StringComparison.Ordinal)) ||
+               ((fieldName.EndsWith(".Data.RunOnTypeIndex", StringComparison.OrdinalIgnoreCase) ||
+                 fieldName.EndsWith(".Data.Unknown3", StringComparison.OrdinalIgnoreCase)) &&
+                string.Equals(fieldValue, "-1", StringComparison.Ordinal)) ||
+               ((fieldName.EndsWith(".Data.FirstParameter", StringComparison.OrdinalIgnoreCase) ||
+                 fieldName.EndsWith(".Data.SecondParameter", StringComparison.OrdinalIgnoreCase) ||
+                 fieldName.EndsWith(".ComparisonValue", StringComparison.OrdinalIgnoreCase) ||
+                 fieldName.EndsWith(".Data.ParameterOneNumber", StringComparison.OrdinalIgnoreCase) ||
+                 fieldName.EndsWith(".Data.ParameterTwoNumber", StringComparison.OrdinalIgnoreCase) ||
+                 fieldName.EndsWith(".Data.SecondUnusedIntParameter", StringComparison.OrdinalIgnoreCase) ||
+                 fieldName.EndsWith(".Unknown2", StringComparison.OrdinalIgnoreCase)) &&
+                IsZero(fieldValue)) ||
+               ((fieldName.EndsWith(".Data.UseAliases", StringComparison.OrdinalIgnoreCase) ||
+                 fieldName.EndsWith(".Data.UsePackageData", StringComparison.OrdinalIgnoreCase) ||
+                 fieldName.EndsWith(".Data.ParameterOneStringIsSet", StringComparison.OrdinalIgnoreCase) ||
+                 fieldName.EndsWith(".Data.ParameterTwoStringIsSet", StringComparison.OrdinalIgnoreCase)) &&
+               string.Equals(fieldValue, "False", StringComparison.OrdinalIgnoreCase)) ||
+               fieldName.EndsWith(".Data.Reference", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.EndsWith(".Data.ParameterOneRecord", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.EndsWith(".Data.ParameterTwoRecord", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.EndsWith(".Data.StaticRegistration", StringComparison.OrdinalIgnoreCase) ||
+               ((string.Equals(fieldName, "Hidden", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(fieldName, "Playable", StringComparison.OrdinalIgnoreCase)) &&
+                string.Equals(fieldValue, "False", StringComparison.OrdinalIgnoreCase)) ||
+               ((string.Equals(fieldName, "Category", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(fieldName, "CrewAssignment", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(fieldName, "SkillGroup", StringComparison.OrdinalIgnoreCase)) &&
+                string.Equals(fieldValue, "None", StringComparison.OrdinalIgnoreCase)) ||
+               ((string.Equals(fieldName, "Level", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(fieldName, "MajorFlags", StringComparison.OrdinalIgnoreCase)) &&
+                IsZero(fieldValue)) ||
                (string.Equals(fieldName, "Teaches.RawContent", StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(fieldValue, uint.MaxValue.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal)) ||
                (string.Equals(fieldName, "DataSlateType", StringComparison.OrdinalIgnoreCase) &&
@@ -2282,7 +2714,13 @@ public static class Helpers
         IReadOnlyDictionary<string, string> spriggitFields,
         IReadOnlyDictionary<string, string> dtoFields)
     {
-        if (string.Equals(fieldName, "REFL", StringComparison.OrdinalIgnoreCase))
+        if (fieldName.StartsWith("VirtualMachineAdapter.ScriptFragments", StringComparison.OrdinalIgnoreCase))
+        {
+            return HasSpriggitRawPayloadField(spriggitFields, "VirtualMachineAdapter.ScriptFragments");
+        }
+
+        if (string.Equals(fieldName, "REFL", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(fieldName, "NavmeshGeometry", StringComparison.OrdinalIgnoreCase))
         {
             return HasSpriggitRawPayloadField(spriggitFields, fieldName);
         }
@@ -2317,6 +2755,22 @@ public static class Helpers
                fieldName.EndsWith(".PayloadType", StringComparison.OrdinalIgnoreCase) ||
                fieldName.EndsWith(".PayloadValue", StringComparison.OrdinalIgnoreCase) ||
                fieldName.EndsWith(".SourcePath", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsDtoNestedScalarBackedBySpriggitList(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        string listFieldName)
+    {
+        if (!fieldName.EndsWith("." + listFieldName, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var values = GetListValues(spriggitFields, fieldName);
+        return values.Count > 0 &&
+               string.Equals(fieldValue, string.Join(", ", values), StringComparison.Ordinal);
     }
 
     private static bool IsSpriggitInlineFormKeyListItemBackedByDtoScalar(
@@ -2374,6 +2828,47 @@ public static class Helpers
         return string.Equals(fieldName, scalarFieldName, StringComparison.OrdinalIgnoreCase) ||
                string.Equals(fieldName, scalarFieldName + ".Count", StringComparison.OrdinalIgnoreCase) ||
                TryGetListIndex(fieldName, scalarFieldName, out _);
+    }
+
+    private static bool IsSpriggitNestedListBackedDtoScalar(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> dtoFields,
+        string listFieldName)
+    {
+        var listPath = GetNestedListPath(fieldName, listFieldName);
+        if (string.IsNullOrWhiteSpace(listPath) || !dtoFields.TryGetValue(listPath, out var dtoValue))
+        {
+            return false;
+        }
+
+        if (string.Equals(fieldName, listPath + ".Count", StringComparison.OrdinalIgnoreCase))
+        {
+            var values = dtoValue.Split(", ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return string.Equals(fieldValue, values.Length.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        }
+
+        if (TryGetListIndex(fieldName, listPath, out var listIndex))
+        {
+            var values = dtoValue.Split(", ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return listIndex >= 0 &&
+                   listIndex < values.Length &&
+                   string.Equals(fieldValue, values[listIndex], StringComparison.Ordinal);
+        }
+
+        return false;
+    }
+
+    private static string GetNestedListPath(string fieldName, string listFieldName)
+    {
+        var listSuffix = "." + listFieldName;
+        var suffixIndex = fieldName.IndexOf(listSuffix, StringComparison.OrdinalIgnoreCase);
+        if (suffixIndex < 0)
+        {
+            return string.Empty;
+        }
+
+        return fieldName[..(suffixIndex + listSuffix.Length)];
     }
 
     private static bool IsMissingZeroCount(
@@ -2516,6 +3011,11 @@ public static class Helpers
     private static bool IsZero(string value)
     {
         return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number) && number == 0;
+    }
+
+    private static bool IsNull(string value)
+    {
+        return string.Equals(value, "Null", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool AreEquivalentSpriggitValues(string dtoValue, string spriggitValue)

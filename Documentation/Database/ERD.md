@@ -366,6 +366,8 @@ erDiagram
         TEXT MutagenObjectType
         TEXT DataMutagenObjectType
         TEXT CompareOperator
+        TEXT Flags
+        INTEGER Unknown2
         TEXT ComparisonValue
         TEXT ComparisonValue_ModKey_Name
         INTEGER ComparisonValue_ModKey_Type
@@ -758,6 +760,14 @@ erDiagram
         INTEGER Training_ModKey_Type
         TEXT Training_ModKey_FileName
         INTEGER Training_FormKey_ID
+        INTEGER Level
+        INTEGER NumRanks
+        INTEGER Playable
+        INTEGER Hidden
+        TEXT NextPerk_ModKey_Name
+        INTEGER NextPerk_ModKey_Type
+        TEXT NextPerk_ModKey_FileName
+        INTEGER NextPerk_FormKey_ID
         TEXT MajorFlags
     }
 
@@ -774,6 +784,7 @@ erDiagram
         INTEGER FormVersion
         INTEGER MajorRecordFlags
         TEXT ImportedAtUTC
+        TEXT Name
         INTEGER Version2
         TEXT ObjectBounds_First
         TEXT ObjectBounds_Second
@@ -783,6 +794,41 @@ erDiagram
         REAL LeafFrequency
         TEXT Unused
         TEXT DNAMDataTypeState
+        REAL DirtinessScale
+        TEXT SnapTemplate_ModKey_Name
+        INTEGER SnapTemplate_ModKey_Type
+        TEXT SnapTemplate_ModKey_FileName
+        INTEGER SnapTemplate_FormKey_ID
+        TEXT PreviewTransform_ModKey_Name
+        INTEGER PreviewTransform_ModKey_Type
+        TEXT PreviewTransform_ModKey_FileName
+        INTEGER PreviewTransform_FormKey_ID
+        TEXT Material_ModKey_Name
+        INTEGER Material_ModKey_Type
+        TEXT Material_ModKey_FileName
+        INTEGER Material_FormKey_ID
+        TEXT Lod_Level0
+        TEXT Lod_Level1
+        TEXT Lod_Level2
+        TEXT Lod_Level3
+    }
+
+    StaticProperties {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Property_Index PK
+        TEXT ActorValue_ModKey_Name
+        INTEGER ActorValue_ModKey_Type
+        TEXT ActorValue_ModKey_FileName
+        INTEGER ActorValue_FormKey_ID
+        REAL Value
+        TEXT ImportedAtUTC
     }
 
     Books {
@@ -1208,6 +1254,90 @@ erDiagram
         INTEGER PerkConditionTabCount
         TEXT Modification
         REAL Value
+        TEXT ActorValue
+        TEXT Spell
+        TEXT Quest
+        INTEGER Stage
+        TEXT ImportedAtUTC
+    }
+
+    PerkRankActivities {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Rank_Index PK, FK
+        INTEGER Activity_Index PK
+        TEXT ATAN
+        TEXT Name
+        TEXT Description
+        TEXT ANAM
+        TEXT Configuration
+        TEXT ImportedAtUTC
+    }
+
+    PerkRankActivityProgressionEvaluators {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Rank_Index PK, FK
+        INTEGER Activity_Index PK, FK
+        INTEGER Evaluator_Index PK
+        TEXT Name
+        TEXT ImportedAtUTC
+    }
+
+    PerkEffects {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Effect_Index PK
+        TEXT MutagenObjectType
+        INTEGER Rank
+        INTEGER Priority
+        INTEGER PerkEntryID
+        TEXT Flags
+        TEXT ButtonLabel
+        INTEGER ConditionCount
+        TEXT EntryPoint
+        INTEGER PerkConditionTabCount
+        TEXT Modification
+        REAL Value
+        TEXT ActorValue
+        TEXT Spell
+        TEXT Quest
+        INTEGER Stage
+        TEXT ImportedAtUTC
+    }
+
+    PerkEffectConditionTabs {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Rank_Index PK
+        INTEGER Effect_Index PK
+        INTEGER ConditionTab_Index PK
+        INTEGER RunOnTabIndex
+        INTEGER ConditionCount
         TEXT ImportedAtUTC
     }
 
@@ -1445,6 +1575,7 @@ erDiagram
     RecordInstances ||--o| MagicEffects : "typed detail"
     RecordInstances ||--o| Perks : "typed detail"
     RecordInstances ||--o| Statics : "typed detail"
+    Statics ||--o{ StaticProperties : contains
     RecordInstances ||--o| Books : "typed detail"
     RecordInstances ||--o| Doors : "typed detail"
     RecordInstances ||--o| Containers : "typed detail"
@@ -1464,6 +1595,10 @@ erDiagram
     Components ||--o{ ComponentItems : contains
     Perks ||--o{ PerkRanks : contains
     PerkRanks ||--o{ PerkRankEffects : contains
+    PerkRanks ||--o{ PerkRankActivities : contains
+    PerkRankActivities ||--o{ PerkRankActivityProgressionEvaluators : contains
+    Perks ||--o{ PerkEffects : contains
+    Perks ||--o{ PerkEffectConditionTabs : contains
     Perks ||--o{ PerkBackgroundSkills : contains
     RecordInstances ||--o{ Models : contains
     Models ||--o{ ModelMaterialSwaps : contains

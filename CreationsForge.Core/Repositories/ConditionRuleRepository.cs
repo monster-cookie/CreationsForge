@@ -98,11 +98,11 @@ public class ConditionRuleRepository : IConditionRuleRepository
                 """
                 INSERT OR REPLACE INTO ConditionRules (
                     Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName,
-                    FormKey_ID, ConditionSlot, Condition_Index, MutagenObjectType, DataMutagenObjectType, CompareOperator, ComparisonValue,
+                    FormKey_ID, ConditionSlot, Condition_Index, MutagenObjectType, DataMutagenObjectType, CompareOperator, Flags, Unknown2, ComparisonValue,
                     ComparisonValue_ModKey_Name, ComparisonValue_ModKey_Type, ComparisonValue_ModKey_FileName, ComparisonValue_FormKey_ID, ImportedAtUTC)
                 VALUES (
                     @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @RecordType, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName,
-                    @FormKeyId, @ConditionSlot, @ConditionIndex, @MutagenObjectType, @DataMutagenObjectType, @CompareOperator, @ComparisonValue,
+                    @FormKeyId, @ConditionSlot, @ConditionIndex, @MutagenObjectType, @DataMutagenObjectType, @CompareOperator, @Flags, @Unknown2, @ComparisonValue,
                     @ComparisonValueModKeyName, @ComparisonValueModKeyType, @ComparisonValueModKeyFileName, @ComparisonValueFormKeyId, @ImportedAtUTC);
                 """,
                 new
@@ -121,6 +121,8 @@ public class ConditionRuleRepository : IConditionRuleRepository
                     conditionRule.MutagenObjectType,
                     conditionRule.DataMutagenObjectType,
                     conditionRule.CompareOperator,
+                    conditionRule.Flags,
+                    conditionRule.Unknown2,
                     conditionRule.ComparisonValue,
                     ComparisonValueModKeyName = conditionRule.ComparisonValueFormKey?.ModKey.Name,
                     ComparisonValueModKeyType = conditionRule.ComparisonValueFormKey?.ModKey.Type,
@@ -207,6 +209,8 @@ public class ConditionRuleRepository : IConditionRuleRepository
             MutagenObjectType = row.MutagenObjectType,
             DataMutagenObjectType = row.DataMutagenObjectType,
             CompareOperator = row.CompareOperator,
+            Flags = row.Flags,
+            Unknown2 = row.Unknown2,
             ComparisonValue = row.ComparisonValue,
             ComparisonValueFormKey = CreateNullableFormKey(row.ComparisonValueModKeyName, row.ComparisonValueModKeyType, row.ComparisonValueModKeyFileName, row.ComparisonValueFormKeyId),
             ImportedAtUTC = row.ImportedAtUTC
@@ -267,6 +271,8 @@ public class ConditionRuleRepository : IConditionRuleRepository
         public string MutagenObjectType { get; set; } = string.Empty;
         public string? DataMutagenObjectType { get; set; }
         public string? CompareOperator { get; set; }
+        public string? Flags { get; set; }
+        public int? Unknown2 { get; set; }
         public string? ComparisonValue { get; set; }
         public string? ComparisonValueModKeyName { get; set; }
         public int? ComparisonValueModKeyType { get; set; }
