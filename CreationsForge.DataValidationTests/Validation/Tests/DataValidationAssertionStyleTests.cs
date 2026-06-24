@@ -36,6 +36,8 @@ public class DataValidationAssertionStyleTests
         return line.Contains("foreach (var field in spriggit.Fields", StringComparison.Ordinal) ||
                line.Contains("foreach (var field in spriggitFields", StringComparison.Ordinal) ||
                line.Contains("TryGetValue(field.Key", StringComparison.Ordinal) ||
+               line.Contains("GlobalSpriggitDTO", StringComparison.Ordinal) ||
+               line.Contains("Helpers.GetDTOFields(", StringComparison.Ordinal) ||
                line.Contains("Helpers.GetSpriggitListValues(spriggit", StringComparison.Ordinal);
     }
 

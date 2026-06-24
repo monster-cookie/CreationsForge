@@ -266,37 +266,42 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
         fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
         fields.Add(CreateField("FormationRadius", records, record => record.FormationRadius?.ToString() ?? string.Empty));
-        fields.Add(CreateField("KeywordFormKey", records, record => FormatFormKey(record.KeywordFormKey)));
-        fields.Add(CreateField("HerdFormKey", records, record => FormatFormKey(record.HerdFormKey)));
-        fields.Add(CreateField("VoiceTypeFormKey", records, record => FormatFormKey(record.VoiceTypeFormKey)));
-        fields.Add(CreateField("SharedCrimeFactionListFormKey", records, record => FormatFormKey(record.SharedCrimeFactionListFormKey)));
-        fields.Add(CreateField("VendorBuySellListFormKey", records, record => FormatFormKey(record.VendorBuySellListFormKey)));
-        fields.Add(CreateField("MerchantContainerFormKey", records, record => FormatFormKey(record.MerchantContainerFormKey)));
-        fields.Add(CreateField("ExteriorJailMarkerFormKey", records, record => FormatFormKey(record.ExteriorJailMarkerFormKey)));
-        fields.Add(CreateField("FollowerWaitMarkerFormKey", records, record => FormatFormKey(record.FollowerWaitMarkerFormKey)));
-        fields.Add(CreateField("StolenGoodsContainerFormKey", records, record => FormatFormKey(record.StolenGoodsContainerFormKey)));
-        fields.Add(CreateField("PlayerInventoryContainerFormKey", records, record => FormatFormKey(record.PlayerInventoryContainerFormKey)));
-        fields.Add(CreateField("JailOutfitFormKey", records, record => FormatFormKey(record.JailOutfitFormKey)));
-        fields.Add(CreateField("CrimeArrest", records, record => record.CrimeArrest?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeAttackOnSight", records, record => record.CrimeAttackOnSight?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeMurder", records, record => record.CrimeMurder?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeAssault", records, record => record.CrimeAssault?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeTrespass", records, record => record.CrimeTrespass?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimePickpocket", records, record => record.CrimePickpocket?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeSteal", records, record => record.CrimeSteal?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeStealMult", records, record => record.CrimeStealMult?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeEscape", records, record => record.CrimeEscape?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeWerewolf", records, record => record.CrimeWerewolf?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeUnknown", records, record => record.CrimeUnknown?.ToString() ?? string.Empty));
-        fields.Add(CreateField("VendorStartHour", records, record => record.VendorStartHour?.ToString() ?? string.Empty));
-        fields.Add(CreateField("VendorEndHour", records, record => record.VendorEndHour?.ToString() ?? string.Empty));
-        fields.Add(CreateField("VendorRadius", records, record => record.VendorRadius?.ToString() ?? string.Empty));
-        fields.Add(CreateField("VendorBuysStolenItems", records, record => record.VendorBuysStolenItems?.ToString() ?? string.Empty));
-        fields.Add(CreateField("VendorBuysNonStolenItems", records, record => record.VendorBuysNonStolenItems?.ToString() ?? string.Empty));
-        fields.Add(CreateField("VendorBuySellEverythingNotInList", records, record => record.VendorBuySellEverythingNotInList?.ToString() ?? string.Empty));
-        fields.Add(CreateField("VendorLocationMutagenObjectType", records, record => record.VendorLocationMutagenObjectType ?? string.Empty));
-        fields.Add(CreateField("VendorLocationType", records, record => record.VendorLocationType ?? string.Empty));
-        fields.Add(CreateField("VendorLocationLinkFormKey", records, record => FormatFormKey(record.VendorLocationLinkFormKey)));
+        fields.Add(CreateField("Keyword", records, record => FormatFormKey(record.Keyword)));
+        fields.Add(CreateField("Herd", records, record => FormatFormKey(record.Herd)));
+        fields.Add(CreateField("VoiceType", records, record => FormatFormKey(record.VoiceType)));
+        fields.Add(CreateField("SharedCrimeFactionList", records, record => FormatFormKey(record.SharedCrimeFactionList)));
+        fields.Add(CreateField("VendorBuySellList", records, record => FormatFormKey(record.VendorBuySellList)));
+        fields.Add(CreateField("MerchantContainer", records, record => FormatFormKey(record.MerchantContainer)));
+        fields.Add(CreateField("ExteriorJailMarker", records, record => FormatFormKey(record.ExteriorJailMarker)));
+        fields.Add(CreateField("FollowerWaitMarker", records, record => FormatFormKey(record.FollowerWaitMarker)));
+        fields.Add(CreateField("StolenGoodsContainer", records, record => FormatFormKey(record.StolenGoodsContainer)));
+        fields.Add(CreateField("PlayerInventoryContainer", records, record => FormatFormKey(record.PlayerInventoryContainer)));
+        fields.Add(CreateField("JailOutfit", records, record => FormatFormKey(record.JailOutfit)));
+        fields.Add(CreateField("CrimeValues.Arrest", records, record => record.CrimeValues?.Arrest?.ToString() ?? string.Empty));
+        fields.Add(CreateField("CrimeValues.AttackOnSight", records, record => record.CrimeValues?.AttackOnSight?.ToString() ?? string.Empty));
+        fields.Add(CreateField("CrimeValues.Murder", records, record => record.CrimeValues?.Murder?.ToString() ?? string.Empty));
+        fields.Add(CreateField("CrimeValues.Assault", records, record => record.CrimeValues?.Assault?.ToString() ?? string.Empty));
+        fields.Add(CreateField("CrimeValues.Trespass", records, record => record.CrimeValues?.Trespass?.ToString() ?? string.Empty));
+        fields.Add(CreateField("CrimeValues.Pickpocket", records, record => record.CrimeValues?.Pickpocket?.ToString() ?? string.Empty));
+        fields.Add(CreateField("CrimeValues.Steal", records, record => record.CrimeValues?.Steal?.ToString() ?? string.Empty));
+        fields.Add(CreateField("CrimeValues.StealMult", records, record => record.CrimeValues?.StealMult?.ToString() ?? string.Empty));
+        fields.Add(CreateField("CrimeValues.StealMultiplier", records, record => record.CrimeValues?.StealMultiplier?.ToString() ?? string.Empty));
+        fields.Add(CreateField("CrimeValues.Escape", records, record => record.CrimeValues?.Escape?.ToString() ?? string.Empty));
+        fields.Add(CreateField("CrimeValues.Werewolf", records, record => record.CrimeValues?.Werewolf?.ToString() ?? string.Empty));
+        fields.Add(CreateField("CrimeValues.WerewolfUnused", records, record => record.CrimeValues?.WerewolfUnused?.ToString() ?? string.Empty));
+        fields.Add(CreateField("CrimeValues.Unknown", records, record => record.CrimeValues?.Unknown?.ToString() ?? string.Empty));
+        fields.Add(CreateField("CrimeValues.Piracy", records, record => record.CrimeValues?.Piracy?.ToString() ?? string.Empty));
+        fields.Add(CreateField("CrimeValues.SmuggleMultiplier", records, record => record.CrimeValues?.SmuggleMultiplier?.ToString() ?? string.Empty));
+        fields.Add(CreateField("VendorValues.StartHour", records, record => record.VendorValues?.StartHour?.ToString() ?? string.Empty));
+        fields.Add(CreateField("VendorValues.EndHour", records, record => record.VendorValues?.EndHour?.ToString() ?? string.Empty));
+        fields.Add(CreateField("VendorValues.Radius", records, record => record.VendorValues?.Radius?.ToString() ?? string.Empty));
+        fields.Add(CreateField("VendorValues.BuysStolenItems", records, record => record.VendorValues?.BuysStolenItems?.ToString() ?? string.Empty));
+        fields.Add(CreateField("VendorValues.BuysNonStolenItems", records, record => record.VendorValues?.BuysNonStolenItems?.ToString() ?? string.Empty));
+        fields.Add(CreateField("VendorValues.BuySellEverythingNotInList", records, record => record.VendorValues?.BuySellEverythingNotInList?.ToString() ?? string.Empty));
+        fields.Add(CreateField("VendorLocation.MutagenObjectType", records, record => record.VendorLocation?.MutagenObjectType ?? string.Empty));
+        fields.Add(CreateField("VendorLocation.Target.MutagenObjectType", records, record => record.VendorLocation?.Target?.MutagenObjectType ?? string.Empty));
+        fields.Add(CreateField("VendorLocation.Target.Type", records, record => record.VendorLocation?.Target?.Type ?? string.Empty));
+        fields.Add(CreateField("VendorLocation.Target.Link", records, record => FormatFormKey(record.VendorLocation?.Target?.Link)));
         AddFactionRelationGroups(fields, records);
         AddFactionRankGroups(fields, records, localizedStrings, recordTextLanguage);
         AddConditionRuleGroups(fields, records.Cast<RecordDTO>().ToList(), records.Cast<IHasConditionsDTO>().ToList());
@@ -404,6 +409,9 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("DefaultPackageListFormKey", records, record => FormatFormKey(record.DefaultPackageListFormKey)));
         fields.Add(CreateField("CrimeFactionFormKey", records, record => FormatFormKey(record.CrimeFactionFormKey)));
         AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey));
+        AddSoundGroups(fields, records.Cast<RecordDTO>().ToList(), SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey));
+        AddScriptingAdapterGroups(fields, records.Cast<RecordDTO>().ToList(), ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey));
+        AddNPCSupplementalFields(fields, records);
 
         return CreateComparison(RecordTypeCatalog.NPC.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
@@ -469,7 +477,7 @@ public class RecordComparisonService : IRecordComparisonService
         AddPerkBackgroundSkillGroup(fields, records);
         AddConditionRuleGroups(fields, records.Cast<RecordDTO>().ToList(), records.Cast<IHasConditionsDTO>().ToList());
         AddSoundGroups(fields, records.Cast<RecordDTO>().ToList(), SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.Perk.RecordID, formKey));
-        AddRawPayloadGroups(fields, records.Cast<RecordDTO>().ToList(), RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Perk.RecordID, formKey));
+        AddScriptFragmentGroups(fields, records.Cast<RecordDTO>().ToList(), records.SelectMany(record => record.ScriptFragments).ToList());
         AddScriptingAdapterGroups(fields, records.Cast<RecordDTO>().ToList(), ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Perk.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.Perk.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
@@ -499,6 +507,7 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("Lod.Level1", records, record => record.LodLevel1 ?? string.Empty));
         fields.Add(CreateField("Lod.Level2", records, record => record.LodLevel2 ?? string.Empty));
         fields.Add(CreateField("Lod.Level3", records, record => record.LodLevel3 ?? string.Empty));
+        fields.Add(CreateField("NavmeshGeometry", records, record => record.NavmeshGeometry ?? string.Empty));
         AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey));
         AddStaticPropertyGroups(fields, records);
         AddModelGroups(fields, records.Cast<RecordDTO>().ToList(), ModelRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey));
@@ -591,6 +600,10 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("NativeTerminalFormKey", records, record => FormatFormKey(record.NativeTerminalFormKey)));
         fields.Add(CreateField("SoundLevel", records, record => record.SoundLevel ?? string.Empty));
         fields.Add(CreateField("FacingAxisOverride", records, record => record.FacingAxisOverride ?? string.Empty));
+        fields.Add(CreateField("AnimationGraph", records, record => record.AnimationGraph ?? string.Empty));
+        fields.Add(CreateField("AnimationSkeleton", records, record => record.AnimationSkeleton ?? string.Empty));
+        fields.Add(CreateField("AnimationDirectory", records, record => record.AnimationDirectory ?? string.Empty));
+        fields.Add(CreateField("AnimationFile", records, record => record.AnimationFile ?? string.Empty));
         AddKeywordGroup(fields, baseRecords, KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
         AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
         AddSoundGroups(fields, baseRecords, SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
@@ -615,10 +628,15 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
         fields.Add(CreateField("MajorFlags", records, record => record.MajorFlags ?? string.Empty));
         fields.Add(CreateField("NativeTerminalFormKey", records, record => FormatFormKey(record.NativeTerminalFormKey)));
+        fields.Add(CreateField("AnimationGraph", records, record => record.AnimationGraph ?? string.Empty));
+        fields.Add(CreateField("AnimationSkeleton", records, record => record.AnimationSkeleton ?? string.Empty));
+        fields.Add(CreateField("AnimationDirectory", records, record => record.AnimationDirectory ?? string.Empty));
+        fields.Add(CreateField("AnimationFile", records, record => record.AnimationFile ?? string.Empty));
         AddContainerItemGroups(fields, records);
         AddKeywordGroup(fields, baseRecords, KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey));
         AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey));
         AddSoundGroups(fields, baseRecords, SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey));
+        AddScriptingAdapterGroups(fields, baseRecords, ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey));
         AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.Container.RecordID, formKey, baseRecords, fields);
@@ -637,15 +655,17 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("WorkbenchKeywordFormKey", records, record => FormatFormKey(record.WorkbenchKeywordFormKey)));
         fields.Add(CreateField("CreatedObjectCount", records, record => record.CreatedObjectCount?.ToString() ?? string.Empty));
         fields.Add(CreateField("AmountProduced", records, record => record.AmountProduced?.ToString() ?? string.Empty));
+        fields.Add(CreateField("Value", records, record => record.Value?.ToString() ?? string.Empty));
         fields.Add(CreateField("MenuSortOrder", records, record => record.MenuSortOrder?.ToString() ?? string.Empty));
         fields.Add(CreateField("LearnMethod", records, record => record.LearnMethod ?? string.Empty));
         fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
+        fields.Add(CreateField("MajorFlags", records, record => record.MajorFlags ?? string.Empty));
         AddConstructibleObjectComponentGroups(fields, records);
         AddConstructibleObjectCategoryGroups(fields, records);
         AddConstructibleObjectRecipeFilterGroups(fields, records);
         AddConditionRuleGroups(fields, baseRecords, records.Cast<IHasConditionsDTO>().ToList());
+        AddSoundGroups(fields, baseRecords, SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.ConstructibleObject.RecordID, formKey));
         AddScriptingAdapterGroups(fields, baseRecords, ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.ConstructibleObject.RecordID, formKey));
-        AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.ConstructibleObject.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.ConstructibleObject.RecordID, formKey, baseRecords, fields);
     }
@@ -686,10 +706,16 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("WorkbenchData", records, record => record.WorkbenchData ?? string.Empty));
         fields.Add(CreateField("FurnitureTemplateFormKey", records, record => FormatFormKey(record.FurnitureTemplateFormKey)));
         fields.Add(CreateField("MarkerModel", records, record => record.MarkerModel ?? string.Empty));
+        fields.Add(CreateField("AnimationGraph", records, record => record.AnimationGraph ?? string.Empty));
+        fields.Add(CreateField("AnimationSkeleton", records, record => record.AnimationSkeleton ?? string.Empty));
+        fields.Add(CreateField("AnimationDirectory", records, record => record.AnimationDirectory ?? string.Empty));
+        fields.Add(CreateField("AnimationFile", records, record => record.AnimationFile ?? string.Empty));
         AddTerminalForcedLocationGroups(fields, records);
         AddKeywordGroup(fields, baseRecords, KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
         AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
         AddScriptingAdapterGroups(fields, baseRecords, ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
+        AddConditionRuleGroups(fields, baseRecords, records.Cast<IHasConditionsDTO>().ToList());
+        AddScriptFragmentGroups(fields, baseRecords, records.SelectMany(record => record.ScriptFragments).ToList());
         AddRawPayloadGroups(fields, baseRecords, RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
         AddTerminalMarkerParameterGroups(fields, records);
         AddTerminalBodyTextGroups(fields, records, localizedStrings, recordTextLanguage);
@@ -770,6 +796,7 @@ public class RecordComparisonService : IRecordComparisonService
             {
                 CreateChildField("File", records, record => FindModel(models, record.ModKey, modelKey)?.File ?? string.Empty),
                 CreateChildField("Texture Hashes", records, record => FindModel(models, record.ModKey, modelKey)?.TextureFileHashes ?? string.Empty),
+                CreateChildField("Data", records, record => FindModel(models, record.ModKey, modelKey)?.Data ?? string.Empty),
                 CreateChildField("Light Layer", records, record => FindModel(models, record.ModKey, modelKey)?.LightLayer?.ToString() ?? string.Empty),
                 CreateChildField("Flags", records, record => FindModel(models, record.ModKey, modelKey)?.Flags ?? string.Empty),
                 CreateChildField("Color Remap", records, record => FindModel(models, record.ModKey, modelKey)?.ColorRemappingIndex?.ToString() ?? string.Empty),
@@ -1642,7 +1669,7 @@ public class RecordComparisonService : IRecordComparisonService
             var currentIndex = relationIndex;
             var children = new List<RecordComparisonFieldDTO>
             {
-                CreateField("TargetFormKey", records, record => FormatFormKey(record.Relations.FirstOrDefault(relation => relation.RelationIndex == currentIndex)?.TargetFormKey)),
+                CreateField("Target", records, record => FormatFormKey(record.Relations.FirstOrDefault(relation => relation.RelationIndex == currentIndex)?.Target)),
                 CreateField("Reaction", records, record => record.Relations.FirstOrDefault(relation => relation.RelationIndex == currentIndex)?.Reaction ?? string.Empty)
             }.Where(HasVisibleValue).ToList();
             if (children.Count > 0)
@@ -1667,9 +1694,9 @@ public class RecordComparisonService : IRecordComparisonService
             var currentIndex = rankIndex;
             var children = new List<RecordComparisonFieldDTO>
             {
-                CreateField("RankNumber", records, record => record.Ranks.FirstOrDefault(rank => rank.RankIndex == currentIndex)?.RankNumber?.ToString() ?? string.Empty),
-                CreateField("MaleTitle", records, record => GetTranslatedDisplayValue(localizedStrings, record, $"Ranks[{currentIndex}].MaleTitle", recordTextLanguage, record.Ranks.FirstOrDefault(rank => rank.RankIndex == currentIndex)?.MaleTitle)),
-                CreateField("FemaleTitle", records, record => GetTranslatedDisplayValue(localizedStrings, record, $"Ranks[{currentIndex}].FemaleTitle", recordTextLanguage, record.Ranks.FirstOrDefault(rank => rank.RankIndex == currentIndex)?.FemaleTitle))
+                CreateField("Number", records, record => record.Ranks.FirstOrDefault(rank => rank.RankIndex == currentIndex)?.Number?.ToString() ?? string.Empty),
+                CreateField("Title.Male", records, record => GetTranslatedDisplayValue(localizedStrings, record, $"Ranks[{currentIndex}].Title.Male", recordTextLanguage, record.Ranks.FirstOrDefault(rank => rank.RankIndex == currentIndex)?.Title?.Male)),
+                CreateField("Title.Female", records, record => GetTranslatedDisplayValue(localizedStrings, record, $"Ranks[{currentIndex}].Title.Female", recordTextLanguage, record.Ranks.FirstOrDefault(rank => rank.RankIndex == currentIndex)?.Title?.Female))
             }.Where(HasVisibleValue).ToList();
             if (children.Count > 0)
             {
@@ -1925,6 +1952,65 @@ public class RecordComparisonService : IRecordComparisonService
         }
     }
 
+    private static void AddNPCSupplementalFields(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        fields.Add(CreateField("Template", records, record => record.Template ?? string.Empty));
+        fields.Add(CreateField("DefaultTemplate", records, record => record.DefaultTemplate ?? string.Empty));
+        fields.Add(CreateField("TemplateActors", records, record => record.TemplateActors ?? string.Empty));
+        fields.Add(CreateField("WornArmor", records, record => record.WornArmor ?? string.Empty));
+        fields.Add(CreateField("FaceMorph", records, record => record.FaceMorph ?? string.Empty));
+        fields.Add(CreateField("FaceParts", records, record => record.FaceParts ?? string.Empty));
+        fields.Add(CreateField("HeadParts", records, record => record.HeadParts ?? string.Empty));
+        fields.Add(CreateField("HeadTexture", records, record => record.HeadTexture ?? string.Empty));
+        fields.Add(CreateField("SleepingOutfit", records, record => record.SleepingOutfit ?? string.Empty));
+        fields.Add(CreateField("TintLayers", records, record => record.TintLayers ?? string.Empty));
+        fields.Add(CreateField("Tints", records, record => record.Tints ?? string.Empty));
+        fields.Add(CreateField("SpaceOutfit", records, record => record.SpaceOutfit ?? string.Empty));
+        fields.Add(CreateField("BodyMorphRegionValues", records, record => record.BodyMorphRegionValues ?? string.Empty));
+        fields.Add(CreateField("ObjectTemplates", records, record => record.ObjectTemplates ?? string.Empty));
+        fields.Add(CreateField("AIData", records, record => record.AIData ?? string.Empty));
+    }
+
+    private static void AddScriptFragmentGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<RecordDTO> records,
+        IReadOnlyList<ScriptFragmentDTO> fragments)
+    {
+        var fragmentKeys = fragments
+            .Select(fragment => new ScriptFragmentKey(fragment.FragmentSlot, fragment.FragmentIndex))
+            .Distinct()
+            .OrderBy(key => key.Slot, StringComparer.Ordinal)
+            .ThenBy(key => key.Index)
+            .ToList();
+        if (fragmentKeys.Count == 0)
+        {
+            return;
+        }
+
+        var fragmentFields = new List<RecordComparisonFieldDTO>();
+        foreach (var fragmentKey in fragmentKeys)
+        {
+            var children = new List<RecordComparisonFieldDTO>
+            {
+                CreateChildField("Type", records, record => FindScriptFragment(fragments, record.ModKey, fragmentKey)?.MutagenObjectType ?? string.Empty),
+                CreateChildField("ScriptName", records, record => FindScriptFragment(fragments, record.ModKey, fragmentKey)?.ScriptName ?? string.Empty),
+                CreateChildField("FragmentName", records, record => FindScriptFragment(fragments, record.ModKey, fragmentKey)?.FragmentName ?? string.Empty),
+                CreateChildField("ExtraBindDataVersion", records, record => FindScriptFragment(fragments, record.ModKey, fragmentKey)?.ExtraBindDataVersion?.ToString() ?? string.Empty)
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (children.Count > 0)
+            {
+                fragmentFields.Add(CreateGroupField(GetScriptFragmentGroupName(fragmentKey), records, children));
+            }
+        }
+
+        if (fragmentFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("Script Fragments", records, fragmentFields));
+        }
+    }
+
     private static void AddScriptingAdapterGroups(
         IList<RecordComparisonFieldDTO> fields,
         IReadOnlyList<RecordDTO> records,
@@ -2120,6 +2206,13 @@ public class RecordComparisonService : IRecordComparisonService
         return payloads.FirstOrDefault(payload => IsSameModKey(payload.ModKey, modKey) &&
             string.Equals(payload.PayloadSlot, payloadKey.Slot, StringComparison.Ordinal) &&
             payload.PayloadIndex == payloadKey.Index);
+    }
+
+    private static ScriptFragmentDTO? FindScriptFragment(IReadOnlyList<ScriptFragmentDTO> fragments, ModKeyDTO modKey, ScriptFragmentKey fragmentKey)
+    {
+        return fragments.FirstOrDefault(fragment => IsSameModKey(fragment.ModKey, modKey) &&
+            string.Equals(fragment.FragmentSlot, fragmentKey.Slot, StringComparison.Ordinal) &&
+            fragment.FragmentIndex == fragmentKey.Index);
     }
 
     private static ConditionFormConditionDTO? FindConditionRule(IHasConditionsDTO record, ConditionRuleKey conditionKey)
@@ -2530,6 +2623,13 @@ public class RecordComparisonService : IRecordComparisonService
             : $"{payloadKey.Slot} [{payloadKey.Index}]";
     }
 
+    private static string GetScriptFragmentGroupName(ScriptFragmentKey fragmentKey)
+    {
+        return fragmentKey.Index == 0
+            ? fragmentKey.Slot
+            : $"{fragmentKey.Slot} [{fragmentKey.Index}]";
+    }
+
     private static string GetConditionRuleGroupName(ConditionRuleKey conditionKey)
     {
         return string.Equals(conditionKey.Slot, "Conditions", StringComparison.Ordinal)
@@ -2549,6 +2649,8 @@ public class RecordComparisonService : IRecordComparisonService
     private sealed record SoundKey(string Slot, int Index);
 
     private sealed record RawPayloadKey(string Slot, int Index);
+
+    private sealed record ScriptFragmentKey(string Slot, int Index);
 
     private sealed record ConditionRuleKey(string Slot, int Index);
 

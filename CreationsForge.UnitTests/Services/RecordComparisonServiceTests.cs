@@ -326,7 +326,7 @@ public class RecordComparisonServiceTests
     }
 
     [Fact]
-    public void GetRecordComparison_ForStatic_MapsStaticFieldsAndRawPayloads()
+    public void GetRecordComparison_ForStatic_MapsStaticFieldsModelDataAndReflectPayloads()
     {
         var formKey = CreateFormKey("Starfield.esm", 0x1000);
         var staticRepository = new TestStaticRepository
@@ -341,8 +341,8 @@ public class RecordComparisonServiceTests
         {
             Records =
             [
-                CreateModel("Base.esm", RecordTypeCatalog.Static.RecordID, formKey, "Meshes\\SetDressing\\Rock01.nif"),
-                CreateModel("Patch.esp", RecordTypeCatalog.Static.RecordID, formKey, "Meshes\\SetDressing\\Rock01.nif")
+                CreateModel("Base.esm", RecordTypeCatalog.Static.RecordID, formKey, "Meshes\\SetDressing\\Rock01.nif", "AABB"),
+                CreateModel("Patch.esp", RecordTypeCatalog.Static.RecordID, formKey, "Meshes\\SetDressing\\Rock01.nif", "CCDD")
             ]
         };
         var keywordMappingRepository = new TestKeywordMappingRepository
@@ -357,8 +357,8 @@ public class RecordComparisonServiceTests
         {
             Records =
             [
-                CreateRawRecordPayload("Base.esm", formKey, "Model.Data", 0, "Model", "AABB"),
-                CreateRawRecordPayload("Patch.esp", formKey, "Model.Data", 0, "Model", "CCDD")
+                CreateRawRecordPayload("Base.esm", formKey, "Components.ReflectionComponent.REFL", 0, "Byte[]", "AABB"),
+                CreateRawRecordPayload("Patch.esp", formKey, "Components.ReflectionComponent.REFL", 0, "Byte[]", "CCDD")
             ]
         };
         var service = CreateService(
@@ -377,17 +377,18 @@ public class RecordComparisonServiceTests
         keywords.Children.Single(field => field.FieldName == "Keyword [0]").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000555", "Starfield.esm:00000666"]);
         var model = comparison.Fields.Single(field => field.FieldName == "Model");
         model.Children.Single(field => field.FieldName == "File").Values.Select(value => value.DisplayValue).ShouldBe(["Meshes\\SetDressing\\Rock01.nif", "Meshes\\SetDressing\\Rock01.nif"]);
+        model.Children.Single(field => field.FieldName == "Data").Values.Select(value => value.DisplayValue).ShouldBe(["AABB", "CCDD"]);
         var rawPayloads = comparison.Fields.Single(field => field.FieldName == "Raw Payloads");
-        var modelData = rawPayloads.Children.Single(field => field.FieldName == "Model.Data");
-        var modelDataValues = modelData.Children.Single(field => field.FieldName == "Value").Values;
-        modelDataValues.Select(value => value.DisplayValue).ShouldBe(["[UNPARSEABLE REFLECTION DATA]", "[UNPARSEABLE REFLECTION DATA]"]);
-        modelDataValues.Select(value => value.DetailValue).ShouldBe(["AABB", "CCDD"]);
-        modelDataValues.Select(value => value.DisplayKind).ShouldBe([RecordComparisonValueDisplayKind.RawBinaryPayload, RecordComparisonValueDisplayKind.RawBinaryPayload]);
-        modelData.Children.Single(field => field.FieldName == "Value").State.ShouldBe(RecordComparisonValueState.Conflict);
+        var reflect = rawPayloads.Children.Single(field => field.FieldName == "Components.ReflectionComponent.REFL");
+        var reflectValues = reflect.Children.Single(field => field.FieldName == "Value").Values;
+        reflectValues.Select(value => value.DisplayValue).ShouldBe(["[UNPARSEABLE REFLECTION DATA]", "[UNPARSEABLE REFLECTION DATA]"]);
+        reflectValues.Select(value => value.DetailValue).ShouldBe(["AABB", "CCDD"]);
+        reflectValues.Select(value => value.DisplayKind).ShouldBe([RecordComparisonValueDisplayKind.RawBinaryPayload, RecordComparisonValueDisplayKind.RawBinaryPayload]);
+        reflect.Children.Single(field => field.FieldName == "Value").State.ShouldBe(RecordComparisonValueState.Conflict);
     }
 
     [Fact]
-    public void GetRecordComparison_ForContainer_MapsContainerFieldsItemsModelsAndRawPayloads()
+    public void GetRecordComparison_ForContainer_MapsContainerFieldsItemsModelsAndAnimationFields()
     {
         var formKey = CreateFormKey("Starfield.esm", 0x2000);
         var itemFormKey = CreateFormKey("Starfield.esm", 0x333);
@@ -396,8 +397,8 @@ public class RecordComparisonServiceTests
         {
             Records =
             [
-                CreateContainer("Base.esm", formKey, "Storage Crate", terminalFormKey, [CreateContainerItem("Base.esm", formKey, itemFormKey, 0, 2)]),
-                CreateContainer("Patch.esp", formKey, "Storage Crate", terminalFormKey, [CreateContainerItem("Patch.esp", formKey, itemFormKey, 0, 4)])
+                CreateContainer("Base.esm", formKey, "Storage Crate", terminalFormKey, [CreateContainerItem("Base.esm", formKey, itemFormKey, 0, 2)], "meshes\\base.anim"),
+                CreateContainer("Patch.esp", formKey, "Storage Crate", terminalFormKey, [CreateContainerItem("Patch.esp", formKey, itemFormKey, 0, 4)], "meshes\\patch.anim")
             ]
         };
         var modelRepository = new TestModelRepository
@@ -408,18 +409,9 @@ public class RecordComparisonServiceTests
                 CreateModel("Patch.esp", RecordTypeCatalog.Container.RecordID, formKey, "Meshes\\SetDressing\\Container01.nif")
             ]
         };
-        var rawRecordPayloadRepository = new TestRawRecordPayloadRepository
-        {
-            Records =
-            [
-                CreateRawRecordPayload("Base.esm", RecordTypeCatalog.Container.RecordID, formKey, "BaseFormComponents.AnimationGraphComponent.ANAM", 0, "Byte[]", "AABBCC", "Components.AnimationGraphComponent.ANAM"),
-                CreateRawRecordPayload("Patch.esp", RecordTypeCatalog.Container.RecordID, formKey, "BaseFormComponents.AnimationGraphComponent.ANAM", 0, "Byte[]", "DDEEFF", "Components.AnimationGraphComponent.ANAM")
-            ]
-        };
         var service = CreateService(
             containerRepository: containerRepository,
-            modelRepository: modelRepository,
-            rawRecordPayloadRepository: rawRecordPayloadRepository);
+            modelRepository: modelRepository);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Container.RecordID, formKey);
 
@@ -432,16 +424,12 @@ public class RecordComparisonServiceTests
         item.Children.Single(field => field.FieldName == "Count").Values.Select(value => value.DisplayValue).ShouldBe(["2", "4"]);
         var model = comparison.Fields.Single(field => field.FieldName == "Model");
         model.Children.Single(field => field.FieldName == "File").Values.Select(value => value.DisplayValue).ShouldBe(["Meshes\\SetDressing\\Container01.nif", "Meshes\\SetDressing\\Container01.nif"]);
-        var rawPayloads = comparison.Fields.Single(field => field.FieldName == "Raw Payloads");
-        var anam = rawPayloads.Children.Single(field => field.FieldName == "BaseFormComponents.AnimationGraphComponent.ANAM");
-        var rawValues = anam.Children.Single(field => field.FieldName == "Value").Values;
-        rawValues.Select(value => value.DisplayValue).ShouldBe(["[UNPARSEABLE REFLECTION DATA]", "[UNPARSEABLE REFLECTION DATA]"]);
-        rawValues.Select(value => value.DetailValue).ShouldBe(["AABBCC", "DDEEFF"]);
-        rawValues.Select(value => value.DisplayKind).ShouldBe([RecordComparisonValueDisplayKind.RawBinaryPayload, RecordComparisonValueDisplayKind.RawBinaryPayload]);
+        comparison.Fields.Single(field => field.FieldName == "AnimationGraph").Values.Select(value => value.DisplayValue).ShouldBe(["meshes\\base.anim", "meshes\\patch.anim"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Base Form Components");
     }
 
     [Fact]
-    public void GetRecordComparison_ForConstructibleObject_MapsComponentsConditionsScriptsAndRawPayloads()
+    public void GetRecordComparison_ForConstructibleObject_MapsComponentsConditionsScriptsAndCreatedObjectCount()
     {
         var formKey = CreateFormKey("Starfield.esm", 0x2500);
         var createdObjectFormKey = CreateFormKey("Starfield.esm", 0x111);
@@ -464,24 +452,16 @@ public class RecordComparisonServiceTests
                 CreateScriptingAdapter("Patch.esp", RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "RecipeScript", "Enabled", "False")
             ]
         };
-        var rawRecordPayloadRepository = new TestRawRecordPayloadRepository
-        {
-            Records =
-            [
-                CreateRawRecordPayload("Base.esm", RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "CreatedObjectCounts", 0, "CreatedObjectCounts", "BaseCount"),
-                CreateRawRecordPayload("Patch.esp", RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "CreatedObjectCounts", 0, "CreatedObjectCounts", "PatchCount")
-            ]
-        };
         var service = CreateService(
             constructibleObjectRepository: constructibleObjectRepository,
-            scriptingAdapterRepository: scriptingAdapterRepository,
-            rawRecordPayloadRepository: rawRecordPayloadRepository);
+            scriptingAdapterRepository: scriptingAdapterRepository);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.ConstructibleObject.RecordID, formKey);
 
         comparison.RecordType.ShouldBe(RecordTypeCatalog.ConstructibleObject.RecordID);
         comparison.Fields.Single(field => field.FieldName == "CreatedObjectFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000111", "Starfield.esm:00000111"]);
         comparison.Fields.Single(field => field.FieldName == "WorkbenchKeywordFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000222", "Starfield.esm:00000222"]);
+        comparison.Fields.Single(field => field.FieldName == "CreatedObjectCount").Values.Select(value => value.DisplayValue).ShouldBe(["2", "4"]);
         comparison.Fields.Single(field => field.FieldName == "AmountProduced").Values.Select(value => value.DisplayValue).ShouldBe(["2", "4"]);
         var components = comparison.Fields.Single(field => field.FieldName == "Components");
         var component = components.Children.Single(field => field.FieldName == "Component [0]");
@@ -499,10 +479,7 @@ public class RecordComparisonServiceTests
         condition.Children.ShouldBeEmpty();
         var scripts = comparison.Fields.Single(field => field.FieldName == "Scripts");
         scripts.Children.Single(field => field.FieldName == "Script [0]").Children.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["RecipeScript", "RecipeScript"]);
-        var rawPayloads = comparison.Fields.Single(field => field.FieldName == "Raw Payloads");
-        var countValues = rawPayloads.Children.Single(field => field.FieldName == "CreatedObjectCounts").Children.Single(field => field.FieldName == "Value").Values;
-        countValues.Select(value => value.DisplayValue).ShouldBe(["[UNPARSEABLE REFLECTION DATA]", "[UNPARSEABLE REFLECTION DATA]"]);
-        countValues.Select(value => value.DetailValue).ShouldBe(["BaseCount", "PatchCount"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Created Object Counts");
     }
 
     [Fact]
@@ -989,7 +966,7 @@ public class RecordComparisonServiceTests
         return CreateModel(fileName, RecordTypeCatalog.MiscItem.RecordID, formKey, file);
     }
 
-    private static ModelDTO CreateModel(string fileName, string recordType, FormKeyDTO formKey, string file)
+    private static ModelDTO CreateModel(string fileName, string recordType, FormKeyDTO formKey, string file, string? data = null)
     {
         return new ModelDTO
         {
@@ -1000,6 +977,7 @@ public class RecordComparisonServiceTests
             ModelSlot = "Model",
             ModelGender = string.Empty,
             File = file,
+            Data = data,
             ImportedAtUTC = DateTime.UtcNow
         };
     }
@@ -1088,7 +1066,13 @@ public class RecordComparisonServiceTests
         };
     }
 
-    private static ContainerDTO CreateContainer(string fileName, FormKeyDTO formKey, string name, FormKeyDTO? nativeTerminalFormKey, IList<ContainerItemDTO> items)
+    private static ContainerDTO CreateContainer(
+        string fileName,
+        FormKeyDTO formKey,
+        string name,
+        FormKeyDTO? nativeTerminalFormKey,
+        IList<ContainerItemDTO> items,
+        string? animationGraph = null)
     {
         return new ContainerDTO
         {
@@ -1105,6 +1089,7 @@ public class RecordComparisonServiceTests
             Name = Text(name),
             Flags = "Respawns",
             NativeTerminalFormKey = nativeTerminalFormKey,
+            AnimationGraph = animationGraph,
             Items = items
         };
     }
@@ -1173,6 +1158,7 @@ public class RecordComparisonServiceTests
             Description = Text("Recipe description"),
             CreatedObjectFormKey = createdObjectFormKey,
             WorkbenchKeywordFormKey = workbenchKeywordFormKey,
+            CreatedObjectCount = amountProduced,
             AmountProduced = amountProduced,
             LearnMethod = "DefaultOrConditions",
             Flags = "None",

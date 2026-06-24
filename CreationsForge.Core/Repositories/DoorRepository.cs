@@ -46,6 +46,7 @@ public class DoorRepository : TypedRecordRepositoryBase, IDoorRepository
                 formKey,
                 [
                     SelectColumn("Version2"),
+                    SelectColumn("VersionControl"),
                     SelectColumn("ObjectBounds_First", "ObjectBoundsFirst"),
                     SelectColumn("ObjectBounds_Second", "ObjectBoundsSecond"),
                     SelectColumn("Name"),
@@ -55,7 +56,11 @@ public class DoorRepository : TypedRecordRepositoryBase, IDoorRepository
                     SelectColumn("NativeTerminal_ModKey_FileName", "NativeTerminalModKeyFileName"),
                     SelectColumn("NativeTerminal_FormKey_ID", "NativeTerminalFormKeyId"),
                     SelectColumn("SoundLevel"),
-                    SelectColumn("FacingAxisOverride")
+                    SelectColumn("FacingAxisOverride"),
+                    SelectColumn("AnimationGraph"),
+                    SelectColumn("AnimationSkeleton"),
+                    SelectColumn("AnimationDirectory"),
+                    SelectColumn("AnimationFile")
                 ])
             .Select(record => ToDTO(record, game))
             .ToList();
@@ -85,14 +90,14 @@ public class DoorRepository : TypedRecordRepositoryBase, IDoorRepository
             """
             INSERT OR REPLACE INTO Doors (
                 Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Version2, ObjectBounds_First, ObjectBounds_Second, Name, Flags,
+                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Version2, VersionControl, ObjectBounds_First, ObjectBounds_Second, Name, Flags,
                 NativeTerminal_ModKey_Name, NativeTerminal_ModKey_Type, NativeTerminal_ModKey_FileName, NativeTerminal_FormKey_ID,
-                SoundLevel, FacingAxisOverride)
+                SoundLevel, FacingAxisOverride, AnimationGraph, AnimationSkeleton, AnimationDirectory, AnimationFile)
             VALUES (
                 @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Version2, @ObjectBoundsFirst, @ObjectBoundsSecond, @Name, @Flags,
+                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Version2, @VersionControl, @ObjectBoundsFirst, @ObjectBoundsSecond, @Name, @Flags,
                 @NativeTerminalModKeyName, @NativeTerminalModKeyType, @NativeTerminalModKeyFileName, @NativeTerminalFormKeyId,
-                @SoundLevel, @FacingAxisOverride);
+                @SoundLevel, @FacingAxisOverride, @AnimationGraph, @AnimationSkeleton, @AnimationDirectory, @AnimationFile);
             """,
             new
             {
@@ -109,6 +114,7 @@ public class DoorRepository : TypedRecordRepositoryBase, IDoorRepository
                 dto.MajorRecordFlags,
                 dto.ImportedAtUTC,
                 dto.Version2,
+                dto.VersionControl,
                 dto.ObjectBoundsFirst,
                 dto.ObjectBoundsSecond,
                 Name = GetEnglishText(dto.Name),
@@ -118,7 +124,11 @@ public class DoorRepository : TypedRecordRepositoryBase, IDoorRepository
                 NativeTerminalModKeyFileName = dto.NativeTerminalFormKey?.ModKey.FileName,
                 NativeTerminalFormKeyId = dto.NativeTerminalFormKey?.Id,
                 dto.SoundLevel,
-                dto.FacingAxisOverride
+                dto.FacingAxisOverride,
+                dto.AnimationGraph,
+                dto.AnimationSkeleton,
+                dto.AnimationDirectory,
+                dto.AnimationFile
             });
     }
 
@@ -134,13 +144,18 @@ public class DoorRepository : TypedRecordRepositoryBase, IDoorRepository
             MajorRecordFlags = 0,
             ImportedAtUTC = record.ImportedAtUTC,
             Version2 = record.Version2,
+            VersionControl = record.VersionControl,
             ObjectBoundsFirst = record.ObjectBoundsFirst,
             ObjectBoundsSecond = record.ObjectBoundsSecond,
             Name = FromEnglish(record.Name),
             Flags = record.Flags,
             NativeTerminalFormKey = CreateNullableFormKey(record.NativeTerminalModKeyName, record.NativeTerminalModKeyType, record.NativeTerminalModKeyFileName, record.NativeTerminalFormKeyId),
             SoundLevel = record.SoundLevel,
-            FacingAxisOverride = record.FacingAxisOverride
+            FacingAxisOverride = record.FacingAxisOverride,
+            AnimationGraph = record.AnimationGraph,
+            AnimationSkeleton = record.AnimationSkeleton,
+            AnimationDirectory = record.AnimationDirectory,
+            AnimationFile = record.AnimationFile
         };
         ApplyCommonFields(dto, record, game);
         return dto;
@@ -156,6 +171,8 @@ public class DoorRepository : TypedRecordRepositoryBase, IDoorRepository
     private sealed class DoorRow : RecordRow
     {
         public int? Version2 { get; set; }
+
+        public int? VersionControl { get; set; }
 
         public string? ObjectBoundsFirst { get; set; }
 
@@ -176,5 +193,13 @@ public class DoorRepository : TypedRecordRepositoryBase, IDoorRepository
         public string? SoundLevel { get; set; }
 
         public string? FacingAxisOverride { get; set; }
+
+        public string? AnimationGraph { get; set; }
+
+        public string? AnimationSkeleton { get; set; }
+
+        public string? AnimationDirectory { get; set; }
+
+        public string? AnimationFile { get; set; }
     }
 }

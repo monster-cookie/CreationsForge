@@ -3,7 +3,7 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class ConstructibleObjectDTO : RecordDTO, IHasScriptingAdaptersDTO, IHasRawRecordPayloadsDTO, IHasConditionsDTO
+public class ConstructibleObjectDTO : RecordDTO, IHasScriptingAdaptersDTO, IHasConditionsDTO, ISounds
 {
     public TranslatedStringDTO? Description { get; set; }
 
@@ -15,11 +15,15 @@ public class ConstructibleObjectDTO : RecordDTO, IHasScriptingAdaptersDTO, IHasR
 
     public int? AmountProduced { get; set; }
 
-    public int? MenuSortOrder { get; set; }
+    public int? Value { get; set; }
+
+    public double? MenuSortOrder { get; set; }
 
     public string? LearnMethod { get; set; }
 
     public string? Flags { get; set; }
+
+    public string? MajorFlags { get; set; }
 
     public IList<ConstructibleObjectComponentDTO> Components { get; set; } = new List<ConstructibleObjectComponentDTO>();
 
@@ -31,5 +35,5 @@ public class ConstructibleObjectDTO : RecordDTO, IHasScriptingAdaptersDTO, IHasR
 
     public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 
-    public IList<RawRecordPayloadDTO> RawPayloads { get; set; } = new List<RawRecordPayloadDTO>();
+    public IList<SoundMappingDTO> Sounds { get; set; } = new List<SoundMappingDTO>();
 }

@@ -24,6 +24,7 @@ public class SoundMapping
         SoundSlot = dto.SoundSlot;
         SoundIndex = dto.SoundIndex;
         Start = dto.Start;
+        Stop = dto.Stop;
         Versioning = dto.Versioning;
         Unknown = dto.Unknown;
         ImportedAtUTC = dto.ImportedAtUTC;
@@ -52,6 +53,8 @@ public class SoundMapping
     [Column("Sound_Index")] public int SoundIndex { get; set; }
 
     [Column("Start")] public string? Start { get; set; }
+
+    [Column("Stop")] public string? Stop { get; set; }
 
     [Column("Versioning")] public string? Versioning { get; set; }
 

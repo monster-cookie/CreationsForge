@@ -3,7 +3,7 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class TerminalDTO : RecordDTO, IHasModelsDTO, IKeywords, IHasScriptingAdaptersDTO, IHasRawRecordPayloadsDTO, IHasTerminalMarkerParametersRecordDTO
+public class TerminalDTO : RecordDTO, IHasModelsDTO, IKeywords, IHasScriptingAdaptersDTO, IHasScriptFragmentsDTO, IHasRawRecordPayloadsDTO, IHasTerminalMarkerParametersRecordDTO, IHasConditionsDTO
 {
     public string? ObjectBoundsFirst { get; set; }
 
@@ -39,13 +39,25 @@ public class TerminalDTO : RecordDTO, IHasModelsDTO, IKeywords, IHasScriptingAda
 
     public string? MarkerModel { get; set; }
 
+    public string? AnimationGraph { get; set; }
+
+    public string? AnimationSkeleton { get; set; }
+
+    public string? AnimationDirectory { get; set; }
+
+    public string? AnimationFile { get; set; }
+
     public IList<ModelDTO> Models { get; set; } = new List<ModelDTO>();
 
     public IList<KeywordMappingDTO> Keywords { get; set; } = new List<KeywordMappingDTO>();
 
     public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 
+    public IList<ScriptFragmentDTO> ScriptFragments { get; set; } = new List<ScriptFragmentDTO>();
+
     public IList<RawRecordPayloadDTO> RawPayloads { get; set; } = new List<RawRecordPayloadDTO>();
+
+    public IList<ConditionFormConditionDTO> Conditions { get; set; } = new List<ConditionFormConditionDTO>();
 
     public IList<TerminalMarkerParameterDTO> MarkerParameters { get; set; } = new List<TerminalMarkerParameterDTO>();
 

@@ -24,6 +24,7 @@ public class ClassRepository : TypedRecordRepositoryBase, IClassRepository
                 formKey,
                 [
                     SelectColumn("Version2"),
+                    SelectColumn("VersionControl"),
                     SelectColumn("Name"),
                     SelectColumn("Description"),
                     SelectColumn("Teaches"),
@@ -63,10 +64,10 @@ public class ClassRepository : TypedRecordRepositoryBase, IClassRepository
             """
             INSERT OR REPLACE INTO Classes (
                 Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Version2, Name, Description, Teaches, MaxTrainingLevel, BleedoutDefault, VoicePoints, Unknown, Unknown2)
+                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Version2, VersionControl, Name, Description, Teaches, MaxTrainingLevel, BleedoutDefault, VoicePoints, Unknown, Unknown2)
             VALUES (
                 @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Version2, @Name, @Description, @Teaches, @MaxTrainingLevel, @BleedoutDefault, @VoicePoints, @Unknown, @Unknown2);
+                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Version2, @VersionControl, @Name, @Description, @Teaches, @MaxTrainingLevel, @BleedoutDefault, @VoicePoints, @Unknown, @Unknown2);
             """,
             new
             {
@@ -83,6 +84,7 @@ public class ClassRepository : TypedRecordRepositoryBase, IClassRepository
                 dto.MajorRecordFlags,
                 dto.ImportedAtUTC,
                 dto.Version2,
+                dto.VersionControl,
                 Name = GetEnglishText(dto.Name),
                 Description = GetEnglishText(dto.Description),
                 dto.Teaches,
@@ -254,6 +256,7 @@ public class ClassRepository : TypedRecordRepositoryBase, IClassRepository
             MajorRecordFlags = 0,
             ImportedAtUTC = record.ImportedAtUTC,
             Version2 = record.Version2,
+            VersionControl = record.VersionControl,
             Name = FromEnglish(record.Name),
             Description = FromEnglish(record.Description),
             Teaches = record.Teaches,
@@ -320,6 +323,7 @@ public class ClassRepository : TypedRecordRepositoryBase, IClassRepository
     private sealed class ClassRow : RecordRow
     {
         public int? Version2 { get; set; }
+        public int? VersionControl { get; set; }
         public string? Name { get; set; }
         public string? Description { get; set; }
         public string? Teaches { get; set; }

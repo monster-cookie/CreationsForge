@@ -37,10 +37,13 @@ public class DtoReflectionFieldReader
         "ParameterIndex",
         "PropertyIndex",
         "ResourceIndex",
+        "RelationIndex",
         "ScriptIndex",
         "ScriptingAdapterName",
         "SoundIndex",
-        "StageIndex"
+        "StageIndex",
+        "WeightIndex",
+        "WeightType"
     };
 
     public IReadOnlyDictionary<string, string> Read(RecordDTO record)

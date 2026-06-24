@@ -35,6 +35,20 @@ public class ValidationFieldRule
         };
     }
 
+    public static ValidationFieldRule OptionalField(
+        string spriggitPath,
+        string dtoPath,
+        ValidationValueNormalizer normalizer = ValidationValueNormalizer.None)
+    {
+        return new ValidationFieldRule
+        {
+            Kind = ValidationRuleKind.OptionalField,
+            SpriggitPath = spriggitPath,
+            DtoPath = dtoPath,
+            Normalizer = normalizer
+        };
+    }
+
     public static ValidationFieldRule FormKeyObjectField(string spriggitPath, string dtoPath)
     {
         return new ValidationFieldRule
@@ -100,14 +114,19 @@ public class ValidationFieldRule
         };
     }
 
-    public static ValidationFieldRule SoundSlot(string spriggitPath, string soundSlot, string dtoFieldName)
+    public static ValidationFieldRule SoundSlot(
+        string spriggitPath,
+        string soundSlot,
+        string dtoFieldName,
+        ValidationValueNormalizer normalizer = ValidationValueNormalizer.None)
     {
         return new ValidationFieldRule
         {
             Kind = ValidationRuleKind.SoundSlot,
             SpriggitPath = spriggitPath,
             DtoPath = soundSlot,
-            ExpectedValue = dtoFieldName
+            ExpectedValue = dtoFieldName,
+            Normalizer = normalizer
         };
     }
 
@@ -182,6 +201,16 @@ public class ValidationFieldRule
         return new ValidationFieldRule
         {
             Kind = ValidationRuleKind.IgnoreSpriggit,
+            SpriggitPath = spriggitPath,
+            Reason = reason
+        };
+    }
+
+    public static ValidationFieldRule IgnoreSpriggitPrefix(string spriggitPath, string reason)
+    {
+        return new ValidationFieldRule
+        {
+            Kind = ValidationRuleKind.IgnoreSpriggitPrefix,
             SpriggitPath = spriggitPath,
             Reason = reason
         };

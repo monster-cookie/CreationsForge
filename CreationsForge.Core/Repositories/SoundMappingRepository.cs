@@ -123,6 +123,7 @@ public class SoundMappingRepository : ISoundMappingRepository
             SoundSlot = sound.SoundSlot,
             SoundIndex = sound.SoundIndex,
             Start = sound.Start,
+            Stop = sound.Stop,
             Versioning = sound.Versioning,
             Unknown = sound.Unknown,
             ImportedAtUTC = sound.ImportedAtUTC

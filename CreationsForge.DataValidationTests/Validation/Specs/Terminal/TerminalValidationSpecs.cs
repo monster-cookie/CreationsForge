@@ -93,12 +93,12 @@ public static class TerminalValidationSpecs
             .AddRule(ValidationFieldRule.Field("MarkerModel", "MarkerModel"))
             .AddRule(ValidationFieldRule.Field("Model.File", "Models[0].File", ValidationValueNormalizer.ModelFile))
             .AddRule(ValidationFieldRule.Field("Model.LightLayer", "Models[0].LightLayer"))
-            .AddRule(ValidationFieldRule.RawPayloadSlot("Components[0].ANAM", "BaseFormComponents.AnimationGraphComponentBinaryOverlay.ANAM"))
-            .AddRule(ValidationFieldRule.RawPayloadSlot("Components[0].BNAM", "BaseFormComponents.AnimationGraphComponentBinaryOverlay.BNAM"))
-            .AddRule(ValidationFieldRule.RawPayloadSlot("Components[0].CNAM", "BaseFormComponents.AnimationGraphComponentBinaryOverlay.CNAM"))
-            .AddRule(ValidationFieldRule.RawPayloadSlot("Components[1].REFL", "BaseFormComponents.EffectSequenceComponentBinaryOverlay.REFL"))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("Components[0].MutagenObjectType", "Component payload type is stored on raw payload rows."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("Components[1].MutagenObjectType", "Component payload type is stored on raw payload rows."))
+            .AddRule(ValidationFieldRule.DtoNonEmpty("Components[0].ANAM", "AnimationGraph"))
+            .AddRule(ValidationFieldRule.DtoNonEmpty("Components[0].BNAM", "AnimationSkeleton"))
+            .AddRule(ValidationFieldRule.DtoNonEmpty("Components[0].CNAM", "AnimationDirectory"))
+            .AddRule(ValidationFieldRule.RawPayloadSlot("Components[1].REFL", "Components.EffectSequenceComponentBinaryOverlay.REFL"))
+            .AddRule(ValidationFieldRule.IgnoreSpriggit("Components[0].MutagenObjectType", "AnimationGraphComponent values are projected into direct animation fields."))
+            .AddRule(ValidationFieldRule.IgnoreSpriggit("Components[1].MutagenObjectType", "REFL component payload type is stored on raw payload rows."))
             .AddRule(ValidationFieldRule.IgnoreDtoPrefix("LocalizedStrings", "Localized backing rows are validated through translated field rules."))
             .AddRule(ValidationFieldRule.PathPrefix("VirtualMachineAdapter.Scripts", "ScriptingAdapters", ScriptingAdapterPathReplacements));
 
@@ -136,7 +136,7 @@ public static class TerminalValidationSpecs
             .AddRule(ValidationFieldRule.Field("Flags[0]", "Flags"))
             .AddRule(ValidationFieldRule.Field("WorkbenchData", "WorkbenchData", ValidationValueNormalizer.HexPayload))
             .AddRule(ValidationFieldRule.Field("Model.File", "Models[0].File", ValidationValueNormalizer.ModelFile))
-            .AddRule(ValidationFieldRule.RawPayloadSlot("Model.Data", "Model.Data"));
+            .AddRule(ValidationFieldRule.Field("Model.Data", "Models[0].Data", ValidationValueNormalizer.HexPayload));
 
         AddMarkerParameterRules(spec, withUnknown: true);
         AddTerminalBodyTextRules(spec, bodyTextCount);
@@ -145,7 +145,7 @@ public static class TerminalValidationSpecs
 
         if (withScriptFragments)
         {
-            spec.AddRule(ValidationFieldRule.RawPayloadSlot("VirtualMachineAdapter.ScriptFragments", "VirtualMachineAdapter.ScriptFragments"));
+            spec.AddRule(ValidationFieldRule.DtoNonEmpty("VirtualMachineAdapter.ScriptFragments", "ScriptFragments[0].ScriptName"));
         }
 
         return spec.Build();
@@ -207,7 +207,7 @@ public static class TerminalValidationSpecs
             spec
                 .AddRule(ValidationFieldRule.IgnoreSpriggit($"BodyTexts[{index}]", "Inline YAML list item root is covered by body text child rules."))
                 .AddRule(ValidationFieldRule.TranslatedField($"BodyTexts[{index}].Text", $"BodyTexts[{index}].Text", ValidationValueNormalizer.TerminalText, requireAllLanguages: true))
-                .AddRule(ValidationFieldRule.RawPayloadSlot($"BodyTexts[{index}].Conditions", $"BodyTexts[{index}].Conditions"));
+                .AddRule(ValidationFieldRule.IgnoreSpriggitPrefix($"BodyTexts[{index}].Conditions", "Terminal body text conditions are persisted as condition rows."));
         }
     }
 
@@ -232,7 +232,7 @@ public static class TerminalValidationSpecs
                     "Null",
                     "Spriggit omits submenu for terminal menu items that do not link to a submenu."))
                 .AddRule(ValidationFieldRule.TranslatedField($"MenuItems[{index}].DisplayText", $"MenuItems[{index}].DisplayText", ValidationValueNormalizer.TerminalText, requireAllLanguages: true))
-                .AddRule(ValidationFieldRule.RawPayloadSlot($"MenuItems[{index}].Conditions", $"MenuItems[{index}].Conditions"));
+                .AddRule(ValidationFieldRule.IgnoreSpriggitPrefix($"MenuItems[{index}].Conditions", "Terminal menu item conditions are persisted as condition rows."));
         }
     }
 

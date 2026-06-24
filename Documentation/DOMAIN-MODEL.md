@@ -117,7 +117,8 @@ Fallout 4 category, and Starfield recipe-filter rows.
 connection-line target indices when they are present. `TERM` comparison also displays forced locations, marker
 parameter rows, body-text rows, and menu-item rows when present.
 MGEF DATA follows Mutagen/Spriggit's flattened record shape and displays as flat rows. Child comparison data such as
-keywords, models, sounds, scripts, raw payloads, items, shared condition rules, condition-rule parameters,
+keywords, models, sounds, scripts, script fragments, binary raw payloads, items, shared condition rules,
+condition-rule parameters,
 constructible object components, Fallout 4 COBJ category links, Starfield COBJ recipe-filter links, perk ranks, perk
 rank effects, perk background skills, and terminal child rows is represented as hierarchical rows in the comparison
 TreeDataGrid instead of flattened dotted field names.
@@ -138,7 +139,8 @@ Mutagen translation-table-backed strings use `TranslatedStringDTO`, which preser
 DTO contract. Type-specific scalar database columns remain a compatibility and fallback persistence layer for existing
 repository rows; they are not the authoritative DTO shape for translated fields.
 
-Localized record text uses Mutagen `Language` in core logic; strings are boundary values for configuration, persistence, and imported/exported data.
+Localized record text uses Mutagen `Language` in core logic; strings are boundary values for configuration,
+persistence, and imported/exported data.
 
 The Settings screen stores the preferred record text language. Core comparison services use that setting when
 rendering localized comparison rows and fall back to English when the selected language is unavailable. Child
@@ -180,7 +182,7 @@ to the containing plugin.
 Models represent Mutagen `IModelGetter` payloads for records that expose model data. Shared model rows are linked to
 their owning `RecordInstances` row and are further identified by `ModelSlot` and `ModelGender`. The currently
 populated direct-model slices are `MISC`, `STAT`, `BOOK`, `DOOR`, `CONT`, and `TERM`, each with `ModelSlot = Model`
-and an empty `ModelGender`.
+and an empty `ModelGender`. Opaque model `Data` bytes are stored on the model row instead of in raw payload rows.
 
 Asset preview candidates are derived from persisted model rows. Candidate identity includes the selected game, source
 plugin, record type, origin FormKey, model slot, model gender, and mesh path. Core can describe preview geometry with
@@ -198,20 +200,30 @@ entries such as `OnHit`, `Release`, and `Charge`.
 
 Constructible object components, categories, and recipe filters are stored in COBJ-specific child tables. Skyrim maps
 COBJ `Items`, Fallout 4 maps `Components` and `Categories`, and Starfield maps `ConstructableComponents` and
-`RecipeFilters`. The COBJ `Components` term is intentionally kept distinct from shared Bethesda base-form components.
+`RecipeFilters`. The COBJ `Components` term is intentionally kept distinct from other Bethesda component-shaped
+payloads.
 
 Condition rules represent indexed condition rows plus generic parameter rows for records that expose condition lists.
-Current users are `CNDF`, `FACT`, and `COBJ`. The condition data function is stored as `DataMutagenObjectType`, and
-parameter values retain a decomposed FormKey when the Mutagen value exposes one. Condition rules are not raw payloads
-when Mutagen exposes structured condition fields.
+Current users are `CNDF`, `FACT`, `COBJ`, and terminal body/menu condition lists. The condition data function is
+stored as `DataMutagenObjectType`, and parameter values retain a decomposed FormKey when the Mutagen value exposes one.
+Condition rules are not raw payloads when Mutagen exposes structured condition fields.
 
 Actor Value Information uses AVIF-specific child tables for Skyrim perk-tree data. Perk-tree rows retain associated
 skill references, grid placement values, optional perk references, and indexed connection-line target indices so
 imported Skyrim perk graph shape can be read back and compared.
 
-Shared Bethesda base-form component payloads use the internal `BaseFormComponents` name when persisted as raw payload
-slots. The original Mutagen/Spriggit source path, such as `Components.AnimationGraphComponent.ANAM`, is retained in
-`RawRecordPayloads.SourcePath` for future writer/export work.
+Script fragments represent VMAD script fragment data and are stored as script-owned child rows for supported `PERK`
+and `TERM` records, not as generic value or raw payload slots. Script adapters remain the storage shape for tracked
+Papyrus scripts and properties.
+
+Readable Bethesda component fields are stored on the consuming record when their meaning varies by record. Starfield
+`DOOR`, `CONT`, and `TERM` animation graph component values map to direct animation fields on the parent DTO/table.
+Raw payload rows are reserved for Spriggit binary-like `REFL` fields. The original Mutagen/Spriggit source path, such
+as `Components.LodOwnerComponentBinaryOverlay.REFL`, is retained in payload source-path fields for future writer/export
+work.
+
+COBJ created-object counts use the parent scalar `CreatedObjectCount` field. NPC template/appearance leftovers and
+static navmesh geometry are typed fields on their owning record DTO and parent table.
 
 Magic Effect DATA represents flattened Starfield `MGEF` properties exposed by Mutagen/Spriggit. Those fields are
 persisted directly on `MagicEffects` and displayed as flat comparison rows.

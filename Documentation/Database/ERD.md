@@ -186,7 +186,6 @@ erDiagram
         INTEGER Version2
         INTEGER VersionControl
         TEXT ImportedAtUTC
-        INTEGER Version2
         TEXT Name
         TEXT Description
         TEXT Teaches
@@ -245,6 +244,7 @@ erDiagram
         INTEGER MajorRecordFlags
         TEXT ImportedAtUTC
         INTEGER Version2
+        INTEGER VersionControl
         TEXT Name
         TEXT Flags
         REAL FormationRadius
@@ -292,29 +292,34 @@ erDiagram
         INTEGER JailOutfit_ModKey_Type
         TEXT JailOutfit_ModKey_FileName
         INTEGER JailOutfit_FormKey_ID
-        INTEGER CrimeArrest
-        INTEGER CrimeAttackOnSight
-        INTEGER CrimeMurder
-        INTEGER CrimeAssault
-        INTEGER CrimeTrespass
-        INTEGER CrimePickpocket
-        INTEGER CrimeSteal
-        REAL CrimeStealMult
-        INTEGER CrimeEscape
-        INTEGER CrimeWerewolf
-        INTEGER CrimeUnknown
-        REAL VendorStartHour
-        REAL VendorEndHour
-        INTEGER VendorRadius
-        INTEGER VendorBuysStolenItems
-        INTEGER VendorBuysNonStolenItems
-        INTEGER VendorBuySellEverythingNotInList
-        TEXT VendorLocationMutagenObjectType
-        TEXT VendorLocationType
-        TEXT VendorLocationLink_ModKey_Name
-        INTEGER VendorLocationLink_ModKey_Type
-        TEXT VendorLocationLink_ModKey_FileName
-        INTEGER VendorLocationLink_FormKey_ID
+        INTEGER CrimeValues_Arrest
+        INTEGER CrimeValues_AttackOnSight
+        INTEGER CrimeValues_Murder
+        INTEGER CrimeValues_Assault
+        INTEGER CrimeValues_Trespass
+        INTEGER CrimeValues_Pickpocket
+        INTEGER CrimeValues_Steal
+        REAL CrimeValues_StealMult
+        REAL CrimeValues_StealMultiplier
+        INTEGER CrimeValues_Escape
+        INTEGER CrimeValues_Werewolf
+        INTEGER CrimeValues_WerewolfUnused
+        INTEGER CrimeValues_Unknown
+        INTEGER CrimeValues_Piracy
+        REAL CrimeValues_SmuggleMultiplier
+        REAL VendorValues_StartHour
+        REAL VendorValues_EndHour
+        INTEGER VendorValues_Radius
+        INTEGER VendorValues_BuysStolenItems
+        INTEGER VendorValues_BuysNonStolenItems
+        INTEGER VendorValues_BuySellEverythingNotInList
+        TEXT VendorLocation_MutagenObjectType
+        TEXT VendorLocation_Target_MutagenObjectType
+        TEXT VendorLocation_Target_Type
+        TEXT VendorLocation_Target_Link_ModKey_Name
+        INTEGER VendorLocation_Target_Link_ModKey_Type
+        TEXT VendorLocation_Target_Link_ModKey_FileName
+        INTEGER VendorLocation_Target_Link_FormKey_ID
     }
 
     FactionRelations {
@@ -345,9 +350,9 @@ erDiagram
         TEXT FormKey_ModKey_FileName PK, FK
         INTEGER FormKey_ID PK, FK
         INTEGER Rank_Index PK
-        INTEGER RankNumber
-        TEXT MaleTitle
-        TEXT FemaleTitle
+        INTEGER Number
+        TEXT Title_Male
+        TEXT Title_Female
         TEXT ImportedAtUTC
     }
 
@@ -624,6 +629,8 @@ erDiagram
         TEXT Name
         TEXT ShortName
         TEXT LongName
+        INTEGER Version2
+        INTEGER VersionControl
         INTEGER DispositionBase
         TEXT Aggression
         TEXT Confidence
@@ -659,6 +666,21 @@ erDiagram
         INTEGER CrimeFaction_ModKey_Type
         TEXT CrimeFaction_ModKey_FileName
         INTEGER CrimeFaction_FormKey_ID
+        TEXT Template
+        TEXT DefaultTemplate
+        TEXT TemplateActors
+        TEXT WornArmor
+        TEXT FaceMorph
+        TEXT FaceParts
+        TEXT HeadParts
+        TEXT HeadTexture
+        TEXT SleepingOutfit
+        TEXT TintLayers
+        TEXT Tints
+        TEXT SpaceOutfit
+        TEXT BodyMorphRegionValues
+        TEXT ObjectTemplates
+        TEXT AIData
     }
 
     MagicEffects {
@@ -676,9 +698,35 @@ erDiagram
         TEXT ImportedAtUTC
         TEXT Name
         TEXT Description
+        INTEGER Version2
+        INTEGER VersionControl
         TEXT Flags
         TEXT CastType
         TEXT TargetType
+        TEXT CastingSoundLevel
+        TEXT DualCastScale
+        TEXT Unknown1
+        TEXT BaseCost
+        TEXT MagicSkill
+        TEXT CastingLight_ModKey_Name
+        INTEGER CastingLight_ModKey_Type
+        TEXT CastingLight_ModKey_FileName
+        INTEGER CastingLight_FormKey_ID
+        TEXT MenuDisplayObject_ModKey_Name
+        INTEGER MenuDisplayObject_ModKey_Type
+        TEXT MenuDisplayObject_ModKey_FileName
+        INTEGER MenuDisplayObject_FormKey_ID
+        INTEGER MinimumSkillLevel
+        TEXT SkillUsageMultiplier
+        TEXT SpellmakingCastingTime
+        TEXT TaperWeight
+        TEXT SecondActorValue
+        TEXT SecondActorValueWeight
+        INTEGER SpellmakingArea
+        TEXT EnchantShader_ModKey_Name
+        INTEGER EnchantShader_ModKey_Type
+        TEXT EnchantShader_ModKey_FileName
+        INTEGER EnchantShader_FormKey_ID
         TEXT ActorValue2_ModKey_Name
         INTEGER ActorValue2_ModKey_Type
         TEXT ActorValue2_ModKey_FileName
@@ -687,6 +735,7 @@ erDiagram
         INTEGER ResistValue_ModKey_Type
         TEXT ResistValue_ModKey_FileName
         INTEGER ResistValue_FormKey_ID
+        TEXT ResistValue
         TEXT PerkToApply_ModKey_Name
         INTEGER PerkToApply_ModKey_Type
         TEXT PerkToApply_ModKey_FileName
@@ -724,8 +773,16 @@ erDiagram
         TEXT Projectile_ModKey_FileName
         INTEGER Projectile_FormKey_ID
         TEXT Archetype
+        TEXT ArchetypeActorValue
+        TEXT ArchetypeAssociation_ModKey_Name
+        INTEGER ArchetypeAssociation_ModKey_Type
+        TEXT ArchetypeAssociation_ModKey_FileName
+        INTEGER ArchetypeAssociation_FormKey_ID
+        REAL UnknownFloat1
         REAL UnknownFloat3
+        REAL UnknownFloat4
         INTEGER UnknownInt2
+        INTEGER UnknownInt3
         TEXT Unknown
         TEXT Unknown2
         TEXT DataTypeState
@@ -811,6 +868,7 @@ erDiagram
         TEXT Lod_Level1
         TEXT Lod_Level2
         TEXT Lod_Level3
+        TEXT NavmeshGeometry
     }
 
     StaticProperties {
@@ -896,6 +954,7 @@ erDiagram
         INTEGER MajorRecordFlags
         TEXT ImportedAtUTC
         INTEGER Version2
+        INTEGER VersionControl
         TEXT ObjectBounds_First
         TEXT ObjectBounds_Second
         TEXT Name
@@ -906,6 +965,10 @@ erDiagram
         INTEGER NativeTerminal_FormKey_ID
         TEXT SoundLevel
         TEXT FacingAxisOverride
+        TEXT AnimationGraph
+        TEXT AnimationSkeleton
+        TEXT AnimationDirectory
+        TEXT AnimationFile
     }
 
     Containers {
@@ -922,6 +985,7 @@ erDiagram
         INTEGER MajorRecordFlags
         TEXT ImportedAtUTC
         INTEGER Version2
+        INTEGER VersionControl
         TEXT ObjectBounds_First
         TEXT ObjectBounds_Second
         TEXT Name
@@ -931,6 +995,10 @@ erDiagram
         INTEGER NativeTerminal_ModKey_Type
         TEXT NativeTerminal_ModKey_FileName
         INTEGER NativeTerminal_FormKey_ID
+        TEXT AnimationGraph
+        TEXT AnimationSkeleton
+        TEXT AnimationDirectory
+        TEXT AnimationFile
     }
 
     ContainerItems {
@@ -965,6 +1033,7 @@ erDiagram
         INTEGER MajorRecordFlags
         TEXT ImportedAtUTC
         INTEGER Version2
+        INTEGER VersionControl
     }
 
     ConstructibleObjects {
@@ -981,6 +1050,7 @@ erDiagram
         INTEGER MajorRecordFlags
         TEXT ImportedAtUTC
         INTEGER Version2
+        INTEGER VersionControl
         TEXT Description
         TEXT CreatedObject_ModKey_Name
         INTEGER CreatedObject_ModKey_Type
@@ -992,9 +1062,11 @@ erDiagram
         INTEGER WorkbenchKeyword_FormKey_ID
         INTEGER CreatedObjectCount
         INTEGER AmountProduced
-        INTEGER MenuSortOrder
+        INTEGER Value
+        REAL MenuSortOrder
         TEXT LearnMethod
         TEXT Flags
+        TEXT MajorFlags
     }
 
     ConstructibleObjectComponents {
@@ -1087,6 +1159,10 @@ erDiagram
         TEXT FurnitureTemplate_ModKey_FileName
         INTEGER FurnitureTemplate_FormKey_ID
         TEXT MarkerModel
+        TEXT AnimationGraph
+        TEXT AnimationSkeleton
+        TEXT AnimationDirectory
+        TEXT AnimationFile
     }
 
     TerminalForcedLocations {
@@ -1372,6 +1448,7 @@ erDiagram
         TEXT ModelGender PK
         TEXT File
         TEXT TextureFileHashes
+        TEXT Data
         INTEGER LightLayer
         TEXT Flags
         REAL ColorRemappingIndex
@@ -1413,8 +1490,28 @@ erDiagram
         TEXT SoundSlot PK
         INTEGER Sound_Index PK
         TEXT Start
+        TEXT Stop
         TEXT Versioning
         TEXT Unknown
+        TEXT ImportedAtUTC
+    }
+
+    ScriptFragments {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT RecordType PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT FragmentSlot PK
+        INTEGER Fragment_Index PK
+        TEXT MutagenObjectType
+        TEXT ScriptName
+        TEXT FragmentName
+        INTEGER ExtraBindDataVersion
         TEXT ImportedAtUTC
     }
 
@@ -1603,6 +1700,7 @@ erDiagram
     RecordInstances ||--o{ Models : contains
     Models ||--o{ ModelMaterialSwaps : contains
     RecordInstances ||--o{ SoundMappings : contains
+    RecordInstances ||--o{ ScriptFragments : contains
     RecordInstances ||--o{ RawRecordPayloads : contains
     RecordInstances ||--o{ LocalizedStrings : contains
     RecordInstances ||--o{ ScriptingAdapters : contains
@@ -1653,8 +1751,8 @@ These columns contain record-reference data but are not declared SQLite foreign 
   `PlayerInventoryContainer_ModKey_FileName`, and `PlayerInventoryContainer_FormKey_ID`
 - `Factions.JailOutfit_ModKey_Name`, `JailOutfit_ModKey_Type`, `JailOutfit_ModKey_FileName`, and
   `JailOutfit_FormKey_ID`
-- `Factions.VendorLocationLink_ModKey_Name`, `VendorLocationLink_ModKey_Type`,
-  `VendorLocationLink_ModKey_FileName`, and `VendorLocationLink_FormKey_ID`
+- `Factions.VendorLocation_Target_Link_ModKey_Name`, `VendorLocation_Target_Link_ModKey_Type`,
+  `VendorLocation_Target_Link_ModKey_FileName`, and `VendorLocation_Target_Link_FormKey_ID`
 - `FactionRelations.Target_ModKey_Name`, `Target_ModKey_Type`, `Target_ModKey_FileName`, and
   `Target_FormKey_ID`
 - `ConditionRules.ComparisonValue_ModKey_Name`, `ComparisonValue_ModKey_Type`,

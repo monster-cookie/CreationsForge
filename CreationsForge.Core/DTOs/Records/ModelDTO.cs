@@ -19,6 +19,8 @@ public class ModelDTO
 
     public string? File { get; set; }
 
+    public string? Data { get; set; }
+
     public string? TextureFileHashes { get; set; }
 
     public uint? LightLayer { get; set; }

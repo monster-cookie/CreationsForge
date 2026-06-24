@@ -57,6 +57,9 @@ public class ValidationSpecRunner
                 case ValidationRuleKind.Field:
                     ApplyFieldRule(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, diagnostics, assertionCases);
                     break;
+                case ValidationRuleKind.OptionalField:
+                    ApplyOptionalFieldRule(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, assertionCases);
+                    break;
                 case ValidationRuleKind.FormKeyObjectField:
                     ApplyFormKeyObjectFieldRule(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, diagnostics, assertionCases);
                     break;
@@ -92,6 +95,9 @@ public class ValidationSpecRunner
                     break;
                 case ValidationRuleKind.IgnoreSpriggit:
                     ignoredSpriggitFields.Add(rule.SpriggitPath);
+                    break;
+                case ValidationRuleKind.IgnoreSpriggitPrefix:
+                    AddIgnoredSpriggitPrefix(rule, spriggitFields, ignoredSpriggitFields);
                     break;
                 case ValidationRuleKind.IgnoreDto:
                     ignoredDtoFields.Add(rule.DtoPath);
@@ -169,6 +175,27 @@ public class ValidationSpecRunner
         AddAssertionCase(rule.SpriggitPath, spriggitValue!, rule.DtoPath, dtoValue!, rule.Normalizer, assertionCases);
     }
 
+    private static void ApplyOptionalFieldRule(
+        ValidationFieldRule rule,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields,
+        ISet<string> matchedSpriggitFields,
+        ISet<string> matchedDtoFields,
+        IList<ValidationAssertionCase> assertionCases)
+    {
+        if (!spriggitFields.TryGetValue(rule.SpriggitPath, out var spriggitValue) ||
+            !dtoFields.TryGetValue(rule.DtoPath, out var dtoValue) ||
+            string.Equals(dtoValue, "Null", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        MarkMatched(matchedSpriggitFields, rule.SpriggitPath);
+        MarkSpriggitFormKeyObjectAlias(spriggitFields, matchedSpriggitFields, rule.SpriggitPath, spriggitValue);
+        MarkMatched(matchedDtoFields, rule.DtoPath);
+        AddAssertionCase(rule.SpriggitPath, spriggitValue, rule.DtoPath, dtoValue, rule.Normalizer, assertionCases);
+    }
+
     private static void ApplyFormKeyObjectFieldRule(
         ValidationFieldRule rule,
         IReadOnlyDictionary<string, string> spriggitFields,
@@ -226,6 +253,11 @@ public class ValidationSpecRunner
     {
         foreach (var spriggitField in spriggitFields.OrderBy(field => field.Key, StringComparer.OrdinalIgnoreCase))
         {
+            if (matchedSpriggitFields.Contains(spriggitField.Key))
+            {
+                continue;
+            }
+
             if (!IsUnderPath(spriggitField.Key, rule.SpriggitPath))
             {
                 continue;
@@ -491,7 +523,7 @@ public class ValidationSpecRunner
         MarkMatched(matchedDtoFields, dtoPath);
         MarkMatched(matchedDtoFields, "Sounds[" + soundIndex.ToString(CultureInfo.InvariantCulture) + "].SoundSlot");
         MarkMatched(matchedDtoFields, "Sounds.Count");
-        AddAssertionCase(rule.SpriggitPath, spriggitValue, dtoPath, dtoValue, ValidationValueNormalizer.None, assertionCases);
+        AddAssertionCase(rule.SpriggitPath, spriggitValue, dtoPath, dtoValue, rule.Normalizer, assertionCases);
     }
 
     private static void ApplyRawPayloadSlotRule(
@@ -509,7 +541,7 @@ public class ValidationSpecRunner
             return;
         }
 
-        var payloadIndex = FindRawPayloadIndex(dtoFields, rule.DtoPath);
+        var payloadIndex = FindRawPayloadIndex(dtoFields, rule.DtoPath, rule.SpriggitPath);
         if (payloadIndex < 0)
         {
             diagnostics.Add("DTO raw payload slot '" + rule.DtoPath + "' was missing for Spriggit path '" + rule.SpriggitPath + "'.");
@@ -539,7 +571,8 @@ public class ValidationSpecRunner
             AddAssertionCase(rule.SpriggitPath, spriggitValue, valuePath, payloadValue, ValidationValueNormalizer.HexPayload, assertionCases);
         }
 
-        var expectedSlot = dtoFields[slotPath].StartsWith(rule.DtoPath + "[", StringComparison.OrdinalIgnoreCase)
+        var expectedSlot = dtoFields[slotPath].StartsWith(rule.DtoPath + "[", StringComparison.OrdinalIgnoreCase) ||
+            dtoFields[slotPath].StartsWith(rule.DtoPath + ".", StringComparison.OrdinalIgnoreCase)
             ? dtoFields[slotPath]
             : rule.DtoPath;
         AddAssertionCase(rule.SpriggitPath, expectedSlot, slotPath, dtoFields[slotPath], ValidationValueNormalizer.None, assertionCases);
@@ -720,6 +753,17 @@ public class ValidationSpecRunner
         }
     }
 
+    private static void AddIgnoredSpriggitPrefix(
+        ValidationFieldRule rule,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        ISet<string> ignoredSpriggitFields)
+    {
+        foreach (var field in spriggitFields.Keys.Where(field => IsUnderPath(field, rule.SpriggitPath)))
+        {
+            ignoredSpriggitFields.Add(field);
+        }
+    }
+
     private static void AddUnmatchedDtoDiagnostics(
         ValidationSpec spec,
         IReadOnlyDictionary<string, string> dtoFields,
@@ -831,15 +875,28 @@ public class ValidationSpecRunner
              fieldName.EndsWith(".RunOnTabIndex", StringComparison.OrdinalIgnoreCase) ||
              string.Equals(fieldName, "Level", StringComparison.OrdinalIgnoreCase) ||
              string.Equals(fieldName, "NumRanks", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "BleedoutDefault", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "VoicePoints", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "Unknown", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "Unknown2", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "MaxTrainingLevel", StringComparison.OrdinalIgnoreCase) ||
              string.Equals(fieldName, "DNAMDataTypeState", StringComparison.OrdinalIgnoreCase) ||
              string.Equals(fieldName, "DirtinessScale", StringComparison.OrdinalIgnoreCase) ||
              string.Equals(fieldName, "LeafAmplitude", StringComparison.OrdinalIgnoreCase) ||
              string.Equals(fieldName, "LeafFrequency", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "Flags", StringComparison.OrdinalIgnoreCase) ||
              string.Equals(fieldName, "MajorFlags", StringComparison.OrdinalIgnoreCase) ||
              string.Equals(fieldName, "MajorRecordFlags", StringComparison.OrdinalIgnoreCase) ||
              fieldName.EndsWith(".Flags", StringComparison.OrdinalIgnoreCase)) &&
             (string.Equals(fieldValue, "0", StringComparison.Ordinal) ||
              string.Equals(fieldValue, "None", StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        if (fieldName.Contains("Properties[", StringComparison.OrdinalIgnoreCase) &&
+            fieldName.EndsWith(".Value", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(fieldValue, "0", StringComparison.Ordinal))
         {
             return true;
         }
@@ -1040,17 +1097,35 @@ public class ValidationSpecRunner
                 : value,
             ValidationValueNormalizer.HexPayload => value.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
                 ? value[2..]
+                : string.Equals(value, "[]", StringComparison.Ordinal)
+                    ? string.Empty
                 : value,
             ValidationValueNormalizer.ModelFile => value.StartsWith("Meshes\\", StringComparison.OrdinalIgnoreCase)
                 ? value.Replace('/', '\\')
                 : "Meshes\\" + value.Replace('/', '\\'),
             ValidationValueNormalizer.Color => FormatSpriggitColor(value),
+            ValidationValueNormalizer.DecimalFormKeyId => FormatDecimalFormKeyId(value),
             ValidationValueNormalizer.DecimalNumber => double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue)
                 ? Math.Round(doubleValue, 6).ToString("0.######", CultureInfo.InvariantCulture)
+                : value,
+            ValidationValueNormalizer.FloatNumber => double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var floatValue)
+                ? Math.Round(floatValue, 4).ToString("0.####", CultureInfo.InvariantCulture)
                 : value,
             ValidationValueNormalizer.JsonWhitespace => Regex.Replace(value, "\\s+", " ").Trim(),
             _ => value
         };
+    }
+
+    private static string FormatDecimalFormKeyId(string value)
+    {
+        var separatorIndex = value.IndexOf(':', StringComparison.Ordinal);
+        if (separatorIndex > 0 &&
+            uint.TryParse(value.AsSpan(0, separatorIndex), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var formId))
+        {
+            return formId.ToString(CultureInfo.InvariantCulture);
+        }
+
+        return value;
     }
 
     private static string FormatSpriggitColor(string value)
@@ -1194,8 +1269,14 @@ public class ValidationSpecRunner
 
     private static bool IsSpriggitScriptingListItemNameWithoutDtoShape(string fieldName)
     {
-        return fieldName.Contains(".Objects[", StringComparison.OrdinalIgnoreCase) &&
-               fieldName.EndsWith(".Name", StringComparison.OrdinalIgnoreCase);
+        if (fieldName.Contains(".Objects[", StringComparison.OrdinalIgnoreCase) &&
+            fieldName.EndsWith(".Name", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return fieldName.Contains(".Structs[", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.EndsWith(".Structs.Count", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryGetScriptingAdapterDataValue(
@@ -1308,7 +1389,10 @@ public class ValidationSpecRunner
         return -1;
     }
 
-    private static int FindRawPayloadIndex(IReadOnlyDictionary<string, string> dtoFields, string payloadSlot)
+    private static int FindRawPayloadIndex(
+        IReadOnlyDictionary<string, string> dtoFields,
+        string payloadSlot,
+        string? sourcePath)
     {
         foreach (var field in dtoFields)
         {
@@ -1319,7 +1403,8 @@ public class ValidationSpecRunner
             }
 
             if (!string.Equals(field.Value, payloadSlot, StringComparison.OrdinalIgnoreCase) &&
-                !field.Value.StartsWith(payloadSlot + "[", StringComparison.OrdinalIgnoreCase))
+                !field.Value.StartsWith(payloadSlot + "[", StringComparison.OrdinalIgnoreCase) &&
+                !field.Value.StartsWith(payloadSlot + ".", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
@@ -1333,11 +1418,37 @@ public class ValidationSpecRunner
 
             if (int.TryParse(field.Key.AsSpan(indexStart, indexLength), NumberStyles.Integer, CultureInfo.InvariantCulture, out var index))
             {
+                if (!string.IsNullOrWhiteSpace(sourcePath) &&
+                    !RawPayloadSourcePathMatches(dtoFields, index, sourcePath))
+                {
+                    continue;
+                }
+
                 return index;
             }
         }
 
         return -1;
+    }
+
+    private static bool RawPayloadSourcePathMatches(
+        IReadOnlyDictionary<string, string> dtoFields,
+        int payloadIndex,
+        string sourcePath)
+    {
+        var dtoSourcePath = "RawPayloads[" + payloadIndex.ToString(CultureInfo.InvariantCulture) + "].SourcePath";
+        if (!dtoFields.TryGetValue(dtoSourcePath, out var actualSourcePath))
+        {
+            return false;
+        }
+
+        if (string.Equals(actualSourcePath, sourcePath, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var sourceLeaf = GetPathLeaf(sourcePath);
+        return string.Equals(GetPathLeaf(actualSourcePath), sourceLeaf, StringComparison.OrdinalIgnoreCase);
     }
 
     private sealed class TranslatedFieldEntry

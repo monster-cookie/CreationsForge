@@ -19,6 +19,8 @@ public class SoundMappingDTO
 
     public string? Start { get; set; }
 
+    public string? Stop { get; set; }
+
     public string? Versioning { get; set; }
 
     public string? Unknown { get; set; }

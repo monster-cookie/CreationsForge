@@ -7,9 +7,25 @@ namespace CreationsForge.Core.Repositories;
 
 public class NPCRepository : TypedRecordRepositoryBase, INPCRepository
 {
-    public NPCRepository(IDatabase database, IRecordInstanceRepository recordInstanceRepository)
+    private readonly IKeywordMappingRepository KeywordMappingRepository;
+    private readonly IScriptingAdapterRepository ScriptingAdapterRepository;
+    private readonly IRecordLocalizedStringRepository RecordLocalizedStringRepository;
+    private readonly ISoundMappingRepository SoundMappingRepository;
+
+    public NPCRepository(
+        IDatabase database,
+        IRecordInstanceRepository recordInstanceRepository,
+        IKeywordMappingRepository keywordMappingRepository,
+        IScriptingAdapterRepository scriptingAdapterRepository,
+        IRecordLocalizedStringRepository recordLocalizedStringRepository,
+        ISoundMappingRepository soundMappingRepository)
         : base(database, recordInstanceRepository)
-    { }
+    {
+        KeywordMappingRepository = keywordMappingRepository;
+        ScriptingAdapterRepository = scriptingAdapterRepository;
+        RecordLocalizedStringRepository = recordLocalizedStringRepository;
+        SoundMappingRepository = soundMappingRepository;
+    }
 
     public override string RecordType => RecordTypeCatalog.NPC.RecordID;
 
@@ -17,13 +33,15 @@ public class NPCRepository : TypedRecordRepositoryBase, INPCRepository
 
     public IReadOnlyList<NPCDTO> GetByFormKey(CreationsForge.Core.Enums.SupportedGame game, CreationsForge.Core.DTOs.Plugins.FormKeyDTO formKey)
     {
-        return FetchByFormKey<NPCRow>(
+        var records = FetchByFormKey<NPCRow>(
                 game,
                 formKey,
                 [
                     SelectColumn("Name"),
                     SelectColumn("ShortName"),
                     SelectColumn("LongName"),
+                    SelectColumn("Version2"),
+                    SelectColumn("VersionControl"),
                     SelectColumn("DispositionBase"),
                     SelectColumn("Aggression"),
                     SelectColumn("Confidence"),
@@ -58,10 +76,42 @@ public class NPCRepository : TypedRecordRepositoryBase, INPCRepository
                     SelectColumn("CrimeFaction_ModKey_Name", "CrimeFactionModKeyName"),
                     SelectColumn("CrimeFaction_ModKey_Type", "CrimeFactionModKeyType"),
                     SelectColumn("CrimeFaction_ModKey_FileName", "CrimeFactionModKeyFileName"),
-                    SelectColumn("CrimeFaction_FormKey_ID", "CrimeFactionFormKeyId")
+                    SelectColumn("CrimeFaction_FormKey_ID", "CrimeFactionFormKeyId"),
+                    SelectColumn("Template"),
+                    SelectColumn("DefaultTemplate"),
+                    SelectColumn("TemplateActors"),
+                    SelectColumn("WornArmor"),
+                    SelectColumn("FaceMorph"),
+                    SelectColumn("FaceParts"),
+                    SelectColumn("HeadParts"),
+                    SelectColumn("HeadTexture"),
+                    SelectColumn("SleepingOutfit"),
+                    SelectColumn("TintLayers"),
+                    SelectColumn("Tints"),
+                    SelectColumn("SpaceOutfit"),
+                    SelectColumn("BodyMorphRegionValues"),
+                    SelectColumn("ObjectTemplates"),
+                    SelectColumn("AIData")
                 ])
             .Select(record => ToDTO(record, game))
             .ToList();
+        var keywords = KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey);
+        var scriptingAdapters = ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey);
+        var sounds = SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey);
+        foreach (var record in records)
+        {
+            record.Keywords = keywords.Where(keyword => RecordModKeysMatch(keyword.ModKey, record.ModKey)).OrderBy(keyword => keyword.KeywordIndex).ToList();
+            record.ScriptingAdapters = scriptingAdapters.Where(adapter => RecordModKeysMatch(adapter.ModKey, record.ModKey)).OrderBy(adapter => adapter.ScriptIndex).ToList();
+            record.Sounds = sounds
+                .Where(sound => RecordModKeysMatch(sound.ModKey, record.ModKey))
+                .OrderBy(sound => sound.SoundSlot)
+                .ThenBy(sound => sound.SoundIndex)
+                .ToList();
+            ApplyLocalizedStrings(record, localizedStrings.Where(localizedString => RecordModKeysMatch(localizedString.ModKey, record.ModKey)).ToList());
+        }
+
+        return records;
     }
 
     public void Save(NPCDTO dto)
@@ -71,24 +121,28 @@ public class NPCRepository : TypedRecordRepositoryBase, INPCRepository
             """
             INSERT OR REPLACE INTO NPCs (
                 Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Name, ShortName, LongName, DispositionBase, Aggression, Confidence,
+                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Name, ShortName, LongName, Version2, VersionControl, DispositionBase, Aggression, Confidence,
                 EnergyLevel, Responsibility, Assistance, GearedUpWeapons, HeightMin, HeightMax, SkinToneIndex, Pronoun,
                 Voice_ModKey_Name, Voice_ModKey_Type, Voice_ModKey_FileName, Voice_FormKey_ID,
                 Race_ModKey_Name, Race_ModKey_Type, Race_ModKey_FileName, Race_FormKey_ID,
                 CombatOverridePackageList_ModKey_Name, CombatOverridePackageList_ModKey_Type, CombatOverridePackageList_ModKey_FileName, CombatOverridePackageList_FormKey_ID,
                 CombatStyle_ModKey_Name, CombatStyle_ModKey_Type, CombatStyle_ModKey_FileName, CombatStyle_FormKey_ID,
                 DefaultPackageList_ModKey_Name, DefaultPackageList_ModKey_Type, DefaultPackageList_ModKey_FileName, DefaultPackageList_FormKey_ID,
-                CrimeFaction_ModKey_Name, CrimeFaction_ModKey_Type, CrimeFaction_ModKey_FileName, CrimeFaction_FormKey_ID)
+                CrimeFaction_ModKey_Name, CrimeFaction_ModKey_Type, CrimeFaction_ModKey_FileName, CrimeFaction_FormKey_ID,
+                Template, DefaultTemplate, TemplateActors, WornArmor, FaceMorph, FaceParts, HeadParts, HeadTexture,
+                SleepingOutfit, TintLayers, Tints, SpaceOutfit, BodyMorphRegionValues, ObjectTemplates, AIData)
             VALUES (
                 @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Name, @ShortName, @LongName, @DispositionBase, @Aggression, @Confidence,
+                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Name, @ShortName, @LongName, @Version2, @VersionControl, @DispositionBase, @Aggression, @Confidence,
                 @EnergyLevel, @Responsibility, @Assistance, @GearedUpWeapons, @HeightMin, @HeightMax, @SkinToneIndex, @Pronoun,
                 @VoiceModKeyName, @VoiceModKeyType, @VoiceModKeyFileName, @VoiceFormKeyId,
                 @RaceModKeyName, @RaceModKeyType, @RaceModKeyFileName, @RaceFormKeyId,
                 @CombatOverridePackageListModKeyName, @CombatOverridePackageListModKeyType, @CombatOverridePackageListModKeyFileName, @CombatOverridePackageListFormKeyId,
                 @CombatStyleModKeyName, @CombatStyleModKeyType, @CombatStyleModKeyFileName, @CombatStyleFormKeyId,
                 @DefaultPackageListModKeyName, @DefaultPackageListModKeyType, @DefaultPackageListModKeyFileName, @DefaultPackageListFormKeyId,
-                @CrimeFactionModKeyName, @CrimeFactionModKeyType, @CrimeFactionModKeyFileName, @CrimeFactionFormKeyId);
+                @CrimeFactionModKeyName, @CrimeFactionModKeyType, @CrimeFactionModKeyFileName, @CrimeFactionFormKeyId,
+                @Template, @DefaultTemplate, @TemplateActors, @WornArmor, @FaceMorph, @FaceParts, @HeadParts, @HeadTexture,
+                @SleepingOutfit, @TintLayers, @Tints, @SpaceOutfit, @BodyMorphRegionValues, @ObjectTemplates, @AIData);
             """,
             new
             {
@@ -107,6 +161,8 @@ public class NPCRepository : TypedRecordRepositoryBase, INPCRepository
                 Name = GetEnglishText(dto.Name),
                 ShortName = GetEnglishText(dto.ShortName),
                 LongName = GetEnglishText(dto.LongName),
+                dto.Version2,
+                dto.VersionControl,
                 dto.DispositionBase,
                 dto.Aggression,
                 dto.Confidence,
@@ -141,7 +197,22 @@ public class NPCRepository : TypedRecordRepositoryBase, INPCRepository
                 CrimeFactionModKeyName = dto.CrimeFactionFormKey?.ModKey.Name,
                 CrimeFactionModKeyType = dto.CrimeFactionFormKey?.ModKey.Type,
                 CrimeFactionModKeyFileName = dto.CrimeFactionFormKey?.ModKey.FileName,
-                CrimeFactionFormKeyId = dto.CrimeFactionFormKey?.Id
+                CrimeFactionFormKeyId = dto.CrimeFactionFormKey?.Id,
+                dto.Template,
+                dto.DefaultTemplate,
+                dto.TemplateActors,
+                dto.WornArmor,
+                dto.FaceMorph,
+                dto.FaceParts,
+                dto.HeadParts,
+                dto.HeadTexture,
+                dto.SleepingOutfit,
+                dto.TintLayers,
+                dto.Tints,
+                dto.SpaceOutfit,
+                dto.BodyMorphRegionValues,
+                dto.ObjectTemplates,
+                dto.AIData
             });
     }
 
@@ -159,6 +230,8 @@ public class NPCRepository : TypedRecordRepositoryBase, INPCRepository
             Name = FromEnglish(record.Name),
             ShortName = FromEnglish(record.ShortName),
             LongName = FromEnglish(record.LongName),
+            Version2 = record.Version2,
+            VersionControl = record.VersionControl,
             DispositionBase = record.DispositionBase,
             Aggression = record.Aggression,
             Confidence = record.Confidence,
@@ -175,10 +248,33 @@ public class NPCRepository : TypedRecordRepositoryBase, INPCRepository
             CombatOverridePackageListFormKey = CreateNullableFormKey(record.CombatOverridePackageListModKeyName, record.CombatOverridePackageListModKeyType, record.CombatOverridePackageListModKeyFileName, record.CombatOverridePackageListFormKeyId),
             CombatStyleFormKey = CreateNullableFormKey(record.CombatStyleModKeyName, record.CombatStyleModKeyType, record.CombatStyleModKeyFileName, record.CombatStyleFormKeyId),
             DefaultPackageListFormKey = CreateNullableFormKey(record.DefaultPackageListModKeyName, record.DefaultPackageListModKeyType, record.DefaultPackageListModKeyFileName, record.DefaultPackageListFormKeyId),
-            CrimeFactionFormKey = CreateNullableFormKey(record.CrimeFactionModKeyName, record.CrimeFactionModKeyType, record.CrimeFactionModKeyFileName, record.CrimeFactionFormKeyId)
+            CrimeFactionFormKey = CreateNullableFormKey(record.CrimeFactionModKeyName, record.CrimeFactionModKeyType, record.CrimeFactionModKeyFileName, record.CrimeFactionFormKeyId),
+            Template = record.Template,
+            DefaultTemplate = record.DefaultTemplate,
+            TemplateActors = record.TemplateActors,
+            WornArmor = record.WornArmor,
+            FaceMorph = record.FaceMorph,
+            FaceParts = record.FaceParts,
+            HeadParts = record.HeadParts,
+            HeadTexture = record.HeadTexture,
+            SleepingOutfit = record.SleepingOutfit,
+            TintLayers = record.TintLayers,
+            Tints = record.Tints,
+            SpaceOutfit = record.SpaceOutfit,
+            BodyMorphRegionValues = record.BodyMorphRegionValues,
+            ObjectTemplates = record.ObjectTemplates,
+            AIData = record.AIData
         };
         ApplyCommonFields(dto, record, game);
         return dto;
+    }
+
+    private static void ApplyLocalizedStrings(NPCDTO record, IReadOnlyList<LocalizedStringDTO> localizedStrings)
+    {
+        record.LocalizedStrings = localizedStrings.ToList();
+        record.Name = BuildTranslatedString(localizedStrings, nameof(NPCDTO.Name), record.Name);
+        record.ShortName = BuildTranslatedString(localizedStrings, nameof(NPCDTO.ShortName), record.ShortName);
+        record.LongName = BuildTranslatedString(localizedStrings, nameof(NPCDTO.LongName), record.LongName);
     }
 
     private sealed class NPCRow : RecordRow
@@ -186,6 +282,8 @@ public class NPCRepository : TypedRecordRepositoryBase, INPCRepository
         public string? Name { get; set; }
         public string? ShortName { get; set; }
         public string? LongName { get; set; }
+        public int? Version2 { get; set; }
+        public int? VersionControl { get; set; }
         public int DispositionBase { get; set; }
         public string Aggression { get; set; } = string.Empty;
         public string Confidence { get; set; } = string.Empty;
@@ -221,5 +319,20 @@ public class NPCRepository : TypedRecordRepositoryBase, INPCRepository
         public int? CrimeFactionModKeyType { get; set; }
         public string? CrimeFactionModKeyFileName { get; set; }
         public long? CrimeFactionFormKeyId { get; set; }
+        public string? Template { get; set; }
+        public string? DefaultTemplate { get; set; }
+        public string? TemplateActors { get; set; }
+        public string? WornArmor { get; set; }
+        public string? FaceMorph { get; set; }
+        public string? FaceParts { get; set; }
+        public string? HeadParts { get; set; }
+        public string? HeadTexture { get; set; }
+        public string? SleepingOutfit { get; set; }
+        public string? TintLayers { get; set; }
+        public string? Tints { get; set; }
+        public string? SpaceOutfit { get; set; }
+        public string? BodyMorphRegionValues { get; set; }
+        public string? ObjectTemplates { get; set; }
+        public string? AIData { get; set; }
     }
 }

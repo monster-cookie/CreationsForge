@@ -19,6 +19,14 @@ public class DoorDTO : RecordDTO, IHasModelsDTO, IKeywords, ISounds, IHasScripti
 
     public string? FacingAxisOverride { get; set; }
 
+    public string? AnimationGraph { get; set; }
+
+    public string? AnimationSkeleton { get; set; }
+
+    public string? AnimationDirectory { get; set; }
+
+    public string? AnimationFile { get; set; }
+
     public IList<ModelDTO> Models { get; set; } = new List<ModelDTO>();
 
     public IList<KeywordMappingDTO> Keywords { get; set; } = new List<KeywordMappingDTO>();

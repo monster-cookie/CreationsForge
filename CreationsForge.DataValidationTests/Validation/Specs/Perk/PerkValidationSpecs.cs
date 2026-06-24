@@ -137,7 +137,7 @@ public static class PerkValidationSpecs
             .AddRule(ValidationFieldRule.Field("Playable", "Playable"))
             .AddRule(ValidationFieldRule.Field("Hidden", "Hidden"))
             .AddRule(ValidationFieldRule.Field("NextPerk", "NextPerk"))
-            .AddRule(ValidationFieldRule.RawPayloadSlot("VirtualMachineAdapter.ScriptFragments", "VirtualMachineAdapter.ScriptFragments"))
+            .AddRule(ValidationFieldRule.DtoNonEmpty("VirtualMachineAdapter.ScriptFragments", "ScriptFragments[0].ScriptName"))
             .AddRule(ValidationFieldRule.PathPrefix("Conditions", "Conditions", NoPathReplacements))
             .AddRules(RootEffectRules())
             .AddRule(ValidationFieldRule.IgnoreSpriggit("Version2", "Version2 is common header metadata outside current repository read-back for this record set."))

@@ -7,9 +7,28 @@ namespace CreationsForge.Core.Repositories;
 
 public class MagicEffectRepository : TypedRecordRepositoryBase, IMagicEffectRepository
 {
-    public MagicEffectRepository(IDatabase database, IRecordInstanceRepository recordInstanceRepository)
+    private readonly IKeywordMappingRepository KeywordMappingRepository;
+    private readonly ISoundMappingRepository SoundMappingRepository;
+    private readonly IScriptingAdapterRepository ScriptingAdapterRepository;
+    private readonly IConditionRuleRepository ConditionRuleRepository;
+    private readonly IRecordLocalizedStringRepository RecordLocalizedStringRepository;
+
+    public MagicEffectRepository(
+        IDatabase database,
+        IRecordInstanceRepository recordInstanceRepository,
+        IKeywordMappingRepository keywordMappingRepository,
+        ISoundMappingRepository soundMappingRepository,
+        IScriptingAdapterRepository scriptingAdapterRepository,
+        IConditionRuleRepository conditionRuleRepository,
+        IRecordLocalizedStringRepository recordLocalizedStringRepository)
         : base(database, recordInstanceRepository)
-    { }
+    {
+        KeywordMappingRepository = keywordMappingRepository;
+        SoundMappingRepository = soundMappingRepository;
+        ScriptingAdapterRepository = scriptingAdapterRepository;
+        ConditionRuleRepository = conditionRuleRepository;
+        RecordLocalizedStringRepository = recordLocalizedStringRepository;
+    }
 
     public override string RecordType => RecordTypeCatalog.MagicEffect.RecordID;
 
@@ -17,15 +36,41 @@ public class MagicEffectRepository : TypedRecordRepositoryBase, IMagicEffectRepo
 
     public IReadOnlyList<MagicEffectDTO> GetByFormKey(CreationsForge.Core.Enums.SupportedGame game, CreationsForge.Core.DTOs.Plugins.FormKeyDTO formKey)
     {
-        return FetchByFormKey<MagicEffectRow>(
+        var records = FetchByFormKey<MagicEffectRow>(
                 game,
                 formKey,
                 [
                     SelectColumn("Name"),
                     SelectColumn("Description"),
+                    SelectColumn("Version2"),
+                    SelectColumn("VersionControl"),
                     SelectColumn("Flags"),
                     SelectColumn("CastType"),
                     SelectColumn("TargetType"),
+                    SelectColumn("CastingSoundLevel"),
+                    SelectColumn("DualCastScale"),
+                    SelectColumn("Unknown1"),
+                    SelectColumn("BaseCost"),
+                    SelectColumn("MagicSkill"),
+                    SelectColumn("CastingLight_ModKey_Name", "CastingLightModKeyName"),
+                    SelectColumn("CastingLight_ModKey_Type", "CastingLightModKeyType"),
+                    SelectColumn("CastingLight_ModKey_FileName", "CastingLightModKeyFileName"),
+                    SelectColumn("CastingLight_FormKey_ID", "CastingLightFormKeyId"),
+                    SelectColumn("MenuDisplayObject_ModKey_Name", "MenuDisplayObjectModKeyName"),
+                    SelectColumn("MenuDisplayObject_ModKey_Type", "MenuDisplayObjectModKeyType"),
+                    SelectColumn("MenuDisplayObject_ModKey_FileName", "MenuDisplayObjectModKeyFileName"),
+                    SelectColumn("MenuDisplayObject_FormKey_ID", "MenuDisplayObjectFormKeyId"),
+                    SelectColumn("MinimumSkillLevel"),
+                    SelectColumn("SkillUsageMultiplier"),
+                    SelectColumn("SpellmakingCastingTime"),
+                    SelectColumn("TaperWeight"),
+                    SelectColumn("SecondActorValue"),
+                    SelectColumn("SecondActorValueWeight"),
+                    SelectColumn("SpellmakingArea"),
+                    SelectColumn("EnchantShader_ModKey_Name", "EnchantShaderModKeyName"),
+                    SelectColumn("EnchantShader_ModKey_Type", "EnchantShaderModKeyType"),
+                    SelectColumn("EnchantShader_ModKey_FileName", "EnchantShaderModKeyFileName"),
+                    SelectColumn("EnchantShader_FormKey_ID", "EnchantShaderFormKeyId"),
                     SelectColumn("ActorValue2_ModKey_Name", "ActorValue2ModKeyName"),
                     SelectColumn("ActorValue2_ModKey_Type", "ActorValue2ModKeyType"),
                     SelectColumn("ActorValue2_ModKey_FileName", "ActorValue2ModKeyFileName"),
@@ -34,6 +79,7 @@ public class MagicEffectRepository : TypedRecordRepositoryBase, IMagicEffectRepo
                     SelectColumn("ResistValue_ModKey_Type", "ResistValueModKeyType"),
                     SelectColumn("ResistValue_ModKey_FileName", "ResistValueModKeyFileName"),
                     SelectColumn("ResistValue_FormKey_ID", "ResistValueFormKeyId"),
+                    SelectColumn("ResistValue"),
                     SelectColumn("PerkToApply_ModKey_Name", "PerkToApplyModKeyName"),
                     SelectColumn("PerkToApply_ModKey_Type", "PerkToApplyModKeyType"),
                     SelectColumn("PerkToApply_ModKey_FileName", "PerkToApplyModKeyFileName"),
@@ -71,14 +117,37 @@ public class MagicEffectRepository : TypedRecordRepositoryBase, IMagicEffectRepo
                     SelectColumn("Projectile_ModKey_FileName", "ProjectileModKeyFileName"),
                     SelectColumn("Projectile_FormKey_ID", "ProjectileFormKeyId"),
                     SelectColumn("Archetype"),
+                    SelectColumn("ArchetypeActorValue"),
+                    SelectColumn("ArchetypeAssociation_ModKey_Name", "ArchetypeAssociationModKeyName"),
+                    SelectColumn("ArchetypeAssociation_ModKey_Type", "ArchetypeAssociationModKeyType"),
+                    SelectColumn("ArchetypeAssociation_ModKey_FileName", "ArchetypeAssociationModKeyFileName"),
+                    SelectColumn("ArchetypeAssociation_FormKey_ID", "ArchetypeAssociationFormKeyId"),
+                    SelectColumn("UnknownFloat1"),
                     SelectColumn("UnknownFloat3"),
+                    SelectColumn("UnknownFloat4"),
                     SelectColumn("UnknownInt2"),
+                    SelectColumn("UnknownInt3"),
                     SelectColumn("Unknown"),
                     SelectColumn("Unknown2"),
                     SelectColumn("DataTypeState")
                 ])
             .Select(record => ToDTO(record, game))
             .ToList();
+        var keywords = KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey);
+        var sounds = SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey);
+        var scriptingAdapters = ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey);
+        var conditions = ConditionRuleRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey);
+        foreach (var record in records)
+        {
+            record.Keywords = keywords.Where(keyword => RecordModKeysMatch(keyword.ModKey, record.ModKey)).OrderBy(keyword => keyword.KeywordIndex).ToList();
+            record.Sounds = sounds.Where(sound => RecordModKeysMatch(sound.ModKey, record.ModKey)).OrderBy(sound => sound.SoundIndex).ToList();
+            record.ScriptingAdapters = scriptingAdapters.Where(adapter => RecordModKeysMatch(adapter.ModKey, record.ModKey)).OrderBy(adapter => adapter.ScriptIndex).ToList();
+            record.Conditions = conditions.Where(condition => RecordModKeysMatch(condition.ModKey, record.ModKey)).OrderBy(condition => condition.ConditionIndex).ToList();
+            ApplyLocalizedStrings(record, localizedStrings.Where(localizedString => RecordModKeysMatch(localizedString.ModKey, record.ModKey)).ToList());
+        }
+
+        return records;
     }
 
     public void Save(MagicEffectDTO dto)
@@ -88,9 +157,14 @@ public class MagicEffectRepository : TypedRecordRepositoryBase, IMagicEffectRepo
             """
             INSERT OR REPLACE INTO MagicEffects (
                 Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Name, Description, Flags, CastType, TargetType,
+                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Name, Description, Version2, VersionControl, Flags, CastType, TargetType,
+                CastingSoundLevel, DualCastScale, Unknown1,
+                BaseCost, MagicSkill, CastingLight_ModKey_Name, CastingLight_ModKey_Type, CastingLight_ModKey_FileName, CastingLight_FormKey_ID,
+                MenuDisplayObject_ModKey_Name, MenuDisplayObject_ModKey_Type, MenuDisplayObject_ModKey_FileName, MenuDisplayObject_FormKey_ID,
+                MinimumSkillLevel, SkillUsageMultiplier, SpellmakingCastingTime, TaperWeight, SecondActorValue, SecondActorValueWeight,
+                SpellmakingArea, EnchantShader_ModKey_Name, EnchantShader_ModKey_Type, EnchantShader_ModKey_FileName, EnchantShader_FormKey_ID,
                 ActorValue2_ModKey_Name, ActorValue2_ModKey_Type, ActorValue2_ModKey_FileName, ActorValue2_FormKey_ID,
-                ResistValue_ModKey_Name, ResistValue_ModKey_Type, ResistValue_ModKey_FileName, ResistValue_FormKey_ID,
+                ResistValue_ModKey_Name, ResistValue_ModKey_Type, ResistValue_ModKey_FileName, ResistValue_FormKey_ID, ResistValue,
                 PerkToApply_ModKey_Name, PerkToApply_ModKey_Type, PerkToApply_ModKey_FileName, PerkToApply_FormKey_ID,
                 EquipAbility_ModKey_Name, EquipAbility_ModKey_Type, EquipAbility_ModKey_FileName, EquipAbility_FormKey_ID,
                 Explosion_ModKey_Name, Explosion_ModKey_Type, Explosion_ModKey_FileName, Explosion_FormKey_ID,
@@ -100,12 +174,18 @@ public class MagicEffectRepository : TypedRecordRepositoryBase, IMagicEffectRepo
                 ImageSpaceModifier_ModKey_Name, ImageSpaceModifier_ModKey_Type, ImageSpaceModifier_ModKey_FileName, ImageSpaceModifier_FormKey_ID,
                 ImpactData_ModKey_Name, ImpactData_ModKey_Type, ImpactData_ModKey_FileName, ImpactData_FormKey_ID,
                 Projectile_ModKey_Name, Projectile_ModKey_Type, Projectile_ModKey_FileName, Projectile_FormKey_ID,
-                Archetype, UnknownFloat3, UnknownInt2, Unknown, Unknown2, DataTypeState)
+                Archetype, ArchetypeActorValue, ArchetypeAssociation_ModKey_Name, ArchetypeAssociation_ModKey_Type, ArchetypeAssociation_ModKey_FileName,
+                ArchetypeAssociation_FormKey_ID, UnknownFloat1, UnknownFloat3, UnknownFloat4, UnknownInt2, UnknownInt3, Unknown, Unknown2, DataTypeState)
             VALUES (
                 @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Name, @Description, @Flags, @CastType, @TargetType,
+                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Name, @Description, @Version2, @VersionControl, @Flags, @CastType, @TargetType,
+                @CastingSoundLevel, @DualCastScale, @Unknown1,
+                @BaseCost, @MagicSkill, @CastingLightModKeyName, @CastingLightModKeyType, @CastingLightModKeyFileName, @CastingLightFormKeyId,
+                @MenuDisplayObjectModKeyName, @MenuDisplayObjectModKeyType, @MenuDisplayObjectModKeyFileName, @MenuDisplayObjectFormKeyId,
+                @MinimumSkillLevel, @SkillUsageMultiplier, @SpellmakingCastingTime, @TaperWeight, @SecondActorValue, @SecondActorValueWeight,
+                @SpellmakingArea, @EnchantShaderModKeyName, @EnchantShaderModKeyType, @EnchantShaderModKeyFileName, @EnchantShaderFormKeyId,
                 @ActorValue2ModKeyName, @ActorValue2ModKeyType, @ActorValue2ModKeyFileName, @ActorValue2FormKeyId,
-                @ResistValueModKeyName, @ResistValueModKeyType, @ResistValueModKeyFileName, @ResistValueFormKeyId,
+                @ResistValueModKeyName, @ResistValueModKeyType, @ResistValueModKeyFileName, @ResistValueFormKeyId, @ResistValue,
                 @PerkToApplyModKeyName, @PerkToApplyModKeyType, @PerkToApplyModKeyFileName, @PerkToApplyFormKeyId,
                 @EquipAbilityModKeyName, @EquipAbilityModKeyType, @EquipAbilityModKeyFileName, @EquipAbilityFormKeyId,
                 @ExplosionModKeyName, @ExplosionModKeyType, @ExplosionModKeyFileName, @ExplosionFormKeyId,
@@ -115,7 +195,8 @@ public class MagicEffectRepository : TypedRecordRepositoryBase, IMagicEffectRepo
                 @ImageSpaceModifierModKeyName, @ImageSpaceModifierModKeyType, @ImageSpaceModifierModKeyFileName, @ImageSpaceModifierFormKeyId,
                 @ImpactDataModKeyName, @ImpactDataModKeyType, @ImpactDataModKeyFileName, @ImpactDataFormKeyId,
                 @ProjectileModKeyName, @ProjectileModKeyType, @ProjectileModKeyFileName, @ProjectileFormKeyId,
-                @Archetype, @UnknownFloat3, @UnknownInt2, @Unknown, @Unknown2, @DataTypeState);
+                @Archetype, @ArchetypeActorValue, @ArchetypeAssociationModKeyName, @ArchetypeAssociationModKeyType, @ArchetypeAssociationModKeyFileName,
+                @ArchetypeAssociationFormKeyId, @UnknownFloat1, @UnknownFloat3, @UnknownFloat4, @UnknownInt2, @UnknownInt3, @Unknown, @Unknown2, @DataTypeState);
             """,
             new
             {
@@ -133,9 +214,35 @@ public class MagicEffectRepository : TypedRecordRepositoryBase, IMagicEffectRepo
                 dto.ImportedAtUTC,
                 Name = GetEnglishText(dto.Name),
                 Description = GetEnglishText(dto.Description),
+                dto.Version2,
+                dto.VersionControl,
                 dto.Flags,
                 dto.CastType,
                 dto.TargetType,
+                dto.CastingSoundLevel,
+                dto.DualCastScale,
+                dto.Unknown1,
+                dto.BaseCost,
+                dto.MagicSkill,
+                CastingLightModKeyName = dto.CastingLightFormKey?.ModKey.Name,
+                CastingLightModKeyType = dto.CastingLightFormKey?.ModKey.Type,
+                CastingLightModKeyFileName = dto.CastingLightFormKey?.ModKey.FileName,
+                CastingLightFormKeyId = dto.CastingLightFormKey?.Id,
+                MenuDisplayObjectModKeyName = dto.MenuDisplayObjectFormKey?.ModKey.Name,
+                MenuDisplayObjectModKeyType = dto.MenuDisplayObjectFormKey?.ModKey.Type,
+                MenuDisplayObjectModKeyFileName = dto.MenuDisplayObjectFormKey?.ModKey.FileName,
+                MenuDisplayObjectFormKeyId = dto.MenuDisplayObjectFormKey?.Id,
+                dto.MinimumSkillLevel,
+                dto.SkillUsageMultiplier,
+                dto.SpellmakingCastingTime,
+                dto.TaperWeight,
+                dto.SecondActorValue,
+                dto.SecondActorValueWeight,
+                dto.SpellmakingArea,
+                EnchantShaderModKeyName = dto.EnchantShaderFormKey?.ModKey.Name,
+                EnchantShaderModKeyType = dto.EnchantShaderFormKey?.ModKey.Type,
+                EnchantShaderModKeyFileName = dto.EnchantShaderFormKey?.ModKey.FileName,
+                EnchantShaderFormKeyId = dto.EnchantShaderFormKey?.Id,
                 ActorValue2ModKeyName = dto.ActorValue2FormKey?.ModKey.Name,
                 ActorValue2ModKeyType = dto.ActorValue2FormKey?.ModKey.Type,
                 ActorValue2ModKeyFileName = dto.ActorValue2FormKey?.ModKey.FileName,
@@ -144,6 +251,7 @@ public class MagicEffectRepository : TypedRecordRepositoryBase, IMagicEffectRepo
                 ResistValueModKeyType = dto.ResistValueFormKey?.ModKey.Type,
                 ResistValueModKeyFileName = dto.ResistValueFormKey?.ModKey.FileName,
                 ResistValueFormKeyId = dto.ResistValueFormKey?.Id,
+                dto.ResistValue,
                 PerkToApplyModKeyName = dto.PerkToApplyFormKey?.ModKey.Name,
                 PerkToApplyModKeyType = dto.PerkToApplyFormKey?.ModKey.Type,
                 PerkToApplyModKeyFileName = dto.PerkToApplyFormKey?.ModKey.FileName,
@@ -181,8 +289,16 @@ public class MagicEffectRepository : TypedRecordRepositoryBase, IMagicEffectRepo
                 ProjectileModKeyFileName = dto.ProjectileFormKey?.ModKey.FileName,
                 ProjectileFormKeyId = dto.ProjectileFormKey?.Id,
                 dto.Archetype,
+                dto.ArchetypeActorValue,
+                ArchetypeAssociationModKeyName = dto.ArchetypeAssociationFormKey?.ModKey.Name,
+                ArchetypeAssociationModKeyType = dto.ArchetypeAssociationFormKey?.ModKey.Type,
+                ArchetypeAssociationModKeyFileName = dto.ArchetypeAssociationFormKey?.ModKey.FileName,
+                ArchetypeAssociationFormKeyId = dto.ArchetypeAssociationFormKey?.Id,
+                dto.UnknownFloat1,
                 dto.UnknownFloat3,
+                dto.UnknownFloat4,
                 dto.UnknownInt2,
+                dto.UnknownInt3,
                 dto.Unknown,
                 dto.Unknown2,
                 dto.DataTypeState
@@ -202,11 +318,29 @@ public class MagicEffectRepository : TypedRecordRepositoryBase, IMagicEffectRepo
             ImportedAtUTC = record.ImportedAtUTC,
             Name = FromEnglish(record.Name),
             Description = FromEnglish(record.Description),
+            Version2 = record.Version2,
+            VersionControl = record.VersionControl,
             Flags = record.Flags,
             CastType = record.CastType,
             TargetType = record.TargetType,
+            CastingSoundLevel = record.CastingSoundLevel,
+            DualCastScale = record.DualCastScale,
+            Unknown1 = record.Unknown1,
+            BaseCost = record.BaseCost,
+            MagicSkill = record.MagicSkill,
+            CastingLightFormKey = CreateNullableFormKey(record.CastingLightModKeyName, record.CastingLightModKeyType, record.CastingLightModKeyFileName, record.CastingLightFormKeyId),
+            MenuDisplayObjectFormKey = CreateNullableFormKey(record.MenuDisplayObjectModKeyName, record.MenuDisplayObjectModKeyType, record.MenuDisplayObjectModKeyFileName, record.MenuDisplayObjectFormKeyId),
+            MinimumSkillLevel = record.MinimumSkillLevel,
+            SkillUsageMultiplier = record.SkillUsageMultiplier,
+            SpellmakingCastingTime = record.SpellmakingCastingTime,
+            TaperWeight = record.TaperWeight,
+            SecondActorValue = record.SecondActorValue,
+            SecondActorValueWeight = record.SecondActorValueWeight,
+            SpellmakingArea = record.SpellmakingArea,
+            EnchantShaderFormKey = CreateNullableFormKey(record.EnchantShaderModKeyName, record.EnchantShaderModKeyType, record.EnchantShaderModKeyFileName, record.EnchantShaderFormKeyId),
             ActorValue2FormKey = CreateNullableFormKey(record.ActorValue2ModKeyName, record.ActorValue2ModKeyType, record.ActorValue2ModKeyFileName, record.ActorValue2FormKeyId),
             ResistValueFormKey = CreateNullableFormKey(record.ResistValueModKeyName, record.ResistValueModKeyType, record.ResistValueModKeyFileName, record.ResistValueFormKeyId),
+            ResistValue = record.ResistValue,
             PerkToApplyFormKey = CreateNullableFormKey(record.PerkToApplyModKeyName, record.PerkToApplyModKeyType, record.PerkToApplyModKeyFileName, record.PerkToApplyFormKeyId),
             EquipAbilityFormKey = CreateNullableFormKey(record.EquipAbilityModKeyName, record.EquipAbilityModKeyType, record.EquipAbilityModKeyFileName, record.EquipAbilityFormKeyId),
             ExplosionFormKey = CreateNullableFormKey(record.ExplosionModKeyName, record.ExplosionModKeyType, record.ExplosionModKeyFileName, record.ExplosionFormKeyId),
@@ -217,8 +351,13 @@ public class MagicEffectRepository : TypedRecordRepositoryBase, IMagicEffectRepo
             ImpactDataFormKey = CreateNullableFormKey(record.ImpactDataModKeyName, record.ImpactDataModKeyType, record.ImpactDataModKeyFileName, record.ImpactDataFormKeyId),
             ProjectileFormKey = CreateNullableFormKey(record.ProjectileModKeyName, record.ProjectileModKeyType, record.ProjectileModKeyFileName, record.ProjectileFormKeyId),
             Archetype = record.Archetype,
+            ArchetypeActorValue = record.ArchetypeActorValue,
+            ArchetypeAssociationFormKey = CreateNullableFormKey(record.ArchetypeAssociationModKeyName, record.ArchetypeAssociationModKeyType, record.ArchetypeAssociationModKeyFileName, record.ArchetypeAssociationFormKeyId),
+            UnknownFloat1 = record.UnknownFloat1,
             UnknownFloat3 = record.UnknownFloat3,
+            UnknownFloat4 = record.UnknownFloat4,
             UnknownInt2 = record.UnknownInt2,
+            UnknownInt3 = record.UnknownInt3,
             Unknown = record.Unknown,
             Unknown2 = record.Unknown2,
             DataTypeState = record.DataTypeState
@@ -227,13 +366,46 @@ public class MagicEffectRepository : TypedRecordRepositoryBase, IMagicEffectRepo
         return dto;
     }
 
+    private static void ApplyLocalizedStrings(MagicEffectDTO record, IReadOnlyList<LocalizedStringDTO> localizedStrings)
+    {
+        record.LocalizedStrings = localizedStrings.ToList();
+        record.Name = BuildTranslatedString(localizedStrings, nameof(MagicEffectDTO.Name), record.Name);
+        record.Description = BuildTranslatedString(localizedStrings, nameof(MagicEffectDTO.Description), record.Description);
+    }
+
     private sealed class MagicEffectRow : RecordRow
     {
         public string? Name { get; set; }
         public string? Description { get; set; }
+        public int? Version2 { get; set; }
+        public int? VersionControl { get; set; }
         public string Flags { get; set; } = string.Empty;
         public string? CastType { get; set; }
         public string? TargetType { get; set; }
+        public string? CastingSoundLevel { get; set; }
+        public string? DualCastScale { get; set; }
+        public string? Unknown1 { get; set; }
+        public string? BaseCost { get; set; }
+        public string? MagicSkill { get; set; }
+        public string? CastingLightModKeyName { get; set; }
+        public int? CastingLightModKeyType { get; set; }
+        public string? CastingLightModKeyFileName { get; set; }
+        public long? CastingLightFormKeyId { get; set; }
+        public string? MenuDisplayObjectModKeyName { get; set; }
+        public int? MenuDisplayObjectModKeyType { get; set; }
+        public string? MenuDisplayObjectModKeyFileName { get; set; }
+        public long? MenuDisplayObjectFormKeyId { get; set; }
+        public int? MinimumSkillLevel { get; set; }
+        public string? SkillUsageMultiplier { get; set; }
+        public string? SpellmakingCastingTime { get; set; }
+        public string? TaperWeight { get; set; }
+        public string? SecondActorValue { get; set; }
+        public string? SecondActorValueWeight { get; set; }
+        public int? SpellmakingArea { get; set; }
+        public string? EnchantShaderModKeyName { get; set; }
+        public int? EnchantShaderModKeyType { get; set; }
+        public string? EnchantShaderModKeyFileName { get; set; }
+        public long? EnchantShaderFormKeyId { get; set; }
         public string? ActorValue2ModKeyName { get; set; }
         public int? ActorValue2ModKeyType { get; set; }
         public string? ActorValue2ModKeyFileName { get; set; }
@@ -242,6 +414,7 @@ public class MagicEffectRepository : TypedRecordRepositoryBase, IMagicEffectRepo
         public int? ResistValueModKeyType { get; set; }
         public string? ResistValueModKeyFileName { get; set; }
         public long? ResistValueFormKeyId { get; set; }
+        public string? ResistValue { get; set; }
         public string? PerkToApplyModKeyName { get; set; }
         public int? PerkToApplyModKeyType { get; set; }
         public string? PerkToApplyModKeyFileName { get; set; }
@@ -279,8 +452,16 @@ public class MagicEffectRepository : TypedRecordRepositoryBase, IMagicEffectRepo
         public string? ProjectileModKeyFileName { get; set; }
         public long? ProjectileFormKeyId { get; set; }
         public string? Archetype { get; set; }
+        public string? ArchetypeActorValue { get; set; }
+        public string? ArchetypeAssociationModKeyName { get; set; }
+        public int? ArchetypeAssociationModKeyType { get; set; }
+        public string? ArchetypeAssociationModKeyFileName { get; set; }
+        public long? ArchetypeAssociationFormKeyId { get; set; }
+        public float? UnknownFloat1 { get; set; }
         public float? UnknownFloat3 { get; set; }
+        public float? UnknownFloat4 { get; set; }
         public int? UnknownInt2 { get; set; }
+        public long? UnknownInt3 { get; set; }
         public string? Unknown { get; set; }
         public string? Unknown2 { get; set; }
         public string? DataTypeState { get; set; }

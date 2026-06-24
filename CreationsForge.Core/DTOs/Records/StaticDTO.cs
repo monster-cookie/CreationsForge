@@ -39,6 +39,8 @@ public class StaticDTO : RecordDTO, IHasModelsDTO, IKeywords, IHasRawRecordPaylo
 
     public string? LodLevel3 { get; set; }
 
+    public string? NavmeshGeometry { get; set; }
+
     public IList<ModelDTO> Models { get; set; } = new List<ModelDTO>();
 
     public IList<KeywordMappingDTO> Keywords { get; set; } = new List<KeywordMappingDTO>();

@@ -10,7 +10,7 @@ The application uses a local SQLite database. The schema is defined by embedded 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains sixty-one tables:
+The application schema contains sixty-two tables:
 
 - `Games`
 - `Plugins`
@@ -70,6 +70,7 @@ The application schema contains sixty-one tables:
 - `Models`
 - `ModelMaterialSwaps`
 - `SoundMappings`
+- `ScriptFragments`
 - `ScriptingAdapters`
 - `ScriptingAdapterProperties`
 - `ScriptingAdapterPropertyListItems`
@@ -179,8 +180,10 @@ shared by record types that expose component subrecords. Starfield FACT componen
 shared component path.
 `SoundMappings` references the full `RecordInstances` key including `RecordType`, so named and indexed sound payloads
 can be shared by record types that expose the same Spriggit-style sound data.
-`RawRecordPayloads` references the full `RecordInstances` key including `RecordType`, so opaque payload bytes or
-strings can be retained for future parsing without adding one table per record type.
+`ScriptFragments` references the full `RecordInstances` key including `RecordType`, so VMAD script fragments are
+stored with the same record ownership as scripting adapters for records that expose script fragments.
+`RawRecordPayloads` references the full `RecordInstances` key including `RecordType`, so opaque binary payloads can be
+retained for future parsing without adding one table per record type.
 `LocalizedStrings` references the full `RecordInstances` key including `RecordType`, so translated text values can be
 shared by record types that expose Mutagen localized strings.
 
@@ -364,8 +367,7 @@ Persistence behavior:
 Columns:
 
 - Common typed record key and metadata columns listed above
-- `Version2` (`INTEGER`, nullable)
-- `VersionControl` (`INTEGER`, nullable)
+- `Version2` and `VersionControl` (`INTEGER`, nullable)
 - `AddToList_ModKey_Name` (`TEXT`, nullable)
 - `AddToList_ModKey_Type` (`INTEGER`, nullable)
 - `AddToList_ModKey_FileName` (`TEXT`, nullable)
@@ -418,7 +420,7 @@ Persistence behavior:
 Columns:
 
 - Common typed record key and metadata columns listed above
-- `Version2` (`INTEGER`, nullable)
+- `Version2` and `VersionControl` (`INTEGER`, nullable)
 - `VersionControl` (`INTEGER`, nullable)
 - `DataType` (`TEXT`, `NOT NULL`)
 - `Data` (`TEXT`, nullable)
@@ -449,7 +451,7 @@ Persistence behavior:
 Columns:
 
 - Common typed record key and metadata columns listed above
-- `Version2` (`INTEGER`, nullable)
+- `Version2` and `VersionControl` (`INTEGER`, nullable)
 - `VersionControl` (`INTEGER`, nullable)
 - `MutagenObjectType` (`TEXT`, nullable)
 - `MajorFlags` (`TEXT`, nullable)
@@ -477,7 +479,7 @@ Persistence behavior:
 Columns:
 
 - Common typed record key and metadata columns listed above
-- `Version2` (`INTEGER`, nullable)
+- `Version2` and `VersionControl` (`INTEGER`, nullable)
 - `Name` and `Description` (`TEXT`, nullable)
 - `Teaches` (`TEXT`, nullable)
 - `MaxTrainingLevel` (`INTEGER`, nullable)
@@ -578,14 +580,18 @@ Columns:
 - `FormationRadius` (`REAL`, nullable)
 - nullable decomposed FormKey columns for `Keyword`, `Herd`, `VoiceType`, `SharedCrimeFactionList`,
   `VendorBuySellList`, `MerchantContainer`, `ExteriorJailMarker`, `FollowerWaitMarker`,
-  `StolenGoodsContainer`, `PlayerInventoryContainer`, `JailOutfit`, and `VendorLocationLink`
-- crime columns `CrimeArrest`, `CrimeAttackOnSight`, `CrimeMurder`, `CrimeAssault`, `CrimeTrespass`,
-  `CrimePickpocket`, `CrimeSteal`, `CrimeEscape`, `CrimeWerewolf`, and `CrimeUnknown` (`INTEGER`, nullable)
-- `CrimeStealMult` (`REAL`, nullable)
-- vendor columns `VendorStartHour`, `VendorEndHour` (`REAL`, nullable)
-- vendor columns `VendorRadius`, `VendorBuysStolenItems`, `VendorBuysNonStolenItems`, and
-  `VendorBuySellEverythingNotInList` (`INTEGER`, nullable)
-- `VendorLocationMutagenObjectType` and `VendorLocationType` (`TEXT`, nullable)
+  `StolenGoodsContainer`, `PlayerInventoryContainer`, `JailOutfit`, and `VendorLocation_Target_Link`
+- crime value columns `CrimeValues_Arrest`, `CrimeValues_AttackOnSight`, `CrimeValues_Murder`,
+  `CrimeValues_Assault`, `CrimeValues_Trespass`, `CrimeValues_Pickpocket`, `CrimeValues_Steal`,
+  `CrimeValues_Escape`, `CrimeValues_Werewolf`, `CrimeValues_WerewolfUnused`, `CrimeValues_Unknown`, and
+  `CrimeValues_Piracy` (`INTEGER`, nullable)
+- `CrimeValues_StealMult`, `CrimeValues_StealMultiplier`, and `CrimeValues_SmuggleMultiplier`
+  (`REAL`, nullable)
+- vendor value columns `VendorValues_StartHour` and `VendorValues_EndHour` (`REAL`, nullable)
+- vendor value columns `VendorValues_Radius`, `VendorValues_BuysStolenItems`,
+  `VendorValues_BuysNonStolenItems`, and `VendorValues_BuySellEverythingNotInList` (`INTEGER`, nullable)
+- `VendorLocation_MutagenObjectType`, `VendorLocation_Target_MutagenObjectType`, and
+  `VendorLocation_Target_Type` (`TEXT`, nullable)
 
 Foreign keys:
 
@@ -646,8 +652,8 @@ Columns:
 - Common containing plugin key columns listed above
 - typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
 - `Rank_Index` (`INTEGER`, `NOT NULL`, primary key)
-- `RankNumber` (`INTEGER`, nullable)
-- `MaleTitle` and `FemaleTitle` (`TEXT`, nullable)
+- `Number` (`INTEGER`, nullable)
+- `Title_Male` and `Title_Female` (`TEXT`, nullable)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
 Foreign keys:
@@ -836,6 +842,7 @@ Indexes:
 `NPCs` additional columns:
 
 - `Name`, `ShortName`, `LongName`, and `Pronoun` (`TEXT`, nullable)
+- `Version2` and `VersionControl` (`INTEGER`, nullable)
 - `DispositionBase`, `EnergyLevel`, and `GearedUpWeapons` (`INTEGER`, `NOT NULL`)
 - `Aggression`, `Confidence`, `Responsibility`, and `Assistance` (`TEXT`, `NOT NULL`)
 - `HeightMin` and `HeightMax` (`REAL`, `NOT NULL`)
@@ -845,13 +852,19 @@ Indexes:
 
 `MagicEffects` additional columns:
 
-- `Name`, `Description`, `CastType`, and `TargetType` (`TEXT`, nullable)
+- `Name`, `Description`, `CastType`, `TargetType`, `CastingSoundLevel`, `DualCastScale`, and `Unknown1`
+  (`TEXT`, nullable)
+- `Version2` and `VersionControl` (`INTEGER`, nullable)
 - `Flags` (`TEXT`, `NOT NULL`)
+- `BaseCost`, `MagicSkill`, `SkillUsageMultiplier`, `SpellmakingCastingTime`, `TaperWeight`,
+  `SecondActorValue`, `SecondActorValueWeight`, `Archetype`, and `ArchetypeActorValue` (`TEXT`, nullable)
+- `MinimumSkillLevel` and `SpellmakingArea` (`INTEGER`, nullable)
 - nullable decomposed FormKey columns for `ActorValue2`, `ResistValue`, `PerkToApply`, `EquipAbility`,
-  `Explosion`, `CastingArt`, `HitEffectArt`, `HitShader`, `ImageSpaceModifier`, `ImpactData`, and `Projectile`
-- `Archetype` (`TEXT`, nullable)
-- `UnknownFloat3` (`REAL`, nullable)
-- `UnknownInt2` (`INTEGER`, nullable)
+  `Explosion`, `CastingArt`, `HitEffectArt`, `HitShader`, `ImageSpaceModifier`, `ImpactData`, `Projectile`,
+  `CastingLight`, `MenuDisplayObject`, `EnchantShader`, and `ArchetypeAssociation`
+- `ResistValue` (`TEXT`, nullable) for actor-value enum or FormKey text values exposed by Spriggit
+- `UnknownFloat1`, `UnknownFloat3`, and `UnknownFloat4` (`REAL`, nullable)
+- `UnknownInt2` and `UnknownInt3` (`INTEGER`, nullable)
 - `Unknown` (`TEXT`, nullable)
 - `Unknown2` (`TEXT`, nullable)
 - `DataTypeState` (`TEXT`, nullable)
@@ -868,6 +881,7 @@ Indexes:
 
 - `Name` (`TEXT`, nullable)
 - `Version2` (`INTEGER`, nullable)
+- `VersionControl` (`INTEGER`, nullable)
 - `ObjectBounds_First` and `ObjectBounds_Second` (`TEXT`, nullable)
 - `MaxAngle`, `UnknownDNAMFloat`, `LeafAmplitude`, and `LeafFrequency` (`REAL`, nullable)
 - `Unused` (`TEXT`, nullable)
@@ -925,27 +939,34 @@ Indexes:
 `Doors` additional columns:
 
 - `Version2` (`INTEGER`, nullable)
+- `VersionControl` (`INTEGER`, nullable)
 - `ObjectBounds_First` and `ObjectBounds_Second` (`TEXT`, nullable)
 - `Name`, `Flags`, `SoundLevel`, and `FacingAxisOverride` (`TEXT`, nullable)
 - nullable decomposed FormKey columns for `NativeTerminal`
+- `AnimationGraph`, `AnimationSkeleton`, `AnimationDirectory`, and `AnimationFile` (`TEXT`, nullable)
 
 `Containers` additional columns:
 
 - `Version2` (`INTEGER`, nullable)
+- `VersionControl` (`INTEGER`, nullable)
 - `ObjectBounds_First` and `ObjectBounds_Second` (`TEXT`, nullable)
 - `Name`, `Flags`, and `MajorFlags` (`TEXT`, nullable)
 - nullable decomposed FormKey columns for `NativeTerminal`
+- `AnimationGraph`, `AnimationSkeleton`, `AnimationDirectory`, and `AnimationFile` (`TEXT`, nullable)
 
 `ConditionForms` additional columns:
 
 - `Version2` (`INTEGER`, nullable)
+- `VersionControl` (`INTEGER`, nullable)
 
 `ConstructibleObjects` additional columns:
 
-- `Version2` (`INTEGER`, nullable)
+- `Version2` and `VersionControl` (`INTEGER`, nullable)
 - `Description`, `LearnMethod`, and `Flags` (`TEXT`, nullable)
 - nullable decomposed FormKey columns for `CreatedObject` and `WorkbenchKeyword`
-- `CreatedObjectCount`, `AmountProduced`, and `MenuSortOrder` (`INTEGER`, nullable)
+- `CreatedObjectCount`, `AmountProduced`, and `Value` (`INTEGER`, nullable)
+- `MenuSortOrder` (`REAL`, nullable)
+- `MajorFlags` (`TEXT`, nullable)
 
 `Terminals` additional columns:
 
@@ -954,6 +975,7 @@ Indexes:
 - nullable decomposed FormKey columns for `Menu` and `FurnitureTemplate`
 - `Background`, `HeaderText`, `WelcomeText`, `Name`, `PNAM`, `FNAM`, `Flags`, `MajorFlags`, `JNAM`,
   `MarkerFlags`, `GNAM`, `WorkbenchData`, and `MarkerModel` (`TEXT`, nullable)
+- `AnimationGraph`, `AnimationSkeleton`, `AnimationDirectory`, and `AnimationFile` (`TEXT`, nullable)
 
 Foreign keys:
 
@@ -975,18 +997,20 @@ Persistence behavior:
   batch are deleted as stale.
 - `MiscItems` currently persists the parent scalar row, FO4/Skyrim component rows including display indices, Fallout 4
   and Skyrim destructible rows when Mutagen exposes them, Starfield resource rows, shared keyword rows, shared model
-  rows, shared sound rows, and scripting adapters. `Statics` persists parent scalar rows,
-  shared model rows, shared keyword rows when present, and raw opaque payload rows. `Books` persist parent scalar rows,
-  shared model rows, shared keyword rows, shared sound rows, scripting adapters, and raw payload rows. `Doors` persist
-  parent scalar rows, shared model rows,
-  shared keyword rows, shared sound rows, and raw payload rows. `Containers` persist parent scalar rows, child item
-  rows, shared model rows, shared keyword rows when present, shared sound rows when present, and raw opaque payload
-  rows. `ConditionForms` persist parent scalar rows and structured Starfield condition rows with generic parameter
-  rows.
+  rows, shared sound rows, and scripting adapters. `Statics` persists parent scalar rows, navmesh geometry, shared
+  model rows, shared keyword rows when present, and binary `REFL` raw payload rows. `Books` persist parent scalar rows,
+  shared model rows, shared keyword rows, shared sound rows, scripting adapters, and binary `REFL` raw payload rows.
+  `Doors` persist parent scalar rows including direct animation component fields, shared model rows, shared keyword
+  rows, shared sound rows, scripting adapters, and binary `REFL` raw payload rows. `Containers` persist parent scalar
+  rows including direct animation component fields, child item rows, shared model rows, shared keyword rows when
+  present, shared sound rows when present, scripting adapters, and binary `REFL` raw payload rows.
+  `ConditionForms` persist parent scalar rows and structured Starfield condition rows with generic parameter rows.
   `ConstructibleObjects` persist parent scalar rows, component rows, Fallout 4 category rows, Starfield recipe-filter
-  rows, scripting adapters when present, and raw opaque payload rows such as conditions and multi-count data.
-  `Terminals` persist parent scalar rows, shared model rows, shared keyword rows, scripting adapters, raw payload rows,
-  forced-location rows, marker-parameter rows, body-text rows, and menu-item rows. `NPCs` and `MagicEffects` persist
+  rows, shared condition rows, shared sound rows when present, and scripting adapters when present.
+  `Terminals` persist parent scalar rows including direct animation component fields, shared model rows, shared keyword
+  rows, scripting adapters, script fragments, binary `REFL` raw payload rows, forced-location rows, marker-parameter
+  rows, body-text rows, condition rows, and menu-item rows. `NPCs` persist shared keyword rows, shared sound rows,
+  scripting adapters, localized strings, and supplemental actor appearance/template columns. `MagicEffects` persist
   shared keyword rows.
   `MagicEffects` persists shared sound rows and Spriggit-flattened DATA fields directly on the parent row.
 
@@ -1512,6 +1536,7 @@ Columns:
 - `ModelGender` (`TEXT`, `NOT NULL`, primary key)
 - `File` (`TEXT`, nullable)
 - `TextureFileHashes` (`TEXT`, nullable)
+- `Data` (`TEXT`, nullable)
 - `LightLayer` (`INTEGER`, nullable)
 - `Flags` (`TEXT`, nullable)
 - `ColorRemappingIndex` (`REAL`, nullable)
@@ -1557,7 +1582,7 @@ Columns:
 - typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
 - `SoundSlot` (`TEXT`, `NOT NULL`, primary key)
 - `Sound_Index` (`INTEGER`, `NOT NULL`, primary key)
-- `Start` (`TEXT`, nullable)
+- `Start` and `Stop` (`TEXT`, nullable)
 - `Versioning` (`TEXT`, nullable)
 - `Unknown` (`TEXT`, nullable)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
@@ -1571,6 +1596,43 @@ Persistence behavior:
 - Current imported rows are upserted after their owning typed record row is saved.
 - Existing sound rows for the same record are deleted before replacement so removed sound slots do not remain stale.
 - Stale typed-record deletion removes sound rows through the declared `RecordInstances` cascade.
+
+### ScriptFragments
+
+Columns:
+
+- Common containing plugin key columns listed above
+- `RecordType` (`TEXT`, `NOT NULL`, primary key)
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `FragmentSlot` (`TEXT`, `NOT NULL`, primary key)
+- `Fragment_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `MutagenObjectType` (`TEXT`, nullable)
+- `ScriptName` (`TEXT`, nullable)
+- `FragmentName` (`TEXT`, nullable)
+- `ExtraBindDataVersion` (`INTEGER`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key plus `RecordType` references `RecordInstances` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FragmentSlot` must not be empty.
+- `Fragment_Index` and `FormKey_ID` must be greater than or equal to zero.
+
+Indexes:
+
+- No secondary indexes are currently declared.
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning typed record row is saved.
+- Existing script fragment rows for the same record are deleted before replacement so removed fragment slots do not
+  remain stale.
+- Stale typed-record deletion removes script fragment rows through the declared `RecordInstances` cascade.
+- Script fragments are part of the VMAD/script adapter storage shape and are not persisted as generic values.
+- Current importers populate script fragments for supported `PERK` and `TERM` records that expose them.
 
 ### RawRecordPayloads
 
@@ -1606,12 +1668,11 @@ Persistence behavior:
 - Existing raw payload rows for the same record are deleted before replacement so removed payload slots do not remain
   stale.
 - Stale typed-record deletion removes raw payload rows through the declared `RecordInstances` cascade.
-- Current importers populate Static property rows, raw payload rows for Static model/component reflection payloads, and Container
-  model/base-form-component reflection payloads, including Starfield container `ANAM`, `BNAM`, `CNAM`, and `REFL`
-  base-form-component subfields when Mutagen exposes them through reflection.
+- Current importers only use raw payload rows for opaque binary-like payloads that Spriggit leaves as binary content.
+  The currently populated raw path is Starfield component `REFL`.
 - `PayloadSlot` stores the internal comparison/storage name. `SourcePath` stores the source Mutagen/Spriggit path
-  when it differs, such as `Components.AnimationGraphComponent.ANAM` for internal
-  `BaseFormComponents.AnimationGraphComponent.ANAM`.
+  when it differs. Starfield component `REFL` rows use source-shaped slots such as
+  `Components.LodOwnerComponentBinaryOverlay.REFL`.
 
 ### LocalizedStrings
 
@@ -1793,7 +1854,8 @@ These columns carry record-reference identity but do not declare SQLite foreign 
 - `NPCs.Voice_*`, `Race_*`, `CombatOverridePackageList_*`, `CombatStyle_*`, `DefaultPackageList_*`,
   and `CrimeFaction_*`
 - `MagicEffects.ActorValue2_*`, `ResistValue_*`, `PerkToApply_*`, `EquipAbility_*`, `Explosion_*`,
-  `CastingArt_*`, `HitEffectArt_*`, `HitShader_*`, `ImageSpaceModifier_*`, `ImpactData_*`, and `Projectile_*`
+  `CastingArt_*`, `HitEffectArt_*`, `HitShader_*`, `ImageSpaceModifier_*`, `ImpactData_*`, `Projectile_*`,
+  `CastingLight_*`, `MenuDisplayObject_*`, `EnchantShader_*`, and `ArchetypeAssociation_*`
 - `Perks.Restriction_*` and `Training_*`
 - `Books.Transforms_Inventory_ModKey_Name`, `Transforms_Inventory_ModKey_Type`,
   `Transforms_Inventory_ModKey_FileName`, and `Transforms_Inventory_FormKey_ID`
@@ -1847,8 +1909,8 @@ These columns carry record-reference identity but do not declare SQLite foreign 
   `PlayerInventoryContainer_ModKey_FileName`, and `PlayerInventoryContainer_FormKey_ID`
 - `Factions.JailOutfit_ModKey_Name`, `JailOutfit_ModKey_Type`, `JailOutfit_ModKey_FileName`, and
   `JailOutfit_FormKey_ID`
-- `Factions.VendorLocationLink_ModKey_Name`, `VendorLocationLink_ModKey_Type`,
-  `VendorLocationLink_ModKey_FileName`, and `VendorLocationLink_FormKey_ID`
+- `Factions.VendorLocation_Target_Link_ModKey_Name`, `VendorLocation_Target_Link_ModKey_Type`,
+  `VendorLocation_Target_Link_ModKey_FileName`, and `VendorLocation_Target_Link_FormKey_ID`
 - `FactionRelations.Target_ModKey_Name`, `Target_ModKey_Type`, `Target_ModKey_FileName`, and
   `Target_FormKey_ID`
 - `ConditionRules.ComparisonValue_ModKey_Name`, `ComparisonValue_ModKey_Type`,

@@ -21,6 +21,14 @@ This folder contains data validation tests for validating that the Mutagen/SQLit
 - If no preserving path exists, the field must be modeled end-to-end: DTO, importer, persistence, readback, comparison/render path where applicable, and validation coverage.
 - Do not delete modeled record data and replace it with validation ignores unless the user explicitly approves that exact removal.
 
+## No validation laundering through generic buckets
+
+Do not mark a Spriggit field as covered merely because its value appears somewhere in `RawPayloads`, `StructuredValues`, JSON, or another generic bucket.
+
+A generic bucket may only satisfy validation when the PLAN explicitly approved that exact Spriggit path as genuinely opaque binary payload. Otherwise, validation must fail until the field is modeled through a first-class DTO/import/ persistence/readback path.
+
+For VMAD data, validation specs must assert script-domain paths such as `VirtualMachineAdapter.Scripts`, `VirtualMachineAdapter.Scripts[].Properties`, and `VirtualMachineAdapter.ScriptFragments` against VMAD/script DTOs, not against structured-value rules.
+
 ## Spec-driven validation
 
 Spec-driven validation tests define sample-specific mapping rules in validation specs and execute those specs through
@@ -89,3 +97,11 @@ A database reset/reimport is required when:
 - validation failures may be caused by stale imported rows rather than current code.
 
 The agent must call this out in the plan and final validation notes. Building the solution is not enough to refresh imported DTO data.
+
+## Completion rule for validation work
+
+A validation-test, validation-spec, Spriggit helper, DTO mapping, or record import task is incomplete while CreationsForge.DataValidationTests has failing tests caused by that task.
+
+When failures remain, group them by root cause and fix the model/spec/import/readback behavior instead of broadening aliases, ignores, raw payloads, or fallback matching.
+
+The two generic unmatched-field helpers are approved coverage backstops. Failures from those helpers must be treated as missing modeled coverage unless an approved plan documents an exact duplicate/derived Spriggit path.

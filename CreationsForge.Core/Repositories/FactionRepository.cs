@@ -57,7 +57,7 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
             """
             INSERT OR REPLACE INTO Factions (
                 Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Version2, Name, Flags, FormationRadius,
+                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Version2, VersionControl, Name, Flags, FormationRadius,
                 Keyword_ModKey_Name, Keyword_ModKey_Type, Keyword_ModKey_FileName, Keyword_FormKey_ID,
                 Herd_ModKey_Name, Herd_ModKey_Type, Herd_ModKey_FileName, Herd_FormKey_ID,
                 VoiceType_ModKey_Name, VoiceType_ModKey_Type, VoiceType_ModKey_FileName, VoiceType_FormKey_ID,
@@ -69,13 +69,15 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
                 StolenGoodsContainer_ModKey_Name, StolenGoodsContainer_ModKey_Type, StolenGoodsContainer_ModKey_FileName, StolenGoodsContainer_FormKey_ID,
                 PlayerInventoryContainer_ModKey_Name, PlayerInventoryContainer_ModKey_Type, PlayerInventoryContainer_ModKey_FileName, PlayerInventoryContainer_FormKey_ID,
                 JailOutfit_ModKey_Name, JailOutfit_ModKey_Type, JailOutfit_ModKey_FileName, JailOutfit_FormKey_ID,
-                CrimeArrest, CrimeAttackOnSight, CrimeMurder, CrimeAssault, CrimeTrespass, CrimePickpocket, CrimeSteal, CrimeStealMult,
-                CrimeEscape, CrimeWerewolf, CrimeUnknown, VendorStartHour, VendorEndHour, VendorRadius, VendorBuysStolenItems, VendorBuysNonStolenItems,
-                VendorBuySellEverythingNotInList, VendorLocationMutagenObjectType, VendorLocationType, VendorLocationLink_ModKey_Name,
-                VendorLocationLink_ModKey_Type, VendorLocationLink_ModKey_FileName, VendorLocationLink_FormKey_ID)
+                CrimeValues_Arrest, CrimeValues_AttackOnSight, CrimeValues_Murder, CrimeValues_Assault, CrimeValues_Trespass, CrimeValues_Pickpocket,
+                CrimeValues_Steal, CrimeValues_StealMult, CrimeValues_StealMultiplier, CrimeValues_Escape, CrimeValues_Werewolf, CrimeValues_WerewolfUnused,
+                CrimeValues_Unknown, CrimeValues_Piracy, CrimeValues_SmuggleMultiplier, VendorValues_StartHour, VendorValues_EndHour, VendorValues_Radius,
+                VendorValues_BuysStolenItems, VendorValues_BuysNonStolenItems, VendorValues_BuySellEverythingNotInList, VendorLocation_MutagenObjectType,
+                VendorLocation_Target_MutagenObjectType, VendorLocation_Target_Type, VendorLocation_Target_Link_ModKey_Name, VendorLocation_Target_Link_ModKey_Type,
+                VendorLocation_Target_Link_ModKey_FileName, VendorLocation_Target_Link_FormKey_ID)
             VALUES (
                 @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Version2, @Name, @Flags, @FormationRadius,
+                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Version2, @VersionControl, @Name, @Flags, @FormationRadius,
                 @KeywordModKeyName, @KeywordModKeyType, @KeywordModKeyFileName, @KeywordFormKeyId,
                 @HerdModKeyName, @HerdModKeyType, @HerdModKeyFileName, @HerdFormKeyId,
                 @VoiceTypeModKeyName, @VoiceTypeModKeyType, @VoiceTypeModKeyFileName, @VoiceTypeFormKeyId,
@@ -87,10 +89,12 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
                 @StolenGoodsContainerModKeyName, @StolenGoodsContainerModKeyType, @StolenGoodsContainerModKeyFileName, @StolenGoodsContainerFormKeyId,
                 @PlayerInventoryContainerModKeyName, @PlayerInventoryContainerModKeyType, @PlayerInventoryContainerModKeyFileName, @PlayerInventoryContainerFormKeyId,
                 @JailOutfitModKeyName, @JailOutfitModKeyType, @JailOutfitModKeyFileName, @JailOutfitFormKeyId,
-                @CrimeArrest, @CrimeAttackOnSight, @CrimeMurder, @CrimeAssault, @CrimeTrespass, @CrimePickpocket, @CrimeSteal, @CrimeStealMult,
-                @CrimeEscape, @CrimeWerewolf, @CrimeUnknown, @VendorStartHour, @VendorEndHour, @VendorRadius, @VendorBuysStolenItems, @VendorBuysNonStolenItems,
-                @VendorBuySellEverythingNotInList, @VendorLocationMutagenObjectType, @VendorLocationType, @VendorLocationLinkModKeyName,
-                @VendorLocationLinkModKeyType, @VendorLocationLinkModKeyFileName, @VendorLocationLinkFormKeyId);
+                @CrimeValuesArrest, @CrimeValuesAttackOnSight, @CrimeValuesMurder, @CrimeValuesAssault, @CrimeValuesTrespass, @CrimeValuesPickpocket,
+                @CrimeValuesSteal, @CrimeValuesStealMult, @CrimeValuesStealMultiplier, @CrimeValuesEscape, @CrimeValuesWerewolf, @CrimeValuesWerewolfUnused,
+                @CrimeValuesUnknown, @CrimeValuesPiracy, @CrimeValuesSmuggleMultiplier, @VendorValuesStartHour, @VendorValuesEndHour, @VendorValuesRadius,
+                @VendorValuesBuysStolenItems, @VendorValuesBuysNonStolenItems, @VendorValuesBuySellEverythingNotInList, @VendorLocationMutagenObjectType,
+                @VendorLocationTargetMutagenObjectType, @VendorLocationTargetType, @VendorLocationTargetLinkModKeyName, @VendorLocationTargetLinkModKeyType,
+                @VendorLocationTargetLinkModKeyFileName, @VendorLocationTargetLinkFormKeyId);
             """,
             CreateFactionParameters(dto));
         ReplaceRelations(dto);
@@ -102,6 +106,7 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
         return
         [
             SelectColumn("Version2"),
+            SelectColumn("VersionControl"),
             SelectColumn("Name"),
             SelectColumn("Flags"),
             SelectColumn("FormationRadius"),
@@ -149,29 +154,34 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
             SelectColumn("JailOutfit_ModKey_Type", "JailOutfitModKeyType"),
             SelectColumn("JailOutfit_ModKey_FileName", "JailOutfitModKeyFileName"),
             SelectColumn("JailOutfit_FormKey_ID", "JailOutfitFormKeyId"),
-            SelectColumn("CrimeArrest"),
-            SelectColumn("CrimeAttackOnSight"),
-            SelectColumn("CrimeMurder"),
-            SelectColumn("CrimeAssault"),
-            SelectColumn("CrimeTrespass"),
-            SelectColumn("CrimePickpocket"),
-            SelectColumn("CrimeSteal"),
-            SelectColumn("CrimeStealMult"),
-            SelectColumn("CrimeEscape"),
-            SelectColumn("CrimeWerewolf"),
-            SelectColumn("CrimeUnknown"),
-            SelectColumn("VendorStartHour"),
-            SelectColumn("VendorEndHour"),
-            SelectColumn("VendorRadius"),
-            SelectColumn("VendorBuysStolenItems"),
-            SelectColumn("VendorBuysNonStolenItems"),
-            SelectColumn("VendorBuySellEverythingNotInList"),
-            SelectColumn("VendorLocationMutagenObjectType"),
-            SelectColumn("VendorLocationType"),
-            SelectColumn("VendorLocationLink_ModKey_Name", "VendorLocationLinkModKeyName"),
-            SelectColumn("VendorLocationLink_ModKey_Type", "VendorLocationLinkModKeyType"),
-            SelectColumn("VendorLocationLink_ModKey_FileName", "VendorLocationLinkModKeyFileName"),
-            SelectColumn("VendorLocationLink_FormKey_ID", "VendorLocationLinkFormKeyId")
+            SelectColumn("CrimeValues_Arrest", "CrimeValuesArrest"),
+            SelectColumn("CrimeValues_AttackOnSight", "CrimeValuesAttackOnSight"),
+            SelectColumn("CrimeValues_Murder", "CrimeValuesMurder"),
+            SelectColumn("CrimeValues_Assault", "CrimeValuesAssault"),
+            SelectColumn("CrimeValues_Trespass", "CrimeValuesTrespass"),
+            SelectColumn("CrimeValues_Pickpocket", "CrimeValuesPickpocket"),
+            SelectColumn("CrimeValues_Steal", "CrimeValuesSteal"),
+            SelectColumn("CrimeValues_StealMult", "CrimeValuesStealMult"),
+            SelectColumn("CrimeValues_StealMultiplier", "CrimeValuesStealMultiplier"),
+            SelectColumn("CrimeValues_Escape", "CrimeValuesEscape"),
+            SelectColumn("CrimeValues_Werewolf", "CrimeValuesWerewolf"),
+            SelectColumn("CrimeValues_WerewolfUnused", "CrimeValuesWerewolfUnused"),
+            SelectColumn("CrimeValues_Unknown", "CrimeValuesUnknown"),
+            SelectColumn("CrimeValues_Piracy", "CrimeValuesPiracy"),
+            SelectColumn("CrimeValues_SmuggleMultiplier", "CrimeValuesSmuggleMultiplier"),
+            SelectColumn("VendorValues_StartHour", "VendorValuesStartHour"),
+            SelectColumn("VendorValues_EndHour", "VendorValuesEndHour"),
+            SelectColumn("VendorValues_Radius", "VendorValuesRadius"),
+            SelectColumn("VendorValues_BuysStolenItems", "VendorValuesBuysStolenItems"),
+            SelectColumn("VendorValues_BuysNonStolenItems", "VendorValuesBuysNonStolenItems"),
+            SelectColumn("VendorValues_BuySellEverythingNotInList", "VendorValuesBuySellEverythingNotInList"),
+            SelectColumn("VendorLocation_MutagenObjectType", "VendorLocationMutagenObjectType"),
+            SelectColumn("VendorLocation_Target_MutagenObjectType", "VendorLocationTargetMutagenObjectType"),
+            SelectColumn("VendorLocation_Target_Type", "VendorLocationTargetType"),
+            SelectColumn("VendorLocation_Target_Link_ModKey_Name", "VendorLocationTargetLinkModKeyName"),
+            SelectColumn("VendorLocation_Target_Link_ModKey_Type", "VendorLocationTargetLinkModKeyType"),
+            SelectColumn("VendorLocation_Target_Link_ModKey_FileName", "VendorLocationTargetLinkModKeyFileName"),
+            SelectColumn("VendorLocation_Target_Link_FormKey_ID", "VendorLocationTargetLinkFormKeyId")
         ];
     }
 
@@ -238,10 +248,10 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
                     FormKeyModKeyFileName = relation.FormKey.ModKey.FileName,
                     FormKeyId = relation.FormKey.Id,
                     relation.RelationIndex,
-                    TargetModKeyName = relation.TargetFormKey?.ModKey.Name,
-                    TargetModKeyType = relation.TargetFormKey?.ModKey.Type,
-                    TargetModKeyFileName = relation.TargetFormKey?.ModKey.FileName,
-                    TargetFormKeyId = relation.TargetFormKey?.Id,
+                    TargetModKeyName = relation.Target?.ModKey.Name,
+                    TargetModKeyType = relation.Target?.ModKey.Type,
+                    TargetModKeyFileName = relation.Target?.ModKey.FileName,
+                    TargetFormKeyId = relation.Target?.Id,
                     relation.Reaction,
                     relation.ImportedAtUTC
                 });
@@ -258,10 +268,10 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
                 """
                 INSERT OR REPLACE INTO FactionRanks (
                     Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                    Rank_Index, RankNumber, MaleTitle, FemaleTitle, ImportedAtUTC)
+                    Rank_Index, Number, Title_Male, Title_Female, ImportedAtUTC)
                 VALUES (
                     @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                    @RankIndex, @RankNumber, @MaleTitle, @FemaleTitle, @ImportedAtUTC);
+                    @RankIndex, @Number, @TitleMale, @TitleFemale, @ImportedAtUTC);
                 """,
                 new
                 {
@@ -274,9 +284,9 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
                     FormKeyModKeyFileName = rank.FormKey.ModKey.FileName,
                     FormKeyId = rank.FormKey.Id,
                     rank.RankIndex,
-                    rank.RankNumber,
-                    MaleTitle = GetEnglishText(rank.MaleTitle),
-                    FemaleTitle = GetEnglishText(rank.FemaleTitle),
+                    rank.Number,
+                    TitleMale = GetEnglishText(rank.Title?.Male),
+                    TitleFemale = GetEnglishText(rank.Title?.Female),
                     rank.ImportedAtUTC
                 });
         }
@@ -316,76 +326,82 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
             dto.MajorRecordFlags,
             dto.ImportedAtUTC,
             dto.Version2,
+            dto.VersionControl,
             Name = GetEnglishText(dto.Name),
             dto.Flags,
             dto.FormationRadius,
-            KeywordModKeyName = dto.KeywordFormKey?.ModKey.Name,
-            KeywordModKeyType = dto.KeywordFormKey?.ModKey.Type,
-            KeywordModKeyFileName = dto.KeywordFormKey?.ModKey.FileName,
-            KeywordFormKeyId = dto.KeywordFormKey?.Id,
-            HerdModKeyName = dto.HerdFormKey?.ModKey.Name,
-            HerdModKeyType = dto.HerdFormKey?.ModKey.Type,
-            HerdModKeyFileName = dto.HerdFormKey?.ModKey.FileName,
-            HerdFormKeyId = dto.HerdFormKey?.Id,
-            VoiceTypeModKeyName = dto.VoiceTypeFormKey?.ModKey.Name,
-            VoiceTypeModKeyType = dto.VoiceTypeFormKey?.ModKey.Type,
-            VoiceTypeModKeyFileName = dto.VoiceTypeFormKey?.ModKey.FileName,
-            VoiceTypeFormKeyId = dto.VoiceTypeFormKey?.Id,
-            SharedCrimeFactionListModKeyName = dto.SharedCrimeFactionListFormKey?.ModKey.Name,
-            SharedCrimeFactionListModKeyType = dto.SharedCrimeFactionListFormKey?.ModKey.Type,
-            SharedCrimeFactionListModKeyFileName = dto.SharedCrimeFactionListFormKey?.ModKey.FileName,
-            SharedCrimeFactionListFormKeyId = dto.SharedCrimeFactionListFormKey?.Id,
-            VendorBuySellListModKeyName = dto.VendorBuySellListFormKey?.ModKey.Name,
-            VendorBuySellListModKeyType = dto.VendorBuySellListFormKey?.ModKey.Type,
-            VendorBuySellListModKeyFileName = dto.VendorBuySellListFormKey?.ModKey.FileName,
-            VendorBuySellListFormKeyId = dto.VendorBuySellListFormKey?.Id,
-            MerchantContainerModKeyName = dto.MerchantContainerFormKey?.ModKey.Name,
-            MerchantContainerModKeyType = dto.MerchantContainerFormKey?.ModKey.Type,
-            MerchantContainerModKeyFileName = dto.MerchantContainerFormKey?.ModKey.FileName,
-            MerchantContainerFormKeyId = dto.MerchantContainerFormKey?.Id,
-            ExteriorJailMarkerModKeyName = dto.ExteriorJailMarkerFormKey?.ModKey.Name,
-            ExteriorJailMarkerModKeyType = dto.ExteriorJailMarkerFormKey?.ModKey.Type,
-            ExteriorJailMarkerModKeyFileName = dto.ExteriorJailMarkerFormKey?.ModKey.FileName,
-            ExteriorJailMarkerFormKeyId = dto.ExteriorJailMarkerFormKey?.Id,
-            FollowerWaitMarkerModKeyName = dto.FollowerWaitMarkerFormKey?.ModKey.Name,
-            FollowerWaitMarkerModKeyType = dto.FollowerWaitMarkerFormKey?.ModKey.Type,
-            FollowerWaitMarkerModKeyFileName = dto.FollowerWaitMarkerFormKey?.ModKey.FileName,
-            FollowerWaitMarkerFormKeyId = dto.FollowerWaitMarkerFormKey?.Id,
-            StolenGoodsContainerModKeyName = dto.StolenGoodsContainerFormKey?.ModKey.Name,
-            StolenGoodsContainerModKeyType = dto.StolenGoodsContainerFormKey?.ModKey.Type,
-            StolenGoodsContainerModKeyFileName = dto.StolenGoodsContainerFormKey?.ModKey.FileName,
-            StolenGoodsContainerFormKeyId = dto.StolenGoodsContainerFormKey?.Id,
-            PlayerInventoryContainerModKeyName = dto.PlayerInventoryContainerFormKey?.ModKey.Name,
-            PlayerInventoryContainerModKeyType = dto.PlayerInventoryContainerFormKey?.ModKey.Type,
-            PlayerInventoryContainerModKeyFileName = dto.PlayerInventoryContainerFormKey?.ModKey.FileName,
-            PlayerInventoryContainerFormKeyId = dto.PlayerInventoryContainerFormKey?.Id,
-            JailOutfitModKeyName = dto.JailOutfitFormKey?.ModKey.Name,
-            JailOutfitModKeyType = dto.JailOutfitFormKey?.ModKey.Type,
-            JailOutfitModKeyFileName = dto.JailOutfitFormKey?.ModKey.FileName,
-            JailOutfitFormKeyId = dto.JailOutfitFormKey?.Id,
-            dto.CrimeArrest,
-            dto.CrimeAttackOnSight,
-            dto.CrimeMurder,
-            dto.CrimeAssault,
-            dto.CrimeTrespass,
-            dto.CrimePickpocket,
-            dto.CrimeSteal,
-            dto.CrimeStealMult,
-            dto.CrimeEscape,
-            dto.CrimeWerewolf,
-            dto.CrimeUnknown,
-            dto.VendorStartHour,
-            dto.VendorEndHour,
-            dto.VendorRadius,
-            dto.VendorBuysStolenItems,
-            dto.VendorBuysNonStolenItems,
-            dto.VendorBuySellEverythingNotInList,
-            dto.VendorLocationMutagenObjectType,
-            dto.VendorLocationType,
-            VendorLocationLinkModKeyName = dto.VendorLocationLinkFormKey?.ModKey.Name,
-            VendorLocationLinkModKeyType = dto.VendorLocationLinkFormKey?.ModKey.Type,
-            VendorLocationLinkModKeyFileName = dto.VendorLocationLinkFormKey?.ModKey.FileName,
-            VendorLocationLinkFormKeyId = dto.VendorLocationLinkFormKey?.Id
+            KeywordModKeyName = dto.Keyword?.ModKey.Name,
+            KeywordModKeyType = dto.Keyword?.ModKey.Type,
+            KeywordModKeyFileName = dto.Keyword?.ModKey.FileName,
+            KeywordFormKeyId = dto.Keyword?.Id,
+            HerdModKeyName = dto.Herd?.ModKey.Name,
+            HerdModKeyType = dto.Herd?.ModKey.Type,
+            HerdModKeyFileName = dto.Herd?.ModKey.FileName,
+            HerdFormKeyId = dto.Herd?.Id,
+            VoiceTypeModKeyName = dto.VoiceType?.ModKey.Name,
+            VoiceTypeModKeyType = dto.VoiceType?.ModKey.Type,
+            VoiceTypeModKeyFileName = dto.VoiceType?.ModKey.FileName,
+            VoiceTypeFormKeyId = dto.VoiceType?.Id,
+            SharedCrimeFactionListModKeyName = dto.SharedCrimeFactionList?.ModKey.Name,
+            SharedCrimeFactionListModKeyType = dto.SharedCrimeFactionList?.ModKey.Type,
+            SharedCrimeFactionListModKeyFileName = dto.SharedCrimeFactionList?.ModKey.FileName,
+            SharedCrimeFactionListFormKeyId = dto.SharedCrimeFactionList?.Id,
+            VendorBuySellListModKeyName = dto.VendorBuySellList?.ModKey.Name,
+            VendorBuySellListModKeyType = dto.VendorBuySellList?.ModKey.Type,
+            VendorBuySellListModKeyFileName = dto.VendorBuySellList?.ModKey.FileName,
+            VendorBuySellListFormKeyId = dto.VendorBuySellList?.Id,
+            MerchantContainerModKeyName = dto.MerchantContainer?.ModKey.Name,
+            MerchantContainerModKeyType = dto.MerchantContainer?.ModKey.Type,
+            MerchantContainerModKeyFileName = dto.MerchantContainer?.ModKey.FileName,
+            MerchantContainerFormKeyId = dto.MerchantContainer?.Id,
+            ExteriorJailMarkerModKeyName = dto.ExteriorJailMarker?.ModKey.Name,
+            ExteriorJailMarkerModKeyType = dto.ExteriorJailMarker?.ModKey.Type,
+            ExteriorJailMarkerModKeyFileName = dto.ExteriorJailMarker?.ModKey.FileName,
+            ExteriorJailMarkerFormKeyId = dto.ExteriorJailMarker?.Id,
+            FollowerWaitMarkerModKeyName = dto.FollowerWaitMarker?.ModKey.Name,
+            FollowerWaitMarkerModKeyType = dto.FollowerWaitMarker?.ModKey.Type,
+            FollowerWaitMarkerModKeyFileName = dto.FollowerWaitMarker?.ModKey.FileName,
+            FollowerWaitMarkerFormKeyId = dto.FollowerWaitMarker?.Id,
+            StolenGoodsContainerModKeyName = dto.StolenGoodsContainer?.ModKey.Name,
+            StolenGoodsContainerModKeyType = dto.StolenGoodsContainer?.ModKey.Type,
+            StolenGoodsContainerModKeyFileName = dto.StolenGoodsContainer?.ModKey.FileName,
+            StolenGoodsContainerFormKeyId = dto.StolenGoodsContainer?.Id,
+            PlayerInventoryContainerModKeyName = dto.PlayerInventoryContainer?.ModKey.Name,
+            PlayerInventoryContainerModKeyType = dto.PlayerInventoryContainer?.ModKey.Type,
+            PlayerInventoryContainerModKeyFileName = dto.PlayerInventoryContainer?.ModKey.FileName,
+            PlayerInventoryContainerFormKeyId = dto.PlayerInventoryContainer?.Id,
+            JailOutfitModKeyName = dto.JailOutfit?.ModKey.Name,
+            JailOutfitModKeyType = dto.JailOutfit?.ModKey.Type,
+            JailOutfitModKeyFileName = dto.JailOutfit?.ModKey.FileName,
+            JailOutfitFormKeyId = dto.JailOutfit?.Id,
+            CrimeValuesArrest = dto.CrimeValues?.Arrest,
+            CrimeValuesAttackOnSight = dto.CrimeValues?.AttackOnSight,
+            CrimeValuesMurder = dto.CrimeValues?.Murder,
+            CrimeValuesAssault = dto.CrimeValues?.Assault,
+            CrimeValuesTrespass = dto.CrimeValues?.Trespass,
+            CrimeValuesPickpocket = dto.CrimeValues?.Pickpocket,
+            CrimeValuesSteal = dto.CrimeValues?.Steal,
+            CrimeValuesStealMult = dto.CrimeValues?.StealMult,
+            CrimeValuesStealMultiplier = dto.CrimeValues?.StealMultiplier,
+            CrimeValuesEscape = dto.CrimeValues?.Escape,
+            CrimeValuesWerewolf = dto.CrimeValues?.Werewolf,
+            CrimeValuesWerewolfUnused = dto.CrimeValues?.WerewolfUnused,
+            CrimeValuesUnknown = dto.CrimeValues?.Unknown,
+            CrimeValuesPiracy = dto.CrimeValues?.Piracy,
+            CrimeValuesSmuggleMultiplier = dto.CrimeValues?.SmuggleMultiplier,
+            VendorValuesStartHour = dto.VendorValues?.StartHour,
+            VendorValuesEndHour = dto.VendorValues?.EndHour,
+            VendorValuesRadius = dto.VendorValues?.Radius,
+            VendorValuesBuysStolenItems = dto.VendorValues?.BuysStolenItems,
+            VendorValuesBuysNonStolenItems = dto.VendorValues?.BuysNonStolenItems,
+            VendorValuesBuySellEverythingNotInList = dto.VendorValues?.BuySellEverythingNotInList,
+            VendorLocationMutagenObjectType = dto.VendorLocation?.MutagenObjectType,
+            VendorLocationTargetMutagenObjectType = dto.VendorLocation?.Target?.MutagenObjectType,
+            VendorLocationTargetType = dto.VendorLocation?.Target?.Type,
+            VendorLocationTargetLinkModKeyName = dto.VendorLocation?.Target?.Link?.ModKey.Name,
+            VendorLocationTargetLinkModKeyType = dto.VendorLocation?.Target?.Link?.ModKey.Type,
+            VendorLocationTargetLinkModKeyFileName = dto.VendorLocation?.Target?.Link?.ModKey.FileName,
+            VendorLocationTargetLinkFormKeyId = dto.VendorLocation?.Target?.Link?.Id
         };
     }
 
@@ -401,40 +417,24 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
             MajorRecordFlags = 0,
             ImportedAtUTC = record.ImportedAtUTC,
             Version2 = record.Version2,
+            VersionControl = record.VersionControl,
             Name = FromEnglish(record.Name),
             Flags = record.Flags,
             FormationRadius = record.FormationRadius,
-            KeywordFormKey = CreateNullableFormKey(record.KeywordModKeyName, record.KeywordModKeyType, record.KeywordModKeyFileName, record.KeywordFormKeyId),
-            HerdFormKey = CreateNullableFormKey(record.HerdModKeyName, record.HerdModKeyType, record.HerdModKeyFileName, record.HerdFormKeyId),
-            VoiceTypeFormKey = CreateNullableFormKey(record.VoiceTypeModKeyName, record.VoiceTypeModKeyType, record.VoiceTypeModKeyFileName, record.VoiceTypeFormKeyId),
-            SharedCrimeFactionListFormKey = CreateNullableFormKey(record.SharedCrimeFactionListModKeyName, record.SharedCrimeFactionListModKeyType, record.SharedCrimeFactionListModKeyFileName, record.SharedCrimeFactionListFormKeyId),
-            VendorBuySellListFormKey = CreateNullableFormKey(record.VendorBuySellListModKeyName, record.VendorBuySellListModKeyType, record.VendorBuySellListModKeyFileName, record.VendorBuySellListFormKeyId),
-            MerchantContainerFormKey = CreateNullableFormKey(record.MerchantContainerModKeyName, record.MerchantContainerModKeyType, record.MerchantContainerModKeyFileName, record.MerchantContainerFormKeyId),
-            ExteriorJailMarkerFormKey = CreateNullableFormKey(record.ExteriorJailMarkerModKeyName, record.ExteriorJailMarkerModKeyType, record.ExteriorJailMarkerModKeyFileName, record.ExteriorJailMarkerFormKeyId),
-            FollowerWaitMarkerFormKey = CreateNullableFormKey(record.FollowerWaitMarkerModKeyName, record.FollowerWaitMarkerModKeyType, record.FollowerWaitMarkerModKeyFileName, record.FollowerWaitMarkerFormKeyId),
-            StolenGoodsContainerFormKey = CreateNullableFormKey(record.StolenGoodsContainerModKeyName, record.StolenGoodsContainerModKeyType, record.StolenGoodsContainerModKeyFileName, record.StolenGoodsContainerFormKeyId),
-            PlayerInventoryContainerFormKey = CreateNullableFormKey(record.PlayerInventoryContainerModKeyName, record.PlayerInventoryContainerModKeyType, record.PlayerInventoryContainerModKeyFileName, record.PlayerInventoryContainerFormKeyId),
-            JailOutfitFormKey = CreateNullableFormKey(record.JailOutfitModKeyName, record.JailOutfitModKeyType, record.JailOutfitModKeyFileName, record.JailOutfitFormKeyId),
-            CrimeArrest = ToBool(record.CrimeArrest),
-            CrimeAttackOnSight = ToBool(record.CrimeAttackOnSight),
-            CrimeMurder = record.CrimeMurder,
-            CrimeAssault = record.CrimeAssault,
-            CrimeTrespass = record.CrimeTrespass,
-            CrimePickpocket = record.CrimePickpocket,
-            CrimeSteal = record.CrimeSteal,
-            CrimeStealMult = record.CrimeStealMult,
-            CrimeEscape = record.CrimeEscape,
-            CrimeWerewolf = record.CrimeWerewolf,
-            CrimeUnknown = record.CrimeUnknown,
-            VendorStartHour = record.VendorStartHour,
-            VendorEndHour = record.VendorEndHour,
-            VendorRadius = record.VendorRadius,
-            VendorBuysStolenItems = ToBool(record.VendorBuysStolenItems),
-            VendorBuysNonStolenItems = ToBool(record.VendorBuysNonStolenItems),
-            VendorBuySellEverythingNotInList = ToBool(record.VendorBuySellEverythingNotInList),
-            VendorLocationMutagenObjectType = record.VendorLocationMutagenObjectType,
-            VendorLocationType = record.VendorLocationType,
-            VendorLocationLinkFormKey = CreateNullableFormKey(record.VendorLocationLinkModKeyName, record.VendorLocationLinkModKeyType, record.VendorLocationLinkModKeyFileName, record.VendorLocationLinkFormKeyId)
+            Keyword = CreateNullableFormKey(record.KeywordModKeyName, record.KeywordModKeyType, record.KeywordModKeyFileName, record.KeywordFormKeyId),
+            Herd = CreateNullableFormKey(record.HerdModKeyName, record.HerdModKeyType, record.HerdModKeyFileName, record.HerdFormKeyId),
+            VoiceType = CreateNullableFormKey(record.VoiceTypeModKeyName, record.VoiceTypeModKeyType, record.VoiceTypeModKeyFileName, record.VoiceTypeFormKeyId),
+            SharedCrimeFactionList = CreateNullableFormKey(record.SharedCrimeFactionListModKeyName, record.SharedCrimeFactionListModKeyType, record.SharedCrimeFactionListModKeyFileName, record.SharedCrimeFactionListFormKeyId),
+            VendorBuySellList = CreateNullableFormKey(record.VendorBuySellListModKeyName, record.VendorBuySellListModKeyType, record.VendorBuySellListModKeyFileName, record.VendorBuySellListFormKeyId),
+            MerchantContainer = CreateNullableFormKey(record.MerchantContainerModKeyName, record.MerchantContainerModKeyType, record.MerchantContainerModKeyFileName, record.MerchantContainerFormKeyId),
+            ExteriorJailMarker = CreateNullableFormKey(record.ExteriorJailMarkerModKeyName, record.ExteriorJailMarkerModKeyType, record.ExteriorJailMarkerModKeyFileName, record.ExteriorJailMarkerFormKeyId),
+            FollowerWaitMarker = CreateNullableFormKey(record.FollowerWaitMarkerModKeyName, record.FollowerWaitMarkerModKeyType, record.FollowerWaitMarkerModKeyFileName, record.FollowerWaitMarkerFormKeyId),
+            StolenGoodsContainer = CreateNullableFormKey(record.StolenGoodsContainerModKeyName, record.StolenGoodsContainerModKeyType, record.StolenGoodsContainerModKeyFileName, record.StolenGoodsContainerFormKeyId),
+            PlayerInventoryContainer = CreateNullableFormKey(record.PlayerInventoryContainerModKeyName, record.PlayerInventoryContainerModKeyType, record.PlayerInventoryContainerModKeyFileName, record.PlayerInventoryContainerFormKeyId),
+            JailOutfit = CreateNullableFormKey(record.JailOutfitModKeyName, record.JailOutfitModKeyType, record.JailOutfitModKeyFileName, record.JailOutfitFormKeyId),
+            CrimeValues = CreateCrimeValues(record),
+            VendorValues = CreateVendorValues(record),
+            VendorLocation = CreateVendorLocation(record)
         };
         ApplyCommonFields(dto, record, game);
         return dto;
@@ -448,7 +448,7 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
             ModKey = CreateModKey(row.ModKeyName, row.ModKeyType, row.ModKeyFileName),
             FormKey = CreateFormKey(row.FormKeyModKeyName, row.FormKeyModKeyType, row.FormKeyModKeyFileName, row.FormKeyId),
             RelationIndex = row.RelationIndex,
-            TargetFormKey = CreateNullableFormKey(row.TargetModKeyName, row.TargetModKeyType, row.TargetModKeyFileName, row.TargetFormKeyId),
+            Target = CreateNullableFormKey(row.TargetModKeyName, row.TargetModKeyType, row.TargetModKeyFileName, row.TargetFormKeyId),
             Reaction = row.Reaction,
             ImportedAtUTC = row.ImportedAtUTC
         };
@@ -462,10 +462,106 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
             ModKey = CreateModKey(row.ModKeyName, row.ModKeyType, row.ModKeyFileName),
             FormKey = CreateFormKey(row.FormKeyModKeyName, row.FormKeyModKeyType, row.FormKeyModKeyFileName, row.FormKeyId),
             RankIndex = row.RankIndex,
-            RankNumber = row.RankNumber,
-            MaleTitle = FromEnglish(row.MaleTitle),
-            FemaleTitle = FromEnglish(row.FemaleTitle),
+            Number = row.Number,
+            Title = new FactionRankDTO.TitleDTO
+            {
+                Male = FromEnglish(row.TitleMale),
+                Female = FromEnglish(row.TitleFemale)
+            },
             ImportedAtUTC = row.ImportedAtUTC
+        };
+    }
+
+    private static FactionDTO.CrimeValuesDTO? CreateCrimeValues(FactionRow record)
+    {
+        if (record.CrimeValuesArrest is null &&
+            record.CrimeValuesAttackOnSight is null &&
+            record.CrimeValuesMurder is null &&
+            record.CrimeValuesAssault is null &&
+            record.CrimeValuesTrespass is null &&
+            record.CrimeValuesPickpocket is null &&
+            record.CrimeValuesSteal is null &&
+            record.CrimeValuesStealMult is null &&
+            record.CrimeValuesStealMultiplier is null &&
+            record.CrimeValuesEscape is null &&
+            record.CrimeValuesWerewolf is null &&
+            record.CrimeValuesWerewolfUnused is null &&
+            record.CrimeValuesUnknown is null &&
+            record.CrimeValuesPiracy is null &&
+            record.CrimeValuesSmuggleMultiplier is null)
+        {
+            return null;
+        }
+
+        return new FactionDTO.CrimeValuesDTO
+        {
+            Arrest = ToBool(record.CrimeValuesArrest),
+            AttackOnSight = ToBool(record.CrimeValuesAttackOnSight),
+            Murder = record.CrimeValuesMurder,
+            Assault = record.CrimeValuesAssault,
+            Trespass = record.CrimeValuesTrespass,
+            Pickpocket = record.CrimeValuesPickpocket,
+            Steal = record.CrimeValuesSteal,
+            StealMult = record.CrimeValuesStealMult,
+            StealMultiplier = record.CrimeValuesStealMultiplier,
+            Escape = record.CrimeValuesEscape,
+            Werewolf = record.CrimeValuesWerewolf,
+            WerewolfUnused = record.CrimeValuesWerewolfUnused,
+            Unknown = record.CrimeValuesUnknown,
+            Piracy = record.CrimeValuesPiracy,
+            SmuggleMultiplier = record.CrimeValuesSmuggleMultiplier
+        };
+    }
+
+    private static FactionDTO.VendorValuesDTO? CreateVendorValues(FactionRow record)
+    {
+        if (record.VendorValuesStartHour is null &&
+            record.VendorValuesEndHour is null &&
+            record.VendorValuesRadius is null &&
+            record.VendorValuesBuysStolenItems is null &&
+            record.VendorValuesBuysNonStolenItems is null &&
+            record.VendorValuesBuySellEverythingNotInList is null)
+        {
+            return null;
+        }
+
+        return new FactionDTO.VendorValuesDTO
+        {
+            StartHour = record.VendorValuesStartHour,
+            EndHour = record.VendorValuesEndHour,
+            Radius = record.VendorValuesRadius,
+            BuysStolenItems = ToBool(record.VendorValuesBuysStolenItems),
+            BuysNonStolenItems = ToBool(record.VendorValuesBuysNonStolenItems),
+            BuySellEverythingNotInList = ToBool(record.VendorValuesBuySellEverythingNotInList)
+        };
+    }
+
+    private static FactionDTO.VendorLocationDTO? CreateVendorLocation(FactionRow record)
+    {
+        var targetLink = CreateNullableFormKey(
+            record.VendorLocationTargetLinkModKeyName,
+            record.VendorLocationTargetLinkModKeyType,
+            record.VendorLocationTargetLinkModKeyFileName,
+            record.VendorLocationTargetLinkFormKeyId);
+        if (record.VendorLocationMutagenObjectType is null &&
+            record.VendorLocationTargetMutagenObjectType is null &&
+            record.VendorLocationTargetType is null &&
+            targetLink is null)
+        {
+            return null;
+        }
+
+        return new FactionDTO.VendorLocationDTO
+        {
+            MutagenObjectType = record.VendorLocationMutagenObjectType,
+            Target = record.VendorLocationTargetMutagenObjectType is null && record.VendorLocationTargetType is null && targetLink is null
+                ? null
+                : new FactionDTO.VendorLocationTargetDTO
+                {
+                    MutagenObjectType = record.VendorLocationTargetMutagenObjectType,
+                    Type = record.VendorLocationTargetType,
+                    Link = targetLink
+                }
         };
     }
 
@@ -494,6 +590,7 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
     private sealed class FactionRow : RecordRow
     {
         public int? Version2 { get; set; }
+        public int? VersionControl { get; set; }
         public string? Name { get; set; }
         public string? Flags { get; set; }
         public double? FormationRadius { get; set; }
@@ -541,29 +638,34 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
         public int? JailOutfitModKeyType { get; set; }
         public string? JailOutfitModKeyFileName { get; set; }
         public long? JailOutfitFormKeyId { get; set; }
-        public int? CrimeArrest { get; set; }
-        public int? CrimeAttackOnSight { get; set; }
-        public int? CrimeMurder { get; set; }
-        public int? CrimeAssault { get; set; }
-        public int? CrimeTrespass { get; set; }
-        public int? CrimePickpocket { get; set; }
-        public int? CrimeSteal { get; set; }
-        public double? CrimeStealMult { get; set; }
-        public int? CrimeEscape { get; set; }
-        public int? CrimeWerewolf { get; set; }
-        public int? CrimeUnknown { get; set; }
-        public double? VendorStartHour { get; set; }
-        public double? VendorEndHour { get; set; }
-        public int? VendorRadius { get; set; }
-        public int? VendorBuysStolenItems { get; set; }
-        public int? VendorBuysNonStolenItems { get; set; }
-        public int? VendorBuySellEverythingNotInList { get; set; }
+        public int? CrimeValuesArrest { get; set; }
+        public int? CrimeValuesAttackOnSight { get; set; }
+        public int? CrimeValuesMurder { get; set; }
+        public int? CrimeValuesAssault { get; set; }
+        public int? CrimeValuesTrespass { get; set; }
+        public int? CrimeValuesPickpocket { get; set; }
+        public int? CrimeValuesSteal { get; set; }
+        public double? CrimeValuesStealMult { get; set; }
+        public double? CrimeValuesStealMultiplier { get; set; }
+        public int? CrimeValuesEscape { get; set; }
+        public int? CrimeValuesWerewolf { get; set; }
+        public int? CrimeValuesWerewolfUnused { get; set; }
+        public int? CrimeValuesUnknown { get; set; }
+        public int? CrimeValuesPiracy { get; set; }
+        public double? CrimeValuesSmuggleMultiplier { get; set; }
+        public double? VendorValuesStartHour { get; set; }
+        public double? VendorValuesEndHour { get; set; }
+        public int? VendorValuesRadius { get; set; }
+        public int? VendorValuesBuysStolenItems { get; set; }
+        public int? VendorValuesBuysNonStolenItems { get; set; }
+        public int? VendorValuesBuySellEverythingNotInList { get; set; }
         public string? VendorLocationMutagenObjectType { get; set; }
-        public string? VendorLocationType { get; set; }
-        public string? VendorLocationLinkModKeyName { get; set; }
-        public int? VendorLocationLinkModKeyType { get; set; }
-        public string? VendorLocationLinkModKeyFileName { get; set; }
-        public long? VendorLocationLinkFormKeyId { get; set; }
+        public string? VendorLocationTargetMutagenObjectType { get; set; }
+        public string? VendorLocationTargetType { get; set; }
+        public string? VendorLocationTargetLinkModKeyName { get; set; }
+        public int? VendorLocationTargetLinkModKeyType { get; set; }
+        public string? VendorLocationTargetLinkModKeyFileName { get; set; }
+        public long? VendorLocationTargetLinkFormKeyId { get; set; }
     }
 
     private sealed class FactionRelationRow
@@ -594,9 +696,9 @@ public class FactionRepository : TypedRecordRepositoryBase, IFactionRepository
         public string FormKeyModKeyFileName { get; set; } = string.Empty;
         public long FormKeyId { get; set; }
         public int RankIndex { get; set; }
-        public int? RankNumber { get; set; }
-        public string? MaleTitle { get; set; }
-        public string? FemaleTitle { get; set; }
+        public int? Number { get; set; }
+        public string? TitleMale { get; set; }
+        public string? TitleFemale { get; set; }
         public DateTime ImportedAtUTC { get; set; }
     }
 

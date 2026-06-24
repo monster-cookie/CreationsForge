@@ -41,6 +41,10 @@ public static class ValidationSpecValidator
                     RequireDtoPath(rule, ruleName, diagnostics);
                     ValidateDuplicateFieldMapping(rule, ruleName, fieldMappings, diagnostics);
                     break;
+                case ValidationRuleKind.OptionalField:
+                    RequireSpriggitPath(rule, ruleName, diagnostics);
+                    RequireDtoPath(rule, ruleName, diagnostics);
+                    break;
                 case ValidationRuleKind.FormKeyObjectField:
                     RequireSpriggitPath(rule, ruleName, diagnostics);
                     RequireDtoPath(rule, ruleName, diagnostics);
@@ -89,6 +93,10 @@ public static class ValidationSpecValidator
                     RequireSpriggitPath(rule, ruleName, diagnostics);
                     break;
                 case ValidationRuleKind.IgnoreSpriggit:
+                    RequireSpriggitPath(rule, ruleName, diagnostics);
+                    RequireReason(rule, ruleName, diagnostics);
+                    break;
+                case ValidationRuleKind.IgnoreSpriggitPrefix:
                     RequireSpriggitPath(rule, ruleName, diagnostics);
                     RequireReason(rule, ruleName, diagnostics);
                     break;

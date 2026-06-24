@@ -1,5 +1,4 @@
 using System.Globalization;
-using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
@@ -15,19 +14,6 @@ public static class Helpers
     private static readonly Lazy<SpriggitEnvironmentConfiguration> SpriggitEnvironment = new(() => EnvironmentLoader.Load());
     private static readonly GameRecordSetProvider RecordSetProvider = new();
     private static readonly DtoFlattener DtoFlattener = new();
-
-    private static readonly IReadOnlyDictionary<string, string> GlobalSpriggitToDtoFields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["FormKey"] = "FormKey",
-        ["EditorID"] = "EditorID",
-        ["MajorRecordFlagsRaw"] = "MajorRecordFlags",
-        ["MutagenObjectType"] = "MutagenObjectType",
-        ["MajorFlags"] = "MajorFlags",
-        ["FormVersion"] = "FormVersion",
-        ["Version2"] = "Version2",
-        ["VersionControl"] = "VersionControl",
-        ["Data"] = "Data"
-    };
 
     private static readonly IReadOnlyDictionary<string, string> SpriggitToDtoFields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
     {
@@ -52,11 +38,6 @@ public static class Helpers
     public static TSpriggit GetSpriggit<TSpriggit>(SupportedGame game, RecordTypeData recordType, string sampleName)
         where TSpriggit : class
     {
-        if (typeof(TSpriggit) == typeof(GlobalSpriggitDTO))
-        {
-            return (TSpriggit)(object)GetGlobalSpriggit(game, recordType, sampleName);
-        }
-
         if (typeof(TSpriggit) == typeof(SpriggitRecordDTO))
         {
             return (TSpriggit)(object)GetSpriggitRecord(game, recordType, sampleName);
@@ -77,27 +58,6 @@ public static class Helpers
         return typedRecord;
     }
 
-    private static GlobalSpriggitDTO GetGlobalSpriggit(SupportedGame game, RecordTypeData recordType, string sampleName)
-    {
-        if (recordType.RecordID != RecordTypeCatalog.Global.RecordID)
-        {
-            throw new InvalidOperationException("This Spriggit helper currently supports Global records.");
-        }
-
-        var path = FindSpriggitFile(game, "Globals", sampleName);
-        var document = SpriggitYamlDocument.Load(path);
-        var fields = document.FlattenScalars();
-
-        return new GlobalSpriggitDTO
-        {
-            FormKey = GetRequiredString(fields, "FormKey", path),
-            MajorRecordFlagsRaw = GetOptionalInt(fields, "MajorRecordFlagsRaw"),
-            FormVersion = GetOptionalInt(fields, "FormVersion"),
-            Data = GetOptionalDouble(fields, "Data"),
-            Fields = fields
-        };
-    }
-
     private static SpriggitRecordDTO GetSpriggitRecord(SupportedGame game, RecordTypeData recordType, string sampleName)
     {
         var path = FindSpriggitFile(game, recordType.TableName, sampleName);
@@ -111,33 +71,18 @@ public static class Helpers
         };
     }
 
-    public static string FormatFormKey(FormKeyDTO formKey)
-    {
-        return formKey.Id.ToString("X6", CultureInfo.InvariantCulture) + ":" + formKey.ModKey.FileName;
-    }
-
-    public static IReadOnlyList<string> GetUnmatchedSpriggitFields(GlobalSpriggitDTO spriggit, GlobalDTO dto)
-    {
-        _ = dto;
-        var unmatchedFields = new List<string>();
-
-        foreach (var field in spriggit.Fields.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase))
-        {
-            if (!GlobalSpriggitToDtoFields.ContainsKey(field.Key) &&
-                !IsGlobalMetadataFieldOutsideRepositoryReadback(field.Key))
-            {
-                unmatchedFields.Add(
-                    "No matching CreationsForge reader DTO data was found for Spriggit field '" + field.Key + "'." +
-                    System.Environment.NewLine +
-                    "Spriggit value: " + field.Value +
-                    System.Environment.NewLine +
-                    "Record: " + spriggit.FormKey);
-            }
-        }
-
-        return unmatchedFields;
-    }
-
+    /// <summary>
+    /// Finds Spriggit YAML fields that were not matched by the flattened CreationsForge DTO.
+    /// This is an intentional coverage backstop for spec-driven validation tests, used to catch
+    /// newly observed Spriggit fields that do not yet have DTO/import/readback coverage.
+    /// </summary>
+    /// <typeparam name="TRecord">The CreationsForge record DTO type being compared.</typeparam>
+    /// <param name="spriggit">The flattened Spriggit YAML record for the validation sample.</param>
+    /// <param name="dto">The CreationsForge DTO imported/read back for the same record.</param>
+    /// <returns>
+    /// Diagnostic messages for unmatched Spriggit fields. An empty list means the backstop found
+    /// no Spriggit-side fields missing from the DTO comparison surface.
+    /// </returns>
     public static IReadOnlyList<string> GetUnmatchedSpriggitFields<TRecord>(SpriggitRecordDTO spriggit, TRecord dto)
         where TRecord : RecordDTO
     {
@@ -160,40 +105,18 @@ public static class Helpers
         return unmatchedFields;
     }
 
-    public static IReadOnlyList<string> GetUnmatchedDtoFields(GlobalSpriggitDTO spriggit, GlobalDTO dto)
-    {
-        var unmatchedFields = new List<string>();
-        var dtoFields = GetDTOFields(dto);
-        var matchedDtoFields = new HashSet<string>(GlobalSpriggitToDtoFields.Values, StringComparer.OrdinalIgnoreCase);
-
-        foreach (var field in dtoFields.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase))
-        {
-            if (string.Equals(field.Key, "EditorID", StringComparison.OrdinalIgnoreCase) &&
-                string.IsNullOrWhiteSpace(field.Value) &&
-                !spriggit.Fields.ContainsKey(field.Key))
-            {
-                continue;
-            }
-
-            if (string.Equals(field.Key, "ScriptingAdapters.Count", StringComparison.OrdinalIgnoreCase) && IsZero(field.Value))
-            {
-                continue;
-            }
-
-            if (!matchedDtoFields.Contains(field.Key))
-            {
-                unmatchedFields.Add(
-                    "No matching Spriggit field was found for CreationsForge reader DTO field '" + field.Key + "'." +
-                    System.Environment.NewLine +
-                    "DTO value: " + field.Value +
-                    System.Environment.NewLine +
-                    "Record: " + spriggit.FormKey);
-            }
-        }
-
-        return unmatchedFields;
-    }
-
+    /// <summary>
+    /// Finds flattened CreationsForge DTO fields that were not matched by the Spriggit YAML record.
+    /// This is an intentional coverage backstop for spec-driven validation tests, used to catch
+    /// DTO/import/readback fields that are not represented by the Spriggit comparison surface.
+    /// </summary>
+    /// <typeparam name="TRecord">The CreationsForge record DTO type being compared.</typeparam>
+    /// <param name="spriggit">The flattened Spriggit YAML record for the validation sample.</param>
+    /// <param name="dto">The CreationsForge DTO imported/read back for the same record.</param>
+    /// <returns>
+    /// Diagnostic messages for unmatched DTO fields. An empty list means the backstop found no
+    /// DTO-side fields missing from the Spriggit comparison surface.
+    /// </returns>
     public static IReadOnlyList<string> GetUnmatchedDtoFields<TRecord>(SpriggitRecordDTO spriggit, TRecord dto)
         where TRecord : RecordDTO
     {
@@ -216,7 +139,7 @@ public static class Helpers
         return unmatchedFields;
     }
 
-    public static IReadOnlyDictionary<string, string> GetDTOFields<TRecord>(TRecord dto)
+    private static IReadOnlyDictionary<string, string> GetDTOFields<TRecord>(TRecord dto)
         where TRecord : RecordDTO
     {
         var fields = new Dictionary<string, string>(DtoFlattener.Flatten(dto), StringComparer.OrdinalIgnoreCase);
@@ -635,24 +558,12 @@ public static class Helpers
 
     private static bool TryGetRawPayloadLeafField(string path, out string fieldName)
     {
-        if (string.Equals(path, "Model.Data", StringComparison.OrdinalIgnoreCase))
-        {
-            fieldName = "Model.Data";
-            return true;
-        }
-
-        if (path.StartsWith("VirtualMachineAdapter.ScriptFragments", StringComparison.OrdinalIgnoreCase))
-        {
-            fieldName = "VirtualMachineAdapter.ScriptFragments";
-            return true;
-        }
-
         var separatorIndex = path.LastIndexOf('.');
         fieldName = separatorIndex < 0
             ? path
             : path[(separatorIndex + 1)..];
 
-        return fieldName is "ANAM" or "BNAM" or "CNAM" or "REFL" or "NavmeshGeometry";
+        return fieldName is "REFL";
     }
 
     private static void AddSpriggitScriptingAdapterAliases(IDictionary<string, string> fields)
@@ -834,16 +745,6 @@ public static class Helpers
         }
 
         if (IsSpriggitComponentRawPayloadBackedByDtoRawPayload(fieldName, spriggitFields, dtoFields))
-        {
-            return true;
-        }
-
-        if (IsSpriggitRawPayloadPathBackedByDtoRawPayload(fieldName, dtoFields, "NavmeshGeometry"))
-        {
-            return true;
-        }
-
-        if (IsSpriggitRawPayloadPathBackedByDtoRawPayload(fieldName, dtoFields, "VirtualMachineAdapter.ScriptFragments"))
         {
             return true;
         }
@@ -1753,8 +1654,7 @@ public static class Helpers
                        int.TryParse(payloadIndexValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var payloadIndex) &&
                        payloadIndex == componentIndex &&
                        dtoFields.TryGetValue(payloadPath + ".SourcePath", out var sourcePath) &&
-                       (sourcePath.StartsWith("Components.", StringComparison.OrdinalIgnoreCase) ||
-                        sourcePath.StartsWith("BaseFormComponents.", StringComparison.OrdinalIgnoreCase)) &&
+                       sourcePath.StartsWith("Components.", StringComparison.OrdinalIgnoreCase) &&
                        (IsSameTypeName(spriggitTypeName, field.Value) ||
                         sourcePath.Contains("." + spriggitTypeName + ".", StringComparison.Ordinal));
             });
@@ -1806,8 +1706,7 @@ public static class Helpers
 
     private static bool IsComponentRawPayloadSourcePath(string sourcePath, string componentFieldName)
     {
-        return (sourcePath.StartsWith("Components.", StringComparison.OrdinalIgnoreCase) ||
-                sourcePath.StartsWith("BaseFormComponents.", StringComparison.OrdinalIgnoreCase)) &&
+        return sourcePath.StartsWith("Components.", StringComparison.OrdinalIgnoreCase) &&
                sourcePath.EndsWith("." + componentFieldName, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -2714,13 +2613,7 @@ public static class Helpers
         IReadOnlyDictionary<string, string> spriggitFields,
         IReadOnlyDictionary<string, string> dtoFields)
     {
-        if (fieldName.StartsWith("VirtualMachineAdapter.ScriptFragments", StringComparison.OrdinalIgnoreCase))
-        {
-            return HasSpriggitRawPayloadField(spriggitFields, "VirtualMachineAdapter.ScriptFragments");
-        }
-
-        if (string.Equals(fieldName, "REFL", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(fieldName, "NavmeshGeometry", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(fieldName, "REFL", StringComparison.OrdinalIgnoreCase))
         {
             return HasSpriggitRawPayloadField(spriggitFields, fieldName);
         }
@@ -3463,17 +3356,4 @@ public static class Helpers
         return value;
     }
 
-    private static int? GetOptionalInt(IReadOnlyDictionary<string, string> fields, string fieldName)
-    {
-        return fields.TryGetValue(fieldName, out var value)
-            ? int.Parse(value, CultureInfo.InvariantCulture)
-            : null;
-    }
-
-    private static double? GetOptionalDouble(IReadOnlyDictionary<string, string> fields, string fieldName)
-    {
-        return fields.TryGetValue(fieldName, out var value)
-            ? double.Parse(value, CultureInfo.InvariantCulture)
-            : null;
-    }
 }

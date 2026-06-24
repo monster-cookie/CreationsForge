@@ -30,7 +30,8 @@ public class ConditionFormRepository : TypedRecordRepositoryBase, IConditionForm
                 game,
                 formKey,
                 [
-                    SelectColumn("Version2")
+                    SelectColumn("Version2"),
+                    SelectColumn("VersionControl")
                 ])
             .Select(record => ToDTO(record, game))
             .ToList();
@@ -53,10 +54,10 @@ public class ConditionFormRepository : TypedRecordRepositoryBase, IConditionForm
             """
             INSERT OR REPLACE INTO ConditionForms (
                 Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Version2)
+                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Version2, VersionControl)
             VALUES (
                 @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Version2);
+                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Version2, @VersionControl);
             """,
             new
             {
@@ -72,7 +73,8 @@ public class ConditionFormRepository : TypedRecordRepositoryBase, IConditionForm
                 dto.FormVersion,
                 dto.MajorRecordFlags,
                 dto.ImportedAtUTC,
-                dto.Version2
+                dto.Version2,
+                dto.VersionControl
             });
     }
 
@@ -87,7 +89,8 @@ public class ConditionFormRepository : TypedRecordRepositoryBase, IConditionForm
             FormVersion = 0,
             MajorRecordFlags = 0,
             ImportedAtUTC = record.ImportedAtUTC,
-            Version2 = record.Version2
+            Version2 = record.Version2,
+            VersionControl = record.VersionControl
         };
         ApplyCommonFields(dto, record, game);
         return dto;
@@ -103,6 +106,8 @@ public class ConditionFormRepository : TypedRecordRepositoryBase, IConditionForm
     private sealed class ConditionFormRow : RecordRow
     {
         public int? Version2 { get; set; }
+
+        public int? VersionControl { get; set; }
     }
 
 }

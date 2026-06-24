@@ -17,11 +17,16 @@ public class FactionRankDTO
 
     public int RankIndex { get; set; }
 
-    public int? RankNumber { get; set; }
+    public int? Number { get; set; }
 
-    public TranslatedStringDTO? MaleTitle { get; set; }
+    public TitleDTO? Title { get; set; }
 
-    public TranslatedStringDTO? FemaleTitle { get; set; }
+    public class TitleDTO
+    {
+        public TranslatedStringDTO? Male { get; set; }
+
+        public TranslatedStringDTO? Female { get; set; }
+    }
 
     public DateTime ImportedAtUTC { get; set; }
 }

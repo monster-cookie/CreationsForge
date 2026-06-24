@@ -17,7 +17,7 @@ public class FactionRelationDTO
 
     public int RelationIndex { get; set; }
 
-    public FormKeyDTO? TargetFormKey { get; set; }
+    public FormKeyDTO? Target { get; set; }
 
     public string? Reaction { get; set; }
 

@@ -41,10 +41,20 @@ public enum ValidationValueNormalizer
     Color,
 
     /// <summary>
+    /// Compare a decimal Spriggit FormID against the DTO's normalized hexadecimal FormKey string.
+    /// </summary>
+    DecimalFormKeyId,
+
+    /// <summary>
     /// Compare numeric values using a six-decimal invariant representation for fields that were previously asserted
     /// with floating-point tolerance.
     /// </summary>
     DecimalNumber,
+
+    /// <summary>
+    /// Compare single-precision Mutagen readback values against Spriggit decimal scalars.
+    /// </summary>
+    FloatNumber,
 
     /// <summary>
     /// Compare structured JSON-like payloads when Spriggit folded YAML scalar formatting differs from DTO formatting.

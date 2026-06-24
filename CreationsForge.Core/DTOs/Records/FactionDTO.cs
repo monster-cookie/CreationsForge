@@ -11,67 +11,33 @@ public class FactionDTO : RecordDTO, IKeywords, IHasComponentsDTO, IHasCondition
 
     public double? FormationRadius { get; set; }
 
-    public FormKeyDTO? KeywordFormKey { get; set; }
+    public FormKeyDTO? Keyword { get; set; }
 
-    public FormKeyDTO? HerdFormKey { get; set; }
+    public FormKeyDTO? Herd { get; set; }
 
-    public FormKeyDTO? VoiceTypeFormKey { get; set; }
+    public FormKeyDTO? VoiceType { get; set; }
 
-    public FormKeyDTO? SharedCrimeFactionListFormKey { get; set; }
+    public FormKeyDTO? SharedCrimeFactionList { get; set; }
 
-    public FormKeyDTO? VendorBuySellListFormKey { get; set; }
+    public FormKeyDTO? VendorBuySellList { get; set; }
 
-    public FormKeyDTO? MerchantContainerFormKey { get; set; }
+    public FormKeyDTO? MerchantContainer { get; set; }
 
-    public FormKeyDTO? ExteriorJailMarkerFormKey { get; set; }
+    public FormKeyDTO? ExteriorJailMarker { get; set; }
 
-    public FormKeyDTO? FollowerWaitMarkerFormKey { get; set; }
+    public FormKeyDTO? FollowerWaitMarker { get; set; }
 
-    public FormKeyDTO? StolenGoodsContainerFormKey { get; set; }
+    public FormKeyDTO? StolenGoodsContainer { get; set; }
 
-    public FormKeyDTO? PlayerInventoryContainerFormKey { get; set; }
+    public FormKeyDTO? PlayerInventoryContainer { get; set; }
 
-    public FormKeyDTO? JailOutfitFormKey { get; set; }
+    public FormKeyDTO? JailOutfit { get; set; }
 
-    public bool? CrimeArrest { get; set; }
+    public CrimeValuesDTO? CrimeValues { get; set; }
 
-    public bool? CrimeAttackOnSight { get; set; }
+    public VendorValuesDTO? VendorValues { get; set; }
 
-    public int? CrimeMurder { get; set; }
-
-    public int? CrimeAssault { get; set; }
-
-    public int? CrimeTrespass { get; set; }
-
-    public int? CrimePickpocket { get; set; }
-
-    public int? CrimeSteal { get; set; }
-
-    public double? CrimeStealMult { get; set; }
-
-    public int? CrimeEscape { get; set; }
-
-    public int? CrimeWerewolf { get; set; }
-
-    public int? CrimeUnknown { get; set; }
-
-    public double? VendorStartHour { get; set; }
-
-    public double? VendorEndHour { get; set; }
-
-    public int? VendorRadius { get; set; }
-
-    public bool? VendorBuysStolenItems { get; set; }
-
-    public bool? VendorBuysNonStolenItems { get; set; }
-
-    public bool? VendorBuySellEverythingNotInList { get; set; }
-
-    public string? VendorLocationMutagenObjectType { get; set; }
-
-    public string? VendorLocationType { get; set; }
-
-    public FormKeyDTO? VendorLocationLinkFormKey { get; set; }
+    public VendorLocationDTO? VendorLocation { get; set; }
 
     public IList<FactionRelationDTO> Relations { get; set; } = new List<FactionRelationDTO>();
 
@@ -82,4 +48,68 @@ public class FactionDTO : RecordDTO, IKeywords, IHasComponentsDTO, IHasCondition
     public IList<RecordComponentDTO> Components { get; set; } = new List<RecordComponentDTO>();
 
     public IList<KeywordMappingDTO> Keywords { get; set; } = new List<KeywordMappingDTO>();
+
+    public class CrimeValuesDTO
+    {
+        public bool? Arrest { get; set; }
+
+        public bool? AttackOnSight { get; set; }
+
+        public int? Murder { get; set; }
+
+        public int? Assault { get; set; }
+
+        public int? Trespass { get; set; }
+
+        public int? Pickpocket { get; set; }
+
+        public int? Steal { get; set; }
+
+        public double? StealMult { get; set; }
+
+        public double? StealMultiplier { get; set; }
+
+        public int? Escape { get; set; }
+
+        public int? Werewolf { get; set; }
+
+        public int? WerewolfUnused { get; set; }
+
+        public int? Unknown { get; set; }
+
+        public int? Piracy { get; set; }
+
+        public double? SmuggleMultiplier { get; set; }
+    }
+
+    public class VendorValuesDTO
+    {
+        public double? StartHour { get; set; }
+
+        public double? EndHour { get; set; }
+
+        public int? Radius { get; set; }
+
+        public bool? BuysStolenItems { get; set; }
+
+        public bool? BuysNonStolenItems { get; set; }
+
+        public bool? BuySellEverythingNotInList { get; set; }
+    }
+
+    public class VendorLocationDTO
+    {
+        public string? MutagenObjectType { get; set; }
+
+        public VendorLocationTargetDTO? Target { get; set; }
+    }
+
+    public class VendorLocationTargetDTO
+    {
+        public string? MutagenObjectType { get; set; }
+
+        public string? Type { get; set; }
+
+        public FormKeyDTO? Link { get; set; }
+    }
 }

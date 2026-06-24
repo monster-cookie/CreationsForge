@@ -3,7 +3,7 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class NPCDTO : RecordDTO, IHasScriptingAdaptersDTO, IKeywords
+public class NPCDTO : RecordDTO, IHasScriptingAdaptersDTO, IKeywords, ISounds
 {
     public TranslatedStringDTO? Name { get; set; }
 
@@ -45,7 +45,39 @@ public class NPCDTO : RecordDTO, IHasScriptingAdaptersDTO, IKeywords
 
     public FormKeyDTO? CrimeFactionFormKey { get; set; }
 
+    public string? Template { get; set; }
+
+    public string? DefaultTemplate { get; set; }
+
+    public string? TemplateActors { get; set; }
+
+    public string? WornArmor { get; set; }
+
+    public string? FaceMorph { get; set; }
+
+    public string? FaceParts { get; set; }
+
+    public string? HeadParts { get; set; }
+
+    public string? HeadTexture { get; set; }
+
+    public string? SleepingOutfit { get; set; }
+
+    public string? TintLayers { get; set; }
+
+    public string? Tints { get; set; }
+
+    public string? SpaceOutfit { get; set; }
+
+    public string? BodyMorphRegionValues { get; set; }
+
+    public string? ObjectTemplates { get; set; }
+
+    public string? AIData { get; set; }
+
     public IList<KeywordMappingDTO> Keywords { get; set; } = new List<KeywordMappingDTO>();
+
+    public IList<SoundMappingDTO> Sounds { get; set; } = new List<SoundMappingDTO>();
 
     public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 }

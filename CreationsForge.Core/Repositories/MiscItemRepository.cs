@@ -12,7 +12,6 @@ public class MiscItemRepository : TypedRecordRepositoryBase, IMiscItemRepository
     private readonly IKeywordMappingRepository KeywordMappingRepository;
     private readonly ISoundMappingRepository SoundMappingRepository;
     private readonly IScriptingAdapterRepository ScriptingAdapterRepository;
-    private readonly IRawRecordPayloadRepository RawRecordPayloadRepository;
 
     public MiscItemRepository(
         IDatabase database,
@@ -21,8 +20,7 @@ public class MiscItemRepository : TypedRecordRepositoryBase, IMiscItemRepository
         IModelRepository modelRepository,
         IKeywordMappingRepository keywordMappingRepository,
         ISoundMappingRepository soundMappingRepository,
-        IScriptingAdapterRepository scriptingAdapterRepository,
-        IRawRecordPayloadRepository rawRecordPayloadRepository)
+        IScriptingAdapterRepository scriptingAdapterRepository)
         : base(database, recordInstanceRepository)
     {
         RecordLocalizedStringRepository = recordLocalizedStringRepository;
@@ -30,7 +28,6 @@ public class MiscItemRepository : TypedRecordRepositoryBase, IMiscItemRepository
         KeywordMappingRepository = keywordMappingRepository;
         SoundMappingRepository = soundMappingRepository;
         ScriptingAdapterRepository = scriptingAdapterRepository;
-        RawRecordPayloadRepository = rawRecordPayloadRepository;
     }
 
     public override string RecordType => RecordTypeCatalog.MiscItem.RecordID;
@@ -73,7 +70,6 @@ public class MiscItemRepository : TypedRecordRepositoryBase, IMiscItemRepository
         var keywords = KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.MiscItem.RecordID, formKey);
         var sounds = SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.MiscItem.RecordID, formKey);
         var scriptingAdapters = ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.MiscItem.RecordID, formKey);
-        var rawPayloads = RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.MiscItem.RecordID, formKey);
         var components = GetComponentsByFormKey(game, formKey);
         var resources = GetResourcesByFormKey(game, formKey);
         var destructibles = GetDestructiblesByFormKey(game, formKey);
@@ -86,7 +82,6 @@ public class MiscItemRepository : TypedRecordRepositoryBase, IMiscItemRepository
             record.ScriptingAdapters = scriptingAdapters.Where(adapter => RecordModKeysMatch(adapter.ModKey, record.ModKey)).OrderBy(adapter => adapter.ScriptIndex).ToList();
             record.Components = components.Where(component => RecordModKeysMatch(component.ModKey, record.ModKey)).OrderBy(component => component.ComponentIndex).ToList();
             record.Resources = resources.Where(resource => RecordModKeysMatch(resource.ModKey, record.ModKey)).OrderBy(resource => resource.ResourceIndex).ToList();
-            record.RawPayloads = rawPayloads.Where(payload => RecordModKeysMatch(payload.ModKey, record.ModKey)).OrderBy(payload => payload.PayloadSlot).ThenBy(payload => payload.PayloadIndex).ToList();
             record.Destructible = destructibles.FirstOrDefault(destructible => RecordModKeysMatch(destructible.ModKey, record.ModKey))?.Destructible;
         }
 

@@ -12,7 +12,7 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
     private readonly IRecordLocalizedStringRepository RecordLocalizedStringRepository;
     private readonly IConditionRuleRepository ConditionRuleRepository;
     private readonly ISoundMappingRepository SoundMappingRepository;
-    private readonly IRawRecordPayloadRepository RawRecordPayloadRepository;
+    private readonly IScriptFragmentRepository ScriptFragmentRepository;
 
     public PerkRepository(
         IDatabase database,
@@ -20,13 +20,13 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
         IRecordLocalizedStringRepository recordLocalizedStringRepository,
         IConditionRuleRepository conditionRuleRepository,
         ISoundMappingRepository soundMappingRepository,
-        IRawRecordPayloadRepository rawRecordPayloadRepository)
+        IScriptFragmentRepository scriptFragmentRepository)
         : base(database, recordInstanceRepository)
     {
         RecordLocalizedStringRepository = recordLocalizedStringRepository;
         ConditionRuleRepository = conditionRuleRepository;
         SoundMappingRepository = soundMappingRepository;
-        RawRecordPayloadRepository = rawRecordPayloadRepository;
+        ScriptFragmentRepository = scriptFragmentRepository;
     }
 
     public override string RecordType => RecordTypeCatalog.Perk.RecordID;
@@ -76,7 +76,7 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Perk.RecordID, formKey);
         var conditions = ConditionRuleRepository.GetByFormKey(game, RecordTypeCatalog.Perk.RecordID, formKey);
         var sounds = SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.Perk.RecordID, formKey);
-        var rawPayloads = RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Perk.RecordID, formKey);
+        var scriptFragments = ScriptFragmentRepository.GetByFormKey(game, RecordTypeCatalog.Perk.RecordID, formKey);
         foreach (var record in records)
         {
             var recordLocalizedStrings = localizedStrings.Where(localizedString => IsSameModKey(localizedString.ModKey, record.ModKey)).ToList();
@@ -87,7 +87,7 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
                 .OrderBy(condition => condition.ConditionIndex)
                 .ToList();
             record.Sounds = sounds.Where(sound => IsSameModKey(sound.ModKey, record.ModKey)).OrderBy(sound => sound.SoundIndex).ToList();
-            record.RawPayloads = rawPayloads.Where(payload => IsSameModKey(payload.ModKey, record.ModKey)).OrderBy(payload => payload.PayloadSlot).ThenBy(payload => payload.PayloadIndex).ToList();
+            record.ScriptFragments = scriptFragments.Where(fragment => IsSameModKey(fragment.ModKey, record.ModKey)).OrderBy(fragment => fragment.FragmentSlot).ThenBy(fragment => fragment.FragmentIndex).ToList();
             record.Effects = rootEffectRows
                 .Where(effect => IsSameModKey(effect, record.ModKey))
                 .OrderBy(effect => effect.EffectIndex)

@@ -65,7 +65,8 @@ public class StaticRepository : TypedRecordRepositoryBase, IStaticRepository
                     SelectColumn("Lod_Level0", "LodLevel0"),
                     SelectColumn("Lod_Level1", "LodLevel1"),
                     SelectColumn("Lod_Level2", "LodLevel2"),
-                    SelectColumn("Lod_Level3", "LodLevel3")
+                    SelectColumn("Lod_Level3", "LodLevel3"),
+                    SelectColumn("NavmeshGeometry")
                 ])
             .Select(record => ToDTO(record, game))
             .ToList();
@@ -98,7 +99,7 @@ public class StaticRepository : TypedRecordRepositoryBase, IStaticRepository
                 SnapTemplate_ModKey_Name, SnapTemplate_ModKey_Type, SnapTemplate_ModKey_FileName, SnapTemplate_FormKey_ID,
                 PreviewTransform_ModKey_Name, PreviewTransform_ModKey_Type, PreviewTransform_ModKey_FileName, PreviewTransform_FormKey_ID,
                 Material_ModKey_Name, Material_ModKey_Type, Material_ModKey_FileName, Material_FormKey_ID,
-                Lod_Level0, Lod_Level1, Lod_Level2, Lod_Level3)
+                Lod_Level0, Lod_Level1, Lod_Level2, Lod_Level3, NavmeshGeometry)
             VALUES (
                 @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
                 @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Name, @Version2, @ObjectBoundsFirst, @ObjectBoundsSecond, @MaxAngle,
@@ -106,7 +107,7 @@ public class StaticRepository : TypedRecordRepositoryBase, IStaticRepository
                 @SnapTemplateModKeyName, @SnapTemplateModKeyType, @SnapTemplateModKeyFileName, @SnapTemplateFormKeyId,
                 @PreviewTransformModKeyName, @PreviewTransformModKeyType, @PreviewTransformModKeyFileName, @PreviewTransformFormKeyId,
                 @MaterialModKeyName, @MaterialModKeyType, @MaterialModKeyFileName, @MaterialFormKeyId,
-                @LodLevel0, @LodLevel1, @LodLevel2, @LodLevel3);
+                @LodLevel0, @LodLevel1, @LodLevel2, @LodLevel3, @NavmeshGeometry);
             """,
             new
             {
@@ -148,7 +149,8 @@ public class StaticRepository : TypedRecordRepositoryBase, IStaticRepository
                 dto.LodLevel0,
                 dto.LodLevel1,
                 dto.LodLevel2,
-                dto.LodLevel3
+                dto.LodLevel3,
+                dto.NavmeshGeometry
             });
         DeleteProperties(dto);
         SaveProperties(dto);
@@ -182,7 +184,8 @@ public class StaticRepository : TypedRecordRepositoryBase, IStaticRepository
             LodLevel0 = record.LodLevel0,
             LodLevel1 = record.LodLevel1,
             LodLevel2 = record.LodLevel2,
-            LodLevel3 = record.LodLevel3
+            LodLevel3 = record.LodLevel3,
+            NavmeshGeometry = record.NavmeshGeometry
         };
         ApplyCommonFields(dto, record, game);
         return dto;
@@ -385,6 +388,8 @@ public class StaticRepository : TypedRecordRepositoryBase, IStaticRepository
         public string? LodLevel2 { get; set; }
 
         public string? LodLevel3 { get; set; }
+
+        public string? NavmeshGeometry { get; set; }
     }
 
     private sealed class StaticPropertyRow

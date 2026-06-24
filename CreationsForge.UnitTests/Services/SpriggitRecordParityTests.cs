@@ -142,16 +142,13 @@ public class SpriggitRecordParityTests
             }
         }
 
-        if ((sample.HasPath("Model.Data") ||
-             sample.HasPath("Components[].ANAM") ||
-             sample.HasPath("Components[].BNAM") ||
-             sample.HasPath("Components[].CNAM") ||
-             sample.HasPath("Components[].REFL")) &&
+        if (sample.HasPath("Components[].REFL") &&
             record is IHasRawRecordPayloadsDTO)
         {
             var rawPayloadRecord = (IHasRawRecordPayloadsDTO)record;
-            rawPayloadRecord.RawPayloads.Count.ShouldBeGreaterThan(0, $"Record '{record.EditorID}' should preserve raw payloads.");
+            rawPayloadRecord.RawPayloads.Count.ShouldBeGreaterThan(0, $"Record '{record.EditorID}' should preserve binary REFL raw payloads.");
         }
+
     }
 
     private static void AssertRecordSpecificFields(string recordType, RecordDTO record, SpriggitYamlDocument sample)

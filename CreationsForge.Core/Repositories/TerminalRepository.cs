@@ -14,7 +14,9 @@ public class TerminalRepository : TypedRecordRepositoryBase, ITerminalRepository
     private readonly IModelRepository ModelRepository;
     private readonly IKeywordMappingRepository KeywordMappingRepository;
     private readonly IScriptingAdapterRepository ScriptingAdapterRepository;
+    private readonly IScriptFragmentRepository ScriptFragmentRepository;
     private readonly IRawRecordPayloadRepository RawRecordPayloadRepository;
+    private readonly IConditionRuleRepository ConditionRuleRepository;
 
     public TerminalRepository(
         IDatabase database,
@@ -24,7 +26,9 @@ public class TerminalRepository : TypedRecordRepositoryBase, ITerminalRepository
         IModelRepository modelRepository,
         IKeywordMappingRepository keywordMappingRepository,
         IScriptingAdapterRepository scriptingAdapterRepository,
-        IRawRecordPayloadRepository rawRecordPayloadRepository)
+        IScriptFragmentRepository scriptFragmentRepository,
+        IRawRecordPayloadRepository rawRecordPayloadRepository,
+        IConditionRuleRepository conditionRuleRepository)
         : base(database, recordInstanceRepository)
     {
         TerminalMarkerParameterRepository = terminalMarkerParameterRepository;
@@ -32,7 +36,9 @@ public class TerminalRepository : TypedRecordRepositoryBase, ITerminalRepository
         ModelRepository = modelRepository;
         KeywordMappingRepository = keywordMappingRepository;
         ScriptingAdapterRepository = scriptingAdapterRepository;
+        ScriptFragmentRepository = scriptFragmentRepository;
         RawRecordPayloadRepository = rawRecordPayloadRepository;
+        ConditionRuleRepository = conditionRuleRepository;
     }
 
     public override string RecordType => RecordTypeCatalog.Terminal.RecordID;
@@ -69,7 +75,11 @@ public class TerminalRepository : TypedRecordRepositoryBase, ITerminalRepository
                     SelectColumn("FurnitureTemplate_ModKey_Type", "FurnitureTemplateModKeyType"),
                     SelectColumn("FurnitureTemplate_ModKey_FileName", "FurnitureTemplateModKeyFileName"),
                     SelectColumn("FurnitureTemplate_FormKey_ID", "FurnitureTemplateFormKeyId"),
-                    SelectColumn("MarkerModel")
+                    SelectColumn("MarkerModel"),
+                    SelectColumn("AnimationGraph"),
+                    SelectColumn("AnimationSkeleton"),
+                    SelectColumn("AnimationDirectory"),
+                    SelectColumn("AnimationFile")
                 ])
             .Select(record => ToDTO(record, game))
             .ToList();
@@ -77,7 +87,9 @@ public class TerminalRepository : TypedRecordRepositoryBase, ITerminalRepository
         var models = ModelRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey);
         var keywords = KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey);
         var scriptingAdapters = ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey);
+        var scriptFragments = ScriptFragmentRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey);
         var rawPayloads = RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey);
+        var conditions = ConditionRuleRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey);
         var markerParameters = TerminalMarkerParameterRepository.GetByFormKey(game, formKey);
         var forcedLocations = GetForcedLocationsByFormKey(game, formKey);
         var bodyTexts = GetBodyTextsByFormKey(game, formKey);
@@ -89,7 +101,9 @@ public class TerminalRepository : TypedRecordRepositoryBase, ITerminalRepository
             record.Models = models.Where(model => RecordModKeysMatch(model.ModKey, record.ModKey)).OrderBy(model => model.ModelSlot).ThenBy(model => model.ModelGender).ToList();
             record.Keywords = keywords.Where(keyword => RecordModKeysMatch(keyword.ModKey, record.ModKey)).OrderBy(keyword => keyword.KeywordIndex).ToList();
             record.ScriptingAdapters = scriptingAdapters.Where(adapter => RecordModKeysMatch(adapter.ModKey, record.ModKey)).OrderBy(adapter => adapter.ScriptIndex).ToList();
+            record.ScriptFragments = scriptFragments.Where(fragment => RecordModKeysMatch(fragment.ModKey, record.ModKey)).OrderBy(fragment => fragment.FragmentSlot).ThenBy(fragment => fragment.FragmentIndex).ToList();
             record.RawPayloads = rawPayloads.Where(payload => RecordModKeysMatch(payload.ModKey, record.ModKey)).OrderBy(payload => payload.PayloadSlot).ThenBy(payload => payload.PayloadIndex).ToList();
+            record.Conditions = conditions.Where(condition => RecordModKeysMatch(condition.ModKey, record.ModKey)).OrderBy(condition => condition.ConditionSlot).ThenBy(condition => condition.ConditionIndex).ToList();
             record.MarkerParameters = markerParameters
                 .Where(parameter => RecordModKeysMatch(parameter.ModKey, record.ModKey))
                 .OrderBy(parameter => parameter.ParameterIndex)
@@ -132,12 +146,14 @@ public class TerminalRepository : TypedRecordRepositoryBase, ITerminalRepository
                 Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
                 EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Version2, VersionControl, ObjectBounds_First, ObjectBounds_Second,
                 Menu_ModKey_Name, Menu_ModKey_Type, Menu_ModKey_FileName, Menu_FormKey_ID, Background, HeaderText, WelcomeText, Name, PNAM, FNAM, Flags, MajorFlags, JNAM, MarkerFlags, GNAM,
-                WorkbenchData, FurnitureTemplate_ModKey_Name, FurnitureTemplate_ModKey_Type, FurnitureTemplate_ModKey_FileName, FurnitureTemplate_FormKey_ID, MarkerModel)
+                WorkbenchData, FurnitureTemplate_ModKey_Name, FurnitureTemplate_ModKey_Type, FurnitureTemplate_ModKey_FileName, FurnitureTemplate_FormKey_ID, MarkerModel,
+                AnimationGraph, AnimationSkeleton, AnimationDirectory, AnimationFile)
             VALUES (
                 @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
                 @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Version2, @VersionControl, @ObjectBoundsFirst, @ObjectBoundsSecond,
                 @MenuModKeyName, @MenuModKeyType, @MenuModKeyFileName, @MenuFormKeyId, @Background, @HeaderText, @WelcomeText, @Name, @Pnam, @Fnam, @Flags, @MajorFlags, @Jnam, @MarkerFlags, @Gnam,
-                @WorkbenchData, @FurnitureTemplateModKeyName, @FurnitureTemplateModKeyType, @FurnitureTemplateModKeyFileName, @FurnitureTemplateFormKeyId, @MarkerModel);
+                @WorkbenchData, @FurnitureTemplateModKeyName, @FurnitureTemplateModKeyType, @FurnitureTemplateModKeyFileName, @FurnitureTemplateFormKeyId, @MarkerModel,
+                @AnimationGraph, @AnimationSkeleton, @AnimationDirectory, @AnimationFile);
             """,
             new
             {
@@ -177,7 +193,11 @@ public class TerminalRepository : TypedRecordRepositoryBase, ITerminalRepository
                 FurnitureTemplateModKeyType = dto.FurnitureTemplateFormKey?.ModKey.Type,
                 FurnitureTemplateModKeyFileName = dto.FurnitureTemplateFormKey?.ModKey.FileName,
                 FurnitureTemplateFormKeyId = dto.FurnitureTemplateFormKey?.Id,
-                dto.MarkerModel
+                dto.MarkerModel,
+                dto.AnimationGraph,
+                dto.AnimationSkeleton,
+                dto.AnimationDirectory,
+                dto.AnimationFile
             });
         ReplaceTerminalForcedLocations(dto);
         ReplaceTerminalBodyTexts(dto);
@@ -221,7 +241,11 @@ public class TerminalRepository : TypedRecordRepositoryBase, ITerminalRepository
             Gnam = record.Gnam,
             WorkbenchData = record.WorkbenchData,
             FurnitureTemplateFormKey = CreateNullableFormKey(record.FurnitureTemplateModKeyName, record.FurnitureTemplateModKeyType, record.FurnitureTemplateModKeyFileName, record.FurnitureTemplateFormKeyId),
-            MarkerModel = record.MarkerModel
+            MarkerModel = record.MarkerModel,
+            AnimationGraph = record.AnimationGraph,
+            AnimationSkeleton = record.AnimationSkeleton,
+            AnimationDirectory = record.AnimationDirectory,
+            AnimationFile = record.AnimationFile
         };
         ApplyCommonFields(dto, record, game);
         return dto;
@@ -654,6 +678,14 @@ public class TerminalRepository : TypedRecordRepositoryBase, ITerminalRepository
         public long? FurnitureTemplateFormKeyId { get; set; }
 
         public string? MarkerModel { get; set; }
+
+        public string? AnimationGraph { get; set; }
+
+        public string? AnimationSkeleton { get; set; }
+
+        public string? AnimationDirectory { get; set; }
+
+        public string? AnimationFile { get; set; }
     }
 
     private sealed class TerminalForcedLocationRow

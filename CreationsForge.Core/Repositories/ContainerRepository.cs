@@ -9,9 +9,31 @@ namespace CreationsForge.Core.Repositories;
 
 public class ContainerRepository : TypedRecordRepositoryBase, IContainerRepository
 {
-    public ContainerRepository(IDatabase database, IRecordInstanceRepository recordInstanceRepository)
+    private readonly IModelRepository ModelRepository;
+    private readonly IKeywordMappingRepository KeywordMappingRepository;
+    private readonly ISoundMappingRepository SoundMappingRepository;
+    private readonly IScriptingAdapterRepository ScriptingAdapterRepository;
+    private readonly IRawRecordPayloadRepository RawRecordPayloadRepository;
+    private readonly IRecordLocalizedStringRepository RecordLocalizedStringRepository;
+
+    public ContainerRepository(
+        IDatabase database,
+        IRecordInstanceRepository recordInstanceRepository,
+        IModelRepository modelRepository,
+        IKeywordMappingRepository keywordMappingRepository,
+        ISoundMappingRepository soundMappingRepository,
+        IScriptingAdapterRepository scriptingAdapterRepository,
+        IRawRecordPayloadRepository rawRecordPayloadRepository,
+        IRecordLocalizedStringRepository recordLocalizedStringRepository)
         : base(database, recordInstanceRepository)
-    { }
+    {
+        ModelRepository = modelRepository;
+        KeywordMappingRepository = keywordMappingRepository;
+        SoundMappingRepository = soundMappingRepository;
+        ScriptingAdapterRepository = scriptingAdapterRepository;
+        RawRecordPayloadRepository = rawRecordPayloadRepository;
+        RecordLocalizedStringRepository = recordLocalizedStringRepository;
+    }
 
     public override string RecordType => RecordTypeCatalog.Container.RecordID;
 
@@ -24,6 +46,7 @@ public class ContainerRepository : TypedRecordRepositoryBase, IContainerReposito
                 formKey,
                 [
                     SelectColumn("Version2"),
+                    SelectColumn("VersionControl"),
                     SelectColumn("ObjectBounds_First", "ObjectBoundsFirst"),
                     SelectColumn("ObjectBounds_Second", "ObjectBoundsSecond"),
                     SelectColumn("Name"),
@@ -32,17 +55,33 @@ public class ContainerRepository : TypedRecordRepositoryBase, IContainerReposito
                     SelectColumn("NativeTerminal_ModKey_Name", "NativeTerminalModKeyName"),
                     SelectColumn("NativeTerminal_ModKey_Type", "NativeTerminalModKeyType"),
                     SelectColumn("NativeTerminal_ModKey_FileName", "NativeTerminalModKeyFileName"),
-                    SelectColumn("NativeTerminal_FormKey_ID", "NativeTerminalFormKeyId")
+                    SelectColumn("NativeTerminal_FormKey_ID", "NativeTerminalFormKeyId"),
+                    SelectColumn("AnimationGraph"),
+                    SelectColumn("AnimationSkeleton"),
+                    SelectColumn("AnimationDirectory"),
+                    SelectColumn("AnimationFile")
                 ])
             .Select(record => ToDTO(record, game))
             .ToList();
         var items = FetchItemsByFormKey(game, formKey);
+        var models = ModelRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey);
+        var keywords = KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey);
+        var sounds = SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey);
+        var scriptingAdapters = ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey);
+        var rawPayloads = RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey);
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey);
         foreach (var record in records)
         {
             record.Items = items
                 .Where(item => IsSameModKey(item.ModKey, record.ModKey))
                 .OrderBy(item => item.ItemIndex)
                 .ToList();
+            ApplyLocalizedStrings(record, localizedStrings.Where(localizedString => IsSameModKey(localizedString.ModKey, record.ModKey)).ToList());
+            record.Models = models.Where(model => IsSameModKey(model.ModKey, record.ModKey)).OrderBy(model => model.ModelSlot).ThenBy(model => model.ModelGender).ToList();
+            record.Keywords = keywords.Where(keyword => IsSameModKey(keyword.ModKey, record.ModKey)).OrderBy(keyword => keyword.KeywordIndex).ToList();
+            record.Sounds = sounds.Where(sound => IsSameModKey(sound.ModKey, record.ModKey)).OrderBy(sound => sound.SoundSlot).ThenBy(sound => sound.SoundIndex).ToList();
+            record.ScriptingAdapters = scriptingAdapters.Where(adapter => IsSameModKey(adapter.ModKey, record.ModKey)).OrderBy(adapter => adapter.ScriptIndex).ToList();
+            record.RawPayloads = rawPayloads.Where(payload => IsSameModKey(payload.ModKey, record.ModKey)).OrderBy(payload => payload.PayloadSlot).ThenBy(payload => payload.PayloadIndex).ToList();
         }
 
         return records;
@@ -55,12 +94,14 @@ public class ContainerRepository : TypedRecordRepositoryBase, IContainerReposito
             """
             INSERT OR REPLACE INTO Containers (
                 Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Version2, ObjectBounds_First, ObjectBounds_Second, Name, Flags,
-                MajorFlags, NativeTerminal_ModKey_Name, NativeTerminal_ModKey_Type, NativeTerminal_ModKey_FileName, NativeTerminal_FormKey_ID)
+                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Version2, VersionControl, ObjectBounds_First, ObjectBounds_Second, Name, Flags,
+                MajorFlags, NativeTerminal_ModKey_Name, NativeTerminal_ModKey_Type, NativeTerminal_ModKey_FileName, NativeTerminal_FormKey_ID,
+                AnimationGraph, AnimationSkeleton, AnimationDirectory, AnimationFile)
             VALUES (
                 @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Version2, @ObjectBoundsFirst, @ObjectBoundsSecond, @Name, @Flags,
-                @MajorFlags, @NativeTerminalModKeyName, @NativeTerminalModKeyType, @NativeTerminalModKeyFileName, @NativeTerminalFormKeyId);
+                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Version2, @VersionControl, @ObjectBoundsFirst, @ObjectBoundsSecond, @Name, @Flags,
+                @MajorFlags, @NativeTerminalModKeyName, @NativeTerminalModKeyType, @NativeTerminalModKeyFileName, @NativeTerminalFormKeyId,
+                @AnimationGraph, @AnimationSkeleton, @AnimationDirectory, @AnimationFile);
             """,
             new
             {
@@ -77,6 +118,7 @@ public class ContainerRepository : TypedRecordRepositoryBase, IContainerReposito
                 dto.MajorRecordFlags,
                 dto.ImportedAtUTC,
                 dto.Version2,
+                dto.VersionControl,
                 dto.ObjectBoundsFirst,
                 dto.ObjectBoundsSecond,
                 Name = GetEnglishText(dto.Name),
@@ -85,7 +127,11 @@ public class ContainerRepository : TypedRecordRepositoryBase, IContainerReposito
                 NativeTerminalModKeyName = dto.NativeTerminalFormKey?.ModKey.Name,
                 NativeTerminalModKeyType = dto.NativeTerminalFormKey?.ModKey.Type,
                 NativeTerminalModKeyFileName = dto.NativeTerminalFormKey?.ModKey.FileName,
-                NativeTerminalFormKeyId = dto.NativeTerminalFormKey?.Id
+                NativeTerminalFormKeyId = dto.NativeTerminalFormKey?.Id,
+                dto.AnimationGraph,
+                dto.AnimationSkeleton,
+                dto.AnimationDirectory,
+                dto.AnimationFile
             });
         ReplaceItems(dto);
     }
@@ -186,15 +232,26 @@ public class ContainerRepository : TypedRecordRepositoryBase, IContainerReposito
             MajorRecordFlags = 0,
             ImportedAtUTC = record.ImportedAtUTC,
             Version2 = record.Version2,
+            VersionControl = record.VersionControl,
             ObjectBoundsFirst = record.ObjectBoundsFirst,
             ObjectBoundsSecond = record.ObjectBoundsSecond,
             Name = FromEnglish(record.Name),
             Flags = record.Flags,
             MajorFlags = record.MajorFlags,
-            NativeTerminalFormKey = CreateNullableFormKey(record.NativeTerminalModKeyName, record.NativeTerminalModKeyType, record.NativeTerminalModKeyFileName, record.NativeTerminalFormKeyId)
+            NativeTerminalFormKey = CreateNullableFormKey(record.NativeTerminalModKeyName, record.NativeTerminalModKeyType, record.NativeTerminalModKeyFileName, record.NativeTerminalFormKeyId),
+            AnimationGraph = record.AnimationGraph,
+            AnimationSkeleton = record.AnimationSkeleton,
+            AnimationDirectory = record.AnimationDirectory,
+            AnimationFile = record.AnimationFile
         };
         ApplyCommonFields(dto, record, game);
         return dto;
+    }
+
+    private static void ApplyLocalizedStrings(ContainerDTO record, IReadOnlyList<LocalizedStringDTO> localizedStrings)
+    {
+        record.LocalizedStrings = localizedStrings.ToList();
+        record.Name = BuildTranslatedString(localizedStrings, nameof(ContainerDTO.Name), record.Name);
     }
 
     private static ContainerItemDTO ToDTO(ContainerItemRow row, SupportedGame game)
@@ -245,6 +302,8 @@ public class ContainerRepository : TypedRecordRepositoryBase, IContainerReposito
     {
         public int? Version2 { get; set; }
 
+        public int? VersionControl { get; set; }
+
         public string? ObjectBoundsFirst { get; set; }
 
         public string? ObjectBoundsSecond { get; set; }
@@ -262,6 +321,14 @@ public class ContainerRepository : TypedRecordRepositoryBase, IContainerReposito
         public string? NativeTerminalModKeyFileName { get; set; }
 
         public long? NativeTerminalFormKeyId { get; set; }
+
+        public string? AnimationGraph { get; set; }
+
+        public string? AnimationSkeleton { get; set; }
+
+        public string? AnimationDirectory { get; set; }
+
+        public string? AnimationFile { get; set; }
     }
 
     private sealed class ContainerItemRow

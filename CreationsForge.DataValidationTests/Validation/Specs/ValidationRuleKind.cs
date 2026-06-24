@@ -3,6 +3,7 @@ namespace CreationsForge.DataValidationTests.Validation.Specs;
 public enum ValidationRuleKind
 {
     Field,
+    OptionalField,
     FormKeyObjectField,
     PathPrefix,
     FormKeyList,
@@ -15,6 +16,7 @@ public enum ValidationRuleKind
     DtoNonEmpty,
     SpriggitAbsent,
     IgnoreSpriggit,
+    IgnoreSpriggitPrefix,
     IgnoreDto,
     IgnoreDtoPrefix
 }

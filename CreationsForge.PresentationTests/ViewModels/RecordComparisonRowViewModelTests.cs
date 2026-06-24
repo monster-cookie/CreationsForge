@@ -10,7 +10,7 @@ public class RecordComparisonRowViewModelTests
     public void Constructor_AssignsParentFieldNameToChildRows()
     {
         var row = new RecordComparisonRowViewModel(
-            "BaseFormComponents.AnimationGraphComponent.REFL",
+            "Components.AnimationGraphComponent.REFL",
             [],
             [
                 new RecordComparisonFieldDTO
@@ -21,6 +21,6 @@ public class RecordComparisonRowViewModelTests
                 }
             ]);
 
-        row.Children.Single().ParentFieldName.ShouldBe("BaseFormComponents.AnimationGraphComponent.REFL");
+        row.Children.Single().ParentFieldName.ShouldBe("Components.AnimationGraphComponent.REFL");
     }
 }

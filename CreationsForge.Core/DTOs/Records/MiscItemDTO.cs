@@ -4,7 +4,7 @@ using CreationsForge.Core.DTOs.Records.Metadata;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class MiscItemDTO : RecordDTO, IHasScriptingAdaptersDTO, IHasModelsDTO, IKeywords, ISounds, IHasRawRecordPayloadsDTO
+public class MiscItemDTO : RecordDTO, IHasScriptingAdaptersDTO, IHasModelsDTO, IKeywords, ISounds
 {
     public ObjectBoundsDTO? ObjectBounds { get; set; }
 
@@ -40,6 +40,4 @@ public class MiscItemDTO : RecordDTO, IHasScriptingAdaptersDTO, IHasModelsDTO, I
     public IList<MiscItemComponentDTO> Components { get; set; } = new List<MiscItemComponentDTO>();
 
     public IList<MiscItemResourceDTO> Resources { get; set; } = new List<MiscItemResourceDTO>();
-
-    public IList<RawRecordPayloadDTO> RawPayloads { get; set; } = new List<RawRecordPayloadDTO>();
 }

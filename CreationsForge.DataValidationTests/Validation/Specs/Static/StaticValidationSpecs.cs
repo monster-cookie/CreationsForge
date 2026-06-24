@@ -92,7 +92,7 @@ public static class StaticValidationSpecs
 
         if (withRefl)
         {
-            spec.AddRule(ValidationFieldRule.RawPayloadSlot("Components[0].REFL", "BaseFormComponents.REFL"));
+            spec.AddRule(ValidationFieldRule.RawPayloadSlot("Components[0].REFL", "Components"));
         }
 
         if (withSnapTemplate)
@@ -107,7 +107,7 @@ public static class StaticValidationSpecs
     {
         return BaseStatic(SupportedGame.Fallout4, sampleName, formKey, withObjectBounds)
             .AddRule(ValidationFieldRule.Field("Model.File", "Models[0].File", ValidationValueNormalizer.ModelFile))
-            .AddRule(ValidationFieldRule.RawPayloadSlot("Model.Data", "Model.Data"))
+            .AddRule(ValidationFieldRule.Field("Model.Data", "Models[0].Data", ValidationValueNormalizer.HexPayload))
             .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
                 "LeafAmplitude",
                 "LeafAmplitude",
@@ -126,7 +126,7 @@ public static class StaticValidationSpecs
     {
         return BaseStatic(SupportedGame.Skyrim, sampleName, formKey, withObjectBounds: true)
             .AddRule(ValidationFieldRule.Field("Model.File", "Models[0].File", ValidationValueNormalizer.ModelFile))
-            .AddRule(ValidationFieldRule.RawPayloadSlot("Model.Data", "Model.Data"))
+            .AddRule(ValidationFieldRule.Field("Model.Data", "Models[0].Data", ValidationValueNormalizer.HexPayload))
             .AddRule(ValidationFieldRule.Field("Material", "Material"))
             .AddRule(ValidationFieldRule.Field("Lod.Level0", "LodLevel0", ValidationValueNormalizer.ModelFile))
             .AddRule(ValidationFieldRule.Field("Lod.Level1", "LodLevel1", ValidationValueNormalizer.ModelFile))
@@ -153,7 +153,7 @@ public static class StaticValidationSpecs
                 "0, 0, 0",
                 "Mutagen exposes default object bounds when Spriggit omits the zero-valued field."))
             .AddRule(ValidationFieldRule.FormKeyList("Keywords", "Keywords", "Keyword"))
-            .AddRule(ValidationFieldRule.RawPayloadSlot("NavmeshGeometry", "NavmeshGeometry"))
+            .AddRule(ValidationFieldRule.DtoNonEmpty("NavmeshGeometry", "NavmeshGeometry"))
             .AddRule(ValidationFieldRule.ScalarList("DNAMDataTypeState", "DNAMDataTypeState"))
             .AddRule(ValidationFieldRule.DtoNonEmpty("MajorRecordFlagsRaw", "MajorRecordFlags"))
             .AddRule(ValidationFieldRule.DtoNonEmpty("MajorFlags", "MajorRecordFlags"))
@@ -174,7 +174,7 @@ public static class StaticValidationSpecs
                 .AddRule(ValidationFieldRule.IgnoreSpriggit(componentPath + ".MutagenObjectType", "Component type metadata is represented by typed child projections."));
         }
 
-        spec.AddRule(ValidationFieldRule.IgnoreSpriggit("Components.Count", "Components are projected into typed keyword/raw-payload DTO children."));
+        spec.AddRule(ValidationFieldRule.IgnoreSpriggit("Components.Count", "Components are projected into typed keyword and REFL payload DTO children."));
 
         if (withObjectBounds)
         {

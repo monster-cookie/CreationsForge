@@ -17,10 +17,17 @@ This folder owns DbUp migration scripts and migration execution support.
 - Use IF NOT EXISTS for tables and indexes when the existing migration style allows it.
 - Avoid destructive changes unless explicitly approved in the plan with rollback notes.
 - Keep foreign key behavior, cascading behavior, nullability, defaults, checks, and collations explicit.
-- Use TEXT COLLATE NOCASE consistently for ModKey, plugin filenames, archive paths, and normalized path keys when that
-  matches the current schema strategy.
+- Use TEXT COLLATE NOCASE consistently for ModKey, plugin filenames, archive paths, and normalized path keys when that matches the current schema strategy.
 - Avoid index confetti. Add indexes only for known lookup, search, filter, relationship, or import validation paths.
 - Run EXPLAIN QUERY PLAN locally before removing or replacing indexes.
+
+## Schema anti-bucket rule
+
+Do not add generic catch-all schema such as key/value tables, JSON payload columns, structured-value tables, or raw payload tables for known Spriggit fields.
+
+New tables must be named for the domain concept they persist. If a field is VMAD script data, condition data, component data, model data, keyword data, sound data, localized text, or another known Creation Engine concept, the schema must model that concept directly.
+
+Any migration that adds or expands generic payload storage requires explicit user approval in the PLAN and must list the exact source paths that cannot be modeled directly.
 
 ## Documentation requirements
 

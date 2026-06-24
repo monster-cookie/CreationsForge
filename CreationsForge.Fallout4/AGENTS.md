@@ -1,7 +1,6 @@
 # CreationsForge.Fallout4 rules
 
-This folder contains Fallout 4-specific Mutagen mapping, DTOs, services, repositories, importers, factories, and record
-support.
+This folder contains Fallout 4-specific Mutagen mapping, DTOs, services, repositories, importers, factories, and record support.
 
 ## Boundaries
 
@@ -26,6 +25,24 @@ The root Reference and documentation section applies here. For record mapping wo
   - Field shape: scalar, FormKey reference, enum/flags, structured value, or collection.
   - Child tables, if any.
   - Fields intentionally skipped and why.
+
+## Spriggit field modeling gate
+
+When mapping a Spriggit field, do not hide it in `RawPayloads` or `StructuredValues`.
+
+For every newly mapped non-header Spriggit path, the PLAN must classify it as one of:
+
+- scalar field on a typed DTO/table
+- FormKey reference
+- enum or flags field
+- localized string
+- child collection with a dedicated DTO/table
+- shared capability such as models, keywords, sounds, conditions, components, or VMAD scripts
+- genuinely opaque binary payload
+
+If the path is classified as genuinely opaque binary payload, the PLAN must include the exact Spriggit sample path and why Mutagen does not expose structured data.
+
+Script fragments must be validated against real `QUST` examples for Starfield, Fallout 4, and Skyrim when VMAD work is planned, because quest records heavily exercise `VirtualMachineAdapter.ScriptFragments`.
 
 ## Record import behavior
 

@@ -135,8 +135,7 @@ After approval:
 - Keep diffs minimal and focused.
 - Prefer targeted changes over sweeping refactors.
 - Do not rewrite files only to reformat them.
-- Do not move types, rename public members, alter persistence formats, or change user workflows unless the plan explicitly
-  covers it.
+- Do not move types, rename public members, alter persistence formats, or change user workflows unless the plan explicitly covers it.
 - Do not use primary constructors unless explicitly requested.
 - Use one class per file for C# types unless an existing local pattern requires otherwise.
 - Use braces for conditionals and loops.
@@ -157,19 +156,14 @@ After approval:
 - Use DbUp migrations for schema changes.
 - Treat DbUp SchemaVersions as the migration-state source of truth.
 - Use Mutagen and Spriggit as primary references for Bethesda record shape and validation.
-- Do not invent Mutagen properties or record collections. Inspect existing code, installed packages, docs/source, and
-  Spriggit output before mapping records.
+- Do not invent Mutagen properties or record collections. Inspect existing code, installed packages, docs/source, and Spriggit output before mapping records.
 - Keep UI framework code out of CreationsForge.Core.
 - Keep game-specific behavior out of CreationsForge.Core unless it is truly shared across supported games.
 - Game-specific fields should stay game-specific unless shared infrastructure consumes the capability.
-- New or rebuilt record DTOs must use Spriggit/Mutagen/xEdit/SFCK canonical field names unless the approved plan
-  documents a conflict.
-- Do not suffix DTO or model properties with storage/type details such as FormKey when the property type already communicates
-  the shape.
-- Shared interfaces must represent behavior consumed by shared infrastructure; do not add decorative one-off
-  interfaces.
-- Mapping attributes are boundary metadata for Spriggit paths, localization, and persistence columns. They must not be
-  used to keep alias drift as permanent model vocabulary.
+- New or rebuilt record DTOs must use Spriggit/Mutagen/xEdit/SFCK canonical field names unless the approved plan documents a conflict.
+- Do not suffix DTO or model properties with storage/type details such as FormKey when the property type already communicates the shape.
+- Shared interfaces must represent behavior consumed by shared infrastructure; do not add decorative one-off interfaces.
+- Mapping attributes are boundary metadata for Spriggit paths, localization, and persistence columns. They must not be used to keep alias drift as permanent model vocabulary.
 
 ## Deferral / incomplete work rules
 
@@ -193,6 +187,20 @@ After approval:
 - Delete stale detail and child rows for a plugin/record type before reinserting where the existing import pattern requires replace-by-plugin behavior.
 - Preserve raw payload storage only where an existing approved pattern uses it or the plan explicitly justifies it.
 - Do not leave stale rows after reimport.
+
+## No generic payload bucket rule
+
+Do not add new uses of `RawRecordPayloads`, `StructuredRecordValues`, `RawPayloads`, `StructuredValues`, or equivalent generic catch-all storage for Spriggit-visible fields.
+
+If a field appears in Spriggit YAML with a stable path and readable structure, it must be modeled as first-class data: DTO shape, importer mapping, persistence schema, repository save/readback, comparison/render output where applicable, validation coverage, and documentation.
+
+`RawRecordPayloads` may only be used for source data that is genuinely opaque binary or binary-like payload content, where Spriggit also exposes the value as opaque/binary data and Mutagen does not expose a structured value. The PLAN must list the exact Spriggit path, example file, Mutagen source property, payload type, and why first-class modeling is not currently possible. In Spriggit/Mutagen these allowed instances will be tagged as a REFL record or field.
+
+`StructuredRecordValues` must not be used for new fields. Existing structured-value paths may only be touched to remove them, migrate them to first-class storage, or preserve existing behavior explicitly approved in the PLAN.
+
+A PLAN that proposes raw or structured generic storage must include a section named `Generic payload justification`. If that section is missing, the work is not approved.
+
+Do not treat script data, VMAD data, Papyrus scripts, script properties, script fragments, conditions, components, model data, keyword lists, sound lists, localized strings, or form-key references as generic payloads when Spriggit or Mutagen exposes their structure.
 
 ## Database and schema rules
 
@@ -223,8 +231,7 @@ When a task changes import mapping or persisted read-back behavior, the agent mu
 
 - Documentation is durable project knowledge, not a scratchpad.
 - Use Markdown and wrap prose at 120 characters.
-- Update documentation when architecture, domain behavior, database schema, persistence behavior, dependency injection,
-  logging behavior, workflows, UI workflows, public interfaces, or validation behavior changes.
+- Update documentation when architecture, domain behavior, database schema, persistence behavior, dependency injection, logging behavior, workflows, UI workflows, public interfaces, or validation behavior changes.
 - If no documentation update is needed, state that in the plan.
 - Do not create new documentation files unless they are listed in the approved plan.
 - Keep docs aligned with current code behavior. If code and docs disagree, call out the conflict before editing.
@@ -252,6 +259,23 @@ For migration changes, include local SQLite validation when practical:
 PRAGMA foreign_key_check;
 PRAGMA integrity_check;
 ```
+
+## Validation completion rule
+
+For any task that changes record DTOs, import mapping, persistence/readback, validation specs, validation helpers, Spriggit comparison behavior, or database schema used by validation tests, the task is not complete until the relevant validation tests are passing again.
+
+If validation tests fail after an approved change, the agent must either:
+
+- fix the failures in the same task, or
+- stop and provide a new explicit plan that lists each remaining failure category and the files likely required to fix it.
+
+Do not treat newly failing validation tests as "existing failures" unless the same failures were observed before the task's changes or the user explicitly approves carrying them forward.
+
+If local SQLite data is stale, the agent must say so directly and list the reset/reimport command or manual prerequisite needed before validation can be considered meaningful.
+
+## XML Documentation Requirements
+
+All new or modified C# classes, interfaces, records, structs, enums, properties, fields, constructors, methods, events, delegates, and other members must include meaningful XML documentation comments using ///. Documentation should explain the symbol’s purpose, behavior, important side effects, nullable behavior, return value, parameters, type parameters, and expected exceptions where relevant. Do not add placeholder comments, stale comments, or comments that merely repeat the member name. When modifying existing documented code, keep the XML documentation accurate as part of the same change.
 
 ## Nested instructions
 

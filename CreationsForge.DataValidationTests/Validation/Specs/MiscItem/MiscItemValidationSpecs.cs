@@ -142,10 +142,7 @@ public static class MiscItemValidationSpecs
         bool withDestructible = false)
     {
         var spec = BaseMiscItem(SupportedGame.Fallout4, sampleName, formKey)
-            .AddRule(ValidationFieldRule.Field("Model.Data", "RawPayloads[0].PayloadValue", ValidationValueNormalizer.HexPayload))
-            .AddRule(ValidationFieldRule.DtoExpectedValue("RawPayloads[0].PayloadSlot", "Model.Data"))
-            .AddRule(ValidationFieldRule.DtoExpectedValue("RawPayloads[0].PayloadType", "ModelBinaryOverlay"))
-            .AddRule(ValidationFieldRule.DtoExpectedValue("RawPayloads[0].SourcePath", "Model.Data"))
+            .AddRule(ValidationFieldRule.Field("Model.Data", "Models[0].Data", ValidationValueNormalizer.HexPayload))
             .AddRule(ValidationFieldRule.Field("Model.File", "Models[0].File", ValidationValueNormalizer.ModelFile));
 
         if (withComponentDisplayIndices)
@@ -198,10 +195,7 @@ public static class MiscItemValidationSpecs
         bool withScriptingAdapters)
     {
         var spec = BaseMiscItem(SupportedGame.Skyrim, sampleName, formKey)
-            .AddRule(ValidationFieldRule.Field("Model.Data", "RawPayloads[0].PayloadValue", ValidationValueNormalizer.HexPayload))
-            .AddRule(ValidationFieldRule.DtoExpectedValue("RawPayloads[0].PayloadSlot", "Model.Data"))
-            .AddRule(ValidationFieldRule.DtoExpectedValue("RawPayloads[0].PayloadType", "ModelBinaryOverlay"))
-            .AddRule(ValidationFieldRule.DtoExpectedValue("RawPayloads[0].SourcePath", "Model.Data"))
+            .AddRule(ValidationFieldRule.Field("Model.Data", "Models[0].Data", ValidationValueNormalizer.HexPayload))
             .AddRule(ValidationFieldRule.Field("Model.File", "Models[0].File", ValidationValueNormalizer.ModelFile));
 
         if (withAlternateTextures)

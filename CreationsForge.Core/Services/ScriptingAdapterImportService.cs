@@ -10,15 +10,18 @@ public class ScriptingAdapterImportService : IScriptingAdapterImportService
     private readonly IScriptingAdapterPropertyListItemRepository ScriptingAdapterPropertyListItemRepository;
     private readonly IScriptingAdapterPropertyRepository ScriptingAdapterPropertyRepository;
     private readonly IScriptingAdapterRepository ScriptingAdapterRepository;
+    private readonly IScriptFragmentRepository ScriptFragmentRepository;
 
     public ScriptingAdapterImportService(
         IScriptingAdapterRepository scriptingAdapterRepository,
         IScriptingAdapterPropertyRepository scriptingAdapterPropertyRepository,
-        IScriptingAdapterPropertyListItemRepository scriptingAdapterPropertyListItemRepository)
+        IScriptingAdapterPropertyListItemRepository scriptingAdapterPropertyListItemRepository,
+        IScriptFragmentRepository scriptFragmentRepository)
     {
         ScriptingAdapterRepository = scriptingAdapterRepository;
         ScriptingAdapterPropertyRepository = scriptingAdapterPropertyRepository;
         ScriptingAdapterPropertyListItemRepository = scriptingAdapterPropertyListItemRepository;
+        ScriptFragmentRepository = scriptFragmentRepository;
     }
 
     public void ReplaceRecordScriptingAdapters(IHasScriptingAdaptersDTO record, string recordType)
@@ -61,6 +64,23 @@ public class ScriptingAdapterImportService : IScriptingAdapterImportService
                     ScriptingAdapterPropertyListItemRepository.Save(listItem);
                 }
             }
+        }
+
+        if (record is not IHasScriptFragmentsDTO fragmentRecord)
+        {
+            return;
+        }
+
+        ScriptFragmentRepository.DeleteByRecord(recordDTO.Game, recordDTO.ModKey, recordType, recordDTO.FormKey);
+
+        foreach (var scriptFragment in fragmentRecord.ScriptFragments)
+        {
+            scriptFragment.Game = recordDTO.Game;
+            scriptFragment.ModKey = recordDTO.ModKey;
+            scriptFragment.RecordType = recordType;
+            scriptFragment.FormKey = recordDTO.FormKey;
+            scriptFragment.ImportedAtUTC = recordDTO.ImportedAtUTC;
+            ScriptFragmentRepository.Save(scriptFragment);
         }
     }
 }
