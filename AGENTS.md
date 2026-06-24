@@ -58,8 +58,7 @@ You must treat repo documentation as durable project knowledge.
 
 Primary project knowledge files:
 
-- /Documentation/NAMING-CONVENTIONS.md - Naming conventions and required project knowledge for record model, DTO, importer, validation,
-  comparison, or schema work.
+- /Documentation/NAMING-CONVENTIONS.md - Naming conventions and required project knowledge for record model, DTO, importer, validation, comparison, or schema work.
 - /Documentation/ARCHITECTURE.md - Layering rules, Core vs presentation responsibilities, dependency direction, DI composition, persistence boundaries, and logging conventions.
 - /Documentation/SYSTEM-OVERVIEW.md - Current system purpose, major workflows, project boundaries, and high-level architecture.
 - /Documentation/DESIGN-DECISIONS.md - Important design decisions, tradeoffs, rejected alternatives, and rationale.
@@ -242,6 +241,9 @@ Use the current solution file name in the repo. Prefer these commands when appli
 
 ```powershell
 dotnet restore
+dotnet format whitespace
+dotnet format style --severity info
+dotnet format analyzers --severity warn
 dotnet build --no-restore
 dotnet test --no-build
 ```

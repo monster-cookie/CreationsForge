@@ -81,3 +81,6 @@ dotnet_diagnostic.SA1601.severity = error
 dotnet_diagnostic.SA1611.severity = warning
 dotnet_diagnostic.SA1615.severity = warning
 dotnet_diagnostic.SA1618.severity = warning
+
+# IDE0005: Remove unnecessary using directives
+dotnet_diagnostic.IDE0005.severity = warning
