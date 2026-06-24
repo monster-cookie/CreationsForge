@@ -21,6 +21,10 @@ public class SoundMappingDTO
 
     public string? Stop { get; set; }
 
+    public string? MutagenObjectType { get; set; }
+
+    public string? InheritsSoundsFrom { get; set; }
+
     public string? Versioning { get; set; }
 
     public string? Unknown { get; set; }

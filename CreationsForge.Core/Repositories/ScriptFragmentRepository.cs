@@ -90,6 +90,7 @@ public class ScriptFragmentRepository : IScriptFragmentRepository
             MutagenObjectType = model.MutagenObjectType,
             ScriptName = model.ScriptName,
             FragmentName = model.FragmentName,
+            Unknown2 = model.Unknown2,
             ExtraBindDataVersion = model.ExtraBindDataVersion,
             ImportedAtUTC = model.ImportedAtUTC
         };

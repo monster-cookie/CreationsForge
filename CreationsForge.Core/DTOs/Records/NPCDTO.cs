@@ -23,6 +23,8 @@ public class NPCDTO : RecordDTO, IHasScriptingAdaptersDTO, IKeywords, ISounds
 
     public required string Assistance { get; set; }
 
+    public string? Mood { get; set; }
+
     public int GearedUpWeapons { get; set; }
 
     public double HeightMin { get; set; }

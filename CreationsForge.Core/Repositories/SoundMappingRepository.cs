@@ -124,6 +124,8 @@ public class SoundMappingRepository : ISoundMappingRepository
             SoundIndex = sound.SoundIndex,
             Start = sound.Start,
             Stop = sound.Stop,
+            MutagenObjectType = sound.MutagenObjectType,
+            InheritsSoundsFrom = sound.InheritsSoundsFrom,
             Versioning = sound.Versioning,
             Unknown = sound.Unknown,
             ImportedAtUTC = sound.ImportedAtUTC

@@ -47,9 +47,18 @@ public static class ScriptFragmentDTOMapper
             results.Add(CreateFragment(game, modKey, recordType, formKey, fragmentSlot + ".Script", fragmentIndex, script, importedAtUTC));
         }
 
+        var fragments = GetPropertyValue(fragment, "Fragments");
+        if (fragments != null)
+        {
+            AddFragment(results, game, modKey, recordType, formKey, fragmentSlot + ".Fragments", fragmentIndex, fragments, importedAtUTC);
+        }
+
         foreach (var property in fragment.GetType().GetProperties())
         {
-            if (property.GetIndexParameters().Length > 0 || !property.CanRead || string.Equals(property.Name, "Script", StringComparison.Ordinal))
+            if (property.GetIndexParameters().Length > 0 ||
+                !property.CanRead ||
+                string.Equals(property.Name, "Script", StringComparison.Ordinal) ||
+                string.Equals(property.Name, "Fragments", StringComparison.Ordinal))
             {
                 continue;
             }
@@ -85,6 +94,7 @@ public static class ScriptFragmentDTOMapper
             MutagenObjectType = source.GetType().Name,
             ScriptName = GetPropertyValue(source, "ScriptName")?.ToString() ?? GetPropertyValue(source, "Name")?.ToString(),
             FragmentName = GetPropertyValue(source, "FragmentName")?.ToString(),
+            Unknown2 = GetPropertyValue(source, "Unknown2") is { } unknown2 ? Convert.ToInt32(unknown2) : null,
             ExtraBindDataVersion = GetPropertyValue(source, "ExtraBindDataVersion") is { } version ? Convert.ToInt32(version) : null,
             ImportedAtUTC = importedAtUTC
         };
@@ -95,6 +105,7 @@ public static class ScriptFragmentDTOMapper
         return GetPropertyValue(source, "ScriptName") != null ||
             GetPropertyValue(source, "Name") != null ||
             GetPropertyValue(source, "FragmentName") != null ||
+            GetPropertyValue(source, "Unknown2") != null ||
             GetPropertyValue(source, "ExtraBindDataVersion") != null;
     }
 

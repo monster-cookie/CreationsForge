@@ -397,6 +397,7 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("EnergyLevel", records, record => record.EnergyLevel.ToString()));
         fields.Add(CreateField("Responsibility", records, record => record.Responsibility));
         fields.Add(CreateField("Assistance", records, record => record.Assistance));
+        fields.Add(CreateField("Mood", records, record => record.Mood ?? string.Empty));
         fields.Add(CreateField("GearedUpWeapons", records, record => record.GearedUpWeapons.ToString()));
         fields.Add(CreateField("HeightMin", records, record => record.HeightMin.ToString()));
         fields.Add(CreateField("HeightMax", records, record => record.HeightMax.ToString()));
@@ -879,6 +880,8 @@ public class RecordComparisonService : IRecordComparisonService
             var soundChildren = new List<RecordComparisonFieldDTO>
             {
                 CreateChildField("Start", records, record => FindSound(sounds, record.ModKey, soundKey)?.Start ?? string.Empty),
+                CreateChildField("MutagenObjectType", records, record => FindSound(sounds, record.ModKey, soundKey)?.MutagenObjectType ?? string.Empty),
+                CreateChildField("InheritsSoundsFrom", records, record => FindSound(sounds, record.ModKey, soundKey)?.InheritsSoundsFrom ?? string.Empty),
                 CreateChildField("Versioning", records, record => FindSound(sounds, record.ModKey, soundKey)?.Versioning ?? string.Empty),
                 CreateChildField("Unknown", records, record => FindSound(sounds, record.ModKey, soundKey)?.Unknown ?? string.Empty)
             }

@@ -56,6 +56,8 @@ public class DtoReflectionFieldReader
 
     private static void NormalizeConditionFields(IDictionary<string, string> values)
     {
+        var projectedConditionSlots = new Dictionary<string, HashSet<int>>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var field in values.Keys.Where(field => field.EndsWith(".DataMutagenObjectType", StringComparison.OrdinalIgnoreCase)).ToList())
         {
             var basePath = field[..^".DataMutagenObjectType".Length];
@@ -67,8 +69,17 @@ public class DtoReflectionFieldReader
             AddConditionComparisonValueAlias(values, basePath);
             AddConditionFlagAliases(values, basePath);
             AddConditionParameterAliases(values, basePath);
+            if (TryProjectConditionSlot(values, basePath, projectedConditionSlots))
+            {
+                RemoveConditionFields(values, basePath);
+                continue;
+            }
+
             RemoveConditionInternalFields(values, basePath);
         }
+
+        AddProjectedConditionSlotCounts(values, projectedConditionSlots);
+        RemoveEmptyConditionCollectionCounts(values);
 
         foreach (var field in values.Keys.Where(field => field.EndsWith(".MutagenObjectType", StringComparison.OrdinalIgnoreCase)).ToList())
         {
@@ -140,6 +151,116 @@ public class DtoReflectionFieldReader
         {
             values.Remove(field);
         }
+    }
+
+    private static bool TryProjectConditionSlot(
+        IDictionary<string, string> values,
+        string basePath,
+        IDictionary<string, HashSet<int>> projectedConditionSlots)
+    {
+        if (!values.TryGetValue(basePath + ".ConditionSlot", out var conditionSlot) ||
+            string.IsNullOrWhiteSpace(conditionSlot) ||
+            string.Equals(conditionSlot, "Conditions", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var conditionIndex = GetConditionIndex(values, basePath);
+        var projectedBasePath = conditionSlot + "[" + conditionIndex.ToString(CultureInfo.InvariantCulture) + "]";
+        if (string.Equals(projectedBasePath, basePath, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        foreach (var field in values.Where(field => IsUnderPath(field.Key, basePath)).ToList())
+        {
+            if (IsConditionStorageField(field.Key, basePath))
+            {
+                continue;
+            }
+
+            values[projectedBasePath + field.Key[basePath.Length..]] = field.Value;
+        }
+
+        if (!projectedConditionSlots.TryGetValue(conditionSlot, out var conditionIndexes))
+        {
+            conditionIndexes = new HashSet<int>();
+            projectedConditionSlots[conditionSlot] = conditionIndexes;
+        }
+
+        conditionIndexes.Add(conditionIndex);
+        return true;
+    }
+
+    private static int GetConditionIndex(IDictionary<string, string> values, string basePath)
+    {
+        if (values.TryGetValue(basePath + ".ConditionIndex", out var conditionIndexText) &&
+            int.TryParse(conditionIndexText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var conditionIndex))
+        {
+            return conditionIndex;
+        }
+
+        var indexStart = basePath.LastIndexOf('[');
+        var indexEnd = basePath.LastIndexOf(']');
+        if (indexStart >= 0 &&
+            indexEnd > indexStart &&
+            int.TryParse(basePath.AsSpan(indexStart + 1, indexEnd - indexStart - 1), NumberStyles.Integer, CultureInfo.InvariantCulture, out conditionIndex))
+        {
+            return conditionIndex;
+        }
+
+        return 0;
+    }
+
+    private static void AddProjectedConditionSlotCounts(
+        IDictionary<string, string> values,
+        IReadOnlyDictionary<string, HashSet<int>> projectedConditionSlots)
+    {
+        foreach (var projectedConditionSlot in projectedConditionSlots)
+        {
+            var count = projectedConditionSlot.Value.Count == 0 ? 0 : projectedConditionSlot.Value.Max() + 1;
+            values[projectedConditionSlot.Key + ".Count"] = count.ToString(CultureInfo.InvariantCulture);
+        }
+    }
+
+    private static void RemoveConditionFields(IDictionary<string, string> values, string basePath)
+    {
+        foreach (var field in values.Keys.Where(field => IsUnderPath(field, basePath)).ToList())
+        {
+            values.Remove(field);
+        }
+    }
+
+    private static void RemoveEmptyConditionCollectionCounts(IDictionary<string, string> values)
+    {
+        foreach (var field in values.Keys.Where(field => field.EndsWith(".Conditions.Count", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(field, "Conditions.Count", StringComparison.OrdinalIgnoreCase)).ToList())
+        {
+            var collectionPath = field[..^".Count".Length];
+            if (values.Keys.Any(valueField => valueField.StartsWith(collectionPath + "[", StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            values.Remove(field);
+        }
+    }
+
+    private static bool IsConditionStorageField(string fieldName, string basePath)
+    {
+        return string.Equals(fieldName, basePath + ".ConditionSlot", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(fieldName, basePath + ".ConditionIndex", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(fieldName, basePath + ".DataMutagenObjectType", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(fieldName, basePath + ".ComparisonValueFormKey", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(fieldName, basePath + ".Flags", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.StartsWith(basePath + ".Parameters", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsUnderPath(string fieldName, string path)
+    {
+        return string.Equals(fieldName, path, StringComparison.OrdinalIgnoreCase) ||
+               fieldName.StartsWith(path + ".", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.StartsWith(path + "[", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsNullValue(string value)

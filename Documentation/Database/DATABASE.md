@@ -845,6 +845,7 @@ Indexes:
 - `Version2` and `VersionControl` (`INTEGER`, nullable)
 - `DispositionBase`, `EnergyLevel`, and `GearedUpWeapons` (`INTEGER`, `NOT NULL`)
 - `Aggression`, `Confidence`, `Responsibility`, and `Assistance` (`TEXT`, `NOT NULL`)
+- `Mood` (`TEXT`, nullable)
 - `HeightMin` and `HeightMax` (`REAL`, `NOT NULL`)
 - `SkinToneIndex` (`INTEGER`, nullable)
 - nullable decomposed FormKey columns for `Voice`, `Race`, `CombatOverridePackageList`, `CombatStyle`,
@@ -1582,7 +1583,8 @@ Columns:
 - typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
 - `SoundSlot` (`TEXT`, `NOT NULL`, primary key)
 - `Sound_Index` (`INTEGER`, `NOT NULL`, primary key)
-- `Start` and `Stop` (`TEXT`, nullable)
+- `MutagenObjectType` (`TEXT`, nullable)
+- `Start`, `Stop`, and `InheritsSoundsFrom` (`TEXT`, nullable)
 - `Versioning` (`TEXT`, nullable)
 - `Unknown` (`TEXT`, nullable)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
@@ -1609,6 +1611,7 @@ Columns:
 - `MutagenObjectType` (`TEXT`, nullable)
 - `ScriptName` (`TEXT`, nullable)
 - `FragmentName` (`TEXT`, nullable)
+- `Unknown2` (`INTEGER`, nullable)
 - `ExtraBindDataVersion` (`INTEGER`, nullable)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 

@@ -637,6 +637,7 @@ erDiagram
         INTEGER EnergyLevel
         TEXT Responsibility
         TEXT Assistance
+        TEXT Mood
         INTEGER GearedUpWeapons
         REAL HeightMin
         REAL HeightMax
@@ -1489,8 +1490,10 @@ erDiagram
         INTEGER FormKey_ID PK, FK
         TEXT SoundSlot PK
         INTEGER Sound_Index PK
+        TEXT MutagenObjectType
         TEXT Start
         TEXT Stop
+        TEXT InheritsSoundsFrom
         TEXT Versioning
         TEXT Unknown
         TEXT ImportedAtUTC
@@ -1511,6 +1514,7 @@ erDiagram
         TEXT MutagenObjectType
         TEXT ScriptName
         TEXT FragmentName
+        INTEGER Unknown2
         INTEGER ExtraBindDataVersion
         TEXT ImportedAtUTC
     }

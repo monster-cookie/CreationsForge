@@ -48,6 +48,7 @@ public class NPCRepository : TypedRecordRepositoryBase, INPCRepository
                     SelectColumn("EnergyLevel"),
                     SelectColumn("Responsibility"),
                     SelectColumn("Assistance"),
+                    SelectColumn("Mood"),
                     SelectColumn("GearedUpWeapons"),
                     SelectColumn("HeightMin"),
                     SelectColumn("HeightMax"),
@@ -122,7 +123,7 @@ public class NPCRepository : TypedRecordRepositoryBase, INPCRepository
             INSERT OR REPLACE INTO NPCs (
                 Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
                 EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Name, ShortName, LongName, Version2, VersionControl, DispositionBase, Aggression, Confidence,
-                EnergyLevel, Responsibility, Assistance, GearedUpWeapons, HeightMin, HeightMax, SkinToneIndex, Pronoun,
+                EnergyLevel, Responsibility, Assistance, Mood, GearedUpWeapons, HeightMin, HeightMax, SkinToneIndex, Pronoun,
                 Voice_ModKey_Name, Voice_ModKey_Type, Voice_ModKey_FileName, Voice_FormKey_ID,
                 Race_ModKey_Name, Race_ModKey_Type, Race_ModKey_FileName, Race_FormKey_ID,
                 CombatOverridePackageList_ModKey_Name, CombatOverridePackageList_ModKey_Type, CombatOverridePackageList_ModKey_FileName, CombatOverridePackageList_FormKey_ID,
@@ -134,7 +135,7 @@ public class NPCRepository : TypedRecordRepositoryBase, INPCRepository
             VALUES (
                 @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
                 @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Name, @ShortName, @LongName, @Version2, @VersionControl, @DispositionBase, @Aggression, @Confidence,
-                @EnergyLevel, @Responsibility, @Assistance, @GearedUpWeapons, @HeightMin, @HeightMax, @SkinToneIndex, @Pronoun,
+                @EnergyLevel, @Responsibility, @Assistance, @Mood, @GearedUpWeapons, @HeightMin, @HeightMax, @SkinToneIndex, @Pronoun,
                 @VoiceModKeyName, @VoiceModKeyType, @VoiceModKeyFileName, @VoiceFormKeyId,
                 @RaceModKeyName, @RaceModKeyType, @RaceModKeyFileName, @RaceFormKeyId,
                 @CombatOverridePackageListModKeyName, @CombatOverridePackageListModKeyType, @CombatOverridePackageListModKeyFileName, @CombatOverridePackageListFormKeyId,
@@ -169,6 +170,7 @@ public class NPCRepository : TypedRecordRepositoryBase, INPCRepository
                 dto.EnergyLevel,
                 dto.Responsibility,
                 dto.Assistance,
+                dto.Mood,
                 dto.GearedUpWeapons,
                 dto.HeightMin,
                 dto.HeightMax,
@@ -238,6 +240,7 @@ public class NPCRepository : TypedRecordRepositoryBase, INPCRepository
             EnergyLevel = record.EnergyLevel,
             Responsibility = record.Responsibility,
             Assistance = record.Assistance,
+            Mood = record.Mood,
             GearedUpWeapons = record.GearedUpWeapons,
             HeightMin = record.HeightMin,
             HeightMax = record.HeightMax,
@@ -290,6 +293,7 @@ public class NPCRepository : TypedRecordRepositoryBase, INPCRepository
         public int EnergyLevel { get; set; }
         public string Responsibility { get; set; } = string.Empty;
         public string Assistance { get; set; } = string.Empty;
+        public string? Mood { get; set; }
         public int GearedUpWeapons { get; set; }
         public double HeightMin { get; set; }
         public double HeightMax { get; set; }

@@ -289,6 +289,12 @@ public class ValidationSpecRunner
                     continue;
                 }
 
+                if (string.Equals(spriggitField.Key, rule.SpriggitPath, StringComparison.OrdinalIgnoreCase) &&
+                    IsSpriggitEmptyCollectionRoot(spriggitField.Value))
+                {
+                    continue;
+                }
+
                 if (IsSpriggitScriptingListItemNameWithoutDtoShape(spriggitField.Key))
                 {
                     continue;
@@ -1277,6 +1283,12 @@ public class ValidationSpecRunner
 
         return fieldName.Contains(".Structs[", StringComparison.OrdinalIgnoreCase) ||
                fieldName.EndsWith(".Structs.Count", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsSpriggitEmptyCollectionRoot(string value)
+    {
+        return string.Equals(value, "[]", StringComparison.Ordinal) ||
+               string.Equals(value, "Empty", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryGetScriptingAdapterDataValue(

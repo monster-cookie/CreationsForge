@@ -570,6 +570,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 EnergyLevel = record.EnergyLevel,
                 Responsibility = record.Responsibility.ToString(),
                 Assistance = record.Assistance.ToString(),
+                Mood = GetPropertyStringOrNull(GetPropertyValue(record, "AIData") ?? record, "Mood"),
                 GearedUpWeapons = record.GearedUpWeapons,
                 HeightMin = record.HeightMin,
                 HeightMax = record.HeightMax,
@@ -1824,7 +1825,8 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         }
 
         var start = GetSoundStart(soundSource);
-        if (string.IsNullOrWhiteSpace(start))
+        var inheritsSoundsFrom = GetSoundInheritsSoundsFrom(soundSource);
+        if (string.IsNullOrWhiteSpace(start) && string.IsNullOrWhiteSpace(inheritsSoundsFrom))
         {
             return null;
         }
@@ -1839,10 +1841,23 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             SoundIndex = soundIndex,
             Start = start,
             Stop = GetSoundStop(soundSource),
+            MutagenObjectType = GetSoundMutagenObjectType(soundSlot, soundSource),
+            InheritsSoundsFrom = inheritsSoundsFrom,
             Versioning = FormatEnumerable(GetPropertyValue(soundSource, "Versioning")),
             Unknown = FormatHexValue(GetPropertyValue(soundSource, "Unknown")),
             ImportedAtUTC = importedAtUTC
         };
+    }
+
+    private static string? GetSoundMutagenObjectType(string soundSlot, object soundSource)
+    {
+        if (!string.Equals(soundSlot, "Sound", StringComparison.OrdinalIgnoreCase) ||
+            GetFormKeyFromObject(soundSource) != null)
+        {
+            return null;
+        }
+
+        return NormalizeMutagenObjectTypeName(soundSource.GetType().Name);
     }
 
     private static string? GetSoundStart(object soundSource)
@@ -1878,6 +1893,21 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         var sound = GetPropertyValue(soundSource, "Sound");
         var stop = sound == null ? null : GetPropertyValue(sound, "Stop")?.ToString();
         return IsEmptyGuidText(stop) ? null : stop;
+    }
+
+    private static string? GetSoundInheritsSoundsFrom(object soundSource)
+    {
+        return GetFormKeyFromObject(GetPropertyValue(soundSource, "InheritsSoundsFrom")) is { } formKey
+            ? $"{formKey.Id:X6}:{formKey.ModKey.FileName}"
+            : null;
+    }
+
+    private static string NormalizeMutagenObjectTypeName(string typeName)
+    {
+        const string binaryOverlaySuffix = "BinaryOverlay";
+        return typeName.EndsWith(binaryOverlaySuffix, StringComparison.Ordinal)
+            ? typeName[..^binaryOverlaySuffix.Length]
+            : typeName;
     }
 
     private static bool IsEmptyGuidText(string? value)

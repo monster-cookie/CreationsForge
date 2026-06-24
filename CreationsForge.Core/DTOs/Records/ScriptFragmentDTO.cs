@@ -23,6 +23,8 @@ public class ScriptFragmentDTO
 
     public string? FragmentName { get; set; }
 
+    public int? Unknown2 { get; set; }
+
     public int? ExtraBindDataVersion { get; set; }
 
     public required DateTime ImportedAtUTC { get; set; }

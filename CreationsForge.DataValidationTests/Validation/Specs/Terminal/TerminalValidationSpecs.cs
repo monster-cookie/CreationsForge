@@ -5,6 +5,9 @@ namespace CreationsForge.DataValidationTests.Validation.Specs.Terminal;
 
 public static class TerminalValidationSpecs
 {
+    private static readonly IReadOnlyDictionary<string, string> NoPathReplacements =
+        new Dictionary<string, string>(StringComparer.Ordinal);
+
     private static readonly IReadOnlyDictionary<string, string> ScriptingAdapterPathReplacements =
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
@@ -207,7 +210,7 @@ public static class TerminalValidationSpecs
             spec
                 .AddRule(ValidationFieldRule.IgnoreSpriggit($"BodyTexts[{index}]", "Inline YAML list item root is covered by body text child rules."))
                 .AddRule(ValidationFieldRule.TranslatedField($"BodyTexts[{index}].Text", $"BodyTexts[{index}].Text", ValidationValueNormalizer.TerminalText, requireAllLanguages: true))
-                .AddRule(ValidationFieldRule.IgnoreSpriggitPrefix($"BodyTexts[{index}].Conditions", "Terminal body text conditions are persisted as condition rows."));
+                .AddRule(ValidationFieldRule.PathPrefix($"BodyTexts[{index}].Conditions", $"BodyTexts[{index}].Conditions", NoPathReplacements));
         }
     }
 
@@ -232,7 +235,7 @@ public static class TerminalValidationSpecs
                     "Null",
                     "Spriggit omits submenu for terminal menu items that do not link to a submenu."))
                 .AddRule(ValidationFieldRule.TranslatedField($"MenuItems[{index}].DisplayText", $"MenuItems[{index}].DisplayText", ValidationValueNormalizer.TerminalText, requireAllLanguages: true))
-                .AddRule(ValidationFieldRule.IgnoreSpriggitPrefix($"MenuItems[{index}].Conditions", "Terminal menu item conditions are persisted as condition rows."));
+                .AddRule(ValidationFieldRule.PathPrefix($"MenuItems[{index}].Conditions", $"MenuItems[{index}].Conditions", NoPathReplacements));
         }
     }
 

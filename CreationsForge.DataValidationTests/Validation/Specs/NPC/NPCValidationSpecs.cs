@@ -138,6 +138,12 @@ public static class NPCValidationSpecs
             .AddRule(ValidationFieldRule.OptionalField("AIData.Responsibility", "Responsibility"))
             .AddRule(ValidationFieldRule.OptionalField("Assistance", "Assistance"))
             .AddRule(ValidationFieldRule.OptionalField("AIData.Assistance", "Assistance"))
+            .AddRule(ValidationFieldRule.OptionalField("AIData.Mood", "Mood"))
+            .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                "AIData.Mood",
+                "Mood",
+                "Neutral",
+                "Mutagen exposes the default NPC mood when Spriggit omits it."))
             .AddRule(ValidationFieldRule.OptionalField("GearedUpWeapons", "GearedUpWeapons"))
             .AddRule(ValidationFieldRule.OptionalField("PlayerSkills.GearedUpWeapons", "GearedUpWeapons"))
             .AddRule(ValidationFieldRule.OptionalField("HeightMin", "HeightMin", ValidationValueNormalizer.DecimalNumber))
@@ -152,6 +158,8 @@ public static class NPCValidationSpecs
             .AddRule(ValidationFieldRule.OptionalField("CrimeFaction", "CrimeFactionFormKey"))
             .AddRule(ValidationFieldRule.FormKeyList("Keywords", "Keywords", "Keyword"))
             .AddRule(ValidationFieldRule.SoundSlot("Sound.Start", "Sound", "Start"))
+            .AddRule(ValidationFieldRule.SoundSlot("Sound.MutagenObjectType", "Sound", "MutagenObjectType"))
+            .AddRule(ValidationFieldRule.SoundSlot("Sound.InheritsSoundsFrom", "Sound", "InheritsSoundsFrom"))
             .AddRule(ValidationFieldRule.PathPrefix("VirtualMachineAdapter.Scripts", "ScriptingAdapters", ScriptingAdapterPathReplacements))
             .AddRules(GetNPCStructuredValueRules())
             .AddRules(GetUnmodeledNPCSpriggitIgnores())
@@ -161,6 +169,7 @@ public static class NPCValidationSpecs
             .AddRule(ValidationFieldRule.IgnoreDto("EnergyLevel", "NPC DTO stores a default value when no Spriggit AI data field is present."))
             .AddRule(ValidationFieldRule.IgnoreDto("Responsibility", "NPC DTO stores a default value when no Spriggit AI data field is present."))
             .AddRule(ValidationFieldRule.IgnoreDto("Assistance", "NPC DTO stores a default value when no Spriggit AI data field is present."))
+            .AddRule(ValidationFieldRule.IgnoreDto("AIData", "AIData is the Mutagen aggregate string; individual AI data fields are validated separately."))
             .AddRule(ValidationFieldRule.IgnoreDto("GearedUpWeapons", "NPC DTO stores a default value when no Spriggit geared-up-weapons field is present."))
             .AddRule(ValidationFieldRule.IgnoreDto("HeightMin", "NPC DTO stores a default value when no Spriggit height range field is present."))
             .AddRule(ValidationFieldRule.IgnoreDto("HeightMax", "NPC DTO stores a default value when no Spriggit height range field is present."))
@@ -227,7 +236,6 @@ public static class NPCValidationSpecs
     {
         var paths = new[]
         {
-            "AIData.Mood",
             "BodyMorphRegionValues",
             "DefaultTemplate",
             "FaceMorph",

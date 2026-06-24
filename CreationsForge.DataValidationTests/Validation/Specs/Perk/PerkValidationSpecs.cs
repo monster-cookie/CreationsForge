@@ -49,12 +49,12 @@ public static class PerkValidationSpecs
 
     public static ValidationSpec Fallout4_AnimalFriend01()
     {
-        return Fallout4Perk("AnimalFriend01", "01E67F:Fallout4.esm", withMajorRecordFlagsRaw: false);
+        return Fallout4Perk("AnimalFriend01", "01E67F:Fallout4.esm", withMajorRecordFlagsRaw: false, withScriptFragments: true);
     }
 
     public static ValidationSpec Fallout4_AnimalFriend02()
     {
-        return Fallout4Perk("AnimalFriend02", "04A0D9:Fallout4.esm", withMajorRecordFlagsRaw: false);
+        return Fallout4Perk("AnimalFriend02", "04A0D9:Fallout4.esm", withMajorRecordFlagsRaw: false, withScriptFragments: true);
     }
 
     public static ValidationSpec Fallout4_TrainingAG01()
@@ -98,7 +98,7 @@ public static class PerkValidationSpecs
             .Build();
     }
 
-    private static ValidationSpec Fallout4Perk(string sampleName, string formKey, bool withMajorRecordFlagsRaw)
+    private static ValidationSpec Fallout4Perk(string sampleName, string formKey, bool withMajorRecordFlagsRaw, bool withScriptFragments = false)
     {
         var spec = BasePerk(SupportedGame.Fallout4, sampleName, formKey)
             .AddRule(ValidationFieldRule.Field("Category", "Category"))
@@ -106,6 +106,11 @@ public static class PerkValidationSpecs
             .AddRule(ValidationFieldRule.Field("Restriction", "RestrictionFormKey"))
             .AddRule(ValidationFieldRule.Field("Training", "TrainingFormKey"))
             .AddRule(ValidationFieldRule.SoundSlot("Sound", "Sound", "Start"));
+
+        if (withScriptFragments)
+        {
+            spec.AddRule(ValidationFieldRule.DtoNonEmpty("VirtualMachineAdapter.ScriptFragments", "ScriptFragments[0].ScriptName"));
+        }
 
         AddMajorRecordFlagRules(spec, withMajorRecordFlagsRaw, "Fallout4MajorRecordFlags");
         return spec.Build();
@@ -137,7 +142,6 @@ public static class PerkValidationSpecs
             .AddRule(ValidationFieldRule.Field("Playable", "Playable"))
             .AddRule(ValidationFieldRule.Field("Hidden", "Hidden"))
             .AddRule(ValidationFieldRule.Field("NextPerk", "NextPerk"))
-            .AddRule(ValidationFieldRule.DtoNonEmpty("VirtualMachineAdapter.ScriptFragments", "ScriptFragments[0].ScriptName"))
             .AddRule(ValidationFieldRule.PathPrefix("Conditions", "Conditions", NoPathReplacements))
             .AddRules(RootEffectRules())
             .AddRule(ValidationFieldRule.IgnoreSpriggit("Version2", "Version2 is common header metadata outside current repository read-back for this record set."))
@@ -366,6 +370,19 @@ public static class PerkValidationSpecs
             yield return ValidationFieldRule.IgnoreDto(
                 "BackgroundSkills[" + skillIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "].SkillIndex",
                 "SkillIndex is DTO collection metadata for repository read-back.");
+        }
+
+        for (var fragmentIndex = 0; fragmentIndex <= 20; fragmentIndex++)
+        {
+            yield return ValidationFieldRule.IgnoreDto(
+                "ScriptFragments[" + fragmentIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "].FragmentIndex",
+                "FragmentIndex is DTO collection metadata for repository read-back.");
+            yield return ValidationFieldRule.IgnoreDto(
+                "ScriptFragments[" + fragmentIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "].FragmentSlot",
+                "FragmentSlot is DTO collection metadata for repository read-back.");
+            yield return ValidationFieldRule.IgnoreDto(
+                "ScriptFragments[" + fragmentIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "].MutagenObjectType",
+                "MutagenObjectType is DTO implementation metadata for script-fragment read-back.");
         }
     }
 

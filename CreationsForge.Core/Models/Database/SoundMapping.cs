@@ -25,6 +25,8 @@ public class SoundMapping
         SoundIndex = dto.SoundIndex;
         Start = dto.Start;
         Stop = dto.Stop;
+        MutagenObjectType = dto.MutagenObjectType;
+        InheritsSoundsFrom = dto.InheritsSoundsFrom;
         Versioning = dto.Versioning;
         Unknown = dto.Unknown;
         ImportedAtUTC = dto.ImportedAtUTC;
@@ -55,6 +57,10 @@ public class SoundMapping
     [Column("Start")] public string? Start { get; set; }
 
     [Column("Stop")] public string? Stop { get; set; }
+
+    [Column("MutagenObjectType")] public string? MutagenObjectType { get; set; }
+
+    [Column("InheritsSoundsFrom")] public string? InheritsSoundsFrom { get; set; }
 
     [Column("Versioning")] public string? Versioning { get; set; }
 

@@ -28,6 +28,7 @@ public static class Helpers
         ["Restriction"] = "RestrictionFormKey",
         ["Training"] = "TrainingFormKey",
         ["Model.File"] = "Models[0].File",
+        ["Model.Data"] = "Models[0].Data",
         ["Model.LightLayer"] = "Models[0].LightLayer",
         ["Lod.Level0"] = "LodLevel0",
         ["Lod.Level1"] = "LodLevel1",
@@ -151,6 +152,7 @@ public static class Helpers
         AddSpriggitFieldAlias(fields, "XALG", "XALG");
         AddSpriggitFieldAlias(fields, "Models.Count", "Model.Count");
         AddSpriggitFieldAlias(fields, "Models[0].File", "Model.File");
+        AddSpriggitFieldAlias(fields, "Models[0].Data", "Model.Data");
         AddSpriggitFieldAlias(fields, "Models[0].LightLayer", "Model.LightLayer");
         AddSpriggitFieldAlias(fields, "Models[0].Flags", "Model.Flags");
         AddSpriggitFieldAlias(fields, "LodLevel0", "Lod.Level0");
@@ -169,25 +171,37 @@ public static class Helpers
         AddSpriggitRawPayloadAliases(fields);
         AddSpriggitSoundAliases(fields);
         AddSpriggitScriptingAdapterAliases(fields);
+        AddSpriggitScriptFragmentAliases(fields);
         NormalizeConditionFields(fields);
         return fields;
     }
 
     private static void NormalizeConditionFields(IDictionary<string, string> fields)
     {
+        var projectedConditionSlots = new Dictionary<string, HashSet<int>>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var field in fields.Keys.Where(field => field.EndsWith(".DataMutagenObjectType", StringComparison.OrdinalIgnoreCase)).ToList())
         {
             var basePath = field[..^".DataMutagenObjectType".Length];
             if (fields.TryGetValue(field, out var value) && !IsNull(value))
             {
-            fields[basePath + ".Data.MutagenObjectType"] = NormalizeMutagenObjectTypeName(value);
+                fields[basePath + ".Data.MutagenObjectType"] = NormalizeMutagenObjectTypeName(value);
             }
 
             AddConditionComparisonValueAlias(fields, basePath);
             AddConditionFlagAliases(fields, basePath);
             AddConditionParameterAliases(fields, basePath);
+            if (TryProjectConditionSlot(fields, basePath, projectedConditionSlots))
+            {
+                RemoveConditionFields(fields, basePath);
+                continue;
+            }
+
             RemoveConditionInternalFields(fields, basePath);
         }
+
+        AddProjectedConditionSlotCounts(fields, projectedConditionSlots);
+        RemoveEmptyConditionCollectionCounts(fields);
 
         foreach (var field in fields.Keys.Where(field => field.EndsWith(".MutagenObjectType", StringComparison.OrdinalIgnoreCase)).ToList())
         {
@@ -259,6 +273,116 @@ public static class Helpers
         {
             fields.Remove(field);
         }
+    }
+
+    private static bool TryProjectConditionSlot(
+        IDictionary<string, string> fields,
+        string basePath,
+        IDictionary<string, HashSet<int>> projectedConditionSlots)
+    {
+        if (!fields.TryGetValue(basePath + ".ConditionSlot", out var conditionSlot) ||
+            string.IsNullOrWhiteSpace(conditionSlot) ||
+            string.Equals(conditionSlot, "Conditions", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var conditionIndex = GetConditionIndex(fields, basePath);
+        var projectedBasePath = conditionSlot + "[" + conditionIndex.ToString(CultureInfo.InvariantCulture) + "]";
+        if (string.Equals(projectedBasePath, basePath, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        foreach (var field in fields.Where(field => IsUnderPath(field.Key, basePath)).ToList())
+        {
+            if (IsConditionStorageField(field.Key, basePath))
+            {
+                continue;
+            }
+
+            fields[projectedBasePath + field.Key[basePath.Length..]] = field.Value;
+        }
+
+        if (!projectedConditionSlots.TryGetValue(conditionSlot, out var conditionIndexes))
+        {
+            conditionIndexes = new HashSet<int>();
+            projectedConditionSlots[conditionSlot] = conditionIndexes;
+        }
+
+        conditionIndexes.Add(conditionIndex);
+        return true;
+    }
+
+    private static int GetConditionIndex(IDictionary<string, string> fields, string basePath)
+    {
+        if (fields.TryGetValue(basePath + ".ConditionIndex", out var conditionIndexText) &&
+            int.TryParse(conditionIndexText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var conditionIndex))
+        {
+            return conditionIndex;
+        }
+
+        var indexStart = basePath.LastIndexOf('[');
+        var indexEnd = basePath.LastIndexOf(']');
+        if (indexStart >= 0 &&
+            indexEnd > indexStart &&
+            int.TryParse(basePath.AsSpan(indexStart + 1, indexEnd - indexStart - 1), NumberStyles.Integer, CultureInfo.InvariantCulture, out conditionIndex))
+        {
+            return conditionIndex;
+        }
+
+        return 0;
+    }
+
+    private static void AddProjectedConditionSlotCounts(
+        IDictionary<string, string> fields,
+        IReadOnlyDictionary<string, HashSet<int>> projectedConditionSlots)
+    {
+        foreach (var projectedConditionSlot in projectedConditionSlots)
+        {
+            var count = projectedConditionSlot.Value.Count == 0 ? 0 : projectedConditionSlot.Value.Max() + 1;
+            fields[projectedConditionSlot.Key + ".Count"] = count.ToString(CultureInfo.InvariantCulture);
+        }
+    }
+
+    private static void RemoveConditionFields(IDictionary<string, string> fields, string basePath)
+    {
+        foreach (var field in fields.Keys.Where(field => IsUnderPath(field, basePath)).ToList())
+        {
+            fields.Remove(field);
+        }
+    }
+
+    private static void RemoveEmptyConditionCollectionCounts(IDictionary<string, string> fields)
+    {
+        foreach (var field in fields.Keys.Where(field => field.EndsWith(".Conditions.Count", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(field, "Conditions.Count", StringComparison.OrdinalIgnoreCase)).ToList())
+        {
+            var collectionPath = field[..^".Count".Length];
+            if (fields.Keys.Any(valueField => valueField.StartsWith(collectionPath + "[", StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            fields.Remove(field);
+        }
+    }
+
+    private static bool IsConditionStorageField(string fieldName, string basePath)
+    {
+        return string.Equals(fieldName, basePath + ".ConditionSlot", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(fieldName, basePath + ".ConditionIndex", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(fieldName, basePath + ".DataMutagenObjectType", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(fieldName, basePath + ".ComparisonValueFormKey", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(fieldName, basePath + ".Flags", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.StartsWith(basePath + ".Parameters", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsUnderPath(string fieldName, string path)
+    {
+        return string.Equals(fieldName, path, StringComparison.OrdinalIgnoreCase) ||
+               fieldName.StartsWith(path + ".", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.StartsWith(path + "[", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string NormalizeMutagenObjectTypeName(string value)
@@ -334,6 +458,8 @@ public static class Helpers
             }
 
             AddSpriggitSoundAlias(fields, soundPath, soundSlot, "Start");
+            AddSpriggitSoundAlias(fields, soundPath, soundSlot, "MutagenObjectType");
+            AddSpriggitSoundAlias(fields, soundPath, soundSlot, "InheritsSoundsFrom");
             AddSpriggitSoundAlias(fields, soundPath, soundSlot, "Versioning");
             AddSpriggitSoundAlias(fields, soundPath, soundSlot, "Unknown");
         }
@@ -584,6 +710,78 @@ public static class Helpers
         for (var index = 0; index < count; index++)
         {
             AddSpriggitScriptingAdapterAlias(fields, index);
+        }
+    }
+
+    private static void AddSpriggitScriptFragmentAliases(IDictionary<string, string> fields)
+    {
+        if (!fields.TryGetValue("ScriptFragments.Count", out var countValue) ||
+            !int.TryParse(countValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
+        {
+            return;
+        }
+
+        for (var index = 0; index < count; index++)
+        {
+            var dtoFragmentPath = "ScriptFragments[" + index.ToString(CultureInfo.InvariantCulture) + "]";
+            if (!fields.TryGetValue(dtoFragmentPath + ".FragmentSlot", out var fragmentSlot))
+            {
+                continue;
+            }
+
+            if (string.Equals(fragmentSlot, "ScriptFragments", StringComparison.Ordinal))
+            {
+                AddSpriggitFieldAlias(fields, dtoFragmentPath + ".ExtraBindDataVersion", "VirtualMachineAdapter.ScriptFragments.ExtraBindDataVersion");
+                continue;
+            }
+
+            if (string.Equals(fragmentSlot, "ScriptFragments.Fragments", StringComparison.Ordinal))
+            {
+                var fragmentIndex = GetFragmentIndex(fields, dtoFragmentPath);
+                var spriggitFragmentPath = "VirtualMachineAdapter.ScriptFragments.Fragments[" + fragmentIndex.ToString(CultureInfo.InvariantCulture) + "]";
+                fields["VirtualMachineAdapter.ScriptFragments.Fragments.Count"] = (fragmentIndex + 1).ToString(CultureInfo.InvariantCulture);
+                AddSpriggitFieldAlias(fields, dtoFragmentPath + ".ScriptName", spriggitFragmentPath + ".ScriptName");
+                AddSpriggitFieldAlias(fields, dtoFragmentPath + ".FragmentName", spriggitFragmentPath + ".FragmentName");
+                AddSpriggitFieldAlias(fields, dtoFragmentPath + ".Unknown2", spriggitFragmentPath + ".Unknown2");
+                continue;
+            }
+
+            if (string.Equals(fragmentSlot, "ScriptFragments.Script", StringComparison.Ordinal))
+            {
+                AddSpriggitFieldAlias(fields, dtoFragmentPath + ".ScriptName", "VirtualMachineAdapter.ScriptFragments.Script.Name");
+                AddSpriggitScriptFragmentScriptPropertyAliases(fields);
+            }
+        }
+    }
+
+    private static int GetFragmentIndex(IDictionary<string, string> fields, string dtoFragmentPath)
+    {
+        return fields.TryGetValue(dtoFragmentPath + ".FragmentIndex", out var fragmentIndexValue) &&
+               int.TryParse(fragmentIndexValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var fragmentIndex)
+            ? fragmentIndex
+            : 0;
+    }
+
+    private static void AddSpriggitScriptFragmentScriptPropertyAliases(IDictionary<string, string> fields)
+    {
+        if (!fields.TryGetValue("ScriptingAdapters[0].Properties.Count", out var propertyCount))
+        {
+            return;
+        }
+
+        fields["VirtualMachineAdapter.ScriptFragments.Script.Properties.Count"] = propertyCount;
+        if (!int.TryParse(propertyCount, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
+        {
+            return;
+        }
+
+        for (var propertyIndex = 0; propertyIndex < count; propertyIndex++)
+        {
+            AddSpriggitScriptingAdapterPropertyAlias(
+                fields,
+                "ScriptingAdapters[0]",
+                "VirtualMachineAdapter.ScriptFragments.Script.Properties",
+                propertyIndex);
         }
     }
 

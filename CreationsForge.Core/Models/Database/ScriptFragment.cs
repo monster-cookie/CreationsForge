@@ -26,6 +26,7 @@ public class ScriptFragment
         MutagenObjectType = dto.MutagenObjectType;
         ScriptName = dto.ScriptName;
         FragmentName = dto.FragmentName;
+        Unknown2 = dto.Unknown2;
         ExtraBindDataVersion = dto.ExtraBindDataVersion;
         ImportedAtUTC = dto.ImportedAtUTC;
     }
@@ -57,6 +58,8 @@ public class ScriptFragment
     [Column("ScriptName")] public string? ScriptName { get; set; }
 
     [Column("FragmentName")] public string? FragmentName { get; set; }
+
+    [Column("Unknown2")] public int? Unknown2 { get; set; }
 
     [Column("ExtraBindDataVersion")] public int? ExtraBindDataVersion { get; set; }
 

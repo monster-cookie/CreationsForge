@@ -299,6 +299,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 EnergyLevel = GetPropertyInt(GetPropertyValue(record, "AIData") ?? record, "EnergyLevel"),
                 Responsibility = GetPropertyString(GetPropertyValue(record, "AIData") ?? record, "Responsibility"),
                 Assistance = GetPropertyString(GetPropertyValue(record, "AIData") ?? record, "Assistance"),
+                Mood = GetPropertyStringOrNull(GetPropertyValue(record, "AIData") ?? record, "Mood"),
                 GearedUpWeapons = GetPropertyInt(GetPropertyValue(record, "PlayerSkills") ?? record, "GearedUpWeapons"),
                 HeightMin = GetPropertyDouble(record, "HeightMin"),
                 HeightMax = GetPropertyDouble(record, "HeightMax"),
@@ -1693,7 +1694,8 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         if (soundSource == null) return null;
 
         var start = GetSoundStart(soundSource);
-        if (string.IsNullOrWhiteSpace(start)) return null;
+        var inheritsSoundsFrom = GetSoundInheritsSoundsFrom(soundSource);
+        if (string.IsNullOrWhiteSpace(start) && string.IsNullOrWhiteSpace(inheritsSoundsFrom)) return null;
 
         return new SoundMappingDTO
         {
@@ -1705,10 +1707,23 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             SoundIndex = soundIndex,
             Start = start,
             Stop = GetSoundStop(soundSource),
+            MutagenObjectType = GetSoundMutagenObjectType(soundSlot, soundSource),
+            InheritsSoundsFrom = inheritsSoundsFrom,
             Versioning = FormatEnumerable(GetPropertyValue(soundSource, "Versioning")),
             Unknown = FormatHexValue(GetPropertyValue(soundSource, "Unknown")),
             ImportedAtUTC = importedAtUTC
         };
+    }
+
+    private static string? GetSoundMutagenObjectType(string soundSlot, object soundSource)
+    {
+        if (!string.Equals(soundSlot, "Sound", StringComparison.OrdinalIgnoreCase) ||
+            GetFormKeyFromObject(soundSource) != null)
+        {
+            return null;
+        }
+
+        return NormalizeMutagenObjectTypeName(soundSource.GetType().Name);
     }
 
     private static string? GetSoundStart(object soundSource)
@@ -1740,6 +1755,21 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         var sound = GetPropertyValue(soundSource, "Sound");
         var stop = sound == null ? null : GetPropertyValue(sound, "Stop")?.ToString();
         return IsEmptyGuidText(stop) ? null : stop;
+    }
+
+    private static string? GetSoundInheritsSoundsFrom(object soundSource)
+    {
+        return GetFormKeyFromObject(GetPropertyValue(soundSource, "InheritsSoundsFrom")) is { } formKey
+            ? $"{formKey.Id:X6}:{formKey.ModKey.FileName}"
+            : null;
+    }
+
+    private static string NormalizeMutagenObjectTypeName(string typeName)
+    {
+        const string binaryOverlaySuffix = "BinaryOverlay";
+        return typeName.EndsWith(binaryOverlaySuffix, StringComparison.Ordinal)
+            ? typeName[..^binaryOverlaySuffix.Length]
+            : typeName;
     }
 
     private static bool IsEmptyGuidText(string? value)
