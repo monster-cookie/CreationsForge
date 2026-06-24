@@ -869,7 +869,122 @@ erDiagram
         TEXT Lod_Level1
         TEXT Lod_Level2
         TEXT Lod_Level3
-        TEXT NavmeshGeometry
+    }
+
+    StaticNavmeshGeometries {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        TEXT GridMin
+        TEXT GridMax
+        TEXT GridMaxDistance
+        TEXT GridSize
+        TEXT Parent_MutagenObjectType
+        TEXT Parent_ModKey_Name
+        INTEGER Parent_ModKey_Type
+        TEXT Parent_ModKey_FileName
+        INTEGER Parent_FormKey_ID
+        TEXT ImportedAtUTC
+    }
+
+    StaticNavmeshCover {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Cover_Index PK
+        TEXT Data
+        TEXT Vertex1
+        TEXT Vertex2
+        TEXT ImportedAtUTC
+    }
+
+    StaticNavmeshCoverTriangleMappings {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Mapping_Index PK
+        TEXT Cover
+        TEXT Triangle
+        TEXT Value
+        TEXT ImportedAtUTC
+    }
+
+    StaticNavmeshGridCells {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER GridArray_Index PK
+        INTEGER GridCell_Index PK
+        TEXT Value
+        TEXT ImportedAtUTC
+    }
+
+    StaticNavmeshTriangles {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Triangle_Index PK
+        TEXT EdgeLink_0_1
+        TEXT EdgeLink_1_2
+        TEXT EdgeLink_2_0
+        TEXT Height
+        TEXT Vertices
+        TEXT CoverFlags
+        TEXT Flags
+        TEXT ImportedAtUTC
+    }
+
+    StaticNavmeshVersioning {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Versioning_Index PK
+        TEXT Value
+        TEXT ImportedAtUTC
+    }
+
+    StaticNavmeshVertices {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Vertex_Index PK
+        TEXT Point
+        TEXT ImportedAtUTC
     }
 
     StaticProperties {
@@ -1511,6 +1626,7 @@ erDiagram
         INTEGER FormKey_ID PK, FK
         TEXT FragmentSlot PK
         INTEGER Fragment_Index PK
+        INTEGER SourceFragmentIndex
         TEXT MutagenObjectType
         TEXT ScriptName
         TEXT FragmentName
@@ -1676,6 +1792,13 @@ erDiagram
     RecordInstances ||--o| MagicEffects : "typed detail"
     RecordInstances ||--o| Perks : "typed detail"
     RecordInstances ||--o| Statics : "typed detail"
+    Statics ||--o| StaticNavmeshGeometries : contains
+    StaticNavmeshGeometries ||--o{ StaticNavmeshCover : contains
+    StaticNavmeshGeometries ||--o{ StaticNavmeshCoverTriangleMappings : contains
+    StaticNavmeshGeometries ||--o{ StaticNavmeshGridCells : contains
+    StaticNavmeshGeometries ||--o{ StaticNavmeshTriangles : contains
+    StaticNavmeshGeometries ||--o{ StaticNavmeshVersioning : contains
+    StaticNavmeshGeometries ||--o{ StaticNavmeshVertices : contains
     Statics ||--o{ StaticProperties : contains
     RecordInstances ||--o| Books : "typed detail"
     RecordInstances ||--o| Doors : "typed detail"
@@ -1775,6 +1898,8 @@ These columns contain record-reference data but are not declared SQLite foreign 
   `Explosion_FormKey_ID`
 - `MiscItemResources.Resource_ModKey_Name`, `Resource_ModKey_Type`, `Resource_ModKey_FileName`, and
   `Resource_FormKey_ID`
+- `StaticNavmeshGeometries.Parent_ModKey_Name`, `Parent_ModKey_Type`, `Parent_ModKey_FileName`, and
+  `Parent_FormKey_ID`
 - `Books.Transforms_Inventory_ModKey_Name`, `Transforms_Inventory_ModKey_Type`,
   `Transforms_Inventory_ModKey_FileName`, and `Transforms_Inventory_FormKey_ID`
 - `Books.InventoryArt_ModKey_Name`, `InventoryArt_ModKey_Type`, `InventoryArt_ModKey_FileName`,

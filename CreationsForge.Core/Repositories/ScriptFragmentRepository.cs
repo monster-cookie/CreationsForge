@@ -87,6 +87,7 @@ public class ScriptFragmentRepository : IScriptFragmentRepository
             FormKey = new FormKeyDTO { ModKey = new ModKeyDTO { Name = model.FormKeyModKeyName, Type = model.FormKeyModKeyType, FileName = model.FormKeyModKeyFileName }, Id = (uint)model.FormKeyId },
             FragmentSlot = model.FragmentSlot,
             FragmentIndex = model.FragmentIndex,
+            SourceFragmentIndex = model.SourceFragmentIndex,
             MutagenObjectType = model.MutagenObjectType,
             ScriptName = model.ScriptName,
             FragmentName = model.FragmentName,

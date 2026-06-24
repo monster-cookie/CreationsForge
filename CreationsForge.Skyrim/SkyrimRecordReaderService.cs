@@ -770,7 +770,7 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 LodLevel1 = GetPropertyStringOrNull(GetPropertyValue(record, "Lod"), "Level1"),
                 LodLevel2 = GetPropertyStringOrNull(GetPropertyValue(record, "Lod"), "Level2"),
                 LodLevel3 = GetPropertyStringOrNull(GetPropertyValue(record, "Lod"), "Level3"),
-                NavmeshGeometry = SpriggitValueFormatter.Format(GetPropertyValue(record, "NavmeshGeometry")),
+                NavmeshGeometry = StaticNavmeshGeometryDTOMapper.FromNavmeshGeometry(SupportedGame.Skyrim, plugin.ModKey, GetRequiredRawFormKey(record), GetPropertyValue(record, "NavmeshGeometry"), DateTime.UtcNow),
                 Models = GetModels(plugin, RecordTypeCatalog.Static.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Model"))
             }, record))
             .ToList();
@@ -1693,11 +1693,10 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
             ? scriptedRecord.VirtualMachineAdapter
             : GetPropertyValue(record, "VirtualMachineAdapter");
         var scripts = GetPropertyValue(virtualMachineAdapter, "Scripts") as IEnumerable;
-        if (scripts == null) return new List<ScriptingAdapterDTO>();
 
         var formKey = GetRequiredRawFormKey(record);
         var importedAtUTC = DateTime.UtcNow;
-        return scripts
+        var adapters = (scripts ?? Array.Empty<object>())
             .Cast<object>()
             .Select((script, scriptIndex) => new ScriptingAdapterDTO
             {
@@ -1711,6 +1710,41 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                 Properties = GetScriptingAdapterProperties(plugin, recordType, formKey, script, importedAtUTC)
             })
             .ToList();
+        AddScriptFragmentScriptingAdapter(adapters, plugin, recordType, formKey, virtualMachineAdapter, importedAtUTC);
+        return adapters;
+    }
+
+    private static void AddScriptFragmentScriptingAdapter(
+        ICollection<ScriptingAdapterDTO> adapters,
+        PluginDTO plugin,
+        string recordType,
+        FormKey formKey,
+        object? virtualMachineAdapter,
+        DateTime importedAtUTC)
+    {
+        var script = GetPropertyValue(GetPropertyValue(virtualMachineAdapter, "ScriptFragments"), "Script");
+        if (script == null)
+        {
+            return;
+        }
+
+        var scriptName = GetPropertyString(script, "Name");
+        if (string.IsNullOrWhiteSpace(scriptName))
+        {
+            return;
+        }
+
+        adapters.Add(new ScriptingAdapterDTO
+        {
+            Game = SupportedGame.Skyrim,
+            ModKey = plugin.ModKey,
+            RecordType = recordType,
+            FormKey = MapFormKey(formKey),
+            Name = scriptName,
+            ScriptIndex = adapters.Count,
+            ImportedAtUTC = importedAtUTC,
+            Properties = GetScriptingAdapterProperties(plugin, recordType, formKey, script, importedAtUTC)
+        });
     }
 
     private static List<ScriptingAdapterPropertyDTO> GetScriptingAdapterProperties(PluginDTO plugin, string recordType, FormKey formKey, object script, DateTime importedAtUTC)

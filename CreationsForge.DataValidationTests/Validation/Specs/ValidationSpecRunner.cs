@@ -271,6 +271,13 @@ public class ValidationSpecRunner
 
             MarkMatched(matchedSpriggitFields, spriggitField.Key);
             var hasDtoValue = dtoFields.TryGetValue(dtoPath, out var dtoValue);
+            if (!hasDtoValue && TryGetStaticNavmeshDtoPath(dtoFields, spriggitField.Key, dtoPath, out var navmeshDtoPath, out var navmeshDtoValue))
+            {
+                dtoPath = navmeshDtoPath;
+                dtoValue = navmeshDtoValue;
+                hasDtoValue = true;
+            }
+
             if ((!hasDtoValue || string.Equals(dtoValue, "Null", StringComparison.OrdinalIgnoreCase)) &&
                 TryGetScriptingAdapterDataValue(dtoFields, dtoPath, out var scriptingDataDtoPath, out var scriptingDataDtoValue))
             {
@@ -281,6 +288,11 @@ public class ValidationSpecRunner
 
             if (!hasDtoValue)
             {
+                if (IsStaticNavmeshScalarListCount(spriggitField.Key, spriggitField.Value, dtoPath, dtoFields))
+                {
+                    continue;
+                }
+
                 if (string.Equals(spriggitField.Key, rule.SpriggitPath, StringComparison.OrdinalIgnoreCase) &&
                     dtoFields.TryGetValue(rule.DtoPath + ".Count", out var dtoCount) &&
                     string.Equals(dtoCount, "0", StringComparison.Ordinal))
@@ -305,8 +317,102 @@ public class ValidationSpecRunner
             }
 
             MarkMatched(matchedDtoFields, dtoPath);
+            if (IsStaticNavmeshDefaultCoverTriangleMapping(spriggitField.Key, spriggitField.Value, dtoValue!))
+            {
+                continue;
+            }
+
             AddAssertionCase(spriggitField.Key, spriggitField.Value, dtoPath, dtoValue!, ValidationValueNormalizer.None, assertionCases);
         }
+    }
+
+    private static bool IsStaticNavmeshDefaultCoverTriangleMapping(string spriggitPath, string spriggitValue, string dtoValue)
+    {
+        return spriggitPath.StartsWith("NavmeshGeometry.CoverTriangleMappings[", StringComparison.Ordinal) &&
+               spriggitPath.EndsWith("]", StringComparison.Ordinal) &&
+               string.Equals(spriggitValue, "{}", StringComparison.Ordinal) &&
+               string.Equals(dtoValue, "0, 0", StringComparison.Ordinal);
+    }
+
+    private static bool TryGetStaticNavmeshDtoPath(
+        IReadOnlyDictionary<string, string> dtoFields,
+        string spriggitPath,
+        string dtoPath,
+        out string matchedDtoPath,
+        out string matchedDtoValue)
+    {
+        if (spriggitPath.StartsWith("NavmeshGeometry.GridArrays.GridCell[", StringComparison.Ordinal) &&
+            dtoPath.StartsWith("NavmeshGeometry.GridArrays.GridCell[", StringComparison.Ordinal))
+        {
+            var projectedPath = "NavmeshGeometry.GridArrays[0]." + dtoPath["NavmeshGeometry.GridArrays.".Length..];
+            if (dtoFields.TryGetValue(projectedPath, out var projectedValue))
+            {
+                matchedDtoPath = projectedPath;
+                matchedDtoValue = projectedValue;
+                return true;
+            }
+        }
+
+        if (string.Equals(spriggitPath, "NavmeshGeometry.GridArrays.GridCell.Count", StringComparison.Ordinal) &&
+            string.Equals(dtoPath, "NavmeshGeometry.GridArrays.GridCell.Count", StringComparison.Ordinal) &&
+            dtoFields.TryGetValue("NavmeshGeometry.GridArrays[0].GridCell.Count", out var projectedCount))
+        {
+            matchedDtoPath = "NavmeshGeometry.GridArrays[0].GridCell.Count";
+            matchedDtoValue = projectedCount;
+            return true;
+        }
+
+        if (spriggitPath.StartsWith("NavmeshGeometry.Triangles[", StringComparison.Ordinal) &&
+            spriggitPath.Contains(".Flags[", StringComparison.Ordinal) &&
+            dtoPath.Contains(".Flags[", StringComparison.Ordinal))
+        {
+            var projectedPath = dtoPath[..dtoPath.LastIndexOf('[', dtoPath.Length - 1)];
+            if (dtoFields.TryGetValue(projectedPath, out var projectedValue))
+            {
+                matchedDtoPath = projectedPath;
+                matchedDtoValue = projectedValue;
+                return true;
+            }
+        }
+
+        if (spriggitPath.StartsWith("NavmeshGeometry.CoverTriangleMappings[", StringComparison.Ordinal) &&
+            spriggitPath.EndsWith("]", StringComparison.Ordinal) &&
+            dtoFields.TryGetValue(dtoPath + ".Value", out var value))
+        {
+            matchedDtoPath = dtoPath + ".Value";
+            matchedDtoValue = value;
+            return true;
+        }
+
+        if (spriggitPath.StartsWith("NavmeshGeometry.Vertices[", StringComparison.Ordinal) &&
+            !spriggitPath.EndsWith(".Point", StringComparison.Ordinal) &&
+            dtoFields.TryGetValue(dtoPath + ".Point", out var pointValue))
+        {
+            matchedDtoPath = dtoPath + ".Point";
+            matchedDtoValue = pointValue;
+            return true;
+        }
+
+        matchedDtoPath = string.Empty;
+        matchedDtoValue = string.Empty;
+        return false;
+    }
+
+    private static bool IsStaticNavmeshScalarListCount(
+        string spriggitPath,
+        string spriggitValue,
+        string dtoPath,
+        IReadOnlyDictionary<string, string> dtoFields)
+    {
+        if (!spriggitPath.StartsWith("NavmeshGeometry.Triangles[", StringComparison.Ordinal) ||
+            !spriggitPath.EndsWith(".Flags.Count", StringComparison.Ordinal) ||
+            !string.Equals(spriggitValue, "1", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var dtoScalarPath = dtoPath[..^".Count".Length];
+        return dtoFields.ContainsKey(dtoScalarPath);
     }
 
     private static void ApplyFormKeyListRule(
@@ -934,6 +1040,16 @@ public class ValidationSpecRunner
 
         if ((fieldName.EndsWith(".Rank", StringComparison.OrdinalIgnoreCase) ||
              fieldName.EndsWith(".ComparisonValue", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".CoverFlags", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".EdgeLink_0_1", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".EdgeLink_1_2", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".EdgeLink_2_0", StringComparison.OrdinalIgnoreCase) ||
+             (fieldName.StartsWith("NavmeshGeometry.Cover[", StringComparison.OrdinalIgnoreCase) &&
+              (fieldName.EndsWith(".Vertex1", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.EndsWith(".Vertex2", StringComparison.OrdinalIgnoreCase))) ||
+             (fieldName.StartsWith("NavmeshGeometry.CoverTriangleMappings[", StringComparison.OrdinalIgnoreCase) &&
+              (fieldName.EndsWith(".Cover", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.EndsWith(".Triangle", StringComparison.OrdinalIgnoreCase))) ||
              fieldName.EndsWith(".Data.FirstParameter", StringComparison.OrdinalIgnoreCase) ||
              fieldName.EndsWith(".Data.SecondParameter", StringComparison.OrdinalIgnoreCase) ||
              fieldName.EndsWith(".Data.ParameterOneNumber", StringComparison.OrdinalIgnoreCase) ||
@@ -943,6 +1059,13 @@ public class ValidationSpecRunner
             string.Equals(fieldValue, "0", StringComparison.Ordinal))
         {
             return true;
+        }
+
+        if (fieldName.StartsWith("NavmeshGeometry.CoverTriangleMappings[", StringComparison.OrdinalIgnoreCase) &&
+            fieldName.EndsWith(".Value", StringComparison.OrdinalIgnoreCase) &&
+            TryGetStaticNavmeshCoverTriangleMappingValue(fieldName, spriggitFields, out var mappingValue))
+        {
+            return string.Equals(fieldValue, mappingValue, StringComparison.Ordinal);
         }
 
         if ((fieldName.EndsWith(".Data.FirstParameter", StringComparison.OrdinalIgnoreCase) ||
@@ -980,6 +1103,14 @@ public class ValidationSpecRunner
         if ((fieldName.EndsWith(".Data.ParameterOneStringIsSet", StringComparison.OrdinalIgnoreCase) ||
              fieldName.EndsWith(".Data.ParameterTwoStringIsSet", StringComparison.OrdinalIgnoreCase)) &&
             string.Equals(fieldValue, "False", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if ((fieldName.EndsWith(".Data.ParameterOneStringIsSet", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".Data.ParameterTwoStringIsSet", StringComparison.OrdinalIgnoreCase)) &&
+            string.Equals(fieldValue, "True", StringComparison.OrdinalIgnoreCase) &&
+            spriggitFields.ContainsKey(fieldName[..^"IsSet".Length]))
         {
             return true;
         }
@@ -1033,6 +1164,33 @@ public class ValidationSpecRunner
             fieldName.EndsWith(".ObjectAlias", StringComparison.OrdinalIgnoreCase) &&
             string.Equals(fieldValue, "-1", StringComparison.Ordinal))
         {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryGetStaticNavmeshCoverTriangleMappingValue(
+        string fieldName,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        out string mappingValue)
+    {
+        mappingValue = string.Empty;
+        var mappingPath = fieldName[..^".Value".Length];
+        if (spriggitFields.TryGetValue(mappingPath, out var spriggitValue))
+        {
+            mappingValue = string.Equals(spriggitValue, "{}", StringComparison.Ordinal)
+                ? "0, 0"
+                : spriggitValue;
+            return true;
+        }
+
+        if (spriggitFields.TryGetValue(mappingPath + ".Cover", out var cover) &&
+            (spriggitFields.TryGetValue(mappingPath + ".Triangle", out var triangle) ||
+             !spriggitFields.ContainsKey(mappingPath + ".Triangle")))
+        {
+            triangle ??= "0";
+            mappingValue = cover + ", " + triangle;
             return true;
         }
 

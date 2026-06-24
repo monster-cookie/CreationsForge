@@ -10,7 +10,7 @@ The application uses a local SQLite database. The schema is defined by embedded 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains sixty-two tables:
+The application schema contains seventy-three tables:
 
 - `Games`
 - `Plugins`
@@ -43,7 +43,16 @@ The application schema contains sixty-two tables:
 - `NPCs`
 - `MagicEffects`
 - `Perks`
+- `PerkEffects`
+- `PerkEffectConditionTabs`
 - `Statics`
+- `StaticNavmeshGeometries`
+- `StaticNavmeshCover`
+- `StaticNavmeshCoverTriangleMappings`
+- `StaticNavmeshGridCells`
+- `StaticNavmeshTriangles`
+- `StaticNavmeshVersioning`
+- `StaticNavmeshVertices`
 - `StaticProperties`
 - `Books`
 - `Doors`
@@ -891,6 +900,190 @@ Indexes:
 - nullable decomposed FormKey columns for `SnapTemplate`, `PreviewTransform`, and `Material`
 - `Lod_Level0`, `Lod_Level1`, `Lod_Level2`, and `Lod_Level3` (`TEXT`, nullable)
 
+### StaticNavmeshGeometries
+
+`StaticNavmeshGeometries` stores STAT navmesh geometry root data keyed by the owning Static record.
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `GridMin`, `GridMax`, `GridMaxDistance`, and `GridSize` (`TEXT`, nullable)
+- nullable parent `MutagenObjectType` and decomposed parent FormKey columns
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full parent key references `Statics` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID >= 0`
+- `Parent_FormKey_ID IS NULL OR Parent_FormKey_ID >= 0`
+
+Indexes:
+
+- `IX_StaticNavmeshGeometries_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+### StaticNavmeshCover
+
+`StaticNavmeshCover` stores STAT navmesh cover rows keyed by the owning navmesh geometry and `Cover_Index`.
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `Cover_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `Data`, `Vertex1`, and `Vertex2` (`TEXT`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full parent key references `StaticNavmeshGeometries` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID >= 0`
+- `Cover_Index >= 0`
+
+Indexes:
+
+- `IX_StaticNavmeshCover_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+### StaticNavmeshCoverTriangleMappings
+
+`StaticNavmeshCoverTriangleMappings` stores STAT navmesh cover-to-triangle mapping rows keyed by the owning navmesh geometry and `Mapping_Index`.
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `Mapping_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `Cover`, `Triangle`, and `Value` (`TEXT`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full parent key references `StaticNavmeshGeometries` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID >= 0`
+- `Mapping_Index >= 0`
+
+Indexes:
+
+- `IX_StaticNavmeshCoverTriangleMappings_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+### StaticNavmeshGridCells
+
+`StaticNavmeshGridCells` stores STAT navmesh grid-cell values keyed by grid array and grid-cell index.
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `GridArray_Index` and `GridCell_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `Value` (`TEXT`, `NOT NULL`)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full parent key references `StaticNavmeshGeometries` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID >= 0`
+- `GridArray_Index >= 0`
+- `GridCell_Index >= 0`
+
+Indexes:
+
+- `IX_StaticNavmeshGridCells_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+### StaticNavmeshTriangles
+
+`StaticNavmeshTriangles` stores STAT navmesh triangle rows keyed by the owning navmesh geometry and `Triangle_Index`.
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `Triangle_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `EdgeLink_0_1`, `EdgeLink_1_2`, `EdgeLink_2_0`, `Height`, `Vertices`, `CoverFlags`, and `Flags`
+  (`TEXT`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full parent key references `StaticNavmeshGeometries` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID >= 0`
+- `Triangle_Index >= 0`
+
+Indexes:
+
+- `IX_StaticNavmeshTriangles_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+### StaticNavmeshVersioning
+
+`StaticNavmeshVersioning` stores STAT navmesh versioning values keyed by the owning navmesh geometry and `Versioning_Index`.
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `Versioning_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `Value` (`TEXT`, `NOT NULL`)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full parent key references `StaticNavmeshGeometries` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID >= 0`
+- `Versioning_Index >= 0`
+
+Indexes:
+
+- `IX_StaticNavmeshVersioning_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+### StaticNavmeshVertices
+
+`StaticNavmeshVertices` stores STAT navmesh vertex points keyed by the owning navmesh geometry and `Vertex_Index`.
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `Vertex_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `Point` (`TEXT`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full parent key references `StaticNavmeshGeometries` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID >= 0`
+- `Vertex_Index >= 0`
+
+Indexes:
+
+- `IX_StaticNavmeshVertices_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported navmesh geometry rows are upserted after their owning static row is saved.
+- Existing navmesh rows for the same static are deleted before replacement so removed geometry children do not remain stale.
+- Stale typed-record deletion removes navmesh rows through the declared `Statics` and `StaticNavmeshGeometries` cascades.
+- Navmesh geometry is persisted as typed rows, not as a generic payload.
+
 ### StaticProperties
 
 `StaticProperties` stores Fallout STAT property rows keyed by the owning Static record and `Property_Index`.
@@ -1608,6 +1801,7 @@ Columns:
 - typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
 - `FragmentSlot` (`TEXT`, `NOT NULL`, primary key)
 - `Fragment_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `SourceFragmentIndex` (`INTEGER`, nullable)
 - `MutagenObjectType` (`TEXT`, nullable)
 - `ScriptName` (`TEXT`, nullable)
 - `FragmentName` (`TEXT`, nullable)
@@ -1623,6 +1817,7 @@ Constraints:
 
 - `FragmentSlot` must not be empty.
 - `Fragment_Index` and `FormKey_ID` must be greater than or equal to zero.
+- `SourceFragmentIndex` must be null or greater than or equal to zero.
 
 Indexes:
 

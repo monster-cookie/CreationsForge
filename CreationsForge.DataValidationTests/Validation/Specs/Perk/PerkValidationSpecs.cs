@@ -109,7 +109,7 @@ public static class PerkValidationSpecs
 
         if (withScriptFragments)
         {
-            spec.AddRule(ValidationFieldRule.DtoNonEmpty("VirtualMachineAdapter.ScriptFragments", "ScriptFragments[0].ScriptName"));
+            AddScriptFragmentRules(spec, fragmentCount: 1);
         }
 
         AddMajorRecordFlagRules(spec, withMajorRecordFlagsRaw, "Fallout4MajorRecordFlags");
@@ -384,6 +384,41 @@ public static class PerkValidationSpecs
                 "ScriptFragments[" + fragmentIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "].MutagenObjectType",
                 "MutagenObjectType is DTO implementation metadata for script-fragment read-back.");
         }
+    }
+
+    private static void AddScriptFragmentRules(ValidationSpecBuilder spec, int fragmentCount)
+    {
+        spec
+            .AddRule(ValidationFieldRule.OptionalField(
+            "VirtualMachineAdapter.ScriptFragments.ExtraBindDataVersion",
+            "ScriptFragments[0].ExtraBindDataVersion"))
+            .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                "VirtualMachineAdapter.ScriptFragments.ExtraBindDataVersion",
+                "ScriptFragments[0].ExtraBindDataVersion",
+                "3",
+                "Mutagen exposes the script-fragment bind data version when Spriggit omits the default value."));
+
+        for (var fragmentIndex = 0; fragmentIndex < fragmentCount; fragmentIndex++)
+        {
+            var spriggitPath = "VirtualMachineAdapter.ScriptFragments.Fragments[" + fragmentIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "]";
+            var dtoPath = "ScriptFragments[" + (fragmentIndex + 1).ToString(System.Globalization.CultureInfo.InvariantCulture) + "]";
+            spec
+                .AddRule(ValidationFieldRule.Field(spriggitPath + ".FragmentName", dtoPath + ".FragmentName"))
+                .AddRule(ValidationFieldRule.OptionalField(spriggitPath + ".FragmentIndex", dtoPath + ".SourceFragmentIndex"))
+                .AddRule(ValidationFieldRule.Field(spriggitPath + ".ScriptName", dtoPath + ".ScriptName"))
+                .AddRule(ValidationFieldRule.Field(spriggitPath + ".Unknown2", dtoPath + ".Unknown2"));
+        }
+
+        var scriptFragmentIndex = fragmentCount + 1;
+        spec
+            .AddRule(ValidationFieldRule.Field(
+                "VirtualMachineAdapter.ScriptFragments.Script.Name",
+                "ScriptFragments[" + scriptFragmentIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "].ScriptName"))
+            .AddRule(ValidationFieldRule.DtoNonEmpty("ScriptingAdapters[0].Name"))
+            .AddRule(ValidationFieldRule.PathPrefix(
+                "VirtualMachineAdapter.ScriptFragments.Script.Properties",
+                "ScriptingAdapters[0].Properties",
+                ScriptingAdapterPathReplacements));
     }
 
     private static void AddMajorRecordFlagRules(ValidationSpecBuilder spec, bool withMajorRecordFlagsRaw, string flagListName)

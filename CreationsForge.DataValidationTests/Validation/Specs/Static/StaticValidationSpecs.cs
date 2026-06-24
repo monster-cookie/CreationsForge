@@ -153,7 +153,8 @@ public static class StaticValidationSpecs
                 "0, 0, 0",
                 "Mutagen exposes default object bounds when Spriggit omits the zero-valued field."))
             .AddRule(ValidationFieldRule.FormKeyList("Keywords", "Keywords", "Keyword"))
-            .AddRule(ValidationFieldRule.DtoNonEmpty("NavmeshGeometry", "NavmeshGeometry"))
+            .AddRule(ValidationFieldRule.PathPrefix("NavmeshGeometry", "NavmeshGeometry", new Dictionary<string, string>(StringComparer.Ordinal)))
+            .AddRules(NavmeshGeometryRules())
             .AddRule(ValidationFieldRule.ScalarList("DNAMDataTypeState", "DNAMDataTypeState"))
             .AddRule(ValidationFieldRule.DtoNonEmpty("MajorRecordFlagsRaw", "MajorRecordFlags"))
             .AddRule(ValidationFieldRule.DtoNonEmpty("MajorFlags", "MajorRecordFlags"))
@@ -196,6 +197,45 @@ public static class StaticValidationSpecs
             yield return ValidationFieldRule.IgnoreDto(
                 propertyPath + ".PropertyIndex",
                 "PropertyIndex is DTO collection metadata for repository read-back.");
+        }
+    }
+
+    private static IEnumerable<ValidationFieldRule> NavmeshGeometryRules()
+    {
+        for (var coverIndex = 0; coverIndex <= 100; coverIndex++)
+        {
+            yield return ValidationFieldRule.IgnoreDto(
+                "NavmeshGeometry.Cover[" + coverIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "].CoverIndex",
+                "CoverIndex is DTO collection metadata for repository read-back.");
+        }
+
+        for (var mappingIndex = 0; mappingIndex <= 100; mappingIndex++)
+        {
+            yield return ValidationFieldRule.IgnoreDto(
+                "NavmeshGeometry.CoverTriangleMappings[" + mappingIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "].MappingIndex",
+                "MappingIndex is DTO collection metadata for repository read-back.");
+        }
+
+        for (var gridArrayIndex = 0; gridArrayIndex <= 25; gridArrayIndex++)
+        {
+            yield return ValidationFieldRule.IgnoreDto(
+                "NavmeshGeometry.GridArrays[" + gridArrayIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "].GridArrayIndex",
+                "GridArrayIndex is DTO collection metadata for repository read-back.");
+        }
+
+        for (var triangleIndex = 0; triangleIndex <= 500; triangleIndex++)
+        {
+            var trianglePath = "NavmeshGeometry.Triangles[" + triangleIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "]";
+            yield return ValidationFieldRule.IgnoreDto(
+                trianglePath + ".TriangleIndex",
+                "TriangleIndex is DTO collection metadata for repository read-back.");
+        }
+
+        for (var vertexIndex = 0; vertexIndex <= 500; vertexIndex++)
+        {
+            yield return ValidationFieldRule.IgnoreDto(
+                "NavmeshGeometry.Vertices[" + vertexIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "].VertexIndex",
+                "VertexIndex is DTO collection metadata for repository read-back.");
         }
     }
 }

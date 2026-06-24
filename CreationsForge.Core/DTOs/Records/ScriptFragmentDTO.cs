@@ -17,6 +17,8 @@ public class ScriptFragmentDTO
 
     public required int FragmentIndex { get; set; }
 
+    public int? SourceFragmentIndex { get; set; }
+
     public string? MutagenObjectType { get; set; }
 
     public string? ScriptName { get; set; }

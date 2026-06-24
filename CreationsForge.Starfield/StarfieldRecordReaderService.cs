@@ -315,7 +315,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Models = GetModels(plugin, RecordTypeCatalog.Static.RecordID, record.FormKey, record.Model),
                 Keywords = GetKeywordMappingsFromNestedKeywordLists(plugin, RecordTypeCatalog.Static.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
                 RawPayloads = GetComponentReflectPayloads(plugin, RecordTypeCatalog.Static.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
-                NavmeshGeometry = SpriggitValueFormatter.Format(GetPropertyValue(record, "NavmeshGeometry"))
+                NavmeshGeometry = StaticNavmeshGeometryDTOMapper.FromNavmeshGeometry(SupportedGame.Starfield, plugin.ModKey, record.FormKey, GetPropertyValue(record, "NavmeshGeometry"), DateTime.UtcNow)
             }, record))
             .ToList();
     }
@@ -1361,7 +1361,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         if (record.VirtualMachineAdapter == null) return new List<ScriptingAdapterDTO>();
 
         var importedAtUTC = DateTime.UtcNow;
-        return record.VirtualMachineAdapter.Scripts
+        var adapters = record.VirtualMachineAdapter.Scripts
             .Select((script, scriptIndex) => new ScriptingAdapterDTO
             {
                 Game = SupportedGame.Starfield,
@@ -1374,6 +1374,41 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Properties = GetScriptingAdapterProperties(plugin, recordType, record.FormKey, script, importedAtUTC)
             })
             .ToList();
+        AddScriptFragmentScriptingAdapter(adapters, plugin, recordType, record.FormKey, record.VirtualMachineAdapter, importedAtUTC);
+        return adapters;
+    }
+
+    private static void AddScriptFragmentScriptingAdapter(
+        ICollection<ScriptingAdapterDTO> adapters,
+        PluginDTO plugin,
+        string recordType,
+        FormKey formKey,
+        object? virtualMachineAdapter,
+        DateTime importedAtUTC)
+    {
+        var script = GetPropertyValue(GetPropertyValue(virtualMachineAdapter, "ScriptFragments"), "Script") as IScriptEntryGetter;
+        if (script == null)
+        {
+            return;
+        }
+
+        var scriptName = script.Name;
+        if (string.IsNullOrWhiteSpace(scriptName))
+        {
+            return;
+        }
+
+        adapters.Add(new ScriptingAdapterDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = plugin.ModKey,
+            RecordType = recordType,
+            FormKey = MapFormKey(formKey),
+            Name = scriptName,
+            ScriptIndex = adapters.Count,
+            ImportedAtUTC = importedAtUTC,
+            Properties = GetScriptingAdapterProperties(plugin, recordType, formKey, script, importedAtUTC)
+        });
     }
 
     private static List<ModelDTO> GetModels(PluginDTO plugin, string recordType, FormKey formKey, IModelGetter? model)

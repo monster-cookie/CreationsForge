@@ -148,7 +148,7 @@ public static class TerminalValidationSpecs
 
         if (withScriptFragments)
         {
-            spec.AddRule(ValidationFieldRule.DtoNonEmpty("VirtualMachineAdapter.ScriptFragments", "ScriptFragments[0].ScriptName"));
+            AddScriptFragmentRules(spec, fragmentCount: 6);
         }
 
         return spec.Build();
@@ -237,6 +237,56 @@ public static class TerminalValidationSpecs
                 .AddRule(ValidationFieldRule.TranslatedField($"MenuItems[{index}].DisplayText", $"MenuItems[{index}].DisplayText", ValidationValueNormalizer.TerminalText, requireAllLanguages: true))
                 .AddRule(ValidationFieldRule.PathPrefix($"MenuItems[{index}].Conditions", $"MenuItems[{index}].Conditions", NoPathReplacements));
         }
+    }
+
+    private static void AddScriptFragmentRules(ValidationSpecBuilder spec, int fragmentCount)
+    {
+        spec
+            .AddRule(ValidationFieldRule.OptionalField(
+            "VirtualMachineAdapter.ScriptFragments.ExtraBindDataVersion",
+            "ScriptFragments[0].ExtraBindDataVersion"))
+            .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                "VirtualMachineAdapter.ScriptFragments.ExtraBindDataVersion",
+                "ScriptFragments[0].ExtraBindDataVersion",
+                "3",
+                "Mutagen exposes the script-fragment bind data version when Spriggit omits the default value."));
+
+        for (var fragmentIndex = 0; fragmentIndex < fragmentCount; fragmentIndex++)
+        {
+            var spriggitPath = "VirtualMachineAdapter.ScriptFragments.Fragments[" + fragmentIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "]";
+            var dtoPath = "ScriptFragments[" + (fragmentIndex + 1).ToString(System.Globalization.CultureInfo.InvariantCulture) + "]";
+            spec
+                .AddRule(ValidationFieldRule.Field(spriggitPath + ".FragmentName", dtoPath + ".FragmentName"))
+                .AddRule(ValidationFieldRule.Field(spriggitPath + ".FragmentIndex", dtoPath + ".SourceFragmentIndex"))
+                .AddRule(ValidationFieldRule.Field(spriggitPath + ".ScriptName", dtoPath + ".ScriptName"))
+                .AddRule(ValidationFieldRule.Field(spriggitPath + ".Unknown2", dtoPath + ".Unknown2"));
+        }
+
+        var scriptFragmentIndex = fragmentCount + 1;
+        spec
+            .AddRule(ValidationFieldRule.Field(
+                "VirtualMachineAdapter.ScriptFragments.Script.Name",
+                "ScriptFragments[" + scriptFragmentIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "].ScriptName"))
+            .AddRule(ValidationFieldRule.DtoNonEmpty("ScriptingAdapters[0].Name"))
+            .AddRule(ValidationFieldRule.PathPrefix(
+                "VirtualMachineAdapter.ScriptFragments.Script.Properties",
+                "ScriptingAdapters[0].Properties",
+                ScriptingAdapterPathReplacements));
+
+        for (var dtoFragmentIndex = 0; dtoFragmentIndex <= scriptFragmentIndex; dtoFragmentIndex++)
+        {
+            var dtoPath = "ScriptFragments[" + dtoFragmentIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "]";
+            spec
+                .AddRule(ValidationFieldRule.IgnoreDto(dtoPath + ".FragmentIndex", "FragmentIndex is DTO collection metadata for repository read-back."))
+                .AddRule(ValidationFieldRule.IgnoreDto(dtoPath + ".FragmentSlot", "FragmentSlot is DTO collection metadata for repository read-back."))
+                .AddRule(ValidationFieldRule.IgnoreDto(dtoPath + ".MutagenObjectType", "MutagenObjectType is DTO implementation metadata for script-fragment read-back."));
+        }
+
+        spec
+            .AddRule(ValidationFieldRule.IgnoreDto("ScriptFragments[0].FragmentIndex", "FragmentIndex is DTO collection metadata for the script-fragment root row."))
+            .AddRule(ValidationFieldRule.IgnoreDto(
+                "ScriptFragments[" + scriptFragmentIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "].FragmentIndex",
+                "FragmentIndex is DTO collection metadata for the fragment-owned script row."));
     }
 
     private static void AddMajorRecordFlagRules(ValidationSpecBuilder spec, bool withMajorRecordFlagsRaw, string flagListName)

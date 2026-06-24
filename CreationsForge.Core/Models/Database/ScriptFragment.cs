@@ -23,6 +23,7 @@ public class ScriptFragment
         FormKeyId = dto.FormKey.Id;
         FragmentSlot = dto.FragmentSlot;
         FragmentIndex = dto.FragmentIndex;
+        SourceFragmentIndex = dto.SourceFragmentIndex;
         MutagenObjectType = dto.MutagenObjectType;
         ScriptName = dto.ScriptName;
         FragmentName = dto.FragmentName;
@@ -52,6 +53,8 @@ public class ScriptFragment
     [Column("FragmentSlot")] public string FragmentSlot { get; set; } = string.Empty;
 
     [Column("Fragment_Index")] public int FragmentIndex { get; set; }
+
+    [Column("SourceFragmentIndex")] public int? SourceFragmentIndex { get; set; }
 
     [Column("MutagenObjectType")] public string? MutagenObjectType { get; set; }
 

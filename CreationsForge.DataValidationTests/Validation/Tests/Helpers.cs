@@ -172,6 +172,7 @@ public static class Helpers
         AddSpriggitSoundAliases(fields);
         AddSpriggitScriptingAdapterAliases(fields);
         AddSpriggitScriptFragmentAliases(fields);
+        AddSpriggitStaticNavmeshAliases(fields);
         NormalizeConditionFields(fields);
         return fields;
     }
@@ -742,6 +743,7 @@ public static class Helpers
                 fields["VirtualMachineAdapter.ScriptFragments.Fragments.Count"] = (fragmentIndex + 1).ToString(CultureInfo.InvariantCulture);
                 AddSpriggitFieldAlias(fields, dtoFragmentPath + ".ScriptName", spriggitFragmentPath + ".ScriptName");
                 AddSpriggitFieldAlias(fields, dtoFragmentPath + ".FragmentName", spriggitFragmentPath + ".FragmentName");
+                AddSpriggitFieldAlias(fields, dtoFragmentPath + ".SourceFragmentIndex", spriggitFragmentPath + ".FragmentIndex");
                 AddSpriggitFieldAlias(fields, dtoFragmentPath + ".Unknown2", spriggitFragmentPath + ".Unknown2");
                 continue;
             }
@@ -764,7 +766,8 @@ public static class Helpers
 
     private static void AddSpriggitScriptFragmentScriptPropertyAliases(IDictionary<string, string> fields)
     {
-        if (!fields.TryGetValue("ScriptingAdapters[0].Properties.Count", out var propertyCount))
+        var dtoScriptPath = GetScriptFragmentScriptAdapterPath(fields);
+        if (dtoScriptPath == null || !fields.TryGetValue(dtoScriptPath + ".Properties.Count", out var propertyCount))
         {
             return;
         }
@@ -779,9 +782,65 @@ public static class Helpers
         {
             AddSpriggitScriptingAdapterPropertyAlias(
                 fields,
-                "ScriptingAdapters[0]",
+                dtoScriptPath,
                 "VirtualMachineAdapter.ScriptFragments.Script.Properties",
                 propertyIndex);
+        }
+    }
+
+    private static string? GetScriptFragmentScriptAdapterPath(IDictionary<string, string> fields)
+    {
+        if (!fields.TryGetValue("VirtualMachineAdapter.ScriptFragments.Script.Name", out var scriptName))
+        {
+            return null;
+        }
+
+        if (!fields.TryGetValue("ScriptingAdapters.Count", out var scriptCountValue) ||
+            !int.TryParse(scriptCountValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var scriptCount))
+        {
+            return null;
+        }
+
+        for (var scriptIndex = 0; scriptIndex < scriptCount; scriptIndex++)
+        {
+            var dtoScriptPath = "ScriptingAdapters[" + scriptIndex.ToString(CultureInfo.InvariantCulture) + "]";
+            if (fields.TryGetValue(dtoScriptPath + ".Name", out var dtoScriptName) &&
+                string.Equals(dtoScriptName, scriptName, StringComparison.Ordinal))
+            {
+                return dtoScriptPath;
+            }
+        }
+
+        return null;
+    }
+
+    private static void AddSpriggitStaticNavmeshAliases(IDictionary<string, string> fields)
+    {
+        if (fields.TryGetValue("NavmeshGeometry.GridArrays[0].GridCell.Count", out var gridCellCount))
+        {
+            fields["NavmeshGeometry.GridArrays.GridCell.Count"] = gridCellCount;
+            if (int.TryParse(gridCellCount, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
+            {
+                for (var index = 0; index < count; index++)
+                {
+                    AddSpriggitFieldAlias(
+                        fields,
+                        "NavmeshGeometry.GridArrays[0].GridCell[" + index.ToString(CultureInfo.InvariantCulture) + "]",
+                        "NavmeshGeometry.GridArrays.GridCell[" + index.ToString(CultureInfo.InvariantCulture) + "]");
+                }
+            }
+        }
+
+        if (fields.TryGetValue("NavmeshGeometry.Vertices.Count", out var vertexCount) &&
+            int.TryParse(vertexCount, NumberStyles.Integer, CultureInfo.InvariantCulture, out var vertices))
+        {
+            for (var index = 0; index < vertices; index++)
+            {
+                AddSpriggitFieldAlias(
+                    fields,
+                    "NavmeshGeometry.Vertices[" + index.ToString(CultureInfo.InvariantCulture) + "].Point",
+                    "NavmeshGeometry.Vertices[" + index.ToString(CultureInfo.InvariantCulture) + "]");
+            }
         }
     }
 
@@ -896,6 +955,12 @@ public static class Helpers
             return true;
         }
 
+        if (string.Equals(fieldValue, "[]", StringComparison.Ordinal) &&
+            fieldName.EndsWith(".Conditions", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
         if (SpriggitToDtoFields.TryGetValue(fieldName, out var dtoFieldName) && dtoFields.ContainsKey(dtoFieldName))
         {
             return true;
@@ -992,8 +1057,33 @@ public static class Helpers
             return true;
         }
 
+        if (IsSpriggitStaticNavmeshFieldBackedByDtoField(fieldName, fieldValue, dtoFields))
+        {
+            return true;
+        }
+
         return IsSpriggitListBackedDtoScalar(fieldName, spriggitFields, dtoFields, "Flags") ||
                IsSpriggitListBackedDtoScalar(fieldName, spriggitFields, dtoFields, "MajorFlags");
+    }
+
+    private static bool IsSpriggitStaticNavmeshFieldBackedByDtoField(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> dtoFields)
+    {
+        if (!fieldName.StartsWith("NavmeshGeometry.CoverTriangleMappings[", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (fieldName.EndsWith("]", StringComparison.Ordinal) &&
+            string.Equals(fieldValue, "{}", StringComparison.Ordinal))
+        {
+            return dtoFields.TryGetValue(fieldName + ".Value", out var dtoValue) &&
+                   string.Equals(dtoValue, "0, 0", StringComparison.Ordinal);
+        }
+
+        return false;
     }
 
     private static bool IsMatchedDtoField(
@@ -1008,6 +1098,16 @@ public static class Helpers
         }
 
         if (IsDtoCollectionMetadataField(fieldName))
+        {
+            return true;
+        }
+
+        if (IsDtoStaticNavmeshFieldBackedBySpriggitField(fieldName, fieldValue, spriggitFields))
+        {
+            return true;
+        }
+
+        if (IsDtoScriptFragmentProjectionBackedBySpriggitField(fieldName, fieldValue, spriggitFields, dtoFields))
         {
             return true;
         }
@@ -1225,6 +1325,280 @@ public static class Helpers
                IsSpriggitListBackedDtoScalar(fieldName, spriggitFields, dtoFields, "Model.Flags") ||
                (string.Equals(fieldName, "Models[0].Flags", StringComparison.OrdinalIgnoreCase) &&
                 IsSpriggitListBackedDtoScalar("Model.Flags", spriggitFields, dtoFields, "Model.Flags"));
+    }
+
+    private static bool IsDtoStaticNavmeshFieldBackedBySpriggitField(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> spriggitFields)
+    {
+        if (!fieldName.StartsWith("NavmeshGeometry.", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (string.Equals(fieldName, "NavmeshGeometry.GridArrays.Count", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(fieldValue, "1", StringComparison.Ordinal) &&
+            (spriggitFields.ContainsKey("NavmeshGeometry.GridArrays.GridCell.Count") ||
+             spriggitFields.ContainsKey("NavmeshGeometry.GridArrays[0].GridCell.Count")))
+        {
+            return true;
+        }
+
+        if (TryMatchStaticNavmeshAlternatePath(fieldName, fieldValue, spriggitFields, "NavmeshGeometry.GridArrays[0].GridCell", "NavmeshGeometry.GridArrays.GridCell"))
+        {
+            return true;
+        }
+
+        if (TryMatchStaticNavmeshAlternatePath(fieldName, fieldValue, spriggitFields, "NavmeshGeometry.Vertices", "NavmeshGeometry.Vertices", ".Point"))
+        {
+            return true;
+        }
+
+        if (fieldName.EndsWith(".GridArrayIndex", StringComparison.OrdinalIgnoreCase) ||
+            fieldName.EndsWith(".TriangleIndex", StringComparison.OrdinalIgnoreCase) ||
+            fieldName.EndsWith(".VertexIndex", StringComparison.OrdinalIgnoreCase) ||
+            fieldName.EndsWith(".CoverIndex", StringComparison.OrdinalIgnoreCase) ||
+            fieldName.EndsWith(".MappingIndex", StringComparison.OrdinalIgnoreCase))
+        {
+            return int.TryParse(fieldValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out _);
+        }
+
+        if (IsZero(fieldValue) &&
+            (fieldName.EndsWith(".CoverFlags", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".EdgeLink_0_1", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".EdgeLink_1_2", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".EdgeLink_2_0", StringComparison.OrdinalIgnoreCase) ||
+             (fieldName.StartsWith("NavmeshGeometry.Cover[", StringComparison.OrdinalIgnoreCase) &&
+              (fieldName.EndsWith(".Vertex1", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.EndsWith(".Vertex2", StringComparison.OrdinalIgnoreCase))) ||
+             (fieldName.StartsWith("NavmeshGeometry.CoverTriangleMappings[", StringComparison.OrdinalIgnoreCase) &&
+              (fieldName.EndsWith(".Cover", StringComparison.OrdinalIgnoreCase) ||
+               fieldName.EndsWith(".Triangle", StringComparison.OrdinalIgnoreCase)))))
+        {
+            return !spriggitFields.ContainsKey(fieldName);
+        }
+
+        if (fieldName.StartsWith("NavmeshGeometry.CoverTriangleMappings[", StringComparison.OrdinalIgnoreCase) &&
+            fieldName.EndsWith(".Value", StringComparison.OrdinalIgnoreCase))
+        {
+            var spriggitPath = fieldName[..^".Value".Length];
+            if (spriggitFields.TryGetValue(spriggitPath, out var spriggitValue))
+            {
+                return string.Equals(fieldValue, spriggitValue, StringComparison.Ordinal) ||
+                       (string.Equals(spriggitValue, "{}", StringComparison.Ordinal) &&
+                        string.Equals(fieldValue, "0, 0", StringComparison.Ordinal));
+            }
+
+            return spriggitFields.TryGetValue(spriggitPath + ".Cover", out var cover) &&
+                   TryGetSpriggitValueOrDefault(spriggitFields, spriggitPath + ".Triangle", "0", out var triangle) &&
+                   string.Equals(fieldValue, cover + ", " + triangle, StringComparison.Ordinal);
+        }
+
+        return false;
+    }
+
+    private static bool TryGetSpriggitValueOrDefault(
+        IReadOnlyDictionary<string, string> spriggitFields,
+        string fieldName,
+        string defaultValue,
+        out string fieldValue)
+    {
+        if (spriggitFields.TryGetValue(fieldName, out fieldValue!))
+        {
+            return true;
+        }
+
+        fieldValue = defaultValue;
+        return true;
+    }
+
+    private static bool TryMatchStaticNavmeshAlternatePath(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        string indexedPath,
+        string flattenedPath,
+        string indexedLeaf = "")
+    {
+        var alternatePath = GetStaticNavmeshAlternatePath(fieldName, indexedPath, flattenedPath, indexedLeaf);
+        return alternatePath != null &&
+               spriggitFields.TryGetValue(alternatePath, out var spriggitValue) &&
+               string.Equals(fieldValue, spriggitValue, StringComparison.Ordinal);
+    }
+
+    private static string? GetStaticNavmeshAlternatePath(string fieldName, string indexedPath, string flattenedPath, string indexedLeaf)
+    {
+        if (fieldName.StartsWith(indexedPath, StringComparison.OrdinalIgnoreCase) &&
+            fieldName.EndsWith(indexedLeaf, StringComparison.OrdinalIgnoreCase))
+        {
+            var fieldWithoutLeaf = string.IsNullOrEmpty(indexedLeaf)
+                ? fieldName
+                : fieldName[..^indexedLeaf.Length];
+            return flattenedPath + fieldWithoutLeaf[indexedPath.Length..];
+        }
+
+        if (fieldName.StartsWith(flattenedPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return indexedPath + fieldName[flattenedPath.Length..] + indexedLeaf;
+        }
+
+        return null;
+    }
+
+    private static bool IsDtoScriptFragmentProjectionBackedBySpriggitField(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields)
+    {
+        if (!spriggitFields.TryGetValue("VirtualMachineAdapter.ScriptFragments.Script.Name", out var fragmentScriptName))
+        {
+            return false;
+        }
+
+        if (string.Equals(fieldName, "ScriptFragments.Count", StringComparison.OrdinalIgnoreCase))
+        {
+            return int.TryParse(fieldValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count) && count > 0;
+        }
+
+        if (string.Equals(fieldName, "VirtualMachineAdapter.Count", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(fieldName, "VirtualMachineAdapter.Scripts.Count", StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Equals(fieldValue, "1", StringComparison.Ordinal);
+        }
+
+        if (string.Equals(fieldName, "VirtualMachineAdapter[0].Count", StringComparison.OrdinalIgnoreCase))
+        {
+            return spriggitFields.TryGetValue("VirtualMachineAdapter.ScriptFragments.Script.Properties.Count", out var propertyCount) &&
+                   string.Equals(fieldValue, propertyCount, StringComparison.Ordinal);
+        }
+
+        if (fieldName.StartsWith("VirtualMachineAdapter.ScriptFragments.Script.Properties[", StringComparison.OrdinalIgnoreCase) &&
+            ((fieldName.EndsWith(".Alias", StringComparison.OrdinalIgnoreCase) && string.Equals(fieldValue, "-1", StringComparison.Ordinal)) ||
+             (fieldName.EndsWith(".Unused", StringComparison.OrdinalIgnoreCase) && IsZero(fieldValue))))
+        {
+            return true;
+        }
+
+        if (TryGetIndexedPath(fieldName, "ScriptFragments", out var fragmentRowIndex, out var fragmentRemainder))
+        {
+            var fragmentPath = "ScriptFragments[" + fragmentRowIndex.ToString(CultureInfo.InvariantCulture) + "]";
+            if (fragmentRemainder is ".FragmentIndex" or ".FragmentSlot" or ".MutagenObjectType")
+            {
+                return true;
+            }
+
+            if (dtoFields.TryGetValue(fragmentPath + ".FragmentSlot", out var fragmentSlot) &&
+                string.Equals(fragmentSlot, "ScriptFragments", StringComparison.Ordinal) &&
+                string.Equals(fragmentRemainder, ".ExtraBindDataVersion", StringComparison.OrdinalIgnoreCase))
+            {
+                return (spriggitFields.TryGetValue("VirtualMachineAdapter.ScriptFragments.ExtraBindDataVersion", out var version) &&
+                        string.Equals(fieldValue, version, StringComparison.Ordinal)) ||
+                       string.Equals(fieldValue, "3", StringComparison.Ordinal);
+            }
+
+            if (dtoFields.TryGetValue(fragmentPath + ".FragmentSlot", out fragmentSlot) &&
+                string.Equals(fragmentSlot, "ScriptFragments.Fragments", StringComparison.Ordinal) &&
+                dtoFields.TryGetValue(fragmentPath + ".FragmentIndex", out var fragmentIndex))
+            {
+                var spriggitFragmentPath = "VirtualMachineAdapter.ScriptFragments.Fragments[" + fragmentIndex + "]";
+                var spriggitPath = string.Equals(fragmentRemainder, ".SourceFragmentIndex", StringComparison.OrdinalIgnoreCase)
+                    ? spriggitFragmentPath + ".FragmentIndex"
+                    : spriggitFragmentPath + fragmentRemainder;
+                return spriggitFields.TryGetValue(spriggitPath, out var spriggitValue) &&
+                       string.Equals(fieldValue, spriggitValue, StringComparison.Ordinal);
+            }
+
+            if (dtoFields.TryGetValue(fragmentPath + ".FragmentSlot", out fragmentSlot) &&
+                string.Equals(fragmentSlot, "ScriptFragments.Script", StringComparison.Ordinal) &&
+                string.Equals(fragmentRemainder, ".ScriptName", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Equals(fieldValue, fragmentScriptName, StringComparison.Ordinal);
+            }
+        }
+
+        if (TryGetFragmentScriptAdapterPath(dtoFields, fragmentScriptName, out var adapterPath) &&
+            IsDtoFragmentScriptingAdapterField(fieldName, fieldValue, spriggitFields, adapterPath))
+        {
+            return true;
+        }
+
+        if (fieldName.StartsWith("VirtualMachineAdapter.Scripts[0]", StringComparison.OrdinalIgnoreCase))
+        {
+            var fragmentPath = "VirtualMachineAdapter.ScriptFragments.Script" + fieldName["VirtualMachineAdapter.Scripts[0]".Length..];
+            return spriggitFields.TryGetValue(fragmentPath, out var spriggitValue) &&
+                   string.Equals(fieldValue, spriggitValue, StringComparison.Ordinal);
+        }
+
+        if (fieldName.StartsWith("VirtualMachineAdapter[0]", StringComparison.OrdinalIgnoreCase))
+        {
+            var remainder = fieldName["VirtualMachineAdapter[0]".Length..];
+            var fragmentPath = remainder.StartsWith("[", StringComparison.Ordinal)
+                ? "VirtualMachineAdapter.ScriptFragments.Script.Properties" + remainder
+                : "VirtualMachineAdapter.ScriptFragments.Script" + remainder;
+            return spriggitFields.TryGetValue(fragmentPath, out var spriggitValue) &&
+                   string.Equals(fieldValue, spriggitValue, StringComparison.Ordinal);
+        }
+
+        return false;
+    }
+
+    private static bool TryGetFragmentScriptAdapterPath(IReadOnlyDictionary<string, string> dtoFields, string fragmentScriptName, out string adapterPath)
+    {
+        adapterPath = string.Empty;
+        if (!dtoFields.TryGetValue("ScriptingAdapters.Count", out var adapterCountValue) ||
+            !int.TryParse(adapterCountValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var adapterCount))
+        {
+            return false;
+        }
+
+        for (var adapterIndex = 0; adapterIndex < adapterCount; adapterIndex++)
+        {
+            var candidatePath = "ScriptingAdapters[" + adapterIndex.ToString(CultureInfo.InvariantCulture) + "]";
+            if (dtoFields.TryGetValue(candidatePath + ".Name", out var adapterName) &&
+                string.Equals(adapterName, fragmentScriptName, StringComparison.Ordinal))
+            {
+                adapterPath = candidatePath;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsDtoFragmentScriptingAdapterField(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        string adapterPath)
+    {
+        if (string.Equals(fieldName, "ScriptingAdapters.Count", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(fieldName, adapterPath + ".Name", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (!fieldName.StartsWith(adapterPath + ".Properties", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (fieldName.EndsWith(".ScriptingAdapterName", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if ((fieldName.EndsWith(".ObjectAlias", StringComparison.OrdinalIgnoreCase) && string.Equals(fieldValue, "-1", StringComparison.Ordinal)) ||
+            (fieldName.EndsWith(".ObjectUnused", StringComparison.OrdinalIgnoreCase) && IsZero(fieldValue)))
+        {
+            return true;
+        }
+
+        var spriggitPath = "VirtualMachineAdapter.ScriptFragments.Script.Properties" + fieldName[(adapterPath + ".Properties").Length..]
+            .Replace(".ObjectFormKey", ".Object", StringComparison.Ordinal);
+        return spriggitFields.TryGetValue(spriggitPath, out var spriggitValue) &&
+               string.Equals(fieldValue, spriggitValue, StringComparison.Ordinal);
     }
 
     private static bool IsDtoModelMaterialSwapBackedBySpriggitScalar(

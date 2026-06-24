@@ -508,7 +508,7 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("Lod.Level1", records, record => record.LodLevel1 ?? string.Empty));
         fields.Add(CreateField("Lod.Level2", records, record => record.LodLevel2 ?? string.Empty));
         fields.Add(CreateField("Lod.Level3", records, record => record.LodLevel3 ?? string.Empty));
-        fields.Add(CreateField("NavmeshGeometry", records, record => record.NavmeshGeometry ?? string.Empty));
+        AddStaticNavmeshGeometryGroups(fields, records);
         AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey));
         AddStaticPropertyGroups(fields, records);
         AddModelGroups(fields, records.Cast<RecordDTO>().ToList(), ModelRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey));
@@ -539,9 +539,186 @@ public class RecordComparisonService : IRecordComparisonService
         }
     }
 
+    private static void AddStaticNavmeshGeometryGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<StaticDTO> records)
+    {
+        if (!records.Any(record => record.NavmeshGeometry != null))
+        {
+            return;
+        }
+
+        var childFields = new List<RecordComparisonFieldDTO>
+        {
+            CreateField("GridMin", records, record => record.NavmeshGeometry?.GridMin ?? string.Empty),
+            CreateField("GridMax", records, record => record.NavmeshGeometry?.GridMax ?? string.Empty),
+            CreateField("GridMaxDistance", records, record => record.NavmeshGeometry?.GridMaxDistance ?? string.Empty),
+            CreateField("GridSize", records, record => record.NavmeshGeometry?.GridSize ?? string.Empty),
+            CreateField("Parent.Type", records, record => record.NavmeshGeometry?.Parent?.MutagenObjectType ?? string.Empty),
+            CreateField("Parent.Parent", records, record => FormatFormKey(record.NavmeshGeometry?.Parent?.Parent)),
+            CreateField("Versioning", records, record => record.NavmeshGeometry == null ? string.Empty : string.Join(", ", record.NavmeshGeometry.Versioning))
+        }
+            .Where(HasVisibleValue)
+            .ToList();
+
+        AddStaticNavmeshCoverGroups(childFields, records);
+        AddStaticNavmeshCoverTriangleMappingGroups(childFields, records);
+        AddStaticNavmeshGridArrayGroups(childFields, records);
+        AddStaticNavmeshTriangleGroups(childFields, records);
+        AddStaticNavmeshVertexGroups(childFields, records);
+
+        if (childFields.Count > 0)
+        {
+            fields.Add(CreateGroupField("Navmesh Geometry", records.Cast<RecordDTO>().ToList(), childFields));
+        }
+    }
+
+    private static void AddStaticNavmeshCoverGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<StaticDTO> records)
+    {
+        var coverIndexes = records
+            .SelectMany(record => record.NavmeshGeometry?.Cover ?? new List<StaticNavmeshCoverDTO>())
+            .Select(cover => cover.CoverIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+
+        foreach (var coverIndex in coverIndexes)
+        {
+            var currentIndex = coverIndex;
+            fields.Add(CreateGroupField(
+                $"Cover [{currentIndex}]",
+                records.Cast<RecordDTO>().ToList(),
+                [
+                    CreateField("Data", records, record => FindStaticNavmeshCover(record.NavmeshGeometry, currentIndex)?.Data ?? string.Empty),
+                    CreateField("Vertex1", records, record => FindStaticNavmeshCover(record.NavmeshGeometry, currentIndex)?.Vertex1 ?? string.Empty),
+                    CreateField("Vertex2", records, record => FindStaticNavmeshCover(record.NavmeshGeometry, currentIndex)?.Vertex2 ?? string.Empty)
+                ]));
+        }
+    }
+
+    private static void AddStaticNavmeshCoverTriangleMappingGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<StaticDTO> records)
+    {
+        var mappingIndexes = records
+            .SelectMany(record => record.NavmeshGeometry?.CoverTriangleMappings ?? new List<StaticNavmeshCoverTriangleMappingDTO>())
+            .Select(mapping => mapping.MappingIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+
+        foreach (var mappingIndex in mappingIndexes)
+        {
+            var currentIndex = mappingIndex;
+            fields.Add(CreateGroupField(
+                $"Cover Triangle Mapping [{currentIndex}]",
+                records.Cast<RecordDTO>().ToList(),
+                [
+                    CreateField("Cover", records, record => FindStaticNavmeshCoverTriangleMapping(record.NavmeshGeometry, currentIndex)?.Cover ?? string.Empty),
+                    CreateField("Triangle", records, record => FindStaticNavmeshCoverTriangleMapping(record.NavmeshGeometry, currentIndex)?.Triangle ?? string.Empty),
+                    CreateField("Value", records, record => FindStaticNavmeshCoverTriangleMapping(record.NavmeshGeometry, currentIndex)?.Value ?? string.Empty)
+                ]));
+        }
+    }
+
+    private static void AddStaticNavmeshGridArrayGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<StaticDTO> records)
+    {
+        var gridArrayIndexes = records
+            .SelectMany(record => record.NavmeshGeometry?.GridArrays ?? new List<StaticNavmeshGridArrayDTO>())
+            .Select(gridArray => gridArray.GridArrayIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+
+        foreach (var gridArrayIndex in gridArrayIndexes)
+        {
+            var currentIndex = gridArrayIndex;
+            fields.Add(CreateGroupField(
+                $"Grid Array [{currentIndex}]",
+                records.Cast<RecordDTO>().ToList(),
+                [
+                    CreateField(
+                        "GridCell",
+                        records,
+                        record => FindStaticNavmeshGridArray(record.NavmeshGeometry, currentIndex) is { } gridArray
+                            ? string.Join(", ", gridArray.GridCell)
+                            : string.Empty)
+                ]));
+        }
+    }
+
+    private static void AddStaticNavmeshTriangleGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<StaticDTO> records)
+    {
+        var triangleIndexes = records
+            .SelectMany(record => record.NavmeshGeometry?.Triangles ?? new List<StaticNavmeshTriangleDTO>())
+            .Select(triangle => triangle.TriangleIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+
+        foreach (var triangleIndex in triangleIndexes)
+        {
+            var currentIndex = triangleIndex;
+            fields.Add(CreateGroupField(
+                $"Triangle [{currentIndex}]",
+                records.Cast<RecordDTO>().ToList(),
+                [
+                    CreateField("EdgeLink_0_1", records, record => FindStaticNavmeshTriangle(record.NavmeshGeometry, currentIndex)?.EdgeLink_0_1 ?? string.Empty),
+                    CreateField("EdgeLink_1_2", records, record => FindStaticNavmeshTriangle(record.NavmeshGeometry, currentIndex)?.EdgeLink_1_2 ?? string.Empty),
+                    CreateField("EdgeLink_2_0", records, record => FindStaticNavmeshTriangle(record.NavmeshGeometry, currentIndex)?.EdgeLink_2_0 ?? string.Empty),
+                    CreateField("Height", records, record => FindStaticNavmeshTriangle(record.NavmeshGeometry, currentIndex)?.Height ?? string.Empty),
+                    CreateField("Vertices", records, record => FindStaticNavmeshTriangle(record.NavmeshGeometry, currentIndex)?.Vertices ?? string.Empty),
+                    CreateField("CoverFlags", records, record => FindStaticNavmeshTriangle(record.NavmeshGeometry, currentIndex)?.CoverFlags ?? string.Empty),
+                    CreateField("Flags", records, record => FindStaticNavmeshTriangle(record.NavmeshGeometry, currentIndex)?.Flags ?? string.Empty)
+                ]));
+        }
+    }
+
+    private static void AddStaticNavmeshVertexGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<StaticDTO> records)
+    {
+        var vertexIndexes = records
+            .SelectMany(record => record.NavmeshGeometry?.Vertices ?? new List<StaticNavmeshVertexDTO>())
+            .Select(vertex => vertex.VertexIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+
+        foreach (var vertexIndex in vertexIndexes)
+        {
+            var currentIndex = vertexIndex;
+            fields.Add(CreateGroupField(
+                $"Vertex [{currentIndex}]",
+                records.Cast<RecordDTO>().ToList(),
+                [
+                    CreateField("Point", records, record => FindStaticNavmeshVertex(record.NavmeshGeometry, currentIndex)?.Point ?? string.Empty)
+                ]));
+        }
+    }
+
     private static StaticPropertyDTO? FindStaticProperty(StaticDTO record, int propertyIndex)
     {
         return record.Properties.FirstOrDefault(property => property.PropertyIndex == propertyIndex);
+    }
+
+    private static StaticNavmeshCoverDTO? FindStaticNavmeshCover(StaticNavmeshGeometryDTO? geometry, int coverIndex)
+    {
+        return geometry?.Cover.FirstOrDefault(cover => cover.CoverIndex == coverIndex);
+    }
+
+    private static StaticNavmeshCoverTriangleMappingDTO? FindStaticNavmeshCoverTriangleMapping(StaticNavmeshGeometryDTO? geometry, int mappingIndex)
+    {
+        return geometry?.CoverTriangleMappings.FirstOrDefault(mapping => mapping.MappingIndex == mappingIndex);
+    }
+
+    private static StaticNavmeshGridArrayDTO? FindStaticNavmeshGridArray(StaticNavmeshGeometryDTO? geometry, int gridArrayIndex)
+    {
+        return geometry?.GridArrays.FirstOrDefault(gridArray => gridArray.GridArrayIndex == gridArrayIndex);
+    }
+
+    private static StaticNavmeshTriangleDTO? FindStaticNavmeshTriangle(StaticNavmeshGeometryDTO? geometry, int triangleIndex)
+    {
+        return geometry?.Triangles.FirstOrDefault(triangle => triangle.TriangleIndex == triangleIndex);
+    }
+
+    private static StaticNavmeshVertexDTO? FindStaticNavmeshVertex(StaticNavmeshGeometryDTO? geometry, int vertexIndex)
+    {
+        return geometry?.Vertices.FirstOrDefault(vertex => vertex.VertexIndex == vertexIndex);
     }
 
     private RecordComparisonDTO CreateBookComparison(SupportedGame game, FormKeyDTO formKey)

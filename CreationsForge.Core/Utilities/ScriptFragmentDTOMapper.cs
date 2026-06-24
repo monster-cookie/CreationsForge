@@ -41,6 +41,11 @@ public static class ScriptFragmentDTOMapper
             return;
         }
 
+        if (HasFragmentData(fragment))
+        {
+            results.Add(CreateFragment(game, modKey, recordType, formKey, fragmentSlot, fragmentIndex, fragment, importedAtUTC));
+        }
+
         var script = GetPropertyValue(fragment, "Script");
         if (script != null)
         {
@@ -91,6 +96,7 @@ public static class ScriptFragmentDTOMapper
             FormKey = MapFormKey(formKey),
             FragmentSlot = fragmentSlot,
             FragmentIndex = fragmentIndex,
+            SourceFragmentIndex = GetPropertyValue(source, "FragmentIndex") is { } sourceFragmentIndex ? Convert.ToInt32(sourceFragmentIndex) : null,
             MutagenObjectType = source.GetType().Name,
             ScriptName = GetPropertyValue(source, "ScriptName")?.ToString() ?? GetPropertyValue(source, "Name")?.ToString(),
             FragmentName = GetPropertyValue(source, "FragmentName")?.ToString(),

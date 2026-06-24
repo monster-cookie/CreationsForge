@@ -1121,6 +1121,7 @@ CREATE TABLE ScriptFragments
     FormKey_ID              INTEGER NOT NULL,
     FragmentSlot            TEXT    NOT NULL,
     Fragment_Index          INTEGER NOT NULL,
+    SourceFragmentIndex     INTEGER NULL,
     MutagenObjectType       TEXT    NULL,
     ScriptName              TEXT    NULL,
     FragmentName            TEXT    NULL,
@@ -1132,7 +1133,8 @@ CREATE TABLE ScriptFragments
         REFERENCES RecordInstances (Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
     CHECK (FormKey_ID >= 0),
     CHECK (FragmentSlot <> ''),
-    CHECK (Fragment_Index >= 0)
+    CHECK (Fragment_Index >= 0),
+    CHECK (SourceFragmentIndex IS NULL OR SourceFragmentIndex >= 0)
 );
 
 CREATE VIEW StarfieldPluginDetails AS
@@ -1303,12 +1305,170 @@ CREATE TABLE Statics
     Lod_Level1              TEXT    NULL,
     Lod_Level2              TEXT    NULL,
     Lod_Level3              TEXT    NULL,
-    NavmeshGeometry         TEXT    NULL,
     PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID),
     FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName) REFERENCES Plugins (Game, ModKey_Name, ModKey_Type, ModKey_FileName) ON DELETE CASCADE,
     FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
         REFERENCES RecordInstances (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
     CHECK (FormKey_ID >= 0)
+);
+
+CREATE TABLE StaticNavmeshGeometries
+(
+    Game                         TEXT    NOT NULL,
+    ModKey_Name                  TEXT    NOT NULL,
+    ModKey_Type                  INTEGER NOT NULL,
+    ModKey_FileName              TEXT    NOT NULL,
+    FormKey_ModKey_Name          TEXT    NOT NULL,
+    FormKey_ModKey_Type          INTEGER NOT NULL,
+    FormKey_ModKey_FileName      TEXT    NOT NULL,
+    FormKey_ID                   INTEGER NOT NULL,
+    GridMin                      TEXT    NULL,
+    GridMax                      TEXT    NULL,
+    GridMaxDistance              TEXT    NULL,
+    GridSize                     TEXT    NULL,
+    Parent_MutagenObjectType     TEXT    NULL,
+    Parent_ModKey_Name           TEXT    NULL,
+    Parent_ModKey_Type           INTEGER NULL,
+    Parent_ModKey_FileName       TEXT    NULL,
+    Parent_FormKey_ID            INTEGER NULL,
+    ImportedAtUTC                TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES Statics (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Parent_FormKey_ID IS NULL OR Parent_FormKey_ID >= 0)
+);
+
+CREATE TABLE StaticNavmeshCover
+(
+    Game                    TEXT    NOT NULL,
+    ModKey_Name             TEXT    NOT NULL,
+    ModKey_Type             INTEGER NOT NULL,
+    ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ModKey_Name     TEXT    NOT NULL,
+    FormKey_ModKey_Type     INTEGER NOT NULL,
+    FormKey_ModKey_FileName TEXT    NOT NULL,
+    FormKey_ID              INTEGER NOT NULL,
+    Cover_Index             INTEGER NOT NULL,
+    Data                    TEXT    NULL,
+    Vertex1                 TEXT    NULL,
+    Vertex2                 TEXT    NULL,
+    ImportedAtUTC           TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Cover_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES StaticNavmeshGeometries (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Cover_Index >= 0)
+);
+
+CREATE TABLE StaticNavmeshCoverTriangleMappings
+(
+    Game                    TEXT    NOT NULL,
+    ModKey_Name             TEXT    NOT NULL,
+    ModKey_Type             INTEGER NOT NULL,
+    ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ModKey_Name     TEXT    NOT NULL,
+    FormKey_ModKey_Type     INTEGER NOT NULL,
+    FormKey_ModKey_FileName TEXT    NOT NULL,
+    FormKey_ID              INTEGER NOT NULL,
+    Mapping_Index           INTEGER NOT NULL,
+    Cover                   TEXT    NULL,
+    Triangle                TEXT    NULL,
+    Value                   TEXT    NULL,
+    ImportedAtUTC           TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Mapping_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES StaticNavmeshGeometries (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Mapping_Index >= 0)
+);
+
+CREATE TABLE StaticNavmeshGridCells
+(
+    Game                    TEXT    NOT NULL,
+    ModKey_Name             TEXT    NOT NULL,
+    ModKey_Type             INTEGER NOT NULL,
+    ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ModKey_Name     TEXT    NOT NULL,
+    FormKey_ModKey_Type     INTEGER NOT NULL,
+    FormKey_ModKey_FileName TEXT    NOT NULL,
+    FormKey_ID              INTEGER NOT NULL,
+    GridArray_Index         INTEGER NOT NULL,
+    GridCell_Index          INTEGER NOT NULL,
+    Value                   TEXT    NOT NULL,
+    ImportedAtUTC           TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, GridArray_Index, GridCell_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES StaticNavmeshGeometries (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (GridArray_Index >= 0),
+    CHECK (GridCell_Index >= 0)
+);
+
+CREATE TABLE StaticNavmeshTriangles
+(
+    Game                    TEXT    NOT NULL,
+    ModKey_Name             TEXT    NOT NULL,
+    ModKey_Type             INTEGER NOT NULL,
+    ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ModKey_Name     TEXT    NOT NULL,
+    FormKey_ModKey_Type     INTEGER NOT NULL,
+    FormKey_ModKey_FileName TEXT    NOT NULL,
+    FormKey_ID              INTEGER NOT NULL,
+    Triangle_Index          INTEGER NOT NULL,
+    EdgeLink_0_1            TEXT    NULL,
+    EdgeLink_1_2            TEXT    NULL,
+    EdgeLink_2_0            TEXT    NULL,
+    Height                  TEXT    NULL,
+    Vertices                TEXT    NULL,
+    CoverFlags              TEXT    NULL,
+    Flags                   TEXT    NULL,
+    ImportedAtUTC           TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Triangle_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES StaticNavmeshGeometries (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Triangle_Index >= 0)
+);
+
+CREATE TABLE StaticNavmeshVersioning
+(
+    Game                    TEXT    NOT NULL,
+    ModKey_Name             TEXT    NOT NULL,
+    ModKey_Type             INTEGER NOT NULL,
+    ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ModKey_Name     TEXT    NOT NULL,
+    FormKey_ModKey_Type     INTEGER NOT NULL,
+    FormKey_ModKey_FileName TEXT    NOT NULL,
+    FormKey_ID              INTEGER NOT NULL,
+    Versioning_Index        INTEGER NOT NULL,
+    Value                   TEXT    NOT NULL,
+    ImportedAtUTC           TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Versioning_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES StaticNavmeshGeometries (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Versioning_Index >= 0)
+);
+
+CREATE TABLE StaticNavmeshVertices
+(
+    Game                    TEXT    NOT NULL,
+    ModKey_Name             TEXT    NOT NULL,
+    ModKey_Type             INTEGER NOT NULL,
+    ModKey_FileName         TEXT    NOT NULL,
+    FormKey_ModKey_Name     TEXT    NOT NULL,
+    FormKey_ModKey_Type     INTEGER NOT NULL,
+    FormKey_ModKey_FileName TEXT    NOT NULL,
+    FormKey_ID              INTEGER NOT NULL,
+    Vertex_Index            INTEGER NOT NULL,
+    Point                   TEXT    NULL,
+    ImportedAtUTC           TEXT    NOT NULL,
+    PRIMARY KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID, Vertex_Index),
+    FOREIGN KEY (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID)
+        REFERENCES StaticNavmeshGeometries (Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID) ON DELETE CASCADE,
+    CHECK (FormKey_ID >= 0),
+    CHECK (Vertex_Index >= 0)
 );
 
 CREATE TABLE StaticProperties
@@ -1446,6 +1606,13 @@ CREATE INDEX IX_Perks_Game_FormKey_Collated ON Perks (Game, FormKey_ModKey_Name 
 CREATE INDEX IX_Statics_FormKey ON Statics (Game, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID);
 CREATE INDEX IX_Statics_Game_Plugin ON Statics (Game, ModKey_Name COLLATE NOCASE, ModKey_Type, ModKey_FileName COLLATE NOCASE, EditorID COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_Statics_Game_FormKey_Collated ON Statics (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+CREATE INDEX IX_StaticNavmeshGeometries_Game_FormKey ON StaticNavmeshGeometries (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+CREATE INDEX IX_StaticNavmeshCover_Game_FormKey ON StaticNavmeshCover (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+CREATE INDEX IX_StaticNavmeshCoverTriangleMappings_Game_FormKey ON StaticNavmeshCoverTriangleMappings (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+CREATE INDEX IX_StaticNavmeshGridCells_Game_FormKey ON StaticNavmeshGridCells (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+CREATE INDEX IX_StaticNavmeshTriangles_Game_FormKey ON StaticNavmeshTriangles (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+CREATE INDEX IX_StaticNavmeshVersioning_Game_FormKey ON StaticNavmeshVersioning (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
+CREATE INDEX IX_StaticNavmeshVertices_Game_FormKey ON StaticNavmeshVertices (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_StaticProperties_Game_FormKey ON StaticProperties (Game, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_RawRecordPayloads_Game_Record_FormKey ON RawRecordPayloads (Game, RecordType, FormKey_ModKey_Name COLLATE NOCASE, FormKey_ModKey_Type, FormKey_ModKey_FileName COLLATE NOCASE, FormKey_ID);
 CREATE INDEX IX_Containers_Game_Plugin ON Containers (Game, ModKey_Name COLLATE NOCASE, ModKey_Type, ModKey_FileName COLLATE NOCASE, EditorID COLLATE NOCASE, FormKey_ID);
