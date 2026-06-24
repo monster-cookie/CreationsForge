@@ -1,6 +1,6 @@
 ﻿# Creations Forge agent instructions
 
-Creations Forge is a .NET desktop and console toolchain for inspecting, importing, comparing, and previewing Bethesda plugin data across Starfield, Fallout 4, and Skyrim. The repository uses Avalonia, Autofac, Serilog, SQLite, NPoco, bUp, Mutagen, and Spriggit-oriented validation workflows.
+Creations Forge is a .NET desktop and console toolchain for inspecting, importing, comparing, and previewing Bethesda plugin data across Starfield, Fallout 4, and Skyrim. The repository uses Avalonia, Autofac, Serilog, SQLite, NPoco, DbUp, Mutagen, and Spriggit-oriented validation workflows.
 
 ## Project layout
 
@@ -274,6 +274,8 @@ If validation tests fail after an approved change, the agent must either:
 Do not treat newly failing validation tests as "existing failures" unless the same failures were observed before the task's changes or the user explicitly approves carrying them forward.
 
 If local SQLite data is stale, the agent must say so directly and list the reset/reimport command or manual prerequisite needed before validation can be considered meaningful.
+
+When a task touches validation specs, validation helpers, import mapping, DTOs, repositories, persistence/readback, comparison output, or database schema for a record type, the affected validation tests must pass before the task is complete. If validation is already red, the PLAN must state the current baseline failures and define the exact filtered validation command that must pass for the touched record family.
 
 ## XML Documentation Requirements
 

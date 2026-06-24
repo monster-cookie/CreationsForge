@@ -2,6 +2,15 @@
 
 This folder contains data validation tests for validating that the Mutagen/SQLite-loaded DTOs match known-good Spriggit YAML data.
 
+A validation recovery work unit must not be marked complete unless:
+
+- `dotnet build --no-restore` passes.
+- The affected record-family validation tests pass with an explicit `dotnet test` filter.
+- The full `CreationsForge.DataValidationTests` suite passes, unless the approved PLAN explicitly identifies other
+  pre-existing red record families that are assigned to later recovery work units.
+
+After the final recovery work unit, `dotnet test ./CreationsForge.DataValidationTests/CreationsForge.DataValidationTests.csproj --no-build` must pass with zero failures.
+
 ## Test scope
 
 - Use xUnit and Shouldly according to existing patterns.
