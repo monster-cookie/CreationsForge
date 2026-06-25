@@ -35,9 +35,15 @@ public static class GlobalValidationSpecs
         return Global(SupportedGame.Fallout4, "AO_Dogmeat_Container_Bailout_Dist", "043F14:Fallout4.esm");
     }
 
+    /// <summary>
+    /// Builds the Skyrim <c>1stPKillCam</c> global validation spec, including a UI row expectation for the scalar data value.
+    /// </summary>
+    /// <returns>The validation spec for the Skyrim <c>1stPKillCam</c> sample.</returns>
     public static ValidationSpec Skyrim_1stPKillCam()
     {
-        return Global(SupportedGame.Skyrim, "1stPKillCam", "10636A:Skyrim.esm");
+        var spec = Global(SupportedGame.Skyrim, "1stPKillCam", "10636A:Skyrim.esm");
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.DtoField(["Data"], "Data"));
+        return spec;
     }
 
     public static ValidationSpec Skyrim_CarriageCost()
@@ -47,9 +53,15 @@ public static class GlobalValidationSpecs
         return spec;
     }
 
+    /// <summary>
+    /// Builds the Skyrim <c>CarriageCostSmall</c> global validation spec, including a UI row expectation for the scalar data value.
+    /// </summary>
+    /// <returns>The validation spec for the Skyrim <c>CarriageCostSmall</c> sample.</returns>
     public static ValidationSpec Skyrim_CarriageCostSmall()
     {
-        return Global(SupportedGame.Skyrim, "CarriageCostSmall", "107702:Skyrim.esm");
+        var spec = Global(SupportedGame.Skyrim, "CarriageCostSmall", "107702:Skyrim.esm");
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.DtoField(["Data"], "Data"));
+        return spec;
     }
 
     private static ValidationSpec Global(SupportedGame game, string sampleName, string formKey)

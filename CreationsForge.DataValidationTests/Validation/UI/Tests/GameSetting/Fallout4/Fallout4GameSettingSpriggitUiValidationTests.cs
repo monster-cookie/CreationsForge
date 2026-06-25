@@ -42,4 +42,46 @@ public class Fallout4GameSettingSpriggitUiValidationTests :
             assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
         }
     }
+
+    /// <summary>
+    /// Validates the Fallout 4 <c>sAccept</c> sample against rendered comparison rows.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("Game", "Fallout4")]
+    [Trait("RecordType", "GMST")]
+    [Trait("FormKey", "0D4DC4:Fallout4.esm")]
+    [Trait("EditorID", "sAccept")]
+    [Trait("SpriggitFile", "GameSettings/sAccept - 0D4DC4_Fallout4.esm.yaml")]
+    public void Fallout4_GMST_ComparisonUi_ShouldRenderSpriggitSample_sAccept()
+    {
+        var spec = GameSettingValidationSpecs.Fallout4_sAccept();
+        var assertions = SpriggitComparisonUiSpecRunner.GetAssertionCases(spec, fixture);
+
+        assertions.ShouldNotBeEmpty("The UI comparison spec should produce assertions.");
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+    }
+
+    /// <summary>
+    /// Validates the Fallout 4 <c>fActionPointsAttackRanged</c> sample against rendered comparison rows.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("Game", "Fallout4")]
+    [Trait("RecordType", "GMST")]
+    [Trait("FormKey", "08A207:Fallout4.esm")]
+    [Trait("EditorID", "fActionPointsAttackRanged")]
+    [Trait("SpriggitFile", "GameSettings/fActionPointsAttackRanged - 08A207_Fallout4.esm.yaml")]
+    public void Fallout4_GMST_ComparisonUi_ShouldRenderSpriggitSample_fActionPointsAttackRanged()
+    {
+        var spec = GameSettingValidationSpecs.Fallout4_fActionPointsAttackRanged();
+        var assertions = SpriggitComparisonUiSpecRunner.GetAssertionCases(spec, fixture);
+
+        assertions.ShouldNotBeEmpty("The UI comparison spec should produce assertions.");
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+    }
 }

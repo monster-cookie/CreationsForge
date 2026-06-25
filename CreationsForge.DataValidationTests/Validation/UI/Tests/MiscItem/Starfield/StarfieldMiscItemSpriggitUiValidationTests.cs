@@ -42,4 +42,46 @@ public class StarfieldMiscItemSpriggitUiValidationTests :
             assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
         }
     }
+
+    /// <summary>
+    /// Validates the Starfield <c>InorgExoticPlutonium</c> sample against rendered comparison rows.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("Game", "Starfield")]
+    [Trait("RecordType", "MISC")]
+    [Trait("FormKey", "00558C:Starfield.esm")]
+    [Trait("EditorID", "InorgExoticPlutonium")]
+    [Trait("SpriggitFile", "MiscItems/InorgExoticPlutonium - 00558C_Starfield.esm.yaml")]
+    public void Starfield_MISC_ComparisonUi_ShouldRenderSpriggitSample_InorgExoticPlutonium()
+    {
+        var spec = MiscItemValidationSpecs.Starfield_InorgExoticPlutonium();
+        var assertions = SpriggitComparisonUiSpecRunner.GetAssertionCases(spec, fixture);
+
+        assertions.ShouldNotBeEmpty("The UI comparison spec should produce assertions.");
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+    }
+
+    /// <summary>
+    /// Validates the Starfield <c>ExoticPlayingCard_Diamond_Q</c> sample against rendered comparison rows.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("Game", "Starfield")]
+    [Trait("RecordType", "MISC")]
+    [Trait("FormKey", "10A797:Starfield.esm")]
+    [Trait("EditorID", "ExoticPlayingCard_Diamond_Q")]
+    [Trait("SpriggitFile", "MiscItems/ExoticPlayingCard_Diamond_Q - 10A797_Starfield.esm.yaml")]
+    public void Starfield_MISC_ComparisonUi_ShouldRenderSpriggitSample_ExoticPlayingCard_Diamond_Q()
+    {
+        var spec = MiscItemValidationSpecs.Starfield_ExoticPlayingCard_Diamond_Q();
+        var assertions = SpriggitComparisonUiSpecRunner.GetAssertionCases(spec, fixture);
+
+        assertions.ShouldNotBeEmpty("The UI comparison spec should produce assertions.");
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+    }
 }

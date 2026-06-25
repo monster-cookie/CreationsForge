@@ -5,9 +5,15 @@ namespace CreationsForge.DataValidationTests.Validation.Specs.Keyword;
 
 public static class KeywordValidationSpecs
 {
+    /// <summary>
+    /// Builds the Starfield <c>CCT_Enviro_AmbusherSurface</c> keyword validation spec, including a UI color row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>CCT_Enviro_AmbusherSurface</c> sample.</returns>
     public static ValidationSpec Starfield_CCT_Enviro_AmbusherSurface()
     {
-        return Keyword(SupportedGame.Starfield, "CCT_Enviro_AmbusherSurface", "200AEB:Starfield.esm");
+        var spec = Keyword(SupportedGame.Starfield, "CCT_Enviro_AmbusherSurface", "200AEB:Starfield.esm");
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Color"]));
+        return spec;
     }
 
     public static ValidationSpec Starfield_CCT_Enviro_AmbusherUnderground()
@@ -22,11 +28,13 @@ public static class KeywordValidationSpecs
 
     public static ValidationSpec Starfield_WeaponTypeDisplay_ElectromagneticRifle()
     {
-        return Keyword(
+        var spec = Keyword(
             SupportedGame.Starfield,
             "WeaponTypeDisplay_ElectromagneticRifle",
             "1C84DD:Starfield.esm",
             withAdaptiveTriggerDataComponent: true);
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.Literal(["WAIM"], "0x00020603"));
+        return spec;
     }
 
     public static ValidationSpec Starfield_CCT_Enviro_Spook()
@@ -39,9 +47,15 @@ public static class KeywordValidationSpecs
         return Keyword(SupportedGame.Starfield, "ActorAttackInjuredLeft", "0345AE:Starfield.esm");
     }
 
+    /// <summary>
+    /// Builds the Starfield <c>ActorTypeChild</c> keyword validation spec, including a UI editor ID row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>ActorTypeChild</c> sample.</returns>
     public static ValidationSpec Starfield_ActorTypeChild()
     {
-        return Keyword(SupportedGame.Starfield, "ActorTypeChild", "1157E8:Starfield.esm");
+        var spec = Keyword(SupportedGame.Starfield, "ActorTypeChild", "1157E8:Starfield.esm");
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.Literal(["EditorID"], "ActorTypeChild"));
+        return spec;
     }
 
     public static ValidationSpec Starfield_AnimArchetypeEyeDown()

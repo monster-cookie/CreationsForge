@@ -15,7 +15,9 @@ public static class BookValidationSpecs
 
     public static ValidationSpec Starfield_NH_SouvenirSlate()
     {
-        return StarfieldBook("NH_SouvenirSlate", "165BF3:Starfield.esm", withHeaderFields: true);
+        var spec = StarfieldBook("NH_SouvenirSlate", "165BF3:Starfield.esm", withHeaderFields: true);
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.DtoField(["Value"], "Value"));
+        return spec;
     }
 
     public static ValidationSpec Starfield_UC07_ScrappingNiira()
@@ -28,17 +30,29 @@ public static class BookValidationSpecs
         return StarfieldBook("SQ_PlanetSurveySlate00_025", "26E6B1:Starfield.esm", withHeaderFields: false);
     }
 
+    /// <summary>
+    /// Builds the Starfield <c>_RENAME_TestDataslate</c> book validation spec, including a UI header row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>_RENAME_TestDataslate</c> sample.</returns>
     public static ValidationSpec Starfield_RENAME_TestDataslate()
     {
-        return StarfieldBook("_RENAME_TestDataslate", "070510:Starfield.esm", withHeaderFields: true);
+        var spec = StarfieldBook("_RENAME_TestDataslate", "070510:Starfield.esm", withHeaderFields: true);
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["DataSlateHeaderLeft"], visualText: "Name"));
+        return spec;
     }
 
+    /// <summary>
+    /// Builds the Starfield <c>TreasureMap_Resource_AnySystem_Unique_Aldumite</c> book validation spec, including a UI model row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>TreasureMap_Resource_AnySystem_Unique_Aldumite</c> sample.</returns>
     public static ValidationSpec Starfield_TreasureMap_Resource_AnySystem_Unique_Aldumite()
     {
-        return StarfieldBook(
+        var spec = StarfieldBook(
             "TreasureMap_Resource_AnySystem_Unique_Aldumite",
             "045631:Starfield.esm",
             withHeaderFields: false);
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Model", "File"], visualText: "EditorID"));
+        return spec;
     }
 
     public static ValidationSpec Fallout4_BoS301ActuatorList()

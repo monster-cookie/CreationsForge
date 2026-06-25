@@ -7,12 +7,22 @@ public static class FormListValidationSpecs
 {
     public static ValidationSpec Starfield_AkilaVendorVeryHighOrganicResources()
     {
-        return StarfieldFormList("AkilaVendorVeryHighOrganicResources", "2117E6:Starfield.esm", withName: false);
+        var spec = StarfieldFormList("AkilaVendorVeryHighOrganicResources", "2117E6:Starfield.esm", withName: false);
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.Literal(
+            ["Items[0]"],
+            "Starfield.esm:000055B1"));
+        return spec;
     }
 
+    /// <summary>
+    /// Builds the Starfield <c>AkilaVendorVeryLowOrganicResources</c> form list validation spec, including a UI item row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>AkilaVendorVeryLowOrganicResources</c> sample.</returns>
     public static ValidationSpec Starfield_AkilaVendorVeryLowOrganicResources()
     {
-        return StarfieldFormList("AkilaVendorVeryLowOrganicResources", "2117EC:Starfield.esm", withName: false);
+        var spec = StarfieldFormList("AkilaVendorVeryLowOrganicResources", "2117EC:Starfield.esm", withName: false);
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Items[0]"]));
+        return spec;
     }
 
     public static ValidationSpec Starfield_AlikaVendorLowOrganicResources()
@@ -20,9 +30,15 @@ public static class FormListValidationSpecs
         return StarfieldFormList("AlikaVendorLowOrganicResources", "2117F0:Starfield.esm", withName: false);
     }
 
+    /// <summary>
+    /// Builds the Starfield <c>COND_imgui_1_Assorted</c> form list validation spec, including a UI editor ID row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>COND_imgui_1_Assorted</c> sample.</returns>
     public static ValidationSpec Starfield_COND_imgui_1_Assorted()
     {
-        return StarfieldFormList("COND_imgui_1_Assorted", "0C3830:Starfield.esm", withName: true);
+        var spec = StarfieldFormList("COND_imgui_1_Assorted", "0C3830:Starfield.esm", withName: true);
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.Literal(["EditorID"], "COND_imgui_1_Assorted"));
+        return spec;
     }
 
     public static ValidationSpec Fallout4_CA_JunkItems()

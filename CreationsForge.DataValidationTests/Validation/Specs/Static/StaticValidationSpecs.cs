@@ -7,12 +7,22 @@ public static class StaticValidationSpecs
 {
     public static ValidationSpec Starfield_OpiExtPodAirlock01()
     {
-        return StarfieldStatic("OpiExtPodAirlock01", "0514C6:Starfield.esm", withSnapTemplate: true);
+        var spec = StarfieldStatic("OpiExtPodAirlock01", "0514C6:Starfield.esm", withSnapTemplate: true);
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.Literal(
+            ["SnapTemplate"],
+            "Starfield.esm:002CBD15"));
+        return spec;
     }
 
+    /// <summary>
+    /// Builds the Starfield <c>OpmIntPodSmSide01</c> static validation spec, including a UI model row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>OpmIntPodSmSide01</c> sample.</returns>
     public static ValidationSpec Starfield_OpmIntPodSmSide01()
     {
-        return StarfieldStatic("OpmIntPodSmSide01", "036311:Starfield.esm", withSnapTemplate: false);
+        var spec = StarfieldStatic("OpmIntPodSmSide01", "036311:Starfield.esm", withSnapTemplate: false);
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Model", "File"], visualText: "EditorID"));
+        return spec;
     }
 
     public static ValidationSpec Starfield_OpmIntPodSmSideWin01()
@@ -20,9 +30,15 @@ public static class StaticValidationSpecs
         return StarfieldStatic("OpmIntPodSmSideWin01", "042AE4:Starfield.esm", withSnapTemplate: false);
     }
 
+    /// <summary>
+    /// Builds the Starfield <c>CatIndWalkSm2WayB01</c> static validation spec, including a UI object-bounds row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>CatIndWalkSm2WayB01</c> sample.</returns>
     public static ValidationSpec Starfield_CatIndWalkSm2WayB01()
     {
-        return StarfieldStatic("CatIndWalkSm2WayB01", "03A1B4:Starfield.esm", withSnapTemplate: false);
+        var spec = StarfieldStatic("CatIndWalkSm2WayB01", "03A1B4:Starfield.esm", withSnapTemplate: false);
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.DtoField(["ObjectBoundsFirst"], "ObjectBoundsFirst"));
+        return spec;
     }
 
     public static ValidationSpec Starfield_OpiExtPodAirlockStairs01()

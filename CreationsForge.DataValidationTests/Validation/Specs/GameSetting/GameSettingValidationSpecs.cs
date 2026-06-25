@@ -65,9 +65,15 @@ public static class GameSettingValidationSpecs
         return GameSetting(SupportedGame.Fallout4, "sAbortText", "0D4C40:Fallout4.esm", GameSettingDataType.String);
     }
 
+    /// <summary>
+    /// Builds the Fallout 4 <c>sAccept</c> game setting validation spec, including a UI row expectation for string data.
+    /// </summary>
+    /// <returns>The validation spec for the Fallout 4 <c>sAccept</c> sample.</returns>
     public static ValidationSpec Fallout4_sAccept()
     {
-        return GameSetting(SupportedGame.Fallout4, "sAccept", "0D4DC4:Fallout4.esm", GameSettingDataType.String);
+        var spec = GameSetting(SupportedGame.Fallout4, "sAccept", "0D4DC4:Fallout4.esm", GameSettingDataType.String);
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Data"]));
+        return spec;
     }
 
     public static ValidationSpec Fallout4_sActivate()
@@ -85,9 +91,15 @@ public static class GameSettingValidationSpecs
         return GameSetting(SupportedGame.Fallout4, "fActionPointsAttackOneHandMelee", "01A145:Fallout4.esm", GameSettingDataType.Float);
     }
 
+    /// <summary>
+    /// Builds the Fallout 4 <c>fActionPointsAttackRanged</c> game setting validation spec, including a UI row expectation for float data.
+    /// </summary>
+    /// <returns>The validation spec for the Fallout 4 <c>fActionPointsAttackRanged</c> sample.</returns>
     public static ValidationSpec Fallout4_fActionPointsAttackRanged()
     {
-        return GameSetting(SupportedGame.Fallout4, "fActionPointsAttackRanged", "08A207:Fallout4.esm", GameSettingDataType.Float);
+        var spec = GameSetting(SupportedGame.Fallout4, "fActionPointsAttackRanged", "08A207:Fallout4.esm", GameSettingDataType.Float);
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.DtoField(["Data"], "Data.Float"));
+        return spec;
     }
 
     public static ValidationSpec Fallout4_iAICombatRestoreHealthPercentage()

@@ -17,9 +17,15 @@ public static class PerkValidationSpecs
     private static readonly IReadOnlyDictionary<string, string> NoPathReplacements =
         new Dictionary<string, string>(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Builds the Starfield <c>Skill_BoostAssaultTraining</c> perk validation spec, including a UI editor ID row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>Skill_BoostAssaultTraining</c> sample.</returns>
     public static ValidationSpec Starfield_Skill_BoostAssaultTraining()
     {
-        return StarfieldPerk("Skill_BoostAssaultTraining", "08C3EE:Starfield.esm");
+        var spec = StarfieldPerk("Skill_BoostAssaultTraining", "08C3EE:Starfield.esm");
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.Literal(["EditorID"], "Skill_BoostAssaultTraining"));
+        return spec;
     }
 
     public static ValidationSpec Starfield_Skill_BoostPackTraining()
@@ -32,9 +38,15 @@ public static class PerkValidationSpecs
         return spec;
     }
 
+    /// <summary>
+    /// Builds the Starfield <c>TrainingTechnologyExpert</c> perk validation spec, including a UI name row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>TrainingTechnologyExpert</c> sample.</returns>
     public static ValidationSpec Starfield_TrainingTechnologyExpert()
     {
-        return StarfieldPerk("TrainingTechnologyExpert", "27CBBE:Starfield.esm");
+        var spec = StarfieldPerk("TrainingTechnologyExpert", "27CBBE:Starfield.esm");
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Name"]));
+        return spec;
     }
 
     public static ValidationSpec Starfield_TRAIT_FreestarCollectiveSettler()

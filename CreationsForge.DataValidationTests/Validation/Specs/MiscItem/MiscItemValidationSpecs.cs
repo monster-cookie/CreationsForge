@@ -84,13 +84,17 @@ public static class MiscItemValidationSpecs
             withResources: true,
             withModelFlags: true);
         spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.DtoField(["Value"], "Value"));
-        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Model", "File"]));
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Model", "File"], visualText: "Model"));
         return spec;
     }
 
+    /// <summary>
+    /// Builds the Starfield <c>InorgExoticPlutonium</c> miscellaneous item validation spec, including a UI value row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>InorgExoticPlutonium</c> sample.</returns>
     public static ValidationSpec Starfield_InorgExoticPlutonium()
     {
-        return StarfieldMiscItem(
+        var spec = StarfieldMiscItem(
             "InorgExoticPlutonium",
             "00558C:Starfield.esm",
             withFlag: true,
@@ -98,6 +102,8 @@ public static class MiscItemValidationSpecs
             materialSwapFormId: string.Empty,
             withResources: true,
             withModelFlags: false);
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.DtoField(["Value"], "Value"));
+        return spec;
     }
 
     public static ValidationSpec Starfield_InorgUniqueTasine()
@@ -124,9 +130,13 @@ public static class MiscItemValidationSpecs
             withModelFlags: false);
     }
 
+    /// <summary>
+    /// Builds the Starfield <c>ExoticPlayingCard_Diamond_Q</c> miscellaneous item validation spec, including a UI model row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>ExoticPlayingCard_Diamond_Q</c> sample.</returns>
     public static ValidationSpec Starfield_ExoticPlayingCard_Diamond_Q()
     {
-        return StarfieldMiscItem(
+        var spec = StarfieldMiscItem(
             "ExoticPlayingCard_Diamond_Q",
             "10A797:Starfield.esm",
             withFlag: false,
@@ -134,6 +144,8 @@ public static class MiscItemValidationSpecs
             materialSwapFormId: "103CFB",
             withResources: false,
             withModelFlags: true);
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Model", "File"], visualText: "EditorID"));
+        return spec;
     }
 
     private static ValidationSpec Fallout4MiscItem(

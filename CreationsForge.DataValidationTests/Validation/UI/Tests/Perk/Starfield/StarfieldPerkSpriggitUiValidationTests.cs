@@ -42,4 +42,46 @@ public class StarfieldPerkSpriggitUiValidationTests :
             assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
         }
     }
+
+    /// <summary>
+    /// Validates the Starfield <c>Skill_BoostAssaultTraining</c> sample against rendered comparison rows.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("Game", "Starfield")]
+    [Trait("RecordType", "PERK")]
+    [Trait("FormKey", "08C3EE:Starfield.esm")]
+    [Trait("EditorID", "Skill_BoostAssaultTraining")]
+    [Trait("SpriggitFile", "Perks/Skill_BoostAssaultTraining - 08C3EE_Starfield.esm.yaml")]
+    public void Starfield_PERK_ComparisonUi_ShouldRenderSpriggitSample_Skill_BoostAssaultTraining()
+    {
+        var spec = PerkValidationSpecs.Starfield_Skill_BoostAssaultTraining();
+        var assertions = SpriggitComparisonUiSpecRunner.GetAssertionCases(spec, fixture);
+
+        assertions.ShouldNotBeEmpty("The UI comparison spec should produce assertions.");
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+    }
+
+    /// <summary>
+    /// Validates the Starfield <c>TrainingTechnologyExpert</c> sample against rendered comparison rows.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("Game", "Starfield")]
+    [Trait("RecordType", "PERK")]
+    [Trait("FormKey", "27CBBE:Starfield.esm")]
+    [Trait("EditorID", "TrainingTechnologyExpert")]
+    [Trait("SpriggitFile", "Perks/TrainingTechnologyExpert - 27CBBE_Starfield.esm.yaml")]
+    public void Starfield_PERK_ComparisonUi_ShouldRenderSpriggitSample_TrainingTechnologyExpert()
+    {
+        var spec = PerkValidationSpecs.Starfield_TrainingTechnologyExpert();
+        var assertions = SpriggitComparisonUiSpecRunner.GetAssertionCases(spec, fixture);
+
+        assertions.ShouldNotBeEmpty("The UI comparison spec should produce assertions.");
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+    }
 }

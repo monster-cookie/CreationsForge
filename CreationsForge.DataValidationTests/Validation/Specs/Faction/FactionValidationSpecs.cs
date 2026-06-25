@@ -60,12 +60,22 @@ public static class FactionValidationSpecs
 
     public static ValidationSpec Starfield_CrimeFactionCrimsonFleet()
     {
-        return StarfieldFaction("CrimeFactionCrimsonFleet", "010B30:Starfield.esm").Build();
+        var spec = StarfieldFaction("CrimeFactionCrimsonFleet", "010B30:Starfield.esm").Build();
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.Literal(
+            ["EditorID"],
+            "CrimeFactionCrimsonFleet"));
+        return spec;
     }
 
+    /// <summary>
+    /// Builds the Starfield <c>CaptiveFaction</c> faction validation spec, including a UI editor ID row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>CaptiveFaction</c> sample.</returns>
     public static ValidationSpec Starfield_CaptiveFaction()
     {
-        return StarfieldFaction("CaptiveFaction", "03E0C8:Starfield.esm").Build();
+        var spec = StarfieldFaction("CaptiveFaction", "03E0C8:Starfield.esm").Build();
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.Literal(["EditorID"], "CaptiveFaction"));
+        return spec;
     }
 
     public static ValidationSpec Starfield_PlayerFaction()
@@ -78,9 +88,17 @@ public static class FactionValidationSpecs
         return StarfieldFaction("LISTColonistFaction", "1A2C9C:Starfield.esm").Build();
     }
 
+    /// <summary>
+    /// Builds the Starfield <c>Vendor_ShipServices_AkilaCityFaction</c> faction validation spec, including a UI editor ID row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>Vendor_ShipServices_AkilaCityFaction</c> sample.</returns>
     public static ValidationSpec Starfield_Vendor_ShipServices_AkilaCityFaction()
     {
-        return StarfieldFaction("Vendor_ShipServices_AkilaCityFaction", "3CAFBA:Starfield.esm").Build();
+        var spec = StarfieldFaction("Vendor_ShipServices_AkilaCityFaction", "3CAFBA:Starfield.esm").Build();
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.Literal(
+            ["EditorID"],
+            "Vendor_ShipServices_AkilaCityFaction"));
+        return spec;
     }
 
     private static ValidationSpecBuilder Fallout4Faction(string sampleName, string formKey)
