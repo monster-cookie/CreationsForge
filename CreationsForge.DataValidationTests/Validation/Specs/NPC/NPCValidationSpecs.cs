@@ -287,7 +287,7 @@ public static class NPCValidationSpecs
         yield return ValidationFieldRule.PathPrefix("FaceDialPositions", "FaceDialPositions", NoPathReplacements, ValidationValueNormalizer.DecimalNumber);
         if (game == SupportedGame.Starfield)
         {
-            yield return ValidationFieldRule.PathPrefix("FaceMorphs", "FaceMorphGroups", NoPathReplacements, ValidationValueNormalizer.DecimalNumber);
+            yield return ValidationFieldRule.PathPrefix("FaceMorphs", "FaceMorphGroups", NoPathReplacements, ValidationValueNormalizer.FloatNumber);
             yield return ValidationFieldRule.IgnoreDto("FaceMorphs.Count", "Starfield FaceMorphs are projected through FaceMorphGroups for repository read-back.");
             for (var faceMorphIndex = 0; faceMorphIndex < 64; faceMorphIndex++)
             {

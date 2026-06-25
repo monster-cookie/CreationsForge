@@ -1,5 +1,36 @@
 # Design Decisions
 
+## 2026-06-25 - Separate Numeric Storage Precision From Display Precision
+
+Status: Accepted
+
+Context: Imported numeric DTO values need to preserve the precision exposed by Mutagen and Spriggit, but some user-facing values such as NPC height and weight are coarse sliders where comparison display should be friendlier. Data validation also found single-precision float readback noise, such as a Starfield NPC face morph blend where Spriggit prints `0.1386505` and DTO readback prints `0.13865050673484802`.
+
+Decision: Keep imported and persisted numeric values exact by default. Add `NumericDisplayPrecisionAttribute` for DTO properties that should use reduced decimal precision when comparison builds display values and comparable state. Use targeted validation normalization for known float-backed source values by parsing them as single-precision floats and formatting with stable `G8` text.
+
+Rationale: Display precision is presentation metadata, not an import or storage rule. Keeping it opt-in avoids hiding meaningful numeric differences across unrelated fields. Float-backed validation normalization handles binary readback noise without rounding source evidence down to coarse UI precision.
+
+Alternatives considered:
+
+- Round all numeric comparison values to three decimals.
+- Store rounded values during import.
+- Add broad validation tolerance for all decimal values.
+
+Consequences:
+
+- Existing imported SQLite data remains valid because storage/readback values are unchanged.
+- Comparison rows for attributed fields may be marked identical when their displayed values match at the declared precision.
+- Validation specs must choose float-backed normalization only for fields known to be sourced from single-precision values.
+
+Related files:
+
+- `CreationsForge.Core/DTOs/Records/Metadata/NumericDisplayPrecisionAttribute.cs`
+- `CreationsForge.Core/DTOs/Records/NPCDTO.cs`
+- `CreationsForge.Core/DTOs/Records/NPCWeightDTO.cs`
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.DataValidationTests/Validation/Specs/ValidationSpecRunner.cs`
+- `CreationsForge.DataValidationTests/Validation/Specs/NPC/NPCValidationSpecs.cs`
+
 ## 2026-06-19 - Persist Localized Record Text
 
 Status: Accepted

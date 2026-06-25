@@ -102,16 +102,19 @@ public class NPCDTO : RecordDTO, IHasScriptingAdaptersDTO, IKeywords, ISounds
     /// <summary>
     /// Gets or sets the minimum actor height.
     /// </summary>
+    [NumericDisplayPrecision(3)]
     public double HeightMin { get; set; }
 
     /// <summary>
     /// Gets or sets the maximum actor height.
     /// </summary>
+    [NumericDisplayPrecision(3)]
     public double HeightMax { get; set; }
 
     /// <summary>
     /// Gets or sets the scalar actor height used by Skyrim NPC records.
     /// </summary>
+    [NumericDisplayPrecision(3)]
     public double? Height { get; set; }
 
     /// <summary>

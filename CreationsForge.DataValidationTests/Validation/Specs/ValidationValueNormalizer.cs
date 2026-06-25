@@ -57,7 +57,7 @@ public enum ValidationValueNormalizer
     DecimalNumber,
 
     /// <summary>
-    /// Compare single-precision Mutagen readback values against Spriggit decimal scalars.
+    /// Compare single-precision Mutagen readback values against Spriggit decimal scalars using stable round-trip text.
     /// </summary>
     FloatNumber,
 

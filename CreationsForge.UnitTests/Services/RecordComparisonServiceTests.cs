@@ -123,6 +123,36 @@ public class RecordComparisonServiceTests
         comparison.Fields.Single(field => field.FieldName == "Items[1]").State.ShouldBe(RecordComparisonValueState.Conflict);
     }
 
+    /// <summary>
+    /// Verifies that attributed NPC numeric fields use reduced precision for comparison display and state.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForNPC_UsesNumericDisplayPrecisionAttributes()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x1010);
+        var npcRepository = new TestNPCRepository
+        {
+            Records =
+            [
+                CreateNPC("Base.esm", formKey, 1.2344, 1.2345),
+                CreateNPC("Patch.esp", formKey, 1.23449, 1.2355)
+            ]
+        };
+        var service = CreateService(npcRepository: npcRepository);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.NPC.RecordID, formKey);
+
+        var heightMin = comparison.Fields.Single(field => field.FieldName == "HeightMin");
+        heightMin.Values.Select(value => value.DisplayValue).ShouldBe(["1.234", "1.234"]);
+        heightMin.State.ShouldBe(RecordComparisonValueState.Identical);
+        heightMin.Values.Select(value => value.State).ShouldBe([RecordComparisonValueState.Identical, RecordComparisonValueState.Identical]);
+
+        var heightMax = comparison.Fields.Single(field => field.FieldName == "HeightMax");
+        heightMax.Values.Select(value => value.DisplayValue).ShouldBe(["1.235", "1.236"]);
+        heightMax.State.ShouldBe(RecordComparisonValueState.Conflict);
+        heightMax.Values.Select(value => value.State).ShouldBe([RecordComparisonValueState.Conflict, RecordComparisonValueState.WinningOverride]);
+    }
+
     [Fact]
     public void GetRecordComparison_ForMiscItem_MapsTypedScalarFields()
     {
@@ -779,6 +809,34 @@ public class RecordComparisonServiceTests
                     String = value
                 }
             ]
+        };
+    }
+
+    /// <summary>
+    /// Creates a minimal NPC record for comparison-service tests that exercise height display precision.
+    /// </summary>
+    /// <param name="fileName">The plugin file name that contributed the test record.</param>
+    /// <param name="formKey">The origin form key shared by compared records.</param>
+    /// <param name="heightMin">The minimum height value to place on the DTO.</param>
+    /// <param name="heightMax">The maximum height value to place on the DTO.</param>
+    /// <returns>The populated NPC DTO.</returns>
+    private static NPCDTO CreateNPC(string fileName, FormKeyDTO formKey, double heightMin, double heightMax)
+    {
+        return new NPCDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            EditorID = "TestNPC",
+            FormVersion = 1,
+            MajorRecordFlags = 0,
+            ImportedAtUTC = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            Aggression = "Unaggressive",
+            Confidence = "Average",
+            Responsibility = "NoCrime",
+            Assistance = "HelpsNobody",
+            HeightMin = heightMin,
+            HeightMax = heightMax
         };
     }
 

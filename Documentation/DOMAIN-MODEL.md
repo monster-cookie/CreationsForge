@@ -127,6 +127,8 @@ Comparable comparison rows are highlighted green when all visible plugin values 
 value differs. Blank values count as values. Single-column comparisons and non-comparable informational rows remain
 neutral. In a conflicting row, the far-right visible plugin value is highlighted yellow as the winning override within
 the displayed load-order-sorted comparison set.
+Numeric DTO fields preserve imported values by default. Fields marked with `NumericDisplayPrecisionAttribute` use that
+declared decimal precision only when comparison builds display values and comparable row state.
 
 The UI renders comparison DTOs from `IRecordComparisonService` and does not call repositories, database tables, or
 Mutagen APIs directly.

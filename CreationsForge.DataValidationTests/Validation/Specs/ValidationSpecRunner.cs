@@ -1493,9 +1493,7 @@ public class ValidationSpecRunner
             ValidationValueNormalizer.ColorOrDecimalNumber => NormalizeColorOrDecimalNumber(value),
             ValidationValueNormalizer.DecimalFormKeyId => FormatDecimalFormKeyId(value),
             ValidationValueNormalizer.DecimalNumber => NormalizeDecimalNumber(value),
-            ValidationValueNormalizer.FloatNumber => double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var floatValue)
-                ? Math.Round(floatValue, 4).ToString("0.####", CultureInfo.InvariantCulture)
-                : value,
+            ValidationValueNormalizer.FloatNumber => NormalizeFloatNumber(value),
             ValidationValueNormalizer.JsonWhitespace => Regex.Replace(value, "\\s+", " ").Trim(),
             ValidationValueNormalizer.StarfieldMajorFlagName => string.Equals(value, "VisibleWhenDistant", StringComparison.Ordinal)
                 ? "HasDistantLOD"
@@ -1517,6 +1515,18 @@ public class ValidationSpecRunner
         return string.Equals(colorValue, value, StringComparison.Ordinal)
             ? NormalizeDecimalNumber(value)
             : colorValue;
+    }
+
+    /// <summary>
+    /// Normalizes float-backed validation values to stable single-precision text without applying UI display rounding.
+    /// </summary>
+    /// <param name="value">The flattened field value to normalize.</param>
+    /// <returns>The single-precision <c>G8</c> text, or the original value when it is not numeric.</returns>
+    private static string NormalizeFloatNumber(string value)
+    {
+        return float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var floatValue)
+            ? floatValue.ToString("G8", CultureInfo.InvariantCulture)
+            : value;
     }
 
     /// <summary>

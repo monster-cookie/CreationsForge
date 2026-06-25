@@ -1,7 +1,9 @@
 using CreationsForge.Core.DTOs.Plugins;
 using System.Globalization;
+using System.Reflection;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.DTOs.Records.Interfaces;
+using CreationsForge.Core.DTOs.Records.Metadata;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Repositories.Interfaces;
@@ -400,8 +402,8 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("Assistance", records, record => record.Assistance));
         fields.Add(CreateField("Mood", records, record => record.Mood ?? string.Empty));
         fields.Add(CreateField("GearedUpWeapons", records, record => record.GearedUpWeapons.ToString()));
-        fields.Add(CreateField("HeightMin", records, record => record.HeightMin.ToString()));
-        fields.Add(CreateField("HeightMax", records, record => record.HeightMax.ToString()));
+        fields.Add(CreateNumericField("HeightMin", records, record => record.HeightMin, nameof(NPCDTO.HeightMin)));
+        fields.Add(CreateNumericField("HeightMax", records, record => record.HeightMax, nameof(NPCDTO.HeightMax)));
         fields.Add(CreateField("SkinToneIndex", records, record => record.SkinToneIndex?.ToString() ?? string.Empty));
         fields.Add(CreateField("Pronoun", records, record => record.Pronoun ?? string.Empty));
         fields.Add(CreateField("VoiceFormKey", records, record => FormatFormKey(record.VoiceFormKey)));
@@ -971,6 +973,67 @@ public class RecordComparisonService : IRecordComparisonService
             State = state,
             Values = values
         };
+    }
+
+    /// <summary>
+    /// Creates a comparison field for numeric DTO values and applies opt-in display precision metadata when present.
+    /// </summary>
+    /// <typeparam name="TRecord">The record DTO type being compared.</typeparam>
+    /// <param name="fieldName">The comparison row name shown to callers.</param>
+    /// <param name="records">The ordered records participating in the comparison.</param>
+    /// <param name="valueFactory">The function that extracts the numeric DTO value from each record.</param>
+    /// <param name="propertyName">The DTO property name whose metadata controls display precision.</param>
+    /// <param name="isComparable">Whether the resulting row should contribute comparison state.</param>
+    /// <returns>The populated comparison field with formatted numeric display values.</returns>
+    private static RecordComparisonFieldDTO CreateNumericField<TRecord>(
+        string fieldName,
+        IReadOnlyList<TRecord> records,
+        Func<TRecord, double?> valueFactory,
+        string propertyName,
+        bool isComparable = true)
+        where TRecord : RecordDTO
+    {
+        var precision = GetNumericDisplayPrecision<TRecord>(propertyName);
+        return CreateField(fieldName, records, record => FormatNumericDisplayValue(valueFactory(record), precision), isComparable);
+    }
+
+    /// <summary>
+    /// Reads the optional display precision metadata from a numeric DTO property.
+    /// </summary>
+    /// <typeparam name="TRecord">The record DTO type that owns the property.</typeparam>
+    /// <param name="propertyName">The public property name to inspect.</param>
+    /// <returns>The configured decimal-place count, or <c>null</c> when the property is not marked.</returns>
+    private static int? GetNumericDisplayPrecision<TRecord>(string propertyName)
+    {
+        return typeof(TRecord)
+            .GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public)
+            ?.GetCustomAttribute<NumericDisplayPrecisionAttribute>()
+            ?.DecimalPlaces;
+    }
+
+    /// <summary>
+    /// Formats a numeric comparison value using optional reduced display precision.
+    /// </summary>
+    /// <param name="value">The source DTO value to display without changing stored/imported data.</param>
+    /// <param name="decimalPlaces">The optional number of decimal places to retain.</param>
+    /// <returns>The invariant display value, or an empty string when <paramref name="value"/> is <c>null</c>.</returns>
+    private static string FormatNumericDisplayValue(double? value, int? decimalPlaces)
+    {
+        if (!value.HasValue)
+        {
+            return string.Empty;
+        }
+
+        if (!decimalPlaces.HasValue)
+        {
+            return value.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        var roundedValue = Math.Round(value.Value, decimalPlaces.Value, MidpointRounding.AwayFromZero);
+        var format = decimalPlaces.Value == 0
+            ? "0"
+            : "0." + new string('#', decimalPlaces.Value);
+        return roundedValue.ToString(format, CultureInfo.InvariantCulture);
     }
 
     private static void AddModelGroups(
