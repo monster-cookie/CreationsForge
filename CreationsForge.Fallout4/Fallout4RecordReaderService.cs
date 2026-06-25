@@ -24,6 +24,15 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         GameMetadataService = gameMetadataService;
     }
 
+    /// <summary>
+    /// Reads the supported Fallout 4 record families from the plugin represented by <paramref name="plugin"/>.
+    /// Terminal records are read through a full binary mod because the overlay reader can omit repeated menu items
+    /// that Spriggit and xEdit expose from TERM records.
+    /// </summary>
+    /// <param name="plugin">The plugin metadata that identifies the Fallout 4 plugin file to read.</param>
+    /// <param name="cancellationToken">A token used to stop the import between record-family mapping steps.</param>
+    /// <returns>The mapped record families that CreationsForge currently imports for Fallout 4.</returns>
+    /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled.</exception>
     public PluginRecordSetDTO ReadPluginRecords(PluginDTO plugin, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -61,7 +70,9 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         cancellationToken.ThrowIfCancellationRequested();
         var constructibleObjects = MapConstructibleObjects(plugin, mod);
         cancellationToken.ThrowIfCancellationRequested();
-        var terminals = MapTerminals(plugin, mod);
+        var terminalMod = LoadFullBinaryMod(plugin);
+        cancellationToken.ThrowIfCancellationRequested();
+        var terminals = MapTerminals(plugin, terminalMod);
 
         return new PluginRecordSetDTO
         {
@@ -2539,6 +2550,20 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             .FromPath(Path.Combine(dataFolderPath, plugin.ModKey.FileName))
             .WithDataFolder(dataFolderPath)
             .Construct();
+    }
+
+    /// <summary>
+    /// Loads a Fallout 4 plugin with Mutagen's full binary reader for record families where the overlay reader has
+    /// known correctness gaps.
+    /// </summary>
+    /// <param name="plugin">The plugin metadata that identifies the Fallout 4 plugin file to read.</param>
+    /// <returns>A full binary Mutagen mod getter for the requested plugin.</returns>
+    protected virtual IFallout4ModGetter LoadFullBinaryMod(PluginDTO plugin)
+    {
+        var dataFolderPath = GetDataFolderPath();
+        return Fallout4Mod.CreateFromBinary(
+            Path.Combine(dataFolderPath, plugin.ModKey.FileName),
+            Fallout4Release.Fallout4);
     }
 
     private string GetDataFolderPath()

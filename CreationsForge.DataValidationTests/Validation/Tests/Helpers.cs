@@ -2246,6 +2246,13 @@ public static class Helpers
         return HasSpriggitPath(spriggitFields, spriggitObjectPath);
     }
 
+    /// <summary>
+    /// Determines whether a Spriggit keyword component field is preserved by scalar keyword DTO fields.
+    /// </summary>
+    /// <param name="fieldName">The flattened Spriggit field path being evaluated.</param>
+    /// <param name="spriggitFields">All flattened Spriggit fields for the record.</param>
+    /// <param name="dtoFields">All flattened DTO fields for the record.</param>
+    /// <returns><c>true</c> when the component field is represented by an equivalent DTO scalar or keyword row.</returns>
     private static bool IsSpriggitKeywordComponentFieldBackedByDtoScalar(
         string fieldName,
         IReadOnlyDictionary<string, string> spriggitFields,
@@ -2286,14 +2293,14 @@ public static class Helpers
         {
             return dtoFields.TryGetValue("WAIM", out var dtoValue) &&
                    spriggitFields.TryGetValue(fieldName, out var spriggitValue) &&
-                   string.Equals(dtoValue, NormalizeHexPrefix(spriggitValue), StringComparison.Ordinal);
+                   HexValuesMatch(dtoValue, spriggitValue);
         }
 
         if (string.Equals(remainder, ".WFIR", StringComparison.OrdinalIgnoreCase))
         {
             return dtoFields.TryGetValue("WFIR", out var dtoValue) &&
                    spriggitFields.TryGetValue(fieldName, out var spriggitValue) &&
-                   string.Equals(dtoValue, NormalizeHexPrefix(spriggitValue), StringComparison.Ordinal);
+                   HexValuesMatch(dtoValue, spriggitValue);
         }
 
         return IsSpriggitComponentKeywordBackedByDtoKeyword(remainder, fieldName, spriggitFields, dtoFields);
@@ -2618,6 +2625,22 @@ public static class Helpers
                 string.Equals(formKey, flatFormKey, StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// Compares two hex payload strings while allowing either side to include the Spriggit <c>0x</c> prefix.
+    /// </summary>
+    /// <param name="left">The first hex payload.</param>
+    /// <param name="right">The second hex payload.</param>
+    /// <returns><c>true</c> when both payloads contain the same hex digits after prefix normalization.</returns>
+    private static bool HexValuesMatch(string left, string right)
+    {
+        return string.Equals(NormalizeHexPrefix(left), NormalizeHexPrefix(right), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Removes the optional Spriggit <c>0x</c> prefix from a hex payload.
+    /// </summary>
+    /// <param name="value">The hex payload text.</param>
+    /// <returns>The payload text without a leading <c>0x</c> prefix.</returns>
     private static string NormalizeHexPrefix(string value)
     {
         return value.StartsWith("0x", StringComparison.OrdinalIgnoreCase)

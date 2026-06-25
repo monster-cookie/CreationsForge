@@ -64,6 +64,11 @@ public static class TerminalValidationSpecs
             withScriptFragments: false);
     }
 
+    /// <summary>
+    /// Creates the Fallout 4 terminal validation spec for the robot-control targeting terminal sample.
+    /// The sample has six menu items in Spriggit and xEdit.
+    /// </summary>
+    /// <returns>The validation rules for the DN035 robot-control targeting terminal sample.</returns>
     public static ValidationSpec Fallout4_DN035_RobotControlTerminal_Targeting()
     {
         return Fallout4Terminal(
@@ -71,7 +76,7 @@ public static class TerminalValidationSpecs
             "1221C8:Fallout4.esm",
             withMajorRecordFlagsRaw: true,
             bodyTextCount: 2,
-            menuItemCount: 7,
+            menuItemCount: 6,
             withScriptFragments: true);
     }
 
