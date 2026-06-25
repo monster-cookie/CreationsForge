@@ -41,6 +41,11 @@ public enum ValidationValueNormalizer
     Color,
 
     /// <summary>
+    /// Compare Spriggit hexadecimal color values and decimal values under a mixed object tree.
+    /// </summary>
+    ColorOrDecimalNumber,
+
+    /// <summary>
     /// Compare a decimal Spriggit FormID against the DTO's normalized hexadecimal FormKey string.
     /// </summary>
     DecimalFormKeyId,
@@ -59,5 +64,20 @@ public enum ValidationValueNormalizer
     /// <summary>
     /// Compare structured JSON-like payloads when Spriggit folded YAML scalar formatting differs from DTO formatting.
     /// </summary>
-    JsonWhitespace
+    JsonWhitespace,
+
+    /// <summary>
+    /// Compare Starfield major record flag names when Spriggit uses game-specific names for the same stored bit.
+    /// </summary>
+    StarfieldMajorFlagName,
+
+    /// <summary>
+    /// Compare major flag lists against the combined integer flag value exposed by Mutagen readback.
+    /// </summary>
+    MajorFlagList,
+
+    /// <summary>
+    /// Compare Skyrim major flag lists against the combined integer flag value exposed by Mutagen readback.
+    /// </summary>
+    SkyrimMajorFlagList
 }

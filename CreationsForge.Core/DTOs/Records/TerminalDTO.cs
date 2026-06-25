@@ -3,7 +3,10 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class TerminalDTO : RecordDTO, IHasModelsDTO, IKeywords, IHasScriptingAdaptersDTO, IHasScriptFragmentsDTO, IHasRawRecordPayloadsDTO, IHasTerminalMarkerParametersRecordDTO, IHasConditionsDTO
+/// <summary>
+/// Represents a terminal record and its typed child data.
+/// </summary>
+public class TerminalDTO : RecordDTO, IHasModelsDTO, IKeywords, IHasScriptingAdaptersDTO, IHasScriptFragmentsDTO, IHasReflectionDTO, IHasTerminalMarkerParametersRecordDTO, IHasConditionsDTO
 {
     public string? ObjectBoundsFirst { get; set; }
 
@@ -55,7 +58,10 @@ public class TerminalDTO : RecordDTO, IHasModelsDTO, IKeywords, IHasScriptingAda
 
     public IList<ScriptFragmentDTO> ScriptFragments { get; set; } = new List<ScriptFragmentDTO>();
 
-    public IList<RawRecordPayloadDTO> RawPayloads { get; set; } = new List<RawRecordPayloadDTO>();
+    /// <summary>
+    /// Gets or sets component reflection rows exported by Spriggit as <c>REFL</c> fields.
+    /// </summary>
+    public IList<ReflectionDTO> Reflections { get; set; } = new List<ReflectionDTO>();
 
     public IList<ConditionFormConditionDTO> Conditions { get; set; } = new List<ConditionFormConditionDTO>();
 

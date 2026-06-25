@@ -218,9 +218,9 @@ Papyrus scripts and properties.
 
 Readable Bethesda component fields are stored on the consuming record when their meaning varies by record. Starfield
 `DOOR`, `CONT`, and `TERM` animation graph component values map to direct animation fields on the parent DTO/table.
-Raw payload rows are reserved for Spriggit binary-like `REFL` fields. The original Mutagen/Spriggit source path, such
-as `Components.LodOwnerComponentBinaryOverlay.REFL`, is retained in payload source-path fields for future writer/export
-work.
+Spriggit component `REFL` fields are stored as first-class `Reflection` rows with component index, component type,
+source path, and payload value. Raw payload rows are reserved for opaque binary-like payloads that do not have a
+first-class model.
 
 COBJ created-object counts use the parent scalar `CreatedObjectCount` field. NPC template/appearance leftovers and
 static navmesh geometry are typed fields on their owning record DTO and parent table.

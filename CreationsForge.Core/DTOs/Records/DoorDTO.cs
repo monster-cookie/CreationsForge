@@ -3,7 +3,10 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class DoorDTO : RecordDTO, IHasModelsDTO, IKeywords, ISounds, IHasScriptingAdaptersDTO, IHasComponentsDTO, IHasRawRecordPayloadsDTO
+/// <summary>
+/// Represents a door record and its typed child data.
+/// </summary>
+public class DoorDTO : RecordDTO, IHasModelsDTO, IKeywords, ISounds, IHasScriptingAdaptersDTO, IHasComponentsDTO, IHasReflectionDTO
 {
     public string? ObjectBoundsFirst { get; set; }
 
@@ -12,6 +15,11 @@ public class DoorDTO : RecordDTO, IHasModelsDTO, IKeywords, ISounds, IHasScripti
     public TranslatedStringDTO? Name { get; set; }
 
     public string? Flags { get; set; }
+
+    /// <summary>
+    /// Gets or sets the named major record flags exported by Spriggit for this door.
+    /// </summary>
+    public string? MajorFlags { get; set; }
 
     public FormKeyDTO? NativeTerminalFormKey { get; set; }
 
@@ -37,5 +45,18 @@ public class DoorDTO : RecordDTO, IHasModelsDTO, IKeywords, ISounds, IHasScripti
 
     public IList<RecordComponentDTO> Components { get; set; } = new List<RecordComponentDTO>();
 
-    public IList<RawRecordPayloadDTO> RawPayloads { get; set; } = new List<RawRecordPayloadDTO>();
+    /// <summary>
+    /// Gets or sets component reflection rows exported by Spriggit as <c>REFL</c> fields.
+    /// </summary>
+    public IList<ReflectionDTO> Reflections { get; set; } = new List<ReflectionDTO>();
+
+    /// <summary>
+    /// Gets or sets forced location form-key references attached to this door.
+    /// </summary>
+    public IList<FormKeyDTO> ForcedLocations { get; set; } = new List<FormKeyDTO>();
+
+    /// <summary>
+    /// Gets or sets the navmesh geometry exported by Spriggit for doors that define navigation data.
+    /// </summary>
+    public StaticNavmeshGeometryDTO? NavmeshGeometry { get; set; }
 }

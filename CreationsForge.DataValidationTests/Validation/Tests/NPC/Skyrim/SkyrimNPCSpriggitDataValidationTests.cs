@@ -15,7 +15,16 @@ public class SkyrimNPCSpriggitDataValidationTests : SpriggitDataValidationTestBa
     [Trait("SpriggitFile", "Npcs/EncGuardImperialTemplate - 0F6F37_Skyrim.esm.yaml")]
     public void Skyrim_NPC__ShouldMatchSpriggitSample_EncGuardImperialTemplate()
     {
-        AssertNPC(NPCValidationSpecs.Skyrim_EncGuardImperialTemplate());
+        var spec = NPCValidationSpecs.Skyrim_EncGuardImperialTemplate();
+        var dto = Helpers.GetDTO<NPCDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -26,7 +35,16 @@ public class SkyrimNPCSpriggitDataValidationTests : SpriggitDataValidationTestBa
     [Trait("SpriggitFile", "Npcs/EncGuardSonsTemplate - 0F6F38_Skyrim.esm.yaml")]
     public void Skyrim_NPC__ShouldMatchSpriggitSample_EncGuardSonsTemplate()
     {
-        AssertNPC(NPCValidationSpecs.Skyrim_EncGuardSonsTemplate());
+        var spec = NPCValidationSpecs.Skyrim_EncGuardSonsTemplate();
+        var dto = Helpers.GetDTO<NPCDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -37,7 +55,16 @@ public class SkyrimNPCSpriggitDataValidationTests : SpriggitDataValidationTestBa
     [Trait("SpriggitFile", "Npcs/EncSiegeImperialSoldierTemplate - 041B30_Skyrim.esm.yaml")]
     public void Skyrim_NPC__ShouldMatchSpriggitSample_EncSiegeImperialSoldierTemplate()
     {
-        AssertNPC(NPCValidationSpecs.Skyrim_EncSiegeImperialSoldierTemplate());
+        var spec = NPCValidationSpecs.Skyrim_EncSiegeImperialSoldierTemplate();
+        var dto = Helpers.GetDTO<NPCDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -48,7 +75,16 @@ public class SkyrimNPCSpriggitDataValidationTests : SpriggitDataValidationTestBa
     [Trait("SpriggitFile", "Npcs/AelaTheHuntress - 01A696_Skyrim.esm.yaml")]
     public void Skyrim_NPC__ShouldMatchSpriggitSample_AelaTheHuntress()
     {
-        AssertNPC(NPCValidationSpecs.Skyrim_AelaTheHuntress());
+        var spec = NPCValidationSpecs.Skyrim_AelaTheHuntress();
+        var dto = Helpers.GetDTO<NPCDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -59,11 +95,7 @@ public class SkyrimNPCSpriggitDataValidationTests : SpriggitDataValidationTestBa
     [Trait("SpriggitFile", "Npcs/AlduinBase - 08E4F1_Skyrim.esm.yaml")]
     public void Skyrim_NPC__ShouldMatchSpriggitSample_AlduinBase()
     {
-        AssertNPC(NPCValidationSpecs.Skyrim_AlduinBase());
-    }
-
-    private void AssertNPC(ValidationSpec spec)
-    {
+        var spec = NPCValidationSpecs.Skyrim_AlduinBase();
         var dto = Helpers.GetDTO<NPCDTO>(spec.Game, spec.RecordType, spec.FormKey);
 
         var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);

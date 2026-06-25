@@ -21,6 +21,11 @@ public class RecordComponentDTO
 
     public string MutagenObjectType { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets display-case editor data values exported by Spriggit as <c>DCED</c>.
+    /// </summary>
+    public IList<int> DCED { get; set; } = new List<int>();
+
     public DateTime ImportedAtUTC { get; set; }
 
     public IList<RecordComponentItemDTO> Items { get; set; } = new List<RecordComponentItemDTO>();

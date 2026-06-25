@@ -186,17 +186,17 @@ display indices, destructible data and stages, and scripting adapter rows as hie
 connection-line target indices. PERK comparison includes root effect rows, rank rows, nested rank-effect rows, rank
 activity rows, progression evaluator rows, condition-tab rows, background skill rows, shared condition rows, shared
 sound rows, shared scripting adapter rows, and script fragment rows. STAT comparison includes scalar fields, shared
-keyword rows, shared model rows, navmesh geometry, and binary `REFL` raw payload rows.
-BOOK comparison includes scalar fields plus shared models, keywords, sounds, scripting adapters, and binary `REFL` raw
-payload rows. DOOR comparison includes scalar fields, direct animation component fields, shared models, keywords,
-sounds, scripting adapters, and binary `REFL` raw payload rows. CONT comparison includes scalar fields, direct
-animation component fields, item rows, shared keyword rows, shared model rows, shared sound rows, scripting adapters,
-and binary `REFL` raw payload rows. TERM comparison includes scalar fields, direct animation component fields, shared
-models, keywords, scripting adapters, script fragments, binary `REFL` raw payload rows, forced locations, marker
-parameters, body texts, condition rows, and menu items.
+keyword rows, shared model rows, navmesh geometry, and first-class reflection rows for component `REFL` data.
+BOOK comparison includes scalar fields plus shared models, keywords, sounds, scripting adapters, and first-class
+reflection rows. DOOR comparison includes scalar fields, direct animation component fields, shared models, keywords,
+sounds, scripting adapters, and first-class reflection rows. CONT comparison includes scalar fields, direct animation
+component fields, item rows, shared keyword rows, shared model rows, shared sound rows, scripting adapters, and
+first-class reflection rows. TERM comparison includes scalar fields, direct animation component fields, shared models,
+keywords, scripting adapters, script fragments, first-class reflection rows, forced locations, marker parameters, body
+texts, condition rows, and menu items.
 CNDF, FACT, and COBJ
 comparison includes structured condition rows and condition-data parameter rows. COBJ comparison also includes
-the scalar `CreatedObjectCount` field. Raw payload values are
+the scalar `CreatedObjectCount` field. Reflection and raw payload values are
 compared by their retained full value but are summarized in the grid as `[UNPARSEABLE REFLECTION DATA]`; the
 presentation layer opens the full value in a hex-view dialog when the user selects the summarized value. MGEF DATA
 fields follow Mutagen/Spriggit's flattened record shape and display as flat comparison rows.
@@ -306,15 +306,16 @@ The `MISC` slice currently persists parent scalar fields, keyword rows, model ro
 components with display indices, Starfield resources, and destructible data/stages when Mutagen exposes them. The
 `PERK` slice persists parent scalar fields, root effects, ranks, rank effects, effect condition tabs,
 background skills, shared condition rows, sounds, scripts, and script fragments. The `BOOK` slice persists parent
-scalar fields, keyword rows, model rows, sounds, scripts, and binary `REFL` raw payloads. The `DOOR` slice persists
-parent scalar fields including direct animation component fields, keyword rows, model rows, sounds, scripts, and binary
-`REFL` raw payloads. The `CONT` slice persists parent scalar fields including direct animation component fields, item
-rows, keyword rows, model rows, sounds, scripts, and binary `REFL` raw payloads. The `CNDF` slice persists parent
+scalar fields, keyword rows, model rows, sounds, scripts, and first-class reflection rows for component `REFL` data.
+The `DOOR` slice persists parent scalar fields including direct animation component fields, keyword rows, model rows,
+sounds, scripts, and first-class reflection rows. The `CONT` slice persists parent scalar fields including direct
+animation component fields, item rows, keyword rows, model rows, sounds, scripts, and first-class reflection rows. The
+`CNDF` slice persists parent
 scalar fields, shared condition-rule rows, and generic condition-data parameter rows. The `COBJ` slice persists parent
 scalar
 fields, recipe component rows, Fallout 4 category rows, Starfield recipe-filter rows, shared condition-rule rows,
 scripts when present, and scalar `CreatedObjectCount`. The `TERM` slice persists parent scalar fields including direct
-animation component fields, keyword rows, model rows, scripts, script fragments, binary `REFL` raw payloads, forced
+animation component fields, keyword rows, model rows, scripts, script fragments, first-class reflection rows, forced
 locations, marker parameters, body texts, condition rows, and menu items.
 Scripting adapters are persisted against the shared `RecordInstances` parent using record type IDs such as `GLOB`,
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `BOOK`, `DOOR`, and `TERM`.
@@ -340,15 +341,17 @@ Readable Bethesda component fields are typed on the consuming records when their
 created-object counts are stored as the scalar `CreatedObjectCount` parent field. NPC template/appearance leftovers
 plus static navmesh geometry are typed columns on their owning parent tables.
 
-Raw payload persistence is shared in Core through `IRawRecordPayloadImportService` and `RawRecordPayloads`.
-`IRecordChildImportService` invokes raw payload persistence only for imported DTOs that implement the raw-payload
-capability interface. Raw payload rows are reserved for opaque binary-like payloads that Spriggit leaves as binary
-content. The current populated raw path is Starfield component `REFL`. Model `Data` is stored on `Models`, sounds are
-stored on `SoundMappings`, condition rules are modeled as structured condition and parameter rows, and reflected
-readable data is stored in typed parent or child tables. Ordinary keyword rows discovered through nested
-component-shaped objects remain `KeywordMappings`; they are not treated as payload rows.
-Comparison DTOs keep the full binary raw payload value as detail data while exposing a summarized display label for the
-UI hex viewer.
+Reflection persistence is shared in Core through `IReflectionImportService` and the `Reflection` table.
+`IRecordChildImportService` invokes reflection persistence for imported DTOs that implement the reflection capability
+interface. Starfield component `REFL` data for supported `STAT`, `BOOK`, `DOOR`, `CONT`, and `TERM` records is stored
+as first-class reflection rows with component index, component type, source path, and payload value. Raw payload
+persistence remains available through `IRawRecordPayloadImportService` and `RawRecordPayloads` only for opaque
+binary-like payloads without a first-class model. Model `Data` is stored on `Models`, sounds are stored on
+`SoundMappings`, condition rules are modeled as structured condition and parameter rows, and reflected readable data is
+stored in typed parent or child tables. Ordinary keyword rows discovered through nested component-shaped objects remain
+`KeywordMappings`; they are not treated as payload rows.
+Comparison DTOs keep the full reflection or raw payload value as detail data while exposing a summarized display label
+for the UI hex viewer.
 
 Sound persistence is shared in Core through `ISoundMappingImportService` and `SoundMappings`.
 `IRecordChildImportService` invokes sound persistence for any imported `RecordDTO` that implements the sound

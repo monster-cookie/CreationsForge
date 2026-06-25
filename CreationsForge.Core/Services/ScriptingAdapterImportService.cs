@@ -9,6 +9,8 @@ public class ScriptingAdapterImportService : IScriptingAdapterImportService
 {
     private readonly IScriptingAdapterPropertyListItemRepository ScriptingAdapterPropertyListItemRepository;
     private readonly IScriptingAdapterPropertyRepository ScriptingAdapterPropertyRepository;
+    private readonly IScriptingAdapterPropertyStructMemberRepository ScriptingAdapterPropertyStructMemberRepository;
+    private readonly IScriptingAdapterPropertyStructRepository ScriptingAdapterPropertyStructRepository;
     private readonly IScriptingAdapterRepository ScriptingAdapterRepository;
     private readonly IScriptFragmentRepository ScriptFragmentRepository;
 
@@ -16,11 +18,15 @@ public class ScriptingAdapterImportService : IScriptingAdapterImportService
         IScriptingAdapterRepository scriptingAdapterRepository,
         IScriptingAdapterPropertyRepository scriptingAdapterPropertyRepository,
         IScriptingAdapterPropertyListItemRepository scriptingAdapterPropertyListItemRepository,
+        IScriptingAdapterPropertyStructRepository scriptingAdapterPropertyStructRepository,
+        IScriptingAdapterPropertyStructMemberRepository scriptingAdapterPropertyStructMemberRepository,
         IScriptFragmentRepository scriptFragmentRepository)
     {
         ScriptingAdapterRepository = scriptingAdapterRepository;
         ScriptingAdapterPropertyRepository = scriptingAdapterPropertyRepository;
         ScriptingAdapterPropertyListItemRepository = scriptingAdapterPropertyListItemRepository;
+        ScriptingAdapterPropertyStructRepository = scriptingAdapterPropertyStructRepository;
+        ScriptingAdapterPropertyStructMemberRepository = scriptingAdapterPropertyStructMemberRepository;
         ScriptFragmentRepository = scriptFragmentRepository;
     }
 
@@ -62,6 +68,31 @@ public class ScriptingAdapterImportService : IScriptingAdapterImportService
                     listItem.PropertyIndex = property.PropertyIndex;
                     listItem.ImportedAtUTC = recordDTO.ImportedAtUTC;
                     ScriptingAdapterPropertyListItemRepository.Save(listItem);
+                }
+
+                foreach (var propertyStruct in property.Structs)
+                {
+                    propertyStruct.Game = recordDTO.Game;
+                    propertyStruct.ModKey = recordDTO.ModKey;
+                    propertyStruct.RecordType = recordType;
+                    propertyStruct.FormKey = recordDTO.FormKey;
+                    propertyStruct.ScriptingAdapterName = scriptingAdapter.Name;
+                    propertyStruct.PropertyIndex = property.PropertyIndex;
+                    propertyStruct.ImportedAtUTC = recordDTO.ImportedAtUTC;
+                    ScriptingAdapterPropertyStructRepository.Save(propertyStruct);
+
+                    foreach (var member in propertyStruct.Members)
+                    {
+                        member.Game = recordDTO.Game;
+                        member.ModKey = recordDTO.ModKey;
+                        member.RecordType = recordType;
+                        member.FormKey = recordDTO.FormKey;
+                        member.ScriptingAdapterName = scriptingAdapter.Name;
+                        member.PropertyIndex = property.PropertyIndex;
+                        member.StructIndex = propertyStruct.StructIndex;
+                        member.ImportedAtUTC = recordDTO.ImportedAtUTC;
+                        ScriptingAdapterPropertyStructMemberRepository.Save(member);
+                    }
                 }
             }
         }

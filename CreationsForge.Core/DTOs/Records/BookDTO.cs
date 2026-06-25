@@ -5,7 +5,10 @@ using CreationsForge.Core.Enums;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class BookDTO : RecordDTO, IHasName, IHasText, IHasTranslatedFields, IHasModelsDTO, IKeywords, ISounds, IHasScriptingAdaptersDTO, IHasComponentsDTO, IHasRawRecordPayloadsDTO
+/// <summary>
+/// Represents a book or slate record and its typed child data.
+/// </summary>
+public class BookDTO : RecordDTO, IHasName, IHasText, IHasTranslatedFields, IHasModelsDTO, IKeywords, ISounds, IHasScriptingAdaptersDTO, IHasComponentsDTO, IHasReflectionDTO
 {
     public ObjectBoundsDTO? ObjectBounds { get; set; }
 
@@ -58,7 +61,10 @@ public class BookDTO : RecordDTO, IHasName, IHasText, IHasTranslatedFields, IHas
 
     public IList<RecordComponentDTO> Components { get; set; } = new List<RecordComponentDTO>();
 
-    public IList<RawRecordPayloadDTO> RawPayloads { get; set; } = new List<RawRecordPayloadDTO>();
+    /// <summary>
+    /// Gets or sets component reflection rows exported by Spriggit as <c>REFL</c> fields.
+    /// </summary>
+    public IList<ReflectionDTO> Reflections { get; set; } = new List<ReflectionDTO>();
 
     public IEnumerable<TranslatedFieldDTO> GetTranslatedFields()
     {

@@ -287,13 +287,20 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 EditorID = GetPropertyString(record, "EditorID"),
                 FormVersion = GetPropertyInt(record, "FormVersion"),
                 MajorRecordFlags = GetPropertyInt(record, "Fallout4MajorRecordFlags"),
+                IsCompressed = GetPropertyNullableBool(record, "IsCompressed"),
+                ObjectBoundsFirst = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "First"),
+                ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
                 Version2 = GetPropertyNullableInt(record, "Version2"),
                 VersionControl = GetPropertyNullableInt(record, "VersionControl"),
                 ImportedAtUTC = DateTime.UtcNow,
                 Name = GetTranslatedString(record, "Name"),
                 ShortName = GetTranslatedString(record, "ShortName"),
                 LongName = GetTranslatedString(record, "LongName"),
+                Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
+                MajorFlags = FormatMajorFlags(GetPropertyValue(record, "MajorFlags")),
+                Level = GetNPCLevel(GetPropertyValue(record, "Level")),
                 DispositionBase = GetPropertyInt(GetPropertyValue(record, "Configuration") ?? record, "DispositionBase"),
+                UseTemplateActors = GetPropertyValue(record, "UseTemplateActors")?.ToString(),
                 Aggression = GetPropertyString(GetPropertyValue(record, "AIData") ?? record, "Aggression"),
                 Confidence = GetPropertyString(GetPropertyValue(record, "AIData") ?? record, "Confidence"),
                 EnergyLevel = GetPropertyInt(GetPropertyValue(record, "AIData") ?? record, "EnergyLevel"),
@@ -304,31 +311,68 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 HeightMin = GetPropertyDouble(record, "HeightMin"),
                 HeightMax = GetPropertyDouble(record, "HeightMax"),
                 SkinToneIndex = GetPropertyNullableInt(record, "SkinToneIndex"),
+                Skin = GetLinkedFormKey(record, "Skin"),
                 Pronoun = GetPropertyStringOrNull(record, "Pronoun"),
                 VoiceFormKey = GetLinkedFormKey(record, "Voice"),
                 RaceFormKey = GetLinkedFormKey(record, "Race"),
+                AttackRace = GetLinkedFormKey(record, "AttackRace"),
                 CombatOverridePackageListFormKey = GetLinkedFormKey(record, "CombatOverridePackageList"),
                 CombatStyleFormKey = GetLinkedFormKey(record, "CombatStyle"),
                 DefaultPackageListFormKey = GetLinkedFormKey(record, "DefaultPackageList"),
                 CrimeFactionFormKey = GetLinkedFormKey(record, "CrimeFaction"),
+                Class = GetLinkedFormKey(record, "Class"),
+                DeathItem = GetLinkedFormKey(record, "DeathItem"),
+                DefaultOutfit = GetLinkedFormKey(record, "DefaultOutfit"),
+                SleepingOutfit = GetLinkedFormKey(record, "SleepingOutfit"),
+                WornArmor = GetLinkedFormKey(record, "WornArmor"),
+                PowerArmorStand = GetLinkedFormKey(record, "PowerArmorStand"),
+                SpaceOutfit = GetLinkedFormKey(record, "SpaceOutfit"),
+                HeadTexture = GetLinkedFormKey(record, "HeadTexture"),
+                Template = GetLinkedFormKey(record, "Template"),
+                DefaultTemplate = GetLinkedFormKey(record, "DefaultTemplate"),
+                TemplateActors = GetNPCTemplateActors(GetPropertyValue(record, "TemplateActors")),
+                CalculatedHealth = GetPropertyNullableInt(record, "CalculatedHealth"),
+                CalculatedActionPoints = GetPropertyNullableInt(record, "CalculatedActionPoints"),
+                XpValueOffset = GetPropertyNullableInt(record, "XpValueOffset"),
+                Unknown = GetPropertyNullableInt(record, "Unknown"),
+                Unused = GetPropertyNullableInt(record, "Unused"),
+                NAM5 = FormatSpriggitHexValue(GetPropertyValue(record, "NAM5")),
+                Height = GetPropertyNullableDouble(record, "Height"),
+                Weight = GetNPCWeight(GetPropertyValue(record, "Weight")),
+                SoundLevel = GetPropertyValue(record, "SoundLevel")?.ToString(),
+                TextureLighting = GetPropertyValue(record, "TextureLighting")?.ToString(),
+                HairColor = FormatFormKeyOrString(GetPropertyValue(record, "HairColor")),
+                FacialHairColor = GetPropertyValue(record, "FacialHairColor")?.ToString(),
+                EyebrowColor = GetPropertyValue(record, "EyebrowColor")?.ToString(),
+                EyeColor = GetPropertyValue(record, "EyeColor")?.ToString(),
                 Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.NPC.RecordID, GetRequiredRawFormKey(record), GetPropertyValue(record, "Keywords")),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.NPC.RecordID, GetRequiredRawFormKey(record), record, "Sound"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.NPC.RecordID, record),
-                Template = SpriggitValueFormatter.Format(GetPropertyValue(record, "Template")),
-                DefaultTemplate = SpriggitValueFormatter.Format(GetPropertyValue(record, "DefaultTemplate")),
-                TemplateActors = SpriggitValueFormatter.Format(GetPropertyValue(record, "TemplateActors")),
-                WornArmor = SpriggitValueFormatter.Format(GetPropertyValue(record, "WornArmor")),
-                FaceMorph = SpriggitValueFormatter.Format(GetPropertyValue(record, "FaceMorph")),
-                FaceParts = SpriggitValueFormatter.Format(GetPropertyValue(record, "FaceParts")),
-                HeadParts = SpriggitValueFormatter.Format(GetPropertyValue(record, "HeadParts")),
-                HeadTexture = SpriggitValueFormatter.Format(GetPropertyValue(record, "HeadTexture")),
-                SleepingOutfit = SpriggitValueFormatter.Format(GetPropertyValue(record, "SleepingOutfit")),
-                TintLayers = SpriggitValueFormatter.Format(GetPropertyValue(record, "TintLayers")),
-                Tints = SpriggitValueFormatter.Format(GetPropertyValue(record, "Tints")),
-                SpaceOutfit = SpriggitValueFormatter.Format(GetPropertyValue(record, "SpaceOutfit")),
                 BodyMorphRegionValues = SpriggitValueFormatter.Format(GetPropertyValue(record, "BodyMorphRegionValues")),
                 ObjectTemplates = SpriggitValueFormatter.Format(GetPropertyValue(record, "ObjectTemplates")),
-                AIData = SpriggitValueFormatter.Format(GetPropertyValue(record, "AIData"))
+                AIData = SpriggitValueFormatter.Format(GetPropertyValue(record, "AIData")),
+                Factions = GetNPCFactions(plugin, SupportedGame.Fallout4, GetRequiredRawFormKey(record), GetPropertyValue(record, "Factions")),
+                Properties = GetNPCProperties(plugin, SupportedGame.Fallout4, GetRequiredRawFormKey(record), GetPropertyValue(record, "Properties")),
+                Items = GetNPCItems(plugin, SupportedGame.Fallout4, GetRequiredRawFormKey(record), GetPropertyValue(record, "Items")),
+                Packages = GetFormKeys(GetPropertyValue(record, "Packages")),
+                Perks = GetNPCPerks(plugin, SupportedGame.Fallout4, GetRequiredRawFormKey(record), GetPropertyValue(record, "Perks")),
+                ForcedLocations = GetFormKeys(GetPropertyValue(record, "ForcedLocations")),
+                HeadParts = GetFormKeys(GetPropertyValue(record, "HeadParts")),
+                ActorEffects = GetFormKeys(GetPropertyValue(record, "ActorEffect"))
+                    .OrderBy(formKey => formKey.ModKey.FileName, StringComparer.Ordinal)
+                    .ThenBy(formKey => formKey.Id)
+                    .ToList(),
+                Morphs = GetNPCMorphs(plugin, SupportedGame.Fallout4, GetRequiredRawFormKey(record), GetPropertyValue(record, "Morphs")),
+                FaceMorphs = GetNPCFaceMorphPositions(plugin, SupportedGame.Fallout4, GetRequiredRawFormKey(record), GetPropertyValue(record, "FaceMorphs")),
+                FaceDialPositions = GetNPCFaceDialPositions(plugin, SupportedGame.Fallout4, GetRequiredRawFormKey(record), GetPropertyValue(record, "FaceDialPositions")),
+                FaceMorphGroups = GetNPCFaceMorphGroups(plugin, SupportedGame.Fallout4, GetRequiredRawFormKey(record), GetPropertyValue(record, "FaceMorphs")),
+                MorphBlends = GetNPCMorphBlends(plugin, SupportedGame.Fallout4, GetRequiredRawFormKey(record), GetPropertyValue(record, "MorphBlends")),
+                Tints = GetNPCTints(plugin, SupportedGame.Fallout4, GetRequiredRawFormKey(record), GetPropertyValue(record, "Tints")),
+                TintLayers = GetNPCTintLayers(plugin, SupportedGame.Fallout4, GetRequiredRawFormKey(record), GetPropertyValue(record, "TintLayers")),
+                FaceTintingLayers = GetNPCFaceTintingLayers(plugin, SupportedGame.Fallout4, GetRequiredRawFormKey(record), GetPropertyValue(record, "FaceTintingLayers")),
+                PlayerSkills = GetNPCPlayerSkills(GetPropertyValue(record, "PlayerSkills")),
+                FaceMorph = GetNPCFaceMorph(GetPropertyValue(record, "FaceMorph")),
+                FaceParts = GetNPCFaceParts(GetPropertyValue(record, "FaceParts"))
             }, record))
             .ToList();
     }
@@ -415,6 +459,428 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 Value = GetPropertyNullableDouble(property, "Value"),
                 ImportedAtUTC = DateTime.UtcNow
             }).ToList();
+    }
+
+    private static NPCLevelDTO? GetNPCLevel(object? level)
+    {
+        if (level == null)
+        {
+            return null;
+        }
+
+        return new NPCLevelDTO
+        {
+            MutagenObjectType = GetPropertyValue(level, "MutagenObjectType")?.ToString() ?? level.GetType().Name,
+            Level = GetPropertyNullableInt(level, "Level"),
+            LevelMult = GetPropertyNullableDouble(level, "LevelMult")
+        };
+    }
+
+    private static NPCTemplateActorsDTO? GetNPCTemplateActors(object? templateActors)
+    {
+        if (templateActors == null)
+        {
+            return null;
+        }
+
+        return new NPCTemplateActorsDTO
+        {
+            TraitTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "TraitTemplate")),
+            StatsTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "StatsTemplate")),
+            SpellListTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "SpellListTemplate")),
+            AiDataTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "AiDataTemplate")),
+            BaseDataTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "BaseDataTemplate")),
+            InventoryTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "InventoryTemplate")),
+            DefPackListTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "DefPackListTemplate")),
+            AttackDataTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "AttackDataTemplate")),
+            KeywordsTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "KeywordsTemplate")),
+            Unknown2 = GetFormKeyFromObject(GetPropertyValue(templateActors, "Unknown2"))
+        };
+    }
+
+    private static NPCWeightDTO? GetNPCWeight(object? weight)
+    {
+        if (weight == null)
+        {
+            return null;
+        }
+
+        if (double.TryParse(weight.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var scalarWeight))
+        {
+            return new NPCWeightDTO { Value = scalarWeight };
+        }
+
+        return new NPCWeightDTO
+        {
+            Thin = GetPropertyNullableDouble(weight, "Thin"),
+            Muscular = GetPropertyNullableDouble(weight, "Muscular"),
+            Fat = GetPropertyNullableDouble(weight, "Fat")
+        };
+    }
+
+    private static List<NPCFactionDTO> GetNPCFactions(PluginDTO plugin, SupportedGame game, FormKey formKey, object? factions)
+    {
+        return factions is not IEnumerable enumerable
+            ? new List<NPCFactionDTO>()
+            : enumerable.Cast<object>()
+                .Select(faction => new
+                {
+                    Faction = faction,
+                    FactionFormKey = GetFormKeyFromObject(GetPropertyValue(faction, "Faction")) ?? GetFormKeyFromObject(faction)
+                })
+                .OrderBy(faction => faction.FactionFormKey?.ModKey.FileName ?? string.Empty, StringComparer.Ordinal)
+                .ThenBy(faction => faction.FactionFormKey?.Id ?? 0)
+                .Select((faction, factionIndex) => new NPCFactionDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                FactionIndex = factionIndex,
+                Faction = faction.FactionFormKey,
+                Rank = GetPropertyNullableInt(faction.Faction, "Rank"),
+                Fluff = FormatHexValue(GetPropertyValue(faction.Faction, "Fluff")),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCPropertyDTO> GetNPCProperties(PluginDTO plugin, SupportedGame game, FormKey formKey, object? properties)
+    {
+        return properties is not IEnumerable enumerable
+            ? new List<NPCPropertyDTO>()
+            : enumerable.Cast<object>().Select((property, propertyIndex) => new NPCPropertyDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                PropertyIndex = propertyIndex,
+                ActorValue = GetFormKeyFromObject(GetPropertyValue(property, "ActorValue")),
+                Value = GetPropertyNullableDouble(property, "Value"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCItemDTO> GetNPCItems(PluginDTO plugin, SupportedGame game, FormKey formKey, object? items)
+    {
+        if (items is not IEnumerable enumerable)
+        {
+            return new List<NPCItemDTO>();
+        }
+
+        return enumerable.Cast<object>()
+            .Select(item =>
+            {
+                var itemData = GetPropertyValue(item, "Item") ?? item;
+                return new
+                {
+                    Item = item,
+                    ItemData = itemData,
+                    ItemFormKey = GetFormKeyFromObject(GetPropertyValue(itemData, "Item"))
+                };
+            })
+            .Where(item => item.ItemFormKey != null && item.ItemFormKey.Id != 0)
+            .Select((item, itemIndex) => new NPCItemDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                ItemIndex = itemIndex,
+                Item = item.ItemFormKey,
+                Count = GetPropertyNullableInt(item.ItemData, "Count") ?? GetPropertyNullableInt(item.Item, "Count"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCPerkDTO> GetNPCPerks(PluginDTO plugin, SupportedGame game, FormKey formKey, object? perks)
+    {
+        return perks is not IEnumerable enumerable
+            ? new List<NPCPerkDTO>()
+            : enumerable.Cast<object>().Select((perk, perkIndex) => new NPCPerkDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                PerkIndex = perkIndex,
+                Perk = GetFormKeyFromObject(GetPropertyValue(perk, "Perk")) ?? GetFormKeyFromObject(perk),
+                Rank = GetPropertyNullableInt(perk, "Rank"),
+                Fluff = FormatHexValue(GetPropertyValue(perk, "Fluff")),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCMorphDTO> GetNPCMorphs(PluginDTO plugin, SupportedGame game, FormKey formKey, object? morphs)
+    {
+        return morphs is not IEnumerable enumerable
+            ? new List<NPCMorphDTO>()
+            : enumerable.Cast<object>().Select((morph, morphIndex) => new NPCMorphDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                MorphIndex = morphIndex,
+                Key = GetPropertyNullableLong(morph, "Key"),
+                Value = GetPropertyNullableDouble(morph, "Value"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCFaceMorphPositionDTO> GetNPCFaceMorphPositions(PluginDTO plugin, SupportedGame game, FormKey formKey, object? faceMorphs)
+    {
+        return faceMorphs is not IEnumerable enumerable
+            ? new List<NPCFaceMorphPositionDTO>()
+            : enumerable.Cast<object>().Select((faceMorph, faceMorphIndex) => new NPCFaceMorphPositionDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                FaceMorphIndex = faceMorphIndex,
+                Index = GetPropertyNullableInt(faceMorph, "Index"),
+                Position = GetPropertyValue(faceMorph, "Position")?.ToString(),
+                Rotation = GetNonDefaultVectorString(GetPropertyValue(faceMorph, "Rotation")),
+                Scale = GetPropertyNullableDouble(faceMorph, "Scale"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCFaceDialPositionDTO> GetNPCFaceDialPositions(PluginDTO plugin, SupportedGame game, FormKey formKey, object? positions)
+    {
+        return positions is not IEnumerable enumerable
+            ? new List<NPCFaceDialPositionDTO>()
+            : enumerable.Cast<object>().Select((position, positionIndex) => new NPCFaceDialPositionDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                FaceDialPositionIndex = positionIndex,
+                Index = GetPropertyNullableInt(position, "Index"),
+                Position = GetPropertyNullableDouble(position, "Position"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCFaceMorphGroupSetDTO> GetNPCFaceMorphGroups(PluginDTO plugin, SupportedGame game, FormKey formKey, object? faceMorphs)
+    {
+        if (faceMorphs is not IEnumerable enumerable)
+        {
+            return new List<NPCFaceMorphGroupSetDTO>();
+        }
+
+        return enumerable.Cast<object>()
+            .Where(faceMorph => GetPropertyValue(faceMorph, "MorphGroups") is not null)
+            .Select((faceMorph, faceMorphIndex) => new NPCFaceMorphGroupSetDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                FaceMorphIndex = faceMorphIndex,
+                Index = GetPropertyNullableInt(faceMorph, "Index"),
+                MorphGroups = GetNPCFaceMorphGroupRows(plugin, game, formKey, faceMorphIndex, GetPropertyValue(faceMorph, "MorphGroups")),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCFaceMorphGroupDTO> GetNPCFaceMorphGroupRows(PluginDTO plugin, SupportedGame game, FormKey formKey, int faceMorphIndex, object? morphGroups)
+    {
+        return morphGroups is not IEnumerable enumerable
+            ? new List<NPCFaceMorphGroupDTO>()
+            : enumerable.Cast<object>()
+                .OrderBy(morphGroup => GetPropertyValue(morphGroup, "MorphGroup")?.ToString(), StringComparer.Ordinal)
+                .Select((morphGroup, morphGroupIndex) => new NPCFaceMorphGroupDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                FaceMorphIndex = faceMorphIndex,
+                MorphGroupIndex = morphGroupIndex,
+                MorphGroup = GetPropertyValue(morphGroup, "MorphGroup")?.ToString(),
+                BlendIntensity = GetPropertyNullableDouble(morphGroup, "BlendIntensity"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCMorphBlendDTO> GetNPCMorphBlends(PluginDTO plugin, SupportedGame game, FormKey formKey, object? morphBlends)
+    {
+        return morphBlends is not IEnumerable enumerable
+            ? new List<NPCMorphBlendDTO>()
+            : enumerable.Cast<object>()
+                .OrderBy(morphBlend => GetPropertyValue(morphBlend, "BlendName")?.ToString(), StringComparer.Ordinal)
+                .Select((morphBlend, morphBlendIndex) => new NPCMorphBlendDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                MorphBlendIndex = morphBlendIndex,
+                BlendName = GetPropertyValue(morphBlend, "BlendName")?.ToString(),
+                Intensity = GetPropertyNullableDouble(morphBlend, "Intensity"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCTintDTO> GetNPCTints(PluginDTO plugin, SupportedGame game, FormKey formKey, object? tints)
+    {
+        return tints is not IEnumerable enumerable
+            ? new List<NPCTintDTO>()
+            : enumerable.Cast<object>().Select((tint, tintIndex) => new NPCTintDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                TintIndex = tintIndex,
+                TintType = GetPropertyValue(tint, "TintType")?.ToString(),
+                TintGroup = GetPropertyValue(tint, "TintGroup")?.ToString(),
+                TintName = GetPropertyValue(tint, "TintName")?.ToString(),
+                TintTexture = GetPropertyValue(tint, "TintTexture")?.ToString(),
+                TintColor = GetPropertyValue(tint, "TintColor")?.ToString(),
+                TintIntensity = GetPropertyNullableDouble(tint, "TintIntensity"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCTintLayerDTO> GetNPCTintLayers(PluginDTO plugin, SupportedGame game, FormKey formKey, object? tintLayers)
+    {
+        return tintLayers is not IEnumerable enumerable
+            ? new List<NPCTintLayerDTO>()
+            : enumerable.Cast<object>().Select((tintLayer, tintLayerIndex) => new NPCTintLayerDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                TintLayerIndex = tintLayerIndex,
+                Index = GetPropertyNullableInt(tintLayer, "Index"),
+                Color = GetPropertyValue(tintLayer, "Color")?.ToString(),
+                InterpolationValue = GetPropertyNullableDouble(tintLayer, "InterpolationValue"),
+                Preset = GetPropertyNullableInt(tintLayer, "Preset"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    /// <summary>
+    /// Maps Fallout 4 NPC face tinting layers from Mutagen into first-class DTO rows.
+    /// </summary>
+    /// <param name="plugin">The plugin that supplied the parent NPC.</param>
+    /// <param name="game">The game whose record is being mapped.</param>
+    /// <param name="formKey">The parent NPC form key.</param>
+    /// <param name="faceTintingLayers">The Mutagen face tinting layer collection, or <c>null</c> when absent.</param>
+    /// <returns>The mapped face tinting layer rows, preserving source collection order.</returns>
+    private static List<NPCFaceTintingLayerDTO> GetNPCFaceTintingLayers(PluginDTO plugin, SupportedGame game, FormKey formKey, object? faceTintingLayers)
+    {
+        return faceTintingLayers is not IEnumerable enumerable
+            ? new List<NPCFaceTintingLayerDTO>()
+            : enumerable.Cast<object>().Select((faceTintingLayer, faceTintingLayerIndex) => new NPCFaceTintingLayerDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                FaceTintingLayerIndex = faceTintingLayerIndex,
+                DataType = GetPropertyValue(faceTintingLayer, "DataType")?.ToString(),
+                Index = GetPropertyNullableInt(faceTintingLayer, "Index"),
+                Value = GetPropertyNonZeroDouble(faceTintingLayer, "Value"),
+                Color = GetNonDefaultColorString(GetPropertyValue(faceTintingLayer, "Color")),
+                TemplateColorIndex = GetPropertyNonZeroInt(faceTintingLayer, "TemplateColorIndex"),
+                TENDDataTypeState = GetStringList(GetPropertyValue(faceTintingLayer, "TENDDataTypeState")),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    /// <summary>
+    /// Converts a reflected scalar or enumerable value into a list of stable string values.
+    /// </summary>
+    /// <param name="value">The value to convert.</param>
+    /// <returns>An ordered list of non-null string values.</returns>
+    private static List<string> GetStringList(object? value)
+    {
+        if (value is string text)
+        {
+            return new List<string> { text };
+        }
+
+        if (value is IEnumerable enumerable)
+        {
+            return enumerable.Cast<object>().Select(item => item.ToString()).Where(item => item != null).Cast<string>().ToList();
+        }
+
+        var formattedValue = FormatEnumerable(value);
+        return string.IsNullOrWhiteSpace(formattedValue) ||
+               string.Equals(formattedValue, "0", StringComparison.Ordinal) ||
+               string.Equals(formattedValue, "None", StringComparison.Ordinal)
+            ? new List<string>()
+            : formattedValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+    }
+
+    private static NPCPlayerSkillsDTO? GetNPCPlayerSkills(object? playerSkills)
+    {
+        if (playerSkills == null)
+        {
+            return null;
+        }
+
+        return new NPCPlayerSkillsDTO
+        {
+            SkillValues = GetNPCPlayerSkillValues(GetPropertyValue(playerSkills, "SkillValues")),
+            SkillOffsets = GetNPCPlayerSkillValues(GetPropertyValue(playerSkills, "SkillOffsets")),
+            Health = GetPropertyNullableInt(playerSkills, "Health"),
+            Magicka = GetPropertyNullableInt(playerSkills, "Magicka"),
+            Stamina = GetPropertyNullableInt(playerSkills, "Stamina"),
+            GearedUpWeapons = GetPropertyNullableInt(playerSkills, "GearedUpWeapons")
+        };
+    }
+
+    private static List<NPCPlayerSkillValueDTO> GetNPCPlayerSkillValues(object? skillValues)
+    {
+        return skillValues is not IEnumerable enumerable
+            ? new List<NPCPlayerSkillValueDTO>()
+            : enumerable.Cast<object>().Select((skillValue, skillIndex) => new NPCPlayerSkillValueDTO
+            {
+                SkillIndex = skillIndex,
+                Key = GetPropertyValue(skillValue, "Key")?.ToString(),
+                Value = GetPropertyNullableInt(skillValue, "Value")
+            }).ToList();
+    }
+
+    private static NPCFaceMorphDTO? GetNPCFaceMorph(object? faceMorph)
+    {
+        if (faceMorph == null)
+        {
+            return null;
+        }
+
+        return new NPCFaceMorphDTO
+        {
+            NoseLongVsShort = GetPropertyNullableDouble(faceMorph, "NoseLongVsShort"),
+            NoseUpVsDown = GetPropertyNullableDouble(faceMorph, "NoseUpVsDown"),
+            JawUpVsDown = GetPropertyNullableDouble(faceMorph, "JawUpVsDown"),
+            JawNarrowVsWide = GetPropertyNullableDouble(faceMorph, "JawNarrowVsWide"),
+            JawForwardVsBack = GetPropertyNullableDouble(faceMorph, "JawForwardVsBack"),
+            CheeksUpVsDown = GetPropertyNullableDouble(faceMorph, "CheeksUpVsDown"),
+            CheeksForwardVsBack = GetPropertyNullableDouble(faceMorph, "CheeksForwardVsBack"),
+            EyesUpVsDown = GetPropertyNullableDouble(faceMorph, "EyesUpVsDown"),
+            EyesInVsOut = GetPropertyNullableDouble(faceMorph, "EyesInVsOut"),
+            BrowsUpVsDown = GetPropertyNullableDouble(faceMorph, "BrowsUpVsDown"),
+            BrowsInVsOut = GetPropertyNullableDouble(faceMorph, "BrowsInVsOut"),
+            BrowsForwardVsBack = GetPropertyNullableDouble(faceMorph, "BrowsForwardVsBack"),
+            LipsUpVsDown = GetPropertyNullableDouble(faceMorph, "LipsUpVsDown"),
+            LipsInVsOut = GetPropertyNullableDouble(faceMorph, "LipsInVsOut"),
+            ChinNarrowVsWide = GetPropertyNullableDouble(faceMorph, "ChinNarrowVsWide"),
+            ChinUpVsDown = GetPropertyNullableDouble(faceMorph, "ChinUpVsDown"),
+            ChinUnderbiteVsOverbite = GetPropertyNullableDouble(faceMorph, "ChinUnderbiteVsOverbite"),
+            EyesForwardVsBack = GetPropertyNullableDouble(faceMorph, "EyesForwardVsBack"),
+            Unknown = GetPropertyNullableDouble(faceMorph, "Unknown")
+        };
+    }
+
+    private static NPCFacePartsDTO? GetNPCFaceParts(object? faceParts)
+    {
+        if (faceParts == null)
+        {
+            return null;
+        }
+
+        return new NPCFacePartsDTO
+        {
+            Nose = GetPropertyNullableLong(faceParts, "Nose"),
+            Unknown = GetPropertyNullableLong(faceParts, "Unknown"),
+            Eyes = GetPropertyNullableLong(faceParts, "Eyes"),
+            Mouth = GetPropertyNullableLong(faceParts, "Mouth")
+        };
     }
 
     private static List<FactionRelationDTO> GetFactionRelations(PluginDTO plugin, SupportedGame game, FormKey formKey, object? relations)
@@ -866,6 +1332,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
                 Name = GetTranslatedString(record, "Name"),
                 Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
+                MajorFlags = GetPropertyStringOrNull(record, "MajorFlags"),
                 NativeTerminalFormKey = GetLinkedFormKey(record, "NativeTerminal"),
                 SoundLevel = GetPropertyStringOrNull(record, "SoundLevel"),
                 FacingAxisOverride = GetPropertyStringOrNull(record, "FacingAxisOverride"),
@@ -1893,6 +2360,12 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             return dto;
         }
 
+        if (typeName.Contains("StructList", StringComparison.OrdinalIgnoreCase))
+        {
+            dto.Structs = GetScriptingAdapterPropertyStructs(plugin, recordType, formKey, scriptName, propertyIndex, property, importedAtUTC);
+            return dto;
+        }
+
         if (typeName.Contains("Bool", StringComparison.OrdinalIgnoreCase)) dto.DataBool = GetPropertyValue(property, "Data") as bool?;
         else if (typeName.Contains("Int", StringComparison.OrdinalIgnoreCase)) dto.DataInt = GetPropertyNullableInt(property, "Data");
         else if (typeName.Contains("Float", StringComparison.OrdinalIgnoreCase)) dto.DataFloat = GetPropertyNullableDouble(property, "Data");
@@ -1924,6 +2397,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 ScriptingAdapterName = scriptName,
                 PropertyIndex = propertyIndex,
                 ListItemIndex = listItemIndex,
+                Name = GetPropertyStringOrNull(value, "Name"),
                 MutagenObjectType = mutagenObjectType,
                 DataBool = value is bool boolValue ? boolValue : null,
                 DataInt = value is int intValue ? intValue : null,
@@ -1950,6 +2424,7 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 ScriptingAdapterName = scriptName,
                 PropertyIndex = propertyIndex,
                 ListItemIndex = listItemIndex,
+                Name = GetPropertyStringOrNull(value, "Name"),
                 MutagenObjectType = value.GetType().Name,
                 ObjectFormKey = GetFormKeyFromObject(GetPropertyValue(value, "Object")),
                 ObjectAlias = GetPropertyNullableShort(value, "Alias"),
@@ -1957,6 +2432,104 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
                 ImportedAtUTC = importedAtUTC
             })
             .ToList();
+    }
+
+    /// <summary>
+    /// Maps VMAD script property struct-list entries to first-class DTO rows.
+    /// </summary>
+    private static List<ScriptingAdapterPropertyStructDTO> GetScriptingAdapterPropertyStructs(
+        PluginDTO plugin,
+        string recordType,
+        FormKey formKey,
+        string scriptName,
+        int propertyIndex,
+        object property,
+        DateTime importedAtUTC)
+    {
+        var structs = GetPropertyValue(property, "Structs") as IEnumerable;
+        if (structs == null)
+        {
+            return new List<ScriptingAdapterPropertyStructDTO>();
+        }
+
+        return structs
+            .Cast<object>()
+            .Select((propertyStruct, structIndex) => new ScriptingAdapterPropertyStructDTO
+            {
+                Game = SupportedGame.Fallout4,
+                ModKey = plugin.ModKey,
+                RecordType = recordType,
+                FormKey = MapFormKey(formKey),
+                ScriptingAdapterName = scriptName,
+                PropertyIndex = propertyIndex,
+                StructIndex = structIndex,
+                ImportedAtUTC = importedAtUTC,
+                Members = GetScriptingAdapterPropertyStructMembers(plugin, recordType, formKey, scriptName, propertyIndex, structIndex, propertyStruct, importedAtUTC)
+            })
+            .ToList();
+    }
+
+    /// <summary>
+    /// Maps VMAD script property struct members to first-class DTO rows.
+    /// </summary>
+    private static List<ScriptingAdapterPropertyStructMemberDTO> GetScriptingAdapterPropertyStructMembers(
+        PluginDTO plugin,
+        string recordType,
+        FormKey formKey,
+        string scriptName,
+        int propertyIndex,
+        int structIndex,
+        object propertyStruct,
+        DateTime importedAtUTC)
+    {
+        var members = GetPropertyValue(propertyStruct, "Members") as IEnumerable;
+        if (members == null)
+        {
+            return new List<ScriptingAdapterPropertyStructMemberDTO>();
+        }
+
+        return members
+            .Cast<object>()
+            .Select((member, memberIndex) => CreateScriptingAdapterPropertyStructMember(plugin, recordType, formKey, scriptName, propertyIndex, structIndex, memberIndex, member, importedAtUTC))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Maps one VMAD script property struct member to a first-class DTO row.
+    /// </summary>
+    private static ScriptingAdapterPropertyStructMemberDTO CreateScriptingAdapterPropertyStructMember(
+        PluginDTO plugin,
+        string recordType,
+        FormKey formKey,
+        string scriptName,
+        int propertyIndex,
+        int structIndex,
+        int memberIndex,
+        object member,
+        DateTime importedAtUTC)
+    {
+        var data = GetPropertyValue(member, "Data");
+        return new ScriptingAdapterPropertyStructMemberDTO
+        {
+            Game = SupportedGame.Fallout4,
+            ModKey = plugin.ModKey,
+            RecordType = recordType,
+            FormKey = MapFormKey(formKey),
+            ScriptingAdapterName = scriptName,
+            PropertyIndex = propertyIndex,
+            StructIndex = structIndex,
+            MemberIndex = memberIndex,
+            Name = GetPropertyString(member, "Name"),
+            MutagenObjectType = member.GetType().Name,
+            DataBool = data is bool boolValue ? boolValue : null,
+            DataInt = data is int intValue ? intValue : null,
+            DataFloat = data is float or double or decimal ? Convert.ToDouble(data, CultureInfo.InvariantCulture) : null,
+            DataString = data is string stringValue ? stringValue : null,
+            ObjectFormKey = GetFormKeyFromObject(GetPropertyValue(member, "Object")),
+            ObjectAlias = GetPropertyNullableShort(member, "Alias"),
+            ObjectUnused = GetPropertyNullableUShort(member, "Unused"),
+            ImportedAtUTC = importedAtUTC
+        };
     }
 
     protected virtual IFallout4ModGetter LoadMod(PluginDTO plugin)
@@ -2101,6 +2674,25 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             : text;
     }
 
+    /// <summary>
+    /// Returns vector text only when the reflected value is not the all-zero default omitted by Spriggit.
+    /// </summary>
+    /// <param name="value">The reflected vector value to normalize.</param>
+    /// <returns>The vector text, or <c>null</c> when the value is absent or the default zero vector.</returns>
+    private static string? GetNonDefaultVectorString(object? value)
+    {
+        var text = value?.ToString();
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        var normalized = text.Replace(" ", string.Empty, StringComparison.Ordinal);
+        return string.Equals(normalized, "0,0,0", StringComparison.Ordinal)
+            ? null
+            : text;
+    }
+
     private static int? GetPropertyNonZeroInt(object? source, string propertyName)
     {
         var value = GetPropertyNullableInt(source, propertyName);
@@ -2125,9 +2717,40 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         return value == 0 ? null : value;
     }
 
+    /// <summary>
+    /// Reads a nullable double and treats zero as an omitted default value.
+    /// </summary>
+    /// <param name="source">The reflected object that owns the property.</param>
+    /// <param name="propertyName">The property name to read.</param>
+    /// <returns>The non-zero double value, or <c>null</c> when absent or zero.</returns>
+    private static double? GetPropertyNonZeroDouble(object? source, string propertyName)
+    {
+        var value = GetPropertyNullableDouble(source, propertyName);
+        return value == 0 ? null : value;
+    }
+
+    /// <summary>
+    /// Returns color text only when Mutagen exposes a non-empty color value.
+    /// </summary>
+    /// <param name="value">The reflected color value.</param>
+    /// <returns>The color text, or <c>null</c> when Mutagen exposes the empty color sentinel.</returns>
+    private static string? GetNonDefaultColorString(object? value)
+    {
+        var text = value?.ToString();
+        return string.IsNullOrWhiteSpace(text) ||
+               string.Equals(text, "Color [Empty]", StringComparison.Ordinal)
+            ? null
+            : text;
+    }
+
     private static string? GetFormKeyOrString(object? source, string propertyName)
     {
         var value = GetPropertyValue(source, propertyName);
+        return FormatFormKeyOrString(value);
+    }
+
+    private static string? FormatFormKeyOrString(object? value)
+    {
         if (GetFormKeyFromObject(value) is { } formKey)
         {
             return FormatFormKey(formKey);
@@ -2154,6 +2777,12 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
     {
         var value = GetPropertyValue(source, propertyName);
         return value == null ? null : Convert.ToInt32(value, CultureInfo.InvariantCulture);
+    }
+
+    private static long? GetPropertyNullableLong(object? source, string propertyName)
+    {
+        var value = GetPropertyValue(source, propertyName);
+        return value == null ? null : Convert.ToInt64(value, CultureInfo.InvariantCulture);
     }
 
     private static short? GetPropertyNullableShort(object source, string propertyName)
@@ -2478,6 +3107,17 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         }
 
         return value.ToString();
+    }
+
+    private static string? FormatSpriggitHexValue(object? value)
+    {
+        var hexValue = FormatHexValue(value)?.Trim();
+        if (string.IsNullOrWhiteSpace(hexValue) || hexValue.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+        {
+            return hexValue;
+        }
+
+        return "0x" + hexValue;
     }
 
     private static GameSettingDataType GetGameSettingDataType(IGameSettingGetter record)

@@ -1,3 +1,4 @@
+using System.Globalization;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.DTOs.Records.Interfaces;
@@ -93,10 +94,10 @@ public class RecordComponentRepository : IRecordComponentRepository
                 """
                 INSERT OR REPLACE INTO Components (
                     Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName,
-                    FormKey_ID, Component_Index, MutagenObjectType, ImportedAtUTC)
+                    FormKey_ID, Component_Index, MutagenObjectType, DCED, ImportedAtUTC)
                 VALUES (
                     @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @RecordType, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName,
-                    @FormKeyId, @ComponentIndex, @MutagenObjectType, @ImportedAtUTC);
+                    @FormKeyId, @ComponentIndex, @MutagenObjectType, @DCED, @ImportedAtUTC);
                 """,
                 new
                 {
@@ -111,6 +112,7 @@ public class RecordComponentRepository : IRecordComponentRepository
                     FormKeyId = component.FormKey.Id,
                     component.ComponentIndex,
                     component.MutagenObjectType,
+                    DCED = FormatIntegerList(component.DCED),
                     component.ImportedAtUTC
                 });
 
@@ -121,10 +123,12 @@ public class RecordComponentRepository : IRecordComponentRepository
                     """
                     INSERT OR REPLACE INTO ComponentItems (
                         Game, ModKey_Name, ModKey_Type, ModKey_FileName, RecordType, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName,
-                        FormKey_ID, Component_Index, Item_Index, Unknown1, Unknown2, Unknown3, Unknown4, Unknown5, ImportedAtUTC)
+                        FormKey_ID, Component_Index, Item_Index, DisplayFilter_ModKey_Name, DisplayFilter_ModKey_Type, DisplayFilter_ModKey_FileName,
+                        DisplayFilter_FormKey_ID, Unknown1, Unknown2, Unknown3, Unknown4, Unknown5, ImportedAtUTC)
                     VALUES (
                         @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @RecordType, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName,
-                        @FormKeyId, @ComponentIndex, @ItemIndex, @Unknown1, @Unknown2, @Unknown3, @Unknown4, @Unknown5, @ImportedAtUTC);
+                        @FormKeyId, @ComponentIndex, @ItemIndex, @DisplayFilterModKeyName, @DisplayFilterModKeyType, @DisplayFilterModKeyFileName,
+                        @DisplayFilterFormKeyId, @Unknown1, @Unknown2, @Unknown3, @Unknown4, @Unknown5, @ImportedAtUTC);
                     """,
                     new
                     {
@@ -139,6 +143,10 @@ public class RecordComponentRepository : IRecordComponentRepository
                         FormKeyId = item.FormKey.Id,
                         item.ComponentIndex,
                         item.ItemIndex,
+                        DisplayFilterModKeyName = item.DisplayFilter?.ModKey.Name,
+                        DisplayFilterModKeyType = item.DisplayFilter?.ModKey.Type,
+                        DisplayFilterModKeyFileName = item.DisplayFilter?.ModKey.FileName,
+                        DisplayFilterFormKeyId = item.DisplayFilter?.Id,
                         item.Unknown1,
                         item.Unknown2,
                         item.Unknown3,
@@ -187,6 +195,7 @@ public class RecordComponentRepository : IRecordComponentRepository
             RecordType = row.RecordType,
             ComponentIndex = row.ComponentIndex,
             MutagenObjectType = row.MutagenObjectType,
+            DCED = ParseIntegerList(row.DCED),
             ImportedAtUTC = row.ImportedAtUTC
         };
     }
@@ -201,6 +210,7 @@ public class RecordComponentRepository : IRecordComponentRepository
             RecordType = row.RecordType,
             ComponentIndex = row.ComponentIndex,
             ItemIndex = row.ItemIndex,
+            DisplayFilter = CreateNullableFormKey(row.DisplayFilterModKeyName, row.DisplayFilterModKeyType, row.DisplayFilterModKeyFileName, row.DisplayFilterFormKeyId),
             Unknown1 = row.Unknown1,
             Unknown2 = row.Unknown2,
             Unknown3 = row.Unknown3,
@@ -224,6 +234,39 @@ public class RecordComponentRepository : IRecordComponentRepository
         };
     }
 
+    /// <summary>
+    /// Creates a nullable form key DTO from database row parts.
+    /// </summary>
+    private static FormKeyDTO? CreateNullableFormKey(string? modKeyName, int? modKeyType, string? modKeyFileName, long? formKeyId)
+    {
+        return string.IsNullOrWhiteSpace(modKeyName) || modKeyType == null || string.IsNullOrWhiteSpace(modKeyFileName) || formKeyId == null
+            ? null
+            : CreateFormKey(modKeyName, modKeyType.Value, modKeyFileName, formKeyId.Value);
+    }
+
+    /// <summary>
+    /// Formats component integer-list data for compact storage.
+    /// </summary>
+    private static string? FormatIntegerList(ICollection<int> values)
+    {
+        return values.Count == 0
+            ? null
+            : string.Join(",", values.Select(value => value.ToString(CultureInfo.InvariantCulture)));
+    }
+
+    /// <summary>
+    /// Parses compact component integer-list storage back into ordered values.
+    /// </summary>
+    private static IList<int> ParseIntegerList(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? new List<int>()
+            : value
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(item => int.Parse(item, CultureInfo.InvariantCulture))
+                .ToList();
+    }
+
     private static bool IsSameModKey(ModKeyDTO first, ModKeyDTO second)
     {
         return first.Type == second.Type &&
@@ -243,6 +286,7 @@ public class RecordComponentRepository : IRecordComponentRepository
         public long FormKeyId { get; set; }
         public int ComponentIndex { get; set; }
         public string MutagenObjectType { get; set; } = string.Empty;
+        public string? DCED { get; set; }
         public DateTime ImportedAtUTC { get; set; }
     }
 
@@ -258,6 +302,10 @@ public class RecordComponentRepository : IRecordComponentRepository
         public long FormKeyId { get; set; }
         public int ComponentIndex { get; set; }
         public int ItemIndex { get; set; }
+        public string? DisplayFilterModKeyName { get; set; }
+        public int? DisplayFilterModKeyType { get; set; }
+        public string? DisplayFilterModKeyFileName { get; set; }
+        public long? DisplayFilterFormKeyId { get; set; }
         public double? Unknown1 { get; set; }
         public double? Unknown2 { get; set; }
         public double? Unknown3 { get; set; }

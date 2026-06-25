@@ -271,6 +271,7 @@ public class SpriggitComparisonHeadlessFixture
         ISoundMappingRepository,
         IScriptingAdapterRepository,
         IRawRecordPayloadRepository,
+        IReflectionRepository,
         IRecordLocalizedStringRepository
     {
         private readonly IReadOnlyList<FormListDTO> formLists = [];
@@ -297,6 +298,7 @@ public class SpriggitComparisonHeadlessFixture
         private readonly IReadOnlyList<SoundMappingDTO> soundMappings = [];
         private readonly IReadOnlyList<ScriptingAdapterDTO> scriptingAdapters = [];
         private readonly IReadOnlyList<RawRecordPayloadDTO> rawPayloads = [];
+        private readonly IReadOnlyList<ReflectionDTO> reflections = [];
         private readonly IReadOnlyList<LocalizedStringDTO> localizedStrings = [];
 
         public InMemoryComparisonRepository(RecordDTO record, string recordType)
@@ -357,6 +359,11 @@ public class SpriggitComparisonHeadlessFixture
             if (record is IHasRawRecordPayloadsDTO rawPayloadRecord)
             {
                 rawPayloads = rawPayloadRecord.RawPayloads.ToList();
+            }
+
+            if (record is IHasReflectionDTO reflectionRecord)
+            {
+                reflections = reflectionRecord.Reflections.ToList();
             }
 
             if (record is IHasLocalizedStringsRecordDTO localizedStringRecord)
@@ -497,6 +504,11 @@ public class SpriggitComparisonHeadlessFixture
             return rawPayloads;
         }
 
+        IReadOnlyList<ReflectionDTO> IReflectionRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+        {
+            return reflections;
+        }
+
         IReadOnlyList<LocalizedStringDTO> IRecordLocalizedStringRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
         {
             return localizedStrings;
@@ -575,6 +587,9 @@ public class SpriggitComparisonHeadlessFixture
         { }
 
         public void Save(RawRecordPayloadDTO dto)
+        { }
+
+        public void Save(ReflectionDTO dto)
         { }
 
         public void Save(LocalizedStringDTO dto)

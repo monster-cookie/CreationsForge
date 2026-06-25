@@ -19,6 +19,11 @@ public class ScriptingAdapterPropertyListItemDTO
 
     public required int ListItemIndex { get; set; }
 
+    /// <summary>
+    /// Gets or sets the optional Spriggit object-list item name.
+    /// </summary>
+    public string? Name { get; set; }
+
     public required string MutagenObjectType { get; set; }
 
     public bool? DataBool { get; set; }

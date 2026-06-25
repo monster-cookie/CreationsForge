@@ -642,6 +642,10 @@ erDiagram
         REAL HeightMin
         REAL HeightMax
         INTEGER SkinToneIndex
+        TEXT Skin_ModKey_Name
+        INTEGER Skin_ModKey_Type
+        TEXT Skin_ModKey_FileName
+        INTEGER Skin_FormKey_ID
         TEXT Pronoun
         TEXT Voice_ModKey_Name
         INTEGER Voice_ModKey_Type
@@ -669,8 +673,68 @@ erDiagram
         INTEGER CrimeFaction_FormKey_ID
         TEXT Template
         TEXT DefaultTemplate
+        TEXT TemplateActors_Trait_ModKey_Name
+        INTEGER TemplateActors_Trait_ModKey_Type
+        TEXT TemplateActors_Trait_ModKey_FileName
+        INTEGER TemplateActors_Trait_FormKey_ID
+        TEXT TemplateActors_Stats_ModKey_Name
+        INTEGER TemplateActors_Stats_ModKey_Type
+        TEXT TemplateActors_Stats_ModKey_FileName
+        INTEGER TemplateActors_Stats_FormKey_ID
+        TEXT TemplateActors_Factions_ModKey_Name
+        INTEGER TemplateActors_Factions_ModKey_Type
+        TEXT TemplateActors_Factions_ModKey_FileName
+        INTEGER TemplateActors_Factions_FormKey_ID
+        TEXT TemplateActors_SpellList_ModKey_Name
+        INTEGER TemplateActors_SpellList_ModKey_Type
+        TEXT TemplateActors_SpellList_ModKey_FileName
+        INTEGER TemplateActors_SpellList_FormKey_ID
+        TEXT TemplateActors_AiPackages_ModKey_Name
+        INTEGER TemplateActors_AiPackages_ModKey_Type
+        TEXT TemplateActors_AiPackages_ModKey_FileName
+        INTEGER TemplateActors_AiPackages_FormKey_ID
+        TEXT TemplateActors_AiData_ModKey_Name
+        INTEGER TemplateActors_AiData_ModKey_Type
+        TEXT TemplateActors_AiData_ModKey_FileName
+        INTEGER TemplateActors_AiData_FormKey_ID
+        TEXT TemplateActors_BaseData_ModKey_Name
+        INTEGER TemplateActors_BaseData_ModKey_Type
+        TEXT TemplateActors_BaseData_ModKey_FileName
+        INTEGER TemplateActors_BaseData_FormKey_ID
+        TEXT TemplateActors_Inventory_ModKey_Name
+        INTEGER TemplateActors_Inventory_ModKey_Type
+        TEXT TemplateActors_Inventory_ModKey_FileName
+        INTEGER TemplateActors_Inventory_FormKey_ID
+        TEXT TemplateActors_Script_ModKey_Name
+        INTEGER TemplateActors_Script_ModKey_Type
+        TEXT TemplateActors_Script_ModKey_FileName
+        INTEGER TemplateActors_Script_FormKey_ID
+        TEXT TemplateActors_DefPackList_ModKey_Name
+        INTEGER TemplateActors_DefPackList_ModKey_Type
+        TEXT TemplateActors_DefPackList_ModKey_FileName
+        INTEGER TemplateActors_DefPackList_FormKey_ID
+        TEXT TemplateActors_AttackData_ModKey_Name
+        INTEGER TemplateActors_AttackData_ModKey_Type
+        TEXT TemplateActors_AttackData_ModKey_FileName
+        INTEGER TemplateActors_AttackData_FormKey_ID
+        TEXT TemplateActors_Keywords_ModKey_Name
+        INTEGER TemplateActors_Keywords_ModKey_Type
+        TEXT TemplateActors_Keywords_ModKey_FileName
+        INTEGER TemplateActors_Keywords_FormKey_ID
+        TEXT TemplateActors_Unknown1_ModKey_Name
+        INTEGER TemplateActors_Unknown1_ModKey_Type
+        TEXT TemplateActors_Unknown1_ModKey_FileName
+        INTEGER TemplateActors_Unknown1_FormKey_ID
+        TEXT TemplateActors_Unknown2_ModKey_Name
+        INTEGER TemplateActors_Unknown2_ModKey_Type
+        TEXT TemplateActors_Unknown2_ModKey_FileName
+        INTEGER TemplateActors_Unknown2_FormKey_ID
         TEXT TemplateActors
         TEXT WornArmor
+        TEXT PowerArmorStand_ModKey_Name
+        INTEGER PowerArmorStand_ModKey_Type
+        TEXT PowerArmorStand_ModKey_FileName
+        INTEGER PowerArmorStand_FormKey_ID
         TEXT FaceMorph
         TEXT FaceParts
         TEXT HeadParts
@@ -682,6 +746,39 @@ erDiagram
         TEXT BodyMorphRegionValues
         TEXT ObjectTemplates
         TEXT AIData
+    }
+
+    NPCFaceTintingLayers {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER FaceTintingLayer_Index PK
+        TEXT DataType
+        INTEGER Source_Index
+        REAL Value
+        TEXT Color
+        INTEGER TemplateColorIndex
+        TEXT ImportedAtUTC
+    }
+
+    NPCFaceTintingLayerStates {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER FaceTintingLayer_Index PK, FK
+        INTEGER State_Index PK
+        TEXT State
+        TEXT ImportedAtUTC
     }
 
     MagicEffects {
@@ -697,6 +794,8 @@ erDiagram
         INTEGER FormVersion
         INTEGER MajorRecordFlags
         TEXT ImportedAtUTC
+        INTEGER Version2
+        INTEGER VersionControl
         TEXT Name
         TEXT Description
         INTEGER Version2
@@ -844,6 +943,7 @@ erDiagram
         TEXT ImportedAtUTC
         TEXT Name
         INTEGER Version2
+        INTEGER VersionControl
         TEXT ObjectBounds_First
         TEXT ObjectBounds_Second
         REAL MaxAngle
@@ -1111,6 +1211,22 @@ erDiagram
         INTEGER NativeTerminal_ModKey_Type
         TEXT NativeTerminal_ModKey_FileName
         INTEGER NativeTerminal_FormKey_ID
+        TEXT SnapTemplate_ModKey_Name
+        INTEGER SnapTemplate_ModKey_Type
+        TEXT SnapTemplate_ModKey_FileName
+        INTEGER SnapTemplate_FormKey_ID
+        TEXT ContainsOnlyFilter_ModKey_Name
+        INTEGER ContainsOnlyFilter_ModKey_Type
+        TEXT ContainsOnlyFilter_ModKey_FileName
+        INTEGER ContainsOnlyFilter_FormKey_ID
+        TEXT TransformOutpost_ModKey_Name
+        INTEGER TransformOutpost_ModKey_Type
+        TEXT TransformOutpost_ModKey_FileName
+        INTEGER TransformOutpost_FormKey_ID
+        TEXT TransformPreview_ModKey_Name
+        INTEGER TransformPreview_ModKey_Type
+        TEXT TransformPreview_ModKey_FileName
+        INTEGER TransformPreview_FormKey_ID
         TEXT AnimationGraph
         TEXT AnimationSkeleton
         TEXT AnimationDirectory
@@ -1135,6 +1251,41 @@ erDiagram
         TEXT ImportedAtUTC
     }
 
+    ContainerProperties {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Property_Index PK
+        TEXT ActorValue_ModKey_Name
+        INTEGER ActorValue_ModKey_Type
+        TEXT ActorValue_ModKey_FileName
+        INTEGER ActorValue_FormKey_ID
+        REAL Value
+        TEXT ImportedAtUTC
+    }
+
+    ContainerForcedLocations {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER ForcedLocation_Index PK
+        TEXT ForcedLocation_ModKey_Name
+        INTEGER ForcedLocation_ModKey_Type
+        TEXT ForcedLocation_ModKey_FileName
+        INTEGER ForcedLocation_FormKey_ID
+        TEXT ImportedAtUTC
+    }
+
     ConditionForms {
         TEXT Game PK, FK
         TEXT ModKey_Name PK, FK
@@ -1150,6 +1301,10 @@ erDiagram
         TEXT ImportedAtUTC
         INTEGER Version2
         INTEGER VersionControl
+        TEXT OwnerQuest_ModKey_Name
+        INTEGER OwnerQuest_ModKey_Type
+        TEXT OwnerQuest_ModKey_FileName
+        INTEGER OwnerQuest_FormKey_ID
     }
 
     ConstructibleObjects {
@@ -1381,6 +1536,7 @@ erDiagram
         INTEGER FormKey_ID PK, FK
         INTEGER Component_Index PK
         TEXT MutagenObjectType
+        TEXT DCED
         TEXT ImportedAtUTC
     }
 
@@ -1396,6 +1552,10 @@ erDiagram
         INTEGER FormKey_ID PK, FK
         INTEGER Component_Index PK, FK
         INTEGER Item_Index PK
+        TEXT DisplayFilter_ModKey_Name
+        INTEGER DisplayFilter_ModKey_Type
+        TEXT DisplayFilter_ModKey_FileName
+        INTEGER DisplayFilter_FormKey_ID
         REAL Unknown1
         REAL Unknown2
         REAL Unknown3
@@ -1653,6 +1813,23 @@ erDiagram
         TEXT ImportedAtUTC
     }
 
+    Reflection {
+        TEXT Game PK, FK
+        TEXT ModKey_Name PK, FK
+        INTEGER ModKey_Type PK, FK
+        TEXT ModKey_FileName PK, FK
+        TEXT RecordType PK, FK
+        TEXT FormKey_ModKey_Name PK, FK
+        INTEGER FormKey_ModKey_Type PK, FK
+        TEXT FormKey_ModKey_FileName PK, FK
+        INTEGER FormKey_ID PK, FK
+        INTEGER Component_Index PK
+        TEXT ComponentType
+        TEXT SourcePath
+        TEXT REFL
+        TEXT ImportedAtUTC
+    }
+
     LocalizedStrings {
         TEXT Game PK, FK
         TEXT ModKey_Name PK, FK
@@ -1804,6 +1981,8 @@ erDiagram
     RecordInstances ||--o| Doors : "typed detail"
     RecordInstances ||--o| Containers : "typed detail"
     Containers ||--o{ ContainerItems : contains
+    Containers ||--o{ ContainerProperties : contains
+    Containers ||--o{ ContainerForcedLocations : contains
     RecordInstances ||--o| ConditionForms : "typed detail"
     RecordInstances ||--o| ConstructibleObjects : "typed detail"
     ConstructibleObjects ||--o{ ConstructibleObjectComponents : contains
@@ -1829,7 +2008,10 @@ erDiagram
     RecordInstances ||--o{ SoundMappings : contains
     RecordInstances ||--o{ ScriptFragments : contains
     RecordInstances ||--o{ RawRecordPayloads : contains
+    RecordInstances ||--o{ Reflection : contains
     RecordInstances ||--o{ LocalizedStrings : contains
+    NPCs ||--o{ NPCFaceTintingLayers : contains
+    NPCFaceTintingLayers ||--o{ NPCFaceTintingLayerStates : contains
     RecordInstances ||--o{ ScriptingAdapters : contains
     ScriptingAdapters ||--o{ ScriptingAdapterProperties : contains
     ScriptingAdapterProperties ||--o{ ScriptingAdapterPropertyListItems : contains
@@ -1914,6 +2096,20 @@ These columns contain record-reference data but are not declared SQLite foreign 
   `NativeTerminal_FormKey_ID`
 - `Containers.NativeTerminal_ModKey_Name`, `NativeTerminal_ModKey_Type`, `NativeTerminal_ModKey_FileName`, and
   `NativeTerminal_FormKey_ID`
+- `Containers.SnapTemplate_ModKey_Name`, `SnapTemplate_ModKey_Type`, `SnapTemplate_ModKey_FileName`, and
+  `SnapTemplate_FormKey_ID`
+- `Containers.ContainsOnlyFilter_ModKey_Name`, `ContainsOnlyFilter_ModKey_Type`,
+  `ContainsOnlyFilter_ModKey_FileName`, and `ContainsOnlyFilter_FormKey_ID`
+- `Containers.TransformOutpost_ModKey_Name`, `TransformOutpost_ModKey_Type`,
+  `TransformOutpost_ModKey_FileName`, and `TransformOutpost_FormKey_ID`
+- `Containers.TransformPreview_ModKey_Name`, `TransformPreview_ModKey_Type`,
+  `TransformPreview_ModKey_FileName`, and `TransformPreview_FormKey_ID`
+- `ContainerProperties.ActorValue_ModKey_Name`, `ActorValue_ModKey_Type`, `ActorValue_ModKey_FileName`, and
+  `ActorValue_FormKey_ID`
+- `ContainerForcedLocations.ForcedLocation_ModKey_Name`, `ForcedLocation_ModKey_Type`,
+  `ForcedLocation_ModKey_FileName`, and `ForcedLocation_FormKey_ID`
+- `ComponentItems.DisplayFilter_ModKey_Name`, `DisplayFilter_ModKey_Type`, `DisplayFilter_ModKey_FileName`, and
+  `DisplayFilter_FormKey_ID`
 - `ConstructibleObjects.CreatedObject_ModKey_Name`, `CreatedObject_ModKey_Type`,
   `CreatedObject_ModKey_FileName`, and `CreatedObject_FormKey_ID`
 - `ConstructibleObjects.WorkbenchKeyword_ModKey_Name`, `WorkbenchKeyword_ModKey_Type`,
@@ -1935,5 +2131,8 @@ These columns contain record-reference data but are not declared SQLite foreign 
 - `ModelMaterialSwaps.MaterialSwap_ModKey_Name`, `MaterialSwap_ModKey_Type`, `MaterialSwap_ModKey_FileName`,
   and `MaterialSwap_FormKey_ID`
 - `KeywordMappings.Keyword_ModKey_Name`, `Keyword_ModKey_Type`, `Keyword_ModKey_FileName`, and `Keyword_FormKey_ID`
+- `NPCs.Skin_ModKey_Name`, `Skin_ModKey_Type`, `Skin_ModKey_FileName`, and `Skin_FormKey_ID`
+- `NPCs.PowerArmorStand_ModKey_Name`, `PowerArmorStand_ModKey_Type`, `PowerArmorStand_ModKey_FileName`, and
+  `PowerArmorStand_FormKey_ID`
 - New Starfield record-reference columns on `MiscItems`, `Keywords`, `NPCs`, `MagicEffects`, `Perks`,
   `PerkRanks`, `PerkBackgroundSkills`, `ScriptingAdapterProperties`, and `ScriptingAdapterPropertyListItems`

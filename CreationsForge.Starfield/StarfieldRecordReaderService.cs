@@ -314,7 +314,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 LodLevel3 = GetPropertyStringOrNull(GetPropertyValue(record, "Lod"), "Level3"),
                 Models = GetModels(plugin, RecordTypeCatalog.Static.RecordID, record.FormKey, record.Model),
                 Keywords = GetKeywordMappingsFromNestedKeywordLists(plugin, RecordTypeCatalog.Static.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
-                RawPayloads = GetComponentReflectPayloads(plugin, RecordTypeCatalog.Static.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
+                Reflections = GetComponentReflections(plugin, RecordTypeCatalog.Static.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
                 NavmeshGeometry = StaticNavmeshGeometryDTOMapper.FromNavmeshGeometry(SupportedGame.Starfield, plugin.ModKey, record.FormKey, GetPropertyValue(record, "NavmeshGeometry"), DateTime.UtcNow)
             }, record))
             .ToList();
@@ -368,7 +368,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.Book.RecordID, record.FormKey, record, "PickupSound", "DropdownSound"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Book.RecordID, record),
                 Components = GetRecordComponents(plugin, SupportedGame.Starfield, RecordTypeCatalog.Book.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
-                RawPayloads = GetComponentReflectPayloads(plugin, RecordTypeCatalog.Book.RecordID, record.FormKey, GetPropertyValue(record, "Components"))
+                Reflections = GetComponentReflections(plugin, RecordTypeCatalog.Book.RecordID, record.FormKey, GetPropertyValue(record, "Components"))
             }, record))
             .ToList();
     }
@@ -391,6 +391,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 ObjectBoundsSecond = FormatObjectBoundsPoint(GetPropertyValue(record, "ObjectBounds"), "Second"),
                 Name = GetTranslatedString(record.Name),
                 Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
+                MajorFlags = FormatEnumerable(GetPropertyValue(record, "MajorFlags")),
                 NativeTerminalFormKey = record.NativeTerminal.IsNull ? null : MapFormKey(record.NativeTerminal.FormKey),
                 SoundLevel = GetPropertyValue(record, "SoundLevel")?.ToString(),
                 FacingAxisOverride = GetPropertyValue(record, "FacingAxisOverride")?.ToString(),
@@ -403,7 +404,9 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 AnimationSkeleton = GetAnimationComponentValue(GetPropertyValue(record, "Components"), "BNAM"),
                 AnimationDirectory = GetAnimationComponentValue(GetPropertyValue(record, "Components"), "CNAM"),
                 AnimationFile = GetAnimationComponentValue(GetPropertyValue(record, "Components"), "FNAM"),
-                RawPayloads = GetComponentReflectPayloads(plugin, RecordTypeCatalog.Door.RecordID, record.FormKey, GetPropertyValue(record, "Components"))
+                Reflections = GetComponentReflections(plugin, RecordTypeCatalog.Door.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
+                ForcedLocations = GetFormKeys(GetPropertyValue(record, "ForcedLocations")),
+                NavmeshGeometry = StaticNavmeshGeometryDTOMapper.FromNavmeshGeometry(SupportedGame.Starfield, plugin.ModKey, record.FormKey, GetPropertyValue(record, "NavmeshGeometry"), DateTime.UtcNow)
             }, record))
             .ToList();
     }
@@ -428,7 +431,16 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
                 MajorFlags = FormatEnumerable(GetPropertyValue(record, "MajorFlags")),
                 NativeTerminalFormKey = record.NativeTerminal.IsNull ? null : MapFormKey(record.NativeTerminal.FormKey),
+                SnapTemplate = GetLinkedFormKey(record, "SnapTemplate"),
+                ContainsOnlyFilter = GetLinkedFormKey(record, "ContainsOnlyFilter"),
+                Transforms = new ContainerTransformsDTO
+                {
+                    Outpost = GetFormKeyFromObject(GetPropertyValue(GetPropertyValue(record, "Transforms"), "Outpost")),
+                    Preview = GetFormKeyFromObject(GetPropertyValue(GetPropertyValue(record, "Transforms"), "Preview"))
+                },
                 Items = GetContainerItems(plugin, record.FormKey, GetPropertyValue(record, "Items")),
+                Properties = GetContainerProperties(plugin, record.FormKey, GetPropertyValue(record, "Properties")),
+                ForcedLocations = GetFormKeys(GetPropertyValue(record, "ForcedLocations")),
                 Models = GetModels(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, record.Model),
                 Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, record.Keywords)
                     .Concat(GetKeywordMappingsFromNestedKeywordLists(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, GetPropertyValue(record, "Components")))
@@ -440,11 +452,12 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                     .ToList(),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, record, "OpenSound", "CloseSound"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Container.RecordID, record),
+                Components = GetRecordComponents(plugin, SupportedGame.Starfield, RecordTypeCatalog.Container.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
                 AnimationGraph = GetAnimationComponentValue(GetPropertyValue(record, "Components"), "ANAM"),
                 AnimationSkeleton = GetAnimationComponentValue(GetPropertyValue(record, "Components"), "BNAM"),
                 AnimationDirectory = GetAnimationComponentValue(GetPropertyValue(record, "Components"), "CNAM"),
                 AnimationFile = GetAnimationComponentValue(GetPropertyValue(record, "Components"), "FNAM"),
-                RawPayloads = GetComponentReflectPayloads(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, GetPropertyValue(record, "Components"))
+                Reflections = GetComponentReflections(plugin, RecordTypeCatalog.Container.RecordID, record.FormKey, GetPropertyValue(record, "Components"))
             }, record))
             .ToList();
     }
@@ -497,6 +510,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                     MajorRecordFlags = GetPropertyNullableInt(record, "StarfieldMajorRecordFlags") ?? 0,
                     Version2 = GetPropertyNullableInt(record, "Version2"),
                     VersionControl = GetPropertyNullableInt(record, "VersionControl"),
+                    OwnerQuest = GetFormKeyFromObject(GetPropertyValue(record, "OwnerQuest")),
                     ImportedAtUTC = DateTime.UtcNow,
                     Conditions = GetConditionRules(plugin, SupportedGame.Starfield, formKey, GetPropertyValue(record, "Conditions"))
                 };
@@ -535,7 +549,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Models = GetModels(plugin, RecordTypeCatalog.Terminal.RecordID, record.FormKey, record.Model),
                 Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.Terminal.RecordID, record.FormKey, record.Keywords),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.Terminal.RecordID, record),
-                RawPayloads = GetComponentReflectPayloads(plugin, RecordTypeCatalog.Terminal.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
+                Reflections = GetComponentReflections(plugin, RecordTypeCatalog.Terminal.RecordID, record.FormKey, GetPropertyValue(record, "Components")),
                 ScriptFragments = GetScriptFragments(SupportedGame.Starfield, plugin, RecordTypeCatalog.Terminal.RecordID, record.FormKey, record),
                 AnimationGraph = GetAnimationComponentValue(GetPropertyValue(record, "Components"), "ANAM"),
                 AnimationSkeleton = GetAnimationComponentValue(GetPropertyValue(record, "Components"), "BNAM"),
@@ -558,13 +572,20 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 EditorID = record.EditorID ?? string.Empty,
                 FormVersion = record.FormVersion,
                 MajorRecordFlags = (int)record.StarfieldMajorRecordFlags,
+                IsCompressed = GetPropertyNullableBool(record, "IsCompressed"),
+                ObjectBoundsFirst = GetPropertyValue(GetPropertyValue(record, "ObjectBounds"), "First")?.ToString(),
+                ObjectBoundsSecond = GetPropertyValue(GetPropertyValue(record, "ObjectBounds"), "Second")?.ToString(),
                 Version2 = GetPropertyNullableInt(record, "Version2"),
                 VersionControl = GetPropertyNullableInt(record, "VersionControl"),
                 ImportedAtUTC = DateTime.UtcNow,
                 Name = GetTranslatedString(record.Name),
                 ShortName = GetTranslatedString(record.ShortName),
                 LongName = GetTranslatedString(record.LongName),
+                Flags = FormatEnumerable(GetPropertyValue(record, "Flags")),
+                MajorFlags = FormatMajorFlags(GetPropertyValue(record, "MajorFlags")),
+                Level = GetNPCLevel(GetPropertyValue(record, "Level")),
                 DispositionBase = record.DispositionBase,
+                UseTemplateActors = GetPropertyValue(record, "UseTemplateActors")?.ToString(),
                 Aggression = record.Aggression.ToString(),
                 Confidence = record.Confidence.ToString(),
                 EnergyLevel = record.EnergyLevel,
@@ -578,28 +599,61 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Pronoun = record.Pronoun?.ToString(),
                 VoiceFormKey = record.Voice.IsNull ? null : MapFormKey(record.Voice.FormKey),
                 RaceFormKey = record.Race.IsNull ? null : MapFormKey(record.Race.FormKey),
+                AttackRace = GetFormKeyFromObject(GetPropertyValue(record, "AttackRace")),
                 CombatOverridePackageListFormKey = record.CombatOverridePackageList.IsNull ? null : MapFormKey(record.CombatOverridePackageList.FormKey),
                 CombatStyleFormKey = record.CombatStyle.IsNull ? null : MapFormKey(record.CombatStyle.FormKey),
                 DefaultPackageListFormKey = record.DefaultPackageList.IsNull ? null : MapFormKey(record.DefaultPackageList.FormKey),
                 CrimeFactionFormKey = record.CrimeFaction.IsNull ? null : MapFormKey(record.CrimeFaction.FormKey),
+                Class = GetFormKeyFromObject(GetPropertyValue(record, "Class")),
+                DeathItem = GetFormKeyFromObject(GetPropertyValue(record, "DeathItem")),
+                DefaultOutfit = GetFormKeyFromObject(GetPropertyValue(record, "DefaultOutfit")),
+                SleepingOutfit = GetFormKeyFromObject(GetPropertyValue(record, "SleepingOutfit")),
+                WornArmor = GetFormKeyFromObject(GetPropertyValue(record, "WornArmor")),
+                SpaceOutfit = GetFormKeyFromObject(GetPropertyValue(record, "SpaceOutfit")),
+                HeadTexture = GetFormKeyFromObject(GetPropertyValue(record, "HeadTexture")),
+                Template = GetFormKeyFromObject(GetPropertyValue(record, "Template")),
+                DefaultTemplate = GetFormKeyFromObject(GetPropertyValue(record, "DefaultTemplate")),
+                TemplateActors = GetNPCTemplateActors(GetPropertyValue(record, "TemplateActors")),
+                CalculatedHealth = GetPropertyNonZeroInt(record, "CalculatedHealth"),
+                CalculatedActionPoints = GetPropertyNonZeroInt(record, "CalculatedActionPoints"),
+                XpValueOffset = GetPropertyNonZeroInt(record, "XpValueOffset"),
+                Unknown = GetPropertyNullableInt(record, "Unknown"),
+                Unused = GetPropertyNonZeroInt(record, "Unused"),
+                NAM5 = FormatSpriggitHexValue(GetPropertyValue(record, "NAM5")),
+                Height = GetPropertyNullableDouble(record, "Height"),
+                Weight = GetNPCWeight(GetPropertyValue(record, "Weight")),
+                SoundLevel = GetPropertyValue(record, "SoundLevel")?.ToString(),
+                TextureLighting = GetPropertyValue(record, "TextureLighting")?.ToString(),
+                HairColor = FormatFormKeyOrString(GetPropertyValue(record, "HairColor")),
+                FacialHairColor = GetPropertyValue(record, "FacialHairColor")?.ToString(),
+                EyebrowColor = GetPropertyValue(record, "EyebrowColor")?.ToString(),
+                EyeColor = GetPropertyValue(record, "EyeColor")?.ToString(),
                 Keywords = GetKeywordMappings(plugin, RecordTypeCatalog.NPC.RecordID, record.FormKey, record.Keywords),
                 Sounds = GetNamedSounds(plugin, RecordTypeCatalog.NPC.RecordID, record.FormKey, record, "Sound"),
                 ScriptingAdapters = GetScriptingAdapters(plugin, RecordTypeCatalog.NPC.RecordID, record),
-                Template = SpriggitValueFormatter.Format(GetPropertyValue(record, "Template")),
-                DefaultTemplate = SpriggitValueFormatter.Format(GetPropertyValue(record, "DefaultTemplate")),
-                TemplateActors = SpriggitValueFormatter.Format(GetPropertyValue(record, "TemplateActors")),
-                WornArmor = SpriggitValueFormatter.Format(GetPropertyValue(record, "WornArmor")),
-                FaceMorph = SpriggitValueFormatter.Format(GetPropertyValue(record, "FaceMorph")),
-                FaceParts = SpriggitValueFormatter.Format(GetPropertyValue(record, "FaceParts")),
-                HeadParts = SpriggitValueFormatter.Format(GetPropertyValue(record, "HeadParts")),
-                HeadTexture = SpriggitValueFormatter.Format(GetPropertyValue(record, "HeadTexture")),
-                SleepingOutfit = SpriggitValueFormatter.Format(GetPropertyValue(record, "SleepingOutfit")),
-                TintLayers = SpriggitValueFormatter.Format(GetPropertyValue(record, "TintLayers")),
-                Tints = SpriggitValueFormatter.Format(GetPropertyValue(record, "Tints")),
-                SpaceOutfit = SpriggitValueFormatter.Format(GetPropertyValue(record, "SpaceOutfit")),
                 BodyMorphRegionValues = SpriggitValueFormatter.Format(GetPropertyValue(record, "BodyMorphRegionValues")),
                 ObjectTemplates = SpriggitValueFormatter.Format(GetPropertyValue(record, "ObjectTemplates")),
-                AIData = SpriggitValueFormatter.Format(GetPropertyValue(record, "AIData"))
+                AIData = SpriggitValueFormatter.Format(GetPropertyValue(record, "AIData")),
+                Factions = GetNPCFactions(plugin, SupportedGame.Starfield, record.FormKey, GetPropertyValue(record, "Factions")),
+                Properties = GetNPCProperties(plugin, SupportedGame.Starfield, record.FormKey, GetPropertyValue(record, "Properties")),
+                Items = GetNPCItems(plugin, SupportedGame.Starfield, record.FormKey, GetPropertyValue(record, "Items")),
+                Packages = GetFormKeys(GetPropertyValue(record, "Packages")),
+                Perks = GetNPCPerks(plugin, SupportedGame.Starfield, record.FormKey, GetPropertyValue(record, "Perks")),
+                ForcedLocations = GetFormKeys(GetPropertyValue(record, "ForcedLocations")),
+                HeadParts = GetFormKeys(GetPropertyValue(record, "HeadParts")),
+                ActorEffects = GetFormKeys(GetPropertyValue(record, "ActorEffect"))
+                    .OrderBy(formKey => formKey.ModKey.FileName, StringComparer.Ordinal)
+                    .ThenBy(formKey => formKey.Id)
+                    .ToList(),
+                Morphs = GetNPCMorphs(plugin, SupportedGame.Starfield, record.FormKey, GetPropertyValue(record, "Morphs")),
+                FaceDialPositions = GetNPCFaceDialPositions(plugin, SupportedGame.Starfield, record.FormKey, GetPropertyValue(record, "FaceDialPositions")),
+                FaceMorphGroups = GetNPCFaceMorphGroups(plugin, SupportedGame.Starfield, record.FormKey, GetPropertyValue(record, "FaceMorphs")),
+                MorphBlends = GetNPCMorphBlends(plugin, SupportedGame.Starfield, record.FormKey, GetPropertyValue(record, "MorphBlends")),
+                Tints = GetNPCTints(plugin, SupportedGame.Starfield, record.FormKey, GetPropertyValue(record, "Tints")),
+                TintLayers = GetNPCTintLayers(plugin, SupportedGame.Starfield, record.FormKey, GetPropertyValue(record, "TintLayers")),
+                PlayerSkills = GetNPCPlayerSkills(GetPropertyValue(record, "PlayerSkills")),
+                FaceMorph = GetNPCFaceMorph(GetPropertyValue(record, "FaceMorph")),
+                FaceParts = GetNPCFaceParts(GetPropertyValue(record, "FaceParts"))
             }, record))
             .ToList();
     }
@@ -685,6 +739,377 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 Value = GetPropertyNullableDouble(property, "Value"),
                 ImportedAtUTC = DateTime.UtcNow
             }).ToList();
+    }
+
+    private static NPCLevelDTO? GetNPCLevel(object? level)
+    {
+        if (level == null)
+        {
+            return null;
+        }
+
+        return new NPCLevelDTO
+        {
+            MutagenObjectType = GetPropertyValue(level, "MutagenObjectType")?.ToString() ?? level.GetType().Name,
+            Level = GetPropertyNullableInt(level, "Level"),
+            LevelMult = GetPropertyNullableDouble(level, "LevelMult")
+        };
+    }
+
+    private static NPCTemplateActorsDTO? GetNPCTemplateActors(object? templateActors)
+    {
+        if (templateActors == null)
+        {
+            return null;
+        }
+
+        return new NPCTemplateActorsDTO
+        {
+            TraitTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "TraitTemplate")),
+            StatsTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "StatsTemplate")),
+            FactionsTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "FactionsTemplate")),
+            SpellListTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "SpellListTemplate")),
+            AiPackagesTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "AiPackagesTemplate")),
+            AiDataTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "AiDataTemplate")),
+            BaseDataTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "BaseDataTemplate")),
+            InventoryTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "InventoryTemplate")),
+            ScriptTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "ScriptTemplate")),
+            DefPackListTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "DefPackListTemplate")),
+            AttackDataTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "AttackDataTemplate")),
+            KeywordsTemplate = GetFormKeyFromObject(GetPropertyValue(templateActors, "KeywordsTemplate")),
+            Unknown1 = GetFormKeyFromObject(GetPropertyValue(templateActors, "Unknown1")),
+            Unknown2 = GetFormKeyFromObject(GetPropertyValue(templateActors, "Unknown2"))
+        };
+    }
+
+    private static NPCWeightDTO? GetNPCWeight(object? weight)
+    {
+        if (weight == null)
+        {
+            return null;
+        }
+
+        if (double.TryParse(weight.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var scalarWeight))
+        {
+            return new NPCWeightDTO { Value = scalarWeight };
+        }
+
+        var dto = new NPCWeightDTO
+        {
+            Thin = GetPropertyNonZeroDouble(weight, "Thin"),
+            Muscular = GetPropertyNonZeroDouble(weight, "Muscular"),
+            Fat = GetPropertyNonZeroDouble(weight, "Fat")
+        };
+        return dto.Thin == null && dto.Muscular == null && dto.Fat == null ? new NPCWeightDTO() : dto;
+    }
+
+    private static List<NPCFactionDTO> GetNPCFactions(PluginDTO plugin, SupportedGame game, FormKey formKey, object? factions)
+    {
+        return factions is not IEnumerable enumerable
+            ? new List<NPCFactionDTO>()
+            : enumerable.Cast<object>()
+                .Select(faction => new
+                {
+                    Faction = faction,
+                    FactionFormKey = GetFormKeyFromObject(GetPropertyValue(faction, "Faction")) ?? GetFormKeyFromObject(faction)
+                })
+                .OrderBy(faction => faction.FactionFormKey?.ModKey.FileName ?? string.Empty, StringComparer.Ordinal)
+                .ThenBy(faction => faction.FactionFormKey?.Id ?? 0)
+                .Select((faction, factionIndex) => new NPCFactionDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                FactionIndex = factionIndex,
+                Faction = faction.FactionFormKey,
+                Rank = GetPropertyNullableInt(faction.Faction, "Rank"),
+                Fluff = FormatSpriggitHexValue(GetPropertyValue(faction.Faction, "Fluff")),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCPropertyDTO> GetNPCProperties(PluginDTO plugin, SupportedGame game, FormKey formKey, object? properties)
+    {
+        return properties is not IEnumerable enumerable
+            ? new List<NPCPropertyDTO>()
+            : enumerable.Cast<object>().Select((property, propertyIndex) => new NPCPropertyDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                PropertyIndex = propertyIndex,
+                ActorValue = GetFormKeyFromObject(GetPropertyValue(property, "ActorValue")),
+                Value = GetPropertyNullableDouble(property, "Value"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCItemDTO> GetNPCItems(PluginDTO plugin, SupportedGame game, FormKey formKey, object? items)
+    {
+        if (items is not IEnumerable enumerable)
+        {
+            return new List<NPCItemDTO>();
+        }
+
+        return enumerable.Cast<object>()
+            .Select(item =>
+            {
+                var itemData = GetPropertyValue(item, "Item") ?? item;
+                return new
+                {
+                    Item = item,
+                    ItemData = itemData,
+                    ItemFormKey = GetFormKeyFromObject(GetPropertyValue(itemData, "Item"))
+                };
+            })
+            .Where(item => item.ItemFormKey != null && item.ItemFormKey.Id != 0)
+            .Select((item, itemIndex) => new NPCItemDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                ItemIndex = itemIndex,
+                Item = item.ItemFormKey,
+                Count = GetPropertyNullableInt(item.ItemData, "Count") ?? GetPropertyNullableInt(item.Item, "Count"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCPerkDTO> GetNPCPerks(PluginDTO plugin, SupportedGame game, FormKey formKey, object? perks)
+    {
+        return perks is not IEnumerable enumerable
+            ? new List<NPCPerkDTO>()
+            : enumerable.Cast<object>().Select((perk, perkIndex) => new NPCPerkDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                PerkIndex = perkIndex,
+                Perk = GetFormKeyFromObject(GetPropertyValue(perk, "Perk")) ?? GetFormKeyFromObject(perk),
+                Rank = GetPropertyNullableInt(perk, "Rank"),
+                Fluff = FormatSpriggitHexValue(GetPropertyValue(perk, "Fluff")),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCMorphDTO> GetNPCMorphs(PluginDTO plugin, SupportedGame game, FormKey formKey, object? morphs)
+    {
+        return morphs is not IEnumerable enumerable
+            ? new List<NPCMorphDTO>()
+            : enumerable.Cast<object>().Select((morph, morphIndex) => new NPCMorphDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                MorphIndex = morphIndex,
+                Key = GetPropertyNullableLong(morph, "Key"),
+                Value = GetPropertyNullableDouble(morph, "Value"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCFaceMorphPositionDTO> GetNPCFaceMorphPositions(PluginDTO plugin, SupportedGame game, FormKey formKey, object? faceMorphs)
+    {
+        return faceMorphs is not IEnumerable enumerable
+            ? new List<NPCFaceMorphPositionDTO>()
+            : enumerable.Cast<object>().Select((faceMorph, faceMorphIndex) => new NPCFaceMorphPositionDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                FaceMorphIndex = faceMorphIndex,
+                Index = GetPropertyNullableInt(faceMorph, "Index"),
+                Position = GetPropertyValue(faceMorph, "Position")?.ToString(),
+                Scale = GetPropertyNullableDouble(faceMorph, "Scale"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCFaceDialPositionDTO> GetNPCFaceDialPositions(PluginDTO plugin, SupportedGame game, FormKey formKey, object? positions)
+    {
+        return positions is not IEnumerable enumerable
+            ? new List<NPCFaceDialPositionDTO>()
+            : enumerable.Cast<object>().Select((position, positionIndex) => new NPCFaceDialPositionDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                FaceDialPositionIndex = positionIndex,
+                Index = GetPropertyNullableInt(position, "Index"),
+                Position = GetPropertyNullableDouble(position, "Position"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCFaceMorphGroupSetDTO> GetNPCFaceMorphGroups(PluginDTO plugin, SupportedGame game, FormKey formKey, object? faceMorphs)
+    {
+        if (faceMorphs is not IEnumerable enumerable)
+        {
+            return new List<NPCFaceMorphGroupSetDTO>();
+        }
+
+        return enumerable.Cast<object>().Select((faceMorph, faceMorphIndex) => new NPCFaceMorphGroupSetDTO
+        {
+            Game = game,
+            ModKey = plugin.ModKey,
+            FormKey = MapFormKey(formKey),
+            FaceMorphIndex = faceMorphIndex,
+            Index = GetPropertyNullableInt(faceMorph, "Index"),
+            MorphGroups = GetNPCFaceMorphGroupRows(plugin, game, formKey, faceMorphIndex, GetPropertyValue(faceMorph, "MorphGroups")),
+            ImportedAtUTC = DateTime.UtcNow
+        }).ToList();
+    }
+
+    private static List<NPCFaceMorphGroupDTO> GetNPCFaceMorphGroupRows(PluginDTO plugin, SupportedGame game, FormKey formKey, int faceMorphIndex, object? morphGroups)
+    {
+        return morphGroups is not IEnumerable enumerable
+            ? new List<NPCFaceMorphGroupDTO>()
+            : enumerable.Cast<object>()
+                .OrderBy(morphGroup => GetPropertyValue(morphGroup, "MorphGroup")?.ToString(), StringComparer.Ordinal)
+                .Select((morphGroup, morphGroupIndex) => new NPCFaceMorphGroupDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                FaceMorphIndex = faceMorphIndex,
+                MorphGroupIndex = morphGroupIndex,
+                MorphGroup = GetPropertyValue(morphGroup, "MorphGroup")?.ToString(),
+                BlendIntensity = GetPropertyNullableDouble(morphGroup, "BlendIntensity"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCMorphBlendDTO> GetNPCMorphBlends(PluginDTO plugin, SupportedGame game, FormKey formKey, object? morphBlends)
+    {
+        return morphBlends is not IEnumerable enumerable
+            ? new List<NPCMorphBlendDTO>()
+            : enumerable.Cast<object>()
+                .OrderBy(morphBlend => GetPropertyValue(morphBlend, "BlendName")?.ToString(), StringComparer.Ordinal)
+                .Select((morphBlend, morphBlendIndex) => new NPCMorphBlendDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                MorphBlendIndex = morphBlendIndex,
+                BlendName = GetPropertyValue(morphBlend, "BlendName")?.ToString(),
+                Intensity = GetPropertyNullableDouble(morphBlend, "Intensity"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCTintDTO> GetNPCTints(PluginDTO plugin, SupportedGame game, FormKey formKey, object? tints)
+    {
+        return tints is not IEnumerable enumerable
+            ? new List<NPCTintDTO>()
+            : enumerable.Cast<object>().Select((tint, tintIndex) => new NPCTintDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                TintIndex = tintIndex,
+                TintType = GetPropertyValue(tint, "TintType")?.ToString(),
+                TintGroup = GetPropertyValue(tint, "TintGroup")?.ToString(),
+                TintName = GetPropertyValue(tint, "TintName")?.ToString(),
+                TintTexture = GetPropertyValue(tint, "TintTexture")?.ToString(),
+                TintColor = GetPropertyValue(tint, "TintColor")?.ToString(),
+                TintIntensity = GetPropertyNullableDouble(tint, "TintIntensity"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static List<NPCTintLayerDTO> GetNPCTintLayers(PluginDTO plugin, SupportedGame game, FormKey formKey, object? tintLayers)
+    {
+        return tintLayers is not IEnumerable enumerable
+            ? new List<NPCTintLayerDTO>()
+            : enumerable.Cast<object>().Select((tintLayer, tintLayerIndex) => new NPCTintLayerDTO
+            {
+                Game = game,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                TintLayerIndex = tintLayerIndex,
+                Index = GetPropertyNullableInt(tintLayer, "Index"),
+                Color = GetPropertyValue(tintLayer, "Color")?.ToString(),
+                InterpolationValue = GetPropertyNullableDouble(tintLayer, "InterpolationValue"),
+                Preset = GetPropertyNullableInt(tintLayer, "Preset"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
+    private static NPCPlayerSkillsDTO? GetNPCPlayerSkills(object? playerSkills)
+    {
+        if (playerSkills == null)
+        {
+            return null;
+        }
+
+        return new NPCPlayerSkillsDTO
+        {
+            SkillValues = GetNPCPlayerSkillValues(GetPropertyValue(playerSkills, "SkillValues")),
+            SkillOffsets = GetNPCPlayerSkillValues(GetPropertyValue(playerSkills, "SkillOffsets")),
+            Health = GetPropertyNullableInt(playerSkills, "Health"),
+            Magicka = GetPropertyNullableInt(playerSkills, "Magicka"),
+            Stamina = GetPropertyNullableInt(playerSkills, "Stamina"),
+            GearedUpWeapons = GetPropertyNullableInt(playerSkills, "GearedUpWeapons")
+        };
+    }
+
+    private static List<NPCPlayerSkillValueDTO> GetNPCPlayerSkillValues(object? skillValues)
+    {
+        return skillValues is not IEnumerable enumerable
+            ? new List<NPCPlayerSkillValueDTO>()
+            : enumerable.Cast<object>().Select((skillValue, skillIndex) => new NPCPlayerSkillValueDTO
+            {
+                SkillIndex = skillIndex,
+                Key = GetPropertyValue(skillValue, "Key")?.ToString(),
+                Value = GetPropertyNullableInt(skillValue, "Value")
+            }).ToList();
+    }
+
+    private static NPCFaceMorphDTO? GetNPCFaceMorph(object? faceMorph)
+    {
+        if (faceMorph == null)
+        {
+            return null;
+        }
+
+        return new NPCFaceMorphDTO
+        {
+            NoseLongVsShort = GetPropertyNullableDouble(faceMorph, "NoseLongVsShort"),
+            NoseUpVsDown = GetPropertyNullableDouble(faceMorph, "NoseUpVsDown"),
+            JawUpVsDown = GetPropertyNullableDouble(faceMorph, "JawUpVsDown"),
+            JawNarrowVsWide = GetPropertyNullableDouble(faceMorph, "JawNarrowVsWide"),
+            JawForwardVsBack = GetPropertyNullableDouble(faceMorph, "JawForwardVsBack"),
+            CheeksUpVsDown = GetPropertyNullableDouble(faceMorph, "CheeksUpVsDown"),
+            CheeksForwardVsBack = GetPropertyNullableDouble(faceMorph, "CheeksForwardVsBack"),
+            EyesUpVsDown = GetPropertyNullableDouble(faceMorph, "EyesUpVsDown"),
+            EyesInVsOut = GetPropertyNullableDouble(faceMorph, "EyesInVsOut"),
+            BrowsUpVsDown = GetPropertyNullableDouble(faceMorph, "BrowsUpVsDown"),
+            BrowsInVsOut = GetPropertyNullableDouble(faceMorph, "BrowsInVsOut"),
+            BrowsForwardVsBack = GetPropertyNullableDouble(faceMorph, "BrowsForwardVsBack"),
+            LipsUpVsDown = GetPropertyNullableDouble(faceMorph, "LipsUpVsDown"),
+            LipsInVsOut = GetPropertyNullableDouble(faceMorph, "LipsInVsOut"),
+            ChinNarrowVsWide = GetPropertyNullableDouble(faceMorph, "ChinNarrowVsWide"),
+            ChinUpVsDown = GetPropertyNullableDouble(faceMorph, "ChinUpVsDown"),
+            ChinUnderbiteVsOverbite = GetPropertyNullableDouble(faceMorph, "ChinUnderbiteVsOverbite"),
+            EyesForwardVsBack = GetPropertyNullableDouble(faceMorph, "EyesForwardVsBack"),
+            Unknown = GetPropertyNullableDouble(faceMorph, "Unknown")
+        };
+    }
+
+    private static NPCFacePartsDTO? GetNPCFaceParts(object? faceParts)
+    {
+        if (faceParts == null)
+        {
+            return null;
+        }
+
+        return new NPCFacePartsDTO
+        {
+            Nose = GetPropertyNullableLong(faceParts, "Nose"),
+            Unknown = GetPropertyNullableLong(faceParts, "Unknown"),
+            Eyes = GetPropertyNullableLong(faceParts, "Eyes"),
+            Mouth = GetPropertyNullableLong(faceParts, "Mouth")
+        };
     }
 
     private static List<FactionRelationDTO> GetFactionRelations(PluginDTO plugin, SupportedGame game, FormKey formKey, object? relations)
@@ -854,9 +1279,25 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 RecordType = recordType,
                 ComponentIndex = componentIndex,
                 MutagenObjectType = GetPropertyValue(component, "MutagenObjectType")?.ToString() ?? component.GetType().Name,
+                DCED = GetIntList(GetPropertyValue(component, "DCED")),
                 ImportedAtUTC = DateTime.UtcNow,
                 Items = GetRecordComponentItems(plugin, game, recordType, formKey, componentIndex, GetPropertyValue(component, "Items"))
             }).ToList();
+    }
+
+    /// <summary>
+    /// Converts a reflected enumerable of numeric values into an integer list while preserving source order.
+    /// </summary>
+    /// <param name="value">The reflected enumerable value to convert.</param>
+    /// <returns>The converted integer values, or an empty list when the source is absent or not enumerable.</returns>
+    private static List<int> GetIntList(object? value)
+    {
+        return value is not IEnumerable enumerable
+            ? new List<int>()
+            : enumerable
+                .Cast<object>()
+                .Select(item => Convert.ToInt32(item, CultureInfo.InvariantCulture))
+                .ToList();
     }
 
     private static List<RecordComponentItemDTO> GetRecordComponentItems(PluginDTO plugin, SupportedGame game, string recordType, FormKey formKey, int componentIndex, object? items)
@@ -871,6 +1312,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 RecordType = recordType,
                 ComponentIndex = componentIndex,
                 ItemIndex = itemIndex,
+                DisplayFilter = GetFormKeyFromObject(GetPropertyValue(item, "DisplayFilter")),
                 Unknown1 = GetPropertyNullableDouble(item, "Unknown1"),
                 Unknown2 = GetPropertyNullableDouble(item, "Unknown2"),
                 Unknown3 = GetPropertyNullableDouble(item, "Unknown3"),
@@ -1577,6 +2019,29 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         };
     }
 
+    /// <summary>
+    /// Maps Starfield container actor-value property entries from Mutagen into CreationsForge DTO rows.
+    /// </summary>
+    /// <param name="plugin">The plugin that owns the source record.</param>
+    /// <param name="formKey">The source container form key.</param>
+    /// <param name="properties">The reflected Mutagen properties collection.</param>
+    /// <returns>The ordered container property DTO rows.</returns>
+    private static List<ContainerPropertyDTO> GetContainerProperties(PluginDTO plugin, FormKey formKey, object? properties)
+    {
+        return properties is not IEnumerable enumerable
+            ? new List<ContainerPropertyDTO>()
+            : enumerable.Cast<object>().Select((property, propertyIndex) => new ContainerPropertyDTO
+            {
+                Game = SupportedGame.Starfield,
+                ModKey = plugin.ModKey,
+                FormKey = MapFormKey(formKey),
+                PropertyIndex = propertyIndex,
+                ActorValue = GetFormKeyFromObject(GetPropertyValue(property, "ActorValue")),
+                Value = GetPropertyNullableDouble(property, "Value"),
+                ImportedAtUTC = DateTime.UtcNow
+            }).ToList();
+    }
+
     private static List<ConstructibleObjectComponentDTO> GetConstructibleObjectComponents(PluginDTO plugin, FormKey formKey, object? components)
     {
         if (components is not IEnumerable enumerable) return new List<ConstructibleObjectComponentDTO>();
@@ -1732,36 +2197,64 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             .ToList();
     }
 
-    private static List<RawRecordPayloadDTO> GetComponentReflectPayloads(
+    /// <summary>
+    /// Reads Spriggit component <c>REFL</c> payloads from Mutagen component overlays.
+    /// </summary>
+    /// <param name="plugin">The plugin that owns the parent record.</param>
+    /// <param name="recordType">The Bethesda record type identifier for the parent record.</param>
+    /// <param name="formKey">The parent record form key.</param>
+    /// <param name="components">The Mutagen component collection to inspect.</param>
+    /// <returns>Reflection rows for components that expose a non-empty <c>REFL</c> payload.</returns>
+    private static List<ReflectionDTO> GetComponentReflections(
         PluginDTO plugin,
         string recordType,
         FormKey formKey,
         object? components)
     {
-        var payloads = new List<RawRecordPayloadDTO>();
+        var reflections = new List<ReflectionDTO>();
         var importedAtUTC = DateTime.UtcNow;
         if (components is not IEnumerable enumerable)
         {
-            return payloads;
+            return reflections;
         }
 
         foreach (var component in enumerable.Cast<object>().Select((value, index) => new { value, index }))
         {
             var componentType = component.value.GetType().Name;
-            AddRawPayload(
-                payloads,
-                plugin,
-                recordType,
-                formKey,
-                $"Components.{componentType}.REFL",
-                component.index,
-                componentType,
-                FormatHexValue(GetPropertyValue(component.value, "REFL")),
-                importedAtUTC,
-                $"Components.{componentType}.REFL");
+            var reflectionValue = FormatHexValue(GetPropertyValue(component.value, "REFL"));
+            if (string.IsNullOrWhiteSpace(reflectionValue))
+            {
+                continue;
+            }
+
+            reflections.Add(new ReflectionDTO
+            {
+                Game = SupportedGame.Starfield,
+                ModKey = plugin.ModKey,
+                RecordType = recordType,
+                FormKey = MapFormKey(formKey),
+                ComponentIndex = component.index,
+                ComponentType = NormalizeReflectionComponentType(componentType),
+                SourcePath = "Components[" + component.index.ToString(System.Globalization.CultureInfo.InvariantCulture) + "].REFL",
+                REFL = reflectionValue,
+                ImportedAtUTC = importedAtUTC
+            });
         }
 
-        return payloads;
+        return reflections;
+    }
+
+    /// <summary>
+    /// Converts Mutagen overlay implementation type names to Spriggit component type names.
+    /// </summary>
+    /// <param name="componentType">The Mutagen component runtime type name.</param>
+    /// <returns>The component type name used by Spriggit field coverage.</returns>
+    private static string NormalizeReflectionComponentType(string componentType)
+    {
+        const string binaryOverlaySuffix = "BinaryOverlay";
+        return componentType.EndsWith(binaryOverlaySuffix, StringComparison.Ordinal)
+            ? componentType[..^binaryOverlaySuffix.Length]
+            : componentType;
     }
 
     private static string? GetAnimationComponentValue(object? components, string propertyName)
@@ -1794,38 +2287,6 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         var importedAtUTC = DateTime.UtcNow;
         var scriptFragments = GetPropertyValue(GetPropertyValue(record, "VirtualMachineAdapter"), "ScriptFragments");
         return ScriptFragmentDTOMapper.FromScriptFragments(game, plugin.ModKey, recordType, formKey, scriptFragments, importedAtUTC);
-    }
-
-    private static void AddRawPayload(
-        ICollection<RawRecordPayloadDTO> payloads,
-        PluginDTO plugin,
-        string recordType,
-        FormKey formKey,
-        string payloadSlot,
-        int payloadIndex,
-        string payloadType,
-        string? payloadValue,
-        DateTime importedAtUTC,
-        string? sourcePath = null)
-    {
-        if (string.IsNullOrWhiteSpace(payloadValue))
-        {
-            return;
-        }
-
-        payloads.Add(new RawRecordPayloadDTO
-        {
-            Game = SupportedGame.Starfield,
-            ModKey = plugin.ModKey,
-            RecordType = recordType,
-            FormKey = MapFormKey(formKey),
-            PayloadSlot = payloadSlot,
-            PayloadIndex = payloadIndex,
-            PayloadType = payloadType,
-            SourcePath = sourcePath ?? payloadSlot,
-            PayloadValue = payloadValue,
-            ImportedAtUTC = importedAtUTC
-        });
     }
 
     private static List<SoundMappingDTO> GetNamedSounds(PluginDTO plugin, string recordType, FormKey formKey, object record, params string[] soundSlots)
@@ -2070,6 +2531,19 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         return longValue == 0 ? null : longValue;
     }
 
+    /// <summary>
+    /// Reads a reflected numeric property and returns <see langword="null" /> when Mutagen exposes the default zero
+    /// that Spriggit omits from sparse object fields.
+    /// </summary>
+    /// <param name="source">The reflected Mutagen object that may expose the property.</param>
+    /// <param name="propertyName">The property name to read.</param>
+    /// <returns>The non-zero double value, or <see langword="null" /> when the property is absent or zero.</returns>
+    private static double? GetPropertyNonZeroDouble(object? source, string propertyName)
+    {
+        var value = GetPropertyNullableDouble(source, propertyName);
+        return value == 0 ? null : value;
+    }
+
     private static float? GetPropertyNonZeroFloat(object? source, string propertyName)
     {
         var value = GetPropertyNullableFloat(source, propertyName);
@@ -2079,6 +2553,11 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
     private static string? GetFormKeyOrString(object? source, string propertyName)
     {
         var value = GetPropertyValue(source, propertyName);
+        return FormatFormKeyOrString(value);
+    }
+
+    private static string? FormatFormKeyOrString(object? value)
+    {
         if (GetFormKeyFromObject(value) is { } formKey)
         {
             return FormatFormKey(formKey);
@@ -2099,6 +2578,24 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
     {
         var value = GetPropertyValue(source, propertyName);
         return value == null ? null : Convert.ToInt32(value, CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Reads a nullable signed VMAD alias value from a reflected Mutagen object.
+    /// </summary>
+    private static short? GetPropertyNullableShort(object? source, string propertyName)
+    {
+        var value = GetPropertyValue(source, propertyName);
+        return value == null ? null : Convert.ToInt16(value, CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Reads a nullable unsigned VMAD object payload value from a reflected Mutagen object.
+    /// </summary>
+    private static ushort? GetPropertyNullableUShort(object? source, string propertyName)
+    {
+        var value = GetPropertyValue(source, propertyName);
+        return value == null ? null : Convert.ToUInt16(value, CultureInfo.InvariantCulture);
     }
 
     private static long? GetPropertyNullableLong(object? source, string propertyName)
@@ -2676,14 +3173,12 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
     private static string? FormatSpriggitHexValue(object? value)
     {
         var hexValue = FormatHexValue(value)?.Trim();
-        if (hexValue == null)
+        if (string.IsNullOrWhiteSpace(hexValue) || hexValue.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
         {
-            return null;
+            return hexValue;
         }
 
-        return hexValue.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
-            ? hexValue[2..]
-            : hexValue;
+        return "0x" + hexValue;
     }
 
     private static string? FormatConditionValue(object? value)
@@ -2770,7 +3265,10 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                 dto.ListItems = stringListProperty.Data.Select((value, listItemIndex) => CreateScriptingAdapterPropertyListItem(plugin, recordType, formKey, scriptName, propertyIndex, listItemIndex, nameof(ScriptStringProperty), importedAtUTC, dataString: value)).ToList();
                 return dto;
             case ScriptObjectListProperty objectListProperty:
-                dto.ListItems = objectListProperty.Objects.Select((value, listItemIndex) => CreateScriptingAdapterPropertyListItem(plugin, recordType, formKey, scriptName, propertyIndex, listItemIndex, nameof(ScriptObjectProperty), importedAtUTC, objectFormKey: value.Object.FormKeyNullable is { } objectFormKey ? MapFormKey(objectFormKey) : null, objectAlias: value.Alias, objectUnused: value.Unused)).ToList();
+                dto.ListItems = objectListProperty.Objects.Select((value, listItemIndex) => CreateScriptingAdapterPropertyListItem(plugin, recordType, formKey, scriptName, propertyIndex, listItemIndex, nameof(ScriptObjectProperty), importedAtUTC, name: GetPropertyStringOrNull(value, "Name"), objectFormKey: value.Object.FormKeyNullable is { } objectFormKey ? MapFormKey(objectFormKey) : null, objectAlias: value.Alias, objectUnused: value.Unused)).ToList();
+                return dto;
+            case ScriptProperty when property.GetType().Name.Contains("StructList", StringComparison.OrdinalIgnoreCase):
+                dto.Structs = GetScriptingAdapterPropertyStructs(plugin, recordType, formKey, scriptName, propertyIndex, property, importedAtUTC);
                 return dto;
             case ScriptProperty:
                 return dto;
@@ -2788,6 +3286,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         int listItemIndex,
         string mutagenObjectType,
         DateTime importedAtUTC,
+        string? name = null,
         bool? dataBool = null,
         int? dataInt = null,
         double? dataFloat = null,
@@ -2805,6 +3304,7 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             ScriptingAdapterName = scriptName,
             PropertyIndex = propertyIndex,
             ListItemIndex = listItemIndex,
+            Name = name,
             MutagenObjectType = mutagenObjectType,
             DataBool = dataBool,
             DataInt = dataInt,
@@ -2813,6 +3313,114 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
             ObjectFormKey = objectFormKey,
             ObjectAlias = objectAlias,
             ObjectUnused = objectUnused,
+            ImportedAtUTC = importedAtUTC
+        };
+    }
+
+    /// <summary>
+    /// Maps a VMAD script property struct list to first-class DTO rows.
+    /// </summary>
+    private static List<ScriptingAdapterPropertyStructDTO> GetScriptingAdapterPropertyStructs(
+        PluginDTO plugin,
+        string recordType,
+        FormKey formKey,
+        string scriptName,
+        int propertyIndex,
+        object property,
+        DateTime importedAtUTC)
+    {
+        var structs = GetPropertyValue(property, "Structs") as IEnumerable;
+        if (structs == null)
+        {
+            return new List<ScriptingAdapterPropertyStructDTO>();
+        }
+
+        return structs
+            .Cast<object>()
+            .Select((value, structIndex) => new ScriptingAdapterPropertyStructDTO
+            {
+                Game = SupportedGame.Starfield,
+                ModKey = plugin.ModKey,
+                RecordType = recordType,
+                FormKey = MapFormKey(formKey),
+                ScriptingAdapterName = scriptName,
+                PropertyIndex = propertyIndex,
+                StructIndex = structIndex,
+                ImportedAtUTC = importedAtUTC,
+                Members = GetScriptingAdapterPropertyStructMembers(plugin, recordType, formKey, scriptName, propertyIndex, structIndex, value, importedAtUTC)
+            })
+            .ToList();
+    }
+
+    /// <summary>
+    /// Maps VMAD script struct members to first-class DTO rows.
+    /// </summary>
+    private static List<ScriptingAdapterPropertyStructMemberDTO> GetScriptingAdapterPropertyStructMembers(
+        PluginDTO plugin,
+        string recordType,
+        FormKey formKey,
+        string scriptName,
+        int propertyIndex,
+        int structIndex,
+        object propertyStruct,
+        DateTime importedAtUTC)
+    {
+        var members = GetPropertyValue(propertyStruct, "Members") as IEnumerable;
+        if (members == null)
+        {
+            return new List<ScriptingAdapterPropertyStructMemberDTO>();
+        }
+
+        return members
+            .Cast<object>()
+            .Select((member, memberIndex) => CreateScriptingAdapterPropertyStructMember(
+                plugin,
+                recordType,
+                formKey,
+                scriptName,
+                propertyIndex,
+                structIndex,
+                memberIndex,
+                member,
+                importedAtUTC))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Maps a VMAD script struct member value to a first-class DTO row.
+    /// </summary>
+    private static ScriptingAdapterPropertyStructMemberDTO CreateScriptingAdapterPropertyStructMember(
+        PluginDTO plugin,
+        string recordType,
+        FormKey formKey,
+        string scriptName,
+        int propertyIndex,
+        int structIndex,
+        int memberIndex,
+        object member,
+        DateTime importedAtUTC)
+    {
+        var data = GetPropertyValue(member, "Data");
+        var objectValue = GetPropertyValue(member, "Object");
+        return new ScriptingAdapterPropertyStructMemberDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = plugin.ModKey,
+            RecordType = recordType,
+            FormKey = MapFormKey(formKey),
+            ScriptingAdapterName = scriptName,
+            PropertyIndex = propertyIndex,
+            StructIndex = structIndex,
+            MemberIndex = memberIndex,
+            Name = GetPropertyStringOrNull(member, "Name") ?? string.Empty,
+            MutagenObjectType = member.GetType().Name,
+            DataBool = data is bool boolValue ? boolValue : null,
+            DataInt = data is int intValue ? intValue : null,
+            DataFloat = data is float or double or decimal ? Convert.ToDouble(data, CultureInfo.InvariantCulture) : null,
+            DataString = data is string stringValue ? stringValue : null,
+            ObjectFormKey = GetFormKeyFromObject(objectValue),
+            ObjectAlias = GetPropertyNullableShort(member, "Alias"),
+            ObjectUnused = GetPropertyNullableUShort(member, "Unused"),
             ImportedAtUTC = importedAtUTC
         };
     }

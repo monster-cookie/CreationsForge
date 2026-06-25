@@ -18,9 +18,7 @@ public static class ContainerValidationSpecs
     {
         return StarfieldContainer("ShipOutpost_Loot_Storage_Safe_Floor_Reg_Common", "277A73:Starfield.esm")
             .AddRules(GetAnimationGraphComponentRules(0))
-            .AddRule(ValidationFieldRule.RawPayloadSlot("Components[1].REFL", "Components"))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("Components[1].MutagenObjectType", "Component type is represented by raw payload rows."))
-            .AddRules(GetOutpostContainerPropertyRules())
+            .AddRules(ValidationFieldRule.ComponentReflection(1, 0, 1, "EffectSequenceComponent"))
             .Build();
     }
 
@@ -28,9 +26,7 @@ public static class ContainerValidationSpecs
     {
         return StarfieldContainer("ShipOutpost_Loot_Storage_Safe_Floor_Tall_Rare", "277A81:Starfield.esm")
             .AddRules(GetAnimationGraphComponentRules(0))
-            .AddRule(ValidationFieldRule.RawPayloadSlot("Components[1].REFL", "Components"))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("Components[1].MutagenObjectType", "Component type is represented by raw payload rows."))
-            .AddRules(GetOutpostContainerPropertyRules())
+            .AddRules(ValidationFieldRule.ComponentReflection(1, 0, 1, "EffectSequenceComponent"))
             .Build();
     }
 
@@ -38,12 +34,7 @@ public static class ContainerValidationSpecs
     {
         return StarfieldContainer("ShipOutpost_Loot_Storage_BossChest_Industrial_Rare", "2779E9:Starfield.esm")
             .AddRules(GetAnimationGraphComponentRules(0))
-            .AddRule(ValidationFieldRule.RawPayloadSlot("Components[1].REFL", "Components"))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("Components[1].MutagenObjectType", "Component type is represented by raw payload rows."))
-            .AddRules(GetOutpostContainerPropertyRules())
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("ForcedLocations.Count", "Container forced locations are not persisted by the current container DTO."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("ForcedLocations[0]", "Container forced locations are not persisted by the current container DTO."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("ForcedLocations[0].05AF1F", "Container forced locations are not persisted by the current container DTO."))
+            .AddRules(ValidationFieldRule.ComponentReflection(1, 0, 1, "EffectSequenceComponent"))
             .Build();
     }
 
@@ -51,25 +42,12 @@ public static class ContainerValidationSpecs
     {
         return StarfieldContainer("Loot_Display_WeaponRack03_EMPTY", "1A23DF:Starfield.esm")
             .AddRules(GetAnimationGraphComponentRules(0))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("Components[1].MutagenObjectType", "Display case component rows are not persisted by the current container DTO."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("Components[1].Items.Count", "Display case component rows are not persisted by the current container DTO."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("Components[1].DCED.Count", "Display case component rows are not persisted by the current container DTO."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("SnapTemplate", "Container snap template is not persisted by the current container DTO."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("ContainsOnlyFilter", "Container display filter is not persisted by the current container DTO."))
-            .AddRules(GetDisplayCaseComponentRules(1))
             .Build();
     }
 
     public static ValidationSpec Starfield_Loot_Display_ArboronWeaponRackPanel02()
     {
         return StarfieldContainer("Loot_Display_ArboronWeaponRackPanel02", "057C20:Starfield.esm")
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("Components.Count", "Component count is covered by component-specific validation rules."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("Components[0].MutagenObjectType", "Display case component rows are not persisted by the current container DTO."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("Components[0].Items.Count", "Display case component rows are not persisted by the current container DTO."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("Components[0].DCED.Count", "Display case component rows are not persisted by the current container DTO."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("SnapTemplate", "Container snap template is not persisted by the current container DTO."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("ContainsOnlyFilter", "Container display filter is not persisted by the current container DTO."))
-            .AddRules(GetDisplayCaseComponentRules(0))
             .Build();
     }
 
@@ -146,6 +124,7 @@ public static class ContainerValidationSpecs
             .AddRule(ValidationFieldRule.ScalarList("MajorFlags", "MajorFlags"))
             .AddRule(ValidationFieldRule.Field("Model.File", "Models[0].File", ValidationValueNormalizer.ModelFile))
             .AddRule(ValidationFieldRule.Field("Model.LightLayer", "Models[0].LightLayer"))
+            .AddRule(ValidationFieldRule.FormKeyList("ForcedLocations", "ForcedLocations", string.Empty))
             .AddRule(ValidationFieldRule.SoundSlot("OpenSound.Start", "OpenSound", "Start"))
             .AddRule(ValidationFieldRule.SoundSlot("CloseSound.Start", "CloseSound", "Start"));
     }
@@ -222,31 +201,7 @@ public static class ContainerValidationSpecs
         yield return ValidationFieldRule.DtoNonEmpty("Components[" + componentText + "].BNAM", "AnimationSkeleton");
         yield return ValidationFieldRule.DtoNonEmpty("Components[" + componentText + "].CNAM", "AnimationDirectory");
         yield return ValidationFieldRule.IgnoreSpriggit("Components[" + componentText + "].MutagenObjectType", "AnimationGraphComponent values are projected into direct animation fields.");
+        yield return ValidationFieldRule.IgnoreDto("Components[" + componentText + "].MutagenObjectType", "AnimationGraphComponent values are projected into direct animation fields.");
     }
 
-    private static IEnumerable<ValidationFieldRule> GetOutpostContainerPropertyRules()
-    {
-        yield return ValidationFieldRule.IgnoreSpriggit("Transforms.Outpost", "Container transform references are not persisted by the current container DTO.");
-        yield return ValidationFieldRule.IgnoreSpriggit("Transforms.Preview", "Container transform references are not persisted by the current container DTO.");
-        yield return ValidationFieldRule.IgnoreSpriggit("Properties.Count", "Container property payloads are not persisted by the current container DTO.");
-        for (var propertyIndex = 0; propertyIndex <= 3; propertyIndex++)
-        {
-            var propertyText = propertyIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            yield return ValidationFieldRule.IgnoreSpriggit("Properties[" + propertyText + "].ActorValue", "Container property payloads are not persisted by the current container DTO.");
-            yield return ValidationFieldRule.IgnoreSpriggit("Properties[" + propertyText + "].Value", "Container property payloads are not persisted by the current container DTO.");
-        }
-    }
-
-    private static IEnumerable<ValidationFieldRule> GetDisplayCaseComponentRules(int componentIndex)
-    {
-        var componentText = componentIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        for (var itemIndex = 0; itemIndex <= 12; itemIndex++)
-        {
-            var indexText = itemIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            yield return ValidationFieldRule.IgnoreSpriggit("Components[" + componentText + "].Items[" + indexText + "].DisplayFilter", "Display case component rows are not persisted by the current container DTO.");
-            yield return ValidationFieldRule.IgnoreSpriggit("Components[" + componentText + "].Items[" + indexText + "].Index", "Display case component rows are not persisted by the current container DTO.");
-            yield return ValidationFieldRule.IgnoreSpriggit("Components[" + componentText + "].Items[" + indexText + "].Unknown2", "Display case component rows are not persisted by the current container DTO.");
-            yield return ValidationFieldRule.IgnoreSpriggit("Components[" + componentText + "].DCED[" + indexText + "]", "Display case component rows are not persisted by the current container DTO.");
-        }
-    }
 }

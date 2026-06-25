@@ -15,7 +15,16 @@ public class StarfieldTerminalSpriggitDataValidationTests : SpriggitDataValidati
     [Trait("SpriggitFile", "Terminals/AkilaLife04_Computer - 2D1D29_Starfield.esm.yaml")]
     public void Starfield_TERM_ShouldMatchSpriggitSample_AkilaLife04_Computer()
     {
-        AssertTerminalMatches(TerminalValidationSpecs.Starfield_AkilaLife04_Computer());
+        var spec = TerminalValidationSpecs.Starfield_AkilaLife04_Computer();
+        var dto = Helpers.GetDTO<TerminalDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -26,7 +35,16 @@ public class StarfieldTerminalSpriggitDataValidationTests : SpriggitDataValidati
     [Trait("SpriggitFile", "Terminals/AkilaLife08_FarmingComputer - 2D2617_Starfield.esm.yaml")]
     public void Starfield_TERM_ShouldMatchSpriggitSample_AkilaLife08_FarmingComputer()
     {
-        AssertTerminalMatches(TerminalValidationSpecs.Starfield_AkilaLife08_FarmingComputer());
+        var spec = TerminalValidationSpecs.Starfield_AkilaLife08_FarmingComputer();
+        var dto = Helpers.GetDTO<TerminalDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -37,7 +55,16 @@ public class StarfieldTerminalSpriggitDataValidationTests : SpriggitDataValidati
     [Trait("SpriggitFile", "Terminals/BE_ShipComputer_BarStanding - 386CD0_Starfield.esm.yaml")]
     public void Starfield_TERM_ShouldMatchSpriggitSample_BE_ShipComputer_BarStanding()
     {
-        AssertTerminalMatches(TerminalValidationSpecs.Starfield_BE_ShipComputer_BarStanding());
+        var spec = TerminalValidationSpecs.Starfield_BE_ShipComputer_BarStanding();
+        var dto = Helpers.GetDTO<TerminalDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -48,7 +75,16 @@ public class StarfieldTerminalSpriggitDataValidationTests : SpriggitDataValidati
     [Trait("SpriggitFile", "Terminals/City_NA_Botany02Terminal - 261A51_Starfield.esm.yaml")]
     public void Starfield_TERM_ShouldMatchSpriggitSample_City_NA_Botany02Terminal()
     {
-        AssertTerminalMatches(TerminalValidationSpecs.Starfield_City_NA_Botany02Terminal());
+        var spec = TerminalValidationSpecs.Starfield_City_NA_Botany02Terminal();
+        var dto = Helpers.GetDTO<TerminalDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -59,11 +95,7 @@ public class StarfieldTerminalSpriggitDataValidationTests : SpriggitDataValidati
     [Trait("SpriggitFile", "Terminals/TerminalSittingActivatorA01_Desk - 19F266_Starfield.esm.yaml")]
     public void Starfield_TERM_ShouldMatchSpriggitSample_TerminalSittingActivatorA01_Desk()
     {
-        AssertTerminalMatches(TerminalValidationSpecs.Starfield_TerminalSittingActivatorA01_Desk());
-    }
-
-    private static void AssertTerminalMatches(ValidationSpec spec)
-    {
+        var spec = TerminalValidationSpecs.Starfield_TerminalSittingActivatorA01_Desk();
         var dto = Helpers.GetDTO<TerminalDTO>(spec.Game, spec.RecordType, spec.FormKey);
 
         var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);

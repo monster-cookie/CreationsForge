@@ -19,6 +19,7 @@ public class RecordChildImportServiceTests
         var componentImportService = new TestRecordComponentImportService();
         var conditionRuleImportService = new TestConditionRuleImportService();
         var rawRecordPayloadImportService = new TestRawRecordPayloadImportService();
+        var reflectionImportService = new TestReflectionImportService();
         var soundImportService = new TestSoundMappingImportService();
         var scriptingAdapterImportService = new TestScriptingAdapterImportService();
         var terminalMarkerParameterImportService = new TestTerminalMarkerParameterImportService();
@@ -29,6 +30,7 @@ public class RecordChildImportServiceTests
             componentImportService,
             conditionRuleImportService,
             rawRecordPayloadImportService,
+            reflectionImportService,
             soundImportService,
             scriptingAdapterImportService,
             terminalMarkerParameterImportService,
@@ -42,6 +44,7 @@ public class RecordChildImportServiceTests
         componentImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
         conditionRuleImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
         rawRecordPayloadImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
+        reflectionImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
         soundImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
         scriptingAdapterImportService.ReplaceRequests.ShouldBe([(record, "TEST")]);
         terminalMarkerParameterImportService.ReplaceRequests.ShouldBe([record]);
@@ -56,6 +59,7 @@ public class RecordChildImportServiceTests
         var componentImportService = new TestRecordComponentImportService();
         var conditionRuleImportService = new TestConditionRuleImportService();
         var rawRecordPayloadImportService = new TestRawRecordPayloadImportService();
+        var reflectionImportService = new TestReflectionImportService();
         var soundImportService = new TestSoundMappingImportService();
         var scriptingAdapterImportService = new TestScriptingAdapterImportService();
         var terminalMarkerParameterImportService = new TestTerminalMarkerParameterImportService();
@@ -66,6 +70,7 @@ public class RecordChildImportServiceTests
             componentImportService,
             conditionRuleImportService,
             rawRecordPayloadImportService,
+            reflectionImportService,
             soundImportService,
             scriptingAdapterImportService,
             terminalMarkerParameterImportService,
@@ -80,6 +85,7 @@ public class RecordChildImportServiceTests
         componentImportService.ReplaceRequests.ShouldBeEmpty();
         conditionRuleImportService.ReplaceRequests.ShouldBeEmpty();
         rawRecordPayloadImportService.ReplaceRequests.ShouldBeEmpty();
+        reflectionImportService.ReplaceRequests.ShouldBeEmpty();
         soundImportService.ReplaceRequests.ShouldBeEmpty();
         scriptingAdapterImportService.ReplaceRequests.ShouldBeEmpty();
         terminalMarkerParameterImportService.ReplaceRequests.ShouldBeEmpty();
@@ -94,6 +100,7 @@ public class RecordChildImportServiceTests
         var componentImportService = new TestRecordComponentImportService();
         var conditionRuleImportService = new TestConditionRuleImportService();
         var rawRecordPayloadImportService = new TestRawRecordPayloadImportService();
+        var reflectionImportService = new TestReflectionImportService();
         var soundImportService = new TestSoundMappingImportService();
         var scriptingAdapterImportService = new TestScriptingAdapterImportService();
         var terminalMarkerParameterImportService = new TestTerminalMarkerParameterImportService();
@@ -104,6 +111,7 @@ public class RecordChildImportServiceTests
             componentImportService,
             conditionRuleImportService,
             rawRecordPayloadImportService,
+            reflectionImportService,
             soundImportService,
             scriptingAdapterImportService,
             terminalMarkerParameterImportService,
@@ -115,6 +123,7 @@ public class RecordChildImportServiceTests
 
         conditionRuleImportService.ReplaceRequests.ShouldBe([(conditionForm, RecordTypeCatalog.ConditionForm.RecordID)]);
         rawRecordPayloadImportService.ReplaceRequests.ShouldBeEmpty();
+        reflectionImportService.ReplaceRequests.ShouldBeEmpty();
     }
 
     private static CompositeRecordDTO CreateCompositeRecord()
@@ -169,7 +178,7 @@ public class RecordChildImportServiceTests
         };
     }
 
-    private sealed class CompositeRecordDTO : RecordDTO, IHasModelsDTO, IKeywords, IHasComponentsDTO, IHasConditionsDTO, IHasRawRecordPayloadsDTO, ISounds, IHasScriptingAdaptersDTO, IHasTerminalMarkerParametersRecordDTO
+    private sealed class CompositeRecordDTO : RecordDTO, IHasModelsDTO, IKeywords, IHasComponentsDTO, IHasConditionsDTO, IHasRawRecordPayloadsDTO, IHasReflectionDTO, ISounds, IHasScriptingAdaptersDTO, IHasTerminalMarkerParametersRecordDTO
     {
         public IList<ModelDTO> Models { get; set; } = new List<ModelDTO>();
 
@@ -180,6 +189,8 @@ public class RecordChildImportServiceTests
         public IList<ConditionFormConditionDTO> Conditions { get; set; } = new List<ConditionFormConditionDTO>();
 
         public IList<RawRecordPayloadDTO> RawPayloads { get; set; } = new List<RawRecordPayloadDTO>();
+
+        public IList<ReflectionDTO> Reflections { get; set; } = new List<ReflectionDTO>();
 
         public IList<SoundMappingDTO> Sounds { get; set; } = new List<SoundMappingDTO>();
 
@@ -216,6 +227,16 @@ public class RecordChildImportServiceTests
         public IList<(IHasRawRecordPayloadsDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasRawRecordPayloadsDTO Record, string RecordType)>();
 
         public void ReplaceRawRecordPayloads(IHasRawRecordPayloadsDTO record, string recordType)
+        {
+            ReplaceRequests.Add((record, recordType));
+        }
+    }
+
+    private sealed class TestReflectionImportService : IReflectionImportService
+    {
+        public IList<(IHasReflectionDTO Record, string RecordType)> ReplaceRequests { get; } = new List<(IHasReflectionDTO Record, string RecordType)>();
+
+        public void ReplaceReflections(IHasReflectionDTO record, string recordType)
         {
             ReplaceRequests.Add((record, recordType));
         }

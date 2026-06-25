@@ -15,7 +15,16 @@ public class StarfieldNPCSpriggitDataValidationTests : SpriggitDataValidationTes
     [Trait("SpriggitFile", "Npcs/CF_AludraTahan - 01539F_Starfield.esm.yaml")]
     public void Starfield_NPC__ShouldMatchSpriggitSample_CF_AludraTahan()
     {
-        AssertNPC(NPCValidationSpecs.Starfield_CF_AludraTahan());
+        var spec = NPCValidationSpecs.Starfield_CF_AludraTahan();
+        var dto = Helpers.GetDTO<NPCDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -26,7 +35,16 @@ public class StarfieldNPCSpriggitDataValidationTests : SpriggitDataValidationTes
     [Trait("SpriggitFile", "Npcs/CF_CESandin - 0A0273_Starfield.esm.yaml")]
     public void Starfield_NPC__ShouldMatchSpriggitSample_CF_CESandin()
     {
-        AssertNPC(NPCValidationSpecs.Starfield_CF_CESandin());
+        var spec = NPCValidationSpecs.Starfield_CF_CESandin();
+        var dto = Helpers.GetDTO<NPCDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -37,7 +55,16 @@ public class StarfieldNPCSpriggitDataValidationTests : SpriggitDataValidationTes
     [Trait("SpriggitFile", "Npcs/CF_CPMurata - 09C32F_Starfield.esm.yaml")]
     public void Starfield_NPC__ShouldMatchSpriggitSample_CF_CPMurata()
     {
-        AssertNPC(NPCValidationSpecs.Starfield_CF_CPMurata());
+        var spec = NPCValidationSpecs.Starfield_CF_CPMurata();
+        var dto = Helpers.GetDTO<NPCDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -48,7 +75,16 @@ public class StarfieldNPCSpriggitDataValidationTests : SpriggitDataValidationTes
     [Trait("SpriggitFile", "Npcs/BE_FAB12_LvlCitizenChunks - 0B6667_Starfield.esm.yaml")]
     public void Starfield_NPC__ShouldMatchSpriggitSample_BE_FAB12_LvlCitizenChunks()
     {
-        AssertNPC(NPCValidationSpecs.Starfield_BE_FAB12_LvlCitizenChunks());
+        var spec = NPCValidationSpecs.Starfield_BE_FAB12_LvlCitizenChunks();
+        var dto = Helpers.GetDTO<NPCDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -59,11 +95,7 @@ public class StarfieldNPCSpriggitDataValidationTests : SpriggitDataValidationTes
     [Trait("SpriggitFile", "Npcs/BQ01_Actor_EllieYankton - 17C10E_Starfield.esm.yaml")]
     public void Starfield_NPC__ShouldMatchSpriggitSample_BQ01_Actor_EllieYankton()
     {
-        AssertNPC(NPCValidationSpecs.Starfield_BQ01_Actor_EllieYankton());
-    }
-
-    private void AssertNPC(ValidationSpec spec)
-    {
+        var spec = NPCValidationSpecs.Starfield_BQ01_Actor_EllieYankton();
         var dto = Helpers.GetDTO<NPCDTO>(spec.Game, spec.RecordType, spec.FormKey);
 
         var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);

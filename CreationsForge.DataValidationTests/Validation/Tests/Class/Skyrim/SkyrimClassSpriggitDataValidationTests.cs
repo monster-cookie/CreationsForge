@@ -15,7 +15,16 @@ public class SkyrimClassSpriggitDataValidationTests : SpriggitDataValidationTest
     [Trait("SpriggitFile", "Classes/TrainerAlchemyExpert - 0E3A6E_Skyrim.esm.yaml")]
     public void Skyrim_CLAS_ShouldMatchSpriggitSample_TrainerAlchemyExpert()
     {
-        AssertClassSpec(ClassValidationSpecs.Skyrim_TrainerAlchemyExpert());
+        var spec = ClassValidationSpecs.Skyrim_TrainerAlchemyExpert();
+        var dto = Helpers.GetDTO<ClassDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -26,7 +35,16 @@ public class SkyrimClassSpriggitDataValidationTests : SpriggitDataValidationTest
     [Trait("SpriggitFile", "Classes/TrainerAlchemyJourneyman - 0E3A5D_Skyrim.esm.yaml")]
     public void Skyrim_CLAS_ShouldMatchSpriggitSample_TrainerAlchemyJourneyman()
     {
-        AssertClassSpec(ClassValidationSpecs.Skyrim_TrainerAlchemyJourneyman());
+        var spec = ClassValidationSpecs.Skyrim_TrainerAlchemyJourneyman();
+        var dto = Helpers.GetDTO<ClassDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -37,7 +55,16 @@ public class SkyrimClassSpriggitDataValidationTests : SpriggitDataValidationTest
     [Trait("SpriggitFile", "Classes/AAAPlayerSpellswordClass - 02F202_Skyrim.esm.yaml")]
     public void Skyrim_CLAS_ShouldMatchSpriggitSample_AAAPlayerSpellswordClass()
     {
-        AssertClassSpec(ClassValidationSpecs.Skyrim_AAAPlayerSpellswordClass());
+        var spec = ClassValidationSpecs.Skyrim_AAAPlayerSpellswordClass();
+        var dto = Helpers.GetDTO<ClassDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -48,7 +75,16 @@ public class SkyrimClassSpriggitDataValidationTests : SpriggitDataValidationTest
     [Trait("SpriggitFile", "Classes/CombatSpellsword - 013177_Skyrim.esm.yaml")]
     public void Skyrim_CLAS_ShouldMatchSpriggitSample_CombatSpellsword()
     {
-        AssertClassSpec(ClassValidationSpecs.Skyrim_CombatSpellsword());
+        var spec = ClassValidationSpecs.Skyrim_CombatSpellsword();
+        var dto = Helpers.GetDTO<ClassDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -59,11 +95,7 @@ public class SkyrimClassSpriggitDataValidationTests : SpriggitDataValidationTest
     [Trait("SpriggitFile", "Classes/Bard - 01325D_Skyrim.esm.yaml")]
     public void Skyrim_CLAS_ShouldMatchSpriggitSample_Bard()
     {
-        AssertClassSpec(ClassValidationSpecs.Skyrim_Bard());
-    }
-
-    private void AssertClassSpec(ValidationSpec spec)
-    {
+        var spec = ClassValidationSpecs.Skyrim_Bard();
         var dto = Helpers.GetDTO<ClassDTO>(spec.Game, spec.RecordType, spec.FormKey);
 
         var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);

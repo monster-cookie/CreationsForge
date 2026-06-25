@@ -7,27 +7,27 @@ public static class StaticValidationSpecs
 {
     public static ValidationSpec Starfield_OpiExtPodAirlock01()
     {
-        return StarfieldStatic("OpiExtPodAirlock01", "0514C6:Starfield.esm", withRefl: true, withSnapTemplate: true);
+        return StarfieldStatic("OpiExtPodAirlock01", "0514C6:Starfield.esm", withSnapTemplate: true);
     }
 
     public static ValidationSpec Starfield_OpmIntPodSmSide01()
     {
-        return StarfieldStatic("OpmIntPodSmSide01", "036311:Starfield.esm", withRefl: false, withSnapTemplate: false);
+        return StarfieldStatic("OpmIntPodSmSide01", "036311:Starfield.esm", withSnapTemplate: false);
     }
 
     public static ValidationSpec Starfield_OpmIntPodSmSideWin01()
     {
-        return StarfieldStatic("OpmIntPodSmSideWin01", "042AE4:Starfield.esm", withRefl: false, withSnapTemplate: false);
+        return StarfieldStatic("OpmIntPodSmSideWin01", "042AE4:Starfield.esm", withSnapTemplate: false);
     }
 
     public static ValidationSpec Starfield_CatIndWalkSm2WayB01()
     {
-        return StarfieldStatic("CatIndWalkSm2WayB01", "03A1B4:Starfield.esm", withRefl: false, withSnapTemplate: false);
+        return StarfieldStatic("CatIndWalkSm2WayB01", "03A1B4:Starfield.esm", withSnapTemplate: false);
     }
 
     public static ValidationSpec Starfield_OpiExtPodAirlockStairs01()
     {
-        return StarfieldStatic("OpiExtPodAirlockStairs01", "04F391:Starfield.esm", withRefl: true, withSnapTemplate: false);
+        return StarfieldStatic("OpiExtPodAirlockStairs01", "04F391:Starfield.esm", withSnapTemplate: false);
     }
 
     public static ValidationSpec Fallout4_workshop_JunkWallDoor01()
@@ -83,21 +83,20 @@ public static class StaticValidationSpecs
     private static ValidationSpec StarfieldStatic(
         string sampleName,
         string formKey,
-        bool withRefl,
         bool withSnapTemplate)
     {
         var spec = BaseStatic(SupportedGame.Starfield, sampleName, formKey, withObjectBounds: true)
             .AddRule(ValidationFieldRule.Field("Model.File", "Models[0].File", ValidationValueNormalizer.ModelFile))
             .AddRule(ValidationFieldRule.Field("Model.LightLayer", "Models[0].LightLayer"));
 
-        if (withRefl)
-        {
-            spec.AddRule(ValidationFieldRule.RawPayloadSlot("Components[0].REFL", "Components"));
-        }
-
         if (withSnapTemplate)
         {
             spec.AddRule(ValidationFieldRule.Field("SnapTemplate", "SnapTemplate"));
+        }
+
+        if (sampleName is "OpiExtPodAirlock01" or "OpiExtPodAirlockStairs01")
+        {
+            spec.AddRules(ValidationFieldRule.ComponentReflection(0, 0, 1, "LodOwnerComponent"));
         }
 
         return spec.Build();
@@ -162,10 +161,8 @@ public static class StaticValidationSpecs
             .AddRule(ValidationFieldRule.DtoNonEmpty("Fallout4MajorRecordFlags", "MajorRecordFlags"))
             .AddRule(ValidationFieldRule.DtoNonEmpty("SkyrimMajorRecordFlags", "MajorRecordFlags"))
             .AddRule(ValidationFieldRule.IgnoreDtoPrefix("LocalizedStrings", "LocalizedStrings is the DTO projection of translated Spriggit fields."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("Version2", "Version2 is common header metadata outside current repository read-back for this record set."))
-            .AddRule(ValidationFieldRule.IgnoreDto("Version2", "Version2 is common header metadata outside current repository read-back for this record set."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("VersionControl", "VersionControl is common header metadata outside current repository read-back for this record set."))
-            .AddRule(ValidationFieldRule.IgnoreDto("VersionControl", "VersionControl is common header metadata outside current repository read-back for this record set."));
+            .AddRule(ValidationFieldRule.Field("Version2", "Version2"))
+            .AddRule(ValidationFieldRule.Field("VersionControl", "VersionControl"));
 
         for (var componentIndex = 0; componentIndex <= 5; componentIndex++)
         {
@@ -175,7 +172,7 @@ public static class StaticValidationSpecs
                 .AddRule(ValidationFieldRule.IgnoreSpriggit(componentPath + ".MutagenObjectType", "Component type metadata is represented by typed child projections."));
         }
 
-        spec.AddRule(ValidationFieldRule.IgnoreSpriggit("Components.Count", "Components are projected into typed keyword and REFL payload DTO children."));
+        spec.AddRule(ValidationFieldRule.IgnoreSpriggit("Components.Count", "Components are projected into typed keyword and reflection DTO children."));
 
         if (withObjectBounds)
         {

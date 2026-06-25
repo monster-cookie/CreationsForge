@@ -15,7 +15,16 @@ public class StarfieldClassSpriggitDataValidationTests : SpriggitDataValidationT
     [Trait("SpriggitFile", "Classes/Citizen - 01326B_Starfield.esm.yaml")]
     public void Starfield_CLAS_ShouldMatchSpriggitSample_Citizen()
     {
-        AssertClassSpec(ClassValidationSpecs.Starfield_Citizen());
+        var spec = ClassValidationSpecs.Starfield_Citizen();
+        var dto = Helpers.GetDTO<ClassDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -26,7 +35,16 @@ public class StarfieldClassSpriggitDataValidationTests : SpriggitDataValidationT
     [Trait("SpriggitFile", "Classes/CourserClass - 20F487_Starfield.esm.yaml")]
     public void Starfield_CLAS_ShouldMatchSpriggitSample_CourserClass()
     {
-        AssertClassSpec(ClassValidationSpecs.Starfield_CourserClass());
+        var spec = ClassValidationSpecs.Starfield_CourserClass();
+        var dto = Helpers.GetDTO<ClassDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -37,11 +55,7 @@ public class StarfieldClassSpriggitDataValidationTests : SpriggitDataValidationT
     [Trait("SpriggitFile", "Classes/CrimsonFleetClass - 010B2F_Starfield.esm.yaml")]
     public void Starfield_CLAS_ShouldMatchSpriggitSample_CrimsonFleetClass()
     {
-        AssertClassSpec(ClassValidationSpecs.Starfield_CrimsonFleetClass());
-    }
-
-    private void AssertClassSpec(ValidationSpec spec)
-    {
+        var spec = ClassValidationSpecs.Starfield_CrimsonFleetClass();
         var dto = Helpers.GetDTO<ClassDTO>(spec.Game, spec.RecordType, spec.FormKey);
 
         var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);

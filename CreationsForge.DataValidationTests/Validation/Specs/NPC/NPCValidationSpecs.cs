@@ -14,6 +14,16 @@ public static class NPCValidationSpecs
             [".Data"] = ".DataInt"
         };
 
+    private static readonly IReadOnlyDictionary<string, string> NoPathReplacements =
+        new Dictionary<string, string>(StringComparer.Ordinal);
+
+    private static readonly IReadOnlyDictionary<string, string> ItemPathReplacements =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [".Item.Item"] = ".Item",
+            [".Item.Count"] = ".Count"
+        };
+
     public static ValidationSpec Starfield_CF_AludraTahan()
     {
         return StarfieldNPC("CF_AludraTahan", "01539F:Starfield.esm").Build();
@@ -149,20 +159,35 @@ public static class NPCValidationSpecs
             .AddRule(ValidationFieldRule.OptionalField("HeightMin", "HeightMin", ValidationValueNormalizer.DecimalNumber))
             .AddRule(ValidationFieldRule.OptionalField("HeightMax", "HeightMax", ValidationValueNormalizer.DecimalNumber))
             .AddRule(ValidationFieldRule.OptionalField("SkinToneIndex", "SkinToneIndex"))
+            .AddRule(ValidationFieldRule.OptionalField("Skin", "Skin"))
             .AddRule(ValidationFieldRule.OptionalField("Pronoun", "Pronoun"))
             .AddRule(ValidationFieldRule.OptionalField("Voice", "VoiceFormKey"))
             .AddRule(ValidationFieldRule.OptionalField("Race", "RaceFormKey"))
+            .AddRule(ValidationFieldRule.OptionalField("AttackRace", "AttackRace"))
             .AddRule(ValidationFieldRule.OptionalField("CombatOverridePackageList", "CombatOverridePackageListFormKey"))
             .AddRule(ValidationFieldRule.OptionalField("CombatStyle", "CombatStyleFormKey"))
             .AddRule(ValidationFieldRule.OptionalField("DefaultPackageList", "DefaultPackageListFormKey"))
             .AddRule(ValidationFieldRule.OptionalField("CrimeFaction", "CrimeFactionFormKey"))
+            .AddRule(ValidationFieldRule.OptionalField("Class", "Class"))
+            .AddRule(ValidationFieldRule.OptionalField("DeathItem", "DeathItem"))
+            .AddRule(ValidationFieldRule.OptionalField("DefaultOutfit", "DefaultOutfit"))
+            .AddRule(ValidationFieldRule.OptionalField("SleepingOutfit", "SleepingOutfit"))
+            .AddRule(ValidationFieldRule.OptionalField("WornArmor", "WornArmor"))
+            .AddRule(ValidationFieldRule.OptionalField("PowerArmorStand", "PowerArmorStand"))
+            .AddRule(ValidationFieldRule.OptionalField("SpaceOutfit", "SpaceOutfit"))
+            .AddRule(ValidationFieldRule.OptionalField("HeadTexture", "HeadTexture"))
+            .AddRule(ValidationFieldRule.OptionalField("Template", "Template"))
+            .AddRule(ValidationFieldRule.OptionalField("DefaultTemplate", "DefaultTemplate"))
             .AddRule(ValidationFieldRule.FormKeyList("Keywords", "Keywords", "Keyword"))
+            .AddRule(ValidationFieldRule.FormKeyList("Packages", "Packages", string.Empty))
+            .AddRule(ValidationFieldRule.FormKeyList("ForcedLocations", "ForcedLocations", string.Empty))
+            .AddRule(ValidationFieldRule.FormKeyList("HeadParts", "HeadParts", string.Empty))
+            .AddRule(ValidationFieldRule.FormKeyList("ActorEffect", "ActorEffects", string.Empty))
             .AddRule(ValidationFieldRule.SoundSlot("Sound.Start", "Sound", "Start"))
             .AddRule(ValidationFieldRule.SoundSlot("Sound.MutagenObjectType", "Sound", "MutagenObjectType"))
             .AddRule(ValidationFieldRule.SoundSlot("Sound.InheritsSoundsFrom", "Sound", "InheritsSoundsFrom"))
             .AddRule(ValidationFieldRule.PathPrefix("VirtualMachineAdapter.Scripts", "ScriptingAdapters", ScriptingAdapterPathReplacements))
-            .AddRules(GetNPCStructuredValueRules())
-            .AddRules(GetUnmodeledNPCSpriggitIgnores())
+            .AddRules(GetNPCTypedRules(game))
             .AddRule(ValidationFieldRule.IgnoreDto("DispositionBase", "NPC DTO stores a default value when no Spriggit disposition field is present."))
             .AddRule(ValidationFieldRule.IgnoreDto("Aggression", "NPC DTO stores a default value when no Spriggit AI data field is present."))
             .AddRule(ValidationFieldRule.IgnoreDto("Confidence", "NPC DTO stores a default value when no Spriggit AI data field is present."))
@@ -176,83 +201,131 @@ public static class NPCValidationSpecs
             .AddRule(ValidationFieldRule.IgnoreDtoPrefix("LocalizedStrings", "LocalizedStrings is the DTO projection of translated Spriggit fields."));
     }
 
-    private static IEnumerable<ValidationFieldRule> GetUnmodeledNPCSpriggitIgnores()
+    private static IEnumerable<ValidationFieldRule> GetNPCTypedRules(SupportedGame game)
     {
-        var reason = "The current NPC DTO persists the shared comparison surface, not the full actor appearance, inventory, package, skill, or template model.";
-        var prefixes = new[]
+        yield return ValidationFieldRule.OptionalField("IsCompressed", "IsCompressed");
+        yield return ValidationFieldRule.OptionalField("ObjectBounds.First", "ObjectBoundsFirst");
+        yield return ValidationFieldRule.OptionalField("ObjectBounds.Second", "ObjectBoundsSecond");
+        yield return game == SupportedGame.Starfield
+            ? ValidationFieldRule.ScalarList("Flags", "Flags", ValidationValueNormalizer.MajorFlagList)
+            : ValidationFieldRule.ScalarList("Flags", "Flags");
+        yield return ValidationFieldRule.ScalarList("MajorFlags", "MajorFlags", ValidationValueNormalizer.MajorFlagList);
+        var gameMajorRecordFlags = game switch
         {
-            "ActorEffect",
-            "AttackRace",
-            "CalculatedActionPoints",
-            "CalculatedHealth",
-            "Class",
-            "Configuration",
-            "DeathItem",
-            "DefaultOutfit",
-            "EyebrowColor",
-            "EyeColor",
-            "FaceDialPositions",
-            "FaceMorphs",
-            "FaceTintingLayers",
-            "FacialHairColor",
-            "Factions",
-            "Flags",
-            "ForcedLocations",
-            "HairColor",
-            "Height",
-            "IsCompressed",
-            "Items",
-            "Level",
-            "MajorFlags",
-            "MorphBlends",
-            "Morphs",
-            "NAM5",
-            "ObjectBounds",
-            "Packages",
-            "Perks",
-            "PlayerSkills",
-            "PowerArmorStand",
-            "Properties",
-            "Skin",
-            "SoundLevel",
-            "StarfieldMajorRecordFlags",
-            "Fallout4MajorRecordFlags",
-            "SkyrimMajorRecordFlags",
-            "TextureLighting",
-            "Unknown",
-            "Unused",
-            "UseTemplateActors",
-            "Weight",
-            "XpValueOffset"
+            SupportedGame.Fallout4 => "Fallout4MajorRecordFlags",
+            SupportedGame.Skyrim => "SkyrimMajorRecordFlags",
+            _ => "StarfieldMajorRecordFlags"
         };
+        yield return ValidationFieldRule.ScalarList(gameMajorRecordFlags, "MajorRecordFlags", ValidationValueNormalizer.MajorFlagList);
 
-        foreach (var prefix in prefixes)
+        yield return ValidationFieldRule.PathPrefix("Level", "Level", NoPathReplacements, ValidationValueNormalizer.DecimalNumber);
+        yield return ValidationFieldRule.PathPrefix("Configuration", "Configuration", NoPathReplacements, ValidationValueNormalizer.DecimalNumber);
+        if (game == SupportedGame.Skyrim)
         {
-            yield return ValidationFieldRule.IgnoreSpriggitPrefix(prefix, reason);
+            yield return ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                "Configuration.TemplateFlags",
+                "Configuration.TemplateFlags.Count",
+                "1",
+                "Mutagen exposes the default zero template flag when Spriggit omits template flags.");
+            yield return ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                "Configuration.TemplateFlags",
+                "Configuration.TemplateFlags[0]",
+                "0",
+                "Mutagen exposes the default zero template flag when Spriggit omits template flags.");
         }
-    }
 
-    private static IEnumerable<ValidationFieldRule> GetNPCStructuredValueRules()
-    {
-        var paths = new[]
+        yield return ValidationFieldRule.PathPrefix("TemplateActors", "TemplateActors", NoPathReplacements);
+        yield return ValidationFieldRule.OptionalField("UseTemplateActors", "UseTemplateActors");
+        if (game == SupportedGame.Fallout4)
+        {
+            yield return ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                "UseTemplateActors",
+                "UseTemplateActors",
+                "0",
+                "Fallout 4 Mutagen exposes default template-actor flags when Spriggit omits them.");
+        }
+
+        yield return ValidationFieldRule.OptionalField("CalculatedHealth", "CalculatedHealth");
+        yield return ValidationFieldRule.OptionalField("CalculatedActionPoints", "CalculatedActionPoints");
+        yield return ValidationFieldRule.OptionalField("XpValueOffset", "XpValueOffset");
+        if (game == SupportedGame.Fallout4)
+        {
+            yield return ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                "XpValueOffset",
+                "XpValueOffset",
+                "0",
+                "Fallout 4 Mutagen exposes the default experience offset when Spriggit omits it.");
+        }
+
+        yield return ValidationFieldRule.OptionalField("Unknown", "Unknown");
+        yield return ValidationFieldRule.OptionalField("Unused", "Unused");
+        if (game == SupportedGame.Fallout4)
+        {
+            yield return ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
+                "Unused",
+                "Unused",
+                "0",
+                "Fallout 4 Mutagen exposes the default unused value when Spriggit omits it.");
+        }
+
+        yield return ValidationFieldRule.OptionalField("NAM5", "NAM5", ValidationValueNormalizer.HexInteger);
+        yield return ValidationFieldRule.OptionalField("Height", "Height", ValidationValueNormalizer.DecimalNumber);
+        yield return ValidationFieldRule.PathPrefix("Weight", "Weight", NoPathReplacements, ValidationValueNormalizer.DecimalNumber);
+        yield return ValidationFieldRule.OptionalField("SoundLevel", "SoundLevel");
+        yield return ValidationFieldRule.OptionalField("TextureLighting", "TextureLighting", ValidationValueNormalizer.Color);
+        yield return ValidationFieldRule.OptionalField("HairColor", "HairColor");
+        yield return ValidationFieldRule.OptionalField("FacialHairColor", "FacialHairColor");
+        yield return ValidationFieldRule.OptionalField("EyebrowColor", "EyebrowColor");
+        yield return ValidationFieldRule.OptionalField("EyeColor", "EyeColor");
+        yield return ValidationFieldRule.PathPrefix("FaceMorph", "FaceMorph", NoPathReplacements, ValidationValueNormalizer.DecimalNumber);
+        yield return ValidationFieldRule.PathPrefix("FaceParts", "FaceParts", NoPathReplacements);
+        yield return ValidationFieldRule.PathPrefix("Factions", "Factions", NoPathReplacements);
+        yield return ValidationFieldRule.PathPrefix("Properties", "Properties", NoPathReplacements);
+        yield return ValidationFieldRule.CanonicalFormKeyCountList("Items", "Items", ItemPathReplacements);
+        yield return ValidationFieldRule.PathPrefix("Perks", "Perks", NoPathReplacements);
+        yield return ValidationFieldRule.PathPrefix("Morphs", "Morphs", NoPathReplacements, ValidationValueNormalizer.DecimalNumber);
+        yield return ValidationFieldRule.PathPrefix("FaceDialPositions", "FaceDialPositions", NoPathReplacements, ValidationValueNormalizer.DecimalNumber);
+        if (game == SupportedGame.Starfield)
+        {
+            yield return ValidationFieldRule.PathPrefix("FaceMorphs", "FaceMorphGroups", NoPathReplacements, ValidationValueNormalizer.DecimalNumber);
+            yield return ValidationFieldRule.IgnoreDto("FaceMorphs.Count", "Starfield FaceMorphs are projected through FaceMorphGroups for repository read-back.");
+            for (var faceMorphIndex = 0; faceMorphIndex < 64; faceMorphIndex++)
+            {
+                for (var morphGroupIndex = 0; morphGroupIndex < 16; morphGroupIndex++)
+                {
+                    var path = "FaceMorphGroups[" + faceMorphIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "].MorphGroups[" + morphGroupIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "].FaceMorphIndex";
+                    yield return ValidationFieldRule.IgnoreDto(path, "FaceMorphIndex is DTO collection metadata for repository read-back.");
+                }
+            }
+        }
+        else
+        {
+            yield return ValidationFieldRule.PathPrefix("FaceMorphs", "FaceMorphs", NoPathReplacements, ValidationValueNormalizer.DecimalNumber);
+        }
+
+        yield return ValidationFieldRule.PathPrefix("MorphBlends", "MorphBlends", NoPathReplacements, ValidationValueNormalizer.FloatNumber);
+        yield return ValidationFieldRule.PathPrefix("Tints", "Tints", NoPathReplacements, ValidationValueNormalizer.ColorOrDecimalNumber);
+        yield return ValidationFieldRule.PathPrefix("TintLayers", "TintLayers", NoPathReplacements, ValidationValueNormalizer.ColorOrDecimalNumber);
+        yield return ValidationFieldRule.PathPrefix("FaceTintingLayers", "FaceTintingLayers", NoPathReplacements, ValidationValueNormalizer.ColorOrDecimalNumber);
+        if (game == SupportedGame.Fallout4)
+        {
+            for (var index = 0; index < 64; index++)
+            {
+                var path = "FaceTintingLayers[" + index.ToString(System.Globalization.CultureInfo.InvariantCulture) + "].FaceTintingLayerIndex";
+                yield return ValidationFieldRule.IgnoreDto(path, "FaceTintingLayerIndex is DTO collection metadata for repository read-back.");
+            }
+        }
+
+        yield return ValidationFieldRule.OptionalField("PlayerSkills.GearedUpWeapons", "PlayerSkills.GearedUpWeapons", ValidationValueNormalizer.DecimalNumber);
+        yield return ValidationFieldRule.PathPrefix("PlayerSkills", "PlayerSkills", NoPathReplacements, ValidationValueNormalizer.DecimalNumber);
+
+        var diagnosticAggregatePaths = new[]
         {
             "BodyMorphRegionValues",
-            "DefaultTemplate",
-            "FaceMorph",
-            "FaceParts",
-            "HeadParts",
-            "HeadTexture",
-            "ObjectTemplates",
-            "SleepingOutfit",
-            "SpaceOutfit",
-            "Template",
-            "TemplateActors",
-            "TintLayers",
-            "Tints",
-            "WornArmor"
+            "ObjectTemplates"
         };
 
-        foreach (var path in paths)
+        foreach (var path in diagnosticAggregatePaths)
         {
             yield return ValidationFieldRule.DtoNonEmpty(path, path);
         }

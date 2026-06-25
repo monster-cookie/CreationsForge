@@ -54,6 +54,10 @@ public static class ValidationSpecValidator
                     RequireSpriggitPath(rule, ruleName, diagnostics);
                     RequireDtoPath(rule, ruleName, diagnostics);
                     break;
+                case ValidationRuleKind.CanonicalFormKeyCountList:
+                    RequireSpriggitPath(rule, ruleName, diagnostics);
+                    RequireDtoPath(rule, ruleName, diagnostics);
+                    break;
                 case ValidationRuleKind.FormKeyList:
                     RequireSpriggitPath(rule, ruleName, diagnostics);
                     RequireDtoPath(rule, ruleName, diagnostics);
@@ -72,10 +76,6 @@ public static class ValidationSpecValidator
                     RequireDtoPath(rule, ruleName, diagnostics);
                     RequireExpectedValue(rule, ruleName, "DTO sound field name", diagnostics);
                     break;
-                case ValidationRuleKind.RawPayloadSlot:
-                    RequireSpriggitPath(rule, ruleName, diagnostics);
-                    RequireDtoPath(rule, ruleName, diagnostics);
-                    break;
                 case ValidationRuleKind.DtoExpectedValue:
                     RequireDtoPath(rule, ruleName, diagnostics);
                     RequireExpectedValue(rule, ruleName, "expected value", diagnostics);
@@ -93,10 +93,6 @@ public static class ValidationSpecValidator
                     RequireSpriggitPath(rule, ruleName, diagnostics);
                     break;
                 case ValidationRuleKind.IgnoreSpriggit:
-                    RequireSpriggitPath(rule, ruleName, diagnostics);
-                    RequireReason(rule, ruleName, diagnostics);
-                    break;
-                case ValidationRuleKind.IgnoreSpriggitPrefix:
                     RequireSpriggitPath(rule, ruleName, diagnostics);
                     RequireReason(rule, ruleName, diagnostics);
                     break;

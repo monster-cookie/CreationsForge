@@ -21,6 +21,10 @@ public class DataValidationAssertionStyleTests
     private static IEnumerable<string> FindViolations(string path)
     {
         var lineNumber = 0;
+        var insidePrivateMethod = false;
+        var privateMethodOpened = false;
+        var privateMethodBraceDepth = 0;
+
         foreach (var line in File.ReadLines(path))
         {
             lineNumber++;
@@ -28,7 +32,50 @@ public class DataValidationAssertionStyleTests
             {
                 yield return Path.GetRelativePath(FindRepositoryRoot(), path) + ":" + lineNumber + ": " + line.Trim();
             }
+
+            if (!insidePrivateMethod && IsPrivateMethodDeclaration(line))
+            {
+                insidePrivateMethod = true;
+                privateMethodOpened = false;
+                privateMethodBraceDepth = 0;
+            }
+
+            if (insidePrivateMethod && ContainsPrivateAssertionPattern(line))
+            {
+                yield return Path.GetRelativePath(FindRepositoryRoot(), path) + ":" + lineNumber + ": " + line.Trim();
+            }
+
+            if (!insidePrivateMethod)
+            {
+                continue;
+            }
+
+            privateMethodBraceDepth += CountBraceDelta(line);
+            privateMethodOpened = privateMethodOpened || line.Contains('{', StringComparison.Ordinal);
+            if (privateMethodOpened && privateMethodBraceDepth <= 0)
+            {
+                insidePrivateMethod = false;
+            }
         }
+    }
+
+    private static bool IsPrivateMethodDeclaration(string line)
+    {
+        var trimmedLine = line.TrimStart();
+        return trimmedLine.StartsWith("private ", StringComparison.Ordinal) &&
+               trimmedLine.Contains('(', StringComparison.Ordinal) &&
+               !trimmedLine.EndsWith(';');
+    }
+
+    private static bool ContainsPrivateAssertionPattern(string line)
+    {
+        return line.Contains(".Should", StringComparison.Ordinal) ||
+               line.Contains("Assert.", StringComparison.Ordinal);
+    }
+
+    private static int CountBraceDelta(string line)
+    {
+        return line.Count(character => character == '{') - line.Count(character => character == '}');
     }
 
     private static bool ContainsForbiddenPattern(string line)

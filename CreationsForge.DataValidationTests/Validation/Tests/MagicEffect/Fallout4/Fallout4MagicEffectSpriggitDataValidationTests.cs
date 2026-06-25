@@ -15,7 +15,16 @@ public class Fallout4MagicEffectSpriggitDataValidationTests : SpriggitDataValida
     [Trait("SpriggitFile", "MagicEffects/CritCryoFreezeEffect - 247A6C_Fallout4.esm.yaml")]
     public void Fallout4_MGEF_ShouldMatchSpriggitSample_CritCryoFreezeEffect()
     {
-        AssertMagicEffect(MagicEffectValidationSpecs.Fallout4_CritCryoFreezeEffect());
+        var spec = MagicEffectValidationSpecs.Fallout4_CritCryoFreezeEffect();
+        var dto = Helpers.GetDTO<MagicEffectDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -26,7 +35,16 @@ public class Fallout4MagicEffectSpriggitDataValidationTests : SpriggitDataValida
     [Trait("SpriggitFile", "MagicEffects/CryoFreezeEffect01 - 18C354_Fallout4.esm.yaml")]
     public void Fallout4_MGEF_ShouldMatchSpriggitSample_CryoFreezeEffect01()
     {
-        AssertMagicEffect(MagicEffectValidationSpecs.Fallout4_CryoFreezeEffect01());
+        var spec = MagicEffectValidationSpecs.Fallout4_CryoFreezeEffect01();
+        var dto = Helpers.GetDTO<MagicEffectDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -37,7 +55,16 @@ public class Fallout4MagicEffectSpriggitDataValidationTests : SpriggitDataValida
     [Trait("SpriggitFile", "MagicEffects/CryoFreezeEffect02 - 18C356_Fallout4.esm.yaml")]
     public void Fallout4_MGEF_ShouldMatchSpriggitSample_CryoFreezeEffect02()
     {
-        AssertMagicEffect(MagicEffectValidationSpecs.Fallout4_CryoFreezeEffect02());
+        var spec = MagicEffectValidationSpecs.Fallout4_CryoFreezeEffect02();
+        var dto = Helpers.GetDTO<MagicEffectDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -48,7 +75,16 @@ public class Fallout4MagicEffectSpriggitDataValidationTests : SpriggitDataValida
     [Trait("SpriggitFile", "MagicEffects/PerkPainTrainKnockbackEffect - 171781_Fallout4.esm.yaml")]
     public void Fallout4_MGEF_ShouldMatchSpriggitSample_PerkPainTrainKnockbackEffect()
     {
-        AssertMagicEffect(MagicEffectValidationSpecs.Fallout4_PerkPainTrainKnockbackEffect());
+        var spec = MagicEffectValidationSpecs.Fallout4_PerkPainTrainKnockbackEffect();
+        var dto = Helpers.GetDTO<MagicEffectDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -59,11 +95,7 @@ public class Fallout4MagicEffectSpriggitDataValidationTests : SpriggitDataValida
     [Trait("SpriggitFile", "MagicEffects/DN102_LabDemo3ParalyzeEffect - 0AE04F_Fallout4.esm.yaml")]
     public void Fallout4_MGEF_ShouldMatchSpriggitSample_DN102_LabDemo3ParalyzeEffect()
     {
-        AssertMagicEffect(MagicEffectValidationSpecs.Fallout4_DN102_LabDemo3ParalyzeEffect());
-    }
-
-    private void AssertMagicEffect(ValidationSpec spec)
-    {
+        var spec = MagicEffectValidationSpecs.Fallout4_DN102_LabDemo3ParalyzeEffect();
         var dto = Helpers.GetDTO<MagicEffectDTO>(spec.Game, spec.RecordType, spec.FormKey);
 
         var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);

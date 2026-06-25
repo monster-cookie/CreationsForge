@@ -6,6 +6,8 @@ using NPoco;
 using ScriptingAdapterModel = CreationsForge.Core.Models.Database.ScriptingAdapter;
 using ScriptingAdapterPropertyListItemModel = CreationsForge.Core.Models.Database.ScriptingAdapterPropertyListItem;
 using ScriptingAdapterPropertyModel = CreationsForge.Core.Models.Database.ScriptingAdapterProperty;
+using ScriptingAdapterPropertyStructMemberModel = CreationsForge.Core.Models.Database.ScriptingAdapterPropertyStructMember;
+using ScriptingAdapterPropertyStructModel = CreationsForge.Core.Models.Database.ScriptingAdapterPropertyStruct;
 
 namespace CreationsForge.Core.Repositories;
 
@@ -88,13 +90,60 @@ public class ScriptingAdapterRepository : IScriptingAdapterRepository
                 FormKeyModKeyFileName = formKey.ModKey.FileName,
                 FormKeyId = formKey.Id
             });
+        var propertyStructs = Database.Fetch<ScriptingAdapterPropertyStructModel>(
+            """
+            SELECT *
+            FROM ScriptingAdapterPropertyStructs
+            WHERE Game = @Game
+              AND RecordType = @RecordType
+              AND FormKey_ModKey_Name = @FormKeyModKeyName
+              AND FormKey_ModKey_Type = @FormKeyModKeyType
+              AND FormKey_ModKey_FileName = @FormKeyModKeyFileName
+              AND FormKey_ID = @FormKeyId
+            ORDER BY ModKey_FileName COLLATE NOCASE, ScriptingAdapter_Name COLLATE NOCASE, Property_Index, Struct_Index;
+            """,
+            new
+            {
+                Game = game.ToString(),
+                RecordType = recordType,
+                FormKeyModKeyName = formKey.ModKey.Name,
+                FormKeyModKeyType = formKey.ModKey.Type,
+                FormKeyModKeyFileName = formKey.ModKey.FileName,
+                FormKeyId = formKey.Id
+            });
+        var structMembers = Database.Fetch<ScriptingAdapterPropertyStructMemberModel>(
+            """
+            SELECT *
+            FROM ScriptingAdapterPropertyStructMembers
+            WHERE Game = @Game
+              AND RecordType = @RecordType
+              AND FormKey_ModKey_Name = @FormKeyModKeyName
+              AND FormKey_ModKey_Type = @FormKeyModKeyType
+              AND FormKey_ModKey_FileName = @FormKeyModKeyFileName
+              AND FormKey_ID = @FormKeyId
+            ORDER BY ModKey_FileName COLLATE NOCASE, ScriptingAdapter_Name COLLATE NOCASE, Property_Index, Struct_Index, Member_Index;
+            """,
+            new
+            {
+                Game = game.ToString(),
+                RecordType = recordType,
+                FormKeyModKeyName = formKey.ModKey.Name,
+                FormKeyModKeyType = formKey.ModKey.Type,
+                FormKeyModKeyFileName = formKey.ModKey.FileName,
+                FormKeyId = formKey.Id
+            });
 
         var dtos = adapters.Select(adapter => ToDTO(game, adapter)).ToList();
         foreach (var dto in dtos)
         {
             dto.Properties = properties
                 .Where(property => IsSameAdapter(dto, property))
-                .Select(property => ToDTO(game, property, listItems.Where(listItem => IsSameProperty(property, listItem)).ToList()))
+                .Select(property => ToDTO(
+                    game,
+                    property,
+                    listItems.Where(listItem => IsSameProperty(property, listItem)).ToList(),
+                    propertyStructs.Where(propertyStruct => IsSameProperty(property, propertyStruct)).ToList(),
+                    structMembers.Where(member => IsSameProperty(property, member)).ToList()))
                 .ToList();
         }
 
@@ -182,7 +231,9 @@ public class ScriptingAdapterRepository : IScriptingAdapterRepository
     private static ScriptingAdapterPropertyDTO ToDTO(
         SupportedGame game,
         ScriptingAdapterPropertyModel property,
-        IReadOnlyList<ScriptingAdapterPropertyListItemModel> listItems)
+        IReadOnlyList<ScriptingAdapterPropertyListItemModel> listItems,
+        IReadOnlyList<ScriptingAdapterPropertyStructModel> propertyStructs,
+        IReadOnlyList<ScriptingAdapterPropertyStructMemberModel> structMembers)
     {
         return new ScriptingAdapterPropertyDTO
         {
@@ -216,7 +267,11 @@ public class ScriptingAdapterRepository : IScriptingAdapterRepository
             ObjectAlias = property.ObjectAlias,
             ObjectUnused = property.ObjectUnused.HasValue ? (ushort)property.ObjectUnused.Value : null,
             ImportedAtUTC = property.ImportedAtUTC,
-            ListItems = listItems.Select(listItem => ToDTO(game, listItem)).ToList()
+            ListItems = listItems.Select(listItem => ToDTO(game, listItem)).ToList(),
+            Structs = propertyStructs.Select(propertyStruct => ToDTO(
+                game,
+                propertyStruct,
+                structMembers.Where(member => IsSameStruct(propertyStruct, member)).ToList())).ToList()
         };
     }
 
@@ -245,6 +300,7 @@ public class ScriptingAdapterRepository : IScriptingAdapterRepository
             ScriptingAdapterName = listItem.ScriptingAdapterName,
             PropertyIndex = listItem.PropertyIndex,
             ListItemIndex = listItem.ListItemIndex,
+            Name = listItem.Name,
             MutagenObjectType = listItem.MutagenObjectType,
             DataBool = listItem.DataBool,
             DataInt = listItem.DataInt,
@@ -254,6 +310,80 @@ public class ScriptingAdapterRepository : IScriptingAdapterRepository
             ObjectAlias = listItem.ObjectAlias,
             ObjectUnused = listItem.ObjectUnused.HasValue ? (ushort)listItem.ObjectUnused.Value : null,
             ImportedAtUTC = listItem.ImportedAtUTC
+        };
+    }
+
+    private static ScriptingAdapterPropertyStructDTO ToDTO(
+        SupportedGame game,
+        ScriptingAdapterPropertyStructModel propertyStruct,
+        IReadOnlyList<ScriptingAdapterPropertyStructMemberModel> members)
+    {
+        return new ScriptingAdapterPropertyStructDTO
+        {
+            Game = game,
+            ModKey = new ModKeyDTO
+            {
+                Name = propertyStruct.ModKeyName,
+                Type = propertyStruct.ModKeyType,
+                FileName = propertyStruct.ModKeyFileName
+            },
+            RecordType = propertyStruct.RecordType,
+            FormKey = new FormKeyDTO
+            {
+                ModKey = new ModKeyDTO
+                {
+                    Name = propertyStruct.FormKeyModKeyName,
+                    Type = propertyStruct.FormKeyModKeyType,
+                    FileName = propertyStruct.FormKeyModKeyFileName
+                },
+                Id = (uint)propertyStruct.FormKeyId
+            },
+            ScriptingAdapterName = propertyStruct.ScriptingAdapterName,
+            PropertyIndex = propertyStruct.PropertyIndex,
+            StructIndex = propertyStruct.StructIndex,
+            ImportedAtUTC = propertyStruct.ImportedAtUTC,
+            Members = members.Select(member => ToDTO(game, member)).ToList()
+        };
+    }
+
+    private static ScriptingAdapterPropertyStructMemberDTO ToDTO(
+        SupportedGame game,
+        ScriptingAdapterPropertyStructMemberModel member)
+    {
+        return new ScriptingAdapterPropertyStructMemberDTO
+        {
+            Game = game,
+            ModKey = new ModKeyDTO
+            {
+                Name = member.ModKeyName,
+                Type = member.ModKeyType,
+                FileName = member.ModKeyFileName
+            },
+            RecordType = member.RecordType,
+            FormKey = new FormKeyDTO
+            {
+                ModKey = new ModKeyDTO
+                {
+                    Name = member.FormKeyModKeyName,
+                    Type = member.FormKeyModKeyType,
+                    FileName = member.FormKeyModKeyFileName
+                },
+                Id = (uint)member.FormKeyId
+            },
+            ScriptingAdapterName = member.ScriptingAdapterName,
+            PropertyIndex = member.PropertyIndex,
+            StructIndex = member.StructIndex,
+            MemberIndex = member.MemberIndex,
+            Name = member.Name,
+            MutagenObjectType = member.MutagenObjectType,
+            DataBool = member.DataBool,
+            DataInt = member.DataInt,
+            DataFloat = member.DataFloat,
+            DataString = member.DataString,
+            ObjectFormKey = CreateOptionalFormKey(member.ObjectModKeyName, member.ObjectModKeyType, member.ObjectModKeyFileName, member.ObjectFormKeyId),
+            ObjectAlias = member.ObjectAlias,
+            ObjectUnused = member.ObjectUnused.HasValue ? (ushort)member.ObjectUnused.Value : null,
+            ImportedAtUTC = member.ImportedAtUTC
         };
     }
 
@@ -291,5 +421,33 @@ public class ScriptingAdapterRepository : IScriptingAdapterRepository
             string.Equals(property.ModKeyFileName, listItem.ModKeyFileName, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(property.ScriptingAdapterName, listItem.ScriptingAdapterName, StringComparison.Ordinal) &&
             property.PropertyIndex == listItem.PropertyIndex;
+    }
+
+    private static bool IsSameProperty(ScriptingAdapterPropertyModel property, ScriptingAdapterPropertyStructModel propertyStruct)
+    {
+        return property.ModKeyType == propertyStruct.ModKeyType &&
+            string.Equals(property.ModKeyName, propertyStruct.ModKeyName, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(property.ModKeyFileName, propertyStruct.ModKeyFileName, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(property.ScriptingAdapterName, propertyStruct.ScriptingAdapterName, StringComparison.Ordinal) &&
+            property.PropertyIndex == propertyStruct.PropertyIndex;
+    }
+
+    private static bool IsSameProperty(ScriptingAdapterPropertyModel property, ScriptingAdapterPropertyStructMemberModel member)
+    {
+        return property.ModKeyType == member.ModKeyType &&
+            string.Equals(property.ModKeyName, member.ModKeyName, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(property.ModKeyFileName, member.ModKeyFileName, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(property.ScriptingAdapterName, member.ScriptingAdapterName, StringComparison.Ordinal) &&
+            property.PropertyIndex == member.PropertyIndex;
+    }
+
+    private static bool IsSameStruct(ScriptingAdapterPropertyStructModel propertyStruct, ScriptingAdapterPropertyStructMemberModel member)
+    {
+        return propertyStruct.ModKeyType == member.ModKeyType &&
+            string.Equals(propertyStruct.ModKeyName, member.ModKeyName, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(propertyStruct.ModKeyFileName, member.ModKeyFileName, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(propertyStruct.ScriptingAdapterName, member.ScriptingAdapterName, StringComparison.Ordinal) &&
+            propertyStruct.PropertyIndex == member.PropertyIndex &&
+            propertyStruct.StructIndex == member.StructIndex;
     }
 }

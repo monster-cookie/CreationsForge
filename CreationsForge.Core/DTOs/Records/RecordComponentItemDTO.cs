@@ -21,6 +21,11 @@ public class RecordComponentItemDTO
 
     public int ItemIndex { get; set; }
 
+    /// <summary>
+    /// Gets or sets the display filter form key for component item entries, or <c>null</c> when the item omits it.
+    /// </summary>
+    public FormKeyDTO? DisplayFilter { get; set; }
+
     public double? Unknown1 { get; set; }
 
     public double? Unknown2 { get; set; }

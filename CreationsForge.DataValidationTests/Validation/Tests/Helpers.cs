@@ -160,6 +160,7 @@ public static class Helpers
         AddSpriggitFieldAlias(fields, "LodLevel2", "Lod.Level2");
         AddSpriggitFieldAlias(fields, "LodLevel3", "Lod.Level3");
         AddSpriggitScalarListAliases(fields, "Flags");
+        AddSpriggitMajorFlagAliases(fields, dto.Game);
         AddSpriggitScalarListAliases(fields, "Model.Flags");
         AddSpriggitScalarListAliases(fields, "DNAMDataTypeState");
         AddSpriggitKeywordAliases(fields);
@@ -168,7 +169,6 @@ public static class Helpers
         AddSpriggitMiscResourceAliases(fields);
         AddSpriggitDestructibleAliases(fields);
         AddSpriggitModelMaterialSwapAliases(fields);
-        AddSpriggitRawPayloadAliases(fields);
         AddSpriggitSoundAliases(fields);
         AddSpriggitScriptingAdapterAliases(fields);
         AddSpriggitScriptFragmentAliases(fields);
@@ -413,15 +413,6 @@ public static class Helpers
         }
     }
 
-    private static void AddSpriggitTranslatedStringAliases(IDictionary<string, string> fields, string dtoRootFieldName, string spriggitRootFieldName)
-    {
-        foreach (var field in fields.Where(field => field.Key.StartsWith(dtoRootFieldName + ".", StringComparison.OrdinalIgnoreCase) ||
-                                                    field.Key.StartsWith(dtoRootFieldName + "[", StringComparison.OrdinalIgnoreCase)).ToList())
-        {
-            fields[spriggitRootFieldName + field.Key[dtoRootFieldName.Length..]] = field.Value;
-        }
-    }
-
     private static void AddSpriggitScalarListAliases(IDictionary<string, string> fields, string fieldName)
     {
         if (!fields.TryGetValue(fieldName, out var value) || string.IsNullOrWhiteSpace(value))
@@ -597,102 +588,6 @@ public static class Helpers
         }
     }
 
-    private static void AddSpriggitRawPayloadAliases(IDictionary<string, string> fields)
-    {
-        if (!fields.TryGetValue("RawPayloads.Count", out var countValue) ||
-            !int.TryParse(countValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
-        {
-            return;
-        }
-
-        for (var index = 0; index < count; index++)
-        {
-            var payloadPath = "RawPayloads[" + index.ToString(CultureInfo.InvariantCulture) + "]";
-            if (!fields.TryGetValue(payloadPath + ".PayloadValue", out var payloadValue))
-            {
-                continue;
-            }
-
-            var spriggitFieldName = GetSpriggitRawPayloadFieldName(fields, payloadPath);
-            if (!string.IsNullOrWhiteSpace(spriggitFieldName))
-            {
-                fields[spriggitFieldName] = FormatSpriggitHexPayload(payloadValue);
-            }
-        }
-    }
-
-    private static string FormatSpriggitHexPayload(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value) || value.StartsWith("0x", StringComparison.OrdinalIgnoreCase) || !IsHexPayloadValue(value))
-        {
-            return value;
-        }
-
-        return "0x" + value;
-    }
-
-    private static bool IsHexPayloadValue(string value)
-    {
-        return value.Length % 2 == 0 &&
-               value.All(character =>
-                   character is >= '0' and <= '9' ||
-                   character is >= 'A' and <= 'F' ||
-                   character is >= 'a' and <= 'f');
-    }
-
-    private static string GetSpriggitRawPayloadFieldName(IDictionary<string, string> fields, string payloadPath)
-    {
-        if (fields.TryGetValue(payloadPath + ".SourcePath", out var sourcePath) &&
-            TryGetRawPayloadLeafField(sourcePath, out var sourceLeafField))
-        {
-            return sourceLeafField;
-        }
-
-        if (fields.TryGetValue(payloadPath + ".PayloadSlot", out var payloadSlot) &&
-            TryGetRawPayloadLeafField(payloadSlot, out var payloadLeafField))
-        {
-            return payloadLeafField;
-        }
-
-        return string.Empty;
-    }
-
-    private static string GetSpriggitRawPayloadFieldName(IReadOnlyDictionary<string, string> fields, string payloadPath)
-    {
-        if (fields.TryGetValue(payloadPath + ".SourcePath", out var sourcePath) &&
-            TryGetRawPayloadLeafField(sourcePath, out var sourceLeafField))
-        {
-            return sourceLeafField;
-        }
-
-        if (fields.TryGetValue(payloadPath + ".PayloadSlot", out var payloadSlot) &&
-            TryGetRawPayloadLeafField(payloadSlot, out var payloadLeafField))
-        {
-            return payloadLeafField;
-        }
-
-        return string.Empty;
-    }
-
-    private static bool HasSpriggitRawPayloadField(IReadOnlyDictionary<string, string> spriggitFields, string fieldName)
-    {
-        return spriggitFields.ContainsKey(fieldName) ||
-               spriggitFields.Keys.Any(field => field.StartsWith(fieldName + ".", StringComparison.OrdinalIgnoreCase)) ||
-               spriggitFields.Keys.Any(field =>
-                   field.EndsWith("." + fieldName, StringComparison.OrdinalIgnoreCase) &&
-                   TryGetIndexedPath(field, "Components", out _, out _));
-    }
-
-    private static bool TryGetRawPayloadLeafField(string path, out string fieldName)
-    {
-        var separatorIndex = path.LastIndexOf('.');
-        fieldName = separatorIndex < 0
-            ? path
-            : path[(separatorIndex + 1)..];
-
-        return fieldName is "REFL";
-    }
-
     private static void AddSpriggitScriptingAdapterAliases(IDictionary<string, string> fields)
     {
         if (!fields.TryGetValue("ScriptingAdapters.Count", out var countValue) ||
@@ -712,6 +607,51 @@ public static class Helpers
         {
             AddSpriggitScriptingAdapterAlias(fields, index);
         }
+    }
+
+    /// <summary>
+    /// Adds Spriggit list-shaped aliases for typed major flag fields that preserve the same flag data.
+    /// </summary>
+    private static void AddSpriggitMajorFlagAliases(IDictionary<string, string> fields, SupportedGame game)
+    {
+        AddSpriggitScalarListAliases(fields, "MajorFlags");
+        if (!fields.TryGetValue("MajorRecordFlags", out var rawFlags) || IsZero(rawFlags))
+        {
+            return;
+        }
+
+        var gameFlagPath = game switch
+        {
+            SupportedGame.Starfield => "StarfieldMajorRecordFlags",
+            SupportedGame.Fallout4 => "Fallout4MajorRecordFlags",
+            SupportedGame.Skyrim => "SkyrimMajorRecordFlags",
+            _ => null
+        };
+        if (gameFlagPath == null)
+        {
+            return;
+        }
+
+        fields[gameFlagPath + ".Count"] = "1";
+        fields[gameFlagPath + "[0]"] = game == SupportedGame.Fallout4
+            ? "0x" + int.Parse(rawFlags, CultureInfo.InvariantCulture).ToString("X", CultureInfo.InvariantCulture)
+            : GetGameSpecificMajorFlagAlias(fields, game) ?? rawFlags;
+    }
+
+    /// <summary>
+    /// Gets a known game-specific major flag alias for a preserved generic major flag value.
+    /// </summary>
+    private static string? GetGameSpecificMajorFlagAlias(IDictionary<string, string> fields, SupportedGame game)
+    {
+        if (!fields.TryGetValue("MajorFlags", out var majorFlags))
+        {
+            return null;
+        }
+
+        return game == SupportedGame.Starfield &&
+               majorFlags.Split(", ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Contains("HasDistantLOD")
+            ? "VisibleWhenDistant"
+            : null;
     }
 
     private static void AddSpriggitScriptFragmentAliases(IDictionary<string, string> fields)
@@ -878,6 +818,16 @@ public static class Helpers
         AddSpriggitFieldAlias(fields, dtoPropertyPath + ".ObjectUnused", spriggitPropertyPath + ".Unused");
         AddSpriggitScriptingAdapterDataAlias(fields, dtoPropertyPath, spriggitPropertyPath);
         AddSpriggitFieldAlias(fields, dtoPropertyPath + ".ListItems.Count", spriggitPropertyPath + ".Count");
+        AddSpriggitFieldAlias(fields, dtoPropertyPath + ".Structs.Count", spriggitPropertyPath + ".Structs.Count");
+
+        if (fields.TryGetValue(dtoPropertyPath + ".Structs.Count", out var structCountValue) &&
+            int.TryParse(structCountValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var structCount))
+        {
+            for (var structIndex = 0; structIndex < structCount; structIndex++)
+            {
+                AddSpriggitScriptingAdapterStructAlias(fields, dtoPropertyPath, spriggitPropertyPath, structIndex);
+            }
+        }
 
         if (!fields.TryGetValue(dtoPropertyPath + ".ListItems.Count", out var listItemCountValue) ||
             !int.TryParse(listItemCountValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var listItemCount))
@@ -892,11 +842,45 @@ public static class Helpers
             var spriggitListItemPath = spriggitPropertyPath + "[" + listItemIndex.ToString(CultureInfo.InvariantCulture) + "]";
             var spriggitObjectListItemPath = spriggitPropertyPath + ".Objects[" + listItemIndex.ToString(CultureInfo.InvariantCulture) + "]";
             AddSpriggitFieldAlias(fields, dtoListItemPath + ".MutagenObjectType", spriggitListItemPath + ".MutagenObjectType");
+            AddSpriggitFieldAlias(fields, dtoListItemPath + ".Name", spriggitListItemPath + ".Name");
             AddSpriggitFieldAlias(fields, dtoListItemPath + ".ObjectFormKey", spriggitListItemPath + ".Object");
             AddSpriggitFieldAlias(fields, dtoListItemPath + ".MutagenObjectType", spriggitObjectListItemPath + ".MutagenObjectType");
+            AddSpriggitFieldAlias(fields, dtoListItemPath + ".Name", spriggitObjectListItemPath + ".Name");
             AddSpriggitFieldAlias(fields, dtoListItemPath + ".ObjectFormKey", spriggitObjectListItemPath + ".Object");
             AddSpriggitScriptingAdapterDataAlias(fields, dtoListItemPath, spriggitListItemPath);
             AddSpriggitScriptingAdapterDataAlias(fields, dtoListItemPath, spriggitObjectListItemPath);
+        }
+    }
+
+    /// <summary>
+    /// Projects typed VMAD script property struct DTO fields to the equivalent Spriggit struct paths.
+    /// </summary>
+    private static void AddSpriggitScriptingAdapterStructAlias(
+        IDictionary<string, string> fields,
+        string dtoPropertyPath,
+        string spriggitPropertyPath,
+        int structIndex)
+    {
+        var dtoStructPath = dtoPropertyPath + ".Structs[" + structIndex.ToString(CultureInfo.InvariantCulture) + "]";
+        var spriggitStructPath = spriggitPropertyPath + ".Structs[" + structIndex.ToString(CultureInfo.InvariantCulture) + "]";
+        AddSpriggitFieldAlias(fields, dtoStructPath + ".Members.Count", spriggitStructPath + ".Members.Count");
+
+        if (!fields.TryGetValue(dtoStructPath + ".Members.Count", out var memberCountValue) ||
+            !int.TryParse(memberCountValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var memberCount))
+        {
+            return;
+        }
+
+        for (var memberIndex = 0; memberIndex < memberCount; memberIndex++)
+        {
+            var dtoMemberPath = dtoStructPath + ".Members[" + memberIndex.ToString(CultureInfo.InvariantCulture) + "]";
+            var spriggitMemberPath = spriggitStructPath + ".Members[" + memberIndex.ToString(CultureInfo.InvariantCulture) + "]";
+            AddSpriggitFieldAlias(fields, dtoMemberPath + ".MutagenObjectType", spriggitMemberPath + ".MutagenObjectType");
+            AddSpriggitFieldAlias(fields, dtoMemberPath + ".Name", spriggitMemberPath + ".Name");
+            AddSpriggitFieldAlias(fields, dtoMemberPath + ".ObjectFormKey", spriggitMemberPath + ".Object");
+            AddSpriggitFieldAlias(fields, dtoMemberPath + ".ObjectAlias", spriggitMemberPath + ".Alias");
+            AddSpriggitFieldAlias(fields, dtoMemberPath + ".ObjectUnused", spriggitMemberPath + ".Unused");
+            AddSpriggitScriptingAdapterDataAlias(fields, dtoMemberPath, spriggitMemberPath);
         }
     }
 
@@ -992,11 +976,6 @@ public static class Helpers
             return true;
         }
 
-        if (IsEmptySpriggitVirtualMachineAdapterListItemName(fieldName, spriggitFields))
-        {
-            return true;
-        }
-
         if (IsSpriggitObjectListItemMutagenType(fieldName, spriggitFields, dtoFields, "Components"))
         {
             return true;
@@ -1007,12 +986,12 @@ public static class Helpers
             return true;
         }
 
-        if (IsSpriggitComponentRawPayloadBackedByDtoRawPayload(fieldName, spriggitFields, dtoFields))
+        if (IsSpriggitKeywordComponentFieldBackedByDtoScalar(fieldName, spriggitFields, dtoFields))
         {
             return true;
         }
 
-        if (IsSpriggitKeywordComponentFieldBackedByDtoScalar(fieldName, spriggitFields, dtoFields))
+        if (IsSpriggitReflectionFieldBackedByDtoReflection(fieldName, fieldValue, spriggitFields, dtoFields))
         {
             return true;
         }
@@ -1203,6 +1182,11 @@ public static class Helpers
             return true;
         }
 
+        if (IsDtoCollectionIndexFieldBackedByPathIndex(fieldName, fieldValue))
+        {
+            return true;
+        }
+
         if (IsDtoIndexedPropertyBackedBySpriggitScalarList(fieldName, spriggitFields, "Keywords", "Keyword"))
         {
             return true;
@@ -1214,6 +1198,11 @@ public static class Helpers
         }
 
         if (IsDtoKeywordBackedBySpriggitComponentKeyword(fieldName, fieldValue, spriggitFields, dtoFields))
+        {
+            return true;
+        }
+
+        if (IsDtoReflectionFieldBackedBySpriggitComponent(fieldName, fieldValue, spriggitFields, dtoFields))
         {
             return true;
         }
@@ -1294,11 +1283,6 @@ public static class Helpers
         }
 
         if (IsDtoActorValueInformationFieldBackedBySpriggitField(fieldName, fieldValue, spriggitFields))
-        {
-            return true;
-        }
-
-        if (IsDtoRawPayloadBackedBySpriggitField(fieldName, spriggitFields, dtoFields))
         {
             return true;
         }
@@ -1987,6 +1971,59 @@ public static class Helpers
                 fieldName.EndsWith(".ConditionTabIndex", StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>
+    /// Determines whether a DTO field stores only the collection index already encoded by its flattened path.
+    /// </summary>
+    /// <param name="fieldName">The flattened DTO field path being evaluated.</param>
+    /// <param name="fieldValue">The flattened DTO field value.</param>
+    /// <returns>
+    /// <c>true</c> when the field value repeats an indexed collection position used for deterministic persistence ordering.
+    /// </returns>
+    private static bool IsDtoCollectionIndexFieldBackedByPathIndex(string fieldName, string fieldValue)
+    {
+        if (!int.TryParse(fieldValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+        {
+            return false;
+        }
+
+        if (fieldName.EndsWith(".StructIndex", StringComparison.OrdinalIgnoreCase) &&
+            fieldName.Contains(".Members[", StringComparison.OrdinalIgnoreCase))
+        {
+            var memberPathIndex = fieldName.IndexOf(".Members[", StringComparison.OrdinalIgnoreCase);
+            return TryGetLastIndexedPathIndex(fieldName[..memberPathIndex], out var structIndex) &&
+                   value == structIndex;
+        }
+
+        return (fieldName.EndsWith(".GridArrayIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".TriangleIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".VertexIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".StructIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".MemberIndex", StringComparison.OrdinalIgnoreCase)) &&
+               TryGetLastIndexedPathIndex(fieldName, out var pathIndex) &&
+               value == pathIndex;
+    }
+
+    /// <summary>
+    /// Gets the final bracketed collection index from a flattened DTO path.
+    /// </summary>
+    /// <param name="path">The flattened DTO path to inspect.</param>
+    /// <param name="index">The parsed final collection index, or zero when parsing fails.</param>
+    /// <returns><c>true</c> when the path contains a final bracketed integer index.</returns>
+    private static bool TryGetLastIndexedPathIndex(string path, out int index)
+    {
+        index = 0;
+        var end = path.LastIndexOf(']');
+        if (end < 0)
+        {
+            return false;
+        }
+
+        var start = path.LastIndexOf('[', end);
+        return start >= 0 &&
+               start < end &&
+               int.TryParse(path[(start + 1)..end], NumberStyles.Integer, CultureInfo.InvariantCulture, out index);
+    }
+
     private static bool IsCommonMetadataFieldOutsideRepositoryReadback(string fieldName, IReadOnlyDictionary<string, string> dtoFields)
     {
         if (string.Equals(fieldName, "MajorFlags.Count", StringComparison.OrdinalIgnoreCase) ||
@@ -2144,11 +2181,6 @@ public static class Helpers
             return true;
         }
 
-        if (IsComponentRawPayloadTypeMatch(dtoFields, componentIndex, spriggitTypeName))
-        {
-            return true;
-        }
-
         return dtoFields.TryGetValue(rootFieldName + ".Count", out var countValue) &&
                int.TryParse(countValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count) &&
                componentIndex < count;
@@ -2214,74 +2246,6 @@ public static class Helpers
         return HasSpriggitPath(spriggitFields, spriggitObjectPath);
     }
 
-    private static bool IsComponentRawPayloadTypeMatch(IReadOnlyDictionary<string, string> dtoFields, int componentIndex, string spriggitTypeName)
-    {
-        return dtoFields
-            .Where(field => field.Key.StartsWith("RawPayloads[", StringComparison.OrdinalIgnoreCase) &&
-                            field.Key.EndsWith("].PayloadType", StringComparison.OrdinalIgnoreCase))
-            .Any(field =>
-            {
-                var payloadPath = field.Key[..^".PayloadType".Length];
-                return dtoFields.TryGetValue(payloadPath + ".PayloadIndex", out var payloadIndexValue) &&
-                       int.TryParse(payloadIndexValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var payloadIndex) &&
-                       payloadIndex == componentIndex &&
-                       dtoFields.TryGetValue(payloadPath + ".SourcePath", out var sourcePath) &&
-                       sourcePath.StartsWith("Components.", StringComparison.OrdinalIgnoreCase) &&
-                       (IsSameTypeName(spriggitTypeName, field.Value) ||
-                        sourcePath.Contains("." + spriggitTypeName + ".", StringComparison.Ordinal));
-            });
-    }
-
-    private static bool IsSpriggitComponentRawPayloadBackedByDtoRawPayload(
-        string fieldName,
-        IReadOnlyDictionary<string, string> spriggitFields,
-        IReadOnlyDictionary<string, string> dtoFields)
-    {
-        if (string.Equals(fieldName, "Components.Count", StringComparison.OrdinalIgnoreCase))
-        {
-            return dtoFields.Keys.Any(field => field.StartsWith("RawPayloads[", StringComparison.OrdinalIgnoreCase) &&
-                                               field.EndsWith("].PayloadType", StringComparison.OrdinalIgnoreCase));
-        }
-
-        if (!TryGetIndexedPath(fieldName, "Components", out var componentIndex, out var componentRemainder) ||
-            !componentRemainder.StartsWith(".", StringComparison.Ordinal) ||
-            !spriggitFields.TryGetValue("Components[" + componentIndex.ToString(CultureInfo.InvariantCulture) + "].MutagenObjectType", out var componentTypeValue) ||
-            string.IsNullOrWhiteSpace(componentTypeValue))
-        {
-            return false;
-        }
-
-        var componentFieldName = componentRemainder[1..];
-        if (string.Equals(componentFieldName, "MutagenObjectType", StringComparison.OrdinalIgnoreCase))
-        {
-            return IsComponentRawPayloadTypeMatch(dtoFields, componentIndex, componentTypeValue);
-        }
-
-        if (componentFieldName is not ("ANAM" or "BNAM" or "CNAM" or "REFL"))
-        {
-            return false;
-        }
-
-        return dtoFields
-            .Where(field => field.Key.StartsWith("RawPayloads[", StringComparison.OrdinalIgnoreCase) &&
-                            field.Key.EndsWith("].PayloadType", StringComparison.OrdinalIgnoreCase))
-            .Any(field =>
-            {
-                var payloadPath = field.Key[..^".PayloadType".Length];
-                return dtoFields.TryGetValue(payloadPath + ".PayloadIndex", out var payloadIndexValue) &&
-                       int.TryParse(payloadIndexValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var payloadIndex) &&
-                       payloadIndex == componentIndex &&
-                       dtoFields.TryGetValue(payloadPath + ".SourcePath", out var sourcePath) &&
-                       IsComponentRawPayloadSourcePath(sourcePath, componentFieldName);
-            });
-    }
-
-    private static bool IsComponentRawPayloadSourcePath(string sourcePath, string componentFieldName)
-    {
-        return sourcePath.StartsWith("Components.", StringComparison.OrdinalIgnoreCase) &&
-               sourcePath.EndsWith("." + componentFieldName, StringComparison.OrdinalIgnoreCase);
-    }
-
     private static bool IsSpriggitKeywordComponentFieldBackedByDtoScalar(
         string fieldName,
         IReadOnlyDictionary<string, string> spriggitFields,
@@ -2333,6 +2297,52 @@ public static class Helpers
         }
 
         return IsSpriggitComponentKeywordBackedByDtoKeyword(remainder, fieldName, spriggitFields, dtoFields);
+    }
+
+    /// <summary>
+    /// Determines whether a Spriggit component <c>REFL</c> field is represented by a first-class reflection DTO row.
+    /// </summary>
+    /// <param name="fieldName">The flattened Spriggit field path being evaluated.</param>
+    /// <param name="fieldValue">The flattened Spriggit field value.</param>
+    /// <param name="spriggitFields">All flattened Spriggit fields for the record.</param>
+    /// <param name="dtoFields">All flattened DTO fields for the record.</param>
+    /// <returns><c>true</c> when the Spriggit field is covered by reflection DTO data.</returns>
+    private static bool IsSpriggitReflectionFieldBackedByDtoReflection(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields)
+    {
+        if (string.Equals(fieldName, "Components.Count", StringComparison.OrdinalIgnoreCase))
+        {
+            return GetComponentReflectionPaths(spriggitFields).Count > 0 &&
+                   dtoFields.TryGetValue("Reflections.Count", out var reflectionCount) &&
+                   !IsZero(reflectionCount);
+        }
+
+        if (!TryGetIndexedPath(fieldName, "Components", out var componentIndex, out var remainder) ||
+            (!string.Equals(remainder, ".REFL", StringComparison.OrdinalIgnoreCase) &&
+             !string.Equals(remainder, ".MutagenObjectType", StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+
+        var sourcePath = "Components[" + componentIndex.ToString(CultureInfo.InvariantCulture) + "].REFL";
+        var reflectionIndex = GetComponentReflectionPaths(spriggitFields).IndexOf(sourcePath);
+        if (reflectionIndex < 0)
+        {
+            return false;
+        }
+
+        var dtoPath = "Reflections[" + reflectionIndex.ToString(CultureInfo.InvariantCulture) + "]";
+        if (string.Equals(remainder, ".REFL", StringComparison.OrdinalIgnoreCase))
+        {
+            return dtoFields.TryGetValue(dtoPath + ".REFL", out var dtoValue) &&
+                   string.Equals(NormalizeHexPrefix(fieldValue), dtoValue, StringComparison.Ordinal);
+        }
+
+        return dtoFields.TryGetValue(dtoPath + ".ComponentType", out var componentType) &&
+               IsSameTypeName(fieldValue, componentType);
     }
 
     private static bool IsSpriggitComponentKeywordBackedByDtoKeyword(
@@ -2406,6 +2416,87 @@ public static class Helpers
                string.Equals(fieldValue, keywordIndex.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// Determines whether a flattened reflection DTO field is backed by a Spriggit component <c>REFL</c> field.
+    /// </summary>
+    /// <param name="fieldName">The flattened DTO field path being evaluated.</param>
+    /// <param name="fieldValue">The flattened DTO field value.</param>
+    /// <param name="spriggitFields">All flattened Spriggit fields for the record.</param>
+    /// <param name="dtoFields">All flattened DTO fields for the record.</param>
+    /// <returns><c>true</c> when the DTO field is covered by Spriggit component reflection data.</returns>
+    private static bool IsDtoReflectionFieldBackedBySpriggitComponent(
+        string fieldName,
+        string fieldValue,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields)
+    {
+        var reflectionPaths = GetComponentReflectionPaths(spriggitFields);
+        if (reflectionPaths.Count == 0)
+        {
+            return false;
+        }
+
+        if (string.Equals(fieldName, "Reflections.Count", StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Equals(fieldValue, reflectionPaths.Count.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        }
+
+        if (!TryGetIndexedPath(fieldName, "Reflections", out var reflectionIndex, out var remainder) ||
+            reflectionIndex < 0 ||
+            reflectionIndex >= reflectionPaths.Count)
+        {
+            return false;
+        }
+
+        var sourcePath = dtoFields.TryGetValue("Reflections[" + reflectionIndex.ToString(CultureInfo.InvariantCulture) + "].SourcePath", out var dtoSourcePath)
+            ? dtoSourcePath
+            : reflectionPaths[reflectionIndex];
+
+        if (string.Equals(remainder, ".SourcePath", StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Equals(fieldValue, reflectionPaths[reflectionIndex], StringComparison.Ordinal);
+        }
+
+        if (string.Equals(remainder, ".ComponentIndex", StringComparison.OrdinalIgnoreCase))
+        {
+            return TryGetIndexedPath(sourcePath, "Components", out var componentIndex, out _) &&
+                   string.Equals(fieldValue, componentIndex.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        }
+
+        if (string.Equals(remainder, ".REFL", StringComparison.OrdinalIgnoreCase))
+        {
+            return spriggitFields.TryGetValue(sourcePath, out var spriggitValue) &&
+                   string.Equals(fieldValue, NormalizeHexPrefix(spriggitValue), StringComparison.Ordinal);
+        }
+
+        if (string.Equals(remainder, ".ComponentType", StringComparison.OrdinalIgnoreCase))
+        {
+            var componentTypePath = sourcePath[..^".REFL".Length] + ".MutagenObjectType";
+            return spriggitFields.TryGetValue(componentTypePath, out var spriggitType) &&
+                   IsSameTypeName(spriggitType, fieldValue);
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Gets the ordered Spriggit component paths that contain <c>REFL</c> fields.
+    /// </summary>
+    /// <param name="spriggitFields">All flattened Spriggit fields for the record.</param>
+    /// <returns>The ordered <c>Components[n].REFL</c> paths.</returns>
+    private static List<string> GetComponentReflectionPaths(IReadOnlyDictionary<string, string> spriggitFields)
+    {
+        return spriggitFields.Keys
+            .Where(field => TryGetIndexedPath(field, "Components", out _, out var remainder) &&
+                string.Equals(remainder, ".REFL", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(field =>
+            {
+                TryGetIndexedPath(field, "Components", out var componentIndex, out _);
+                return componentIndex;
+            })
+            .ToList();
+    }
+
     private static IEnumerable<string> GetComponentKeywordFormKeys(IReadOnlyDictionary<string, string> spriggitFields)
     {
         return spriggitFields
@@ -2448,24 +2539,6 @@ public static class Helpers
 
         formKey = formId + ":" + fieldValue;
         return true;
-    }
-
-    private static bool IsSpriggitRawPayloadPathBackedByDtoRawPayload(
-        string fieldName,
-        IReadOnlyDictionary<string, string> dtoFields,
-        string sourcePath)
-    {
-        if (!string.Equals(fieldName, sourcePath, StringComparison.OrdinalIgnoreCase) &&
-            !fieldName.StartsWith(sourcePath + ".", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        return dtoFields
-            .Where(field => field.Key.StartsWith("RawPayloads[", StringComparison.OrdinalIgnoreCase) &&
-                            field.Key.EndsWith("].SourcePath", StringComparison.OrdinalIgnoreCase))
-            .Any(field => string.Equals(field.Value, sourcePath, StringComparison.OrdinalIgnoreCase) ||
-                          field.Value.StartsWith(sourcePath + "[", StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool IsSpriggitModelMaterialSwapFieldBackedByDtoField(
@@ -3180,48 +3253,6 @@ public static class Helpers
                IsDtoMutagenTypeBackedBySpriggitInlineType(spriggitPath + ".MutagenObjectType", fieldValue, spriggitFields);
     }
 
-    private static bool IsDtoRawPayloadBackedBySpriggitField(
-        string fieldName,
-        IReadOnlyDictionary<string, string> spriggitFields,
-        IReadOnlyDictionary<string, string> dtoFields)
-    {
-        if (string.Equals(fieldName, "REFL", StringComparison.OrdinalIgnoreCase))
-        {
-            return HasSpriggitRawPayloadField(spriggitFields, fieldName);
-        }
-
-        if (string.Equals(fieldName, "RawPayloads.Count", StringComparison.OrdinalIgnoreCase))
-        {
-            return dtoFields.Keys.Any(field => field.StartsWith("RawPayloads[", StringComparison.OrdinalIgnoreCase) &&
-                                               IsDtoRawPayloadBackedBySpriggitField(field, spriggitFields, dtoFields));
-        }
-
-        if (!fieldName.StartsWith("RawPayloads[", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        var payloadPathEnd = fieldName.IndexOf(']');
-        if (payloadPathEnd < 0)
-        {
-            return false;
-        }
-
-        var payloadPath = fieldName[..(payloadPathEnd + 1)];
-        var spriggitFieldName = GetSpriggitRawPayloadFieldName(dtoFields, payloadPath);
-        if (string.IsNullOrWhiteSpace(spriggitFieldName) ||
-            !HasSpriggitRawPayloadField(spriggitFields, spriggitFieldName))
-        {
-            return false;
-        }
-
-        return fieldName.EndsWith(".PayloadIndex", StringComparison.OrdinalIgnoreCase) ||
-               fieldName.EndsWith(".PayloadSlot", StringComparison.OrdinalIgnoreCase) ||
-               fieldName.EndsWith(".PayloadType", StringComparison.OrdinalIgnoreCase) ||
-               fieldName.EndsWith(".PayloadValue", StringComparison.OrdinalIgnoreCase) ||
-               fieldName.EndsWith(".SourcePath", StringComparison.OrdinalIgnoreCase);
-    }
-
     private static bool IsDtoNestedScalarBackedBySpriggitList(
         string fieldName,
         string fieldValue,
@@ -3276,7 +3307,46 @@ public static class Helpers
         return (dtoFields.TryGetValue(dtoPath, out var dtoValue) &&
                 string.Equals(formKey, dtoValue, StringComparison.Ordinal)) ||
                (dtoFields.TryGetValue(dtoPath + "." + dtoPropertyName, out var dtoScalarValue) &&
-                string.Equals(formKey, dtoScalarValue, StringComparison.Ordinal));
+                string.Equals(formKey, dtoScalarValue, StringComparison.Ordinal)) ||
+               IsSpriggitInlineFormKeyListItemBackedByDtoFormKey(fieldValue, formKeyId, dtoFields, dtoPath);
+    }
+
+    /// <summary>
+    /// Determines whether an inline Spriggit form-key list item is represented by flattened <see cref="FormKeyDTO"/> members.
+    /// </summary>
+    /// <param name="modFileName">The Spriggit mod file name stored as the inline field value.</param>
+    /// <param name="formKeyId">The Spriggit form identifier portion from the inline field path.</param>
+    /// <param name="dtoFields">All flattened DTO fields for the record.</param>
+    /// <param name="dtoPath">The flattened DTO collection item path to inspect.</param>
+    /// <returns><c>true</c> when the flattened DTO FormKey members match the Spriggit inline form key.</returns>
+    private static bool IsSpriggitInlineFormKeyListItemBackedByDtoFormKey(
+        string modFileName,
+        string formKeyId,
+        IReadOnlyDictionary<string, string> dtoFields,
+        string dtoPath)
+    {
+        return dtoFields.TryGetValue(dtoPath + ".ModKey.FileName", out var dtoModFileName) &&
+               dtoFields.TryGetValue(dtoPath + ".Id", out var dtoFormKeyId) &&
+               string.Equals(modFileName, dtoModFileName, StringComparison.OrdinalIgnoreCase) &&
+               AreEquivalentFormKeyIds(formKeyId, dtoFormKeyId);
+    }
+
+    /// <summary>
+    /// Compares Spriggit hexadecimal form identifiers with DTO numeric or hexadecimal form identifiers.
+    /// </summary>
+    /// <param name="spriggitFormKeyId">The Spriggit form identifier text, usually hexadecimal without a prefix.</param>
+    /// <param name="dtoFormKeyId">The DTO form identifier text, usually decimal after flattening.</param>
+    /// <returns><c>true</c> when both values identify the same form.</returns>
+    private static bool AreEquivalentFormKeyIds(string spriggitFormKeyId, string dtoFormKeyId)
+    {
+        var normalizedDtoFormKeyId = dtoFormKeyId.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+            ? dtoFormKeyId[2..]
+            : dtoFormKeyId;
+
+        return uint.TryParse(spriggitFormKeyId, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var spriggitId) &&
+               (uint.TryParse(normalizedDtoFormKeyId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var dtoDecimalId) ||
+                uint.TryParse(normalizedDtoFormKeyId, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out dtoDecimalId)) &&
+               spriggitId == dtoDecimalId;
     }
 
     private static bool IsSpriggitListBackedDtoScalar(
@@ -3364,19 +3434,6 @@ public static class Helpers
         var rootFieldName = fieldName[..^targetLanguageSuffix.Length];
         return !spriggitFields.ContainsKey(rootFieldName + ".Count") &&
                !spriggitFields.Keys.Any(field => field.StartsWith(rootFieldName + "[", StringComparison.OrdinalIgnoreCase));
-    }
-
-    private static bool IsEmptySpriggitVirtualMachineAdapterListItemName(
-        string fieldName,
-        IReadOnlyDictionary<string, string> spriggitFields)
-    {
-        return (fieldName.StartsWith("VirtualMachineAdapter[", StringComparison.OrdinalIgnoreCase) ||
-                fieldName.StartsWith("VirtualMachineAdapter.Scripts[", StringComparison.OrdinalIgnoreCase)) &&
-               (fieldName.Count(character => character == '[') == 3 ||
-                fieldName.Contains(".Objects[", StringComparison.OrdinalIgnoreCase)) &&
-               fieldName.EndsWith("].Name", StringComparison.OrdinalIgnoreCase) &&
-               spriggitFields.TryGetValue(fieldName, out var value) &&
-               string.IsNullOrEmpty(value);
     }
 
     private static bool HasSpriggitPath(IReadOnlyDictionary<string, string> spriggitFields, string fieldName)
@@ -3529,7 +3586,14 @@ public static class Helpers
                     break;
                 }
 
-                values.Add(NormalizeScalar(valueLine.Trim()[2..].Trim()));
+                var value = valueLine.Trim()[2..].Trim();
+                if (!IsRootScalarListValue(value))
+                {
+                    values.Clear();
+                    break;
+                }
+
+                values.Add(NormalizeScalar(value));
             }
 
             if (values.Count == 0)
@@ -3561,6 +3625,21 @@ public static class Helpers
         }
 
         return index;
+    }
+
+    /// <summary>
+    /// Determines whether a top-level YAML list row is a scalar alias candidate rather than an object wrapper.
+    /// </summary>
+    /// <param name="value">The raw list item text after the leading dash.</param>
+    /// <returns><c>true</c> when the row can be safely projected as a scalar list item.</returns>
+    private static bool IsRootScalarListValue(string value)
+    {
+        var isQuoted = value.Length >= 2 &&
+                       ((value.StartsWith('\'') && value.EndsWith('\'')) ||
+                        (value.StartsWith('"') && value.EndsWith('"')));
+        return isQuoted ||
+               (!value.EndsWith(":", StringComparison.Ordinal) &&
+                !value.Contains(": ", StringComparison.Ordinal));
     }
 
     private static string NormalizeScalar(string value)

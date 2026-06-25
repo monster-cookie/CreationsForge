@@ -10,7 +10,7 @@ The application uses a local SQLite database. The schema is defined by embedded 
 DbUp creates and owns its `SchemaVersions` migration-history table. `SchemaVersions` is the migration-state source of
 truth. The application does not define a hardcoded schema-version constant.
 
-The application schema contains seventy-three tables:
+The application schema contains 102 tables:
 
 - `Games`
 - `Plugins`
@@ -36,15 +36,53 @@ The application schema contains seventy-three tables:
 - `MiscItemDestructibles`
 - `MiscItemDestructibleStages`
 - `MiscItemResources`
-- `Keywords`
 - `ActorValueInformation`
 - `ActorValueInformationPerkTreeEntries`
 - `ActorValueInformationPerkTreeConnectionLineIndices`
 - `NPCs`
+- `NPCFormKeyLists`
+- `NPCFactions`
+- `NPCProperties`
+- `NPCItems`
+- `NPCPerks`
+- `NPCMorphs`
+- `NPCFaceDialPositions`
+- `NPCFaceMorphPositions`
+- `NPCFaceMorphGroupSets`
+- `NPCFaceMorphGroups`
+- `NPCMorphBlends`
+- `NPCTints`
+- `NPCTintLayers`
+- `NPCFaceTintingLayers`
+- `NPCFaceTintingLayerStates`
+- `NPCPlayerSkillValues`
 - `MagicEffects`
+- `MiscItems`
+- `MiscItemComponents`
+- `MiscItemDestructibles`
+- `MiscItemDestructibleStages`
+- `MiscItemResources`
+- `Keywords`
 - `Perks`
+- `KeywordMappings`
+- `PerkRanks`
+- `PerkRankEffects`
+- `PerkRankActivities`
+- `PerkRankActivityProgressionEvaluators`
 - `PerkEffects`
 - `PerkEffectConditionTabs`
+- `PerkBackgroundSkills`
+- `Models`
+- `ModelMaterialSwaps`
+- `SoundMappings`
+- `ScriptingAdapters`
+- `ScriptingAdapterProperties`
+- `ScriptingAdapterPropertyListItems`
+- `ScriptingAdapterPropertyStructs`
+- `ScriptingAdapterPropertyStructMembers`
+- `ScriptFragments`
+- `AssetArchiveFiles`
+- `AssetArchiveEntries`
 - `Statics`
 - `StaticNavmeshGeometries`
 - `StaticNavmeshCover`
@@ -54,39 +92,41 @@ The application schema contains seventy-three tables:
 - `StaticNavmeshVersioning`
 - `StaticNavmeshVertices`
 - `StaticProperties`
-- `Books`
-- `Doors`
+- `RawRecordPayloads`
+- `Reflection`
 - `Containers`
 - `ContainerItems`
-- `ConditionForms`
-- `ConstructibleObjects`
-- `ConstructibleObjectComponents`
-- `ConstructibleObjectCategories`
-- `ConstructibleObjectRecipeFilters`
+- `ContainerProperties`
+- `ContainerForcedLocations`
+- `Books`
+- `Doors`
+- `DoorForcedLocations`
+- `DoorNavmeshGeometries`
+- `DoorNavmeshGridCells`
+- `DoorNavmeshTriangles`
+- `DoorNavmeshVersioning`
+- `DoorNavmeshVertices`
 - `Terminals`
 - `TerminalForcedLocations`
 - `TerminalMarkerParameters`
 - `TerminalBodyTexts`
 - `TerminalMenuItems`
-- `KeywordMappings`
+- `ConstructibleObjects`
+- `ConstructibleObjectComponents`
+- `ConstructibleObjectCategories`
+- `ConstructibleObjectRecipeFilters`
+- `ConditionForms`
+- `Classes`
+- `ClassProperties`
+- `ClassWeights`
+- `Factions`
+- `FactionRelations`
+- `FactionRanks`
+- `ConditionRules`
+- `ConditionRuleParameters`
 - `Components`
 - `ComponentItems`
-- `PerkRanks`
-- `PerkRankEffects`
-- `PerkRankActivities`
-- `PerkRankActivityProgressionEvaluators`
-- `PerkBackgroundSkills`
-- `Models`
-- `ModelMaterialSwaps`
-- `SoundMappings`
-- `ScriptFragments`
-- `ScriptingAdapters`
-- `ScriptingAdapterProperties`
-- `ScriptingAdapterPropertyListItems`
-- `RawRecordPayloads`
 - `LocalizedStrings`
-- `AssetArchiveFiles`
-- `AssetArchiveEntries`
 
 The application schema also contains these read views:
 
@@ -859,6 +899,60 @@ Indexes:
 - `SkinToneIndex` (`INTEGER`, nullable)
 - nullable decomposed FormKey columns for `Voice`, `Race`, `CombatOverridePackageList`, `CombatStyle`,
   `DefaultPackageList`, and `CrimeFaction`
+- nullable decomposed FormKey columns for `Skin` and `PowerArmorStand`
+- nullable decomposed FormKey columns for `TemplateActors` entries: `TraitTemplate`, `StatsTemplate`,
+  `FactionsTemplate`, `SpellListTemplate`, `AiPackagesTemplate`, `AiDataTemplate`, `BaseDataTemplate`,
+  `InventoryTemplate`, `ScriptTemplate`, `DefPackListTemplate`, `AttackDataTemplate`, `KeywordsTemplate`,
+  `Unknown1`, and `Unknown2`
+
+`NPCFaceMorphPositions` stores Fallout 4 face morph position rows keyed by the owning NPC and
+`FaceMorph_Index`. The row includes nullable `Source_Index`, `Position`, `Rotation`, and `Scale` columns.
+
+`NPCFaceTintingLayers` stores Fallout 4 face tinting layer rows keyed by the owning NPC and
+`FaceTintingLayer_Index`.
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `FaceTintingLayer_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `DataType` (`TEXT`, nullable)
+- `Source_Index` (`INTEGER`, nullable)
+- `Value` (`REAL`, nullable)
+- `Color` (`TEXT`, nullable)
+- `TemplateColorIndex` (`INTEGER`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full parent key references `NPCs` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID >= 0`
+- `FaceTintingLayer_Index >= 0`
+
+`NPCFaceTintingLayerStates` stores the nested `TENDDataTypeState` entries for Fallout 4 NPC face tinting
+layers.
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `FaceTintingLayer_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `State_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `State` (`TEXT`, `NOT NULL`)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full parent key references `NPCFaceTintingLayers` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID >= 0`
+- `FaceTintingLayer_Index >= 0`
+- `State_Index >= 0`
 
 `MagicEffects` additional columns:
 
@@ -881,6 +975,7 @@ Indexes:
 
 `Perks` additional columns:
 
+- `Version2` and `VersionControl` (`INTEGER`, nullable)
 - `Name`, `Description`, `SkillGroup`, `CrewAssignment`, `PerkIcon`, `Category`, and `MajorFlags`
   (`TEXT`, nullable)
 - `Flags` (`TEXT`, `NOT NULL`)
@@ -1146,12 +1241,15 @@ Indexes:
 - `ObjectBounds_First` and `ObjectBounds_Second` (`TEXT`, nullable)
 - `Name`, `Flags`, and `MajorFlags` (`TEXT`, nullable)
 - nullable decomposed FormKey columns for `NativeTerminal`
+- nullable decomposed FormKey columns for `SnapTemplate`, `ContainsOnlyFilter`, `TransformOutpost`, and
+  `TransformPreview`
 - `AnimationGraph`, `AnimationSkeleton`, `AnimationDirectory`, and `AnimationFile` (`TEXT`, nullable)
 
 `ConditionForms` additional columns:
 
 - `Version2` (`INTEGER`, nullable)
 - `VersionControl` (`INTEGER`, nullable)
+- nullable decomposed FormKey columns for `OwnerQuest`
 
 `ConstructibleObjects` additional columns:
 
@@ -1192,20 +1290,23 @@ Persistence behavior:
 - `MiscItems` currently persists the parent scalar row, FO4/Skyrim component rows including display indices, Fallout 4
   and Skyrim destructible rows when Mutagen exposes them, Starfield resource rows, shared keyword rows, shared model
   rows, shared sound rows, and scripting adapters. `Statics` persists parent scalar rows, navmesh geometry, shared
-  model rows, shared keyword rows when present, and binary `REFL` raw payload rows. `Books` persist parent scalar rows,
-  shared model rows, shared keyword rows, shared sound rows, scripting adapters, and binary `REFL` raw payload rows.
+  model rows, shared keyword rows when present, and first-class `Reflection` rows for component `REFL` data. `Books`
+  persist parent scalar rows, shared model rows, shared keyword rows, shared sound rows, scripting adapters, and
+  first-class `Reflection` rows for component `REFL` data.
   `Doors` persist parent scalar rows including direct animation component fields, shared model rows, shared keyword
-  rows, shared sound rows, scripting adapters, and binary `REFL` raw payload rows. `Containers` persist parent scalar
-  rows including direct animation component fields, child item rows, shared model rows, shared keyword rows when
-  present, shared sound rows when present, scripting adapters, and binary `REFL` raw payload rows.
+  rows, shared sound rows, scripting adapters, and first-class `Reflection` rows for component `REFL` data.
+  `Containers` persist parent scalar rows including direct animation component fields, transform/filter links, child
+  item rows, actor-value property rows, forced-location rows, shared component rows, shared model rows, shared keyword
+  rows when present, shared sound rows when present, scripting adapters, and first-class `Reflection` rows for
+  component `REFL` data.
   `ConditionForms` persist parent scalar rows and structured Starfield condition rows with generic parameter rows.
   `ConstructibleObjects` persist parent scalar rows, component rows, Fallout 4 category rows, Starfield recipe-filter
   rows, shared condition rows, shared sound rows when present, and scripting adapters when present.
   `Terminals` persist parent scalar rows including direct animation component fields, shared model rows, shared keyword
-  rows, scripting adapters, script fragments, binary `REFL` raw payload rows, forced-location rows, marker-parameter
-  rows, body-text rows, condition rows, and menu-item rows. `NPCs` persist shared keyword rows, shared sound rows,
-  scripting adapters, localized strings, and supplemental actor appearance/template columns. `MagicEffects` persist
-  shared keyword rows.
+  rows, scripting adapters, script fragments, first-class `Reflection` rows for component `REFL` data,
+  forced-location rows, marker-parameter rows, body-text rows, condition rows, and menu-item rows. `NPCs` persist
+  shared keyword rows, shared sound rows, scripting adapters, localized strings, and supplemental actor
+  appearance/template columns. `MagicEffects` persist shared keyword rows.
   `MagicEffects` persists shared sound rows and Spriggit-flattened DATA fields directly on the parent row.
 
 ### MiscItemComponents
@@ -1338,6 +1439,52 @@ Persistence behavior:
 - Current imported rows are upserted after their owning container row is saved.
 - Existing item rows for the same container are deleted before replacement so removed items do not remain stale.
 - Stale typed-record deletion removes item rows through the declared `Containers` cascade.
+
+### ContainerProperties
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `Property_Index` (`INTEGER`, `NOT NULL`, primary key)
+- nullable decomposed FormKey columns for `ActorValue`
+- `Value` (`REAL`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `Containers` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID` and `Property_Index` must be greater than or equal to zero.
+- `ActorValue_FormKey_ID` must be null or greater than or equal to zero.
+
+Indexes:
+
+- `IX_ContainerProperties_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
+
+### ContainerForcedLocations
+
+Columns:
+
+- Common containing plugin key columns listed above
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `ForcedLocation_Index` (`INTEGER`, `NOT NULL`, primary key)
+- decomposed `ForcedLocation_*` FormKey columns (`NOT NULL`)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key references `Containers` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID`, `ForcedLocation_Index`, and `ForcedLocation_FormKey_ID` must be greater than or equal to zero.
+
+Indexes:
+
+- `IX_ContainerForcedLocations_Game_FormKey` on `Game`, origin FormKey ModKey columns, and `FormKey_ID`
 
 Condition form `Conditions` rows use the shared `ConditionRules` and `ConditionRuleParameters` tables with
 `RecordType = 'CNDF'` and `ConditionSlot = 'Conditions'`.
@@ -1586,6 +1733,7 @@ Columns:
 - typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
 - `Component_Index` (`INTEGER`, `NOT NULL`, primary key)
 - `MutagenObjectType` (`TEXT`, `NOT NULL`)
+- `DCED` (`TEXT`, nullable)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
 Foreign keys:
@@ -1614,6 +1762,7 @@ Columns:
 
 - Full parent record-component key columns listed above
 - `Item_Index` (`INTEGER`, `NOT NULL`, primary key)
+- nullable decomposed FormKey columns for `DisplayFilter`
 - `Unknown1`, `Unknown2`, `Unknown3`, `Unknown4`, and `Unknown5` (`REAL`, nullable)
 - `ImportedAtUTC` (`TEXT`, `NOT NULL`)
 
@@ -1867,10 +2016,44 @@ Persistence behavior:
   stale.
 - Stale typed-record deletion removes raw payload rows through the declared `RecordInstances` cascade.
 - Current importers only use raw payload rows for opaque binary-like payloads that Spriggit leaves as binary content.
-  The currently populated raw path is Starfield component `REFL`.
 - `PayloadSlot` stores the internal comparison/storage name. `SourcePath` stores the source Mutagen/Spriggit path
-  when it differs. Starfield component `REFL` rows use source-shaped slots such as
-  `Components.LodOwnerComponentBinaryOverlay.REFL`.
+  when it differs.
+
+### Reflection
+
+Columns:
+
+- Common containing plugin key columns listed above
+- `RecordType` (`TEXT`, `NOT NULL`, primary key)
+- typed-record origin FormKey columns listed above (`NOT NULL`, primary key)
+- `Component_Index` (`INTEGER`, `NOT NULL`, primary key)
+- `ComponentType` (`TEXT`, `NOT NULL`)
+- `SourcePath` (`TEXT`, `NOT NULL`)
+- `REFL` (`TEXT`, nullable)
+- `ImportedAtUTC` (`TEXT`, `NOT NULL`)
+
+Foreign keys:
+
+- Full common typed record key plus `RecordType` references `RecordInstances` with `ON DELETE CASCADE`.
+
+Constraints:
+
+- `FormKey_ID` and `Component_Index` must be greater than or equal to zero.
+- `ComponentType` and `SourcePath` must not be empty.
+
+Indexes:
+
+- `IX_Reflection_Game_Record_FormKey` on `Game`, `RecordType`, origin FormKey ModKey columns, and `FormKey_ID`
+
+Persistence behavior:
+
+- Current imported rows are upserted after their owning typed record row is saved.
+- Existing reflection rows for the same record are deleted before replacement so removed component `REFL` rows do not
+  remain stale.
+- Stale typed-record deletion removes reflection rows through the declared `RecordInstances` cascade.
+- Starfield component `REFL` data for `STAT`, `BOOK`, `DOOR`, `CONT`, and `TERM` records is modeled here as
+  first-class reflection data rather than as raw payload rows. `SourcePath` stores the source-shaped component path,
+  such as `Components[0].REFL`.
 
 ### LocalizedStrings
 
@@ -2069,6 +2252,20 @@ These columns carry record-reference identity but do not declare SQLite foreign 
   and `NativeTerminal_FormKey_ID`
 - `Containers.NativeTerminal_ModKey_Name`, `NativeTerminal_ModKey_Type`, `NativeTerminal_ModKey_FileName`,
   and `NativeTerminal_FormKey_ID`
+- `Containers.SnapTemplate_ModKey_Name`, `SnapTemplate_ModKey_Type`, `SnapTemplate_ModKey_FileName`, and
+  `SnapTemplate_FormKey_ID`
+- `Containers.ContainsOnlyFilter_ModKey_Name`, `ContainsOnlyFilter_ModKey_Type`,
+  `ContainsOnlyFilter_ModKey_FileName`, and `ContainsOnlyFilter_FormKey_ID`
+- `Containers.TransformOutpost_ModKey_Name`, `TransformOutpost_ModKey_Type`,
+  `TransformOutpost_ModKey_FileName`, and `TransformOutpost_FormKey_ID`
+- `Containers.TransformPreview_ModKey_Name`, `TransformPreview_ModKey_Type`,
+  `TransformPreview_ModKey_FileName`, and `TransformPreview_FormKey_ID`
+- `ContainerProperties.ActorValue_ModKey_Name`, `ActorValue_ModKey_Type`, `ActorValue_ModKey_FileName`, and
+  `ActorValue_FormKey_ID`
+- `ContainerForcedLocations.ForcedLocation_ModKey_Name`, `ForcedLocation_ModKey_Type`,
+  `ForcedLocation_ModKey_FileName`, and `ForcedLocation_FormKey_ID`
+- `ComponentItems.DisplayFilter_ModKey_Name`, `DisplayFilter_ModKey_Type`, `DisplayFilter_ModKey_FileName`, and
+  `DisplayFilter_FormKey_ID`
 - `ConstructibleObjects.CreatedObject_ModKey_Name`, `CreatedObject_ModKey_Type`,
   `CreatedObject_ModKey_FileName`, and `CreatedObject_FormKey_ID`
 - `ConstructibleObjects.WorkbenchKeyword_ModKey_Name`, `WorkbenchKeyword_ModKey_Type`,

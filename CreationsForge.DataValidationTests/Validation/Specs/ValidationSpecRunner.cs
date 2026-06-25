@@ -66,6 +66,9 @@ public class ValidationSpecRunner
                 case ValidationRuleKind.PathPrefix:
                     ApplyPathPrefixRule(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, diagnostics, assertionCases);
                     break;
+                case ValidationRuleKind.CanonicalFormKeyCountList:
+                    ApplyCanonicalFormKeyCountListRule(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, diagnostics, assertionCases);
+                    break;
                 case ValidationRuleKind.FormKeyList:
                     ApplyFormKeyListRule(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, diagnostics, assertionCases);
                     break;
@@ -77,9 +80,6 @@ public class ValidationSpecRunner
                     break;
                 case ValidationRuleKind.SoundSlot:
                     ApplySoundSlotRule(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, diagnostics, assertionCases);
-                    break;
-                case ValidationRuleKind.RawPayloadSlot:
-                    ApplyRawPayloadSlotRule(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, diagnostics, assertionCases);
                     break;
                 case ValidationRuleKind.DtoExpectedValue:
                     ApplyDtoExpectedValueRule(rule, dtoFields, matchedDtoFields, diagnostics, assertionCases);
@@ -95,9 +95,6 @@ public class ValidationSpecRunner
                     break;
                 case ValidationRuleKind.IgnoreSpriggit:
                     ignoredSpriggitFields.Add(rule.SpriggitPath);
-                    break;
-                case ValidationRuleKind.IgnoreSpriggitPrefix:
-                    AddIgnoredSpriggitPrefix(rule, spriggitFields, ignoredSpriggitFields);
                     break;
                 case ValidationRuleKind.IgnoreDto:
                     ignoredDtoFields.Add(rule.DtoPath);
@@ -278,6 +275,31 @@ public class ValidationSpecRunner
                 hasDtoValue = true;
             }
 
+            if (!hasDtoValue &&
+                string.Equals(spriggitField.Key, rule.SpriggitPath, StringComparison.OrdinalIgnoreCase) &&
+                dtoFields.TryGetValue(dtoPath + ".Value", out var scalarWrapperValue))
+            {
+                if (IsSpriggitEmptyCollectionRoot(spriggitField.Value) &&
+                    string.Equals(scalarWrapperValue, "Null", StringComparison.OrdinalIgnoreCase))
+                {
+                    MarkMatched(matchedDtoFields, dtoPath + ".Value");
+                    continue;
+                }
+
+                dtoPath += ".Value";
+                dtoValue = scalarWrapperValue;
+                hasDtoValue = true;
+            }
+
+            if (hasDtoValue &&
+                string.Equals(spriggitField.Key, rule.SpriggitPath, StringComparison.OrdinalIgnoreCase) &&
+                IsSpriggitEmptyCollectionRoot(spriggitField.Value) &&
+                string.Equals(dtoValue, "Null", StringComparison.OrdinalIgnoreCase))
+            {
+                MarkMatched(matchedDtoFields, dtoPath);
+                continue;
+            }
+
             if ((!hasDtoValue || string.Equals(dtoValue, "Null", StringComparison.OrdinalIgnoreCase)) &&
                 TryGetScriptingAdapterDataValue(dtoFields, dtoPath, out var scriptingDataDtoPath, out var scriptingDataDtoValue))
             {
@@ -289,6 +311,11 @@ public class ValidationSpecRunner
             if (!hasDtoValue)
             {
                 if (IsStaticNavmeshScalarListCount(spriggitField.Key, spriggitField.Value, dtoPath, dtoFields))
+                {
+                    continue;
+                }
+
+                if (IsSpriggitCollectionItemWrapper(spriggitField.Key, rule.SpriggitPath))
                 {
                     continue;
                 }
@@ -307,11 +334,6 @@ public class ValidationSpecRunner
                     continue;
                 }
 
-                if (IsSpriggitScriptingListItemNameWithoutDtoShape(spriggitField.Key))
-                {
-                    continue;
-                }
-
                 diagnostics.Add("DTO field '" + dtoPath + "' was missing for Spriggit field '" + spriggitField.Key + "'.");
                 continue;
             }
@@ -322,7 +344,7 @@ public class ValidationSpecRunner
                 continue;
             }
 
-            AddAssertionCase(spriggitField.Key, spriggitField.Value, dtoPath, dtoValue!, ValidationValueNormalizer.None, assertionCases);
+            AddAssertionCase(spriggitField.Key, spriggitField.Value, dtoPath, dtoValue!, rule.Normalizer, assertionCases);
         }
     }
 
@@ -415,6 +437,216 @@ public class ValidationSpecRunner
         return dtoFields.ContainsKey(dtoScalarPath);
     }
 
+    /// <summary>
+    /// Applies a collection rule that compares form-key/count rows after sorting each side by the referenced form key.
+    /// </summary>
+    /// <param name="rule">The validation rule describing the collection roots and path replacements.</param>
+    /// <param name="spriggitFields">The flattened Spriggit fields for the sample record.</param>
+    /// <param name="dtoFields">The flattened DTO fields for the imported record.</param>
+    /// <param name="matchedSpriggitFields">The Spriggit fields already covered by validation rules.</param>
+    /// <param name="matchedDtoFields">The DTO fields already covered by validation rules.</param>
+    /// <param name="diagnostics">Diagnostics to append when either side lacks required item data.</param>
+    /// <param name="assertionCases">Assertion cases to append for matched rows.</param>
+    private static void ApplyCanonicalFormKeyCountListRule(
+        ValidationFieldRule rule,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields,
+        ISet<string> matchedSpriggitFields,
+        ISet<string> matchedDtoFields,
+        IList<string> diagnostics,
+        IList<ValidationAssertionCase> assertionCases)
+    {
+        AddCollectionCountAssertion(rule, spriggitFields, dtoFields, matchedSpriggitFields, matchedDtoFields, assertionCases);
+
+        var spriggitItems = GetCanonicalFormKeyCountListItems(rule, spriggitFields, rule.SpriggitPath, "Spriggit", diagnostics)
+            .OrderBy(item => GetCanonicalFormKeySortValue(item.FormKey), StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.Count, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.Index)
+            .ToList();
+        var dtoItems = GetCanonicalFormKeyCountListItems(rule, dtoFields, rule.DtoPath, "DTO", diagnostics)
+            .OrderBy(item => GetCanonicalFormKeySortValue(item.FormKey), StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.Count, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.Index)
+            .ToList();
+
+        var pairCount = Math.Min(spriggitItems.Count, dtoItems.Count);
+        for (var index = 0; index < pairCount; index++)
+        {
+            var spriggitItem = spriggitItems[index];
+            var dtoItem = dtoItems[index];
+
+            MarkMatched(matchedSpriggitFields, spriggitItem.FormKeyPath);
+            MarkMatched(matchedSpriggitFields, spriggitItem.CountPath);
+            MarkMatched(matchedDtoFields, dtoItem.FormKeyPath);
+            MarkMatched(matchedDtoFields, dtoItem.CountPath);
+
+            AddAssertionCase(
+                spriggitItem.FormKeyPath,
+                spriggitItem.FormKey,
+                dtoItem.FormKeyPath,
+                dtoItem.FormKey,
+                rule.Normalizer,
+                assertionCases);
+            AddAssertionCase(
+                spriggitItem.CountPath,
+                spriggitItem.Count,
+                dtoItem.CountPath,
+                dtoItem.Count,
+                ValidationValueNormalizer.None,
+                assertionCases);
+        }
+    }
+
+    /// <summary>
+    /// Adds a count assertion for a canonical form-key/count child collection when both sides expose a count.
+    /// </summary>
+    /// <param name="rule">The validation rule describing the collection roots.</param>
+    /// <param name="spriggitFields">The flattened Spriggit fields for the sample record.</param>
+    /// <param name="dtoFields">The flattened DTO fields for the imported record.</param>
+    /// <param name="matchedSpriggitFields">The Spriggit fields already covered by validation rules.</param>
+    /// <param name="matchedDtoFields">The DTO fields already covered by validation rules.</param>
+    /// <param name="assertionCases">Assertion cases to append for the count comparison.</param>
+    private static void AddCollectionCountAssertion(
+        ValidationFieldRule rule,
+        IReadOnlyDictionary<string, string> spriggitFields,
+        IReadOnlyDictionary<string, string> dtoFields,
+        ISet<string> matchedSpriggitFields,
+        ISet<string> matchedDtoFields,
+        IList<ValidationAssertionCase> assertionCases)
+    {
+        if (!spriggitFields.TryGetValue(rule.SpriggitPath + ".Count", out var spriggitCount) ||
+            !dtoFields.TryGetValue(rule.DtoPath + ".Count", out var dtoCount))
+        {
+            return;
+        }
+
+        MarkMatched(matchedSpriggitFields, rule.SpriggitPath + ".Count");
+        MarkMatched(matchedDtoFields, rule.DtoPath + ".Count");
+        AddAssertionCase(
+            rule.SpriggitPath + ".Count",
+            spriggitCount,
+            rule.DtoPath + ".Count",
+            dtoCount,
+            ValidationValueNormalizer.None,
+            assertionCases);
+    }
+
+    /// <summary>
+    /// Reads indexed form-key/count child rows from flattened validation fields.
+    /// </summary>
+    /// <param name="rule">The validation rule whose path replacements should be applied.</param>
+    /// <param name="fields">The flattened field dictionary to inspect.</param>
+    /// <param name="rootPath">The collection root path.</param>
+    /// <param name="sourceName">The source name used in diagnostics.</param>
+    /// <param name="diagnostics">Diagnostics to append for incomplete rows.</param>
+    /// <returns>The complete form-key/count rows found under the collection root.</returns>
+    private static IReadOnlyList<(int Index, string FormKeyPath, string FormKey, string CountPath, string Count)> GetCanonicalFormKeyCountListItems(
+        ValidationFieldRule rule,
+        IReadOnlyDictionary<string, string> fields,
+        string rootPath,
+        string sourceName,
+        IList<string> diagnostics)
+    {
+        var formKeyPaths = new Dictionary<int, string>();
+        var formKeys = new Dictionary<int, string>();
+        var countPaths = new Dictionary<int, string>();
+        var counts = new Dictionary<int, string>();
+
+        foreach (var field in fields.OrderBy(field => field.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            if (!TryGetIndexedChildPath(field.Key, rootPath, out var index, out var suffix))
+            {
+                continue;
+            }
+
+            foreach (var replacement in rule.PathReplacements)
+            {
+                suffix = suffix.Replace(replacement.Key, replacement.Value, StringComparison.Ordinal);
+            }
+
+            if (string.Equals(suffix, ".Item", StringComparison.OrdinalIgnoreCase))
+            {
+                formKeyPaths[index] = field.Key;
+                formKeys[index] = field.Value;
+                continue;
+            }
+
+            if (string.Equals(suffix, ".Count", StringComparison.OrdinalIgnoreCase))
+            {
+                countPaths[index] = field.Key;
+                counts[index] = field.Value;
+            }
+        }
+
+        var indexes = formKeys.Keys.Concat(counts.Keys).Distinct().OrderBy(index => index).ToList();
+        var items = new List<(int Index, string FormKeyPath, string FormKey, string CountPath, string Count)>();
+        foreach (var index in indexes)
+        {
+            if (!formKeys.TryGetValue(index, out var formKey))
+            {
+                diagnostics.Add(sourceName + " field '" + rootPath + "[" + index.ToString(CultureInfo.InvariantCulture) + "].Item' was missing for canonical form-key/count list validation.");
+                continue;
+            }
+
+            if (!counts.TryGetValue(index, out var count))
+            {
+                diagnostics.Add(sourceName + " field '" + rootPath + "[" + index.ToString(CultureInfo.InvariantCulture) + "].Count' was missing for canonical form-key/count list validation.");
+                continue;
+            }
+
+            items.Add((index, formKeyPaths[index], formKey, countPaths[index], count));
+        }
+
+        return items;
+    }
+
+    /// <summary>
+    /// Gets a sortable form-key value that places rows in stable form ID order with plugin name as a tie-breaker.
+    /// </summary>
+    /// <param name="formKey">The flattened form key value.</param>
+    /// <returns>The sortable form-key text.</returns>
+    private static string GetCanonicalFormKeySortValue(string formKey)
+    {
+        var separatorIndex = formKey.IndexOf(':', StringComparison.Ordinal);
+        if (separatorIndex <= 0)
+        {
+            return formKey;
+        }
+
+        var formId = formKey[..separatorIndex].PadLeft(8, '0');
+        var plugin = formKey[(separatorIndex + 1)..];
+        return formId + ":" + plugin;
+    }
+
+    /// <summary>
+    /// Parses an indexed child field path under a collection root.
+    /// </summary>
+    /// <param name="fieldName">The flattened field path to parse.</param>
+    /// <param name="rootPath">The collection root path.</param>
+    /// <param name="index">The parsed collection row index.</param>
+    /// <param name="suffix">The path suffix after the indexed row.</param>
+    /// <returns><c>true</c> when the field belongs to an indexed row under the root path.</returns>
+    private static bool TryGetIndexedChildPath(string fieldName, string rootPath, out int index, out string suffix)
+    {
+        index = 0;
+        suffix = string.Empty;
+        var prefix = rootPath + "[";
+        if (!fieldName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var indexEnd = fieldName.IndexOf(']', prefix.Length);
+        if (indexEnd < 0 ||
+            !int.TryParse(fieldName.AsSpan(prefix.Length, indexEnd - prefix.Length), NumberStyles.Integer, CultureInfo.InvariantCulture, out index))
+        {
+            return false;
+        }
+
+        suffix = fieldName[(indexEnd + 1)..];
+        return suffix.Length > 0;
+    }
+
     private static void ApplyFormKeyListRule(
         ValidationFieldRule rule,
         IReadOnlyDictionary<string, string> spriggitFields,
@@ -442,7 +674,7 @@ public class ValidationSpecRunner
         {
             if (TryGetListObjectFormKey(spriggitField.Key, rule.SpriggitPath, out var formKeyIndex, out var formKeyId))
             {
-                var formKeyDtoPath = rule.DtoPath + "[" + formKeyIndex.ToString(CultureInfo.InvariantCulture) + "]." + rule.ExpectedValue;
+                var formKeyDtoPath = GetFormKeyListDtoPath(rule, formKeyIndex);
                 MarkMatched(matchedSpriggitFields, spriggitField.Key);
                 if (!dtoFields.TryGetValue(formKeyDtoPath, out var formKeyDtoValue))
                 {
@@ -466,7 +698,7 @@ public class ValidationSpecRunner
                 continue;
             }
 
-            var dtoPath = rule.DtoPath + "[" + index.ToString(CultureInfo.InvariantCulture) + "]." + rule.ExpectedValue;
+            var dtoPath = GetFormKeyListDtoPath(rule, index);
             MarkMatched(matchedSpriggitFields, spriggitField.Key);
             MarkSpriggitFormKeyObjectAlias(spriggitFields, matchedSpriggitFields, spriggitField.Key, spriggitField.Value);
             if (!dtoFields.TryGetValue(dtoPath, out var dtoValue))
@@ -478,6 +710,20 @@ public class ValidationSpecRunner
             MarkMatched(matchedDtoFields, dtoPath);
             AddAssertionCase(spriggitField.Key, spriggitField.Value, dtoPath, dtoValue, ValidationValueNormalizer.None, assertionCases);
         }
+    }
+
+    /// <summary>
+    /// Builds the flattened DTO path for a form-key list item, supporting either a direct FormKeyDTO item or a child leaf.
+    /// </summary>
+    /// <param name="rule">The form-key list validation rule being applied.</param>
+    /// <param name="index">The zero-based list item index.</param>
+    /// <returns>The flattened DTO path for the indexed form-key value.</returns>
+    private static string GetFormKeyListDtoPath(ValidationFieldRule rule, int index)
+    {
+        var dtoItemPath = rule.DtoPath + "[" + index.ToString(CultureInfo.InvariantCulture) + "]";
+        return string.IsNullOrWhiteSpace(rule.ExpectedValue)
+            ? dtoItemPath
+            : dtoItemPath + "." + rule.ExpectedValue;
     }
 
     private static void ApplyScalarListRule(
@@ -525,6 +771,11 @@ public class ValidationSpecRunner
         if (spriggitFields.ContainsKey(rule.SpriggitPath + ".Count"))
         {
             MarkMatched(matchedSpriggitFields, rule.SpriggitPath + ".Count");
+        }
+
+        if (spriggitFields.ContainsKey(rule.SpriggitPath))
+        {
+            MarkMatched(matchedSpriggitFields, rule.SpriggitPath);
         }
 
         foreach (var spriggitValue in spriggitValues)
@@ -636,58 +887,6 @@ public class ValidationSpecRunner
         MarkMatched(matchedDtoFields, "Sounds[" + soundIndex.ToString(CultureInfo.InvariantCulture) + "].SoundSlot");
         MarkMatched(matchedDtoFields, "Sounds.Count");
         AddAssertionCase(rule.SpriggitPath, spriggitValue, dtoPath, dtoValue, rule.Normalizer, assertionCases);
-    }
-
-    private static void ApplyRawPayloadSlotRule(
-        ValidationFieldRule rule,
-        IReadOnlyDictionary<string, string> spriggitFields,
-        IReadOnlyDictionary<string, string> dtoFields,
-        ISet<string> matchedSpriggitFields,
-        ISet<string> matchedDtoFields,
-        IList<string> diagnostics,
-        IList<ValidationAssertionCase> assertionCases)
-    {
-        var matchingSpriggitFields = spriggitFields.Keys.Where(field => IsUnderPath(field, rule.SpriggitPath)).ToList();
-        if (matchingSpriggitFields.Count == 0)
-        {
-            return;
-        }
-
-        var payloadIndex = FindRawPayloadIndex(dtoFields, rule.DtoPath, rule.SpriggitPath);
-        if (payloadIndex < 0)
-        {
-            diagnostics.Add("DTO raw payload slot '" + rule.DtoPath + "' was missing for Spriggit path '" + rule.SpriggitPath + "'.");
-            return;
-        }
-
-        var slotPath = "RawPayloads[" + payloadIndex.ToString(CultureInfo.InvariantCulture) + "].PayloadSlot";
-        var valuePath = "RawPayloads[" + payloadIndex.ToString(CultureInfo.InvariantCulture) + "].PayloadValue";
-        if (!dtoFields.TryGetValue(valuePath, out var payloadValue) || string.IsNullOrWhiteSpace(payloadValue))
-        {
-            diagnostics.Add("DTO raw payload value '" + valuePath + "' was missing or empty for Spriggit path '" + rule.SpriggitPath + "'.");
-            return;
-        }
-
-        foreach (var spriggitField in matchingSpriggitFields)
-        {
-            MarkMatched(matchedSpriggitFields, spriggitField);
-        }
-
-        MarkMatched(matchedDtoFields, slotPath);
-        MarkMatched(matchedDtoFields, valuePath);
-        MarkMatched(matchedDtoFields, "RawPayloads[" + payloadIndex.ToString(CultureInfo.InvariantCulture) + "].PayloadIndex");
-        MarkMatched(matchedDtoFields, "RawPayloads[" + payloadIndex.ToString(CultureInfo.InvariantCulture) + "].PayloadType");
-        MarkMatched(matchedDtoFields, "RawPayloads[" + payloadIndex.ToString(CultureInfo.InvariantCulture) + "].SourcePath");
-        if (spriggitFields.TryGetValue(rule.SpriggitPath, out var spriggitValue))
-        {
-            AddAssertionCase(rule.SpriggitPath, spriggitValue, valuePath, payloadValue, ValidationValueNormalizer.HexPayload, assertionCases);
-        }
-
-        var expectedSlot = dtoFields[slotPath].StartsWith(rule.DtoPath + "[", StringComparison.OrdinalIgnoreCase) ||
-            dtoFields[slotPath].StartsWith(rule.DtoPath + ".", StringComparison.OrdinalIgnoreCase)
-            ? dtoFields[slotPath]
-            : rule.DtoPath;
-        AddAssertionCase(rule.SpriggitPath, expectedSlot, slotPath, dtoFields[slotPath], ValidationValueNormalizer.None, assertionCases);
     }
 
     private static void ApplyDtoExpectedValueRule(
@@ -846,7 +1045,8 @@ public class ValidationSpecRunner
         {
             if (matchedSpriggitFields.Contains(field.Key) ||
                 ignoredSpriggitFields.Contains(field.Key) ||
-                IsSpriggitInlineObjectMarker(field.Key, field.Value))
+                IsSpriggitInlineObjectMarker(field.Key, field.Value) ||
+                IsSpriggitCollectionIndexFieldBackedByPathIndex(field.Key, field.Value))
             {
                 continue;
             }
@@ -862,17 +1062,6 @@ public class ValidationSpecRunner
                 "Spriggit value: " + field.Value +
                 System.Environment.NewLine +
                 "Record: " + spec.FormKey);
-        }
-    }
-
-    private static void AddIgnoredSpriggitPrefix(
-        ValidationFieldRule rule,
-        IReadOnlyDictionary<string, string> spriggitFields,
-        ISet<string> ignoredSpriggitFields)
-    {
-        foreach (var field in spriggitFields.Keys.Where(field => IsUnderPath(field, rule.SpriggitPath)))
-        {
-            ignoredSpriggitFields.Add(field);
         }
     }
 
@@ -924,6 +1113,11 @@ public class ValidationSpecRunner
             return true;
         }
 
+        if (IsDtoCollectionIndexFieldBackedByPathIndex(fieldName, fieldValue))
+        {
+            return true;
+        }
+
         return false;
     }
 
@@ -949,6 +1143,13 @@ public class ValidationSpecRunner
         }
 
         if (fieldName is "ObjectBounds.First" or "ObjectBounds.Second" &&
+            string.Equals(fieldValue, "0, 0, 0", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if ((string.Equals(fieldName, "ObjectBoundsFirst", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "ObjectBoundsSecond", StringComparison.OrdinalIgnoreCase)) &&
             string.Equals(fieldValue, "0, 0, 0", StringComparison.Ordinal))
         {
             return true;
@@ -984,7 +1185,11 @@ public class ValidationSpecRunner
              fieldName.EndsWith(".ActivityIndex", StringComparison.OrdinalIgnoreCase) ||
              fieldName.EndsWith(".EvaluatorIndex", StringComparison.OrdinalIgnoreCase) ||
              fieldName.EndsWith(".ConditionIndex", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".MorphIndex", StringComparison.OrdinalIgnoreCase) ||
+             fieldName.EndsWith(".HealthOffset", StringComparison.OrdinalIgnoreCase) ||
              fieldName.EndsWith(".RunOnTabIndex", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "ObjectBoundsFirst", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName, "ObjectBoundsSecond", StringComparison.OrdinalIgnoreCase) ||
              string.Equals(fieldName, "Level", StringComparison.OrdinalIgnoreCase) ||
              string.Equals(fieldName, "NumRanks", StringComparison.OrdinalIgnoreCase) ||
              string.Equals(fieldName, "BleedoutDefault", StringComparison.OrdinalIgnoreCase) ||
@@ -1009,6 +1214,22 @@ public class ValidationSpecRunner
         if (fieldName.Contains("Properties[", StringComparison.OrdinalIgnoreCase) &&
             fieldName.EndsWith(".Value", StringComparison.OrdinalIgnoreCase) &&
             string.Equals(fieldValue, "0", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (fieldName.StartsWith("FaceMorph.", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(fieldValue, "0", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if ((fieldName.StartsWith("FaceMorphs[", StringComparison.OrdinalIgnoreCase) &&
+             fieldName.EndsWith(".Scale", StringComparison.OrdinalIgnoreCase) &&
+             string.Equals(fieldValue, "0", StringComparison.Ordinal)) ||
+            (fieldName.StartsWith("FaceMorphs[", StringComparison.OrdinalIgnoreCase) &&
+             fieldName.EndsWith(".Position", StringComparison.OrdinalIgnoreCase) &&
+             string.Equals(fieldValue, "0, 0, 0", StringComparison.Ordinal)))
         {
             return true;
         }
@@ -1050,6 +1271,7 @@ public class ValidationSpecRunner
              (fieldName.StartsWith("NavmeshGeometry.CoverTriangleMappings[", StringComparison.OrdinalIgnoreCase) &&
               (fieldName.EndsWith(".Cover", StringComparison.OrdinalIgnoreCase) ||
                fieldName.EndsWith(".Triangle", StringComparison.OrdinalIgnoreCase))) ||
+             fieldName.EndsWith(".Unknown1", StringComparison.OrdinalIgnoreCase) ||
              fieldName.EndsWith(".Data.FirstParameter", StringComparison.OrdinalIgnoreCase) ||
              fieldName.EndsWith(".Data.SecondParameter", StringComparison.OrdinalIgnoreCase) ||
              fieldName.EndsWith(".Data.ParameterOneNumber", StringComparison.OrdinalIgnoreCase) ||
@@ -1268,16 +1490,222 @@ public class ValidationSpecRunner
                 ? value.Replace('/', '\\')
                 : "Meshes\\" + value.Replace('/', '\\'),
             ValidationValueNormalizer.Color => FormatSpriggitColor(value),
+            ValidationValueNormalizer.ColorOrDecimalNumber => NormalizeColorOrDecimalNumber(value),
             ValidationValueNormalizer.DecimalFormKeyId => FormatDecimalFormKeyId(value),
-            ValidationValueNormalizer.DecimalNumber => double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue)
-                ? Math.Round(doubleValue, 6).ToString("0.######", CultureInfo.InvariantCulture)
-                : value,
+            ValidationValueNormalizer.DecimalNumber => NormalizeDecimalNumber(value),
             ValidationValueNormalizer.FloatNumber => double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var floatValue)
                 ? Math.Round(floatValue, 4).ToString("0.####", CultureInfo.InvariantCulture)
                 : value,
             ValidationValueNormalizer.JsonWhitespace => Regex.Replace(value, "\\s+", " ").Trim(),
+            ValidationValueNormalizer.StarfieldMajorFlagName => string.Equals(value, "VisibleWhenDistant", StringComparison.Ordinal)
+                ? "HasDistantLOD"
+                : value,
+            ValidationValueNormalizer.MajorFlagList => NormalizeMajorFlagList(value),
+            ValidationValueNormalizer.SkyrimMajorFlagList => NormalizeMajorFlagList(value),
             _ => value
         };
+    }
+
+    /// <summary>
+    /// Normalizes either a color value or a decimal number for mixed validation paths.
+    /// </summary>
+    /// <param name="value">The flattened field value to normalize.</param>
+    /// <returns>The normalized color or numeric value.</returns>
+    private static string NormalizeColorOrDecimalNumber(string value)
+    {
+        var colorValue = FormatSpriggitColor(value);
+        return string.Equals(colorValue, value, StringComparison.Ordinal)
+            ? NormalizeDecimalNumber(value)
+            : colorValue;
+    }
+
+    /// <summary>
+    /// Determines whether a DTO field stores only the collection index already encoded by its flattened path.
+    /// </summary>
+    /// <param name="fieldName">The flattened DTO field path being evaluated.</param>
+    /// <param name="fieldValue">The flattened DTO field value.</param>
+    /// <returns>
+    /// <c>true</c> when the field value repeats an indexed collection position used for deterministic persistence ordering.
+    /// </returns>
+    private static bool IsDtoCollectionIndexFieldBackedByPathIndex(string fieldName, string fieldValue)
+    {
+        if (!int.TryParse(fieldValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+        {
+            return false;
+        }
+
+        if (fieldName.EndsWith(".StructIndex", StringComparison.OrdinalIgnoreCase) &&
+            fieldName.Contains(".Members[", StringComparison.OrdinalIgnoreCase))
+        {
+            var memberPathIndex = fieldName.IndexOf(".Members[", StringComparison.OrdinalIgnoreCase);
+            return TryGetLastIndexedPathIndex(fieldName[..memberPathIndex], out var structIndex) &&
+                   value == structIndex;
+        }
+
+        return (fieldName.EndsWith(".GridArrayIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".TriangleIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".VertexIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".StructIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".MemberIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".FactionIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".ItemIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".PerkIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".PropertyIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".SkillIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".MorphIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".FaceDialPositionIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".FaceMorphIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".MorphBlendIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".MorphGroupIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".TintIndex", StringComparison.OrdinalIgnoreCase) ||
+                fieldName.EndsWith(".TintLayerIndex", StringComparison.OrdinalIgnoreCase)) &&
+               TryGetLastIndexedPathIndex(fieldName, out var pathIndex) &&
+               value == pathIndex;
+    }
+
+    /// <summary>
+    /// Determines whether a Spriggit path is only the YAML object wrapper for an indexed collection item.
+    /// </summary>
+    /// <param name="fieldName">The flattened Spriggit field path being evaluated.</param>
+    /// <param name="collectionPath">The root collection path from the active validation rule.</param>
+    /// <returns><c>true</c> when the path names the collection item itself rather than a child value.</returns>
+    private static bool IsSpriggitCollectionItemWrapper(string fieldName, string collectionPath)
+    {
+        if (!fieldName.StartsWith(collectionPath + "[", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var closingBracket = fieldName.IndexOf(']', collectionPath.Length + 1);
+        return closingBracket == fieldName.Length - 1;
+    }
+
+    /// <summary>
+    /// Normalizes numeric Spriggit and DTO values while preserving float max sentinel values that lose precision when
+    /// read back through a double-valued DTO property.
+    /// </summary>
+    /// <param name="value">The flattened field value to normalize.</param>
+    /// <returns>The normalized numeric text, or the original value when it is not numeric.</returns>
+    private static string NormalizeDecimalNumber(string value)
+    {
+        if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue))
+        {
+            return value;
+        }
+
+        if (Math.Abs(doubleValue) > 1E20 &&
+            float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var singleValue))
+        {
+            return singleValue.ToString("G8", CultureInfo.InvariantCulture);
+        }
+
+        return Math.Round(doubleValue, 6).ToString("0.######", CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Normalizes Skyrim flag-list text into the combined integer value emitted by Mutagen-backed DTO readback.
+    /// </summary>
+    /// <param name="value">The flattened flag-list value to normalize.</param>
+    /// <returns>The combined integer flag value when the input is a recognized flag list; otherwise, the original value.</returns>
+    private static string NormalizeMajorFlagList(string value)
+    {
+        if (long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var storedValue))
+        {
+            return storedValue.ToString(CultureInfo.InvariantCulture);
+        }
+
+        long combinedValue = 0;
+        var sawFlag = false;
+        foreach (var part in value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (part.StartsWith("0x", StringComparison.OrdinalIgnoreCase) &&
+                long.TryParse(part.AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var hexValue))
+            {
+                combinedValue |= hexValue;
+                sawFlag = true;
+                continue;
+            }
+
+            if (string.Equals(part, "Compressed", StringComparison.OrdinalIgnoreCase))
+            {
+                combinedValue |= 0x40000;
+                sawFlag = true;
+                continue;
+            }
+
+            if (string.Equals(part, "Female", StringComparison.OrdinalIgnoreCase))
+            {
+                combinedValue |= 0x1;
+                sawFlag = true;
+                continue;
+            }
+
+            if (string.Equals(part, "Essential", StringComparison.OrdinalIgnoreCase))
+            {
+                combinedValue |= 0x2;
+                sawFlag = true;
+                continue;
+            }
+
+            if (string.Equals(part, "Respawn", StringComparison.OrdinalIgnoreCase))
+            {
+                combinedValue |= 0x8;
+                sawFlag = true;
+                continue;
+            }
+
+            if (string.Equals(part, "Unique", StringComparison.OrdinalIgnoreCase))
+            {
+                combinedValue |= 0x20;
+                sawFlag = true;
+                continue;
+            }
+
+            if (string.Equals(part, "BleedoutOverride", StringComparison.OrdinalIgnoreCase))
+            {
+                combinedValue |= 0x20000000;
+                sawFlag = true;
+            }
+        }
+
+        return sawFlag
+            ? combinedValue.ToString(CultureInfo.InvariantCulture)
+            : value;
+    }
+
+    /// <summary>
+    /// Determines whether a Spriggit field stores only the collection index already encoded by its flattened path.
+    /// </summary>
+    /// <param name="fieldName">The flattened Spriggit field path being evaluated.</param>
+    /// <param name="fieldValue">The flattened Spriggit field value.</param>
+    /// <returns><c>true</c> when the field value repeats an indexed collection position.</returns>
+    private static bool IsSpriggitCollectionIndexFieldBackedByPathIndex(string fieldName, string fieldValue)
+    {
+        return fieldName.EndsWith(".Index", StringComparison.OrdinalIgnoreCase) &&
+               int.TryParse(fieldValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) &&
+               TryGetLastIndexedPathIndex(fieldName, out var pathIndex) &&
+               value == pathIndex;
+    }
+
+    /// <summary>
+    /// Gets the final bracketed collection index from a flattened DTO path.
+    /// </summary>
+    /// <param name="path">The flattened DTO path to inspect.</param>
+    /// <param name="index">The parsed final collection index, or zero when parsing fails.</param>
+    /// <returns><c>true</c> when the path contains a final bracketed integer index.</returns>
+    private static bool TryGetLastIndexedPathIndex(string path, out int index)
+    {
+        index = 0;
+        var end = path.LastIndexOf(']');
+        if (end < 0)
+        {
+            return false;
+        }
+
+        var start = path.LastIndexOf('[', end);
+        return start >= 0 &&
+               start < end &&
+               int.TryParse(path[(start + 1)..end], NumberStyles.Integer, CultureInfo.InvariantCulture, out index);
     }
 
     private static string FormatDecimalFormKeyId(string value)
@@ -1431,21 +1859,10 @@ public class ValidationSpecRunner
         return int.TryParse(fieldName.AsSpan(prefix.Length, indexEnd - prefix.Length), NumberStyles.Integer, CultureInfo.InvariantCulture, out index);
     }
 
-    private static bool IsSpriggitScriptingListItemNameWithoutDtoShape(string fieldName)
-    {
-        if (fieldName.Contains(".Objects[", StringComparison.OrdinalIgnoreCase) &&
-            fieldName.EndsWith(".Name", StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        return fieldName.Contains(".Structs[", StringComparison.OrdinalIgnoreCase) ||
-               fieldName.EndsWith(".Structs.Count", StringComparison.OrdinalIgnoreCase);
-    }
-
     private static bool IsSpriggitEmptyCollectionRoot(string value)
     {
         return string.Equals(value, "[]", StringComparison.Ordinal) ||
+               string.Equals(value, "{}", StringComparison.Ordinal) ||
                string.Equals(value, "Empty", StringComparison.OrdinalIgnoreCase);
     }
 
@@ -1557,68 +1974,6 @@ public class ValidationSpecRunner
         }
 
         return -1;
-    }
-
-    private static int FindRawPayloadIndex(
-        IReadOnlyDictionary<string, string> dtoFields,
-        string payloadSlot,
-        string? sourcePath)
-    {
-        foreach (var field in dtoFields)
-        {
-            if (!field.Key.StartsWith("RawPayloads[", StringComparison.OrdinalIgnoreCase) ||
-                !field.Key.EndsWith("].PayloadSlot", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            if (!string.Equals(field.Value, payloadSlot, StringComparison.OrdinalIgnoreCase) &&
-                !field.Value.StartsWith(payloadSlot + "[", StringComparison.OrdinalIgnoreCase) &&
-                !field.Value.StartsWith(payloadSlot + ".", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            var indexStart = "RawPayloads[".Length;
-            var indexLength = field.Key.IndexOf(']', indexStart) - indexStart;
-            if (indexLength <= 0)
-            {
-                continue;
-            }
-
-            if (int.TryParse(field.Key.AsSpan(indexStart, indexLength), NumberStyles.Integer, CultureInfo.InvariantCulture, out var index))
-            {
-                if (!string.IsNullOrWhiteSpace(sourcePath) &&
-                    !RawPayloadSourcePathMatches(dtoFields, index, sourcePath))
-                {
-                    continue;
-                }
-
-                return index;
-            }
-        }
-
-        return -1;
-    }
-
-    private static bool RawPayloadSourcePathMatches(
-        IReadOnlyDictionary<string, string> dtoFields,
-        int payloadIndex,
-        string sourcePath)
-    {
-        var dtoSourcePath = "RawPayloads[" + payloadIndex.ToString(CultureInfo.InvariantCulture) + "].SourcePath";
-        if (!dtoFields.TryGetValue(dtoSourcePath, out var actualSourcePath))
-        {
-            return false;
-        }
-
-        if (string.Equals(actualSourcePath, sourcePath, StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        var sourceLeaf = GetPathLeaf(sourcePath);
-        return string.Equals(GetPathLeaf(actualSourcePath), sourceLeaf, StringComparison.OrdinalIgnoreCase);
     }
 
     private sealed class TranslatedFieldEntry

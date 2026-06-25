@@ -353,19 +353,19 @@ public class RecordComparisonServiceTests
                 CreateKeywordMapping("Patch.esp", RecordTypeCatalog.Static.RecordID, formKey, CreateFormKey("Starfield.esm", 0x666), 0)
             ]
         };
-        var rawRecordPayloadRepository = new TestRawRecordPayloadRepository
+        var reflectionRepository = new TestReflectionRepository
         {
             Records =
             [
-                CreateRawRecordPayload("Base.esm", formKey, "Components.ReflectionComponent.REFL", 0, "Byte[]", "AABB"),
-                CreateRawRecordPayload("Patch.esp", formKey, "Components.ReflectionComponent.REFL", 0, "Byte[]", "CCDD")
+                CreateReflection("Base.esm", formKey, 0, "ReflectionComponent", "Components[0].REFL", "AABB"),
+                CreateReflection("Patch.esp", formKey, 0, "ReflectionComponent", "Components[0].REFL", "CCDD")
             ]
         };
         var service = CreateService(
             staticRepository: staticRepository,
             modelRepository: modelRepository,
             keywordMappingRepository: keywordMappingRepository,
-            rawRecordPayloadRepository: rawRecordPayloadRepository);
+            reflectionRepository: reflectionRepository);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Static.RecordID, formKey);
 
@@ -378,13 +378,15 @@ public class RecordComparisonServiceTests
         var model = comparison.Fields.Single(field => field.FieldName == "Model");
         model.Children.Single(field => field.FieldName == "File").Values.Select(value => value.DisplayValue).ShouldBe(["Meshes\\SetDressing\\Rock01.nif", "Meshes\\SetDressing\\Rock01.nif"]);
         model.Children.Single(field => field.FieldName == "Data").Values.Select(value => value.DisplayValue).ShouldBe(["AABB", "CCDD"]);
-        var rawPayloads = comparison.Fields.Single(field => field.FieldName == "Raw Payloads");
-        var reflect = rawPayloads.Children.Single(field => field.FieldName == "Components.ReflectionComponent.REFL");
-        var reflectValues = reflect.Children.Single(field => field.FieldName == "Value").Values;
+        var reflection = comparison.Fields.Single(field => field.FieldName == "Reflection");
+        var reflect = reflection.Children.Single(field => field.FieldName == "Components[0].REFL");
+        reflect.Children.Single(field => field.FieldName == "ComponentType").Values.Select(value => value.DisplayValue).ShouldBe(["ReflectionComponent", "ReflectionComponent"]);
+        reflect.Children.Single(field => field.FieldName == "SourcePath").Values.Select(value => value.DisplayValue).ShouldBe(["Components[0].REFL", "Components[0].REFL"]);
+        var reflectValues = reflect.Children.Single(field => field.FieldName == "REFL").Values;
         reflectValues.Select(value => value.DisplayValue).ShouldBe(["[UNPARSEABLE REFLECTION DATA]", "[UNPARSEABLE REFLECTION DATA]"]);
         reflectValues.Select(value => value.DetailValue).ShouldBe(["AABB", "CCDD"]);
         reflectValues.Select(value => value.DisplayKind).ShouldBe([RecordComparisonValueDisplayKind.RawBinaryPayload, RecordComparisonValueDisplayKind.RawBinaryPayload]);
-        reflect.Children.Single(field => field.FieldName == "Value").State.ShouldBe(RecordComparisonValueState.Conflict);
+        reflect.Children.Single(field => field.FieldName == "REFL").State.ShouldBe(RecordComparisonValueState.Conflict);
     }
 
     [Fact]
@@ -496,14 +498,7 @@ public class RecordComparisonServiceTests
                 CreateConditionForm("Patch.esp", formKey, 2, patchFirstParameter, null)
             ]
         };
-        var rawRecordPayloadRepository = new TestRawRecordPayloadRepository
-        {
-            Records =
-            [
-                CreateRawRecordPayload("Base.esm", RecordTypeCatalog.ConditionForm.RecordID, formKey, "Conditions", 0, "Conditions", "RawCondition")
-            ]
-        };
-        var service = CreateService(conditionFormRepository: conditionFormRepository, rawRecordPayloadRepository: rawRecordPayloadRepository);
+        var service = CreateService(conditionFormRepository: conditionFormRepository);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.ConditionForm.RecordID, formKey);
 
@@ -721,7 +716,7 @@ public class RecordComparisonServiceTests
         TestKeywordMappingRepository? keywordMappingRepository = null,
         TestSoundMappingRepository? soundMappingRepository = null,
         TestScriptingAdapterRepository? scriptingAdapterRepository = null,
-        TestRawRecordPayloadRepository? rawRecordPayloadRepository = null,
+        TestReflectionRepository? reflectionRepository = null,
         TestRecordLocalizedStringRepository? recordLocalizedStringRepository = null,
         TestGameSelectionService? gameSelectionService = null)
     {
@@ -748,7 +743,7 @@ public class RecordComparisonServiceTests
             keywordMappingRepository ?? new TestKeywordMappingRepository(),
             soundMappingRepository ?? new TestSoundMappingRepository(),
             scriptingAdapterRepository ?? new TestScriptingAdapterRepository(),
-            rawRecordPayloadRepository ?? new TestRawRecordPayloadRepository(),
+            reflectionRepository ?? new TestReflectionRepository(),
             recordLocalizedStringRepository ?? new TestRecordLocalizedStringRepository(),
             gameSelectionService ?? new TestGameSelectionService());
     }
@@ -1353,31 +1348,25 @@ public class RecordComparisonServiceTests
         };
     }
 
-    private static RawRecordPayloadDTO CreateRawRecordPayload(string fileName, FormKeyDTO formKey, string payloadSlot, int payloadIndex, string payloadType, string payloadValue)
+    private static ReflectionDTO CreateReflection(string fileName, FormKeyDTO formKey, int componentIndex, string componentType, string sourcePath, string refl)
     {
-        return CreateRawRecordPayload(fileName, RecordTypeCatalog.Static.RecordID, formKey, payloadSlot, payloadIndex, payloadType, payloadValue);
+        return new ReflectionDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            RecordType = RecordTypeCatalog.Static.RecordID,
+            FormKey = formKey,
+            ComponentIndex = componentIndex,
+            ComponentType = componentType,
+            SourcePath = sourcePath,
+            REFL = refl,
+            ImportedAtUTC = DateTime.UtcNow
+        };
     }
 
     private static string FormatFormKey(FormKeyDTO formKey)
     {
         return $"{formKey.ModKey.FileName}:{formKey.Id:X8}";
-    }
-
-    private static RawRecordPayloadDTO CreateRawRecordPayload(string fileName, string recordType, FormKeyDTO formKey, string payloadSlot, int payloadIndex, string payloadType, string payloadValue, string? sourcePath = null)
-    {
-        return new RawRecordPayloadDTO
-        {
-            Game = SupportedGame.Starfield,
-            ModKey = CreateModKey(fileName),
-            RecordType = recordType,
-            FormKey = formKey,
-            PayloadSlot = payloadSlot,
-            PayloadIndex = payloadIndex,
-            PayloadType = payloadType,
-            SourcePath = sourcePath ?? payloadSlot,
-            PayloadValue = payloadValue,
-            ImportedAtUTC = DateTime.UtcNow
-        };
     }
 
     private static ScriptingAdapterDTO CreateScriptingAdapter(string fileName, FormKeyDTO formKey, string name, string propertyName, string propertyValue)
@@ -2088,14 +2077,14 @@ public class RecordComparisonServiceTests
         { }
     }
 
-    private sealed class TestRawRecordPayloadRepository : IRawRecordPayloadRepository
+    private sealed class TestReflectionRepository : IReflectionRepository
     {
-        public IReadOnlyList<RawRecordPayloadDTO> Records { get; set; } = [];
+        public IReadOnlyList<ReflectionDTO> Records { get; set; } = [];
 
-        public void Save(RawRecordPayloadDTO dto)
+        public void Save(ReflectionDTO dto)
         { }
 
-        public IReadOnlyList<RawRecordPayloadDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+        public IReadOnlyList<ReflectionDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
         {
             return Records;
         }

@@ -6,17 +6,16 @@ public enum ValidationRuleKind
     OptionalField,
     FormKeyObjectField,
     PathPrefix,
+    CanonicalFormKeyCountList,
     FormKeyList,
     ScalarList,
     TranslatedField,
     SoundSlot,
-    RawPayloadSlot,
     DtoExpectedValue,
     DtoDefaultWhenSpriggitAbsent,
     DtoNonEmpty,
     SpriggitAbsent,
     IgnoreSpriggit,
-    IgnoreSpriggitPrefix,
     IgnoreDto,
     IgnoreDtoPrefix
 }

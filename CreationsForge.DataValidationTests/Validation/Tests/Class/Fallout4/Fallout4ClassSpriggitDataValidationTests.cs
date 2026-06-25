@@ -15,7 +15,16 @@ public class Fallout4ClassSpriggitDataValidationTests : SpriggitDataValidationTe
     [Trait("SpriggitFile", "Classes/ZeroSPECIALclass - 1CD0A8_Fallout4.esm.yaml")]
     public void Fallout4_CLAS_ShouldMatchSpriggitSample_ZeroSPECIALclass()
     {
-        AssertClassSpec(ClassValidationSpecs.Fallout4_ZeroSPECIALclass());
+        var spec = ClassValidationSpecs.Fallout4_ZeroSPECIALclass();
+        var dto = Helpers.GetDTO<ClassDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -26,7 +35,16 @@ public class Fallout4ClassSpriggitDataValidationTests : SpriggitDataValidationTe
     [Trait("SpriggitFile", "Classes/Citizen - 01326B_Fallout4.esm.yaml")]
     public void Fallout4_CLAS_ShouldMatchSpriggitSample_Citizen()
     {
-        AssertClassSpec(ClassValidationSpecs.Fallout4_Citizen());
+        var spec = ClassValidationSpecs.Fallout4_Citizen();
+        var dto = Helpers.GetDTO<ClassDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -37,7 +55,16 @@ public class Fallout4ClassSpriggitDataValidationTests : SpriggitDataValidationTe
     [Trait("SpriggitFile", "Classes/BloatflyClass - 031757_Fallout4.esm.yaml")]
     public void Fallout4_CLAS_ShouldMatchSpriggitSample_BloatflyClass()
     {
-        AssertClassSpec(ClassValidationSpecs.Fallout4_BloatflyClass());
+        var spec = ClassValidationSpecs.Fallout4_BloatflyClass();
+        var dto = Helpers.GetDTO<ClassDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -48,11 +75,7 @@ public class Fallout4ClassSpriggitDataValidationTests : SpriggitDataValidationTe
     [Trait("SpriggitFile", "Classes/MQ203Class - 20ED07_Fallout4.esm.yaml")]
     public void Fallout4_CLAS_ShouldMatchSpriggitSample_MQ203Class()
     {
-        AssertClassSpec(ClassValidationSpecs.Fallout4_MQ203Class());
-    }
-
-    private void AssertClassSpec(ValidationSpec spec)
-    {
+        var spec = ClassValidationSpecs.Fallout4_MQ203Class();
         var dto = Helpers.GetDTO<ClassDTO>(spec.Game, spec.RecordType, spec.FormKey);
 
         var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);

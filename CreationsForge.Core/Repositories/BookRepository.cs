@@ -14,7 +14,7 @@ public class BookRepository : TypedRecordRepositoryBase, IBookRepository
     private readonly ISoundMappingRepository SoundMappingRepository;
     private readonly IScriptingAdapterRepository ScriptingAdapterRepository;
     private readonly IRecordComponentRepository RecordComponentRepository;
-    private readonly IRawRecordPayloadRepository RawRecordPayloadRepository;
+    private readonly IReflectionRepository ReflectionRepository;
 
     public BookRepository(
         IDatabase database,
@@ -24,7 +24,7 @@ public class BookRepository : TypedRecordRepositoryBase, IBookRepository
         ISoundMappingRepository soundMappingRepository,
         IScriptingAdapterRepository scriptingAdapterRepository,
         IRecordComponentRepository recordComponentRepository,
-        IRawRecordPayloadRepository rawRecordPayloadRepository)
+        IReflectionRepository reflectionRepository)
         : base(database, recordInstanceRepository)
     {
         ModelRepository = modelRepository;
@@ -32,7 +32,7 @@ public class BookRepository : TypedRecordRepositoryBase, IBookRepository
         SoundMappingRepository = soundMappingRepository;
         ScriptingAdapterRepository = scriptingAdapterRepository;
         RecordComponentRepository = recordComponentRepository;
-        RawRecordPayloadRepository = rawRecordPayloadRepository;
+        ReflectionRepository = reflectionRepository;
     }
 
     public override string RecordType => RecordTypeCatalog.Book.RecordID;
@@ -89,7 +89,7 @@ public class BookRepository : TypedRecordRepositoryBase, IBookRepository
         var sounds = SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey);
         var scriptingAdapters = ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey);
         var components = RecordComponentRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey);
-        var rawPayloads = RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey);
+        var reflections = ReflectionRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey);
         foreach (var record in records)
         {
             record.Models = models.Where(model => IsSameModKey(model.ModKey, record.ModKey)).OrderBy(model => model.ModelSlot).ThenBy(model => model.ModelGender).ToList();
@@ -97,7 +97,7 @@ public class BookRepository : TypedRecordRepositoryBase, IBookRepository
             record.Sounds = sounds.Where(sound => IsSameModKey(sound.ModKey, record.ModKey)).OrderBy(sound => sound.SoundIndex).ToList();
             record.ScriptingAdapters = scriptingAdapters.Where(adapter => IsSameModKey(adapter.ModKey, record.ModKey)).OrderBy(adapter => adapter.ScriptIndex).ToList();
             record.Components = components.Where(component => IsSameModKey(component.ModKey, record.ModKey)).OrderBy(component => component.ComponentIndex).ToList();
-            record.RawPayloads = rawPayloads.Where(payload => IsSameModKey(payload.ModKey, record.ModKey)).OrderBy(payload => payload.PayloadSlot).ThenBy(payload => payload.PayloadIndex).ToList();
+            record.Reflections = reflections.Where(reflection => IsSameModKey(reflection.ModKey, record.ModKey)).OrderBy(reflection => reflection.ComponentIndex).ToList();
         }
 
         return records;

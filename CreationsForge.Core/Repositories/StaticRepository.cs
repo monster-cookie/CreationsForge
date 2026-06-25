@@ -11,7 +11,7 @@ public class StaticRepository : TypedRecordRepositoryBase, IStaticRepository
 {
     private readonly IModelRepository ModelRepository;
     private readonly IKeywordMappingRepository KeywordMappingRepository;
-    private readonly IRawRecordPayloadRepository RawRecordPayloadRepository;
+    private readonly IReflectionRepository ReflectionRepository;
     private readonly IRecordLocalizedStringRepository RecordLocalizedStringRepository;
 
     public StaticRepository(
@@ -19,13 +19,13 @@ public class StaticRepository : TypedRecordRepositoryBase, IStaticRepository
         IRecordInstanceRepository recordInstanceRepository,
         IModelRepository modelRepository,
         IKeywordMappingRepository keywordMappingRepository,
-        IRawRecordPayloadRepository rawRecordPayloadRepository,
+        IReflectionRepository reflectionRepository,
         IRecordLocalizedStringRepository recordLocalizedStringRepository)
         : base(database, recordInstanceRepository)
     {
         ModelRepository = modelRepository;
         KeywordMappingRepository = keywordMappingRepository;
-        RawRecordPayloadRepository = rawRecordPayloadRepository;
+        ReflectionRepository = reflectionRepository;
         RecordLocalizedStringRepository = recordLocalizedStringRepository;
     }
 
@@ -41,6 +41,7 @@ public class StaticRepository : TypedRecordRepositoryBase, IStaticRepository
                 [
                     SelectColumn("Name"),
                     SelectColumn("Version2"),
+                    SelectColumn("VersionControl"),
                     SelectColumn("ObjectBounds_First", "ObjectBoundsFirst"),
                     SelectColumn("ObjectBounds_Second", "ObjectBoundsSecond"),
                     SelectColumn("MaxAngle"),
@@ -71,7 +72,7 @@ public class StaticRepository : TypedRecordRepositoryBase, IStaticRepository
             .ToList();
         var models = ModelRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey);
         var keywords = KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey);
-        var rawPayloads = RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey);
+        var reflections = ReflectionRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey);
         var properties = FetchPropertiesByFormKey(game, formKey);
         var navmeshGeometries = FetchNavmeshGeometriesByFormKey(game, formKey);
@@ -81,7 +82,7 @@ public class StaticRepository : TypedRecordRepositoryBase, IStaticRepository
             record.Models = models.Where(model => IsSameModKey(model.ModKey, record.ModKey)).OrderBy(model => model.ModelSlot).ThenBy(model => model.ModelGender).ToList();
             record.Keywords = keywords.Where(keyword => IsSameModKey(keyword.ModKey, record.ModKey)).OrderBy(keyword => keyword.KeywordIndex).ToList();
             record.Properties = properties.Where(property => IsSameModKey(property.ModKey, record.ModKey)).OrderBy(property => property.PropertyIndex).ToList();
-            record.RawPayloads = rawPayloads.Where(payload => IsSameModKey(payload.ModKey, record.ModKey)).OrderBy(payload => payload.PayloadSlot).ThenBy(payload => payload.PayloadIndex).ToList();
+            record.Reflections = reflections.Where(reflection => IsSameModKey(reflection.ModKey, record.ModKey)).OrderBy(reflection => reflection.ComponentIndex).ToList();
             record.NavmeshGeometry = navmeshGeometries.FirstOrDefault(navmesh => IsSameModKey(navmesh.ModKey, record.ModKey))?.Geometry;
         }
 
@@ -95,7 +96,7 @@ public class StaticRepository : TypedRecordRepositoryBase, IStaticRepository
             """
             INSERT OR REPLACE INTO Statics (
                 Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Name, Version2, ObjectBounds_First, ObjectBounds_Second, MaxAngle,
+                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Name, Version2, VersionControl, ObjectBounds_First, ObjectBounds_Second, MaxAngle,
                 UnknownDNAMFloat, LeafAmplitude, LeafFrequency, Unused, DNAMDataTypeState, DirtinessScale,
                 SnapTemplate_ModKey_Name, SnapTemplate_ModKey_Type, SnapTemplate_ModKey_FileName, SnapTemplate_FormKey_ID,
                 PreviewTransform_ModKey_Name, PreviewTransform_ModKey_Type, PreviewTransform_ModKey_FileName, PreviewTransform_FormKey_ID,
@@ -103,7 +104,7 @@ public class StaticRepository : TypedRecordRepositoryBase, IStaticRepository
                 Lod_Level0, Lod_Level1, Lod_Level2, Lod_Level3)
             VALUES (
                 @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Name, @Version2, @ObjectBoundsFirst, @ObjectBoundsSecond, @MaxAngle,
+                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Name, @Version2, @VersionControl, @ObjectBoundsFirst, @ObjectBoundsSecond, @MaxAngle,
                 @UnknownDNAMFloat, @LeafAmplitude, @LeafFrequency, @Unused, @DNAMDataTypeState, @DirtinessScale,
                 @SnapTemplateModKeyName, @SnapTemplateModKeyType, @SnapTemplateModKeyFileName, @SnapTemplateFormKeyId,
                 @PreviewTransformModKeyName, @PreviewTransformModKeyType, @PreviewTransformModKeyFileName, @PreviewTransformFormKeyId,
@@ -126,6 +127,7 @@ public class StaticRepository : TypedRecordRepositoryBase, IStaticRepository
                 dto.ImportedAtUTC,
                 Name = GetEnglishText(dto.Name),
                 dto.Version2,
+                dto.VersionControl,
                 dto.ObjectBoundsFirst,
                 dto.ObjectBoundsSecond,
                 dto.MaxAngle,
@@ -169,9 +171,10 @@ public class StaticRepository : TypedRecordRepositoryBase, IStaticRepository
             FormVersion = 0,
             MajorRecordFlags = 0,
             ImportedAtUTC = record.ImportedAtUTC,
-            Name = FromEnglish(record.Name),
-            Version2 = record.Version2,
-            ObjectBoundsFirst = record.ObjectBoundsFirst,
+                Name = FromEnglish(record.Name),
+                Version2 = record.Version2,
+                VersionControl = record.VersionControl,
+                ObjectBoundsFirst = record.ObjectBoundsFirst,
             ObjectBoundsSecond = record.ObjectBoundsSecond,
             MaxAngle = record.MaxAngle,
             UnknownDNAMFloat = record.UnknownDNAMFloat,
@@ -911,6 +914,11 @@ public class StaticRepository : TypedRecordRepositoryBase, IStaticRepository
         public string? Name { get; set; }
 
         public int? Version2 { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional Spriggit/Mutagen version-control header value stored on the static row.
+        /// </summary>
+        public int? VersionControl { get; set; }
 
         public string? ObjectBoundsFirst { get; set; }
 

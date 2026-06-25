@@ -15,7 +15,7 @@ public class TerminalRepository : TypedRecordRepositoryBase, ITerminalRepository
     private readonly IKeywordMappingRepository KeywordMappingRepository;
     private readonly IScriptingAdapterRepository ScriptingAdapterRepository;
     private readonly IScriptFragmentRepository ScriptFragmentRepository;
-    private readonly IRawRecordPayloadRepository RawRecordPayloadRepository;
+    private readonly IReflectionRepository ReflectionRepository;
     private readonly IConditionRuleRepository ConditionRuleRepository;
 
     public TerminalRepository(
@@ -27,7 +27,7 @@ public class TerminalRepository : TypedRecordRepositoryBase, ITerminalRepository
         IKeywordMappingRepository keywordMappingRepository,
         IScriptingAdapterRepository scriptingAdapterRepository,
         IScriptFragmentRepository scriptFragmentRepository,
-        IRawRecordPayloadRepository rawRecordPayloadRepository,
+        IReflectionRepository reflectionRepository,
         IConditionRuleRepository conditionRuleRepository)
         : base(database, recordInstanceRepository)
     {
@@ -37,7 +37,7 @@ public class TerminalRepository : TypedRecordRepositoryBase, ITerminalRepository
         KeywordMappingRepository = keywordMappingRepository;
         ScriptingAdapterRepository = scriptingAdapterRepository;
         ScriptFragmentRepository = scriptFragmentRepository;
-        RawRecordPayloadRepository = rawRecordPayloadRepository;
+        ReflectionRepository = reflectionRepository;
         ConditionRuleRepository = conditionRuleRepository;
     }
 
@@ -88,7 +88,7 @@ public class TerminalRepository : TypedRecordRepositoryBase, ITerminalRepository
         var keywords = KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey);
         var scriptingAdapters = ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey);
         var scriptFragments = ScriptFragmentRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey);
-        var rawPayloads = RawRecordPayloadRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey);
+        var reflections = ReflectionRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey);
         var conditions = ConditionRuleRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey);
         var markerParameters = TerminalMarkerParameterRepository.GetByFormKey(game, formKey);
         var forcedLocations = GetForcedLocationsByFormKey(game, formKey);
@@ -102,7 +102,7 @@ public class TerminalRepository : TypedRecordRepositoryBase, ITerminalRepository
             record.Keywords = keywords.Where(keyword => RecordModKeysMatch(keyword.ModKey, record.ModKey)).OrderBy(keyword => keyword.KeywordIndex).ToList();
             record.ScriptingAdapters = scriptingAdapters.Where(adapter => RecordModKeysMatch(adapter.ModKey, record.ModKey)).OrderBy(adapter => adapter.ScriptIndex).ToList();
             record.ScriptFragments = scriptFragments.Where(fragment => RecordModKeysMatch(fragment.ModKey, record.ModKey)).OrderBy(fragment => fragment.FragmentSlot).ThenBy(fragment => fragment.FragmentIndex).ToList();
-            record.RawPayloads = rawPayloads.Where(payload => RecordModKeysMatch(payload.ModKey, record.ModKey)).OrderBy(payload => payload.PayloadSlot).ThenBy(payload => payload.PayloadIndex).ToList();
+            record.Reflections = reflections.Where(reflection => RecordModKeysMatch(reflection.ModKey, record.ModKey)).OrderBy(reflection => reflection.ComponentIndex).ToList();
             record.Conditions = conditions.Where(condition => RecordModKeysMatch(condition.ModKey, record.ModKey)).OrderBy(condition => condition.ConditionSlot).ThenBy(condition => condition.ConditionIndex).ToList();
             record.MarkerParameters = markerParameters
                 .Where(parameter => RecordModKeysMatch(parameter.ModKey, record.ModKey))

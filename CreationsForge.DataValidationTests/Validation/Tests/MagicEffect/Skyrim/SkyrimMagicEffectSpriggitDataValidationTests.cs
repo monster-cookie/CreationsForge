@@ -15,7 +15,16 @@ public class SkyrimMagicEffectSpriggitDataValidationTests : SpriggitDataValidati
     [Trait("SpriggitFile", "MagicEffects/ShockDamageMassConcAimed - 0D22FA_Skyrim.esm.yaml")]
     public void Skyrim_MGEF_ShouldMatchSpriggitSample_ShockDamageMassConcAimed()
     {
-        AssertMagicEffect(MagicEffectValidationSpecs.Skyrim_ShockDamageMassConcAimed());
+        var spec = MagicEffectValidationSpecs.Skyrim_ShockDamageMassConcAimed();
+        var dto = Helpers.GetDTO<MagicEffectDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -26,7 +35,16 @@ public class SkyrimMagicEffectSpriggitDataValidationTests : SpriggitDataValidati
     [Trait("SpriggitFile", "MagicEffects/dunVolunruudPickaxeEffect - 1019D6_Skyrim.esm.yaml")]
     public void Skyrim_MGEF_ShouldMatchSpriggitSample_dunVolunruudPickaxeEffect()
     {
-        AssertMagicEffect(MagicEffectValidationSpecs.Skyrim_dunVolunruudPickaxeEffect());
+        var spec = MagicEffectValidationSpecs.Skyrim_dunVolunruudPickaxeEffect();
+        var dto = Helpers.GetDTO<MagicEffectDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -37,7 +55,16 @@ public class SkyrimMagicEffectSpriggitDataValidationTests : SpriggitDataValidati
     [Trait("SpriggitFile", "MagicEffects/ArmorFFSelf100 - 0CDB75_Skyrim.esm.yaml")]
     public void Skyrim_MGEF_ShouldMatchSpriggitSample_ArmorFFSelf100()
     {
-        AssertMagicEffect(MagicEffectValidationSpecs.Skyrim_ArmorFFSelf100());
+        var spec = MagicEffectValidationSpecs.Skyrim_ArmorFFSelf100();
+        var dto = Helpers.GetDTO<MagicEffectDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -48,7 +75,16 @@ public class SkyrimMagicEffectSpriggitDataValidationTests : SpriggitDataValidati
     [Trait("SpriggitFile", "MagicEffects/DA15WabbajackFF - 09B246_Skyrim.esm.yaml")]
     public void Skyrim_MGEF_ShouldMatchSpriggitSample_DA15WabbajackFF()
     {
-        AssertMagicEffect(MagicEffectValidationSpecs.Skyrim_DA15WabbajackFF());
+        var spec = MagicEffectValidationSpecs.Skyrim_DA15WabbajackFF();
+        var dto = Helpers.GetDTO<MagicEffectDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -59,11 +95,7 @@ public class SkyrimMagicEffectSpriggitDataValidationTests : SpriggitDataValidati
     [Trait("SpriggitFile", "MagicEffects/dunHalldirAggDownFFAimedArea - 0FB406_Skyrim.esm.yaml")]
     public void Skyrim_MGEF_ShouldMatchSpriggitSample_dunHalldirAggDownFFAimedArea()
     {
-        AssertMagicEffect(MagicEffectValidationSpecs.Skyrim_dunHalldirAggDownFFAimedArea());
-    }
-
-    private void AssertMagicEffect(ValidationSpec spec)
-    {
+        var spec = MagicEffectValidationSpecs.Skyrim_dunHalldirAggDownFFAimedArea();
         var dto = Helpers.GetDTO<MagicEffectDTO>(spec.Game, spec.RecordType, spec.FormKey);
 
         var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);

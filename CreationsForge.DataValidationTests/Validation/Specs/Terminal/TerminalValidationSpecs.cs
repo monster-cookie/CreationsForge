@@ -99,9 +99,8 @@ public static class TerminalValidationSpecs
             .AddRule(ValidationFieldRule.DtoNonEmpty("Components[0].ANAM", "AnimationGraph"))
             .AddRule(ValidationFieldRule.DtoNonEmpty("Components[0].BNAM", "AnimationSkeleton"))
             .AddRule(ValidationFieldRule.DtoNonEmpty("Components[0].CNAM", "AnimationDirectory"))
-            .AddRule(ValidationFieldRule.RawPayloadSlot("Components[1].REFL", "Components.EffectSequenceComponentBinaryOverlay.REFL"))
             .AddRule(ValidationFieldRule.IgnoreSpriggit("Components[0].MutagenObjectType", "AnimationGraphComponent values are projected into direct animation fields."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("Components[1].MutagenObjectType", "REFL component payload type is stored on raw payload rows."))
+            .AddRules(ValidationFieldRule.ComponentReflection(1, 0, 1, "EffectSequenceComponent"))
             .AddRule(ValidationFieldRule.IgnoreDtoPrefix("LocalizedStrings", "Localized backing rows are validated through translated field rules."))
             .AddRule(ValidationFieldRule.PathPrefix("VirtualMachineAdapter.Scripts", "ScriptingAdapters", ScriptingAdapterPathReplacements));
 

@@ -15,7 +15,16 @@ public class Fallout4NPCSpriggitDataValidationTests : SpriggitDataValidationTest
     [Trait("SpriggitFile", "Npcs/BHExtBOSSoldier - 0FB232_Fallout4.esm.yaml")]
     public void Fallout4_NPC__ShouldMatchSpriggitSample_BHExtBOSSoldier()
     {
-        AssertNPC(NPCValidationSpecs.Fallout4_BHExtBOSSoldier());
+        var spec = NPCValidationSpecs.Fallout4_BHExtBOSSoldier();
+        var dto = Helpers.GetDTO<NPCDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -26,7 +35,16 @@ public class Fallout4NPCSpriggitDataValidationTests : SpriggitDataValidationTest
     [Trait("SpriggitFile", "Npcs/BHExtBOSSoldier_PowerArmorAuto - 0FB22E_Fallout4.esm.yaml")]
     public void Fallout4_NPC__ShouldMatchSpriggitSample_BHExtBOSSoldier_PowerArmorAuto()
     {
-        AssertNPC(NPCValidationSpecs.Fallout4_BHExtBOSSoldier_PowerArmorAuto());
+        var spec = NPCValidationSpecs.Fallout4_BHExtBOSSoldier_PowerArmorAuto();
+        var dto = Helpers.GetDTO<NPCDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -37,7 +55,16 @@ public class Fallout4NPCSpriggitDataValidationTests : SpriggitDataValidationTest
     [Trait("SpriggitFile", "Npcs/BHExtBOSSoldier_PowerArmorBigGun - 1D58EA_Fallout4.esm.yaml")]
     public void Fallout4_NPC__ShouldMatchSpriggitSample_BHExtBOSSoldier_PowerArmorBigGun()
     {
-        AssertNPC(NPCValidationSpecs.Fallout4_BHExtBOSSoldier_PowerArmorBigGun());
+        var spec = NPCValidationSpecs.Fallout4_BHExtBOSSoldier_PowerArmorBigGun();
+        var dto = Helpers.GetDTO<NPCDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -48,7 +75,16 @@ public class Fallout4NPCSpriggitDataValidationTests : SpriggitDataValidationTest
     [Trait("SpriggitFile", "Npcs/AllieFilmore - 05E557_Fallout4.esm.yaml")]
     public void Fallout4_NPC__ShouldMatchSpriggitSample_AllieFilmore()
     {
-        AssertNPC(NPCValidationSpecs.Fallout4_AllieFilmore());
+        var spec = NPCValidationSpecs.Fallout4_AllieFilmore();
+        var dto = Helpers.GetDTO<NPCDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -59,11 +95,7 @@ public class Fallout4NPCSpriggitDataValidationTests : SpriggitDataValidationTest
     [Trait("SpriggitFile", "Npcs/AudioTemplateSynthGen1 - 240C21_Fallout4.esm.yaml")]
     public void Fallout4_NPC__ShouldMatchSpriggitSample_AudioTemplateSynthGen1()
     {
-        AssertNPC(NPCValidationSpecs.Fallout4_AudioTemplateSynthGen1());
-    }
-
-    private void AssertNPC(ValidationSpec spec)
-    {
+        var spec = NPCValidationSpecs.Fallout4_AudioTemplateSynthGen1();
         var dto = Helpers.GetDTO<NPCDTO>(spec.Game, spec.RecordType, spec.FormKey);
 
         var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);

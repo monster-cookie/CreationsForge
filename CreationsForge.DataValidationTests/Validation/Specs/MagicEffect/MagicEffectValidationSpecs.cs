@@ -219,18 +219,6 @@ public static class MagicEffectValidationSpecs
         }
     }
 
-    private static IEnumerable<ValidationFieldRule> GetConditionPathRules(
-        int conditionIndex,
-        string spriggitPath,
-        string dtoPath,
-        ValidationValueNormalizer normalizer = ValidationValueNormalizer.None)
-    {
-        yield return ValidationFieldRule.Field(
-            spriggitPath + "[" + conditionIndex.ToString(System.Globalization.CultureInfo.InvariantCulture) + "]",
-            dtoPath,
-            normalizer);
-    }
-
     private static IEnumerable<ValidationFieldRule> GetIndexedSoundRules()
     {
         for (var soundIndex = 0; soundIndex <= 5; soundIndex++)

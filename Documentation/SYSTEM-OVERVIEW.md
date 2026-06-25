@@ -106,7 +106,7 @@ types.
   `ActorValueInformation`, `NPCs`,
   `MagicEffects`, `Perks`, `Statics`, `ConditionForms`, `ConstructibleObjects`, `Books`, `Doors`, `Containers`,
   `Terminals`, `TerminalMarkerParameters`, shared model data, shared keyword lists, shared record components, shared
-  sounds, binary raw payload data, shared localized string data, script fragment data, and shared scripting adapter
+  sounds, component reflection data, shared localized string data, script fragment data, and shared scripting adapter
   data.
 - Preserves plugin source-fingerprint behavior for unchanged, changed, missing, failed, and unsupported plugin states.
 - Preserves record import accounting for the approved typed record types.
@@ -115,7 +115,7 @@ types.
   Core services with a progress screen, and browsing imported typed records in a left-side tree with category counts,
   per-record
   plugin usage counts, scalar comparison rows, and supported child comparison rows such as CNDF condition rows,
-  script fragments, terminal children, and COBJ component/filter rows. Long binary raw payload comparison values are
+  script fragments, terminal children, and COBJ component/filter rows. Long reflection and raw payload values are
   summarized as `[UNPARSEABLE REFLECTION DATA]` and can
   be opened in a hex-view dialog from the comparison grid.
 - Provides an experimental asset preview pane in the Avalonia UI. Core resolves persisted model-path candidates through

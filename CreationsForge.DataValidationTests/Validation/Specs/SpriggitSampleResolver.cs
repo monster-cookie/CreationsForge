@@ -102,10 +102,17 @@ public class SpriggitSampleResolver
                     break;
                 }
 
-                values.Add(NormalizeScalar(valueLine.Trim()[2..].Trim()));
+                var value = valueLine.Trim()[2..].Trim();
+                if (!IsRootScalarListValue(value))
+                {
+                    values.Clear();
+                    break;
+                }
+
+                values.Add(NormalizeScalar(value));
             }
 
-            if (values.Count == 0 || values.Any(value => value.Contains(": ", StringComparison.Ordinal)))
+            if (values.Count == 0)
             {
                 continue;
             }
@@ -129,6 +136,21 @@ public class SpriggitSampleResolver
         }
 
         return index;
+    }
+
+    /// <summary>
+    /// Determines whether a top-level YAML list row is a scalar alias candidate rather than an object wrapper.
+    /// </summary>
+    /// <param name="value">The raw list item text after the leading dash.</param>
+    /// <returns><c>true</c> when the row can be safely projected as a scalar list item.</returns>
+    private static bool IsRootScalarListValue(string value)
+    {
+        var isQuoted = value.Length >= 2 &&
+                       ((value.StartsWith('\'') && value.EndsWith('\'')) ||
+                        (value.StartsWith('"') && value.EndsWith('"')));
+        return isQuoted ||
+               (!value.EndsWith(":", StringComparison.Ordinal) &&
+                !value.Contains(": ", StringComparison.Ordinal));
     }
 
     private static string NormalizeScalar(string value)

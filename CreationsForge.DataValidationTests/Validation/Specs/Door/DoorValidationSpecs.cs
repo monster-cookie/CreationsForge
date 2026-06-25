@@ -11,8 +11,12 @@ public static class DoorValidationSpecs
             [".Objects"] = ".ListItems",
             [".Object"] = ".ObjectFormKey",
             [".Alias"] = ".ObjectAlias",
+            [".Unused"] = ".ObjectUnused",
             [".Data"] = ".DataInt"
         };
+
+    private static readonly IReadOnlyDictionary<string, string> NoPathReplacements =
+        new Dictionary<string, string>(StringComparer.Ordinal);
 
     public static ValidationSpec Starfield_ShipFloorLoadHatch()
     {
@@ -28,6 +32,7 @@ public static class DoorValidationSpecs
     {
         return StarfieldDoor("SftIntRmSmWallMid_DoorA00", "19AFF6:Starfield.esm")
             .AddRule(ValidationFieldRule.Field("MajorRecordFlagsRaw", "MajorRecordFlags"))
+            .AddRule(ValidationFieldRule.ScalarList("StarfieldMajorRecordFlags", "MajorFlags", ValidationValueNormalizer.StarfieldMajorFlagName))
             .Build();
     }
 
@@ -35,13 +40,14 @@ public static class DoorValidationSpecs
     {
         return StarfieldDoor("SftIntRmSmWallMid_DoorA00_Loud", "30D813:Starfield.esm")
             .AddRule(ValidationFieldRule.Field("MajorRecordFlagsRaw", "MajorRecordFlags"))
+            .AddRule(ValidationFieldRule.ScalarList("StarfieldMajorRecordFlags", "MajorFlags", ValidationValueNormalizer.StarfieldMajorFlagName))
             .Build();
     }
 
     public static ValidationSpec Starfield_ShpGenIntPerSmWallMid_ExLg_DockingDoor02L_NonLoad()
     {
         return StarfieldDoor("ShpGenIntPerSmWallMid_ExLg_DockingDoor02L_NonLoad", "31D042:Starfield.esm")
-            .AddRule(ValidationFieldRule.RawPayloadSlot("Components[1].REFL", "Components.EffectSequenceComponentBinaryOverlay.REFL"))
+            .AddRules(ValidationFieldRule.ComponentReflection(1, 0, 1, "EffectSequenceComponent"))
             .Build();
     }
 
@@ -54,6 +60,7 @@ public static class DoorValidationSpecs
     {
         return Fallout4Door("BldWoodPDbDoor01", "01D930:Fallout4.esm")
             .AddRule(ValidationFieldRule.Field("MajorRecordFlagsRaw", "MajorRecordFlags"))
+            .AddRule(ValidationFieldRule.ScalarList("Fallout4MajorRecordFlags", "MajorRecordFlags", ValidationValueNormalizer.HexInteger))
             .Build();
     }
 
@@ -72,27 +79,18 @@ public static class DoorValidationSpecs
         return BaseDoor(SupportedGame.Starfield, sampleName, formKey)
             .AddRule(ValidationFieldRule.Field("Model.File", "Models[0].File", ValidationValueNormalizer.ModelFile))
             .AddRule(ValidationFieldRule.ScalarList("Flags", "Flags"))
+            .AddRule(ValidationFieldRule.ScalarList("MajorFlags", "MajorFlags"))
             .AddRule(ValidationFieldRule.ScalarList("Model.Flags", "Models[0].Flags"))
             .AddRule(ValidationFieldRule.FormKeyList("Model.MaterialSwaps", "Models[0].MaterialSwaps", "MaterialSwapFormKey"))
             .AddRule(ValidationFieldRule.FormKeyList("Keywords", "Keywords", "Keyword"))
+            .AddRule(ValidationFieldRule.FormKeyList("ForcedLocations", "ForcedLocations", string.Empty))
             .AddRule(ValidationFieldRule.DtoNonEmpty("Components[0].ANAM", "AnimationGraph"))
             .AddRule(ValidationFieldRule.DtoNonEmpty("Components[0].BNAM", "AnimationSkeleton"))
             .AddRule(ValidationFieldRule.DtoNonEmpty("Components[0].CNAM", "AnimationDirectory"))
             .AddRule(ValidationFieldRule.Field("Model.LightLayer", "Models[0].LightLayer"))
             .AddRule(ValidationFieldRule.SoundSlot("OpenSound.Start", "OpenSound", "Start"))
             .AddRule(ValidationFieldRule.SoundSlot("CloseSound.Start", "CloseSound", "Start"))
-            .AddRule(ValidationFieldRule.IgnoreSpriggitPrefix(
-                "ForcedLocations",
-                "The Door DTO does not persist Starfield forced-location references."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggitPrefix(
-                "NavmeshGeometry",
-                "The Door DTO does not persist embedded Starfield navmesh geometry."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggitPrefix(
-                "MajorFlags",
-                "MajorRecordFlagsRaw covers the stored numeric major-record flags."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggitPrefix(
-                "StarfieldMajorRecordFlags",
-                "MajorRecordFlagsRaw covers the stored numeric major-record flags."))
+            .AddRule(ValidationFieldRule.PathPrefix("NavmeshGeometry", "NavmeshGeometry", NoPathReplacements))
             .AddRule(ValidationFieldRule.PathPrefix("VirtualMachineAdapter.Scripts", "ScriptingAdapters", ScriptingAdapterPathReplacements));
     }
 
@@ -100,22 +98,18 @@ public static class DoorValidationSpecs
     {
         return BaseDoor(SupportedGame.Fallout4, sampleName, formKey)
             .AddRule(ValidationFieldRule.ScalarList("Flags", "Flags"))
+            .AddRule(ValidationFieldRule.ScalarList("MajorFlags", "MajorFlags"))
             .AddRule(ValidationFieldRule.Field("Model.Data", "Models[0].Data", ValidationValueNormalizer.HexPayload))
             .AddRule(ValidationFieldRule.Field("Model.File", "Models[0].File", ValidationValueNormalizer.ModelFile))
             .AddRule(ValidationFieldRule.SoundSlot("OpenSound", "OpenSound", "Start"))
-            .AddRule(ValidationFieldRule.SoundSlot("CloseSound", "CloseSound", "Start"))
-            .AddRule(ValidationFieldRule.IgnoreSpriggitPrefix(
-                "MajorFlags",
-                "MajorRecordFlagsRaw covers the stored numeric major-record flags."))
-            .AddRule(ValidationFieldRule.IgnoreSpriggitPrefix(
-                "Fallout4MajorRecordFlags",
-                "MajorRecordFlagsRaw covers the stored numeric major-record flags."));
+            .AddRule(ValidationFieldRule.SoundSlot("CloseSound", "CloseSound", "Start"));
     }
 
     private static ValidationSpecBuilder SkyrimDoor(string sampleName, string formKey)
     {
         return BaseDoor(SupportedGame.Skyrim, sampleName, formKey)
             .AddRule(ValidationFieldRule.ScalarList("Flags", "Flags"))
+            .AddRule(ValidationFieldRule.ScalarList("MajorFlags", "MajorFlags"))
             .AddRule(ValidationFieldRule.Field("Model.Data", "Models[0].Data", ValidationValueNormalizer.HexPayload))
             .AddRule(ValidationFieldRule.Field("Model.File", "Models[0].File", ValidationValueNormalizer.ModelFile))
             .AddRule(ValidationFieldRule.SoundSlot("OpenSound", "OpenSound", "Start"))

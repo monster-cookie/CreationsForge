@@ -15,7 +15,16 @@ public class StarfieldMagicEffectSpriggitDataValidationTests : SpriggitDataValid
     [Trait("SpriggitFile", "MagicEffects/ArtifactPowerLifeForced_Effect - 2C5392_Starfield.esm.yaml")]
     public void Starfield_MGEF_ShouldMatchSpriggitSample_ArtifactPowerLifeForced_Effect()
     {
-        AssertMagicEffect(MagicEffectValidationSpecs.Starfield_ArtifactPowerLifeForced_Effect());
+        var spec = MagicEffectValidationSpecs.Starfield_ArtifactPowerLifeForced_Effect();
+        var dto = Helpers.GetDTO<MagicEffectDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -26,7 +35,16 @@ public class StarfieldMagicEffectSpriggitDataValidationTests : SpriggitDataValid
     [Trait("SpriggitFile", "MagicEffects/ArtifactPowerParticleBeam_Effect - 2C7789_Starfield.esm.yaml")]
     public void Starfield_MGEF_ShouldMatchSpriggitSample_ArtifactPowerParticleBeam_Effect()
     {
-        AssertMagicEffect(MagicEffectValidationSpecs.Starfield_ArtifactPowerParticleBeam_Effect());
+        var spec = MagicEffectValidationSpecs.Starfield_ArtifactPowerParticleBeam_Effect();
+        var dto = Helpers.GetDTO<MagicEffectDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -37,7 +55,16 @@ public class StarfieldMagicEffectSpriggitDataValidationTests : SpriggitDataValid
     [Trait("SpriggitFile", "MagicEffects/ArtifactPowerSunlessSpace_AIUse - 23AF01_Starfield.esm.yaml")]
     public void Starfield_MGEF_ShouldMatchSpriggitSample_ArtifactPowerSunlessSpace_AIUse()
     {
-        AssertMagicEffect(MagicEffectValidationSpecs.Starfield_ArtifactPowerSunlessSpace_AIUse());
+        var spec = MagicEffectValidationSpecs.Starfield_ArtifactPowerSunlessSpace_AIUse();
+        var dto = Helpers.GetDTO<MagicEffectDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -48,7 +75,16 @@ public class StarfieldMagicEffectSpriggitDataValidationTests : SpriggitDataValid
     [Trait("SpriggitFile", "MagicEffects/ArtifactPowerSolarFlare_AIUse - 22AC10_Starfield.esm.yaml")]
     public void Starfield_MGEF_ShouldMatchSpriggitSample_ArtifactPowerSolarFlare_AIUse()
     {
-        AssertMagicEffect(MagicEffectValidationSpecs.Starfield_ArtifactPowerSolarFlare_AIUse());
+        var spec = MagicEffectValidationSpecs.Starfield_ArtifactPowerSolarFlare_AIUse();
+        var dto = Helpers.GetDTO<MagicEffectDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -59,11 +95,7 @@ public class StarfieldMagicEffectSpriggitDataValidationTests : SpriggitDataValid
     [Trait("SpriggitFile", "MagicEffects/ENV_DMG_Airborne_Hazard_Damage_Effect - 245B6F_Starfield.esm.yaml")]
     public void Starfield_MGEF_ShouldMatchSpriggitSample_ENV_DMG_Airborne_Hazard_Damage_Effect()
     {
-        AssertMagicEffect(MagicEffectValidationSpecs.Starfield_ENV_DMG_Airborne_Hazard_Damage_Effect());
-    }
-
-    private void AssertMagicEffect(ValidationSpec spec)
-    {
+        var spec = MagicEffectValidationSpecs.Starfield_ENV_DMG_Airborne_Hazard_Damage_Effect();
         var dto = Helpers.GetDTO<MagicEffectDTO>(spec.Game, spec.RecordType, spec.FormKey);
 
         var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);

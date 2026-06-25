@@ -8,7 +8,6 @@ public static class ConditionFormValidationSpecs
     public static ValidationSpec Starfield_DebugMoveToPlanetConditions_Trait()
     {
         return StarfieldConditionForm("DebugMoveToPlanetConditions_Trait", "3C8F9C:Starfield.esm")
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("OwnerQuest", "ConditionForm owner quest is not persisted by the current condition form DTO."))
             .Build();
     }
 
@@ -36,6 +35,7 @@ public static class ConditionFormValidationSpecs
             .ForRecord(SupportedGame.Starfield, RecordTypeCatalog.ConditionForm)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddRule(ValidationFieldRule.Field("OwnerQuest", "OwnerQuest"))
             .AddRules(GetConditionParameterRules());
     }
 

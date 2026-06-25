@@ -94,13 +94,8 @@ public static class BookValidationSpecs
             .AddRule(ValidationFieldRule.FormKeyList("Keywords", "Keywords", "Keyword"))
             .AddRule(ValidationFieldRule.SoundSlot("DropdownSound.Start", "DropdownSound", "Start"))
             .AddRule(ValidationFieldRule.SoundSlot("PickupSound.Start", "PickupSound", "Start"))
-            .AddRule(ValidationFieldRule.Field("Components[0].REFL", "RawPayloads[0].PayloadValue", ValidationValueNormalizer.HexPayload))
             .AddRule(ValidationFieldRule.DtoExpectedValue("Components.Count", "1"))
-            .AddRule(ValidationFieldRule.IgnoreSpriggit("Components[0].MutagenObjectType", "The component wrapper type differs from the stored raw payload type."))
-            .AddRule(ValidationFieldRule.IgnoreDto("Components[0].MutagenObjectType", "The DTO stores the raw payload component type for the imported payload."))
-            .AddRule(ValidationFieldRule.DtoExpectedValue("RawPayloads[0].PayloadSlot", "Components.LodOwnerComponentBinaryOverlay.REFL"))
-            .AddRule(ValidationFieldRule.DtoExpectedValue("RawPayloads[0].PayloadType", "LodOwnerComponentBinaryOverlay"))
-            .AddRule(ValidationFieldRule.DtoExpectedValue("RawPayloads[0].SourcePath", "Components.LodOwnerComponentBinaryOverlay.REFL"))
+            .AddRules(ValidationFieldRule.ComponentReflection(0, 0, 1, "LodOwnerComponent"))
             .AddRule(ValidationFieldRule.PathPrefix("VirtualMachineAdapter.Scripts", "ScriptingAdapters", ScriptingAdapterPathReplacements))
             .Build();
     }

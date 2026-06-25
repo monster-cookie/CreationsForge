@@ -15,7 +15,16 @@ public class Fallout4TerminalSpriggitDataValidationTests : SpriggitDataValidatio
     [Trait("SpriggitFile", "Terminals/Vault111OverseerTPrimeDirective - 0AEF52_Fallout4.esm.yaml")]
     public void Fallout4_TERM_ShouldMatchSpriggitSample_Vault111OverseerTPrimeDirective()
     {
-        AssertTerminalMatches(TerminalValidationSpecs.Fallout4_Vault111OverseerTPrimeDirective());
+        var spec = TerminalValidationSpecs.Fallout4_Vault111OverseerTPrimeDirective();
+        var dto = Helpers.GetDTO<TerminalDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -26,7 +35,16 @@ public class Fallout4TerminalSpriggitDataValidationTests : SpriggitDataValidatio
     [Trait("SpriggitFile", "Terminals/Vault75OverseerTerminal - 0EC83C_Fallout4.esm.yaml")]
     public void Fallout4_TERM_ShouldMatchSpriggitSample_Vault75OverseerTerminal()
     {
-        AssertTerminalMatches(TerminalValidationSpecs.Fallout4_Vault75OverseerTerminal());
+        var spec = TerminalValidationSpecs.Fallout4_Vault75OverseerTerminal();
+        var dto = Helpers.GetDTO<TerminalDTO>(spec.Game, spec.RecordType, spec.FormKey);
+
+        var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+
+        ValidationSpecRunner.GetCoverageDiagnostics(spec, dto).ShouldBeEmpty();
     }
 
     [Fact]
@@ -37,11 +55,7 @@ public class Fallout4TerminalSpriggitDataValidationTests : SpriggitDataValidatio
     [Trait("SpriggitFile", "Terminals/DN035_RobotControlTerminal_Targeting - 1221C8_Fallout4.esm.yaml")]
     public void Fallout4_TERM_ShouldMatchSpriggitSample_DN035_RobotControlTerminal_Targeting()
     {
-        AssertTerminalMatches(TerminalValidationSpecs.Fallout4_DN035_RobotControlTerminal_Targeting());
-    }
-
-    private static void AssertTerminalMatches(ValidationSpec spec)
-    {
+        var spec = TerminalValidationSpecs.Fallout4_DN035_RobotControlTerminal_Targeting();
         var dto = Helpers.GetDTO<TerminalDTO>(spec.Game, spec.RecordType, spec.FormKey);
 
         var assertions = ValidationSpecRunner.GetAssertionCases(spec, dto);

@@ -43,9 +43,9 @@ dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- -
 
 The validation test process does not run reset/import automatically.
 
-Each selected sample has its own explicit xUnit fact, such as
-`Starfield_GLOB_ShouldMatchSpriggitSample_2B7FBD_Starfield_esm`, with visible field-by-field Shouldly assertions in
-the test body.
+Each selected sample has its own explicit xUnit fact with visible assertions in the test body. The fact should call
+the spec-driven validation runner so the selected sample remains explicit while field mapping rules stay in the
+record-family validation spec.
 
 You can also filter from the CLI:
 
@@ -77,10 +77,10 @@ When refreshing samples, keep the explicit test set deterministic:
 Each test loads the selected Spriggit YAML file and the imported DTO read back through the matching repository, then
 asserts mapped fields directly in the test body before checking unmatched fields.
 
-Spriggit-to-DTO comparisons in validation test methods must be explicit and sample-specific. Do not use loops,
-dictionary iteration, reflection, or broad helper assertions to compare matching Spriggit and DTO fields inside
-individual validation tests. The only approved generic coverage checks are `Helpers.GetUnmatchedSpriggitFields(...)`
-and `Helpers.GetUnmatchedDtoFields(...)`.
+Spriggit-to-DTO comparisons must be explicit and sample-specific in the validation spec. Specs may opt into a
+canonical collection comparison when source tools expose the same child rows in different stable order. For example,
+NPC inventory items are compared by form-key order and count so validation still requires every Spriggit item row
+without treating non-semantic row order as missing data.
 
 Important failure shapes:
 

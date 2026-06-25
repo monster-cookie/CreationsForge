@@ -3,7 +3,10 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class StaticDTO : RecordDTO, IHasModelsDTO, IKeywords, IHasRawRecordPayloadsDTO
+/// <summary>
+/// Represents a static object record and its typed child data.
+/// </summary>
+public class StaticDTO : RecordDTO, IHasModelsDTO, IKeywords, IHasReflectionDTO
 {
     public TranslatedStringDTO? Name { get; set; }
 
@@ -47,5 +50,8 @@ public class StaticDTO : RecordDTO, IHasModelsDTO, IKeywords, IHasRawRecordPaylo
 
     public IList<StaticPropertyDTO> Properties { get; set; } = new List<StaticPropertyDTO>();
 
-    public IList<RawRecordPayloadDTO> RawPayloads { get; set; } = new List<RawRecordPayloadDTO>();
+    /// <summary>
+    /// Gets or sets component reflection rows exported by Spriggit as <c>REFL</c> fields.
+    /// </summary>
+    public IList<ReflectionDTO> Reflections { get; set; } = new List<ReflectionDTO>();
 }

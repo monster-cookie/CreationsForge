@@ -44,6 +44,8 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
                 [
                     SelectColumn("Name"),
                     SelectColumn("Description"),
+                    SelectColumn("Version2"),
+                    SelectColumn("VersionControl"),
                     SelectColumn("Flags"),
                     SelectColumn("SkillGroup"),
                     SelectColumn("CrewAssignment"),
@@ -170,13 +172,13 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
             """
             INSERT OR REPLACE INTO Perks (
                 Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Name, Description, Flags, SkillGroup, CrewAssignment, PerkIcon, Category,
+                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Version2, VersionControl, Name, Description, Flags, SkillGroup, CrewAssignment, PerkIcon, Category,
                 Restriction_ModKey_Name, Restriction_ModKey_Type, Restriction_ModKey_FileName, Restriction_FormKey_ID,
                 Training_ModKey_Name, Training_ModKey_Type, Training_ModKey_FileName, Training_FormKey_ID,
                 Level, NumRanks, Playable, Hidden, NextPerk_ModKey_Name, NextPerk_ModKey_Type, NextPerk_ModKey_FileName, NextPerk_FormKey_ID, MajorFlags)
             VALUES (
                 @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Name, @Description, @Flags, @SkillGroup, @CrewAssignment, @PerkIcon, @Category,
+                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Version2, @VersionControl, @Name, @Description, @Flags, @SkillGroup, @CrewAssignment, @PerkIcon, @Category,
                 @RestrictionModKeyName, @RestrictionModKeyType, @RestrictionModKeyFileName, @RestrictionFormKeyId,
                 @TrainingModKeyName, @TrainingModKeyType, @TrainingModKeyFileName, @TrainingFormKeyId,
                 @Level, @NumRanks, @Playable, @Hidden, @NextPerkModKeyName, @NextPerkModKeyType, @NextPerkModKeyFileName, @NextPerkFormKeyId, @MajorFlags);
@@ -195,6 +197,8 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
                 dto.FormVersion,
                 dto.MajorRecordFlags,
                 dto.ImportedAtUTC,
+                dto.Version2,
+                dto.VersionControl,
                 Name = GetEnglishText(dto.Name),
                 Description = GetEnglishText(dto.Description),
                 dto.Flags,
@@ -710,6 +714,8 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
             ImportedAtUTC = record.ImportedAtUTC,
             Name = FromEnglish(record.Name),
             Description = FromEnglish(record.Description),
+            Version2 = record.Version2,
+            VersionControl = record.VersionControl,
             Flags = record.Flags,
             SkillGroup = record.SkillGroup,
             CrewAssignment = record.CrewAssignment,
@@ -980,6 +986,14 @@ public class PerkRepository : TypedRecordRepositoryBase, IPerkRepository
     {
         public string? Name { get; set; }
         public string? Description { get; set; }
+        /// <summary>
+        /// Gets or sets the optional Spriggit/Mutagen secondary version header value stored on the perk row.
+        /// </summary>
+        public int? Version2 { get; set; }
+        /// <summary>
+        /// Gets or sets the optional Spriggit/Mutagen version-control header value stored on the perk row.
+        /// </summary>
+        public int? VersionControl { get; set; }
         public string Flags { get; set; } = string.Empty;
         public string? SkillGroup { get; set; }
         public string? CrewAssignment { get; set; }
