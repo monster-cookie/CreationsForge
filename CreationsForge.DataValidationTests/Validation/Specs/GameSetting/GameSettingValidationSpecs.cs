@@ -92,7 +92,9 @@ public static class GameSettingValidationSpecs
 
     public static ValidationSpec Fallout4_iAICombatRestoreHealthPercentage()
     {
-        return GameSetting(SupportedGame.Fallout4, "iAICombatRestoreHealthPercentage", "01A237:Fallout4.esm", GameSettingDataType.Integer);
+        var spec = GameSetting(SupportedGame.Fallout4, "iAICombatRestoreHealthPercentage", "01A237:Fallout4.esm", GameSettingDataType.Integer);
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.DtoField(["Data"], "Data.Integer"));
+        return spec;
     }
 
     public static ValidationSpec Fallout4_iAISocialDistanceToTriggerEvent()

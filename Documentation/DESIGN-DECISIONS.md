@@ -1,5 +1,45 @@
 # Design Decisions
 
+## 2026-06-25 - Keep Spriggit-Backed Rendered UI Validation With Data Validation
+
+Status: Accepted
+
+Context: The comparison UI needs validation that imported DTO readback can be rendered into the Avalonia comparison
+grid and still match representative Spriggit samples. `CreationsForge.PresentationTests` already supports headless
+Avalonia tests, but its responsibility is isolated presentation behavior rather than Spriggit/data-backed validation.
+The existing `CreationsForge.DataValidationTests` specs already identify the game, record type, sample, form key, and
+DTO/Spriggit field mappings needed for rendered validation.
+
+Decision: Keep Spriggit-backed rendered comparison UI validation in `CreationsForge.DataValidationTests`. Add optional
+comparison UI expectations to the existing validation specs so DTO validation and headless rendered UI validation can
+share the same sample identity and expected value source. `CreationsForge.PresentationTests` remains focused on
+headless Avalonia unit and presentation behavior tests.
+
+Rationale: The rendered comparison UI checks are a data-validation slice: they depend on imported validation database
+state, Spriggit extraction roots, and spec-driven expected values. Keeping them with DataValidationTests avoids a second
+Spriggit sample catalog and makes failures easier to interpret alongside DTO readback validation failures.
+
+Alternatives considered:
+
+- Keep Spriggit-backed UI validation in `CreationsForge.PresentationTests`.
+- Duplicate a separate UI validation spec catalog under `CreationsForge.PresentationTests`.
+- Validate only `IRecordComparisonService` output without rendering Avalonia controls.
+
+Consequences:
+
+- `CreationsForge.DataValidationTests` references the Avalonia presentation project and `Avalonia.Headless.XUnit`.
+- Specs can opt into rendered UI validation incrementally through explicit comparison row expectations.
+- Existing imported SQLite data must be current for rendered validation to be meaningful, just like DTO validation.
+- PresentationTests remains available for UI behavior that does not need Spriggit or imported validation data.
+
+Related files:
+
+- `CreationsForge.DataValidationTests/CreationsForge.DataValidationTests.csproj`
+- `CreationsForge.DataValidationTests/Validation/Specs/ValidationSpec.cs`
+- `CreationsForge.DataValidationTests/Validation/Specs/ValidationUiComparisonExpectation.cs`
+- `CreationsForge.DataValidationTests/Validation/UI/SpriggitComparisonUiSpecRunner.cs`
+- `CreationsForge.DataValidationTests/Validation/UI/SpriggitComparisonUiValidationTests.cs`
+
 ## 2026-06-25 - Separate Numeric Storage Precision From Display Precision
 
 Status: Accepted

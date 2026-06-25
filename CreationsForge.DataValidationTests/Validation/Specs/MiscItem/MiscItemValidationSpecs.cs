@@ -75,7 +75,7 @@ public static class MiscItemValidationSpecs
 
     public static ValidationSpec Starfield_InorgCommonWater()
     {
-        return StarfieldMiscItem(
+        var spec = StarfieldMiscItem(
             "InorgCommonWater",
             "005591:Starfield.esm",
             withFlag: true,
@@ -83,6 +83,9 @@ public static class MiscItemValidationSpecs
             materialSwapFormId: "127A9B",
             withResources: true,
             withModelFlags: true);
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.DtoField(["Value"], "Value"));
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Model", "File"]));
+        return spec;
     }
 
     public static ValidationSpec Starfield_InorgExoticPlutonium()

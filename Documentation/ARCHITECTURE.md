@@ -50,9 +50,14 @@ adapter projects rather than persisted game metadata paths.
 `CreationsForge.UnitTests` tests non-database logic only.
 
 `CreationsForge.DataValidationTests` is a manual validation test project. It references Bootstrap and Core so it can
-resolve existing repositories and compare imported DTO readback against selected Spriggit YAML samples. Its JSON
-configuration lives inside the test project under `Configuration`. It does not own production services, database
-schema, or UI behavior.
+resolve existing repositories and compare imported DTO readback against selected Spriggit YAML samples. It may also
+reference the Avalonia presentation project for Spriggit-backed rendered comparison validation, where the validation
+subject is imported data flowing through the production comparison UI rather than isolated presentation behavior. Its
+JSON configuration lives inside the test project under `Configuration`. It does not own production services or database
+schema.
+
+`CreationsForge.PresentationTests` owns headless Avalonia unit and presentation behavior checks that do not require
+Spriggit extraction data or imported validation database state.
 
 ## Dependency Direction
 

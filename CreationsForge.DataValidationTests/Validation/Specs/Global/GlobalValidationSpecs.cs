@@ -42,7 +42,9 @@ public static class GlobalValidationSpecs
 
     public static ValidationSpec Skyrim_CarriageCost()
     {
-        return Global(SupportedGame.Skyrim, "CarriageCost", "050765:Skyrim.esm");
+        var spec = Global(SupportedGame.Skyrim, "CarriageCost", "050765:Skyrim.esm");
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.DtoField(["Data"], "Data"));
+        return spec;
     }
 
     public static ValidationSpec Skyrim_CarriageCostSmall()

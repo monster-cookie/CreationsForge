@@ -24,7 +24,12 @@ public static class PerkValidationSpecs
 
     public static ValidationSpec Starfield_Skill_BoostPackTraining()
     {
-        return StarfieldPerk("Skill_BoostPackTraining", "146C2C:Starfield.esm");
+        var spec = StarfieldPerk("Skill_BoostPackTraining", "146C2C:Starfield.esm");
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.DtoField(
+            ["Ranks", "Rank [0]", "Effects", "Effect [0]", "Value"],
+            "Ranks[0].Effects[0].Value",
+            "Ranks"));
+        return spec;
     }
 
     public static ValidationSpec Starfield_TrainingTechnologyExpert()

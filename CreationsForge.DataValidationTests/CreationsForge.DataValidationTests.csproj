@@ -13,6 +13,7 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Include="Avalonia.Headless.XUnit" Version="12.0.5" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
         <PackageReference Include="Shouldly" Version="4.3.0" />
         <PackageReference Include="xunit.v3" Version="3.2.2" />
@@ -23,11 +24,16 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\CreationsForge\CreationsForge.csproj" />
         <ProjectReference Include="..\CreationsForge.Bootstrap\CreationsForge.Bootstrap.csproj" />
         <ProjectReference Include="..\CreationsForge.Core\CreationsForge.Core.csproj" />
         <ProjectReference Include="..\CreationsForge.Fallout4\CreationsForge.Fallout4.csproj" />
         <ProjectReference Include="..\CreationsForge.Skyrim\CreationsForge.Skyrim.csproj" />
         <ProjectReference Include="..\CreationsForge.Starfield\CreationsForge.Starfield.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(AVALONIA_UI_LICENSE_KEY)' != ''">
+        <AvaloniaUILicenseKey Include="$(AVALONIA_UI_LICENSE_KEY)" />
     </ItemGroup>
 
     <ItemGroup>
