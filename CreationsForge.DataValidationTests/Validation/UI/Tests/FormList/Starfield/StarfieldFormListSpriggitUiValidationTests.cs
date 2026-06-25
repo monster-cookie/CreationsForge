@@ -65,6 +65,27 @@ public class StarfieldFormListSpriggitUiValidationTests :
     }
 
     /// <summary>
+    /// Validates the Starfield <c>AlikaVendorLowOrganicResources</c> sample against rendered comparison rows.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("Game", "Starfield")]
+    [Trait("RecordType", "FLST")]
+    [Trait("FormKey", "2117F0:Starfield.esm")]
+    [Trait("EditorID", "AlikaVendorLowOrganicResources")]
+    [Trait("SpriggitFile", "FormLists/AlikaVendorLowOrganicResources - 2117F0_Starfield.esm.yaml")]
+    public void Starfield_FLST_ComparisonUi_ShouldRenderSpriggitSample_AlikaVendorLowOrganicResources()
+    {
+        var spec = FormListValidationSpecs.Starfield_AlikaVendorLowOrganicResources();
+        var assertions = SpriggitComparisonUiSpecRunner.GetAssertionCases(spec, fixture);
+
+        assertions.ShouldNotBeEmpty("The UI comparison spec should produce assertions.");
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+    }
+
+    /// <summary>
     /// Validates the Starfield <c>COND_imgui_1_Assorted</c> sample against rendered comparison rows.
     /// </summary>
     [AvaloniaFact]

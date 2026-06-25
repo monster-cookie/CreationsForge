@@ -35,11 +35,6 @@ public static class SpriggitComparisonUiSpecRunner
         SpriggitComparisonUiFixture fixture)
     {
         var cases = new List<SpriggitComparisonUiAssertionCase>();
-        if (spec.UiComparisonExpectations.Count == 0)
-        {
-            return cases;
-        }
-
         var sample = fixture.CreateSample(spec);
         var window = CreateWindowWithMainView(sample);
         try
@@ -54,7 +49,14 @@ public static class SpriggitComparisonUiSpecRunner
             Dispatcher.UIThread.RunJobs();
 
             AddGridAssertions(cases, mainView, viewModel, sample, spec);
-            AddExpectationAssertions(cases, mainView, viewModel, sample, spec);
+            if (spec.UiComparisonExpectations.Count == 0)
+            {
+                AddDefaultEditorIdAssertions(cases, mainView, viewModel, sample, spec);
+            }
+            else
+            {
+                AddExpectationAssertions(cases, mainView, viewModel, sample, spec);
+            }
         }
         finally
         {
@@ -100,6 +102,51 @@ public static class SpriggitComparisonUiSpecRunner
             expected: sample.Plugin.ModKey.FileName,
             actual: GetActiveColumnHeader(viewModel),
             message: "Expected the active comparison column to match the selected plugin for sample '" + spec.SampleName + "'."));
+    }
+
+    /// <summary>
+    /// Adds a default data-row assertion for specs that do not need a custom UI row expectation.
+    /// </summary>
+    /// <param name="cases">The assertion case list to append to.</param>
+    /// <param name="mainView">The rendered main view.</param>
+    /// <param name="viewModel">The main view model backing the rendered view.</param>
+    /// <param name="sample">The sample being rendered.</param>
+    /// <param name="spec">The validation spec being evaluated.</param>
+    private static void AddDefaultEditorIdAssertions(
+        IList<SpriggitComparisonUiAssertionCase> cases,
+        MainView mainView,
+        MainViewModel viewModel,
+        SpriggitComparisonUiSample sample,
+        ValidationSpec spec)
+    {
+        if (string.IsNullOrWhiteSpace(sample.Record.EditorID))
+        {
+            return;
+        }
+
+        var row = FindRow(viewModel.RecordComparisonRows, ["EditorID"]);
+        cases.Add(CreateCase(
+            expected: "Present",
+            actual: row is null ? "Missing" : "Present",
+            message: "Expected comparison row 'EditorID' to render for sample '" + spec.SampleName + "'."));
+
+        if (row is null)
+        {
+            return;
+        }
+
+        var activeColumnIndex = GetActiveColumnIndex(viewModel);
+        cases.Add(CreateCase(
+            expected: sample.Record.EditorID,
+            actual: row.GetValue(activeColumnIndex),
+            message: "Expected comparison row 'EditorID' to match imported record data for sample '" +
+                spec.SampleName + "'." + System.Environment.NewLine +
+                "Spriggit form key: " + sample.Spriggit.FormKey));
+        cases.Add(CreateCase(
+            expected: "Present",
+            actual: ContainsVisualText(mainView, "EditorID") ? "Present" : "Missing",
+            message: "Expected rendered visual tree to contain text 'EditorID' for sample '" +
+                spec.SampleName + "'."));
     }
 
     /// <summary>

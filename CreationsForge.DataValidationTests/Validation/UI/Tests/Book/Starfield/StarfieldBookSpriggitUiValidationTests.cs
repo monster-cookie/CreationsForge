@@ -44,6 +44,48 @@ public class StarfieldBookSpriggitUiValidationTests :
     }
 
     /// <summary>
+    /// Validates the Starfield <c>UC07_ScrappingNiira</c> sample against rendered comparison rows.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("Game", "Starfield")]
+    [Trait("RecordType", "BOOK")]
+    [Trait("FormKey", "1F40EE:Starfield.esm")]
+    [Trait("EditorID", "UC07_ScrappingNiira")]
+    [Trait("SpriggitFile", "Books/UC07_ScrappingNiira - 1F40EE_Starfield.esm.yaml")]
+    public void Starfield_BOOK_ComparisonUi_ShouldRenderSpriggitSample_UC07_ScrappingNiira()
+    {
+        var spec = BookValidationSpecs.Starfield_UC07_ScrappingNiira();
+        var assertions = SpriggitComparisonUiSpecRunner.GetAssertionCases(spec, fixture);
+
+        assertions.ShouldNotBeEmpty("The UI comparison spec should produce assertions.");
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+    }
+
+    /// <summary>
+    /// Validates the Starfield <c>SQ_PlanetSurveySlate00_025</c> sample against rendered comparison rows.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("Game", "Starfield")]
+    [Trait("RecordType", "BOOK")]
+    [Trait("FormKey", "26E6B1:Starfield.esm")]
+    [Trait("EditorID", "SQ_PlanetSurveySlate00_025")]
+    [Trait("SpriggitFile", "Books/SQ_PlanetSurveySlate00_025 - 26E6B1_Starfield.esm.yaml")]
+    public void Starfield_BOOK_ComparisonUi_ShouldRenderSpriggitSample_SQ_PlanetSurveySlate00_025()
+    {
+        var spec = BookValidationSpecs.Starfield_SQ_PlanetSurveySlate00_025();
+        var assertions = SpriggitComparisonUiSpecRunner.GetAssertionCases(spec, fixture);
+
+        assertions.ShouldNotBeEmpty("The UI comparison spec should produce assertions.");
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+    }
+
+    /// <summary>
     /// Validates the Starfield <c>_RENAME_TestDataslate</c> sample against rendered comparison rows.
     /// </summary>
     [AvaloniaFact]

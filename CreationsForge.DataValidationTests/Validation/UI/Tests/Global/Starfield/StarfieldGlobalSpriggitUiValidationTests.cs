@@ -2,12 +2,12 @@ using Avalonia.Headless.XUnit;
 using CreationsForge.DataValidationTests.Validation.Specs.Global;
 using Shouldly;
 
-namespace CreationsForge.DataValidationTests.Validation.UI.Tests.Global.Skyrim;
+namespace CreationsForge.DataValidationTests.Validation.UI.Tests.Global.Starfield;
 
 /// <summary>
-/// Validates Skyrim global Spriggit samples against the rendered comparison UI.
+/// Validates Starfield global Spriggit samples against the rendered comparison UI.
 /// </summary>
-public class SkyrimGlobalSpriggitUiValidationTests :
+public class StarfieldGlobalSpriggitUiValidationTests :
     SpriggitComparisonUiTestBase,
     IClassFixture<SpriggitComparisonUiFixture>
 {
@@ -17,23 +17,23 @@ public class SkyrimGlobalSpriggitUiValidationTests :
     /// Initializes the UI validation tests with shared comparison fixture state.
     /// </summary>
     /// <param name="fixture">The fixture used to resolve imported records and comparison services.</param>
-    public SkyrimGlobalSpriggitUiValidationTests(SpriggitComparisonUiFixture fixture)
+    public StarfieldGlobalSpriggitUiValidationTests(SpriggitComparisonUiFixture fixture)
     {
         this.fixture = fixture;
     }
 
     /// <summary>
-    /// Validates the Skyrim <c>1stPKillCam</c> sample against rendered comparison rows.
+    /// Validates the Starfield <c>_UpdateShatteredSpaceMaster</c> sample against rendered comparison rows.
     /// </summary>
     [AvaloniaFact]
-    [Trait("Game", "Skyrim")]
+    [Trait("Game", "Starfield")]
     [Trait("RecordType", "GLOB")]
-    [Trait("FormKey", "10636A:Skyrim.esm")]
-    [Trait("EditorID", "1stPKillCam")]
-    [Trait("SpriggitFile", "Globals/1stPKillCam - 10636A_Skyrim.esm.yaml")]
-    public void Skyrim_GLOB_ComparisonUi_ShouldRenderSpriggitSample_1stPKillCam()
+    [Trait("FormKey", "20C81D:Starfield.esm")]
+    [Trait("EditorID", "_UpdateShatteredSpaceMaster")]
+    [Trait("SpriggitFile", "Globals/_UpdateShatteredSpaceMaster - 20C81D_Starfield.esm.yaml")]
+    public void Starfield_GLOB_ComparisonUi_ShouldRenderSpriggitSample_UpdateShatteredSpaceMaster()
     {
-        var spec = GlobalValidationSpecs.Skyrim_1stPKillCam();
+        var spec = GlobalValidationSpecs.Starfield_UpdateShatteredSpaceMaster();
         var assertions = SpriggitComparisonUiSpecRunner.GetAssertionCases(spec, fixture);
 
         assertions.ShouldNotBeEmpty("The UI comparison spec should produce assertions.");
@@ -44,17 +44,17 @@ public class SkyrimGlobalSpriggitUiValidationTests :
     }
 
     /// <summary>
-    /// Validates the Skyrim <c>CarriageCost</c> sample against rendered comparison rows.
+    /// Validates the Starfield <c>2B7FBD_Starfield.esm</c> sample against rendered comparison rows.
     /// </summary>
     [AvaloniaFact]
-    [Trait("Game", "Skyrim")]
+    [Trait("Game", "Starfield")]
     [Trait("RecordType", "GLOB")]
-    [Trait("FormKey", "050765:Skyrim.esm")]
-    [Trait("EditorID", "CarriageCost")]
-    [Trait("SpriggitFile", "Globals/CarriageCost - 050765_Skyrim.esm.yaml")]
-    public void Skyrim_GLOB_ComparisonUi_ShouldRenderSpriggitSample_CarriageCost()
+    [Trait("FormKey", "2B7FBD:Starfield.esm")]
+    [Trait("EditorID", "2B7FBD_Starfield.esm")]
+    [Trait("SpriggitFile", "Globals/2B7FBD_Starfield.esm.yaml")]
+    public void Starfield_GLOB_ComparisonUi_ShouldRenderSpriggitSample_2B7FBD_Starfield_esm()
     {
-        var spec = GlobalValidationSpecs.Skyrim_CarriageCost();
+        var spec = GlobalValidationSpecs.Starfield_2B7FBD_Starfield_esm();
         var assertions = SpriggitComparisonUiSpecRunner.GetAssertionCases(spec, fixture);
 
         assertions.ShouldNotBeEmpty("The UI comparison spec should produce assertions.");
@@ -65,17 +65,17 @@ public class SkyrimGlobalSpriggitUiValidationTests :
     }
 
     /// <summary>
-    /// Validates the Skyrim <c>CarriageCostSmall</c> sample against rendered comparison rows.
+    /// Validates the Starfield <c>2B91E0_Starfield.esm</c> sample against rendered comparison rows.
     /// </summary>
     [AvaloniaFact]
-    [Trait("Game", "Skyrim")]
+    [Trait("Game", "Starfield")]
     [Trait("RecordType", "GLOB")]
-    [Trait("FormKey", "107702:Skyrim.esm")]
-    [Trait("EditorID", "CarriageCostSmall")]
-    [Trait("SpriggitFile", "Globals/CarriageCostSmall - 107702_Skyrim.esm.yaml")]
-    public void Skyrim_GLOB_ComparisonUi_ShouldRenderSpriggitSample_CarriageCostSmall()
+    [Trait("FormKey", "2B91E0:Starfield.esm")]
+    [Trait("EditorID", "2B91E0_Starfield.esm")]
+    [Trait("SpriggitFile", "Globals/2B91E0_Starfield.esm.yaml")]
+    public void Starfield_GLOB_ComparisonUi_ShouldRenderSpriggitSample_2B91E0_Starfield_esm()
     {
-        var spec = GlobalValidationSpecs.Skyrim_CarriageCostSmall();
+        var spec = GlobalValidationSpecs.Starfield_2B91E0_Starfield_esm();
         var assertions = SpriggitComparisonUiSpecRunner.GetAssertionCases(spec, fixture);
 
         assertions.ShouldNotBeEmpty("The UI comparison spec should produce assertions.");

@@ -2,12 +2,12 @@ using Avalonia.Headless.XUnit;
 using CreationsForge.DataValidationTests.Validation.Specs.Class;
 using Shouldly;
 
-namespace CreationsForge.DataValidationTests.Validation.UI.Tests.Class;
+namespace CreationsForge.DataValidationTests.Validation.UI.Tests.Class.Starfield;
 
 /// <summary>
-/// Validates class Spriggit samples against the rendered comparison UI.
+/// Validates Starfield class Spriggit samples against the rendered comparison UI.
 /// </summary>
-public class ClassSpriggitUiValidationTests :
+public class StarfieldClassSpriggitUiValidationTests :
     SpriggitComparisonUiTestBase,
     IClassFixture<SpriggitComparisonUiFixture>
 {
@@ -17,7 +17,7 @@ public class ClassSpriggitUiValidationTests :
     /// Initializes the UI validation tests with shared comparison fixture state.
     /// </summary>
     /// <param name="fixture">The fixture used to resolve imported records and comparison services.</param>
-    public ClassSpriggitUiValidationTests(SpriggitComparisonUiFixture fixture)
+    public StarfieldClassSpriggitUiValidationTests(SpriggitComparisonUiFixture fixture)
     {
         this.fixture = fixture;
     }
@@ -44,17 +44,17 @@ public class ClassSpriggitUiValidationTests :
     }
 
     /// <summary>
-    /// Validates the Fallout 4 <c>BloatflyClass</c> sample against rendered comparison rows.
+    /// Validates the Starfield <c>CourserClass</c> sample against rendered comparison rows.
     /// </summary>
     [AvaloniaFact]
-    [Trait("Game", "Fallout4")]
+    [Trait("Game", "Starfield")]
     [Trait("RecordType", "CLAS")]
-    [Trait("FormKey", "031757:Fallout4.esm")]
-    [Trait("EditorID", "BloatflyClass")]
-    [Trait("SpriggitFile", "Classes/BloatflyClass - 031757_Fallout4.esm.yaml")]
-    public void Fallout4_CLAS_ComparisonUi_ShouldRenderSpriggitSample_BloatflyClass()
+    [Trait("FormKey", "20F487:Starfield.esm")]
+    [Trait("EditorID", "CourserClass")]
+    [Trait("SpriggitFile", "Classes/CourserClass - 20F487_Starfield.esm.yaml")]
+    public void Starfield_CLAS_ComparisonUi_ShouldRenderSpriggitSample_CourserClass()
     {
-        var spec = ClassValidationSpecs.Fallout4_BloatflyClass();
+        var spec = ClassValidationSpecs.Starfield_CourserClass();
         var assertions = SpriggitComparisonUiSpecRunner.GetAssertionCases(spec, fixture);
 
         assertions.ShouldNotBeEmpty("The UI comparison spec should produce assertions.");
@@ -65,17 +65,17 @@ public class ClassSpriggitUiValidationTests :
     }
 
     /// <summary>
-    /// Validates the Skyrim <c>TrainerAlchemyExpert</c> sample against rendered comparison rows.
+    /// Validates the Starfield <c>CrimsonFleetClass</c> sample against rendered comparison rows.
     /// </summary>
     [AvaloniaFact]
-    [Trait("Game", "Skyrim")]
+    [Trait("Game", "Starfield")]
     [Trait("RecordType", "CLAS")]
-    [Trait("FormKey", "0E3A6E:Skyrim.esm")]
-    [Trait("EditorID", "TrainerAlchemyExpert")]
-    [Trait("SpriggitFile", "Classes/TrainerAlchemyExpert - 0E3A6E_Skyrim.esm.yaml")]
-    public void Skyrim_CLAS_ComparisonUi_ShouldRenderSpriggitSample_TrainerAlchemyExpert()
+    [Trait("FormKey", "010B2F:Starfield.esm")]
+    [Trait("EditorID", "CrimsonFleetClass")]
+    [Trait("SpriggitFile", "Classes/CrimsonFleetClass - 010B2F_Starfield.esm.yaml")]
+    public void Starfield_CLAS_ComparisonUi_ShouldRenderSpriggitSample_CrimsonFleetClass()
     {
-        var spec = ClassValidationSpecs.Skyrim_TrainerAlchemyExpert();
+        var spec = ClassValidationSpecs.Starfield_CrimsonFleetClass();
         var assertions = SpriggitComparisonUiSpecRunner.GetAssertionCases(spec, fixture);
 
         assertions.ShouldNotBeEmpty("The UI comparison spec should produce assertions.");

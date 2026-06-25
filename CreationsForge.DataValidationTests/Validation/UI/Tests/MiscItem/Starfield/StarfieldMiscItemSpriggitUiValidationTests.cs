@@ -5,7 +5,7 @@ using Shouldly;
 namespace CreationsForge.DataValidationTests.Validation.UI.Tests.MiscItem.Starfield;
 
 /// <summary>
-/// Validates Starfield miscellaneous item Spriggit samples against the rendered comparison UI.
+/// Validates Starfield misc item Spriggit samples against the rendered comparison UI.
 /// </summary>
 public class StarfieldMiscItemSpriggitUiValidationTests :
     SpriggitComparisonUiTestBase,
@@ -55,6 +55,48 @@ public class StarfieldMiscItemSpriggitUiValidationTests :
     public void Starfield_MISC_ComparisonUi_ShouldRenderSpriggitSample_InorgExoticPlutonium()
     {
         var spec = MiscItemValidationSpecs.Starfield_InorgExoticPlutonium();
+        var assertions = SpriggitComparisonUiSpecRunner.GetAssertionCases(spec, fixture);
+
+        assertions.ShouldNotBeEmpty("The UI comparison spec should produce assertions.");
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+    }
+
+    /// <summary>
+    /// Validates the Starfield <c>InorgUniqueTasine</c> sample against rendered comparison rows.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("Game", "Starfield")]
+    [Trait("RecordType", "MISC")]
+    [Trait("FormKey", "005DED:Starfield.esm")]
+    [Trait("EditorID", "InorgUniqueTasine")]
+    [Trait("SpriggitFile", "MiscItems/InorgUniqueTasine - 005DED_Starfield.esm.yaml")]
+    public void Starfield_MISC_ComparisonUi_ShouldRenderSpriggitSample_InorgUniqueTasine()
+    {
+        var spec = MiscItemValidationSpecs.Starfield_InorgUniqueTasine();
+        var assertions = SpriggitComparisonUiSpecRunner.GetAssertionCases(spec, fixture);
+
+        assertions.ShouldNotBeEmpty("The UI comparison spec should produce assertions.");
+        foreach (var assertion in assertions)
+        {
+            assertion.Actual.ShouldBe(assertion.Expected, assertion.Message);
+        }
+    }
+
+    /// <summary>
+    /// Validates the Starfield <c>FFCydoniaZ07_HeartOfMarsTitanium</c> sample against rendered comparison rows.
+    /// </summary>
+    [AvaloniaFact]
+    [Trait("Game", "Starfield")]
+    [Trait("RecordType", "MISC")]
+    [Trait("FormKey", "302791:Starfield.esm")]
+    [Trait("EditorID", "FFCydoniaZ07_HeartOfMarsTitanium")]
+    [Trait("SpriggitFile", "MiscItems/FFCydoniaZ07_HeartOfMarsTitanium - 302791_Starfield.esm.yaml")]
+    public void Starfield_MISC_ComparisonUi_ShouldRenderSpriggitSample_FFCydoniaZ07_HeartOfMarsTitanium()
+    {
+        var spec = MiscItemValidationSpecs.Starfield_FFCydoniaZ07_HeartOfMarsTitanium();
         var assertions = SpriggitComparisonUiSpecRunner.GetAssertionCases(spec, fixture);
 
         assertions.ShouldNotBeEmpty("The UI comparison spec should produce assertions.");
