@@ -18,9 +18,15 @@ public static class DoorValidationSpecs
     private static readonly IReadOnlyDictionary<string, string> NoPathReplacements =
         new Dictionary<string, string>(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Builds the Starfield <c>ShipFloorLoadHatch</c> door validation spec, including a UI model row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>ShipFloorLoadHatch</c> sample.</returns>
     public static ValidationSpec Starfield_ShipFloorLoadHatch()
     {
-        return StarfieldDoor("ShipFloorLoadHatch", "144F85:Starfield.esm").Build();
+        var spec = StarfieldDoor("ShipFloorLoadHatch", "144F85:Starfield.esm").Build();
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Model", "File"], visualText: "EditorID"));
+        return spec;
     }
 
     public static ValidationSpec Starfield_ShipDockingHatchFloor()
@@ -51,9 +57,15 @@ public static class DoorValidationSpecs
             .Build();
     }
 
+    /// <summary>
+    /// Builds the Fallout 4 <c>AutoloadDoor</c> door validation spec, including a UI model row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Fallout 4 <c>AutoloadDoor</c> sample.</returns>
     public static ValidationSpec Fallout4_AutoloadDoor()
     {
-        return Fallout4Door("AutoloadDoor", "01ED77:Fallout4.esm").Build();
+        var spec = Fallout4Door("AutoloadDoor", "01ED77:Fallout4.esm").Build();
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Model", "File"], visualText: "EditorID"));
+        return spec;
     }
 
     public static ValidationSpec Fallout4_BldWoodPDbDoor01()
@@ -69,9 +81,15 @@ public static class DoorValidationSpecs
         return SkyrimDoor("AutoLoadDoor01", "031897:Skyrim.esm").Build();
     }
 
+    /// <summary>
+    /// Builds the Skyrim <c>DBBlackDoor</c> door validation spec, including a UI model row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Skyrim <c>DBBlackDoor</c> sample.</returns>
     public static ValidationSpec Skyrim_DBBlackDoor()
     {
-        return SkyrimDoor("DBBlackDoor", "022F44:Skyrim.esm").Build();
+        var spec = SkyrimDoor("DBBlackDoor", "022F44:Skyrim.esm").Build();
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Model", "File"], visualText: "EditorID"));
+        return spec;
     }
 
     private static ValidationSpecBuilder StarfieldDoor(string sampleName, string formKey)

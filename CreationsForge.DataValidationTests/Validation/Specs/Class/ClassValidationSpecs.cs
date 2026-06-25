@@ -15,9 +15,15 @@ public static class ClassValidationSpecs
         return Fallout4Class("Citizen", "01326B:Fallout4.esm").Build();
     }
 
+    /// <summary>
+    /// Builds the Fallout 4 <c>BloatflyClass</c> class validation spec, including a stable UI editor ID row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Fallout 4 <c>BloatflyClass</c> sample.</returns>
     public static ValidationSpec Fallout4_BloatflyClass()
     {
-        return Fallout4Class("BloatflyClass", "031757:Fallout4.esm").Build();
+        var spec = Fallout4Class("BloatflyClass", "031757:Fallout4.esm").Build();
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.Literal(["EditorID"], "BloatflyClass"));
+        return spec;
     }
 
     public static ValidationSpec Fallout4_MQ203Class()
@@ -25,9 +31,17 @@ public static class ClassValidationSpecs
         return Fallout4Class("MQ203Class", "20ED07:Fallout4.esm").Build();
     }
 
+    /// <summary>
+    /// Builds the Skyrim <c>TrainerAlchemyExpert</c> class validation spec, including a UI skill-weight row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Skyrim <c>TrainerAlchemyExpert</c> sample.</returns>
     public static ValidationSpec Skyrim_TrainerAlchemyExpert()
     {
-        return SkyrimClass("TrainerAlchemyExpert", "0E3A6E:Skyrim.esm").Build();
+        var spec = SkyrimClass("TrainerAlchemyExpert", "0E3A6E:Skyrim.esm").Build();
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(
+            ["SkillWeights", "SkillWeight [0]", "Key"],
+            visualText: "EditorID"));
+        return spec;
     }
 
     public static ValidationSpec Skyrim_TrainerAlchemyJourneyman()
@@ -50,9 +64,15 @@ public static class ClassValidationSpecs
         return SkyrimClass("Bard", "01325D:Skyrim.esm").Build();
     }
 
+    /// <summary>
+    /// Builds the Starfield <c>Citizen</c> class validation spec, including a stable UI editor ID row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>Citizen</c> sample.</returns>
     public static ValidationSpec Starfield_Citizen()
     {
-        return StarfieldClass("Citizen", "01326B:Starfield.esm").Build();
+        var spec = StarfieldClass("Citizen", "01326B:Starfield.esm").Build();
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.Literal(["EditorID"], "Citizen"));
+        return spec;
     }
 
     public static ValidationSpec Starfield_CourserClass()

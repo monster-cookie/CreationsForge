@@ -5,9 +5,18 @@ namespace CreationsForge.DataValidationTests.Validation.Specs.ActorValueInformat
 
 public static class ActorValueInformationValidationSpecs
 {
+    /// <summary>
+    /// Builds the Starfield <c>TargetingModeActionPoints_AV</c> actor value information validation spec,
+    /// including a stable UI editor ID row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>TargetingModeActionPoints_AV</c> sample.</returns>
     public static ValidationSpec Starfield_TargetingModeActionPoints_AV()
     {
-        return StarfieldActorValueInformation("TargetingModeActionPoints_AV", "05ACD4:Starfield.esm");
+        var spec = StarfieldActorValueInformation("TargetingModeActionPoints_AV", "05ACD4:Starfield.esm");
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.Literal(
+            ["EditorID"],
+            "TargetingModeActionPoints_AV"));
+        return spec;
     }
 
     public static ValidationSpec Starfield_ENV_Resist_Airborne()
@@ -30,9 +39,18 @@ public static class ActorValueInformationValidationSpecs
         return StarfieldActorValueInformation("Health", "0002D4:Starfield.esm");
     }
 
+    /// <summary>
+    /// Builds the Fallout 4 <c>SentryBotMaxHeatLevel</c> actor value information validation spec,
+    /// including a stable UI editor ID row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Fallout 4 <c>SentryBotMaxHeatLevel</c> sample.</returns>
     public static ValidationSpec Fallout4_SentryBotMaxHeatLevel()
     {
-        return Fallout4ActorValueInformation("SentryBotMaxHeatLevel", "0B287B:Fallout4.esm");
+        var spec = Fallout4ActorValueInformation("SentryBotMaxHeatLevel", "0B287B:Fallout4.esm");
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.Literal(
+            ["EditorID"],
+            "SentryBotMaxHeatLevel"));
+        return spec;
     }
 
     public static ValidationSpec Fallout4_HC_Adrenaline()
@@ -55,13 +73,21 @@ public static class ActorValueInformationValidationSpecs
         return Fallout4ActorValueInformation("AddictionCount", "1EB998:Fallout4.esm");
     }
 
+    /// <summary>
+    /// Builds the Skyrim <c>AVAlchemy</c> actor value information validation spec, including a UI perk-tree row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Skyrim <c>AVAlchemy</c> sample.</returns>
     public static ValidationSpec Skyrim_AVAlchemy()
     {
-        return SkyrimActorValueInformation("AVAlchemy", "000456:Skyrim.esm")
+        var spec = SkyrimActorValueInformation("AVAlchemy", "000456:Skyrim.esm")
             .AddRules(SkyrimSkillMultiplierRules())
             .AddRule(SkyrimSkillImproveOffsetRule())
             .AddRules(SkyrimPerkTreeRules())
             .Build();
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(
+            ["PerkTree", "PerkTree [0]", "HorizontalPosition"],
+            visualText: "EditorID"));
+        return spec;
     }
 
     public static ValidationSpec Skyrim_AVAlteration()

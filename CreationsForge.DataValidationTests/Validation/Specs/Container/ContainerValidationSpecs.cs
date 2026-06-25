@@ -14,12 +14,19 @@ public static class ContainerValidationSpecs
             [".Data"] = ".DataInt"
         };
 
+    /// <summary>
+    /// Builds the Starfield <c>ShipOutpost_Loot_Storage_Safe_Floor_Reg_Common</c> container validation spec,
+    /// including a UI model row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>ShipOutpost_Loot_Storage_Safe_Floor_Reg_Common</c> sample.</returns>
     public static ValidationSpec Starfield_ShipOutpost_Loot_Storage_Safe_Floor_Reg_Common()
     {
-        return StarfieldContainer("ShipOutpost_Loot_Storage_Safe_Floor_Reg_Common", "277A73:Starfield.esm")
+        var spec = StarfieldContainer("ShipOutpost_Loot_Storage_Safe_Floor_Reg_Common", "277A73:Starfield.esm")
             .AddRules(GetAnimationGraphComponentRules(0))
             .AddRules(ValidationFieldRule.ComponentReflection(1, 0, 1, "EffectSequenceComponent"))
             .Build();
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Model", "File"], visualText: "EditorID"));
+        return spec;
     }
 
     public static ValidationSpec Starfield_ShipOutpost_Loot_Storage_Safe_Floor_Tall_Rare()
@@ -57,10 +64,16 @@ public static class ContainerValidationSpecs
             .Build();
     }
 
+    /// <summary>
+    /// Builds the Fallout 4 <c>Loot_Raider_Safe</c> container validation spec, including a UI model row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Fallout 4 <c>Loot_Raider_Safe</c> sample.</returns>
     public static ValidationSpec Fallout4_Loot_Raider_Safe()
     {
-        return Fallout4Container("Loot_Raider_Safe", "064A36:Fallout4.esm", withScriptingAdapters: true)
+        var spec = Fallout4Container("Loot_Raider_Safe", "064A36:Fallout4.esm", withScriptingAdapters: true)
             .Build();
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Model", "File"], visualText: "EditorID"));
+        return spec;
     }
 
     public static ValidationSpec Fallout4_TheaterTickerTape_Safe()
@@ -101,14 +114,20 @@ public static class ContainerValidationSpecs
             .Build();
     }
 
+    /// <summary>
+    /// Builds the Skyrim <c>BeeHive</c> container validation spec, including a UI model row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Skyrim <c>BeeHive</c> sample.</returns>
     public static ValidationSpec Skyrim_BeeHive()
     {
-        return SkyrimContainer("BeeHive", "0A918C:Skyrim.esm")
+        var spec = SkyrimContainer("BeeHive", "0A918C:Skyrim.esm")
             .AddRule(ValidationFieldRule.Field("VirtualMachineAdapter.Scripts.Count", "ScriptingAdapters.Count"))
             .AddRule(ValidationFieldRule.Field("VirtualMachineAdapter.Scripts[0].Name", "ScriptingAdapters[1].Name"))
             .AddRule(ValidationFieldRule.Field("VirtualMachineAdapter.Scripts[1].Name", "ScriptingAdapters[0].Name"))
             .AddRule(ValidationFieldRule.PathPrefix("VirtualMachineAdapter.Scripts[1].Properties", "ScriptingAdapters[0].Properties", ScriptingAdapterPathReplacements))
             .Build();
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Model", "File"], visualText: "EditorID"));
+        return spec;
     }
 
     public static ValidationSpec Skyrim_MerchantCaravanAChest()

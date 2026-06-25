@@ -17,9 +17,18 @@ public static class ConstructibleObjectValidationSpecs
             [".Data"] = ".DataInt"
         };
 
+    /// <summary>
+    /// Builds the Starfield <c>co_Outpost_Power_Reactor01</c> constructible object validation spec,
+    /// including a UI component row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>co_Outpost_Power_Reactor01</c> sample.</returns>
     public static ValidationSpec Starfield_co_Outpost_Power_Reactor01()
     {
-        return StarfieldConstructibleObject("co_Outpost_Power_Reactor01", "007F7C:Starfield.esm").Build();
+        var spec = StarfieldConstructibleObject("co_Outpost_Power_Reactor01", "007F7C:Starfield.esm").Build();
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(
+            ["Components", "Component [0]", "Count"],
+            visualText: "EditorID"));
+        return spec;
     }
 
     public static ValidationSpec Starfield_co_Outpost_Power_Reactor02()
@@ -44,9 +53,18 @@ public static class ConstructibleObjectValidationSpecs
             .Build();
     }
 
+    /// <summary>
+    /// Builds the Fallout 4 <c>workshop_co_Artillery</c> constructible object validation spec,
+    /// including a UI component row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Fallout 4 <c>workshop_co_Artillery</c> sample.</returns>
     public static ValidationSpec Fallout4_workshop_co_Artillery()
     {
-        return Fallout4ConstructibleObject("workshop_co_Artillery", "0ADF6E:Fallout4.esm").Build();
+        var spec = Fallout4ConstructibleObject("workshop_co_Artillery", "0ADF6E:Fallout4.esm").Build();
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(
+            ["Components", "Component [0]", "Count"],
+            visualText: "EditorID"));
+        return spec;
     }
 
     public static ValidationSpec Fallout4_workshop_co_MQ206BeamEmitter()
@@ -69,9 +87,18 @@ public static class ConstructibleObjectValidationSpecs
         return Fallout4ConstructibleObject("co_mod_GatlingLaser_BarrelMingunLaser_Super", "1889E3:Fallout4.esm").Build();
     }
 
+    /// <summary>
+    /// Builds the Skyrim <c>RecipeArmorDragonscaleBoots</c> constructible object validation spec,
+    /// including a UI component row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Skyrim <c>RecipeArmorDragonscaleBoots</c> sample.</returns>
     public static ValidationSpec Skyrim_RecipeArmorDragonscaleBoots()
     {
-        return SkyrimConstructibleObject("RecipeArmorDragonscaleBoots", "0DCA13:Skyrim.esm").Build();
+        var spec = SkyrimConstructibleObject("RecipeArmorDragonscaleBoots", "0DCA13:Skyrim.esm").Build();
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(
+            ["Components", "Component [0]", "Count"],
+            visualText: "EditorID"));
+        return spec;
     }
 
     public static ValidationSpec Skyrim_RecipeArmorDragonscaleCuirass()
