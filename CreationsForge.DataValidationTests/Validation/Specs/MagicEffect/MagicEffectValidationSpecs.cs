@@ -17,9 +17,16 @@ public static class MagicEffectValidationSpecs
     private static readonly IReadOnlyDictionary<string, string> NoPathReplacements =
         new Dictionary<string, string>(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Builds the Starfield <c>ArtifactPowerLifeForced_Effect</c> magic effect validation spec,
+    /// including a UI cast-type row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>ArtifactPowerLifeForced_Effect</c> sample.</returns>
     public static ValidationSpec Starfield_ArtifactPowerLifeForced_Effect()
     {
-        return StarfieldMagicEffect("ArtifactPowerLifeForced_Effect", "2C5392:Starfield.esm").Build();
+        var spec = StarfieldMagicEffect("ArtifactPowerLifeForced_Effect", "2C5392:Starfield.esm").Build();
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.DtoField(["CastType"], "CastType", visualText: "EditorID"));
+        return spec;
     }
 
     public static ValidationSpec Starfield_ArtifactPowerParticleBeam_Effect()
@@ -57,9 +64,16 @@ public static class MagicEffectValidationSpecs
         return Fallout4MagicEffect("CryoFreezeEffect02", "18C356:Fallout4.esm").Build();
     }
 
+    /// <summary>
+    /// Builds the Fallout 4 <c>PerkPainTrainKnockbackEffect</c> magic effect validation spec,
+    /// including a UI cast-type row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Fallout 4 <c>PerkPainTrainKnockbackEffect</c> sample.</returns>
     public static ValidationSpec Fallout4_PerkPainTrainKnockbackEffect()
     {
-        return Fallout4MagicEffect("PerkPainTrainKnockbackEffect", "171781:Fallout4.esm").Build();
+        var spec = Fallout4MagicEffect("PerkPainTrainKnockbackEffect", "171781:Fallout4.esm").Build();
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.DtoField(["CastType"], "CastType", visualText: "EditorID"));
+        return spec;
     }
 
     public static ValidationSpec Fallout4_DN102_LabDemo3ParalyzeEffect()
@@ -67,9 +81,16 @@ public static class MagicEffectValidationSpecs
         return Fallout4MagicEffect("DN102_LabDemo3ParalyzeEffect", "0AE04F:Fallout4.esm").Build();
     }
 
+    /// <summary>
+    /// Builds the Skyrim <c>ShockDamageMassConcAimed</c> magic effect validation spec,
+    /// including a UI cast-type row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Skyrim <c>ShockDamageMassConcAimed</c> sample.</returns>
     public static ValidationSpec Skyrim_ShockDamageMassConcAimed()
     {
-        return SkyrimMagicEffect("ShockDamageMassConcAimed", "0D22FA:Skyrim.esm").Build();
+        var spec = SkyrimMagicEffect("ShockDamageMassConcAimed", "0D22FA:Skyrim.esm").Build();
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.DtoField(["CastType"], "CastType", visualText: "EditorID"));
+        return spec;
     }
 
     public static ValidationSpec Skyrim_dunVolunruudPickaxeEffect()

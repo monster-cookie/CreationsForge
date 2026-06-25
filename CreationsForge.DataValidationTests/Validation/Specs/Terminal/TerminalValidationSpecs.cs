@@ -17,9 +17,19 @@ public static class TerminalValidationSpecs
             [".Data"] = ".DataInt"
         };
 
+    /// <summary>
+    /// Builds the Starfield <c>AkilaLife04_Computer</c> terminal validation spec,
+    /// including a UI model-file row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>AkilaLife04_Computer</c> sample.</returns>
     public static ValidationSpec Starfield_AkilaLife04_Computer()
     {
-        return StarfieldTerminal("AkilaLife04_Computer", "2D1D29:Starfield.esm", withMenu: true, withFurnitureTemplate: true, withMajorRecordFlagsRaw: false);
+        var spec = StarfieldTerminal("AkilaLife04_Computer", "2D1D29:Starfield.esm", withMenu: true, withFurnitureTemplate: true, withMajorRecordFlagsRaw: false);
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.Literal(
+            ["Model", "File"],
+            "SetDressing\\Terminals\\TerminalActivatorA01\\TerminalActivatorA01.nif",
+            visualText: "EditorID"));
+        return spec;
     }
 
     public static ValidationSpec Starfield_AkilaLife08_FarmingComputer()
@@ -27,9 +37,19 @@ public static class TerminalValidationSpecs
         return StarfieldTerminal("AkilaLife08_FarmingComputer", "2D2617:Starfield.esm", withMenu: true, withFurnitureTemplate: true, withMajorRecordFlagsRaw: false);
     }
 
+    /// <summary>
+    /// Builds the Starfield <c>BE_ShipComputer_BarStanding</c> terminal validation spec,
+    /// including a UI model-file row expectation.
+    /// </summary>
+    /// <returns>The validation spec for the Starfield <c>BE_ShipComputer_BarStanding</c> sample.</returns>
     public static ValidationSpec Starfield_BE_ShipComputer_BarStanding()
     {
-        return StarfieldTerminal("BE_ShipComputer_BarStanding", "386CD0:Starfield.esm", withMenu: true, withFurnitureTemplate: true, withMajorRecordFlagsRaw: true, forcedLocationCount: 1);
+        var spec = StarfieldTerminal("BE_ShipComputer_BarStanding", "386CD0:Starfield.esm", withMenu: true, withFurnitureTemplate: true, withMajorRecordFlagsRaw: true, forcedLocationCount: 1);
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.Literal(
+            ["Model", "File"],
+            "SetDressing\\Terminals\\TerminalSittingActivatorA01\\TerminalSittingActivatorB01.nif",
+            visualText: "EditorID"));
+        return spec;
     }
 
     public static ValidationSpec Starfield_City_NA_Botany02Terminal()
@@ -71,13 +91,18 @@ public static class TerminalValidationSpecs
     /// <returns>The validation rules for the DN035 robot-control targeting terminal sample.</returns>
     public static ValidationSpec Fallout4_DN035_RobotControlTerminal_Targeting()
     {
-        return Fallout4Terminal(
+        var spec = Fallout4Terminal(
             "DN035_RobotControlTerminal_Targeting",
             "1221C8:Fallout4.esm",
             withMajorRecordFlagsRaw: true,
             bodyTextCount: 2,
             menuItemCount: 6,
             withScriptFragments: true);
+        spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.Literal(
+            ["Model", "File"],
+            "Furniture\\Terminals\\TerminalOn.nif",
+            visualText: "EditorID"));
+        return spec;
     }
 
     private static ValidationSpec StarfieldTerminal(
