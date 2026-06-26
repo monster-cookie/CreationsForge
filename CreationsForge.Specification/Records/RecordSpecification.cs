@@ -47,6 +47,16 @@ public sealed class RecordSpecification
     };
 
     /// <summary>
+    /// Gets reader metadata that identifies the current DTO destination collection and default Mutagen collection
+    /// used by game-specific reader services.
+    /// </summary>
+    public RecordReaderSpecification Reader { get; init; } = new()
+    {
+        PluginRecordSetPropertyName = string.Empty,
+        DefaultMutagenCollectionName = string.Empty
+    };
+
+    /// <summary>
     /// Gets comparison metadata for the record family.
     /// </summary>
     public RecordComparisonSpecification Comparison { get; init; } = new();

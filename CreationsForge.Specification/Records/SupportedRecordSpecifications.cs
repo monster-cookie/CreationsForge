@@ -21,6 +21,7 @@ public static class SupportedRecordSpecifications
             ImportOrder = 0,
             IsRequired = true
         },
+        Reader = CreateReaderSpecification("FormLists", "FormLists"),
         Fields =
         [
             new RecordFieldSpecification
@@ -78,6 +79,7 @@ public static class SupportedRecordSpecifications
             ImportOrder = 1,
             IsRequired = true
         },
+        Reader = CreateReaderSpecification("GameSettings", "GameSettings"),
         Fields =
         [
             new RecordFieldSpecification
@@ -134,6 +136,7 @@ public static class SupportedRecordSpecifications
             ImportOrder = 2,
             IsRequired = true
         },
+        Reader = CreateReaderSpecification("Globals", "Globals"),
         Fields =
         [
             new RecordFieldSpecification
@@ -432,7 +435,26 @@ public static class SupportedRecordSpecifications
                 ImportOrder = importOrder,
                 IsRequired = isRequired
             },
+            Reader = CreateReaderSpecification(pluginRecordSetPropertyName, pluginRecordSetPropertyName),
             ImplementationNote = "Import dispatch metadata is active; comparison remains record-specific."
+        };
+    }
+
+    /// <summary>
+    /// Creates reader metadata for the current game-adapter record mapping path.
+    /// </summary>
+    /// <param name="pluginRecordSetPropertyName">The <c>PluginRecordSetDTO</c> collection property that receives mapped DTOs.</param>
+    /// <param name="defaultMutagenCollectionName">The default Mutagen mod collection property read by game adapters.</param>
+    /// <returns>The reader metadata used as the next specification-driven reader migration target.</returns>
+    private static RecordReaderSpecification CreateReaderSpecification(
+        string pluginRecordSetPropertyName,
+        string defaultMutagenCollectionName)
+    {
+        return new RecordReaderSpecification
+        {
+            PluginRecordSetPropertyName = pluginRecordSetPropertyName,
+            DefaultMutagenCollectionName = defaultMutagenCollectionName,
+            UsesGameSpecificMapper = true
         };
     }
 

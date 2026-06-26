@@ -154,4 +154,42 @@ public class RecordSpecificationCatalogTests
         RecordSpecificationCatalog.All.ShouldAllBe(specification =>
             recordSetProperties.Contains(specification.Import.PluginRecordSetPropertyName));
     }
+
+    /// <summary>
+    /// Verifies that reader specifications point at real plugin record-set collections.
+    /// </summary>
+    [Fact]
+    public void All_ReaderSpecificationsReferencePluginRecordSetProperties()
+    {
+        var recordSetProperties = typeof(PluginRecordSetDTO)
+            .GetProperties()
+            .Select(property => property.Name)
+            .ToHashSet(StringComparer.Ordinal);
+
+        RecordSpecificationCatalog.All.ShouldAllBe(specification =>
+            recordSetProperties.Contains(specification.Reader.PluginRecordSetPropertyName));
+    }
+
+    /// <summary>
+    /// Verifies that reader and import metadata target the same DTO collection during the metadata foundation phase.
+    /// </summary>
+    [Fact]
+    public void All_ReaderSpecificationsMatchImportRecordSetProperties()
+    {
+        RecordSpecificationCatalog.All.ShouldAllBe(specification =>
+            specification.Reader.PluginRecordSetPropertyName == specification.Import.PluginRecordSetPropertyName);
+    }
+
+    /// <summary>
+    /// Verifies that reader-facing Mutagen collection names are populated for the catalog and supported game entries.
+    /// </summary>
+    [Fact]
+    public void All_ReaderSpecificationsExposeMutagenCollectionNames()
+    {
+        RecordSpecificationCatalog.All.ShouldAllBe(specification =>
+            !string.IsNullOrWhiteSpace(specification.Reader.DefaultMutagenCollectionName));
+
+        RecordSpecificationCatalog.All.ShouldAllBe(specification =>
+            specification.GameSupport.All(support => !string.IsNullOrWhiteSpace(support.MutagenCollectionName)));
+    }
 }

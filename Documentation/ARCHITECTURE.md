@@ -21,12 +21,14 @@ shared import orchestration, shared Mutagen primitive mapping, and repositories 
 may reference shared Mutagen packages such as `Mutagen.Bethesda.Core`, but it must not reference game-specific Mutagen
 packages.
 
-`CreationsForge.Specification` owns production record-family metadata that can gradually drive shared import,
+`CreationsForge.Specification` owns production record-family metadata that can gradually drive shared reader, import,
 validation, and comparison behavior. The catalog includes the current imported record families and drives
-`RecordImportService` dispatch order and `PluginRecordSetDTO` collection lookup. `RecordComparisonService` consumes
-comparison metadata for the `FLST`, `GMST`, and `GLOB` pilot records' simple scalar rows. The existing game readers,
-typed importers, repositories, and complex comparison strategies still own their current runtime behavior. The
-specification project does not reference Core, Avalonia, NPoco, Migrations, Assets, or game-specific Mutagen packages.
+`RecordImportService` dispatch order and `PluginRecordSetDTO` collection lookup. It also describes reader-facing DTO
+destination collections and default Mutagen collection names for the current game adapters. `RecordComparisonService`
+consumes comparison metadata for the `FLST`, `GMST`, and `GLOB` pilot records' simple scalar rows. The existing game
+readers, typed importers, repositories, and complex comparison strategies still own their current runtime behavior.
+The specification project does not reference Core, Avalonia, NPoco, Migrations, Assets, or game-specific Mutagen
+packages.
 
 `CreationsForge.Bethesda.Assets` owns UI-neutral Bethesda asset IO helpers, local-file resolution result DTOs, an
 in-memory asset provider, archive-reader contracts, and temporary extraction session infrastructure. It does not
@@ -141,6 +143,11 @@ families. `RecordImportService` reads specifications from `IRecordSpecificationP
 metadata, resolves each `PluginRecordSetDTO` collection by name, and still uses the existing `ITypedRecordImporter`
 lookup, progress reporting, per-record failure handling, and stale cleanup behavior. Required and optional record-type
 result behavior is controlled by the specification's import metadata.
+
+The catalog also carries reader metadata for the current record families. Reader metadata names the
+`PluginRecordSetDTO` destination collection and default Mutagen mod collection for each record family, but the
+Starfield, Fallout 4, and Skyrim reader services still own the actual Mutagen-to-DTO mapping. This keeps the next
+reader-dispatch migration target explicit without moving game-specific Mutagen APIs into Core or Specification.
 
 Starfield plugin metadata, master-reference, and record reads use a Starfield-only construction helper. The helper
 prefers the full Mutagen environment load order's mod objects with the Starfield environment data folder from

@@ -165,6 +165,48 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-26 - Add Reader Metadata To Record Specifications
+
+Status: Accepted
+
+Context: Import dispatch now consumes specification metadata for the current record families, but the Starfield,
+Fallout 4, and Skyrim reader services still encode their reader targets and Mutagen collection choices directly in
+game-adapter code. A full reader rewrite would be too broad for one step because mapping logic still differs by game
+and record family.
+
+Decision: Add reader-facing metadata to each record specification. The new metadata names the destination
+`PluginRecordSetDTO` collection, the default Mutagen mod collection name, and whether current behavior still relies on
+game-adapter mapping code. Populate the catalog for every current imported record family and add catalog tests that
+guard valid DTO destination names, import-reader destination alignment, and populated Mutagen collection names. Do not
+change the runtime reader services in this slice.
+
+Rationale: This gives the next reader-dispatch migration a typed target without forcing game-specific Mutagen APIs or
+mapping code into `CreationsForge.Specification`. It also prevents the catalog from becoming import-only metadata when
+the long-term direction is spec-driven reader, import, comparison, and validation behavior.
+
+Alternatives considered:
+
+- Start rewriting the three game reader services immediately.
+- Keep reader targets implicit until every record family has declarative field mappings.
+- Store reader collection names only in `RecordGameSupportSpecification`.
+
+Consequences:
+
+- `RecordSpecification` now exposes reader metadata alongside import and comparison metadata.
+- Runtime reader behavior is unchanged; game adapters still map Mutagen records into Core DTOs.
+- Catalog tests now fail when reader metadata points at a missing `PluginRecordSetDTO` collection.
+- No database schema, persisted data shape, dependency injection, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Specification/Records/RecordReaderSpecification.cs`
+- `CreationsForge.Specification/Records/RecordSpecification.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-25 - Keep Spriggit-Backed Rendered UI Validation With Data Validation
 
 Status: Accepted
