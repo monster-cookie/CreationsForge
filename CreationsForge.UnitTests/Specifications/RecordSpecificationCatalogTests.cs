@@ -67,4 +67,13 @@ public class RecordSpecificationCatalogTests
 
         specifications.Select(specification => specification.RecordID).ShouldBe(["FLST", "GMST", "GLOB"], ignoreOrder: true);
     }
+
+    /// <summary>
+    /// Verifies that active pilot comparison specifications define at least one comparison row.
+    /// </summary>
+    [Fact]
+    public void All_ActivePilotSpecificationsExposeComparisonFields()
+    {
+        RecordSpecificationCatalog.All.ShouldAllBe(specification => specification.Comparison.Fields.Count > 0);
+    }
 }

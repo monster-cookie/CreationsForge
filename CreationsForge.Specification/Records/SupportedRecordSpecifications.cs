@@ -53,7 +53,7 @@ public static class SupportedRecordSpecifications
                 }
             ]
         },
-        ImplementationNote = "Foundation metadata only; existing import and comparison services still own behavior."
+        ImplementationNote = "Comparison metadata drives the simple scalar rows; indexed item rows remain strategy-based."
     };
 
     /// <summary>
@@ -103,7 +103,7 @@ public static class SupportedRecordSpecifications
                 }
             ]
         },
-        ImplementationNote = "Foundation metadata only; existing import and comparison services still own behavior."
+        ImplementationNote = "Comparison metadata drives the simple rows; Data display still uses a localized-value strategy."
     };
 
     /// <summary>
@@ -164,7 +164,7 @@ public static class SupportedRecordSpecifications
                 }
             ]
         },
-        ImplementationNote = "Foundation metadata only; existing import and comparison services still own behavior."
+        ImplementationNote = "Comparison metadata drives the simple scalar rows."
     };
 
     /// <summary>

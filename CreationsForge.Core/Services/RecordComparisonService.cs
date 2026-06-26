@@ -9,10 +9,14 @@ using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Repositories.Interfaces;
 using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Core.Utilities;
+using CreationsForge.Specification.Records;
 using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Core.Services;
 
+/// <summary>
+/// Builds UI-neutral comparison DTOs from imported record readback data.
+/// </summary>
 public class RecordComparisonService : IRecordComparisonService
 {
     private const string UnparseableReflectionDataLabel = "[UNPARSEABLE REFLECTION DATA]";
@@ -41,7 +45,37 @@ public class RecordComparisonService : IRecordComparisonService
     private readonly IReflectionRepository ReflectionRepository;
     private readonly IRecordLocalizedStringRepository RecordLocalizedStringRepository;
     private readonly IGameSelectionService GameSelectionService;
+    private readonly IRecordSpecificationProvider RecordSpecificationProvider;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RecordComparisonService"/> class.
+    /// </summary>
+    /// <param name="formListRepository">The repository used to read imported Form List records.</param>
+    /// <param name="gameSettingRepository">The repository used to read imported Game Setting records.</param>
+    /// <param name="globalRepository">The repository used to read imported Global records.</param>
+    /// <param name="classRepository">The repository used to read imported Class records.</param>
+    /// <param name="factionRepository">The repository used to read imported Faction records.</param>
+    /// <param name="miscItemRepository">The repository used to read imported Misc Item records.</param>
+    /// <param name="keywordRepository">The repository used to read imported Keyword records.</param>
+    /// <param name="actorValueInformationRepository">The repository used to read imported Actor Value Information records.</param>
+    /// <param name="npcRepository">The repository used to read imported NPC records.</param>
+    /// <param name="magicEffectRepository">The repository used to read imported Magic Effect records.</param>
+    /// <param name="perkRepository">The repository used to read imported Perk records.</param>
+    /// <param name="staticRepository">The repository used to read imported Static records.</param>
+    /// <param name="bookRepository">The repository used to read imported Book records.</param>
+    /// <param name="doorRepository">The repository used to read imported Door records.</param>
+    /// <param name="containerRepository">The repository used to read imported Container records.</param>
+    /// <param name="constructibleObjectRepository">The repository used to read imported Constructible Object records.</param>
+    /// <param name="conditionFormRepository">The repository used to read imported Condition Form records.</param>
+    /// <param name="terminalRepository">The repository used to read imported Terminal records.</param>
+    /// <param name="modelRepository">The repository used to read shared model child rows.</param>
+    /// <param name="keywordMappingRepository">The repository used to read shared keyword child rows.</param>
+    /// <param name="soundMappingRepository">The repository used to read shared sound child rows.</param>
+    /// <param name="scriptingAdapterRepository">The repository used to read shared scripting adapter rows.</param>
+    /// <param name="reflectionRepository">The repository used to read shared reflection payload rows.</param>
+    /// <param name="recordLocalizedStringRepository">The repository used to read localized record text rows.</param>
+    /// <param name="gameSelectionService">The service that provides display preferences such as record text language.</param>
+    /// <param name="recordSpecificationProvider">The optional provider for record comparison specifications.</param>
     public RecordComparisonService(
         IFormListRepository formListRepository,
         IGameSettingRepository gameSettingRepository,
@@ -67,7 +101,8 @@ public class RecordComparisonService : IRecordComparisonService
         IScriptingAdapterRepository scriptingAdapterRepository,
         IReflectionRepository reflectionRepository,
         IRecordLocalizedStringRepository recordLocalizedStringRepository,
-        IGameSelectionService gameSelectionService)
+        IGameSelectionService gameSelectionService,
+        IRecordSpecificationProvider? recordSpecificationProvider = null)
     {
         FormListRepository = formListRepository;
         GameSettingRepository = gameSettingRepository;
@@ -94,6 +129,7 @@ public class RecordComparisonService : IRecordComparisonService
         ReflectionRepository = reflectionRepository;
         RecordLocalizedStringRepository = recordLocalizedStringRepository;
         GameSelectionService = gameSelectionService;
+        RecordSpecificationProvider = recordSpecificationProvider ?? new RecordSpecificationProvider();
     }
 
     public RecordComparisonDTO GetRecordComparison(SupportedGame game, string recordType, FormKeyDTO formKey)
@@ -202,8 +238,7 @@ public class RecordComparisonService : IRecordComparisonService
             .Select(record => record.Items.Count)
             .DefaultIfEmpty()
             .Max();
-        var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("AddToList", records, record => FormatFormKey(record.AddToList)));
+        var fields = CreateSpecComparisonFields(RecordTypeCatalog.FormList.RecordID, records);
         for (var itemIndex = 0; itemIndex < maxItemCount; itemIndex++)
         {
             var currentIndex = itemIndex;
@@ -218,9 +253,13 @@ public class RecordComparisonService : IRecordComparisonService
         var records = GameSettingRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.GameSetting.RecordID, formKey);
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
-        var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("MutagenObjectType", records, record => record.MutagenObjectType));
-        fields.Add(CreateField("Data", records, record => GetGameSettingDisplayValue(localizedStrings, record, recordTextLanguage)));
+        var fields = CreateSpecComparisonFields(
+            RecordTypeCatalog.GameSetting.RecordID,
+            records,
+            new Dictionary<string, Func<GameSettingDTO, string>>(StringComparer.Ordinal)
+            {
+                ["Data"] = record => GetGameSettingDisplayValue(localizedStrings, record, recordTextLanguage)
+            });
 
         return CreateComparison(RecordTypeCatalog.GameSetting.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
@@ -228,10 +267,7 @@ public class RecordComparisonService : IRecordComparisonService
     private RecordComparisonDTO CreateGlobalComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = GlobalRepository.GetByFormKey(game, formKey);
-        var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("MutagenObjectType", records, record => record.MutagenObjectType ?? string.Empty));
-        fields.Add(CreateField("MajorFlags", records, record => record.MajorFlags ?? string.Empty));
-        fields.Add(CreateField("Data", records, record => record.Data?.ToString() ?? string.Empty));
+        var fields = CreateSpecComparisonFields(RecordTypeCatalog.Global.RecordID, records);
 
         return CreateComparison(RecordTypeCatalog.Global.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
@@ -978,6 +1014,120 @@ public class RecordComparisonService : IRecordComparisonService
             CreateField("VersionControl", records, record => record.VersionControl?.ToString() ?? string.Empty, isComparable: false),
             CreateField("MajorRecordFlags", records, record => record.MajorRecordFlags.ToString(), isComparable: false)
         ];
+    }
+
+    /// <summary>
+    /// Creates comparison fields from a record specification while allowing callers to keep record-specific formatting
+    /// hooks for values that are not yet purely declarative.
+    /// </summary>
+    /// <typeparam name="TRecord">The record DTO type participating in the comparison.</typeparam>
+    /// <param name="recordType">The Bethesda record ID whose comparison specification should be used.</param>
+    /// <param name="records">The ordered records participating in the comparison.</param>
+    /// <param name="customValueFactories">Optional value factories keyed by comparison field name.</param>
+    /// <returns>The comparison fields produced from the specification and custom value factories.</returns>
+    private List<RecordComparisonFieldDTO> CreateSpecComparisonFields<TRecord>(
+        string recordType,
+        IReadOnlyList<TRecord> records,
+        IReadOnlyDictionary<string, Func<TRecord, string>>? customValueFactories = null)
+        where TRecord : RecordDTO
+    {
+        var specification = RecordSpecificationProvider.FindByRecordID(recordType);
+        var fields = specification?.Comparison.IncludeCommonFields == false
+            ? new List<RecordComparisonFieldDTO>()
+            : CreateCommonFields(records.Cast<RecordDTO>().ToList());
+
+        if (specification == null)
+        {
+            return fields;
+        }
+
+        foreach (var fieldSpecification in specification.Comparison.Fields)
+        {
+            if (fieldSpecification.ValueKind == RecordFieldValueKind.Collection)
+            {
+                continue;
+            }
+
+            fields.Add(CreateSpecComparisonField(fieldSpecification, records, customValueFactories));
+        }
+
+        return fields;
+    }
+
+    /// <summary>
+    /// Creates one comparison field from a specification row.
+    /// </summary>
+    /// <typeparam name="TRecord">The record DTO type participating in the comparison.</typeparam>
+    /// <param name="fieldSpecification">The field specification that identifies source path and display kind.</param>
+    /// <param name="records">The ordered records participating in the comparison.</param>
+    /// <param name="customValueFactories">Optional value factories keyed by comparison field name.</param>
+    /// <returns>The populated comparison field.</returns>
+    private static RecordComparisonFieldDTO CreateSpecComparisonField<TRecord>(
+        RecordComparisonFieldSpecification fieldSpecification,
+        IReadOnlyList<TRecord> records,
+        IReadOnlyDictionary<string, Func<TRecord, string>>? customValueFactories)
+        where TRecord : RecordDTO
+    {
+        if (customValueFactories != null &&
+            customValueFactories.TryGetValue(fieldSpecification.FieldName, out var customValueFactory))
+        {
+            return CreateField(fieldSpecification.FieldName, records, customValueFactory, fieldSpecification.IsComparable);
+        }
+
+        return CreateField(
+            fieldSpecification.FieldName,
+            records,
+            record => FormatSpecComparisonValue(GetPropertyPathValue(record, fieldSpecification.SourcePath), fieldSpecification.ValueKind),
+            fieldSpecification.IsComparable);
+    }
+
+    /// <summary>
+    /// Reads a dotted public-property path from a DTO object.
+    /// </summary>
+    /// <param name="source">The source object that owns the first path segment.</param>
+    /// <param name="sourcePath">The dotted property path to read.</param>
+    /// <returns>The resolved property value, or <c>null</c> when any segment is absent or null.</returns>
+    private static object? GetPropertyPathValue(object? source, string sourcePath)
+    {
+        var value = source;
+        foreach (var pathSegment in sourcePath.Split('.', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (value == null)
+            {
+                return null;
+            }
+
+            var property = value.GetType().GetProperty(pathSegment, BindingFlags.Instance | BindingFlags.Public);
+            value = property?.GetValue(value);
+        }
+
+        return value;
+    }
+
+    /// <summary>
+    /// Formats a specification-resolved value using the comparison field's declared value kind.
+    /// </summary>
+    /// <param name="value">The raw DTO value resolved from the source path.</param>
+    /// <param name="valueKind">The broad value kind declared by the comparison specification.</param>
+    /// <returns>The formatted display value used by comparison rows.</returns>
+    private static string FormatSpecComparisonValue(object? value, RecordFieldValueKind valueKind)
+    {
+        if (value == null)
+        {
+            return string.Empty;
+        }
+
+        if (valueKind == RecordFieldValueKind.FormKey)
+        {
+            return FormatFormKey(value as FormKeyDTO);
+        }
+
+        if (value is IFormattable formattable)
+        {
+            return formattable.ToString(null, CultureInfo.InvariantCulture);
+        }
+
+        return value.ToString() ?? string.Empty;
     }
 
     private static RecordComparisonFieldDTO CreateField<TRecord>(

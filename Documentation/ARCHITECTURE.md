@@ -23,9 +23,10 @@ packages.
 
 `CreationsForge.Specification` owns production record-family metadata that can gradually drive shared import,
 validation, and comparison behavior. The first catalog slice covers FormLists (`FLST`), GameSettings (`GMST`), and
-Globals (`GLOB`) as foundation metadata only; the existing import readers, typed importers, repositories, and
-comparison service still own runtime behavior for those records. The specification project does not reference Core,
-Avalonia, NPoco, Migrations, Assets, or game-specific Mutagen packages.
+Globals (`GLOB`). `RecordComparisonService` consumes that comparison metadata for the pilot records' simple scalar
+rows, while the existing import readers, typed importers, repositories, and complex comparison strategies still own
+their current runtime behavior. The specification project does not reference Core, Avalonia, NPoco, Migrations,
+Assets, or game-specific Mutagen packages.
 
 `CreationsForge.Bethesda.Assets` owns UI-neutral Bethesda asset IO helpers, local-file resolution result DTOs, an
 in-memory asset provider, archive-reader contracts, and temporary extraction session infrastructure. It does not
@@ -225,10 +226,12 @@ Core assigns comparison value states for neutral, identical, conflicting, and di
 presentation layer maps those states to the green, red, and yellow comparison colors and shows the legend in the status
 area.
 
-The specification catalog now includes comparison metadata for the first `FLST`, `GMST`, and `GLOB` pilot records.
-That metadata records intended comparison rows and value kinds, but `RecordComparisonService` still builds comparison
-DTOs through its existing record-specific methods until a later approved slice replaces those branches with
-specification-driven row construction.
+The specification catalog now drives simple comparison rows for the first `FLST`, `GMST`, and `GLOB` pilot records.
+`RecordComparisonService` reads type-specific comparison fields from `IRecordSpecificationProvider`, resolves simple
+DTO source paths generically, and still uses explicit strategy hooks where behavior is not purely declarative. The
+current hooks include indexed `FLST` item rows and localized `GMST` `Data` display. Complex record families and shared
+child groups remain on the existing record-specific comparison methods until later approved slices move them behind
+specification metadata.
 
 `IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows.
 `IAssetFileResolverService` resolves readable local asset files from preview candidates by checking absolute paths,

@@ -7,6 +7,7 @@ using CreationsForge.Core.Models.Configuration;
 using CreationsForge.Core.Repositories.Interfaces;
 using CreationsForge.Core.Services;
 using CreationsForge.Core.Services.Interfaces;
+using CreationsForge.Specification.Records;
 using Mutagen.Bethesda.Strings;
 using Shouldly;
 
@@ -37,6 +38,52 @@ public class RecordComparisonServiceTests
         comparison.Fields.Single(field => field.FieldName == "Data").Values.Select(value => value.DisplayValue).ShouldBe(["1.5", "2.5"]);
         comparison.Fields.Single(field => field.FieldName == "Data").State.ShouldBe(RecordComparisonValueState.Conflict);
         comparison.Fields.Single(field => field.FieldName == "Data").Values.Select(value => value.State).ShouldBe([RecordComparisonValueState.Conflict, RecordComparisonValueState.WinningOverride]);
+    }
+
+    /// <summary>
+    /// Verifies that the Global pilot path reads type-specific rows from the injected comparison specification.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForGlobal_UsesInjectedComparisonSpecification()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x124);
+        var globalRepository = new TestGlobalRepository
+        {
+            Records =
+            [
+                CreateGlobal("Base.esm", formKey, "MyGlobal", 1.5, "GlobalShort", "Constant")
+            ]
+        };
+        var provider = new TestRecordSpecificationProvider(
+            new RecordSpecification
+            {
+                RecordID = SupportedRecordSpecifications.Global.RecordID,
+                RecordType = SupportedRecordSpecifications.Global.RecordType,
+                TableName = SupportedRecordSpecifications.Global.TableName,
+                FriendlyName = SupportedRecordSpecifications.Global.FriendlyName,
+                GameSupport = SupportedRecordSpecifications.Global.GameSupport,
+                Fields = SupportedRecordSpecifications.Global.Fields,
+                Comparison = new RecordComparisonSpecification
+                {
+                    Fields =
+                    [
+                        new RecordComparisonFieldSpecification
+                        {
+                            FieldName = "Data",
+                            SourcePath = "Data",
+                            ValueKind = RecordFieldValueKind.Number
+                        }
+                    ]
+                },
+                ImplementationNote = "Test specification."
+            });
+        var service = CreateService(globalRepository: globalRepository, recordSpecificationProvider: provider);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Global.RecordID, formKey);
+
+        comparison.Fields.ShouldContain(field => field.FieldName == "Data");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "MutagenObjectType");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "MajorFlags");
     }
 
     [Fact]
@@ -820,7 +867,8 @@ public class RecordComparisonServiceTests
         TestScriptingAdapterRepository? scriptingAdapterRepository = null,
         TestReflectionRepository? reflectionRepository = null,
         TestRecordLocalizedStringRepository? recordLocalizedStringRepository = null,
-        TestGameSelectionService? gameSelectionService = null)
+        TestGameSelectionService? gameSelectionService = null,
+        IRecordSpecificationProvider? recordSpecificationProvider = null)
     {
         return new RecordComparisonService(
             formListRepository ?? new TestFormListRepository(),
@@ -847,7 +895,8 @@ public class RecordComparisonServiceTests
             scriptingAdapterRepository ?? new TestScriptingAdapterRepository(),
             reflectionRepository ?? new TestReflectionRepository(),
             recordLocalizedStringRepository ?? new TestRecordLocalizedStringRepository(),
-            gameSelectionService ?? new TestGameSelectionService());
+            gameSelectionService ?? new TestGameSelectionService(),
+            recordSpecificationProvider ?? new RecordSpecificationProvider());
     }
 
     private static FormKeyDTO CreateFormKey(string fileName, uint id)
@@ -2312,5 +2361,43 @@ public class RecordComparisonServiceTests
 
         public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)
         { }
+    }
+
+    /// <summary>
+    /// Provides an isolated record specification set for comparison-service tests.
+    /// </summary>
+    private sealed class TestRecordSpecificationProvider : IRecordSpecificationProvider
+    {
+        private readonly IReadOnlyList<RecordSpecification> Specifications;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TestRecordSpecificationProvider"/> class.
+        /// </summary>
+        /// <param name="specifications">The specifications the provider should expose.</param>
+        public TestRecordSpecificationProvider(params RecordSpecification[] specifications)
+        {
+            Specifications = specifications;
+        }
+
+        /// <inheritdoc />
+        public IReadOnlyList<RecordSpecification> GetAll()
+        {
+            return Specifications;
+        }
+
+        /// <inheritdoc />
+        public RecordSpecification? FindByRecordID(string recordID)
+        {
+            return Specifications.FirstOrDefault(specification =>
+                string.Equals(specification.RecordID, recordID, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <inheritdoc />
+        public IReadOnlyList<RecordSpecification> GetSupportedByGame(SpecificationGame game)
+        {
+            return Specifications
+                .Where(specification => specification.GameSupport.Any(support => support.Game == game))
+                .ToList();
+        }
     }
 }

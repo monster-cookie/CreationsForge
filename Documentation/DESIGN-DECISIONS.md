@@ -35,6 +35,46 @@ Related files:
 - `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
 - `CreationsForge.UnitTests/Specifications/RecordSpecificationProviderTests.cs`
 
+## 2026-06-25 - Drive Pilot Comparison Rows From Specifications
+
+Status: Accepted
+
+Context: `RecordComparisonService` built every record-type comparison row through hand-written branches. The first
+specification slice added metadata for `FLST`, `GMST`, and `GLOB`, but comparison behavior still ignored that metadata.
+The UI consumes `RecordComparisonDTO`, so changing the comparison implementation must preserve the DTO shape, row
+ordering, value-state behavior, and localized display behavior.
+
+Decision: Make `RecordComparisonService` consume `IRecordSpecificationProvider` for simple type-specific comparison
+rows on the pilot records. `GLOB` simple scalar rows, `GMST` simple rows, and the `FLST` `AddToList` row are produced
+from comparison specifications. `FLST` indexed item rows and localized `GMST` `Data` display remain explicit strategy
+hooks because those behaviors are not purely source-path-to-display-value mappings.
+
+Rationale: This proves the specification provider can drive production comparison behavior without rewriting the full
+comparison engine or changing the Avalonia UI contract. Keeping special cases as hooks avoids pretending complex row
+alignment and localization behavior are solved by scalar metadata.
+
+Alternatives considered:
+
+- Keep the pilot comparison metadata inactive until the import engine also consumes specifications.
+- Rewrite the full comparison service around specifications in one change.
+- Move localized `GMST` display and `FLST` item expansion into declarative metadata immediately.
+
+Consequences:
+
+- `RecordComparisonService` now has an optional constructor dependency on `IRecordSpecificationProvider`.
+- The pilot records' simple rows can be changed through specification metadata.
+- Existing direct test construction remains source-compatible through a default provider fallback.
+- Complex records, shared child rows, and import dispatch remain on the existing hand-written paths.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.Specification/Records/RecordComparisonSpecification.cs`
+- `CreationsForge.Specification/Records/RecordComparisonFieldSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+
 ## 2026-06-25 - Keep Spriggit-Backed Rendered UI Validation With Data Validation
 
 Status: Accepted
