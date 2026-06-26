@@ -187,7 +187,9 @@ named `MajorFlags`, and `Data` when those values are persisted. GameSetting comp
 includes shared keyword rows.
 MISC and MGEF comparison includes shared sound rows. MISC comparison also includes persisted model rows, component
 display indices, destructible data and stages, and scripting adapter rows as hierarchical child rows in the comparison
-`TreeDataGrid`. AVIF comparison includes Skyrim layout rows, perk-tree rows, optional perk references, and
+`TreeDataGrid`. NPC_ comparison includes persisted actor configuration, template, appearance, head part, package,
+property, perk, inventory, face morph, face dial, morph blend, tint, and player-skill rows. AVIF comparison includes
+Skyrim layout rows, perk-tree rows, optional perk references, and
 connection-line target indices. PERK comparison includes root effect rows, rank rows, nested rank-effect rows, rank
 activity rows, progression evaluator rows, condition-tab rows, background skill rows, shared condition rows, shared
 sound rows, shared scripting adapter rows, and script fragment rows. STAT comparison includes scalar fields, shared

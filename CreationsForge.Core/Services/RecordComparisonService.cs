@@ -385,15 +385,30 @@ public class RecordComparisonService : IRecordComparisonService
         return CreateComparison(RecordTypeCatalog.ActorValueInformation.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
 
+    /// <summary>
+    /// Creates a comparison tree for NPC records, including root actor data and first-class child rows imported for
+    /// head parts, morphs, tints, packages, and other NPC-specific collections.
+    /// </summary>
+    /// <param name="game">The game whose NPC records are being compared.</param>
+    /// <param name="formKey">The NPC form key to compare across loaded plugins.</param>
+    /// <returns>A comparison DTO ready for the record comparison UI.</returns>
     private RecordComparisonDTO CreateNPCComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = NPCRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey);
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
-        var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
+        var baseRecords = records.Cast<RecordDTO>().ToList();
+        var fields = CreateCommonFields(baseRecords);
+        fields.Add(CreateField("IsCompressed", records, record => record.IsCompressed?.ToString() ?? string.Empty));
+        fields.Add(CreateField("ObjectBoundsFirst", records, record => record.ObjectBoundsFirst ?? string.Empty));
+        fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBoundsSecond ?? string.Empty));
         fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
         fields.Add(CreateField("ShortName", records, record => GetTranslatedDisplayValue(localizedStrings, record, "ShortName", recordTextLanguage, record.ShortName)));
         fields.Add(CreateField("LongName", records, record => GetTranslatedDisplayValue(localizedStrings, record, "LongName", recordTextLanguage, record.LongName)));
+        fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
+        fields.Add(CreateField("MajorFlags", records, record => record.MajorFlags ?? string.Empty));
+        AddNPCLevelGroup(fields, records);
+        AddNPCConfigurationGroup(fields, records);
         fields.Add(CreateField("DispositionBase", records, record => record.DispositionBase.ToString()));
         fields.Add(CreateField("Aggression", records, record => record.Aggression));
         fields.Add(CreateField("Confidence", records, record => record.Confidence));
@@ -404,20 +419,40 @@ public class RecordComparisonService : IRecordComparisonService
         fields.Add(CreateField("GearedUpWeapons", records, record => record.GearedUpWeapons.ToString()));
         fields.Add(CreateNumericField("HeightMin", records, record => record.HeightMin, nameof(NPCDTO.HeightMin)));
         fields.Add(CreateNumericField("HeightMax", records, record => record.HeightMax, nameof(NPCDTO.HeightMax)));
+        fields.Add(CreateNumericField("Height", records, record => record.Height, nameof(NPCDTO.Height)));
         fields.Add(CreateField("SkinToneIndex", records, record => record.SkinToneIndex?.ToString() ?? string.Empty));
+        fields.Add(CreateField("Skin", records, record => FormatFormKey(record.Skin)));
         fields.Add(CreateField("Pronoun", records, record => record.Pronoun ?? string.Empty));
         fields.Add(CreateField("VoiceFormKey", records, record => FormatFormKey(record.VoiceFormKey)));
         fields.Add(CreateField("RaceFormKey", records, record => FormatFormKey(record.RaceFormKey)));
+        fields.Add(CreateField("AttackRace", records, record => FormatFormKey(record.AttackRace)));
         fields.Add(CreateField("CombatOverridePackageListFormKey", records, record => FormatFormKey(record.CombatOverridePackageListFormKey)));
         fields.Add(CreateField("CombatStyleFormKey", records, record => FormatFormKey(record.CombatStyleFormKey)));
         fields.Add(CreateField("DefaultPackageListFormKey", records, record => FormatFormKey(record.DefaultPackageListFormKey)));
         fields.Add(CreateField("CrimeFactionFormKey", records, record => FormatFormKey(record.CrimeFactionFormKey)));
-        AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey));
-        AddSoundGroups(fields, records.Cast<RecordDTO>().ToList(), SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey));
-        AddScriptingAdapterGroups(fields, records.Cast<RecordDTO>().ToList(), ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey));
         AddNPCSupplementalFields(fields, records);
+        AddNPCFormKeyListGroup(fields, records, "Packages", record => record.Packages);
+        AddNPCFormKeyListGroup(fields, records, "ForcedLocations", record => record.ForcedLocations);
+        AddNPCFormKeyListGroup(fields, records, "HeadParts", record => record.HeadParts);
+        AddNPCFormKeyListGroup(fields, records, "ActorEffects", record => record.ActorEffects);
+        AddNPCFactionGroups(fields, records);
+        AddNPCPropertyGroups(fields, records);
+        AddNPCItemGroups(fields, records);
+        AddNPCPerkGroups(fields, records);
+        AddNPCMorphGroups(fields, records);
+        AddNPCFaceMorphPositionGroups(fields, records);
+        AddNPCFaceDialPositionGroups(fields, records);
+        AddNPCFaceMorphGroupSetGroups(fields, records);
+        AddNPCMorphBlendGroups(fields, records);
+        AddNPCTintGroups(fields, records);
+        AddNPCTintLayerGroups(fields, records);
+        AddNPCFaceTintingLayerGroups(fields, records);
+        AddNPCPlayerSkillsGroup(fields, records);
+        AddKeywordGroup(fields, baseRecords, KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey));
+        AddSoundGroups(fields, baseRecords, SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey));
+        AddScriptingAdapterGroups(fields, baseRecords, ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey));
 
-        return CreateComparison(RecordTypeCatalog.NPC.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
+        return CreateComparison(RecordTypeCatalog.NPC.RecordID, formKey, baseRecords, fields);
     }
 
     private RecordComparisonDTO CreateMagicEffectComparison(SupportedGame game, FormKeyDTO formKey)
@@ -2295,17 +2330,780 @@ public class RecordComparisonService : IRecordComparisonService
         }
     }
 
+    /// <summary>
+    /// Adds NPC scalar fields that are not part of the common actor data block but are first-class persisted values.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
     private static void AddNPCSupplementalFields(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
     {
+        fields.Add(CreateField("Class", records, record => FormatFormKey(record.Class)));
+        fields.Add(CreateField("DeathItem", records, record => FormatFormKey(record.DeathItem)));
+        fields.Add(CreateField("DefaultOutfit", records, record => FormatFormKey(record.DefaultOutfit)));
         fields.Add(CreateField("Template", records, record => FormatFormKey(record.Template)));
         fields.Add(CreateField("DefaultTemplate", records, record => FormatFormKey(record.DefaultTemplate)));
         fields.Add(CreateField("WornArmor", records, record => FormatFormKey(record.WornArmor)));
         fields.Add(CreateField("HeadTexture", records, record => FormatFormKey(record.HeadTexture)));
         fields.Add(CreateField("SleepingOutfit", records, record => FormatFormKey(record.SleepingOutfit)));
         fields.Add(CreateField("SpaceOutfit", records, record => FormatFormKey(record.SpaceOutfit)));
+        fields.Add(CreateField("PowerArmorStand", records, record => FormatFormKey(record.PowerArmorStand)));
+        fields.Add(CreateField("UseTemplateActors", records, record => record.UseTemplateActors ?? string.Empty));
+        fields.Add(CreateField("CalculatedHealth", records, record => record.CalculatedHealth?.ToString(CultureInfo.InvariantCulture) ?? string.Empty));
+        fields.Add(CreateField("CalculatedActionPoints", records, record => record.CalculatedActionPoints?.ToString(CultureInfo.InvariantCulture) ?? string.Empty));
+        fields.Add(CreateField("XpValueOffset", records, record => record.XpValueOffset?.ToString(CultureInfo.InvariantCulture) ?? string.Empty));
+        fields.Add(CreateField("Unknown", records, record => record.Unknown?.ToString(CultureInfo.InvariantCulture) ?? string.Empty));
+        fields.Add(CreateField("Unused", records, record => record.Unused?.ToString(CultureInfo.InvariantCulture) ?? string.Empty));
+        fields.Add(CreateField("NAM5", records, record => record.NAM5 ?? string.Empty));
+        AddNPCWeightGroup(fields, records);
+        fields.Add(CreateField("SoundLevel", records, record => record.SoundLevel ?? string.Empty));
+        fields.Add(CreateField("TextureLighting", records, record => record.TextureLighting ?? string.Empty));
+        fields.Add(CreateField("HairColor", records, record => record.HairColor ?? string.Empty));
+        fields.Add(CreateField("FacialHairColor", records, record => record.FacialHairColor ?? string.Empty));
+        fields.Add(CreateField("EyebrowColor", records, record => record.EyebrowColor ?? string.Empty));
+        fields.Add(CreateField("EyeColor", records, record => record.EyeColor ?? string.Empty));
+        AddNPCFaceMorphGroup(fields, records);
+        AddNPCFacePartsGroup(fields, records);
+        AddNPCTemplateActorsGroup(fields, records);
         fields.Add(CreateField("BodyMorphRegionValues", records, record => record.BodyMorphRegionValues ?? string.Empty));
         fields.Add(CreateField("ObjectTemplates", records, record => record.ObjectTemplates ?? string.Empty));
         fields.Add(CreateField("AIData", records, record => record.AIData ?? string.Empty));
+    }
+
+    /// <summary>
+    /// Adds the Spriggit <c>Level</c> object used by NPC records when any compared record contains level data.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCLevelGroup(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var children = new List<RecordComparisonFieldDTO>
+        {
+            CreateField("MutagenObjectType", records, record => record.Level?.MutagenObjectType ?? string.Empty),
+            CreateField("Level", records, record => record.Level?.Level?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+            CreateField("LevelMult", records, record => FormatNumericDisplayValue(record.Level?.LevelMult, null))
+        }
+            .Where(HasVisibleValue)
+            .ToList();
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("Level", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Adds Skyrim NPC configuration values when they are present on at least one compared record.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCConfigurationGroup(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var children = new List<RecordComparisonFieldDTO>
+        {
+            CreateField("Flags", records, record => record.Configuration is null ? string.Empty : string.Join(", ", record.Configuration.Flags)),
+            CreateField("Level.MutagenObjectType", records, record => record.Configuration?.Level?.MutagenObjectType ?? string.Empty),
+            CreateField("Level.Level", records, record => record.Configuration?.Level?.Level?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+            CreateField("Level.LevelMult", records, record => FormatNumericDisplayValue(record.Configuration?.Level?.LevelMult, null)),
+            CreateField("CalcMinLevel", records, record => record.Configuration?.CalcMinLevel?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+            CreateField("CalcMaxLevel", records, record => record.Configuration?.CalcMaxLevel?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+            CreateField("HealthOffset", records, record => record.Configuration?.HealthOffset?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+            CreateField("SpeedMultiplier", records, record => record.Configuration?.SpeedMultiplier?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+            CreateField("TemplateFlags", records, record => record.Configuration is null ? string.Empty : string.Join(", ", record.Configuration.TemplateFlags))
+        }
+            .Where(HasVisibleValue)
+            .ToList();
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("Configuration", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Adds the NPC body-weight group, including scalar and Starfield tri-shape weight fields.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCWeightGroup(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var children = new List<RecordComparisonFieldDTO>
+        {
+            CreateField("Value", records, record => FormatNumericDisplayValue(record.Weight?.Value, GetNPCWeightPrecision(nameof(NPCWeightDTO.Value)))),
+            CreateField("Thin", records, record => FormatNumericDisplayValue(record.Weight?.Thin, GetNPCWeightPrecision(nameof(NPCWeightDTO.Thin)))),
+            CreateField("Muscular", records, record => FormatNumericDisplayValue(record.Weight?.Muscular, GetNPCWeightPrecision(nameof(NPCWeightDTO.Muscular)))),
+            CreateField("Fat", records, record => FormatNumericDisplayValue(record.Weight?.Fat, GetNPCWeightPrecision(nameof(NPCWeightDTO.Fat))))
+        }
+            .Where(HasVisibleValue)
+            .ToList();
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("Weight", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Reads display precision metadata from NPC weight DTO members.
+    /// </summary>
+    /// <param name="propertyName">The weight DTO property name to inspect.</param>
+    /// <returns>The configured decimal-place count, or <c>null</c> when no precision metadata exists.</returns>
+    private static int? GetNPCWeightPrecision(string propertyName)
+    {
+        return typeof(NPCWeightDTO)
+            .GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public)
+            ?.GetCustomAttribute<NumericDisplayPrecisionAttribute>()
+            ?.DecimalPlaces;
+    }
+
+    /// <summary>
+    /// Adds Skyrim face morph slider rows when a compared NPC contains the face morph object.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCFaceMorphGroup(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var children = new List<RecordComparisonFieldDTO>
+        {
+            CreateField("NoseLongVsShort", records, record => FormatNumericDisplayValue(record.FaceMorph?.NoseLongVsShort, null)),
+            CreateField("NoseUpVsDown", records, record => FormatNumericDisplayValue(record.FaceMorph?.NoseUpVsDown, null)),
+            CreateField("JawUpVsDown", records, record => FormatNumericDisplayValue(record.FaceMorph?.JawUpVsDown, null)),
+            CreateField("JawNarrowVsWide", records, record => FormatNumericDisplayValue(record.FaceMorph?.JawNarrowVsWide, null)),
+            CreateField("JawForwardVsBack", records, record => FormatNumericDisplayValue(record.FaceMorph?.JawForwardVsBack, null)),
+            CreateField("CheeksUpVsDown", records, record => FormatNumericDisplayValue(record.FaceMorph?.CheeksUpVsDown, null)),
+            CreateField("CheeksForwardVsBack", records, record => FormatNumericDisplayValue(record.FaceMorph?.CheeksForwardVsBack, null)),
+            CreateField("EyesUpVsDown", records, record => FormatNumericDisplayValue(record.FaceMorph?.EyesUpVsDown, null)),
+            CreateField("EyesInVsOut", records, record => FormatNumericDisplayValue(record.FaceMorph?.EyesInVsOut, null)),
+            CreateField("BrowsUpVsDown", records, record => FormatNumericDisplayValue(record.FaceMorph?.BrowsUpVsDown, null)),
+            CreateField("BrowsInVsOut", records, record => FormatNumericDisplayValue(record.FaceMorph?.BrowsInVsOut, null)),
+            CreateField("BrowsForwardVsBack", records, record => FormatNumericDisplayValue(record.FaceMorph?.BrowsForwardVsBack, null)),
+            CreateField("LipsUpVsDown", records, record => FormatNumericDisplayValue(record.FaceMorph?.LipsUpVsDown, null)),
+            CreateField("LipsInVsOut", records, record => FormatNumericDisplayValue(record.FaceMorph?.LipsInVsOut, null)),
+            CreateField("ChinNarrowVsWide", records, record => FormatNumericDisplayValue(record.FaceMorph?.ChinNarrowVsWide, null)),
+            CreateField("ChinUpVsDown", records, record => FormatNumericDisplayValue(record.FaceMorph?.ChinUpVsDown, null)),
+            CreateField("ChinUnderbiteVsOverbite", records, record => FormatNumericDisplayValue(record.FaceMorph?.ChinUnderbiteVsOverbite, null)),
+            CreateField("EyesForwardVsBack", records, record => FormatNumericDisplayValue(record.FaceMorph?.EyesForwardVsBack, null)),
+            CreateField("Unknown", records, record => FormatNumericDisplayValue(record.FaceMorph?.Unknown, null))
+        }
+            .Where(HasVisibleValue)
+            .ToList();
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("FaceMorph", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Adds Skyrim face part index rows when a compared NPC contains the face parts object.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCFacePartsGroup(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var children = new List<RecordComparisonFieldDTO>
+        {
+            CreateField("Nose", records, record => record.FaceParts?.Nose?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+            CreateField("Unknown", records, record => record.FaceParts?.Unknown?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+            CreateField("Eyes", records, record => record.FaceParts?.Eyes?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+            CreateField("Mouth", records, record => record.FaceParts?.Mouth?.ToString(CultureInfo.InvariantCulture) ?? string.Empty)
+        }
+            .Where(HasVisibleValue)
+            .ToList();
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("FaceParts", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Adds role-specific template actor references when a compared NPC contains template actor data.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCTemplateActorsGroup(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var children = new List<RecordComparisonFieldDTO>
+        {
+            CreateField("TraitTemplate", records, record => FormatFormKey(record.TemplateActors?.TraitTemplate)),
+            CreateField("StatsTemplate", records, record => FormatFormKey(record.TemplateActors?.StatsTemplate)),
+            CreateField("FactionsTemplate", records, record => FormatFormKey(record.TemplateActors?.FactionsTemplate)),
+            CreateField("SpellListTemplate", records, record => FormatFormKey(record.TemplateActors?.SpellListTemplate)),
+            CreateField("AiPackagesTemplate", records, record => FormatFormKey(record.TemplateActors?.AiPackagesTemplate)),
+            CreateField("AiDataTemplate", records, record => FormatFormKey(record.TemplateActors?.AiDataTemplate)),
+            CreateField("BaseDataTemplate", records, record => FormatFormKey(record.TemplateActors?.BaseDataTemplate)),
+            CreateField("InventoryTemplate", records, record => FormatFormKey(record.TemplateActors?.InventoryTemplate)),
+            CreateField("ScriptTemplate", records, record => FormatFormKey(record.TemplateActors?.ScriptTemplate)),
+            CreateField("DefPackListTemplate", records, record => FormatFormKey(record.TemplateActors?.DefPackListTemplate)),
+            CreateField("AttackDataTemplate", records, record => FormatFormKey(record.TemplateActors?.AttackDataTemplate)),
+            CreateField("KeywordsTemplate", records, record => FormatFormKey(record.TemplateActors?.KeywordsTemplate)),
+            CreateField("Unknown1", records, record => FormatFormKey(record.TemplateActors?.Unknown1)),
+            CreateField("Unknown2", records, record => FormatFormKey(record.TemplateActors?.Unknown2))
+        }
+            .Where(HasVisibleValue)
+            .ToList();
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("TemplateActors", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Adds an indexed group for a simple NPC form-key collection.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    /// <param name="groupName">The comparison group name shown for the collection.</param>
+    /// <param name="collectionFactory">The accessor that returns the collection for one NPC.</param>
+    private static void AddNPCFormKeyListGroup(
+        ICollection<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<NPCDTO> records,
+        string groupName,
+        Func<NPCDTO, IList<FormKeyDTO>> collectionFactory)
+    {
+        var maxCount = records.Select(record => collectionFactory(record).Count).DefaultIfEmpty(0).Max();
+        if (maxCount == 0)
+        {
+            return;
+        }
+
+        var children = new List<RecordComparisonFieldDTO>();
+        for (var index = 0; index < maxCount; index++)
+        {
+            var currentIndex = index;
+            children.Add(CreateField(
+                GetNPCSingularRowName(groupName) + $" [{currentIndex}]",
+                records,
+                record => collectionFactory(record).Count > currentIndex
+                    ? FormatFormKey(collectionFactory(record)[currentIndex])
+                    : string.Empty));
+        }
+
+        var visibleChildren = children.Where(HasVisibleValue).ToList();
+        if (visibleChildren.Count > 0)
+        {
+            fields.Add(CreateGroupField(groupName, records.Cast<RecordDTO>().ToList(), visibleChildren));
+        }
+    }
+
+    /// <summary>
+    /// Gets the singular row label used for a simple NPC form-key collection.
+    /// </summary>
+    /// <param name="groupName">The plural comparison group name.</param>
+    /// <returns>The singular comparison row label.</returns>
+    private static string GetNPCSingularRowName(string groupName)
+    {
+        return groupName switch
+        {
+            "HeadParts" => "HeadPart",
+            "ActorEffects" => "ActorEffect",
+            "ForcedLocations" => "ForcedLocation",
+            "Packages" => "Package",
+            _ => groupName.TrimEnd('s')
+        };
+    }
+
+    /// <summary>
+    /// Adds indexed faction membership rows for compared NPC records.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCFactionGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var indexes = records.SelectMany(record => record.Factions).Select(faction => faction.FactionIndex).Distinct().Order().ToList();
+        var children = new List<RecordComparisonFieldDTO>();
+        foreach (var index in indexes)
+        {
+            var currentIndex = index;
+            var factionChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("Faction", records, record => FormatFormKey(record.Factions.FirstOrDefault(faction => faction.FactionIndex == currentIndex)?.Faction)),
+                CreateField("Rank", records, record => record.Factions.FirstOrDefault(faction => faction.FactionIndex == currentIndex)?.Rank?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+                CreateField("Fluff", records, record => record.Factions.FirstOrDefault(faction => faction.FactionIndex == currentIndex)?.Fluff ?? string.Empty)
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (factionChildren.Count > 0)
+            {
+                children.Add(CreateGroupField($"Faction [{currentIndex}]", records.Cast<RecordDTO>().ToList(), factionChildren));
+            }
+        }
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("Factions", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Adds indexed actor-value property rows for compared NPC records.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCPropertyGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var indexes = records.SelectMany(record => record.Properties).Select(property => property.PropertyIndex).Distinct().Order().ToList();
+        var children = new List<RecordComparisonFieldDTO>();
+        foreach (var index in indexes)
+        {
+            var currentIndex = index;
+            var propertyChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("ActorValue", records, record => FormatFormKey(record.Properties.FirstOrDefault(property => property.PropertyIndex == currentIndex)?.ActorValue)),
+                CreateField("Value", records, record => FormatNumericDisplayValue(record.Properties.FirstOrDefault(property => property.PropertyIndex == currentIndex)?.Value, null))
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (propertyChildren.Count > 0)
+            {
+                children.Add(CreateGroupField($"Property [{currentIndex}]", records.Cast<RecordDTO>().ToList(), propertyChildren));
+            }
+        }
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("Properties", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Adds indexed inventory item rows for compared NPC records.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCItemGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var indexes = records.SelectMany(record => record.Items).Select(item => item.ItemIndex).Distinct().Order().ToList();
+        var children = new List<RecordComparisonFieldDTO>();
+        foreach (var index in indexes)
+        {
+            var currentIndex = index;
+            var itemChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("Item", records, record => FormatFormKey(record.Items.FirstOrDefault(item => item.ItemIndex == currentIndex)?.Item)),
+                CreateField("Count", records, record => record.Items.FirstOrDefault(item => item.ItemIndex == currentIndex)?.Count?.ToString(CultureInfo.InvariantCulture) ?? string.Empty)
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (itemChildren.Count > 0)
+            {
+                children.Add(CreateGroupField($"Item [{currentIndex}]", records.Cast<RecordDTO>().ToList(), itemChildren));
+            }
+        }
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("Items", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Adds indexed perk rows for compared NPC records.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCPerkGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var indexes = records.SelectMany(record => record.Perks).Select(perk => perk.PerkIndex).Distinct().Order().ToList();
+        var children = new List<RecordComparisonFieldDTO>();
+        foreach (var index in indexes)
+        {
+            var currentIndex = index;
+            var perkChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("Perk", records, record => FormatFormKey(record.Perks.FirstOrDefault(perk => perk.PerkIndex == currentIndex)?.Perk)),
+                CreateField("Rank", records, record => record.Perks.FirstOrDefault(perk => perk.PerkIndex == currentIndex)?.Rank?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+                CreateField("Fluff", records, record => record.Perks.FirstOrDefault(perk => perk.PerkIndex == currentIndex)?.Fluff ?? string.Empty)
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (perkChildren.Count > 0)
+            {
+                children.Add(CreateGroupField($"Perk [{currentIndex}]", records.Cast<RecordDTO>().ToList(), perkChildren));
+            }
+        }
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("Perks", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Adds Fallout 4 NPC morph key/value rows.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCMorphGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var indexes = records.SelectMany(record => record.Morphs).Select(morph => morph.MorphIndex).Distinct().Order().ToList();
+        var children = new List<RecordComparisonFieldDTO>();
+        foreach (var index in indexes)
+        {
+            var currentIndex = index;
+            var morphChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("Key", records, record => record.Morphs.FirstOrDefault(morph => morph.MorphIndex == currentIndex)?.Key?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+                CreateField("Value", records, record => FormatNumericDisplayValue(record.Morphs.FirstOrDefault(morph => morph.MorphIndex == currentIndex)?.Value, null))
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (morphChildren.Count > 0)
+            {
+                children.Add(CreateGroupField($"Morph [{currentIndex}]", records.Cast<RecordDTO>().ToList(), morphChildren));
+            }
+        }
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("Morphs", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Adds simple face morph position rows used by Fallout 4 NPC records.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCFaceMorphPositionGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var indexes = records.SelectMany(record => record.FaceMorphs).Select(morph => morph.FaceMorphIndex).Distinct().Order().ToList();
+        var children = new List<RecordComparisonFieldDTO>();
+        foreach (var index in indexes)
+        {
+            var currentIndex = index;
+            var morphChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("Index", records, record => record.FaceMorphs.FirstOrDefault(morph => morph.FaceMorphIndex == currentIndex)?.Index?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+                CreateField("Position", records, record => record.FaceMorphs.FirstOrDefault(morph => morph.FaceMorphIndex == currentIndex)?.Position ?? string.Empty),
+                CreateField("Rotation", records, record => record.FaceMorphs.FirstOrDefault(morph => morph.FaceMorphIndex == currentIndex)?.Rotation ?? string.Empty),
+                CreateField("Scale", records, record => FormatNumericDisplayValue(record.FaceMorphs.FirstOrDefault(morph => morph.FaceMorphIndex == currentIndex)?.Scale, null))
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (morphChildren.Count > 0)
+            {
+                children.Add(CreateGroupField($"FaceMorph [{currentIndex}]", records.Cast<RecordDTO>().ToList(), morphChildren));
+            }
+        }
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("FaceMorphs", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Adds Starfield face dial slider position rows.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCFaceDialPositionGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var indexes = records.SelectMany(record => record.FaceDialPositions).Select(position => position.FaceDialPositionIndex).Distinct().Order().ToList();
+        var children = new List<RecordComparisonFieldDTO>();
+        foreach (var index in indexes)
+        {
+            var currentIndex = index;
+            var positionChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("Index", records, record => record.FaceDialPositions.FirstOrDefault(position => position.FaceDialPositionIndex == currentIndex)?.Index?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+                CreateField("Position", records, record => FormatNumericDisplayValue(record.FaceDialPositions.FirstOrDefault(position => position.FaceDialPositionIndex == currentIndex)?.Position, 3))
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (positionChildren.Count > 0)
+            {
+                children.Add(CreateGroupField($"FaceDialPosition [{currentIndex}]", records.Cast<RecordDTO>().ToList(), positionChildren));
+            }
+        }
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("FaceDialPositions", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Adds Starfield nested face morph group rows, preserving the face morph index and nested morph group indices.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCFaceMorphGroupSetGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var indexes = records.SelectMany(record => record.FaceMorphGroups).Select(morph => morph.FaceMorphIndex).Distinct().Order().ToList();
+        var children = new List<RecordComparisonFieldDTO>();
+        foreach (var index in indexes)
+        {
+            var currentIndex = index;
+            var faceMorphChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("Index", records, record => record.FaceMorphGroups.FirstOrDefault(morph => morph.FaceMorphIndex == currentIndex)?.Index?.ToString(CultureInfo.InvariantCulture) ?? string.Empty)
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            AddNPCFaceMorphNestedGroupRows(faceMorphChildren, records, currentIndex);
+            if (faceMorphChildren.Count > 0)
+            {
+                children.Add(CreateGroupField($"FaceMorph [{currentIndex}]", records.Cast<RecordDTO>().ToList(), faceMorphChildren));
+            }
+        }
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("FaceMorphGroups", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Adds nested morph group blend rows for one Starfield face morph entry.
+    /// </summary>
+    /// <param name="fields">The child comparison field collection for the parent face morph entry.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    /// <param name="faceMorphIndex">The parent face morph row index.</param>
+    private static void AddNPCFaceMorphNestedGroupRows(
+        ICollection<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<NPCDTO> records,
+        int faceMorphIndex)
+    {
+        var groupIndexes = records
+            .SelectMany(record => record.FaceMorphGroups.FirstOrDefault(morph => morph.FaceMorphIndex == faceMorphIndex)?.MorphGroups ?? [])
+            .Select(group => group.MorphGroupIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        foreach (var groupIndex in groupIndexes)
+        {
+            var currentGroupIndex = groupIndex;
+            var groupChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("MorphGroup", records, record => FindNPCFaceMorphGroup(record, faceMorphIndex, currentGroupIndex)?.MorphGroup ?? string.Empty),
+                CreateField("BlendIntensity", records, record => FormatNumericDisplayValue(FindNPCFaceMorphGroup(record, faceMorphIndex, currentGroupIndex)?.BlendIntensity, 3))
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (groupChildren.Count > 0)
+            {
+                fields.Add(CreateGroupField($"MorphGroup [{currentGroupIndex}]", records.Cast<RecordDTO>().ToList(), groupChildren));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Finds one nested face morph group by parent and child index.
+    /// </summary>
+    /// <param name="record">The NPC record to search.</param>
+    /// <param name="faceMorphIndex">The parent face morph row index.</param>
+    /// <param name="morphGroupIndex">The nested morph group row index.</param>
+    /// <returns>The matching nested morph group row, or <c>null</c> when absent.</returns>
+    private static NPCFaceMorphGroupDTO? FindNPCFaceMorphGroup(NPCDTO record, int faceMorphIndex, int morphGroupIndex)
+    {
+        return record.FaceMorphGroups
+            .FirstOrDefault(morph => morph.FaceMorphIndex == faceMorphIndex)
+            ?.MorphGroups
+            .FirstOrDefault(group => group.MorphGroupIndex == morphGroupIndex);
+    }
+
+    /// <summary>
+    /// Adds Starfield morph blend rows.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCMorphBlendGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var indexes = records.SelectMany(record => record.MorphBlends).Select(blend => blend.MorphBlendIndex).Distinct().Order().ToList();
+        var children = new List<RecordComparisonFieldDTO>();
+        foreach (var index in indexes)
+        {
+            var currentIndex = index;
+            var blendChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("BlendName", records, record => record.MorphBlends.FirstOrDefault(blend => blend.MorphBlendIndex == currentIndex)?.BlendName ?? string.Empty),
+                CreateField("Intensity", records, record => FormatNumericDisplayValue(record.MorphBlends.FirstOrDefault(blend => blend.MorphBlendIndex == currentIndex)?.Intensity, 3))
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (blendChildren.Count > 0)
+            {
+                children.Add(CreateGroupField($"MorphBlend [{currentIndex}]", records.Cast<RecordDTO>().ToList(), blendChildren));
+            }
+        }
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("MorphBlends", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Adds Starfield AVMD tint rows.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCTintGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var indexes = records.SelectMany(record => record.Tints).Select(tint => tint.TintIndex).Distinct().Order().ToList();
+        var children = new List<RecordComparisonFieldDTO>();
+        foreach (var index in indexes)
+        {
+            var currentIndex = index;
+            var tintChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("TintType", records, record => record.Tints.FirstOrDefault(tint => tint.TintIndex == currentIndex)?.TintType ?? string.Empty),
+                CreateField("TintGroup", records, record => record.Tints.FirstOrDefault(tint => tint.TintIndex == currentIndex)?.TintGroup ?? string.Empty),
+                CreateField("TintName", records, record => record.Tints.FirstOrDefault(tint => tint.TintIndex == currentIndex)?.TintName ?? string.Empty),
+                CreateField("TintTexture", records, record => record.Tints.FirstOrDefault(tint => tint.TintIndex == currentIndex)?.TintTexture ?? string.Empty),
+                CreateField("TintColor", records, record => record.Tints.FirstOrDefault(tint => tint.TintIndex == currentIndex)?.TintColor ?? string.Empty),
+                CreateField("TintIntensity", records, record => FormatNumericDisplayValue(record.Tints.FirstOrDefault(tint => tint.TintIndex == currentIndex)?.TintIntensity, 3))
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (tintChildren.Count > 0)
+            {
+                children.Add(CreateGroupField($"Tint [{currentIndex}]", records.Cast<RecordDTO>().ToList(), tintChildren));
+            }
+        }
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("Tints", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Adds Skyrim tint layer rows.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCTintLayerGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var indexes = records.SelectMany(record => record.TintLayers).Select(layer => layer.TintLayerIndex).Distinct().Order().ToList();
+        var children = new List<RecordComparisonFieldDTO>();
+        foreach (var index in indexes)
+        {
+            var currentIndex = index;
+            var layerChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("Index", records, record => record.TintLayers.FirstOrDefault(layer => layer.TintLayerIndex == currentIndex)?.Index?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+                CreateField("Color", records, record => record.TintLayers.FirstOrDefault(layer => layer.TintLayerIndex == currentIndex)?.Color ?? string.Empty),
+                CreateField("InterpolationValue", records, record => FormatNumericDisplayValue(record.TintLayers.FirstOrDefault(layer => layer.TintLayerIndex == currentIndex)?.InterpolationValue, null)),
+                CreateField("Preset", records, record => record.TintLayers.FirstOrDefault(layer => layer.TintLayerIndex == currentIndex)?.Preset?.ToString(CultureInfo.InvariantCulture) ?? string.Empty)
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (layerChildren.Count > 0)
+            {
+                children.Add(CreateGroupField($"TintLayer [{currentIndex}]", records.Cast<RecordDTO>().ToList(), layerChildren));
+            }
+        }
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("TintLayers", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Adds Fallout 4 face tinting layer rows and their state flag lists.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCFaceTintingLayerGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var indexes = records.SelectMany(record => record.FaceTintingLayers).Select(layer => layer.FaceTintingLayerIndex).Distinct().Order().ToList();
+        var children = new List<RecordComparisonFieldDTO>();
+        foreach (var index in indexes)
+        {
+            var currentIndex = index;
+            var layerChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("DataType", records, record => record.FaceTintingLayers.FirstOrDefault(layer => layer.FaceTintingLayerIndex == currentIndex)?.DataType ?? string.Empty),
+                CreateField("Index", records, record => record.FaceTintingLayers.FirstOrDefault(layer => layer.FaceTintingLayerIndex == currentIndex)?.Index?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+                CreateField("Value", records, record => FormatNumericDisplayValue(record.FaceTintingLayers.FirstOrDefault(layer => layer.FaceTintingLayerIndex == currentIndex)?.Value, null)),
+                CreateField("Color", records, record => record.FaceTintingLayers.FirstOrDefault(layer => layer.FaceTintingLayerIndex == currentIndex)?.Color ?? string.Empty),
+                CreateField("TemplateColorIndex", records, record => record.FaceTintingLayers.FirstOrDefault(layer => layer.FaceTintingLayerIndex == currentIndex)?.TemplateColorIndex?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+                CreateField("TENDDataTypeState", records, record => string.Join(", ", record.FaceTintingLayers.FirstOrDefault(layer => layer.FaceTintingLayerIndex == currentIndex)?.TENDDataTypeState ?? []))
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (layerChildren.Count > 0)
+            {
+                children.Add(CreateGroupField($"FaceTintingLayer [{currentIndex}]", records.Cast<RecordDTO>().ToList(), layerChildren));
+            }
+        }
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("FaceTintingLayers", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Adds Skyrim NPC player-skill values and offsets when present.
+    /// </summary>
+    /// <param name="fields">The comparison field collection being populated.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    private static void AddNPCPlayerSkillsGroup(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<NPCDTO> records)
+    {
+        var children = new List<RecordComparisonFieldDTO>
+        {
+            CreateField("Health", records, record => record.PlayerSkills?.Health?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+            CreateField("Magicka", records, record => record.PlayerSkills?.Magicka?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+            CreateField("Stamina", records, record => record.PlayerSkills?.Stamina?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+            CreateField("GearedUpWeapons", records, record => record.PlayerSkills?.GearedUpWeapons?.ToString(CultureInfo.InvariantCulture) ?? string.Empty)
+        }
+            .Where(HasVisibleValue)
+            .ToList();
+        AddNPCPlayerSkillValueRows(children, records, "SkillValues", record => record.PlayerSkills?.SkillValues);
+        AddNPCPlayerSkillValueRows(children, records, "SkillOffsets", record => record.PlayerSkills?.SkillOffsets);
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField("PlayerSkills", records.Cast<RecordDTO>().ToList(), children));
+        }
+    }
+
+    /// <summary>
+    /// Adds indexed key/value skill rows for one player-skill collection.
+    /// </summary>
+    /// <param name="fields">The child field collection for the player-skills group.</param>
+    /// <param name="records">The NPC records participating in the comparison.</param>
+    /// <param name="groupName">The comparison group name for the skill collection.</param>
+    /// <param name="collectionFactory">The accessor that returns the skill collection for one NPC.</param>
+    private static void AddNPCPlayerSkillValueRows(
+        ICollection<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<NPCDTO> records,
+        string groupName,
+        Func<NPCDTO, IList<NPCPlayerSkillValueDTO>?> collectionFactory)
+    {
+        var indexes = records
+            .SelectMany(record => collectionFactory(record) ?? [])
+            .Select(skill => skill.SkillIndex)
+            .Distinct()
+            .Order()
+            .ToList();
+        var children = new List<RecordComparisonFieldDTO>();
+        foreach (var index in indexes)
+        {
+            var currentIndex = index;
+            var skillChildren = new List<RecordComparisonFieldDTO>
+            {
+                CreateField("Key", records, record => collectionFactory(record)?.FirstOrDefault(skill => skill.SkillIndex == currentIndex)?.Key ?? string.Empty),
+                CreateField("Value", records, record => collectionFactory(record)?.FirstOrDefault(skill => skill.SkillIndex == currentIndex)?.Value?.ToString(CultureInfo.InvariantCulture) ?? string.Empty)
+            }
+                .Where(HasVisibleValue)
+                .ToList();
+            if (skillChildren.Count > 0)
+            {
+                children.Add(CreateGroupField($"Skill [{currentIndex}]", records.Cast<RecordDTO>().ToList(), skillChildren));
+            }
+        }
+
+        if (children.Count > 0)
+        {
+            fields.Add(CreateGroupField(groupName, records.Cast<RecordDTO>().ToList(), children));
+        }
     }
 
     private static void AddScriptFragmentGroups(

@@ -108,7 +108,9 @@ class property rows and skill-weight or stat-weight
 rows when those child rows are present. FACT comparison displays relation, rank, shared condition-rule, and Starfield
 component rows when those payloads are persisted. PERK comparison displays rank rows, nested rank-effect
 rows, background skill rows, and shared scripting adapter rows. `MISC` comparison displays component display indices
-and destructible data/stage rows when those payloads are persisted. `MISC`, `NPC_`, `MGEF`, `BOOK`, `DOOR`, `CONT`,
+and destructible data/stage rows when those payloads are persisted. `NPC_` comparison displays persisted actor
+configuration, template, appearance, head part, package, property, perk, inventory, face morph, face dial, morph blend,
+tint, and player-skill rows when those payloads are persisted. `MISC`, `NPC_`, `MGEF`, `BOOK`, `DOOR`, `CONT`,
 `COBJ`, and `TERM` comparisons display shared child rows when those payloads are persisted. `CNDF` and `COBJ`
 comparison displays shared condition-rule rows and
 generic condition-data parameter rows when those payloads are persisted. `COBJ` comparison displays component,

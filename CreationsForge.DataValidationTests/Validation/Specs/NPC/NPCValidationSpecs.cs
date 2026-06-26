@@ -26,7 +26,9 @@ public static class NPCValidationSpecs
 
     public static ValidationSpec Starfield_CF_AludraTahan()
     {
-        return StarfieldNPC("CF_AludraTahan", "01539F:Starfield.esm").Build();
+        return StarfieldNPC("CF_AludraTahan", "01539F:Starfield.esm")
+            .AddUiComparisonExpectations(GetStarfieldHumanoidNPCUiComparisonExpectations())
+            .Build();
     }
 
     public static ValidationSpec Starfield_CF_CESandin()
@@ -120,6 +122,7 @@ public static class NPCValidationSpecs
             .ForRecord(game, RecordTypeCatalog.NPC)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddUiComparisonExpectations(GetNPCUiComparisonExpectations(sampleName))
             .AddRule(ValidationFieldRule.TranslatedField("Name", "Name", requireAllLanguages: true))
             .AddRule(ValidationFieldRule.TranslatedField("ShortName", "ShortName", requireAllLanguages: true))
             .AddRule(ValidationFieldRule.TranslatedField("LongName", "LongName", requireAllLanguages: true))
@@ -199,6 +202,30 @@ public static class NPCValidationSpecs
             .AddRule(ValidationFieldRule.IgnoreDto("HeightMin", "NPC DTO stores a default value when no Spriggit height range field is present."))
             .AddRule(ValidationFieldRule.IgnoreDto("HeightMax", "NPC DTO stores a default value when no Spriggit height range field is present."))
             .AddRule(ValidationFieldRule.IgnoreDtoPrefix("LocalizedStrings", "LocalizedStrings is the DTO projection of translated Spriggit fields."));
+    }
+
+    /// <summary>
+    /// Gets baseline NPC comparison UI expectations that should hold for every selected validation sample.
+    /// </summary>
+    /// <param name="sampleName">The sample editor ID expected in the rendered comparison row.</param>
+    /// <returns>Comparison UI expectations shared by all NPC validation samples.</returns>
+    private static IEnumerable<ValidationUiComparisonExpectation> GetNPCUiComparisonExpectations(string sampleName)
+    {
+        yield return ValidationUiComparisonExpectation.Literal(["EditorID"], sampleName, visualText: "EditorID");
+        yield return new ValidationUiComparisonExpectation(["RaceFormKey"]);
+    }
+
+    /// <summary>
+    /// Gets Starfield humanoid NPC comparison UI expectations that cover face-generation child rows.
+    /// </summary>
+    /// <returns>Comparison UI expectations for a Starfield NPC sample with head, morph, blend, and tint data.</returns>
+    private static IEnumerable<ValidationUiComparisonExpectation> GetStarfieldHumanoidNPCUiComparisonExpectations()
+    {
+        yield return new ValidationUiComparisonExpectation(["HeadParts", "HeadPart [0]"]);
+        yield return ValidationUiComparisonExpectation.DtoField(["FaceDialPositions", "FaceDialPosition [0]", "Position"], "FaceDialPositions[0].Position");
+        yield return ValidationUiComparisonExpectation.DtoField(["FaceMorphGroups", "FaceMorph [0]", "MorphGroup [0]", "MorphGroup"], "FaceMorphGroups[0].MorphGroups[0].MorphGroup");
+        yield return ValidationUiComparisonExpectation.DtoField(["MorphBlends", "MorphBlend [0]", "BlendName"], "MorphBlends[0].BlendName");
+        yield return ValidationUiComparisonExpectation.DtoField(["Tints", "Tint [0]", "TintName"], "Tints[0].TintName");
     }
 
     private static IEnumerable<ValidationFieldRule> GetNPCTypedRules(SupportedGame game)
