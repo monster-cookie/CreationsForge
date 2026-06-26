@@ -141,6 +141,9 @@ public static class DoorValidationSpecs
             .ForRecord(game, RecordTypeCatalog.Door)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddBaselineUiComparisonExpectations(
+                new[] { "Name" },
+                new[] { "ObjectBoundsFirst" })
             .AddRule(ValidationFieldRule.TranslatedField("Name", "Name"))
             .AddRule(ValidationFieldRule.OptionalField("ObjectBounds.First", "ObjectBoundsFirst"))
             .AddRule(ValidationFieldRule.OptionalField("ObjectBounds.Second", "ObjectBoundsSecond"))

@@ -140,6 +140,9 @@ public static class MagicEffectValidationSpecs
             .ForRecord(game, RecordTypeCatalog.MagicEffect)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddBaselineUiComparisonExpectations(
+                new[] { "Name" },
+                new[] { "CastType" })
             .AddRule(ValidationFieldRule.TranslatedField("Name", "Name", requireAllLanguages: true))
             .AddRule(ValidationFieldRule.TranslatedField("Description", "Description", requireAllLanguages: true))
             .AddRule(ValidationFieldRule.Field("Version2", "Version2"))

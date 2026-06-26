@@ -149,6 +149,8 @@ public static class KeywordValidationSpecs
             .ForRecord(game, RecordTypeCatalog.Keyword)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddBaselineUiComparisonExpectations(
+                new[] { "MajorRecordFlags" })
             .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
                 "Version2",
                 "Version2",

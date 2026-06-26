@@ -192,6 +192,7 @@ public static class ConstructibleObjectValidationSpecs
             .ForRecord(game, RecordTypeCatalog.ConstructibleObject)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddBaselineUiComparisonExpectations()
             .AddRule(ValidationFieldRule.TranslatedField("Description", "Description"))
             .AddRule(ValidationFieldRule.Field("CreatedObject", "CreatedObjectFormKey"))
             .AddRule(ValidationFieldRule.Field("WorkbenchKeyword", "WorkbenchKeywordFormKey"))

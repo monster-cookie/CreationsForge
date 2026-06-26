@@ -128,6 +128,7 @@ public static class FactionValidationSpecs
             .ForRecord(game, RecordTypeCatalog.Faction)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddBaselineUiComparisonExpectations()
             .AddRule(ValidationFieldRule.TranslatedField("Name", "Name"))
             .AddRule(ValidationFieldRule.ScalarList("Flags", "Flags"))
             .AddRule(ValidationFieldRule.Field("FormationRadius", "FormationRadius", ValidationValueNormalizer.DecimalNumber))

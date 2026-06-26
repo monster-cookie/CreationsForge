@@ -56,6 +56,7 @@ public static class ConditionFormValidationSpecs
             .ForRecord(SupportedGame.Starfield, RecordTypeCatalog.ConditionForm)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddBaselineUiComparisonExpectations()
             .AddRule(ValidationFieldRule.Field("OwnerQuest", "OwnerQuest"))
             .AddRules(GetConditionParameterRules());
     }

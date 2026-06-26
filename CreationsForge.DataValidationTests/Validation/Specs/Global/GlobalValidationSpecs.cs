@@ -77,6 +77,7 @@ public static class GlobalValidationSpecs
             .ForRecord(game, RecordTypeCatalog.Global)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddUiComparisonExpectation(new ValidationUiComparisonExpectation(new[] { "Data" }))
             .AddRule(ValidationFieldRule.Field("MajorRecordFlagsRaw", "MajorRecordFlags"))
             .AddRule(ValidationFieldRule.ScalarList("MajorFlags", "MajorFlags"))
             .AddRule(ValidationFieldRule.ScalarList(gameMajorRecordFlags, "MajorRecordFlags", ValidationValueNormalizer.HexInteger))

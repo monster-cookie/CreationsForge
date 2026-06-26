@@ -117,6 +117,8 @@ public static class FormListValidationSpecs
             .ForRecord(game, RecordTypeCatalog.FormList)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddBaselineUiComparisonExpectations(
+                new[] { "MajorRecordFlags" })
             .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
                 "MajorRecordFlags",
                 "MajorRecordFlags",

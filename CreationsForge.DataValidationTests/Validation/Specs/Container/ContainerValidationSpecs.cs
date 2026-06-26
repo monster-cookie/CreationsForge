@@ -192,6 +192,9 @@ public static class ContainerValidationSpecs
             .ForRecord(game, RecordTypeCatalog.Container)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddBaselineUiComparisonExpectations(
+                new[] { "Name" },
+                new[] { "ObjectBoundsFirst" })
             .AddRule(ValidationFieldRule.TranslatedField("Name", "Name", requireAllLanguages: true))
             .AddRule(ValidationFieldRule.Field("ObjectBounds.First", "ObjectBoundsFirst"))
             .AddRule(ValidationFieldRule.Field("ObjectBounds.Second", "ObjectBoundsSecond"))

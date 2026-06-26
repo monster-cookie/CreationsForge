@@ -158,6 +158,9 @@ public static class BookValidationSpecs
             .ForRecord(game, RecordTypeCatalog.Book)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddBaselineUiComparisonExpectations(
+                new[] { "MajorRecordFlags" },
+                new[] { "Weight" })
             .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
                 "MajorRecordFlags",
                 "MajorRecordFlags",

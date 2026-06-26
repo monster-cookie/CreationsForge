@@ -152,6 +152,7 @@ public static class PerkValidationSpecs
             .ForRecord(game, RecordTypeCatalog.Perk)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddBaselineUiComparisonExpectations()
             .AddRule(ValidationFieldRule.TranslatedField("Name", "Name", requireAllLanguages: true))
             .AddRule(ValidationFieldRule.TranslatedField("Description", "Description", requireAllLanguages: true))
             .AddRule(ValidationFieldRule.Field("Level", "Level"))

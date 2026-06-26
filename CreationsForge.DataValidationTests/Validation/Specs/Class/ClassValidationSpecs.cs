@@ -108,6 +108,7 @@ public static class ClassValidationSpecs
             .ForRecord(game, RecordTypeCatalog.Class)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddBaselineUiComparisonExpectations()
             .AddRule(ValidationFieldRule.TranslatedField("Name", "Name"))
             .AddRule(ValidationFieldRule.TranslatedField("Description", "Description"))
             .AddRule(ValidationFieldRule.Field("BleedoutDefault", "BleedoutDefault", ValidationValueNormalizer.DecimalNumber))

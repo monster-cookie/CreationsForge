@@ -277,6 +277,9 @@ public static class MiscItemValidationSpecs
             .ForRecord(game, RecordTypeCatalog.MiscItem)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddBaselineUiComparisonExpectations(
+                new[] { "MajorRecordFlags" },
+                new[] { "Value" })
             .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
                 "MajorRecordFlags",
                 "MajorRecordFlags",

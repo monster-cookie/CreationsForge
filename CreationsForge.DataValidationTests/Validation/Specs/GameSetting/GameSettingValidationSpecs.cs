@@ -174,6 +174,8 @@ public static class GameSettingValidationSpecs
             .ForRecord(game, RecordTypeCatalog.GameSetting)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddBaselineUiComparisonExpectations(
+                new[] { "Data" })
             .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
                 "MajorRecordFlags",
                 "MajorRecordFlags",

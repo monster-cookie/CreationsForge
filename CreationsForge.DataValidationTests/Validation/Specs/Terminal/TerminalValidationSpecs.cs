@@ -191,6 +191,9 @@ public static class TerminalValidationSpecs
         return ValidationSpecBuilder.ForRecord(game, RecordTypeCatalog.Terminal)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddBaselineUiComparisonExpectations(
+                new[] { "ObjectBoundsFirst" },
+                new[] { "Keywords", "Keyword [0]" })
             .AddRule(ValidationFieldRule.Field("ObjectBounds.First", "ObjectBoundsFirst"))
             .AddRule(ValidationFieldRule.Field("ObjectBounds.Second", "ObjectBoundsSecond"))
             .AddRule(ValidationFieldRule.FormKeyList("Keywords", "Keywords", "Keyword"))

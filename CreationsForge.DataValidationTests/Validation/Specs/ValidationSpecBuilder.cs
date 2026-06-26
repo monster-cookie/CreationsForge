@@ -113,6 +113,26 @@ public class ValidationSpecBuilder
     }
 
     /// <summary>
+    /// Adds a baseline set of comparison UI expectations for a validation sample, including the sample's editor ID
+    /// and any record-type-specific data rows that are stable for every sample using the builder.
+    /// </summary>
+    /// <param name="fieldPaths">The optional additional comparison row paths that should render with non-empty values.</param>
+    /// <returns>The current builder for chained spec setup.</returns>
+    public ValidationSpecBuilder AddBaselineUiComparisonExpectations(params IReadOnlyList<string>[] fieldPaths)
+    {
+        uiComparisonExpectations.Add(ValidationUiComparisonExpectation.Literal(
+            new[] { "EditorID" },
+            sampleName,
+            visualText: "EditorID"));
+        foreach (var fieldPath in fieldPaths)
+        {
+            uiComparisonExpectations.Add(new ValidationUiComparisonExpectation(fieldPath));
+        }
+
+        return this;
+    }
+
+    /// <summary>
     /// Creates the validation spec from the current builder state.
     /// </summary>
     /// <returns>A validation spec containing all configured DTO rules and comparison UI expectations.</returns>

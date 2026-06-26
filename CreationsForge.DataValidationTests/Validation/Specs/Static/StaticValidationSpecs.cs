@@ -156,6 +156,9 @@ public static class StaticValidationSpecs
             .ForRecord(game, RecordTypeCatalog.Static)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddBaselineUiComparisonExpectations(
+                new[] { "MajorRecordFlags" },
+                new[] { "ObjectBoundsFirst" })
             .AddRule(ValidationFieldRule.TranslatedField("Name", "Name", requireAllLanguages: true))
             .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
                 "ObjectBounds.First",

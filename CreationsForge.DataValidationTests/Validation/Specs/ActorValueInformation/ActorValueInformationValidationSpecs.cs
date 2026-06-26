@@ -224,6 +224,8 @@ public static class ActorValueInformationValidationSpecs
             .ForRecord(game, RecordTypeCatalog.ActorValueInformation)
             .Sample(sampleName)
             .FormKey(formKey)
+            .AddBaselineUiComparisonExpectations(
+                new[] { "MajorRecordFlags" })
             .AddRule(ValidationFieldRule.DtoDefaultWhenSpriggitAbsent(
                 "MajorRecordFlags",
                 "MajorRecordFlags",
