@@ -134,6 +134,9 @@ declared decimal precision only when comparison builds display values and compar
 
 The UI renders comparison DTOs from `IRecordComparisonService` and does not call repositories, database tables, or
 Mutagen APIs directly.
+Spriggit comparison UI validation includes a coverage audit that flags validation specs with meaningful DTO assertions
+but no explicit comparison row expectations, preventing record types from passing headless UI validation through the
+default `EditorID`-only fallback.
 
 ## Localized Record Text
 

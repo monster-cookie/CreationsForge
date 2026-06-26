@@ -67,6 +67,41 @@ public static class SpriggitComparisonUiSpecRunner
     }
 
     /// <summary>
+    /// Renders the comparison UI for one validation spec and returns the flattened comparison row paths and active
+    /// column values observed in the headless main view.
+    /// </summary>
+    /// <param name="spec">The validation spec whose comparison rows should be inspected.</param>
+    /// <param name="fixture">The fixture that resolves imported records and comparison services.</param>
+    /// <returns>The rendered comparison rows, including nested child paths.</returns>
+    public static IReadOnlyList<SpriggitComparisonUiRenderedRow> GetRenderedRows(
+        ValidationSpec spec,
+        SpriggitComparisonUiFixture fixture)
+    {
+        var sample = fixture.CreateSample(spec);
+        var window = CreateWindowWithMainView(sample);
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            var mainView = (MainView)window.Content!;
+            var viewModel = (MainViewModel)mainView.DataContext!;
+            var selectedRecord = viewModel.RecordTreeItems.Single().Children.Single();
+            viewModel.SelectRecordForComparison(selectedRecord);
+            Dispatcher.UIThread.RunJobs();
+
+            var activeColumnIndex = GetActiveColumnIndex(viewModel);
+            var rows = new List<SpriggitComparisonUiRenderedRow>();
+            AddRenderedRows(rows, viewModel.RecordComparisonRows, [], activeColumnIndex);
+            return rows;
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>
     /// Adds assertions that prove the comparison grid and active column rendered for the selected sample.
     /// </summary>
     /// <param name="cases">The assertion case list to append to.</param>
@@ -327,6 +362,27 @@ public static class SpriggitComparisonUiSpecRunner
         }
 
         return currentRow;
+    }
+
+    /// <summary>
+    /// Recursively flattens rendered comparison rows into path/value snapshots for coverage auditing.
+    /// </summary>
+    /// <param name="rows">The destination row snapshot list.</param>
+    /// <param name="sourceRows">The rendered comparison rows to flatten.</param>
+    /// <param name="parentPath">The parent path segments that lead to <paramref name="sourceRows"/>.</param>
+    /// <param name="activeColumnIndex">The active plugin column index whose display value should be captured.</param>
+    private static void AddRenderedRows(
+        IList<SpriggitComparisonUiRenderedRow> rows,
+        IEnumerable<RecordComparisonRowViewModel> sourceRows,
+        IReadOnlyList<string> parentPath,
+        int activeColumnIndex)
+    {
+        foreach (var sourceRow in sourceRows)
+        {
+            var rowPath = parentPath.Concat([sourceRow.FieldName]).ToList();
+            rows.Add(new SpriggitComparisonUiRenderedRow(rowPath, sourceRow.GetValue(activeColumnIndex)));
+            AddRenderedRows(rows, sourceRow.Children, rowPath, activeColumnIndex);
+        }
     }
 
     /// <summary>
