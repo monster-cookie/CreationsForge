@@ -14,6 +14,7 @@ using CreationsForge.Core.Importers.Interfaces;
 using CreationsForge.Core.Models.Database;
 using CreationsForge.Core.Services;
 using CreationsForge.Core.Services.Interfaces;
+using CreationsForge.Specification.Records;
 using NPoco;
 using Module = Autofac.Module;
 
@@ -55,6 +56,10 @@ public class CoreModule : Module
 
         builder.RegisterType<ProcessTerminationDiagnosticsService>()
             .As<IProcessTerminationDiagnosticsService>()
+            .SingleInstance();
+
+        builder.RegisterType<RecordSpecificationProvider>()
+            .As<IRecordSpecificationProvider>()
             .SingleInstance();
 
         builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly())

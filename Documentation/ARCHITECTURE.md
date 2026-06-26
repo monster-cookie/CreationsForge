@@ -21,6 +21,12 @@ shared import orchestration, shared Mutagen primitive mapping, and repositories 
 may reference shared Mutagen packages such as `Mutagen.Bethesda.Core`, but it must not reference game-specific Mutagen
 packages.
 
+`CreationsForge.Specification` owns production record-family metadata that can gradually drive shared import,
+validation, and comparison behavior. The first catalog slice covers FormLists (`FLST`), GameSettings (`GMST`), and
+Globals (`GLOB`) as foundation metadata only; the existing import readers, typed importers, repositories, and
+comparison service still own runtime behavior for those records. The specification project does not reference Core,
+Avalonia, NPoco, Migrations, Assets, or game-specific Mutagen packages.
+
 `CreationsForge.Bethesda.Assets` owns UI-neutral Bethesda asset IO helpers, local-file resolution result DTOs, an
 in-memory asset provider, archive-reader contracts, and temporary extraction session infrastructure. It does not
 reference Avalonia, Mutagen, NPoco, game projects, or the database. Archive implementations are intended to be
@@ -64,8 +70,9 @@ Spriggit extraction data or imported validation database state.
 - CreationsForge depends on Bootstrap and Core.
 - Console depends on Bootstrap and Core.
 - Bootstrap depends on Core, Migrations, Starfield, Fallout4, and Skyrim.
-- Core depends on Assets for asset resolution DTOs, Migrations for migration execution, and shared Mutagen core
-  primitives for game-agnostic DTO mapping.
+- Core depends on Assets for asset resolution DTOs, Migrations for migration execution, Specification for
+  record-family metadata, and shared Mutagen core primitives for game-agnostic DTO mapping.
+- Specification has no project dependencies.
 - Assets has no project dependencies.
 - Game projects depend on Core.
 - Migrations does not depend on Core or game projects.
@@ -76,8 +83,8 @@ Spriggit extraction data or imported validation database state.
 `CreationsForge.Bootstrap` provides shared Autofac module registration.
 
 - `CoreModule` registers configuration, SQLite options, connection factory, NPoco `IDatabase`, schema initializer,
-  shared services, UI-neutral workflow services, shared typed importers, the asset archive readers, and shared
-  repositories.
+  shared services, UI-neutral workflow services, shared typed importers, the asset archive readers, the record
+  specification provider, and shared repositories.
 - `MigrationsModule` registers `DatabaseMigrationRunner`.
 - Each game module registers that game's plugin reader service, plugin reader facade, record reader, and one
   `IGameImporter`. Game reader facades are keyed by `SupportedGame` so the shared `GameImporter` can be constructor
@@ -127,6 +134,11 @@ Records that expose models, keywords, condition rules, record components, sounds
 child rows through the common `RecordInstances` identity instead of game-specific child-table paths. Starfield FACT
 components use the shared record-component child path; Fallout 4 and Skyrim FACT records currently have no component
 payload to map.
+
+The `CreationsForge.Specification` catalog is a transitional source of production record metadata for the first
+`FLST`, `GMST`, and `GLOB` slice. Runtime import dispatch still uses `PluginRecordSetDTO`, `RecordTypeCatalog`, and
+registered `ITypedRecordImporter` implementations until later approved work moves discovery and dispatch behind the
+specification provider.
 
 Starfield plugin metadata, master-reference, and record reads use a Starfield-only construction helper. The helper
 prefers the full Mutagen environment load order's mod objects with the Starfield environment data folder from
@@ -212,6 +224,11 @@ record text language, then falls back to English and finally the scalar `Data` v
 Core assigns comparison value states for neutral, identical, conflicting, and displayed winning-override values; the
 presentation layer maps those states to the green, red, and yellow comparison colors and shows the legend in the status
 area.
+
+The specification catalog now includes comparison metadata for the first `FLST`, `GMST`, and `GLOB` pilot records.
+That metadata records intended comparison rows and value kinds, but `RecordComparisonService` still builds comparison
+DTOs through its existing record-specific methods until a later approved slice replaces those branches with
+specification-driven row construction.
 
 `IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows.
 `IAssetFileResolverService` resolves readable local asset files from preview candidates by checking absolute paths,

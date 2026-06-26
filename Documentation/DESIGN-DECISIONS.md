@@ -1,5 +1,40 @@
 # Design Decisions
 
+## 2026-06-25 - Add Specification Project For Record Metadata
+
+Status: Accepted
+
+Context: The import readers and comparison service are currently wired by hand for every supported record family. That shape is workable for the current approved records, but it does not scale cleanly toward hundreds of major and minor record types across additional Mutagen-supported games. The project also already has validation specs, but those describe sample assertions rather than production record-family metadata.
+
+Decision: Add `CreationsForge.Specification` as a dependency-free production metadata project. The first catalog slice describes `FLST`, `GMST`, and `GLOB` record identity, current game support, source field hints, and comparison field intent. Core references the specification project and registers `IRecordSpecificationProvider`, but the existing import readers, `RecordImportService`, repositories, and `RecordComparisonService` remain the runtime behavior owners for this slice.
+
+Rationale: A small C# specification foundation gives the project a typed, documented place to grow record metadata without adding dependencies, inventing a file format too early, or forcing a high-risk rewrite of import and comparison behavior. Keeping the first slice metadata-only lets future work migrate one runtime path at a time while tests guard the catalog shape.
+
+Alternatives considered:
+
+- Keep expanding `RecordTypeCatalog`, `PluginRecordSetDTO`, and `RecordComparisonService` manually for every new record family.
+- Move existing DataValidationTests validation specs into production.
+- Introduce YAML or JSON production specs immediately.
+- Rewrite import and comparison dispatch in the same change as the new project.
+
+Consequences:
+
+- `CreationsForge.Specification` has no project dependencies and uses its own lightweight game identifiers so Core can depend on it without a circular reference.
+- Core composition can resolve `IRecordSpecificationProvider` for future import, validation, comparison, and UI-neutral services.
+- `RecordTypeCatalog` and the existing comparison/import branches remain transitional and can drift unless future slices intentionally move consumers to the specification provider.
+- No database schema, persisted cache shape, UI workflow, or import behavior changes in the foundation slice.
+
+Related files:
+
+- `CreationsForge.Specification/CreationsForge.Specification.csproj`
+- `CreationsForge.Specification/Records/RecordSpecification.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.Specification/Records/IRecordSpecificationProvider.cs`
+- `CreationsForge.Core/CoreModule.cs`
+- `CreationsForge.Core/CreationsForge.Core.csproj`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationProviderTests.cs`
+
 ## 2026-06-25 - Keep Spriggit-Backed Rendered UI Validation With Data Validation
 
 Status: Accepted

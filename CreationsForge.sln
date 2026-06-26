@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationsForge.Console", "C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationsForge.Core", "CreationsForge.Core\CreationsForge.Core.csproj", "{58CE90C9-8FBA-4675-A0EC-0222820A0573}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationsForge.Specification", "CreationsForge.Specification\CreationsForge.Specification.csproj", "{B5A35775-415A-4F6B-90B6-9309D40E5D88}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationsForge.Starfield", "CreationsForge.Starfield\CreationsForge.Starfield.csproj", "{55264067-F8B7-4C62-8AF5-89255CAFD78E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationsForge.Fallout4", "CreationsForge.Fallout4\CreationsForge.Fallout4.csproj", "{659A481E-CAEE-4E30-A6A1-E267C374A2CA}"
@@ -58,6 +60,18 @@ Global
 		{58CE90C9-8FBA-4675-A0EC-0222820A0573}.Release|x64.Build.0 = Release|Any CPU
 		{58CE90C9-8FBA-4675-A0EC-0222820A0573}.Release|x86.ActiveCfg = Release|Any CPU
 		{58CE90C9-8FBA-4675-A0EC-0222820A0573}.Release|x86.Build.0 = Release|Any CPU
+		{B5A35775-415A-4F6B-90B6-9309D40E5D88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5A35775-415A-4F6B-90B6-9309D40E5D88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5A35775-415A-4F6B-90B6-9309D40E5D88}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B5A35775-415A-4F6B-90B6-9309D40E5D88}.Debug|x64.Build.0 = Debug|Any CPU
+		{B5A35775-415A-4F6B-90B6-9309D40E5D88}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B5A35775-415A-4F6B-90B6-9309D40E5D88}.Debug|x86.Build.0 = Debug|Any CPU
+		{B5A35775-415A-4F6B-90B6-9309D40E5D88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5A35775-415A-4F6B-90B6-9309D40E5D88}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5A35775-415A-4F6B-90B6-9309D40E5D88}.Release|x64.ActiveCfg = Release|Any CPU
+		{B5A35775-415A-4F6B-90B6-9309D40E5D88}.Release|x64.Build.0 = Release|Any CPU
+		{B5A35775-415A-4F6B-90B6-9309D40E5D88}.Release|x86.ActiveCfg = Release|Any CPU
+		{B5A35775-415A-4F6B-90B6-9309D40E5D88}.Release|x86.Build.0 = Release|Any CPU
 		{55264067-F8B7-4C62-8AF5-89255CAFD78E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{55264067-F8B7-4C62-8AF5-89255CAFD78E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{55264067-F8B7-4C62-8AF5-89255CAFD78E}.Debug|x64.ActiveCfg = Debug|Any CPU

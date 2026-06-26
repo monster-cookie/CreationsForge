@@ -38,6 +38,12 @@ Classes (`CLAS`), Factions (`FACT`), Keywords (`KYWD`), ActorValueInformation (`
 ConstructibleObjects (`COBJ`). Starfield also persists typed detail rows for ConditionForms (`CNDF`), and Starfield
 plus Fallout 4 persist typed detail rows for Terminals (`TERM`).
 
+Record specification: Production metadata that describes a record family's Bethesda record ID, canonical
+CreationsForge name, current typed-detail table name, supported game adapters, source field hints, and comparison
+field intent. The first specification catalog lives in `CreationsForge.Specification` and covers `FLST`, `GMST`, and
+`GLOB` as foundation metadata only. Runtime import and comparison behavior remains owned by the existing Core and
+game-adapter services until later approved work makes those paths specification-driven.
+
 Starfield master references require special construction through Mutagen's separated-master-aware load-order paths.
 The Starfield reader prefers the full Mutagen environment load order's mod objects so split masters, medium masters,
 and overlays retain their master-style data for FormID translation. Header-master construction remains a fallback when
@@ -102,6 +108,8 @@ records. FormLists also display `AddToList` and indexed `Items[n]` rows. GameSet
 and the active typed `Data` value. Localized text rows use the Settings-selected record text language when a persisted
 localized value exists, then fall back to English and the DTO or scalar database fallback. Globals display
 `MutagenObjectType`, named `MajorFlags`, and `Data`.
+The specification catalog now mirrors the intended comparison fields for `FLST`, `GMST`, and `GLOB`, but the Core
+comparison service remains the runtime authority for generated comparison DTOs in this foundation slice.
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `CLAS`, `FACT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM`
 comparisons display their currently persisted parent fields and record-reference fields. CLAS comparison displays
 class property rows and skill-weight or stat-weight
@@ -165,6 +173,10 @@ Typed record repositories persist a shared
 record
 instance before saving type-specific detail rows, and typed importers dispatch shared child persistence from the record
 DTO capability interfaces.
+
+`CreationsForge.Specification` currently provides pilot production metadata for `FLST`, `GMST`, and `GLOB`. That
+metadata is registered through Core composition for future consumers, but it does not yet change how readers map
+Mutagen records, how repositories persist DTOs, or how comparison rows are rendered.
 
 ## Presentation Boundary
 
