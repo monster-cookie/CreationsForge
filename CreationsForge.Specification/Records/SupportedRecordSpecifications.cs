@@ -368,6 +368,7 @@ public static class SupportedRecordSpecifications
         "Terminals",
         17,
         isRequired: false,
+        gamesRequiringFullBinaryMod: new HashSet<SpecificationGame> { SpecificationGame.Fallout4 },
         gameSupport: CreateGameSupport(
             "Terminals",
             "Terminals",
@@ -410,6 +411,16 @@ public static class SupportedRecordSpecifications
     /// <param name="pluginRecordSetPropertyName">The <c>PluginRecordSetDTO</c> collection property containing DTOs.</param>
     /// <param name="importOrder">The import order that preserves the existing record-dispatch sequence.</param>
     /// <param name="isRequired">A value indicating whether an import result should be emitted for empty unsupported families.</param>
+    /// <param name="gamesRequiringFullBinaryMod">
+    /// The supported games that must read this record family through a full binary Mutagen mod.
+    /// </param>
+    /// <param name="usesOverlaySafeMod">
+    /// A value indicating whether the normal overlay-safe reader path is valid for games without a full-binary
+    /// override.
+    /// </param>
+    /// <param name="isOptionalCollection">
+    /// A value indicating whether a missing reader collection is an expected adapter capability gap.
+    /// </param>
     /// <param name="gameSupport">The optional game support metadata; all current adapters are used when omitted.</param>
     /// <returns>The specification containing import metadata and no declarative comparison fields.</returns>
     private static RecordSpecification CreateImportOnlySpecification(
@@ -420,6 +431,9 @@ public static class SupportedRecordSpecifications
         string pluginRecordSetPropertyName,
         int importOrder,
         bool isRequired,
+        IReadOnlySet<SpecificationGame>? gamesRequiringFullBinaryMod = null,
+        bool usesOverlaySafeMod = true,
+        bool isOptionalCollection = false,
         IReadOnlyList<RecordGameSupportSpecification>? gameSupport = null)
     {
         return new RecordSpecification
@@ -435,7 +449,12 @@ public static class SupportedRecordSpecifications
                 ImportOrder = importOrder,
                 IsRequired = isRequired
             },
-            Reader = CreateReaderSpecification(pluginRecordSetPropertyName, pluginRecordSetPropertyName),
+            Reader = CreateReaderSpecification(
+                pluginRecordSetPropertyName,
+                pluginRecordSetPropertyName,
+                gamesRequiringFullBinaryMod,
+                usesOverlaySafeMod,
+                isOptionalCollection),
             ImplementationNote = "Import dispatch metadata is active; comparison remains record-specific."
         };
     }
@@ -445,15 +464,31 @@ public static class SupportedRecordSpecifications
     /// </summary>
     /// <param name="pluginRecordSetPropertyName">The <c>PluginRecordSetDTO</c> collection property that receives mapped DTOs.</param>
     /// <param name="defaultMutagenCollectionName">The default Mutagen mod collection property read by game adapters.</param>
+    /// <param name="gamesRequiringFullBinaryMod">
+    /// The supported games that must read this record family through a full binary Mutagen mod.
+    /// </param>
+    /// <param name="usesOverlaySafeMod">
+    /// A value indicating whether the normal overlay-safe reader path is valid for games without a full-binary
+    /// override.
+    /// </param>
+    /// <param name="isOptionalCollection">
+    /// A value indicating whether a missing reader collection is an expected adapter capability gap.
+    /// </param>
     /// <returns>The reader metadata used as the next specification-driven reader migration target.</returns>
     private static RecordReaderSpecification CreateReaderSpecification(
         string pluginRecordSetPropertyName,
-        string defaultMutagenCollectionName)
+        string defaultMutagenCollectionName,
+        IReadOnlySet<SpecificationGame>? gamesRequiringFullBinaryMod = null,
+        bool usesOverlaySafeMod = true,
+        bool isOptionalCollection = false)
     {
         return new RecordReaderSpecification
         {
             PluginRecordSetPropertyName = pluginRecordSetPropertyName,
             DefaultMutagenCollectionName = defaultMutagenCollectionName,
+            GamesRequiringFullBinaryMod = gamesRequiringFullBinaryMod ?? new HashSet<SpecificationGame>(),
+            UsesOverlaySafeMod = usesOverlaySafeMod,
+            IsOptionalCollection = isOptionalCollection,
             UsesGameSpecificMapper = true
         };
     }

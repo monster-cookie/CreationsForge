@@ -351,4 +351,47 @@ public class RecordSpecificationCatalogTests
         RecordSpecificationCatalog.All.ShouldAllBe(specification =>
             specification.GameSupport.All(support => !string.IsNullOrWhiteSpace(support.MutagenCollectionName)));
     }
+
+    /// <summary>
+    /// Verifies that reader behavior metadata defaults to the overlay-safe path and does not silently allow missing
+    /// collections.
+    /// </summary>
+    [Fact]
+    public void All_ReaderSpecificationsExposeCurrentBehaviorDefaults()
+    {
+        RecordSpecificationCatalog.All.ShouldAllBe(specification => specification.Reader.UsesOverlaySafeMod);
+        RecordSpecificationCatalog.All.ShouldAllBe(specification => !specification.Reader.IsOptionalCollection);
+    }
+
+    /// <summary>
+    /// Verifies that full-binary reader metadata is limited to the current Fallout 4 terminal workaround.
+    /// </summary>
+    [Fact]
+    public void All_ReaderSpecificationsExposeOnlyCurrentFullBinaryRequirements()
+    {
+        var fullBinarySpecifications = RecordSpecificationCatalog.All
+            .Where(specification => specification.Reader.RequiresFullBinaryMod)
+            .ToList();
+
+        fullBinarySpecifications.Count.ShouldBe(1);
+        fullBinarySpecifications[0].RecordID.ShouldBe("TERM");
+        fullBinarySpecifications[0].Reader.RequiresFullBinaryModForGame(SpecificationGame.Fallout4).ShouldBeTrue();
+        fullBinarySpecifications[0].Reader.RequiresFullBinaryModForGame(SpecificationGame.Starfield).ShouldBeFalse();
+        fullBinarySpecifications[0].Reader.RequiresFullBinaryModForGame(SpecificationGame.Skyrim).ShouldBeFalse();
+    }
+
+    /// <summary>
+    /// Verifies that game-specific full-binary reader overrides only target games that support the record family.
+    /// </summary>
+    [Fact]
+    public void All_ReaderFullBinaryRequirementsReferenceSupportedGames()
+    {
+        foreach (var specification in RecordSpecificationCatalog.All)
+        {
+            foreach (var game in specification.Reader.GamesRequiringFullBinaryMod)
+            {
+                specification.GameSupport.Any(support => support.Game == game).ShouldBeTrue();
+            }
+        }
+    }
 }

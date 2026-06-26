@@ -145,16 +145,17 @@ lookup, progress reporting, per-record failure handling, and stale cleanup behav
 result behavior is controlled by the specification's import metadata.
 
 The catalog also carries reader metadata for the current record families. Reader metadata names the
-`PluginRecordSetDTO` destination collection and default Mutagen mod collection for each record family, but the
-Starfield, Fallout 4, and Skyrim reader services still own the actual Mutagen-to-DTO mapping. This keeps the next
-reader-dispatch migration target explicit without moving game-specific Mutagen APIs into Core or Specification.
+`PluginRecordSetDTO` destination collection, default Mutagen mod collection, overlay-safe reader eligibility,
+full-binary reader overrides, and optional collection policy for each record family, but the Starfield, Fallout 4,
+and Skyrim reader services still own the actual Mutagen-to-DTO mapping. This keeps the next reader-dispatch migration
+target explicit without moving game-specific Mutagen APIs into Core or Specification.
 Core `RecordSetSpecificationBuilder` consumes that metadata to assemble `PluginRecordSetDTO` instances from mapped
 record-family collections. Starfield, Fallout 4, and Skyrim record reads now use the builder for the final record-set
 assembly step while retaining the existing game-specific Mutagen mapping methods.
 Starfield, Fallout 4, and Skyrim record-family dispatch also use `IRecordSpecificationProvider` to choose the
 supported record mappers in specification import order. The mapper registries still call the existing game-specific
-`Map*` methods, so Mutagen field mapping remains game-adapter behavior. Fallout 4 keeps its terminal-specific full
-binary mod read inside the Fallout 4 reader mapper path.
+`Map*` methods, so Mutagen field mapping remains game-adapter behavior. Fallout 4 uses the reader metadata to keep
+terminal records on the full binary mod path because the overlay reader can omit repeated terminal menu items.
 
 Starfield plugin metadata, master-reference, and record reads use a Starfield-only construction helper. The helper
 prefers the full Mutagen environment load order's mod objects with the Starfield environment data folder from

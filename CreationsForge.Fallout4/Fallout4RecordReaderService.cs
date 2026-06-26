@@ -133,11 +133,17 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
             }
 
             var mapperMod = mod;
-            if (string.Equals(specification.RecordID, RecordTypeCatalog.Terminal.RecordID, StringComparison.OrdinalIgnoreCase))
+            if (specification.Reader.RequiresFullBinaryModForGame(SpecificationGame.Fallout4))
             {
                 fullBinaryMod ??= LoadFullBinaryMod(plugin);
                 cancellationToken.ThrowIfCancellationRequested();
                 mapperMod = fullBinaryMod;
+            }
+            else if (!specification.Reader.UsesOverlaySafeMod)
+            {
+                throw new InvalidOperationException(
+                    $"Fallout 4 record specification '{specification.RecordID}' does not allow the overlay-safe " +
+                    "reader path.");
             }
 
             recordsByRecordID[specification.RecordID] = mapper(plugin, mapperMod);

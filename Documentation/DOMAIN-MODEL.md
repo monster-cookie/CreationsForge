@@ -42,11 +42,12 @@ Record specification: Production metadata that describes a record family's Bethe
 CreationsForge name, current typed-detail table name, supported game adapters, source field hints, and comparison
 field intent. The specification catalog lives in `CreationsForge.Specification` and covers the current imported
 record families for Core import dispatch. Reader metadata names each record family's `PluginRecordSetDTO` destination
-collection and default Mutagen collection name, but game adapters still own Mutagen-to-DTO mapping. Core import
-dispatch consumes specification import metadata to locate the matching `PluginRecordSetDTO` collections and preserve
-the approved record-family order. Core comparison consumes pilot comparison metadata for `FLST`, `GMST`, and `GLOB`
-simple scalar rows. Complex comparison strategies and the actual game-specific Mutagen mapping remain owned by the
-existing Core and game-adapter services until later approved work makes those paths specification-driven.
+collection, default Mutagen collection name, overlay-safe reader eligibility, full-binary reader overrides, and
+optional collection policy, but game adapters still own Mutagen-to-DTO mapping. Core import dispatch consumes
+specification import metadata to locate the matching `PluginRecordSetDTO` collections and preserve the approved
+record-family order. Core comparison consumes pilot comparison metadata for `FLST`, `GMST`, and `GLOB` simple scalar
+rows. Complex comparison strategies and the actual game-specific Mutagen mapping remain owned by the existing Core
+and game-adapter services until later approved work makes those paths specification-driven.
 
 Starfield master references require special construction through Mutagen's separated-master-aware load-order paths.
 The Starfield reader prefers the full Mutagen environment load order's mod objects so split masters, medium masters,
@@ -181,13 +182,15 @@ DTO capability interfaces.
 
 `CreationsForge.Specification` currently provides production metadata for the imported record families. That metadata
 is registered through Core composition and drives the shared import dispatch loop. The catalog now describes current
-reader destination collections and default Mutagen collection names as a reader-migration target. The same catalog
-drives simple comparison rows for the `FLST`, `GMST`, and `GLOB` pilot records, but it does not yet change how readers
-map Mutagen records or how repositories persist DTOs. Core can assemble a `PluginRecordSetDTO` from mapped
-record-family collections using specification reader metadata; Starfield, Fallout 4, and Skyrim use that assembly path
-while preserving their game-specific mapping methods. Starfield, Fallout 4, and Skyrim also use supported record
-specifications to select and order record-family mapper dispatch, but each mapper still calls the existing
-game-specific Mutagen mapping code. Fallout 4 terminal records still use the full binary mod path.
+reader destination collections, default Mutagen collection names, overlay-safe reader eligibility, full-binary reader
+overrides, and optional collection policy as a reader-migration target. The same catalog drives simple comparison rows
+for the `FLST`, `GMST`, and `GLOB` pilot records, but it does not yet change how readers map Mutagen records or how
+repositories persist DTOs. Core can assemble a `PluginRecordSetDTO` from mapped record-family collections using
+specification reader metadata; Starfield, Fallout 4, and Skyrim use that assembly path while preserving their
+game-specific mapping methods. Starfield, Fallout 4, and Skyrim also use supported record specifications to select
+and order record-family mapper dispatch, but each mapper still calls the existing game-specific Mutagen mapping code.
+Fallout 4 terminal records use the full binary mod path because the reader metadata marks the Fallout 4 `TERM`
+adapter path as requiring it.
 
 ## Presentation Boundary
 

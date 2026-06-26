@@ -130,6 +130,20 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
                     $"No Starfield record mapper is registered for specification '{specification.RecordID}'.");
             }
 
+            if (specification.Reader.RequiresFullBinaryModForGame(SpecificationGame.Starfield))
+            {
+                throw new InvalidOperationException(
+                    $"Starfield record specification '{specification.RecordID}' requires a full binary mod reader, " +
+                    "but the Starfield reader does not provide a full-binary dispatch path.");
+            }
+
+            if (!specification.Reader.UsesOverlaySafeMod)
+            {
+                throw new InvalidOperationException(
+                    $"Starfield record specification '{specification.RecordID}' does not allow the overlay-safe " +
+                    "reader path.");
+            }
+
             recordsByRecordID[specification.RecordID] = mapper(plugin, mod);
         }
 

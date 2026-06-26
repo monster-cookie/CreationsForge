@@ -377,6 +377,51 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-26 - Add Reader Behavior Metadata
+
+Status: Accepted
+
+Context: Reader dispatch now comes from record specifications for Starfield, Fallout 4, and Skyrim, but a few reader
+behaviors still need explicit policy. Most record families can use the normal overlay-safe Mutagen mod path. Fallout 4
+terminal records require the full binary mod path because the overlay reader can omit repeated terminal menu items.
+Future record families may also expose optional reader collections, but missing mapper coverage should remain an error
+unless a specification explicitly marks the collection optional.
+
+Decision: Extend `RecordReaderSpecification` with overlay-safe eligibility, optional collection policy, and per-game
+full-binary reader requirements. Mark only Fallout 4 `TERM` as requiring a full binary mod. Keep current production
+record families non-optional and overlay-safe by default. Update reader dispatch so Fallout 4 selects the full binary
+mod through metadata instead of a hardcoded record-ID check, while Starfield and Skyrim fail loudly if future metadata
+requires a full-binary path they do not implement.
+
+Rationale: Keeping reader quirks in specification metadata makes the catalog a better migration source for all 300+
+record types while avoiding a false global `TERM` rule that would affect Starfield. The game adapters still own the
+actual Mutagen load paths and DTO mapping, so the specification project remains dependency-free.
+
+Alternatives considered:
+
+- Keep the Fallout 4 `TERM` full-binary requirement hardcoded in `Fallout4RecordReaderService`.
+- Model full-binary requirements as a single global record flag.
+- Treat missing mapper registrations as optional by default.
+
+Consequences:
+
+- Reader behavior metadata now documents overlay-safe defaults, optional collection policy, and full-binary overrides.
+- Fallout 4 terminal dispatch is selected from specification metadata.
+- Starfield and Skyrim reader services guard against unsupported full-binary metadata.
+- No database schema, persisted data shape, import result, or comparison UI behavior changes.
+
+Related files:
+
+- `CreationsForge.Specification/Records/RecordReaderSpecification.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.Starfield/StarfieldRecordReaderService.cs`
+- `CreationsForge.Fallout4/Fallout4RecordReaderService.cs`
+- `CreationsForge.Skyrim/SkyrimRecordReaderService.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-25 - Keep Spriggit-Backed Rendered UI Validation With Data Validation
 
 Status: Accepted

@@ -128,6 +128,20 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
                     $"No Skyrim record mapper is registered for specification '{specification.RecordID}'.");
             }
 
+            if (specification.Reader.RequiresFullBinaryModForGame(SpecificationGame.Skyrim))
+            {
+                throw new InvalidOperationException(
+                    $"Skyrim record specification '{specification.RecordID}' requires a full binary mod reader, " +
+                    "but the Skyrim reader does not provide a full-binary dispatch path.");
+            }
+
+            if (!specification.Reader.UsesOverlaySafeMod)
+            {
+                throw new InvalidOperationException(
+                    $"Skyrim record specification '{specification.RecordID}' does not allow the overlay-safe reader " +
+                    "path.");
+            }
+
             recordsByRecordID[specification.RecordID] = mapper(plugin, mod);
         }
 
