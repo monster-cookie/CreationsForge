@@ -16,7 +16,7 @@ public static class ContainerValidationSpecs
 
     /// <summary>
     /// Builds the Starfield <c>ShipOutpost_Loot_Storage_Safe_Floor_Reg_Common</c> container validation spec,
-    /// including a UI model row expectation.
+    /// including UI model and reflection row expectations.
     /// </summary>
     /// <returns>The validation spec for the Starfield <c>ShipOutpost_Loot_Storage_Safe_Floor_Reg_Common</c> sample.</returns>
     public static ValidationSpec Starfield_ShipOutpost_Loot_Storage_Safe_Floor_Reg_Common()
@@ -26,6 +26,8 @@ public static class ContainerValidationSpecs
             .AddRules(ValidationFieldRule.ComponentReflection(1, 0, 1, "EffectSequenceComponent"))
             .Build();
         spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Model", "File"], visualText: "EditorID"));
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(
+            ["Reflection", "Components[1].REFL", "SourcePath"]));
         return spec;
     }
 
@@ -115,7 +117,7 @@ public static class ContainerValidationSpecs
     }
 
     /// <summary>
-    /// Builds the Skyrim <c>BeeHive</c> container validation spec, including a UI model row expectation.
+    /// Builds the Skyrim <c>BeeHive</c> container validation spec, including UI model and script row expectations.
     /// </summary>
     /// <returns>The validation spec for the Skyrim <c>BeeHive</c> sample.</returns>
     public static ValidationSpec Skyrim_BeeHive()
@@ -127,6 +129,7 @@ public static class ContainerValidationSpecs
             .AddRule(ValidationFieldRule.PathPrefix("VirtualMachineAdapter.Scripts[1].Properties", "ScriptingAdapters[0].Properties", ScriptingAdapterPathReplacements))
             .Build();
         spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Model", "File"], visualText: "EditorID"));
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Scripts", "Script [0]", "Name"]));
         return spec;
     }
 

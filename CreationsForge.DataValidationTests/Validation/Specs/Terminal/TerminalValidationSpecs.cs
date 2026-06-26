@@ -39,7 +39,7 @@ public static class TerminalValidationSpecs
 
     /// <summary>
     /// Builds the Starfield <c>BE_ShipComputer_BarStanding</c> terminal validation spec,
-    /// including a UI model-file row expectation.
+    /// including UI model-file and forced-location row expectations.
     /// </summary>
     /// <returns>The validation spec for the Starfield <c>BE_ShipComputer_BarStanding</c> sample.</returns>
     public static ValidationSpec Starfield_BE_ShipComputer_BarStanding()
@@ -49,6 +49,7 @@ public static class TerminalValidationSpecs
             ["Model", "File"],
             "SetDressing\\Terminals\\TerminalSittingActivatorA01\\TerminalSittingActivatorB01.nif",
             visualText: "EditorID"));
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["ForcedLocations[0]"]));
         return spec;
     }
 
@@ -86,7 +87,7 @@ public static class TerminalValidationSpecs
 
     /// <summary>
     /// Creates the Fallout 4 terminal validation spec for the robot-control targeting terminal sample.
-    /// The sample has six menu items in Spriggit and xEdit.
+    /// The sample has six menu items in Spriggit and xEdit, and UI expectations cover rendered terminal child rows.
     /// </summary>
     /// <returns>The validation rules for the DN035 robot-control targeting terminal sample.</returns>
     public static ValidationSpec Fallout4_DN035_RobotControlTerminal_Targeting()
@@ -102,6 +103,8 @@ public static class TerminalValidationSpecs
             ["Model", "File"],
             "Furniture\\Terminals\\TerminalOn.nif",
             visualText: "EditorID"));
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["BodyTexts", "BodyText [0]", "Text"]));
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["MenuItems", "MenuItem [0]", "ItemText"]));
         return spec;
     }
 

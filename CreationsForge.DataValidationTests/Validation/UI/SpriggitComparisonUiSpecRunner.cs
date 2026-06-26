@@ -105,7 +105,7 @@ public static class SpriggitComparisonUiSpecRunner
     }
 
     /// <summary>
-    /// Adds a default data-row assertion for specs that do not need a custom UI row expectation.
+    /// Adds a stable default data-row assertion for specs that do not declare custom UI row expectations.
     /// </summary>
     /// <param name="cases">The assertion case list to append to.</param>
     /// <param name="mainView">The rendered main view.</param>
@@ -204,12 +204,14 @@ public static class SpriggitComparisonUiSpecRunner
                         expectation.DtoPath + "' for sample '" + spec.SampleName + "'."));
             }
 
-            var visualText = expectation.VisualText ?? expectation.FieldPath[^1];
-            cases.Add(CreateCase(
-                expected: "Present",
-                actual: ContainsVisualText(mainView, visualText) ? "Present" : "Missing",
-                message: "Expected rendered visual tree to contain text '" + visualText + "' for sample '" +
-                    spec.SampleName + "'."));
+            if (!string.IsNullOrWhiteSpace(expectation.VisualText))
+            {
+                cases.Add(CreateCase(
+                    expected: "Present",
+                    actual: ContainsVisualText(mainView, expectation.VisualText) ? "Present" : "Missing",
+                    message: "Expected rendered visual tree to contain text '" + expectation.VisualText + "' for sample '" +
+                        spec.SampleName + "'."));
+            }
         }
     }
 

@@ -19,7 +19,7 @@ public static class ConstructibleObjectValidationSpecs
 
     /// <summary>
     /// Builds the Starfield <c>co_Outpost_Power_Reactor01</c> constructible object validation spec,
-    /// including a UI component row expectation.
+    /// including UI component and recipe-filter row expectations.
     /// </summary>
     /// <returns>The validation spec for the Starfield <c>co_Outpost_Power_Reactor01</c> sample.</returns>
     public static ValidationSpec Starfield_co_Outpost_Power_Reactor01()
@@ -28,6 +28,9 @@ public static class ConstructibleObjectValidationSpecs
         spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(
             ["Components", "Component [0]", "Count"],
             visualText: "EditorID"));
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(
+            ["RecipeFilters", "RecipeFilter [0]", "RecipeFilterFormKey"],
+            visualText: null));
         return spec;
     }
 
@@ -55,7 +58,7 @@ public static class ConstructibleObjectValidationSpecs
 
     /// <summary>
     /// Builds the Fallout 4 <c>workshop_co_Artillery</c> constructible object validation spec,
-    /// including a UI component row expectation.
+    /// including UI component and category row expectations.
     /// </summary>
     /// <returns>The validation spec for the Fallout 4 <c>workshop_co_Artillery</c> sample.</returns>
     public static ValidationSpec Fallout4_workshop_co_Artillery()
@@ -64,6 +67,9 @@ public static class ConstructibleObjectValidationSpecs
         spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(
             ["Components", "Component [0]", "Count"],
             visualText: "EditorID"));
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(
+            ["Categories", "Category [0]", "CategoryFormKey"],
+            visualText: null));
         return spec;
     }
 

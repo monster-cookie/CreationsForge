@@ -65,9 +65,13 @@ public static class BookValidationSpecs
         return Fallout4Book("DN054PowerArmorPaintJobPurchaseItem", "23C675:Fallout4.esm", withScriptingAdapters: true);
     }
 
+    /// <summary>
+    /// Builds the Fallout 4 <c>PerkMagGunsAndBullets07</c> book validation spec, including UI model and script row expectations.
+    /// </summary>
+    /// <returns>The validation spec for the Fallout 4 <c>PerkMagGunsAndBullets07</c> sample.</returns>
     public static ValidationSpec Fallout4_PerkMagGunsAndBullets07()
     {
-        return BaseBook(SupportedGame.Fallout4, "PerkMagGunsAndBullets07", "092A8C:Fallout4.esm")
+        var spec = BaseBook(SupportedGame.Fallout4, "PerkMagGunsAndBullets07", "092A8C:Fallout4.esm")
             .AddRule(ValidationFieldRule.TranslatedField("Name", "Name"))
             .AddRule(ValidationFieldRule.Field("Flags[0]", "Flags", ValidationValueNormalizer.HexInteger))
             .AddRule(ValidationFieldRule.FormKeyList("Keywords", "Keywords", "Keyword"))
@@ -76,6 +80,9 @@ public static class BookValidationSpecs
             .AddRule(ValidationFieldRule.Field("Model.MaterialSwap", "Models[0].MaterialSwaps[0].MaterialSwapFormKey"))
             .AddRule(ValidationFieldRule.PathPrefix("VirtualMachineAdapter.Scripts", "ScriptingAdapters", ScriptingAdapterPathReplacements))
             .Build();
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Model", "File"]));
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Scripts", "Script [0]", "Name"]));
+        return spec;
     }
 
     public static ValidationSpec Skyrim_AtrFrgDaedricRecipe00()

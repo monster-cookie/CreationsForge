@@ -66,13 +66,14 @@ public static class MagicEffectValidationSpecs
 
     /// <summary>
     /// Builds the Fallout 4 <c>PerkPainTrainKnockbackEffect</c> magic effect validation spec,
-    /// including a UI cast-type row expectation.
+    /// including UI cast-type and scripting adapter row expectations.
     /// </summary>
     /// <returns>The validation spec for the Fallout 4 <c>PerkPainTrainKnockbackEffect</c> sample.</returns>
     public static ValidationSpec Fallout4_PerkPainTrainKnockbackEffect()
     {
         var spec = Fallout4MagicEffect("PerkPainTrainKnockbackEffect", "171781:Fallout4.esm").Build();
         spec.UiComparisonExpectations.Add(ValidationUiComparisonExpectation.DtoField(["CastType"], "CastType", visualText: "EditorID"));
+        spec.UiComparisonExpectations.Add(new ValidationUiComparisonExpectation(["Scripts", "Script [0]", "Name"]));
         return spec;
     }
 

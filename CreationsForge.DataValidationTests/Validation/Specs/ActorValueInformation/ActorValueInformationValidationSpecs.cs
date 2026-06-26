@@ -74,7 +74,7 @@ public static class ActorValueInformationValidationSpecs
     }
 
     /// <summary>
-    /// Builds the Skyrim <c>AVAlchemy</c> actor value information validation spec, including a UI perk-tree row expectation.
+    /// Builds the Skyrim <c>AVAlchemy</c> actor value information validation spec, including UI perk-tree row expectations.
     /// </summary>
     /// <returns>The validation spec for the Skyrim <c>AVAlchemy</c> sample.</returns>
     public static ValidationSpec Skyrim_AVAlchemy()
