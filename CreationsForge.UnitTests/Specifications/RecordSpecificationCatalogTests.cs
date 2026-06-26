@@ -286,17 +286,17 @@ public class RecordSpecificationCatalogTests
     }
 
     /// <summary>
-    /// Verifies that active pilot comparison specifications define at least one comparison row.
+    /// Verifies that active scalar comparison specifications define at least one comparison row.
     /// </summary>
     [Fact]
-    public void All_ActivePilotSpecificationsExposeComparisonFields()
+    public void All_ActiveScalarComparisonSpecificationsExposeComparisonFields()
     {
         var comparisonBackedRecordIDs = RecordSpecificationCatalog.All
             .Where(specification => specification.Comparison.Fields.Count > 0)
             .Select(specification => specification.RecordID)
             .ToList();
 
-        comparisonBackedRecordIDs.ShouldBe(["FLST", "GMST", "GLOB"], ignoreOrder: true);
+        comparisonBackedRecordIDs.ShouldBe(["FLST", "GMST", "GLOB", "KYWD", "STAT"], ignoreOrder: true);
     }
 
     /// <summary>

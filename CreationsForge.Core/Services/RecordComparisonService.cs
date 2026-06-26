@@ -377,22 +377,25 @@ public class RecordComparisonService : IRecordComparisonService
         return CreateComparison(RecordTypeCatalog.MiscItem.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
 
+    /// <summary>
+    /// Creates the comparison output for imported Keyword overrides, using specification metadata for scalar parent
+    /// rows while preserving localized name display behavior.
+    /// </summary>
+    /// <param name="game">The game whose imported keyword records should be compared.</param>
+    /// <param name="formKey">The origin FormKey shared by the keyword overrides.</param>
+    /// <returns>The keyword comparison DTO consumed by presentation rendering.</returns>
     private RecordComparisonDTO CreateKeywordComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = KeywordRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Keyword.RecordID, formKey);
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
-        var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
-        fields.Add(CreateField("Color", records, record => record.Color ?? string.Empty));
-        fields.Add(CreateField("Type", records, record => record.Type ?? string.Empty));
-        fields.Add(CreateField("Notes", records, record => record.Notes ?? string.Empty));
-        fields.Add(CreateField("FlashLinkageName", records, record => record.FlashLinkageName ?? string.Empty));
-        fields.Add(CreateField("FNAM", records, record => record.FNAM ?? string.Empty));
-        fields.Add(CreateField("WAIM", records, record => record.WAIM ?? string.Empty));
-        fields.Add(CreateField("WFIR", records, record => record.WFIR ?? string.Empty));
-        fields.Add(CreateField("AttractionRule", records, record => FormatFormKey(record.AttractionRule)));
+        var fields = CreateSpecComparisonFields(
+            RecordTypeCatalog.Keyword.RecordID,
+            records,
+            new Dictionary<string, Func<KeywordDTO, string>>(StringComparer.Ordinal)
+            {
+                ["Name"] = record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)
+            });
 
         return CreateComparison(RecordTypeCatalog.Keyword.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
@@ -559,30 +562,25 @@ public class RecordComparisonService : IRecordComparisonService
         return CreateComparison(RecordTypeCatalog.Perk.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
 
+    /// <summary>
+    /// Creates the comparison output for imported Static overrides, using specification metadata for scalar parent
+    /// rows while leaving navmesh, keyword, property, model, and reflection groups on strategy code.
+    /// </summary>
+    /// <param name="game">The game whose imported static records should be compared.</param>
+    /// <param name="formKey">The origin FormKey shared by the static overrides.</param>
+    /// <returns>The static comparison DTO consumed by presentation rendering.</returns>
     private RecordComparisonDTO CreateStaticComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = StaticRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey);
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
-        var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
-        fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
-        fields.Add(CreateField("ObjectBoundsFirst", records, record => record.ObjectBoundsFirst ?? string.Empty));
-        fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBoundsSecond ?? string.Empty));
-        fields.Add(CreateField("MaxAngle", records, record => record.MaxAngle?.ToString() ?? string.Empty));
-        fields.Add(CreateField("UnknownDNAMFloat", records, record => record.UnknownDNAMFloat?.ToString() ?? string.Empty));
-        fields.Add(CreateField("LeafAmplitude", records, record => record.LeafAmplitude?.ToString() ?? string.Empty));
-        fields.Add(CreateField("LeafFrequency", records, record => record.LeafFrequency?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Unused", records, record => record.Unused ?? string.Empty));
-        fields.Add(CreateField("DNAMDataTypeState", records, record => record.DNAMDataTypeState ?? string.Empty));
-        fields.Add(CreateField("DirtinessScale", records, record => record.DirtinessScale?.ToString() ?? string.Empty));
-        fields.Add(CreateField("SnapTemplate", records, record => FormatFormKey(record.SnapTemplate)));
-        fields.Add(CreateField("PreviewTransform", records, record => FormatFormKey(record.PreviewTransform)));
-        fields.Add(CreateField("Material", records, record => FormatFormKey(record.Material)));
-        fields.Add(CreateField("Lod.Level0", records, record => record.LodLevel0 ?? string.Empty));
-        fields.Add(CreateField("Lod.Level1", records, record => record.LodLevel1 ?? string.Empty));
-        fields.Add(CreateField("Lod.Level2", records, record => record.LodLevel2 ?? string.Empty));
-        fields.Add(CreateField("Lod.Level3", records, record => record.LodLevel3 ?? string.Empty));
+        var fields = CreateSpecComparisonFields(
+            RecordTypeCatalog.Static.RecordID,
+            records,
+            new Dictionary<string, Func<StaticDTO, string>>(StringComparer.Ordinal)
+            {
+                ["Name"] = record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)
+            });
         AddStaticNavmeshGeometryGroups(fields, records);
         AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey));
         AddStaticPropertyGroups(fields, records);

@@ -242,12 +242,13 @@ Core assigns comparison value states for neutral, identical, conflicting, and di
 presentation layer maps those states to the green, red, and yellow comparison colors and shows the legend in the status
 area.
 
-The specification catalog now drives simple comparison rows for the first `FLST`, `GMST`, and `GLOB` pilot records.
+The specification catalog now drives simple comparison rows for `FLST`, `GMST`, `GLOB`, `KYWD`, and `STAT`.
 `RecordComparisonService` reads type-specific comparison fields from `IRecordSpecificationProvider`, resolves simple
 DTO source paths generically, and still uses explicit strategy hooks where behavior is not purely declarative. The
-current hooks include indexed `FLST` item rows and localized `GMST` `Data` display. Complex record families and shared
-child groups remain on the existing record-specific comparison methods until later approved slices move them behind
-specification metadata.
+current hooks include indexed `FLST` item rows, localized `GMST` `Data` display, localized `KYWD` and `STAT` names,
+and `STAT` navmesh, keyword, property, model, and reflection groups. Complex record families and shared child groups
+remain on the existing record-specific comparison methods until later approved slices move them behind specification
+metadata.
 
 `IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows.
 `IAssetFileResolverService` resolves readable local asset files from preview candidates by checking absolute paths,

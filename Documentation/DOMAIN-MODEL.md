@@ -45,9 +45,9 @@ record families for Core import dispatch. Reader metadata names each record fami
 collection, default Mutagen collection name, overlay-safe reader eligibility, full-binary reader overrides, and
 optional collection policy, but game adapters still own Mutagen-to-DTO mapping. Core import dispatch consumes
 specification import metadata to locate the matching `PluginRecordSetDTO` collections and preserve the approved
-record-family order. Core comparison consumes pilot comparison metadata for `FLST`, `GMST`, and `GLOB` simple scalar
-rows. Complex comparison strategies and the actual game-specific Mutagen mapping remain owned by the existing Core
-and game-adapter services until later approved work makes those paths specification-driven.
+record-family order. Core comparison consumes comparison metadata for `FLST`, `GMST`, `GLOB`, `KYWD`, and `STAT`
+simple scalar rows. Complex comparison strategies and the actual game-specific Mutagen mapping remain owned by the
+existing Core and game-adapter services until later approved work makes those paths specification-driven.
 
 Starfield master references require special construction through Mutagen's separated-master-aware load-order paths.
 The Starfield reader prefers the full Mutagen environment load order's mod objects so split masters, medium masters,
@@ -113,9 +113,10 @@ records. FormLists also display `AddToList` and indexed `Items[n]` rows. GameSet
 and the active typed `Data` value. Localized text rows use the Settings-selected record text language when a persisted
 localized value exists, then fall back to English and the DTO or scalar database fallback. Globals display
 `MutagenObjectType`, named `MajorFlags`, and `Data`.
-The specification catalog now drives the simple comparison fields for `FLST`, `GMST`, and `GLOB`. The Core comparison
-service remains the runtime authority for generated comparison DTOs, including row state, plugin column ordering,
-indexed `FLST` item expansion, and localized `GMST` `Data` display.
+The specification catalog now drives the simple comparison fields for `FLST`, `GMST`, `GLOB`, `KYWD`, and `STAT`.
+The Core comparison service remains the runtime authority for generated comparison DTOs, including row state, plugin
+column ordering, indexed `FLST` item expansion, localized `GMST` `Data` display, localized `KYWD` and `STAT` names,
+and strategy-owned `STAT` child groups.
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `CLAS`, `FACT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM`
 comparisons display their currently persisted parent fields and record-reference fields. CLAS comparison displays
 class property rows and skill-weight or stat-weight

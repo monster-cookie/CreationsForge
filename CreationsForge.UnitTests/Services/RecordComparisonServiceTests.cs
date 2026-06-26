@@ -86,6 +86,103 @@ public class RecordComparisonServiceTests
         comparison.Fields.ShouldNotContain(field => field.FieldName == "MajorFlags");
     }
 
+    /// <summary>
+    /// Verifies that Keyword scalar rows are selected from the injected comparison specification.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForKeyword_UsesInjectedComparisonSpecification()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x125);
+        var keywordRepository = new TestKeywordRepository
+        {
+            Records =
+            [
+                CreateKeyword("Base.esm", formKey, "BaseType", "Blue"),
+                CreateKeyword("Patch.esp", formKey, "PatchType", "Red")
+            ]
+        };
+        var provider = new TestRecordSpecificationProvider(
+            new RecordSpecification
+            {
+                RecordID = SupportedRecordSpecifications.Keyword.RecordID,
+                RecordType = SupportedRecordSpecifications.Keyword.RecordType,
+                TableName = SupportedRecordSpecifications.Keyword.TableName,
+                FriendlyName = SupportedRecordSpecifications.Keyword.FriendlyName,
+                GameSupport = SupportedRecordSpecifications.Keyword.GameSupport,
+                Fields = SupportedRecordSpecifications.Keyword.Fields,
+                Comparison = new RecordComparisonSpecification
+                {
+                    Fields =
+                    [
+                        new RecordComparisonFieldSpecification
+                        {
+                            FieldName = "Type",
+                            SourcePath = "Type",
+                            ValueKind = RecordFieldValueKind.Text
+                        }
+                    ]
+                },
+                ImplementationNote = "Test specification."
+            });
+        var service = CreateService(keywordRepository: keywordRepository, recordSpecificationProvider: provider);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Keyword.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Type").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["BaseType", "PatchType"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Color");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
+    }
+
+    /// <summary>
+    /// Verifies that Static scalar rows are selected from the injected comparison specification while strategy rows
+    /// remain outside the scalar metadata path.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForStatic_UsesInjectedComparisonSpecification()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x126);
+        var staticRepository = new TestStaticRepository
+        {
+            Records =
+            [
+                CreateStatic("Base.esm", formKey, 35, "0, 0, 0", null),
+                CreateStatic("Patch.esp", formKey, 45, "1, 1, 1", 1.25)
+            ]
+        };
+        var provider = new TestRecordSpecificationProvider(
+            new RecordSpecification
+            {
+                RecordID = SupportedRecordSpecifications.Static.RecordID,
+                RecordType = SupportedRecordSpecifications.Static.RecordType,
+                TableName = SupportedRecordSpecifications.Static.TableName,
+                FriendlyName = SupportedRecordSpecifications.Static.FriendlyName,
+                GameSupport = SupportedRecordSpecifications.Static.GameSupport,
+                Fields = SupportedRecordSpecifications.Static.Fields,
+                Comparison = new RecordComparisonSpecification
+                {
+                    Fields =
+                    [
+                        new RecordComparisonFieldSpecification
+                        {
+                            FieldName = "MaxAngle",
+                            SourcePath = "MaxAngle",
+                            ValueKind = RecordFieldValueKind.Number
+                        }
+                    ]
+                },
+                ImplementationNote = "Test specification."
+            });
+        var service = CreateService(staticRepository: staticRepository, recordSpecificationProvider: provider);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Static.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "MaxAngle").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["35", "45"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "ObjectBoundsFirst");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
+    }
+
     [Fact]
     public void GetRecordComparison_ForGameSetting_HidesRedundantTypedValueFields()
     {
@@ -1077,6 +1174,30 @@ public class RecordComparisonServiceTests
             DirtinessScale = 1,
             FeaturedItemMessage = featuredItemMessageFormKey,
             Flag = "None"
+        };
+    }
+
+    /// <summary>
+    /// Creates a minimal Keyword record for comparison-service tests that exercise scalar metadata dispatch.
+    /// </summary>
+    /// <param name="fileName">The plugin file name that contributed the test record.</param>
+    /// <param name="formKey">The origin FormKey shared by compared records.</param>
+    /// <param name="type">The keyword type value to place on the DTO.</param>
+    /// <param name="color">The keyword color value to place on the DTO.</param>
+    /// <returns>The populated Keyword DTO.</returns>
+    private static KeywordDTO CreateKeyword(string fileName, FormKeyDTO formKey, string type, string color)
+    {
+        return new KeywordDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            EditorID = "MyKeyword",
+            FormVersion = 1,
+            MajorRecordFlags = 2,
+            ImportedAtUTC = DateTime.UtcNow,
+            Type = type,
+            Color = color
         };
     }
 

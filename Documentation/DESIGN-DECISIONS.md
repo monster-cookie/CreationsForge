@@ -75,6 +75,48 @@ Related files:
 - `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
 - `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
 
+## 2026-06-26 - Extend Scalar Comparison Metadata To Keyword And Static
+
+Status: Accepted
+
+Context: The first comparison slice proved that `RecordComparisonService` can produce simple comparison rows from
+record specifications for `FLST`, `GMST`, and `GLOB`. The next low-risk step is to move additional scalar parent
+fields without disturbing complex child alignment, localized display hooks, or presentation DTO shape. `KYWD` has a
+small scalar parent shape, while `STAT` has useful scalar parent rows plus several child groups that should remain
+strategy-based.
+
+Decision: Add comparison metadata for `KYWD` and `STAT` scalar parent rows. Convert `CreateKeywordComparison` and
+`CreateStaticComparison` to call the shared specification comparison-field builder. Keep localized `Name` display as a
+custom value hook, and keep `STAT` navmesh, keyword, property, model, and reflection rows on the existing strategy
+methods.
+
+Rationale: This expands production use of specification-driven comparison while keeping the change easy to validate.
+The spec now owns more scalar row selection and ordering, but row state, plugin column ordering, localized display,
+and complex child grouping remain in the comparison service until those behaviors have stronger declarative support.
+
+Alternatives considered:
+
+- Convert `BOOK` in the same slice.
+- Move `STAT` child groups into specification metadata immediately.
+- Leave `KYWD` and `STAT` hardcoded until the entire comparison engine can be rewritten.
+
+Consequences:
+
+- `KYWD` and `STAT` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- Existing localized-name display behavior is preserved through comparison-service hooks.
+- `STAT` child groups remain strategy-based.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-26 - Drive Pilot Import Dispatch From Specifications
 
 Status: Accepted
