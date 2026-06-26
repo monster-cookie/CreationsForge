@@ -135,6 +135,41 @@ public class RecordComparisonServiceTests
     }
 
     /// <summary>
+    /// Verifies that specification-declared localized Keyword rows use the selected record text language.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForKeyword_UsesSpecificationLocalizedDisplay()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x127);
+        var keywordRepository = new TestKeywordRepository
+        {
+            Records =
+            [
+                CreateKeyword("Base.esm", formKey, "BaseType", "Blue"),
+                CreateKeyword("Patch.esp", formKey, "PatchType", "Red")
+            ]
+        };
+        var localizedStringRepository = new TestRecordLocalizedStringRepository
+        {
+            Records =
+            [
+                CreateLocalizedString("Base.esm", formKey, "Name", "German", "Basis Schluesselwort"),
+                CreateLocalizedString("Patch.esp", formKey, "Name", "German", "Patch Schluesselwort")
+            ]
+        };
+        var gameSelectionService = new TestGameSelectionService { RecordTextLanguage = Language.German };
+        var service = CreateService(
+            keywordRepository: keywordRepository,
+            recordLocalizedStringRepository: localizedStringRepository,
+            gameSelectionService: gameSelectionService);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Keyword.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["Basis Schluesselwort", "Patch Schluesselwort"]);
+    }
+
+    /// <summary>
     /// Verifies that Static scalar rows are selected from the injected comparison specification while strategy rows
     /// remain outside the scalar metadata path.
     /// </summary>
@@ -181,6 +216,89 @@ public class RecordComparisonServiceTests
             .ShouldBe(["35", "45"]);
         comparison.Fields.ShouldNotContain(field => field.FieldName == "ObjectBoundsFirst");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
+    }
+
+    /// <summary>
+    /// Verifies that specification-declared localized Static rows use the selected record text language.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForStatic_UsesSpecificationLocalizedDisplay()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x128);
+        var staticRepository = new TestStaticRepository
+        {
+            Records =
+            [
+                CreateStatic("Base.esm", formKey, 35, "0, 0, 0", null),
+                CreateStatic("Patch.esp", formKey, 45, "1, 1, 1", 1.25)
+            ]
+        };
+        var localizedStringRepository = new TestRecordLocalizedStringRepository
+        {
+            Records =
+            [
+                CreateLocalizedString("Base.esm", formKey, "Name", "German", "Basis Statik"),
+                CreateLocalizedString("Patch.esp", formKey, "Name", "German", "Patch Statik")
+            ]
+        };
+        var gameSelectionService = new TestGameSelectionService { RecordTextLanguage = Language.German };
+        var service = CreateService(
+            staticRepository: staticRepository,
+            recordLocalizedStringRepository: localizedStringRepository,
+            gameSelectionService: gameSelectionService);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Static.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["Basis Statik", "Patch Statik"]);
+    }
+
+    /// <summary>
+    /// Verifies that Book scalar rows are selected from the injected comparison specification.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForBook_UsesInjectedComparisonSpecification()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x129);
+        var bookRepository = new TestBookRepository
+        {
+            Records =
+            [
+                CreateBook("Base.esm", formKey, "Captain's Log", 100),
+                CreateBook("Patch.esp", formKey, "Captain's Log", 150)
+            ]
+        };
+        var provider = new TestRecordSpecificationProvider(
+            new RecordSpecification
+            {
+                RecordID = SupportedRecordSpecifications.Book.RecordID,
+                RecordType = SupportedRecordSpecifications.Book.RecordType,
+                TableName = SupportedRecordSpecifications.Book.TableName,
+                FriendlyName = SupportedRecordSpecifications.Book.FriendlyName,
+                GameSupport = SupportedRecordSpecifications.Book.GameSupport,
+                Fields = SupportedRecordSpecifications.Book.Fields,
+                Comparison = new RecordComparisonSpecification
+                {
+                    Fields =
+                    [
+                        new RecordComparisonFieldSpecification
+                        {
+                            FieldName = "Value",
+                            SourcePath = "Value",
+                            ValueKind = RecordFieldValueKind.Number
+                        }
+                    ]
+                },
+                ImplementationNote = "Test specification."
+            });
+        var service = CreateService(bookRepository: bookRepository, recordSpecificationProvider: provider);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Book.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["100", "150"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Flags");
     }
 
     [Fact]
@@ -839,6 +957,12 @@ public class RecordComparisonServiceTests
         comparison.Fields.Single(field => field.FieldName == "Text").Values.Select(value => value.DisplayValue).ShouldBe(["Base text", "Patch text"]);
         comparison.Fields.Single(field => field.FieldName == "Teaches.MutagenObjectType").Values.Select(value => value.DisplayValue).ShouldBe(["Skill", "Skill"]);
         comparison.Fields.Single(field => field.FieldName == "Teaches.Perk").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000666", "Starfield.esm:00000666"]);
+        var keywords = comparison.Fields.Single(field => field.FieldName == "Keywords");
+        keywords.Children.Single(field => field.FieldName == "Keyword [0]").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000101", "Starfield.esm:00000101"]);
+        var model = comparison.Fields.Single(field => field.FieldName == "Model");
+        model.Children.Single(field => field.FieldName == "File").Values.Select(value => value.DisplayValue).ShouldBe(["Meshes\\SetDressing\\Books\\Book01.nif", "Meshes\\SetDressing\\Books\\Book01.nif"]);
+        var sounds = comparison.Fields.Single(field => field.FieldName == "Sounds");
+        sounds.Children.Single(field => field.FieldName == "PickupSound").Children.Single(field => field.FieldName == "Start").Values.Select(value => value.DisplayValue).ShouldBe(["pickup", "pickup"]);
     }
 
     [Fact]

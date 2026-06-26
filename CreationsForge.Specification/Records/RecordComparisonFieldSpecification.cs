@@ -32,6 +32,12 @@ public sealed class RecordComparisonFieldSpecification
     public bool UsesLocalizedDisplay { get; init; }
 
     /// <summary>
+    /// Gets the localized-string source field used when <see cref="UsesLocalizedDisplay"/> is true. When omitted, the
+    /// comparison service uses <see cref="SourcePath"/> as the localized source field.
+    /// </summary>
+    public string? LocalizedSourceField { get; init; }
+
+    /// <summary>
     /// Gets a concise explanation of strategy boundaries or formatting behavior for the comparison row.
     /// </summary>
     public string Description { get; init; } = string.Empty;

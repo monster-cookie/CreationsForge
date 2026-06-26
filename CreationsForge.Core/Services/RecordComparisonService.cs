@@ -392,10 +392,8 @@ public class RecordComparisonService : IRecordComparisonService
         var fields = CreateSpecComparisonFields(
             RecordTypeCatalog.Keyword.RecordID,
             records,
-            new Dictionary<string, Func<KeywordDTO, string>>(StringComparer.Ordinal)
-            {
-                ["Name"] = record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)
-            });
+            localizedStrings: localizedStrings,
+            recordTextLanguage: recordTextLanguage);
 
         return CreateComparison(RecordTypeCatalog.Keyword.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
@@ -577,10 +575,8 @@ public class RecordComparisonService : IRecordComparisonService
         var fields = CreateSpecComparisonFields(
             RecordTypeCatalog.Static.RecordID,
             records,
-            new Dictionary<string, Func<StaticDTO, string>>(StringComparer.Ordinal)
-            {
-                ["Name"] = record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)
-            });
+            localizedStrings: localizedStrings,
+            recordTextLanguage: recordTextLanguage);
         AddStaticNavmeshGeometryGroups(fields, records);
         AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey));
         AddStaticPropertyGroups(fields, records);
@@ -794,33 +790,33 @@ public class RecordComparisonService : IRecordComparisonService
         return geometry?.Vertices.FirstOrDefault(vertex => vertex.VertexIndex == vertexIndex);
     }
 
+    /// <summary>
+    /// Creates the comparison output for imported Book overrides, using specification metadata for scalar parent rows
+    /// while leaving child collections on existing strategy code.
+    /// </summary>
+    /// <param name="game">The game whose imported book records should be compared.</param>
+    /// <param name="formKey">The origin FormKey shared by the book overrides.</param>
+    /// <returns>The book comparison DTO consumed by presentation rendering.</returns>
     private RecordComparisonDTO CreateBookComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = BookRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey);
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var baseRecords = records.Cast<RecordDTO>().ToList();
-        var fields = CreateCommonFields(baseRecords);
-        fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
-        fields.Add(CreateField("ObjectBounds.First", records, record => record.ObjectBounds?.First ?? string.Empty));
-        fields.Add(CreateField("ObjectBounds.Second", records, record => record.ObjectBounds?.Second ?? string.Empty));
-        fields.Add(CreateField("Transforms.Inventory", records, record => FormatFormKey(record.Transforms?.Inventory)));
-        fields.Add(CreateField("InventoryArt", records, record => FormatFormKey(record.InventoryArt)));
-        fields.Add(CreateField("PreviewTransform", records, record => FormatFormKey(record.PreviewTransform)));
-        fields.Add(CreateField("FeaturedItemMessage", records, record => FormatFormKey(record.FeaturedItemMessage)));
-        fields.Add(CreateField("XALG", records, record => record.XALG?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
-        fields.Add(CreateField("Text", records, record => GetTranslatedDisplayValue(localizedStrings, record, GetBookTextSourceField(record), recordTextLanguage, record.Text)));
-        fields.Add(CreateField("Value", records, record => record.Value?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Weight", records, record => record.Weight?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
-        fields.Add(CreateField("Teaches.MutagenObjectType", records, record => record.Teaches?.MutagenObjectType ?? string.Empty));
-        fields.Add(CreateField("Teaches.Perk", records, record => FormatFormKey(record.Teaches?.Perk)));
-        fields.Add(CreateField("Teaches.RawContent", records, record => record.Teaches?.RawContent ?? string.Empty));
-        fields.Add(CreateField("DataSlateType", records, record => record.DataSlateType ?? string.Empty));
-        fields.Add(CreateField("Description", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Description", recordTextLanguage, record.Description)));
-        fields.Add(CreateField("DataSlateHeaderLeft", records, record => GetTranslatedDisplayValue(localizedStrings, record, "DataSlateHeaderLeft", recordTextLanguage, record.DataSlateHeaderLeft)));
-        fields.Add(CreateField("DataSlateHeaderRight", records, record => GetTranslatedDisplayValue(localizedStrings, record, "DataSlateHeaderRight", recordTextLanguage, record.DataSlateHeaderRight)));
+        var fields = CreateSpecComparisonFields(
+            RecordTypeCatalog.Book.RecordID,
+            records,
+            new Dictionary<string, Func<BookDTO, string>>(StringComparer.Ordinal)
+            {
+                ["Text"] = record => GetTranslatedDisplayValue(
+                    localizedStrings,
+                    record,
+                    GetBookTextSourceField(record),
+                    recordTextLanguage,
+                    record.Text)
+            },
+            localizedStrings,
+            recordTextLanguage);
         AddKeywordGroup(fields, baseRecords, KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
         AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
         AddSoundGroups(fields, baseRecords, SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
@@ -1022,11 +1018,15 @@ public class RecordComparisonService : IRecordComparisonService
     /// <param name="recordType">The Bethesda record ID whose comparison specification should be used.</param>
     /// <param name="records">The ordered records participating in the comparison.</param>
     /// <param name="customValueFactories">Optional value factories keyed by comparison field name.</param>
+    /// <param name="localizedStrings">Optional localized string rows used by specification-declared localized fields.</param>
+    /// <param name="recordTextLanguage">The preferred language used when resolving localized comparison rows.</param>
     /// <returns>The comparison fields produced from the specification and custom value factories.</returns>
     private List<RecordComparisonFieldDTO> CreateSpecComparisonFields<TRecord>(
         string recordType,
         IReadOnlyList<TRecord> records,
-        IReadOnlyDictionary<string, Func<TRecord, string>>? customValueFactories = null)
+        IReadOnlyDictionary<string, Func<TRecord, string>>? customValueFactories = null,
+        IReadOnlyList<LocalizedStringDTO>? localizedStrings = null,
+        Language? recordTextLanguage = null)
         where TRecord : RecordDTO
     {
         var specification = RecordSpecificationProvider.FindByRecordID(recordType);
@@ -1046,7 +1046,12 @@ public class RecordComparisonService : IRecordComparisonService
                 continue;
             }
 
-            fields.Add(CreateSpecComparisonField(fieldSpecification, records, customValueFactories));
+            fields.Add(CreateSpecComparisonField(
+                fieldSpecification,
+                records,
+                customValueFactories,
+                localizedStrings,
+                recordTextLanguage));
         }
 
         return fields;
@@ -1059,17 +1064,36 @@ public class RecordComparisonService : IRecordComparisonService
     /// <param name="fieldSpecification">The field specification that identifies source path and display kind.</param>
     /// <param name="records">The ordered records participating in the comparison.</param>
     /// <param name="customValueFactories">Optional value factories keyed by comparison field name.</param>
+    /// <param name="localizedStrings">Optional localized string rows used by specification-declared localized fields.</param>
+    /// <param name="recordTextLanguage">The preferred language used when resolving localized comparison rows.</param>
     /// <returns>The populated comparison field.</returns>
     private static RecordComparisonFieldDTO CreateSpecComparisonField<TRecord>(
         RecordComparisonFieldSpecification fieldSpecification,
         IReadOnlyList<TRecord> records,
-        IReadOnlyDictionary<string, Func<TRecord, string>>? customValueFactories)
+        IReadOnlyDictionary<string, Func<TRecord, string>>? customValueFactories,
+        IReadOnlyList<LocalizedStringDTO>? localizedStrings,
+        Language? recordTextLanguage)
         where TRecord : RecordDTO
     {
         if (customValueFactories != null &&
             customValueFactories.TryGetValue(fieldSpecification.FieldName, out var customValueFactory))
         {
             return CreateField(fieldSpecification.FieldName, records, customValueFactory, fieldSpecification.IsComparable);
+        }
+
+        if (fieldSpecification.UsesLocalizedDisplay)
+        {
+            var sourceField = fieldSpecification.LocalizedSourceField ?? fieldSpecification.SourcePath;
+            return CreateField(
+                fieldSpecification.FieldName,
+                records,
+                record => GetTranslatedDisplayValue(
+                    localizedStrings ?? [],
+                    record,
+                    sourceField,
+                    recordTextLanguage ?? Language.English,
+                    GetPropertyPathValue(record, fieldSpecification.SourcePath) as TranslatedStringDTO),
+                fieldSpecification.IsComparable);
         }
 
         return CreateField(

@@ -103,13 +103,57 @@ Alternatives considered:
 Consequences:
 
 - `KYWD` and `STAT` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
-- Existing localized-name display behavior is preserved through comparison-service hooks.
+- Existing localized-name display behavior was preserved through comparison-service hooks in this slice; a later
+  accepted decision moved ordinary localized scalar rows to metadata.
 - `STAT` child groups remain strategy-based.
 - No database schema, persisted data shape, import, reader, or UI workflow changes.
 
 Related files:
 
 - `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-26 - Add Localized Spec Comparison And Book Scalars
+
+Status: Accepted
+
+Context: `KYWD` and `STAT` scalar comparison rows are selected from metadata, but localized scalar rows still required
+record-specific custom value hooks. `BOOK` is the next practical record family because its parent scalar rows are
+valuable to compare, while its keyword, model, sound, script, component, and reflection rows should remain
+strategy-based.
+
+Decision: Add a localized source-field override to `RecordComparisonFieldSpecification` and make
+`RecordComparisonService` resolve ordinary localized scalar rows from comparison metadata. Convert `BOOK` scalar parent
+rows to `RecordComparisonSpecification`. Keep `BOOK` body text on a custom hook because Starfield uses `Text` while
+Fallout 4 and Skyrim use `BookText` as the localized source field. Keep all `BOOK` child groups on existing strategy
+methods.
+
+Rationale: This removes another repeated custom-hook pattern before converting more records, while preserving the
+current localized fallback chain and avoiding an overbroad child-row metadata design. `BOOK` proves the scalar path can
+support localized fields, FormKey fields, nested DTO paths, and still coexist with strategy-owned child groups.
+
+Alternatives considered:
+
+- Convert `BOOK` with custom hooks for every localized scalar row.
+- Add game-specific localized source metadata for every comparison field in this slice.
+- Move `BOOK` child groups into specification metadata immediately.
+
+Consequences:
+
+- Ordinary localized scalar comparison rows can be driven by metadata.
+- `BOOK` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- `BOOK` child groups remain strategy-based.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonFieldSpecification.cs`
 - `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
 - `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
 - `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
