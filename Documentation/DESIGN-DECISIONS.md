@@ -207,6 +207,51 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-26 - Use Specifications For Starfield Record-Set Assembly
+
+Status: Accepted
+
+Context: Record specifications now describe reader-facing DTO destination collections, but the game reader services
+still manually assemble `PluginRecordSetDTO` objects after mapping each record family. Starfield is the broadest
+current adapter because it includes the shared record families plus `CNDF` and `TERM`, making it a useful pilot for
+specification-driven record-set assembly without changing Mutagen mapping.
+
+Decision: Add a Core `RecordSetSpecificationBuilder` that consumes `IRecordSpecificationProvider`, filters
+specifications by game, and assigns mapped record-family collections to the `PluginRecordSetDTO` properties named by
+reader metadata. Convert `StarfieldRecordReaderService.ReadPluginRecords` to keep its existing Mutagen mapping methods
+and cancellation points, then hand the mapped collections to the builder by Bethesda record ID. Fallout 4 and Skyrim
+remain on manual record-set assembly until later approved slices.
+
+Rationale: This moves the next repeatable reader responsibility behind specifications while keeping game-specific
+Mutagen APIs and record-field mapping inside the Starfield adapter. The builder also centralizes validation for
+missing mappings, invalid destination properties, and collection type mismatches before the same pattern is reused by
+other game adapters.
+
+Alternatives considered:
+
+- Convert all three game reader services in one change.
+- Move the builder into `CreationsForge.Specification`.
+- Rewrite Starfield mapping methods around declarative field metadata immediately.
+
+Consequences:
+
+- Core now owns specification-driven `PluginRecordSetDTO` assembly.
+- Starfield reader output should remain equivalent, but the final DTO assignment now depends on complete Starfield
+  reader metadata.
+- Fallout 4 and Skyrim still assemble record sets manually.
+- No database schema, persisted data shape, import result, or comparison UI behavior changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/Interfaces/IRecordSetSpecificationBuilder.cs`
+- `CreationsForge.Core/Services/RecordSetSpecificationBuilder.cs`
+- `CreationsForge.Core/CoreModule.cs`
+- `CreationsForge.Starfield/StarfieldRecordReaderService.cs`
+- `CreationsForge.UnitTests/Services/RecordSetSpecificationBuilderTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-25 - Keep Spriggit-Backed Rendered UI Validation With Data Validation
 
 Status: Accepted

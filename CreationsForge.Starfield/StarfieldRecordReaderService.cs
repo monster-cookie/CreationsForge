@@ -5,6 +5,8 @@ using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
+using CreationsForge.Core.Services;
+using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Core.Utilities;
 using CreationsForge.Starfield.Interfaces;
 using Mutagen.Bethesda;
@@ -15,15 +17,52 @@ using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Starfield;
 
+/// <summary>
+/// Reads Starfield plugin records through Mutagen and maps the currently supported record families into Core DTOs.
+/// </summary>
 public class StarfieldRecordReaderService : IStarfieldRecordReaderService
 {
+    /// <summary>
+    /// Provides Starfield installation metadata used to locate plugin files and game data.
+    /// </summary>
     private readonly StarfieldGameMetadataService GameMetadataService;
 
+    /// <summary>
+    /// Builds the final plugin record set from mapped record-family collections and specification reader metadata.
+    /// </summary>
+    private readonly IRecordSetSpecificationBuilder RecordSetBuilder;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StarfieldRecordReaderService"/> class.
+    /// </summary>
+    /// <param name="gameMetadataService">The service used to discover Starfield installation metadata.</param>
     public StarfieldRecordReaderService(StarfieldGameMetadataService gameMetadataService)
+        : this(gameMetadataService, RecordSetSpecificationBuilder.CreateDefault())
     {
-        GameMetadataService = gameMetadataService;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StarfieldRecordReaderService"/> class.
+    /// </summary>
+    /// <param name="gameMetadataService">The service used to discover Starfield installation metadata.</param>
+    /// <param name="recordSetSpecificationBuilder">
+    /// The builder used to assemble mapped record collections into a record set.
+    /// </param>
+    public StarfieldRecordReaderService(
+        StarfieldGameMetadataService gameMetadataService,
+        IRecordSetSpecificationBuilder recordSetSpecificationBuilder)
+    {
+        GameMetadataService = gameMetadataService;
+        RecordSetBuilder = recordSetSpecificationBuilder;
+    }
+
+    /// <summary>
+    /// Reads all currently supported Starfield record families from a plugin and returns them in a Core record set.
+    /// </summary>
+    /// <param name="plugin">The plugin metadata that identifies the Starfield plugin file to read.</param>
+    /// <param name="cancellationToken">A token used to stop the read between record-family mapping steps.</param>
+    /// <returns>The mapped Starfield record families assembled according to record specification metadata.</returns>
+    /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled.</exception>
     public PluginRecordSetDTO ReadPluginRecords(PluginDTO plugin, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -65,27 +104,29 @@ public class StarfieldRecordReaderService : IStarfieldRecordReaderService
         cancellationToken.ThrowIfCancellationRequested();
         var terminals = MapTerminals(plugin, mod);
 
-        return new PluginRecordSetDTO
-        {
-            FormLists = formLists,
-            GameSettings = gameSettings,
-            Globals = globals,
-            Classes = classes,
-            Factions = factions,
-            MiscItems = miscItems,
-            Keywords = keywords,
-            ActorValueInformation = actorValueInformation,
-            NPCs = npcs,
-            MagicEffects = magicEffects,
-            Perks = perks,
-            Statics = statics,
-            Books = books,
-            Doors = doors,
-            Containers = containers,
-            ConditionForms = conditionForms,
-            ConstructibleObjects = constructibleObjects,
-            Terminals = terminals
-        };
+        return RecordSetBuilder.Build(
+            SupportedGame.Starfield,
+            new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+            {
+                [RecordTypeCatalog.FormList.RecordID] = formLists,
+                [RecordTypeCatalog.GameSetting.RecordID] = gameSettings,
+                [RecordTypeCatalog.Global.RecordID] = globals,
+                [RecordTypeCatalog.Class.RecordID] = classes,
+                [RecordTypeCatalog.Faction.RecordID] = factions,
+                [RecordTypeCatalog.MiscItem.RecordID] = miscItems,
+                [RecordTypeCatalog.Keyword.RecordID] = keywords,
+                [RecordTypeCatalog.ActorValueInformation.RecordID] = actorValueInformation,
+                [RecordTypeCatalog.NPC.RecordID] = npcs,
+                [RecordTypeCatalog.MagicEffect.RecordID] = magicEffects,
+                [RecordTypeCatalog.Perk.RecordID] = perks,
+                [RecordTypeCatalog.Static.RecordID] = statics,
+                [RecordTypeCatalog.Book.RecordID] = books,
+                [RecordTypeCatalog.Door.RecordID] = doors,
+                [RecordTypeCatalog.Container.RecordID] = containers,
+                [RecordTypeCatalog.ConditionForm.RecordID] = conditionForms,
+                [RecordTypeCatalog.ConstructibleObject.RecordID] = constructibleObjects,
+                [RecordTypeCatalog.Terminal.RecordID] = terminals
+            });
     }
 
     public IReadOnlyList<FormListDTO> ReadFormLists(PluginDTO plugin)

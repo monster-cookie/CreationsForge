@@ -183,7 +183,9 @@ DTO capability interfaces.
 is registered through Core composition and drives the shared import dispatch loop. The catalog now describes current
 reader destination collections and default Mutagen collection names as a reader-migration target. The same catalog
 drives simple comparison rows for the `FLST`, `GMST`, and `GLOB` pilot records, but it does not yet change how readers
-map Mutagen records or how repositories persist DTOs.
+map Mutagen records or how repositories persist DTOs. Core can assemble a `PluginRecordSetDTO` from mapped
+record-family collections using specification reader metadata; Starfield uses that assembly path while preserving its
+game-specific mapping methods.
 
 ## Presentation Boundary
 
