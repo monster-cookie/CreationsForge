@@ -127,6 +127,40 @@ public class RecordSpecificationCatalogTests
     }
 
     /// <summary>
+    /// Verifies that Starfield-supported specifications expose the dispatch sequence consumed by the Starfield reader.
+    /// </summary>
+    [Fact]
+    public void GetSupportedByGame_ReturnsStarfieldRecordsInReaderDispatchOrder()
+    {
+        var recordIDs = RecordSpecificationCatalog.GetSupportedByGame(SpecificationGame.Starfield)
+            .OrderBy(specification => specification.Import.ImportOrder)
+            .Select(specification => specification.RecordID)
+            .ToList();
+
+        recordIDs.ShouldBe(
+        [
+            "FLST",
+            "GMST",
+            "GLOB",
+            "CLAS",
+            "FACT",
+            "MISC",
+            "KYWD",
+            "AVIF",
+            "NPC_",
+            "MGEF",
+            "PERK",
+            "STAT",
+            "CONT",
+            "COBJ",
+            "CNDF",
+            "BOOK",
+            "DOOR",
+            "TERM"
+        ]);
+    }
+
+    /// <summary>
     /// Verifies that game support filtering returns the current record families for the Fallout 4 adapter.
     /// </summary>
     [Fact]

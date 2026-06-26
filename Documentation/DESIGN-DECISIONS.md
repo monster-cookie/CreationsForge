@@ -294,6 +294,46 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-26 - Drive Starfield Reader Dispatch From Specifications
+
+Status: Accepted
+
+Context: All supported game adapters now use `RecordSetSpecificationBuilder` for final `PluginRecordSetDTO` assembly,
+but Starfield still manually listed every record-family mapping call before handing the mapped lists to the builder.
+That kept one more copy of Starfield's supported record-family order outside the specification catalog.
+
+Decision: Convert `StarfieldRecordReaderService.ReadPluginRecords` to load the Mutagen mod once, iterate the
+Starfield-supported specifications from `IRecordSpecificationProvider` in import order, resolve each record ID through
+a Starfield-local mapper registry, and pass the mapped collections to `RecordSetSpecificationBuilder`. Keep every
+existing `Map*` method intact and keep Fallout 4 and Skyrim reader dispatch on their current explicit mapping lists.
+
+Rationale: This makes the Starfield reader's record-family dispatch follow the same catalog that drives import
+dispatch and record-set assembly, while keeping Starfield-specific Mutagen field mapping in the Starfield adapter.
+Using a local mapper registry gives the next game-adapter conversions a repeatable shape without prematurely making
+field mapping declarative.
+
+Alternatives considered:
+
+- Convert Starfield, Fallout 4, and Skyrim reader dispatch in one change.
+- Move Starfield field mapping into declarative specification metadata immediately.
+- Keep Starfield dispatch explicit until all reader metadata is richer.
+
+Consequences:
+
+- Starfield reader dispatch order and supported record-family selection now come from record specifications.
+- Missing Starfield mappers for supported specifications fail at read time instead of silently omitting records.
+- Starfield Mutagen-to-DTO field mapping remains in existing mapper methods.
+- Fallout 4 and Skyrim still use explicit reader dispatch until later approved slices.
+- No database schema, persisted data shape, import result, or comparison UI behavior changes.
+
+Related files:
+
+- `CreationsForge.Starfield/StarfieldRecordReaderService.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-25 - Keep Spriggit-Backed Rendered UI Validation With Data Validation
 
 Status: Accepted
