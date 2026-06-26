@@ -149,8 +149,8 @@ The catalog also carries reader metadata for the current record families. Reader
 Starfield, Fallout 4, and Skyrim reader services still own the actual Mutagen-to-DTO mapping. This keeps the next
 reader-dispatch migration target explicit without moving game-specific Mutagen APIs into Core or Specification.
 Core `RecordSetSpecificationBuilder` consumes that metadata to assemble `PluginRecordSetDTO` instances from mapped
-record-family collections. Starfield record reads now use the builder for the final record-set assembly step while
-retaining the existing Starfield-specific Mutagen mapping methods.
+record-family collections. Starfield, Fallout 4, and Skyrim record reads now use the builder for the final record-set
+assembly step while retaining the existing game-specific Mutagen mapping methods.
 
 Starfield plugin metadata, master-reference, and record reads use a Starfield-only construction helper. The helper
 prefers the full Mutagen environment load order's mod objects with the Starfield environment data folder from

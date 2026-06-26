@@ -96,10 +96,10 @@ public class RecordSpecificationCatalogTests
     }
 
     /// <summary>
-    /// Verifies that game support filtering returns the current record families for the selected game adapter.
+    /// Verifies that game support filtering returns the current record families for the Starfield adapter.
     /// </summary>
     [Fact]
-    public void GetSupportedByGame_ReturnsRecordsSupportedByRequestedGame()
+    public void GetSupportedByGame_ReturnsStarfieldRecordsSupportedByRequestedGame()
     {
         var specifications = RecordSpecificationCatalog.GetSupportedByGame(SpecificationGame.Starfield);
 
@@ -123,6 +123,65 @@ public class RecordSpecificationCatalogTests
             "BOOK",
             "DOOR",
             "TERM"
+        ], ignoreOrder: true);
+    }
+
+    /// <summary>
+    /// Verifies that game support filtering returns the current record families for the Fallout 4 adapter.
+    /// </summary>
+    [Fact]
+    public void GetSupportedByGame_ReturnsFallout4RecordsSupportedByRequestedGame()
+    {
+        var specifications = RecordSpecificationCatalog.GetSupportedByGame(SpecificationGame.Fallout4);
+
+        specifications.Select(specification => specification.RecordID).ShouldBe(
+        [
+            "FLST",
+            "GMST",
+            "GLOB",
+            "CLAS",
+            "FACT",
+            "MISC",
+            "KYWD",
+            "AVIF",
+            "NPC_",
+            "MGEF",
+            "PERK",
+            "STAT",
+            "CONT",
+            "COBJ",
+            "BOOK",
+            "DOOR",
+            "TERM"
+        ], ignoreOrder: true);
+    }
+
+    /// <summary>
+    /// Verifies that game support filtering returns the current record families for the Skyrim adapter.
+    /// </summary>
+    [Fact]
+    public void GetSupportedByGame_ReturnsSkyrimRecordsSupportedByRequestedGame()
+    {
+        var specifications = RecordSpecificationCatalog.GetSupportedByGame(SpecificationGame.Skyrim);
+
+        specifications.Select(specification => specification.RecordID).ShouldBe(
+        [
+            "FLST",
+            "GMST",
+            "GLOB",
+            "CLAS",
+            "FACT",
+            "MISC",
+            "KYWD",
+            "AVIF",
+            "NPC_",
+            "MGEF",
+            "PERK",
+            "STAT",
+            "CONT",
+            "COBJ",
+            "BOOK",
+            "DOOR"
         ], ignoreOrder: true);
     }
 

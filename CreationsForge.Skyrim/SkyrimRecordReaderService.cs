@@ -5,6 +5,8 @@ using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
+using CreationsForge.Core.Services;
+using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Core.Utilities;
 using CreationsForge.Skyrim.Interfaces;
 using Mutagen.Bethesda;
@@ -15,15 +17,52 @@ using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Skyrim;
 
+/// <summary>
+/// Reads Skyrim plugin records through Mutagen and maps the currently supported record families into Core DTOs.
+/// </summary>
 public class SkyrimRecordReaderService : ISkyrimRecordReaderService
 {
+    /// <summary>
+    /// Provides Skyrim installation metadata used to locate plugin files and game data.
+    /// </summary>
     private readonly SkyrimGameMetadataService GameMetadataService;
 
+    /// <summary>
+    /// Builds the final plugin record set from mapped record-family collections and specification reader metadata.
+    /// </summary>
+    private readonly IRecordSetSpecificationBuilder RecordSetBuilder;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SkyrimRecordReaderService"/> class.
+    /// </summary>
+    /// <param name="gameMetadataService">The service used to discover Skyrim installation metadata.</param>
     public SkyrimRecordReaderService(SkyrimGameMetadataService gameMetadataService)
+        : this(gameMetadataService, RecordSetSpecificationBuilder.CreateDefault())
     {
-        GameMetadataService = gameMetadataService;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SkyrimRecordReaderService"/> class.
+    /// </summary>
+    /// <param name="gameMetadataService">The service used to discover Skyrim installation metadata.</param>
+    /// <param name="recordSetSpecificationBuilder">
+    /// The builder used to assemble mapped record collections into a record set.
+    /// </param>
+    public SkyrimRecordReaderService(
+        SkyrimGameMetadataService gameMetadataService,
+        IRecordSetSpecificationBuilder recordSetSpecificationBuilder)
+    {
+        GameMetadataService = gameMetadataService;
+        RecordSetBuilder = recordSetSpecificationBuilder;
+    }
+
+    /// <summary>
+    /// Reads all currently supported Skyrim record families from a plugin and returns them in a Core record set.
+    /// </summary>
+    /// <param name="plugin">The plugin metadata that identifies the Skyrim plugin file to read.</param>
+    /// <param name="cancellationToken">A token used to stop the read between record-family mapping steps.</param>
+    /// <returns>The mapped Skyrim record families assembled according to record specification metadata.</returns>
+    /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled.</exception>
     public PluginRecordSetDTO ReadPluginRecords(PluginDTO plugin, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -61,25 +100,27 @@ public class SkyrimRecordReaderService : ISkyrimRecordReaderService
         cancellationToken.ThrowIfCancellationRequested();
         var constructibleObjects = MapConstructibleObjects(plugin, mod);
 
-        return new PluginRecordSetDTO
-        {
-            FormLists = formLists,
-            GameSettings = gameSettings,
-            Globals = globals,
-            Classes = classes,
-            Factions = factions,
-            MiscItems = miscItems,
-            Keywords = keywords,
-            ActorValueInformation = actorValueInformation,
-            NPCs = npcs,
-            MagicEffects = magicEffects,
-            Perks = perks,
-            Statics = statics,
-            Books = books,
-            Doors = doors,
-            Containers = containers,
-            ConstructibleObjects = constructibleObjects
-        };
+        return RecordSetBuilder.Build(
+            SupportedGame.Skyrim,
+            new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+            {
+                [RecordTypeCatalog.FormList.RecordID] = formLists,
+                [RecordTypeCatalog.GameSetting.RecordID] = gameSettings,
+                [RecordTypeCatalog.Global.RecordID] = globals,
+                [RecordTypeCatalog.Class.RecordID] = classes,
+                [RecordTypeCatalog.Faction.RecordID] = factions,
+                [RecordTypeCatalog.MiscItem.RecordID] = miscItems,
+                [RecordTypeCatalog.Keyword.RecordID] = keywords,
+                [RecordTypeCatalog.ActorValueInformation.RecordID] = actorValueInformation,
+                [RecordTypeCatalog.NPC.RecordID] = npcs,
+                [RecordTypeCatalog.MagicEffect.RecordID] = magicEffects,
+                [RecordTypeCatalog.Perk.RecordID] = perks,
+                [RecordTypeCatalog.Static.RecordID] = statics,
+                [RecordTypeCatalog.Book.RecordID] = books,
+                [RecordTypeCatalog.Door.RecordID] = doors,
+                [RecordTypeCatalog.Container.RecordID] = containers,
+                [RecordTypeCatalog.ConstructibleObject.RecordID] = constructibleObjects
+            });
     }
 
     public IReadOnlyList<FormListDTO> ReadFormLists(PluginDTO plugin)

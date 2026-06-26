@@ -5,6 +5,8 @@ using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
+using CreationsForge.Core.Services;
+using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Core.Utilities;
 using CreationsForge.Fallout4.Interfaces;
 using Mutagen.Bethesda;
@@ -15,13 +17,43 @@ using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Fallout4;
 
+/// <summary>
+/// Reads Fallout 4 plugin records through Mutagen and maps the currently supported record families into Core DTOs.
+/// </summary>
 public class Fallout4RecordReaderService : IFallout4RecordReaderService
 {
+    /// <summary>
+    /// Provides Fallout 4 installation metadata used to locate plugin files and game data.
+    /// </summary>
     private readonly Fallout4GameMetadataService GameMetadataService;
 
+    /// <summary>
+    /// Builds the final plugin record set from mapped record-family collections and specification reader metadata.
+    /// </summary>
+    private readonly IRecordSetSpecificationBuilder RecordSetBuilder;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Fallout4RecordReaderService"/> class.
+    /// </summary>
+    /// <param name="gameMetadataService">The service used to discover Fallout 4 installation metadata.</param>
     public Fallout4RecordReaderService(Fallout4GameMetadataService gameMetadataService)
+        : this(gameMetadataService, RecordSetSpecificationBuilder.CreateDefault())
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Fallout4RecordReaderService"/> class.
+    /// </summary>
+    /// <param name="gameMetadataService">The service used to discover Fallout 4 installation metadata.</param>
+    /// <param name="recordSetSpecificationBuilder">
+    /// The builder used to assemble mapped record collections into a record set.
+    /// </param>
+    public Fallout4RecordReaderService(
+        Fallout4GameMetadataService gameMetadataService,
+        IRecordSetSpecificationBuilder recordSetSpecificationBuilder)
     {
         GameMetadataService = gameMetadataService;
+        RecordSetBuilder = recordSetSpecificationBuilder;
     }
 
     /// <summary>
@@ -74,26 +106,28 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
         cancellationToken.ThrowIfCancellationRequested();
         var terminals = MapTerminals(plugin, terminalMod);
 
-        return new PluginRecordSetDTO
-        {
-            FormLists = formLists,
-            GameSettings = gameSettings,
-            Globals = globals,
-            Classes = classes,
-            Factions = factions,
-            MiscItems = miscItems,
-            Keywords = keywords,
-            ActorValueInformation = actorValueInformation,
-            NPCs = npcs,
-            MagicEffects = magicEffects,
-            Perks = perks,
-            Statics = statics,
-            Books = books,
-            Doors = doors,
-            Containers = containers,
-            ConstructibleObjects = constructibleObjects,
-            Terminals = terminals
-        };
+        return RecordSetBuilder.Build(
+            SupportedGame.Fallout4,
+            new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+            {
+                [RecordTypeCatalog.FormList.RecordID] = formLists,
+                [RecordTypeCatalog.GameSetting.RecordID] = gameSettings,
+                [RecordTypeCatalog.Global.RecordID] = globals,
+                [RecordTypeCatalog.Class.RecordID] = classes,
+                [RecordTypeCatalog.Faction.RecordID] = factions,
+                [RecordTypeCatalog.MiscItem.RecordID] = miscItems,
+                [RecordTypeCatalog.Keyword.RecordID] = keywords,
+                [RecordTypeCatalog.ActorValueInformation.RecordID] = actorValueInformation,
+                [RecordTypeCatalog.NPC.RecordID] = npcs,
+                [RecordTypeCatalog.MagicEffect.RecordID] = magicEffects,
+                [RecordTypeCatalog.Perk.RecordID] = perks,
+                [RecordTypeCatalog.Static.RecordID] = statics,
+                [RecordTypeCatalog.Book.RecordID] = books,
+                [RecordTypeCatalog.Door.RecordID] = doors,
+                [RecordTypeCatalog.Container.RecordID] = containers,
+                [RecordTypeCatalog.ConstructibleObject.RecordID] = constructibleObjects,
+                [RecordTypeCatalog.Terminal.RecordID] = terminals
+            });
     }
 
     public IReadOnlyList<FormListDTO> ReadFormLists(PluginDTO plugin)

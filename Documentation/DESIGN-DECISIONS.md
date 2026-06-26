@@ -238,7 +238,7 @@ Consequences:
 - Core now owns specification-driven `PluginRecordSetDTO` assembly.
 - Starfield reader output should remain equivalent, but the final DTO assignment now depends on complete Starfield
   reader metadata.
-- Fallout 4 and Skyrim still assemble record sets manually.
+- Starfield was converted first; a later accepted decision converted Fallout 4 and Skyrim to the same builder.
 - No database schema, persisted data shape, import result, or comparison UI behavior changes.
 
 Related files:
@@ -248,6 +248,48 @@ Related files:
 - `CreationsForge.Core/CoreModule.cs`
 - `CreationsForge.Starfield/StarfieldRecordReaderService.cs`
 - `CreationsForge.UnitTests/Services/RecordSetSpecificationBuilderTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-26 - Complete Spec-Driven Record-Set Assembly For Supported Adapters
+
+Status: Accepted
+
+Context: Starfield record reads already use `RecordSetSpecificationBuilder` for the final `PluginRecordSetDTO`
+assembly step, but Fallout 4 and Skyrim still manually assign mapped record-family lists to DTO collection properties.
+That left the three game adapters using different assembly paths even though their supported record families are now
+described by the specification catalog.
+
+Decision: Convert `Fallout4RecordReaderService.ReadPluginRecords` and `SkyrimRecordReaderService.ReadPluginRecords`
+to keep their existing Mutagen mapping calls and cancellation checkpoints, then hand the mapped record-family
+collections to `RecordSetSpecificationBuilder` by Bethesda record ID. Preserve the one-argument constructors used by
+manual fixtures through default builder overloads. Add catalog tests that pin Fallout 4 and Skyrim supported record
+families, including Fallout 4 `TERM` support and Skyrim's exclusion of `CNDF` and `TERM`.
+
+Rationale: Completing the assembly migration makes the specification catalog the single source for supported
+record-set destination collections across the current game adapters while avoiding any field-mapping rewrite. The
+builder now protects all three adapters from silent drift between game-support metadata and `PluginRecordSetDTO`
+assignment.
+
+Alternatives considered:
+
+- Leave Fallout 4 and Skyrim on manual record-set assembly until field mapping becomes declarative.
+- Convert Fallout 4 and Skyrim in separate tasks.
+- Remove direct constructor compatibility from manual validation fixtures.
+
+Consequences:
+
+- Starfield, Fallout 4, and Skyrim all use Core specification-driven record-set assembly.
+- Game-specific reader services still own Mutagen loading and Mutagen-to-DTO field mapping.
+- The catalog's game-support metadata now directly controls which mapped collections each adapter must supply.
+- No database schema, persisted data shape, import result, or comparison UI behavior changes.
+
+Related files:
+
+- `CreationsForge.Fallout4/Fallout4RecordReaderService.cs`
+- `CreationsForge.Skyrim/SkyrimRecordReaderService.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
 - `Documentation/ARCHITECTURE.md`
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
