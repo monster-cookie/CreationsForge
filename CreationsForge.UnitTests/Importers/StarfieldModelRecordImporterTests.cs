@@ -140,11 +140,11 @@ public class StarfieldModelRecordImporterTests
 
     private class TestModelImportService : IModelImportService
     {
-        public IHasModelsRecordDTO? Record { get; private set; }
+        public IHasModelsDTO? Record { get; private set; }
 
         public string? RecordType { get; private set; }
 
-        public void ReplaceRecordModels(IHasModelsRecordDTO record, string recordType)
+        public void ReplaceRecordModels(IHasModelsDTO record, string recordType)
         {
             Record = record;
             RecordType = recordType;

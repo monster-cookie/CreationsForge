@@ -123,15 +123,11 @@ GameSetting stores scalar values:
 ```csharp
 public class GameSettingDTO : RecordDTO
 {
-    public string? SettingType { get; set; }
+    public GameSettingDataType DataType { get; set; }
 
-    public string? Data { get; set; }
+    public string MutagenObjectType => GameSettingDataDTO.GetMutagenObjectType(DataType);
 
-    public double? NumericData { get; set; }
-
-    public int? IntegerData { get; set; }
-
-    public bool? BooleanData { get; set; }
+    public GameSettingDataDTO Data { get; set; } = new();
 }
 ```
 
@@ -157,7 +153,7 @@ It has:
 Global stores a numeric value and can support scripting adapters:
 
 ```csharp
-public class GlobalDTO : RecordDTO, IHasScriptingAdaptersRecordDTO
+public class GlobalDTO : RecordDTO, IHasScriptingAdaptersDTO
 {
     public double? Data { get; set; }
 
@@ -187,7 +183,7 @@ It has:
 AVIF stores several typed fields and supports scripting adapters:
 
 ```csharp
-public class ActorValueInformationDTO : RecordDTO, IHasScriptingAdaptersRecordDTO
+public class ActorValueInformationDTO : RecordDTO, IHasScriptingAdaptersDTO
 {
     public string? Name { get; set; }
 
@@ -330,11 +326,11 @@ Do not mirror the entire Mutagen object. The DTO should represent the subset Cre
 If the record has child data, implement the matching child interfaces:
 
 ```csharp
-IHasModelsRecordDTO
-IHasKeywordsRecordDTO
-IHasSoundsRecordDTO
-IHasRawRecordPayloadsRecordDTO
-IHasScriptingAdaptersRecordDTO
+IHasModelsDTO
+IKeywords
+ISounds
+IHasRawRecordPayloadsDTO
+IHasScriptingAdaptersDTO
 ```
 
 Example with child data:
@@ -344,11 +340,11 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class SomeRecordDTO : RecordDTO, IHasKeywordsRecordDTO, IHasScriptingAdaptersRecordDTO
+public class SomeRecordDTO : RecordDTO, IKeywords, IHasScriptingAdaptersDTO
 {
     public string? Name { get; set; }
 
-    public IList<RecordKeywordDTO> Keywords { get; set; } = new List<RecordKeywordDTO>();
+    public IList<KeywordMappingDTO> Keywords { get; set; } = new List<KeywordMappingDTO>();
 
     public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
 }
@@ -906,9 +902,9 @@ private RecordComparisonDTO CreateSomeRecordComparison(SupportedGame game, FormK
 For child records, also add the relevant child groups:
 
 ```csharp
-AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), RecordKeywordRepository.GetByFormKey(game, RecordTypeCatalog.SomeRecord.RecordID, formKey));
+AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.SomeRecord.RecordID, formKey));
 AddModelGroups(fields, records.Cast<RecordDTO>().ToList(), ModelRepository.GetByFormKey(game, RecordTypeCatalog.SomeRecord.RecordID, formKey));
-AddSoundGroups(fields, records.Cast<RecordDTO>().ToList(), RecordSoundRepository.GetByFormKey(game, RecordTypeCatalog.SomeRecord.RecordID, formKey));
+AddSoundGroups(fields, records.Cast<RecordDTO>().ToList(), SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.SomeRecord.RecordID, formKey));
 AddScriptingAdapterGroups(fields, records.Cast<RecordDTO>().ToList(), ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.SomeRecord.RecordID, formKey));
 ```
 

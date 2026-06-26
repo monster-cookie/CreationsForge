@@ -1,7 +1,11 @@
+using CreationsForge.Core.Enums;
+
 namespace CreationsForge.Core.DTOs.Results;
 
 public class GameImportProgressDTO
 {
+    public SupportedGame? Game { get; set; }
+
     public required string StatusText { get; set; }
 
     public string DetailText { get; set; } = string.Empty;

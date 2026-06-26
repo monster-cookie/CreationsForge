@@ -3,11 +3,11 @@ using CreationsForge.Core.DTOs.Records.Interfaces;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class MagicEffectDTO : RecordDTO, IHasScriptingAdaptersRecordDTO, IHasKeywordsRecordDTO, IHasSoundsRecordDTO
+public class MagicEffectDTO : RecordDTO, IHasScriptingAdaptersDTO, IKeywords, ISounds, IHasConditionsDTO
 {
-    public string? Name { get; set; }
+    public TranslatedStringDTO? Name { get; set; }
 
-    public string? Description { get; set; }
+    public TranslatedStringDTO? Description { get; set; }
 
     public required string Flags { get; set; }
 
@@ -15,9 +15,41 @@ public class MagicEffectDTO : RecordDTO, IHasScriptingAdaptersRecordDTO, IHasKey
 
     public string? TargetType { get; set; }
 
+    public string? CastingSoundLevel { get; set; }
+
+    public string? DualCastScale { get; set; }
+
+    public string? Unknown1 { get; set; }
+
+    public string? BaseCost { get; set; }
+
+    public string? MagicSkill { get; set; }
+
+    public FormKeyDTO? CastingLightFormKey { get; set; }
+
+    public FormKeyDTO? MenuDisplayObjectFormKey { get; set; }
+
+    public int? MinimumSkillLevel { get; set; }
+
+    public string? SkillUsageMultiplier { get; set; }
+
+    public string? SpellmakingCastingTime { get; set; }
+
+    public string? TaperWeight { get; set; }
+
+    public string? SecondActorValue { get; set; }
+
+    public string? SecondActorValueWeight { get; set; }
+
+    public int? SpellmakingArea { get; set; }
+
+    public FormKeyDTO? EnchantShaderFormKey { get; set; }
+
     public FormKeyDTO? ActorValue2FormKey { get; set; }
 
     public FormKeyDTO? ResistValueFormKey { get; set; }
+
+    public string? ResistValue { get; set; }
 
     public FormKeyDTO? PerkToApplyFormKey { get; set; }
 
@@ -39,9 +71,19 @@ public class MagicEffectDTO : RecordDTO, IHasScriptingAdaptersRecordDTO, IHasKey
 
     public string? Archetype { get; set; }
 
+    public string? ArchetypeActorValue { get; set; }
+
+    public FormKeyDTO? ArchetypeAssociationFormKey { get; set; }
+
+    public float? UnknownFloat1 { get; set; }
+
     public float? UnknownFloat3 { get; set; }
 
+    public float? UnknownFloat4 { get; set; }
+
     public int? UnknownInt2 { get; set; }
+
+    public long? UnknownInt3 { get; set; }
 
     public string? Unknown { get; set; }
 
@@ -49,9 +91,11 @@ public class MagicEffectDTO : RecordDTO, IHasScriptingAdaptersRecordDTO, IHasKey
 
     public string? DataTypeState { get; set; }
 
-    public IList<RecordKeywordDTO> Keywords { get; set; } = new List<RecordKeywordDTO>();
+    public IList<KeywordMappingDTO> Keywords { get; set; } = new List<KeywordMappingDTO>();
 
-    public IList<RecordSoundDTO> Sounds { get; set; } = new List<RecordSoundDTO>();
+    public IList<SoundMappingDTO> Sounds { get; set; } = new List<SoundMappingDTO>();
 
     public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
+
+    public IList<ConditionFormConditionDTO> Conditions { get; set; } = new List<ConditionFormConditionDTO>();
 }

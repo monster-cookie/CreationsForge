@@ -24,7 +24,8 @@ public class TerminalImporter : ITypedRecordImporter
 
     public string TableName => RecordTypeCatalog.Terminal.TableName;
 
-    public IReadOnlySet<SupportedGame> SupportedGames { get; } = new HashSet<SupportedGame> { SupportedGame.Starfield };
+    public IReadOnlySet<SupportedGame> SupportedGames { get; } =
+        new HashSet<SupportedGame> { SupportedGame.Starfield, SupportedGame.Fallout4 };
 
     public void Import(object recordDTO, RecordTypeImportResultDTO result, DateTime importedAtUTC)
     {

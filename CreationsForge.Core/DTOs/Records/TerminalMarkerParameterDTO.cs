@@ -17,11 +17,15 @@ public class TerminalMarkerParameterDTO
 
     public int ParameterIndex { get; set; }
 
+    public bool? Enabled { get; set; }
+
     public string? Offset { get; set; }
 
     public string? EntryTypes { get; set; }
 
     public string? ExitTypes { get; set; }
+
+    public string? Unknown { get; set; }
 
     public DateTime ImportedAtUTC { get; set; }
 }

@@ -1,9 +1,10 @@
 using CreationsForge.Core.DTOs.Plugins;
+using CreationsForge.Core.DTOs.Records.Interfaces;
 using CreationsForge.Core.Enums;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public abstract class RecordDTO
+public abstract class RecordDTO : IHasModKey, IHasFormKey, IHasEditorID, IHasLocalizedStringsRecordDTO
 {
     public required SupportedGame Game { get; set; }
 
@@ -17,5 +18,11 @@ public abstract class RecordDTO
 
     public required int MajorRecordFlags { get; set; }
 
+    public int? Version2 { get; set; }
+
+    public int? VersionControl { get; set; }
+
     public required DateTime ImportedAtUTC { get; set; }
+
+    public IList<LocalizedStringDTO> LocalizedStrings { get; set; } = new List<LocalizedStringDTO>();
 }

@@ -54,10 +54,10 @@ public class TerminalMarkerParameterRepository : ITerminalMarkerParameterReposit
                 """
                 INSERT OR REPLACE INTO TerminalMarkerParameters (
                     Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                    Parameter_Index, Offset, EntryTypes, ExitTypes, ImportedAtUTC)
+                    Parameter_Index, Enabled, Offset, EntryTypes, ExitTypes, Unknown, ImportedAtUTC)
                 VALUES (
                     @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                    @ParameterIndex, @Offset, @EntryTypes, @ExitTypes, @ImportedAtUTC);
+                    @ParameterIndex, @Enabled, @Offset, @EntryTypes, @ExitTypes, @Unknown, @ImportedAtUTC);
                 """,
                 new
                 {
@@ -70,9 +70,11 @@ public class TerminalMarkerParameterRepository : ITerminalMarkerParameterReposit
                     FormKeyModKeyFileName = parameter.FormKey.ModKey.FileName,
                     FormKeyId = parameter.FormKey.Id,
                     parameter.ParameterIndex,
+                    parameter.Enabled,
                     parameter.Offset,
                     parameter.EntryTypes,
                     parameter.ExitTypes,
+                    parameter.Unknown,
                     parameter.ImportedAtUTC
                 });
         }
@@ -119,9 +121,11 @@ public class TerminalMarkerParameterRepository : ITerminalMarkerParameterReposit
                     Id = (uint)row.FormKeyId
                 },
                 ParameterIndex = row.ParameterIndex,
+                Enabled = row.Enabled,
                 Offset = row.Offset,
                 EntryTypes = row.EntryTypes,
                 ExitTypes = row.ExitTypes,
+                Unknown = row.Unknown,
                 ImportedAtUTC = row.ImportedAtUTC
             })
             .ToList();
@@ -147,11 +151,15 @@ public class TerminalMarkerParameterRepository : ITerminalMarkerParameterReposit
 
         public int ParameterIndex { get; set; }
 
+        public bool? Enabled { get; set; }
+
         public string? Offset { get; set; }
 
         public string? EntryTypes { get; set; }
 
         public string? ExitTypes { get; set; }
+
+        public string? Unknown { get; set; }
 
         public DateTime ImportedAtUTC { get; set; }
     }

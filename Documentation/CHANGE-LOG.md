@@ -1,5 +1,18 @@
 ﻿# Change Log
 
+## Unreleased
+
+- Again with missing child data on NPCs.
+- Display UI for condition rules vs storing them as binary.
+- On multiple game imports the progress bar reliably shows which game it is currently processing.
+- Added data validation test harness and all current record types now match base game spriggit data.
+- Might finally have the fix for the random killed application. Nice side effect we can do larger batch inserts again.
+- Added Additional Major Record Types: Class (CLAS), Faction (FACT)
+
+### BREAKING CHANGES
+
+- Somewhere in the conversion to Creations Forge DB, Models, DTOs, etc. stopped being based on the spriggit/mutagen names and became based on generic gaming naming. Once we support editing this would have been a disaster. I've made the decision while the project is still small to reset to spriggit naming this also makes the data validation harness less of a nightmare.
+
 ## Version 1.1.9 - 2026-06-16
 
 - Moved the active game/plugin dropdowns in to an open plugin dialog.
@@ -33,7 +46,7 @@
 - Added missing child schemas for Perks (Ranks, Skills, etc.)
 - Added missing child schemas for MiscItems (Transforms, models, sounds).
 
-### BREAKING CHANGES
+### BREAKING CHANGES FOR v1.1.1
 
 - This is a completely new application and data model. You should uninstall/remove the old SFRecordComparisonEngine
   version.

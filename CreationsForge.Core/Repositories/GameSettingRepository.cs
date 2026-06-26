@@ -4,6 +4,7 @@ using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Models.Database;
 using CreationsForge.Core.Repositories.Interfaces;
+using CreationsForge.Core.Utilities;
 using NPoco;
 
 namespace CreationsForge.Core.Repositories;
@@ -12,11 +13,16 @@ public class GameSettingRepository : IGameSettingRepository, IRecordTreeReposito
 {
     private readonly IDatabase Database;
     private readonly IRecordInstanceRepository RecordInstanceRepository;
+    private readonly IRecordLocalizedStringRepository RecordLocalizedStringRepository;
 
-    public GameSettingRepository(IDatabase database, IRecordInstanceRepository recordInstanceRepository)
+    public GameSettingRepository(
+        IDatabase database,
+        IRecordInstanceRepository recordInstanceRepository,
+        IRecordLocalizedStringRepository recordLocalizedStringRepository)
     {
         Database = database;
         RecordInstanceRepository = recordInstanceRepository;
+        RecordLocalizedStringRepository = recordLocalizedStringRepository;
     }
 
     public string RecordType => RecordTypeCatalog.GameSetting.RecordID;
@@ -100,7 +106,7 @@ public class GameSettingRepository : IGameSettingRepository, IRecordTreeReposito
 
     public IReadOnlyList<GameSettingDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
     {
-        return Database.Fetch<GameSetting>(
+        var records = Database.Fetch<GameSetting>(
                 """
                 SELECT *
                 FROM GameSettings
@@ -121,6 +127,13 @@ public class GameSettingRepository : IGameSettingRepository, IRecordTreeReposito
                 })
             .Select(record => ToDTO(record, game))
             .ToList();
+        var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordType, formKey);
+        foreach (var record in records)
+        {
+            ApplyLocalizedStrings(record, localizedStrings.Where(localizedString => IsSameModKey(localizedString.ModKey, record.ModKey)).ToList());
+        }
+
+        return records;
     }
 
     public void Save(GameSettingDTO dto)
@@ -208,12 +221,68 @@ public class GameSettingRepository : IGameSettingRepository, IRecordTreeReposito
             FormVersion = record.FormVersion,
             MajorRecordFlags = record.MajorRecordFlags,
             ImportedAtUTC = record.ImportedAtUTC,
-            SettingType = record.SettingType,
-            Data = record.Data,
-            NumericData = record.NumericData,
-            IntegerData = record.IntegerData,
-            BooleanData = record.BooleanData.HasValue ? record.BooleanData.Value == 1 : null
+            Version2 = record.Version2,
+            VersionControl = record.VersionControl,
+            DataType = ParseDataType(record.DataType),
+            Data = ToDataDTO(record)
         };
+    }
+
+    private static GameSettingDataDTO ToDataDTO(GameSetting record)
+    {
+        var dataType = ParseDataType(record.DataType);
+        return new GameSettingDataDTO
+        {
+            DataType = dataType,
+            Boolean = dataType == GameSettingDataType.Boolean && record.BooleanData.HasValue ? record.BooleanData.Value == 1 : null,
+            Float = dataType == GameSettingDataType.Float ? record.FloatData : null,
+            Integer = dataType == GameSettingDataType.Integer ? record.IntegerData : null,
+            String = dataType == GameSettingDataType.String ? LocalizedStringDTOMapper.FromEnglish(record.Data) : null,
+            UnsignedInteger = dataType == GameSettingDataType.UnsignedInteger && record.UnsignedIntegerData.HasValue
+                ? checked((uint)record.UnsignedIntegerData.Value)
+                : null
+        };
+    }
+
+    private static GameSettingDataType ParseDataType(string dataType)
+    {
+        return Enum.TryParse<GameSettingDataType>(dataType, out var parsed)
+            ? parsed
+            : throw new InvalidOperationException($"Unsupported game setting data type '{dataType}'.");
+    }
+
+    private static void ApplyLocalizedStrings(GameSettingDTO record, IReadOnlyList<LocalizedStringDTO> localizedStrings)
+    {
+        record.LocalizedStrings = localizedStrings.ToList();
+        if (record.DataType == GameSettingDataType.String)
+        {
+            record.Data.String = GetTranslatedString(localizedStrings, "Data", record.Data.String);
+        }
+    }
+
+    private static TranslatedStringDTO? GetTranslatedString(IReadOnlyList<LocalizedStringDTO> localizedStrings, string sourceField, TranslatedStringDTO? fallback)
+    {
+        var strings = localizedStrings
+            .Where(localizedString => string.Equals(localizedString.SourceField, sourceField, StringComparison.OrdinalIgnoreCase))
+            .GroupBy(localizedString => localizedString.Language, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .Select(localizedString => new TranslatedStringValueDTO
+            {
+                Language = localizedString.Language,
+                String = localizedString.Value
+            })
+            .ToList();
+
+        return strings.Count == 0
+            ? fallback
+            : new TranslatedStringDTO { Strings = strings };
+    }
+
+    private static bool IsSameModKey(ModKeyDTO first, ModKeyDTO second)
+    {
+        return string.Equals(first.Name, second.Name, StringComparison.OrdinalIgnoreCase) &&
+               first.Type == second.Type &&
+               string.Equals(first.FileName, second.FileName, StringComparison.OrdinalIgnoreCase);
     }
 
     private static RecordTreeEntryDTO ToRecordTreeEntry(RecordTreeEntryRow record, SupportedGame game)

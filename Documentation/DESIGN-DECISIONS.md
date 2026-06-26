@@ -1,5 +1,164 @@
 # Design Decisions
 
+## 2026-06-25 - Keep Spriggit-Backed Rendered UI Validation With Data Validation
+
+Status: Accepted
+
+Context: The comparison UI needs validation that imported DTO readback can be rendered into the Avalonia comparison
+grid and still match representative Spriggit samples. `CreationsForge.PresentationTests` already supports headless
+Avalonia tests, but its responsibility is isolated presentation behavior rather than Spriggit/data-backed validation.
+The existing `CreationsForge.DataValidationTests` specs already identify the game, record type, sample, form key, and
+DTO/Spriggit field mappings needed for rendered validation.
+
+Decision: Keep Spriggit-backed rendered comparison UI validation in `CreationsForge.DataValidationTests`. Add optional
+comparison UI expectations to the existing validation specs so DTO validation and headless rendered UI validation can
+share the same sample identity and expected value source. `CreationsForge.PresentationTests` remains focused on
+headless Avalonia unit and presentation behavior tests.
+
+Rationale: The rendered comparison UI checks are a data-validation slice: they depend on imported validation database
+state, Spriggit extraction roots, and spec-driven expected values. Keeping them with DataValidationTests avoids a second
+Spriggit sample catalog and makes failures easier to interpret alongside DTO readback validation failures.
+
+Alternatives considered:
+
+- Keep Spriggit-backed UI validation in `CreationsForge.PresentationTests`.
+- Duplicate a separate UI validation spec catalog under `CreationsForge.PresentationTests`.
+- Validate only `IRecordComparisonService` output without rendering Avalonia controls.
+
+Consequences:
+
+- `CreationsForge.DataValidationTests` references the Avalonia presentation project and `Avalonia.Headless.XUnit`.
+- Specs can opt into rendered UI validation incrementally through explicit comparison row expectations.
+- Existing imported SQLite data must be current for rendered validation to be meaningful, just like DTO validation.
+- PresentationTests remains available for UI behavior that does not need Spriggit or imported validation data.
+
+Related files:
+
+- `CreationsForge.DataValidationTests/CreationsForge.DataValidationTests.csproj`
+- `CreationsForge.DataValidationTests/Validation/Specs/ValidationSpec.cs`
+- `CreationsForge.DataValidationTests/Validation/Specs/ValidationUiComparisonExpectation.cs`
+- `CreationsForge.DataValidationTests/Validation/UI/SpriggitComparisonUiSpecRunner.cs`
+- `CreationsForge.DataValidationTests/Validation/UI/SpriggitComparisonUiValidationTests.cs`
+
+## 2026-06-25 - Separate Numeric Storage Precision From Display Precision
+
+Status: Accepted
+
+Context: Imported numeric DTO values need to preserve the precision exposed by Mutagen and Spriggit, but some user-facing values such as NPC height and weight are coarse sliders where comparison display should be friendlier. Data validation also found single-precision float readback noise, such as a Starfield NPC face morph blend where Spriggit prints `0.1386505` and DTO readback prints `0.13865050673484802`.
+
+Decision: Keep imported and persisted numeric values exact by default. Add `NumericDisplayPrecisionAttribute` for DTO properties that should use reduced decimal precision when comparison builds display values and comparable state. Use targeted validation normalization for known float-backed source values by parsing them as single-precision floats and formatting with stable `G8` text.
+
+Rationale: Display precision is presentation metadata, not an import or storage rule. Keeping it opt-in avoids hiding meaningful numeric differences across unrelated fields. Float-backed validation normalization handles binary readback noise without rounding source evidence down to coarse UI precision.
+
+Alternatives considered:
+
+- Round all numeric comparison values to three decimals.
+- Store rounded values during import.
+- Add broad validation tolerance for all decimal values.
+
+Consequences:
+
+- Existing imported SQLite data remains valid because storage/readback values are unchanged.
+- Comparison rows for attributed fields may be marked identical when their displayed values match at the declared precision.
+- Validation specs must choose float-backed normalization only for fields known to be sourced from single-precision values.
+
+Related files:
+
+- `CreationsForge.Core/DTOs/Records/Metadata/NumericDisplayPrecisionAttribute.cs`
+- `CreationsForge.Core/DTOs/Records/NPCDTO.cs`
+- `CreationsForge.Core/DTOs/Records/NPCWeightDTO.cs`
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.DataValidationTests/Validation/Specs/ValidationSpecRunner.cs`
+- `CreationsForge.DataValidationTests/Validation/Specs/NPC/NPCValidationSpecs.cs`
+
+## 2026-06-19 - Persist Localized Record Text
+
+Status: Accepted
+
+Context: Mutagen can expose localized text values through translation-table-backed strings, but CreationsForge was
+collapsing imported string data to English scalar values. Manual Spriggit validation showed the same problem anywhere
+Spriggit preserves language-specific values: English-only DTOs can report false differences and would corrupt plugin
+text on future edit/export paths by writing English into translated fields.
+
+Decision: Add shared localized string persistence under `LocalizedStrings`, owned by `RecordInstances`. `RecordDTO`
+exposes localized strings as shared child data, imported records replace those rows through
+`IRecordLocalizedStringImportService`, and DTO fields that map directly to Mutagen translation-table-backed strings
+use `TranslatedStringDTO`. GameSetting import stores localized `Data` values when available while keeping the scalar
+`Data` DTO value because the field also carries setting-type semantics. The Settings screen stores the preferred
+record text language. Comparison resolves localized fields through the selected language, then English, then the DTO or
+scalar database fallback. The command bar does not expose a language selector.
+
+Rationale: Localized text is record-owned data and needs the same stale-row behavior as other shared child payloads.
+Keeping language selection in Settings avoids crowding the command bar and gives comparison a stable persisted display
+preference.
+
+Alternatives considered:
+
+- Continue storing only English scalar strings.
+- Add per-record-type translation tables.
+- Add a command-bar language dropdown.
+
+Consequences:
+
+- Plugins must be reimported after migration 005 so localized string rows are populated.
+- Comparison can display localized record text without direct Mutagen access from the UI.
+- Translated DTO fields preserve the Mutagen/Spriggit language-table shape instead of exposing English as the public
+  contract.
+- Additional localized fields can use the shared child table without adding new schema tables.
+
+Related files:
+
+- `CreationsForge.Migrations/Sql/005_Migrations005.sql`
+- `CreationsForge.Core/DTOs/Records/LocalizedStringDTO.cs`
+- `CreationsForge.Core/DTOs/Records/TranslatedStringDTO.cs`
+- `CreationsForge.Core/DTOs/Records/TranslatedStringValueDTO.cs`
+- `CreationsForge.Core/Repositories/RecordLocalizedStringRepository.cs`
+- `CreationsForge.Core/Services/RecordLocalizedStringImportService.cs`
+- `CreationsForge.Core/Utilities/LocalizedStringDTOMapper.cs`
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge/ViewModels/SettingsViewModel.cs`
+- `CreationsForge/Views/SettingsView.cs`
+
+## 2026-06-19 - Add Manual Spriggit DTO Validation Tests
+
+Status: Accepted
+
+Context: Creations Forge maps Bethesda records through Mutagen into project DTOs, repositories, and comparison
+surfaces. Existing unit and presentation tests cover focused behavior, but the project also needs a manual engineering
+tool that can compare representative Spriggit YAML extraction data against current DTO output across supported games
+and record types.
+
+Decision: Add `CreationsForge.DataValidationTests` as a manual xUnit/Shouldly test project rather than a console app.
+The project stores validation JSON under `CreationsForge.DataValidationTests/Configuration`, reads Spriggit extraction
+roots from environment variables with a read-only `.env` fallback, and compares selected samples against imported DTOs
+read back through repositories from the currently configured database.
+
+Rationale: Keeping the harness as a test project gives it Shouldly assertions, test filtering, and normal .NET test
+runner ergonomics while avoiding a second command-line app surface. Reusing the CLI import path validates Mutagen
+mapping, persistence, and repository readback without a parallel Bethesda parser.
+
+Alternatives considered:
+
+- Add a standalone console validation harness.
+- Add validation commands to `CreationsForge.Console`.
+- Store validation sample configuration under `Documentation`.
+
+Consequences:
+
+- Manual validation can fail independently of normal unit and presentation test runs.
+- Spriggit validation reads the configured local database; schema or import changes should be validated after a
+  manual CLI reset/import.
+- Sample and approved-difference configuration stays close to the validation code that consumes it.
+- Spriggit extraction files remain external local inputs and are not copied into the repository.
+- Avalonia comparison-row validation remains a separate validation slice.
+
+Related files:
+
+- `CreationsForge.DataValidationTests/CreationsForge.DataValidationTests.csproj`
+- `CreationsForge.DataValidationTests/Configuration/SpriggitValidationSamples.json`
+- `CreationsForge.DataValidationTests/Configuration/SpriggitApprovedDifferences.json`
+- `Documentation/Instructions/SpriggitManualValidation.md`
+
 ## 2026-06-12 - Harden Local Asset And Database Trust Boundaries
 
 Status: Accepted
@@ -290,7 +449,7 @@ Related files:
 - `AGENTS.md`
 - `CreationsForge.Fallout4/Fallout4RecordReaderService.cs`
 - `CreationsForge.Skyrim/SkyrimRecordReaderService.cs`
-- `CreationsForge.Core/Importers/MiscObjectImporter.cs`
+- `CreationsForge.Core/Importers/MiscItemImporter.cs`
 - `CreationsForge.Core/Importers/KeywordImporter.cs`
 - `CreationsForge.Core/Importers/ActorValueInformationImporter.cs`
 - `CreationsForge.Core/Importers/NPCImporter.cs`

@@ -17,6 +17,8 @@ public class ModelMaterialSwapDTO
 
     public string ModelGender { get; set; } = string.Empty;
 
+    public string? Name { get; set; }
+
     public required FormKeyDTO MaterialSwapFormKey { get; set; }
 
     public required int MaterialSwapIndex { get; set; }

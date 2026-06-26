@@ -55,11 +55,15 @@ Cross-game record types:
 12. NPCs (NPC_)
 13. Perks (PERK)
 14. Statics (STAT)
-15. Terminals (TERM)
+
+Additional Fallout 4 record types:
+
+1. Terminals (TERM)
 
 Additional Starfield record types:
 
 1. Condition Forms (CNDF)
+2. Terminals (TERM)
 
 ## Planned Roadmap
 
@@ -102,6 +106,7 @@ Run the console harness from the repository with:
 dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --game Starfield
 dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --game Fallout4
 dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --game Skyrim
+dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --reset-all
 ```
 
 Useful import options:

@@ -1,12 +1,22 @@
 using CreationsForge.Core.DTOs.Records.Interfaces;
+using CreationsForge.Core.DTOs.Records.Metadata;
 
 namespace CreationsForge.Core.DTOs.Records;
 
-public class ActorValueInformationDTO : RecordDTO, IHasScriptingAdaptersRecordDTO
+public class ActorValueInformationDTO : RecordDTO, IHasName, IHasTranslatedFields, IHasScriptingAdaptersDTO
 {
-    public string? Name { get; set; }
+    [LocalizedField("Name")]
+    public TranslatedStringDTO? Name { get; set; }
 
-    public string? Abbreviation { get; set; }
+    [LocalizedField("Abbreviation")]
+    public TranslatedStringDTO? Abbreviation { get; set; }
+
+    [LocalizedField("Description")]
+    public TranslatedStringDTO? Description { get; set; }
+
+    public string? CNAM { get; set; }
+
+    public ActorValueInformationSkillDTO? Skill { get; set; }
 
     public string? ContextNotes { get; set; }
 
@@ -21,4 +31,13 @@ public class ActorValueInformationDTO : RecordDTO, IHasScriptingAdaptersRecordDT
     public double? Max { get; set; }
 
     public IList<ScriptingAdapterDTO> ScriptingAdapters { get; set; } = new List<ScriptingAdapterDTO>();
+
+    public IList<ActorValueInformationPerkTreeEntryDTO> PerkTree { get; set; } = new List<ActorValueInformationPerkTreeEntryDTO>();
+
+    public IEnumerable<TranslatedFieldDTO> GetTranslatedFields()
+    {
+        yield return new TranslatedFieldDTO { SourceField = "Name", Value = Name };
+        yield return new TranslatedFieldDTO { SourceField = "Abbreviation", Value = Abbreviation };
+        yield return new TranslatedFieldDTO { SourceField = "Description", Value = Description };
+    }
 }

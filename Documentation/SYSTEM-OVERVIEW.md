@@ -17,11 +17,15 @@ selected game installation metadata, load-order plugins, source fingerprints, he
 declared plugin master references. Thin game plugin readers expose the shared Core import contract over those services.
 Plugin metadata import avoids typed record enumeration; record counts are read from header stats. Game-specific plugin
 extension importers persist audited scalar plugin header fields into extension tables. Starfield, Fallout 4, and
-Skyrim map the currently approved cross-game typed records: FormLists, GameSettings, Globals, MiscItems, Keywords,
-ActorValueInformation, NPCs, MagicEffects, Perks, Statics, Containers, and ConstructibleObjects. Starfield also maps
-ConditionForms, Books, Doors, and Terminals into typed detail rows. ConditionForms include structured condition rows
-and generic condition-data parameter rows, not raw condition payload rows. Imports currently create/update the selected
-`Games`, `Plugins`, `PluginMasterReferences`, game-specific plugin extension rows, and approved typed record rows.
+Skyrim map the currently approved cross-game typed records: FormLists, GameSettings, Globals, Classes, Factions,
+MiscItems, Keywords, ActorValueInformation, NPCs, MagicEffects, Perks, Statics, Containers, and
+ConstructibleObjects, Books, and Doors. Starfield also maps ConditionForms and Terminals into typed detail rows. CNDF,
+FACT, and COBJ condition lists use shared structured condition-rule rows and generic condition-data parameter rows,
+not raw condition payload rows. Factions can also persist shared component child rows for Starfield-only FACT component
+payloads. Imports
+currently create/update the selected
+`Games`, `Plugins`, `PluginMasterReferences`, game-specific plugin extension rows, approved typed record rows, and
+localized text rows for imported fields that expose Mutagen translation tables.
 
 ## Projects
 
@@ -44,6 +48,9 @@ and generic condition-data parameter rows, not raw condition payload rows. Impor
   reader facade, and module types.
 - `CreationsForge.Migrations` owns DbUp migration execution and embedded SQL scripts.
 - `CreationsForge.UnitTests` owns xUnit tests for parser, dispatch, and shared service behavior.
+- `CreationsForge.DataValidationTests` owns manual xUnit/Shouldly Spriggit data validation. It reads local Spriggit
+  extraction roots and compares selected YAML samples against imported DTOs read back through repositories from the
+  currently configured database.
 
 ## Runtime Flow
 
@@ -89,33 +96,42 @@ types.
 - Accepts `--reset-all` to delete the current database and force a full import for every supported game.
 - Rejects unsupported game values with a clear error and non-zero exit code.
 - Persists active game and app data paths in a JSON configuration file.
+- Persists the selected record text language in the Settings screen. Record comparison uses that language for
+  localized values when available and falls back to English values when needed.
 - Writes logs to console and the configured `Logs` directory.
 - Creates and migrates a SQLite database through DbUp.
 - Uses DbUp `SchemaVersions` as the migration-state source of truth.
 - Creates a multi-game application schema for `Games`, `Plugins`, `PluginMasterReferences`, `FormLists`,
-  `FormListItems`, `GameSettings`, `Globals`, `MiscItems`, `Keywords`, `ActorValueInformation`, `NPCs`,
+  `FormListItems`, `GameSettings`, `Globals`, `Classes`, `Factions`, `MiscItems`, `Keywords`,
+  `ActorValueInformation`, `NPCs`,
   `MagicEffects`, `Perks`, `Statics`, `ConditionForms`, `ConstructibleObjects`, `Books`, `Doors`, `Containers`,
-  `Terminals`, `TerminalMarkerParameters`, shared model data, shared keyword lists, shared sounds, shared raw payload
-  data, and shared scripting adapter data.
+  `Terminals`, `TerminalMarkerParameters`, shared model data, shared keyword lists, shared record components, shared
+  sounds, component reflection data, shared localized string data, script fragment data, and shared scripting adapter
+  data.
 - Preserves plugin source-fingerprint behavior for unchanged, changed, missing, failed, and unsupported plugin states.
 - Preserves record import accounting for the approved typed record types.
 - Provides an initial Avalonia UI with an Open Plugin dialog for active game/plugin selection, warning before long
   first/full imports, toolbar commands for active-game reimport and Reset & Import All, running all imports through
   Core services with a progress screen, and browsing imported typed records in a left-side tree with category counts,
   per-record
-  plugin usage counts, scalar comparison rows, and supported child comparison rows such as CNDF condition rows. Long
-  binary raw payload comparison values are summarized as `[UNPARSEABLE REFLECTION DATA]` and can be opened in a
-  hex-view dialog from the comparison grid.
+  plugin usage counts, scalar comparison rows, and supported child comparison rows such as CNDF condition rows,
+  script fragments, terminal children, and COBJ component/filter rows. Long reflection and raw payload values are
+  summarized as `[UNPARSEABLE REFLECTION DATA]` and can
+  be opened in a hex-view dialog from the comparison grid.
 - Provides an experimental asset preview pane in the Avalonia UI. Core resolves persisted model-path candidates through
   UI-neutral DTOs and services, while the presentation project owns Silk.NET-backed OpenGL rendering and external file
   launching.
+- Provides a manual Spriggit data validation project with project-local sample and approved-difference JSON
+  configuration. The validation project is not a CI gate and compares selected Spriggit samples against imported
+  repository DTOs from the currently configured database.
 
 ## Current Limitations
 
 - Game-specific reader services currently return selected game metadata, load-order plugin metadata, header-stat
   record counts, declared master references, and audited scalar game-specific plugin header fields.
-- Starfield, Fallout 4, and Skyrim share `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`,
-  `STAT`, `CONT`, and `COBJ` typed-record mapping. Starfield also maps `CNDF`, `BOOK`, `DOOR`, and `TERM`.
+- Starfield, Fallout 4, and Skyrim share `FLST`, `GMST`, `GLOB`, `CLAS`, `FACT`, `MISC`, `KYWD`, `AVIF`, `NPC_`,
+  `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, and `COBJ` typed-record mapping. Starfield also maps `CNDF` and
+  `TERM`.
   Deeper game-specific fields are follow-up work.
 - Shared plugin, plugin-master-reference, and typed-record repositories use NPoco database models for save behavior.
   Repository delete/query SQL remains parameterized where explicit SQL is used.
@@ -128,15 +144,16 @@ types.
 ## Shared Record Child Import
 
 Starfield, Fallout 4, and Skyrim import typed record parent rows for MiscItems (`MISC`), Keywords (`KYWD`),
-ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), Perks (`PERK`), Statics (`STAT`), and
-Containers (`CONT`). Starfield also imports ConditionForms (`CNDF`), Books (`BOOK`), Doors (`DOOR`), and Terminals
-(`TERM`) into typed detail tables. These records are mapped in their game adapter projects and persisted through Core
-DTOs, repositories, and
+ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), Perks (`PERK`), Statics (`STAT`), Classes
+(`CLAS`), Factions (`FACT`), Books (`BOOK`), Doors (`DOOR`), and Containers (`CONT`). Starfield also imports
+ConditionForms (`CNDF`) and Terminals (`TERM`) into typed detail tables. These records are mapped in their game adapter
+projects and persisted through Core DTOs, repositories, and
 typed importers. Scripting adapters are persisted for `GLOB`, `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `BOOK`,
-and `TERM` when the source record exposes virtual-machine adapter data; `FLST`, `GMST`, and `DOOR` remain flat
-records without scripting adapter persistence. Shared child rows for models, keywords, sounds, raw payloads,
-scripting adapters, and terminal marker parameters are dispatched by Core DTO capability interfaces and linked through
-the owning `RecordInstances` row or terminal parent row.
+`DOOR`, and `TERM` when the source record exposes virtual-machine adapter data; `FLST` and `GMST` remain flat records
+without scripting adapter persistence. Shared child rows for models, keywords, record components, sounds, raw
+payloads, scripting adapters, and terminal marker parameters are dispatched by Core DTO capability interfaces and
+linked through the owning `RecordInstances` row or terminal parent row. Localized string rows are also dispatched from
+Core DTO capability interfaces and linked through the owning `RecordInstances` row.
 
 The current `MISC` implementation persists the parent scalar row plus shared model, keyword, sound, and scripting
 adapter rows. `BOOK`, `DOOR`, `CONT`, and `TERM` now persist typed parent scalar rows in addition to their shared

@@ -22,7 +22,7 @@ public class PerkRankEffectDTO
 
     public string? Flags { get; set; }
 
-    public string? ButtonLabel { get; set; }
+    public TranslatedStringDTO? ButtonLabel { get; set; }
 
     public int ConditionCount { get; set; }
 
@@ -33,6 +33,16 @@ public class PerkRankEffectDTO
     public string? Modification { get; set; }
 
     public double? Value { get; set; }
+
+    public string? ActorValue { get; set; }
+
+    public string? Spell { get; set; }
+
+    public string? Quest { get; set; }
+
+    public int? Stage { get; set; }
+
+    public IList<PerkEffectConditionTabDTO> Conditions { get; set; } = new List<PerkEffectConditionTabDTO>();
 
     public DateTime ImportedAtUTC { get; set; }
 }

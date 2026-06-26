@@ -29,8 +29,8 @@ public class TypedRecordImporterSupportedGamesTests
 
     public static IEnumerable<object[]> ExpandedRecordImporters()
     {
-        yield return [new MiscObjectImporter(
-            Mock.Of<IMiscObjectRepository>(),
+        yield return [new MiscItemImporter(
+            Mock.Of<IMiscItemRepository>(),
             Mock.Of<IRecordChildImportService>())];
         yield return [new KeywordImporter(
             Mock.Of<IKeywordRepository>(),

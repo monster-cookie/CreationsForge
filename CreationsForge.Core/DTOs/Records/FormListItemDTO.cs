@@ -11,7 +11,7 @@ public class FormListItemDTO
 
     public required FormKeyDTO FormKey { get; set; }
 
-    public required FormKeyDTO ItemFormKey { get; set; }
+    public required FormKeyDTO Item { get; set; }
 
     public required int ItemIndex { get; set; }
 

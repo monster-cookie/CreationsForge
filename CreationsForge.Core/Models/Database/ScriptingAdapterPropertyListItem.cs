@@ -24,6 +24,7 @@ public class ScriptingAdapterPropertyListItem
         ScriptingAdapterName = dto.ScriptingAdapterName;
         PropertyIndex = dto.PropertyIndex;
         ListItemIndex = dto.ListItemIndex;
+        Name = dto.Name;
         MutagenObjectType = dto.MutagenObjectType;
         DataBool = dto.DataBool;
         DataInt = dto.DataInt;
@@ -61,6 +62,8 @@ public class ScriptingAdapterPropertyListItem
     [Column("Property_Index")] public int PropertyIndex { get; set; }
 
     [Column("ListItem_Index")] public int ListItemIndex { get; set; }
+
+    [Column("Name")] public string? Name { get; set; }
 
     [Column("MutagenObjectType")] public string MutagenObjectType { get; set; } = string.Empty;
 

@@ -154,6 +154,7 @@ public class ModelRepository : IModelRepository
             ModelSlot = model.ModelSlot,
             ModelGender = model.ModelGender,
             File = model.File,
+            Data = model.Data,
             TextureFileHashes = model.TextureFileHashes,
             LightLayer = model.LightLayer.HasValue ? (uint)model.LightLayer.Value : null,
             Flags = model.Flags,
@@ -187,6 +188,7 @@ public class ModelRepository : IModelRepository
             },
             ModelSlot = materialSwap.ModelSlot,
             ModelGender = materialSwap.ModelGender,
+            Name = materialSwap.Name,
             MaterialSwapFormKey = new FormKeyDTO
             {
                 ModKey = new ModKeyDTO

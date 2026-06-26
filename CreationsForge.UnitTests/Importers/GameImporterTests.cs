@@ -8,6 +8,8 @@ using CreationsForge.Core.Importers;
 using CreationsForge.Core.Importers.Interfaces;
 using CreationsForge.Core.Repositories.Interfaces;
 using CreationsForge.Core.Services.Interfaces;
+using Moq;
+using NPoco;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Importers;
@@ -31,6 +33,82 @@ public class GameImporterTests
         importer.Import();
 
         events.ShouldBe(["game", "asset-index", "base-plugin"]);
+    }
+
+    [Fact]
+    public void Import_OpensPluginTransactionAfterAssetIndexing()
+    {
+        var events = new List<string>();
+        var plugin = CreatePlugin(SupportedGame.Starfield);
+        var transaction = new Mock<ITransaction>();
+        transaction.Setup(current => current.Complete()).Callback(() => events.Add("transaction-complete"));
+        transaction.Setup(current => current.Dispose()).Callback(() => events.Add("transaction-dispose"));
+        var database = new Mock<IDatabase>();
+        database.Setup(current => current.GetTransaction()).Returns(transaction.Object).Callback(() => events.Add("transaction-begin"));
+        var importer = new GameImporter(
+            new TestGamePluginReader(plugin),
+            new TestGameRecordReader(plugin.Game),
+            new TestGameRepository(events),
+            new TestPluginRepository(events),
+            new TestPluginMasterReferenceRepository(),
+            [],
+            new TestRecordImportService(),
+            new TestAssetArchiveIndexService(events),
+            database.Object);
+
+        importer.Import();
+
+        events.ShouldBe(["game", "asset-index", "transaction-begin", "base-plugin", "transaction-complete", "transaction-dispose"]);
+    }
+
+    [Fact]
+    public void Import_WhenRecordImportFails_RollsBackPluginTransactionAndSavesFailedState()
+    {
+        var events = new List<string>();
+        var plugin = CreatePlugin(SupportedGame.Skyrim);
+        var transaction = new Mock<ITransaction>();
+        transaction.Setup(current => current.Dispose()).Callback(() => events.Add("transaction-dispose"));
+        var database = new Mock<IDatabase>();
+        database.Setup(current => current.GetTransaction()).Returns(transaction.Object).Callback(() => events.Add("transaction-begin"));
+        var pluginRepository = new TestPluginRepository(events);
+        var importer = new GameImporter(
+            new TestGamePluginReader(plugin),
+            new TestGameRecordReader(plugin.Game),
+            new TestGameRepository(events),
+            pluginRepository,
+            new TestPluginMasterReferenceRepository(),
+            [],
+            new ThrowingRecordImportService(),
+            new TestAssetArchiveIndexService(events),
+            database.Object);
+
+        var result = importer.Import();
+
+        result.PluginsFailed.ShouldBe(1);
+        pluginRepository.Saved.Last().ImportState.ShouldBe(PluginImportState.Failed);
+        pluginRepository.Saved.Last().ImportDetails.ShouldNotBeNull();
+        pluginRepository.Saved.Last().ImportDetails!.ShouldContain("Record import failed.");
+        events.ShouldContain("transaction-begin");
+        events.ShouldContain("transaction-dispose");
+    }
+
+    [Fact]
+    public void Import_ReportsGameForPluginProgress()
+    {
+        var progressReports = new List<GameImportProgressDTO>();
+        var plugin = CreatePlugin(SupportedGame.Fallout4);
+        var importer = CreateImporter(
+            plugin,
+            new TestGameRepository(),
+            new TestPluginRepository(),
+            new TestPluginMasterReferenceRepository(),
+            [],
+            new TestRecordImportService());
+
+        importer.Import(progress: new TestProgress<GameImportProgressDTO>(progressReports));
+
+        progressReports.ShouldNotBeEmpty();
+        progressReports.ShouldAllBe(progress => progress.Game == SupportedGame.Fallout4);
     }
 
     [Fact]
@@ -574,6 +652,35 @@ public class GameImporterTests
             ImportWasCalled = true;
             ImportedPlugin = plugin;
             return Result;
+        }
+    }
+
+    private sealed class ThrowingRecordImportService : IRecordImportService
+    {
+        public RecordImportResultDTO ImportPluginRecords(
+            PluginDTO plugin,
+            IGameRecordReader recordReader,
+            IProgress<GameImportProgressDTO>? progress = null,
+            int pluginIndex = 0,
+            int pluginCount = 0,
+            CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException("Record import failed.");
+        }
+    }
+
+    private sealed class TestProgress<T> : IProgress<T>
+    {
+        private readonly IList<T> Reports;
+
+        public TestProgress(IList<T> reports)
+        {
+            Reports = reports;
+        }
+
+        public void Report(T value)
+        {
+            Reports.Add(value);
         }
     }
 

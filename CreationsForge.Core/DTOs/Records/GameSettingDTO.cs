@@ -1,14 +1,21 @@
+using CreationsForge.Core.DTOs.Records.Interfaces;
+using CreationsForge.Core.Enums;
+
 namespace CreationsForge.Core.DTOs.Records;
 
-public class GameSettingDTO : RecordDTO
+public class GameSettingDTO : RecordDTO, IHasTranslatedFields
 {
-    public string? SettingType { get; set; }
+    public GameSettingDataType DataType { get; set; }
 
-    public string? Data { get; set; }
+    public string MutagenObjectType => GameSettingDataDTO.GetMutagenObjectType(DataType);
 
-    public double? NumericData { get; set; }
+    public GameSettingDataDTO Data { get; set; } = new();
 
-    public int? IntegerData { get; set; }
-
-    public bool? BooleanData { get; set; }
+    public IEnumerable<TranslatedFieldDTO> GetTranslatedFields()
+    {
+        if (DataType == GameSettingDataType.String)
+        {
+            yield return new TranslatedFieldDTO { SourceField = "Data", Value = Data.String };
+        }
+    }
 }

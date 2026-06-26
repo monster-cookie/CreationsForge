@@ -15,12 +15,12 @@ public class ModelImportServiceTests
         var modKey = CreateModKey("Test", "Test.esm");
         var formKey = new FormKeyDTO { ModKey = modKey, Id = 10 };
         var materialSwapFormKey = new FormKeyDTO { ModKey = CreateModKey("Materials", "Materials.esm"), Id = 20 };
-        var record = new MiscObjectDTO
+        var record = new MiscItemDTO
         {
             Game = SupportedGame.Starfield,
             ModKey = modKey,
             FormKey = formKey,
-            EditorID = "MiscObject",
+            EditorID = "MiscItem",
             FormVersion = 1,
             MajorRecordFlags = 0,
             ImportedAtUTC = new DateTime(2026, 6, 7, 12, 0, 0, DateTimeKind.Utc),

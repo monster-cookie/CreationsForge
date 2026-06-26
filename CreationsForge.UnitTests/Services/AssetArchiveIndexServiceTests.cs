@@ -47,6 +47,7 @@ public class AssetArchiveIndexServiceTests
             result.EntriesIndexed.ShouldBe(1);
             repository.Entries.Count.ShouldBe(1);
             progressReports.Count.ShouldBe(1);
+            progressReports[0].Game.ShouldBe(SupportedGame.Starfield);
             progressReports[0].StatusText.ShouldBe("Indexing Starfield asset archives");
             progressReports[0].DetailText.ShouldBe("Starfield - Textures03.ba2");
         }
@@ -83,6 +84,8 @@ public class AssetArchiveIndexServiceTests
             result.EntriesIndexed.ShouldBe(1200);
             repository.Entries.Count.ShouldBe(1200);
             repository.LastReplaceEntryCount.ShouldBe(1200);
+            repository.RefreshProgressCallbackWasProvided.ShouldBeTrue();
+            repository.RefreshProgressCounts.ShouldBe([1200]);
         }
         finally
         {
@@ -715,6 +718,24 @@ public class AssetArchiveIndexServiceTests
         {
             DeleteArchive(archiveFile.Game, archiveFile.ArchivePath);
             ArchiveFiles.Add(archiveFile);
+        }
+
+        public bool RefreshProgressCallbackWasProvided { get; private set; }
+
+        public List<long> RefreshProgressCounts { get; } = new();
+
+        public long RefreshArchiveIndex(AssetArchiveFileDTO archiveFile, IEnumerable<AssetArchiveEntryDTO> entries, Action<long>? insertedCountProgress = null)
+        {
+            RefreshProgressCallbackWasProvided = insertedCountProgress != null;
+            SaveArchiveFile(archiveFile);
+            var insertedCount = ReplaceArchiveEntries(archiveFile.Game, archiveFile.ArchivePath, entries);
+            if (insertedCountProgress != null)
+            {
+                RefreshProgressCounts.Add(insertedCount);
+                insertedCountProgress(insertedCount);
+            }
+
+            return insertedCount;
         }
 
         public long ReplaceArchiveEntries(SupportedGame game, string archivePath, IEnumerable<AssetArchiveEntryDTO> entries)

@@ -1,4 +1,6 @@
 using CreationsForge.Core.DTOs.Records;
+using CreationsForge.Core.Enums;
+using CreationsForge.Core.Utilities;
 using NPoco;
 
 namespace CreationsForge.Core.Models.Database;
@@ -24,11 +26,18 @@ public class GameSetting
         FormVersion = dto.FormVersion;
         MajorRecordFlags = dto.MajorRecordFlags;
         ImportedAtUTC = dto.ImportedAtUTC;
-        SettingType = dto.SettingType;
-        Data = dto.Data;
-        NumericData = dto.NumericData;
-        IntegerData = dto.IntegerData;
-        BooleanData = dto.BooleanData.HasValue ? dto.BooleanData.Value ? 1 : 0 : (int?)null;
+        Version2 = dto.Version2;
+        VersionControl = dto.VersionControl;
+        DataType = dto.DataType.ToString();
+        Data = dto.DataType == GameSettingDataType.String ? LocalizedStringDTOMapper.GetEnglishText(dto.Data.String) : null;
+        FloatData = dto.DataType == GameSettingDataType.Float ? dto.Data.Float : null;
+        IntegerData = dto.DataType == GameSettingDataType.Integer ? dto.Data.Integer : null;
+        UnsignedIntegerData = dto.DataType == GameSettingDataType.UnsignedInteger && dto.Data.UnsignedInteger.HasValue
+            ? dto.Data.UnsignedInteger.Value
+            : null;
+        BooleanData = dto.DataType == GameSettingDataType.Boolean && dto.Data.Boolean.HasValue
+            ? dto.Data.Boolean.Value ? 1 : 0
+            : null;
     }
 
     [Column("Game")] public string Game { get; set; } = string.Empty;
@@ -55,13 +64,19 @@ public class GameSetting
 
     [Column("ImportedAtUTC")] public DateTime ImportedAtUTC { get; set; }
 
-    [Column("SettingType")] public string? SettingType { get; set; }
+    [Column("Version2")] public int? Version2 { get; set; }
+
+    [Column("VersionControl")] public int? VersionControl { get; set; }
+
+    [Column("DataType")] public string DataType { get; set; } = string.Empty;
 
     [Column("Data")] public string? Data { get; set; }
 
-    [Column("NumericData")] public double? NumericData { get; set; }
+    [Column("FloatData")] public double? FloatData { get; set; }
 
     [Column("IntegerData")] public int? IntegerData { get; set; }
+
+    [Column("UnsignedIntegerData")] public long? UnsignedIntegerData { get; set; }
 
     [Column("BooleanData")] public int? BooleanData { get; set; }
 }

@@ -12,6 +12,8 @@ namespace CreationsForge.Starfield;
 
 public class StarfieldPluginReaderService : IStarfieldPluginReaderService
 {
+    private const string BasePluginFileName = "Starfield.esm";
+
     private readonly StarfieldGameMetadataService GameMetadataService;
 
     public StarfieldPluginReaderService(StarfieldGameMetadataService gameMetadataService)
@@ -28,13 +30,36 @@ public class StarfieldPluginReaderService : IStarfieldPluginReaderService
     public IReadOnlyList<PluginLoadOrderEntryDTO> ReadLoadOrder()
     {
         var environment = GameEnvironment.Typical.Starfield(StarfieldRelease.Starfield);
-        return environment.LoadOrder.ListedOrder
-            .Select((plugin, index) => new PluginLoadOrderEntryDTO
+        var entries = environment.LoadOrder.ListedOrder
+            .Select(plugin => new
+            {
+                ModKey = ModKeyDTOMapper.FromModKey(plugin.ModKey),
+                Enabled = plugin.Enabled
+            })
+            .ToList();
+
+        if (!entries.Any(entry => string.Equals(entry.ModKey.FileName, BasePluginFileName, StringComparison.OrdinalIgnoreCase)) &&
+            File.Exists(Path.Combine(GetDataFolderPath(), BasePluginFileName)))
+        {
+            entries.Insert(0, new
+            {
+                ModKey = new ModKeyDTO
+                {
+                    Name = Path.GetFileNameWithoutExtension(BasePluginFileName),
+                    Type = 0,
+                    FileName = BasePluginFileName
+                },
+                Enabled = true
+            });
+        }
+
+        return entries
+            .Select((entry, index) => new PluginLoadOrderEntryDTO
             {
                 Game = SupportedGame.Starfield,
-                ModKey = ModKeyDTOMapper.FromModKey(plugin.ModKey),
+                ModKey = entry.ModKey,
                 LoadOrderIndex = index,
-                Enabled = plugin.Enabled
+                Enabled = entry.Enabled
             })
             .ToList();
     }

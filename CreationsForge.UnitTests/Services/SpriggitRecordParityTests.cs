@@ -4,6 +4,7 @@ using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.DTOs.Records.Interfaces;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
+using CreationsForge.Core.Utilities;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Services;
@@ -41,7 +42,7 @@ public class SpriggitRecordParityTests
         yield return [SupportedGame.Fallout4, RecordTypeCatalog.Global.RecordID];
         yield return [SupportedGame.Fallout4, RecordTypeCatalog.Keyword.RecordID];
         yield return [SupportedGame.Fallout4, RecordTypeCatalog.MagicEffect.RecordID];
-        yield return [SupportedGame.Fallout4, RecordTypeCatalog.MiscObject.RecordID];
+        yield return [SupportedGame.Fallout4, RecordTypeCatalog.MiscItem.RecordID];
         yield return [SupportedGame.Fallout4, RecordTypeCatalog.NPC.RecordID];
         yield return [SupportedGame.Fallout4, RecordTypeCatalog.Perk.RecordID];
         yield return [SupportedGame.Fallout4, RecordTypeCatalog.Static.RecordID];
@@ -53,7 +54,7 @@ public class SpriggitRecordParityTests
         yield return [SupportedGame.Skyrim, RecordTypeCatalog.Global.RecordID];
         yield return [SupportedGame.Skyrim, RecordTypeCatalog.Keyword.RecordID];
         yield return [SupportedGame.Skyrim, RecordTypeCatalog.MagicEffect.RecordID];
-        yield return [SupportedGame.Skyrim, RecordTypeCatalog.MiscObject.RecordID];
+        yield return [SupportedGame.Skyrim, RecordTypeCatalog.MiscItem.RecordID];
         yield return [SupportedGame.Skyrim, RecordTypeCatalog.NPC.RecordID];
         yield return [SupportedGame.Skyrim, RecordTypeCatalog.Perk.RecordID];
         yield return [SupportedGame.Skyrim, RecordTypeCatalog.Static.RecordID];
@@ -68,7 +69,7 @@ public class SpriggitRecordParityTests
         yield return [SupportedGame.Starfield, RecordTypeCatalog.Global.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.Keyword.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.MagicEffect.RecordID];
-        yield return [SupportedGame.Starfield, RecordTypeCatalog.MiscObject.RecordID];
+        yield return [SupportedGame.Starfield, RecordTypeCatalog.MiscItem.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.NPC.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.Perk.RecordID];
         yield return [SupportedGame.Starfield, RecordTypeCatalog.Static.RecordID];
@@ -112,8 +113,8 @@ public class SpriggitRecordParityTests
     {
         if (sample.TryGetScalar("Model.File", out var modelFile))
         {
-            (record is IHasModelsRecordDTO).ShouldBeTrue($"Record '{record.EditorID}' should expose models.");
-            var modelRecord = (IHasModelsRecordDTO)record;
+            (record is IHasModelsDTO).ShouldBeTrue($"Record '{record.EditorID}' should expose models.");
+            var modelRecord = (IHasModelsDTO)record;
             var normalizedExpectedModelFile = NormalizeSpriggitModelFilePath(modelFile);
             modelRecord.Models.Any(model => string.Equals(NormalizeMutagenModelFilePath(model.File), normalizedExpectedModelFile, StringComparison.OrdinalIgnoreCase))
                 .ShouldBeTrue($"Record '{record.EditorID}' should contain model '{modelFile}'.");
@@ -122,8 +123,8 @@ public class SpriggitRecordParityTests
         var keywordCount = sample.GetListItemCount("Keywords");
         if (keywordCount > 0)
         {
-            (record is IHasKeywordsRecordDTO).ShouldBeTrue($"Record '{record.EditorID}' should expose keywords.");
-            var keywordRecord = (IHasKeywordsRecordDTO)record;
+            (record is IKeywords).ShouldBeTrue($"Record '{record.EditorID}' should expose keywords.");
+            var keywordRecord = (IKeywords)record;
             keywordRecord.Keywords.Count.ShouldBeGreaterThanOrEqualTo(keywordCount, $"Record '{record.EditorID}' should preserve Spriggit keywords.");
         }
 
@@ -132,8 +133,8 @@ public class SpriggitRecordParityTests
             .ToList();
         if (soundSlots.Count > 0)
         {
-            (record is IHasSoundsRecordDTO).ShouldBeTrue($"Record '{record.EditorID}' should expose sounds.");
-            var soundRecord = (IHasSoundsRecordDTO)record;
+            (record is ISounds).ShouldBeTrue($"Record '{record.EditorID}' should expose sounds.");
+            var soundRecord = (ISounds)record;
             foreach (var soundSlot in soundSlots)
             {
                 soundRecord.Sounds.Any(sound => string.Equals(sound.SoundSlot, soundSlot, StringComparison.OrdinalIgnoreCase))
@@ -141,16 +142,13 @@ public class SpriggitRecordParityTests
             }
         }
 
-        if ((sample.HasPath("Model.Data") ||
-             sample.HasPath("Components[].ANAM") ||
-             sample.HasPath("Components[].BNAM") ||
-             sample.HasPath("Components[].CNAM") ||
-             sample.HasPath("Components[].REFL")) &&
-            record is IHasRawRecordPayloadsRecordDTO)
+        if (sample.HasPath("Components[].REFL") &&
+            record is IHasRawRecordPayloadsDTO)
         {
-            var rawPayloadRecord = (IHasRawRecordPayloadsRecordDTO)record;
-            rawPayloadRecord.RawPayloads.Count.ShouldBeGreaterThan(0, $"Record '{record.EditorID}' should preserve raw payloads.");
+            var rawPayloadRecord = (IHasRawRecordPayloadsDTO)record;
+            rawPayloadRecord.RawPayloads.Count.ShouldBeGreaterThan(0, $"Record '{record.EditorID}' should preserve binary REFL raw payloads.");
         }
+
     }
 
     private static void AssertRecordSpecificFields(string recordType, RecordDTO record, SpriggitYamlDocument sample)
@@ -245,7 +243,7 @@ public class SpriggitRecordParityTests
 
                 if (sample.HasPath("Conditions"))
                 {
-                    constructibleObjectRecord.RawPayloads.Count.ShouldBeGreaterThan(0, $"ConstructibleObject '{record.EditorID}' should preserve Conditions as raw payloads.");
+                    constructibleObjectRecord.Conditions.Count.ShouldBeGreaterThan(0, $"ConstructibleObject '{record.EditorID}' should preserve structured Conditions.");
                 }
 
                 break;
@@ -269,7 +267,7 @@ public class SpriggitRecordParityTests
                 if (sample.TryGetScalar("AddToList", out var addToListValue) &&
                     !string.Equals(addToListValue?.Trim(), "Null", StringComparison.OrdinalIgnoreCase))
                 {
-                    formListRecord.AddToListFormKey.ShouldNotBeNull($"FormList '{record.EditorID}' should preserve AddToList.");
+                    formListRecord.AddToList.ShouldNotBeNull($"FormList '{record.EditorID}' should preserve AddToList.");
                 }
 
                 break;
@@ -349,28 +347,37 @@ public class SpriggitRecordParityTests
         sample.TryGetScalar("Data", out var expectedData).ShouldBeTrue($"GameSetting sample '{sample.FilePath}' should contain Data.");
         expectedData.ShouldNotBeNullOrWhiteSpace();
 
-        if (bool.TryParse(expectedData, out var expectedBoolean))
+        if (record.DataType == GameSettingDataType.Boolean && bool.TryParse(expectedData, out var expectedBoolean))
         {
-            record.BooleanData.ShouldBe(expectedBoolean, $"GameSetting '{record.EditorID}' should preserve boolean Data.");
+            record.Data.Boolean.ShouldBe(expectedBoolean, $"GameSetting '{record.EditorID}' should preserve boolean Data.");
             return;
         }
 
-        if (int.TryParse(expectedData, NumberStyles.Integer, CultureInfo.InvariantCulture, out var expectedInteger))
+        if (record.DataType == GameSettingDataType.Integer &&
+            int.TryParse(expectedData, NumberStyles.Integer, CultureInfo.InvariantCulture, out var expectedInteger))
         {
-            record.IntegerData.ShouldBe(expectedInteger, $"GameSetting '{record.EditorID}' should preserve integer Data.");
+            record.Data.Integer.ShouldBe(expectedInteger, $"GameSetting '{record.EditorID}' should preserve integer Data.");
             return;
         }
 
-        if (double.TryParse(expectedData, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var expectedNumeric))
+        if (record.DataType == GameSettingDataType.UnsignedInteger &&
+            uint.TryParse(expectedData, NumberStyles.Integer, CultureInfo.InvariantCulture, out var expectedUnsignedInteger))
         {
-            record.NumericData.ShouldNotBeNull($"GameSetting '{record.EditorID}' should preserve numeric Data.");
-            Math.Abs(record.NumericData!.Value - expectedNumeric).ShouldBeLessThanOrEqualTo(
+            record.Data.UnsignedInteger.ShouldBe(expectedUnsignedInteger, $"GameSetting '{record.EditorID}' should preserve unsigned integer Data.");
+            return;
+        }
+
+        if (record.DataType == GameSettingDataType.Float &&
+            double.TryParse(expectedData, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var expectedNumeric))
+        {
+            record.Data.Float.ShouldNotBeNull($"GameSetting '{record.EditorID}' should preserve numeric Data.");
+            Math.Abs(record.Data.Float!.Value - expectedNumeric).ShouldBeLessThanOrEqualTo(
                 0.0001,
                 $"GameSetting '{record.EditorID}' should preserve numeric Data.");
             return;
         }
 
-        record.Data.ShouldBe(expectedData, $"GameSetting '{record.EditorID}' should preserve string Data.");
+        LocalizedStringDTOMapper.GetEnglishText(record.Data.String).ShouldBe(expectedData, $"GameSetting '{record.EditorID}' should preserve string Data.");
     }
 
     private static void AssertLocalizedStringProperty(RecordDTO record, SpriggitYamlDocument sample, string propertyName, string path)

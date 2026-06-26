@@ -14,7 +14,7 @@ public class RawRecordPayloadImportService : IRawRecordPayloadImportService
         RawRecordPayloadRepository = rawRecordPayloadRepository;
     }
 
-    public void ReplaceRawRecordPayloads(IHasRawRecordPayloadsRecordDTO record, string recordType)
+    public void ReplaceRawRecordPayloads(IHasRawRecordPayloadsDTO record, string recordType)
     {
         if (record is not RecordDTO recordDTO)
         {

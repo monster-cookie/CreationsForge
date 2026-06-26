@@ -33,6 +33,25 @@ public class GameImportWorkflowServiceTests
     }
 
     [Fact]
+    public async Task ImportAsync_ReportsProgressWithGame()
+    {
+        var progressReports = new List<GameImportProgressDTO>();
+        var configurationStore = new TestApplicationConfigurationStore();
+        var schemaInitializer = new TestDatabaseSchemaInitializer();
+        var importer = new TestGameImporter(SupportedGame.Skyrim);
+        var dispatcher = new GameImportDispatcher([importer]);
+        var selectionService = new GameSelectionService(configurationStore);
+        var workflowService = new GameImportWorkflowService(schemaInitializer, dispatcher, selectionService);
+
+        await workflowService.ImportAsync(
+            SupportedGame.Skyrim,
+            progress: new TestProgress<GameImportProgressDTO>(progressReports));
+
+        progressReports.ShouldNotBeEmpty();
+        progressReports.ShouldAllBe(progress => progress.Game == SupportedGame.Skyrim);
+    }
+
+    [Fact]
     public async Task ImportAsync_WithCanceledToken_ThrowsBeforeImport()
     {
         var configurationStore = new TestApplicationConfigurationStore();
@@ -75,6 +94,21 @@ public class GameImportWorkflowServiceTests
         {
             InitializeWasCalled = true;
             return MigrationsApplied;
+        }
+    }
+
+    private sealed class TestProgress<T> : IProgress<T>
+    {
+        private readonly IList<T> Reports;
+
+        public TestProgress(IList<T> reports)
+        {
+            Reports = reports;
+        }
+
+        public void Report(T value)
+        {
+            Reports.Add(value);
         }
     }
 

@@ -82,7 +82,7 @@ public class ConstructibleObjectImporterTests
             MajorRecordFlags = 0,
             ImportedAtUTC = default,
             Version2 = 1,
-            Description = "Recipe",
+            Description = Text("Recipe"),
             CreatedObjectFormKey = CreateFormKey(plugin.ModKey, 200),
             WorkbenchKeywordFormKey = CreateFormKey(plugin.ModKey, 300),
             CreatedObjectCount = 1,
@@ -132,6 +132,21 @@ public class ConstructibleObjectImporterTests
         {
             ModKey = modKey,
             Id = id
+        };
+    }
+
+    private static TranslatedStringDTO Text(string value)
+    {
+        return new TranslatedStringDTO
+        {
+            Strings =
+            [
+                new TranslatedStringValueDTO
+                {
+                    Language = "English",
+                    String = value
+                }
+            ]
         };
     }
 

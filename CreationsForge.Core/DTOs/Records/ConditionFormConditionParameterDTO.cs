@@ -17,6 +17,8 @@ public class ConditionFormConditionParameterDTO
 
     public int ConditionIndex { get; set; }
 
+    public string ConditionSlot { get; set; } = "Conditions";
+
     public string ParameterName { get; set; } = string.Empty;
 
     public string? ParameterValue { get; set; }

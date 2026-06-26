@@ -6,6 +6,8 @@ using CreationsForge.Core.Repositories.Interfaces;
 using CreationsForge.Core.Services.Interfaces;
 using NPoco;
 using Serilog;
+using System.Data.Common;
+using System.Data.SQLite;
 
 namespace CreationsForge.Core.Importers;
 
@@ -55,7 +57,6 @@ public class GameImporter : IGameImporter
 
         cancellationToken.ThrowIfCancellationRequested();
         Logger.Information("Starting import for {Game}", Game);
-        using var transaction = Database?.GetTransaction();
         var gameDTO = PluginReader.ReadGame();
         gameDTO.ImportedAtUTC = DateTime.UtcNow;
         GameRepository.Save(gameDTO);
@@ -71,6 +72,7 @@ public class GameImporter : IGameImporter
         result.PluginsDiscovered = loadOrderEntries.Count;
         progress?.Report(new GameImportProgressDTO
         {
+            Game = Game,
             StatusText = $"Discovered {loadOrderEntries.Count} {Game} plugins.",
             DetailText = forceFullReimport ? "Running full import." : "Unchanged plugins will be skipped.",
             ProgressValue = 0,
@@ -78,39 +80,36 @@ public class GameImporter : IGameImporter
             PluginCount = loadOrderEntries.Count,
             IsIndeterminate = loadOrderEntries.Count == 0
         });
-        var pluginsForLaterPhases = new List<PluginDTO>();
-
         for (var index = 0; index < loadOrderEntries.Count; index++)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var loadOrderEntry = loadOrderEntries[index];
             ReportPluginProgress(progress, loadOrderEntry, index + 1, loadOrderEntries.Count, "Checking plugin", forceFullReimport ? "Full import requested." : "Checking source fingerprint.");
-            var plugin = ImportPlugin(loadOrderEntry, result, forceFullReimport);
-            if (plugin is not null)
+            try
             {
-                pluginsForLaterPhases.Add(plugin);
+                using var transaction = Database?.GetTransaction();
+                var plugin = ImportPlugin(loadOrderEntry, result, forceFullReimport);
+                if (plugin is not null)
+                {
+                    ReportPluginProgress(progress, plugin, index + 1, loadOrderEntries.Count, "Importing master references", "Reading declared plugin masters.");
+                    ImportMasterReferences(plugin, result, cancellationToken);
+                    ReportPluginProgress(progress, plugin, index + 1, loadOrderEntries.Count, "Importing records", "Reading approved shared record types.");
+                    var recordImportResult = RecordImportService.ImportPluginRecords(plugin, RecordReader, progress, index + 1, loadOrderEntries.Count, cancellationToken);
+                    result.Records.Add(recordImportResult);
+                    SavePartialImportStateWhenNeeded(plugin, recordImportResult);
+                    result.PluginsImported++;
+                }
+
+                transaction?.Complete();
+            }
+            catch (Exception exception) when (IsPluginImportFailureException(exception))
+            {
+                result.PluginsFailed++;
+                Logger.Error(exception, "Unable to complete import for plugin {ModKey} for {Game}", loadOrderEntry.ModKey.FileName, Game);
+                SaveFailedPluginImportState(loadOrderEntry, exception);
             }
         }
 
-        for (var index = 0; index < pluginsForLaterPhases.Count; index++)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var plugin = pluginsForLaterPhases[index];
-            ReportPluginProgress(progress, plugin, index + 1, pluginsForLaterPhases.Count, "Importing master references", "Reading declared plugin masters.");
-            ImportMasterReferences(plugin, result, cancellationToken);
-        }
-
-        for (var index = 0; index < pluginsForLaterPhases.Count; index++)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var plugin = pluginsForLaterPhases[index];
-            ReportPluginProgress(progress, plugin, index + 1, pluginsForLaterPhases.Count, "Importing records", "Reading approved shared record types.");
-            var recordImportResult = RecordImportService.ImportPluginRecords(plugin, RecordReader, progress, index + 1, pluginsForLaterPhases.Count, cancellationToken);
-            result.Records.Add(recordImportResult);
-            SavePartialImportStateWhenNeeded(plugin, recordImportResult);
-        }
-
-        transaction?.Complete();
         Logger.Information(
             "Completed import for {Game}; discovered: {PluginsDiscovered}, imported: {PluginsImported}, unchanged: {PluginsUnchanged}, changed: {PluginsChanged}, missing: {PluginsMissing}, failed: {PluginsFailed}, unsupported: {PluginsUnsupported}, invalidated: {PluginsInvalidated}, masters: {MasterReferencesImported}, record headers: {RecordHeadersImported}, record details: {RecordDetailRowsImported}, record failures: {RecordFailures}, unsupported record types: {UnsupportedRecordTypes}, form lists: {FormListsImported}, form list items: {FormListItemsImported}, game settings: {GameSettingsImported}, globals: {GlobalsImported}",
             Game,
@@ -135,6 +134,11 @@ public class GameImporter : IGameImporter
         return result;
     }
 
+    private static bool IsPluginImportFailureException(Exception exception)
+    {
+        return exception is not OperationCanceledException;
+    }
+
     private static void ReportPluginProgress(
         IProgress<GameImportProgressDTO>? progress,
         PluginLoadOrderEntryDTO loadOrderEntry,
@@ -145,6 +149,7 @@ public class GameImporter : IGameImporter
     {
         progress?.Report(new GameImportProgressDTO
         {
+            Game = loadOrderEntry.Game,
             StatusText = $"{statusPrefix}: {loadOrderEntry.ModKey.FileName}",
             DetailText = detailText,
             ProgressValue = pluginIndex,
@@ -166,6 +171,7 @@ public class GameImporter : IGameImporter
     {
         progress?.Report(new GameImportProgressDTO
         {
+            Game = plugin.Game,
             StatusText = $"{statusPrefix}: {plugin.ModKey.FileName}",
             DetailText = detailText,
             ProgressValue = pluginIndex,
@@ -268,7 +274,6 @@ public class GameImporter : IGameImporter
                 pluginExtensionImporter.Import(plugin);
             }
 
-            result.PluginsImported++;
             return plugin;
         }
         catch (Exception ex)
@@ -328,6 +333,40 @@ public class GameImporter : IGameImporter
             plugin.ModKey.FileName,
             Game,
             recordImportResult.RecordsFailed);
+    }
+
+    private void SaveFailedPluginImportState(PluginLoadOrderEntryDTO loadOrderEntry, Exception exception)
+    {
+        try
+        {
+            var existingPlugin = PluginRepository.GetByModKey(Game, loadOrderEntry.ModKey);
+            var sourceInfo = PluginReader.ReadSourceInfo(loadOrderEntry.ModKey);
+            PluginRepository.Save(CreatePluginState(
+                loadOrderEntry,
+                existingPlugin,
+                sourceInfo,
+                PluginImportState.Failed,
+                "Plugin import failed.",
+                CreateImportFailureDetails(exception)));
+        }
+        catch (Exception saveException) when (saveException is SQLiteException || saveException is DbException)
+        {
+            Logger.Error(
+                saveException,
+                "Unable to persist failed import state for plugin {ModKey} for {Game} after import failure",
+                loadOrderEntry.ModKey.FileName,
+                Game);
+        }
+    }
+
+    private static string CreateImportFailureDetails(Exception exception)
+    {
+        if (exception is SQLiteException || exception is DbException)
+        {
+            return $"Database import failure: {exception}";
+        }
+
+        return exception.ToString();
     }
 
     private PluginDTO CreatePluginState(

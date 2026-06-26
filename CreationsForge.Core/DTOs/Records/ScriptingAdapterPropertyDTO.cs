@@ -38,4 +38,9 @@ public class ScriptingAdapterPropertyDTO
     public required DateTime ImportedAtUTC { get; set; }
 
     public IList<ScriptingAdapterPropertyListItemDTO> ListItems { get; set; } = new List<ScriptingAdapterPropertyListItemDTO>();
+
+    /// <summary>
+    /// Gets or sets struct-list entries owned by this VMAD script property.
+    /// </summary>
+    public IList<ScriptingAdapterPropertyStructDTO> Structs { get; set; } = new List<ScriptingAdapterPropertyStructDTO>();
 }

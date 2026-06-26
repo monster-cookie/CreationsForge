@@ -1,14 +1,17 @@
+using CreationsForge.Core.DTOs.Games;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.DTOs.Records.Interfaces;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
+using CreationsForge.Core.Models.Configuration;
 using CreationsForge.Core.Repositories.Interfaces;
 using CreationsForge.Core.Services;
 using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Fallout4;
 using CreationsForge.Skyrim;
 using CreationsForge.Starfield;
+using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.PresentationTests.Headless;
 
@@ -136,7 +139,7 @@ public class SpriggitComparisonHeadlessFixture
         {
             "GMST" => recordSet.GameSettings,
             "GLOB" => recordSet.Globals,
-            "MISC" => recordSet.MiscObjects,
+            "MISC" => recordSet.MiscItems,
             "COBJ" => recordSet.ConstructibleObjects,
             "PERK" => recordSet.Perks,
             _ => throw new InvalidOperationException($"Unsupported headless comparison record type '{recordType}'.")
@@ -228,7 +231,11 @@ public class SpriggitComparisonHeadlessFixture
             repository,
             repository,
             repository,
-            repository);
+            repository,
+            repository,
+            repository,
+            repository,
+            new HeadlessGameSelectionService());
     }
 
     public sealed record ComparisonSample(
@@ -243,7 +250,9 @@ public class SpriggitComparisonHeadlessFixture
         IFormListRepository,
         IGameSettingRepository,
         IGlobalRepository,
-        IMiscObjectRepository,
+        IClassRepository,
+        IFactionRepository,
+        IMiscItemRepository,
         IKeywordRepository,
         IActorValueInformationRepository,
         INPCRepository,
@@ -257,15 +266,20 @@ public class SpriggitComparisonHeadlessFixture
         IConditionFormRepository,
         ITerminalRepository,
         IModelRepository,
-        IRecordKeywordRepository,
-        IRecordSoundRepository,
+        IKeywordMappingRepository,
+        IRecordComponentRepository,
+        ISoundMappingRepository,
         IScriptingAdapterRepository,
-        IRawRecordPayloadRepository
+        IRawRecordPayloadRepository,
+        IReflectionRepository,
+        IRecordLocalizedStringRepository
     {
         private readonly IReadOnlyList<FormListDTO> formLists = [];
         private readonly IReadOnlyList<GameSettingDTO> gameSettings = [];
         private readonly IReadOnlyList<GlobalDTO> globals = [];
-        private readonly IReadOnlyList<MiscObjectDTO> miscObjects = [];
+        private readonly IReadOnlyList<ClassDTO> classes = [];
+        private readonly IReadOnlyList<FactionDTO> factions = [];
+        private readonly IReadOnlyList<MiscItemDTO> miscItems = [];
         private readonly IReadOnlyList<KeywordDTO> keywords = [];
         private readonly IReadOnlyList<ActorValueInformationDTO> actorValueInformation = [];
         private readonly IReadOnlyList<NPCDTO> npcs = [];
@@ -279,10 +293,13 @@ public class SpriggitComparisonHeadlessFixture
         private readonly IReadOnlyList<ConditionFormDTO> conditionForms = [];
         private readonly IReadOnlyList<TerminalDTO> terminals = [];
         private readonly IReadOnlyList<ModelDTO> models = [];
-        private readonly IReadOnlyList<RecordKeywordDTO> recordKeywords = [];
-        private readonly IReadOnlyList<RecordSoundDTO> recordSounds = [];
+        private readonly IReadOnlyList<KeywordMappingDTO> keywordMappings = [];
+        private readonly IReadOnlyList<RecordComponentDTO> recordComponents = [];
+        private readonly IReadOnlyList<SoundMappingDTO> soundMappings = [];
         private readonly IReadOnlyList<ScriptingAdapterDTO> scriptingAdapters = [];
         private readonly IReadOnlyList<RawRecordPayloadDTO> rawPayloads = [];
+        private readonly IReadOnlyList<ReflectionDTO> reflections = [];
+        private readonly IReadOnlyList<LocalizedStringDTO> localizedStrings = [];
 
         public InMemoryComparisonRepository(RecordDTO record, string recordType)
         {
@@ -294,8 +311,14 @@ public class SpriggitComparisonHeadlessFixture
                 case "GLOB":
                     globals = [RequireRecord<GlobalDTO>(record, recordType)];
                     break;
+                case "CLAS":
+                    classes = [RequireRecord<ClassDTO>(record, recordType)];
+                    break;
+                case "FACT":
+                    factions = [RequireRecord<FactionDTO>(record, recordType)];
+                    break;
                 case "MISC":
-                    miscObjects = [RequireRecord<MiscObjectDTO>(record, recordType)];
+                    miscItems = [RequireRecord<MiscItemDTO>(record, recordType)];
                     break;
                 case "COBJ":
                     constructibleObjects = [RequireRecord<ConstructibleObjectDTO>(record, recordType)];
@@ -308,29 +331,44 @@ public class SpriggitComparisonHeadlessFixture
                     break;
             }
 
-            if (record is IHasModelsRecordDTO modelRecord)
+            if (record is IHasModelsDTO modelRecord)
             {
                 models = modelRecord.Models.ToList();
             }
 
-            if (record is IHasKeywordsRecordDTO keywordRecord)
+            if (record is IKeywords keywordRecord)
             {
-                recordKeywords = keywordRecord.Keywords.ToList();
+                keywordMappings = keywordRecord.Keywords.ToList();
             }
 
-            if (record is IHasSoundsRecordDTO soundRecord)
+            if (record is IHasComponentsDTO componentRecord)
             {
-                recordSounds = soundRecord.Sounds.ToList();
+                recordComponents = componentRecord.Components.ToList();
             }
 
-            if (record is IHasScriptingAdaptersRecordDTO scriptingAdapterRecord)
+            if (record is ISounds soundRecord)
+            {
+                soundMappings = soundRecord.Sounds.ToList();
+            }
+
+            if (record is IHasScriptingAdaptersDTO scriptingAdapterRecord)
             {
                 scriptingAdapters = scriptingAdapterRecord.ScriptingAdapters.ToList();
             }
 
-            if (record is IHasRawRecordPayloadsRecordDTO rawPayloadRecord)
+            if (record is IHasRawRecordPayloadsDTO rawPayloadRecord)
             {
                 rawPayloads = rawPayloadRecord.RawPayloads.ToList();
+            }
+
+            if (record is IHasReflectionDTO reflectionRecord)
+            {
+                reflections = reflectionRecord.Reflections.ToList();
+            }
+
+            if (record is IHasLocalizedStringsRecordDTO localizedStringRecord)
+            {
+                localizedStrings = localizedStringRecord.LocalizedStrings.ToList();
             }
         }
 
@@ -361,9 +399,19 @@ public class SpriggitComparisonHeadlessFixture
             return globals;
         }
 
-        IReadOnlyList<MiscObjectDTO> IMiscObjectRepository.GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        IReadOnlyList<ClassDTO> IClassRepository.GetByFormKey(SupportedGame game, FormKeyDTO formKey)
         {
-            return miscObjects;
+            return classes;
+        }
+
+        IReadOnlyList<FactionDTO> IFactionRepository.GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        {
+            return factions;
+        }
+
+        IReadOnlyList<MiscItemDTO> IMiscItemRepository.GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        {
+            return miscItems;
         }
 
         IReadOnlyList<KeywordDTO> IKeywordRepository.GetByFormKey(SupportedGame game, FormKeyDTO formKey)
@@ -431,14 +479,19 @@ public class SpriggitComparisonHeadlessFixture
             return models;
         }
 
-        IReadOnlyList<RecordKeywordDTO> IRecordKeywordRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+        IReadOnlyList<KeywordMappingDTO> IKeywordMappingRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
         {
-            return recordKeywords;
+            return keywordMappings;
         }
 
-        IReadOnlyList<RecordSoundDTO> IRecordSoundRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+        IReadOnlyList<RecordComponentDTO> IRecordComponentRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
         {
-            return recordSounds;
+            return recordComponents;
+        }
+
+        IReadOnlyList<SoundMappingDTO> ISoundMappingRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+        {
+            return soundMappings;
         }
 
         IReadOnlyList<ScriptingAdapterDTO> IScriptingAdapterRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
@@ -451,6 +504,16 @@ public class SpriggitComparisonHeadlessFixture
             return rawPayloads;
         }
 
+        IReadOnlyList<ReflectionDTO> IReflectionRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+        {
+            return reflections;
+        }
+
+        IReadOnlyList<LocalizedStringDTO> IRecordLocalizedStringRepository.GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+        {
+            return localizedStrings;
+        }
+
         public void Save(FormListDTO dto)
         { }
 
@@ -460,7 +523,13 @@ public class SpriggitComparisonHeadlessFixture
         public void Save(GlobalDTO dto)
         { }
 
-        public void Save(MiscObjectDTO dto)
+        public void Save(ClassDTO dto)
+        { }
+
+        public void Save(FactionDTO dto)
+        { }
+
+        public void Save(MiscItemDTO dto)
         { }
 
         public void Save(KeywordDTO dto)
@@ -502,16 +571,28 @@ public class SpriggitComparisonHeadlessFixture
         public void Save(ModelDTO dto)
         { }
 
-        public void Save(RecordKeywordDTO dto)
+        public void Save(KeywordMappingDTO dto)
         { }
 
-        public void Save(RecordSoundDTO dto)
+        public void Save(RecordComponentDTO dto)
+        { }
+
+        public void ReplaceRecordComponents(IHasComponentsDTO record, string recordType)
+        { }
+
+        public void Save(SoundMappingDTO dto)
         { }
 
         public void Save(ScriptingAdapterDTO dto)
         { }
 
         public void Save(RawRecordPayloadDTO dto)
+        { }
+
+        public void Save(ReflectionDTO dto)
+        { }
+
+        public void Save(LocalizedStringDTO dto)
         { }
 
         public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)
@@ -530,5 +611,51 @@ public class SpriggitComparisonHeadlessFixture
 
             throw new InvalidOperationException($"Record type '{recordType}' resolved to unexpected DTO '{record.GetType().Name}'.");
         }
+    }
+
+    private sealed class HeadlessGameSelectionService : IGameSelectionService
+    {
+        public IReadOnlyList<SupportedGameDTO> GetSupportedGames()
+        {
+            return [];
+        }
+
+        public SupportedGame? GetActiveGame()
+        {
+            return null;
+        }
+
+        public ApplicationThemeMode GetThemeMode()
+        {
+            return ApplicationThemeMode.Dark;
+        }
+
+        public ApplicationThemeFamily GetThemeFamily()
+        {
+            return ApplicationThemeFamily.Semi;
+        }
+
+        public Language GetRecordTextLanguage()
+        {
+            return Language.English;
+        }
+
+        public void SetActiveGame(SupportedGame game)
+        { }
+
+        public void SetThemeMode(ApplicationThemeMode themeMode)
+        { }
+
+        public void SetThemeFamily(ApplicationThemeFamily themeFamily)
+        { }
+
+        public void SetActiveGameAndThemeMode(SupportedGame game, ApplicationThemeMode themeMode)
+        { }
+
+        public void SetActiveGameAndTheme(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode)
+        { }
+
+        public void SetTheme(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode)
+        { }
     }
 }

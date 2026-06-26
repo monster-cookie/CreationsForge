@@ -49,6 +49,16 @@ adapter projects rather than persisted game metadata paths.
 
 `CreationsForge.UnitTests` tests non-database logic only.
 
+`CreationsForge.DataValidationTests` is a manual validation test project. It references Bootstrap and Core so it can
+resolve existing repositories and compare imported DTO readback against selected Spriggit YAML samples. It may also
+reference the Avalonia presentation project for Spriggit-backed rendered comparison validation, where the validation
+subject is imported data flowing through the production comparison UI rather than isolated presentation behavior. Its
+JSON configuration lives inside the test project under `Configuration`. It does not own production services or database
+schema.
+
+`CreationsForge.PresentationTests` owns headless Avalonia unit and presentation behavior checks that do not require
+Spriggit extraction data or imported validation database state.
+
 ## Dependency Direction
 
 - CreationsForge depends on Bootstrap and Core.
@@ -87,8 +97,9 @@ order, evaluates source fingerprints and plugin import state, persists all curre
 rows, removes stale master-reference rows after a successful master-reference refresh, and delegates typed record
 import to `RecordImportService` last. Import dispatch, plugin loops, master-reference loops, and record-detail loops
 accept cancellation and report Core `GameImportProgressDTO` snapshots so UI and CLI callers can observe long-running
-work without depending on UI binding primitives. The importer wraps the database write workflow in one NPoco
-transaction so large imports do not pay per-row SQLite autocommit cost.
+work without depending on UI binding primitives. The importer saves the selected game row before archive indexing,
+then scopes plugin metadata, extension rows, master references, typed records, and stale cleanup to one short NPoco
+transaction per plugin.
 
 The game plugin readers are thin Core-contract facades over game-specific plugin reader services. The services ask
 their game-specific metadata services for installed game metadata before returning the selected `GameDTO`. They expose
@@ -103,16 +114,19 @@ masters to shared `PluginMasterReferenceDTO` rows.
 types from a bundled `PluginRecordSetDTO`, creates per-record-type results, resolves registered typed detail importers
 by `SupportedGame` and record type ID, tracks unsupported typed detail importers, and logs per-record failures without
 aborting the full plugin import. The current cross-game shared record types are FormLists (`FLST`), GameSettings
-(`GMST`), Globals (`GLOB`), MiscItems (`MISC`), Keywords (`KYWD`), ActorValueInformation (`AVIF`), NPCs (`NPC_`),
-MagicEffects (`MGEF`), Perks (`PERK`), Statics (`STAT`), Containers (`CONT`), and ConstructibleObjects (`COBJ`).
+(`GMST`), Globals (`GLOB`), Classes (`CLAS`), Factions (`FACT`), MiscItems (`MISC`), Keywords (`KYWD`),
+ActorValueInformation (`AVIF`), NPCs (`NPC_`), MagicEffects (`MGEF`), Perks (`PERK`), Statics (`STAT`),
+Books (`BOOK`), Doors (`DOOR`), Containers (`CONT`), and ConstructibleObjects (`COBJ`).
 Starfield, Fallout 4, and Skyrim map approved shared records inside their game adapters after loading the Mutagen
-plugin once for the Core-facing record-read call. Starfield also imports ConditionForms (`CNDF`), Books (`BOOK`),
-Doors (`DOOR`), and Terminals (`TERM`) through the same typed-record pipeline with type-specific detail tables and
-comparison fields. Starfield ConditionForms include structured condition rows and generic condition-data parameter
-rows, not raw condition payload rows, because Mutagen exposes the CNDF condition list as typed condition objects.
+plugin once for the Core-facing record-read call. Starfield also imports ConditionForms (`CNDF`), and Starfield plus
+Fallout 4 import Terminals (`TERM`) through the same typed-record pipeline with type-specific detail tables and
+comparison fields. CNDF, FACT, COBJ, and PERK condition lists use shared condition-rule rows and generic condition-data
+parameter rows, not raw condition payload rows, when Mutagen exposes the condition list as typed condition objects.
 All typed record importers save the record's parent row before dispatching shared child import by DTO capability.
-Records that expose models, keywords, sounds, or scripting adapters persist those child rows through the common
-`RecordInstances` identity instead of game-specific child-table paths.
+Records that expose models, keywords, condition rules, record components, sounds, or scripting adapters persist those
+child rows through the common `RecordInstances` identity instead of game-specific child-table paths. Starfield FACT
+components use the shared record-component child path; Fallout 4 and Skyrim FACT records currently have no component
+payload to map.
 
 Starfield plugin metadata, master-reference, and record reads use a Starfield-only construction helper. The helper
 prefers the full Mutagen environment load order's mod objects with the Starfield environment data folder from
@@ -166,21 +180,35 @@ It reads all persisted overrides for a selected origin FormKey from shared repos
 with plugin columns, field rows, and display values. The presentation project renders those DTOs with an Avalonia
 `TreeDataGrid` and does not query repositories, database tables, or Mutagen directly. The active plugin record browser
 renders record-type groups as expander sections with flat `TreeDataGrid` controls for record rows. The comparison
-slice covers common record header fields plus scalar persisted fields for `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`,
-`AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, and `CONT`. GameSetting comparison displays the generic `Data` row instead of
-duplicating the Mutagen-derived typed data helper fields. MISC, NPC_, and MGEF comparison includes shared keyword rows.
-MISC and MGEF comparison includes shared sound rows. MISC comparison also includes persisted model rows and scripting
-adapter rows as hierarchical child rows in the comparison `TreeDataGrid`. PERK comparison includes rank rows, nested
-rank-effect rows, background skill rows, and shared scripting adapter rows. STAT comparison includes scalar fields,
-shared keyword rows, shared model rows, and raw payload rows. BOOK comparison includes scalar fields plus shared
-models, keywords, sounds, scripting adapters, and raw payload rows. DOOR comparison includes scalar fields plus shared
-models, keywords, sounds, and raw payload rows. CONT comparison includes scalar fields, item rows, shared keyword rows,
-shared model rows, shared sound rows, and raw payload rows. TERM comparison includes scalar fields, shared models,
-keywords, scripting adapters, raw payload rows, and terminal marker parameter child rows. CNDF comparison includes
-structured condition rows and condition-data parameter rows. Raw payload values are
+slice covers common record header fields plus scalar persisted fields for `FLST`, `GMST`, `GLOB`, `CLAS`, `FACT`,
+`MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, and `CONT`. Global comparison displays `MutagenObjectType`,
+named `MajorFlags`, and `Data` when those values are persisted. GameSetting comparison displays the generic
+`Data` row instead of duplicating the Mutagen-derived typed data helper fields. MISC, NPC_, and MGEF comparison
+includes shared keyword rows.
+MISC and MGEF comparison includes shared sound rows. MISC comparison also includes persisted model rows, component
+display indices, destructible data and stages, and scripting adapter rows as hierarchical child rows in the comparison
+`TreeDataGrid`. NPC_ comparison includes persisted actor configuration, template, appearance, head part, package,
+property, perk, inventory, face morph, face dial, morph blend, tint, and player-skill rows. AVIF comparison includes
+Skyrim layout rows, perk-tree rows, optional perk references, and
+connection-line target indices. PERK comparison includes root effect rows, rank rows, nested rank-effect rows, rank
+activity rows, progression evaluator rows, condition-tab rows, background skill rows, shared condition rows, shared
+sound rows, shared scripting adapter rows, and script fragment rows. STAT comparison includes scalar fields, shared
+keyword rows, shared model rows, navmesh geometry, and first-class reflection rows for component `REFL` data.
+BOOK comparison includes scalar fields plus shared models, keywords, sounds, scripting adapters, and first-class
+reflection rows. DOOR comparison includes scalar fields, direct animation component fields, shared models, keywords,
+sounds, scripting adapters, and first-class reflection rows. CONT comparison includes scalar fields, direct animation
+component fields, item rows, shared keyword rows, shared model rows, shared sound rows, scripting adapters, and
+first-class reflection rows. TERM comparison includes scalar fields, direct animation component fields, shared models,
+keywords, scripting adapters, script fragments, first-class reflection rows, forced locations, marker parameters, body
+texts, condition rows, and menu items.
+CNDF, FACT, and COBJ
+comparison includes structured condition rows and condition-data parameter rows. COBJ comparison also includes
+the scalar `CreatedObjectCount` field. Reflection and raw payload values are
 compared by their retained full value but are summarized in the grid as `[UNPARSEABLE REFLECTION DATA]`; the
 presentation layer opens the full value in a hex-view dialog when the user selects the summarized value. MGEF DATA
 fields follow Mutagen/Spriggit's flattened record shape and display as flat comparison rows.
+GameSetting comparison resolves localized `Data` through persisted localized string rows using the Settings-selected
+record text language, then falls back to English and finally the scalar `Data` value.
 Core assigns comparison value states for neutral, identical, conflicting, and displayed winning-override values; the
 presentation layer maps those states to the green, red, and yellow comparison colors and shows the legend in the status
 area.
@@ -226,7 +254,8 @@ tasks.
 NPoco is used for application database access. Shared plugin, plugin-master-reference, and typed-record repositories
 use NPoco database models for save behavior. Explicit runtime SQL uses named parameterized queries and named parameter
 objects, not positional NPoco placeholders. Database-backed repositories, importers, and workflow services are
-registered per Autofac lifetime scope so they share the same scoped `IDatabase` and import transaction.
+registered per Autofac lifetime scope so they share the same scoped `IDatabase`. Game imports use short transaction
+boundaries: one archive-index transaction per refreshed archive and one plugin transaction per imported plugin.
 
 Typed record repositories upsert a shared `RecordInstances` row before saving type-specific detail rows.
 `RecordInstances` is the common persisted parent identity for imported record overrides and lets shared child tables
@@ -280,19 +309,25 @@ Scripting adapter persistence is shared in Core through `IScriptingAdapterImport
 repositories. `IRecordChildImportService` invokes scripting adapter persistence for any imported `RecordDTO` that
 implements the scripting-adapter capability interface. Game adapters populate scripting adapter DTOs for record types
 that expose virtual-machine adapters.
-The `MISC` slice currently persists parent scalar fields, keyword rows, model rows, sounds, and scripts. The `BOOK`
-slice persists parent scalar fields, keyword rows, model rows, sounds, scripts, and raw payloads. The `DOOR` slice
-persists parent scalar fields, keyword rows, model rows, sounds, and raw payloads. The `CONT` slice persists parent
-scalar fields, item rows, keyword rows, model rows, sounds, and raw payloads. The `CNDF` slice persists parent scalar
-fields, condition rows, and generic condition-data parameter rows. The `COBJ` slice persists parent scalar fields,
-recipe component rows, Fallout 4 category rows, Starfield recipe-filter rows, scripts when present, and raw payloads
-for conditions and partially understood count/list data. The `TERM` slice persists parent scalar fields, keyword
-rows, model rows, scripts, raw payloads, and marker parameter rows. The old single-game app's deeper
-MiscObject child-detail tables are still a separate follow-up.
+The `MISC` slice currently persists parent scalar fields, keyword rows, model rows, sounds, scripts, FO4/Skyrim
+components with display indices, Starfield resources, and destructible data/stages when Mutagen exposes them. The
+`PERK` slice persists parent scalar fields, root effects, ranks, rank effects, effect condition tabs,
+background skills, shared condition rows, sounds, scripts, and script fragments. The `BOOK` slice persists parent
+scalar fields, keyword rows, model rows, sounds, scripts, and first-class reflection rows for component `REFL` data.
+The `DOOR` slice persists parent scalar fields including direct animation component fields, keyword rows, model rows,
+sounds, scripts, and first-class reflection rows. The `CONT` slice persists parent scalar fields including direct
+animation component fields, item rows, keyword rows, model rows, sounds, scripts, and first-class reflection rows. The
+`CNDF` slice persists parent
+scalar fields, shared condition-rule rows, and generic condition-data parameter rows. The `COBJ` slice persists parent
+scalar
+fields, recipe component rows, Fallout 4 category rows, Starfield recipe-filter rows, shared condition-rule rows,
+scripts when present, and scalar `CreatedObjectCount`. The `TERM` slice persists parent scalar fields including direct
+animation component fields, keyword rows, model rows, scripts, script fragments, first-class reflection rows, forced
+locations, marker parameters, body texts, condition rows, and menu items.
 Scripting adapters are persisted against the shared `RecordInstances` parent using record type IDs such as `GLOB`,
-`MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, and `PERK`.
+`MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `BOOK`, `DOOR`, and `TERM`.
 
-Keyword-list persistence is shared in Core through `IRecordKeywordImportService` and `RecordKeywords`.
+Keyword-list persistence is shared in Core through `IKeywordMappingImportService` and `KeywordMappings`.
 `IRecordChildImportService` invokes keyword persistence for any imported `RecordDTO` that implements the keyword-list
 capability interface. Magic Effect DATA fields are persisted directly on `MagicEffects` because Mutagen/Spriggit
 expose them as flattened MGEF properties.
@@ -304,24 +339,40 @@ persistence for any imported `RecordDTO` that implements the model capability in
 direct-model slices are `MISC`, `STAT`, `BOOK`, `DOOR`, `CONT`, and `TERM`, each using `ModelSlot = Model` and an
 empty `ModelGender`.
 
-Raw payload persistence is shared in Core through `IRawRecordPayloadImportService` and `RawRecordPayloads`.
-`IRecordChildImportService` invokes raw payload persistence for any imported `RecordDTO` that implements the raw
-payload capability interface. The current populated slices are `STAT`, `CONT`, `BOOK`, `DOOR`, `TERM`, and `COBJ`:
-Starfield, Fallout 4, and Skyrim preserve opaque `Model.Data` payloads where present, and COBJ preserves condition
-payloads because the current schema does not model the full Mutagen condition tree. Starfield also preserves shared
-base-form component payload bytes when present.
-CNDF condition rules are modeled as structured condition and parameter rows, so `ConditionFormDTO` does not expose the
-raw payload capability.
-Starfield `CONT` import stores shared Bethesda base-form component payloads under internal
-`BaseFormComponents.*` slots while preserving the source Mutagen/Spriggit `Components.*` path in
-`RawRecordPayloads.SourcePath`. Ordinary keyword rows discovered through nested component-shaped objects remain
-`RecordKeywords`; they are not treated as base-form component payload rows. Comparison DTOs keep the full payload value
-as detail data while exposing a summarized display label for the UI hex viewer.
+Script fragments are persisted in Core through `IScriptFragmentRepository` alongside scripting adapters. Game adapters
+populate script fragment DTOs from VMAD data for supported `PERK` and `TERM` records that expose script fragments, and
+the scripting-adapter import path persists them only for DTOs that implement the script-fragment capability interface.
 
-Sound persistence is shared in Core through `IRecordSoundImportService` and `RecordSounds`. `IRecordChildImportService`
-invokes sound persistence for any imported `RecordDTO` that implements the sound capability interface. `MISC` maps
-named scalar sounds such as crafting, pickup, putdown, and dropdown sounds when present, while `MGEF` maps indexed
-typed sound entries such as OnHit, Release, and Charge into the same table shape when present.
+Readable Bethesda component fields are typed on the consuming records when their meaning varies by record. Starfield
+`DOOR`, `CONT`, and `TERM` animation graph component values are stored as direct parent columns. COBJ
+created-object counts are stored as the scalar `CreatedObjectCount` parent field. NPC template/appearance leftovers
+plus static navmesh geometry are typed columns on their owning parent tables.
+
+Reflection persistence is shared in Core through `IReflectionImportService` and the `Reflection` table.
+`IRecordChildImportService` invokes reflection persistence for imported DTOs that implement the reflection capability
+interface. Starfield component `REFL` data for supported `STAT`, `BOOK`, `DOOR`, `CONT`, and `TERM` records is stored
+as first-class reflection rows with component index, component type, source path, and payload value. Raw payload
+persistence remains available through `IRawRecordPayloadImportService` and `RawRecordPayloads` only for opaque
+binary-like payloads without a first-class model. Model `Data` is stored on `Models`, sounds are stored on
+`SoundMappings`, condition rules are modeled as structured condition and parameter rows, and reflected readable data is
+stored in typed parent or child tables. Ordinary keyword rows discovered through nested component-shaped objects remain
+`KeywordMappings`; they are not treated as payload rows.
+Comparison DTOs keep the full reflection or raw payload value as detail data while exposing a summarized display label
+for the UI hex viewer.
+
+Sound persistence is shared in Core through `ISoundMappingImportService` and `SoundMappings`.
+`IRecordChildImportService` invokes sound persistence for any imported `RecordDTO` that implements the sound
+capability interface. `MISC` maps
+named scalar sounds such as crafting, pickup, putdown, and dropdown sounds when present, `PERK` maps its exposed sound
+list, and `MGEF` maps indexed typed sound entries such as OnHit, Release, and Charge into the same table shape when
+present.
+
+Localized string persistence is shared in Core through `IRecordLocalizedStringImportService` and `LocalizedStrings`.
+`RecordDTO` exposes localized strings as a shared child collection, and `IRecordChildImportService` replaces those
+rows for imported records. DTO fields that map to Mutagen translation-table-backed strings use `TranslatedStringDTO`
+so import and future editing preserve the per-language table shape. GameSetting `Data` still uses its scalar DTO value
+with localized child rows because the field also carries setting-type semantics. The Settings screen owns the
+persisted record text language selection; the command bar does not expose a language dropdown.
 
 Starfield `MiscItem`, `Static`, `Book`, `Door`, `Container`, and `Terminal` expose a direct `Model : IModelGetter`
 shape and currently map that direct model to `ModelSlot = Model`. `Terminal.MarkerModel` is a separate

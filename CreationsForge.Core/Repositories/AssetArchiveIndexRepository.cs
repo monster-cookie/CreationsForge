@@ -7,7 +7,7 @@ namespace CreationsForge.Core.Repositories;
 
 public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
 {
-    private const int InsertBatchSize = 100;
+    private const int InsertBatchSize = 500;
     private readonly IDatabase Database;
 
     public AssetArchiveIndexRepository(IDatabase database)
@@ -138,7 +138,24 @@ public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
             });
     }
 
+    public long RefreshArchiveIndex(AssetArchiveFileDTO archiveFile, IEnumerable<AssetArchiveEntryDTO> entries, Action<long>? insertedCountProgress = null)
+    {
+        using var transaction = Database.GetTransaction();
+        SaveArchiveFile(archiveFile);
+        var insertedCount = ReplaceArchiveEntriesCore(archiveFile.Game, archiveFile.ArchivePath, entries, insertedCountProgress);
+        transaction.Complete();
+        return insertedCount;
+    }
+
     public long ReplaceArchiveEntries(SupportedGame game, string archivePath, IEnumerable<AssetArchiveEntryDTO> entries)
+    {
+        using var transaction = Database.GetTransaction();
+        var insertedCount = ReplaceArchiveEntriesCore(game, archivePath, entries, null);
+        transaction.Complete();
+        return insertedCount;
+    }
+
+    private long ReplaceArchiveEntriesCore(SupportedGame game, string archivePath, IEnumerable<AssetArchiveEntryDTO> entries, Action<long>? insertedCountProgress)
     {
         Database.Execute(
             """
@@ -161,6 +178,7 @@ public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
             {
                 InsertArchiveEntryBatch(batch);
                 insertedCount += batch.Count;
+                insertedCountProgress?.Invoke(insertedCount);
                 batch.Clear();
             }
         }
@@ -169,6 +187,7 @@ public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
         {
             InsertArchiveEntryBatch(batch);
             insertedCount += batch.Count;
+            insertedCountProgress?.Invoke(insertedCount);
         }
 
         return insertedCount;
@@ -176,7 +195,14 @@ public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
 
     private void InsertArchiveEntryBatch(IReadOnlyList<AssetArchiveEntryDTO> entries)
     {
-        var sql = new Sql("""
+        if (Database is not NPoco.Database npocoDatabase)
+        {
+            throw new InvalidOperationException("Asset archive index repository requires an NPoco Database instance.");
+        }
+
+        using var command = npocoDatabase.Connection.CreateCommand();
+        command.Transaction = npocoDatabase.Transaction;
+        command.CommandText = """
             INSERT INTO AssetArchiveEntries (
                 Game,
                 ArchivePath,
@@ -186,31 +212,38 @@ public class AssetArchiveIndexRepository : IAssetArchiveIndexRepository
                 PackedSize,
                 UnpackedSize)
             VALUES
-            """);
+                (@Game, @ArchivePath, @NormalizedEntryPath, @RootFolder, @Extension, @PackedSize, @UnpackedSize);
+            """;
 
-        for (var index = 0; index < entries.Count; index++)
+        var gameParameter = AddParameter(command, "@Game");
+        var archivePathParameter = AddParameter(command, "@ArchivePath");
+        var normalizedEntryPathParameter = AddParameter(command, "@NormalizedEntryPath");
+        var rootFolderParameter = AddParameter(command, "@RootFolder");
+        var extensionParameter = AddParameter(command, "@Extension");
+        var packedSizeParameter = AddParameter(command, "@PackedSize");
+        var unpackedSizeParameter = AddParameter(command, "@UnpackedSize");
+
+        command.Prepare();
+        foreach (var entry in entries)
         {
-            var entry = entries[index];
-            if (index > 0)
-            {
-                sql.Append(",");
-            }
+            gameParameter.Value = entry.Game.ToString();
+            archivePathParameter.Value = entry.ArchivePath;
+            normalizedEntryPathParameter.Value = entry.NormalizedEntryPath;
+            rootFolderParameter.Value = entry.RootFolder;
+            extensionParameter.Value = entry.Extension;
+            packedSizeParameter.Value = entry.PackedSize;
+            unpackedSizeParameter.Value = entry.UnpackedSize;
 
-            sql.Append(
-                "(@Game, @ArchivePath, @NormalizedEntryPath, @RootFolder, @Extension, @PackedSize, @UnpackedSize)",
-                new
-                {
-                    Game = entry.Game.ToString(),
-                    entry.ArchivePath,
-                    entry.NormalizedEntryPath,
-                    entry.RootFolder,
-                    entry.Extension,
-                    entry.PackedSize,
-                    entry.UnpackedSize
-                });
+            command.ExecuteNonQuery();
         }
+    }
 
-        Database.Execute(sql);
+    private static System.Data.Common.DbParameter AddParameter(System.Data.Common.DbCommand command, string name)
+    {
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = name;
+        command.Parameters.Add(parameter);
+        return parameter;
     }
 
     public void DeleteArchive(SupportedGame game, string archivePath)

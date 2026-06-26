@@ -49,7 +49,7 @@ public class RecordComparisonSpriggitHeadlessTests : IClassFixture<SpriggitCompa
                 [new ComparisonExpectation(["Data"], "Data")]),
             new ComparisonCase(
                 SupportedGame.Starfield,
-                RecordTypeCatalog.MiscObject.RecordID,
+                RecordTypeCatalog.MiscItem.RecordID,
                 "MiscItems",
                 ["Model.File", "Value"],
                 [

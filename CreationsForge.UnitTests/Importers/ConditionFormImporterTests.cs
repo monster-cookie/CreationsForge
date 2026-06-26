@@ -29,8 +29,10 @@ public class ConditionFormImporterTests
         importer.TableName.ShouldBe("ConditionForms");
         importer.SupportedGames.ShouldBe([SupportedGame.Starfield], ignoreOrder: true);
         repository.Saved.ShouldBe([conditionForm]);
-        conditionForm.Conditions.Single().DataMutagenObjectType.ShouldBe("HasKeywordConditionData");
-        conditionForm.Conditions.Single().Parameters.Single().ParameterName.ShouldBe("FirstParameter");
+        conditionForm.Conditions.Count.ShouldBe(2);
+        conditionForm.Conditions.Select(condition => condition.ConditionIndex).ShouldBe([0, 1]);
+        conditionForm.Conditions.Select(condition => condition.DataMutagenObjectType).ShouldBe(["HasKeywordConditionData", "HasKeywordConditionData"]);
+        conditionForm.Conditions.Select(condition => condition.Parameters.Single(parameter => parameter.ParameterName == "FirstParameter").ParameterFormKey?.Id).ShouldBe([100u, 0x200u]);
         conditionForm.ImportedAtUTC.ShouldBe(importedAtUTC);
         childImportService.ReplaceRequests.ShouldBe([(conditionForm, RecordTypeCatalog.ConditionForm.RecordID)]);
         result.DetailRowsImported.ShouldBe(1);
@@ -103,6 +105,31 @@ public class ConditionFormImporterTests
                             ParameterName = "FirstParameter",
                             ParameterValue = "Test.esm:00000100",
                             ParameterFormKey = CreateFormKey(plugin.ModKey, id),
+                            ImportedAtUTC = default
+                        }
+                    }
+                },
+                new ConditionFormConditionDTO
+                {
+                    Game = plugin.Game,
+                    ModKey = plugin.ModKey,
+                    FormKey = CreateFormKey(plugin.ModKey, id),
+                    ConditionIndex = 1,
+                    MutagenObjectType = "ConditionFloat",
+                    DataMutagenObjectType = "HasKeywordConditionData",
+                    ComparisonValue = "0",
+                    ImportedAtUTC = default,
+                    Parameters =
+                    {
+                        new ConditionFormConditionParameterDTO
+                        {
+                            Game = plugin.Game,
+                            ModKey = plugin.ModKey,
+                            FormKey = CreateFormKey(plugin.ModKey, id),
+                            ConditionIndex = 1,
+                            ParameterName = "FirstParameter",
+                            ParameterValue = "Test.esm:00000200",
+                            ParameterFormKey = CreateFormKey(plugin.ModKey, 0x200),
                             ImportedAtUTC = default
                         }
                     }

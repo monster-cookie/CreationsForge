@@ -18,7 +18,7 @@ public class ModelImportService : IModelImportService
         ModelMaterialSwapRepository = modelMaterialSwapRepository;
     }
 
-    public void ReplaceRecordModels(IHasModelsRecordDTO record, string recordType)
+    public void ReplaceRecordModels(IHasModelsDTO record, string recordType)
     {
         if (record is not RecordDTO recordDTO)
         {

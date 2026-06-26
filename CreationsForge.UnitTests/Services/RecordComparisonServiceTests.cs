@@ -1,9 +1,13 @@
+using CreationsForge.Core.DTOs.Games;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
+using CreationsForge.Core.Models.Configuration;
 using CreationsForge.Core.Repositories.Interfaces;
 using CreationsForge.Core.Services;
+using CreationsForge.Core.Services.Interfaces;
+using Mutagen.Bethesda.Strings;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Services;
@@ -18,8 +22,8 @@ public class RecordComparisonServiceTests
         {
             Records =
             [
-                CreateGlobal("Base.esm", formKey, "MyGlobal", 1.5),
-                CreateGlobal("Patch.esp", formKey, "MyGlobal", 2.5)
+                CreateGlobal("Base.esm", formKey, "MyGlobal", 1.5, "GlobalShort", "Constant"),
+                CreateGlobal("Patch.esp", formKey, "MyGlobal", 2.5, "GlobalFloat", "Constant")
             ]
         };
         var service = CreateService(globalRepository: globalRepository);
@@ -28,6 +32,8 @@ public class RecordComparisonServiceTests
 
         comparison.RecordType.ShouldBe(RecordTypeCatalog.Global.RecordID);
         comparison.Columns.Select(column => column.Header).ShouldBe(["Base.esm", "Patch.esp"]);
+        comparison.Fields.Single(field => field.FieldName == "MutagenObjectType").Values.Select(value => value.DisplayValue).ShouldBe(["GlobalShort", "GlobalFloat"]);
+        comparison.Fields.Single(field => field.FieldName == "MajorFlags").Values.Select(value => value.DisplayValue).ShouldBe(["Constant", "Constant"]);
         comparison.Fields.Single(field => field.FieldName == "Data").Values.Select(value => value.DisplayValue).ShouldBe(["1.5", "2.5"]);
         comparison.Fields.Single(field => field.FieldName == "Data").State.ShouldBe(RecordComparisonValueState.Conflict);
         comparison.Fields.Single(field => field.FieldName == "Data").Values.Select(value => value.State).ShouldBe([RecordComparisonValueState.Conflict, RecordComparisonValueState.WinningOverride]);
@@ -41,8 +47,8 @@ public class RecordComparisonServiceTests
         {
             Records =
             [
-                CreateGameSetting("Base.esm", formKey, "fSetting", "Float", "1.25", numericData: 1.25),
-                CreateGameSetting("Patch.esp", formKey, "fSetting", "Float", "1.75", numericData: 1.75)
+                CreateGameSetting("Base.esm", formKey, "fSetting", GameSettingDataType.Float, floatData: 1.25),
+                CreateGameSetting("Patch.esp", formKey, "fSetting", GameSettingDataType.Float, floatData: 1.75)
             ]
         };
         var service = CreateService(gameSettingRepository: gameSettingRepository);
@@ -50,11 +56,45 @@ public class RecordComparisonServiceTests
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.GameSetting.RecordID, formKey);
 
         comparison.Columns.Select(column => column.Header).ShouldBe(["Base.esm", "Patch.esp"]);
-        comparison.Fields.Single(field => field.FieldName == "SettingType").Values.Select(value => value.DisplayValue).ShouldBe(["Float", "Float"]);
+        comparison.Fields.Single(field => field.FieldName == "MutagenObjectType").Values.Select(value => value.DisplayValue).ShouldBe(["GameSettingFloat", "GameSettingFloat"]);
         comparison.Fields.Single(field => field.FieldName == "Data").Values.Select(value => value.DisplayValue).ShouldBe(["1.25", "1.75"]);
-        comparison.Fields.ShouldNotContain(field => field.FieldName == "NumericData");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "FloatData");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "IntegerData");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "UnsignedIntegerData");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "BooleanData");
+    }
+
+    [Fact]
+    public void GetRecordComparison_ForGameSetting_UsesSelectedLocalizedData()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x457);
+        var gameSettingRepository = new TestGameSettingRepository
+        {
+            Records =
+            [
+                CreateGameSetting("Base.esm", formKey, "sSetting", GameSettingDataType.String, stringData: "Base English"),
+                CreateGameSetting("Patch.esp", formKey, "sSetting", GameSettingDataType.String, stringData: "Patch English")
+            ]
+        };
+        var localizedStringRepository = new TestRecordLocalizedStringRepository
+        {
+            Records =
+            [
+                CreateLocalizedString("Base.esm", formKey, "Data", "English", "Base English"),
+                CreateLocalizedString("Base.esm", formKey, "Data", "German", "Base German"),
+                CreateLocalizedString("Patch.esp", formKey, "Data", "English", "Patch English"),
+                CreateLocalizedString("Patch.esp", formKey, "Data", "German", "Patch German")
+            ]
+        };
+        var gameSelectionService = new TestGameSelectionService { RecordTextLanguage = Language.German };
+        var service = CreateService(
+            gameSettingRepository: gameSettingRepository,
+            recordLocalizedStringRepository: localizedStringRepository,
+            gameSelectionService: gameSelectionService);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.GameSetting.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Data").Values.Select(value => value.DisplayValue).ShouldBe(["Base German", "Patch German"]);
     }
 
     [Fact]
@@ -83,17 +123,125 @@ public class RecordComparisonServiceTests
         comparison.Fields.Single(field => field.FieldName == "Items[1]").State.ShouldBe(RecordComparisonValueState.Conflict);
     }
 
+    /// <summary>
+    /// Verifies that attributed NPC numeric fields use reduced precision for comparison display and state.
+    /// </summary>
     [Fact]
-    public void GetRecordComparison_ForMiscObject_MapsTypedScalarFields()
+    public void GetRecordComparison_ForNPC_UsesNumericDisplayPrecisionAttributes()
     {
-        var formKey = CreateFormKey("Starfield.esm", 0x818);
-        var messageFormKey = CreateFormKey("Starfield.esm", 0x444);
-        var miscObjectRepository = new TestMiscObjectRepository
+        var formKey = CreateFormKey("Starfield.esm", 0x1010);
+        var npcRepository = new TestNPCRepository
         {
             Records =
             [
-                CreateMiscObject("Base.esm", formKey, "Digipick", 35, 0.1f, null),
-                CreateMiscObject("Patch.esp", formKey, "Digipick", 50, 0.2f, messageFormKey)
+                CreateNPC("Base.esm", formKey, 1.2344, 1.2345),
+                CreateNPC("Patch.esp", formKey, 1.23449, 1.2355)
+            ]
+        };
+        var service = CreateService(npcRepository: npcRepository);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.NPC.RecordID, formKey);
+
+        var heightMin = comparison.Fields.Single(field => field.FieldName == "HeightMin");
+        heightMin.Values.Select(value => value.DisplayValue).ShouldBe(["1.234", "1.234"]);
+        heightMin.State.ShouldBe(RecordComparisonValueState.Identical);
+        heightMin.Values.Select(value => value.State).ShouldBe([RecordComparisonValueState.Identical, RecordComparisonValueState.Identical]);
+
+        var heightMax = comparison.Fields.Single(field => field.FieldName == "HeightMax");
+        heightMax.Values.Select(value => value.DisplayValue).ShouldBe(["1.235", "1.236"]);
+        heightMax.State.ShouldBe(RecordComparisonValueState.Conflict);
+        heightMax.Values.Select(value => value.State).ShouldBe([RecordComparisonValueState.Conflict, RecordComparisonValueState.WinningOverride]);
+    }
+
+    /// <summary>
+    /// Verifies that NPC comparison output renders first-class persisted child rows instead of only scalar actor data.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForNPC_RendersPersistedChildRows()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x831);
+        var baseNpc = CreateNPC("Base.esm", formKey, 1, 1);
+        var patchNpc = CreateNPC("Patch.esp", formKey, 1, 1);
+        patchNpc.Class = CreateFormKey("Starfield.esm", 0x20F487);
+        patchNpc.DefaultOutfit = CreateFormKey("Starfield.esm", 0x102EC);
+        patchNpc.Weight = new NPCWeightDTO { Thin = 0.54, Muscular = 0, Fat = 0 };
+        patchNpc.HeadParts.Add(CreateFormKey("Starfield.esm", 0x3E2B2));
+        patchNpc.FaceDialPositions.Add(new NPCFaceDialPositionDTO
+        {
+            FaceDialPositionIndex = 0,
+            Index = 24,
+            Position = -0.512
+        });
+        patchNpc.FaceMorphGroups.Add(new NPCFaceMorphGroupSetDTO
+        {
+            FaceMorphIndex = 0,
+            Index = 12,
+            MorphGroups =
+            {
+                new NPCFaceMorphGroupDTO
+                {
+                    FaceMorphIndex = 0,
+                    MorphGroupIndex = 0,
+                    MorphGroup = "Cheeks",
+                    BlendIntensity = 1
+                }
+            }
+        });
+        patchNpc.MorphBlends.Add(new NPCMorphBlendDTO
+        {
+            MorphBlendIndex = 0,
+            BlendName = "male_eu_md2_Cheeks",
+            Intensity = 1
+        });
+        patchNpc.Tints.Add(new NPCTintDTO
+        {
+            TintIndex = 0,
+            TintType = "Simple Group",
+            TintGroup = "Dermaesthetic",
+            TintName = "European_Male_Md2_Sk3",
+            TintTexture = "textures/actors/human/faces/chargen/postblenddetails/dermaesthetic/male_eu_md2_sk3_derm_color.dds",
+            TintColor = "Black",
+            TintIntensity = 64
+        });
+        var npcRepository = new TestNPCRepository
+        {
+            Records =
+            [
+                baseNpc,
+                patchNpc
+            ]
+        };
+        var service = CreateService(npcRepository: npcRepository);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.NPC.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Class").Values.Select(value => value.DisplayValue).ShouldBe(["", "Starfield.esm:0020F487"]);
+        comparison.Fields.Single(field => field.FieldName == "DefaultOutfit").Values.Select(value => value.DisplayValue).ShouldBe(["", "Starfield.esm:000102EC"]);
+        comparison.Fields.Single(field => field.FieldName == "Weight").Children.Single(field => field.FieldName == "Thin").Values.Select(value => value.DisplayValue).ShouldBe(["", "0.54"]);
+        comparison.Fields.Single(field => field.FieldName == "HeadParts").Children.Single(field => field.FieldName == "HeadPart [0]").Values.Select(value => value.DisplayValue).ShouldBe(["", "Starfield.esm:0003E2B2"]);
+        comparison.Fields.Single(field => field.FieldName == "FaceDialPositions").Children.Single(field => field.FieldName == "FaceDialPosition [0]").Children.Single(field => field.FieldName == "Position").Values.Select(value => value.DisplayValue).ShouldBe(["", "-0.512"]);
+        comparison.Fields.Single(field => field.FieldName == "FaceMorphGroups").Children.Single(field => field.FieldName == "FaceMorph [0]").Children.Single(field => field.FieldName == "MorphGroup [0]").Children.Single(field => field.FieldName == "MorphGroup").Values.Select(value => value.DisplayValue).ShouldBe(["", "Cheeks"]);
+        comparison.Fields.Single(field => field.FieldName == "MorphBlends").Children.Single(field => field.FieldName == "MorphBlend [0]").Children.Single(field => field.FieldName == "BlendName").Values.Select(value => value.DisplayValue).ShouldBe(["", "male_eu_md2_Cheeks"]);
+        comparison.Fields.Single(field => field.FieldName == "Tints").Children.Single(field => field.FieldName == "Tint [0]").Children.Single(field => field.FieldName == "TintName").Values.Select(value => value.DisplayValue).ShouldBe(["", "European_Male_Md2_Sk3"]);
+    }
+
+    [Fact]
+    public void GetRecordComparison_ForMiscItem_MapsTypedScalarFields()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x818);
+        var messageFormKey = CreateFormKey("Starfield.esm", 0x444);
+        var baseItem = CreateMiscItem("Base.esm", formKey, "Digipick", 35, 0.1f, null);
+        baseItem.Components.Add(CreateMiscItemComponent("Base.esm", formKey, CreateFormKey("Starfield.esm", 0x777), 0, 0, 2));
+        baseItem.Destructible = CreateMiscItemDestructible(CreateFormKey("Starfield.esm", 0x888), 100, 2, "BaseStage.nif", "AABB");
+        var patchItem = CreateMiscItem("Patch.esp", formKey, "Digipick", 50, 0.2f, messageFormKey);
+        patchItem.Components.Add(CreateMiscItemComponent("Patch.esp", formKey, CreateFormKey("Starfield.esm", 0x777), 0, 2, 4));
+        patchItem.Destructible = CreateMiscItemDestructible(CreateFormKey("Starfield.esm", 0x999), 90, 3, "PatchStage.nif", "CCDD");
+        var miscItemRepository = new TestMiscItemRepository
+        {
+            Records =
+            [
+                baseItem,
+                patchItem
             ]
         };
         var modelRepository = new TestModelRepository
@@ -112,36 +260,36 @@ public class RecordComparisonServiceTests
                 CreateScriptingAdapter("Patch.esp", formKey, "DefaultScript", "PropertyName", "PatchValue")
             ]
         };
-        var recordKeywordRepository = new TestRecordKeywordRepository
+        var keywordMappingRepository = new TestKeywordMappingRepository
         {
             Records =
             [
-                CreateRecordKeyword("Base.esm", RecordTypeCatalog.MiscObject.RecordID, formKey, CreateFormKey("Starfield.esm", 0x555), 0),
-                CreateRecordKeyword("Patch.esp", RecordTypeCatalog.MiscObject.RecordID, formKey, CreateFormKey("Starfield.esm", 0x555), 0)
+                CreateKeywordMapping("Base.esm", RecordTypeCatalog.MiscItem.RecordID, formKey, CreateFormKey("Starfield.esm", 0x555), 0),
+                CreateKeywordMapping("Patch.esp", RecordTypeCatalog.MiscItem.RecordID, formKey, CreateFormKey("Starfield.esm", 0x555), 0)
             ]
         };
-        var recordSoundRepository = new TestRecordSoundRepository
+        var soundMappingRepository = new TestSoundMappingRepository
         {
             Records =
             [
-                CreateRecordSound("Base.esm", RecordTypeCatalog.MiscObject.RecordID, formKey, "PickupSound", 1, "ff0b45e7-a8ae-a30f-390b-d0cd2b6933a6"),
-                CreateRecordSound("Patch.esp", RecordTypeCatalog.MiscObject.RecordID, formKey, "PickupSound", 1, "ff0b45e7-a8ae-a30f-390b-d0cd2b6933a6")
+                CreateSoundMapping("Base.esm", RecordTypeCatalog.MiscItem.RecordID, formKey, "PickupSound", 1, "ff0b45e7-a8ae-a30f-390b-d0cd2b6933a6"),
+                CreateSoundMapping("Patch.esp", RecordTypeCatalog.MiscItem.RecordID, formKey, "PickupSound", 1, "ff0b45e7-a8ae-a30f-390b-d0cd2b6933a6")
             ]
         };
         var service = CreateService(
-            miscObjectRepository: miscObjectRepository,
+            miscItemRepository: miscItemRepository,
             modelRepository: modelRepository,
-            recordKeywordRepository: recordKeywordRepository,
-            recordSoundRepository: recordSoundRepository,
+            keywordMappingRepository: keywordMappingRepository,
+            soundMappingRepository: soundMappingRepository,
             scriptingAdapterRepository: scriptingAdapterRepository);
 
-        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.MiscObject.RecordID, formKey);
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.MiscItem.RecordID, formKey);
 
         comparison.Columns.Select(column => column.Header).ShouldBe(["Base.esm", "Patch.esp"]);
         comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["Digipick", "Digipick"]);
         comparison.Fields.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["35", "50"]);
         comparison.Fields.Single(field => field.FieldName == "Weight").Values.Select(value => value.DisplayValue).ShouldBe(["0.1", "0.2"]);
-        comparison.Fields.Single(field => field.FieldName == "FeaturedItemMessageFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["", "Starfield.esm:00000444"]);
+        comparison.Fields.Single(field => field.FieldName == "FeaturedItemMessage").Values.Select(value => value.DisplayValue).ShouldBe(["", "Starfield.esm:00000444"]);
         var keywords = comparison.Fields.Single(field => field.FieldName == "Keywords");
         keywords.Children.Single(field => field.FieldName == "Keyword [0]").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000555", "Starfield.esm:00000555"]);
         var model = comparison.Fields.Single(field => field.FieldName == "Model");
@@ -149,6 +297,17 @@ public class RecordComparisonServiceTests
         var sounds = comparison.Fields.Single(field => field.FieldName == "Sounds");
         var pickupSound = sounds.Children.Single(field => field.FieldName == "PickupSound [1]");
         pickupSound.Children.Single(field => field.FieldName == "Start").Values.Select(value => value.DisplayValue).ShouldBe(["ff0b45e7-a8ae-a30f-390b-d0cd2b6933a6", "ff0b45e7-a8ae-a30f-390b-d0cd2b6933a6"]);
+        var components = comparison.Fields.Single(field => field.FieldName == "Components");
+        var component = components.Children.Single(field => field.FieldName == "Component [0]");
+        component.Children.Single(field => field.FieldName == "DisplayIndex").Values.Select(value => value.DisplayValue).ShouldBe(["0", "2"]);
+        component.Children.Single(field => field.FieldName == "Count").Values.Select(value => value.DisplayValue).ShouldBe(["2", "4"]);
+        var destructible = comparison.Fields.Single(field => field.FieldName == "Destructible");
+        destructible.Children.Single(field => field.FieldName == "Health").Values.Select(value => value.DisplayValue).ShouldBe(["100", "90"]);
+        destructible.Children.Single(field => field.FieldName == "DESTCount").Values.Select(value => value.DisplayValue).ShouldBe(["2", "3"]);
+        var stage = destructible.Children.Single(field => field.FieldName == "Stage [0]");
+        stage.Children.Single(field => field.FieldName == "Explosion").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000888", "Starfield.esm:00000999"]);
+        stage.Children.Single(field => field.FieldName == "Model.File").Values.Select(value => value.DisplayValue).ShouldBe(["BaseStage.nif", "PatchStage.nif"]);
+        stage.Children.Single(field => field.FieldName == "Model.Data").Values.Select(value => value.DisplayValue).ShouldBe(["AABB", "CCDD"]);
 
         var scripts = comparison.Fields.Single(field => field.FieldName == "Scripts");
         var script = scripts.Children.Single(field => field.FieldName == "Script [0]");
@@ -170,12 +329,12 @@ public class RecordComparisonServiceTests
                 CreateMagicEffect("Patch.esp", formKey, "Elemental Blast", "52", 7)
             ]
         };
-        var recordKeywordRepository = new TestRecordKeywordRepository
+        var keywordMappingRepository = new TestKeywordMappingRepository
         {
             Records =
             [
-                CreateRecordKeyword("Base.esm", RecordTypeCatalog.MagicEffect.RecordID, formKey, CreateFormKey("Starfield.esm", 0x111), 0),
-                CreateRecordKeyword("Patch.esp", RecordTypeCatalog.MagicEffect.RecordID, formKey, CreateFormKey("Patch.esp", 0x222), 0)
+                CreateKeywordMapping("Base.esm", RecordTypeCatalog.MagicEffect.RecordID, formKey, CreateFormKey("Starfield.esm", 0x111), 0),
+                CreateKeywordMapping("Patch.esp", RecordTypeCatalog.MagicEffect.RecordID, formKey, CreateFormKey("Patch.esp", 0x222), 0)
             ]
         };
         var scriptingAdapterRepository = new TestScriptingAdapterRepository
@@ -186,18 +345,18 @@ public class RecordComparisonServiceTests
                 CreateScriptingAdapter("Patch.esp", RecordTypeCatalog.MagicEffect.RecordID, formKey, "FXScripts:FXResourceCollectionVisuals", "TargetVFX", "PatchVFX")
             ]
         };
-        var recordSoundRepository = new TestRecordSoundRepository
+        var soundMappingRepository = new TestSoundMappingRepository
         {
             Records =
             [
-                CreateRecordSound("Base.esm", RecordTypeCatalog.MagicEffect.RecordID, formKey, "Charge", 2, "a328413d-b619-45b5-0d9e-aa9d0ade8280", "Break0", "000000"),
-                CreateRecordSound("Patch.esp", RecordTypeCatalog.MagicEffect.RecordID, formKey, "Charge", 2, "a328413d-b619-45b5-0d9e-aa9d0ade8280", "Break0", "000000")
+                CreateSoundMapping("Base.esm", RecordTypeCatalog.MagicEffect.RecordID, formKey, "Charge", 2, "a328413d-b619-45b5-0d9e-aa9d0ade8280", "Break0", "000000"),
+                CreateSoundMapping("Patch.esp", RecordTypeCatalog.MagicEffect.RecordID, formKey, "Charge", 2, "a328413d-b619-45b5-0d9e-aa9d0ade8280", "Break0", "000000")
             ]
         };
         var service = CreateService(
             magicEffectRepository: magicEffectRepository,
-            recordKeywordRepository: recordKeywordRepository,
-            recordSoundRepository: recordSoundRepository,
+            keywordMappingRepository: keywordMappingRepository,
+            soundMappingRepository: soundMappingRepository,
             scriptingAdapterRepository: scriptingAdapterRepository);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.MagicEffect.RecordID, formKey);
@@ -269,7 +428,7 @@ public class RecordComparisonServiceTests
     }
 
     [Fact]
-    public void GetRecordComparison_ForStatic_MapsStaticFieldsAndRawPayloads()
+    public void GetRecordComparison_ForStatic_MapsStaticFieldsModelDataAndReflectPayloads()
     {
         var formKey = CreateFormKey("Starfield.esm", 0x1000);
         var staticRepository = new TestStaticRepository
@@ -284,31 +443,31 @@ public class RecordComparisonServiceTests
         {
             Records =
             [
-                CreateModel("Base.esm", RecordTypeCatalog.Static.RecordID, formKey, "Meshes\\SetDressing\\Rock01.nif"),
-                CreateModel("Patch.esp", RecordTypeCatalog.Static.RecordID, formKey, "Meshes\\SetDressing\\Rock01.nif")
+                CreateModel("Base.esm", RecordTypeCatalog.Static.RecordID, formKey, "Meshes\\SetDressing\\Rock01.nif", "AABB"),
+                CreateModel("Patch.esp", RecordTypeCatalog.Static.RecordID, formKey, "Meshes\\SetDressing\\Rock01.nif", "CCDD")
             ]
         };
-        var recordKeywordRepository = new TestRecordKeywordRepository
+        var keywordMappingRepository = new TestKeywordMappingRepository
         {
             Records =
             [
-                CreateRecordKeyword("Base.esm", RecordTypeCatalog.Static.RecordID, formKey, CreateFormKey("Starfield.esm", 0x555), 0),
-                CreateRecordKeyword("Patch.esp", RecordTypeCatalog.Static.RecordID, formKey, CreateFormKey("Starfield.esm", 0x666), 0)
+                CreateKeywordMapping("Base.esm", RecordTypeCatalog.Static.RecordID, formKey, CreateFormKey("Starfield.esm", 0x555), 0),
+                CreateKeywordMapping("Patch.esp", RecordTypeCatalog.Static.RecordID, formKey, CreateFormKey("Starfield.esm", 0x666), 0)
             ]
         };
-        var rawRecordPayloadRepository = new TestRawRecordPayloadRepository
+        var reflectionRepository = new TestReflectionRepository
         {
             Records =
             [
-                CreateRawRecordPayload("Base.esm", formKey, "Model.Data", 0, "Model", "AABB"),
-                CreateRawRecordPayload("Patch.esp", formKey, "Model.Data", 0, "Model", "CCDD")
+                CreateReflection("Base.esm", formKey, 0, "ReflectionComponent", "Components[0].REFL", "AABB"),
+                CreateReflection("Patch.esp", formKey, 0, "ReflectionComponent", "Components[0].REFL", "CCDD")
             ]
         };
         var service = CreateService(
             staticRepository: staticRepository,
             modelRepository: modelRepository,
-            recordKeywordRepository: recordKeywordRepository,
-            rawRecordPayloadRepository: rawRecordPayloadRepository);
+            keywordMappingRepository: keywordMappingRepository,
+            reflectionRepository: reflectionRepository);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Static.RecordID, formKey);
 
@@ -320,17 +479,20 @@ public class RecordComparisonServiceTests
         keywords.Children.Single(field => field.FieldName == "Keyword [0]").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000555", "Starfield.esm:00000666"]);
         var model = comparison.Fields.Single(field => field.FieldName == "Model");
         model.Children.Single(field => field.FieldName == "File").Values.Select(value => value.DisplayValue).ShouldBe(["Meshes\\SetDressing\\Rock01.nif", "Meshes\\SetDressing\\Rock01.nif"]);
-        var rawPayloads = comparison.Fields.Single(field => field.FieldName == "Raw Payloads");
-        var modelData = rawPayloads.Children.Single(field => field.FieldName == "Model.Data");
-        var modelDataValues = modelData.Children.Single(field => field.FieldName == "Value").Values;
-        modelDataValues.Select(value => value.DisplayValue).ShouldBe(["[UNPARSEABLE REFLECTION DATA]", "[UNPARSEABLE REFLECTION DATA]"]);
-        modelDataValues.Select(value => value.DetailValue).ShouldBe(["AABB", "CCDD"]);
-        modelDataValues.Select(value => value.DisplayKind).ShouldBe([RecordComparisonValueDisplayKind.RawBinaryPayload, RecordComparisonValueDisplayKind.RawBinaryPayload]);
-        modelData.Children.Single(field => field.FieldName == "Value").State.ShouldBe(RecordComparisonValueState.Conflict);
+        model.Children.Single(field => field.FieldName == "Data").Values.Select(value => value.DisplayValue).ShouldBe(["AABB", "CCDD"]);
+        var reflection = comparison.Fields.Single(field => field.FieldName == "Reflection");
+        var reflect = reflection.Children.Single(field => field.FieldName == "Components[0].REFL");
+        reflect.Children.Single(field => field.FieldName == "ComponentType").Values.Select(value => value.DisplayValue).ShouldBe(["ReflectionComponent", "ReflectionComponent"]);
+        reflect.Children.Single(field => field.FieldName == "SourcePath").Values.Select(value => value.DisplayValue).ShouldBe(["Components[0].REFL", "Components[0].REFL"]);
+        var reflectValues = reflect.Children.Single(field => field.FieldName == "REFL").Values;
+        reflectValues.Select(value => value.DisplayValue).ShouldBe(["[UNPARSEABLE REFLECTION DATA]", "[UNPARSEABLE REFLECTION DATA]"]);
+        reflectValues.Select(value => value.DetailValue).ShouldBe(["AABB", "CCDD"]);
+        reflectValues.Select(value => value.DisplayKind).ShouldBe([RecordComparisonValueDisplayKind.RawBinaryPayload, RecordComparisonValueDisplayKind.RawBinaryPayload]);
+        reflect.Children.Single(field => field.FieldName == "REFL").State.ShouldBe(RecordComparisonValueState.Conflict);
     }
 
     [Fact]
-    public void GetRecordComparison_ForContainer_MapsContainerFieldsItemsModelsAndRawPayloads()
+    public void GetRecordComparison_ForContainer_MapsContainerFieldsItemsModelsAndAnimationFields()
     {
         var formKey = CreateFormKey("Starfield.esm", 0x2000);
         var itemFormKey = CreateFormKey("Starfield.esm", 0x333);
@@ -339,8 +501,8 @@ public class RecordComparisonServiceTests
         {
             Records =
             [
-                CreateContainer("Base.esm", formKey, "Storage Crate", terminalFormKey, [CreateContainerItem("Base.esm", formKey, itemFormKey, 0, 2)]),
-                CreateContainer("Patch.esp", formKey, "Storage Crate", terminalFormKey, [CreateContainerItem("Patch.esp", formKey, itemFormKey, 0, 4)])
+                CreateContainer("Base.esm", formKey, "Storage Crate", terminalFormKey, [CreateContainerItem("Base.esm", formKey, itemFormKey, 0, 2)], "meshes\\base.anim"),
+                CreateContainer("Patch.esp", formKey, "Storage Crate", terminalFormKey, [CreateContainerItem("Patch.esp", formKey, itemFormKey, 0, 4)], "meshes\\patch.anim")
             ]
         };
         var modelRepository = new TestModelRepository
@@ -351,18 +513,9 @@ public class RecordComparisonServiceTests
                 CreateModel("Patch.esp", RecordTypeCatalog.Container.RecordID, formKey, "Meshes\\SetDressing\\Container01.nif")
             ]
         };
-        var rawRecordPayloadRepository = new TestRawRecordPayloadRepository
-        {
-            Records =
-            [
-                CreateRawRecordPayload("Base.esm", RecordTypeCatalog.Container.RecordID, formKey, "BaseFormComponents.AnimationGraphComponent.ANAM", 0, "Byte[]", "AABBCC", "Components.AnimationGraphComponent.ANAM"),
-                CreateRawRecordPayload("Patch.esp", RecordTypeCatalog.Container.RecordID, formKey, "BaseFormComponents.AnimationGraphComponent.ANAM", 0, "Byte[]", "DDEEFF", "Components.AnimationGraphComponent.ANAM")
-            ]
-        };
         var service = CreateService(
             containerRepository: containerRepository,
-            modelRepository: modelRepository,
-            rawRecordPayloadRepository: rawRecordPayloadRepository);
+            modelRepository: modelRepository);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Container.RecordID, formKey);
 
@@ -375,16 +528,12 @@ public class RecordComparisonServiceTests
         item.Children.Single(field => field.FieldName == "Count").Values.Select(value => value.DisplayValue).ShouldBe(["2", "4"]);
         var model = comparison.Fields.Single(field => field.FieldName == "Model");
         model.Children.Single(field => field.FieldName == "File").Values.Select(value => value.DisplayValue).ShouldBe(["Meshes\\SetDressing\\Container01.nif", "Meshes\\SetDressing\\Container01.nif"]);
-        var rawPayloads = comparison.Fields.Single(field => field.FieldName == "Raw Payloads");
-        var anam = rawPayloads.Children.Single(field => field.FieldName == "BaseFormComponents.AnimationGraphComponent.ANAM");
-        var rawValues = anam.Children.Single(field => field.FieldName == "Value").Values;
-        rawValues.Select(value => value.DisplayValue).ShouldBe(["[UNPARSEABLE REFLECTION DATA]", "[UNPARSEABLE REFLECTION DATA]"]);
-        rawValues.Select(value => value.DetailValue).ShouldBe(["AABBCC", "DDEEFF"]);
-        rawValues.Select(value => value.DisplayKind).ShouldBe([RecordComparisonValueDisplayKind.RawBinaryPayload, RecordComparisonValueDisplayKind.RawBinaryPayload]);
+        comparison.Fields.Single(field => field.FieldName == "AnimationGraph").Values.Select(value => value.DisplayValue).ShouldBe(["meshes\\base.anim", "meshes\\patch.anim"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Base Form Components");
     }
 
     [Fact]
-    public void GetRecordComparison_ForConstructibleObject_MapsComponentsRecipeFiltersScriptsAndRawPayloads()
+    public void GetRecordComparison_ForConstructibleObject_MapsComponentsConditionsScriptsAndCreatedObjectCount()
     {
         var formKey = CreateFormKey("Starfield.esm", 0x2500);
         var createdObjectFormKey = CreateFormKey("Starfield.esm", 0x111);
@@ -407,24 +556,16 @@ public class RecordComparisonServiceTests
                 CreateScriptingAdapter("Patch.esp", RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "RecipeScript", "Enabled", "False")
             ]
         };
-        var rawRecordPayloadRepository = new TestRawRecordPayloadRepository
-        {
-            Records =
-            [
-                CreateRawRecordPayload("Base.esm", RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "Conditions", 0, "Conditions", "BaseCondition"),
-                CreateRawRecordPayload("Patch.esp", RecordTypeCatalog.ConstructibleObject.RecordID, formKey, "Conditions", 0, "Conditions", "PatchCondition")
-            ]
-        };
         var service = CreateService(
             constructibleObjectRepository: constructibleObjectRepository,
-            scriptingAdapterRepository: scriptingAdapterRepository,
-            rawRecordPayloadRepository: rawRecordPayloadRepository);
+            scriptingAdapterRepository: scriptingAdapterRepository);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.ConstructibleObject.RecordID, formKey);
 
         comparison.RecordType.ShouldBe(RecordTypeCatalog.ConstructibleObject.RecordID);
         comparison.Fields.Single(field => field.FieldName == "CreatedObjectFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000111", "Starfield.esm:00000111"]);
         comparison.Fields.Single(field => field.FieldName == "WorkbenchKeywordFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000222", "Starfield.esm:00000222"]);
+        comparison.Fields.Single(field => field.FieldName == "CreatedObjectCount").Values.Select(value => value.DisplayValue).ShouldBe(["2", "4"]);
         comparison.Fields.Single(field => field.FieldName == "AmountProduced").Values.Select(value => value.DisplayValue).ShouldBe(["2", "4"]);
         var components = comparison.Fields.Single(field => field.FieldName == "Components");
         var component = components.Children.Single(field => field.FieldName == "Component [0]");
@@ -433,12 +574,16 @@ public class RecordComparisonServiceTests
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Categories");
         var recipeFilters = comparison.Fields.Single(field => field.FieldName == "RecipeFilters");
         recipeFilters.Children.Single(field => field.FieldName == "RecipeFilter [0]").Children.Single(field => field.FieldName == "RecipeFilterFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000444", "Starfield.esm:00000444"]);
+        var conditions = comparison.Fields.Single(field => field.FieldName == "Conditions");
+        var condition = conditions.Children.Single();
+        condition.FieldName.ShouldBe("Condition [0]");
+        condition.Values.Select(value => value.DisplayValue).ShouldBe(["GetItemCount() EqualTo 2", "GetItemCount() EqualTo 4"]);
+        condition.State.ShouldBe(RecordComparisonValueState.Conflict);
+        condition.Values.Select(value => value.State).ShouldBe([RecordComparisonValueState.Conflict, RecordComparisonValueState.WinningOverride]);
+        condition.Children.ShouldBeEmpty();
         var scripts = comparison.Fields.Single(field => field.FieldName == "Scripts");
         scripts.Children.Single(field => field.FieldName == "Script [0]").Children.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["RecipeScript", "RecipeScript"]);
-        var rawPayloads = comparison.Fields.Single(field => field.FieldName == "Raw Payloads");
-        var conditionValues = rawPayloads.Children.Single(field => field.FieldName == "Conditions").Children.Single(field => field.FieldName == "Value").Values;
-        conditionValues.Select(value => value.DisplayValue).ShouldBe(["[UNPARSEABLE REFLECTION DATA]", "[UNPARSEABLE REFLECTION DATA]"]);
-        conditionValues.Select(value => value.DetailValue).ShouldBe(["BaseCondition", "PatchCondition"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Created Object Counts");
     }
 
     [Fact]
@@ -455,14 +600,7 @@ public class RecordComparisonServiceTests
                 CreateConditionForm("Patch.esp", formKey, 2, patchFirstParameter, null)
             ]
         };
-        var rawRecordPayloadRepository = new TestRawRecordPayloadRepository
-        {
-            Records =
-            [
-                CreateRawRecordPayload("Base.esm", RecordTypeCatalog.ConditionForm.RecordID, formKey, "Conditions", 0, "Conditions", "RawCondition")
-            ]
-        };
-        var service = CreateService(conditionFormRepository: conditionFormRepository, rawRecordPayloadRepository: rawRecordPayloadRepository);
+        var service = CreateService(conditionFormRepository: conditionFormRepository);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.ConditionForm.RecordID, formKey);
 
@@ -471,12 +609,37 @@ public class RecordComparisonServiceTests
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Raw Payloads");
         var conditions = comparison.Fields.Single(field => field.FieldName == "Conditions");
         var condition = conditions.Children.Single(field => field.FieldName == "Condition [0]");
-        condition.Children.Single(field => field.FieldName == "MutagenObjectType").Values.Select(value => value.DisplayValue).ShouldBe(["ConditionFloat", "ConditionFloat"]);
-        condition.Children.Single(field => field.FieldName == "DataMutagenObjectType").Values.Select(value => value.DisplayValue).ShouldBe(["HasKeywordConditionData", "HasKeywordConditionData"]);
-        condition.Children.Single(field => field.FieldName == "ComparisonValue").Values.Select(value => value.DisplayValue).ShouldBe(["1", ""]);
-        var firstParameterField = condition.Children.Single(field => field.FieldName == "Parameters").Children.Single(field => field.FieldName == "FirstParameter");
-        firstParameterField.Children.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00258350", "Starfield.esm:002CC9F2"]);
-        firstParameterField.Children.Single(field => field.FieldName == "FormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00258350", "Starfield.esm:002CC9F2"]);
+        condition.Values.Select(value => value.DisplayValue).ShouldBe(["Subject: HasKeyword(Starfield.esm:00258350, 0) EqualTo 1", "Subject: HasKeyword(Starfield.esm:002CC9F2, 0)"]);
+        condition.State.ShouldBe(RecordComparisonValueState.Conflict);
+        condition.Values.Select(value => value.State).ShouldBe([RecordComparisonValueState.Conflict, RecordComparisonValueState.WinningOverride]);
+        condition.Children.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void GetRecordComparison_ForConditionForm_PreservesMultipleConditionRules()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x246E86);
+        var conditionFormRepository = new TestConditionFormRepository
+        {
+            Records =
+            [
+                CreateActorIsPreyConditionForm(formKey)
+            ]
+        };
+        var service = CreateService(conditionFormRepository: conditionFormRepository);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.ConditionForm.RecordID, formKey);
+
+        var conditions = comparison.Fields.Single(field => field.FieldName == "Conditions");
+        conditions.Children.Select(field => field.FieldName).ShouldBe([
+            "Condition [0]",
+            "Condition [1]"
+        ]);
+        conditions.Children.Select(field => field.Values.Single().DisplayValue).ShouldBe([
+            "Subject: HasKeyword(Starfield.esm:00258350, 0) EqualTo 1",
+            "Subject: HasKeyword(Starfield.esm:002CC9F2, 0) EqualTo 0"
+        ]);
+        conditions.Children.Select(field => field.Children.Count).ShouldBe([0, 0]);
     }
 
     [Fact]
@@ -499,35 +662,39 @@ public class RecordComparisonServiceTests
                 CreateModel("Patch.esp", RecordTypeCatalog.Book.RecordID, formKey, "Meshes\\SetDressing\\Books\\Book01.nif")
             ]
         };
-        var recordKeywordRepository = new TestRecordKeywordRepository
+        var keywordMappingRepository = new TestKeywordMappingRepository
         {
             Records =
             [
-                CreateRecordKeyword("Base.esm", RecordTypeCatalog.Book.RecordID, formKey, CreateFormKey("Starfield.esm", 0x101), 0),
-                CreateRecordKeyword("Patch.esp", RecordTypeCatalog.Book.RecordID, formKey, CreateFormKey("Starfield.esm", 0x101), 0)
+                CreateKeywordMapping("Base.esm", RecordTypeCatalog.Book.RecordID, formKey, CreateFormKey("Starfield.esm", 0x101), 0),
+                CreateKeywordMapping("Patch.esp", RecordTypeCatalog.Book.RecordID, formKey, CreateFormKey("Starfield.esm", 0x101), 0)
             ]
         };
-        var recordSoundRepository = new TestRecordSoundRepository
+        var soundMappingRepository = new TestSoundMappingRepository
         {
             Records =
             [
-                CreateRecordSound("Base.esm", RecordTypeCatalog.Book.RecordID, formKey, "PickupSound", 0, "pickup"),
-                CreateRecordSound("Patch.esp", RecordTypeCatalog.Book.RecordID, formKey, "PickupSound", 0, "pickup")
+                CreateSoundMapping("Base.esm", RecordTypeCatalog.Book.RecordID, formKey, "PickupSound", 0, "pickup"),
+                CreateSoundMapping("Patch.esp", RecordTypeCatalog.Book.RecordID, formKey, "PickupSound", 0, "pickup")
             ]
         };
         var service = CreateService(
             bookRepository: bookRepository,
             modelRepository: modelRepository,
-            recordKeywordRepository: recordKeywordRepository,
-            recordSoundRepository: recordSoundRepository);
+            keywordMappingRepository: keywordMappingRepository,
+            soundMappingRepository: soundMappingRepository);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Book.RecordID, formKey);
 
         comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["Captain's Log", "Captain's Log"]);
         comparison.Fields.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["100", "150"]);
-        comparison.Fields.Single(field => field.FieldName == "InventoryTransformFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000999", "Starfield.esm:00000999"]);
+        comparison.Fields.Single(field => field.FieldName == "Transforms.Inventory").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000999", "Starfield.esm:00000999"]);
+        comparison.Fields.Single(field => field.FieldName == "InventoryArt").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000998", "Starfield.esm:00000998"]);
+        comparison.Fields.Single(field => field.FieldName == "PreviewTransform").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000888", "Starfield.esm:00000888"]);
+        comparison.Fields.Single(field => field.FieldName == "FeaturedItemMessage").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000777", "Starfield.esm:00000777"]);
         comparison.Fields.Single(field => field.FieldName == "Text").Values.Select(value => value.DisplayValue).ShouldBe(["Base text", "Patch text"]);
-        comparison.Fields.Single(field => field.FieldName == "TeachesType").Values.Select(value => value.DisplayValue).ShouldBe(["Skill", "Skill"]);
+        comparison.Fields.Single(field => field.FieldName == "Teaches.MutagenObjectType").Values.Select(value => value.DisplayValue).ShouldBe(["Skill", "Skill"]);
+        comparison.Fields.Single(field => field.FieldName == "Teaches.Perk").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000666", "Starfield.esm:00000666"]);
     }
 
     [Fact]
@@ -632,7 +799,9 @@ public class RecordComparisonServiceTests
         TestFormListRepository? formListRepository = null,
         TestGameSettingRepository? gameSettingRepository = null,
         TestGlobalRepository? globalRepository = null,
-        TestMiscObjectRepository? miscObjectRepository = null,
+        TestClassRepository? classRepository = null,
+        TestFactionRepository? factionRepository = null,
+        TestMiscItemRepository? miscItemRepository = null,
         TestKeywordRepository? keywordRepository = null,
         TestActorValueInformationRepository? actorValueInformationRepository = null,
         TestNPCRepository? npcRepository = null,
@@ -646,16 +815,20 @@ public class RecordComparisonServiceTests
         TestConditionFormRepository? conditionFormRepository = null,
         TestTerminalRepository? terminalRepository = null,
         TestModelRepository? modelRepository = null,
-        TestRecordKeywordRepository? recordKeywordRepository = null,
-        TestRecordSoundRepository? recordSoundRepository = null,
+        TestKeywordMappingRepository? keywordMappingRepository = null,
+        TestSoundMappingRepository? soundMappingRepository = null,
         TestScriptingAdapterRepository? scriptingAdapterRepository = null,
-        TestRawRecordPayloadRepository? rawRecordPayloadRepository = null)
+        TestReflectionRepository? reflectionRepository = null,
+        TestRecordLocalizedStringRepository? recordLocalizedStringRepository = null,
+        TestGameSelectionService? gameSelectionService = null)
     {
         return new RecordComparisonService(
             formListRepository ?? new TestFormListRepository(),
             gameSettingRepository ?? new TestGameSettingRepository(),
             globalRepository ?? new TestGlobalRepository(),
-            miscObjectRepository ?? new TestMiscObjectRepository(),
+            classRepository ?? new TestClassRepository(),
+            factionRepository ?? new TestFactionRepository(),
+            miscItemRepository ?? new TestMiscItemRepository(),
             keywordRepository ?? new TestKeywordRepository(),
             actorValueInformationRepository ?? new TestActorValueInformationRepository(),
             npcRepository ?? new TestNPCRepository(),
@@ -669,10 +842,12 @@ public class RecordComparisonServiceTests
             conditionFormRepository ?? new TestConditionFormRepository(),
             terminalRepository ?? new TestTerminalRepository(),
             modelRepository ?? new TestModelRepository(),
-            recordKeywordRepository ?? new TestRecordKeywordRepository(),
-            recordSoundRepository ?? new TestRecordSoundRepository(),
+            keywordMappingRepository ?? new TestKeywordMappingRepository(),
+            soundMappingRepository ?? new TestSoundMappingRepository(),
             scriptingAdapterRepository ?? new TestScriptingAdapterRepository(),
-            rawRecordPayloadRepository ?? new TestRawRecordPayloadRepository());
+            reflectionRepository ?? new TestReflectionRepository(),
+            recordLocalizedStringRepository ?? new TestRecordLocalizedStringRepository(),
+            gameSelectionService ?? new TestGameSelectionService());
     }
 
     private static FormKeyDTO CreateFormKey(string fileName, uint id)
@@ -694,7 +869,56 @@ public class RecordComparisonServiceTests
         };
     }
 
-    private static GlobalDTO CreateGlobal(string fileName, FormKeyDTO formKey, string editorID, double data)
+    private static TranslatedStringDTO Text(string value)
+    {
+        return new TranslatedStringDTO
+        {
+            Strings =
+            [
+                new TranslatedStringValueDTO
+                {
+                    Language = "English",
+                    String = value
+                }
+            ]
+        };
+    }
+
+    /// <summary>
+    /// Creates a minimal NPC record for comparison-service tests that exercise height display precision.
+    /// </summary>
+    /// <param name="fileName">The plugin file name that contributed the test record.</param>
+    /// <param name="formKey">The origin form key shared by compared records.</param>
+    /// <param name="heightMin">The minimum height value to place on the DTO.</param>
+    /// <param name="heightMax">The maximum height value to place on the DTO.</param>
+    /// <returns>The populated NPC DTO.</returns>
+    private static NPCDTO CreateNPC(string fileName, FormKeyDTO formKey, double heightMin, double heightMax)
+    {
+        return new NPCDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            EditorID = "TestNPC",
+            FormVersion = 1,
+            MajorRecordFlags = 0,
+            ImportedAtUTC = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            Aggression = "Unaggressive",
+            Confidence = "Average",
+            Responsibility = "NoCrime",
+            Assistance = "HelpsNobody",
+            HeightMin = heightMin,
+            HeightMax = heightMax
+        };
+    }
+
+    private static GlobalDTO CreateGlobal(
+        string fileName,
+        FormKeyDTO formKey,
+        string editorID,
+        double data,
+        string? mutagenObjectType = null,
+        string? majorFlags = null)
     {
         return new GlobalDTO
         {
@@ -705,6 +929,8 @@ public class RecordComparisonServiceTests
             FormVersion = 1,
             MajorRecordFlags = 2,
             ImportedAtUTC = DateTime.UtcNow,
+            MutagenObjectType = mutagenObjectType,
+            MajorFlags = majorFlags,
             Data = data
         };
     }
@@ -713,9 +939,9 @@ public class RecordComparisonServiceTests
         string fileName,
         FormKeyDTO formKey,
         string editorID,
-        string settingType,
-        string data,
-        double? numericData = null)
+        GameSettingDataType dataType,
+        string? stringData = null,
+        double? floatData = null)
     {
         return new GameSettingDTO
         {
@@ -726,9 +952,33 @@ public class RecordComparisonServiceTests
             FormVersion = 1,
             MajorRecordFlags = 2,
             ImportedAtUTC = DateTime.UtcNow,
-            SettingType = settingType,
-            Data = data,
-            NumericData = numericData
+            DataType = dataType,
+            Data = new GameSettingDataDTO
+            {
+                DataType = dataType,
+                String = dataType == GameSettingDataType.String ? Text(stringData ?? string.Empty) : null,
+                Float = dataType == GameSettingDataType.Float ? floatData : null
+            }
+        };
+    }
+
+    private static LocalizedStringDTO CreateLocalizedString(
+        string fileName,
+        FormKeyDTO formKey,
+        string sourceField,
+        string language,
+        string value)
+    {
+        return new LocalizedStringDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            RecordType = RecordTypeCatalog.GameSetting.RecordID,
+            FormKey = formKey,
+            SourceField = sourceField,
+            Language = language,
+            Value = value,
+            ImportedAtUTC = DateTime.UtcNow
         };
     }
 
@@ -754,39 +1004,94 @@ public class RecordComparisonServiceTests
             Game = SupportedGame.Starfield,
             ModKey = CreateModKey(fileName),
             FormKey = formKey,
-            ItemFormKey = itemFormKey,
+            Item = itemFormKey,
             ItemIndex = itemIndex,
             ImportedAtUTC = DateTime.UtcNow
         };
     }
 
-    private static MiscObjectDTO CreateMiscObject(string fileName, FormKeyDTO formKey, string name, int value, float weight, FormKeyDTO? featuredItemMessageFormKey)
+    private static MiscItemDTO CreateMiscItem(string fileName, FormKeyDTO formKey, string name, int value, float weight, FormKeyDTO? featuredItemMessageFormKey)
     {
-        return new MiscObjectDTO
+        return new MiscItemDTO
         {
             Game = SupportedGame.Starfield,
             ModKey = CreateModKey(fileName),
             FormKey = formKey,
-            EditorID = "MyMiscObject",
+            EditorID = "MyMiscItem",
             FormVersion = 1,
             MajorRecordFlags = 2,
             ImportedAtUTC = DateTime.UtcNow,
-            Name = name,
-            ShortName = "ShortName",
+            Name = Text(name),
+            ShortName = Text("ShortName"),
             Value = value,
             Weight = weight,
             DirtinessScale = 1,
-            FeaturedItemMessageFormKey = featuredItemMessageFormKey,
+            FeaturedItemMessage = featuredItemMessageFormKey,
             Flag = "None"
+        };
+    }
+
+    private static MiscItemComponentDTO CreateMiscItemComponent(
+        string fileName,
+        FormKeyDTO formKey,
+        FormKeyDTO componentFormKey,
+        int componentIndex,
+        int displayIndex,
+        int count)
+    {
+        return new MiscItemComponentDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            Component = componentFormKey,
+            ComponentIndex = componentIndex,
+            DisplayIndex = displayIndex,
+            Count = count,
+            ImportedAtUTC = DateTime.UtcNow
+        };
+    }
+
+    private static MiscItemDestructibleDTO CreateMiscItemDestructible(
+        FormKeyDTO explosionFormKey,
+        int health,
+        int destCount,
+        string modelFile,
+        string modelData)
+    {
+        return new MiscItemDestructibleDTO
+        {
+            Data = new MiscItemDestructibleDataDTO
+            {
+                Health = health,
+                DESTCount = destCount
+            },
+            Stages =
+            {
+                new MiscItemDestructibleStageDTO
+                {
+                    StageIndex = 0,
+                    HealthPercent = 90,
+                    ModelDamageStage = 1,
+                    Flags = "CapDamage",
+                    SelfDamagePerSecond = 45,
+                    Explosion = explosionFormKey,
+                    Model = new MiscItemDestructibleStageModelDTO
+                    {
+                        File = modelFile,
+                        Data = modelData
+                    }
+                }
+            }
         };
     }
 
     private static ModelDTO CreateModel(string fileName, FormKeyDTO formKey, string file)
     {
-        return CreateModel(fileName, RecordTypeCatalog.MiscObject.RecordID, formKey, file);
+        return CreateModel(fileName, RecordTypeCatalog.MiscItem.RecordID, formKey, file);
     }
 
-    private static ModelDTO CreateModel(string fileName, string recordType, FormKeyDTO formKey, string file)
+    private static ModelDTO CreateModel(string fileName, string recordType, FormKeyDTO formKey, string file, string? data = null)
     {
         return new ModelDTO
         {
@@ -797,6 +1102,7 @@ public class RecordComparisonServiceTests
             ModelSlot = "Model",
             ModelGender = string.Empty,
             File = file,
+            Data = data,
             ImportedAtUTC = DateTime.UtcNow
         };
     }
@@ -832,21 +1138,34 @@ public class RecordComparisonServiceTests
             MajorRecordFlags = 2,
             ImportedAtUTC = DateTime.UtcNow,
             Version2 = 3,
-            ObjectBoundsFirst = "0, 0, 0",
-            ObjectBoundsSecond = "1, 1, 1",
-            InventoryTransformFormKey = CreateFormKey("Starfield.esm", 0x999),
-            Xalg = 7,
-            Name = name,
-            Text = fileName.StartsWith("Base", StringComparison.Ordinal) ? "Base text" : "Patch text",
+            ObjectBounds = new ObjectBoundsDTO
+            {
+                First = "0, 0, 0",
+                Second = "1, 1, 1"
+            },
+            Transforms = new BookTransformsDTO
+            {
+                Inventory = CreateFormKey("Starfield.esm", 0x999)
+            },
+            InventoryArt = CreateFormKey("Starfield.esm", 0x998),
+            PreviewTransform = CreateFormKey("Starfield.esm", 0x888),
+            FeaturedItemMessage = CreateFormKey("Starfield.esm", 0x777),
+            XALG = 7,
+            Name = Text(name),
+            Text = Text(fileName.StartsWith("Base", StringComparison.Ordinal) ? "Base text" : "Patch text"),
             Value = value,
             Weight = 1.25f,
             Flags = "Takeable",
-            TeachesType = "Skill",
-            TeachesRawContent = "Piloting",
+            Teaches = new BookTeachesDTO
+            {
+                MutagenObjectType = "Skill",
+                Perk = CreateFormKey("Starfield.esm", 0x666),
+                RawContent = "Piloting"
+            },
             DataSlateType = "None",
-            Description = "Book description",
-            DataSlateHeaderLeft = "Left",
-            DataSlateHeaderRight = "Right"
+            Description = Text("Book description"),
+            DataSlateHeaderLeft = Text("Left"),
+            DataSlateHeaderRight = Text("Right")
         };
     }
 
@@ -864,7 +1183,7 @@ public class RecordComparisonServiceTests
             Version2 = 1,
             ObjectBoundsFirst = "0, 0, 0",
             ObjectBoundsSecond = "1, 1, 1",
-            Name = name,
+            Name = Text(name),
             Flags = "Automatic",
             NativeTerminalFormKey = nativeTerminalFormKey,
             SoundLevel = "Normal",
@@ -872,7 +1191,13 @@ public class RecordComparisonServiceTests
         };
     }
 
-    private static ContainerDTO CreateContainer(string fileName, FormKeyDTO formKey, string name, FormKeyDTO? nativeTerminalFormKey, IList<ContainerItemDTO> items)
+    private static ContainerDTO CreateContainer(
+        string fileName,
+        FormKeyDTO formKey,
+        string name,
+        FormKeyDTO? nativeTerminalFormKey,
+        IList<ContainerItemDTO> items,
+        string? animationGraph = null)
     {
         return new ContainerDTO
         {
@@ -886,9 +1211,10 @@ public class RecordComparisonServiceTests
             Version2 = 15,
             ObjectBoundsFirst = "0, 0, 0",
             ObjectBoundsSecond = "1, 1, 1",
-            Name = name,
+            Name = Text(name),
             Flags = "Respawns",
             NativeTerminalFormKey = nativeTerminalFormKey,
+            AnimationGraph = animationGraph,
             Items = items
         };
     }
@@ -909,11 +1235,11 @@ public class RecordComparisonServiceTests
             ObjectBoundsSecond = "1, 1, 1",
             MenuFormKey = CreateFormKey("Starfield.esm", 0x111),
             Background = "BackgroundA",
-            Name = name,
+            Name = Text(name),
             Pnam = "PNAM",
             Fnam = "FNAM",
             Jnam = "JNAM",
-            MarkerFlags = long.Parse(markerFlags.Replace("0x", string.Empty), System.Globalization.NumberStyles.HexNumber),
+            MarkerFlags = markerFlags,
             Gnam = "GNAM",
             WorkbenchData = "WorkbenchData",
             FurnitureTemplateFormKey = CreateFormKey("Starfield.esm", 0x222),
@@ -954,9 +1280,10 @@ public class RecordComparisonServiceTests
             MajorRecordFlags = 2,
             ImportedAtUTC = DateTime.UtcNow,
             Version2 = 2,
-            Description = "Recipe description",
+            Description = Text("Recipe description"),
             CreatedObjectFormKey = createdObjectFormKey,
             WorkbenchKeywordFormKey = workbenchKeywordFormKey,
+            CreatedObjectCount = amountProduced,
             AmountProduced = amountProduced,
             LearnMethod = "DefaultOrConditions",
             Flags = "None",
@@ -982,6 +1309,21 @@ public class RecordComparisonServiceTests
                     FormKey = formKey,
                     RecipeFilterFormKey = recipeFilterFormKey,
                     RecipeFilterIndex = 0,
+                    ImportedAtUTC = DateTime.UtcNow
+                }
+            },
+            Conditions =
+            {
+                new ConditionFormConditionDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    ConditionIndex = 0,
+                    MutagenObjectType = "ConditionFloat",
+                    DataMutagenObjectType = "GetItemCountConditionData",
+                    CompareOperator = "EqualTo",
+                    ComparisonValue = amountProduced.ToString(),
                     ImportedAtUTC = DateTime.UtcNow
                 }
             }
@@ -1010,6 +1352,7 @@ public class RecordComparisonServiceTests
                     ConditionIndex = 0,
                     MutagenObjectType = "ConditionFloat",
                     DataMutagenObjectType = "HasKeywordConditionData",
+                    CompareOperator = "EqualTo",
                     ComparisonValue = comparisonValue,
                     ImportedAtUTC = DateTime.UtcNow,
                     Parameters =
@@ -1024,8 +1367,98 @@ public class RecordComparisonServiceTests
                             ParameterValue = FormatFormKey(firstParameter),
                             ParameterFormKey = firstParameter,
                             ImportedAtUTC = DateTime.UtcNow
+                        },
+                        new ConditionFormConditionParameterDTO
+                        {
+                            Game = SupportedGame.Starfield,
+                            ModKey = CreateModKey(fileName),
+                            FormKey = formKey,
+                            ConditionIndex = 0,
+                            ParameterName = "RunOnType",
+                            ParameterValue = "Subject",
+                            ImportedAtUTC = DateTime.UtcNow
+                        },
+                        new ConditionFormConditionParameterDTO
+                        {
+                            Game = SupportedGame.Starfield,
+                            ModKey = CreateModKey(fileName),
+                            FormKey = formKey,
+                            ConditionIndex = 0,
+                            ParameterName = "SecondParameter",
+                            ParameterValue = "0",
+                            ImportedAtUTC = DateTime.UtcNow
                         }
                     }
+                }
+            }
+        };
+    }
+
+    private static ConditionFormDTO CreateActorIsPreyConditionForm(FormKeyDTO formKey)
+    {
+        return new ConditionFormDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey("Starfield.esm"),
+            FormKey = formKey,
+            EditorID = "ActorIsPrey",
+            FormVersion = 581,
+            MajorRecordFlags = 0,
+            ImportedAtUTC = DateTime.UtcNow,
+            Version2 = 1,
+            Conditions =
+            {
+                CreateCondition("Starfield.esm", formKey, 0, CreateFormKey("Starfield.esm", 0x258350), "1"),
+                CreateCondition("Starfield.esm", formKey, 1, CreateFormKey("Starfield.esm", 0x2CC9F2), "0")
+            }
+        };
+    }
+
+    private static ConditionFormConditionDTO CreateCondition(string fileName, FormKeyDTO formKey, int conditionIndex, FormKeyDTO firstParameter, string comparisonValue)
+    {
+        return new ConditionFormConditionDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            ConditionIndex = conditionIndex,
+            MutagenObjectType = "ConditionFloat",
+            DataMutagenObjectType = "HasKeywordConditionData",
+            CompareOperator = "EqualTo",
+            ComparisonValue = comparisonValue,
+            ImportedAtUTC = DateTime.UtcNow,
+            Parameters =
+            {
+                new ConditionFormConditionParameterDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    ConditionIndex = conditionIndex,
+                    ParameterName = "RunOnType",
+                    ParameterValue = "Subject",
+                    ImportedAtUTC = DateTime.UtcNow
+                },
+                new ConditionFormConditionParameterDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    ConditionIndex = conditionIndex,
+                    ParameterName = "FirstParameter",
+                    ParameterValue = FormatFormKey(firstParameter),
+                    ParameterFormKey = firstParameter,
+                    ImportedAtUTC = DateTime.UtcNow
+                },
+                new ConditionFormConditionParameterDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    ConditionIndex = conditionIndex,
+                    ParameterName = "SecondParameter",
+                    ParameterValue = "0",
+                    ImportedAtUTC = DateTime.UtcNow
                 }
             }
         };
@@ -1045,9 +1478,20 @@ public class RecordComparisonServiceTests
         };
     }
 
-    private static RawRecordPayloadDTO CreateRawRecordPayload(string fileName, FormKeyDTO formKey, string payloadSlot, int payloadIndex, string payloadType, string payloadValue)
+    private static ReflectionDTO CreateReflection(string fileName, FormKeyDTO formKey, int componentIndex, string componentType, string sourcePath, string refl)
     {
-        return CreateRawRecordPayload(fileName, RecordTypeCatalog.Static.RecordID, formKey, payloadSlot, payloadIndex, payloadType, payloadValue);
+        return new ReflectionDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            RecordType = RecordTypeCatalog.Static.RecordID,
+            FormKey = formKey,
+            ComponentIndex = componentIndex,
+            ComponentType = componentType,
+            SourcePath = sourcePath,
+            REFL = refl,
+            ImportedAtUTC = DateTime.UtcNow
+        };
     }
 
     private static string FormatFormKey(FormKeyDTO formKey)
@@ -1055,26 +1499,9 @@ public class RecordComparisonServiceTests
         return $"{formKey.ModKey.FileName}:{formKey.Id:X8}";
     }
 
-    private static RawRecordPayloadDTO CreateRawRecordPayload(string fileName, string recordType, FormKeyDTO formKey, string payloadSlot, int payloadIndex, string payloadType, string payloadValue, string? sourcePath = null)
-    {
-        return new RawRecordPayloadDTO
-        {
-            Game = SupportedGame.Starfield,
-            ModKey = CreateModKey(fileName),
-            RecordType = recordType,
-            FormKey = formKey,
-            PayloadSlot = payloadSlot,
-            PayloadIndex = payloadIndex,
-            PayloadType = payloadType,
-            SourcePath = sourcePath ?? payloadSlot,
-            PayloadValue = payloadValue,
-            ImportedAtUTC = DateTime.UtcNow
-        };
-    }
-
     private static ScriptingAdapterDTO CreateScriptingAdapter(string fileName, FormKeyDTO formKey, string name, string propertyName, string propertyValue)
     {
-        return CreateScriptingAdapter(fileName, RecordTypeCatalog.MiscObject.RecordID, formKey, name, propertyName, propertyValue);
+        return CreateScriptingAdapter(fileName, RecordTypeCatalog.MiscItem.RecordID, formKey, name, propertyName, propertyValue);
     }
 
     private static ScriptingAdapterDTO CreateScriptingAdapter(string fileName, string recordType, FormKeyDTO formKey, string name, string propertyName, string propertyValue)
@@ -1107,23 +1534,23 @@ public class RecordComparisonServiceTests
         };
     }
 
-    private static RecordKeywordDTO CreateRecordKeyword(string fileName, string recordType, FormKeyDTO formKey, FormKeyDTO keywordFormKey, int keywordIndex)
+    private static KeywordMappingDTO CreateKeywordMapping(string fileName, string recordType, FormKeyDTO formKey, FormKeyDTO keywordFormKey, int keywordIndex)
     {
-        return new RecordKeywordDTO
+        return new KeywordMappingDTO
         {
             Game = SupportedGame.Starfield,
             ModKey = CreateModKey(fileName),
             RecordType = recordType,
             FormKey = formKey,
             KeywordIndex = keywordIndex,
-            KeywordFormKey = keywordFormKey,
+            Keyword = keywordFormKey,
             ImportedAtUTC = DateTime.UtcNow
         };
     }
 
-    private static RecordSoundDTO CreateRecordSound(string fileName, string recordType, FormKeyDTO formKey, string soundSlot, int soundIndex, string start, string? versioning = null, string? unknown = null)
+    private static SoundMappingDTO CreateSoundMapping(string fileName, string recordType, FormKeyDTO formKey, string soundSlot, int soundIndex, string start, string? versioning = null, string? unknown = null)
     {
-        return new RecordSoundDTO
+        return new SoundMappingDTO
         {
             Game = SupportedGame.Starfield,
             ModKey = CreateModKey(fileName),
@@ -1149,7 +1576,7 @@ public class RecordComparisonServiceTests
             FormVersion = 1,
             MajorRecordFlags = 2,
             ImportedAtUTC = DateTime.UtcNow,
-            Name = name,
+            Name = Text(name),
             Archetype = archetype,
             UnknownInt2 = unknownInt2,
             Flags = "None"
@@ -1167,8 +1594,8 @@ public class RecordComparisonServiceTests
             FormVersion = 1,
             MajorRecordFlags = 2,
             ImportedAtUTC = DateTime.UtcNow,
-            Name = name,
-            Description = "Perk description",
+            Name = Text(name),
+            Description = Text("Perk description"),
             Flags = "PcPlayable",
             SkillGroup = "Expert",
             CrewAssignment = "None",
@@ -1182,7 +1609,7 @@ public class RecordComparisonServiceTests
                     ModKey = CreateModKey(fileName),
                     FormKey = formKey,
                     RankIndex = 0,
-                    Description = rankDescription,
+                    Description = Text(rankDescription),
                     UnknownStaticFormKey = unknownStaticFormKey,
                     ConditionCount = 1,
                     ActivityCount = 2,
@@ -1200,7 +1627,7 @@ public class RecordComparisonServiceTests
                             Priority = 10,
                             PerkEntryId = 20,
                             Flags = "None",
-                            ButtonLabel = buttonLabel,
+                            ButtonLabel = Text(buttonLabel),
                             ConditionCount = 3,
                             EntryPoint = "ModSkillUse",
                             PerkConditionTabCount = 4,
@@ -1303,11 +1730,11 @@ public class RecordComparisonServiceTests
         { }
     }
 
-    private sealed class TestMiscObjectRepository : IMiscObjectRepository
+    private sealed class TestClassRepository : IClassRepository
     {
-        public string RecordType => RecordTypeCatalog.MiscObject.RecordID;
+        public string RecordType => RecordTypeCatalog.Class.RecordID;
 
-        public IReadOnlyList<MiscObjectDTO> Records { get; set; } = [];
+        public IReadOnlyList<ClassDTO> Records { get; set; } = [];
 
         public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntriesByPlugin(SupportedGame game, ModKeyDTO modKey)
         {
@@ -1319,12 +1746,68 @@ public class RecordComparisonServiceTests
             return new Dictionary<string, int>();
         }
 
-        public IReadOnlyList<MiscObjectDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        public IReadOnlyList<ClassDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
         {
             return Records;
         }
 
-        public void Save(MiscObjectDTO dto)
+        public void Save(ClassDTO dto)
+        { }
+
+        public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)
+        { }
+    }
+
+    private sealed class TestFactionRepository : IFactionRepository
+    {
+        public string RecordType => RecordTypeCatalog.Faction.RecordID;
+
+        public IReadOnlyList<FactionDTO> Records { get; set; } = [];
+
+        public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntriesByPlugin(SupportedGame game, ModKeyDTO modKey)
+        {
+            return [];
+        }
+
+        public IReadOnlyDictionary<string, int> GetRecordPluginCountsByGame(SupportedGame game)
+        {
+            return new Dictionary<string, int>();
+        }
+
+        public IReadOnlyList<FactionDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        {
+            return Records;
+        }
+
+        public void Save(FactionDTO dto)
+        { }
+
+        public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)
+        { }
+    }
+
+    private sealed class TestMiscItemRepository : IMiscItemRepository
+    {
+        public string RecordType => RecordTypeCatalog.MiscItem.RecordID;
+
+        public IReadOnlyList<MiscItemDTO> Records { get; set; } = [];
+
+        public IReadOnlyList<RecordTreeEntryDTO> GetRecordTreeEntriesByPlugin(SupportedGame game, ModKeyDTO modKey)
+        {
+            return [];
+        }
+
+        public IReadOnlyDictionary<string, int> GetRecordPluginCountsByGame(SupportedGame game)
+        {
+            return new Dictionary<string, int>();
+        }
+
+        public IReadOnlyList<MiscItemDTO> GetByFormKey(SupportedGame game, FormKeyDTO formKey)
+        {
+            return Records;
+        }
+
+        public void Save(MiscItemDTO dto)
         { }
 
         public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)
@@ -1686,14 +2169,14 @@ public class RecordComparisonServiceTests
         { }
     }
 
-    private sealed class TestRecordKeywordRepository : IRecordKeywordRepository
+    private sealed class TestKeywordMappingRepository : IKeywordMappingRepository
     {
-        public IReadOnlyList<RecordKeywordDTO> Records { get; set; } = [];
+        public IReadOnlyList<KeywordMappingDTO> Records { get; set; } = [];
 
-        public void Save(RecordKeywordDTO dto)
+        public void Save(KeywordMappingDTO dto)
         { }
 
-        public IReadOnlyList<RecordKeywordDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+        public IReadOnlyList<KeywordMappingDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
         {
             return Records;
         }
@@ -1705,14 +2188,14 @@ public class RecordComparisonServiceTests
         { }
     }
 
-    private sealed class TestRecordSoundRepository : IRecordSoundRepository
+    private sealed class TestSoundMappingRepository : ISoundMappingRepository
     {
-        public IReadOnlyList<RecordSoundDTO> Records { get; set; } = [];
+        public IReadOnlyList<SoundMappingDTO> Records { get; set; } = [];
 
-        public void Save(RecordSoundDTO dto)
+        public void Save(SoundMappingDTO dto)
         { }
 
-        public IReadOnlyList<RecordSoundDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+        public IReadOnlyList<SoundMappingDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
         {
             return Records;
         }
@@ -1724,19 +2207,91 @@ public class RecordComparisonServiceTests
         { }
     }
 
-    private sealed class TestRawRecordPayloadRepository : IRawRecordPayloadRepository
+    private sealed class TestReflectionRepository : IReflectionRepository
     {
-        public IReadOnlyList<RawRecordPayloadDTO> Records { get; set; } = [];
+        public IReadOnlyList<ReflectionDTO> Records { get; set; } = [];
 
-        public void Save(RawRecordPayloadDTO dto)
+        public void Save(ReflectionDTO dto)
         { }
 
-        public IReadOnlyList<RawRecordPayloadDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+        public IReadOnlyList<ReflectionDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
         {
             return Records;
         }
 
         public void DeleteByRecord(SupportedGame game, ModKeyDTO modKey, string recordType, FormKeyDTO formKey)
+        { }
+    }
+
+    private sealed class TestRecordLocalizedStringRepository : IRecordLocalizedStringRepository
+    {
+        public IReadOnlyList<LocalizedStringDTO> Records { get; set; } = [];
+
+        public void Save(LocalizedStringDTO dto)
+        { }
+
+        public IReadOnlyList<LocalizedStringDTO> GetByFormKey(SupportedGame game, string recordType, FormKeyDTO formKey)
+        {
+            return Records;
+        }
+
+        public void DeleteByRecord(SupportedGame game, ModKeyDTO modKey, string recordType, FormKeyDTO formKey)
+        { }
+
+        public void DeleteStaleByPlugin(SupportedGame game, ModKeyDTO modKey, DateTime importedAtUTC)
+        { }
+    }
+
+    private sealed class TestGameSelectionService : IGameSelectionService
+    {
+        public Language RecordTextLanguage { get; set; } = Language.English;
+
+        public IReadOnlyList<SupportedGameDTO> GetSupportedGames()
+        {
+            return [];
+        }
+
+        public SupportedGame? GetActiveGame()
+        {
+            return null;
+        }
+
+        public ApplicationThemeMode GetThemeMode()
+        {
+            return ApplicationThemeMode.Dark;
+        }
+
+        public ApplicationThemeFamily GetThemeFamily()
+        {
+            return ApplicationThemeFamily.Semi;
+        }
+
+        public IReadOnlyList<Language> GetRecordTextLanguages()
+        {
+            return [RecordTextLanguage];
+        }
+
+        public Language GetRecordTextLanguage()
+        {
+            return RecordTextLanguage;
+        }
+
+        public void SetActiveGame(SupportedGame game)
+        { }
+
+        public void SetThemeMode(ApplicationThemeMode themeMode)
+        { }
+
+        public void SetThemeFamily(ApplicationThemeFamily themeFamily)
+        { }
+
+        public void SetActiveGameAndThemeMode(SupportedGame game, ApplicationThemeMode themeMode)
+        { }
+
+        public void SetActiveGameAndTheme(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode)
+        { }
+
+        public void SetTheme(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode)
         { }
     }
 

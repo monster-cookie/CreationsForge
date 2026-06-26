@@ -9,9 +9,19 @@ namespace CreationsForge.Core.Repositories;
 
 public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstructibleObjectRepository
 {
-    public ConstructibleObjectRepository(IDatabase database, IRecordInstanceRepository recordInstanceRepository)
+    private readonly IConditionRuleRepository ConditionRuleRepository;
+    private readonly ISoundMappingRepository SoundMappingRepository;
+
+    public ConstructibleObjectRepository(
+        IDatabase database,
+        IRecordInstanceRepository recordInstanceRepository,
+        IConditionRuleRepository conditionRuleRepository,
+        ISoundMappingRepository soundMappingRepository)
         : base(database, recordInstanceRepository)
-    { }
+    {
+        ConditionRuleRepository = conditionRuleRepository;
+        SoundMappingRepository = soundMappingRepository;
+    }
 
     public override string RecordType => RecordTypeCatalog.ConstructibleObject.RecordID;
 
@@ -24,6 +34,7 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
                 formKey,
                 [
                     SelectColumn("Version2"),
+                    SelectColumn("VersionControl"),
                     SelectColumn("Description"),
                     SelectColumn("CreatedObject_ModKey_Name", "CreatedObjectModKeyName"),
                     SelectColumn("CreatedObject_ModKey_Type", "CreatedObjectModKeyType"),
@@ -35,15 +46,19 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
                     SelectColumn("WorkbenchKeyword_FormKey_ID", "WorkbenchKeywordFormKeyId"),
                     SelectColumn("CreatedObjectCount"),
                     SelectColumn("AmountProduced"),
+                    SelectColumn("Value"),
                     SelectColumn("MenuSortOrder"),
                     SelectColumn("LearnMethod"),
-                    SelectColumn("Flags")
+                    SelectColumn("Flags"),
+                    SelectColumn("MajorFlags")
                 ])
             .Select(record => ToDTO(record, game))
             .ToList();
         var components = FetchComponentsByFormKey(game, formKey);
         var categories = FetchCategoriesByFormKey(game, formKey);
         var recipeFilters = FetchRecipeFiltersByFormKey(game, formKey);
+        var conditions = ConditionRuleRepository.GetByFormKey(game, RecordTypeCatalog.ConstructibleObject.RecordID, formKey);
+        var sounds = SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.ConstructibleObject.RecordID, formKey);
         foreach (var record in records)
         {
             record.Components = components
@@ -58,6 +73,14 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
                 .Where(recipeFilter => IsSameModKey(recipeFilter.ModKey, record.ModKey))
                 .OrderBy(recipeFilter => recipeFilter.RecipeFilterIndex)
                 .ToList();
+            record.Conditions = conditions
+                .Where(condition => IsSameModKey(condition.ModKey, record.ModKey) && string.Equals(condition.ConditionSlot, "Conditions", StringComparison.Ordinal))
+                .OrderBy(condition => condition.ConditionIndex)
+                .ToList();
+            record.Sounds = sounds
+                .Where(sound => IsSameModKey(sound.ModKey, record.ModKey))
+                .OrderBy(sound => sound.SoundIndex)
+                .ToList();
         }
 
         return records;
@@ -70,14 +93,14 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
             """
             INSERT OR REPLACE INTO ConstructibleObjects (
                 Game, ModKey_Name, ModKey_Type, ModKey_FileName, FormKey_ModKey_Name, FormKey_ModKey_Type, FormKey_ModKey_FileName, FormKey_ID,
-                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Version2, Description, CreatedObject_ModKey_Name, CreatedObject_ModKey_Type,
+                EditorID, FormVersion, MajorRecordFlags, ImportedAtUTC, Version2, VersionControl, Description, CreatedObject_ModKey_Name, CreatedObject_ModKey_Type,
                 CreatedObject_ModKey_FileName, CreatedObject_FormKey_ID, WorkbenchKeyword_ModKey_Name, WorkbenchKeyword_ModKey_Type,
-                WorkbenchKeyword_ModKey_FileName, WorkbenchKeyword_FormKey_ID, CreatedObjectCount, AmountProduced, MenuSortOrder, LearnMethod, Flags)
+                WorkbenchKeyword_ModKey_FileName, WorkbenchKeyword_FormKey_ID, CreatedObjectCount, AmountProduced, Value, MenuSortOrder, LearnMethod, Flags, MajorFlags)
             VALUES (
                 @Game, @ModKeyName, @ModKeyType, @ModKeyFileName, @FormKeyModKeyName, @FormKeyModKeyType, @FormKeyModKeyFileName, @FormKeyId,
-                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Version2, @Description, @CreatedObjectModKeyName, @CreatedObjectModKeyType,
+                @EditorId, @FormVersion, @MajorRecordFlags, @ImportedAtUTC, @Version2, @VersionControl, @Description, @CreatedObjectModKeyName, @CreatedObjectModKeyType,
                 @CreatedObjectModKeyFileName, @CreatedObjectFormKeyId, @WorkbenchKeywordModKeyName, @WorkbenchKeywordModKeyType,
-                @WorkbenchKeywordModKeyFileName, @WorkbenchKeywordFormKeyId, @CreatedObjectCount, @AmountProduced, @MenuSortOrder, @LearnMethod, @Flags);
+                @WorkbenchKeywordModKeyFileName, @WorkbenchKeywordFormKeyId, @CreatedObjectCount, @AmountProduced, @Value, @MenuSortOrder, @LearnMethod, @Flags, @MajorFlags);
             """,
             new
             {
@@ -94,7 +117,8 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
                 dto.MajorRecordFlags,
                 dto.ImportedAtUTC,
                 dto.Version2,
-                dto.Description,
+                dto.VersionControl,
+                Description = GetEnglishText(dto.Description),
                 CreatedObjectModKeyName = dto.CreatedObjectFormKey?.ModKey.Name,
                 CreatedObjectModKeyType = dto.CreatedObjectFormKey?.ModKey.Type,
                 CreatedObjectModKeyFileName = dto.CreatedObjectFormKey?.ModKey.FileName,
@@ -105,9 +129,11 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
                 WorkbenchKeywordFormKeyId = dto.WorkbenchKeywordFormKey?.Id,
                 dto.CreatedObjectCount,
                 dto.AmountProduced,
+                dto.Value,
                 dto.MenuSortOrder,
                 dto.LearnMethod,
-                dto.Flags
+                dto.Flags,
+                dto.MajorFlags
             });
         ReplaceComponents(dto);
         ReplaceCategories(dto);
@@ -346,14 +372,17 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
             MajorRecordFlags = 0,
             ImportedAtUTC = record.ImportedAtUTC,
             Version2 = record.Version2,
-            Description = record.Description,
+            VersionControl = record.VersionControl,
+            Description = FromEnglish(record.Description),
             CreatedObjectFormKey = CreateNullableFormKey(record.CreatedObjectModKeyName, record.CreatedObjectModKeyType, record.CreatedObjectModKeyFileName, record.CreatedObjectFormKeyId),
             WorkbenchKeywordFormKey = CreateNullableFormKey(record.WorkbenchKeywordModKeyName, record.WorkbenchKeywordModKeyType, record.WorkbenchKeywordModKeyFileName, record.WorkbenchKeywordFormKeyId),
             CreatedObjectCount = record.CreatedObjectCount,
             AmountProduced = record.AmountProduced,
+            Value = record.Value,
             MenuSortOrder = record.MenuSortOrder,
             LearnMethod = record.LearnMethod,
-            Flags = record.Flags
+            Flags = record.Flags,
+            MajorFlags = record.MajorFlags
         };
         ApplyCommonFields(dto, record, game);
         return dto;
@@ -429,6 +458,8 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
     {
         public int? Version2 { get; set; }
 
+        public int? VersionControl { get; set; }
+
         public string? Description { get; set; }
 
         public string? CreatedObjectModKeyName { get; set; }
@@ -451,11 +482,15 @@ public class ConstructibleObjectRepository : TypedRecordRepositoryBase, IConstru
 
         public int? AmountProduced { get; set; }
 
-        public int? MenuSortOrder { get; set; }
+        public int? Value { get; set; }
+
+        public double? MenuSortOrder { get; set; }
 
         public string? LearnMethod { get; set; }
 
         public string? Flags { get; set; }
+
+        public string? MajorFlags { get; set; }
     }
 
     private sealed class ConstructibleObjectComponentRow

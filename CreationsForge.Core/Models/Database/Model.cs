@@ -24,6 +24,7 @@ public class Model
         ModelSlot = dto.ModelSlot;
         ModelGender = dto.ModelGender;
         File = dto.File;
+        Data = dto.Data;
         TextureFileHashes = dto.TextureFileHashes;
         LightLayer = dto.LightLayer;
         Flags = dto.Flags;
@@ -55,6 +56,8 @@ public class Model
     [Column("ModelGender")] public string ModelGender { get; set; } = string.Empty;
 
     [Column("File")] public string? File { get; set; }
+
+    [Column("Data")] public string? Data { get; set; }
 
     [Column("TextureFileHashes")] public string? TextureFileHashes { get; set; }
 

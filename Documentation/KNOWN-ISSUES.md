@@ -4,9 +4,11 @@
   - The supported record types in all games are:
     - ActorValueInformation (AVIF)
     - Book (BOOK)
+    - Class (CLAS)
     - Container (CONT)
     - ConstructibleObject (COBJ)
     - Door (DOOR)
+    - Faction (FACT)
     - FormList (FLST)
     - GameSetting (GMST)
     - Global (GLOB)
@@ -16,16 +18,10 @@
     - MagicEffect (MGEF)
     - Perk (PERK)
     - Static (STAT)
+  - Fallout 4 Also Support:
     - Terminal (TERM)
   - Starfield also supports:
     - ConditionForm (CNDF)
-
-- Some supported record types have partial detail coverage. The current implementation intentionally persists clearly
-  understood scalar fields and direct `FormKey` references first. The following omitted child structures are
-  representative examples, not an exhaustive list:
-  - MiscItem (MISC), resource mappings are deferred until Resource records are supported.
-  - NPC (NPC_) currently imports selected scalar fields and direct references only. Inventory, abilities, perks,
-    factions, keywords, AI packages, appearance data, object templates, and other nested structures are not
-    imported.
-  - FormKey and ModKey lists are showing raw information instead of the more helpful EditorID.
+    - Terminal (TERM)
+- FormKey and ModKey lists are showing raw information instead of the more helpful EditorID.
 - Currently we cannot support MO2, it virtual file system is causing problems with how mutagen looks up plugins and especially starfield partial/split masters.

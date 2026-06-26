@@ -1,9 +1,13 @@
 ﻿root = true
 
 [*]
+charset = utf-8
+end_of_line = crlf
 indent_style = space
 indent_size = 4
 tab_width = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
 
 [*.yml]
 [*.yaml]
@@ -18,16 +22,65 @@ tab_width = 2
 max_line_length = 120
 
 [*.sql]
-indent_style = space
-indent_size = 4
-tab_width = 4
-max_line_length = 400
 
 [*.cs]
-indent_style = space
-indent_size = 4
-tab_width = 4
-max_line_length = 400
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
+csharp_using_directive_placement = outside_namespace:suggestion
+
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_new_line_between_query_expression_clauses = true
+
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_indent_labels = one_less_than_current
+
+csharp_space_after_cast = false
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_parentheses = false
+csharp_space_before_colon_in_inheritance_clause = true
+csharp_space_after_colon_in_inheritance_clause = true
+csharp_space_around_binary_operators = before_and_after
+csharp_space_between_method_declaration_parameter_list_parentheses = false
+csharp_space_between_method_call_parameter_list_parentheses = false
+
+csharp_preserve_single_line_blocks = true
+csharp_preserve_single_line_statements = true
+
+dotnet_style_qualification_for_field = false:suggestion
+dotnet_style_qualification_for_property = false:suggestion
+dotnet_style_qualification_for_method = false:suggestion
+dotnet_style_qualification_for_event = false:suggestion
+
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+# Do not allow attributes inline with the thing they decorate.
+csharp_new_line_before_open_brace = all
+csharp_indent_case_contents = true
+csharp_space_around_binary_operators = before_and_after
 
 # Do not suggest C# primary constructors.
 dotnet_diagnostic.IDE0290.severity = none
+
+# Require XML docs for publicly visible members via compiler warning.
+dotnet_diagnostic.CS1591.severity = error
+
+# StyleCop: elements should be documented.
+dotnet_diagnostic.SA1600.severity = error
+
+# StyleCop: partial elements should be documented.
+dotnet_diagnostic.SA1601.severity = error
+
+# StyleCop: element documentation should be complete.
+dotnet_diagnostic.SA1611.severity = warning
+dotnet_diagnostic.SA1615.severity = warning
+dotnet_diagnostic.SA1618.severity = warning
+
+# IDE0005: Remove unnecessary using directives
+dotnet_diagnostic.IDE0005.severity = warning

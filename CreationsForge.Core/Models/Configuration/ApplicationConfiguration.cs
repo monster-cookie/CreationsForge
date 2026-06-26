@@ -16,11 +16,15 @@ public enum ApplicationThemeFamily
 
 public class ApplicationConfiguration
 {
+    public const string DefaultRecordTextLanguage = "English";
+
     public string? ActiveGame { get; set; }
 
     public ApplicationThemeMode ThemeMode { get; set; } = ApplicationThemeMode.Dark;
 
     public ApplicationThemeFamily ThemeFamily { get; set; } = ApplicationThemeFamily.Semi;
+
+    public string RecordTextLanguage { get; set; } = DefaultRecordTextLanguage;
 
     public string? NifSkopeExecutablePath { get; set; }
 

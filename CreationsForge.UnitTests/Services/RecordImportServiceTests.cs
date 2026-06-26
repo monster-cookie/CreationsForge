@@ -18,28 +18,32 @@ public class RecordImportServiceTests
         var formList = CreateFormList(plugin, 10);
         var gameSetting = CreateGameSetting(plugin, 20);
         var global = CreateGlobal(plugin, 30);
-        var miscObject = CreateMiscObject(plugin, 40);
-        var keyword = CreateKeyword(plugin, 50);
-        var actorValueInformation = CreateActorValueInformation(plugin, 60);
-        var npc = CreateNPC(plugin, 70);
-        var magicEffect = CreateMagicEffect(plugin, 80);
-        var perk = CreatePerk(plugin, 90);
+        var classRecord = CreateClass(plugin, 40);
+        var faction = CreateFaction(plugin, 50);
+        var miscItem = CreateMiscItem(plugin, 60);
+        var keyword = CreateKeyword(plugin, 70);
+        var actorValueInformation = CreateActorValueInformation(plugin, 80);
+        var npc = CreateNPC(plugin, 90);
+        var magicEffect = CreateMagicEffect(plugin, 100);
+        var perk = CreatePerk(plugin, 110);
         var formListImporter = new TestTypedRecordImporter("FLST", "FormLists", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1, formListItems: 2);
         var gameSettingImporter = new TestTypedRecordImporter("GMST", "GameSettings", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
         var globalImporter = new TestTypedRecordImporter("GLOB", "Globals", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
-        var miscObjectImporter = new TestTypedRecordImporter("MISC", "MiscItems", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
+        var classImporter = new TestTypedRecordImporter("CLAS", "Classes", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
+        var factionImporter = new TestTypedRecordImporter("FACT", "Factions", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
+        var miscItemImporter = new TestTypedRecordImporter("MISC", "MiscItems", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
         var keywordImporter = new TestTypedRecordImporter("KYWD", "Keywords", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
         var actorValueInformationImporter = new TestTypedRecordImporter("AVIF", "ActorValueInformation", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
         var npcImporter = new TestTypedRecordImporter("NPC_", "NPCs", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
         var magicEffectImporter = new TestTypedRecordImporter("MGEF", "MagicEffects", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
         var perkImporter = new TestTypedRecordImporter("PERK", "Perks", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
-        var service = new RecordImportService([formListImporter, gameSettingImporter, globalImporter, miscObjectImporter, keywordImporter, actorValueInformationImporter, npcImporter, magicEffectImporter, perkImporter]);
+        var service = new RecordImportService([formListImporter, gameSettingImporter, globalImporter, classImporter, factionImporter, miscItemImporter, keywordImporter, actorValueInformationImporter, npcImporter, magicEffectImporter, perkImporter]);
 
-        var result = service.ImportPluginRecords(plugin, new TestGameRecordReader(plugin.Game, [formList], [gameSetting], [global], [miscObject], [keyword], [actorValueInformation], [npc], [magicEffect], [perk]));
+        var result = service.ImportPluginRecords(plugin, new TestGameRecordReader(plugin.Game, [formList], [gameSetting], [global], [classRecord], [faction], [miscItem], [keyword], [actorValueInformation], [npc], [magicEffect], [perk]));
 
-        result.RecordTypes.Select(recordType => recordType.RecordType).ShouldBe(["FLST", "GMST", "GLOB", "MISC", "KYWD", "AVIF", "NPC_", "MGEF", "PERK"]);
-        result.HeadersImported.ShouldBe(9);
-        result.DetailRowsImported.ShouldBe(9);
+        result.RecordTypes.Select(recordType => recordType.RecordType).ShouldBe(["FLST", "GMST", "GLOB", "CLAS", "FACT", "MISC", "KYWD", "AVIF", "NPC_", "MGEF", "PERK"]);
+        result.HeadersImported.ShouldBe(11);
+        result.DetailRowsImported.ShouldBe(11);
         result.FormListsImported.ShouldBe(1);
         result.FormListItemsImported.ShouldBe(2);
         result.GameSettingsImported.ShouldBe(1);
@@ -49,7 +53,9 @@ public class RecordImportServiceTests
         formListImporter.StaleCleanupRequests.ShouldBe([plugin]);
         gameSettingImporter.StaleCleanupRequests.ShouldBe([plugin]);
         globalImporter.StaleCleanupRequests.ShouldBe([plugin]);
-        miscObjectImporter.StaleCleanupRequests.ShouldBe([plugin]);
+        classImporter.StaleCleanupRequests.ShouldBe([plugin]);
+        factionImporter.StaleCleanupRequests.ShouldBe([plugin]);
+        miscItemImporter.StaleCleanupRequests.ShouldBe([plugin]);
         keywordImporter.StaleCleanupRequests.ShouldBe([plugin]);
         actorValueInformationImporter.StaleCleanupRequests.ShouldBe([plugin]);
         npcImporter.StaleCleanupRequests.ShouldBe([plugin]);
@@ -58,7 +64,9 @@ public class RecordImportServiceTests
         formListImporter.ImportedRecords.ShouldBe([formList]);
         gameSettingImporter.ImportedRecords.ShouldBe([gameSetting]);
         globalImporter.ImportedRecords.ShouldBe([global]);
-        miscObjectImporter.ImportedRecords.ShouldBe([miscObject]);
+        classImporter.ImportedRecords.ShouldBe([classRecord]);
+        factionImporter.ImportedRecords.ShouldBe([faction]);
+        miscItemImporter.ImportedRecords.ShouldBe([miscItem]);
         keywordImporter.ImportedRecords.ShouldBe([keyword]);
         actorValueInformationImporter.ImportedRecords.ShouldBe([actorValueInformation]);
         npcImporter.ImportedRecords.ShouldBe([npc]);
@@ -75,13 +83,15 @@ public class RecordImportServiceTests
         var formListImporter = new TestTypedRecordImporter("FLST", "FormLists", CreateSupportedGames(SupportedGame.Starfield));
         var gameSettingImporter = new TestTypedRecordImporter("GMST", "GameSettings", CreateSupportedGames(SupportedGame.Starfield));
         var globalImporter = new TestTypedRecordImporter("GLOB", "Globals", CreateSupportedGames(SupportedGame.Starfield));
-        var miscObjectImporter = new TestTypedRecordImporter("MISC", "MiscItems", CreateSupportedGames(SupportedGame.Starfield));
+        var classImporter = new TestTypedRecordImporter("CLAS", "Classes", CreateSupportedGames(SupportedGame.Starfield));
+        var factionImporter = new TestTypedRecordImporter("FACT", "Factions", CreateSupportedGames(SupportedGame.Starfield));
+        var miscItemImporter = new TestTypedRecordImporter("MISC", "MiscItems", CreateSupportedGames(SupportedGame.Starfield));
         var keywordImporter = new TestTypedRecordImporter("KYWD", "Keywords", CreateSupportedGames(SupportedGame.Starfield));
         var actorValueInformationImporter = new TestTypedRecordImporter("AVIF", "ActorValueInformation", CreateSupportedGames(SupportedGame.Starfield));
         var npcImporter = new TestTypedRecordImporter("NPC_", "NPCs", CreateSupportedGames(SupportedGame.Starfield));
         var magicEffectImporter = new TestTypedRecordImporter("MGEF", "MagicEffects", CreateSupportedGames(SupportedGame.Starfield));
         var perkImporter = new TestTypedRecordImporter("PERK", "Perks", CreateSupportedGames(SupportedGame.Starfield));
-        var service = new RecordImportService([formListImporter, gameSettingImporter, globalImporter, miscObjectImporter, keywordImporter, actorValueInformationImporter, npcImporter, magicEffectImporter, perkImporter, conditionFormImporter]);
+        var service = new RecordImportService([formListImporter, gameSettingImporter, globalImporter, classImporter, factionImporter, miscItemImporter, keywordImporter, actorValueInformationImporter, npcImporter, magicEffectImporter, perkImporter, conditionFormImporter]);
 
         var result = service.ImportPluginRecords(plugin, new TestGameRecordReader(plugin.Game, [], [], [], conditionForms: [conditionForm]));
 
@@ -107,10 +117,12 @@ public class RecordImportServiceTests
 
         result.FormListsImported.ShouldBe(1);
         result.GameSettingsImported.ShouldBe(0);
-        result.UnsupportedRecordTypes.ShouldBe(8);
+        result.UnsupportedRecordTypes.ShouldBe(10);
         result.RecordTypes.Single(recordType => recordType.RecordType == "GMST").TypedDetailImportSupported.ShouldBeFalse();
         result.RecordTypes.Single(recordType => recordType.RecordType == "GMST").UnsupportedReason.ShouldNotBeNull().ShouldContain("No typed detail importer");
         result.RecordTypes.Single(recordType => recordType.RecordType == "GLOB").TypedDetailImportSupported.ShouldBeFalse();
+        result.RecordTypes.Single(recordType => recordType.RecordType == "CLAS").TypedDetailImportSupported.ShouldBeFalse();
+        result.RecordTypes.Single(recordType => recordType.RecordType == "FACT").TypedDetailImportSupported.ShouldBeFalse();
         result.RecordTypes.Single(recordType => recordType.RecordType == "MISC").TypedDetailImportSupported.ShouldBeFalse();
         result.RecordTypes.Single(recordType => recordType.RecordType == "KYWD").TypedDetailImportSupported.ShouldBeFalse();
         result.RecordTypes.Single(recordType => recordType.RecordType == "AVIF").TypedDetailImportSupported.ShouldBeFalse();
@@ -221,9 +233,37 @@ public class RecordImportServiceTests
         };
     }
 
-    private static MiscObjectDTO CreateMiscObject(PluginDTO plugin, uint id)
+    private static ClassDTO CreateClass(PluginDTO plugin, uint id)
     {
-        return new MiscObjectDTO
+        return new ClassDTO
+        {
+            Game = plugin.Game,
+            ModKey = plugin.ModKey,
+            FormKey = CreateFormKey(plugin.ModKey, id),
+            EditorID = $"CLAS{id}",
+            FormVersion = 1,
+            MajorRecordFlags = 0,
+            ImportedAtUTC = default
+        };
+    }
+
+    private static FactionDTO CreateFaction(PluginDTO plugin, uint id)
+    {
+        return new FactionDTO
+        {
+            Game = plugin.Game,
+            ModKey = plugin.ModKey,
+            FormKey = CreateFormKey(plugin.ModKey, id),
+            EditorID = $"FACT{id}",
+            FormVersion = 1,
+            MajorRecordFlags = 0,
+            ImportedAtUTC = default
+        };
+    }
+
+    private static MiscItemDTO CreateMiscItem(PluginDTO plugin, uint id)
+    {
+        return new MiscItemDTO
         {
             Game = plugin.Game,
             ModKey = plugin.ModKey,
@@ -357,7 +397,9 @@ public class RecordImportServiceTests
         private readonly IReadOnlyList<FormListDTO> FormLists;
         private readonly IReadOnlyList<GameSettingDTO> GameSettings;
         private readonly IReadOnlyList<GlobalDTO> Globals;
-        private readonly IReadOnlyList<MiscObjectDTO> MiscObjects;
+        private readonly IReadOnlyList<ClassDTO> Classes;
+        private readonly IReadOnlyList<FactionDTO> Factions;
+        private readonly IReadOnlyList<MiscItemDTO> MiscItems;
         private readonly IReadOnlyList<KeywordDTO> Keywords;
         private readonly IReadOnlyList<ActorValueInformationDTO> ActorValueInformation;
         private readonly IReadOnlyList<NPCDTO> NPCs;
@@ -370,7 +412,9 @@ public class RecordImportServiceTests
             IReadOnlyList<FormListDTO> formLists,
             IReadOnlyList<GameSettingDTO> gameSettings,
             IReadOnlyList<GlobalDTO> globals,
-            IReadOnlyList<MiscObjectDTO>? miscObjects = null,
+            IReadOnlyList<ClassDTO>? classes = null,
+            IReadOnlyList<FactionDTO>? factions = null,
+            IReadOnlyList<MiscItemDTO>? miscItems = null,
             IReadOnlyList<KeywordDTO>? keywords = null,
             IReadOnlyList<ActorValueInformationDTO>? actorValueInformation = null,
             IReadOnlyList<NPCDTO>? npcs = null,
@@ -382,7 +426,9 @@ public class RecordImportServiceTests
             FormLists = formLists;
             GameSettings = gameSettings;
             Globals = globals;
-            MiscObjects = miscObjects ?? [];
+            Classes = classes ?? [];
+            Factions = factions ?? [];
+            MiscItems = miscItems ?? [];
             Keywords = keywords ?? [];
             ActorValueInformation = actorValueInformation ?? [];
             NPCs = npcs ?? [];
@@ -400,7 +446,9 @@ public class RecordImportServiceTests
                 FormLists = FormLists,
                 GameSettings = GameSettings,
                 Globals = Globals,
-                MiscObjects = MiscObjects,
+                Classes = Classes,
+                Factions = Factions,
+                MiscItems = MiscItems,
                 Keywords = Keywords,
                 ActorValueInformation = ActorValueInformation,
                 NPCs = NPCs,

@@ -17,11 +17,17 @@ public class ConditionFormConditionDTO
 
     public int ConditionIndex { get; set; }
 
+    public string ConditionSlot { get; set; } = "Conditions";
+
     public string MutagenObjectType { get; set; } = string.Empty;
 
     public string? DataMutagenObjectType { get; set; }
 
     public string? CompareOperator { get; set; }
+
+    public string? Flags { get; set; }
+
+    public int? Unknown2 { get; set; }
 
     public string? ComparisonValue { get; set; }
 

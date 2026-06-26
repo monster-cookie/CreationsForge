@@ -51,7 +51,7 @@ public class SettingsView : UserControl
 
         var description = new TextBlock
         {
-            Text = "Choose the active game and display mode.",
+            Text = "Choose the active game, display mode, and record text language.",
             FontSize = 15,
             TextWrapping = TextWrapping.Wrap
         };
@@ -75,20 +75,22 @@ public class SettingsView : UserControl
         var gameBox = CreateComboBox(nameof(SettingsViewModel.GameOptions), nameof(SettingsViewModel.SelectedGameDisplayName));
         var themeFamilyBox = CreateComboBox(nameof(SettingsViewModel.ThemeFamilyOptions), nameof(SettingsViewModel.SelectedThemeFamily));
         var themeBox = CreateComboBox(nameof(SettingsViewModel.ThemeModeOptions), nameof(SettingsViewModel.SelectedThemeMode));
+        var recordTextLanguageBox = CreateComboBox(nameof(SettingsViewModel.RecordTextLanguageOptions), nameof(SettingsViewModel.SelectedRecordTextLanguage));
         var nifSkopePathBox = CreateNifSkopePathInput();
 
         var form = new Grid
         {
             MaxWidth = 620,
             HorizontalAlignment = HorizontalAlignment.Left,
-            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto"),
+            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,Auto"),
             RowSpacing = 18,
             Children =
             {
                 CreateField("Active game", gameBox, 0),
                 CreateField("Theme", themeFamilyBox, 1),
                 CreateField("Display mode", themeBox, 2),
-                CreateNifSkopeField(nifSkopePathBox, 3)
+                CreateField("Record text language", recordTextLanguageBox, 3),
+                CreateNifSkopeField(nifSkopePathBox, 4)
             }
         };
         Grid.SetRow(form, 1);

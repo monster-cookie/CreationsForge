@@ -98,7 +98,7 @@ public class SpriggitRecordParityFixture
             "GLOB" => recordSet.Globals,
             "KYWD" => recordSet.Keywords,
             "MGEF" => recordSet.MagicEffects,
-            "MISC" => recordSet.MiscObjects,
+            "MISC" => recordSet.MiscItems,
             "NPC_" => recordSet.NPCs,
             "PERK" => recordSet.Perks,
             "STAT" => recordSet.Statics,

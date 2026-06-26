@@ -2,6 +2,7 @@ using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
+using CreationsForge.Core.Utilities;
 using CreationsForge.Core.Repositories.Interfaces;
 using NPoco;
 
@@ -12,9 +13,10 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
     private static readonly IReadOnlySet<string> AllowedTableNames = new HashSet<string>(StringComparer.Ordinal)
     {
         RecordTypeCatalog.ActorValueInformation.TableName,
+        RecordTypeCatalog.Class.TableName,
         RecordTypeCatalog.Keyword.TableName,
         RecordTypeCatalog.MagicEffect.TableName,
-        RecordTypeCatalog.MiscObject.TableName,
+        RecordTypeCatalog.MiscItem.TableName,
         RecordTypeCatalog.NPC.TableName,
         RecordTypeCatalog.Perk.TableName,
         RecordTypeCatalog.Book.TableName,
@@ -23,6 +25,7 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
         RecordTypeCatalog.Container.TableName,
         RecordTypeCatalog.ConstructibleObject.TableName,
         RecordTypeCatalog.ConditionForm.TableName,
+        RecordTypeCatalog.Faction.TableName,
         RecordTypeCatalog.Terminal.TableName
     };
 
@@ -315,6 +318,45 @@ public abstract class TypedRecordRepositoryBase : IRecordTreeRepository
             },
             Id = (uint)formKeyId.Value
         };
+    }
+
+    protected static string? GetEnglishText(TranslatedStringDTO? translatedString)
+    {
+        return LocalizedStringDTOMapper.GetEnglishText(translatedString);
+    }
+
+    protected static TranslatedStringDTO? FromEnglish(string? value)
+    {
+        return LocalizedStringDTOMapper.FromEnglish(value);
+    }
+
+    protected static TranslatedStringDTO? BuildTranslatedString(IReadOnlyList<LocalizedStringDTO> localizedStrings, string sourceField, TranslatedStringDTO? fallback)
+    {
+        var strings = localizedStrings
+            .Where(localizedString => string.Equals(localizedString.SourceField, sourceField, StringComparison.OrdinalIgnoreCase))
+            .GroupBy(localizedString => localizedString.Language, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .Select(localizedString => new TranslatedStringValueDTO
+            {
+                Language = localizedString.Language,
+                String = localizedString.Value
+            })
+            .ToList();
+
+        return strings.Count == 0
+            ? fallback
+            : new TranslatedStringDTO
+            {
+                TargetLanguage = fallback?.TargetLanguage ?? "English",
+                Strings = strings
+            };
+    }
+
+    protected static bool RecordModKeysMatch(ModKeyDTO first, ModKeyDTO second)
+    {
+        return first.Type == second.Type &&
+            string.Equals(first.Name, second.Name, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(first.FileName, second.FileName, StringComparison.OrdinalIgnoreCase);
     }
 
     private RecordTreeEntryDTO ToRecordTreeEntry(RecordTreeEntryRow record, SupportedGame game)

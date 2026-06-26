@@ -67,6 +67,15 @@ public class ImportProgressView : UserControl
         App.ApplyApplicationTextForeground(detailText);
         detailText.Bind(TextBlock.TextProperty, new Binding(nameof(ImportProgressViewModel.CurrentDetailText)));
 
+        var gameText = new TextBlock
+        {
+            FontSize = 14,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            TextWrapping = TextWrapping.Wrap
+        };
+        App.ApplyApplicationTextForeground(gameText);
+        gameText.Bind(TextBlock.TextProperty, new Binding(nameof(ImportProgressViewModel.CurrentGameText)));
+
         var progressBar = new ProgressBar
         {
             Width = 620,
@@ -98,6 +107,7 @@ public class ImportProgressView : UserControl
                 {
                     statusText,
                     detailText,
+                    gameText,
                     progressBar,
                     cancelButton
                 }
