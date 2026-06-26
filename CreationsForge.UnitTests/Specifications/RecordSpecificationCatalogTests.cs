@@ -1,4 +1,5 @@
 using CreationsForge.Specification.Records;
+using CreationsForge.Core.DTOs.Records;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Specifications;
@@ -75,5 +76,20 @@ public class RecordSpecificationCatalogTests
     public void All_ActivePilotSpecificationsExposeComparisonFields()
     {
         RecordSpecificationCatalog.All.ShouldAllBe(specification => specification.Comparison.Fields.Count > 0);
+    }
+
+    /// <summary>
+    /// Verifies that pilot import specifications point at real plugin record-set collections.
+    /// </summary>
+    [Fact]
+    public void All_ActivePilotSpecificationsReferencePluginRecordSetProperties()
+    {
+        var recordSetProperties = typeof(PluginRecordSetDTO)
+            .GetProperties()
+            .Select(property => property.Name)
+            .ToHashSet(StringComparer.Ordinal);
+
+        RecordSpecificationCatalog.All.ShouldAllBe(specification =>
+            recordSetProperties.Contains(specification.Import.PluginRecordSetPropertyName));
     }
 }

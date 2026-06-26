@@ -6,9 +6,9 @@ Status: Accepted
 
 Context: The import readers and comparison service are currently wired by hand for every supported record family. That shape is workable for the current approved records, but it does not scale cleanly toward hundreds of major and minor record types across additional Mutagen-supported games. The project also already has validation specs, but those describe sample assertions rather than production record-family metadata.
 
-Decision: Add `CreationsForge.Specification` as a dependency-free production metadata project. The first catalog slice describes `FLST`, `GMST`, and `GLOB` record identity, current game support, source field hints, and comparison field intent. Core references the specification project and registers `IRecordSpecificationProvider`, but the existing import readers, `RecordImportService`, repositories, and `RecordComparisonService` remain the runtime behavior owners for this slice.
+Decision: Add `CreationsForge.Specification` as a dependency-free production metadata project. The first catalog slice describes `FLST`, `GMST`, and `GLOB` record identity, current game support, source field hints, and comparison field intent. Core references the specification project and registers `IRecordSpecificationProvider`. Later accepted decisions extended the pilot metadata into `RecordComparisonService` and `RecordImportService`; game readers, typed importers, repositories, and complex comparison strategies remain runtime behavior owners for their current responsibilities.
 
-Rationale: A small C# specification foundation gives the project a typed, documented place to grow record metadata without adding dependencies, inventing a file format too early, or forcing a high-risk rewrite of import and comparison behavior. Keeping the first slice metadata-only lets future work migrate one runtime path at a time while tests guard the catalog shape.
+Rationale: A small C# specification foundation gives the project a typed, documented place to grow record metadata without adding dependencies, inventing a file format too early, or forcing a high-risk rewrite of import and comparison behavior. Introducing the project before moving runtime behavior let later work migrate one path at a time while tests guard the catalog shape.
 
 Alternatives considered:
 
@@ -20,8 +20,8 @@ Alternatives considered:
 Consequences:
 
 - `CreationsForge.Specification` has no project dependencies and uses its own lightweight game identifiers so Core can depend on it without a circular reference.
-- Core composition can resolve `IRecordSpecificationProvider` for future import, validation, comparison, and UI-neutral services.
-- `RecordTypeCatalog` and the existing comparison/import branches remain transitional and can drift unless future slices intentionally move consumers to the specification provider.
+- Core composition can resolve `IRecordSpecificationProvider` for import, comparison, future validation, and UI-neutral services.
+- `RecordTypeCatalog` plus non-pilot comparison/import branches remain transitional and can drift unless future slices intentionally move consumers to the specification provider.
 - No database schema, persisted cache shape, UI workflow, or import behavior changes in the foundation slice.
 
 Related files:
@@ -73,6 +73,49 @@ Related files:
 - `CreationsForge.Specification/Records/RecordComparisonSpecification.cs`
 - `CreationsForge.Specification/Records/RecordComparisonFieldSpecification.cs`
 - `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+
+## 2026-06-26 - Drive Pilot Import Dispatch From Specifications
+
+Status: Accepted
+
+Context: The first production specification catalog described `FLST`, `GMST`, and `GLOB`, and the comparison service
+already consumes pilot comparison metadata. `RecordImportService` still hardcoded those first three record families
+before continuing through the rest of the explicit record list. The project needs a low-risk path toward
+specification-driven import dispatch without changing game readers, typed importers, persistence, or import results.
+
+Decision: Add import metadata to `RecordSpecification` and route the `FLST`, `GMST`, and `GLOB` import loop through
+`IRecordSpecificationProvider`. Each pilot specification names the `PluginRecordSetDTO` collection that contains its
+mapped DTOs and whether the record type is required. `RecordImportService` resolves those collections generically,
+then reuses the existing typed importer lookup, progress reporting, per-record failure handling, and stale cleanup.
+Non-pilot record families remain on the existing explicit import calls.
+
+Rationale: This proves production specifications can drive import dispatch while preserving the behavior most likely
+to affect users: record order, unsupported importer accounting, result totals, progress messages, and stale cleanup.
+Keeping `PluginRecordSetDTO` and the current typed importers in place avoids bundling a reader rewrite into the import
+dispatch pilot.
+
+Alternatives considered:
+
+- Keep import dispatch hardcoded until all record types have specifications.
+- Replace `PluginRecordSetDTO` with a generic record bag in the same change.
+- Move all current record families behind the specification provider immediately.
+
+Consequences:
+
+- `RecordImportService` now has an optional constructor dependency on `IRecordSpecificationProvider`.
+- `FLST`, `GMST`, and `GLOB` dispatch order and record-set access are controlled by specification metadata.
+- A typo in a pilot `PluginRecordSetDTO` property is guarded by unit tests and fails at import time.
+- Non-pilot record families remain transitional and explicitly dispatched.
+- No database schema, persisted cache shape, game-reader mapping, or UI behavior changes.
+
+Related files:
+
+- `CreationsForge.Specification/Records/RecordImportSpecification.cs`
+- `CreationsForge.Specification/Records/RecordSpecification.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.Core/Services/RecordImportService.cs`
+- `CreationsForge.UnitTests/Services/RecordImportServiceTests.cs`
 - `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
 
 ## 2026-06-25 - Keep Spriggit-Backed Rendered UI Validation With Data Validation

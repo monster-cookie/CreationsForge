@@ -15,6 +15,11 @@ public static class SupportedRecordSpecifications
         TableName = "FormLists",
         FriendlyName = "Form List",
         GameSupport = CreateCurrentGameSupport("FormLists", "FormLists"),
+        Import = new RecordImportSpecification
+        {
+            PluginRecordSetPropertyName = "FormLists",
+            IsRequired = true
+        },
         Fields =
         [
             new RecordFieldSpecification
@@ -66,6 +71,11 @@ public static class SupportedRecordSpecifications
         TableName = "GameSettings",
         FriendlyName = "Game Setting",
         GameSupport = CreateCurrentGameSupport("GameSettings", "GameSettings"),
+        Import = new RecordImportSpecification
+        {
+            PluginRecordSetPropertyName = "GameSettings",
+            IsRequired = true
+        },
         Fields =
         [
             new RecordFieldSpecification
@@ -116,6 +126,11 @@ public static class SupportedRecordSpecifications
         TableName = "Globals",
         FriendlyName = "Global",
         GameSupport = CreateCurrentGameSupport("Globals", "Globals"),
+        Import = new RecordImportSpecification
+        {
+            PluginRecordSetPropertyName = "Globals",
+            IsRequired = true
+        },
         Fields =
         [
             new RecordFieldSpecification

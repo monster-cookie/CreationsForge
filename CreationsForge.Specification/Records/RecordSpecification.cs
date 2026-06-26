@@ -39,6 +39,14 @@ public sealed class RecordSpecification
         new List<RecordFieldSpecification>();
 
     /// <summary>
+    /// Gets import dispatch metadata for the record family.
+    /// </summary>
+    public RecordImportSpecification Import { get; init; } = new()
+    {
+        PluginRecordSetPropertyName = string.Empty
+    };
+
+    /// <summary>
     /// Gets comparison metadata for the record family.
     /// </summary>
     public RecordComparisonSpecification Comparison { get; init; } = new();

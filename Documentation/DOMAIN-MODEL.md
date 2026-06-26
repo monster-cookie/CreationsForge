@@ -41,9 +41,10 @@ plus Fallout 4 persist typed detail rows for Terminals (`TERM`).
 Record specification: Production metadata that describes a record family's Bethesda record ID, canonical
 CreationsForge name, current typed-detail table name, supported game adapters, source field hints, and comparison
 field intent. The first specification catalog lives in `CreationsForge.Specification` and covers `FLST`, `GMST`, and
-`GLOB`. Core comparison consumes the pilot comparison metadata for simple scalar rows. Runtime import behavior and
-complex comparison strategies remain owned by the existing Core and game-adapter services until later approved work
-makes those paths specification-driven.
+`GLOB`. Core import dispatch consumes pilot import metadata to locate the matching `PluginRecordSetDTO` collections,
+and Core comparison consumes pilot comparison metadata for simple scalar rows. Complex comparison strategies and the
+actual game-specific Mutagen mapping remain owned by the existing Core and game-adapter services until later approved
+work makes those paths specification-driven.
 
 Starfield master references require special construction through Mutagen's separated-master-aware load-order paths.
 The Starfield reader prefers the full Mutagen environment load order's mod objects so split masters, medium masters,
@@ -177,8 +178,9 @@ instance before saving type-specific detail rows, and typed importers dispatch s
 DTO capability interfaces.
 
 `CreationsForge.Specification` currently provides pilot production metadata for `FLST`, `GMST`, and `GLOB`. That
-metadata is registered through Core composition and now drives the simple comparison rows for those pilot records, but
-it does not yet change how readers map Mutagen records or how repositories persist DTOs.
+metadata is registered through Core composition and now drives the pilot import dispatch loop plus the simple
+comparison rows for those pilot records, but it does not yet change how readers map Mutagen records or how
+repositories persist DTOs.
 
 ## Presentation Boundary
 

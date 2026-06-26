@@ -5,6 +5,7 @@ using CreationsForge.Core.Enums;
 using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Importers.Interfaces;
 using CreationsForge.Core.Services;
+using CreationsForge.Specification.Records;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Services;
@@ -129,6 +130,30 @@ public class RecordImportServiceTests
         result.RecordTypes.Single(recordType => recordType.RecordType == "NPC_").TypedDetailImportSupported.ShouldBeFalse();
         result.RecordTypes.Single(recordType => recordType.RecordType == "MGEF").TypedDetailImportSupported.ShouldBeFalse();
         result.RecordTypes.Single(recordType => recordType.RecordType == "PERK").TypedDetailImportSupported.ShouldBeFalse();
+    }
+
+    /// <summary>
+    /// Verifies that pilot record import dispatch reads the injected specification catalog instead of the old
+    /// hardcoded first-three-record sequence.
+    /// </summary>
+    [Fact]
+    public void ImportPluginRecords_ForPilotRecords_UsesInjectedImportSpecifications()
+    {
+        var plugin = CreatePlugin(SupportedGame.Starfield);
+        var formList = CreateFormList(plugin, 10);
+        var gameSetting = CreateGameSetting(plugin, 20);
+        var global = CreateGlobal(plugin, 30);
+        var globalImporter = new TestTypedRecordImporter("GLOB", "Globals", CreateSupportedGames(SupportedGame.Starfield), detailRows: 1);
+        var specificationProvider = new TestRecordSpecificationProvider(CreatePilotImportSpecification("GLOB", "Global", "Globals", "Global", "Globals"));
+        var service = new RecordImportService([globalImporter], specificationProvider);
+
+        var result = service.ImportPluginRecords(plugin, new TestGameRecordReader(plugin.Game, [formList], [gameSetting], [global]));
+
+        result.RecordTypes.Select(recordType => recordType.RecordType).ShouldBe(["GLOB", "CLAS", "FACT", "MISC", "KYWD", "AVIF", "NPC_", "MGEF", "PERK"]);
+        result.GlobalsImported.ShouldBe(1);
+        result.FormListsImported.ShouldBe(0);
+        result.GameSettingsImported.ShouldBe(0);
+        globalImporter.ImportedRecords.ShouldBe([global]);
     }
 
     [Fact]
@@ -392,6 +417,36 @@ public class RecordImportServiceTests
         return new HashSet<SupportedGame>(games);
     }
 
+    /// <summary>
+    /// Creates a minimal record specification for import-dispatch tests.
+    /// </summary>
+    /// <param name="recordID">The Bethesda record identifier used to resolve a typed importer.</param>
+    /// <param name="recordType">The canonical record type name stored in import results.</param>
+    /// <param name="tableName">The detail table name stored in import results.</param>
+    /// <param name="friendlyName">The human-readable record type name.</param>
+    /// <param name="pluginRecordSetPropertyName">The record-set property containing mapped DTOs for the record type.</param>
+    /// <returns>The test record specification.</returns>
+    private static RecordSpecification CreatePilotImportSpecification(
+        string recordID,
+        string recordType,
+        string tableName,
+        string friendlyName,
+        string pluginRecordSetPropertyName)
+    {
+        return new RecordSpecification
+        {
+            RecordID = recordID,
+            RecordType = recordType,
+            TableName = tableName,
+            FriendlyName = friendlyName,
+            Import = new RecordImportSpecification
+            {
+                PluginRecordSetPropertyName = pluginRecordSetPropertyName,
+                IsRequired = true
+            }
+        };
+    }
+
     private sealed class TestGameRecordReader : IGameRecordReader
     {
         private readonly IReadOnlyList<FormListDTO> FormLists;
@@ -510,6 +565,44 @@ public class RecordImportServiceTests
         public void DeleteStaleRecords(PluginDTO plugin, DateTime importedAtUTC)
         {
             StaleCleanupRequests.Add(plugin);
+        }
+    }
+
+    /// <summary>
+    /// Provides an isolated record specification set for import-service tests.
+    /// </summary>
+    private sealed class TestRecordSpecificationProvider : IRecordSpecificationProvider
+    {
+        private readonly IReadOnlyList<RecordSpecification> Specifications;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TestRecordSpecificationProvider"/> class.
+        /// </summary>
+        /// <param name="specifications">The specifications the provider should expose.</param>
+        public TestRecordSpecificationProvider(params RecordSpecification[] specifications)
+        {
+            Specifications = specifications;
+        }
+
+        /// <inheritdoc />
+        public IReadOnlyList<RecordSpecification> GetAll()
+        {
+            return Specifications;
+        }
+
+        /// <inheritdoc />
+        public RecordSpecification? FindByRecordID(string recordID)
+        {
+            return Specifications.FirstOrDefault(specification =>
+                string.Equals(specification.RecordID, recordID, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <inheritdoc />
+        public IReadOnlyList<RecordSpecification> GetSupportedByGame(SpecificationGame game)
+        {
+            return Specifications
+                .Where(specification => specification.GameSupport.Any(support => support.Game == game))
+                .ToList();
         }
     }
 }
