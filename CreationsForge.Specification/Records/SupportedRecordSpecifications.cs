@@ -1,7 +1,7 @@
 namespace CreationsForge.Specification.Records;
 
 /// <summary>
-/// Contains the first production record specifications used to prove the specification project boundary.
+/// Contains the production record specifications used by shared specification-aware workflows.
 /// </summary>
 public static class SupportedRecordSpecifications
 {
@@ -18,6 +18,7 @@ public static class SupportedRecordSpecifications
         Import = new RecordImportSpecification
         {
             PluginRecordSetPropertyName = "FormLists",
+            ImportOrder = 0,
             IsRequired = true
         },
         Fields =
@@ -74,6 +75,7 @@ public static class SupportedRecordSpecifications
         Import = new RecordImportSpecification
         {
             PluginRecordSetPropertyName = "GameSettings",
+            ImportOrder = 1,
             IsRequired = true
         },
         Fields =
@@ -129,6 +131,7 @@ public static class SupportedRecordSpecifications
         Import = new RecordImportSpecification
         {
             PluginRecordSetPropertyName = "Globals",
+            ImportOrder = 2,
             IsRequired = true
         },
         Fields =
@@ -183,14 +186,255 @@ public static class SupportedRecordSpecifications
     };
 
     /// <summary>
-    /// Gets every specification included in the first production catalog.
+    /// Gets the Class record specification.
+    /// </summary>
+    public static RecordSpecification Class { get; } = CreateImportOnlySpecification(
+        "CLAS",
+        "Class",
+        "Classes",
+        "Class",
+        "Classes",
+        3,
+        isRequired: true);
+
+    /// <summary>
+    /// Gets the Faction record specification.
+    /// </summary>
+    public static RecordSpecification Faction { get; } = CreateImportOnlySpecification(
+        "FACT",
+        "Faction",
+        "Factions",
+        "Faction",
+        "Factions",
+        4,
+        isRequired: true);
+
+    /// <summary>
+    /// Gets the Misc Item record specification.
+    /// </summary>
+    public static RecordSpecification MiscItem { get; } = CreateImportOnlySpecification(
+        "MISC",
+        "MiscItem",
+        "MiscItems",
+        "Misc Item",
+        "MiscItems",
+        5,
+        isRequired: true);
+
+    /// <summary>
+    /// Gets the Keyword record specification.
+    /// </summary>
+    public static RecordSpecification Keyword { get; } = CreateImportOnlySpecification(
+        "KYWD",
+        "Keyword",
+        "Keywords",
+        "Keyword",
+        "Keywords",
+        6,
+        isRequired: true);
+
+    /// <summary>
+    /// Gets the Actor Value Information record specification.
+    /// </summary>
+    public static RecordSpecification ActorValueInformation { get; } = CreateImportOnlySpecification(
+        "AVIF",
+        "ActorValueInformation",
+        "ActorValueInformation",
+        "Actor Value Information",
+        "ActorValueInformation",
+        7,
+        isRequired: true);
+
+    /// <summary>
+    /// Gets the NPC record specification.
+    /// </summary>
+    public static RecordSpecification NPC { get; } = CreateImportOnlySpecification(
+        "NPC_",
+        "NPC",
+        "NPCs",
+        "NPC",
+        "NPCs",
+        8,
+        isRequired: true);
+
+    /// <summary>
+    /// Gets the Magic Effect record specification.
+    /// </summary>
+    public static RecordSpecification MagicEffect { get; } = CreateImportOnlySpecification(
+        "MGEF",
+        "MagicEffect",
+        "MagicEffects",
+        "Magic Effect",
+        "MagicEffects",
+        9,
+        isRequired: true);
+
+    /// <summary>
+    /// Gets the Perk record specification.
+    /// </summary>
+    public static RecordSpecification Perk { get; } = CreateImportOnlySpecification(
+        "PERK",
+        "Perk",
+        "Perks",
+        "Perk",
+        "Perks",
+        10,
+        isRequired: true);
+
+    /// <summary>
+    /// Gets the Static record specification.
+    /// </summary>
+    public static RecordSpecification Static { get; } = CreateImportOnlySpecification(
+        "STAT",
+        "Static",
+        "Statics",
+        "Static",
+        "Statics",
+        11,
+        isRequired: false);
+
+    /// <summary>
+    /// Gets the Container record specification.
+    /// </summary>
+    public static RecordSpecification Container { get; } = CreateImportOnlySpecification(
+        "CONT",
+        "Container",
+        "Containers",
+        "Container",
+        "Containers",
+        12,
+        isRequired: false);
+
+    /// <summary>
+    /// Gets the Constructible Object record specification.
+    /// </summary>
+    public static RecordSpecification ConstructibleObject { get; } = CreateImportOnlySpecification(
+        "COBJ",
+        "ConstructibleObject",
+        "ConstructibleObjects",
+        "Constructible Object",
+        "ConstructibleObjects",
+        13,
+        isRequired: false);
+
+    /// <summary>
+    /// Gets the Condition Form record specification.
+    /// </summary>
+    public static RecordSpecification ConditionForm { get; } = CreateImportOnlySpecification(
+        "CNDF",
+        "ConditionForm",
+        "ConditionForms",
+        "Condition Form",
+        "ConditionForms",
+        14,
+        isRequired: false,
+        gameSupport: CreateGameSupport("ConditionForms", "ConditionForms", SpecificationGame.Starfield));
+
+    /// <summary>
+    /// Gets the Book record specification.
+    /// </summary>
+    public static RecordSpecification Book { get; } = CreateImportOnlySpecification(
+        "BOOK",
+        "Book",
+        "Books",
+        "Book",
+        "Books",
+        15,
+        isRequired: false);
+
+    /// <summary>
+    /// Gets the Door record specification.
+    /// </summary>
+    public static RecordSpecification Door { get; } = CreateImportOnlySpecification(
+        "DOOR",
+        "Door",
+        "Doors",
+        "Door",
+        "Doors",
+        16,
+        isRequired: false);
+
+    /// <summary>
+    /// Gets the Terminal record specification.
+    /// </summary>
+    public static RecordSpecification Terminal { get; } = CreateImportOnlySpecification(
+        "TERM",
+        "Terminal",
+        "Terminals",
+        "Terminal",
+        "Terminals",
+        17,
+        isRequired: false,
+        gameSupport: CreateGameSupport(
+            "Terminals",
+            "Terminals",
+            SpecificationGame.Starfield,
+            SpecificationGame.Fallout4));
+
+    /// <summary>
+    /// Gets every specification included in the production catalog.
     /// </summary>
     public static IReadOnlyList<RecordSpecification> All { get; } =
     [
         FormList,
         GameSetting,
-        Global
+        Global,
+        Class,
+        Faction,
+        MiscItem,
+        Keyword,
+        ActorValueInformation,
+        NPC,
+        MagicEffect,
+        Perk,
+        Static,
+        Container,
+        ConstructibleObject,
+        ConditionForm,
+        Book,
+        Door,
+        Terminal
     ];
+
+    /// <summary>
+    /// Creates an import-dispatch specification for a current record family whose comparison metadata remains owned by
+    /// record-specific Core code.
+    /// </summary>
+    /// <param name="recordID">The Bethesda record identifier used to resolve the typed detail importer.</param>
+    /// <param name="recordType">The canonical CreationsForge record type name.</param>
+    /// <param name="tableName">The current typed detail table name used in import results.</param>
+    /// <param name="friendlyName">The human-readable record family name used for diagnostics and display.</param>
+    /// <param name="pluginRecordSetPropertyName">The <c>PluginRecordSetDTO</c> collection property containing DTOs.</param>
+    /// <param name="importOrder">The import order that preserves the existing record-dispatch sequence.</param>
+    /// <param name="isRequired">A value indicating whether an import result should be emitted for empty unsupported families.</param>
+    /// <param name="gameSupport">The optional game support metadata; all current adapters are used when omitted.</param>
+    /// <returns>The specification containing import metadata and no declarative comparison fields.</returns>
+    private static RecordSpecification CreateImportOnlySpecification(
+        string recordID,
+        string recordType,
+        string tableName,
+        string friendlyName,
+        string pluginRecordSetPropertyName,
+        int importOrder,
+        bool isRequired,
+        IReadOnlyList<RecordGameSupportSpecification>? gameSupport = null)
+    {
+        return new RecordSpecification
+        {
+            RecordID = recordID,
+            RecordType = recordType,
+            TableName = tableName,
+            FriendlyName = friendlyName,
+            GameSupport = gameSupport ?? CreateCurrentGameSupport(pluginRecordSetPropertyName, pluginRecordSetPropertyName),
+            Import = new RecordImportSpecification
+            {
+                PluginRecordSetPropertyName = pluginRecordSetPropertyName,
+                ImportOrder = importOrder,
+                IsRequired = isRequired
+            },
+            ImplementationNote = "Import dispatch metadata is active; comparison remains record-specific."
+        };
+    }
 
     /// <summary>
     /// Creates support metadata for the currently implemented CreationsForge game adapters.
@@ -202,26 +446,34 @@ public static class SupportedRecordSpecifications
         string mutagenCollectionName,
         string spriggitRecordDirectoryName)
     {
+        return CreateGameSupport(
+            mutagenCollectionName,
+            spriggitRecordDirectoryName,
+            SpecificationGame.Starfield,
+            SpecificationGame.Fallout4,
+            SpecificationGame.Skyrim);
+    }
+
+    /// <summary>
+    /// Creates support metadata for the specified game adapters.
+    /// </summary>
+    /// <param name="mutagenCollectionName">The Mutagen collection property name exposed by the selected adapters.</param>
+    /// <param name="spriggitRecordDirectoryName">The Spriggit record-family directory name used by validation.</param>
+    /// <param name="games">The supported games that expose the record family through current adapters.</param>
+    /// <returns>The requested game support metadata.</returns>
+    private static IReadOnlyList<RecordGameSupportSpecification> CreateGameSupport(
+        string mutagenCollectionName,
+        string spriggitRecordDirectoryName,
+        params SpecificationGame[] games)
+    {
         return
         [
-            new RecordGameSupportSpecification
+            .. games.Select(game => new RecordGameSupportSpecification
             {
-                Game = SpecificationGame.Starfield,
+                Game = game,
                 MutagenCollectionName = mutagenCollectionName,
                 SpriggitRecordDirectoryName = spriggitRecordDirectoryName
-            },
-            new RecordGameSupportSpecification
-            {
-                Game = SpecificationGame.Fallout4,
-                MutagenCollectionName = mutagenCollectionName,
-                SpriggitRecordDirectoryName = spriggitRecordDirectoryName
-            },
-            new RecordGameSupportSpecification
-            {
-                Game = SpecificationGame.Skyrim,
-                MutagenCollectionName = mutagenCollectionName,
-                SpriggitRecordDirectoryName = spriggitRecordDirectoryName
-            }
+            })
         ];
     }
 }

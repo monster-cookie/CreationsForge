@@ -133,11 +133,11 @@ public class RecordImportServiceTests
     }
 
     /// <summary>
-    /// Verifies that pilot record import dispatch reads the injected specification catalog instead of the old
-    /// hardcoded first-three-record sequence.
+    /// Verifies that record import dispatch reads the injected specification catalog instead of the old hardcoded
+    /// record sequence.
     /// </summary>
     [Fact]
-    public void ImportPluginRecords_ForPilotRecords_UsesInjectedImportSpecifications()
+    public void ImportPluginRecords_UsesInjectedImportSpecificationsAsDispatchSource()
     {
         var plugin = CreatePlugin(SupportedGame.Starfield);
         var formList = CreateFormList(plugin, 10);
@@ -149,7 +149,7 @@ public class RecordImportServiceTests
 
         var result = service.ImportPluginRecords(plugin, new TestGameRecordReader(plugin.Game, [formList], [gameSetting], [global]));
 
-        result.RecordTypes.Select(recordType => recordType.RecordType).ShouldBe(["GLOB", "CLAS", "FACT", "MISC", "KYWD", "AVIF", "NPC_", "MGEF", "PERK"]);
+        result.RecordTypes.Select(recordType => recordType.RecordType).ShouldBe(["GLOB"]);
         result.GlobalsImported.ShouldBe(1);
         result.FormListsImported.ShouldBe(0);
         result.GameSettingsImported.ShouldBe(0);
@@ -442,6 +442,7 @@ public class RecordImportServiceTests
             Import = new RecordImportSpecification
             {
                 PluginRecordSetPropertyName = pluginRecordSetPropertyName,
+                ImportOrder = 0,
                 IsRequired = true
             }
         };

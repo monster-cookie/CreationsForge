@@ -118,6 +118,53 @@ Related files:
 - `CreationsForge.UnitTests/Services/RecordImportServiceTests.cs`
 - `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
 
+## 2026-06-26 - Complete Spec-Driven Import Dispatch For Current Record Families
+
+Status: Accepted
+
+Context: The pilot import-dispatch slice proved that `RecordImportService` could resolve `PluginRecordSetDTO`
+collections through `IRecordSpecificationProvider` while preserving typed importer lookup, progress reporting, failure
+handling, and stale cleanup. The remaining current record families were still dispatched through explicit service
+calls, which left two sources of import order and required/optional record-family policy.
+
+Decision: Expand `CreationsForge.Specification` so the catalog contains import metadata for every currently imported
+record family. Add an explicit import order to `RecordImportSpecification`, preserve the existing dispatch order, and
+mark optional families through specification metadata. `RecordImportService` now loops over the ordered specification
+catalog for all current record families instead of mixing specification-driven pilot records with hardcoded calls.
+Import-only specifications do not add declarative comparison fields; record-specific Core comparison methods remain
+the runtime authority for those families until approved comparison migration slices move them.
+
+Rationale: Moving the full current import surface behind one catalog removes duplicated dispatch policy without
+changing game readers, typed importers, repositories, persisted schema, or UI-facing import results. Keeping comparison
+metadata limited to the existing pilot fields avoids implying that complex child-row and localization behavior has
+become declarative before the comparison engine is ready.
+
+Alternatives considered:
+
+- Keep only `FLST`, `GMST`, and `GLOB` import dispatch specification-driven until reader mapping also moves.
+- Move comparison metadata for all current record families in the same change.
+- Replace `PluginRecordSetDTO` with a generic record bag while completing dispatch migration.
+
+Consequences:
+
+- Import order, required record-type result emission, optional record-type omission, and record-set collection lookup
+  are now catalog metadata.
+- `RecordImportService` treats an injected `IRecordSpecificationProvider` as the complete dispatch source.
+- Tests now guard catalog coverage, contiguous import order, and valid `PluginRecordSetDTO` collection names.
+- No database schema, persisted data shape, game-reader mapping, or Avalonia UI behavior changes.
+- Existing imported SQLite data is not stale because this changes dispatch metadata only.
+
+Related files:
+
+- `CreationsForge.Specification/Records/RecordImportSpecification.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.Core/Services/RecordImportService.cs`
+- `CreationsForge.UnitTests/Services/RecordImportServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-25 - Keep Spriggit-Backed Rendered UI Validation With Data Validation
 
 Status: Accepted

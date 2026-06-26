@@ -40,9 +40,10 @@ plus Fallout 4 persist typed detail rows for Terminals (`TERM`).
 
 Record specification: Production metadata that describes a record family's Bethesda record ID, canonical
 CreationsForge name, current typed-detail table name, supported game adapters, source field hints, and comparison
-field intent. The first specification catalog lives in `CreationsForge.Specification` and covers `FLST`, `GMST`, and
-`GLOB`. Core import dispatch consumes pilot import metadata to locate the matching `PluginRecordSetDTO` collections,
-and Core comparison consumes pilot comparison metadata for simple scalar rows. Complex comparison strategies and the
+field intent. The specification catalog lives in `CreationsForge.Specification` and covers the current imported
+record families for Core import dispatch. Core import dispatch consumes specification import metadata to locate the
+matching `PluginRecordSetDTO` collections and preserve the approved record-family order. Core comparison consumes
+pilot comparison metadata for `FLST`, `GMST`, and `GLOB` simple scalar rows. Complex comparison strategies and the
 actual game-specific Mutagen mapping remain owned by the existing Core and game-adapter services until later approved
 work makes those paths specification-driven.
 
@@ -177,10 +178,10 @@ record
 instance before saving type-specific detail rows, and typed importers dispatch shared child persistence from the record
 DTO capability interfaces.
 
-`CreationsForge.Specification` currently provides pilot production metadata for `FLST`, `GMST`, and `GLOB`. That
-metadata is registered through Core composition and now drives the pilot import dispatch loop plus the simple
-comparison rows for those pilot records, but it does not yet change how readers map Mutagen records or how
-repositories persist DTOs.
+`CreationsForge.Specification` currently provides production metadata for the imported record families. That metadata
+is registered through Core composition and drives the shared import dispatch loop. The same catalog drives simple
+comparison rows for the `FLST`, `GMST`, and `GLOB` pilot records, but it does not yet change how readers map Mutagen
+records or how repositories persist DTOs.
 
 ## Presentation Boundary
 

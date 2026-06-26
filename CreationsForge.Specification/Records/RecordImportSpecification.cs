@@ -11,6 +11,12 @@ public sealed class RecordImportSpecification
     public required string PluginRecordSetPropertyName { get; init; }
 
     /// <summary>
+    /// Gets the ordered position used by shared import dispatch when processing the record family alongside other
+    /// specification-backed record families.
+    /// </summary>
+    public int ImportOrder { get; init; }
+
+    /// <summary>
     /// Gets a value indicating whether the record family should always produce an import result entry even when no
     /// rows are mapped and no typed detail importer is registered.
     /// </summary>

@@ -24,7 +24,7 @@ public class RecordImportService : IRecordImportService
     /// Initializes a new instance of the <see cref="RecordImportService"/> class.
     /// </summary>
     /// <param name="typedRecordImporters">The typed detail importers available for record import.</param>
-    /// <param name="recordSpecificationProvider">The optional record specification provider used for pilot spec-driven import dispatch.</param>
+    /// <param name="recordSpecificationProvider">The optional record specification provider used for spec-driven import dispatch.</param>
     public RecordImportService(
         IEnumerable<ITypedRecordImporter> typedRecordImporters,
         IRecordSpecificationProvider? recordSpecificationProvider = null)
@@ -63,22 +63,7 @@ public class RecordImportService : IRecordImportService
         ReportProgress(progress, plugin, pluginIndex, pluginCount, string.Empty, 0, 0, $"Starting record import: {plugin.ModKey.FileName}", "Loading plugin records.");
         cancellationToken.ThrowIfCancellationRequested();
         var recordSet = recordReader.ReadPluginRecords(plugin, cancellationToken);
-        ImportSpecDrivenPilotRecordTypes(plugin, result, recordSet, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.Class, recordSet.Classes, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.Faction, recordSet.Factions, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.MiscItem, recordSet.MiscItems, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.Keyword, recordSet.Keywords, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.ActorValueInformation, recordSet.ActorValueInformation, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.NPC, recordSet.NPCs, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.MagicEffect, recordSet.MagicEffects, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.Perk, recordSet.Perks, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Static, recordSet.Statics, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Container, recordSet.Containers, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.ConstructibleObject, recordSet.ConstructibleObjects, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.ConditionForm, recordSet.ConditionForms, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Book, recordSet.Books, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Door, recordSet.Doors, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Terminal, recordSet.Terminals, progress, pluginIndex, pluginCount, cancellationToken);
+        ImportSpecDrivenRecordTypes(plugin, result, recordSet, progress, pluginIndex, pluginCount, cancellationToken);
         Logger.Information(
             "Finished record import for {ModKey} for {Game}: headers {HeadersImported}, details {DetailRowsImported}, FormList items {FormListItemsImported}, record failures {RecordsFailed}, unsupported record types {UnsupportedRecordTypes}",
             plugin.ModKey.FileName,
@@ -93,7 +78,7 @@ public class RecordImportService : IRecordImportService
     }
 
     /// <summary>
-    /// Imports the first record families whose dispatch metadata lives in the production specification catalog.
+    /// Imports record families whose dispatch metadata lives in the production specification catalog.
     /// </summary>
     /// <param name="plugin">The plugin whose records are being imported.</param>
     /// <param name="result">The aggregate import result being populated.</param>
@@ -102,7 +87,7 @@ public class RecordImportService : IRecordImportService
     /// <param name="pluginIndex">The one-based plugin index used for progress reporting.</param>
     /// <param name="pluginCount">The total plugin count used for progress reporting.</param>
     /// <param name="cancellationToken">The token used to cancel record import.</param>
-    private void ImportSpecDrivenPilotRecordTypes(
+    private void ImportSpecDrivenRecordTypes(
         PluginDTO plugin,
         RecordImportResultDTO result,
         PluginRecordSetDTO recordSet,
@@ -111,7 +96,7 @@ public class RecordImportService : IRecordImportService
         int pluginCount,
         CancellationToken cancellationToken)
     {
-        foreach (var specification in RecordSpecificationProvider.GetAll())
+        foreach (var specification in RecordSpecificationProvider.GetAll().OrderBy(specification => specification.Import.ImportOrder))
         {
             var recordType = new RecordTypeData
             {

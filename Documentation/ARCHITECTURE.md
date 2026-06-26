@@ -22,12 +22,11 @@ may reference shared Mutagen packages such as `Mutagen.Bethesda.Core`, but it mu
 packages.
 
 `CreationsForge.Specification` owns production record-family metadata that can gradually drive shared import,
-validation, and comparison behavior. The first catalog slice covers FormLists (`FLST`), GameSettings (`GMST`), and
-Globals (`GLOB`). `RecordComparisonService` consumes that comparison metadata for the pilot records' simple scalar
-rows, and `RecordImportService` consumes import metadata for the pilot record dispatch loop. The existing game
-readers, typed importers, repositories, and complex comparison strategies still own their current runtime behavior.
-The specification project does not reference Core, Avalonia, NPoco, Migrations, Assets, or game-specific Mutagen
-packages.
+validation, and comparison behavior. The catalog includes the current imported record families and drives
+`RecordImportService` dispatch order and `PluginRecordSetDTO` collection lookup. `RecordComparisonService` consumes
+comparison metadata for the `FLST`, `GMST`, and `GLOB` pilot records' simple scalar rows. The existing game readers,
+typed importers, repositories, and complex comparison strategies still own their current runtime behavior. The
+specification project does not reference Core, Avalonia, NPoco, Migrations, Assets, or game-specific Mutagen packages.
 
 `CreationsForge.Bethesda.Assets` owns UI-neutral Bethesda asset IO helpers, local-file resolution result DTOs, an
 in-memory asset provider, archive-reader contracts, and temporary extraction session infrastructure. It does not
@@ -137,12 +136,11 @@ child rows through the common `RecordInstances` identity instead of game-specifi
 components use the shared record-component child path; Fallout 4 and Skyrim FACT records currently have no component
 payload to map.
 
-The `CreationsForge.Specification` catalog now drives the first `FLST`, `GMST`, and `GLOB` import dispatch loop.
-`RecordImportService` reads the pilot specifications from `IRecordSpecificationProvider`, resolves each
-`PluginRecordSetDTO` collection by the specification's import metadata, and still uses the existing
-`ITypedRecordImporter` lookup, progress reporting, per-record failure handling, and stale cleanup behavior. Non-pilot
-record families still use the explicit import calls until later approved work moves them behind the specification
-provider.
+The `CreationsForge.Specification` catalog drives the import dispatch loop for all currently imported record
+families. `RecordImportService` reads specifications from `IRecordSpecificationProvider`, orders them by import
+metadata, resolves each `PluginRecordSetDTO` collection by name, and still uses the existing `ITypedRecordImporter`
+lookup, progress reporting, per-record failure handling, and stale cleanup behavior. Required and optional record-type
+result behavior is controlled by the specification's import metadata.
 
 Starfield plugin metadata, master-reference, and record reads use a Starfield-only construction helper. The helper
 prefers the full Mutagen environment load order's mod objects with the Starfield environment data folder from

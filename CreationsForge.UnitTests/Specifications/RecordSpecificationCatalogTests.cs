@@ -5,19 +5,42 @@ using Shouldly;
 namespace CreationsForge.UnitTests.Specifications;
 
 /// <summary>
-/// Tests the static production record specification catalog used by the first specification foundation slice.
+/// Tests the static production record specification catalog used by specification-aware workflows.
 /// </summary>
 public class RecordSpecificationCatalogTests
 {
     /// <summary>
-    /// Verifies that the foundation catalog includes the pilot record families chosen for the first slice.
+    /// Verifies that the catalog includes the current imported record families in import-dispatch order.
     /// </summary>
     [Fact]
-    public void All_ReturnsPilotRecordSpecifications()
+    public void All_ReturnsCurrentImportRecordSpecifications()
     {
-        var recordIDs = RecordSpecificationCatalog.All.Select(specification => specification.RecordID).ToList();
+        var recordIDs = RecordSpecificationCatalog.All
+            .OrderBy(specification => specification.Import.ImportOrder)
+            .Select(specification => specification.RecordID)
+            .ToList();
 
-        recordIDs.ShouldBe(["FLST", "GMST", "GLOB"], ignoreOrder: true);
+        recordIDs.ShouldBe(
+        [
+            "FLST",
+            "GMST",
+            "GLOB",
+            "CLAS",
+            "FACT",
+            "MISC",
+            "KYWD",
+            "AVIF",
+            "NPC_",
+            "MGEF",
+            "PERK",
+            "STAT",
+            "CONT",
+            "COBJ",
+            "CNDF",
+            "BOOK",
+            "DOOR",
+            "TERM"
+        ]);
     }
 
     /// <summary>
@@ -33,6 +56,20 @@ public class RecordSpecificationCatalogTests
             .ToList();
 
         duplicateRecordIDs.ShouldBeEmpty();
+    }
+
+    /// <summary>
+    /// Verifies that import order values are unique and contiguous so dispatch order stays deterministic.
+    /// </summary>
+    [Fact]
+    public void All_DoesNotExposeDuplicateImportOrders()
+    {
+        var importOrders = RecordSpecificationCatalog.All
+            .Select(specification => specification.Import.ImportOrder)
+            .Order()
+            .ToList();
+
+        importOrders.ShouldBe(Enumerable.Range(0, RecordSpecificationCatalog.All.Count).ToList());
     }
 
     /// <summary>
@@ -59,14 +96,34 @@ public class RecordSpecificationCatalogTests
     }
 
     /// <summary>
-    /// Verifies that game support filtering returns the current pilot records for the selected game adapter.
+    /// Verifies that game support filtering returns the current record families for the selected game adapter.
     /// </summary>
     [Fact]
     public void GetSupportedByGame_ReturnsRecordsSupportedByRequestedGame()
     {
         var specifications = RecordSpecificationCatalog.GetSupportedByGame(SpecificationGame.Starfield);
 
-        specifications.Select(specification => specification.RecordID).ShouldBe(["FLST", "GMST", "GLOB"], ignoreOrder: true);
+        specifications.Select(specification => specification.RecordID).ShouldBe(
+        [
+            "FLST",
+            "GMST",
+            "GLOB",
+            "CLAS",
+            "FACT",
+            "MISC",
+            "KYWD",
+            "AVIF",
+            "NPC_",
+            "MGEF",
+            "PERK",
+            "STAT",
+            "CONT",
+            "COBJ",
+            "CNDF",
+            "BOOK",
+            "DOOR",
+            "TERM"
+        ], ignoreOrder: true);
     }
 
     /// <summary>
@@ -75,11 +132,16 @@ public class RecordSpecificationCatalogTests
     [Fact]
     public void All_ActivePilotSpecificationsExposeComparisonFields()
     {
-        RecordSpecificationCatalog.All.ShouldAllBe(specification => specification.Comparison.Fields.Count > 0);
+        var comparisonBackedRecordIDs = RecordSpecificationCatalog.All
+            .Where(specification => specification.Comparison.Fields.Count > 0)
+            .Select(specification => specification.RecordID)
+            .ToList();
+
+        comparisonBackedRecordIDs.ShouldBe(["FLST", "GMST", "GLOB"], ignoreOrder: true);
     }
 
     /// <summary>
-    /// Verifies that pilot import specifications point at real plugin record-set collections.
+    /// Verifies that import specifications point at real plugin record-set collections.
     /// </summary>
     [Fact]
     public void All_ActivePilotSpecificationsReferencePluginRecordSetProperties()
