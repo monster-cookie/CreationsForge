@@ -185,8 +185,9 @@ reader destination collections and default Mutagen collection names as a reader-
 drives simple comparison rows for the `FLST`, `GMST`, and `GLOB` pilot records, but it does not yet change how readers
 map Mutagen records or how repositories persist DTOs. Core can assemble a `PluginRecordSetDTO` from mapped
 record-family collections using specification reader metadata; Starfield, Fallout 4, and Skyrim use that assembly path
-while preserving their game-specific mapping methods. Starfield also uses supported record specifications to select
-and order its record-family mapper dispatch, but each mapper still calls the existing Starfield Mutagen mapping code.
+while preserving their game-specific mapping methods. Starfield, Fallout 4, and Skyrim also use supported record
+specifications to select and order record-family mapper dispatch, but each mapper still calls the existing
+game-specific Mutagen mapping code. Fallout 4 terminal records still use the full binary mod path.
 
 ## Presentation Boundary
 

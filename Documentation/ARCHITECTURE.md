@@ -151,9 +151,10 @@ reader-dispatch migration target explicit without moving game-specific Mutagen A
 Core `RecordSetSpecificationBuilder` consumes that metadata to assemble `PluginRecordSetDTO` instances from mapped
 record-family collections. Starfield, Fallout 4, and Skyrim record reads now use the builder for the final record-set
 assembly step while retaining the existing game-specific Mutagen mapping methods.
-Starfield record-family dispatch also uses `IRecordSpecificationProvider` to choose the supported record mappers in
-specification import order. The mapper registry still calls the existing Starfield-specific `Map*` methods, so
-Mutagen field mapping remains game-adapter behavior.
+Starfield, Fallout 4, and Skyrim record-family dispatch also use `IRecordSpecificationProvider` to choose the
+supported record mappers in specification import order. The mapper registries still call the existing game-specific
+`Map*` methods, so Mutagen field mapping remains game-adapter behavior. Fallout 4 keeps its terminal-specific full
+binary mod read inside the Fallout 4 reader mapper path.
 
 Starfield plugin metadata, master-reference, and record reads use a Starfield-only construction helper. The helper
 prefers the full Mutagen environment load order's mod objects with the Starfield environment data folder from

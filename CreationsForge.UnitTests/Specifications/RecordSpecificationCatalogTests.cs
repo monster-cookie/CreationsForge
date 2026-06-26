@@ -191,6 +191,40 @@ public class RecordSpecificationCatalogTests
     }
 
     /// <summary>
+    /// Verifies that Fallout 4-supported specifications expose the dispatch sequence consumed by the Fallout 4
+    /// reader.
+    /// </summary>
+    [Fact]
+    public void GetSupportedByGame_ReturnsFallout4RecordsInReaderDispatchOrder()
+    {
+        var recordIDs = RecordSpecificationCatalog.GetSupportedByGame(SpecificationGame.Fallout4)
+            .OrderBy(specification => specification.Import.ImportOrder)
+            .Select(specification => specification.RecordID)
+            .ToList();
+
+        recordIDs.ShouldBe(
+        [
+            "FLST",
+            "GMST",
+            "GLOB",
+            "CLAS",
+            "FACT",
+            "MISC",
+            "KYWD",
+            "AVIF",
+            "NPC_",
+            "MGEF",
+            "PERK",
+            "STAT",
+            "CONT",
+            "COBJ",
+            "BOOK",
+            "DOOR",
+            "TERM"
+        ]);
+    }
+
+    /// <summary>
     /// Verifies that game support filtering returns the current record families for the Skyrim adapter.
     /// </summary>
     [Fact]
@@ -217,6 +251,38 @@ public class RecordSpecificationCatalogTests
             "BOOK",
             "DOOR"
         ], ignoreOrder: true);
+    }
+
+    /// <summary>
+    /// Verifies that Skyrim-supported specifications expose the dispatch sequence consumed by the Skyrim reader.
+    /// </summary>
+    [Fact]
+    public void GetSupportedByGame_ReturnsSkyrimRecordsInReaderDispatchOrder()
+    {
+        var recordIDs = RecordSpecificationCatalog.GetSupportedByGame(SpecificationGame.Skyrim)
+            .OrderBy(specification => specification.Import.ImportOrder)
+            .Select(specification => specification.RecordID)
+            .ToList();
+
+        recordIDs.ShouldBe(
+        [
+            "FLST",
+            "GMST",
+            "GLOB",
+            "CLAS",
+            "FACT",
+            "MISC",
+            "KYWD",
+            "AVIF",
+            "NPC_",
+            "MGEF",
+            "PERK",
+            "STAT",
+            "CONT",
+            "COBJ",
+            "BOOK",
+            "DOOR"
+        ]);
     }
 
     /// <summary>

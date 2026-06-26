@@ -9,6 +9,7 @@ using CreationsForge.Core.Services;
 using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Core.Utilities;
 using CreationsForge.Fallout4.Interfaces;
+using CreationsForge.Specification.Records;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
 using Mutagen.Bethesda.Fallout4;
@@ -23,6 +24,31 @@ namespace CreationsForge.Fallout4;
 public class Fallout4RecordReaderService : IFallout4RecordReaderService
 {
     /// <summary>
+    /// Maps Fallout 4-supported record identifiers to the existing Mutagen-to-DTO mapping functions.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, Func<PluginDTO, IFallout4ModGetter, object>> RecordMappers =
+        new Dictionary<string, Func<PluginDTO, IFallout4ModGetter, object>>(StringComparer.OrdinalIgnoreCase)
+        {
+            [RecordTypeCatalog.FormList.RecordID] = (plugin, mod) => MapFormLists(plugin, mod),
+            [RecordTypeCatalog.GameSetting.RecordID] = (plugin, mod) => MapGameSettings(plugin, mod),
+            [RecordTypeCatalog.Global.RecordID] = (plugin, mod) => MapGlobals(plugin, mod),
+            [RecordTypeCatalog.Class.RecordID] = (plugin, mod) => MapClasses(plugin, mod),
+            [RecordTypeCatalog.Faction.RecordID] = (plugin, mod) => MapFactions(plugin, mod),
+            [RecordTypeCatalog.MiscItem.RecordID] = (plugin, mod) => MapMiscItems(plugin, mod),
+            [RecordTypeCatalog.Keyword.RecordID] = (plugin, mod) => MapKeywords(plugin, mod),
+            [RecordTypeCatalog.ActorValueInformation.RecordID] = (plugin, mod) => MapActorValueInformation(plugin, mod),
+            [RecordTypeCatalog.NPC.RecordID] = (plugin, mod) => MapNPCs(plugin, mod),
+            [RecordTypeCatalog.MagicEffect.RecordID] = (plugin, mod) => MapMagicEffects(plugin, mod),
+            [RecordTypeCatalog.Perk.RecordID] = (plugin, mod) => MapPerks(plugin, mod),
+            [RecordTypeCatalog.Static.RecordID] = (plugin, mod) => MapStatics(plugin, mod),
+            [RecordTypeCatalog.Book.RecordID] = (plugin, mod) => MapBooks(plugin, mod),
+            [RecordTypeCatalog.Door.RecordID] = (plugin, mod) => MapDoors(plugin, mod),
+            [RecordTypeCatalog.Container.RecordID] = (plugin, mod) => MapContainers(plugin, mod),
+            [RecordTypeCatalog.ConstructibleObject.RecordID] = (plugin, mod) => MapConstructibleObjects(plugin, mod),
+            [RecordTypeCatalog.Terminal.RecordID] = (plugin, mod) => MapTerminals(plugin, mod)
+        };
+
+    /// <summary>
     /// Provides Fallout 4 installation metadata used to locate plugin files and game data.
     /// </summary>
     private readonly Fallout4GameMetadataService GameMetadataService;
@@ -33,11 +59,16 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
     private readonly IRecordSetSpecificationBuilder RecordSetBuilder;
 
     /// <summary>
+    /// Provides the record specifications that drive Fallout 4 record-family dispatch.
+    /// </summary>
+    private readonly IRecordSpecificationProvider RecordSpecificationProvider;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="Fallout4RecordReaderService"/> class.
     /// </summary>
     /// <param name="gameMetadataService">The service used to discover Fallout 4 installation metadata.</param>
     public Fallout4RecordReaderService(Fallout4GameMetadataService gameMetadataService)
-        : this(gameMetadataService, RecordSetSpecificationBuilder.CreateDefault())
+        : this(gameMetadataService, RecordSetSpecificationBuilder.CreateDefault(), new RecordSpecificationProvider())
     {
     }
 
@@ -51,9 +82,26 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
     public Fallout4RecordReaderService(
         Fallout4GameMetadataService gameMetadataService,
         IRecordSetSpecificationBuilder recordSetSpecificationBuilder)
+        : this(gameMetadataService, recordSetSpecificationBuilder, new RecordSpecificationProvider())
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Fallout4RecordReaderService"/> class.
+    /// </summary>
+    /// <param name="gameMetadataService">The service used to discover Fallout 4 installation metadata.</param>
+    /// <param name="recordSetSpecificationBuilder">
+    /// The builder used to assemble mapped record collections into a record set.
+    /// </param>
+    /// <param name="recordSpecificationProvider">The provider used to select Fallout 4-supported record mappers.</param>
+    public Fallout4RecordReaderService(
+        Fallout4GameMetadataService gameMetadataService,
+        IRecordSetSpecificationBuilder recordSetSpecificationBuilder,
+        IRecordSpecificationProvider recordSpecificationProvider)
     {
         GameMetadataService = gameMetadataService;
         RecordSetBuilder = recordSetSpecificationBuilder;
+        RecordSpecificationProvider = recordSpecificationProvider;
     }
 
     /// <summary>
@@ -69,65 +117,35 @@ public class Fallout4RecordReaderService : IFallout4RecordReaderService
     {
         cancellationToken.ThrowIfCancellationRequested();
         var mod = LoadMod(plugin);
-        cancellationToken.ThrowIfCancellationRequested();
-        var formLists = MapFormLists(plugin, mod);
-        cancellationToken.ThrowIfCancellationRequested();
-        var gameSettings = MapGameSettings(plugin, mod);
-        cancellationToken.ThrowIfCancellationRequested();
-        var globals = MapGlobals(plugin, mod);
-        cancellationToken.ThrowIfCancellationRequested();
-        var classes = MapClasses(plugin, mod);
-        cancellationToken.ThrowIfCancellationRequested();
-        var factions = MapFactions(plugin, mod);
-        cancellationToken.ThrowIfCancellationRequested();
-        var miscItems = MapMiscItems(plugin, mod);
-        cancellationToken.ThrowIfCancellationRequested();
-        var keywords = MapKeywords(plugin, mod);
-        cancellationToken.ThrowIfCancellationRequested();
-        var actorValueInformation = MapActorValueInformation(plugin, mod);
-        cancellationToken.ThrowIfCancellationRequested();
-        var npcs = MapNPCs(plugin, mod);
-        cancellationToken.ThrowIfCancellationRequested();
-        var magicEffects = MapMagicEffects(plugin, mod);
-        cancellationToken.ThrowIfCancellationRequested();
-        var perks = MapPerks(plugin, mod);
-        cancellationToken.ThrowIfCancellationRequested();
-        var statics = MapStatics(plugin, mod);
-        cancellationToken.ThrowIfCancellationRequested();
-        var books = MapBooks(plugin, mod);
-        cancellationToken.ThrowIfCancellationRequested();
-        var doors = MapDoors(plugin, mod);
-        cancellationToken.ThrowIfCancellationRequested();
-        var containers = MapContainers(plugin, mod);
-        cancellationToken.ThrowIfCancellationRequested();
-        var constructibleObjects = MapConstructibleObjects(plugin, mod);
-        cancellationToken.ThrowIfCancellationRequested();
-        var terminalMod = LoadFullBinaryMod(plugin);
-        cancellationToken.ThrowIfCancellationRequested();
-        var terminals = MapTerminals(plugin, terminalMod);
+        IFallout4ModGetter? fullBinaryMod = null;
+        var recordsByRecordID = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        var specifications = RecordSpecificationProvider
+            .GetSupportedByGame(SpecificationGame.Fallout4)
+            .OrderBy(specification => specification.Import.ImportOrder);
+
+        foreach (var specification in specifications)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!RecordMappers.TryGetValue(specification.RecordID, out var mapper))
+            {
+                throw new InvalidOperationException(
+                    $"No Fallout 4 record mapper is registered for specification '{specification.RecordID}'.");
+            }
+
+            var mapperMod = mod;
+            if (string.Equals(specification.RecordID, RecordTypeCatalog.Terminal.RecordID, StringComparison.OrdinalIgnoreCase))
+            {
+                fullBinaryMod ??= LoadFullBinaryMod(plugin);
+                cancellationToken.ThrowIfCancellationRequested();
+                mapperMod = fullBinaryMod;
+            }
+
+            recordsByRecordID[specification.RecordID] = mapper(plugin, mapperMod);
+        }
 
         return RecordSetBuilder.Build(
             SupportedGame.Fallout4,
-            new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
-            {
-                [RecordTypeCatalog.FormList.RecordID] = formLists,
-                [RecordTypeCatalog.GameSetting.RecordID] = gameSettings,
-                [RecordTypeCatalog.Global.RecordID] = globals,
-                [RecordTypeCatalog.Class.RecordID] = classes,
-                [RecordTypeCatalog.Faction.RecordID] = factions,
-                [RecordTypeCatalog.MiscItem.RecordID] = miscItems,
-                [RecordTypeCatalog.Keyword.RecordID] = keywords,
-                [RecordTypeCatalog.ActorValueInformation.RecordID] = actorValueInformation,
-                [RecordTypeCatalog.NPC.RecordID] = npcs,
-                [RecordTypeCatalog.MagicEffect.RecordID] = magicEffects,
-                [RecordTypeCatalog.Perk.RecordID] = perks,
-                [RecordTypeCatalog.Static.RecordID] = statics,
-                [RecordTypeCatalog.Book.RecordID] = books,
-                [RecordTypeCatalog.Door.RecordID] = doors,
-                [RecordTypeCatalog.Container.RecordID] = containers,
-                [RecordTypeCatalog.ConstructibleObject.RecordID] = constructibleObjects,
-                [RecordTypeCatalog.Terminal.RecordID] = terminals
-            });
+            recordsByRecordID);
     }
 
     public IReadOnlyList<FormListDTO> ReadFormLists(PluginDTO plugin)

@@ -323,12 +323,55 @@ Consequences:
 - Starfield reader dispatch order and supported record-family selection now come from record specifications.
 - Missing Starfield mappers for supported specifications fail at read time instead of silently omitting records.
 - Starfield Mutagen-to-DTO field mapping remains in existing mapper methods.
-- Fallout 4 and Skyrim still use explicit reader dispatch until later approved slices.
+- Starfield was converted first; a later accepted decision converted Fallout 4 and Skyrim to the same dispatch pattern.
 - No database schema, persisted data shape, import result, or comparison UI behavior changes.
 
 Related files:
 
 - `CreationsForge.Starfield/StarfieldRecordReaderService.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-26 - Complete Spec-Driven Reader Dispatch For Supported Adapters
+
+Status: Accepted
+
+Context: Starfield reader dispatch already uses `IRecordSpecificationProvider` to select supported record-family
+mappers in specification order, but Fallout 4 and Skyrim still manually listed every mapping call. Fallout 4 also has
+a `TERM` special case that must use a full binary mod because the overlay reader can omit repeated terminal menu
+items.
+
+Decision: Convert `Fallout4RecordReaderService.ReadPluginRecords` and `SkyrimRecordReaderService.ReadPluginRecords`
+to iterate supported record specifications in import order, resolve record IDs through game-local mapper registries,
+and pass mapped collections to `RecordSetSpecificationBuilder`. Preserve existing mapping methods and constructor
+compatibility overloads. Keep Fallout 4 `TERM` on the full binary mod path by loading that mod only when the
+specification loop reaches `TERM`.
+
+Rationale: This removes the remaining manually duplicated supported-family dispatch lists from current game readers
+while preserving all game-specific Mutagen mapping behavior. It also makes the specification catalog the single source
+for reader dispatch order, reader destination collections, and import dispatch order across Starfield, Fallout 4, and
+Skyrim.
+
+Alternatives considered:
+
+- Convert Fallout 4 and Skyrim in separate tasks.
+- Defer Fallout 4 because of the `TERM` full-binary special case.
+- Move all game-reader mapping functions into shared Core dispatch.
+
+Consequences:
+
+- Starfield, Fallout 4, and Skyrim all dispatch record-family reader mapping from specifications.
+- Missing mapper registrations for supported specifications fail at read time instead of silently omitting records.
+- Fallout 4 terminal reads still use the full binary mod construction path.
+- Game-specific Mutagen-to-DTO field mapping remains in the game adapter projects.
+- No database schema, persisted data shape, import result, or comparison UI behavior changes.
+
+Related files:
+
+- `CreationsForge.Fallout4/Fallout4RecordReaderService.cs`
+- `CreationsForge.Skyrim/SkyrimRecordReaderService.cs`
 - `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
 - `Documentation/ARCHITECTURE.md`
 - `Documentation/DOMAIN-MODEL.md`
