@@ -164,6 +164,17 @@ After approval:
 - Shared interfaces must represent behavior consumed by shared infrastructure; do not add decorative one-off interfaces.
 - Mapping attributes are boundary metadata for Spriggit paths, localization, and persistence columns. They must not be used to keep alias drift as permanent model vocabulary.
 
+## Specification catalog rules
+
+- Production record specifications in `CreationsForge.Specification/Records` must be one record family per file.
+- Name files by the canonical CreationsForge record type, for example:
+  - `FormListRecordSpecification.cs`
+  - `NPCRecordSpecification.cs`
+  - `TerminalRecordSpecification.cs`
+- Do not group record specifications into invented categories such as "basic", "item", or "world object" unless that grouping is an actual CreationsForge domain concept.
+- `SupportedRecordSpecifications.cs` must remain a thin public facade that preserves catalog API and import order.
+- Shared helper/factory behavior belongs in explicitly named shared helper classes such as `RecordSpecificationFactory`.
+
 ## File Size and Decomposition
 
 When a source file grows beyond roughly 1000 lines, treat it as a maintainability warning and evaluate whether it should be split. Prefer decomposing by clear responsibilities using the language’s normal structure, such as classes, modules, components, functions, services, extensions, or partial classes where the language and codebase already support them.
