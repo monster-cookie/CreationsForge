@@ -215,10 +215,19 @@ internal static class ContainerRecordSpecification
                     SourcePath = "AnimationFile",
                     ValueKind = RecordFieldValueKind.Text
                 }
-            ]
-        },
+            ],
+            ChildGroups =
+            [
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.KeywordMappings,
+                    GroupName = "Keywords",
+                    Description = "Shared keyword mapping rows appended after scalar parent and record-specific rows."
+                }
+            ]        },
         ImplementationNote = "Comparison metadata drives scalar parent rows; item, property, forced-location, keyword, " +
             "model, sound, script, component, and reflection rows remain strategy-based."
     };
 }
+
 

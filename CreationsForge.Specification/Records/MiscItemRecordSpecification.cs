@@ -172,10 +172,19 @@ internal static class MiscItemRecordSpecification
                     SourcePath = "Flag",
                     ValueKind = RecordFieldValueKind.FlagSet
                 }
-            ]
-        },
+            ],
+            ChildGroups =
+            [
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.KeywordMappings,
+                    GroupName = "Keywords",
+                    Description = "Shared keyword mapping rows appended after scalar parent and record-specific rows."
+                }
+            ]        },
         ImplementationNote = "Comparison metadata drives scalar parent rows; destructible, keyword, model, sound, " +
             "script, component, and resource rows remain strategy-based."
     };
 }
+
 

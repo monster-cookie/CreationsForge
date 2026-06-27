@@ -302,10 +302,11 @@ public class RecordSpecificationCatalogTests
     }
 
     /// <summary>
-    /// Verifies that child-group comparison metadata is limited to the current explicit pilot strategy.
+    /// Verifies that keyword child-group comparison metadata is declared by the current keyword-bearing record
+    /// families.
     /// </summary>
     [Fact]
-    public void All_ComparisonChildGroupsExposeCurrentPilotStrategies()
+    public void All_ComparisonChildGroupsExposeCurrentKeywordStrategies()
     {
         var childGroups = RecordSpecificationCatalog.All
             .SelectMany(specification => specification.Comparison.ChildGroups.Select(group => new
@@ -313,13 +314,14 @@ public class RecordSpecificationCatalogTests
                 specification.RecordID,
                 Group = group
             }))
+            .OrderBy(entry => entry.RecordID, StringComparer.Ordinal)
             .ToList();
 
-        childGroups.Count.ShouldBe(1);
-        childGroups[0].RecordID.ShouldBe("MGEF");
-        childGroups[0].Group.GroupKind.ShouldBe(RecordComparisonChildGroupKind.KeywordMappings);
-        childGroups[0].Group.GroupName.ShouldBe("Keywords");
-        childGroups[0].Group.Description.ShouldNotBeNullOrWhiteSpace();
+        childGroups.Select(entry => entry.RecordID).ShouldBe(
+            ["BOOK", "CONT", "DOOR", "FACT", "MGEF", "MISC", "NPC_", "STAT", "TERM"]);
+        childGroups.ShouldAllBe(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.KeywordMappings);
+        childGroups.ShouldAllBe(entry => entry.Group.GroupName == "Keywords");
+        childGroups.ShouldAllBe(entry => !string.IsNullOrWhiteSpace(entry.Group.Description));
     }
 
     /// <summary>

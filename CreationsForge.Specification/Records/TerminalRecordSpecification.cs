@@ -357,8 +357,16 @@ internal static class TerminalRecordSpecification
                     SourcePath = "AnimationFile",
                     ValueKind = RecordFieldValueKind.Text
                 }
-            ]
-        },
+            ],
+            ChildGroups =
+            [
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.KeywordMappings,
+                    GroupName = "Keywords",
+                    Description = "Shared keyword mapping rows appended after scalar parent and record-specific rows."
+                }
+            ]        },
         ImplementationNote = "Comparison metadata drives scalar parent rows; forced-location, keyword, model, script, " +
             "condition, reflection, marker parameter, body text, and menu item rows remain strategy-based."
     };
@@ -366,4 +374,5 @@ internal static class TerminalRecordSpecification
     /// <summary>
     /// Gets every specification included in the production catalog.
 }
+
 

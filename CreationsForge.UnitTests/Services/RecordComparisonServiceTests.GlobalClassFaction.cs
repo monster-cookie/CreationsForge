@@ -299,6 +299,14 @@ public partial class RecordComparisonServiceTests
                 patchFaction
             ]
         };
+        var keywordMappingRepository = new TestKeywordMappingRepository
+        {
+            Records =
+            [
+                CreateKeywordMapping("Base.esm", RecordTypeCatalog.Faction.RecordID, formKey, keywordFormKey, 0),
+                CreateKeywordMapping("Patch.esp", RecordTypeCatalog.Faction.RecordID, formKey, keywordFormKey, 0)
+            ]
+        };
         var provider = new TestRecordSpecificationProvider(
             new RecordSpecification
             {
@@ -322,7 +330,10 @@ public partial class RecordComparisonServiceTests
                 },
                 ImplementationNote = "Test specification."
             });
-        var service = CreateService(factionRepository: factionRepository, recordSpecificationProvider: provider);
+        var service = CreateService(
+            factionRepository: factionRepository,
+            keywordMappingRepository: keywordMappingRepository,
+            recordSpecificationProvider: provider);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Faction.RecordID, formKey);
 
@@ -331,6 +342,7 @@ public partial class RecordComparisonServiceTests
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Flags");
         comparison.Fields.Single(field => field.FieldName == "Relations").Children.ShouldNotBeEmpty();
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Keywords");
     }
 
     /// <summary>

@@ -464,11 +464,20 @@ internal static class NPCRecordSpecification
                     SourcePath = "CrimeFactionFormKey",
                     ValueKind = RecordFieldValueKind.FormKey
                 }
-            ]
-        },
+            ],
+            ChildGroups =
+            [
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.KeywordMappings,
+                    GroupName = "Keywords",
+                    Description = "Shared keyword mapping rows appended after scalar parent and record-specific rows."
+                }
+            ]        },
         ImplementationNote = "Comparison metadata drives top-level scalar parent rows; level, configuration, " +
             "supplemental parent rows, form-key list rows, actor data children, keyword, sound, and script rows remain " +
             "strategy-based."
     };
 }
+
 

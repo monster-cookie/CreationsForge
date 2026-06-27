@@ -262,10 +262,19 @@ internal static class StaticRecordSpecification
                     SourcePath = "LodLevel3",
                     ValueKind = RecordFieldValueKind.Text
                 }
-            ]
-        },
+            ],
+            ChildGroups =
+            [
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.KeywordMappings,
+                    GroupName = "Keywords",
+                    Description = "Shared keyword mapping rows appended after scalar parent and record-specific rows."
+                }
+            ]        },
         ImplementationNote = "Comparison metadata drives scalar parent rows; navmesh, keyword, property, model, " +
             "and reflection rows remain strategy-based."
     };
 }
+
 

@@ -472,6 +472,55 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-27 - Complete Spec-Driven Keyword Child Group Dispatch
+
+Status: Accepted
+
+Context: The Magic Effect keyword pilot proved that comparison metadata can select a shared child-row strategy without
+changing comparison DTO shape. The remaining keyword-bearing comparison families still called the shared keyword row
+builder directly, leaving the same dispatch rule duplicated across record-specific comparison methods.
+
+Decision: Declare `KeywordMappings` child-group metadata on all current keyword-bearing comparison record families:
+`FACT`, `MISC`, `NPC_`, `MGEF`, `STAT`, `BOOK`, `DOOR`, `CONT`, and `TERM`. Replace each explicit keyword-row call
+with the shared metadata-driven child-group dispatcher at the same row position. Keep all non-keyword child groups on
+their existing explicit strategy methods.
+
+Rationale: This turns the keyword pilot into a reusable production path while avoiding a premature generic collection
+engine. Keyword rows already share one repository and row-building strategy, making them the right first child group
+to complete before introducing additional child-group kinds.
+
+Alternatives considered:
+
+- Add sound, script, model, condition, and reflection child-group kinds in the same slice.
+- Leave keyword rows mixed between metadata dispatch and explicit calls.
+- Replace all child-row builders with a generic collection engine immediately.
+
+Consequences:
+
+- Keyword rows for current keyword-bearing comparison families are emitted only when the comparison specification
+  declares the `KeywordMappings` child group.
+- Existing keyword row order is preserved by calling the metadata dispatcher from the original row positions.
+- Non-keyword child groups remain strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/FactionRecordSpecification.cs`
+- `CreationsForge.Specification/Records/MiscItemRecordSpecification.cs`
+- `CreationsForge.Specification/Records/NPCRecordSpecification.cs`
+- `CreationsForge.Specification/Records/MagicEffectRecordSpecification.cs`
+- `CreationsForge.Specification/Records/StaticRecordSpecification.cs`
+- `CreationsForge.Specification/Records/BookRecordSpecification.cs`
+- `CreationsForge.Specification/Records/DoorRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
+- `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.GlobalClassFaction.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-27 - Pilot Spec-Driven Child Group Dispatch For Magic Effect Keywords
 
 Status: Accepted
@@ -501,7 +550,7 @@ Consequences:
 - `MGEF` keyword child rows are emitted only when the comparison specification declares the `KeywordMappings` child
   group.
 - Sound and scripting adapter rows for `MGEF` remain explicit strategy calls.
-- The child-group metadata model is intentionally small and currently supports only the keyword pilot.
+- At that point, the child-group metadata model was intentionally small and supported only the keyword pilot.
 - No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
 
 Related files:
