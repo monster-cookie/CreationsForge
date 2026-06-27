@@ -227,6 +227,155 @@ public class RecordComparisonServiceTests
     }
 
     /// <summary>
+    /// Verifies that Actor Value Information comparison uses specification-owned scalar rows while retaining
+    /// strategy-owned perk-tree rows.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForActorValueInformation_MapsScalarFieldsAndPerkTree()
+    {
+        var formKey = CreateFormKey("Skyrim.esm", 0x150);
+        var associatedSkill = CreateFormKey("Skyrim.esm", 0x201);
+        var perk = CreateFormKey("Skyrim.esm", 0x202);
+        var baseActorValue = CreateActorValueInformation("Base.esm", formKey, "Archery", "ARC", "Base description", "BaseCNAM", 1.1, 2.2, 3.3, "Base notes", 10, "BaseFlags", "Skill", 0, 100);
+        baseActorValue.PerkTree.Add(CreateActorValueInformationPerkTreeEntry("Base.esm", formKey, associatedSkill, perk, 0, "BaseFNAM", 4, 5));
+        var patchActorValue = CreateActorValueInformation("Patch.esp", formKey, "Archery", "ARC", "Patch description", "PatchCNAM", 1.5, 2.5, 3.5, "Patch notes", 20, "PatchFlags", "Skill", -10, 110);
+        patchActorValue.PerkTree.Add(CreateActorValueInformationPerkTreeEntry("Patch.esp", formKey, associatedSkill, perk, 0, "PatchFNAM", 6, 7));
+        var actorValueInformationRepository = new TestActorValueInformationRepository
+        {
+            Records =
+            [
+                baseActorValue,
+                patchActorValue
+            ]
+        };
+        var service = CreateService(actorValueInformationRepository: actorValueInformationRepository);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.ActorValueInformation.RecordID, formKey);
+
+        comparison.Columns.Select(column => column.Header).ShouldBe(["Base.esm", "Patch.esp"]);
+        comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["Archery", "Archery"]);
+        comparison.Fields.Single(field => field.FieldName == "Abbreviation").Values.Select(value => value.DisplayValue).ShouldBe(["ARC", "ARC"]);
+        comparison.Fields.Single(field => field.FieldName == "Description").Values.Select(value => value.DisplayValue).ShouldBe(["Base description", "Patch description"]);
+        comparison.Fields.Single(field => field.FieldName == "CNAM").Values.Select(value => value.DisplayValue).ShouldBe(["BaseCNAM", "PatchCNAM"]);
+        comparison.Fields.Single(field => field.FieldName == "Skill.ImproveMult").Values.Select(value => value.DisplayValue).ShouldBe(["1.1", "1.5"]);
+        comparison.Fields.Single(field => field.FieldName == "Skill.ImproveOffset").Values.Select(value => value.DisplayValue).ShouldBe(["2.2", "2.5"]);
+        comparison.Fields.Single(field => field.FieldName == "Skill.UseMult").Values.Select(value => value.DisplayValue).ShouldBe(["3.3", "3.5"]);
+        comparison.Fields.Single(field => field.FieldName == "ContextNotes").Values.Select(value => value.DisplayValue).ShouldBe(["Base notes", "Patch notes"]);
+        comparison.Fields.Single(field => field.FieldName == "DefaultValue").Values.Select(value => value.DisplayValue).ShouldBe(["10", "20"]);
+        comparison.Fields.Single(field => field.FieldName == "Flags").Values.Select(value => value.DisplayValue).ShouldBe(["BaseFlags", "PatchFlags"]);
+        comparison.Fields.Single(field => field.FieldName == "Type").Values.Select(value => value.DisplayValue).ShouldBe(["Skill", "Skill"]);
+        comparison.Fields.Single(field => field.FieldName == "Min").Values.Select(value => value.DisplayValue).ShouldBe(["0", "-10"]);
+        comparison.Fields.Single(field => field.FieldName == "Max").Values.Select(value => value.DisplayValue).ShouldBe(["100", "110"]);
+        var perkTree = comparison.Fields.Single(field => field.FieldName == "PerkTree");
+        var perkTreeEntry = perkTree.Children.Single(field => field.FieldName == "PerkTree [0]");
+        perkTreeEntry.Children.Single(field => field.FieldName == "AssociatedSkill").Values.Select(value => value.DisplayValue).ShouldBe(["Skyrim.esm:00000201", "Skyrim.esm:00000201"]);
+        perkTreeEntry.Children.Single(field => field.FieldName == "FNAM").Values.Select(value => value.DisplayValue).ShouldBe(["BaseFNAM", "PatchFNAM"]);
+        perkTreeEntry.Children.Single(field => field.FieldName == "ConnectionLineToIndices").Values.Select(value => value.DisplayValue).ShouldBe(["4", "6"]);
+    }
+
+    /// <summary>
+    /// Verifies that Actor Value Information scalar rows are selected from the injected comparison specification while
+    /// perk-tree rows remain strategy-based.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForActorValueInformation_UsesInjectedComparisonSpecification()
+    {
+        var formKey = CreateFormKey("Skyrim.esm", 0x151);
+        var associatedSkill = CreateFormKey("Skyrim.esm", 0x201);
+        var perk = CreateFormKey("Skyrim.esm", 0x202);
+        var baseActorValue = CreateActorValueInformation("Base.esm", formKey, "Archery", "ARC", "Base description", "BaseCNAM", 1.1, 2.2, 3.3, "Base notes", 10, "BaseFlags", "Skill", 0, 100);
+        baseActorValue.PerkTree.Add(CreateActorValueInformationPerkTreeEntry("Base.esm", formKey, associatedSkill, perk, 0, "BaseFNAM", 4, 5));
+        var patchActorValue = CreateActorValueInformation("Patch.esp", formKey, "Archery", "ARC", "Patch description", "PatchCNAM", 1.5, 2.5, 3.5, "Patch notes", 20, "PatchFlags", "Skill", -10, 110);
+        patchActorValue.PerkTree.Add(CreateActorValueInformationPerkTreeEntry("Patch.esp", formKey, associatedSkill, perk, 0, "PatchFNAM", 6, 7));
+        var actorValueInformationRepository = new TestActorValueInformationRepository
+        {
+            Records =
+            [
+                baseActorValue,
+                patchActorValue
+            ]
+        };
+        var provider = new TestRecordSpecificationProvider(
+            new RecordSpecification
+            {
+                RecordID = SupportedRecordSpecifications.ActorValueInformation.RecordID,
+                RecordType = SupportedRecordSpecifications.ActorValueInformation.RecordType,
+                TableName = SupportedRecordSpecifications.ActorValueInformation.TableName,
+                FriendlyName = SupportedRecordSpecifications.ActorValueInformation.FriendlyName,
+                GameSupport = SupportedRecordSpecifications.ActorValueInformation.GameSupport,
+                Fields = SupportedRecordSpecifications.ActorValueInformation.Fields,
+                Comparison = new RecordComparisonSpecification
+                {
+                    Fields =
+                    [
+                        new RecordComparisonFieldSpecification
+                        {
+                            FieldName = "DefaultValue",
+                            SourcePath = "DefaultValue",
+                            ValueKind = RecordFieldValueKind.Number
+                        }
+                    ]
+                },
+                ImplementationNote = "Test specification."
+            });
+        var service = CreateService(
+            actorValueInformationRepository: actorValueInformationRepository,
+            recordSpecificationProvider: provider);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.ActorValueInformation.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "DefaultValue").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["10", "20"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Skill.ImproveMult");
+        comparison.Fields.Single(field => field.FieldName == "PerkTree").Children.ShouldNotBeEmpty();
+    }
+
+    /// <summary>
+    /// Verifies that specification-declared localized Actor Value Information rows use the selected record text
+    /// language.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForActorValueInformation_UsesSpecificationLocalizedDisplay()
+    {
+        var formKey = CreateFormKey("Skyrim.esm", 0x152);
+        var actorValueInformationRepository = new TestActorValueInformationRepository
+        {
+            Records =
+            [
+                CreateActorValueInformation("Base.esm", formKey, "Archery", "ARC", "Base description", "BaseCNAM", 1.1, 2.2, 3.3, "Base notes", 10, "BaseFlags", "Skill", 0, 100),
+                CreateActorValueInformation("Patch.esp", formKey, "Archery", "ARC", "Patch description", "PatchCNAM", 1.5, 2.5, 3.5, "Patch notes", 20, "PatchFlags", "Skill", -10, 110)
+            ]
+        };
+        var localizedStringRepository = new TestRecordLocalizedStringRepository
+        {
+            Records =
+            [
+                CreateLocalizedString("Base.esm", formKey, "Name", "German", "Basis Akteurwert"),
+                CreateLocalizedString("Patch.esp", formKey, "Name", "German", "Patch Akteurwert"),
+                CreateLocalizedString("Base.esm", formKey, "Abbreviation", "German", "BAW"),
+                CreateLocalizedString("Patch.esp", formKey, "Abbreviation", "German", "PAW"),
+                CreateLocalizedString("Base.esm", formKey, "Description", "German", "Basis Beschreibung"),
+                CreateLocalizedString("Patch.esp", formKey, "Description", "German", "Patch Beschreibung")
+            ]
+        };
+        var gameSelectionService = new TestGameSelectionService { RecordTextLanguage = Language.German };
+        var service = CreateService(
+            actorValueInformationRepository: actorValueInformationRepository,
+            recordLocalizedStringRepository: localizedStringRepository,
+            gameSelectionService: gameSelectionService);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.ActorValueInformation.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["Basis Akteurwert", "Patch Akteurwert"]);
+        comparison.Fields.Single(field => field.FieldName == "Abbreviation").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["BAW", "PAW"]);
+        comparison.Fields.Single(field => field.FieldName == "Description").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["Basis Beschreibung", "Patch Beschreibung"]);
+    }
+
+    /// <summary>
     /// Verifies that Keyword scalar rows are selected from the injected comparison specification.
     /// </summary>
     [Fact]
@@ -1797,6 +1946,125 @@ public class RecordComparisonServiceTests
             WeightIndex = weightIndex,
             Key = key,
             Value = value,
+            ImportedAtUTC = DateTime.UtcNow
+        };
+    }
+
+    /// <summary>
+    /// Creates a minimal Actor Value Information record for comparison-service tests that exercise scalar metadata
+    /// dispatch.
+    /// </summary>
+    /// <param name="fileName">The plugin file name that contributed the test record.</param>
+    /// <param name="formKey">The origin FormKey shared by compared records.</param>
+    /// <param name="name">The translated actor value name to place on the DTO.</param>
+    /// <param name="abbreviation">The translated actor value abbreviation to place on the DTO.</param>
+    /// <param name="description">The translated actor value description to place on the DTO.</param>
+    /// <param name="cnam">The CNAM text to place on the DTO.</param>
+    /// <param name="improveMult">The skill improve multiplier to place on the DTO.</param>
+    /// <param name="improveOffset">The skill improve offset to place on the DTO.</param>
+    /// <param name="useMult">The skill use multiplier to place on the DTO.</param>
+    /// <param name="contextNotes">The context notes to place on the DTO.</param>
+    /// <param name="defaultValue">The default value scalar to place on the DTO.</param>
+    /// <param name="flags">The flags text to place on the DTO.</param>
+    /// <param name="type">The type text to place on the DTO.</param>
+    /// <param name="min">The minimum value scalar to place on the DTO.</param>
+    /// <param name="max">The maximum value scalar to place on the DTO.</param>
+    /// <returns>The populated Actor Value Information DTO.</returns>
+    private static ActorValueInformationDTO CreateActorValueInformation(
+        string fileName,
+        FormKeyDTO formKey,
+        string name,
+        string abbreviation,
+        string description,
+        string cnam,
+        double improveMult,
+        double improveOffset,
+        double useMult,
+        string contextNotes,
+        double defaultValue,
+        string flags,
+        string type,
+        double min,
+        double max)
+    {
+        return new ActorValueInformationDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            EditorID = "MyActorValueInformation",
+            FormVersion = 1,
+            MajorRecordFlags = 2,
+            ImportedAtUTC = DateTime.UtcNow,
+            Name = Text(name),
+            Abbreviation = Text(abbreviation),
+            Description = Text(description),
+            CNAM = cnam,
+            Skill = new ActorValueInformationSkillDTO
+            {
+                ImproveMult = improveMult,
+                ImproveOffset = improveOffset,
+                UseMult = useMult
+            },
+            ContextNotes = contextNotes,
+            DefaultValue = defaultValue,
+            Flags = flags,
+            Type = type,
+            Min = min,
+            Max = max
+        };
+    }
+
+    /// <summary>
+    /// Creates an Actor Value Information perk-tree entry for comparison-service tests that exercise strategy-owned
+    /// child groups.
+    /// </summary>
+    /// <param name="fileName">The plugin file name that contributed the child row.</param>
+    /// <param name="formKey">The parent Actor Value Information FormKey.</param>
+    /// <param name="associatedSkill">The associated skill FormKey referenced by the perk-tree entry.</param>
+    /// <param name="perk">The perk FormKey referenced by the perk-tree entry.</param>
+    /// <param name="perkTreeIndex">The stable perk-tree index used for cross-plugin alignment.</param>
+    /// <param name="fnam">The FNAM text to place on the entry.</param>
+    /// <param name="connectionTargetIndex">The target index to place in the first connection-line row.</param>
+    /// <param name="perkGridX">The grid X coordinate to place on the entry.</param>
+    /// <returns>The populated Actor Value Information perk-tree entry DTO.</returns>
+    private static ActorValueInformationPerkTreeEntryDTO CreateActorValueInformationPerkTreeEntry(
+        string fileName,
+        FormKeyDTO formKey,
+        FormKeyDTO associatedSkill,
+        FormKeyDTO perk,
+        int perkTreeIndex,
+        string fnam,
+        int connectionTargetIndex,
+        int perkGridX)
+    {
+        return new ActorValueInformationPerkTreeEntryDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            PerkTreeIndex = perkTreeIndex,
+            AssociatedSkill = associatedSkill,
+            FNAM = fnam,
+            HorizontalPosition = 1.5,
+            Index = 2,
+            PerkGridX = perkGridX,
+            PerkGridY = 3,
+            VerticalPosition = 4.5,
+            Perk = perk,
+            ConnectionLineToIndices =
+            [
+                new ActorValueInformationConnectionLineIndexDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    PerkTreeIndex = perkTreeIndex,
+                    ConnectionLineIndex = 0,
+                    TargetIndex = connectionTargetIndex,
+                    ImportedAtUTC = DateTime.UtcNow
+                }
+            ],
             ImportedAtUTC = DateTime.UtcNow
         };
     }

@@ -317,6 +317,44 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-26 - Convert Actor Value Information Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: `AVIF` comparison includes localized scalar parent rows, nested skill scalar rows, and Skyrim perk-tree child
+rows. The scalar comparison path already handles localized strings, numbers, text fields, nested source paths, and
+ordinary source-path resolution, so the parent rows can move into metadata without changing perk-tree alignment.
+
+Decision: Add `AVIF` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreateActorValueInformationComparison` to use the shared specification comparison-field builder for scalar rows. Keep
+perk-tree rows on the existing strategy method.
+
+Rationale: This expands the spec-driven comparison surface to another shared record family while proving that nested
+scalar source paths can move through metadata without pulling in indexed child rows. Keeping the perk tree explicit
+avoids designing collection metadata before the scalar path is complete.
+
+Alternatives considered:
+
+- Convert `FACT` next because it is adjacent to `CLAS` in the import order.
+- Move AVIF perk-tree rows into specification metadata in the same slice.
+- Leave `AVIF` hardcoded until all Skyrim-specific display rows are revisited together.
+
+Consequences:
+
+- `AVIF` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- Perk-tree rows remain strategy-based.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-26 - Drive Pilot Import Dispatch From Specifications
 
 Status: Accepted

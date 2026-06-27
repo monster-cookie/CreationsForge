@@ -400,25 +400,23 @@ public class RecordComparisonService : IRecordComparisonService
         return CreateComparison(RecordTypeCatalog.Keyword.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
 
+    /// <summary>
+    /// Creates the comparison output for imported Actor Value Information overrides, using specification metadata for
+    /// scalar parent rows while leaving perk-tree rows on existing strategy code.
+    /// </summary>
+    /// <param name="game">The game whose imported actor value information records should be compared.</param>
+    /// <param name="formKey">The origin FormKey shared by the actor value information overrides.</param>
+    /// <returns>The actor value information comparison DTO consumed by presentation rendering.</returns>
     private RecordComparisonDTO CreateActorValueInformationComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = ActorValueInformationRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.ActorValueInformation.RecordID, formKey);
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
-        var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
-        fields.Add(CreateField("Abbreviation", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Abbreviation", recordTextLanguage, record.Abbreviation)));
-        fields.Add(CreateField("Description", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Description", recordTextLanguage, record.Description)));
-        fields.Add(CreateField("CNAM", records, record => record.CNAM ?? string.Empty));
-        fields.Add(CreateField("Skill.ImproveMult", records, record => record.Skill?.ImproveMult?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Skill.ImproveOffset", records, record => record.Skill?.ImproveOffset?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Skill.UseMult", records, record => record.Skill?.UseMult?.ToString() ?? string.Empty));
-        fields.Add(CreateField("ContextNotes", records, record => record.ContextNotes ?? string.Empty));
-        fields.Add(CreateField("DefaultValue", records, record => record.DefaultValue?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
-        fields.Add(CreateField("Type", records, record => record.Type ?? string.Empty));
-        fields.Add(CreateField("Min", records, record => record.Min?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Max", records, record => record.Max?.ToString() ?? string.Empty));
+        var fields = CreateSpecComparisonFields(
+            RecordTypeCatalog.ActorValueInformation.RecordID,
+            records,
+            localizedStrings: localizedStrings,
+            recordTextLanguage: recordTextLanguage);
         AddActorValueInformationPerkTreeGroups(fields, records);
 
         return CreateComparison(RecordTypeCatalog.ActorValueInformation.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
