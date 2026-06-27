@@ -1084,6 +1084,106 @@ public class RecordComparisonServiceTests
         property.Children.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["BaseVFX", "PatchVFX"]);
     }
 
+    /// <summary>
+    /// Verifies that Magic Effect scalar rows are selected from the injected comparison specification while strategy
+    /// rows remain outside the scalar metadata path.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForMagicEffect_UsesInjectedComparisonSpecification()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x2C5A69);
+        var magicEffectRepository = new TestMagicEffectRepository
+        {
+            Records =
+            [
+                CreateMagicEffect("Base.esm", formKey, "Elemental Blast", "52", 5, castType: "BaseCast"),
+                CreateMagicEffect("Patch.esp", formKey, "Elemental Blast", "60", 7, castType: "PatchCast")
+            ]
+        };
+        var keywordMappingRepository = new TestKeywordMappingRepository
+        {
+            Records =
+            [
+                CreateKeywordMapping("Base.esm", RecordTypeCatalog.MagicEffect.RecordID, formKey, CreateFormKey("Starfield.esm", 0x111), 0),
+                CreateKeywordMapping("Patch.esp", RecordTypeCatalog.MagicEffect.RecordID, formKey, CreateFormKey("Patch.esp", 0x222), 0)
+            ]
+        };
+        var provider = new TestRecordSpecificationProvider(
+            new RecordSpecification
+            {
+                RecordID = SupportedRecordSpecifications.MagicEffect.RecordID,
+                RecordType = SupportedRecordSpecifications.MagicEffect.RecordType,
+                TableName = SupportedRecordSpecifications.MagicEffect.TableName,
+                FriendlyName = SupportedRecordSpecifications.MagicEffect.FriendlyName,
+                GameSupport = SupportedRecordSpecifications.MagicEffect.GameSupport,
+                Fields = SupportedRecordSpecifications.MagicEffect.Fields,
+                Comparison = new RecordComparisonSpecification
+                {
+                    Fields =
+                    [
+                        new RecordComparisonFieldSpecification
+                        {
+                            FieldName = "CastType",
+                            SourcePath = "CastType",
+                            ValueKind = RecordFieldValueKind.Text
+                        }
+                    ]
+                },
+                ImplementationNote = "Test specification."
+            });
+        var service = CreateService(
+            magicEffectRepository: magicEffectRepository,
+            keywordMappingRepository: keywordMappingRepository,
+            recordSpecificationProvider: provider);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.MagicEffect.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "CastType").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["BaseCast", "PatchCast"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Archetype");
+        comparison.Fields.Single(field => field.FieldName == "Keywords").Children.ShouldNotBeEmpty();
+    }
+
+    /// <summary>
+    /// Verifies that specification-declared localized Magic Effect rows use the selected record text language.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForMagicEffect_UsesSpecificationLocalizedDisplay()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x2C5A70);
+        var magicEffectRepository = new TestMagicEffectRepository
+        {
+            Records =
+            [
+                CreateMagicEffect("Base.esm", formKey, "Elemental Blast", "52", 5, description: "Base description"),
+                CreateMagicEffect("Patch.esp", formKey, "Elemental Blast", "60", 7, description: "Patch description")
+            ]
+        };
+        var localizedStringRepository = new TestRecordLocalizedStringRepository
+        {
+            Records =
+            [
+                CreateLocalizedString("Base.esm", formKey, "Name", "German", "Basis Magieeffekt"),
+                CreateLocalizedString("Patch.esp", formKey, "Name", "German", "Patch Magieeffekt"),
+                CreateLocalizedString("Base.esm", formKey, "Description", "German", "Basis Beschreibung"),
+                CreateLocalizedString("Patch.esp", formKey, "Description", "German", "Patch Beschreibung")
+            ]
+        };
+        var gameSelectionService = new TestGameSelectionService { RecordTextLanguage = Language.German };
+        var service = CreateService(
+            magicEffectRepository: magicEffectRepository,
+            recordLocalizedStringRepository: localizedStringRepository,
+            gameSelectionService: gameSelectionService);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.MagicEffect.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["Basis Magieeffekt", "Patch Magieeffekt"]);
+        comparison.Fields.Single(field => field.FieldName == "Description").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["Basis Beschreibung", "Patch Beschreibung"]);
+    }
+
     [Fact]
     public void GetRecordComparison_ForPerk_ExpandsRanksBackgroundSkillsAndScripts()
     {
@@ -2648,7 +2748,59 @@ public class RecordComparisonServiceTests
         };
     }
 
-    private static MagicEffectDTO CreateMagicEffect(string fileName, FormKeyDTO formKey, string name, string archetype, int unknownInt2)
+    /// <summary>
+    /// Creates a minimal Magic Effect record for comparison-service tests that exercise scalar metadata dispatch.
+    /// </summary>
+    /// <param name="fileName">The plugin file name that contributed the test record.</param>
+    /// <param name="formKey">The origin FormKey shared by compared records.</param>
+    /// <param name="name">The translated magic effect name to place on the DTO.</param>
+    /// <param name="archetype">The magic effect archetype value to place on the DTO.</param>
+    /// <param name="unknownInt2">The unknown integer value to place on the DTO.</param>
+    /// <param name="description">The translated magic effect description to place on the DTO.</param>
+    /// <param name="flags">The flags text to place on the DTO.</param>
+    /// <param name="castType">The cast type text to place on the DTO.</param>
+    /// <param name="targetType">The target type text to place on the DTO.</param>
+    /// <param name="actorValue2FormKey">The actor value FormKey to place on the DTO.</param>
+    /// <param name="resistValueFormKey">The resist value FormKey to place on the DTO.</param>
+    /// <param name="perkToApplyFormKey">The perk-to-apply FormKey to place on the DTO.</param>
+    /// <param name="equipAbilityFormKey">The equip ability FormKey to place on the DTO.</param>
+    /// <param name="explosionFormKey">The explosion FormKey to place on the DTO.</param>
+    /// <param name="castingArtFormKey">The casting art FormKey to place on the DTO.</param>
+    /// <param name="hitEffectArtFormKey">The hit effect art FormKey to place on the DTO.</param>
+    /// <param name="hitShaderFormKey">The hit shader FormKey to place on the DTO.</param>
+    /// <param name="imageSpaceModifierFormKey">The image space modifier FormKey to place on the DTO.</param>
+    /// <param name="impactDataFormKey">The impact data FormKey to place on the DTO.</param>
+    /// <param name="projectileFormKey">The projectile FormKey to place on the DTO.</param>
+    /// <param name="unknownFloat3">The unknown float value to place on the DTO.</param>
+    /// <param name="unknown">The first unknown text value to place on the DTO.</param>
+    /// <param name="unknown2">The second unknown text value to place on the DTO.</param>
+    /// <param name="dataTypeState">The data type state text to place on the DTO.</param>
+    /// <returns>The populated Magic Effect DTO.</returns>
+    private static MagicEffectDTO CreateMagicEffect(
+        string fileName,
+        FormKeyDTO formKey,
+        string name,
+        string archetype,
+        int unknownInt2,
+        string description = "Magic effect description",
+        string flags = "None",
+        string? castType = null,
+        string? targetType = null,
+        FormKeyDTO? actorValue2FormKey = null,
+        FormKeyDTO? resistValueFormKey = null,
+        FormKeyDTO? perkToApplyFormKey = null,
+        FormKeyDTO? equipAbilityFormKey = null,
+        FormKeyDTO? explosionFormKey = null,
+        FormKeyDTO? castingArtFormKey = null,
+        FormKeyDTO? hitEffectArtFormKey = null,
+        FormKeyDTO? hitShaderFormKey = null,
+        FormKeyDTO? imageSpaceModifierFormKey = null,
+        FormKeyDTO? impactDataFormKey = null,
+        FormKeyDTO? projectileFormKey = null,
+        float? unknownFloat3 = null,
+        string? unknown = null,
+        string? unknown2 = null,
+        string? dataTypeState = null)
     {
         return new MagicEffectDTO
         {
@@ -2660,9 +2812,27 @@ public class RecordComparisonServiceTests
             MajorRecordFlags = 2,
             ImportedAtUTC = DateTime.UtcNow,
             Name = Text(name),
+            Description = Text(description),
+            Flags = flags,
+            CastType = castType,
+            TargetType = targetType,
+            ActorValue2FormKey = actorValue2FormKey,
+            ResistValueFormKey = resistValueFormKey,
+            PerkToApplyFormKey = perkToApplyFormKey,
+            EquipAbilityFormKey = equipAbilityFormKey,
+            ExplosionFormKey = explosionFormKey,
+            CastingArtFormKey = castingArtFormKey,
+            HitEffectArtFormKey = hitEffectArtFormKey,
+            HitShaderFormKey = hitShaderFormKey,
+            ImageSpaceModifierFormKey = imageSpaceModifierFormKey,
+            ImpactDataFormKey = impactDataFormKey,
+            ProjectileFormKey = projectileFormKey,
             Archetype = archetype,
+            UnknownFloat3 = unknownFloat3,
             UnknownInt2 = unknownInt2,
-            Flags = "None"
+            Unknown = unknown,
+            Unknown2 = unknown2,
+            DataTypeState = dataTypeState
         };
     }
 

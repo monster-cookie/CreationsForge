@@ -492,34 +492,23 @@ public class RecordComparisonService : IRecordComparisonService
         return CreateComparison(RecordTypeCatalog.NPC.RecordID, formKey, baseRecords, fields);
     }
 
+    /// <summary>
+    /// Creates the comparison output for imported Magic Effect overrides, using specification metadata for scalar
+    /// parent rows while leaving keyword, sound, and scripting adapter rows on existing strategy code.
+    /// </summary>
+    /// <param name="game">The game whose imported magic effect records should be compared.</param>
+    /// <param name="formKey">The origin FormKey shared by the magic effect overrides.</param>
+    /// <returns>The magic effect comparison DTO consumed by presentation rendering.</returns>
     private RecordComparisonDTO CreateMagicEffectComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = MagicEffectRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey);
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
-        var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
-        fields.Add(CreateField("Description", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Description", recordTextLanguage, record.Description)));
-        fields.Add(CreateField("Flags", records, record => record.Flags));
-        fields.Add(CreateField("CastType", records, record => record.CastType ?? string.Empty));
-        fields.Add(CreateField("TargetType", records, record => record.TargetType ?? string.Empty));
-        fields.Add(CreateField("ActorValue2FormKey", records, record => FormatFormKey(record.ActorValue2FormKey)));
-        fields.Add(CreateField("ResistValueFormKey", records, record => FormatFormKey(record.ResistValueFormKey)));
-        fields.Add(CreateField("PerkToApplyFormKey", records, record => FormatFormKey(record.PerkToApplyFormKey)));
-        fields.Add(CreateField("EquipAbilityFormKey", records, record => FormatFormKey(record.EquipAbilityFormKey)));
-        fields.Add(CreateField("ExplosionFormKey", records, record => FormatFormKey(record.ExplosionFormKey)));
-        fields.Add(CreateField("CastingArtFormKey", records, record => FormatFormKey(record.CastingArtFormKey)));
-        fields.Add(CreateField("HitEffectArtFormKey", records, record => FormatFormKey(record.HitEffectArtFormKey)));
-        fields.Add(CreateField("HitShaderFormKey", records, record => FormatFormKey(record.HitShaderFormKey)));
-        fields.Add(CreateField("ImageSpaceModifierFormKey", records, record => FormatFormKey(record.ImageSpaceModifierFormKey)));
-        fields.Add(CreateField("ImpactDataFormKey", records, record => FormatFormKey(record.ImpactDataFormKey)));
-        fields.Add(CreateField("ProjectileFormKey", records, record => FormatFormKey(record.ProjectileFormKey)));
-        fields.Add(CreateField("Archetype", records, record => record.Archetype ?? string.Empty));
-        fields.Add(CreateField("UnknownFloat3", records, record => record.UnknownFloat3?.ToString() ?? string.Empty));
-        fields.Add(CreateField("UnknownInt2", records, record => record.UnknownInt2?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Unknown", records, record => record.Unknown ?? string.Empty));
-        fields.Add(CreateField("Unknown2", records, record => record.Unknown2 ?? string.Empty));
-        fields.Add(CreateField("DataTypeState", records, record => record.DataTypeState ?? string.Empty));
+        var fields = CreateSpecComparisonFields(
+            RecordTypeCatalog.MagicEffect.RecordID,
+            records,
+            localizedStrings: localizedStrings,
+            recordTextLanguage: recordTextLanguage);
         AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey));
         AddSoundGroups(fields, records.Cast<RecordDTO>().ToList(), SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey));
         AddScriptingAdapterGroups(fields, records.Cast<RecordDTO>().ToList(), ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey));

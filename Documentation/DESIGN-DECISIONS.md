@@ -355,6 +355,45 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-26 - Convert Magic Effect Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: `MGEF` comparison includes localized scalar parent rows, FormKey reference rows, flattened DATA-style rows,
+and shared keyword, sound, and scripting adapter child groups. The scalar comparison path already handles localized
+strings, FormKeys, numbers, text fields, and ordinary source-path resolution, so the currently emitted parent rows can
+move into metadata without changing shared child-row alignment.
+
+Decision: Add `MGEF` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreateMagicEffectComparison` to use the shared specification comparison-field builder for scalar rows. Keep keyword,
+sound, and scripting adapter rows on existing strategy methods.
+
+Rationale: This moves another parent-field-heavy record family into the spec-driven comparison path while preserving
+the current comparison output surface. `MGEF` is a useful slice because it exercises localized rows, many FormKey
+references, and flattened Mutagen/Spriggit DATA fields without requiring collection metadata.
+
+Alternatives considered:
+
+- Convert `FACT` next because it has condition-heavy behavior that should eventually become more declarative.
+- Add every persisted `MGEF` DTO field to the comparison specification.
+- Move keyword, sound, and scripting adapter rows into specification metadata in the same slice.
+
+Consequences:
+
+- `MGEF` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- Keyword, sound, and scripting adapter rows remain strategy-based.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-26 - Drive Pilot Import Dispatch From Specifications
 
 Status: Accepted
