@@ -377,12 +377,18 @@ internal static class TerminalRecordSpecification
                     GroupKind = RecordComparisonChildGroupKind.ScriptingAdapterMappings,
                     GroupName = "Scripts",
                     Description = "Shared scripting adapter rows appended after model rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.ReflectionMappings,
+                    GroupName = "Reflection",
+                    Description = "Shared reflection rows appended after script fragment rows."
                 }
             ]
         },
-        ImplementationNote = "Comparison metadata drives scalar parent rows and keyword/model/script child-group " +
-            "dispatch; forced-location, condition, reflection, marker parameter, body text, and menu item rows remain " +
-            "strategy-based."
+        ImplementationNote = "Comparison metadata drives scalar parent rows and keyword/model/script/reflection " +
+            "child-group dispatch; forced-location, condition, marker parameter, body text, and menu item rows " +
+            "remain strategy-based."
     };
 
     /// <summary>

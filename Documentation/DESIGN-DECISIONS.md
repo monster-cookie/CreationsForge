@@ -521,6 +521,58 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-27 - Add Spec-Driven Reflection Child Group Dispatch
+
+Status: Accepted
+
+Context: Keyword, model, sound, and scripting adapter child groups now use comparison metadata to select shared
+child-row strategies while preserving row order and comparison DTO shape. Shared reflection rows use one repository and
+one row-builder strategy across several record families, but reflection data must remain separate from record
+component rows and raw payload behavior.
+
+Decision: Add a `ReflectionMappings` child-group strategy kind. Declare reflection child-group metadata on the current
+comparison record families that use the shared reflection repository path: `STAT`, `BOOK`, `DOOR`, `CONT`, and
+`TERM`. Replace each explicit shared reflection row call with the metadata-driven child-group dispatcher at the same
+row position. Keep condition rules, record components, script fragments, container child rows, navmesh rows, faction
+rows, class rows, perk rows, misc destructible and resource rows, and other complex child groups on their existing
+strategy methods.
+
+Rationale: Reflection rows are shared enough to benefit from specification dispatch, while the existing row builder
+still owns component-index alignment, raw display formatting, detail values, and visible-row filtering. Moving only the
+dispatch keeps reflection modeling explicit and avoids blending first-class component rows with reflected `REFL`
+payloads.
+
+Alternatives considered:
+
+- Convert reflection and record component rows together.
+- Convert condition, reflection, component, and script fragment rows in the same slice.
+- Leave reflection rows mixed between metadata dispatch and explicit calls.
+- Replace reflection row building with a fully declarative nested collection specification immediately.
+
+Consequences:
+
+- Shared reflection rows for current reflection-bearing comparison families are emitted only when the comparison
+  specification declares the `ReflectionMappings` child group.
+- Existing reflection row order is preserved by calling the metadata dispatcher from the original row positions.
+- Record components, raw payloads, and non-keyword/non-model/non-sound/non-scripting-adapter/non-reflection child
+  groups remain strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/StaticRecordSpecification.cs`
+- `CreationsForge.Specification/Records/BookRecordSpecification.cs`
+- `CreationsForge.Specification/Records/DoorRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
+- `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.ActorValueKeywordStaticBookDoorContainer.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-27 - Add Spec-Driven Scripting Adapter Child Group Dispatch
 
 Status: Accepted

@@ -301,11 +301,17 @@ internal static class BookRecordSpecification
                     GroupKind = RecordComparisonChildGroupKind.ScriptingAdapterMappings,
                     GroupName = "Scripts",
                     Description = "Shared scripting adapter rows appended after sound rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.ReflectionMappings,
+                    GroupName = "Reflection",
+                    Description = "Shared reflection rows appended after component rows."
                 }
             ]
         },
-        ImplementationNote = "Comparison metadata drives scalar parent rows and keyword/model/sound/script " +
-            "child-group dispatch; component and reflection rows remain strategy-based."
+        ImplementationNote = "Comparison metadata drives scalar parent rows and keyword/model/sound/script/" +
+            "reflection child-group dispatch; component rows remain strategy-based."
     };
 }
 

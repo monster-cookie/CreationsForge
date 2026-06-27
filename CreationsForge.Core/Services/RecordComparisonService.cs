@@ -655,7 +655,13 @@ public class RecordComparisonService : IRecordComparisonService
             formKey,
             records.Cast<RecordDTO>().ToList(),
             RecordComparisonChildGroupKind.ModelMappings);
-        AddReflectionGroups(fields, records.Cast<RecordDTO>().ToList(), ReflectionRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey));
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Static.RecordID,
+            formKey,
+            records.Cast<RecordDTO>().ToList(),
+            RecordComparisonChildGroupKind.ReflectionMappings);
 
         return CreateComparison(RecordTypeCatalog.Static.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
@@ -920,7 +926,13 @@ public class RecordComparisonService : IRecordComparisonService
             baseRecords,
             RecordComparisonChildGroupKind.ScriptingAdapterMappings);
         AddRecordComponentGroups(fields, baseRecords, records.SelectMany(record => record.Components).ToList());
-        AddReflectionGroups(fields, baseRecords, ReflectionRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Book.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.ReflectionMappings);
 
         return CreateComparison(RecordTypeCatalog.Book.RecordID, formKey, baseRecords, fields);
     }
@@ -977,7 +989,13 @@ public class RecordComparisonService : IRecordComparisonService
             baseRecords,
             RecordComparisonChildGroupKind.ScriptingAdapterMappings);
         AddRecordComponentGroups(fields, baseRecords, records.SelectMany(record => record.Components).ToList());
-        AddReflectionGroups(fields, baseRecords, ReflectionRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Door.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.ReflectionMappings);
 
         return CreateComparison(RecordTypeCatalog.Door.RecordID, formKey, baseRecords, fields);
     }
@@ -1032,7 +1050,13 @@ public class RecordComparisonService : IRecordComparisonService
             baseRecords,
             RecordComparisonChildGroupKind.ScriptingAdapterMappings);
         AddRecordComponentGroups(fields, baseRecords, records.SelectMany(record => record.Components).ToList());
-        AddReflectionGroups(fields, baseRecords, ReflectionRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey));
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Container.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.ReflectionMappings);
 
         return CreateComparison(RecordTypeCatalog.Container.RecordID, formKey, baseRecords, fields);
     }
@@ -1142,7 +1166,13 @@ public class RecordComparisonService : IRecordComparisonService
             RecordComparisonChildGroupKind.ScriptingAdapterMappings);
         AddConditionRuleGroups(fields, baseRecords, records.Cast<IHasConditionsDTO>().ToList());
         AddScriptFragmentGroups(fields, baseRecords, records.SelectMany(record => record.ScriptFragments).ToList());
-        AddReflectionGroups(fields, baseRecords, ReflectionRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Terminal.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.ReflectionMappings);
         AddTerminalMarkerParameterGroups(fields, records);
         AddTerminalBodyTextGroups(fields, records, localizedStrings, recordTextLanguage);
         AddTerminalMenuItemGroups(fields, records, localizedStrings, recordTextLanguage);
@@ -1287,6 +1317,9 @@ public class RecordComparisonService : IRecordComparisonService
                         fields,
                         records,
                         ScriptingAdapterRepository.GetByFormKey(game, recordType, formKey));
+                    break;
+                case RecordComparisonChildGroupKind.ReflectionMappings:
+                    AddReflectionGroups(fields, records, ReflectionRepository.GetByFormKey(game, recordType, formKey));
                     break;
                 default:
                     throw new NotSupportedException(

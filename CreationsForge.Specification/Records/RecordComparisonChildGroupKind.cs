@@ -24,5 +24,10 @@ public enum RecordComparisonChildGroupKind
     /// <summary>
     /// Indicates that persisted scripting adapter rows should be rendered as the shared <c>Scripts</c> child group.
     /// </summary>
-    ScriptingAdapterMappings
+    ScriptingAdapterMappings,
+
+    /// <summary>
+    /// Indicates that persisted reflection rows should be rendered as the shared <c>Reflection</c> child group.
+    /// </summary>
+    ReflectionMappings
 }

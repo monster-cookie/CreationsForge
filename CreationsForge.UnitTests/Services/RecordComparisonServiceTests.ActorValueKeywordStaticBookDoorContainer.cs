@@ -248,7 +248,7 @@ public partial class RecordComparisonServiceTests
 
     /// <summary>
     /// Verifies that Static scalar rows are selected from the injected comparison specification while undeclared
-    /// model child rows remain outside the metadata path.
+    /// model and reflection child rows remain outside the metadata path.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForStatic_UsesInjectedComparisonSpecification()
@@ -268,6 +268,14 @@ public partial class RecordComparisonServiceTests
             [
                 CreateModel("Base.esm", RecordTypeCatalog.Static.RecordID, formKey, "Meshes\\SetDressing\\Rock01.nif"),
                 CreateModel("Patch.esp", RecordTypeCatalog.Static.RecordID, formKey, "Meshes\\SetDressing\\Rock01.nif")
+            ]
+        };
+        var reflectionRepository = new TestReflectionRepository
+        {
+            Records =
+            [
+                CreateReflection("Base.esm", formKey, 0, "ReflectionComponent", "Components[0].REFL", "AABB"),
+                CreateReflection("Patch.esp", formKey, 0, "ReflectionComponent", "Components[0].REFL", "CCDD")
             ]
         };
         var provider = new TestRecordSpecificationProvider(
@@ -296,6 +304,7 @@ public partial class RecordComparisonServiceTests
         var service = CreateService(
             staticRepository: staticRepository,
             modelRepository: modelRepository,
+            reflectionRepository: reflectionRepository,
             recordSpecificationProvider: provider);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Static.RecordID, formKey);
@@ -305,6 +314,7 @@ public partial class RecordComparisonServiceTests
         comparison.Fields.ShouldNotContain(field => field.FieldName == "ObjectBoundsFirst");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Model");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Reflection");
     }
 
     /// <summary>
