@@ -223,10 +223,17 @@ internal static class ContainerRecordSpecification
                     GroupKind = RecordComparisonChildGroupKind.KeywordMappings,
                     GroupName = "Keywords",
                     Description = "Shared keyword mapping rows appended after scalar parent and record-specific rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.SoundMappings,
+                    GroupName = "Sounds",
+                    Description = "Shared sound mapping rows appended after model rows."
                 }
-            ]        },
-        ImplementationNote = "Comparison metadata drives scalar parent rows; item, property, forced-location, keyword, " +
-            "model, sound, script, component, and reflection rows remain strategy-based."
+            ]
+        },
+        ImplementationNote = "Comparison metadata drives scalar parent rows and keyword/sound child-group dispatch; " +
+            "item, property, forced-location, model, script, component, and reflection rows remain strategy-based."
     };
 }
 

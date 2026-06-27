@@ -330,11 +330,17 @@ internal static class MagicEffectRecordSpecification
                     GroupKind = RecordComparisonChildGroupKind.KeywordMappings,
                     GroupName = "Keywords",
                     Description = "Shared keyword mapping rows appended after Magic Effect scalar parent rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.SoundMappings,
+                    GroupName = "Sounds",
+                    Description = "Shared sound mapping rows appended after keyword rows."
                 }
             ]
         },
-        ImplementationNote = "Comparison metadata drives scalar parent rows and keyword child-group dispatch; " +
-            "sound and script rows remain strategy-based."
+        ImplementationNote = "Comparison metadata drives scalar parent rows and keyword/sound child-group dispatch; " +
+            "script rows remain strategy-based."
     };
 }
 

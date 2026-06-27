@@ -9,5 +9,10 @@ public enum RecordComparisonChildGroupKind
     /// <summary>
     /// Indicates that persisted keyword mapping rows should be rendered as the shared <c>Keywords</c> child group.
     /// </summary>
-    KeywordMappings
+    KeywordMappings,
+
+    /// <summary>
+    /// Indicates that persisted sound mapping rows should be rendered as the shared <c>Sounds</c> child group.
+    /// </summary>
+    SoundMappings
 }

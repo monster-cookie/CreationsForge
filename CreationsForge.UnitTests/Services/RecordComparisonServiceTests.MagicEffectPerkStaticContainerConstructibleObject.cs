@@ -105,6 +105,14 @@ public partial class RecordComparisonServiceTests
                 CreateKeywordMapping("Patch.esp", RecordTypeCatalog.MagicEffect.RecordID, formKey, CreateFormKey("Patch.esp", 0x222), 0)
             ]
         };
+        var soundMappingRepository = new TestSoundMappingRepository
+        {
+            Records =
+            [
+                CreateSoundMapping("Base.esm", RecordTypeCatalog.MagicEffect.RecordID, formKey, "Charge", 2, "BaseSound", "Break0", "000000"),
+                CreateSoundMapping("Patch.esp", RecordTypeCatalog.MagicEffect.RecordID, formKey, "Charge", 2, "PatchSound", "Break0", "000000")
+            ]
+        };
         var provider = new TestRecordSpecificationProvider(
             new RecordSpecification
             {
@@ -132,6 +140,12 @@ public partial class RecordComparisonServiceTests
                             GroupKind = RecordComparisonChildGroupKind.KeywordMappings,
                             GroupName = "Keywords",
                             Description = "Test keyword child group."
+                        },
+                        new RecordComparisonChildGroupSpecification
+                        {
+                            GroupKind = RecordComparisonChildGroupKind.SoundMappings,
+                            GroupName = "Sounds",
+                            Description = "Test sound child group."
                         }
                     ]
                 },
@@ -140,6 +154,7 @@ public partial class RecordComparisonServiceTests
         var service = CreateService(
             magicEffectRepository: magicEffectRepository,
             keywordMappingRepository: keywordMappingRepository,
+            soundMappingRepository: soundMappingRepository,
             recordSpecificationProvider: provider);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.MagicEffect.RecordID, formKey);
@@ -149,6 +164,7 @@ public partial class RecordComparisonServiceTests
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Archetype");
         comparison.Fields.Single(field => field.FieldName == "Keywords").Children.ShouldNotBeEmpty();
+        comparison.Fields.Single(field => field.FieldName == "Sounds").Children.ShouldNotBeEmpty();
     }
 
     /// <summary>
@@ -226,7 +242,7 @@ public partial class RecordComparisonServiceTests
         comparison.Fields.Single(field => field.FieldName == "CastType").Values.Select(value => value.DisplayValue)
             .ShouldBe(["BaseCast", "PatchCast"]);
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Keywords");
-        comparison.Fields.Single(field => field.FieldName == "Sounds").Children.ShouldNotBeEmpty();
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Sounds");
         comparison.Fields.Single(field => field.FieldName == "Scripts").Children.ShouldNotBeEmpty();
     }
 

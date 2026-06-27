@@ -302,11 +302,10 @@ public class RecordSpecificationCatalogTests
     }
 
     /// <summary>
-    /// Verifies that keyword child-group comparison metadata is declared by the current keyword-bearing record
-    /// families.
+    /// Verifies that child-group comparison metadata is declared by the current shared child-row record families.
     /// </summary>
     [Fact]
-    public void All_ComparisonChildGroupsExposeCurrentKeywordStrategies()
+    public void All_ComparisonChildGroupsExposeCurrentSharedStrategies()
     {
         var childGroups = RecordSpecificationCatalog.All
             .SelectMany(specification => specification.Comparison.ChildGroups.Select(group => new
@@ -317,10 +316,26 @@ public class RecordSpecificationCatalogTests
             .OrderBy(entry => entry.RecordID, StringComparer.Ordinal)
             .ToList();
 
-        childGroups.Select(entry => entry.RecordID).ShouldBe(
+        var keywordRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.KeywordMappings)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var soundRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.SoundMappings)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+
+        keywordRecordIDs.ShouldBe(
             ["BOOK", "CONT", "DOOR", "FACT", "MGEF", "MISC", "NPC_", "STAT", "TERM"]);
-        childGroups.ShouldAllBe(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.KeywordMappings);
-        childGroups.ShouldAllBe(entry => entry.Group.GroupName == "Keywords");
+        soundRecordIDs.ShouldBe(["BOOK", "COBJ", "CONT", "DOOR", "MGEF", "MISC", "NPC_", "PERK"]);
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.KeywordMappings)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Keywords");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.SoundMappings)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Sounds");
         childGroups.ShouldAllBe(entry => !string.IsNullOrWhiteSpace(entry.Group.Description));
     }
 

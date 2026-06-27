@@ -170,10 +170,19 @@ internal static class ConstructibleObjectRecordSpecification
                     SourcePath = "MajorFlags",
                     ValueKind = RecordFieldValueKind.FlagSet
                 }
+            ],
+            ChildGroups =
+            [
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.SoundMappings,
+                    GroupName = "Sounds",
+                    Description = "Shared sound mapping rows appended after condition rows."
+                }
             ]
         },
-        ImplementationNote = "Comparison metadata drives scalar parent rows; component, category, recipe-filter, " +
-            "condition, sound, and script rows remain strategy-based."
+        ImplementationNote = "Comparison metadata drives scalar parent rows and sound child-group dispatch; " +
+            "component, category, recipe-filter, condition, and script rows remain strategy-based."
     };
 }
 

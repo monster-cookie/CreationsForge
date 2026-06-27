@@ -402,9 +402,10 @@ internal static class FactionRecordSpecification
                     GroupName = "Keywords",
                     Description = "Shared keyword mapping rows appended after scalar parent and record-specific rows."
                 }
-            ]        },
-        ImplementationNote = "Comparison metadata drives scalar parent rows; relation, rank, condition, component, " +
-            "and keyword rows remain strategy-based."
+            ]
+        },
+        ImplementationNote = "Comparison metadata drives scalar parent rows and keyword child-group dispatch; " +
+            "relation, rank, condition, and component rows remain strategy-based."
     };
 }
 

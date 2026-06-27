@@ -366,9 +366,11 @@ internal static class TerminalRecordSpecification
                     GroupName = "Keywords",
                     Description = "Shared keyword mapping rows appended after scalar parent and record-specific rows."
                 }
-            ]        },
-        ImplementationNote = "Comparison metadata drives scalar parent rows; forced-location, keyword, model, script, " +
-            "condition, reflection, marker parameter, body text, and menu item rows remain strategy-based."
+            ]
+        },
+        ImplementationNote = "Comparison metadata drives scalar parent rows and keyword child-group dispatch; " +
+            "forced-location, model, script, condition, reflection, marker parameter, body text, and menu item rows " +
+            "remain strategy-based."
     };
 
     /// <summary>

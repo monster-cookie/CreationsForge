@@ -271,9 +271,10 @@ internal static class StaticRecordSpecification
                     GroupName = "Keywords",
                     Description = "Shared keyword mapping rows appended after scalar parent and record-specific rows."
                 }
-            ]        },
-        ImplementationNote = "Comparison metadata drives scalar parent rows; navmesh, keyword, property, model, " +
-            "and reflection rows remain strategy-based."
+            ]
+        },
+        ImplementationNote = "Comparison metadata drives scalar parent rows and keyword child-group dispatch; " +
+            "navmesh, property, model, and reflection rows remain strategy-based."
     };
 }
 

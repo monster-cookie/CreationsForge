@@ -521,6 +521,56 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-27 - Add Spec-Driven Sound Child Group Dispatch
+
+Status: Accepted
+
+Context: Keyword child groups now prove the comparison specification can select shared child-row strategies while
+preserving row order and comparison DTO shape. Shared sound rows use the same repository and row-builder pattern across
+multiple record families, making them the next low-risk child group to move behind metadata.
+
+Decision: Add a `SoundMappings` child-group strategy kind. Declare sound child-group metadata on the current
+sound-bearing comparison record families: `MISC`, `NPC_`, `MGEF`, `PERK`, `BOOK`, `DOOR`, `CONT`, and `COBJ`.
+Replace each explicit sound-row call with the shared metadata-driven child-group dispatcher at the same row position.
+Keep model, script, condition, component, reflection, rank, item, and other complex child groups on their existing
+strategy methods.
+
+Rationale: Sound rows are shared enough to benefit from specification dispatch, but still simple enough to avoid a
+generic child collection engine. This keeps the spec conversion moving in narrow slices and gives each record file an
+honest declaration of the sound rows it can emit.
+
+Alternatives considered:
+
+- Convert model, script, condition, and reflection child groups in the same slice.
+- Leave sound rows mixed between metadata dispatch and explicit calls.
+- Replace the child-group dispatcher with a generic repository collection engine immediately.
+
+Consequences:
+
+- Shared sound rows for current sound-bearing comparison families are emitted only when the comparison specification
+  declares the `SoundMappings` child group.
+- Existing sound row order is preserved by calling the metadata dispatcher from the original row positions.
+- Non-keyword/non-sound child groups remain strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/MiscItemRecordSpecification.cs`
+- `CreationsForge.Specification/Records/NPCRecordSpecification.cs`
+- `CreationsForge.Specification/Records/MagicEffectRecordSpecification.cs`
+- `CreationsForge.Specification/Records/PerkRecordSpecification.cs`
+- `CreationsForge.Specification/Records/BookRecordSpecification.cs`
+- `CreationsForge.Specification/Records/DoorRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ConstructibleObjectRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.MagicEffectPerkStaticContainerConstructibleObject.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-27 - Pilot Spec-Driven Child Group Dispatch For Magic Effect Keywords
 
 Status: Accepted
