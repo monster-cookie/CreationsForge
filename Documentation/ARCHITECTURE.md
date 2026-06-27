@@ -27,6 +27,9 @@ validation, and comparison behavior. The catalog includes the current imported r
 destination collections and default Mutagen collection names for the current game adapters. `RecordComparisonService`
 consumes comparison metadata for the current simple scalar-row slice. The existing game readers, typed importers,
 repositories, and complex comparison strategies still own their current runtime behavior.
+`SupportedRecordSpecifications` is a public facade that preserves the catalog API and import order. Each record
+family's metadata lives in its own `*RecordSpecification.cs` file named after the canonical CreationsForge record
+type, and shared construction helpers live in `RecordSpecificationFactory`.
 The specification project does not reference Core, Avalonia, NPoco, Migrations, Assets, or game-specific Mutagen
 packages.
 
