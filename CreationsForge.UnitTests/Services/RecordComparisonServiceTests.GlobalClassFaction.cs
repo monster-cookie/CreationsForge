@@ -279,8 +279,8 @@ public partial class RecordComparisonServiceTests
     }
 
     /// <summary>
-    /// Verifies that Faction scalar rows are selected from the injected comparison specification while strategy rows
-    /// remain outside the scalar metadata path.
+    /// Verifies that Faction scalar rows are selected from the injected comparison specification while metadata-owned
+    /// child rows remain outside the scalar metadata path.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForFaction_UsesInjectedComparisonSpecification()
@@ -342,6 +342,7 @@ public partial class RecordComparisonServiceTests
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Flags");
         comparison.Fields.Single(field => field.FieldName == "Relations").Children.ShouldNotBeEmpty();
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Components");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Keywords");
     }
 

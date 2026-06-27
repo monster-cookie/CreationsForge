@@ -34,5 +34,11 @@ public enum RecordComparisonChildGroupKind
     /// <summary>
     /// Indicates that persisted condition rules should be rendered as the shared <c>Conditions</c> child group.
     /// </summary>
-    ConditionRules
+    ConditionRules,
+
+    /// <summary>
+    /// Indicates that persisted shared record component rows should be rendered as the shared <c>Components</c> child
+    /// group.
+    /// </summary>
+    RecordComponents
 }

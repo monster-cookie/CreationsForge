@@ -304,6 +304,12 @@ internal static class BookRecordSpecification
                 },
                 new RecordComparisonChildGroupSpecification
                 {
+                    GroupKind = RecordComparisonChildGroupKind.RecordComponents,
+                    GroupName = "Components",
+                    Description = "Shared record component rows appended after scripting adapter rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
                     GroupKind = RecordComparisonChildGroupKind.ReflectionMappings,
                     GroupName = "Reflection",
                     Description = "Shared reflection rows appended after component rows."
@@ -311,7 +317,7 @@ internal static class BookRecordSpecification
             ]
         },
         ImplementationNote = "Comparison metadata drives scalar parent rows and keyword/model/sound/script/" +
-            "reflection child-group dispatch; component rows remain strategy-based."
+            "component/reflection child-group dispatch."
     };
 }
 

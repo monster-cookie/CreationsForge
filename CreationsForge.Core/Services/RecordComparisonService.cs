@@ -322,7 +322,13 @@ public class RecordComparisonService : IRecordComparisonService
             formKey,
             records.Cast<RecordDTO>().ToList(),
             RecordComparisonChildGroupKind.ConditionRules);
-        AddRecordComponentGroups(fields, records.Cast<RecordDTO>().ToList(), records.SelectMany(record => record.Components).ToList());
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Faction.RecordID,
+            formKey,
+            records.Cast<RecordDTO>().ToList(),
+            RecordComparisonChildGroupKind.RecordComponents);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -937,7 +943,13 @@ public class RecordComparisonService : IRecordComparisonService
             formKey,
             baseRecords,
             RecordComparisonChildGroupKind.ScriptingAdapterMappings);
-        AddRecordComponentGroups(fields, baseRecords, records.SelectMany(record => record.Components).ToList());
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Book.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.RecordComponents);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -1000,7 +1012,13 @@ public class RecordComparisonService : IRecordComparisonService
             formKey,
             baseRecords,
             RecordComparisonChildGroupKind.ScriptingAdapterMappings);
-        AddRecordComponentGroups(fields, baseRecords, records.SelectMany(record => record.Components).ToList());
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Door.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.RecordComponents);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -1061,7 +1079,13 @@ public class RecordComparisonService : IRecordComparisonService
             formKey,
             baseRecords,
             RecordComparisonChildGroupKind.ScriptingAdapterMappings);
-        AddRecordComponentGroups(fields, baseRecords, records.SelectMany(record => record.Components).ToList());
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Container.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.RecordComponents);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -1353,6 +1377,12 @@ public class RecordComparisonService : IRecordComparisonService
                     break;
                 case RecordComparisonChildGroupKind.ConditionRules:
                     AddConditionRuleGroups(fields, records, records.Cast<IHasConditionsDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.RecordComponents:
+                    AddRecordComponentGroups(
+                        fields,
+                        records,
+                        records.Cast<IHasComponentsDTO>().SelectMany(record => record.Components).ToList());
                     break;
                 default:
                     throw new NotSupportedException(

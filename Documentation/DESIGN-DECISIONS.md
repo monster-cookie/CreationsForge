@@ -521,6 +521,56 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-27 - Add Spec-Driven Record Component Child Group Dispatch
+
+Status: Accepted
+
+Context: Keyword, model, sound, scripting adapter, reflection, and condition-rule child groups now use comparison
+metadata to select shared child-row strategies while preserving row order and comparison DTO shape. Shared record
+component rows use one row-builder strategy across several record families, but they are distinct from `MISC`
+component rows and `COBJ` recipe component rows.
+
+Decision: Add a `RecordComponents` child-group strategy kind. Declare record component child-group metadata on the
+current comparison record families that use the shared record component path: `FACT`, `BOOK`, `DOOR`, and `CONT`.
+Replace each explicit shared record component row call with the metadata-driven child-group dispatcher at the same row
+position. Keep `MISC` component rows, `COBJ` component/category/recipe-filter rows, container items/properties/forced
+locations, faction relations/ranks, navmesh rows, perk rows, NPC rows, terminal body/menu/marker rows, destructible
+rows, resource rows, script fragments, and other complex child groups on their existing strategy methods.
+
+Rationale: Shared record component rows are a good metadata-dispatch fit because they already share row alignment,
+display filtering, and component item expansion. Keeping `MISC` and `COBJ` component-shaped rows explicit prevents
+different domain concepts from being folded into one generic "components" bucket.
+
+Alternatives considered:
+
+- Convert all component-like rows together.
+- Convert record components and reflection rows together.
+- Leave shared record component rows mixed between metadata dispatch and explicit calls.
+- Replace component row building with a fully declarative nested collection specification immediately.
+
+Consequences:
+
+- Shared record component rows for current component-bearing comparison families are emitted only when the comparison
+  specification declares the `RecordComponents` child group.
+- Existing component row order is preserved by calling the metadata dispatcher from the original row positions.
+- `MISC` components, `COBJ` recipe components, and non-keyword/non-model/non-sound/non-scripting-adapter/
+  non-reflection/non-condition/non-component child groups remain strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/FactionRecordSpecification.cs`
+- `CreationsForge.Specification/Records/BookRecordSpecification.cs`
+- `CreationsForge.Specification/Records/DoorRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.GlobalClassFaction.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-27 - Add Spec-Driven Condition Rule Child Group Dispatch
 
 Status: Accepted

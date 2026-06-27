@@ -244,6 +244,12 @@ internal static class ContainerRecordSpecification
                 },
                 new RecordComparisonChildGroupSpecification
                 {
+                    GroupKind = RecordComparisonChildGroupKind.RecordComponents,
+                    GroupName = "Components",
+                    Description = "Shared record component rows appended after scripting adapter rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
                     GroupKind = RecordComparisonChildGroupKind.ReflectionMappings,
                     GroupName = "Reflection",
                     Description = "Shared reflection rows appended after component rows."
@@ -251,7 +257,7 @@ internal static class ContainerRecordSpecification
             ]
         },
         ImplementationNote = "Comparison metadata drives scalar parent rows and keyword/model/sound/script/" +
-            "reflection child-group dispatch; item, property, forced-location, and component rows remain " +
+            "component/reflection child-group dispatch; item, property, and forced-location rows remain " +
             "strategy-based."
     };
 }
