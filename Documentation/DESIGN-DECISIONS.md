@@ -472,6 +472,48 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-27 - Convert NPC Top-Level Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: `NPC_` comparison is the largest current comparison family. It includes simple localized and scalar parent
+rows, nested level and configuration groups, supplemental parent rows, form-key lists, actor data children, keywords,
+sounds, and scripting adapters. The scalar comparison path can handle the straightforward parent rows, but the nested
+and child groups still need explicit ordering and alignment strategies.
+
+Decision: Add `NPC_` top-level scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreateNPCComparison` to use the shared specification comparison-field builder for the pre-level scalar rows and the
+post-configuration scalar rows while preserving the existing row order. Keep height rows on the existing numeric
+precision display hook. Keep level, configuration, supplemental parent rows, form-key lists, actor data children,
+keyword rows, sound rows, and scripting adapter rows on existing strategy methods.
+
+Rationale: This completes the current scalar parent comparison metadata pass without forcing the most complex NPC
+child tree into a premature declarative model. Splitting the NPC scalar rows around the existing level and
+configuration groups preserves UI row ordering while making the selected parent rows specification-driven.
+
+Alternatives considered:
+
+- Convert the entire NPC comparison tree in one slice.
+- Leave `NPC_` hardcoded until child-row metadata exists.
+- Move height formatting into generic specification numeric formatting in the same slice.
+
+Consequences:
+
+- `NPC_` top-level scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- NPC level, configuration, supplemental, list, actor child, keyword, sound, and script rows remain strategy-based.
+- The current comparison catalog now covers scalar parent rows for all currently compared record families.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.GameSettingFormListNpcMiscItem.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-27 - Convert Terminal Scalar Comparison Metadata
 
 Status: Accepted
@@ -488,9 +530,9 @@ marker flag display formatting kept as a custom value hook. Preserve Fallout 4's
 terminal reader metadata. Keep forced locations, marker parameters, body texts, menu items, conditions, scripts,
 keywords, models, and reflection rows on existing strategy methods.
 
-Rationale: This moves the final non-NPC scalar parent surface into the spec-driven comparison path without changing
-terminal child-row behavior. `NPC_` remains hardcoded because its comparison tree is much larger and needs a separate
-strategy-design slice.
+Rationale: This moved the final non-NPC scalar parent surface into the spec-driven comparison path without changing
+terminal child-row behavior. At that point, `NPC_` remained hardcoded because its comparison tree was much larger and
+needed a separate strategy-design slice.
 
 Alternatives considered:
 

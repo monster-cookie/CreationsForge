@@ -133,6 +133,115 @@ public partial class RecordComparisonServiceTests
     }
 
     /// <summary>
+    /// Verifies that NPC top-level scalar parent rows are selected from the injected comparison specification while
+    /// child rows remain strategy-based.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForNPC_UsesInjectedComparisonSpecification()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x1011);
+        var baseNpc = CreateNPC("Base.esm", formKey, 1, 1);
+        var patchNpc = CreateNPC("Patch.esp", formKey, 1, 1);
+        patchNpc.Aggression = "Aggressive";
+        patchNpc.HeadParts.Add(CreateFormKey("Starfield.esm", 0x3E2B2));
+        var npcRepository = new TestNPCRepository
+        {
+            Records =
+            [
+                baseNpc,
+                patchNpc
+            ]
+        };
+        var provider = new TestRecordSpecificationProvider(
+            new RecordSpecification
+            {
+                RecordID = SupportedRecordSpecifications.NPC.RecordID,
+                RecordType = SupportedRecordSpecifications.NPC.RecordType,
+                TableName = SupportedRecordSpecifications.NPC.TableName,
+                FriendlyName = SupportedRecordSpecifications.NPC.FriendlyName,
+                GameSupport = SupportedRecordSpecifications.NPC.GameSupport,
+                Fields = SupportedRecordSpecifications.NPC.Fields,
+                Comparison = new RecordComparisonSpecification
+                {
+                    Fields =
+                    [
+                        new RecordComparisonFieldSpecification
+                        {
+                            FieldName = "Aggression",
+                            SourcePath = "Aggression",
+                            ValueKind = RecordFieldValueKind.Text
+                        }
+                    ]
+                },
+                ImplementationNote = "Test specification."
+            });
+        var service = CreateService(npcRepository: npcRepository, recordSpecificationProvider: provider);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.NPC.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Aggression").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["Unaggressive", "Aggressive"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "HeightMin");
+        comparison.Fields.Single(field => field.FieldName == "HeadParts")
+            .Children.Single(field => field.FieldName == "HeadPart [0]")
+            .Values.Select(value => value.DisplayValue)
+            .ShouldBe(["", "Starfield.esm:0003E2B2"]);
+    }
+
+    /// <summary>
+    /// Verifies that NPC localized scalar parent rows resolve through specification metadata and the selected record
+    /// text language.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForNPC_UsesSpecificationLocalizedDisplay()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x1012);
+        var baseNpc = CreateNPC("Base.esm", formKey, 1, 1);
+        var patchNpc = CreateNPC("Patch.esp", formKey, 1, 1);
+        baseNpc.Name = Text("Base NPC");
+        baseNpc.ShortName = Text("Base Short");
+        baseNpc.LongName = Text("Base Long");
+        patchNpc.Name = Text("Patch NPC");
+        patchNpc.ShortName = Text("Patch Short");
+        patchNpc.LongName = Text("Patch Long");
+        var npcRepository = new TestNPCRepository
+        {
+            Records =
+            [
+                baseNpc,
+                patchNpc
+            ]
+        };
+        var localizedStringRepository = new TestRecordLocalizedStringRepository
+        {
+            Records =
+            [
+                CreateLocalizedString("Base.esm", formKey, "Name", "German", "Basis NSC"),
+                CreateLocalizedString("Patch.esp", formKey, "Name", "German", "Patch NSC"),
+                CreateLocalizedString("Base.esm", formKey, "ShortName", "German", "Basis Kurz"),
+                CreateLocalizedString("Patch.esp", formKey, "ShortName", "German", "Patch Kurz"),
+                CreateLocalizedString("Base.esm", formKey, "LongName", "German", "Basis Lang"),
+                CreateLocalizedString("Patch.esp", formKey, "LongName", "German", "Patch Lang")
+            ]
+        };
+        var gameSelectionService = new TestGameSelectionService { RecordTextLanguage = Language.German };
+        var service = CreateService(
+            npcRepository: npcRepository,
+            recordLocalizedStringRepository: localizedStringRepository,
+            gameSelectionService: gameSelectionService);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.NPC.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["Basis NSC", "Patch NSC"]);
+        comparison.Fields.Single(field => field.FieldName == "ShortName").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["Basis Kurz", "Patch Kurz"]);
+        comparison.Fields.Single(field => field.FieldName == "LongName").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["Basis Lang", "Patch Lang"]);
+    }
+
+    /// <summary>
     /// Verifies that NPC comparison output renders first-class persisted child rows instead of only scalar actor data.
     /// </summary>
     [Fact]

@@ -406,38 +406,64 @@ public class RecordComparisonService : IRecordComparisonService
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey);
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var baseRecords = records.Cast<RecordDTO>().ToList();
-        var fields = CreateCommonFields(baseRecords);
-        fields.Add(CreateField("IsCompressed", records, record => record.IsCompressed?.ToString() ?? string.Empty));
-        fields.Add(CreateField("ObjectBoundsFirst", records, record => record.ObjectBoundsFirst ?? string.Empty));
-        fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBoundsSecond ?? string.Empty));
-        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
-        fields.Add(CreateField("ShortName", records, record => GetTranslatedDisplayValue(localizedStrings, record, "ShortName", recordTextLanguage, record.ShortName)));
-        fields.Add(CreateField("LongName", records, record => GetTranslatedDisplayValue(localizedStrings, record, "LongName", recordTextLanguage, record.LongName)));
-        fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
-        fields.Add(CreateField("MajorFlags", records, record => record.MajorFlags ?? string.Empty));
+        var preLevelFieldNames = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "IsCompressed",
+            "ObjectBoundsFirst",
+            "ObjectBoundsSecond",
+            "Name",
+            "ShortName",
+            "LongName",
+            "Flags",
+            "MajorFlags"
+        };
+        var postConfigurationFieldNames = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "DispositionBase",
+            "Aggression",
+            "Confidence",
+            "EnergyLevel",
+            "Responsibility",
+            "Assistance",
+            "Mood",
+            "GearedUpWeapons",
+            "HeightMin",
+            "HeightMax",
+            "Height",
+            "SkinToneIndex",
+            "Skin",
+            "Pronoun",
+            "VoiceFormKey",
+            "RaceFormKey",
+            "AttackRace",
+            "CombatOverridePackageListFormKey",
+            "CombatStyleFormKey",
+            "DefaultPackageListFormKey",
+            "CrimeFactionFormKey"
+        };
+        var customValueFactories = new Dictionary<string, Func<NPCDTO, string>>(StringComparer.Ordinal)
+        {
+            ["HeightMin"] = record => FormatNumericDisplayValue(record.HeightMin, GetNumericDisplayPrecision<NPCDTO>(nameof(NPCDTO.HeightMin))),
+            ["HeightMax"] = record => FormatNumericDisplayValue(record.HeightMax, GetNumericDisplayPrecision<NPCDTO>(nameof(NPCDTO.HeightMax))),
+            ["Height"] = record => FormatNumericDisplayValue(record.Height, GetNumericDisplayPrecision<NPCDTO>(nameof(NPCDTO.Height)))
+        };
+        var fields = CreateSpecComparisonFields(
+            RecordTypeCatalog.NPC.RecordID,
+            records,
+            customValueFactories,
+            localizedStrings,
+            recordTextLanguage,
+            fieldPredicate: fieldSpecification => preLevelFieldNames.Contains(fieldSpecification.FieldName));
         AddNPCLevelGroup(fields, records);
         AddNPCConfigurationGroup(fields, records);
-        fields.Add(CreateField("DispositionBase", records, record => record.DispositionBase.ToString()));
-        fields.Add(CreateField("Aggression", records, record => record.Aggression));
-        fields.Add(CreateField("Confidence", records, record => record.Confidence));
-        fields.Add(CreateField("EnergyLevel", records, record => record.EnergyLevel.ToString()));
-        fields.Add(CreateField("Responsibility", records, record => record.Responsibility));
-        fields.Add(CreateField("Assistance", records, record => record.Assistance));
-        fields.Add(CreateField("Mood", records, record => record.Mood ?? string.Empty));
-        fields.Add(CreateField("GearedUpWeapons", records, record => record.GearedUpWeapons.ToString()));
-        fields.Add(CreateNumericField("HeightMin", records, record => record.HeightMin, nameof(NPCDTO.HeightMin)));
-        fields.Add(CreateNumericField("HeightMax", records, record => record.HeightMax, nameof(NPCDTO.HeightMax)));
-        fields.Add(CreateNumericField("Height", records, record => record.Height, nameof(NPCDTO.Height)));
-        fields.Add(CreateField("SkinToneIndex", records, record => record.SkinToneIndex?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Skin", records, record => FormatFormKey(record.Skin)));
-        fields.Add(CreateField("Pronoun", records, record => record.Pronoun ?? string.Empty));
-        fields.Add(CreateField("VoiceFormKey", records, record => FormatFormKey(record.VoiceFormKey)));
-        fields.Add(CreateField("RaceFormKey", records, record => FormatFormKey(record.RaceFormKey)));
-        fields.Add(CreateField("AttackRace", records, record => FormatFormKey(record.AttackRace)));
-        fields.Add(CreateField("CombatOverridePackageListFormKey", records, record => FormatFormKey(record.CombatOverridePackageListFormKey)));
-        fields.Add(CreateField("CombatStyleFormKey", records, record => FormatFormKey(record.CombatStyleFormKey)));
-        fields.Add(CreateField("DefaultPackageListFormKey", records, record => FormatFormKey(record.DefaultPackageListFormKey)));
-        fields.Add(CreateField("CrimeFactionFormKey", records, record => FormatFormKey(record.CrimeFactionFormKey)));
+        fields.AddRange(CreateSpecComparisonFields(
+            RecordTypeCatalog.NPC.RecordID,
+            records,
+            customValueFactories,
+            localizedStrings,
+            recordTextLanguage,
+            includeCommonFields: false,
+            fieldPredicate: fieldSpecification => postConfigurationFieldNames.Contains(fieldSpecification.FieldName)));
         AddNPCSupplementalFields(fields, records);
         AddNPCFormKeyListGroup(fields, records, "Packages", record => record.Packages);
         AddNPCFormKeyListGroup(fields, records, "ForcedLocations", record => record.ForcedLocations);
@@ -971,17 +997,21 @@ public class RecordComparisonService : IRecordComparisonService
     /// <param name="customValueFactories">Optional value factories keyed by comparison field name.</param>
     /// <param name="localizedStrings">Optional localized string rows used by specification-declared localized fields.</param>
     /// <param name="recordTextLanguage">The preferred language used when resolving localized comparison rows.</param>
+    /// <param name="includeCommonFields">Whether common record header fields should be included in the returned rows.</param>
+    /// <param name="fieldPredicate">Optional predicate used by callers that need to insert specification rows in phases.</param>
     /// <returns>The comparison fields produced from the specification and custom value factories.</returns>
     private List<RecordComparisonFieldDTO> CreateSpecComparisonFields<TRecord>(
         string recordType,
         IReadOnlyList<TRecord> records,
         IReadOnlyDictionary<string, Func<TRecord, string>>? customValueFactories = null,
         IReadOnlyList<LocalizedStringDTO>? localizedStrings = null,
-        Language? recordTextLanguage = null)
+        Language? recordTextLanguage = null,
+        bool includeCommonFields = true,
+        Func<RecordComparisonFieldSpecification, bool>? fieldPredicate = null)
         where TRecord : RecordDTO
     {
         var specification = RecordSpecificationProvider.FindByRecordID(recordType);
-        var fields = specification?.Comparison.IncludeCommonFields == false
+        var fields = !includeCommonFields || specification?.Comparison.IncludeCommonFields == false
             ? new List<RecordComparisonFieldDTO>()
             : CreateCommonFields(records.Cast<RecordDTO>().ToList());
 
@@ -992,6 +1022,11 @@ public class RecordComparisonService : IRecordComparisonService
 
         foreach (var fieldSpecification in specification.Comparison.Fields)
         {
+            if (fieldPredicate != null && !fieldPredicate(fieldSpecification))
+            {
+                continue;
+            }
+
             if (fieldSpecification.ValueKind == RecordFieldValueKind.Collection)
             {
                 continue;
