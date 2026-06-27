@@ -433,6 +433,45 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-27 - Convert Perk Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: `PERK` comparison includes localized scalar parent rows and several strategy-owned child groups: effects,
+ranks, background skills, conditions, sounds, script fragments, and scripting adapters. The scalar comparison path
+already handles localized strings, FormKeys, numbers, text values, and ordinary source paths, so the parent rows can
+move into metadata without changing the child-row alignment strategies.
+
+Decision: Add `PERK` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreatePerkComparison` to use the shared specification comparison-field builder for scalar rows. Keep effects, ranks,
+background skills, conditions, sounds, script fragments, and scripting adapters on existing strategy methods.
+
+Rationale: This moves the next-largest remaining scalar parent surface behind metadata while avoiding the more complex
+collection strategy problem. It leaves `NPC_` and `TERM` as the last hardcoded comparison families because they have
+much broader UI-facing trees.
+
+Alternatives considered:
+
+- Move perk rank and effect rows into specification metadata in the same slice.
+- Convert `NPC_` next.
+- Leave `PERK` hardcoded until all remaining comparison families can be converted together.
+
+Consequences:
+
+- `PERK` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- Effect, rank, background skill, condition, sound, script fragment, and scripting adapter rows remain strategy-based.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-26 - Drive Pilot Import Dispatch From Specifications
 
 Status: Accepted

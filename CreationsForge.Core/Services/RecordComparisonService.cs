@@ -487,28 +487,24 @@ public class RecordComparisonService : IRecordComparisonService
         return CreateComparison(RecordTypeCatalog.MagicEffect.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
 
+    /// <summary>
+    /// Creates the comparison output for imported Perk overrides, using specification metadata for scalar parent rows
+    /// while leaving effect, rank, background skill, condition, sound, script, and scripting adapter rows on existing
+    /// strategy code.
+    /// </summary>
+    /// <param name="game">The game whose imported perk records should be compared.</param>
+    /// <param name="formKey">The origin FormKey shared by the perk overrides.</param>
+    /// <returns>The perk comparison DTO consumed by presentation rendering.</returns>
     private RecordComparisonDTO CreatePerkComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = PerkRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Perk.RecordID, formKey);
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
-        var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
-        fields.Add(CreateField("Description", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Description", recordTextLanguage, record.Description)));
-        fields.Add(CreateField("Flags", records, record => record.Flags));
-        fields.Add(CreateField("SkillGroup", records, record => record.SkillGroup ?? string.Empty));
-        fields.Add(CreateField("CrewAssignment", records, record => record.CrewAssignment ?? string.Empty));
-        fields.Add(CreateField("PerkIcon", records, record => record.PerkIcon ?? string.Empty));
-        fields.Add(CreateField("Category", records, record => record.Category ?? string.Empty));
-        fields.Add(CreateField("RestrictionFormKey", records, record => FormatFormKey(record.RestrictionFormKey)));
-        fields.Add(CreateField("TrainingFormKey", records, record => FormatFormKey(record.TrainingFormKey)));
-        fields.Add(CreateField("Level", records, record => record.Level?.ToString() ?? string.Empty));
-        fields.Add(CreateField("NumRanks", records, record => record.NumRanks?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Playable", records, record => record.Playable?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Hidden", records, record => record.Hidden?.ToString() ?? string.Empty));
-        fields.Add(CreateField("NextPerk", records, record => FormatFormKey(record.NextPerk)));
-        fields.Add(CreateField("MajorFlags", records, record => record.MajorFlags ?? string.Empty));
+        var fields = CreateSpecComparisonFields(
+            RecordTypeCatalog.Perk.RecordID,
+            records,
+            localizedStrings: localizedStrings,
+            recordTextLanguage: recordTextLanguage);
         AddPerkEffectGroups(fields, records, localizedStrings, recordTextLanguage);
         AddPerkRankGroups(fields, records, localizedStrings, recordTextLanguage);
         AddPerkBackgroundSkillGroup(fields, records);
