@@ -331,11 +331,17 @@ public class RecordSpecificationCatalogTests
             .Select(entry => entry.RecordID)
             .OrderBy(recordID => recordID, StringComparer.Ordinal)
             .ToList();
+        var scriptingAdapterRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ScriptingAdapterMappings)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
 
         keywordRecordIDs.ShouldBe(
             ["BOOK", "CONT", "DOOR", "FACT", "MGEF", "MISC", "NPC_", "STAT", "TERM"]);
         soundRecordIDs.ShouldBe(["BOOK", "COBJ", "CONT", "DOOR", "MGEF", "MISC", "NPC_", "PERK"]);
         modelRecordIDs.ShouldBe(["BOOK", "CONT", "DOOR", "MISC", "STAT", "TERM"]);
+        scriptingAdapterRecordIDs.ShouldBe(["BOOK", "COBJ", "CONT", "DOOR", "MGEF", "MISC", "NPC_", "PERK", "TERM"]);
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.KeywordMappings)
             .ShouldAllBe(entry => entry.Group.GroupName == "Keywords");
@@ -345,6 +351,9 @@ public class RecordSpecificationCatalogTests
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ModelMappings)
             .ShouldAllBe(entry => entry.Group.GroupName == "Models");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ScriptingAdapterMappings)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Scripts");
         childGroups.ShouldAllBe(entry => !string.IsNullOrWhiteSpace(entry.Group.Description));
     }
 

@@ -19,5 +19,10 @@ public enum RecordComparisonChildGroupKind
     /// <summary>
     /// Indicates that persisted model rows should be rendered as shared model child groups.
     /// </summary>
-    ModelMappings
+    ModelMappings,
+
+    /// <summary>
+    /// Indicates that persisted scripting adapter rows should be rendered as the shared <c>Scripts</c> child group.
+    /// </summary>
+    ScriptingAdapterMappings
 }

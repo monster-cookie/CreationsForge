@@ -245,11 +245,17 @@ internal static class PerkRecordSpecification
                     GroupKind = RecordComparisonChildGroupKind.SoundMappings,
                     GroupName = "Sounds",
                     Description = "Shared sound mapping rows appended after condition rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.ScriptingAdapterMappings,
+                    GroupName = "Scripts",
+                    Description = "Shared scripting adapter rows appended after script fragment rows."
                 }
             ]
         },
-        ImplementationNote = "Comparison metadata drives scalar parent rows and sound child-group dispatch; effect, " +
-            "rank, background skill, condition, script fragment, and scripting adapter rows remain strategy-based."
+        ImplementationNote = "Comparison metadata drives scalar parent rows and sound/script child-group dispatch; " +
+            "effect, rank, background skill, condition, and script fragment rows remain strategy-based."
     };
 }
 

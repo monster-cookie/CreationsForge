@@ -478,12 +478,18 @@ internal static class NPCRecordSpecification
                     GroupKind = RecordComparisonChildGroupKind.SoundMappings,
                     GroupName = "Sounds",
                     Description = "Shared sound mapping rows appended after keyword rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.ScriptingAdapterMappings,
+                    GroupName = "Scripts",
+                    Description = "Shared scripting adapter rows appended after sound rows."
                 }
             ]
         },
-        ImplementationNote = "Comparison metadata drives top-level scalar parent rows and keyword/sound child-group " +
-            "dispatch; level, configuration, supplemental parent rows, form-key list rows, actor data children, and " +
-            "script rows remain strategy-based."
+        ImplementationNote = "Comparison metadata drives top-level scalar parent rows and keyword/sound/script " +
+            "child-group dispatch; level, configuration, supplemental parent rows, form-key list rows, and actor " +
+            "data children remain strategy-based."
     };
 }
 

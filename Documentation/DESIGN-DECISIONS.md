@@ -521,6 +521,60 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-27 - Add Spec-Driven Scripting Adapter Child Group Dispatch
+
+Status: Accepted
+
+Context: Keyword, model, and sound child groups now use comparison metadata to select shared child-row strategies while
+preserving row order and comparison DTO shape. Shared scripting adapter rows use one repository and one row-builder
+strategy across several record families, but they are distinct from script fragments and should not be combined with
+fragment rendering.
+
+Decision: Add a `ScriptingAdapterMappings` child-group strategy kind. Declare scripting adapter child-group metadata
+on the current comparison record families that use the shared scripting adapter repository path: `MISC`, `NPC_`,
+`MGEF`, `PERK`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM`. Replace each explicit shared scripting adapter row call
+with the metadata-driven child-group dispatcher at the same row position. Keep condition rules, reflection rows,
+record components, script fragments, rank and effect rows, items, destructible rows, resource rows, and other complex
+child groups on their existing strategy methods.
+
+Rationale: Scripting adapter rows are shared enough to benefit from specification dispatch, while the existing row
+builder still owns script index alignment, property expansion, value formatting, and visible-row filtering. Keeping
+script fragments explicit prevents two different script-shaped concepts from being collapsed into one metadata kind.
+
+Alternatives considered:
+
+- Convert scripting adapters and script fragments together.
+- Convert condition, reflection, component, and scripting adapter rows in the same slice.
+- Leave scripting adapter rows mixed between metadata dispatch and explicit calls.
+- Replace script row building with a fully declarative nested collection specification immediately.
+
+Consequences:
+
+- Shared scripting adapter rows for current scripting-adapter-bearing comparison families are emitted only when the
+  comparison specification declares the `ScriptingAdapterMappings` child group.
+- Existing script row order is preserved by calling the metadata dispatcher from the original row positions.
+- Script fragments and non-keyword/non-model/non-sound/non-scripting-adapter child groups remain strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/MiscItemRecordSpecification.cs`
+- `CreationsForge.Specification/Records/NPCRecordSpecification.cs`
+- `CreationsForge.Specification/Records/MagicEffectRecordSpecification.cs`
+- `CreationsForge.Specification/Records/PerkRecordSpecification.cs`
+- `CreationsForge.Specification/Records/BookRecordSpecification.cs`
+- `CreationsForge.Specification/Records/DoorRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ConstructibleObjectRecordSpecification.cs`
+- `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.MagicEffectPerkStaticContainerConstructibleObject.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-27 - Add Spec-Driven Model Child Group Dispatch
 
 Status: Accepted

@@ -113,6 +113,14 @@ public partial class RecordComparisonServiceTests
                 CreateSoundMapping("Patch.esp", RecordTypeCatalog.MagicEffect.RecordID, formKey, "Charge", 2, "PatchSound", "Break0", "000000")
             ]
         };
+        var scriptingAdapterRepository = new TestScriptingAdapterRepository
+        {
+            Records =
+            [
+                CreateScriptingAdapter("Base.esm", RecordTypeCatalog.MagicEffect.RecordID, formKey, "FXScript", "TargetVFX", "BaseVFX"),
+                CreateScriptingAdapter("Patch.esp", RecordTypeCatalog.MagicEffect.RecordID, formKey, "FXScript", "TargetVFX", "PatchVFX")
+            ]
+        };
         var provider = new TestRecordSpecificationProvider(
             new RecordSpecification
             {
@@ -146,6 +154,12 @@ public partial class RecordComparisonServiceTests
                             GroupKind = RecordComparisonChildGroupKind.SoundMappings,
                             GroupName = "Sounds",
                             Description = "Test sound child group."
+                        },
+                        new RecordComparisonChildGroupSpecification
+                        {
+                            GroupKind = RecordComparisonChildGroupKind.ScriptingAdapterMappings,
+                            GroupName = "Scripts",
+                            Description = "Test scripting adapter child group."
                         }
                     ]
                 },
@@ -155,6 +169,7 @@ public partial class RecordComparisonServiceTests
             magicEffectRepository: magicEffectRepository,
             keywordMappingRepository: keywordMappingRepository,
             soundMappingRepository: soundMappingRepository,
+            scriptingAdapterRepository: scriptingAdapterRepository,
             recordSpecificationProvider: provider);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.MagicEffect.RecordID, formKey);
@@ -165,11 +180,11 @@ public partial class RecordComparisonServiceTests
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Archetype");
         comparison.Fields.Single(field => field.FieldName == "Keywords").Children.ShouldNotBeEmpty();
         comparison.Fields.Single(field => field.FieldName == "Sounds").Children.ShouldNotBeEmpty();
+        comparison.Fields.Single(field => field.FieldName == "Scripts").Children.ShouldNotBeEmpty();
     }
 
     /// <summary>
-    /// Verifies that Magic Effect keyword child rows are controlled by child-group metadata rather than scalar field
-    /// metadata.
+    /// Verifies that Magic Effect child rows are controlled by child-group metadata rather than scalar field metadata.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForMagicEffect_UsesInjectedChildGroupSpecification()
@@ -243,7 +258,7 @@ public partial class RecordComparisonServiceTests
             .ShouldBe(["BaseCast", "PatchCast"]);
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Keywords");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Sounds");
-        comparison.Fields.Single(field => field.FieldName == "Scripts").Children.ShouldNotBeEmpty();
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Scripts");
     }
 
     /// <summary>
