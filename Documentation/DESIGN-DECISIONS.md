@@ -161,6 +161,46 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-26 - Convert Door And Container Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: The scalar comparison path now supports ordinary localized fields and has moved `KYWD`, `STAT`, and `BOOK`
+parent rows behind specifications. `DOOR` and `CONT` are a natural next slice because their scalar parent rows are
+straightforward, while their models, keywords, sounds, scripts, components, reflection rows, and container-specific
+child rows still need strategy-based alignment.
+
+Decision: Add `DOOR` and `CONT` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreateDoorComparison` and `CreateContainerComparison` to use the shared specification comparison-field builder for
+scalar rows. Keep all existing child/group rows on the current strategy methods.
+
+Rationale: This expands the spec-driven comparison surface with another pair of user-visible record families while
+preserving comparison DTO shape and avoiding premature child-row metadata. Door and container rows also exercise the
+generic localized display path, FormKey formatting, nested transform source paths, and animation scalar fields.
+
+Alternatives considered:
+
+- Convert only `DOOR` first.
+- Add `DOOR.MajorFlags` because the DTO has the property.
+- Move container item/property/forced-location groups into specification metadata immediately.
+
+Consequences:
+
+- `DOOR` and `CONT` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- `DOOR.MajorFlags` remains omitted because the existing comparison output does not emit it.
+- Door and container child groups remain strategy-based.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-26 - Drive Pilot Import Dispatch From Specifications
 
 Status: Accepted

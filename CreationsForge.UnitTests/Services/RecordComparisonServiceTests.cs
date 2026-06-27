@@ -301,6 +301,105 @@ public class RecordComparisonServiceTests
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Flags");
     }
 
+    /// <summary>
+    /// Verifies that Door scalar rows are selected from the injected comparison specification.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForDoor_UsesInjectedComparisonSpecification()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x12A);
+        var nativeTerminalFormKey = CreateFormKey("Starfield.esm", 0x555);
+        var doorRepository = new TestDoorRepository
+        {
+            Records =
+            [
+                CreateDoor("Base.esm", formKey, "Airlock", nativeTerminalFormKey, "Both"),
+                CreateDoor("Patch.esp", formKey, "Airlock", nativeTerminalFormKey, "Positive")
+            ]
+        };
+        var provider = new TestRecordSpecificationProvider(
+            new RecordSpecification
+            {
+                RecordID = SupportedRecordSpecifications.Door.RecordID,
+                RecordType = SupportedRecordSpecifications.Door.RecordType,
+                TableName = SupportedRecordSpecifications.Door.TableName,
+                FriendlyName = SupportedRecordSpecifications.Door.FriendlyName,
+                GameSupport = SupportedRecordSpecifications.Door.GameSupport,
+                Fields = SupportedRecordSpecifications.Door.Fields,
+                Comparison = new RecordComparisonSpecification
+                {
+                    Fields =
+                    [
+                        new RecordComparisonFieldSpecification
+                        {
+                            FieldName = "FacingAxisOverride",
+                            SourcePath = "FacingAxisOverride",
+                            ValueKind = RecordFieldValueKind.Text
+                        }
+                    ]
+                },
+                ImplementationNote = "Test specification."
+            });
+        var service = CreateService(doorRepository: doorRepository, recordSpecificationProvider: provider);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Door.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "FacingAxisOverride").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["Both", "Positive"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "NativeTerminalFormKey");
+    }
+
+    /// <summary>
+    /// Verifies that Container scalar rows are selected from the injected comparison specification.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForContainer_UsesInjectedComparisonSpecification()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x12B);
+        var itemFormKey = CreateFormKey("Starfield.esm", 0x333);
+        var terminalFormKey = CreateFormKey("Starfield.esm", 0x444);
+        var containerRepository = new TestContainerRepository
+        {
+            Records =
+            [
+                CreateContainer("Base.esm", formKey, "Storage Crate", terminalFormKey, [CreateContainerItem("Base.esm", formKey, itemFormKey, 0, 2)], "meshes\\base.anim"),
+                CreateContainer("Patch.esp", formKey, "Storage Crate", terminalFormKey, [CreateContainerItem("Patch.esp", formKey, itemFormKey, 0, 4)], "meshes\\patch.anim")
+            ]
+        };
+        var provider = new TestRecordSpecificationProvider(
+            new RecordSpecification
+            {
+                RecordID = SupportedRecordSpecifications.Container.RecordID,
+                RecordType = SupportedRecordSpecifications.Container.RecordType,
+                TableName = SupportedRecordSpecifications.Container.TableName,
+                FriendlyName = SupportedRecordSpecifications.Container.FriendlyName,
+                GameSupport = SupportedRecordSpecifications.Container.GameSupport,
+                Fields = SupportedRecordSpecifications.Container.Fields,
+                Comparison = new RecordComparisonSpecification
+                {
+                    Fields =
+                    [
+                        new RecordComparisonFieldSpecification
+                        {
+                            FieldName = "AnimationGraph",
+                            SourcePath = "AnimationGraph",
+                            ValueKind = RecordFieldValueKind.Text
+                        }
+                    ]
+                },
+                ImplementationNote = "Test specification."
+            });
+        var service = CreateService(containerRepository: containerRepository, recordSpecificationProvider: provider);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Container.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "AnimationGraph").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["meshes\\base.anim", "meshes\\patch.anim"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "NativeTerminalFormKey");
+    }
+
     [Fact]
     public void GetRecordComparison_ForGameSetting_HidesRedundantTypedValueFields()
     {
@@ -978,13 +1077,25 @@ public class RecordComparisonServiceTests
                 CreateDoor("Patch.esp", formKey, "Airlock", nativeTerminalFormKey, "Positive")
             ]
         };
-        var service = CreateService(doorRepository: doorRepository);
+        var modelRepository = new TestModelRepository
+        {
+            Records =
+            [
+                CreateModel("Base.esm", RecordTypeCatalog.Door.RecordID, formKey, "Meshes\\Architecture\\Door01.nif"),
+                CreateModel("Patch.esp", RecordTypeCatalog.Door.RecordID, formKey, "Meshes\\Architecture\\Door01.nif")
+            ]
+        };
+        var service = CreateService(
+            doorRepository: doorRepository,
+            modelRepository: modelRepository);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Door.RecordID, formKey);
 
         comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["Airlock", "Airlock"]);
         comparison.Fields.Single(field => field.FieldName == "NativeTerminalFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000555", "Starfield.esm:00000555"]);
         comparison.Fields.Single(field => field.FieldName == "FacingAxisOverride").Values.Select(value => value.DisplayValue).ShouldBe(["Both", "Positive"]);
+        var model = comparison.Fields.Single(field => field.FieldName == "Model");
+        model.Children.Single(field => field.FieldName == "File").Values.Select(value => value.DisplayValue).ShouldBe(["Meshes\\Architecture\\Door01.nif", "Meshes\\Architecture\\Door01.nif"]);
     }
 
     [Fact]

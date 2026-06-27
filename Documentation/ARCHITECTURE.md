@@ -242,13 +242,14 @@ Core assigns comparison value states for neutral, identical, conflicting, and di
 presentation layer maps those states to the green, red, and yellow comparison colors and shows the legend in the status
 area.
 
-The specification catalog now drives simple comparison rows for `FLST`, `GMST`, `GLOB`, `KYWD`, `STAT`, and `BOOK`.
+The specification catalog now drives simple comparison rows for `FLST`, `GMST`, `GLOB`, `KYWD`, `STAT`, `BOOK`,
+`DOOR`, and `CONT`.
 `RecordComparisonService` reads type-specific comparison fields from `IRecordSpecificationProvider`, resolves simple
 DTO source paths generically, and uses comparison metadata for ordinary localized scalar rows. Explicit strategy hooks
 remain where behavior is not purely declarative. The current hooks include indexed `FLST` item rows, localized `GMST`
-`Data` display, game-dependent `BOOK` body-text source fields, and `STAT` plus `BOOK` child groups. Complex record
-families and shared child groups remain on the existing record-specific comparison methods until later approved slices
-move them behind specification metadata.
+`Data` display, game-dependent `BOOK` body-text source fields, and `STAT`, `BOOK`, `DOOR`, and `CONT` child groups.
+Complex record families and shared child groups remain on the existing record-specific comparison methods until later
+approved slices move them behind specification metadata.
 
 `IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows.
 `IAssetFileResolverService` resolves readable local asset files from preview candidates by checking absolute paths,

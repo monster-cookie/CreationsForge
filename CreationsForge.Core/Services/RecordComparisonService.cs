@@ -832,25 +832,24 @@ public class RecordComparisonService : IRecordComparisonService
         return record.Game == SupportedGame.Starfield ? "Text" : "BookText";
     }
 
+    /// <summary>
+    /// Creates the comparison output for imported Door overrides, using specification metadata for scalar parent rows
+    /// while leaving child collections on existing strategy code.
+    /// </summary>
+    /// <param name="game">The game whose imported door records should be compared.</param>
+    /// <param name="formKey">The origin FormKey shared by the door overrides.</param>
+    /// <returns>The door comparison DTO consumed by presentation rendering.</returns>
     private RecordComparisonDTO CreateDoorComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = DoorRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey);
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var baseRecords = records.Cast<RecordDTO>().ToList();
-        var fields = CreateCommonFields(baseRecords);
-        fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
-        fields.Add(CreateField("ObjectBoundsFirst", records, record => record.ObjectBoundsFirst ?? string.Empty));
-        fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBoundsSecond ?? string.Empty));
-        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
-        fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
-        fields.Add(CreateField("NativeTerminalFormKey", records, record => FormatFormKey(record.NativeTerminalFormKey)));
-        fields.Add(CreateField("SoundLevel", records, record => record.SoundLevel ?? string.Empty));
-        fields.Add(CreateField("FacingAxisOverride", records, record => record.FacingAxisOverride ?? string.Empty));
-        fields.Add(CreateField("AnimationGraph", records, record => record.AnimationGraph ?? string.Empty));
-        fields.Add(CreateField("AnimationSkeleton", records, record => record.AnimationSkeleton ?? string.Empty));
-        fields.Add(CreateField("AnimationDirectory", records, record => record.AnimationDirectory ?? string.Empty));
-        fields.Add(CreateField("AnimationFile", records, record => record.AnimationFile ?? string.Empty));
+        var fields = CreateSpecComparisonFields(
+            RecordTypeCatalog.Door.RecordID,
+            records,
+            localizedStrings: localizedStrings,
+            recordTextLanguage: recordTextLanguage);
         AddKeywordGroup(fields, baseRecords, KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
         AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
         AddSoundGroups(fields, baseRecords, SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
@@ -861,28 +860,24 @@ public class RecordComparisonService : IRecordComparisonService
         return CreateComparison(RecordTypeCatalog.Door.RecordID, formKey, baseRecords, fields);
     }
 
+    /// <summary>
+    /// Creates the comparison output for imported Container overrides, using specification metadata for scalar parent
+    /// rows while leaving item and shared child collections on existing strategy code.
+    /// </summary>
+    /// <param name="game">The game whose imported container records should be compared.</param>
+    /// <param name="formKey">The origin FormKey shared by the container overrides.</param>
+    /// <returns>The container comparison DTO consumed by presentation rendering.</returns>
     private RecordComparisonDTO CreateContainerComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = ContainerRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey);
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var baseRecords = records.Cast<RecordDTO>().ToList();
-        var fields = CreateCommonFields(baseRecords);
-        fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
-        fields.Add(CreateField("ObjectBoundsFirst", records, record => record.ObjectBoundsFirst ?? string.Empty));
-        fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBoundsSecond ?? string.Empty));
-        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
-        fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
-        fields.Add(CreateField("MajorFlags", records, record => record.MajorFlags ?? string.Empty));
-        fields.Add(CreateField("NativeTerminalFormKey", records, record => FormatFormKey(record.NativeTerminalFormKey)));
-        fields.Add(CreateField("SnapTemplate", records, record => FormatFormKey(record.SnapTemplate)));
-        fields.Add(CreateField("ContainsOnlyFilter", records, record => FormatFormKey(record.ContainsOnlyFilter)));
-        fields.Add(CreateField("Transforms.Outpost", records, record => FormatFormKey(record.Transforms?.Outpost)));
-        fields.Add(CreateField("Transforms.Preview", records, record => FormatFormKey(record.Transforms?.Preview)));
-        fields.Add(CreateField("AnimationGraph", records, record => record.AnimationGraph ?? string.Empty));
-        fields.Add(CreateField("AnimationSkeleton", records, record => record.AnimationSkeleton ?? string.Empty));
-        fields.Add(CreateField("AnimationDirectory", records, record => record.AnimationDirectory ?? string.Empty));
-        fields.Add(CreateField("AnimationFile", records, record => record.AnimationFile ?? string.Empty));
+        var fields = CreateSpecComparisonFields(
+            RecordTypeCatalog.Container.RecordID,
+            records,
+            localizedStrings: localizedStrings,
+            recordTextLanguage: recordTextLanguage);
         AddContainerItemGroups(fields, records);
         AddContainerPropertyGroups(fields, records);
         AddContainerForcedLocationGroups(fields, records);
