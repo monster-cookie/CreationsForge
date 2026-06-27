@@ -315,7 +315,13 @@ public class RecordComparisonService : IRecordComparisonService
             recordTextLanguage: recordTextLanguage);
         AddFactionRelationGroups(fields, records);
         AddFactionRankGroups(fields, records, localizedStrings, recordTextLanguage);
-        AddConditionRuleGroups(fields, records.Cast<RecordDTO>().ToList(), records.Cast<IHasConditionsDTO>().ToList());
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Faction.RecordID,
+            formKey,
+            records.Cast<RecordDTO>().ToList(),
+            RecordComparisonChildGroupKind.ConditionRules);
         AddRecordComponentGroups(fields, records.Cast<RecordDTO>().ToList(), records.SelectMany(record => record.Components).ToList());
         AddSpecComparisonChildGroups(
             fields,
@@ -602,7 +608,13 @@ public class RecordComparisonService : IRecordComparisonService
         AddPerkEffectGroups(fields, records, localizedStrings, recordTextLanguage);
         AddPerkRankGroups(fields, records, localizedStrings, recordTextLanguage);
         AddPerkBackgroundSkillGroup(fields, records);
-        AddConditionRuleGroups(fields, records.Cast<RecordDTO>().ToList(), records.Cast<IHasConditionsDTO>().ToList());
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Perk.RecordID,
+            formKey,
+            records.Cast<RecordDTO>().ToList(),
+            RecordComparisonChildGroupKind.ConditionRules);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -1083,7 +1095,13 @@ public class RecordComparisonService : IRecordComparisonService
         AddConstructibleObjectComponentGroups(fields, records);
         AddConstructibleObjectCategoryGroups(fields, records);
         AddConstructibleObjectRecipeFilterGroups(fields, records);
-        AddConditionRuleGroups(fields, baseRecords, records.Cast<IHasConditionsDTO>().ToList());
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.ConditionForm.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.ConditionRules);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -1114,7 +1132,13 @@ public class RecordComparisonService : IRecordComparisonService
         var records = ConditionFormRepository.GetByFormKey(game, formKey);
         var baseRecords = records.Cast<RecordDTO>().ToList();
         var fields = CreateSpecComparisonFields(RecordTypeCatalog.ConditionForm.RecordID, records);
-        AddConditionRuleGroups(fields, baseRecords, records.Cast<IHasConditionsDTO>().ToList());
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.ConstructibleObject.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.ConditionRules);
 
         return CreateComparison(RecordTypeCatalog.ConditionForm.RecordID, formKey, baseRecords, fields);
     }
@@ -1164,7 +1188,13 @@ public class RecordComparisonService : IRecordComparisonService
             formKey,
             baseRecords,
             RecordComparisonChildGroupKind.ScriptingAdapterMappings);
-        AddConditionRuleGroups(fields, baseRecords, records.Cast<IHasConditionsDTO>().ToList());
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Terminal.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.ConditionRules);
         AddScriptFragmentGroups(fields, baseRecords, records.SelectMany(record => record.ScriptFragments).ToList());
         AddSpecComparisonChildGroups(
             fields,
@@ -1320,6 +1350,9 @@ public class RecordComparisonService : IRecordComparisonService
                     break;
                 case RecordComparisonChildGroupKind.ReflectionMappings:
                     AddReflectionGroups(fields, records, ReflectionRepository.GetByFormKey(game, recordType, formKey));
+                    break;
+                case RecordComparisonChildGroupKind.ConditionRules:
+                    AddConditionRuleGroups(fields, records, records.Cast<IHasConditionsDTO>().ToList());
                     break;
                 default:
                     throw new NotSupportedException(

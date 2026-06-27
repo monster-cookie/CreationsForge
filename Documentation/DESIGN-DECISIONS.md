@@ -521,6 +521,58 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-27 - Add Spec-Driven Condition Rule Child Group Dispatch
+
+Status: Accepted
+
+Context: Keyword, model, sound, scripting adapter, and reflection child groups now use comparison metadata to select
+shared child-row strategies while preserving row order and comparison DTO shape. Shared condition-rule rows use one
+row-builder strategy across several record families, but they are sourced from the compared DTOs through
+`IHasConditionsDTO` rather than from a repository.
+
+Decision: Add a `ConditionRules` child-group strategy kind. Declare condition-rule child-group metadata on the current
+comparison record families that use the shared condition-rule path: `FACT`, `PERK`, `CNDF`, `COBJ`, and `TERM`.
+Replace each explicit shared condition-rule row call with the metadata-driven child-group dispatcher at the same row
+position. Keep perk effect condition tabs, record components, script fragments, faction relations and ranks, terminal
+menu and body rows, constructible object components/categories/filters, and other complex child groups on their
+existing strategy methods.
+
+Rationale: Condition-rule rows are shared enough to benefit from specification dispatch, while the existing row builder
+still owns condition key alignment, summary formatting, and visible-row filtering. Keeping perk effect condition tabs
+explicit prevents nested perk effect condition structures from being collapsed into the top-level shared condition
+rule group.
+
+Alternatives considered:
+
+- Convert condition rules and perk effect condition tabs together.
+- Convert condition rules and record component rows together.
+- Leave condition-rule rows mixed between metadata dispatch and explicit calls.
+- Replace condition row building with a fully declarative nested collection specification immediately.
+
+Consequences:
+
+- Shared condition-rule rows for current condition-bearing comparison families are emitted only when the comparison
+  specification declares the `ConditionRules` child group.
+- Existing condition row order is preserved by calling the metadata dispatcher from the original row positions.
+- Perk effect condition tabs and non-keyword/non-model/non-sound/non-scripting-adapter/non-reflection/non-condition
+  child groups remain strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/FactionRecordSpecification.cs`
+- `CreationsForge.Specification/Records/PerkRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ConditionFormRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ConstructibleObjectRecordSpecification.cs`
+- `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.ConditionFormBookDoorTerminal.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-27 - Add Spec-Driven Reflection Child Group Dispatch
 
 Status: Accepted

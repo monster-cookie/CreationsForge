@@ -653,7 +653,7 @@ public partial class RecordComparisonServiceTests
         comparison.Fields.ShouldNotContain(field => field.FieldName == "CreatedObjectFormKey");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "WorkbenchKeywordFormKey");
         comparison.Fields.Single(field => field.FieldName == "Components").Children.ShouldNotBeEmpty();
-        comparison.Fields.Single(field => field.FieldName == "Conditions").Children.ShouldNotBeEmpty();
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Conditions");
     }
 
 }

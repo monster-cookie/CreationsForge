@@ -29,5 +29,10 @@ public enum RecordComparisonChildGroupKind
     /// <summary>
     /// Indicates that persisted reflection rows should be rendered as the shared <c>Reflection</c> child group.
     /// </summary>
-    ReflectionMappings
+    ReflectionMappings,
+
+    /// <summary>
+    /// Indicates that persisted condition rules should be rendered as the shared <c>Conditions</c> child group.
+    /// </summary>
+    ConditionRules
 }

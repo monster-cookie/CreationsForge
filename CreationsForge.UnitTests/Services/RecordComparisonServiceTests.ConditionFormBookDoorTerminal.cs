@@ -49,7 +49,7 @@ public partial class RecordComparisonServiceTests
 
     /// <summary>
     /// Verifies that Condition Form scalar rows are selected from the injected comparison specification while
-    /// condition rows remain strategy-based.
+    /// undeclared condition rows remain outside the metadata path.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForConditionForm_UsesInjectedComparisonSpecification()
@@ -97,7 +97,7 @@ public partial class RecordComparisonServiceTests
         comparison.Fields.Single(field => field.FieldName == "Version2").Values.Select(value => value.DisplayValue)
             .ShouldBe(["1", "2"]);
         comparison.Fields.ShouldNotContain(field => field.FieldName == "OwnerQuest");
-        comparison.Fields.Single(field => field.FieldName == "Conditions").Children.ShouldNotBeEmpty();
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Conditions");
     }
 
     [Fact]

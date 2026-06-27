@@ -341,6 +341,11 @@ public class RecordSpecificationCatalogTests
             .Select(entry => entry.RecordID)
             .OrderBy(recordID => recordID, StringComparer.Ordinal)
             .ToList();
+        var conditionRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ConditionRules)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
 
         keywordRecordIDs.ShouldBe(
             ["BOOK", "CONT", "DOOR", "FACT", "MGEF", "MISC", "NPC_", "STAT", "TERM"]);
@@ -348,6 +353,7 @@ public class RecordSpecificationCatalogTests
         modelRecordIDs.ShouldBe(["BOOK", "CONT", "DOOR", "MISC", "STAT", "TERM"]);
         scriptingAdapterRecordIDs.ShouldBe(["BOOK", "COBJ", "CONT", "DOOR", "MGEF", "MISC", "NPC_", "PERK", "TERM"]);
         reflectionRecordIDs.ShouldBe(["BOOK", "CONT", "DOOR", "STAT", "TERM"]);
+        conditionRecordIDs.ShouldBe(["CNDF", "COBJ", "FACT", "PERK", "TERM"]);
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.KeywordMappings)
             .ShouldAllBe(entry => entry.Group.GroupName == "Keywords");
@@ -363,6 +369,9 @@ public class RecordSpecificationCatalogTests
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ReflectionMappings)
             .ShouldAllBe(entry => entry.Group.GroupName == "Reflection");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ConditionRules)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Conditions");
         childGroups.ShouldAllBe(entry => !string.IsNullOrWhiteSpace(entry.Group.Description));
     }
 

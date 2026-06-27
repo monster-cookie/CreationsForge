@@ -51,9 +51,18 @@ internal static class ConditionFormRecordSpecification
                     SourcePath = "OwnerQuest",
                     ValueKind = RecordFieldValueKind.FormKey
                 }
+            ],
+            ChildGroups =
+            [
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.ConditionRules,
+                    GroupName = "Conditions",
+                    Description = "Shared condition-rule rows appended after scalar parent rows."
+                }
             ]
         },
-        ImplementationNote = "Comparison metadata drives scalar parent rows; condition rows remain strategy-based."
+        ImplementationNote = "Comparison metadata drives scalar parent rows and condition child-group dispatch."
     };
 }
 
