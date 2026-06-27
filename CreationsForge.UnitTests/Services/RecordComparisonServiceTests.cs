@@ -87,6 +87,146 @@ public class RecordComparisonServiceTests
     }
 
     /// <summary>
+    /// Verifies that Class comparison uses specification-owned scalar rows while retaining strategy-owned child rows.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForClass_MapsScalarFieldsAndChildGroups()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x140);
+        var actorValueFormKey = CreateFormKey("Starfield.esm", 0x201);
+        var baseClass = CreateClass("Base.esm", formKey, "Soldier", "Base description", "Ballistics", 50, 1.1, 2.2, 3.3, 4.4);
+        baseClass.Properties.Add(CreateClassProperty("Base.esm", formKey, actorValueFormKey, 0, 10));
+        baseClass.SkillWeights.Add(CreateClassWeight("Base.esm", formKey, "Skill", 0, "Ballistics", 4));
+        baseClass.StatWeights.Add(CreateClassWeight("Base.esm", formKey, "Stat", 0, "Health", 5));
+        var patchClass = CreateClass("Patch.esp", formKey, "Soldier", "Patch description", "Lasers", 75, 1.5, 2.5, 3.5, 4.5);
+        patchClass.Properties.Add(CreateClassProperty("Patch.esp", formKey, actorValueFormKey, 0, 20));
+        patchClass.SkillWeights.Add(CreateClassWeight("Patch.esp", formKey, "Skill", 0, "Ballistics", 8));
+        patchClass.StatWeights.Add(CreateClassWeight("Patch.esp", formKey, "Stat", 0, "Health", 9));
+        var classRepository = new TestClassRepository
+        {
+            Records =
+            [
+                baseClass,
+                patchClass
+            ]
+        };
+        var service = CreateService(classRepository: classRepository);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Class.RecordID, formKey);
+
+        comparison.Columns.Select(column => column.Header).ShouldBe(["Base.esm", "Patch.esp"]);
+        comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["Soldier", "Soldier"]);
+        comparison.Fields.Single(field => field.FieldName == "Description").Values.Select(value => value.DisplayValue).ShouldBe(["Base description", "Patch description"]);
+        comparison.Fields.Single(field => field.FieldName == "Teaches").Values.Select(value => value.DisplayValue).ShouldBe(["Ballistics", "Lasers"]);
+        comparison.Fields.Single(field => field.FieldName == "MaxTrainingLevel").Values.Select(value => value.DisplayValue).ShouldBe(["50", "75"]);
+        comparison.Fields.Single(field => field.FieldName == "BleedoutDefault").Values.Select(value => value.DisplayValue).ShouldBe(["1.1", "1.5"]);
+        comparison.Fields.Single(field => field.FieldName == "VoicePoints").Values.Select(value => value.DisplayValue).ShouldBe(["2.2", "2.5"]);
+        comparison.Fields.Single(field => field.FieldName == "Unknown").Values.Select(value => value.DisplayValue).ShouldBe(["3.3", "3.5"]);
+        comparison.Fields.Single(field => field.FieldName == "Unknown2").Values.Select(value => value.DisplayValue).ShouldBe(["4.4", "4.5"]);
+        var properties = comparison.Fields.Single(field => field.FieldName == "Properties");
+        var property = properties.Children.Single(field => field.FieldName == "Property [0]");
+        property.Children.Single(field => field.FieldName == "ActorValueFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000201", "Starfield.esm:00000201"]);
+        property.Children.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["10", "20"]);
+        var skillWeights = comparison.Fields.Single(field => field.FieldName == "SkillWeights");
+        skillWeights.Children.Single(field => field.FieldName == "SkillWeight [0]").Children.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["4", "8"]);
+        var statWeights = comparison.Fields.Single(field => field.FieldName == "StatWeights");
+        statWeights.Children.Single(field => field.FieldName == "StatWeight [0]").Children.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["5", "9"]);
+    }
+
+    /// <summary>
+    /// Verifies that Class scalar rows are selected from the injected comparison specification while child rows remain
+    /// strategy-based.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForClass_UsesInjectedComparisonSpecification()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x141);
+        var baseClass = CreateClass("Base.esm", formKey, "Soldier", "Base description", "Ballistics", 50, 1.1, 2.2, 3.3, 4.4);
+        baseClass.Properties.Add(CreateClassProperty("Base.esm", formKey, CreateFormKey("Starfield.esm", 0x201), 0, 10));
+        var patchClass = CreateClass("Patch.esp", formKey, "Soldier", "Patch description", "Lasers", 75, 1.5, 2.5, 3.5, 4.5);
+        patchClass.Properties.Add(CreateClassProperty("Patch.esp", formKey, CreateFormKey("Starfield.esm", 0x201), 0, 20));
+        var classRepository = new TestClassRepository
+        {
+            Records =
+            [
+                baseClass,
+                patchClass
+            ]
+        };
+        var provider = new TestRecordSpecificationProvider(
+            new RecordSpecification
+            {
+                RecordID = SupportedRecordSpecifications.Class.RecordID,
+                RecordType = SupportedRecordSpecifications.Class.RecordType,
+                TableName = SupportedRecordSpecifications.Class.TableName,
+                FriendlyName = SupportedRecordSpecifications.Class.FriendlyName,
+                GameSupport = SupportedRecordSpecifications.Class.GameSupport,
+                Fields = SupportedRecordSpecifications.Class.Fields,
+                Comparison = new RecordComparisonSpecification
+                {
+                    Fields =
+                    [
+                        new RecordComparisonFieldSpecification
+                        {
+                            FieldName = "Teaches",
+                            SourcePath = "Teaches",
+                            ValueKind = RecordFieldValueKind.Text
+                        }
+                    ]
+                },
+                ImplementationNote = "Test specification."
+            });
+        var service = CreateService(classRepository: classRepository, recordSpecificationProvider: provider);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Class.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Teaches").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["Ballistics", "Lasers"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "MaxTrainingLevel");
+        comparison.Fields.Single(field => field.FieldName == "Properties").Children.ShouldNotBeEmpty();
+    }
+
+    /// <summary>
+    /// Verifies that specification-declared localized Class rows use the selected record text language.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForClass_UsesSpecificationLocalizedDisplay()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x142);
+        var classRepository = new TestClassRepository
+        {
+            Records =
+            [
+                CreateClass("Base.esm", formKey, "Soldier", "Base description", "Ballistics", 50, 1.1, 2.2, 3.3, 4.4),
+                CreateClass("Patch.esp", formKey, "Soldier", "Patch description", "Lasers", 75, 1.5, 2.5, 3.5, 4.5)
+            ]
+        };
+        var localizedStringRepository = new TestRecordLocalizedStringRepository
+        {
+            Records =
+            [
+                CreateLocalizedString("Base.esm", formKey, "Name", "German", "Basis Klasse"),
+                CreateLocalizedString("Patch.esp", formKey, "Name", "German", "Patch Klasse"),
+                CreateLocalizedString("Base.esm", formKey, "Description", "German", "Basis Beschreibung"),
+                CreateLocalizedString("Patch.esp", formKey, "Description", "German", "Patch Beschreibung")
+            ]
+        };
+        var gameSelectionService = new TestGameSelectionService { RecordTextLanguage = Language.German };
+        var service = CreateService(
+            classRepository: classRepository,
+            recordLocalizedStringRepository: localizedStringRepository,
+            gameSelectionService: gameSelectionService);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Class.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["Basis Klasse", "Patch Klasse"]);
+        comparison.Fields.Single(field => field.FieldName == "Description").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["Basis Beschreibung", "Patch Beschreibung"]);
+    }
+
+    /// <summary>
     /// Verifies that Keyword scalar rows are selected from the injected comparison specification.
     /// </summary>
     [Fact]
@@ -1551,6 +1691,112 @@ public class RecordComparisonServiceTests
             FormKey = formKey,
             Item = itemFormKey,
             ItemIndex = itemIndex,
+            ImportedAtUTC = DateTime.UtcNow
+        };
+    }
+
+    /// <summary>
+    /// Creates a minimal Class record for comparison-service tests that exercise scalar metadata dispatch.
+    /// </summary>
+    /// <param name="fileName">The plugin file name that contributed the test record.</param>
+    /// <param name="formKey">The origin FormKey shared by compared records.</param>
+    /// <param name="name">The translated class name to place on the DTO.</param>
+    /// <param name="description">The translated class description to place on the DTO.</param>
+    /// <param name="teaches">The class teaching target value to place on the DTO.</param>
+    /// <param name="maxTrainingLevel">The maximum training level to place on the DTO.</param>
+    /// <param name="bleedoutDefault">The bleedout default value to place on the DTO.</param>
+    /// <param name="voicePoints">The voice-points value to place on the DTO.</param>
+    /// <param name="unknown">The first unknown scalar value to place on the DTO.</param>
+    /// <param name="unknown2">The second unknown scalar value to place on the DTO.</param>
+    /// <returns>The populated Class DTO.</returns>
+    private static ClassDTO CreateClass(
+        string fileName,
+        FormKeyDTO formKey,
+        string name,
+        string description,
+        string teaches,
+        int maxTrainingLevel,
+        double bleedoutDefault,
+        double voicePoints,
+        double unknown,
+        double unknown2)
+    {
+        return new ClassDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            EditorID = "MyClass",
+            FormVersion = 1,
+            MajorRecordFlags = 2,
+            Version2 = 3,
+            ImportedAtUTC = DateTime.UtcNow,
+            Name = Text(name),
+            Description = Text(description),
+            Teaches = teaches,
+            MaxTrainingLevel = maxTrainingLevel,
+            BleedoutDefault = bleedoutDefault,
+            VoicePoints = voicePoints,
+            Unknown = unknown,
+            Unknown2 = unknown2
+        };
+    }
+
+    /// <summary>
+    /// Creates a Class property row for comparison-service tests that exercise strategy-owned child groups.
+    /// </summary>
+    /// <param name="fileName">The plugin file name that contributed the child row.</param>
+    /// <param name="formKey">The parent Class FormKey.</param>
+    /// <param name="actorValueFormKey">The actor value FormKey referenced by the property.</param>
+    /// <param name="propertyIndex">The stable property index used for cross-plugin alignment.</param>
+    /// <param name="value">The property numeric value to place on the DTO.</param>
+    /// <returns>The populated Class property DTO.</returns>
+    private static ClassPropertyDTO CreateClassProperty(
+        string fileName,
+        FormKeyDTO formKey,
+        FormKeyDTO actorValueFormKey,
+        int propertyIndex,
+        double value)
+    {
+        return new ClassPropertyDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            PropertyIndex = propertyIndex,
+            ActorValueFormKey = actorValueFormKey,
+            Value = value,
+            ImportedAtUTC = DateTime.UtcNow
+        };
+    }
+
+    /// <summary>
+    /// Creates a Class weight row for comparison-service tests that exercise strategy-owned child groups.
+    /// </summary>
+    /// <param name="fileName">The plugin file name that contributed the child row.</param>
+    /// <param name="formKey">The parent Class FormKey.</param>
+    /// <param name="weightType">The class weight type, such as Skill or Stat.</param>
+    /// <param name="weightIndex">The stable weight index used for cross-plugin alignment.</param>
+    /// <param name="key">The class weight key to place on the DTO.</param>
+    /// <param name="value">The class weight numeric value to place on the DTO.</param>
+    /// <returns>The populated Class weight DTO.</returns>
+    private static ClassWeightDTO CreateClassWeight(
+        string fileName,
+        FormKeyDTO formKey,
+        string weightType,
+        int weightIndex,
+        string key,
+        double value)
+    {
+        return new ClassWeightDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            WeightType = weightType,
+            WeightIndex = weightIndex,
+            Key = key,
+            Value = value,
             ImportedAtUTC = DateTime.UtcNow
         };
     }

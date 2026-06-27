@@ -272,21 +272,23 @@ public class RecordComparisonService : IRecordComparisonService
         return CreateComparison(RecordTypeCatalog.Global.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
 
+    /// <summary>
+    /// Creates the comparison output for imported Class overrides, using specification metadata for scalar parent rows
+    /// while leaving class properties and weight groups on existing strategy code.
+    /// </summary>
+    /// <param name="game">The game whose imported class records should be compared.</param>
+    /// <param name="formKey">The origin FormKey shared by the class overrides.</param>
+    /// <returns>The class comparison DTO consumed by presentation rendering.</returns>
     private RecordComparisonDTO CreateClassComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = ClassRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Class.RecordID, formKey);
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
-        var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
-        fields.Add(CreateField("Description", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Description", recordTextLanguage, record.Description)));
-        fields.Add(CreateField("Teaches", records, record => record.Teaches ?? string.Empty));
-        fields.Add(CreateField("MaxTrainingLevel", records, record => record.MaxTrainingLevel?.ToString() ?? string.Empty));
-        fields.Add(CreateField("BleedoutDefault", records, record => record.BleedoutDefault?.ToString() ?? string.Empty));
-        fields.Add(CreateField("VoicePoints", records, record => record.VoicePoints?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Unknown", records, record => record.Unknown?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Unknown2", records, record => record.Unknown2?.ToString() ?? string.Empty));
+        var fields = CreateSpecComparisonFields(
+            RecordTypeCatalog.Class.RecordID,
+            records,
+            localizedStrings: localizedStrings,
+            recordTextLanguage: recordTextLanguage);
         AddClassPropertyGroups(fields, records);
         AddClassWeightGroups(fields, records, "Skill", "SkillWeights");
         AddClassWeightGroups(fields, records, "Stat", "StatWeights");

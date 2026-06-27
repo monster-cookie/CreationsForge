@@ -279,6 +279,44 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-26 - Convert Class Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: `CLAS` comparison includes localized scalar parent rows followed by class property, skill-weight, and
+stat-weight groups. The scalar comparison path already handles localized strings, numbers, text fields, and ordinary
+source-path resolution, so the parent rows can move into metadata without changing child-row alignment.
+
+Decision: Add `CLAS` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreateClassComparison` to use the shared specification comparison-field builder for scalar rows. Keep class
+properties, skill weights, and stat weights on existing strategy methods.
+
+Rationale: This expands the spec-driven comparison surface to another shared cross-game record family while keeping
+the more structured child rows explicit. `CLAS` is a low-risk next step because its parent row shape is compact and
+exercises localized display without requiring condition, script, model, or record-component metadata.
+
+Alternatives considered:
+
+- Convert `FACT` next because it is adjacent in import order.
+- Move class property and weight groups into specification metadata in the same slice.
+- Leave `CLAS` hardcoded until all remaining import-only record families can be moved together.
+
+Consequences:
+
+- `CLAS` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- Class property, skill-weight, and stat-weight rows remain strategy-based.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-26 - Drive Pilot Import Dispatch From Specifications
 
 Status: Accepted
