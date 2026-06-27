@@ -46,7 +46,7 @@ collection, default Mutagen collection name, overlay-safe reader eligibility, fu
 optional collection policy, but game adapters still own Mutagen-to-DTO mapping. Core import dispatch consumes
 specification import metadata to locate the matching `PluginRecordSetDTO` collections and preserve the approved
 record-family order. Core comparison consumes comparison metadata for `FLST`, `GMST`, `GLOB`, `CLAS`, `FACT`,
-`MISC`, `KYWD`, `AVIF`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `CNDF` simple scalar rows.
+`MISC`, `KYWD`, `AVIF`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, and `TERM` simple scalar rows.
 Complex comparison strategies and the actual game-specific Mutagen mapping remain owned by the existing Core and
 game-adapter services until later approved work makes those paths specification-driven.
 
@@ -115,11 +115,11 @@ and the active typed `Data` value. Localized text rows use the Settings-selected
 localized value exists, then fall back to English and the DTO or scalar database fallback. Globals display
 `MutagenObjectType`, named `MajorFlags`, and `Data`.
 The specification catalog now drives the simple comparison fields for `FLST`, `GMST`, `GLOB`, `CLAS`, `FACT`,
-`MISC`, `KYWD`, `AVIF`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `CNDF`. The Core comparison
+`MISC`, `KYWD`, `AVIF`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, and `TERM`. The Core comparison
 service remains the runtime authority for generated comparison DTOs, including row state, plugin column ordering,
 indexed `FLST` item expansion, localized `GMST` `Data` display, game-dependent `BOOK` body text source fields, and
-strategy-owned `CLAS`, `FACT`, `AVIF`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, and `MISC`
-child groups.
+strategy-owned `CLAS`, `FACT`, `AVIF`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, `MISC`,
+and `TERM` child groups.
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `CLAS`, `FACT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM`
 comparisons display their currently persisted parent fields and record-reference fields. CLAS comparison displays
 class property rows and skill-weight or stat-weight

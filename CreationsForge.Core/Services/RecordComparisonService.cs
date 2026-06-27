@@ -893,35 +893,29 @@ public class RecordComparisonService : IRecordComparisonService
         return CreateComparison(RecordTypeCatalog.ConditionForm.RecordID, formKey, baseRecords, fields);
     }
 
+    /// <summary>
+    /// Creates the comparison output for imported Terminal overrides, using specification metadata for scalar parent
+    /// rows while leaving terminal child collections on existing strategy code.
+    /// </summary>
+    /// <param name="game">The game whose imported terminal records should be compared.</param>
+    /// <param name="formKey">The origin FormKey shared by the terminal overrides.</param>
+    /// <returns>The terminal comparison DTO consumed by presentation rendering.</returns>
     private RecordComparisonDTO CreateTerminalComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = TerminalRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey);
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var baseRecords = records.Cast<RecordDTO>().ToList();
-        var fields = CreateCommonFields(baseRecords);
-        fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
-        fields.Add(CreateField("ObjectBoundsFirst", records, record => record.ObjectBoundsFirst ?? string.Empty));
-        fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBoundsSecond ?? string.Empty));
-        fields.Add(CreateField("MenuFormKey", records, record => FormatFormKey(record.MenuFormKey)));
-        fields.Add(CreateField("Background", records, record => record.Background ?? string.Empty));
-        fields.Add(CreateField("HeaderText", records, record => GetTranslatedDisplayValue(localizedStrings, record, "HeaderText", recordTextLanguage, record.HeaderText)));
-        fields.Add(CreateField("WelcomeText", records, record => GetTranslatedDisplayValue(localizedStrings, record, "WelcomeText", recordTextLanguage, record.WelcomeText)));
-        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
-        fields.Add(CreateField("Pnam", records, record => record.Pnam ?? string.Empty));
-        fields.Add(CreateField("Fnam", records, record => record.Fnam ?? string.Empty));
-        fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
-        fields.Add(CreateField("MajorFlags", records, record => record.MajorFlags ?? string.Empty));
-        fields.Add(CreateField("Jnam", records, record => record.Jnam ?? string.Empty));
-        fields.Add(CreateField("MarkerFlags", records, record => FormatHexIntegerString(record.MarkerFlags)));
-        fields.Add(CreateField("Gnam", records, record => record.Gnam ?? string.Empty));
-        fields.Add(CreateField("WorkbenchData", records, record => record.WorkbenchData ?? string.Empty));
-        fields.Add(CreateField("FurnitureTemplateFormKey", records, record => FormatFormKey(record.FurnitureTemplateFormKey)));
-        fields.Add(CreateField("MarkerModel", records, record => record.MarkerModel ?? string.Empty));
-        fields.Add(CreateField("AnimationGraph", records, record => record.AnimationGraph ?? string.Empty));
-        fields.Add(CreateField("AnimationSkeleton", records, record => record.AnimationSkeleton ?? string.Empty));
-        fields.Add(CreateField("AnimationDirectory", records, record => record.AnimationDirectory ?? string.Empty));
-        fields.Add(CreateField("AnimationFile", records, record => record.AnimationFile ?? string.Empty));
+        var customValueFactories = new Dictionary<string, Func<TerminalDTO, string>>(StringComparer.Ordinal)
+        {
+            ["MarkerFlags"] = record => FormatHexIntegerString(record.MarkerFlags)
+        };
+        var fields = CreateSpecComparisonFields(
+            RecordTypeCatalog.Terminal.RecordID,
+            records,
+            customValueFactories,
+            localizedStrings,
+            recordTextLanguage);
         AddTerminalForcedLocationGroups(fields, records);
         AddKeywordGroup(fields, baseRecords, KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
         AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));

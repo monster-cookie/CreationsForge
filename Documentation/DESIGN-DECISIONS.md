@@ -472,6 +472,49 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-27 - Convert Terminal Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: `TERM` comparison includes localized scalar parent rows, FormKey references, direct animation component
+fields, and several strategy-owned child groups: forced locations, marker parameters, body texts, menu items,
+conditions, scripts, keywords, models, and reflection rows. The scalar comparison path already handles localized
+strings, FormKeys, numbers, text values, and custom value hooks, so the parent rows can move into metadata while
+preserving the existing terminal-specific child alignment strategies.
+
+Decision: Add `TERM` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreateTerminalComparison` to use the shared specification comparison-field builder for scalar rows, with the existing
+marker flag display formatting kept as a custom value hook. Preserve Fallout 4's full-binary reader requirement in
+terminal reader metadata. Keep forced locations, marker parameters, body texts, menu items, conditions, scripts,
+keywords, models, and reflection rows on existing strategy methods.
+
+Rationale: This moves the final non-NPC scalar parent surface into the spec-driven comparison path without changing
+terminal child-row behavior. `NPC_` remains hardcoded because its comparison tree is much larger and needs a separate
+strategy-design slice.
+
+Alternatives considered:
+
+- Move terminal body text and menu item rows into specification metadata in the same slice.
+- Convert `NPC_` before `TERM`.
+- Leave `TERM` hardcoded because Fallout 4 uses the full-binary reader path.
+
+Consequences:
+
+- `TERM` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- Terminal child rows remain strategy-based.
+- Fallout 4 `TERM` still requires a full binary Mutagen mod for reader dispatch.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-26 - Drive Pilot Import Dispatch From Specifications
 
 Status: Accepted

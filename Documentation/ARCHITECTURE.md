@@ -209,9 +209,9 @@ It reads all persisted overrides for a selected origin FormKey from shared repos
 with plugin columns, field rows, and display values. The presentation project renders those DTOs with an Avalonia
 `TreeDataGrid` and does not query repositories, database tables, or Mutagen directly. The active plugin record browser
 renders record-type groups as expander sections with flat `TreeDataGrid` controls for record rows. The comparison
-slice covers common record header fields plus scalar persisted fields for `FLST`, `GMST`, `GLOB`, `CLAS`, `FACT`,
-`MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, and `CONT`. Global comparison displays `MutagenObjectType`,
-named `MajorFlags`, and `Data` when those values are persisted. GameSetting comparison displays the generic
+slice covers common record header fields plus scalar persisted fields for the approved typed comparison families.
+Global comparison displays `MutagenObjectType`, named `MajorFlags`, and `Data` when those values are persisted.
+GameSetting comparison displays the generic
 `Data` row instead of duplicating the Mutagen-derived typed data helper fields. MISC, NPC_, and MGEF comparison
 includes shared keyword rows.
 MISC and MGEF comparison includes shared sound rows. MISC comparison also includes persisted model rows, component
@@ -243,12 +243,12 @@ presentation layer maps those states to the green, red, and yellow comparison co
 area.
 
 The specification catalog now drives simple comparison rows for `FLST`, `GMST`, `GLOB`, `CLAS`, `FACT`, `MISC`,
-`KYWD`, `AVIF`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `CNDF`.
+`KYWD`, `AVIF`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, and `TERM`.
 `RecordComparisonService` reads type-specific comparison fields from `IRecordSpecificationProvider`, resolves simple
 DTO source paths generically, and uses comparison metadata for ordinary localized scalar rows. Explicit strategy hooks
 remain where behavior is not purely declarative. The current hooks include indexed `FLST` item rows, localized `GMST`
 `Data` display, game-dependent `BOOK` body-text source fields, and `CLAS`, `FACT`, `MISC`, `AVIF`, `MGEF`, `PERK`,
-`STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `CNDF` child groups. Complex record families and shared child groups
+`STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, and `TERM` child groups. Complex record families and shared child groups
 remain on the existing record-specific comparison methods until later approved slices move them behind specification
 metadata.
 
