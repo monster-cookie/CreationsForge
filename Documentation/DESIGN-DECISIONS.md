@@ -472,6 +472,51 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-27 - Pilot Spec-Driven Child Group Dispatch For Magic Effect Keywords
+
+Status: Accepted
+
+Context: The current comparison catalog covers scalar parent rows for all compared record families, but most child
+groups are still invoked directly by record-specific comparison methods. Child groups have alignment, ordering, and
+repository dependencies, so moving them behind metadata should start with one simple shared strategy rather than a
+generic child-row framework.
+
+Decision: Add child-group comparison metadata with an initial `KeywordMappings` strategy kind. Declare the `MGEF`
+`Keywords` child group in `MagicEffectRecordSpecification`. Route `CreateMagicEffectComparison` through a small
+metadata-driven child-group dispatcher for keyword rows while keeping sound and scripting adapter rows explicit.
+
+Rationale: Magic Effect keywords are a low-risk pilot because they already use the shared keyword comparison strategy
+and sit between scalar parent rows and the remaining explicit sound/script groups. This proves specifications can
+select child-group dispatch without changing comparison DTO shape or pretending every child collection has a generic
+alignment model.
+
+Alternatives considered:
+
+- Move every shared keyword group behind metadata in the same slice.
+- Build a fully generic child collection comparison engine first.
+- Keep all child groups explicit until every scalar and child strategy can be converted together.
+
+Consequences:
+
+- `MGEF` keyword child rows are emitted only when the comparison specification declares the `KeywordMappings` child
+  group.
+- Sound and scripting adapter rows for `MGEF` remain explicit strategy calls.
+- The child-group metadata model is intentionally small and currently supports only the keyword pilot.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupSpecification.cs`
+- `CreationsForge.Specification/Records/RecordComparisonSpecification.cs`
+- `CreationsForge.Specification/Records/MagicEffectRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.MagicEffectPerkStaticContainerConstructibleObject.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-27 - Convert NPC Top-Level Scalar Comparison Metadata
 
 Status: Accepted

@@ -17,6 +17,12 @@ public sealed class RecordComparisonSpecification
         new List<RecordComparisonFieldSpecification>();
 
     /// <summary>
+    /// Gets strategy-backed child-row groups that should be appended after scalar comparison fields.
+    /// </summary>
+    public IReadOnlyList<RecordComparisonChildGroupSpecification> ChildGroups { get; init; } =
+        new List<RecordComparisonChildGroupSpecification>();
+
+    /// <summary>
     /// Gets strategy names for child-row groups that are expected to remain implemented by focused comparison helpers
     /// until their shapes are proven generic.
     /// </summary>

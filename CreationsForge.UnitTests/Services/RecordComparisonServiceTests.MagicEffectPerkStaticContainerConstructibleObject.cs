@@ -124,6 +124,15 @@ public partial class RecordComparisonServiceTests
                             SourcePath = "CastType",
                             ValueKind = RecordFieldValueKind.Text
                         }
+                    ],
+                    ChildGroups =
+                    [
+                        new RecordComparisonChildGroupSpecification
+                        {
+                            GroupKind = RecordComparisonChildGroupKind.KeywordMappings,
+                            GroupName = "Keywords",
+                            Description = "Test keyword child group."
+                        }
                     ]
                 },
                 ImplementationNote = "Test specification."
@@ -140,6 +149,85 @@ public partial class RecordComparisonServiceTests
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Archetype");
         comparison.Fields.Single(field => field.FieldName == "Keywords").Children.ShouldNotBeEmpty();
+    }
+
+    /// <summary>
+    /// Verifies that Magic Effect keyword child rows are controlled by child-group metadata rather than scalar field
+    /// metadata.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForMagicEffect_UsesInjectedChildGroupSpecification()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x2C5A70);
+        var magicEffectRepository = new TestMagicEffectRepository
+        {
+            Records =
+            [
+                CreateMagicEffect("Base.esm", formKey, "Elemental Blast", "52", 5, castType: "BaseCast"),
+                CreateMagicEffect("Patch.esp", formKey, "Elemental Blast", "60", 7, castType: "PatchCast")
+            ]
+        };
+        var keywordMappingRepository = new TestKeywordMappingRepository
+        {
+            Records =
+            [
+                CreateKeywordMapping("Base.esm", RecordTypeCatalog.MagicEffect.RecordID, formKey, CreateFormKey("Starfield.esm", 0x111), 0),
+                CreateKeywordMapping("Patch.esp", RecordTypeCatalog.MagicEffect.RecordID, formKey, CreateFormKey("Patch.esp", 0x222), 0)
+            ]
+        };
+        var soundMappingRepository = new TestSoundMappingRepository
+        {
+            Records =
+            [
+                CreateSoundMapping("Base.esm", RecordTypeCatalog.MagicEffect.RecordID, formKey, "Charge", 2, "BaseSound", "Break0", "000000"),
+                CreateSoundMapping("Patch.esp", RecordTypeCatalog.MagicEffect.RecordID, formKey, "Charge", 2, "PatchSound", "Break0", "000000")
+            ]
+        };
+        var scriptingAdapterRepository = new TestScriptingAdapterRepository
+        {
+            Records =
+            [
+                CreateScriptingAdapter("Base.esm", RecordTypeCatalog.MagicEffect.RecordID, formKey, "FXScript", "TargetVFX", "BaseVFX"),
+                CreateScriptingAdapter("Patch.esp", RecordTypeCatalog.MagicEffect.RecordID, formKey, "FXScript", "TargetVFX", "PatchVFX")
+            ]
+        };
+        var provider = new TestRecordSpecificationProvider(
+            new RecordSpecification
+            {
+                RecordID = SupportedRecordSpecifications.MagicEffect.RecordID,
+                RecordType = SupportedRecordSpecifications.MagicEffect.RecordType,
+                TableName = SupportedRecordSpecifications.MagicEffect.TableName,
+                FriendlyName = SupportedRecordSpecifications.MagicEffect.FriendlyName,
+                GameSupport = SupportedRecordSpecifications.MagicEffect.GameSupport,
+                Fields = SupportedRecordSpecifications.MagicEffect.Fields,
+                Comparison = new RecordComparisonSpecification
+                {
+                    Fields =
+                    [
+                        new RecordComparisonFieldSpecification
+                        {
+                            FieldName = "CastType",
+                            SourcePath = "CastType",
+                            ValueKind = RecordFieldValueKind.Text
+                        }
+                    ]
+                },
+                ImplementationNote = "Test specification."
+            });
+        var service = CreateService(
+            magicEffectRepository: magicEffectRepository,
+            keywordMappingRepository: keywordMappingRepository,
+            soundMappingRepository: soundMappingRepository,
+            scriptingAdapterRepository: scriptingAdapterRepository,
+            recordSpecificationProvider: provider);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.MagicEffect.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "CastType").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["BaseCast", "PatchCast"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Keywords");
+        comparison.Fields.Single(field => field.FieldName == "Sounds").Children.ShouldNotBeEmpty();
+        comparison.Fields.Single(field => field.FieldName == "Scripts").Children.ShouldNotBeEmpty();
     }
 
     /// <summary>

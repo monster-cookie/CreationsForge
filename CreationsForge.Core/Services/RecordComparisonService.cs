@@ -491,7 +491,8 @@ public class RecordComparisonService : IRecordComparisonService
 
     /// <summary>
     /// Creates the comparison output for imported Magic Effect overrides, using specification metadata for scalar
-    /// parent rows while leaving keyword, sound, and scripting adapter rows on existing strategy code.
+    /// parent rows and keyword child-group dispatch while leaving sound and scripting adapter rows on existing
+    /// strategy code.
     /// </summary>
     /// <param name="game">The game whose imported magic effect records should be compared.</param>
     /// <param name="formKey">The origin FormKey shared by the magic effect overrides.</param>
@@ -506,11 +507,12 @@ public class RecordComparisonService : IRecordComparisonService
             records,
             localizedStrings: localizedStrings,
             recordTextLanguage: recordTextLanguage);
-        AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey));
-        AddSoundGroups(fields, records.Cast<RecordDTO>().ToList(), SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey));
-        AddScriptingAdapterGroups(fields, records.Cast<RecordDTO>().ToList(), ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey));
+        var baseRecords = records.Cast<RecordDTO>().ToList();
+        AddSpecComparisonChildGroups(fields, game, RecordTypeCatalog.MagicEffect.RecordID, formKey, baseRecords);
+        AddSoundGroups(fields, baseRecords, SoundMappingRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey));
+        AddScriptingAdapterGroups(fields, baseRecords, ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey));
 
-        return CreateComparison(RecordTypeCatalog.MagicEffect.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
+        return CreateComparison(RecordTypeCatalog.MagicEffect.RecordID, formKey, baseRecords, fields);
     }
 
     /// <summary>
@@ -1041,6 +1043,44 @@ public class RecordComparisonService : IRecordComparisonService
         }
 
         return fields;
+    }
+
+    /// <summary>
+    /// Appends strategy-backed child groups declared by the record comparison specification.
+    /// </summary>
+    /// <param name="fields">The comparison field list that receives generated child groups.</param>
+    /// <param name="game">The game whose imported rows are being compared.</param>
+    /// <param name="recordType">The Bethesda record ID whose comparison specification should be used.</param>
+    /// <param name="formKey">The origin FormKey shared by the compared records.</param>
+    /// <param name="records">The ordered base record rows participating in the comparison.</param>
+    /// <exception cref="NotSupportedException">
+    /// Thrown when metadata asks Core to execute a child-group strategy that this service does not implement.
+    /// </exception>
+    private void AddSpecComparisonChildGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        SupportedGame game,
+        string recordType,
+        FormKeyDTO formKey,
+        IReadOnlyList<RecordDTO> records)
+    {
+        var specification = RecordSpecificationProvider.FindByRecordID(recordType);
+        if (specification == null)
+        {
+            return;
+        }
+
+        foreach (var childGroup in specification.Comparison.ChildGroups)
+        {
+            switch (childGroup.GroupKind)
+            {
+                case RecordComparisonChildGroupKind.KeywordMappings:
+                    AddKeywordGroup(fields, records, KeywordMappingRepository.GetByFormKey(game, recordType, formKey));
+                    break;
+                default:
+                    throw new NotSupportedException(
+                        $"Comparison child group '{childGroup.GroupKind}' is not supported for record type '{recordType}'.");
+            }
+        }
     }
 
     /// <summary>

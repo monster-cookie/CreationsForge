@@ -118,10 +118,10 @@ localized value exists, then fall back to English and the DTO or scalar database
 The specification catalog now drives the simple comparison fields for `FLST`, `GMST`, `GLOB`, `CLAS`, `FACT`,
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, and `TERM`.
 The Core comparison service remains the runtime authority for generated comparison DTOs, including row state, plugin
-column ordering,
-indexed `FLST` item expansion, localized `GMST` `Data` display, game-dependent `BOOK` body text source fields, and
-strategy-owned `CLAS`, `FACT`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, `MISC`,
-and `TERM` child groups.
+column ordering, indexed `FLST` item expansion, localized `GMST` `Data` display, game-dependent `BOOK` body text
+source fields, and strategy-owned child rows. `MGEF` keyword rows are the first child group whose strategy dispatch
+is selected by comparison metadata. Other `CLAS`, `FACT`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`,
+`CONT`, `COBJ`, `CNDF`, `MISC`, and `TERM` child groups remain strategy-owned.
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `CLAS`, `FACT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM`
 comparisons display their currently persisted parent fields and record-reference fields. CLAS comparison displays
 class property rows and skill-weight or stat-weight

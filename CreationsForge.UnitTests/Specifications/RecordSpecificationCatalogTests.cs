@@ -302,6 +302,27 @@ public class RecordSpecificationCatalogTests
     }
 
     /// <summary>
+    /// Verifies that child-group comparison metadata is limited to the current explicit pilot strategy.
+    /// </summary>
+    [Fact]
+    public void All_ComparisonChildGroupsExposeCurrentPilotStrategies()
+    {
+        var childGroups = RecordSpecificationCatalog.All
+            .SelectMany(specification => specification.Comparison.ChildGroups.Select(group => new
+            {
+                specification.RecordID,
+                Group = group
+            }))
+            .ToList();
+
+        childGroups.Count.ShouldBe(1);
+        childGroups[0].RecordID.ShouldBe("MGEF");
+        childGroups[0].Group.GroupKind.ShouldBe(RecordComparisonChildGroupKind.KeywordMappings);
+        childGroups[0].Group.GroupName.ShouldBe("Keywords");
+        childGroups[0].Group.Description.ShouldNotBeNullOrWhiteSpace();
+    }
+
+    /// <summary>
     /// Verifies that import specifications point at real plugin record-set collections.
     /// </summary>
     [Fact]
