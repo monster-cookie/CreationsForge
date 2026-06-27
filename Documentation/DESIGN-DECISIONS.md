@@ -521,6 +521,56 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-27 - Add Spec-Driven Model Child Group Dispatch
+
+Status: Accepted
+
+Context: Keyword and sound child groups now use comparison metadata to select shared child-row strategies while
+preserving row order and comparison DTO shape. Shared model rows use one repository and one row-builder strategy across
+several record families, but the renderer can emit multiple model group rows depending on model slot and gender.
+
+Decision: Add a `ModelMappings` child-group strategy kind. Declare model child-group metadata on the current
+model-bearing comparison record families that use the shared model repository path: `MISC`, `STAT`, `BOOK`, `DOOR`,
+`CONT`, and `TERM`. Replace each explicit shared model-row call with the metadata-driven child-group dispatcher at the
+same row position. Keep scripting adapters, conditions, reflection rows, destructible rows, rank rows, items,
+components, and other complex child groups on their existing strategy methods.
+
+Rationale: Model rows are shared enough to benefit from specification dispatch, but the existing row builder already
+owns model-slot alignment, material swap expansion, visible-row filtering, and display names. Moving dispatch metadata
+without replacing that builder keeps the slice narrow and avoids flattening record-specific model-like data into the
+generic model path.
+
+Alternatives considered:
+
+- Convert scripting adapter, condition, reflection, and model rows in the same slice.
+- Leave model rows mixed between metadata dispatch and explicit calls.
+- Replace model row building with a fully declarative nested collection specification immediately.
+
+Consequences:
+
+- Shared model rows for current model-bearing comparison families are emitted only when the comparison specification
+  declares the `ModelMappings` child group.
+- Existing model row order is preserved by calling the metadata dispatcher from the original row positions.
+- Non-keyword/non-model/non-sound child groups remain strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/MiscItemRecordSpecification.cs`
+- `CreationsForge.Specification/Records/StaticRecordSpecification.cs`
+- `CreationsForge.Specification/Records/BookRecordSpecification.cs`
+- `CreationsForge.Specification/Records/DoorRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
+- `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.ActorValueKeywordStaticBookDoorContainer.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.GameSettingFormListNpcMiscItem.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-27 - Add Spec-Driven Sound Child Group Dispatch
 
 Status: Accepted

@@ -14,5 +14,10 @@ public enum RecordComparisonChildGroupKind
     /// <summary>
     /// Indicates that persisted sound mapping rows should be rendered as the shared <c>Sounds</c> child group.
     /// </summary>
-    SoundMappings
+    SoundMappings,
+
+    /// <summary>
+    /// Indicates that persisted model rows should be rendered as shared model child groups.
+    /// </summary>
+    ModelMappings
 }

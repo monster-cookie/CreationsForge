@@ -247,8 +247,8 @@ public partial class RecordComparisonServiceTests
     }
 
     /// <summary>
-    /// Verifies that Static scalar rows are selected from the injected comparison specification while strategy rows
-    /// remain outside the scalar metadata path.
+    /// Verifies that Static scalar rows are selected from the injected comparison specification while undeclared
+    /// model child rows remain outside the metadata path.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForStatic_UsesInjectedComparisonSpecification()
@@ -260,6 +260,14 @@ public partial class RecordComparisonServiceTests
             [
                 CreateStatic("Base.esm", formKey, 35, "0, 0, 0", null),
                 CreateStatic("Patch.esp", formKey, 45, "1, 1, 1", 1.25)
+            ]
+        };
+        var modelRepository = new TestModelRepository
+        {
+            Records =
+            [
+                CreateModel("Base.esm", RecordTypeCatalog.Static.RecordID, formKey, "Meshes\\SetDressing\\Rock01.nif"),
+                CreateModel("Patch.esp", RecordTypeCatalog.Static.RecordID, formKey, "Meshes\\SetDressing\\Rock01.nif")
             ]
         };
         var provider = new TestRecordSpecificationProvider(
@@ -285,7 +293,10 @@ public partial class RecordComparisonServiceTests
                 },
                 ImplementationNote = "Test specification."
             });
-        var service = CreateService(staticRepository: staticRepository, recordSpecificationProvider: provider);
+        var service = CreateService(
+            staticRepository: staticRepository,
+            modelRepository: modelRepository,
+            recordSpecificationProvider: provider);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Static.RecordID, formKey);
 
@@ -293,6 +304,7 @@ public partial class RecordComparisonServiceTests
             .ShouldBe(["35", "45"]);
         comparison.Fields.ShouldNotContain(field => field.FieldName == "ObjectBoundsFirst");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Model");
     }
 
     /// <summary>

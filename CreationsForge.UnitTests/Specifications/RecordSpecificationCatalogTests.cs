@@ -326,16 +326,25 @@ public class RecordSpecificationCatalogTests
             .Select(entry => entry.RecordID)
             .OrderBy(recordID => recordID, StringComparer.Ordinal)
             .ToList();
+        var modelRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ModelMappings)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
 
         keywordRecordIDs.ShouldBe(
             ["BOOK", "CONT", "DOOR", "FACT", "MGEF", "MISC", "NPC_", "STAT", "TERM"]);
         soundRecordIDs.ShouldBe(["BOOK", "COBJ", "CONT", "DOOR", "MGEF", "MISC", "NPC_", "PERK"]);
+        modelRecordIDs.ShouldBe(["BOOK", "CONT", "DOOR", "MISC", "STAT", "TERM"]);
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.KeywordMappings)
             .ShouldAllBe(entry => entry.Group.GroupName == "Keywords");
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.SoundMappings)
             .ShouldAllBe(entry => entry.Group.GroupName == "Sounds");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ModelMappings)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Models");
         childGroups.ShouldAllBe(entry => !string.IsNullOrWhiteSpace(entry.Group.Description));
     }
 

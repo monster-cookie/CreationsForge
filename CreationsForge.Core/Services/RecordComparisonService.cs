@@ -353,7 +353,13 @@ public class RecordComparisonService : IRecordComparisonService
             formKey,
             records.Cast<RecordDTO>().ToList(),
             RecordComparisonChildGroupKind.KeywordMappings);
-        AddModelGroups(fields, records.Cast<RecordDTO>().ToList(), ModelRepository.GetByFormKey(game, RecordTypeCatalog.MiscItem.RecordID, formKey));
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.MiscItem.RecordID,
+            formKey,
+            records.Cast<RecordDTO>().ToList(),
+            RecordComparisonChildGroupKind.ModelMappings);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -618,7 +624,13 @@ public class RecordComparisonService : IRecordComparisonService
             records.Cast<RecordDTO>().ToList(),
             RecordComparisonChildGroupKind.KeywordMappings);
         AddStaticPropertyGroups(fields, records);
-        AddModelGroups(fields, records.Cast<RecordDTO>().ToList(), ModelRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey));
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Static.RecordID,
+            formKey,
+            records.Cast<RecordDTO>().ToList(),
+            RecordComparisonChildGroupKind.ModelMappings);
         AddReflectionGroups(fields, records.Cast<RecordDTO>().ToList(), ReflectionRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey));
 
         return CreateComparison(RecordTypeCatalog.Static.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
@@ -862,7 +874,13 @@ public class RecordComparisonService : IRecordComparisonService
             formKey,
             baseRecords,
             RecordComparisonChildGroupKind.KeywordMappings);
-        AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey));
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Book.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.ModelMappings);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -907,7 +925,13 @@ public class RecordComparisonService : IRecordComparisonService
             formKey,
             baseRecords,
             RecordComparisonChildGroupKind.KeywordMappings);
-        AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey));
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Door.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.ModelMappings);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -950,7 +974,13 @@ public class RecordComparisonService : IRecordComparisonService
             formKey,
             baseRecords,
             RecordComparisonChildGroupKind.KeywordMappings);
-        AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey));
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Container.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.ModelMappings);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -1048,7 +1078,13 @@ public class RecordComparisonService : IRecordComparisonService
             formKey,
             baseRecords,
             RecordComparisonChildGroupKind.KeywordMappings);
-        AddModelGroups(fields, baseRecords, ModelRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Terminal.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.ModelMappings);
         AddScriptingAdapterGroups(fields, baseRecords, ScriptingAdapterRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey));
         AddConditionRuleGroups(fields, baseRecords, records.Cast<IHasConditionsDTO>().ToList());
         AddScriptFragmentGroups(fields, baseRecords, records.SelectMany(record => record.ScriptFragments).ToList());
@@ -1188,6 +1224,9 @@ public class RecordComparisonService : IRecordComparisonService
                     break;
                 case RecordComparisonChildGroupKind.SoundMappings:
                     AddSoundGroups(fields, records, SoundMappingRepository.GetByFormKey(game, recordType, formKey));
+                    break;
+                case RecordComparisonChildGroupKind.ModelMappings:
+                    AddModelGroups(fields, records, ModelRepository.GetByFormKey(game, recordType, formKey));
                     break;
                 default:
                     throw new NotSupportedException(

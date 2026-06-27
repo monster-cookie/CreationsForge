@@ -365,12 +365,18 @@ internal static class TerminalRecordSpecification
                     GroupKind = RecordComparisonChildGroupKind.KeywordMappings,
                     GroupName = "Keywords",
                     Description = "Shared keyword mapping rows appended after scalar parent and record-specific rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.ModelMappings,
+                    GroupName = "Models",
+                    Description = "Shared model rows appended after keyword rows."
                 }
             ]
         },
-        ImplementationNote = "Comparison metadata drives scalar parent rows and keyword child-group dispatch; " +
-            "forced-location, model, script, condition, reflection, marker parameter, body text, and menu item rows " +
-            "remain strategy-based."
+        ImplementationNote = "Comparison metadata drives scalar parent rows and keyword/model child-group dispatch; " +
+            "forced-location, script, condition, reflection, marker parameter, body text, and menu item rows remain " +
+            "strategy-based."
     };
 
     /// <summary>

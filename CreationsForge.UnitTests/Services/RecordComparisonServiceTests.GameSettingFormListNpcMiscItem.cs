@@ -406,8 +406,8 @@ public partial class RecordComparisonServiceTests
     }
 
     /// <summary>
-    /// Verifies that Misc Item scalar rows are selected from the injected comparison specification while child rows
-    /// remain strategy-based.
+    /// Verifies that Misc Item scalar rows are selected from the injected comparison specification while shared model
+    /// rows are selected from child-group metadata.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForMiscItem_UsesInjectedComparisonSpecification()
@@ -424,6 +424,14 @@ public partial class RecordComparisonServiceTests
             [
                 baseItem,
                 patchItem
+            ]
+        };
+        var modelRepository = new TestModelRepository
+        {
+            Records =
+            [
+                CreateModel("Base.esm", formKey, "Meshes\\Clutter\\Digipick.nif"),
+                CreateModel("Patch.esp", formKey, "Meshes\\Clutter\\Digipick.nif")
             ]
         };
         var provider = new TestRecordSpecificationProvider(
@@ -445,17 +453,30 @@ public partial class RecordComparisonServiceTests
                             SourcePath = "Value",
                             ValueKind = RecordFieldValueKind.Number
                         }
+                    ],
+                    ChildGroups =
+                    [
+                        new RecordComparisonChildGroupSpecification
+                        {
+                            GroupKind = RecordComparisonChildGroupKind.ModelMappings,
+                            GroupName = "Models",
+                            Description = "Test model child group."
+                        }
                     ]
                 },
                 ImplementationNote = "Test specification."
             });
-        var service = CreateService(miscItemRepository: miscItemRepository, recordSpecificationProvider: provider);
+        var service = CreateService(
+            miscItemRepository: miscItemRepository,
+            modelRepository: modelRepository,
+            recordSpecificationProvider: provider);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.MiscItem.RecordID, formKey);
 
         comparison.Fields.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["35", "50"]);
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Weight");
+        comparison.Fields.Single(field => field.FieldName == "Model").Children.ShouldNotBeEmpty();
         comparison.Fields.Single(field => field.FieldName == "Components").Children.ShouldNotBeEmpty();
     }
 

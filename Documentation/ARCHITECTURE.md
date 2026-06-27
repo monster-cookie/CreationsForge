@@ -249,12 +249,12 @@ The specification catalog now drives simple comparison rows for `FLST`, `GMST`, 
 `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, and `TERM`.
 `RecordComparisonService` reads type-specific comparison fields from `IRecordSpecificationProvider`, resolves simple
 DTO source paths generically, and uses comparison metadata for ordinary localized scalar rows. Explicit strategy hooks
-remain where behavior is not purely declarative. Keyword rows and shared sound rows for current supported comparison
-families are selected by comparison child-group metadata. The current explicit hooks include indexed `FLST` item rows,
-localized `GMST` `Data` display, game-dependent `BOOK` body-text source fields, and other `CLAS`, `FACT`, `MISC`,
-`AVIF`, `MGEF`, `PERK`, `NPC_`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, and `TERM` child groups. Complex
-record families and most non-keyword/non-sound shared child groups remain on the existing record-specific comparison
-methods until later approved slices move them behind specification metadata.
+remain where behavior is not purely declarative. Keyword rows, shared model rows, and shared sound rows for current
+supported comparison families are selected by comparison child-group metadata. The current explicit hooks include
+indexed `FLST` item rows, localized `GMST` `Data` display, game-dependent `BOOK` body-text source fields, and other
+`CLAS`, `FACT`, `MISC`, `AVIF`, `MGEF`, `PERK`, `NPC_`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, and `TERM`
+child groups. Complex record families and most non-keyword/non-model/non-sound shared child groups remain on the
+existing record-specific comparison methods until later approved slices move them behind specification metadata.
 
 `IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows.
 `IAssetFileResolverService` resolves readable local asset files from preview candidates by checking absolute paths,
