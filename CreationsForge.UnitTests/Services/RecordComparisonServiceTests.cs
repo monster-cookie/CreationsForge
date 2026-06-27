@@ -678,6 +678,60 @@ public class RecordComparisonServiceTests
         property.Children.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["BaseValue", "PatchValue"]);
     }
 
+    /// <summary>
+    /// Verifies that Misc Item scalar rows are selected from the injected comparison specification while child rows
+    /// remain strategy-based.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForMiscItem_UsesInjectedComparisonSpecification()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x819);
+        var messageFormKey = CreateFormKey("Starfield.esm", 0x444);
+        var baseItem = CreateMiscItem("Base.esm", formKey, "Digipick", 35, 0.1f, null);
+        baseItem.Components.Add(CreateMiscItemComponent("Base.esm", formKey, CreateFormKey("Starfield.esm", 0x777), 0, 0, 2));
+        var patchItem = CreateMiscItem("Patch.esp", formKey, "Digipick", 50, 0.2f, messageFormKey);
+        patchItem.Components.Add(CreateMiscItemComponent("Patch.esp", formKey, CreateFormKey("Starfield.esm", 0x777), 0, 2, 4));
+        var miscItemRepository = new TestMiscItemRepository
+        {
+            Records =
+            [
+                baseItem,
+                patchItem
+            ]
+        };
+        var provider = new TestRecordSpecificationProvider(
+            new RecordSpecification
+            {
+                RecordID = SupportedRecordSpecifications.MiscItem.RecordID,
+                RecordType = SupportedRecordSpecifications.MiscItem.RecordType,
+                TableName = SupportedRecordSpecifications.MiscItem.TableName,
+                FriendlyName = SupportedRecordSpecifications.MiscItem.FriendlyName,
+                GameSupport = SupportedRecordSpecifications.MiscItem.GameSupport,
+                Fields = SupportedRecordSpecifications.MiscItem.Fields,
+                Comparison = new RecordComparisonSpecification
+                {
+                    Fields =
+                    [
+                        new RecordComparisonFieldSpecification
+                        {
+                            FieldName = "Value",
+                            SourcePath = "Value",
+                            ValueKind = RecordFieldValueKind.Number
+                        }
+                    ]
+                },
+                ImplementationNote = "Test specification."
+            });
+        var service = CreateService(miscItemRepository: miscItemRepository, recordSpecificationProvider: provider);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.MiscItem.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["35", "50"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Weight");
+        comparison.Fields.Single(field => field.FieldName == "Components").Children.ShouldNotBeEmpty();
+    }
+
     [Fact]
     public void GetRecordComparison_ForMagicEffect_ExpandsKeywordsAndFlattensMagicEffectData()
     {

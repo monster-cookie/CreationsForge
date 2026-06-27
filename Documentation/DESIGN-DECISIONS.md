@@ -240,6 +240,45 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-26 - Convert Misc Item Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: `MISC` comparison includes scalar parent rows followed by destructible, keyword, model, sound, scripting,
+component, and resource rows. The scalar comparison path already handles localized strings, FormKey display, numeric
+values, flag sets, and ordinary source-path resolution, so the parent rows can move into metadata without changing
+the child-row alignment strategies.
+
+Decision: Add `MISC` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreateMiscItemComparison` to use the shared specification comparison-field builder for scalar rows. Keep
+destructible rows and shared child groups on existing strategy methods.
+
+Rationale: This moves another high-value record family into the spec-driven scalar path while leaving complex child
+payloads on proven code. `MISC` is a useful bridge because it exercises localized strings, FormKeys, numbers, flags,
+object-bounds text, and several strategy-owned child groups in the same comparison output.
+
+Alternatives considered:
+
+- Move destructible and component rows into specification metadata in the same slice.
+- Convert a simpler remaining record family before `MISC`.
+- Leave `MISC` hardcoded until shared child-row metadata is designed.
+
+Consequences:
+
+- `MISC` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- Destructible, keyword, model, sound, scripting, component, and resource rows remain strategy-based.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-26 - Drive Pilot Import Dispatch From Specifications
 
 Status: Accepted

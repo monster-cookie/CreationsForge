@@ -25,8 +25,8 @@ packages.
 validation, and comparison behavior. The catalog includes the current imported record families and drives
 `RecordImportService` dispatch order and `PluginRecordSetDTO` collection lookup. It also describes reader-facing DTO
 destination collections and default Mutagen collection names for the current game adapters. `RecordComparisonService`
-consumes comparison metadata for the `FLST`, `GMST`, and `GLOB` pilot records' simple scalar rows. The existing game
-readers, typed importers, repositories, and complex comparison strategies still own their current runtime behavior.
+consumes comparison metadata for the current simple scalar-row slice. The existing game readers, typed importers,
+repositories, and complex comparison strategies still own their current runtime behavior.
 The specification project does not reference Core, Avalonia, NPoco, Migrations, Assets, or game-specific Mutagen
 packages.
 
@@ -242,14 +242,14 @@ Core assigns comparison value states for neutral, identical, conflicting, and di
 presentation layer maps those states to the green, red, and yellow comparison colors and shows the legend in the status
 area.
 
-The specification catalog now drives simple comparison rows for `FLST`, `GMST`, `GLOB`, `KYWD`, `STAT`, `BOOK`,
-`DOOR`, `CONT`, `COBJ`, and `CNDF`.
+The specification catalog now drives simple comparison rows for `FLST`, `GMST`, `GLOB`, `MISC`, `KYWD`, `STAT`,
+`BOOK`, `DOOR`, `CONT`, `COBJ`, and `CNDF`.
 `RecordComparisonService` reads type-specific comparison fields from `IRecordSpecificationProvider`, resolves simple
 DTO source paths generically, and uses comparison metadata for ordinary localized scalar rows. Explicit strategy hooks
 remain where behavior is not purely declarative. The current hooks include indexed `FLST` item rows, localized `GMST`
-`Data` display, game-dependent `BOOK` body-text source fields, and `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `CNDF`
-child groups. Complex record families and shared child groups remain on the existing record-specific comparison
-methods until later approved slices move them behind specification metadata.
+`Data` display, game-dependent `BOOK` body-text source fields, and `MISC`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`,
+and `CNDF` child groups. Complex record families and shared child groups remain on the existing record-specific
+comparison methods until later approved slices move them behind specification metadata.
 
 `IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows.
 `IAssetFileResolverService` resolves readable local asset files from preview candidates by checking absolute paths,

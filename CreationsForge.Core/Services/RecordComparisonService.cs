@@ -349,23 +349,23 @@ public class RecordComparisonService : IRecordComparisonService
         return CreateComparison(RecordTypeCatalog.Faction.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
 
+    /// <summary>
+    /// Creates the comparison output for imported Misc Item overrides, using specification metadata for scalar parent
+    /// rows while leaving destructible and shared child collections on existing strategy code.
+    /// </summary>
+    /// <param name="game">The game whose imported misc item records should be compared.</param>
+    /// <param name="formKey">The origin FormKey shared by the misc item overrides.</param>
+    /// <returns>The misc item comparison DTO consumed by presentation rendering.</returns>
     private RecordComparisonDTO CreateMiscItemComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = MiscItemRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.MiscItem.RecordID, formKey);
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
-        var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("ObjectBoundsFirst", records, record => record.ObjectBounds?.First ?? string.Empty));
-        fields.Add(CreateField("ObjectBoundsSecond", records, record => record.ObjectBounds?.Second ?? string.Empty));
-        fields.Add(CreateField("Transforms.Inventory", records, record => FormatFormKey(record.Transforms?.Inventory)));
-        fields.Add(CreateField("PreviewTransform", records, record => FormatFormKey(record.PreviewTransform)));
-        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
-        fields.Add(CreateField("ShortName", records, record => GetTranslatedDisplayValue(localizedStrings, record, "ShortName", recordTextLanguage, record.ShortName)));
-        fields.Add(CreateField("Value", records, record => record.Value?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Weight", records, record => record.Weight?.ToString() ?? string.Empty));
-        fields.Add(CreateField("DirtinessScale", records, record => record.DirtinessScale?.ToString() ?? string.Empty));
-        fields.Add(CreateField("FeaturedItemMessage", records, record => FormatFormKey(record.FeaturedItemMessage)));
-        fields.Add(CreateField("Flag", records, record => record.Flag ?? string.Empty));
+        var fields = CreateSpecComparisonFields(
+            RecordTypeCatalog.MiscItem.RecordID,
+            records,
+            localizedStrings: localizedStrings,
+            recordTextLanguage: recordTextLanguage);
         AddMiscItemDestructibleGroups(fields, records);
         AddKeywordGroup(fields, records.Cast<RecordDTO>().ToList(), KeywordMappingRepository.GetByFormKey(game, RecordTypeCatalog.MiscItem.RecordID, formKey));
         AddModelGroups(fields, records.Cast<RecordDTO>().ToList(), ModelRepository.GetByFormKey(game, RecordTypeCatalog.MiscItem.RecordID, formKey));
