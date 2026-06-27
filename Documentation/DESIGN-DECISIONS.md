@@ -201,6 +201,45 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-26 - Convert Condition Form And Constructible Object Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: `CNDF` and `COBJ` comparison both include a small scalar parent section followed by condition or child-group
+strategy rows. The scalar comparison path already handles localized fields, FormKey formatting, and numeric display,
+so these records can move their parent rows into metadata without solving condition or component alignment.
+
+Decision: Add `CNDF` and `COBJ` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreateConditionFormComparison` and `CreateConstructibleObjectComparison` to use the shared specification
+comparison-field builder for scalar rows. Keep condition rules, COBJ components, categories, recipe filters, sounds,
+and scripts on existing strategy methods.
+
+Rationale: This continues expanding spec-driven comparison across records with condition-heavy behavior while keeping
+the hard part deliberately isolated. It also proves that the scalar metadata path can coexist with condition-rule
+groups and COBJ-specific child collections.
+
+Alternatives considered:
+
+- Convert only `CNDF` because it has fewer scalar fields.
+- Move condition-rule rows into specification metadata in the same slice.
+- Move COBJ component, category, and recipe-filter rows into specification metadata immediately.
+
+Consequences:
+
+- `CNDF` and `COBJ` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- Condition rows and COBJ child groups remain strategy-based.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-26 - Drive Pilot Import Dispatch From Specifications
 
 Status: Accepted

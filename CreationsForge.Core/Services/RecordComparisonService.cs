@@ -891,24 +891,25 @@ public class RecordComparisonService : IRecordComparisonService
         return CreateComparison(RecordTypeCatalog.Container.RecordID, formKey, baseRecords, fields);
     }
 
+    /// <summary>
+    /// Creates the comparison output for imported Constructible Object overrides, using specification metadata for
+    /// scalar parent rows while leaving components, categories, filters, conditions, sounds, and scripts on existing
+    /// strategy code.
+    /// </summary>
+    /// <param name="game">The game whose imported constructible object records should be compared.</param>
+    /// <param name="formKey">The origin FormKey shared by the constructible object overrides.</param>
+    /// <returns>The constructible object comparison DTO consumed by presentation rendering.</returns>
     private RecordComparisonDTO CreateConstructibleObjectComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = ConstructibleObjectRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.ConstructibleObject.RecordID, formKey);
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
         var baseRecords = records.Cast<RecordDTO>().ToList();
-        var fields = CreateCommonFields(baseRecords);
-        fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Description", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Description", recordTextLanguage, record.Description)));
-        fields.Add(CreateField("CreatedObjectFormKey", records, record => FormatFormKey(record.CreatedObjectFormKey)));
-        fields.Add(CreateField("WorkbenchKeywordFormKey", records, record => FormatFormKey(record.WorkbenchKeywordFormKey)));
-        fields.Add(CreateField("CreatedObjectCount", records, record => record.CreatedObjectCount?.ToString() ?? string.Empty));
-        fields.Add(CreateField("AmountProduced", records, record => record.AmountProduced?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Value", records, record => record.Value?.ToString() ?? string.Empty));
-        fields.Add(CreateField("MenuSortOrder", records, record => record.MenuSortOrder?.ToString() ?? string.Empty));
-        fields.Add(CreateField("LearnMethod", records, record => record.LearnMethod ?? string.Empty));
-        fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
-        fields.Add(CreateField("MajorFlags", records, record => record.MajorFlags ?? string.Empty));
+        var fields = CreateSpecComparisonFields(
+            RecordTypeCatalog.ConstructibleObject.RecordID,
+            records,
+            localizedStrings: localizedStrings,
+            recordTextLanguage: recordTextLanguage);
         AddConstructibleObjectComponentGroups(fields, records);
         AddConstructibleObjectCategoryGroups(fields, records);
         AddConstructibleObjectRecipeFilterGroups(fields, records);
@@ -919,13 +920,18 @@ public class RecordComparisonService : IRecordComparisonService
         return CreateComparison(RecordTypeCatalog.ConstructibleObject.RecordID, formKey, baseRecords, fields);
     }
 
+    /// <summary>
+    /// Creates the comparison output for imported Condition Form overrides, using specification metadata for scalar
+    /// parent rows while leaving condition-rule rows on existing strategy code.
+    /// </summary>
+    /// <param name="game">The game whose imported condition form records should be compared.</param>
+    /// <param name="formKey">The origin FormKey shared by the condition form overrides.</param>
+    /// <returns>The condition form comparison DTO consumed by presentation rendering.</returns>
     private RecordComparisonDTO CreateConditionFormComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = ConditionFormRepository.GetByFormKey(game, formKey);
         var baseRecords = records.Cast<RecordDTO>().ToList();
-        var fields = CreateCommonFields(baseRecords);
-        fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
-        fields.Add(CreateField("OwnerQuest", records, record => FormatFormKey(record.OwnerQuest)));
+        var fields = CreateSpecComparisonFields(RecordTypeCatalog.ConditionForm.RecordID, records);
         AddConditionRuleGroups(fields, baseRecords, records.Cast<IHasConditionsDTO>().ToList());
 
         return CreateComparison(RecordTypeCatalog.ConditionForm.RecordID, formKey, baseRecords, fields);

@@ -947,6 +947,63 @@ public class RecordComparisonServiceTests
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Created Object Counts");
     }
 
+    /// <summary>
+    /// Verifies that Constructible Object scalar rows are selected from the injected comparison specification while
+    /// child rows remain strategy-based.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForConstructibleObject_UsesInjectedComparisonSpecification()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x2501);
+        var createdObjectFormKey = CreateFormKey("Starfield.esm", 0x111);
+        var workbenchKeywordFormKey = CreateFormKey("Starfield.esm", 0x222);
+        var componentFormKey = CreateFormKey("Starfield.esm", 0x333);
+        var recipeFilterFormKey = CreateFormKey("Starfield.esm", 0x444);
+        var constructibleObjectRepository = new TestConstructibleObjectRepository
+        {
+            Records =
+            [
+                CreateConstructibleObject("Base.esm", formKey, createdObjectFormKey, workbenchKeywordFormKey, componentFormKey, recipeFilterFormKey, 2),
+                CreateConstructibleObject("Patch.esp", formKey, createdObjectFormKey, workbenchKeywordFormKey, componentFormKey, recipeFilterFormKey, 4)
+            ]
+        };
+        var provider = new TestRecordSpecificationProvider(
+            new RecordSpecification
+            {
+                RecordID = SupportedRecordSpecifications.ConstructibleObject.RecordID,
+                RecordType = SupportedRecordSpecifications.ConstructibleObject.RecordType,
+                TableName = SupportedRecordSpecifications.ConstructibleObject.TableName,
+                FriendlyName = SupportedRecordSpecifications.ConstructibleObject.FriendlyName,
+                GameSupport = SupportedRecordSpecifications.ConstructibleObject.GameSupport,
+                Fields = SupportedRecordSpecifications.ConstructibleObject.Fields,
+                Comparison = new RecordComparisonSpecification
+                {
+                    Fields =
+                    [
+                        new RecordComparisonFieldSpecification
+                        {
+                            FieldName = "AmountProduced",
+                            SourcePath = "AmountProduced",
+                            ValueKind = RecordFieldValueKind.Number
+                        }
+                    ]
+                },
+                ImplementationNote = "Test specification."
+            });
+        var service = CreateService(
+            constructibleObjectRepository: constructibleObjectRepository,
+            recordSpecificationProvider: provider);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.ConstructibleObject.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "AmountProduced").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["2", "4"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "CreatedObjectFormKey");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "WorkbenchKeywordFormKey");
+        comparison.Fields.Single(field => field.FieldName == "Components").Children.ShouldNotBeEmpty();
+        comparison.Fields.Single(field => field.FieldName == "Conditions").Children.ShouldNotBeEmpty();
+    }
+
     [Fact]
     public void GetRecordComparison_ForConditionForm_MapsVersion2AndConditions()
     {
@@ -974,6 +1031,59 @@ public class RecordComparisonServiceTests
         condition.State.ShouldBe(RecordComparisonValueState.Conflict);
         condition.Values.Select(value => value.State).ShouldBe([RecordComparisonValueState.Conflict, RecordComparisonValueState.WinningOverride]);
         condition.Children.ShouldBeEmpty();
+    }
+
+    /// <summary>
+    /// Verifies that Condition Form scalar rows are selected from the injected comparison specification while
+    /// condition rows remain strategy-based.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForConditionForm_UsesInjectedComparisonSpecification()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x246E87);
+        var firstParameter = CreateFormKey("Starfield.esm", 0x258350);
+        var patchFirstParameter = CreateFormKey("Starfield.esm", 0x2CC9F2);
+        var conditionFormRepository = new TestConditionFormRepository
+        {
+            Records =
+            [
+                CreateConditionForm("Base.esm", formKey, 1, firstParameter, "1"),
+                CreateConditionForm("Patch.esp", formKey, 2, patchFirstParameter, null)
+            ]
+        };
+        var provider = new TestRecordSpecificationProvider(
+            new RecordSpecification
+            {
+                RecordID = SupportedRecordSpecifications.ConditionForm.RecordID,
+                RecordType = SupportedRecordSpecifications.ConditionForm.RecordType,
+                TableName = SupportedRecordSpecifications.ConditionForm.TableName,
+                FriendlyName = SupportedRecordSpecifications.ConditionForm.FriendlyName,
+                GameSupport = SupportedRecordSpecifications.ConditionForm.GameSupport,
+                Fields = SupportedRecordSpecifications.ConditionForm.Fields,
+                Comparison = new RecordComparisonSpecification
+                {
+                    Fields =
+                    [
+                        new RecordComparisonFieldSpecification
+                        {
+                            FieldName = "Version2",
+                            SourcePath = "Version2",
+                            ValueKind = RecordFieldValueKind.Number
+                        }
+                    ]
+                },
+                ImplementationNote = "Test specification."
+            });
+        var service = CreateService(
+            conditionFormRepository: conditionFormRepository,
+            recordSpecificationProvider: provider);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.ConditionForm.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Version2").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["1", "2"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "OwnerQuest");
+        comparison.Fields.Single(field => field.FieldName == "Conditions").Children.ShouldNotBeEmpty();
     }
 
     [Fact]
