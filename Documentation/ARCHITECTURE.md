@@ -136,10 +136,10 @@ Fallout 4 import Terminals (`TERM`) through the same typed-record pipeline with 
 comparison fields. CNDF, FACT, COBJ, and PERK condition lists use shared condition-rule rows and generic condition-data
 parameter rows, not raw condition payload rows, when Mutagen exposes the condition list as typed condition objects.
 All typed record importers save the record's parent row before dispatching shared child import by DTO capability.
-Records that expose models, keywords, condition rules, record components, sounds, or scripting adapters persist those
-child rows through the common `RecordInstances` identity instead of game-specific child-table paths. Starfield FACT
-components use the shared record-component child path; Fallout 4 and Skyrim FACT records currently have no component
-payload to map.
+Records that expose models, keywords, condition rules, record components, sounds, scripting adapters, or script
+fragments persist those child rows through the common `RecordInstances` identity instead of game-specific child-table
+paths. Starfield FACT components use the shared record-component child path; Fallout 4 and Skyrim FACT records
+currently have no component payload to map.
 
 The `CreationsForge.Specification` catalog drives the import dispatch loop for all currently imported record
 families. `RecordImportService` reads specifications from `IRecordSpecificationProvider`, orders them by import
@@ -250,13 +250,13 @@ The specification catalog now drives simple comparison rows for `FLST`, `GMST`, 
 `RecordComparisonService` reads type-specific comparison fields from `IRecordSpecificationProvider`, resolves simple
 DTO source paths generically, and uses comparison metadata for ordinary localized scalar rows. Explicit strategy hooks
 remain where behavior is not purely declarative. Keyword rows, shared model rows, shared sound rows, shared scripting
-adapter rows, shared reflection rows, shared condition-rule rows, and shared record component rows for current
-supported comparison families are selected by comparison child-group metadata. The current explicit hooks include
-indexed `FLST` item rows, localized `GMST` `Data` display, game-dependent `BOOK` body-text source fields, and other
-`CLAS`, `FACT`, `MISC`, `AVIF`, `MGEF`, `PERK`, `NPC_`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, and `TERM`
-child groups. Complex record families and most child groups beyond keywords, models, sounds, scripting adapters,
-reflection, shared condition rules, and shared record components remain on the existing record-specific comparison
-methods until later approved slices move them behind specification metadata.
+adapter rows, shared reflection rows, shared condition-rule rows, shared record component rows, and script fragment
+rows for current supported comparison families are selected by comparison child-group metadata. The current explicit
+hooks include indexed `FLST` item rows, localized `GMST` `Data` display, game-dependent `BOOK` body-text source
+fields, and other `CLAS`, `FACT`, `MISC`, `AVIF`, `MGEF`, `PERK`, `NPC_`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`,
+`CNDF`, and `TERM` child groups. Complex record families and most child groups beyond keywords, models, sounds,
+scripting adapters, reflection, shared condition rules, shared record components, and script fragments remain on the
+existing record-specific comparison methods until later approved slices move them behind specification metadata.
 
 `IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows.
 `IAssetFileResolverService` resolves readable local asset files from preview candidates by checking absolute paths,

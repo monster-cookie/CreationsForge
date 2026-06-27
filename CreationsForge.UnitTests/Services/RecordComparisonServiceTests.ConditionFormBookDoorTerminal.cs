@@ -222,6 +222,10 @@ public partial class RecordComparisonServiceTests
         model.Children.Single(field => field.FieldName == "File").Values.Select(value => value.DisplayValue).ShouldBe(["Meshes\\Architecture\\Door01.nif", "Meshes\\Architecture\\Door01.nif"]);
     }
 
+    /// <summary>
+    /// Verifies that Terminal comparison renders scalar fields, marker parameters, and specification-declared script
+    /// fragments.
+    /// </summary>
     [Fact]
     public void GetRecordComparison_ForTerminal_MapsTerminalFieldsAndMarkerParameters()
     {
@@ -243,6 +247,10 @@ public partial class RecordComparisonServiceTests
         var markerParameters = comparison.Fields.Single(field => field.FieldName == "Marker Parameters");
         var firstParameter = markerParameters.Children.Single(field => field.FieldName == "Marker Parameter [0]");
         firstParameter.Children.Single(field => field.FieldName == "EntryTypes").Values.Select(value => value.DisplayValue).ShouldBe(["BaseEntry", "PatchEntry"]);
+        var scriptFragments = comparison.Fields.Single(field => field.FieldName == "Script Fragments");
+        var scriptFragment = scriptFragments.Children.Single(field => field.FieldName == "MenuItem");
+        scriptFragment.Children.Single(field => field.FieldName == "FragmentName").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["BaseFragment", "PatchFragment"]);
     }
 
     /// <summary>
@@ -292,6 +300,7 @@ public partial class RecordComparisonServiceTests
             .ShouldBe(["1", "2"]);
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "MenuFormKey");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Script Fragments");
         var markerParameters = comparison.Fields.Single(field => field.FieldName == "Marker Parameters");
         markerParameters.Children.Single(field => field.FieldName == "Marker Parameter [0]")
             .Children.Single(field => field.FieldName == "EntryTypes")

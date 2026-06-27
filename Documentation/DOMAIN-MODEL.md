@@ -27,7 +27,7 @@ the identity needed to group true overrides for comparison while avoiding collis
 
 Record instance: A persisted imported override identity combining the containing game/plugin, record type ID, and
 origin record identity. `RecordInstances` is the database parent for typed detail rows and shared child rows such as
-models, keywords, sounds, and scripting adapters.
+models, keywords, sounds, scripting adapters, condition rules, record components, reflections, and script fragments.
 
 Master reference: A relationship edge from a declaring plugin to a declared master plugin in the same game.
 
@@ -61,7 +61,8 @@ a future Mutagen or game-specific requirement proves otherwise.
 
 Core DTOs and repositories are shared only for the current approved schema: games, plugin metadata, plugin master
 references, FormLists, FormListItems, GameSettings, Globals, approved typed parent rows, shared model rows, shared
-keyword rows, shared sound rows, and shared scripting adapter rows. Shared child rows are persisted for approved record
+keyword rows, shared sound rows, shared scripting adapter rows, shared condition-rule rows, shared record-component
+rows, shared reflection rows, and shared script-fragment rows. Shared child rows are persisted for approved record
 types that expose the corresponding Core DTO capability interfaces.
 
 Game-specific projects own Mutagen package references and should own any mapping that depends on a specific game's
@@ -120,17 +121,18 @@ The specification catalog now drives the simple comparison fields for `FLST`, `G
 The Core comparison service remains the runtime authority for generated comparison DTOs, including row state, plugin
 column ordering, indexed `FLST` item expansion, localized `GMST` `Data` display, game-dependent `BOOK` body text
 source fields, and strategy-owned child rows. Keyword rows, shared model rows, shared sound rows, shared scripting
-adapter rows, shared reflection rows, shared condition-rule rows, and shared record component rows for current
-supported comparison families are selected by comparison child-group metadata. Other `CLAS`, `FACT`, `AVIF`, `NPC_`,
-`MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, `MISC`, and `TERM` child groups remain
-strategy-owned.
+adapter rows, shared reflection rows, shared condition-rule rows, shared record component rows, and script fragment
+rows for current supported comparison families are selected by comparison child-group metadata. Other `CLAS`, `FACT`,
+`AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, `MISC`, and `TERM` child groups
+remain strategy-owned.
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `CLAS`, `FACT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM`
 comparisons display their currently persisted parent fields and record-reference fields. CLAS comparison displays
 class property rows and skill-weight or stat-weight
 rows when those child rows are present. FACT comparison displays relation, rank, shared condition-rule, and Starfield
-component rows when those payloads are persisted. PERK comparison displays rank rows, nested rank-effect
-rows, background skill rows, and shared scripting adapter rows. `MISC` comparison displays component display indices
-and destructible data/stage rows when those payloads are persisted. `NPC_` comparison displays persisted actor
+component rows when those payloads are persisted. PERK comparison displays rank rows, nested rank-effect rows,
+background skill rows, shared scripting adapter rows, and script fragment rows. `MISC` comparison displays component
+display indices and destructible data/stage rows when those payloads are persisted. `NPC_` comparison displays
+persisted actor
 configuration, template, appearance, head part, package, property, perk, inventory, face morph, face dial, morph blend,
 tint, and player-skill rows when those payloads are persisted. `MISC`, `NPC_`, `MGEF`, `BOOK`, `DOOR`, `CONT`,
 `COBJ`, and `TERM` comparisons display shared child rows when those payloads are persisted. `CNDF` and `COBJ`

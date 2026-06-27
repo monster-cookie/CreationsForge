@@ -351,6 +351,11 @@ public class RecordSpecificationCatalogTests
             .Select(entry => entry.RecordID)
             .OrderBy(recordID => recordID, StringComparer.Ordinal)
             .ToList();
+        var scriptFragmentRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ScriptFragments)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
 
         keywordRecordIDs.ShouldBe(
             ["BOOK", "CONT", "DOOR", "FACT", "MGEF", "MISC", "NPC_", "STAT", "TERM"]);
@@ -360,6 +365,7 @@ public class RecordSpecificationCatalogTests
         reflectionRecordIDs.ShouldBe(["BOOK", "CONT", "DOOR", "STAT", "TERM"]);
         conditionRecordIDs.ShouldBe(["CNDF", "COBJ", "FACT", "PERK", "TERM"]);
         componentRecordIDs.ShouldBe(["BOOK", "CONT", "DOOR", "FACT"]);
+        scriptFragmentRecordIDs.ShouldBe(["PERK", "TERM"]);
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.KeywordMappings)
             .ShouldAllBe(entry => entry.Group.GroupName == "Keywords");
@@ -381,6 +387,9 @@ public class RecordSpecificationCatalogTests
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.RecordComponents)
             .ShouldAllBe(entry => entry.Group.GroupName == "Components");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ScriptFragments)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Script Fragments");
         childGroups.ShouldAllBe(entry => !string.IsNullOrWhiteSpace(entry.Group.Description));
     }
 

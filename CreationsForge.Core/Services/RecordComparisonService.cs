@@ -628,7 +628,13 @@ public class RecordComparisonService : IRecordComparisonService
             formKey,
             records.Cast<RecordDTO>().ToList(),
             RecordComparisonChildGroupKind.SoundMappings);
-        AddScriptFragmentGroups(fields, records.Cast<RecordDTO>().ToList(), records.SelectMany(record => record.ScriptFragments).ToList());
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Perk.RecordID,
+            formKey,
+            records.Cast<RecordDTO>().ToList(),
+            RecordComparisonChildGroupKind.ScriptFragments);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -1219,7 +1225,13 @@ public class RecordComparisonService : IRecordComparisonService
             formKey,
             baseRecords,
             RecordComparisonChildGroupKind.ConditionRules);
-        AddScriptFragmentGroups(fields, baseRecords, records.SelectMany(record => record.ScriptFragments).ToList());
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Terminal.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.ScriptFragments);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -1383,6 +1395,12 @@ public class RecordComparisonService : IRecordComparisonService
                         fields,
                         records,
                         records.Cast<IHasComponentsDTO>().SelectMany(record => record.Components).ToList());
+                    break;
+                case RecordComparisonChildGroupKind.ScriptFragments:
+                    AddScriptFragmentGroups(
+                        fields,
+                        records,
+                        records.Cast<IHasScriptFragmentsDTO>().SelectMany(record => record.ScriptFragments).ToList());
                     break;
                 default:
                     throw new NotSupportedException(

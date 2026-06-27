@@ -768,6 +768,16 @@ public partial class RecordComparisonServiceTests
         };
     }
 
+    /// <summary>
+    /// Creates a Terminal test record with marker parameters and one VMAD script fragment so comparison tests can
+    /// exercise both strategy-owned and specification-declared child groups.
+    /// </summary>
+    /// <param name="fileName">The plugin filename used to build the record's mod key and fixture-specific values.</param>
+    /// <param name="formKey">The shared origin form key used by all compared overrides.</param>
+    /// <param name="name">The localized terminal display name.</param>
+    /// <param name="markerFlags">The marker flags text stored on the parent terminal row.</param>
+    /// <param name="entryTypes">The marker parameter entry-type text for the generated marker parameter row.</param>
+    /// <returns>A populated terminal DTO suitable for comparison service tests.</returns>
     private static TerminalDTO CreateTerminal(string fileName, FormKeyDTO formKey, string name, string markerFlags, string entryTypes)
     {
         return new TerminalDTO
@@ -804,6 +814,25 @@ public partial class RecordComparisonServiceTests
                     Offset = "0,0,0",
                     EntryTypes = entryTypes,
                     ExitTypes = "ExitType",
+                    ImportedAtUTC = DateTime.UtcNow
+                }
+            ],
+            ScriptFragments =
+            [
+                new ScriptFragmentDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    RecordType = RecordTypeCatalog.Terminal.RecordID,
+                    FormKey = formKey,
+                    FragmentSlot = "MenuItem",
+                    FragmentIndex = 0,
+                    SourceFragmentIndex = 0,
+                    MutagenObjectType = "TerminalScriptFragment",
+                    ScriptName = "TerminalMenuScript",
+                    FragmentName = fileName.StartsWith("Base", StringComparison.Ordinal) ? "BaseFragment" : "PatchFragment",
+                    Unknown2 = 2,
+                    ExtraBindDataVersion = 1,
                     ImportedAtUTC = DateTime.UtcNow
                 }
             ]
@@ -1202,6 +1231,18 @@ public partial class RecordComparisonServiceTests
         };
     }
 
+    /// <summary>
+    /// Creates a Perk test record with rank, background-skill, and VMAD script-fragment rows used by comparison
+    /// service tests.
+    /// </summary>
+    /// <param name="fileName">The plugin filename used to build the record's mod key and fixture-specific values.</param>
+    /// <param name="formKey">The shared origin form key used by all compared overrides.</param>
+    /// <param name="name">The localized perk display name.</param>
+    /// <param name="unknownStaticFormKey">The static form key assigned to the generated perk rank.</param>
+    /// <param name="backgroundSkillFormKey">The skill form key assigned to the generated background-skill row.</param>
+    /// <param name="rankDescription">The localized description assigned to the generated rank.</param>
+    /// <param name="buttonLabel">The localized button label assigned to the generated rank effect.</param>
+    /// <returns>A populated perk DTO suitable for comparison service tests.</returns>
     private static PerkDTO CreatePerk(string fileName, FormKeyDTO formKey, string name, FormKeyDTO unknownStaticFormKey, FormKeyDTO backgroundSkillFormKey, string rankDescription, string buttonLabel)
     {
         return new PerkDTO
@@ -1265,6 +1306,25 @@ public partial class RecordComparisonServiceTests
                     FormKey = formKey,
                     SkillFormKey = backgroundSkillFormKey,
                     SkillIndex = 0,
+                    ImportedAtUTC = DateTime.UtcNow
+                }
+            },
+            ScriptFragments =
+            {
+                new ScriptFragmentDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    RecordType = RecordTypeCatalog.Perk.RecordID,
+                    FormKey = formKey,
+                    FragmentSlot = "Rank",
+                    FragmentIndex = 0,
+                    SourceFragmentIndex = 0,
+                    MutagenObjectType = "PerkScriptFragment",
+                    ScriptName = "PerkRankScript",
+                    FragmentName = fileName.StartsWith("Base", StringComparison.Ordinal) ? "BaseRankFragment" : "PatchRankFragment",
+                    Unknown2 = 2,
+                    ExtraBindDataVersion = 1,
                     ImportedAtUTC = DateTime.UtcNow
                 }
             }

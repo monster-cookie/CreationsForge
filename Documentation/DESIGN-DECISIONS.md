@@ -521,6 +521,56 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-27 - Add Spec-Driven Script Fragment Child Group Dispatch
+
+Status: Accepted
+
+Context: Keyword, model, sound, scripting adapter, reflection, condition-rule, and shared record component child
+groups now use comparison metadata to select shared child-row strategies while preserving row order and comparison DTO
+shape. Script fragments are shared child rows for `PERK` and `TERM`, but they represent VMAD fragment data and are
+distinct from general scripting adapter rows.
+
+Decision: Add a `ScriptFragments` child-group strategy kind. Declare script-fragment child-group metadata on the
+current comparison record families that use the shared script-fragment path: `PERK` and `TERM`. Replace each explicit
+shared script-fragment row call with the metadata-driven child-group dispatcher at the same row position. Keep perk
+effect/rank/background-skill rows and terminal forced-location, marker-parameter, body-text, and menu-item rows on
+their existing strategy methods.
+
+Rationale: Shared script-fragment rows are a metadata-dispatch fit because they already share slot/index alignment,
+visible-row filtering, and fragment field rendering. Keeping script fragments separate from scripting adapters
+preserves the domain distinction between VMAD fragment data and normal script adapter/property data.
+
+Alternatives considered:
+
+- Convert scripting adapters and script fragments as one metadata kind.
+- Convert perk-specific and terminal-specific child rows in the same slice.
+- Leave script fragments mixed between metadata dispatch and explicit calls.
+- Replace script-fragment row building with a fully declarative nested collection specification immediately.
+
+Consequences:
+
+- Script-fragment rows for current fragment-bearing comparison families are emitted only when the comparison
+  specification declares the `ScriptFragments` child group.
+- Existing script-fragment row order is preserved by calling the metadata dispatcher from the original row positions.
+- Perk effect/rank/background-skill rows, terminal forced-location/marker/body/menu rows, and non-keyword/non-model/
+  non-sound/non-scripting-adapter/non-reflection/non-condition/non-component/non-fragment child groups remain
+  strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/PerkRecordSpecification.cs`
+- `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.ConditionFormBookDoorTerminal.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.MagicEffectPerkStaticContainerConstructibleObject.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.RecordFactories.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-27 - Add Spec-Driven Record Component Child Group Dispatch
 
 Status: Accepted

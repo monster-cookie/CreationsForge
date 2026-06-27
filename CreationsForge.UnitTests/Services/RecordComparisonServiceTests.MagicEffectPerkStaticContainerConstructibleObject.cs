@@ -300,6 +300,10 @@ public partial class RecordComparisonServiceTests
             .ShouldBe(["Basis Beschreibung", "Patch Beschreibung"]);
     }
 
+    /// <summary>
+    /// Verifies that Perk comparison keeps strategy-owned rank rows while rendering specification-declared shared
+    /// script and script-fragment child groups.
+    /// </summary>
     [Fact]
     public void GetRecordComparison_ForPerk_ExpandsRanksBackgroundSkillsAndScripts()
     {
@@ -340,6 +344,10 @@ public partial class RecordComparisonServiceTests
         effect.Children.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["1.5", "2.5"]);
         var backgroundSkills = comparison.Fields.Single(field => field.FieldName == "Background Skills");
         backgroundSkills.Children.Single(field => field.FieldName == "Skill [0]").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000444", "Starfield.esm:00000444"]);
+        var scriptFragments = comparison.Fields.Single(field => field.FieldName == "Script Fragments");
+        var scriptFragment = scriptFragments.Children.Single(field => field.FieldName == "Rank");
+        scriptFragment.Children.Single(field => field.FieldName == "FragmentName").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["BaseRankFragment", "PatchRankFragment"]);
         var scripts = comparison.Fields.Single(field => field.FieldName == "Scripts");
         var script = scripts.Children.Single(field => field.FieldName == "Script [0]");
         script.Children.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["SkillScript", "SkillScript"]);
@@ -397,6 +405,7 @@ public partial class RecordComparisonServiceTests
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "SkillGroup");
         comparison.Fields.Single(field => field.FieldName == "Ranks").Children.ShouldNotBeEmpty();
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Script Fragments");
     }
 
     /// <summary>

@@ -40,5 +40,11 @@ public enum RecordComparisonChildGroupKind
     /// Indicates that persisted shared record component rows should be rendered as the shared <c>Components</c> child
     /// group.
     /// </summary>
-    RecordComponents
+    RecordComponents,
+
+    /// <summary>
+    /// Indicates that persisted script fragment rows should be rendered as the shared <c>Script Fragments</c> child
+    /// group.
+    /// </summary>
+    ScriptFragments
 }
