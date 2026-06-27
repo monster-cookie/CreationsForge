@@ -394,6 +394,45 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-26 - Convert Faction Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: `FACT` comparison includes localized scalar parent rows, many FormKey reference rows, nested crime and vendor
+value rows, and relation, rank, condition, component, and keyword child groups. The scalar comparison path already
+handles localized strings, FormKeys, numbers, text values, and nested source paths, so the parent rows can move into
+metadata without changing the current child-row alignment strategies.
+
+Decision: Add `FACT` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreateFactionComparison` to use the shared specification comparison-field builder for scalar rows. Keep relation,
+rank, condition, component, and keyword rows on existing strategy methods.
+
+Rationale: This moves the last condition-heavy shared record with a manageable parent scalar surface into the
+spec-driven comparison path while deliberately avoiding collection metadata. `FACT` also proves the metadata path can
+handle a wider nested scalar shape before tackling larger records such as `NPC_`, `PERK`, or `TERM`.
+
+Alternatives considered:
+
+- Move relation and rank rows into specification metadata in the same slice.
+- Convert `PERK` next because its parent rows are smaller than `NPC_`.
+- Leave `FACT` hardcoded until a condition-row metadata model exists.
+
+Consequences:
+
+- `FACT` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- Relation, rank, condition, component, and keyword rows remain strategy-based.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-26 - Drive Pilot Import Dispatch From Specifications
 
 Status: Accepted

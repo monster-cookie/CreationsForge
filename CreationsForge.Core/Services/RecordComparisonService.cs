@@ -296,52 +296,23 @@ public class RecordComparisonService : IRecordComparisonService
         return CreateComparison(RecordTypeCatalog.Class.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
 
+    /// <summary>
+    /// Creates the comparison output for imported Faction overrides, using specification metadata for scalar parent
+    /// rows while leaving relations, ranks, conditions, components, and keyword rows on existing strategy code.
+    /// </summary>
+    /// <param name="game">The game whose imported faction records should be compared.</param>
+    /// <param name="formKey">The origin FormKey shared by the faction overrides.</param>
+    /// <returns>The faction comparison DTO consumed by presentation rendering.</returns>
     private RecordComparisonDTO CreateFactionComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = FactionRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Faction.RecordID, formKey);
         var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
-        var fields = CreateCommonFields(records.Cast<RecordDTO>().ToList());
-        fields.Add(CreateField("Version2", records, record => record.Version2?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Name", records, record => GetTranslatedDisplayValue(localizedStrings, record, "Name", recordTextLanguage, record.Name)));
-        fields.Add(CreateField("Flags", records, record => record.Flags ?? string.Empty));
-        fields.Add(CreateField("FormationRadius", records, record => record.FormationRadius?.ToString() ?? string.Empty));
-        fields.Add(CreateField("Keyword", records, record => FormatFormKey(record.Keyword)));
-        fields.Add(CreateField("Herd", records, record => FormatFormKey(record.Herd)));
-        fields.Add(CreateField("VoiceType", records, record => FormatFormKey(record.VoiceType)));
-        fields.Add(CreateField("SharedCrimeFactionList", records, record => FormatFormKey(record.SharedCrimeFactionList)));
-        fields.Add(CreateField("VendorBuySellList", records, record => FormatFormKey(record.VendorBuySellList)));
-        fields.Add(CreateField("MerchantContainer", records, record => FormatFormKey(record.MerchantContainer)));
-        fields.Add(CreateField("ExteriorJailMarker", records, record => FormatFormKey(record.ExteriorJailMarker)));
-        fields.Add(CreateField("FollowerWaitMarker", records, record => FormatFormKey(record.FollowerWaitMarker)));
-        fields.Add(CreateField("StolenGoodsContainer", records, record => FormatFormKey(record.StolenGoodsContainer)));
-        fields.Add(CreateField("PlayerInventoryContainer", records, record => FormatFormKey(record.PlayerInventoryContainer)));
-        fields.Add(CreateField("JailOutfit", records, record => FormatFormKey(record.JailOutfit)));
-        fields.Add(CreateField("CrimeValues.Arrest", records, record => record.CrimeValues?.Arrest?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeValues.AttackOnSight", records, record => record.CrimeValues?.AttackOnSight?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeValues.Murder", records, record => record.CrimeValues?.Murder?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeValues.Assault", records, record => record.CrimeValues?.Assault?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeValues.Trespass", records, record => record.CrimeValues?.Trespass?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeValues.Pickpocket", records, record => record.CrimeValues?.Pickpocket?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeValues.Steal", records, record => record.CrimeValues?.Steal?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeValues.StealMult", records, record => record.CrimeValues?.StealMult?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeValues.StealMultiplier", records, record => record.CrimeValues?.StealMultiplier?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeValues.Escape", records, record => record.CrimeValues?.Escape?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeValues.Werewolf", records, record => record.CrimeValues?.Werewolf?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeValues.WerewolfUnused", records, record => record.CrimeValues?.WerewolfUnused?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeValues.Unknown", records, record => record.CrimeValues?.Unknown?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeValues.Piracy", records, record => record.CrimeValues?.Piracy?.ToString() ?? string.Empty));
-        fields.Add(CreateField("CrimeValues.SmuggleMultiplier", records, record => record.CrimeValues?.SmuggleMultiplier?.ToString() ?? string.Empty));
-        fields.Add(CreateField("VendorValues.StartHour", records, record => record.VendorValues?.StartHour?.ToString() ?? string.Empty));
-        fields.Add(CreateField("VendorValues.EndHour", records, record => record.VendorValues?.EndHour?.ToString() ?? string.Empty));
-        fields.Add(CreateField("VendorValues.Radius", records, record => record.VendorValues?.Radius?.ToString() ?? string.Empty));
-        fields.Add(CreateField("VendorValues.BuysStolenItems", records, record => record.VendorValues?.BuysStolenItems?.ToString() ?? string.Empty));
-        fields.Add(CreateField("VendorValues.BuysNonStolenItems", records, record => record.VendorValues?.BuysNonStolenItems?.ToString() ?? string.Empty));
-        fields.Add(CreateField("VendorValues.BuySellEverythingNotInList", records, record => record.VendorValues?.BuySellEverythingNotInList?.ToString() ?? string.Empty));
-        fields.Add(CreateField("VendorLocation.MutagenObjectType", records, record => record.VendorLocation?.MutagenObjectType ?? string.Empty));
-        fields.Add(CreateField("VendorLocation.Target.MutagenObjectType", records, record => record.VendorLocation?.Target?.MutagenObjectType ?? string.Empty));
-        fields.Add(CreateField("VendorLocation.Target.Type", records, record => record.VendorLocation?.Target?.Type ?? string.Empty));
-        fields.Add(CreateField("VendorLocation.Target.Link", records, record => FormatFormKey(record.VendorLocation?.Target?.Link)));
+        var fields = CreateSpecComparisonFields(
+            RecordTypeCatalog.Faction.RecordID,
+            records,
+            localizedStrings: localizedStrings,
+            recordTextLanguage: recordTextLanguage);
         AddFactionRelationGroups(fields, records);
         AddFactionRankGroups(fields, records, localizedStrings, recordTextLanguage);
         AddConditionRuleGroups(fields, records.Cast<RecordDTO>().ToList(), records.Cast<IHasConditionsDTO>().ToList());

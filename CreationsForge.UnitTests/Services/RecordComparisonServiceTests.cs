@@ -227,6 +227,145 @@ public class RecordComparisonServiceTests
     }
 
     /// <summary>
+    /// Verifies that Faction comparison uses specification-owned scalar rows while retaining strategy-owned child rows.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForFaction_MapsScalarFieldsAndChildGroups()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x160);
+        var keywordFormKey = CreateFormKey("Starfield.esm", 0x301);
+        var baseFaction = CreateFaction("Base.esm", formKey, "Constellation", "BaseFlags", 100, keywordFormKey);
+        AddFactionChildren(baseFaction, "Base.esm", formKey, "Ally", "Base Rank", 4, 10);
+        var patchFaction = CreateFaction("Patch.esp", formKey, "Constellation", "PatchFlags", 200, keywordFormKey);
+        AddFactionChildren(patchFaction, "Patch.esp", formKey, "Friend", "Patch Rank", 8, 20);
+        var factionRepository = new TestFactionRepository
+        {
+            Records =
+            [
+                baseFaction,
+                patchFaction
+            ]
+        };
+        var keywordMappingRepository = new TestKeywordMappingRepository
+        {
+            Records =
+            [
+                CreateKeywordMapping("Base.esm", RecordTypeCatalog.Faction.RecordID, formKey, keywordFormKey, 0),
+                CreateKeywordMapping("Patch.esp", RecordTypeCatalog.Faction.RecordID, formKey, keywordFormKey, 0)
+            ]
+        };
+        var service = CreateService(factionRepository: factionRepository, keywordMappingRepository: keywordMappingRepository);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Faction.RecordID, formKey);
+
+        comparison.Columns.Select(column => column.Header).ShouldBe(["Base.esm", "Patch.esp"]);
+        comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue).ShouldBe(["Constellation", "Constellation"]);
+        comparison.Fields.Single(field => field.FieldName == "Flags").Values.Select(value => value.DisplayValue).ShouldBe(["BaseFlags", "PatchFlags"]);
+        comparison.Fields.Single(field => field.FieldName == "FormationRadius").Values.Select(value => value.DisplayValue).ShouldBe(["100", "200"]);
+        comparison.Fields.Single(field => field.FieldName == "Keyword").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000301", "Starfield.esm:00000301"]);
+        comparison.Fields.Single(field => field.FieldName == "CrimeValues.Murder").Values.Select(value => value.DisplayValue).ShouldBe(["10", "20"]);
+        comparison.Fields.Single(field => field.FieldName == "VendorValues.StartHour").Values.Select(value => value.DisplayValue).ShouldBe(["8", "10"]);
+        comparison.Fields.Single(field => field.FieldName == "VendorLocation.Target.Link").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000301", "Starfield.esm:00000301"]);
+        var relations = comparison.Fields.Single(field => field.FieldName == "Relations");
+        relations.Children.Single(field => field.FieldName == "Relation [0]").Children.Single(field => field.FieldName == "Reaction").Values.Select(value => value.DisplayValue).ShouldBe(["Ally", "Friend"]);
+        var ranks = comparison.Fields.Single(field => field.FieldName == "Ranks");
+        ranks.Children.Single(field => field.FieldName == "Rank [0]").Children.Single(field => field.FieldName == "Number").Values.Select(value => value.DisplayValue).ShouldBe(["4", "8"]);
+        comparison.Fields.Single(field => field.FieldName == "Conditions").Children.ShouldNotBeEmpty();
+        comparison.Fields.Single(field => field.FieldName == "Components").Children.ShouldNotBeEmpty();
+        comparison.Fields.Single(field => field.FieldName == "Keywords").Children.ShouldNotBeEmpty();
+    }
+
+    /// <summary>
+    /// Verifies that Faction scalar rows are selected from the injected comparison specification while strategy rows
+    /// remain outside the scalar metadata path.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForFaction_UsesInjectedComparisonSpecification()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x161);
+        var keywordFormKey = CreateFormKey("Starfield.esm", 0x301);
+        var baseFaction = CreateFaction("Base.esm", formKey, "Constellation", "BaseFlags", 100, keywordFormKey);
+        AddFactionChildren(baseFaction, "Base.esm", formKey, "Ally", "Base Rank", 4, 10);
+        var patchFaction = CreateFaction("Patch.esp", formKey, "Constellation", "PatchFlags", 200, keywordFormKey);
+        AddFactionChildren(patchFaction, "Patch.esp", formKey, "Friend", "Patch Rank", 8, 20);
+        var factionRepository = new TestFactionRepository
+        {
+            Records =
+            [
+                baseFaction,
+                patchFaction
+            ]
+        };
+        var provider = new TestRecordSpecificationProvider(
+            new RecordSpecification
+            {
+                RecordID = SupportedRecordSpecifications.Faction.RecordID,
+                RecordType = SupportedRecordSpecifications.Faction.RecordType,
+                TableName = SupportedRecordSpecifications.Faction.TableName,
+                FriendlyName = SupportedRecordSpecifications.Faction.FriendlyName,
+                GameSupport = SupportedRecordSpecifications.Faction.GameSupport,
+                Fields = SupportedRecordSpecifications.Faction.Fields,
+                Comparison = new RecordComparisonSpecification
+                {
+                    Fields =
+                    [
+                        new RecordComparisonFieldSpecification
+                        {
+                            FieldName = "FormationRadius",
+                            SourcePath = "FormationRadius",
+                            ValueKind = RecordFieldValueKind.Number
+                        }
+                    ]
+                },
+                ImplementationNote = "Test specification."
+            });
+        var service = CreateService(factionRepository: factionRepository, recordSpecificationProvider: provider);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Faction.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "FormationRadius").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["100", "200"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Flags");
+        comparison.Fields.Single(field => field.FieldName == "Relations").Children.ShouldNotBeEmpty();
+    }
+
+    /// <summary>
+    /// Verifies that specification-declared localized Faction rows use the selected record text language.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForFaction_UsesSpecificationLocalizedDisplay()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x162);
+        var factionRepository = new TestFactionRepository
+        {
+            Records =
+            [
+                CreateFaction("Base.esm", formKey, "Constellation", "BaseFlags", 100, CreateFormKey("Starfield.esm", 0x301)),
+                CreateFaction("Patch.esp", formKey, "Constellation", "PatchFlags", 200, CreateFormKey("Starfield.esm", 0x301))
+            ]
+        };
+        var localizedStringRepository = new TestRecordLocalizedStringRepository
+        {
+            Records =
+            [
+                CreateLocalizedString("Base.esm", formKey, "Name", "German", "Basis Fraktion"),
+                CreateLocalizedString("Patch.esp", formKey, "Name", "German", "Patch Fraktion")
+            ]
+        };
+        var gameSelectionService = new TestGameSelectionService { RecordTextLanguage = Language.German };
+        var service = CreateService(
+            factionRepository: factionRepository,
+            recordLocalizedStringRepository: localizedStringRepository,
+            gameSelectionService: gameSelectionService);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Faction.RecordID, formKey);
+
+        comparison.Fields.Single(field => field.FieldName == "Name").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["Basis Fraktion", "Patch Fraktion"]);
+    }
+
+    /// <summary>
     /// Verifies that Actor Value Information comparison uses specification-owned scalar rows while retaining
     /// strategy-owned perk-tree rows.
     /// </summary>
@@ -2047,6 +2186,180 @@ public class RecordComparisonServiceTests
             Key = key,
             Value = value,
             ImportedAtUTC = DateTime.UtcNow
+        };
+    }
+
+    /// <summary>
+    /// Creates a minimal Faction record for comparison-service tests that exercise scalar metadata dispatch.
+    /// </summary>
+    /// <param name="fileName">The plugin file name that contributed the test record.</param>
+    /// <param name="formKey">The origin FormKey shared by compared records.</param>
+    /// <param name="name">The translated faction name to place on the DTO.</param>
+    /// <param name="flags">The faction flags text to place on the DTO.</param>
+    /// <param name="formationRadius">The formation radius value to place on the DTO.</param>
+    /// <param name="keyword">The keyword FormKey used for scalar and vendor-location references.</param>
+    /// <returns>The populated Faction DTO.</returns>
+    private static FactionDTO CreateFaction(
+        string fileName,
+        FormKeyDTO formKey,
+        string name,
+        string flags,
+        double formationRadius,
+        FormKeyDTO keyword)
+    {
+        return new FactionDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            EditorID = "MyFaction",
+            FormVersion = 1,
+            MajorRecordFlags = 2,
+            Version2 = 3,
+            ImportedAtUTC = DateTime.UtcNow,
+            Name = Text(name),
+            Flags = flags,
+            FormationRadius = formationRadius,
+            Keyword = keyword,
+            Herd = keyword,
+            VoiceType = keyword,
+            SharedCrimeFactionList = keyword,
+            VendorBuySellList = keyword,
+            MerchantContainer = keyword,
+            ExteriorJailMarker = keyword,
+            FollowerWaitMarker = keyword,
+            StolenGoodsContainer = keyword,
+            PlayerInventoryContainer = keyword,
+            JailOutfit = keyword,
+            CrimeValues = new FactionDTO.CrimeValuesDTO
+            {
+                Arrest = true,
+                AttackOnSight = false,
+                Murder = (int)(formationRadius / 10),
+                Assault = 20,
+                Trespass = 30,
+                Pickpocket = 40,
+                Steal = 50,
+                StealMult = 1.5,
+                StealMultiplier = 2.5,
+                Escape = 60,
+                Werewolf = 70,
+                WerewolfUnused = 80,
+                Unknown = 90,
+                Piracy = 100,
+                SmuggleMultiplier = 3.5
+            },
+            VendorValues = new FactionDTO.VendorValuesDTO
+            {
+                StartHour = formationRadius / 50 + 6,
+                EndHour = 18,
+                Radius = 512,
+                BuysStolenItems = true,
+                BuysNonStolenItems = false,
+                BuySellEverythingNotInList = true
+            },
+            VendorLocation = new FactionDTO.VendorLocationDTO
+            {
+                MutagenObjectType = "FactionVendorLocation",
+                Target = new FactionDTO.VendorLocationTargetDTO
+                {
+                    MutagenObjectType = "ConditionTarget",
+                    Type = "LinkedReference",
+                    Link = keyword
+                }
+            }
+        };
+    }
+
+    /// <summary>
+    /// Adds representative strategy-owned child rows to a Faction DTO used by comparison-service tests.
+    /// </summary>
+    /// <param name="faction">The faction DTO that should receive child rows.</param>
+    /// <param name="fileName">The plugin file name that contributed the child rows.</param>
+    /// <param name="formKey">The parent Faction FormKey.</param>
+    /// <param name="reaction">The relation reaction text to place on the child row.</param>
+    /// <param name="rankTitle">The rank title text to place on the child row.</param>
+    /// <param name="rankNumber">The rank number to place on the child row.</param>
+    /// <param name="componentValue">The component item numeric value to place on the child row.</param>
+    private static void AddFactionChildren(
+        FactionDTO faction,
+        string fileName,
+        FormKeyDTO formKey,
+        string reaction,
+        string rankTitle,
+        int rankNumber,
+        double componentValue)
+    {
+        var childFormKey = CreateFormKey("Starfield.esm", 0x302);
+        faction.Relations.Add(new FactionRelationDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            RelationIndex = 0,
+            Target = childFormKey,
+            Reaction = reaction,
+            ImportedAtUTC = DateTime.UtcNow
+        });
+        faction.Ranks.Add(new FactionRankDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            RankIndex = 0,
+            Number = rankNumber,
+            Title = new FactionRankDTO.TitleDTO
+            {
+                Male = Text(rankTitle),
+                Female = Text(rankTitle)
+            },
+            ImportedAtUTC = DateTime.UtcNow
+        });
+        faction.Conditions.Add(CreateCondition(fileName, formKey, 0, childFormKey, "1"));
+        faction.Components.Add(CreateRecordComponent(fileName, RecordTypeCatalog.Faction.RecordID, formKey, childFormKey, componentValue));
+    }
+
+    /// <summary>
+    /// Creates a shared record component row for comparison-service tests that exercise strategy-owned child groups.
+    /// </summary>
+    /// <param name="fileName">The plugin file name that contributed the child row.</param>
+    /// <param name="recordType">The owning record type ID.</param>
+    /// <param name="formKey">The parent record FormKey.</param>
+    /// <param name="displayFilter">The display filter FormKey to place on the component item.</param>
+    /// <param name="itemValue">The numeric value to place on the component item.</param>
+    /// <returns>The populated shared record component DTO.</returns>
+    private static RecordComponentDTO CreateRecordComponent(
+        string fileName,
+        string recordType,
+        FormKeyDTO formKey,
+        FormKeyDTO displayFilter,
+        double itemValue)
+    {
+        return new RecordComponentDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            RecordType = recordType,
+            ComponentIndex = 0,
+            MutagenObjectType = "Component",
+            DCED = [1, 2],
+            ImportedAtUTC = DateTime.UtcNow,
+            Items =
+            [
+                new RecordComponentItemDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    RecordType = recordType,
+                    ComponentIndex = 0,
+                    ItemIndex = 0,
+                    DisplayFilter = displayFilter,
+                    Unknown1 = itemValue,
+                    ImportedAtUTC = DateTime.UtcNow
+                }
+            ]
         };
     }
 

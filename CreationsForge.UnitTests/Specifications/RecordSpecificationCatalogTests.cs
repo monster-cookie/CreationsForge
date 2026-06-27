@@ -297,7 +297,7 @@ public class RecordSpecificationCatalogTests
             .ToList();
 
         comparisonBackedRecordIDs.ShouldBe(
-            ["FLST", "GMST", "GLOB", "CLAS", "MISC", "KYWD", "AVIF", "MGEF", "STAT", "CONT", "COBJ", "CNDF", "BOOK", "DOOR"],
+            ["FLST", "GMST", "GLOB", "CLAS", "FACT", "MISC", "KYWD", "AVIF", "MGEF", "STAT", "CONT", "COBJ", "CNDF", "BOOK", "DOOR"],
             ignoreOrder: true);
     }
 
