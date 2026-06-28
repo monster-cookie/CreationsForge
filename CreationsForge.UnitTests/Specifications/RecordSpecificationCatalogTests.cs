@@ -436,6 +436,31 @@ public class RecordSpecificationCatalogTests
             .Select(entry => entry.RecordID)
             .OrderBy(recordID => recordID, StringComparer.Ordinal)
             .ToList();
+        var formListItemRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.FormListItems)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var miscItemDestructibleRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.MiscItemDestructible)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var miscItemComponentRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.MiscItemComponents)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var miscItemResourceRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.MiscItemResources)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var actorValueInformationPerkTreeRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ActorValueInformationPerkTree)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
 
         keywordRecordIDs.ShouldBe(
             ["BOOK", "CONT", "DOOR", "FACT", "MGEF", "MISC", "NPC_", "STAT", "TERM"]);
@@ -462,6 +487,11 @@ public class RecordSpecificationCatalogTests
         terminalMarkerParameterRecordIDs.ShouldBe(["TERM"]);
         terminalBodyTextRecordIDs.ShouldBe(["TERM"]);
         terminalMenuItemRecordIDs.ShouldBe(["TERM"]);
+        formListItemRecordIDs.ShouldBe(["FLST"]);
+        miscItemDestructibleRecordIDs.ShouldBe(["MISC"]);
+        miscItemComponentRecordIDs.ShouldBe(["MISC"]);
+        miscItemResourceRecordIDs.ShouldBe(["MISC"]);
+        actorValueInformationPerkTreeRecordIDs.ShouldBe(["AVIF"]);
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.KeywordMappings)
             .ShouldAllBe(entry => entry.Group.GroupName == "Keywords");
@@ -534,6 +564,21 @@ public class RecordSpecificationCatalogTests
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.TerminalMenuItems)
             .ShouldAllBe(entry => entry.Group.GroupName == "MenuItems");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.FormListItems)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Items");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.MiscItemDestructible)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Destructible");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.MiscItemComponents)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Components");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.MiscItemResources)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Resources");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ActorValueInformationPerkTree)
+            .ShouldAllBe(entry => entry.Group.GroupName == "PerkTree");
         childGroups.ShouldAllBe(entry => !string.IsNullOrWhiteSpace(entry.Group.Description));
     }
 

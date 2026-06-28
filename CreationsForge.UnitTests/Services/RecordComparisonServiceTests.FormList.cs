@@ -46,4 +46,42 @@ public partial class RecordComparisonServiceTests
         comparison.Fields.Single(field => field.FieldName == "Items[1]").Values.Select(value => value.DisplayValue).ShouldBe(["", "Starfield.esm:00000222"]);
         comparison.Fields.Single(field => field.FieldName == "Items[1]").State.ShouldBe(RecordComparisonValueState.Conflict);
     }
+
+    /// <summary>
+    /// Verifies that Form List item rows are selected from child-group metadata.
+    /// </summary>
+    [Fact]
+    public void GetRecordComparison_ForFormList_UsesInjectedComparisonSpecification()
+    {
+        var formKey = CreateFormKey("Starfield.esm", 0x790);
+        var firstItem = CreateFormKey("Starfield.esm", 0x111);
+        var formListRepository = new TestFormListRepository
+        {
+            Records =
+            [
+                CreateFormList("Base.esm", formKey, [CreateFormListItem("Base.esm", formKey, firstItem, 0)]),
+                CreateFormList("Patch.esp", formKey, [CreateFormListItem("Patch.esp", formKey, firstItem, 0)])
+            ]
+        };
+        var provider = new TestRecordSpecificationProvider(
+            new RecordSpecification
+            {
+                RecordID = SupportedRecordSpecifications.FormList.RecordID,
+                RecordType = SupportedRecordSpecifications.FormList.RecordType,
+                TableName = SupportedRecordSpecifications.FormList.TableName,
+                FriendlyName = SupportedRecordSpecifications.FormList.FriendlyName,
+                GameSupport = SupportedRecordSpecifications.FormList.GameSupport,
+                Fields = SupportedRecordSpecifications.FormList.Fields,
+                Comparison = new RecordComparisonSpecification(),
+                ImplementationNote = "Test specification."
+            });
+        var service = CreateService(
+            formListRepository: formListRepository,
+            recordSpecificationProvider: provider);
+
+        var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.FormList.RecordID, formKey);
+
+        comparison.Fields.ShouldContain(field => field.FieldName == "EditorID");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Items[0]");
+    }
 }

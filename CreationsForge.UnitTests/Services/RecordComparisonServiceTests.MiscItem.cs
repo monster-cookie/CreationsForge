@@ -28,9 +28,11 @@ public partial class RecordComparisonServiceTests
         var messageFormKey = CreateFormKey("Starfield.esm", 0x444);
         var baseItem = CreateMiscItem("Base.esm", formKey, "Digipick", 35, 0.1f, null);
         baseItem.Components.Add(CreateMiscItemComponent("Base.esm", formKey, CreateFormKey("Starfield.esm", 0x777), 0, 0, 2));
+        baseItem.Resources.Add(CreateMiscItemResource("Base.esm", formKey, CreateFormKey("Starfield.esm", 0x778), 0, 5));
         baseItem.Destructible = CreateMiscItemDestructible(CreateFormKey("Starfield.esm", 0x888), 100, 2, "BaseStage.nif", "AABB");
         var patchItem = CreateMiscItem("Patch.esp", formKey, "Digipick", 50, 0.2f, messageFormKey);
         patchItem.Components.Add(CreateMiscItemComponent("Patch.esp", formKey, CreateFormKey("Starfield.esm", 0x777), 0, 2, 4));
+        patchItem.Resources.Add(CreateMiscItemResource("Patch.esp", formKey, CreateFormKey("Starfield.esm", 0x779), 0, 6));
         patchItem.Destructible = CreateMiscItemDestructible(CreateFormKey("Starfield.esm", 0x999), 90, 3, "PatchStage.nif", "CCDD");
         var miscItemRepository = new TestMiscItemRepository
         {
@@ -97,6 +99,12 @@ public partial class RecordComparisonServiceTests
         var component = components.Children.Single(field => field.FieldName == "Component [0]");
         component.Children.Single(field => field.FieldName == "DisplayIndex").Values.Select(value => value.DisplayValue).ShouldBe(["0", "2"]);
         component.Children.Single(field => field.FieldName == "Count").Values.Select(value => value.DisplayValue).ShouldBe(["2", "4"]);
+        var resources = comparison.Fields.Single(field => field.FieldName == "Resources");
+        var resource = resources.Children.Single(field => field.FieldName == "Resource [0]");
+        resource.Children.Single(field => field.FieldName == "Resource").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["Starfield.esm:00000778", "Starfield.esm:00000779"]);
+        resource.Children.Single(field => field.FieldName == "Count").Values.Select(value => value.DisplayValue)
+            .ShouldBe(["5", "6"]);
         var destructible = comparison.Fields.Single(field => field.FieldName == "Destructible");
         destructible.Children.Single(field => field.FieldName == "Health").Values.Select(value => value.DisplayValue).ShouldBe(["100", "90"]);
         destructible.Children.Single(field => field.FieldName == "DESTCount").Values.Select(value => value.DisplayValue).ShouldBe(["2", "3"]);
@@ -114,8 +122,7 @@ public partial class RecordComparisonServiceTests
     }
 
     /// <summary>
-    /// Verifies that Misc Item scalar rows are selected from the injected comparison specification while shared model
-    /// rows are selected from child-group metadata.
+    /// Verifies that Misc Item scalar rows and child rows are selected from the injected comparison specification.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForMiscItem_UsesInjectedComparisonSpecification()
@@ -124,8 +131,12 @@ public partial class RecordComparisonServiceTests
         var messageFormKey = CreateFormKey("Starfield.esm", 0x444);
         var baseItem = CreateMiscItem("Base.esm", formKey, "Digipick", 35, 0.1f, null);
         baseItem.Components.Add(CreateMiscItemComponent("Base.esm", formKey, CreateFormKey("Starfield.esm", 0x777), 0, 0, 2));
+        baseItem.Resources.Add(CreateMiscItemResource("Base.esm", formKey, CreateFormKey("Starfield.esm", 0x778), 0, 5));
+        baseItem.Destructible = CreateMiscItemDestructible(CreateFormKey("Starfield.esm", 0x888), 100, 2, "BaseStage.nif", "AABB");
         var patchItem = CreateMiscItem("Patch.esp", formKey, "Digipick", 50, 0.2f, messageFormKey);
         patchItem.Components.Add(CreateMiscItemComponent("Patch.esp", formKey, CreateFormKey("Starfield.esm", 0x777), 0, 2, 4));
+        patchItem.Resources.Add(CreateMiscItemResource("Patch.esp", formKey, CreateFormKey("Starfield.esm", 0x779), 0, 6));
+        patchItem.Destructible = CreateMiscItemDestructible(CreateFormKey("Starfield.esm", 0x999), 90, 3, "PatchStage.nif", "CCDD");
         var miscItemRepository = new TestMiscItemRepository
         {
             Records =
@@ -185,6 +196,8 @@ public partial class RecordComparisonServiceTests
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Weight");
         comparison.Fields.Single(field => field.FieldName == "Model").Children.ShouldNotBeEmpty();
-        comparison.Fields.Single(field => field.FieldName == "Components").Children.ShouldNotBeEmpty();
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Destructible");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Components");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Resources");
     }
 }

@@ -7,6 +7,11 @@ namespace CreationsForge.Specification.Records;
 public enum RecordComparisonChildGroupKind
 {
     /// <summary>
+    /// Indicates that persisted form list item rows should be rendered as indexed <c>Items</c> rows.
+    /// </summary>
+    FormListItems,
+
+    /// <summary>
     /// Indicates that persisted keyword mapping rows should be rendered as the shared <c>Keywords</c> child group.
     /// </summary>
     KeywordMappings,
@@ -132,5 +137,25 @@ public enum RecordComparisonChildGroupKind
     /// <summary>
     /// Indicates that persisted terminal menu item rows should be rendered as the <c>MenuItems</c> child group.
     /// </summary>
-    TerminalMenuItems
+    TerminalMenuItems,
+
+    /// <summary>
+    /// Indicates that persisted misc item destructible data should be rendered as the <c>Destructible</c> child group.
+    /// </summary>
+    MiscItemDestructible,
+
+    /// <summary>
+    /// Indicates that persisted misc item component rows should be rendered as the <c>Components</c> child group.
+    /// </summary>
+    MiscItemComponents,
+
+    /// <summary>
+    /// Indicates that persisted misc item resource rows should be rendered as the <c>Resources</c> child group.
+    /// </summary>
+    MiscItemResources,
+
+    /// <summary>
+    /// Indicates that persisted actor value perk-tree rows should be rendered as the <c>PerkTree</c> child group.
+    /// </summary>
+    ActorValueInformationPerkTree
 }

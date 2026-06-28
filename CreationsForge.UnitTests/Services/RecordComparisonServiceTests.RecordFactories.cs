@@ -601,6 +601,34 @@ public partial class RecordComparisonServiceTests
         };
     }
 
+    /// <summary>
+    /// Creates a Misc Item resource row for comparison-service tests that exercise indexed resource child groups.
+    /// </summary>
+    /// <param name="fileName">The plugin file name that contributed the test row.</param>
+    /// <param name="formKey">The origin FormKey shared by compared records.</param>
+    /// <param name="resourceFormKey">The resource FormKey stored on the generated child row.</param>
+    /// <param name="resourceIndex">The resource index used to align child rows across overrides.</param>
+    /// <param name="count">The resource count value stored on the generated child row.</param>
+    /// <returns>The populated Misc Item resource DTO.</returns>
+    private static MiscItemResourceDTO CreateMiscItemResource(
+        string fileName,
+        FormKeyDTO formKey,
+        FormKeyDTO resourceFormKey,
+        int resourceIndex,
+        int count)
+    {
+        return new MiscItemResourceDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            Resource = resourceFormKey,
+            ResourceIndex = resourceIndex,
+            Count = count,
+            ImportedAtUTC = DateTime.UtcNow
+        };
+    }
+
     private static MiscItemDestructibleDTO CreateMiscItemDestructible(
         FormKeyDTO explosionFormKey,
         int health,

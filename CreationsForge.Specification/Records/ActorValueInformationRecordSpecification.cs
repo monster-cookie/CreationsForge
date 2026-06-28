@@ -193,9 +193,18 @@ internal static class ActorValueInformationRecordSpecification
                     SourcePath = "Max",
                     ValueKind = RecordFieldValueKind.Number
                 }
+            ],
+            ChildGroups =
+            [
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.ActorValueInformationPerkTree,
+                    GroupName = "PerkTree",
+                    Description = "Actor value perk-tree rows appended after scalar parent rows."
+                }
             ]
         },
-        ImplementationNote = "Comparison metadata drives scalar parent rows; perk-tree rows remain strategy-based."
+        ImplementationNote = "Comparison metadata drives scalar parent rows and perk-tree row dispatch."
     };
 }
 

@@ -231,21 +231,27 @@ public class RecordComparisonService : IRecordComparisonService
         };
     }
 
+    /// <summary>
+    /// Creates the comparison output for imported Form List overrides, using specification metadata for scalar parent
+    /// rows and indexed item-row dispatch.
+    /// </summary>
+    /// <param name="game">The game whose imported form list records should be compared.</param>
+    /// <param name="formKey">The origin FormKey shared by the form list overrides.</param>
+    /// <returns>The form list comparison DTO consumed by presentation rendering.</returns>
     private RecordComparisonDTO CreateFormListComparison(SupportedGame game, FormKeyDTO formKey)
     {
         var records = FormListRepository.GetByFormKey(game, formKey);
-        var maxItemCount = records
-            .Select(record => record.Items.Count)
-            .DefaultIfEmpty()
-            .Max();
+        var baseRecords = records.Cast<RecordDTO>().ToList();
         var fields = CreateSpecComparisonFields(RecordTypeCatalog.FormList.RecordID, records);
-        for (var itemIndex = 0; itemIndex < maxItemCount; itemIndex++)
-        {
-            var currentIndex = itemIndex;
-            fields.Add(CreateField($"Items[{itemIndex}]", records, record => FormatFormKey(record.Items.FirstOrDefault(item => item.ItemIndex == currentIndex)?.Item)));
-        }
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.FormList.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.FormListItems);
 
-        return CreateComparison(RecordTypeCatalog.FormList.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
+        return CreateComparison(RecordTypeCatalog.FormList.RecordID, formKey, baseRecords, fields);
     }
 
     private RecordComparisonDTO CreateGameSettingComparison(SupportedGame game, FormKeyDTO formKey)
@@ -356,7 +362,7 @@ public class RecordComparisonService : IRecordComparisonService
 
     /// <summary>
     /// Creates the comparison output for imported Misc Item overrides, using specification metadata for scalar parent
-    /// rows while leaving destructible and shared child collections on existing strategy code.
+    /// rows and child-group dispatch while Core keeps the row-building strategy implementations.
     /// </summary>
     /// <param name="game">The game whose imported misc item records should be compared.</param>
     /// <param name="formKey">The origin FormKey shared by the misc item overrides.</param>
@@ -371,7 +377,13 @@ public class RecordComparisonService : IRecordComparisonService
             records,
             localizedStrings: localizedStrings,
             recordTextLanguage: recordTextLanguage);
-        AddMiscItemDestructibleGroups(fields, records);
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.MiscItem.RecordID,
+            formKey,
+            records.Cast<RecordDTO>().ToList(),
+            RecordComparisonChildGroupKind.MiscItemDestructible);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -400,8 +412,14 @@ public class RecordComparisonService : IRecordComparisonService
             formKey,
             records.Cast<RecordDTO>().ToList(),
             RecordComparisonChildGroupKind.ScriptingAdapterMappings);
-        AddMiscItemComponentGroups(fields, records);
-        AddMiscItemResourceGroups(fields, records);
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.MiscItem.RecordID,
+            formKey,
+            records.Cast<RecordDTO>().ToList(),
+            RecordComparisonChildGroupKind.MiscItemComponents,
+            RecordComparisonChildGroupKind.MiscItemResources);
 
         return CreateComparison(RecordTypeCatalog.MiscItem.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
@@ -429,7 +447,7 @@ public class RecordComparisonService : IRecordComparisonService
 
     /// <summary>
     /// Creates the comparison output for imported Actor Value Information overrides, using specification metadata for
-    /// scalar parent rows while leaving perk-tree rows on existing strategy code.
+    /// scalar parent rows and perk-tree child-group dispatch.
     /// </summary>
     /// <param name="game">The game whose imported actor value information records should be compared.</param>
     /// <param name="formKey">The origin FormKey shared by the actor value information overrides.</param>
@@ -444,7 +462,13 @@ public class RecordComparisonService : IRecordComparisonService
             records,
             localizedStrings: localizedStrings,
             recordTextLanguage: recordTextLanguage);
-        AddActorValueInformationPerkTreeGroups(fields, records);
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.ActorValueInformation.RecordID,
+            formKey,
+            records.Cast<RecordDTO>().ToList(),
+            RecordComparisonChildGroupKind.ActorValueInformationPerkTree);
 
         return CreateComparison(RecordTypeCatalog.ActorValueInformation.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
@@ -1450,6 +1474,9 @@ public class RecordComparisonService : IRecordComparisonService
 
             switch (childGroup.GroupKind)
             {
+                case RecordComparisonChildGroupKind.FormListItems:
+                    AddFormListItemGroups(fields, records.Cast<FormListDTO>().ToList());
+                    break;
                 case RecordComparisonChildGroupKind.KeywordMappings:
                     AddKeywordGroup(fields, records, KeywordMappingRepository.GetByFormKey(game, recordType, formKey));
                     break;
@@ -1542,6 +1569,18 @@ public class RecordComparisonService : IRecordComparisonService
                         records.Cast<TerminalDTO>().ToList(),
                         localizedStrings ?? Array.Empty<LocalizedStringDTO>(),
                         recordTextLanguage ?? Language.English);
+                    break;
+                case RecordComparisonChildGroupKind.MiscItemDestructible:
+                    AddMiscItemDestructibleGroups(fields, records.Cast<MiscItemDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.MiscItemComponents:
+                    AddMiscItemComponentGroups(fields, records.Cast<MiscItemDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.MiscItemResources:
+                    AddMiscItemResourceGroups(fields, records.Cast<MiscItemDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.ActorValueInformationPerkTree:
+                    AddActorValueInformationPerkTreeGroups(fields, records.Cast<ActorValueInformationDTO>().ToList());
                     break;
                 default:
                     throw new NotSupportedException(
@@ -2472,6 +2511,26 @@ public class RecordComparisonService : IRecordComparisonService
         if (componentFields.Count > 0)
         {
             fields.Add(CreateGroupField("Components", records.Cast<RecordDTO>().ToList(), componentFields));
+        }
+    }
+
+    /// <summary>
+    /// Appends indexed Form List item rows using the existing position-based comparison display.
+    /// </summary>
+    /// <param name="fields">The comparison field list that receives generated item rows.</param>
+    /// <param name="records">The ordered form list records participating in the comparison.</param>
+    private static void AddFormListItemGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        IReadOnlyList<FormListDTO> records)
+    {
+        var maxItemCount = records
+            .Select(record => record.Items.Count)
+            .DefaultIfEmpty()
+            .Max();
+        for (var itemIndex = 0; itemIndex < maxItemCount; itemIndex++)
+        {
+            var currentIndex = itemIndex;
+            fields.Add(CreateField($"Items[{itemIndex}]", records, record => FormatFormKey(record.Items.FirstOrDefault(item => item.ItemIndex == currentIndex)?.Item)));
         }
     }
 

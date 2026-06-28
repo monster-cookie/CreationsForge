@@ -177,6 +177,12 @@ internal static class MiscItemRecordSpecification
             [
                 new RecordComparisonChildGroupSpecification
                 {
+                    GroupKind = RecordComparisonChildGroupKind.MiscItemDestructible,
+                    GroupName = "Destructible",
+                    Description = "Misc item destructible data and stage rows appended after scalar parent rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
                     GroupKind = RecordComparisonChildGroupKind.KeywordMappings,
                     GroupName = "Keywords",
                     Description = "Shared keyword mapping rows appended after scalar parent and record-specific rows."
@@ -198,11 +204,23 @@ internal static class MiscItemRecordSpecification
                     GroupKind = RecordComparisonChildGroupKind.ScriptingAdapterMappings,
                     GroupName = "Scripts",
                     Description = "Shared scripting adapter rows appended after sound rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.MiscItemComponents,
+                    GroupName = "Components",
+                    Description = "Misc item component rows appended after scripting adapter rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.MiscItemResources,
+                    GroupName = "Resources",
+                    Description = "Misc item resource rows appended after component rows."
                 }
             ]
         },
         ImplementationNote = "Comparison metadata drives scalar parent rows and keyword/model/sound/script " +
-            "child-group dispatch; destructible, component, and resource rows remain strategy-based."
+            "child-group dispatch plus misc item destructible, component, and resource row dispatch."
     };
 }
 

@@ -60,9 +60,18 @@ internal static class FormListRecordSpecification
                     ValueKind = RecordFieldValueKind.Collection,
                     Description = "Expanded into indexed item rows by the current comparison implementation."
                 }
+            ],
+            ChildGroups =
+            [
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.FormListItems,
+                    GroupName = "Items",
+                    Description = "Indexed Form List item FormKeys appended after scalar parent rows."
+                }
             ]
         },
-        ImplementationNote = "Comparison metadata drives the simple scalar rows; indexed item rows remain strategy-based."
+        ImplementationNote = "Comparison metadata drives simple scalar rows and indexed item row dispatch."
     };
 }
 

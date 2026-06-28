@@ -65,8 +65,8 @@ public partial class RecordComparisonServiceTests
     }
 
     /// <summary>
-    /// Verifies that Actor Value Information scalar rows are selected from the injected comparison specification while
-    /// perk-tree rows remain strategy-based.
+    /// Verifies that Actor Value Information scalar rows and perk-tree rows are selected from the injected comparison
+    /// specification.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForActorValueInformation_UsesInjectedComparisonSpecification()
@@ -119,7 +119,7 @@ public partial class RecordComparisonServiceTests
             .ShouldBe(["10", "20"]);
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Skill.ImproveMult");
-        comparison.Fields.Single(field => field.FieldName == "PerkTree").Children.ShouldNotBeEmpty();
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "PerkTree");
     }
 
     /// <summary>

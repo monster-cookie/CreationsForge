@@ -46,8 +46,9 @@ ordering, value-state behavior, and localized display behavior.
 
 Decision: Make `RecordComparisonService` consume `IRecordSpecificationProvider` for simple type-specific comparison
 rows on the pilot records. `GLOB` simple scalar rows, `GMST` simple rows, and the `FLST` `AddToList` row are produced
-from comparison specifications. `FLST` indexed item rows and localized `GMST` `Data` display remain explicit strategy
-hooks because those behaviors are not purely source-path-to-display-value mappings.
+from comparison specifications. `FLST` indexed item rows remained explicit in this pilot slice until later superseded
+by `2026-06-27 - Add Spec-Driven Bounded Child Group Dispatch`. Localized `GMST` `Data` display remains an explicit
+strategy hook because that behavior is not purely source-path-to-display-value mapping.
 
 Rationale: This proves the specification provider can drive production comparison behavior without rewriting the full
 comparison engine or changing the Avalonia UI contract. Keeping special cases as hooks avoids pretending complex row
@@ -527,6 +528,58 @@ Related files:
 - `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
 - `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
 - `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.GlobalClassFaction.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Bounded Child Group Dispatch
+
+Status: Accepted
+
+Context: Several comparison child families were still selected by explicit calls even though their row builders were
+small and already isolated: Form List indexed items, Misc Item destructible/component/resource rows, and Actor Value
+Information perk-tree rows. Larger nested families such as NPC children, Perk ranks/effects, and Static navmesh
+geometry still need narrower strategy slices.
+
+Decision: Add `FormListItems`, `MiscItemDestructible`, `MiscItemComponents`, `MiscItemResources`, and
+`ActorValueInformationPerkTree` child-group strategy kinds. Declare those child groups in the matching record
+specification files with the existing `Items`, `Destructible`, `Components`, `Resources`, and `PerkTree` group names.
+Replace the explicit comparison-service calls with filtered metadata dispatch while keeping the existing row builders
+as the Core implementation.
+
+Rationale: This batch moves the remaining bounded comparison child families behind metadata-selected dispatch without
+mixing them with the more complex nested comparison trees. Keeping the row builders in Core preserves row shape,
+ordering, localization behavior, and comparison value state while making specifications decide whether each group is
+emitted.
+
+Alternatives considered:
+
+- Convert all remaining explicit child groups, including NPC, Perk, and Static navmesh, in one batch.
+- Include GameSetting `Data` display even though it is a localized scalar strategy rather than child-group dispatch.
+- Introduce a generic nested collection specification immediately.
+- Leave the bounded families explicit until every child strategy can move together.
+
+Consequences:
+
+- `FLST` item rows, `MISC` destructible/component/resource rows, and `AVIF` perk-tree rows are emitted only when the
+  comparison specification declares the matching child group.
+- Existing row names, row ordering, and comparison DTO shape are preserved by using the existing row builders.
+- GameSetting `Data`, NPC children, Perk ranks/effects, Static navmesh geometry, and other larger complex families
+  remain on explicit strategies.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/FormListRecordSpecification.cs`
+- `CreationsForge.Specification/Records/MiscItemRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ActorValueInformationRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.FormList.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.MiscItem.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.ActorValueInformation.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.RecordFactories.cs`
 - `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
 - `Documentation/ARCHITECTURE.md`
 - `Documentation/DOMAIN-MODEL.md`
