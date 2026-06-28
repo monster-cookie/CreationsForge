@@ -255,32 +255,7 @@ public class RecordComparisonSpriggitHeadlessTests : IClassFixture<SpriggitCompa
             return selectedGame.Game;
         }
 
-        public ApplicationThemeMode GetThemeMode()
-        {
-            return ApplicationThemeMode.Dark;
-        }
-
-        public ApplicationThemeFamily GetThemeFamily()
-        {
-            return ApplicationThemeFamily.Fluent;
-        }
-
         public void SetActiveGame(SupportedGame game)
-        { }
-
-        public void SetThemeMode(ApplicationThemeMode themeMode)
-        { }
-
-        public void SetThemeFamily(ApplicationThemeFamily themeFamily)
-        { }
-
-        public void SetActiveGameAndThemeMode(SupportedGame game, ApplicationThemeMode themeMode)
-        { }
-
-        public void SetActiveGameAndTheme(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode)
-        { }
-
-        public void SetTheme(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode)
         { }
     }
 

@@ -282,7 +282,6 @@ public class OpenPluginDialogView : UserControl
                 CreateRowText(plugin.LastImportedText))
         };
         ToolTip.SetTip(row, plugin.DiagnosticTooltip);
-        row.PointerEntered += (_, _) => ViewModel.SelectedPluginRow = plugin;
         row.DoubleTapped += (_, _) =>
         {
             if (plugin.CanOpen)

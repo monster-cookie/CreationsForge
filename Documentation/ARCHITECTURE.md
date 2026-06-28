@@ -177,8 +177,10 @@ path.
 The presentation layer owns `INotifyPropertyChanged`, `ObservableCollection<T>`, `ICommand`, XAML views, and
 presentation commands. Core does not expose UI binding primitives or UI framework types.
 
-`IGameSelectionService` exposes the supported game list and active-game persistence through Core DTOs and
-`SupportedGame`. `IGameImportReadinessService` checks whether a selected game has imported plugin data.
+`IGameSelectionService` exposes only the supported game list and active-game persistence through Core DTOs and
+`SupportedGame`. `IApplicationSettingsService` owns UI-neutral application preferences such as theme selection,
+record text language, NifSkope executable path, and the active-plugin selector display preference.
+`IGameImportReadinessService` checks whether a selected game has imported plugin data.
 `IGameImportWorkflowService` initializes the schema, persists the selected game, reports progress, and dispatches the
 existing import workflow asynchronously for UI callers. Progress includes stage text plus current plugin and record
 type counters. These services are UI-neutral and do not expose Mutagen types.
@@ -195,12 +197,16 @@ dispose the main workspace database connection before the reset workflow deletes
 
 The main view owns active-game and active-plugin selection state, but selection is initiated through an Open Plugin
 dialog rather than command-bar autocomplete controls. `IPluginSelectionService` exposes UI-neutral queries for openable
-plugins and imported record totals by game. The dialog filters, sorts, and presents those plugin rows in presentation
-code, including persisted plugin import diagnostics. Selecting an active plugin updates presentation status and loads
-left-side record-type sections through `IRecordTreeService`. Each section is rendered as an expander with a grid
-populated from persisted shared record rows for the approved typed record set; the grids show per-record plugin usage
-counts and do not call Mutagen directly from presentation code. Plugins with large header record counts use a dedicated
-active-plugin loading screen before returning to the main view with a prebuilt record browser tree.
+plugins and imported record totals by game. Plugin selector queries honor the configured display preference to hide a
+matching ESM when an ESP with the same base filename is also available. That preference is display-only for selection
+queries; game import and plugin metadata scanning still process both matching plugins from the game's load order. The
+Open Plugin dialog filters, sorts, and presents those plugin rows in presentation code, including persisted plugin
+import diagnostics; pointer hover does not change the selected plugin row. Selecting an active plugin updates
+presentation status and loads left-side record-type sections through `IRecordTreeService`. Each section is rendered as
+an expander with a grid populated from persisted shared record rows for the approved typed record set; the grids show
+per-record plugin usage counts and do not call Mutagen directly from presentation code. Plugins with large header
+record counts use a dedicated active-plugin loading screen before returning to the main view with a prebuilt record
+browser tree.
 That loading screen, and the main view's asynchronous record-tree refresh path, create child Autofac lifetime scopes on
 worker paths so database-backed record tree services are resolved and disposed with the background load instead of
 reusing the main view's scoped connection. Active-plugin record tree entries are loaded from the shared
@@ -244,7 +250,8 @@ compared by their retained full value but are summarized in the grid as `[UNPARS
 presentation layer opens the full value in a hex-view dialog when the user selects the summarized value. MGEF DATA
 fields follow Mutagen/Spriggit's flattened record shape and display as flat comparison rows.
 GameSetting comparison resolves localized `Data` through persisted localized string rows using the Settings-selected
-record text language, then falls back to English and finally the scalar `Data` value.
+record text language from `IApplicationSettingsService`, then falls back to English and finally the scalar `Data`
+value.
 Core assigns comparison value states for neutral, identical, conflicting, and displayed winning-override values; the
 presentation layer maps those states to the green, red, and yellow comparison colors and shows the legend in the status
 area.

@@ -44,7 +44,7 @@ public class RecordComparisonService : IRecordComparisonService
     private readonly IScriptingAdapterRepository ScriptingAdapterRepository;
     private readonly IReflectionRepository ReflectionRepository;
     private readonly IRecordLocalizedStringRepository RecordLocalizedStringRepository;
-    private readonly IGameSelectionService GameSelectionService;
+    private readonly IApplicationSettingsService ApplicationSettingsService;
     private readonly IRecordSpecificationProvider RecordSpecificationProvider;
 
     /// <summary>
@@ -74,7 +74,7 @@ public class RecordComparisonService : IRecordComparisonService
     /// <param name="scriptingAdapterRepository">The repository used to read shared scripting adapter rows.</param>
     /// <param name="reflectionRepository">The repository used to read shared reflection payload rows.</param>
     /// <param name="recordLocalizedStringRepository">The repository used to read localized record text rows.</param>
-    /// <param name="gameSelectionService">The service that provides display preferences such as record text language.</param>
+    /// <param name="applicationSettingsService">The service that provides display preferences such as record text language.</param>
     /// <param name="recordSpecificationProvider">The optional provider for record comparison specifications.</param>
     public RecordComparisonService(
         IFormListRepository formListRepository,
@@ -101,7 +101,7 @@ public class RecordComparisonService : IRecordComparisonService
         IScriptingAdapterRepository scriptingAdapterRepository,
         IReflectionRepository reflectionRepository,
         IRecordLocalizedStringRepository recordLocalizedStringRepository,
-        IGameSelectionService gameSelectionService,
+        IApplicationSettingsService applicationSettingsService,
         IRecordSpecificationProvider? recordSpecificationProvider = null)
     {
         FormListRepository = formListRepository;
@@ -128,7 +128,7 @@ public class RecordComparisonService : IRecordComparisonService
         ScriptingAdapterRepository = scriptingAdapterRepository;
         ReflectionRepository = reflectionRepository;
         RecordLocalizedStringRepository = recordLocalizedStringRepository;
-        GameSelectionService = gameSelectionService;
+        ApplicationSettingsService = applicationSettingsService;
         RecordSpecificationProvider = recordSpecificationProvider ?? new RecordSpecificationProvider();
     }
 
@@ -258,7 +258,7 @@ public class RecordComparisonService : IRecordComparisonService
     {
         var records = GameSettingRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.GameSetting.RecordID, formKey);
-        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
+        var recordTextLanguage = ApplicationSettingsService.GetRecordTextLanguage();
         var fields = CreateSpecComparisonFields(
             RecordTypeCatalog.GameSetting.RecordID,
             records,
@@ -289,7 +289,7 @@ public class RecordComparisonService : IRecordComparisonService
     {
         var records = ClassRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Class.RecordID, formKey);
-        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
+        var recordTextLanguage = ApplicationSettingsService.GetRecordTextLanguage();
         var fields = CreateSpecComparisonFields(
             RecordTypeCatalog.Class.RecordID,
             records,
@@ -319,7 +319,7 @@ public class RecordComparisonService : IRecordComparisonService
     {
         var records = FactionRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Faction.RecordID, formKey);
-        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
+        var recordTextLanguage = ApplicationSettingsService.GetRecordTextLanguage();
         var fields = CreateSpecComparisonFields(
             RecordTypeCatalog.Faction.RecordID,
             records,
@@ -371,7 +371,7 @@ public class RecordComparisonService : IRecordComparisonService
     {
         var records = MiscItemRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.MiscItem.RecordID, formKey);
-        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
+        var recordTextLanguage = ApplicationSettingsService.GetRecordTextLanguage();
         var fields = CreateSpecComparisonFields(
             RecordTypeCatalog.MiscItem.RecordID,
             records,
@@ -435,7 +435,7 @@ public class RecordComparisonService : IRecordComparisonService
     {
         var records = KeywordRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Keyword.RecordID, formKey);
-        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
+        var recordTextLanguage = ApplicationSettingsService.GetRecordTextLanguage();
         var fields = CreateSpecComparisonFields(
             RecordTypeCatalog.Keyword.RecordID,
             records,
@@ -456,7 +456,7 @@ public class RecordComparisonService : IRecordComparisonService
     {
         var records = ActorValueInformationRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.ActorValueInformation.RecordID, formKey);
-        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
+        var recordTextLanguage = ApplicationSettingsService.GetRecordTextLanguage();
         var fields = CreateSpecComparisonFields(
             RecordTypeCatalog.ActorValueInformation.RecordID,
             records,
@@ -484,7 +484,7 @@ public class RecordComparisonService : IRecordComparisonService
     {
         var records = NPCRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.NPC.RecordID, formKey);
-        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
+        var recordTextLanguage = ApplicationSettingsService.GetRecordTextLanguage();
         var baseRecords = records.Cast<RecordDTO>().ToList();
         var preLevelFieldNames = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -611,7 +611,7 @@ public class RecordComparisonService : IRecordComparisonService
     {
         var records = MagicEffectRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.MagicEffect.RecordID, formKey);
-        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
+        var recordTextLanguage = ApplicationSettingsService.GetRecordTextLanguage();
         var fields = CreateSpecComparisonFields(
             RecordTypeCatalog.MagicEffect.RecordID,
             records,
@@ -654,7 +654,7 @@ public class RecordComparisonService : IRecordComparisonService
     {
         var records = PerkRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Perk.RecordID, formKey);
-        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
+        var recordTextLanguage = ApplicationSettingsService.GetRecordTextLanguage();
         var fields = CreateSpecComparisonFields(
             RecordTypeCatalog.Perk.RecordID,
             records,
@@ -715,7 +715,7 @@ public class RecordComparisonService : IRecordComparisonService
     {
         var records = StaticRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Static.RecordID, formKey);
-        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
+        var recordTextLanguage = ApplicationSettingsService.GetRecordTextLanguage();
         var fields = CreateSpecComparisonFields(
             RecordTypeCatalog.Static.RecordID,
             records,
@@ -976,7 +976,7 @@ public class RecordComparisonService : IRecordComparisonService
     {
         var records = BookRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Book.RecordID, formKey);
-        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
+        var recordTextLanguage = ApplicationSettingsService.GetRecordTextLanguage();
         var baseRecords = records.Cast<RecordDTO>().ToList();
         var fields = CreateSpecComparisonFields(
             RecordTypeCatalog.Book.RecordID,
@@ -1054,7 +1054,7 @@ public class RecordComparisonService : IRecordComparisonService
     {
         var records = DoorRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Door.RecordID, formKey);
-        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
+        var recordTextLanguage = ApplicationSettingsService.GetRecordTextLanguage();
         var baseRecords = records.Cast<RecordDTO>().ToList();
         var fields = CreateSpecComparisonFields(
             RecordTypeCatalog.Door.RecordID,
@@ -1118,7 +1118,7 @@ public class RecordComparisonService : IRecordComparisonService
     {
         var records = ContainerRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Container.RecordID, formKey);
-        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
+        var recordTextLanguage = ApplicationSettingsService.GetRecordTextLanguage();
         var baseRecords = records.Cast<RecordDTO>().ToList();
         var fields = CreateSpecComparisonFields(
             RecordTypeCatalog.Container.RecordID,
@@ -1191,7 +1191,7 @@ public class RecordComparisonService : IRecordComparisonService
     {
         var records = ConstructibleObjectRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.ConstructibleObject.RecordID, formKey);
-        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
+        var recordTextLanguage = ApplicationSettingsService.GetRecordTextLanguage();
         var baseRecords = records.Cast<RecordDTO>().ToList();
         var fields = CreateSpecComparisonFields(
             RecordTypeCatalog.ConstructibleObject.RecordID,
@@ -1266,7 +1266,7 @@ public class RecordComparisonService : IRecordComparisonService
     {
         var records = TerminalRepository.GetByFormKey(game, formKey);
         var localizedStrings = RecordLocalizedStringRepository.GetByFormKey(game, RecordTypeCatalog.Terminal.RecordID, formKey);
-        var recordTextLanguage = GameSelectionService.GetRecordTextLanguage();
+        var recordTextLanguage = ApplicationSettingsService.GetRecordTextLanguage();
         var baseRecords = records.Cast<RecordDTO>().ToList();
         var customValueFactories = new Dictionary<string, Func<TerminalDTO, string>>(StringComparer.Ordinal)
         {

@@ -160,6 +160,7 @@ public class OpenPluginDialogViewModel : ViewModelBase
         AllPluginRows = PluginSelectionService.GetOpenablePlugins(SelectedGame.Game)
             .Select(plugin => new OpenPluginRowViewModel(plugin))
             .ToList();
+        SelectedPluginRow = null;
         ApplyFiltersAndSort();
     }
 
@@ -194,8 +195,7 @@ public class OpenPluginDialogViewModel : ViewModelBase
             PluginRows.Add(row);
         }
 
-        SelectedPluginRow = filteredRows.FirstOrDefault(row => string.Equals(row.FileName, selectedFileName, StringComparison.OrdinalIgnoreCase)) ??
-            filteredRows.FirstOrDefault();
+        SelectedPluginRow = filteredRows.FirstOrDefault(row => string.Equals(row.FileName, selectedFileName, StringComparison.OrdinalIgnoreCase));
         OnPropertyChanged(nameof(HasNoPlugins));
         OnPropertyChanged(nameof(CanRunPrimaryAction));
         OnPropertyChanged(nameof(PrimaryActionText));

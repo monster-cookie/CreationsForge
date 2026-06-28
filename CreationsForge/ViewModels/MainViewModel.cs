@@ -957,7 +957,8 @@ public class MainViewModel : ViewModelBase
                 row => row.FieldName,
                 row => row.Children,
                 row => row.IsExpanded,
-                row => row.HasChildren);
+                row => row.HasChildren,
+                options => options.BeginEditGestures = BeginEditGestures.None);
         for (var columnIndex = 0; columnIndex < RecordComparisonColumns.Count; columnIndex++)
         {
             var currentIndex = columnIndex;
@@ -965,6 +966,7 @@ public class MainViewModel : ViewModelBase
             source.Columns.Add(new TreeDataGridTemplateColumn
             {
                 Header = column.Header,
+                BeginEditGestures = BeginEditGestures.None,
                 CellTemplate = new FuncDataTemplate<RecordComparisonRowViewModel>(
                     (row, _) => row is null
                         ? new TextBlock()

@@ -6,8 +6,14 @@ using Shouldly;
 
 namespace CreationsForge.UnitTests.Services;
 
+/// <summary>
+/// Tests supported-game and active-game behavior for <see cref="GameSelectionService"/>.
+/// </summary>
 public class GameSelectionServiceTests
 {
+    /// <summary>
+    /// Verifies the supported game list exposes the approved CreationsForge games.
+    /// </summary>
     [Fact]
     public void GetSupportedGames_ReturnsApprovedGames()
     {
@@ -20,6 +26,9 @@ public class GameSelectionServiceTests
         games.Single(game => game.Game == SupportedGame.Fallout4).DisplayName.ShouldBe("Fallout 4");
     }
 
+    /// <summary>
+    /// Verifies a configured supported game can be read back from configuration.
+    /// </summary>
     [Fact]
     public void GetActiveGame_WithConfiguredGame_ReturnsGame()
     {
@@ -34,6 +43,9 @@ public class GameSelectionServiceTests
         game.ShouldBe(SupportedGame.Skyrim);
     }
 
+    /// <summary>
+    /// Verifies invalid active-game configuration values are ignored.
+    /// </summary>
     [Fact]
     public void GetActiveGame_WithInvalidConfiguredGame_ReturnsNull()
     {
@@ -48,8 +60,11 @@ public class GameSelectionServiceTests
         game.ShouldBeNull();
     }
 
+    /// <summary>
+    /// Verifies active-game saves preserve unrelated application settings.
+    /// </summary>
     [Fact]
-    public void SetActiveGame_PreservesExistingPaths()
+    public void SetActiveGame_PreservesExistingSettingsAndPaths()
     {
         var store = new TestApplicationConfigurationStore
         {
@@ -57,7 +72,9 @@ public class GameSelectionServiceTests
             {
                 ThemeFamily = ApplicationThemeFamily.Fluent,
                 ThemeMode = ApplicationThemeMode.Light,
+                RecordTextLanguage = "German",
                 NifSkopeExecutablePath = "nifskope.exe",
+                PreferEspOverMatchingEsm = false,
                 ApplicationDataDirectory = "app-data",
                 DatabaseDirectory = "database",
                 LoggingDirectory = "logs"
@@ -70,250 +87,30 @@ public class GameSelectionServiceTests
         store.Current.ActiveGame.ShouldBe("Fallout4");
         store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
         store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
+        store.Current.RecordTextLanguage.ShouldBe("German");
         store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
+        store.Current.PreferEspOverMatchingEsm.ShouldBeFalse();
         store.Current.ApplicationDataDirectory.ShouldBe("app-data");
         store.Current.DatabaseDirectory.ShouldBe("database");
         store.Current.LoggingDirectory.ShouldBe("logs");
     }
 
-    [Fact]
-    public void GetThemeFamily_ReturnsConfiguredThemeFamily()
-    {
-        var store = new TestApplicationConfigurationStore
-        {
-            Current = new ApplicationConfiguration { ThemeFamily = ApplicationThemeFamily.Fluent }
-        };
-        var service = new GameSelectionService(store);
-
-        var themeFamily = service.GetThemeFamily();
-
-        themeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
-    }
-
-    [Fact]
-    public void GetThemeMode_ReturnsConfiguredThemeMode()
-    {
-        var store = new TestApplicationConfigurationStore
-        {
-            Current = new ApplicationConfiguration { ThemeMode = ApplicationThemeMode.Light }
-        };
-        var service = new GameSelectionService(store);
-
-        var themeMode = service.GetThemeMode();
-
-        themeMode.ShouldBe(ApplicationThemeMode.Light);
-    }
-
-    [Fact]
-    public void GetNifSkopeExecutablePath_ReturnsConfiguredPath()
-    {
-        var store = new TestApplicationConfigurationStore
-        {
-            Current = new ApplicationConfiguration { NifSkopeExecutablePath = "nifskope.exe" }
-        };
-        var service = new GameSelectionService(store);
-
-        var path = service.GetNifSkopeExecutablePath();
-
-        path.ShouldBe("nifskope.exe");
-    }
-
-    [Fact]
-    public void SetThemeMode_PreservesActiveGameAndExistingPaths()
-    {
-        var store = new TestApplicationConfigurationStore
-        {
-            Current = new ApplicationConfiguration
-            {
-                ActiveGame = "Skyrim",
-                ThemeFamily = ApplicationThemeFamily.Fluent,
-                NifSkopeExecutablePath = "nifskope.exe",
-                ApplicationDataDirectory = "app-data",
-                DatabaseDirectory = "database",
-                LoggingDirectory = "logs"
-            }
-        };
-        var service = new GameSelectionService(store);
-
-        service.SetThemeMode(ApplicationThemeMode.Light);
-
-        store.Current.ActiveGame.ShouldBe("Skyrim");
-        store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
-        store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
-        store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
-        store.Current.ApplicationDataDirectory.ShouldBe("app-data");
-        store.Current.DatabaseDirectory.ShouldBe("database");
-        store.Current.LoggingDirectory.ShouldBe("logs");
-    }
-
-    [Fact]
-    public void SetThemeFamily_PreservesActiveGameThemeModeAndExistingPaths()
-    {
-        var store = new TestApplicationConfigurationStore
-        {
-            Current = new ApplicationConfiguration
-            {
-                ActiveGame = "Skyrim",
-                ThemeMode = ApplicationThemeMode.Light,
-                NifSkopeExecutablePath = "nifskope.exe",
-                ApplicationDataDirectory = "app-data",
-                DatabaseDirectory = "database",
-                LoggingDirectory = "logs"
-            }
-        };
-        var service = new GameSelectionService(store);
-
-        service.SetThemeFamily(ApplicationThemeFamily.Fluent);
-
-        store.Current.ActiveGame.ShouldBe("Skyrim");
-        store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
-        store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
-        store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
-        store.Current.ApplicationDataDirectory.ShouldBe("app-data");
-        store.Current.DatabaseDirectory.ShouldBe("database");
-        store.Current.LoggingDirectory.ShouldBe("logs");
-    }
-
-    [Fact]
-    public void SetActiveGameAndThemeMode_PreservesExistingPaths()
-    {
-        var store = new TestApplicationConfigurationStore
-        {
-            Current = new ApplicationConfiguration
-            {
-                ThemeFamily = ApplicationThemeFamily.Fluent,
-                NifSkopeExecutablePath = "nifskope.exe",
-                ApplicationDataDirectory = "app-data",
-                DatabaseDirectory = "database",
-                LoggingDirectory = "logs"
-            }
-        };
-        var service = new GameSelectionService(store);
-
-        service.SetActiveGameAndThemeMode(SupportedGame.Starfield, ApplicationThemeMode.Light);
-
-        store.Current.ActiveGame.ShouldBe("Starfield");
-        store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
-        store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
-        store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
-        store.Current.ApplicationDataDirectory.ShouldBe("app-data");
-        store.Current.DatabaseDirectory.ShouldBe("database");
-        store.Current.LoggingDirectory.ShouldBe("logs");
-    }
-
-    [Fact]
-    public void SetActiveGameAndTheme_PreservesExistingPaths()
-    {
-        var store = new TestApplicationConfigurationStore
-        {
-            Current = new ApplicationConfiguration
-            {
-                ApplicationDataDirectory = "app-data",
-                NifSkopeExecutablePath = "nifskope.exe",
-                DatabaseDirectory = "database",
-                LoggingDirectory = "logs"
-            }
-        };
-        var service = new GameSelectionService(store);
-
-        service.SetActiveGameAndTheme(SupportedGame.Starfield, ApplicationThemeFamily.Fluent, ApplicationThemeMode.Light);
-
-        store.Current.ActiveGame.ShouldBe("Starfield");
-        store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
-        store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
-        store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
-        store.Current.ApplicationDataDirectory.ShouldBe("app-data");
-        store.Current.DatabaseDirectory.ShouldBe("database");
-        store.Current.LoggingDirectory.ShouldBe("logs");
-    }
-
-    [Fact]
-    public void SetTheme_PreservesActiveGameAndExistingPaths()
-    {
-        var store = new TestApplicationConfigurationStore
-        {
-            Current = new ApplicationConfiguration
-            {
-                ActiveGame = "Fallout4",
-                NifSkopeExecutablePath = "nifskope.exe",
-                ApplicationDataDirectory = "app-data",
-                DatabaseDirectory = "database",
-                LoggingDirectory = "logs"
-            }
-        };
-        var service = new GameSelectionService(store);
-
-        service.SetTheme(ApplicationThemeFamily.Fluent, ApplicationThemeMode.Light);
-
-        store.Current.ActiveGame.ShouldBe("Fallout4");
-        store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
-        store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
-        store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
-        store.Current.ApplicationDataDirectory.ShouldBe("app-data");
-        store.Current.DatabaseDirectory.ShouldBe("database");
-        store.Current.LoggingDirectory.ShouldBe("logs");
-    }
-
-    [Fact]
-    public void SetActiveGameThemeAndNifSkopeExecutablePath_SavesTrimmedPath()
-    {
-        var store = new TestApplicationConfigurationStore
-        {
-            Current = new ApplicationConfiguration
-            {
-                ApplicationDataDirectory = "app-data",
-                DatabaseDirectory = "database",
-                LoggingDirectory = "logs"
-            }
-        };
-        var service = new GameSelectionService(store);
-
-        service.SetActiveGameThemeAndNifSkopeExecutablePath(SupportedGame.Starfield, ApplicationThemeFamily.Fluent, ApplicationThemeMode.Light, "  nifskope.exe  ");
-
-        store.Current.ActiveGame.ShouldBe("Starfield");
-        store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
-        store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
-        store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
-        store.Current.ApplicationDataDirectory.ShouldBe("app-data");
-        store.Current.DatabaseDirectory.ShouldBe("database");
-        store.Current.LoggingDirectory.ShouldBe("logs");
-    }
-
-    [Fact]
-    public void SetThemeAndNifSkopeExecutablePath_BlankPathSavesNull()
-    {
-        var store = new TestApplicationConfigurationStore
-        {
-            Current = new ApplicationConfiguration
-            {
-                ActiveGame = "Fallout4",
-                ApplicationDataDirectory = "app-data",
-                DatabaseDirectory = "database",
-                LoggingDirectory = "logs"
-            }
-        };
-        var service = new GameSelectionService(store);
-
-        service.SetThemeAndNifSkopeExecutablePath(ApplicationThemeFamily.Fluent, ApplicationThemeMode.Light, " ");
-
-        store.Current.ActiveGame.ShouldBe("Fallout4");
-        store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
-        store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
-        store.Current.NifSkopeExecutablePath.ShouldBeNull();
-        store.Current.ApplicationDataDirectory.ShouldBe("app-data");
-        store.Current.DatabaseDirectory.ShouldBe("database");
-        store.Current.LoggingDirectory.ShouldBe("logs");
-    }
-
+    /// <summary>
+    /// Provides in-memory configuration state for game-selection service tests.
+    /// </summary>
     private sealed class TestApplicationConfigurationStore : IApplicationConfigurationStore
     {
+        /// <inheritdoc />
         public string ConfigurationPath => "test.json";
 
+        /// <inheritdoc />
         public ApplicationConfiguration Current { get; set; } = new();
 
+        /// <inheritdoc />
         public void Load()
         { }
 
+        /// <inheritdoc />
         public void Save(ApplicationConfiguration configuration)
         {
             Current = configuration;

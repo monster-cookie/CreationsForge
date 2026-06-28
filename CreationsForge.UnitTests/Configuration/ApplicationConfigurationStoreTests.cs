@@ -27,6 +27,7 @@ public class ApplicationConfigurationStoreTests : IDisposable
         store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Semi);
         store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Dark);
         store.Current.NifSkopeExecutablePath.ShouldBeNull();
+        store.Current.PreferEspOverMatchingEsm.ShouldBeTrue();
     }
 
     [Fact]
@@ -40,6 +41,7 @@ public class ApplicationConfigurationStoreTests : IDisposable
         store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Semi);
         store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Dark);
         store.Current.NifSkopeExecutablePath.ShouldBeNull();
+        store.Current.PreferEspOverMatchingEsm.ShouldBeTrue();
     }
 
     [Fact]
@@ -53,6 +55,7 @@ public class ApplicationConfigurationStoreTests : IDisposable
         store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Semi);
         store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Dark);
         store.Current.NifSkopeExecutablePath.ShouldBeNull();
+        store.Current.PreferEspOverMatchingEsm.ShouldBeTrue();
     }
 
     [Fact]
@@ -65,7 +68,8 @@ public class ApplicationConfigurationStoreTests : IDisposable
             ActiveGame = nameof(SupportedGame.Starfield),
             ThemeFamily = ApplicationThemeFamily.Fluent,
             ThemeMode = ApplicationThemeMode.Light,
-            NifSkopeExecutablePath = @"C:\Tools\NifSkope.exe"
+            NifSkopeExecutablePath = @"C:\Tools\NifSkope.exe",
+            PreferEspOverMatchingEsm = false
         };
 
         store.Save(configuration);
@@ -77,6 +81,7 @@ public class ApplicationConfigurationStoreTests : IDisposable
         saved.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
         saved.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
         saved.NifSkopeExecutablePath.ShouldBe(@"C:\Tools\NifSkope.exe");
+        saved.PreferEspOverMatchingEsm.ShouldBeFalse();
     }
 
     [Fact]
@@ -90,6 +95,7 @@ public class ApplicationConfigurationStoreTests : IDisposable
         store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Semi);
         store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Dark);
         store.Current.NifSkopeExecutablePath.ShouldBeNull();
+        store.Current.PreferEspOverMatchingEsm.ShouldBeTrue();
     }
 
     public void Dispose()

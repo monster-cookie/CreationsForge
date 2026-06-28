@@ -1,64 +1,28 @@
 using CreationsForge.Core.DTOs.Games;
 using CreationsForge.Core.Enums;
-using CreationsForge.Core.Models.Configuration;
-using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Core.Services.Interfaces;
 
+/// <summary>
+/// Provides supported game choices and persisted active-game selection.
+/// </summary>
 public interface IGameSelectionService
 {
+    /// <summary>
+    /// Gets the supported games that can be selected in CreationsForge workflows.
+    /// </summary>
+    /// <returns>The supported game options with display labels.</returns>
     IReadOnlyList<SupportedGameDTO> GetSupportedGames();
 
+    /// <summary>
+    /// Gets the currently configured active game when one is valid.
+    /// </summary>
+    /// <returns>The configured game, or <see langword="null"/> when no valid game is configured.</returns>
     SupportedGame? GetActiveGame();
 
-    ApplicationThemeMode GetThemeMode();
-
-    ApplicationThemeFamily GetThemeFamily();
-
-    IReadOnlyList<Language> GetRecordTextLanguages()
-    {
-        return [Language.English];
-    }
-
-    Language GetRecordTextLanguage()
-    {
-        return Language.English;
-    }
-
-    string? GetNifSkopeExecutablePath()
-    {
-        return null;
-    }
-
+    /// <summary>
+    /// Persists the active game without changing other configuration settings.
+    /// </summary>
+    /// <param name="game">The game to store as active.</param>
     void SetActiveGame(SupportedGame game);
-
-    void SetThemeMode(ApplicationThemeMode themeMode);
-
-    void SetThemeFamily(ApplicationThemeFamily themeFamily);
-
-    void SetActiveGameAndThemeMode(SupportedGame game, ApplicationThemeMode themeMode);
-
-    void SetActiveGameAndTheme(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode);
-
-    void SetTheme(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode);
-
-    void SetThemeRecordTextLanguageAndNifSkopeExecutablePath(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, Language recordTextLanguage, string? nifSkopeExecutablePath)
-    {
-        SetTheme(themeFamily, themeMode);
-    }
-
-    void SetActiveGameThemeAndNifSkopeExecutablePath(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, string? nifSkopeExecutablePath)
-    {
-        SetActiveGameAndTheme(game, themeFamily, themeMode);
-    }
-
-    void SetActiveGameThemeRecordTextLanguageAndNifSkopeExecutablePath(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, Language recordTextLanguage, string? nifSkopeExecutablePath)
-    {
-        SetActiveGameAndTheme(game, themeFamily, themeMode);
-    }
-
-    void SetThemeAndNifSkopeExecutablePath(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, string? nifSkopeExecutablePath)
-    {
-        SetTheme(themeFamily, themeMode);
-    }
 }

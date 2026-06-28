@@ -43,7 +43,7 @@ public partial class RecordComparisonServiceTests
         TestScriptingAdapterRepository? scriptingAdapterRepository = null,
         TestReflectionRepository? reflectionRepository = null,
         TestRecordLocalizedStringRepository? recordLocalizedStringRepository = null,
-        TestGameSelectionService? gameSelectionService = null,
+        TestApplicationSettingsService? applicationSettingsService = null,
         IRecordSpecificationProvider? recordSpecificationProvider = null)
     {
         return new RecordComparisonService(
@@ -71,7 +71,7 @@ public partial class RecordComparisonServiceTests
             scriptingAdapterRepository ?? new TestScriptingAdapterRepository(),
             reflectionRepository ?? new TestReflectionRepository(),
             recordLocalizedStringRepository ?? new TestRecordLocalizedStringRepository(),
-            gameSelectionService ?? new TestGameSelectionService(),
+            applicationSettingsService ?? new TestApplicationSettingsService(),
             recordSpecificationProvider ?? new RecordSpecificationProvider());
     }
 

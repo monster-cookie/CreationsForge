@@ -76,13 +76,14 @@ public class SettingsView : UserControl
         var themeFamilyBox = CreateComboBox(nameof(SettingsViewModel.ThemeFamilyOptions), nameof(SettingsViewModel.SelectedThemeFamily));
         var themeBox = CreateComboBox(nameof(SettingsViewModel.ThemeModeOptions), nameof(SettingsViewModel.SelectedThemeMode));
         var recordTextLanguageBox = CreateComboBox(nameof(SettingsViewModel.RecordTextLanguageOptions), nameof(SettingsViewModel.SelectedRecordTextLanguage));
+        var pluginPreferenceBox = CreateCheckBox(nameof(SettingsViewModel.PreferEspOverMatchingEsm));
         var nifSkopePathBox = CreateNifSkopePathInput();
 
         var form = new Grid
         {
             MaxWidth = 620,
             HorizontalAlignment = HorizontalAlignment.Left,
-            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,Auto"),
+            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,Auto,Auto"),
             RowSpacing = 18,
             Children =
             {
@@ -90,7 +91,8 @@ public class SettingsView : UserControl
                 CreateField("Theme", themeFamilyBox, 1),
                 CreateField("Display mode", themeBox, 2),
                 CreateField("Record text language", recordTextLanguageBox, 3),
-                CreateNifSkopeField(nifSkopePathBox, 4)
+                CreateField("Prefer ESP over matching ESM", pluginPreferenceBox, 4),
+                CreateNifSkopeField(nifSkopePathBox, 5)
             }
         };
         Grid.SetRow(form, 1);
@@ -163,6 +165,19 @@ public class SettingsView : UserControl
             Mode = BindingMode.TwoWay
         });
         return comboBox;
+    }
+
+    private static CheckBox CreateCheckBox(string isCheckedProperty)
+    {
+        var checkBox = new CheckBox
+        {
+            HorizontalAlignment = HorizontalAlignment.Left
+        };
+        checkBox.Bind(ToggleButton.IsCheckedProperty, new Binding(isCheckedProperty)
+        {
+            Mode = BindingMode.TwoWay
+        });
+        return checkBox;
     }
 
     private static Control CreateNifSkopeField(Control input, int row)

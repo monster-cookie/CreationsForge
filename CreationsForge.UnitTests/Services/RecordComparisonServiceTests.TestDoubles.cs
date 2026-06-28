@@ -608,19 +608,9 @@ public partial class RecordComparisonServiceTests
         { }
     }
 
-    private sealed class TestGameSelectionService : IGameSelectionService
+    private sealed class TestApplicationSettingsService : IApplicationSettingsService
     {
         public Language RecordTextLanguage { get; set; } = Language.English;
-
-        public IReadOnlyList<SupportedGameDTO> GetSupportedGames()
-        {
-            return [];
-        }
-
-        public SupportedGame? GetActiveGame()
-        {
-            return null;
-        }
 
         public ApplicationThemeMode GetThemeMode()
         {
@@ -642,8 +632,15 @@ public partial class RecordComparisonServiceTests
             return RecordTextLanguage;
         }
 
-        public void SetActiveGame(SupportedGame game)
-        { }
+        public string? GetNifSkopeExecutablePath()
+        {
+            return null;
+        }
+
+        public bool GetPreferEspOverMatchingEsm()
+        {
+            return true;
+        }
 
         public void SetThemeMode(ApplicationThemeMode themeMode)
         { }
@@ -651,13 +648,16 @@ public partial class RecordComparisonServiceTests
         public void SetThemeFamily(ApplicationThemeFamily themeFamily)
         { }
 
-        public void SetActiveGameAndThemeMode(SupportedGame game, ApplicationThemeMode themeMode)
-        { }
-
-        public void SetActiveGameAndTheme(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode)
-        { }
-
         public void SetTheme(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode)
+        { }
+
+        public void SetThemeAndNifSkopeExecutablePath(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, string? nifSkopeExecutablePath)
+        { }
+
+        public void SetThemeRecordTextLanguageNifSkopeExecutablePathAndPluginSelectionPreference(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, Language recordTextLanguage, string? nifSkopeExecutablePath, bool preferEspOverMatchingEsm)
+        { }
+
+        public void SetActiveGameThemeRecordTextLanguageNifSkopeExecutablePathAndPluginSelectionPreference(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, Language recordTextLanguage, string? nifSkopeExecutablePath, bool preferEspOverMatchingEsm)
         { }
     }
 
