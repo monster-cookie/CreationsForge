@@ -1125,8 +1125,7 @@ public class RecordComparisonService : IRecordComparisonService
 
     /// <summary>
     /// Creates the comparison output for imported Constructible Object overrides, using specification metadata for
-    /// scalar parent rows while leaving components, categories, filters, conditions, sounds, and scripts on existing
-    /// strategy code.
+    /// scalar parent rows and child-group dispatch.
     /// </summary>
     /// <param name="game">The game whose imported constructible object records should be compared.</param>
     /// <param name="formKey">The origin FormKey shared by the constructible object overrides.</param>
@@ -1142,9 +1141,15 @@ public class RecordComparisonService : IRecordComparisonService
             records,
             localizedStrings: localizedStrings,
             recordTextLanguage: recordTextLanguage);
-        AddConstructibleObjectComponentGroups(fields, records);
-        AddConstructibleObjectCategoryGroups(fields, records);
-        AddConstructibleObjectRecipeFilterGroups(fields, records);
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.ConstructibleObject.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.ConstructibleObjectComponents,
+            RecordComparisonChildGroupKind.ConstructibleObjectCategories,
+            RecordComparisonChildGroupKind.ConstructibleObjectRecipeFilters);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -1479,6 +1484,15 @@ public class RecordComparisonService : IRecordComparisonService
                     break;
                 case RecordComparisonChildGroupKind.StaticProperties:
                     AddStaticPropertyGroups(fields, records.Cast<StaticDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.ConstructibleObjectComponents:
+                    AddConstructibleObjectComponentGroups(fields, records.Cast<ConstructibleObjectDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.ConstructibleObjectCategories:
+                    AddConstructibleObjectCategoryGroups(fields, records.Cast<ConstructibleObjectDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.ConstructibleObjectRecipeFilters:
+                    AddConstructibleObjectRecipeFilterGroups(fields, records.Cast<ConstructibleObjectDTO>().ToList());
                     break;
                 default:
                     throw new NotSupportedException(

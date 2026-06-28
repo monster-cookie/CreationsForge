@@ -251,10 +251,11 @@ The specification catalog now drives simple comparison rows for `FLST`, `GMST`, 
 DTO source paths generically, and uses comparison metadata for ordinary localized scalar rows. Explicit strategy hooks
 remain where behavior is not purely declarative. Keyword rows, shared model rows, shared sound rows, shared scripting
 adapter rows, shared reflection rows, shared condition-rule rows, shared record component rows, script fragment rows,
-class property/weight rows, faction relation/rank rows, and static property rows for current supported comparison
-families are selected by comparison child-group metadata. The current explicit hooks include indexed `FLST` item rows,
+class property/weight rows, faction relation/rank rows, static property rows, and constructible object component/
+category/recipe-filter rows for current supported comparison families are selected by comparison child-group
+metadata. The current explicit hooks include indexed `FLST` item rows,
 localized `GMST` `Data` display, game-dependent `BOOK` body-text source fields, and remaining complex child groups for
-`MISC`, `AVIF`, `MGEF`, `PERK`, `NPC_`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, and `TERM`. Those remaining
+`MISC`, `AVIF`, `MGEF`, `PERK`, `NPC_`, `STAT`, `BOOK`, `DOOR`, `CONT`, `CNDF`, and `TERM`. Those remaining
 complex child groups stay on the existing record-specific comparison methods until later approved slices move them
 behind specification metadata.
 

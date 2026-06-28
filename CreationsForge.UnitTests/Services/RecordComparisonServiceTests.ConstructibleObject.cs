@@ -19,7 +19,8 @@ namespace CreationsForge.UnitTests.Services;
 public partial class RecordComparisonServiceTests
 {
     /// <summary>
-    /// Verifies that record comparison constructible object maps components conditions scripts and created object count.
+    /// Verifies that Constructible Object comparison maps component, category, recipe-filter, condition, script, and
+    /// scalar rows.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForConstructibleObject_MapsComponentsConditionsScriptsAndCreatedObjectCount()
@@ -28,13 +29,14 @@ public partial class RecordComparisonServiceTests
         var createdObjectFormKey = CreateFormKey("Starfield.esm", 0x111);
         var workbenchKeywordFormKey = CreateFormKey("Starfield.esm", 0x222);
         var componentFormKey = CreateFormKey("Starfield.esm", 0x333);
-        var recipeFilterFormKey = CreateFormKey("Starfield.esm", 0x444);
+        var categoryFormKey = CreateFormKey("Starfield.esm", 0x444);
+        var recipeFilterFormKey = CreateFormKey("Starfield.esm", 0x555);
         var constructibleObjectRepository = new TestConstructibleObjectRepository
         {
             Records =
             [
-                CreateConstructibleObject("Base.esm", formKey, createdObjectFormKey, workbenchKeywordFormKey, componentFormKey, recipeFilterFormKey, 2),
-                CreateConstructibleObject("Patch.esp", formKey, createdObjectFormKey, workbenchKeywordFormKey, componentFormKey, recipeFilterFormKey, 4)
+                CreateConstructibleObject("Base.esm", formKey, createdObjectFormKey, workbenchKeywordFormKey, componentFormKey, categoryFormKey, recipeFilterFormKey, 2),
+                CreateConstructibleObject("Patch.esp", formKey, createdObjectFormKey, workbenchKeywordFormKey, componentFormKey, categoryFormKey, recipeFilterFormKey, 4)
             ]
         };
         var scriptingAdapterRepository = new TestScriptingAdapterRepository
@@ -60,9 +62,10 @@ public partial class RecordComparisonServiceTests
         var component = components.Children.Single(field => field.FieldName == "Component [0]");
         component.Children.Single(field => field.FieldName == "ComponentFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000333", "Starfield.esm:00000333"]);
         component.Children.Single(field => field.FieldName == "Count").Values.Select(value => value.DisplayValue).ShouldBe(["3", "3"]);
-        comparison.Fields.ShouldNotContain(field => field.FieldName == "Categories");
+        var categories = comparison.Fields.Single(field => field.FieldName == "Categories");
+        categories.Children.Single(field => field.FieldName == "Category [0]").Children.Single(field => field.FieldName == "CategoryFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000444", "Starfield.esm:00000444"]);
         var recipeFilters = comparison.Fields.Single(field => field.FieldName == "RecipeFilters");
-        recipeFilters.Children.Single(field => field.FieldName == "RecipeFilter [0]").Children.Single(field => field.FieldName == "RecipeFilterFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000444", "Starfield.esm:00000444"]);
+        recipeFilters.Children.Single(field => field.FieldName == "RecipeFilter [0]").Children.Single(field => field.FieldName == "RecipeFilterFormKey").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000555", "Starfield.esm:00000555"]);
         var conditions = comparison.Fields.Single(field => field.FieldName == "Conditions");
         var condition = conditions.Children.Single();
         condition.FieldName.ShouldBe("Condition [0]");
@@ -77,7 +80,7 @@ public partial class RecordComparisonServiceTests
 
     /// <summary>
     /// Verifies that Constructible Object scalar rows are selected from the injected comparison specification while
-    /// child rows remain strategy-based.
+    /// undeclared child groups are omitted.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForConstructibleObject_UsesInjectedComparisonSpecification()
@@ -86,13 +89,14 @@ public partial class RecordComparisonServiceTests
         var createdObjectFormKey = CreateFormKey("Starfield.esm", 0x111);
         var workbenchKeywordFormKey = CreateFormKey("Starfield.esm", 0x222);
         var componentFormKey = CreateFormKey("Starfield.esm", 0x333);
-        var recipeFilterFormKey = CreateFormKey("Starfield.esm", 0x444);
+        var categoryFormKey = CreateFormKey("Starfield.esm", 0x444);
+        var recipeFilterFormKey = CreateFormKey("Starfield.esm", 0x555);
         var constructibleObjectRepository = new TestConstructibleObjectRepository
         {
             Records =
             [
-                CreateConstructibleObject("Base.esm", formKey, createdObjectFormKey, workbenchKeywordFormKey, componentFormKey, recipeFilterFormKey, 2),
-                CreateConstructibleObject("Patch.esp", formKey, createdObjectFormKey, workbenchKeywordFormKey, componentFormKey, recipeFilterFormKey, 4)
+                CreateConstructibleObject("Base.esm", formKey, createdObjectFormKey, workbenchKeywordFormKey, componentFormKey, categoryFormKey, recipeFilterFormKey, 2),
+                CreateConstructibleObject("Patch.esp", formKey, createdObjectFormKey, workbenchKeywordFormKey, componentFormKey, categoryFormKey, recipeFilterFormKey, 4)
             ]
         };
         var provider = new TestRecordSpecificationProvider(
@@ -128,7 +132,9 @@ public partial class RecordComparisonServiceTests
             .ShouldBe(["2", "4"]);
         comparison.Fields.ShouldNotContain(field => field.FieldName == "CreatedObjectFormKey");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "WorkbenchKeywordFormKey");
-        comparison.Fields.Single(field => field.FieldName == "Components").Children.ShouldNotBeEmpty();
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Components");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Categories");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "RecipeFilters");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Conditions");
     }
 }

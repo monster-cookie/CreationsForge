@@ -867,12 +867,25 @@ public partial class RecordComparisonServiceTests
         };
     }
 
+    /// <summary>
+    /// Creates a Constructible Object test record with component, category, recipe-filter, and condition child rows.
+    /// </summary>
+    /// <param name="fileName">The plugin filename used to build the record's mod key and child rows.</param>
+    /// <param name="formKey">The shared origin form key used by all compared overrides.</param>
+    /// <param name="createdObjectFormKey">The created object reference assigned to the parent record.</param>
+    /// <param name="workbenchKeywordFormKey">The workbench keyword reference assigned to the parent record.</param>
+    /// <param name="componentFormKey">The component reference assigned to the generated component row.</param>
+    /// <param name="categoryFormKey">The category reference assigned to the generated category row.</param>
+    /// <param name="recipeFilterFormKey">The recipe-filter reference assigned to the generated recipe-filter row.</param>
+    /// <param name="amountProduced">The parent amount-produced value and condition comparison value.</param>
+    /// <returns>A populated constructible object DTO suitable for comparison service tests.</returns>
     private static ConstructibleObjectDTO CreateConstructibleObject(
         string fileName,
         FormKeyDTO formKey,
         FormKeyDTO createdObjectFormKey,
         FormKeyDTO workbenchKeywordFormKey,
         FormKeyDTO componentFormKey,
+        FormKeyDTO categoryFormKey,
         FormKeyDTO recipeFilterFormKey,
         int amountProduced)
     {
@@ -903,6 +916,18 @@ public partial class RecordComparisonServiceTests
                     ComponentFormKey = componentFormKey,
                     ComponentIndex = 0,
                     Count = 3,
+                    ImportedAtUTC = DateTime.UtcNow
+                }
+            },
+            Categories =
+            {
+                new ConstructibleObjectCategoryDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    CategoryFormKey = categoryFormKey,
+                    CategoryIndex = 0,
                     ImportedAtUTC = DateTime.UtcNow
                 }
             },

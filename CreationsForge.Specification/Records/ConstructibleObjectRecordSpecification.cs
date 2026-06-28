@@ -175,6 +175,24 @@ internal static class ConstructibleObjectRecordSpecification
             [
                 new RecordComparisonChildGroupSpecification
                 {
+                    GroupKind = RecordComparisonChildGroupKind.ConstructibleObjectComponents,
+                    GroupName = "Components",
+                    Description = "Constructible object component rows appended after scalar parent rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.ConstructibleObjectCategories,
+                    GroupName = "Categories",
+                    Description = "Constructible object category rows appended after component rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.ConstructibleObjectRecipeFilters,
+                    GroupName = "RecipeFilters",
+                    Description = "Constructible object recipe-filter rows appended after category rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
                     GroupKind = RecordComparisonChildGroupKind.ConditionRules,
                     GroupName = "Conditions",
                     Description = "Shared condition-rule rows appended after recipe-filter rows."
@@ -193,8 +211,8 @@ internal static class ConstructibleObjectRecordSpecification
                 }
             ]
         },
-        ImplementationNote = "Comparison metadata drives scalar parent rows and condition/sound/script child-group " +
-            "dispatch; component, category, and recipe-filter rows remain strategy-based."
+        ImplementationNote = "Comparison metadata drives scalar parent rows and component/category/recipe-filter/" +
+            "condition/sound/script child-group dispatch."
     };
 }
 

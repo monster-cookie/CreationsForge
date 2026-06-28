@@ -122,8 +122,9 @@ The Core comparison service remains the runtime authority for generated comparis
 column ordering, indexed `FLST` item expansion, localized `GMST` `Data` display, game-dependent `BOOK` body text
 source fields, and strategy-owned child rows. Keyword rows, shared model rows, shared sound rows, shared scripting
 adapter rows, shared reflection rows, shared condition-rule rows, shared record component rows, script fragment rows,
-class property/weight rows, faction relation/rank rows, and static property rows for current supported comparison
-families are selected by comparison child-group metadata. Other `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`,
+class property/weight rows, faction relation/rank rows, static property rows, and constructible object component/
+category/recipe-filter rows for current supported comparison families are selected by comparison child-group metadata.
+Other `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`,
 `CNDF`, `MISC`, and `TERM` child groups remain strategy-owned.
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `CLAS`, `FACT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM`
 comparisons display their currently persisted parent fields and record-reference fields. CLAS comparison displays

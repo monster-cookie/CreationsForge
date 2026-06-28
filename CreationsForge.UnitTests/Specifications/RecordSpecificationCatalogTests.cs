@@ -386,6 +386,21 @@ public class RecordSpecificationCatalogTests
             .Select(entry => entry.RecordID)
             .OrderBy(recordID => recordID, StringComparer.Ordinal)
             .ToList();
+        var constructibleObjectComponentRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ConstructibleObjectComponents)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var constructibleObjectCategoryRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ConstructibleObjectCategories)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var constructibleObjectRecipeFilterRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ConstructibleObjectRecipeFilters)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
 
         keywordRecordIDs.ShouldBe(
             ["BOOK", "CONT", "DOOR", "FACT", "MGEF", "MISC", "NPC_", "STAT", "TERM"]);
@@ -402,6 +417,9 @@ public class RecordSpecificationCatalogTests
         factionRelationRecordIDs.ShouldBe(["FACT"]);
         factionRankRecordIDs.ShouldBe(["FACT"]);
         staticPropertyRecordIDs.ShouldBe(["STAT"]);
+        constructibleObjectComponentRecordIDs.ShouldBe(["COBJ"]);
+        constructibleObjectCategoryRecordIDs.ShouldBe(["COBJ"]);
+        constructibleObjectRecipeFilterRecordIDs.ShouldBe(["COBJ"]);
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.KeywordMappings)
             .ShouldAllBe(entry => entry.Group.GroupName == "Keywords");
@@ -444,6 +462,15 @@ public class RecordSpecificationCatalogTests
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.StaticProperties)
             .ShouldAllBe(entry => entry.Group.GroupName == "Properties");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ConstructibleObjectComponents)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Components");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ConstructibleObjectCategories)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Categories");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ConstructibleObjectRecipeFilters)
+            .ShouldAllBe(entry => entry.Group.GroupName == "RecipeFilters");
         childGroups.ShouldAllBe(entry => !string.IsNullOrWhiteSpace(entry.Group.Description));
     }
 

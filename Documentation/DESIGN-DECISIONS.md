@@ -213,8 +213,8 @@ so these records can move their parent rows into metadata without solving condit
 
 Decision: Add `CNDF` and `COBJ` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
 `CreateConditionFormComparison` and `CreateConstructibleObjectComparison` to use the shared specification
-comparison-field builder for scalar rows. Keep condition rules, COBJ components, categories, recipe filters, sounds,
-and scripts on existing strategy methods.
+comparison-field builder for scalar rows. In that scalar slice, keep condition rules, COBJ components, categories,
+recipe filters, sounds, and scripts on existing strategy methods.
 
 Rationale: This continues expanding spec-driven comparison across records with condition-heavy behavior while keeping
 the hard part deliberately isolated. It also proves that the scalar metadata path can coexist with condition-rule
@@ -229,7 +229,9 @@ Alternatives considered:
 Consequences:
 
 - `CNDF` and `COBJ` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
-- Condition rows and COBJ child groups remain strategy-based.
+- In that scalar slice, condition rows and COBJ child groups stayed strategy-based.
+- Later accepted decisions moved condition, sound, script, component, category, and recipe-filter dispatch into
+  comparison child-group metadata while preserving the existing row builders.
 - No database schema, persisted data shape, import, reader, or UI workflow changes.
 
 Related files:
@@ -522,6 +524,52 @@ Related files:
 - `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
 - `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
 - `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.GlobalClassFaction.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Constructible Object Child Group Dispatch
+
+Status: Accepted
+
+Context: `COBJ` scalar parent rows and shared condition, sound, and scripting adapter child groups already use
+comparison metadata, while constructible object component, category, and recipe-filter rows still used explicit
+comparison-service calls. These rows are record-specific and distinct from shared record components and `MISC`
+component rows.
+
+Decision: Add `ConstructibleObjectComponents`, `ConstructibleObjectCategories`, and
+`ConstructibleObjectRecipeFilters` child-group strategy kinds. Declare those child groups in
+`ConstructibleObjectRecordSpecification` with the existing `Components`, `Categories`, and `RecipeFilters` group
+names. Replace the explicit `CreateConstructibleObjectComparison` child-row calls with filtered metadata dispatch at
+the same row position, while keeping the existing COBJ row builders as the Core implementation.
+
+Rationale: COBJ component, category, and recipe-filter rows are indexed, compact, and already have dedicated row
+builders. Moving only dispatch into metadata continues the record-specific child-group migration without blending COBJ
+recipe components with shared record components or `MISC` components.
+
+Alternatives considered:
+
+- Leave COBJ child groups explicit until every record-specific child family can move together.
+- Convert COBJ components only and keep categories and recipe filters explicit.
+- Reuse the shared `RecordComponents` metadata kind for COBJ recipe components.
+- Introduce a generic nested collection specification immediately.
+
+Consequences:
+
+- `COBJ` component, category, and recipe-filter rows are emitted only when the comparison specification declares the
+  matching constructible object child group.
+- Existing COBJ child row order and display shape are preserved by using the existing row builders.
+- COBJ recipe components remain distinct from shared record components and `MISC` components.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/ConstructibleObjectRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.ConstructibleObject.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.RecordFactories.cs`
 - `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
 - `Documentation/ARCHITECTURE.md`
 - `Documentation/DOMAIN-MODEL.md`

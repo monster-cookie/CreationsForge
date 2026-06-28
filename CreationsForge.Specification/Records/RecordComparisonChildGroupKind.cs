@@ -76,5 +76,23 @@ public enum RecordComparisonChildGroupKind
     /// <summary>
     /// Indicates that persisted static property rows should be rendered as indexed <c>Property</c> child rows.
     /// </summary>
-    StaticProperties
+    StaticProperties,
+
+    /// <summary>
+    /// Indicates that persisted constructible object component rows should be rendered as the <c>Components</c> child
+    /// group.
+    /// </summary>
+    ConstructibleObjectComponents,
+
+    /// <summary>
+    /// Indicates that persisted constructible object category rows should be rendered as the <c>Categories</c> child
+    /// group.
+    /// </summary>
+    ConstructibleObjectCategories,
+
+    /// <summary>
+    /// Indicates that persisted constructible object recipe-filter rows should be rendered as the
+    /// <c>RecipeFilters</c> child group.
+    /// </summary>
+    ConstructibleObjectRecipeFilters
 }
