@@ -398,6 +398,18 @@ internal static class FactionRecordSpecification
             [
                 new RecordComparisonChildGroupSpecification
                 {
+                    GroupKind = RecordComparisonChildGroupKind.FactionRelations,
+                    GroupName = "Relations",
+                    Description = "Faction relation rows appended after scalar parent rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.FactionRanks,
+                    GroupName = "Ranks",
+                    Description = "Faction rank rows appended after relation rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
                     GroupKind = RecordComparisonChildGroupKind.ConditionRules,
                     GroupName = "Conditions",
                     Description = "Shared condition-rule rows appended after rank rows."
@@ -416,8 +428,8 @@ internal static class FactionRecordSpecification
                 }
             ]
         },
-        ImplementationNote = "Comparison metadata drives scalar parent rows and condition/component/keyword " +
-            "child-group dispatch; relation and rank rows remain strategy-based."
+        ImplementationNote = "Comparison metadata drives scalar parent rows and relation/rank/condition/component/" +
+            "keyword child-group dispatch."
     };
 }
 

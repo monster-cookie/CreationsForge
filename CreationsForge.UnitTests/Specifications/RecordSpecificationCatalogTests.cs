@@ -371,6 +371,16 @@ public class RecordSpecificationCatalogTests
             .Select(entry => entry.RecordID)
             .OrderBy(recordID => recordID, StringComparer.Ordinal)
             .ToList();
+        var factionRelationRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.FactionRelations)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var factionRankRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.FactionRanks)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
 
         keywordRecordIDs.ShouldBe(
             ["BOOK", "CONT", "DOOR", "FACT", "MGEF", "MISC", "NPC_", "STAT", "TERM"]);
@@ -384,6 +394,8 @@ public class RecordSpecificationCatalogTests
         classPropertyRecordIDs.ShouldBe(["CLAS"]);
         classSkillWeightRecordIDs.ShouldBe(["CLAS"]);
         classStatWeightRecordIDs.ShouldBe(["CLAS"]);
+        factionRelationRecordIDs.ShouldBe(["FACT"]);
+        factionRankRecordIDs.ShouldBe(["FACT"]);
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.KeywordMappings)
             .ShouldAllBe(entry => entry.Group.GroupName == "Keywords");
@@ -417,6 +429,12 @@ public class RecordSpecificationCatalogTests
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ClassStatWeights)
             .ShouldAllBe(entry => entry.Group.GroupName == "StatWeights");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.FactionRelations)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Relations");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.FactionRanks)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Ranks");
         childGroups.ShouldAllBe(entry => !string.IsNullOrWhiteSpace(entry.Group.Description));
     }
 

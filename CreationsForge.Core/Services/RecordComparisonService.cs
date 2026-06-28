@@ -304,7 +304,7 @@ public class RecordComparisonService : IRecordComparisonService
 
     /// <summary>
     /// Creates the comparison output for imported Faction overrides, using specification metadata for scalar parent
-    /// rows while leaving relations, ranks, conditions, components, and keyword rows on existing strategy code.
+    /// rows and faction child-group dispatch.
     /// </summary>
     /// <param name="game">The game whose imported faction records should be compared.</param>
     /// <param name="formKey">The origin FormKey shared by the faction overrides.</param>
@@ -319,8 +319,16 @@ public class RecordComparisonService : IRecordComparisonService
             records,
             localizedStrings: localizedStrings,
             recordTextLanguage: recordTextLanguage);
-        AddFactionRelationGroups(fields, records);
-        AddFactionRankGroups(fields, records, localizedStrings, recordTextLanguage);
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Faction.RecordID,
+            formKey,
+            records.Cast<RecordDTO>().ToList(),
+            localizedStrings,
+            recordTextLanguage,
+            RecordComparisonChildGroupKind.FactionRelations,
+            RecordComparisonChildGroupKind.FactionRanks);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -1359,6 +1367,42 @@ public class RecordComparisonService : IRecordComparisonService
         IReadOnlyList<RecordDTO> records,
         params RecordComparisonChildGroupKind[] groupKinds)
     {
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            recordType,
+            formKey,
+            records,
+            localizedStrings: null,
+            recordTextLanguage: null,
+            groupKinds);
+    }
+
+    /// <summary>
+    /// Appends strategy-backed child groups declared by the record comparison specification with localized text
+    /// context available for child rows that need it.
+    /// </summary>
+    /// <param name="fields">The comparison field list that receives generated child groups.</param>
+    /// <param name="game">The game whose imported rows are being compared.</param>
+    /// <param name="recordType">The Bethesda record ID whose comparison specification should be used.</param>
+    /// <param name="formKey">The origin FormKey shared by the compared records.</param>
+    /// <param name="records">The ordered base record rows participating in the comparison.</param>
+    /// <param name="localizedStrings">Optional localized string rows used by localized child fields.</param>
+    /// <param name="recordTextLanguage">The preferred language used when resolving localized child fields.</param>
+    /// <param name="groupKinds">The child-group strategies to execute at the current row position.</param>
+    /// <exception cref="NotSupportedException">
+    /// Thrown when metadata asks Core to execute a child-group strategy that this service does not implement.
+    /// </exception>
+    private void AddSpecComparisonChildGroups(
+        IList<RecordComparisonFieldDTO> fields,
+        SupportedGame game,
+        string recordType,
+        FormKeyDTO formKey,
+        IReadOnlyList<RecordDTO> records,
+        IReadOnlyList<LocalizedStringDTO>? localizedStrings,
+        Language? recordTextLanguage,
+        params RecordComparisonChildGroupKind[] groupKinds)
+    {
         var specification = RecordSpecificationProvider.FindByRecordID(recordType);
         if (specification == null)
         {
@@ -1416,6 +1460,16 @@ public class RecordComparisonService : IRecordComparisonService
                     break;
                 case RecordComparisonChildGroupKind.ClassStatWeights:
                     AddClassWeightGroups(fields, records.Cast<ClassDTO>().ToList(), "Stat", childGroup.GroupName);
+                    break;
+                case RecordComparisonChildGroupKind.FactionRelations:
+                    AddFactionRelationGroups(fields, records.Cast<FactionDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.FactionRanks:
+                    AddFactionRankGroups(
+                        fields,
+                        records.Cast<FactionDTO>().ToList(),
+                        localizedStrings ?? Array.Empty<LocalizedStringDTO>(),
+                        recordTextLanguage ?? Language.English);
                     break;
                 default:
                     throw new NotSupportedException(

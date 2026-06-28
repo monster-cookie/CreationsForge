@@ -19,7 +19,7 @@ namespace CreationsForge.UnitTests.Services;
 public partial class RecordComparisonServiceTests
 {
     /// <summary>
-    /// Verifies that Faction comparison uses specification-owned scalar rows while retaining strategy-owned child rows.
+    /// Verifies that Faction comparison uses specification-owned scalar rows and child-group dispatch.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForFaction_MapsScalarFieldsAndChildGroups()
@@ -68,8 +68,8 @@ public partial class RecordComparisonServiceTests
     }
 
     /// <summary>
-    /// Verifies that Faction scalar rows are selected from the injected comparison specification while metadata-owned
-    /// child rows remain outside the scalar metadata path.
+    /// Verifies that Faction scalar rows are selected from the injected comparison specification while undeclared
+    /// child groups are omitted.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForFaction_UsesInjectedComparisonSpecification()
@@ -130,7 +130,8 @@ public partial class RecordComparisonServiceTests
             .ShouldBe(["100", "200"]);
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Flags");
-        comparison.Fields.Single(field => field.FieldName == "Relations").Children.ShouldNotBeEmpty();
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Relations");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Ranks");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Components");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Keywords");
     }
@@ -170,8 +171,4 @@ public partial class RecordComparisonServiceTests
             .ShouldBe(["Basis Fraktion", "Patch Fraktion"]);
     }
 
-    /// <summary>
-    /// Verifies that Actor Value Information comparison uses specification-owned scalar rows while retaining
-    /// strategy-owned perk-tree rows.
-    /// </summary>
 }

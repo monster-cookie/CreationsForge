@@ -61,5 +61,15 @@ public enum RecordComparisonChildGroupKind
     /// <summary>
     /// Indicates that persisted class stat-weight rows should be rendered as the <c>StatWeights</c> child group.
     /// </summary>
-    ClassStatWeights
+    ClassStatWeights,
+
+    /// <summary>
+    /// Indicates that persisted faction relation rows should be rendered as the <c>Relations</c> child group.
+    /// </summary>
+    FactionRelations,
+
+    /// <summary>
+    /// Indicates that persisted faction rank rows should be rendered as the <c>Ranks</c> child group.
+    /// </summary>
+    FactionRanks
 }

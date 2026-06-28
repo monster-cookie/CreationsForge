@@ -251,13 +251,13 @@ The specification catalog now drives simple comparison rows for `FLST`, `GMST`, 
 DTO source paths generically, and uses comparison metadata for ordinary localized scalar rows. Explicit strategy hooks
 remain where behavior is not purely declarative. Keyword rows, shared model rows, shared sound rows, shared scripting
 adapter rows, shared reflection rows, shared condition-rule rows, shared record component rows, script fragment rows,
-and class property/weight rows for current supported comparison families are selected by comparison child-group
+class property/weight rows, and faction relation/rank rows for current supported comparison families are selected by comparison child-group
 metadata. The current explicit hooks include indexed `FLST` item rows, localized `GMST` `Data` display,
-game-dependent `BOOK` body-text source fields, and other `FACT`, `MISC`, `AVIF`, `MGEF`, `PERK`, `NPC_`, `STAT`,
-`BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, and `TERM` child groups. Complex record families and most child groups beyond
+game-dependent `BOOK` body-text source fields, and other `MISC`, `AVIF`, `MGEF`, `PERK`, `NPC_`, `STAT`, `BOOK`,
+`DOOR`, `CONT`, `COBJ`, `CNDF`, and `TERM` child groups. Complex record families and most child groups beyond
 keywords, models, sounds, scripting adapters, reflection, shared condition rules, shared record components, script
-fragments, and class property/weight rows remain on the existing record-specific comparison methods until later
-approved slices move them behind specification metadata.
+fragments, class property/weight rows, and faction relation/rank rows remain on the existing record-specific
+comparison methods until later approved slices move them behind specification metadata.
 
 `IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows.
 `IAssetFileResolverService` resolves readable local asset files from preview candidates by checking absolute paths,

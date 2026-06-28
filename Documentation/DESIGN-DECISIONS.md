@@ -406,8 +406,8 @@ handles localized strings, FormKeys, numbers, text values, and nested source pat
 metadata without changing the current child-row alignment strategies.
 
 Decision: Add `FACT` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
-`CreateFactionComparison` to use the shared specification comparison-field builder for scalar rows. Keep relation,
-rank, condition, component, and keyword rows on existing strategy methods.
+`CreateFactionComparison` to use the shared specification comparison-field builder for scalar rows. In that scalar
+slice, keep relation, rank, condition, component, and keyword rows on existing strategy methods.
 
 Rationale: This moves the last condition-heavy shared record with a manageable parent scalar surface into the
 spec-driven comparison path while deliberately avoiding collection metadata. `FACT` also proves the metadata path can
@@ -422,7 +422,9 @@ Alternatives considered:
 Consequences:
 
 - `FACT` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
-- Relation, rank, condition, component, and keyword rows remain strategy-based.
+- In that scalar slice, relation, rank, condition, component, and keyword rows stayed strategy-based.
+- Later accepted decisions moved condition, component, keyword, relation, and rank dispatch into comparison
+  child-group metadata while preserving the existing row builders.
 - No database schema, persisted data shape, import, reader, or UI workflow changes.
 
 Related files:
@@ -518,6 +520,51 @@ Related files:
 - `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
 - `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
 - `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.GlobalClassFaction.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Faction Child Group Dispatch
+
+Status: Accepted
+
+Context: `FACT` scalar parent comparison rows and shared condition, component, and keyword child groups already use
+comparison metadata, while faction relation and rank rows still used explicit comparison-service calls. Faction ranks
+also use localized title display, so this slice needs metadata dispatch to carry localized text context into
+record-specific child row builders.
+
+Decision: Add `FactionRelations` and `FactionRanks` child-group strategy kinds. Declare those child groups in
+`FactionRecordSpecification` with the existing `Relations` and `Ranks` group names. Replace the explicit
+`CreateFactionComparison` relation and rank calls with filtered metadata dispatch at the same row position, while
+keeping the existing faction row builders as the Core implementation.
+
+Rationale: Faction relations and ranks are a low-risk next record-specific child group because their row builders are
+compact and already indexed. Moving only dispatch into metadata continues the spec-driven migration without forcing a
+generic nested collection model for more complex records.
+
+Alternatives considered:
+
+- Leave faction relation and rank groups explicit until every record-specific child family can move together.
+- Convert faction relations only and keep localized ranks explicit.
+- Introduce a generic nested collection specification immediately.
+- Collapse relation and rank rows into one generic faction-child metadata kind.
+
+Consequences:
+
+- `FACT` relation and rank rows are emitted only when the comparison specification declares the matching faction child
+  group.
+- Existing faction child row order, localized rank-title display, and row shape are preserved by using the existing
+  row builders.
+- More complex record-specific child groups remain strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/FactionRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.Faction.cs`
 - `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
 - `Documentation/ARCHITECTURE.md`
 - `Documentation/DOMAIN-MODEL.md`
