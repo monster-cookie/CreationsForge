@@ -1,5 +1,5 @@
 using Avalonia.Headless.XUnit;
-using CreationsForge.DataValidationTests.Validation.Specs.Perk;
+using CreationsForge.Specification.Validation.Specs.Perk;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.UI.Tests.Perk.Fallout4;

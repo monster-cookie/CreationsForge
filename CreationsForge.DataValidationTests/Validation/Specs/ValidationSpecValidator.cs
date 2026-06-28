@@ -1,3 +1,5 @@
+using CreationsForge.Specification.Validation;
+
 namespace CreationsForge.DataValidationTests.Validation.Specs;
 
 public static class ValidationSpecValidator

@@ -1,155 +1,30 @@
+using CreationsForge.Specification.Records;
+
 namespace CreationsForge.Core.Helpers;
 
 /// <summary>
-/// Listing of all currently implemented major record types
-/// 
-/// NOTE: Please keep these alphabetized. 
+/// Adapts production record specifications into the Core record-type metadata shape used by legacy call sites.
 /// </summary>
 public static class RecordTypeCatalog
 {
-    public static readonly RecordTypeData ActorValueInformation = new()
-    {
-        TableName = "ActorValueInformation",
-        RecordType = "ActorValueInformation",
-        RecordID = "AVIF",
-        FriendlyName = "Actor Value Information"
-    };
-
-    public static readonly RecordTypeData Book = new()
-    {
-        TableName = "Books",
-        RecordType = "Book",
-        RecordID = "BOOK",
-        FriendlyName = "Book"
-    };
-
-    public static readonly RecordTypeData Class = new()
-    {
-        TableName = "Classes",
-        RecordType = "Class",
-        RecordID = "CLAS",
-        FriendlyName = "Class"
-    };
-
-    public static readonly RecordTypeData Container = new()
-    {
-        TableName = "Containers",
-        RecordType = "Container",
-        RecordID = "CONT",
-        FriendlyName = "Container"
-    };
-
-    public static readonly RecordTypeData ConditionForm = new()
-    {
-        TableName = "ConditionForms",
-        RecordType = "ConditionForm",
-        RecordID = "CNDF",
-        FriendlyName = "Condition Form"
-    };
-
-    public static readonly RecordTypeData ConstructibleObject = new()
-    {
-        TableName = "ConstructibleObjects",
-        RecordType = "ConstructibleObject",
-        RecordID = "COBJ",
-        FriendlyName = "Constructible Object"
-    };
-
-    public static readonly RecordTypeData Door = new()
-    {
-        TableName = "Doors",
-        RecordType = "Door",
-        RecordID = "DOOR",
-        FriendlyName = "Door"
-    };
-
-    public static readonly RecordTypeData Faction = new()
-    {
-        TableName = "Factions",
-        RecordType = "Faction",
-        RecordID = "FACT",
-        FriendlyName = "Faction"
-    };
-
-    public static readonly RecordTypeData FormList = new()
-    {
-        TableName = "FormLists",
-        RecordType = "FormList",
-        RecordID = "FLST",
-        FriendlyName = "Form List"
-    };
-
-    public static readonly RecordTypeData GameSetting = new()
-    {
-        TableName = "GameSettings",
-        RecordType = "GameSetting",
-        RecordID = "GMST",
-        FriendlyName = "Game Setting"
-    };
-
-    public static readonly RecordTypeData Global = new()
-    {
-        TableName = "Globals",
-        RecordType = "Global",
-        RecordID = "GLOB",
-        FriendlyName = "Global"
-    };
-
-    public static readonly RecordTypeData Keyword = new()
-    {
-        TableName = "Keywords",
-        RecordType = "Keyword",
-        RecordID = "KYWD",
-        FriendlyName = "Keyword"
-    };
-
-    public static readonly RecordTypeData MagicEffect = new()
-    {
-        TableName = "MagicEffects",
-        RecordType = "MagicEffect",
-        RecordID = "MGEF",
-        FriendlyName = "Magic Effect"
-    };
-
-    public static readonly RecordTypeData MiscItem = new()
-    {
-        TableName = "MiscItems",
-        RecordType = "MiscItem",
-        RecordID = "MISC",
-        FriendlyName = "Misc Item"
-    };
-
-    public static readonly RecordTypeData NPC = new()
-    {
-        TableName = "NPCs",
-        RecordType = "NPC",
-        RecordID = "NPC_",
-        FriendlyName = "NPC"
-    };
-
-    public static readonly RecordTypeData Perk = new()
-    {
-        TableName = "Perks",
-        RecordType = "Perk",
-        RecordID = "PERK",
-        FriendlyName = "Perk"
-    };
-
-    public static readonly RecordTypeData Static = new()
-    {
-        TableName = "Statics",
-        RecordType = "Static",
-        RecordID = "STAT",
-        FriendlyName = "Static"
-    };
-
-    public static readonly RecordTypeData Terminal = new()
-    {
-        TableName = "Terminals",
-        RecordType = "Terminal",
-        RecordID = "TERM",
-        FriendlyName = "Terminal"
-    };
+    public static readonly RecordTypeData ActorValueInformation = RecordTypeData.FromSpecification(SupportedRecordSpecifications.ActorValueInformation);
+    public static readonly RecordTypeData Book = RecordTypeData.FromSpecification(SupportedRecordSpecifications.Book);
+    public static readonly RecordTypeData Class = RecordTypeData.FromSpecification(SupportedRecordSpecifications.Class);
+    public static readonly RecordTypeData Container = RecordTypeData.FromSpecification(SupportedRecordSpecifications.Container);
+    public static readonly RecordTypeData ConditionForm = RecordTypeData.FromSpecification(SupportedRecordSpecifications.ConditionForm);
+    public static readonly RecordTypeData ConstructibleObject = RecordTypeData.FromSpecification(SupportedRecordSpecifications.ConstructibleObject);
+    public static readonly RecordTypeData Door = RecordTypeData.FromSpecification(SupportedRecordSpecifications.Door);
+    public static readonly RecordTypeData Faction = RecordTypeData.FromSpecification(SupportedRecordSpecifications.Faction);
+    public static readonly RecordTypeData FormList = RecordTypeData.FromSpecification(SupportedRecordSpecifications.FormList);
+    public static readonly RecordTypeData GameSetting = RecordTypeData.FromSpecification(SupportedRecordSpecifications.GameSetting);
+    public static readonly RecordTypeData Global = RecordTypeData.FromSpecification(SupportedRecordSpecifications.Global);
+    public static readonly RecordTypeData Keyword = RecordTypeData.FromSpecification(SupportedRecordSpecifications.Keyword);
+    public static readonly RecordTypeData MagicEffect = RecordTypeData.FromSpecification(SupportedRecordSpecifications.MagicEffect);
+    public static readonly RecordTypeData MiscItem = RecordTypeData.FromSpecification(SupportedRecordSpecifications.MiscItem);
+    public static readonly RecordTypeData NPC = RecordTypeData.FromSpecification(SupportedRecordSpecifications.NPC);
+    public static readonly RecordTypeData Perk = RecordTypeData.FromSpecification(SupportedRecordSpecifications.Perk);
+    public static readonly RecordTypeData Static = RecordTypeData.FromSpecification(SupportedRecordSpecifications.Static);
+    public static readonly RecordTypeData Terminal = RecordTypeData.FromSpecification(SupportedRecordSpecifications.Terminal);
 
     public static readonly IReadOnlyList<RecordTypeData> All =
     [
@@ -173,12 +48,22 @@ public static class RecordTypeCatalog
         Terminal
     ];
 
+    /// <summary>
+    /// Finds a Core record-type shape by Bethesda record identifier.
+    /// </summary>
+    /// <param name="recordID">The record identifier to locate.</param>
+    /// <returns>The adapted record type, or <c>null</c> when no specification is registered for the identifier.</returns>
     public static RecordTypeData? FindByRecordID(string recordID)
     {
         return All.FirstOrDefault(recordType =>
             string.Equals(recordType.RecordID, recordID, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>
+    /// Gets the display label for a record identifier.
+    /// </summary>
+    /// <param name="recordID">The record identifier to display.</param>
+    /// <returns>The known display label, or the original identifier when it is unknown.</returns>
     public static string GetDisplayLabel(string recordID)
     {
         return FindByRecordID(recordID)?.DisplayLabel ?? recordID;

@@ -1,5 +1,5 @@
 using Avalonia.Headless.XUnit;
-using CreationsForge.DataValidationTests.Validation.Specs.ConditionForm;
+using CreationsForge.Specification.Validation.Specs.ConditionForm;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.UI.Tests.ConditionForm.Starfield;

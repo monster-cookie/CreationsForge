@@ -1,6 +1,6 @@
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.DataValidationTests.Validation.Specs;
-using CreationsForge.DataValidationTests.Validation.Specs.Door;
+using CreationsForge.Specification.Validation.Specs.Door;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.Tests.Door.Skyrim;

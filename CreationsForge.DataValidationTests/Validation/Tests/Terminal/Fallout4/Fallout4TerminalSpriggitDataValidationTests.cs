@@ -1,6 +1,6 @@
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.DataValidationTests.Validation.Specs;
-using CreationsForge.DataValidationTests.Validation.Specs.Terminal;
+using CreationsForge.Specification.Validation.Specs.Terminal;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.Tests.Terminal.Fallout4;

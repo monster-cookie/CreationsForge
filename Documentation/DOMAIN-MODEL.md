@@ -162,9 +162,11 @@ declared decimal precision only when comparison builds display values and compar
 
 The UI renders comparison DTOs from `IRecordComparisonService` and does not call repositories, database tables, or
 Mutagen APIs directly.
-Spriggit comparison UI validation includes a coverage audit that flags validation specs with meaningful DTO assertions
-but no explicit comparison row expectations, preventing record types from passing headless UI validation through the
-default `EditorID`-only fallback.
+Spriggit validation spec declarations live in `CreationsForge.Specification` beside the production game and record
+metadata they reference. `CreationsForge.DataValidationTests` owns the workers that load Spriggit YAML, flatten DTOs,
+run assertions, and render headless UI comparison rows. Spriggit comparison UI validation includes a coverage audit
+that flags validation specs with meaningful DTO assertions but no explicit comparison row expectations, preventing
+record types from passing headless UI validation through the default `EditorID`-only fallback.
 
 ## Localized Record Text
 
@@ -194,15 +196,14 @@ record
 instance before saving type-specific detail rows, and typed importers dispatch shared child persistence from the record
 DTO capability interfaces.
 
-`CreationsForge.Specification` currently provides production metadata for the imported record families. That metadata
-is registered through Core composition and drives the shared import dispatch loop. The catalog now describes current
-reader destination collections, default Mutagen collection names, overlay-safe reader eligibility, full-binary reader
-overrides, and optional collection policy as a reader-migration target. The same catalog drives simple comparison rows
-for the `FLST`, `GMST`, and `GLOB` pilot records, but it does not yet change how readers map Mutagen records or how
-repositories persist DTOs. Core can assemble a `PluginRecordSetDTO` from mapped record-family collections using
-specification reader metadata; Starfield, Fallout 4, and Skyrim use that assembly path while preserving their
-game-specific mapping methods. Starfield, Fallout 4, and Skyrim also use supported record specifications to select
-and order record-family mapper dispatch, but each mapper still calls the existing game-specific Mutagen mapping code.
+`CreationsForge.Specification` currently provides production metadata for the supported games and imported record
+families. That metadata is registered through Core composition and drives the shared import dispatch loop. The catalog
+now describes record identity, current reader destination collections, default Mutagen collection names, overlay-safe
+reader eligibility, full-binary reader overrides, optional collection policy, comparison metadata, and validation spec
+declarations. Core can assemble a `PluginRecordSetDTO` from mapped record-family collections using specification
+reader metadata; Starfield, Fallout 4, and Skyrim use that assembly path while preserving their game-specific mapping
+methods. Starfield, Fallout 4, and Skyrim also use supported record specifications to select and order record-family
+mapper dispatch, but each mapper still calls the existing game-specific Mutagen mapping code.
 Fallout 4 terminal records use the full binary mod path because the reader metadata marks the Fallout 4 `TERM`
 adapter path as requiring it.
 

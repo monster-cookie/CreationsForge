@@ -1,5 +1,5 @@
 using Avalonia.Headless.XUnit;
-using CreationsForge.DataValidationTests.Validation.Specs.Faction;
+using CreationsForge.Specification.Validation.Specs.Faction;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.UI.Tests.Faction.Fallout4;

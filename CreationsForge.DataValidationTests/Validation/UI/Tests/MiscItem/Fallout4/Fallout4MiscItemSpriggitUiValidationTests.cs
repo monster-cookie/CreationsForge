@@ -1,5 +1,5 @@
 using Avalonia.Headless.XUnit;
-using CreationsForge.DataValidationTests.Validation.Specs.MiscItem;
+using CreationsForge.Specification.Validation.Specs.MiscItem;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.UI.Tests.MiscItem.Fallout4;

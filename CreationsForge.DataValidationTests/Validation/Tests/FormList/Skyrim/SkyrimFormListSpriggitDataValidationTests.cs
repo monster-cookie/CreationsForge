@@ -1,6 +1,6 @@
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.DataValidationTests.Validation.Specs;
-using CreationsForge.DataValidationTests.Validation.Specs.FormList;
+using CreationsForge.Specification.Validation.Specs.FormList;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.Tests.FormList.Skyrim;

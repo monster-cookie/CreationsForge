@@ -27,6 +27,11 @@ public sealed class RecordSpecification
     public required string FriendlyName { get; init; }
 
     /// <summary>
+    /// Gets the standard display label that combines the friendly record-family name and Bethesda record identifier.
+    /// </summary>
+    public string DisplayLabel => FriendlyName + " (" + RecordID + ")";
+
+    /// <summary>
     /// Gets the game-specific read/import support entries for the record family.
     /// </summary>
     public IReadOnlyList<RecordGameSupportSpecification> GameSupport { get; init; } =

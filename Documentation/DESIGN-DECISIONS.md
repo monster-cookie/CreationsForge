@@ -21,7 +21,7 @@ Consequences:
 
 - `CreationsForge.Specification` has no project dependencies and uses its own lightweight game identifiers so Core can depend on it without a circular reference.
 - Core composition can resolve `IRecordSpecificationProvider` for import, comparison, future validation, and UI-neutral services.
-- `RecordTypeCatalog` plus non-pilot comparison/import branches remain transitional and can drift unless future slices intentionally move consumers to the specification provider.
+- `RecordTypeCatalog` is now superseded by specification-owned record metadata and remains only as a Core adapter for legacy call sites.
 - No database schema, persisted cache shape, UI workflow, or import behavior changes in the foundation slice.
 
 Related files:
@@ -34,6 +34,54 @@ Related files:
 - `CreationsForge.Core/CreationsForge.Core.csproj`
 - `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
 - `CreationsForge.UnitTests/Specifications/RecordSpecificationProviderTests.cs`
+
+## 2026-06-27 - Promote Game, Record, And Validation Spec Metadata
+
+Status: Accepted
+
+Context: The project had two metadata homes after the reader/import/comparison migration. `CreationsForge.Specification`
+owned production record-family metadata, while `CreationsForge.Core/Helpers/RecordTypeCatalog.cs` still owned
+record identity facts and `CreationsForge.DataValidationTests/Validation/Specs` still owned reusable Spriggit validation
+spec declarations. That split made validation and Core adapters depend on catalog data that could drift from the new
+specification project.
+
+Decision: Promote game metadata, record identity metadata, and Spriggit validation spec declarations into
+`CreationsForge.Specification`. Keep Core `SupportedGame` and `RecordTypeData` as runtime/boundary shapes for now, but
+adapt them from specification metadata. Keep DataValidationTests as the execution harness for Spriggit loading, DTO
+flattening, imported database reads, UI rendering, and assertions.
+
+Rationale: Specification should be the single home for reusable metadata and spec definitions. Keeping Core runtime
+types as adapters avoids a broad persistence/UI/config churn while still removing the duplicate source of record
+identity truth. Moving validation declarations into Specification lets future record work update reader/import/
+comparison/validation declarations together.
+
+Alternatives considered:
+
+- Keep validation spec declarations in DataValidationTests and only reference production record specifications from
+  test code.
+- Move Core `SupportedGame` and `RecordTypeData` completely into Specification in the same change.
+- Add a Specification dependency on Core to reuse existing helper types.
+
+Consequences:
+
+- `CreationsForge.Specification` now owns `GameSpecificationCatalog`, `RecordSpecificationCatalog`, and
+  `ValidationSpecCatalog`.
+- `CreationsForge.Core/Helpers/RecordTypeCatalog.cs` adapts from `SupportedRecordSpecifications` instead of owning
+  independent record metadata.
+- `CreationsForge.DataValidationTests` references Specification directly but still owns validation workers and local
+  environment concerns.
+- No database schema, import mapping, persisted data, UI workflow, or validation rule semantics changed.
+
+Related files:
+
+- `CreationsForge.Specification/Games/GameSpecificationCatalog.cs`
+- `CreationsForge.Specification/Records/RecordSpecification.cs`
+- `CreationsForge.Specification/Validation/ValidationSpecCatalog.cs`
+- `CreationsForge.Specification/Validation/Specs`
+- `CreationsForge.Core/Helpers/RecordTypeCatalog.cs`
+- `CreationsForge.Core/Helpers/SpecificationGameAdapter.cs`
+- `CreationsForge.DataValidationTests/Validation`
+- `CreationsForge.UnitTests/Specifications/ValidationSpecCatalogTests.cs`
 
 ## 2026-06-25 - Drive Pilot Comparison Rows From Specifications
 

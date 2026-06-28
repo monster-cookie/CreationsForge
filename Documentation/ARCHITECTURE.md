@@ -21,12 +21,14 @@ shared import orchestration, shared Mutagen primitive mapping, and repositories 
 may reference shared Mutagen packages such as `Mutagen.Bethesda.Core`, but it must not reference game-specific Mutagen
 packages.
 
-`CreationsForge.Specification` owns production record-family metadata that can gradually drive shared reader, import,
-validation, and comparison behavior. The catalog includes the current imported record families and drives
-`RecordImportService` dispatch order and `PluginRecordSetDTO` collection lookup. It also describes reader-facing DTO
-destination collections and default Mutagen collection names for the current game adapters. `RecordComparisonService`
-consumes comparison metadata for the current simple scalar-row slice. The existing game readers, typed importers,
-repositories, and complex comparison strategies still own their current runtime behavior.
+`CreationsForge.Specification` owns production game metadata, record-family identity metadata, and record-family
+metadata that can gradually drive shared reader, import, validation, and comparison behavior. The catalog includes the
+current imported record families and drives `RecordImportService` dispatch order and `PluginRecordSetDTO` collection
+lookup. It also describes reader-facing DTO destination collections and default Mutagen collection names for the current
+game adapters. `RecordComparisonService` consumes comparison metadata for the current comparison surface. Validation
+spec declarations and sample-specific Spriggit-to-DTO mapping rules live in this project so they share the same
+game/record metadata source as production readers, importers, and comparison. The existing game readers, typed
+importers, repositories, comparison row builders, and validation runners still own their current runtime behavior.
 `SupportedRecordSpecifications` is a public facade that preserves the catalog API and import order. Each record
 family's metadata lives in its own `*RecordSpecification.cs` file named after the canonical CreationsForge record
 type, and shared construction helpers live in `RecordSpecificationFactory`.
@@ -61,12 +63,13 @@ adapter projects rather than persisted game metadata paths.
 
 `CreationsForge.UnitTests` tests non-database logic only.
 
-`CreationsForge.DataValidationTests` is a manual validation test project. It references Bootstrap and Core so it can
-resolve existing repositories and compare imported DTO readback against selected Spriggit YAML samples. It may also
-reference the Avalonia presentation project for Spriggit-backed rendered comparison validation, where the validation
-subject is imported data flowing through the production comparison UI rather than isolated presentation behavior. Its
-JSON configuration lives inside the test project under `Configuration`. It does not own production services or database
-schema.
+`CreationsForge.DataValidationTests` is a manual validation test project. It references Bootstrap, Core, and
+Specification so it can resolve existing repositories and compare imported DTO readback against selected Spriggit YAML
+samples declared by the specification project. It may also reference the Avalonia presentation project for
+Spriggit-backed rendered comparison validation, where the validation subject is imported data flowing through the
+production comparison UI rather than isolated presentation behavior. Its JSON configuration lives inside the test
+project under `Configuration`. It owns validation execution workers, Spriggit file loading, DTO flattening, UI
+fixtures, and assertions; it does not own production services, schema, or reusable spec definitions.
 
 `CreationsForge.PresentationTests` owns headless Avalonia unit and presentation behavior checks that do not require
 Spriggit extraction data or imported validation database state.
@@ -76,13 +79,14 @@ Spriggit extraction data or imported validation database state.
 - CreationsForge depends on Bootstrap and Core.
 - Console depends on Bootstrap and Core.
 - Bootstrap depends on Core, Migrations, Starfield, Fallout4, and Skyrim.
-- Core depends on Assets for asset resolution DTOs, Migrations for migration execution, Specification for
-  record-family metadata, and shared Mutagen core primitives for game-agnostic DTO mapping.
+- Core depends on Assets for asset resolution DTOs, Migrations for migration execution, Specification for game,
+  record-family, reader, import, validation, and comparison metadata, and shared Mutagen core primitives for
+  game-agnostic DTO mapping.
 - Specification has no project dependencies.
 - Assets has no project dependencies.
 - Game projects depend on Core.
 - Migrations does not depend on Core or game projects.
-- UnitTests depend on Core and the console project for parser tests.
+- UnitTests depend on Core, Specification, and the console project for parser tests.
 
 ## Composition
 
