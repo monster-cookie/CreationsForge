@@ -87,8 +87,8 @@ strategy-based.
 
 Decision: Add comparison metadata for `KYWD` and `STAT` scalar parent rows. Convert `CreateKeywordComparison` and
 `CreateStaticComparison` to call the shared specification comparison-field builder. Keep localized `Name` display as a
-custom value hook, and keep `STAT` navmesh, keyword, property, model, and reflection rows on the existing strategy
-methods.
+custom value hook, and in that scalar slice keep `STAT` navmesh, keyword, property, model, and reflection rows on the
+existing strategy methods.
 
 Rationale: This expands production use of specification-driven comparison while keeping the change easy to validate.
 The spec now owns more scalar row selection and ordering, but row state, plugin column ordering, localized display,
@@ -105,7 +105,9 @@ Consequences:
 - `KYWD` and `STAT` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
 - Existing localized-name display behavior was preserved through comparison-service hooks in this slice; a later
   accepted decision moved ordinary localized scalar rows to metadata.
-- `STAT` child groups remain strategy-based.
+- In that scalar slice, `STAT` child groups stayed strategy-based.
+- Later accepted decisions moved keyword, model, reflection, and property dispatch into comparison child-group
+  metadata while preserving the existing row builders.
 - No database schema, persisted data shape, import, reader, or UI workflow changes.
 
 Related files:
@@ -520,6 +522,49 @@ Related files:
 - `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
 - `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
 - `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.GlobalClassFaction.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Static Property Child Group Dispatch
+
+Status: Accepted
+
+Context: `STAT` scalar parent comparison rows and shared keyword, model, and reflection child groups already use
+comparison metadata, while static property rows still used an explicit comparison-service call. Static navmesh rows
+remain a larger nested family, so this slice moves only the simple indexed property rows.
+
+Decision: Add a `StaticProperties` child-group strategy kind. Declare that child group in
+`StaticRecordSpecification` with the existing property row behavior and position after keywords. Replace the explicit
+`CreateStaticComparison` property call with filtered metadata dispatch at the same row position, while keeping the
+existing static property row builder as the Core implementation.
+
+Rationale: Static property rows are low-risk because they are indexed and compact. Moving only dispatch into metadata
+continues the record-specific child-group migration while leaving navmesh geometry explicit until a stronger nested
+collection strategy exists.
+
+Alternatives considered:
+
+- Convert static navmesh and properties together.
+- Leave static properties explicit until every record-specific child family can move together.
+- Introduce a generic nested collection specification immediately.
+- Collapse all static child rows into one generic static-child metadata kind.
+
+Consequences:
+
+- `STAT` property rows are emitted only when the comparison specification declares the `StaticProperties` child group.
+- Existing static property row order and display shape are preserved by using the existing row builder.
+- Static navmesh geometry remains strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/StaticRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.Static.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.RecordFactories.cs`
 - `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
 - `Documentation/ARCHITECTURE.md`
 - `Documentation/DOMAIN-MODEL.md`

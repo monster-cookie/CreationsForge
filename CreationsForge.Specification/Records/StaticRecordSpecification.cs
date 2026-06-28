@@ -273,6 +273,12 @@ internal static class StaticRecordSpecification
                 },
                 new RecordComparisonChildGroupSpecification
                 {
+                    GroupKind = RecordComparisonChildGroupKind.StaticProperties,
+                    GroupName = "Properties",
+                    Description = "Static property rows appended after keyword rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
                     GroupKind = RecordComparisonChildGroupKind.ModelMappings,
                     GroupName = "Models",
                     Description = "Shared model rows appended after property rows."
@@ -285,8 +291,8 @@ internal static class StaticRecordSpecification
                 }
             ]
         },
-        ImplementationNote = "Comparison metadata drives scalar parent rows and keyword/model/reflection " +
-            "child-group dispatch; navmesh and property rows remain strategy-based."
+        ImplementationNote = "Comparison metadata drives scalar parent rows and keyword/property/model/reflection " +
+            "child-group dispatch; navmesh rows remain strategy-based."
     };
 }
 

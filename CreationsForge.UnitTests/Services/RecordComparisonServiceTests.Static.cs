@@ -20,18 +20,23 @@ public partial class RecordComparisonServiceTests
 {
     /// <summary>
     /// Verifies that Static scalar rows are selected from the injected comparison specification while undeclared
-    /// model and reflection child rows remain outside the metadata path.
+    /// property, model, and reflection child rows remain outside the metadata path.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForStatic_UsesInjectedComparisonSpecification()
     {
         var formKey = CreateFormKey("Starfield.esm", 0x126);
+        var actorValueFormKey = CreateFormKey("Starfield.esm", 0x201);
+        var baseStatic = CreateStatic("Base.esm", formKey, 35, "0, 0, 0", null);
+        baseStatic.Properties.Add(CreateStaticProperty("Base.esm", formKey, actorValueFormKey, 0, 10));
+        var patchStatic = CreateStatic("Patch.esp", formKey, 45, "1, 1, 1", 1.25);
+        patchStatic.Properties.Add(CreateStaticProperty("Patch.esp", formKey, actorValueFormKey, 0, 20));
         var staticRepository = new TestStaticRepository
         {
             Records =
             [
-                CreateStatic("Base.esm", formKey, 35, "0, 0, 0", null),
-                CreateStatic("Patch.esp", formKey, 45, "1, 1, 1", 1.25)
+                baseStatic,
+                patchStatic
             ]
         };
         var modelRepository = new TestModelRepository
@@ -85,6 +90,7 @@ public partial class RecordComparisonServiceTests
             .ShouldBe(["35", "45"]);
         comparison.Fields.ShouldNotContain(field => field.FieldName == "ObjectBoundsFirst");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Property [0]");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Model");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Reflection");
     }
@@ -125,18 +131,23 @@ public partial class RecordComparisonServiceTests
     }
 
     /// <summary>
-    /// Verifies that record comparison static maps static fields model data and reflect payloads.
+    /// Verifies that Static comparison maps scalar rows, property rows, model data, and reflection payloads.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForStatic_MapsStaticFieldsModelDataAndReflectPayloads()
     {
         var formKey = CreateFormKey("Starfield.esm", 0x1000);
+        var actorValueFormKey = CreateFormKey("Starfield.esm", 0x201);
+        var baseStatic = CreateStatic("Base.esm", formKey, 35, "0, 0, 0", null);
+        baseStatic.Properties.Add(CreateStaticProperty("Base.esm", formKey, actorValueFormKey, 0, 10));
+        var patchStatic = CreateStatic("Patch.esp", formKey, 45, "0, 0, 0", 1.25);
+        patchStatic.Properties.Add(CreateStaticProperty("Patch.esp", formKey, actorValueFormKey, 0, 20));
         var staticRepository = new TestStaticRepository
         {
             Records =
             [
-                CreateStatic("Base.esm", formKey, 35, "0, 0, 0", null),
-                CreateStatic("Patch.esp", formKey, 45, "0, 0, 0", 1.25)
+                baseStatic,
+                patchStatic
             ]
         };
         var modelRepository = new TestModelRepository
@@ -177,6 +188,9 @@ public partial class RecordComparisonServiceTests
         comparison.Fields.Single(field => field.FieldName == "UnknownDNAMFloat").Values.Select(value => value.DisplayValue).ShouldBe(["", "1.25"]);
         var keywords = comparison.Fields.Single(field => field.FieldName == "Keywords");
         keywords.Children.Single(field => field.FieldName == "Keyword [0]").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000555", "Starfield.esm:00000666"]);
+        var property = comparison.Fields.Single(field => field.FieldName == "Property [0]");
+        property.Children.Single(field => field.FieldName == "ActorValue").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000201", "Starfield.esm:00000201"]);
+        property.Children.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["10", "20"]);
         var model = comparison.Fields.Single(field => field.FieldName == "Model");
         model.Children.Single(field => field.FieldName == "File").Values.Select(value => value.DisplayValue).ShouldBe(["Meshes\\SetDressing\\Rock01.nif", "Meshes\\SetDressing\\Rock01.nif"]);
         model.Children.Single(field => field.FieldName == "Data").Values.Select(value => value.DisplayValue).ShouldBe(["AABB", "CCDD"]);

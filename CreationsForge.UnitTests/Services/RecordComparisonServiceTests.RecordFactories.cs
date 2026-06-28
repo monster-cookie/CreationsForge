@@ -675,6 +675,34 @@ public partial class RecordComparisonServiceTests
         };
     }
 
+    /// <summary>
+    /// Creates an indexed static property row for comparison tests.
+    /// </summary>
+    /// <param name="fileName">The plugin filename used to build the row's mod key.</param>
+    /// <param name="formKey">The owning static record form key.</param>
+    /// <param name="actorValue">The actor value reference assigned to the property.</param>
+    /// <param name="propertyIndex">The property index used for comparison row alignment.</param>
+    /// <param name="value">The numeric property value.</param>
+    /// <returns>A populated static property DTO suitable for static comparison fixtures.</returns>
+    private static StaticPropertyDTO CreateStaticProperty(
+        string fileName,
+        FormKeyDTO formKey,
+        FormKeyDTO actorValue,
+        int propertyIndex,
+        double value)
+    {
+        return new StaticPropertyDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            ActorValue = actorValue,
+            PropertyIndex = propertyIndex,
+            Value = value,
+            ImportedAtUTC = DateTime.UtcNow
+        };
+    }
+
     private static BookDTO CreateBook(string fileName, FormKeyDTO formKey, string name, int value)
     {
         return new BookDTO

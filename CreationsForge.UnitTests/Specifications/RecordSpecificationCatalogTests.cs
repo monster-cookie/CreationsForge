@@ -381,6 +381,11 @@ public class RecordSpecificationCatalogTests
             .Select(entry => entry.RecordID)
             .OrderBy(recordID => recordID, StringComparer.Ordinal)
             .ToList();
+        var staticPropertyRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.StaticProperties)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
 
         keywordRecordIDs.ShouldBe(
             ["BOOK", "CONT", "DOOR", "FACT", "MGEF", "MISC", "NPC_", "STAT", "TERM"]);
@@ -396,6 +401,7 @@ public class RecordSpecificationCatalogTests
         classStatWeightRecordIDs.ShouldBe(["CLAS"]);
         factionRelationRecordIDs.ShouldBe(["FACT"]);
         factionRankRecordIDs.ShouldBe(["FACT"]);
+        staticPropertyRecordIDs.ShouldBe(["STAT"]);
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.KeywordMappings)
             .ShouldAllBe(entry => entry.Group.GroupName == "Keywords");
@@ -435,6 +441,9 @@ public class RecordSpecificationCatalogTests
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.FactionRanks)
             .ShouldAllBe(entry => entry.Group.GroupName == "Ranks");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.StaticProperties)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Properties");
         childGroups.ShouldAllBe(entry => !string.IsNullOrWhiteSpace(entry.Group.Description));
     }
 

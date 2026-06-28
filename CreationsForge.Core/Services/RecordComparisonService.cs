@@ -662,7 +662,7 @@ public class RecordComparisonService : IRecordComparisonService
 
     /// <summary>
     /// Creates the comparison output for imported Static overrides, using specification metadata for scalar parent
-    /// rows while leaving navmesh, keyword, property, model, and reflection groups on strategy code.
+    /// rows and supported child-group dispatch while leaving navmesh groups on strategy code.
     /// </summary>
     /// <param name="game">The game whose imported static records should be compared.</param>
     /// <param name="formKey">The origin FormKey shared by the static overrides.</param>
@@ -685,7 +685,13 @@ public class RecordComparisonService : IRecordComparisonService
             formKey,
             records.Cast<RecordDTO>().ToList(),
             RecordComparisonChildGroupKind.KeywordMappings);
-        AddStaticPropertyGroups(fields, records);
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Static.RecordID,
+            formKey,
+            records.Cast<RecordDTO>().ToList(),
+            RecordComparisonChildGroupKind.StaticProperties);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -1470,6 +1476,9 @@ public class RecordComparisonService : IRecordComparisonService
                         records.Cast<FactionDTO>().ToList(),
                         localizedStrings ?? Array.Empty<LocalizedStringDTO>(),
                         recordTextLanguage ?? Language.English);
+                    break;
+                case RecordComparisonChildGroupKind.StaticProperties:
+                    AddStaticPropertyGroups(fields, records.Cast<StaticDTO>().ToList());
                     break;
                 default:
                     throw new NotSupportedException(

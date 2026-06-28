@@ -71,5 +71,10 @@ public enum RecordComparisonChildGroupKind
     /// <summary>
     /// Indicates that persisted faction rank rows should be rendered as the <c>Ranks</c> child group.
     /// </summary>
-    FactionRanks
+    FactionRanks,
+
+    /// <summary>
+    /// Indicates that persisted static property rows should be rendered as indexed <c>Property</c> child rows.
+    /// </summary>
+    StaticProperties
 }
