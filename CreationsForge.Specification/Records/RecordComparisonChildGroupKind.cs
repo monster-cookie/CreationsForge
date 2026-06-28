@@ -46,5 +46,20 @@ public enum RecordComparisonChildGroupKind
     /// Indicates that persisted script fragment rows should be rendered as the shared <c>Script Fragments</c> child
     /// group.
     /// </summary>
-    ScriptFragments
+    ScriptFragments,
+
+    /// <summary>
+    /// Indicates that persisted class property rows should be rendered as the <c>Properties</c> child group.
+    /// </summary>
+    ClassProperties,
+
+    /// <summary>
+    /// Indicates that persisted class skill-weight rows should be rendered as the <c>SkillWeights</c> child group.
+    /// </summary>
+    ClassSkillWeights,
+
+    /// <summary>
+    /// Indicates that persisted class stat-weight rows should be rendered as the <c>StatWeights</c> child group.
+    /// </summary>
+    ClassStatWeights
 }

@@ -19,7 +19,7 @@ namespace CreationsForge.UnitTests.Services;
 public partial class RecordComparisonServiceTests
 {
     /// <summary>
-    /// Verifies that Class comparison uses specification-owned scalar rows while retaining strategy-owned child rows.
+    /// Verifies that Class comparison uses specification-owned scalar rows and child-group dispatch.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForClass_MapsScalarFieldsAndChildGroups()
@@ -66,8 +66,8 @@ public partial class RecordComparisonServiceTests
     }
 
     /// <summary>
-    /// Verifies that Class scalar rows are selected from the injected comparison specification while child rows remain
-    /// strategy-based.
+    /// Verifies that Class scalar rows are selected from the injected comparison specification while undeclared child
+    /// groups are omitted.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForClass_UsesInjectedComparisonSpecification()
@@ -116,7 +116,9 @@ public partial class RecordComparisonServiceTests
             .ShouldBe(["Ballistics", "Lasers"]);
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "MaxTrainingLevel");
-        comparison.Fields.Single(field => field.FieldName == "Properties").Children.ShouldNotBeEmpty();
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Properties");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "SkillWeights");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "StatWeights");
     }
 
     /// <summary>

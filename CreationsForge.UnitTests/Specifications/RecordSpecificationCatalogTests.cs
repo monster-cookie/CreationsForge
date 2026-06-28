@@ -356,6 +356,21 @@ public class RecordSpecificationCatalogTests
             .Select(entry => entry.RecordID)
             .OrderBy(recordID => recordID, StringComparer.Ordinal)
             .ToList();
+        var classPropertyRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ClassProperties)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var classSkillWeightRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ClassSkillWeights)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var classStatWeightRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ClassStatWeights)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
 
         keywordRecordIDs.ShouldBe(
             ["BOOK", "CONT", "DOOR", "FACT", "MGEF", "MISC", "NPC_", "STAT", "TERM"]);
@@ -366,6 +381,9 @@ public class RecordSpecificationCatalogTests
         conditionRecordIDs.ShouldBe(["CNDF", "COBJ", "FACT", "PERK", "TERM"]);
         componentRecordIDs.ShouldBe(["BOOK", "CONT", "DOOR", "FACT"]);
         scriptFragmentRecordIDs.ShouldBe(["PERK", "TERM"]);
+        classPropertyRecordIDs.ShouldBe(["CLAS"]);
+        classSkillWeightRecordIDs.ShouldBe(["CLAS"]);
+        classStatWeightRecordIDs.ShouldBe(["CLAS"]);
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.KeywordMappings)
             .ShouldAllBe(entry => entry.Group.GroupName == "Keywords");
@@ -390,6 +408,15 @@ public class RecordSpecificationCatalogTests
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ScriptFragments)
             .ShouldAllBe(entry => entry.Group.GroupName == "Script Fragments");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ClassProperties)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Properties");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ClassSkillWeights)
+            .ShouldAllBe(entry => entry.Group.GroupName == "SkillWeights");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ClassStatWeights)
+            .ShouldAllBe(entry => entry.Group.GroupName == "StatWeights");
         childGroups.ShouldAllBe(entry => !string.IsNullOrWhiteSpace(entry.Group.Description));
     }
 

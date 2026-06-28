@@ -304,7 +304,9 @@ Alternatives considered:
 Consequences:
 
 - `CLAS` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
-- Class property, skill-weight, and stat-weight rows remain strategy-based.
+- In that scalar slice, class property, skill-weight, and stat-weight rows stayed strategy-based.
+- A later accepted decision moved class child-row dispatch into comparison child-group metadata while preserving the
+  existing row builders.
 - No database schema, persisted data shape, import, reader, or UI workflow changes.
 
 Related files:
@@ -516,6 +518,50 @@ Related files:
 - `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
 - `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
 - `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.GlobalClassFaction.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Class Child Group Dispatch
+
+Status: Accepted
+
+Context: `CLAS` scalar parent comparison rows already use comparison metadata, while class property, skill-weight, and
+stat-weight rows still used explicit comparison-service calls. The shared child-group metadata path now covers several
+common row strategies, so `CLAS` is a small record-specific pilot for metadata-selected child groups without requiring
+a generic nested collection engine.
+
+Decision: Add `ClassProperties`, `ClassSkillWeights`, and `ClassStatWeights` child-group strategy kinds. Declare those
+child groups in `ClassRecordSpecification` with the existing `Properties`, `SkillWeights`, and `StatWeights` group
+names. Replace the explicit `CreateClassComparison` child-row calls with filtered metadata dispatch at the same row
+position, while keeping the existing class row builders as the Core implementation.
+
+Rationale: Class child rows are low-risk because they are record-local, already indexed, and have compact row shapes.
+Moving only dispatch into metadata proves record-specific child-group metadata without inventing a broad nested
+collection description for more complex families.
+
+Alternatives considered:
+
+- Leave `CLAS` child groups explicit until every record-specific child family can move together.
+- Convert `FACT` relation and rank rows first.
+- Introduce a generic nested collection specification immediately.
+- Collapse all class child rows into one generic class-child metadata kind.
+
+Consequences:
+
+- `CLAS` property and weight rows are emitted only when the comparison specification declares the matching class child
+  group.
+- Existing class child row order and display shape are preserved by using the existing row builders.
+- More complex record-specific child groups remain strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/ClassRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.Class.cs`
 - `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
 - `Documentation/ARCHITECTURE.md`
 - `Documentation/DOMAIN-MODEL.md`

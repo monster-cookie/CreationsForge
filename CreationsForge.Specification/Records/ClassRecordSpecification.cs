@@ -146,10 +146,30 @@ internal static class ClassRecordSpecification
                     SourcePath = "Unknown2",
                     ValueKind = RecordFieldValueKind.Number
                 }
+            ],
+            ChildGroups =
+            [
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.ClassProperties,
+                    GroupName = "Properties",
+                    Description = "Class property rows keyed by property index."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.ClassSkillWeights,
+                    GroupName = "SkillWeights",
+                    Description = "Class skill-weight rows keyed by weight index."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.ClassStatWeights,
+                    GroupName = "StatWeights",
+                    Description = "Class stat-weight rows keyed by weight index."
+                }
             ]
         },
-        ImplementationNote = "Comparison metadata drives scalar parent rows; property, skill-weight, and stat-weight " +
-            "rows remain strategy-based."
+        ImplementationNote = "Comparison metadata drives scalar parent rows and class property/weight child-group " +
+            "dispatch."
     };
 }
-

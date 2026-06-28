@@ -274,7 +274,7 @@ public class RecordComparisonService : IRecordComparisonService
 
     /// <summary>
     /// Creates the comparison output for imported Class overrides, using specification metadata for scalar parent rows
-    /// while leaving class properties and weight groups on existing strategy code.
+    /// and class child-group dispatch.
     /// </summary>
     /// <param name="game">The game whose imported class records should be compared.</param>
     /// <param name="formKey">The origin FormKey shared by the class overrides.</param>
@@ -289,9 +289,15 @@ public class RecordComparisonService : IRecordComparisonService
             records,
             localizedStrings: localizedStrings,
             recordTextLanguage: recordTextLanguage);
-        AddClassPropertyGroups(fields, records);
-        AddClassWeightGroups(fields, records, "Skill", "SkillWeights");
-        AddClassWeightGroups(fields, records, "Stat", "StatWeights");
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Class.RecordID,
+            formKey,
+            records.Cast<RecordDTO>().ToList(),
+            RecordComparisonChildGroupKind.ClassProperties,
+            RecordComparisonChildGroupKind.ClassSkillWeights,
+            RecordComparisonChildGroupKind.ClassStatWeights);
 
         return CreateComparison(RecordTypeCatalog.Class.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
     }
@@ -1401,6 +1407,15 @@ public class RecordComparisonService : IRecordComparisonService
                         fields,
                         records,
                         records.Cast<IHasScriptFragmentsDTO>().SelectMany(record => record.ScriptFragments).ToList());
+                    break;
+                case RecordComparisonChildGroupKind.ClassProperties:
+                    AddClassPropertyGroups(fields, records.Cast<ClassDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.ClassSkillWeights:
+                    AddClassWeightGroups(fields, records.Cast<ClassDTO>().ToList(), "Skill", childGroup.GroupName);
+                    break;
+                case RecordComparisonChildGroupKind.ClassStatWeights:
+                    AddClassWeightGroups(fields, records.Cast<ClassDTO>().ToList(), "Stat", childGroup.GroupName);
                     break;
                 default:
                     throw new NotSupportedException(
