@@ -1,5 +1,47 @@
 # Design Decisions
 
+## 2026-06-28 - Split Application Settings From Game Selection
+
+Status: Accepted
+
+Context: `GameSelectionService` had grown beyond supported-game and active-game behavior. It also read and saved
+theme, record text language, NifSkope executable path, and active-plugin selector preferences, which made the service
+name misleading and encouraged unrelated consumers to depend on game-selection behavior.
+
+Decision: Introduce `IApplicationSettingsService` and `ApplicationSettingsService` for UI-neutral application
+preferences. Keep `IGameSelectionService` focused on supported-game lookup and active-game persistence. Make
+`RecordComparisonService` read the configured record text language through the application settings service. Keep the
+ESP-over-matching-ESM preference as a selector-display rule only; import and plugin metadata scanning still process
+both matching plugins.
+
+Rationale: Splitting the services makes each contract describe its actual responsibility while preserving the existing
+configuration store. It also keeps comparison and settings consumers from depending on a game-selection abstraction
+just to read non-game preferences.
+
+Alternatives considered:
+
+- Rename `GameSelectionService` to a broad configuration service and keep all current members together.
+- Keep the overloaded service name and add documentation only.
+- Move Settings-screen persistence directly into the Avalonia view model.
+
+Consequences:
+
+- Settings persistence remains UI-neutral in Core and continues to use the existing JSON configuration store.
+- Active-game persistence is still available without exposing theme, language, path, or selector-display members.
+- Record comparison consumes only the settings dependency it needs for localized text selection.
+- The active-plugin selector can hide a matching ESM from display without changing import scan coverage.
+- No database schema, import mapping, plugin persistence, or configuration file format changes are introduced.
+
+Related files:
+
+- `CreationsForge.Core/Services/Interfaces/IApplicationSettingsService.cs`
+- `CreationsForge.Core/Services/ApplicationSettingsService.cs`
+- `CreationsForge.Core/Services/Interfaces/IGameSelectionService.cs`
+- `CreationsForge.Core/Services/GameSelectionService.cs`
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge/ViewModels/SettingsViewModel.cs`
+- `CreationsForge.Core/Services/PluginSelectionService.cs`
+
 ## 2026-06-25 - Add Specification Project For Record Metadata
 
 Status: Accepted

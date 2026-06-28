@@ -263,23 +263,35 @@ public class MainView : UserControl
 
     private Control BuildRecordTreeDataGrid(RecordTreeItemViewModel item)
     {
+        var selectionChangedSincePointerPress = false;
+        var source = new FlatTreeDataGridSource<RecordTreeItemViewModel>(item.Children)
+            .WithTextColumn("FormID", record => record.FormIDText, options => options.BeginEditGestures = BeginEditGestures.None)
+            .WithTextColumn("EditorID", record => record.EditorID, options => options.BeginEditGestures = BeginEditGestures.None)
+            .WithTextColumn("Plugins", record => record.PluginCountText, options => options.BeginEditGestures = BeginEditGestures.None);
         var records = new TreeDataGrid
         {
             CanUserResizeColumns = true,
             CanUserSortColumns = false,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             MinHeight = 44,
-            Source = new FlatTreeDataGridSource<RecordTreeItemViewModel>(item.Children)
-                .WithTextColumn("FormID", record => record.FormIDText)
-                .WithTextColumn("EditorID", record => record.EditorID)
-                .WithTextColumn("Plugins", record => record.PluginCountText)
+            Source = source
         };
+        records.PointerPressed += (_, _) => selectionChangedSincePointerPress = false;
         records.SelectionChanged += (_, e) =>
         {
             var selectedRecord = e.SelectedItems
                 .OfType<RecordTreeItemViewModel>()
                 .LastOrDefault();
             if (selectedRecord is not null)
+            {
+                selectionChangedSincePointerPress = true;
+                ViewModel.SelectRecordForComparison(selectedRecord);
+            }
+        };
+        records.Tapped += (_, _) =>
+        {
+            if (!selectionChangedSincePointerPress &&
+                source.RowSelection?.SelectedItem is RecordTreeItemViewModel selectedRecord)
             {
                 ViewModel.SelectRecordForComparison(selectedRecord);
             }

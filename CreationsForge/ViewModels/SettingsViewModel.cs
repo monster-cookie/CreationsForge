@@ -12,6 +12,7 @@ public class SettingsViewModel : ViewModelBase
 {
     private readonly IApplicationNavigationService ApplicationNavigationService;
     private readonly IApplicationWindowService ApplicationWindowService;
+    private readonly IApplicationSettingsService ApplicationSettingsService;
     private readonly IGameSelectionService GameSelectionService;
     private readonly SupportedGameDTO? InitialSelectedGame;
     private string? SelectedGameDisplayNameValue;
@@ -19,26 +20,30 @@ public class SettingsViewModel : ViewModelBase
     private string SelectedThemeModeValue;
     private string SelectedRecordTextLanguageValue;
     private string? NifSkopeExecutablePathValue;
+    private bool PreferEspOverMatchingEsmValue;
 
     public SettingsViewModel(
         IGameSelectionService gameSelectionService,
+        IApplicationSettingsService applicationSettingsService,
         IApplicationNavigationService applicationNavigationService,
         IApplicationWindowService applicationWindowService)
     {
         GameSelectionService = gameSelectionService;
+        ApplicationSettingsService = applicationSettingsService;
         ApplicationNavigationService = applicationNavigationService;
         ApplicationWindowService = applicationWindowService;
         SupportedGames = GameSelectionService.GetSupportedGames();
         GameOptions = SupportedGames.Select(game => game.DisplayName).ToList();
         ThemeFamilyOptions = ["Semi", "Fluent"];
         ThemeModeOptions = ["Dark", "Light"];
-        RecordTextLanguageOptions = GameSelectionService.GetRecordTextLanguages().Select(language => language.ToString()).ToList();
+        RecordTextLanguageOptions = ApplicationSettingsService.GetRecordTextLanguages().Select(language => language.ToString()).ToList();
         InitialSelectedGame = GetConfiguredGame();
         SelectedGameDisplayNameValue = InitialSelectedGame?.DisplayName;
-        SelectedThemeFamilyValue = GameSelectionService.GetThemeFamily().ToString();
-        SelectedThemeModeValue = GameSelectionService.GetThemeMode().ToString();
-        SelectedRecordTextLanguageValue = GameSelectionService.GetRecordTextLanguage().ToString();
-        NifSkopeExecutablePathValue = GameSelectionService.GetNifSkopeExecutablePath();
+        SelectedThemeFamilyValue = ApplicationSettingsService.GetThemeFamily().ToString();
+        SelectedThemeModeValue = ApplicationSettingsService.GetThemeMode().ToString();
+        SelectedRecordTextLanguageValue = ApplicationSettingsService.GetRecordTextLanguage().ToString();
+        NifSkopeExecutablePathValue = ApplicationSettingsService.GetNifSkopeExecutablePath();
+        PreferEspOverMatchingEsmValue = ApplicationSettingsService.GetPreferEspOverMatchingEsm();
         SaveCommand = new RelayCommand(Save);
         BrowseNifSkopeExecutableCommand = new AsyncRelayCommand(BrowseNifSkopeExecutableAsync, () => IsNifSkopeSettingVisible);
         CancelCommand = new RelayCommand(Cancel);
@@ -92,6 +97,15 @@ public class SettingsViewModel : ViewModelBase
         set => SetProperty(ref NifSkopeExecutablePathValue, value);
     }
 
+    /// <summary>
+    /// Gets or sets whether plugin selectors hide a matching ESM when an ESP with the same base filename exists.
+    /// </summary>
+    public bool PreferEspOverMatchingEsm
+    {
+        get => PreferEspOverMatchingEsmValue;
+        set => SetProperty(ref PreferEspOverMatchingEsmValue, value);
+    }
+
     private void Save()
     {
         var selectedGame = SupportedGames.FirstOrDefault(game =>
@@ -101,11 +115,11 @@ public class SettingsViewModel : ViewModelBase
         var recordTextLanguage = GetSelectedRecordTextLanguage();
         if (selectedGame is not null)
         {
-            GameSelectionService.SetActiveGameThemeRecordTextLanguageAndNifSkopeExecutablePath(selectedGame.Game, themeFamily, themeMode, recordTextLanguage, GetSelectedNifSkopeExecutablePath());
+            ApplicationSettingsService.SetActiveGameThemeRecordTextLanguageNifSkopeExecutablePathAndPluginSelectionPreference(selectedGame.Game, themeFamily, themeMode, recordTextLanguage, GetSelectedNifSkopeExecutablePath(), PreferEspOverMatchingEsm);
         }
         else
         {
-            GameSelectionService.SetThemeRecordTextLanguageAndNifSkopeExecutablePath(themeFamily, themeMode, recordTextLanguage, GetSelectedNifSkopeExecutablePath());
+            ApplicationSettingsService.SetThemeRecordTextLanguageNifSkopeExecutablePathAndPluginSelectionPreference(themeFamily, themeMode, recordTextLanguage, GetSelectedNifSkopeExecutablePath(), PreferEspOverMatchingEsm);
         }
 
         ApplicationWindowService.ApplyTheme(themeFamily, themeMode);
@@ -169,7 +183,7 @@ public class SettingsViewModel : ViewModelBase
     {
         if (!OperatingSystem.IsWindows())
         {
-            return GameSelectionService.GetNifSkopeExecutablePath();
+            return ApplicationSettingsService.GetNifSkopeExecutablePath();
         }
 
         return string.IsNullOrWhiteSpace(NifSkopeExecutablePath)

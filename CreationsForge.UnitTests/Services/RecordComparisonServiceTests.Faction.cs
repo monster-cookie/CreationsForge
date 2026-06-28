@@ -159,11 +159,11 @@ public partial class RecordComparisonServiceTests
                 CreateLocalizedString("Patch.esp", formKey, "Name", "German", "Patch Fraktion")
             ]
         };
-        var gameSelectionService = new TestGameSelectionService { RecordTextLanguage = Language.German };
+        var applicationSettingsService = new TestApplicationSettingsService { RecordTextLanguage = Language.German };
         var service = CreateService(
             factionRepository: factionRepository,
             recordLocalizedStringRepository: localizedStringRepository,
-            gameSelectionService: gameSelectionService);
+            applicationSettingsService: applicationSettingsService);
 
         var comparison = service.GetRecordComparison(SupportedGame.Starfield, RecordTypeCatalog.Faction.RecordID, formKey);
 

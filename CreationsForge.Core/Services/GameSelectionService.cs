@@ -3,19 +3,26 @@ using CreationsForge.Core.DTOs.Games;
 using CreationsForge.Core.Enums;
 using CreationsForge.Core.Models.Configuration;
 using CreationsForge.Core.Services.Interfaces;
-using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Core.Services;
 
+/// <summary>
+/// Provides supported game choices and active-game persistence.
+/// </summary>
 public class GameSelectionService : IGameSelectionService
 {
     private readonly IApplicationConfigurationStore ConfigurationStore;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="GameSelectionService"/> class.
+    /// </summary>
+    /// <param name="configurationStore">The configuration store used to read and save the active game.</param>
     public GameSelectionService(IApplicationConfigurationStore configurationStore)
     {
         ConfigurationStore = configurationStore;
     }
 
+    /// <inheritdoc />
     public IReadOnlyList<SupportedGameDTO> GetSupportedGames()
     {
         return
@@ -26,6 +33,7 @@ public class GameSelectionService : IGameSelectionService
         ];
     }
 
+    /// <inheritdoc />
     public SupportedGame? GetActiveGame()
     {
         return Enum.TryParse<SupportedGame>(ConfigurationStore.Current.ActiveGame, true, out var game)
@@ -33,81 +41,30 @@ public class GameSelectionService : IGameSelectionService
             : null;
     }
 
-    public ApplicationThemeMode GetThemeMode()
-    {
-        return ConfigurationStore.Current.ThemeMode;
-    }
-
-    public ApplicationThemeFamily GetThemeFamily()
-    {
-        return ConfigurationStore.Current.ThemeFamily;
-    }
-
-    public IReadOnlyList<Language> GetRecordTextLanguages()
-    {
-        return Enum.GetValues<Language>().OrderBy(language => language.ToString(), StringComparer.OrdinalIgnoreCase).ToList();
-    }
-
-    public Language GetRecordTextLanguage()
-    {
-        return NormalizeRecordTextLanguage(ConfigurationStore.Current.RecordTextLanguage);
-    }
-
-    public string? GetNifSkopeExecutablePath()
-    {
-        return ConfigurationStore.Current.NifSkopeExecutablePath;
-    }
-
+    /// <inheritdoc />
     public void SetActiveGame(SupportedGame game)
     {
-        SaveConfiguration(game.ToString(), ConfigurationStore.Current.ThemeFamily, ConfigurationStore.Current.ThemeMode, GetRecordTextLanguage().ToString(), ConfigurationStore.Current.NifSkopeExecutablePath);
+        var configuration = new ApplicationConfiguration
+        {
+            ActiveGame = game.ToString(),
+            ThemeFamily = ConfigurationStore.Current.ThemeFamily,
+            ThemeMode = ConfigurationStore.Current.ThemeMode,
+            RecordTextLanguage = ConfigurationStore.Current.RecordTextLanguage,
+            NifSkopeExecutablePath = ConfigurationStore.Current.NifSkopeExecutablePath,
+            PreferEspOverMatchingEsm = ConfigurationStore.Current.PreferEspOverMatchingEsm,
+            ApplicationDataDirectory = ConfigurationStore.Current.ApplicationDataDirectory,
+            DatabaseDirectory = ConfigurationStore.Current.DatabaseDirectory,
+            LoggingDirectory = ConfigurationStore.Current.LoggingDirectory
+        };
+        ConfigurationStore.Save(configuration);
     }
 
-    public void SetThemeMode(ApplicationThemeMode themeMode)
-    {
-        SaveConfiguration(ConfigurationStore.Current.ActiveGame, ConfigurationStore.Current.ThemeFamily, themeMode, GetRecordTextLanguage().ToString(), ConfigurationStore.Current.NifSkopeExecutablePath);
-    }
-
-    public void SetThemeFamily(ApplicationThemeFamily themeFamily)
-    {
-        SaveConfiguration(ConfigurationStore.Current.ActiveGame, themeFamily, ConfigurationStore.Current.ThemeMode, GetRecordTextLanguage().ToString(), ConfigurationStore.Current.NifSkopeExecutablePath);
-    }
-
-    public void SetActiveGameAndThemeMode(SupportedGame game, ApplicationThemeMode themeMode)
-    {
-        SaveConfiguration(game.ToString(), ConfigurationStore.Current.ThemeFamily, themeMode, GetRecordTextLanguage().ToString(), ConfigurationStore.Current.NifSkopeExecutablePath);
-    }
-
-    public void SetActiveGameAndTheme(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode)
-    {
-        SaveConfiguration(game.ToString(), themeFamily, themeMode, GetRecordTextLanguage().ToString(), ConfigurationStore.Current.NifSkopeExecutablePath);
-    }
-
-    public void SetTheme(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode)
-    {
-        SaveConfiguration(ConfigurationStore.Current.ActiveGame, themeFamily, themeMode, GetRecordTextLanguage().ToString(), ConfigurationStore.Current.NifSkopeExecutablePath);
-    }
-
-    public void SetActiveGameThemeAndNifSkopeExecutablePath(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, string? nifSkopeExecutablePath)
-    {
-        SaveConfiguration(game.ToString(), themeFamily, themeMode, GetRecordTextLanguage().ToString(), NormalizeOptionalPath(nifSkopeExecutablePath));
-    }
-
-    public void SetThemeAndNifSkopeExecutablePath(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, string? nifSkopeExecutablePath)
-    {
-        SaveConfiguration(ConfigurationStore.Current.ActiveGame, themeFamily, themeMode, GetRecordTextLanguage().ToString(), NormalizeOptionalPath(nifSkopeExecutablePath));
-    }
-
-    public void SetThemeRecordTextLanguageAndNifSkopeExecutablePath(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, Language recordTextLanguage, string? nifSkopeExecutablePath)
-    {
-        SaveConfiguration(ConfigurationStore.Current.ActiveGame, themeFamily, themeMode, recordTextLanguage.ToString(), NormalizeOptionalPath(nifSkopeExecutablePath));
-    }
-
-    public void SetActiveGameThemeRecordTextLanguageAndNifSkopeExecutablePath(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, Language recordTextLanguage, string? nifSkopeExecutablePath)
-    {
-        SaveConfiguration(game.ToString(), themeFamily, themeMode, recordTextLanguage.ToString(), NormalizeOptionalPath(nifSkopeExecutablePath));
-    }
-
+    /// <summary>
+    /// Creates a supported-game option for presentation and command-line selection surfaces.
+    /// </summary>
+    /// <param name="game">The supported game identifier.</param>
+    /// <param name="displayName">The display label for the game.</param>
+    /// <returns>The supported game DTO.</returns>
     private static SupportedGameDTO CreateGameOption(SupportedGame game, string displayName)
     {
         return new SupportedGameDTO
@@ -116,36 +73,5 @@ public class GameSelectionService : IGameSelectionService
             Name = game.ToString(),
             DisplayName = displayName
         };
-    }
-
-    private void SaveConfiguration(string? activeGame, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, string recordTextLanguage, string? nifSkopeExecutablePath)
-    {
-        var configuration = new ApplicationConfiguration
-        {
-            ActiveGame = activeGame,
-            ThemeFamily = themeFamily,
-            ThemeMode = themeMode,
-            RecordTextLanguage = recordTextLanguage,
-            NifSkopeExecutablePath = nifSkopeExecutablePath,
-            ApplicationDataDirectory = ConfigurationStore.Current.ApplicationDataDirectory,
-            DatabaseDirectory = ConfigurationStore.Current.DatabaseDirectory,
-            LoggingDirectory = ConfigurationStore.Current.LoggingDirectory
-        };
-
-        ConfigurationStore.Save(configuration);
-    }
-
-    private static string? NormalizeOptionalPath(string? path)
-    {
-        return string.IsNullOrWhiteSpace(path)
-            ? null
-            : path.Trim();
-    }
-
-    private static Language NormalizeRecordTextLanguage(string? language)
-    {
-        return Enum.TryParse<Language>(language, true, out var parsedLanguage)
-            ? parsedLanguage
-            : Language.English;
     }
 }

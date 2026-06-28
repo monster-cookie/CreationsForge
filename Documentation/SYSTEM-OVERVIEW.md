@@ -75,11 +75,11 @@ localized text rows for imported fields that expose Mutagen translation tables.
     record types, resolves registered typed detail importers, records unsupported typed detail importers, and isolates
     per-record failures.
 
-The Avalonia UI uses `IGameSelectionService` to list and persist supported games, `IGameImportReadinessService` to
-detect whether the selected game already has imported plugin data, `IPluginSelectionService` to list imported/openable
-plugins for the active game, and `IGameImportWorkflowService` to run the same schema initialization and import workflow
-through Core. UI and MVVM code consume Core DTOs and result objects only; direct Mutagen usage remains outside the
-presentation project.
+The Avalonia UI uses `IGameSelectionService` to list and persist supported games, `IApplicationSettingsService` to
+read and save UI-neutral preferences, `IGameImportReadinessService` to detect whether the selected game already has
+imported plugin data, `IPluginSelectionService` to list imported/openable plugins for the active game, and
+`IGameImportWorkflowService` to run the same schema initialization and import workflow through Core. UI and MVVM code
+consume Core DTOs and result objects only; direct Mutagen usage remains outside the presentation project.
 
 On startup, the UI opens the main window immediately and initializes the database schema before view-model queries run.
 The main toolbar exposes `Open Plugin` for active game/plugin selection. When a configured active game exists, startup
@@ -96,8 +96,11 @@ types.
 - Accepts `--reset-all` to delete the current database and force a full import for every supported game.
 - Rejects unsupported game values with a clear error and non-zero exit code.
 - Persists active game and app data paths in a JSON configuration file.
-- Persists the selected record text language in the Settings screen. Record comparison uses that language for
-  localized values when available and falls back to English values when needed.
+- Persists Settings-screen preferences for theme, record text language, NifSkope executable path, and active-plugin
+  selector display. Record comparison uses the selected language for localized values when available and falls back to
+  English values when needed.
+- Persists a plugin selector preference that hides a matching ESM when an ESP with the same base filename is available
+  in selection/search results. Import and plugin metadata scanning still process both matching plugins.
 - Writes logs to console and the configured `Logs` directory.
 - Creates and migrates a SQLite database through DbUp.
 - Uses DbUp `SchemaVersions` as the migration-state source of truth.
@@ -115,7 +118,8 @@ types.
   Core services with a progress screen, and browsing imported typed records in a left-side tree with category counts,
   per-record
   plugin usage counts, scalar comparison rows, and supported child comparison rows such as CNDF condition rows,
-  script fragments, terminal children, and COBJ component/filter rows. Long reflection and raw payload values are
+  script fragments, terminal children, and COBJ component/filter rows. The Open Plugin dialog changes plugin selection
+  only from explicit row selection actions, not pointer hover. Long reflection and raw payload values are
   summarized as `[UNPARSEABLE REFLECTION DATA]` and can
   be opened in a hex-view dialog from the comparison grid.
 - Provides an experimental asset preview pane in the Avalonia UI. Core resolves persisted model-path candidates through

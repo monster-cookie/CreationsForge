@@ -14,6 +14,9 @@ public enum ApplicationThemeFamily
     Fluent
 }
 
+/// <summary>
+/// Stores user-facing CreationsForge settings that are serialized to the local JSON configuration file.
+/// </summary>
 public class ApplicationConfiguration
 {
     public const string DefaultRecordTextLanguage = "English";
@@ -27,6 +30,12 @@ public class ApplicationConfiguration
     public string RecordTextLanguage { get; set; } = DefaultRecordTextLanguage;
 
     public string? NifSkopeExecutablePath { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether plugin selection lists hide a matching ESM when an ESP with the same
+    /// base filename is also available.
+    /// </summary>
+    public bool PreferEspOverMatchingEsm { get; set; } = true;
 
     public string ApplicationDataDirectory { get; set; } = ApplicationConfigurationStore.DefaultApplicationDataDirectory;
 

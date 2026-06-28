@@ -235,7 +235,7 @@ public class SpriggitComparisonHeadlessFixture
             repository,
             repository,
             repository,
-            new HeadlessGameSelectionService());
+            new HeadlessApplicationSettingsService());
     }
 
     public sealed record ComparisonSample(
@@ -613,18 +613,8 @@ public class SpriggitComparisonHeadlessFixture
         }
     }
 
-    private sealed class HeadlessGameSelectionService : IGameSelectionService
+    private sealed class HeadlessApplicationSettingsService : IApplicationSettingsService
     {
-        public IReadOnlyList<SupportedGameDTO> GetSupportedGames()
-        {
-            return [];
-        }
-
-        public SupportedGame? GetActiveGame()
-        {
-            return null;
-        }
-
         public ApplicationThemeMode GetThemeMode()
         {
             return ApplicationThemeMode.Dark;
@@ -640,8 +630,20 @@ public class SpriggitComparisonHeadlessFixture
             return Language.English;
         }
 
-        public void SetActiveGame(SupportedGame game)
-        { }
+        public IReadOnlyList<Language> GetRecordTextLanguages()
+        {
+            return [Language.English];
+        }
+
+        public string? GetNifSkopeExecutablePath()
+        {
+            return null;
+        }
+
+        public bool GetPreferEspOverMatchingEsm()
+        {
+            return true;
+        }
 
         public void SetThemeMode(ApplicationThemeMode themeMode)
         { }
@@ -649,13 +651,16 @@ public class SpriggitComparisonHeadlessFixture
         public void SetThemeFamily(ApplicationThemeFamily themeFamily)
         { }
 
-        public void SetActiveGameAndThemeMode(SupportedGame game, ApplicationThemeMode themeMode)
-        { }
-
-        public void SetActiveGameAndTheme(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode)
-        { }
-
         public void SetTheme(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode)
+        { }
+
+        public void SetThemeAndNifSkopeExecutablePath(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, string? nifSkopeExecutablePath)
+        { }
+
+        public void SetThemeRecordTextLanguageNifSkopeExecutablePathAndPluginSelectionPreference(ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, Language recordTextLanguage, string? nifSkopeExecutablePath, bool preferEspOverMatchingEsm)
+        { }
+
+        public void SetActiveGameThemeRecordTextLanguageNifSkopeExecutablePathAndPluginSelectionPreference(SupportedGame game, ApplicationThemeFamily themeFamily, ApplicationThemeMode themeMode, Language recordTextLanguage, string? nifSkopeExecutablePath, bool preferEspOverMatchingEsm)
         { }
     }
 }

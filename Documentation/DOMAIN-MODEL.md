@@ -80,6 +80,9 @@ the stored active game. Running without a game argument uses the stored active g
 The UI uses the same active-game configuration through `IGameSelectionService`. Supported-game display labels are
 presentation-safe Core DTOs and do not expose Mutagen types.
 
+Theme, record text language, NifSkope executable path, and active-plugin selector display preferences are application
+settings rather than game selection behavior. Core exposes those preferences through `IApplicationSettingsService`.
+
 The main-window Open Plugin workflow defaults to the configured active game when one is stored in the configuration
 file. Selecting a game/plugin from the dialog updates presentation active-selection state, and configured startup or
 explicit import commands continue to run through the shared import workflow.
@@ -88,10 +91,13 @@ explicit import commands continue to run through the shared import workflow.
 
 An active plugin is a presentation selection from imported/openable plugin rows for a selected active game. The UI uses
 an Open Plugin dialog to choose both the active game and active plugin from Core DTOs. Plugin choices are scoped to the
-selected game and can be filtered/sorted in presentation code. Selecting an active plugin updates the status bar with
-active game, plugin, and record-count context; it does not perform direct Mutagen reads in the presentation layer.
-Plugin rows can carry persisted import diagnostics for failed, missing, unsupported, changed, or partially imported
-states so the UI can show details without reading logs.
+selected game and can be filtered/sorted in presentation code. The plugin selection service can hide a matching ESM
+from selector results when an ESP with the same base filename is also available, according to the persisted
+configuration preference. That preference does not remove either plugin from import, plugin metadata scanning, or
+stored plugin rows. Selecting an active plugin updates the status bar with active game, plugin, and record-count
+context; it does not perform direct Mutagen reads in the presentation layer. Plugin rows can carry persisted import
+diagnostics for failed, missing, unsupported, changed, or partially imported states so the UI can show details without
+reading logs.
 
 ## Imported Record Tree
 

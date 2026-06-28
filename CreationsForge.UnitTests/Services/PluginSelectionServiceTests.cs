@@ -1,5 +1,7 @@
+using CreationsForge.Core.Configuration.Interfaces;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.Enums;
+using CreationsForge.Core.Models.Configuration;
 using CreationsForge.Core.Repositories.Interfaces;
 using CreationsForge.Core.Services;
 using Shouldly;
@@ -13,7 +15,7 @@ public class PluginSelectionServiceTests
     {
         var openablePlugins = new List<PluginDTO> { CreatePlugin("Example.esm") };
         var repository = new TestPluginRepository { OpenablePlugins = openablePlugins };
-        var service = new PluginSelectionService(repository);
+        var service = new PluginSelectionService(repository, new TestConfigurationStore());
 
         var plugins = service.SearchOpenablePluginsByFilename(SupportedGame.Starfield, string.Empty);
 
@@ -27,7 +29,7 @@ public class PluginSelectionServiceTests
     {
         var searchResults = new List<PluginDTO> { CreatePlugin("SearchResult.esm") };
         var repository = new TestPluginRepository { SearchResults = searchResults };
-        var service = new PluginSelectionService(repository);
+        var service = new PluginSelectionService(repository, new TestConfigurationStore());
 
         var plugins = service.SearchOpenablePluginsByFilename(SupportedGame.Fallout4, "search");
 
@@ -40,12 +42,71 @@ public class PluginSelectionServiceTests
     public void GetImportedRecordCount_ReturnsRepositoryCount()
     {
         var repository = new TestPluginRepository { ImportedRecordCount = 42 };
-        var service = new PluginSelectionService(repository);
+        var service = new PluginSelectionService(repository, new TestConfigurationStore());
 
         var count = service.GetImportedRecordCount(SupportedGame.Skyrim);
 
         count.ShouldBe(42);
         repository.RecordCountGame.ShouldBe(SupportedGame.Skyrim);
+    }
+
+    [Fact]
+    public void GetOpenablePlugins_WhenPreferenceEnabled_HidesMatchingEsmWhenEspExists()
+    {
+        var repository = new TestPluginRepository
+        {
+            OpenablePlugins =
+            [
+                CreatePlugin("Example.esm"),
+                CreatePlugin("Example.esp"),
+                CreatePlugin("Other.esm")
+            ]
+        };
+        var service = new PluginSelectionService(repository, new TestConfigurationStore());
+
+        var plugins = service.GetOpenablePlugins(SupportedGame.Starfield);
+
+        plugins.Select(plugin => plugin.ModKey.FileName).ShouldBe(["Example.esp", "Other.esm"]);
+    }
+
+    [Fact]
+    public void SearchOpenablePluginsByFilename_WhenPreferenceEnabled_HidesMatchingEsmWhenEspExists()
+    {
+        var repository = new TestPluginRepository
+        {
+            SearchResults =
+            [
+                CreatePlugin("Example.esm"),
+                CreatePlugin("Example.esp")
+            ]
+        };
+        var service = new PluginSelectionService(repository, new TestConfigurationStore());
+
+        var plugins = service.SearchOpenablePluginsByFilename(SupportedGame.Starfield, "Example");
+
+        plugins.Select(plugin => plugin.ModKey.FileName).ShouldBe(["Example.esp"]);
+    }
+
+    [Fact]
+    public void GetOpenablePlugins_WhenPreferenceDisabled_ReturnsMatchingEsmAndEsp()
+    {
+        var repository = new TestPluginRepository
+        {
+            OpenablePlugins =
+            [
+                CreatePlugin("Example.esm"),
+                CreatePlugin("Example.esp")
+            ]
+        };
+        var configurationStore = new TestConfigurationStore
+        {
+            Current = new ApplicationConfiguration { PreferEspOverMatchingEsm = false }
+        };
+        var service = new PluginSelectionService(repository, configurationStore);
+
+        var plugins = service.GetOpenablePlugins(SupportedGame.Starfield);
+
+        plugins.Select(plugin => plugin.ModKey.FileName).ShouldBe(["Example.esm", "Example.esp"]);
     }
 
     private static PluginDTO CreatePlugin(string fileName)
@@ -119,5 +180,20 @@ public class PluginSelectionServiceTests
 
         public void Save(PluginDTO dto)
         { }
+    }
+
+    private sealed class TestConfigurationStore : IApplicationConfigurationStore
+    {
+        public string ConfigurationPath { get; } = "Test.Config.json";
+
+        public ApplicationConfiguration Current { get; set; } = new();
+
+        public void Load()
+        { }
+
+        public void Save(ApplicationConfiguration configuration)
+        {
+            Current = configuration;
+        }
     }
 }
