@@ -1,12 +1,14 @@
 ﻿# Change Log
 
-## Unreleased
+## Version 1.2.0 - 2026-06-28
 
 - Again with missing child data on NPCs.
 - Display UI for condition rules vs storing them as binary.
 - On multiple game imports the progress bar reliably shows which game it is currently processing.
 - Added data validation test harness and all current record types now match base game spriggit data.
 - Might finally have the fix for the random killed application. Nice side effect we can do larger batch inserts again.
+- Adds “Prefer ESP over matching ESM” to de‑duplicate selector results; exposed in Settings
+- Improves Open Plugin UX: no auto/hover selection, selection persists through search
 - Added Additional Major Record Types: Class (CLAS), Faction (FACT)
 
 ### BREAKING CHANGES
