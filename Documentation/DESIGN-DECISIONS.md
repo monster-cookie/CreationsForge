@@ -1,5 +1,1798 @@
 # Design Decisions
 
+## 2026-06-25 - Add Specification Project For Record Metadata
+
+Status: Accepted
+
+Context: The import readers and comparison service are currently wired by hand for every supported record family. That shape is workable for the current approved records, but it does not scale cleanly toward hundreds of major and minor record types across additional Mutagen-supported games. The project also already has validation specs, but those describe sample assertions rather than production record-family metadata.
+
+Decision: Add `CreationsForge.Specification` as a dependency-free production metadata project. The first catalog slice describes `FLST`, `GMST`, and `GLOB` record identity, current game support, source field hints, and comparison field intent. Core references the specification project and registers `IRecordSpecificationProvider`. Later accepted decisions extended the pilot metadata into `RecordComparisonService` and `RecordImportService`; game readers, typed importers, repositories, and complex comparison strategies remain runtime behavior owners for their current responsibilities.
+
+Rationale: A small C# specification foundation gives the project a typed, documented place to grow record metadata without adding dependencies, inventing a file format too early, or forcing a high-risk rewrite of import and comparison behavior. Introducing the project before moving runtime behavior let later work migrate one path at a time while tests guard the catalog shape.
+
+Alternatives considered:
+
+- Keep expanding `RecordTypeCatalog`, `PluginRecordSetDTO`, and `RecordComparisonService` manually for every new record family.
+- Move existing DataValidationTests validation specs into production.
+- Introduce YAML or JSON production specs immediately.
+- Rewrite import and comparison dispatch in the same change as the new project.
+
+Consequences:
+
+- `CreationsForge.Specification` has no project dependencies and uses its own lightweight game identifiers so Core can depend on it without a circular reference.
+- Core composition can resolve `IRecordSpecificationProvider` for import, comparison, future validation, and UI-neutral services.
+- `RecordTypeCatalog` is now superseded by specification-owned record metadata and remains only as a Core adapter for legacy call sites.
+- No database schema, persisted cache shape, UI workflow, or import behavior changes in the foundation slice.
+
+Related files:
+
+- `CreationsForge.Specification/CreationsForge.Specification.csproj`
+- `CreationsForge.Specification/Records/RecordSpecification.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.Specification/Records/IRecordSpecificationProvider.cs`
+- `CreationsForge.Core/CoreModule.cs`
+- `CreationsForge.Core/CreationsForge.Core.csproj`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationProviderTests.cs`
+
+## 2026-06-27 - Promote Game, Record, And Validation Spec Metadata
+
+Status: Accepted
+
+Context: The project had two metadata homes after the reader/import/comparison migration. `CreationsForge.Specification`
+owned production record-family metadata, while `CreationsForge.Core/Helpers/RecordTypeCatalog.cs` still owned
+record identity facts and `CreationsForge.DataValidationTests/Validation/Specs` still owned reusable Spriggit validation
+spec declarations. That split made validation and Core adapters depend on catalog data that could drift from the new
+specification project.
+
+Decision: Promote game metadata, record identity metadata, and Spriggit validation spec declarations into
+`CreationsForge.Specification`. Keep Core `SupportedGame` and `RecordTypeData` as runtime/boundary shapes for now, but
+adapt them from specification metadata. Keep DataValidationTests as the execution harness for Spriggit loading, DTO
+flattening, imported database reads, UI rendering, and assertions.
+
+Rationale: Specification should be the single home for reusable metadata and spec definitions. Keeping Core runtime
+types as adapters avoids a broad persistence/UI/config churn while still removing the duplicate source of record
+identity truth. Moving validation declarations into Specification lets future record work update reader/import/
+comparison/validation declarations together.
+
+Alternatives considered:
+
+- Keep validation spec declarations in DataValidationTests and only reference production record specifications from
+  test code.
+- Move Core `SupportedGame` and `RecordTypeData` completely into Specification in the same change.
+- Add a Specification dependency on Core to reuse existing helper types.
+
+Consequences:
+
+- `CreationsForge.Specification` now owns `GameSpecificationCatalog`, `RecordSpecificationCatalog`, and
+  `ValidationSpecCatalog`.
+- `CreationsForge.Core/Helpers/RecordTypeCatalog.cs` adapts from `SupportedRecordSpecifications` instead of owning
+  independent record metadata.
+- `CreationsForge.DataValidationTests` references Specification directly but still owns validation workers and local
+  environment concerns.
+- No database schema, import mapping, persisted data, UI workflow, or validation rule semantics changed.
+
+Related files:
+
+- `CreationsForge.Specification/Games/GameSpecificationCatalog.cs`
+- `CreationsForge.Specification/Records/RecordSpecification.cs`
+- `CreationsForge.Specification/Validation/ValidationSpecCatalog.cs`
+- `CreationsForge.Specification/Validation/Specs`
+- `CreationsForge.Core/Helpers/RecordTypeCatalog.cs`
+- `CreationsForge.Core/Helpers/SpecificationGameAdapter.cs`
+- `CreationsForge.DataValidationTests/Validation`
+- `CreationsForge.UnitTests/Specifications/ValidationSpecCatalogTests.cs`
+
+## 2026-06-25 - Drive Pilot Comparison Rows From Specifications
+
+Status: Accepted
+
+Context: `RecordComparisonService` built every record-type comparison row through hand-written branches. The first
+specification slice added metadata for `FLST`, `GMST`, and `GLOB`, but comparison behavior still ignored that metadata.
+The UI consumes `RecordComparisonDTO`, so changing the comparison implementation must preserve the DTO shape, row
+ordering, value-state behavior, and localized display behavior.
+
+Decision: Make `RecordComparisonService` consume `IRecordSpecificationProvider` for simple type-specific comparison
+rows on the pilot records. `GLOB` simple scalar rows, `GMST` simple rows, and the `FLST` `AddToList` row are produced
+from comparison specifications. `FLST` indexed item rows remained explicit in this pilot slice until later superseded
+by `2026-06-27 - Add Spec-Driven Bounded Child Group Dispatch`. Localized `GMST` `Data` display remains an explicit
+strategy hook because that behavior is not purely source-path-to-display-value mapping.
+
+Rationale: This proves the specification provider can drive production comparison behavior without rewriting the full
+comparison engine or changing the Avalonia UI contract. Keeping special cases as hooks avoids pretending complex row
+alignment and localization behavior are solved by scalar metadata.
+
+Alternatives considered:
+
+- Keep the pilot comparison metadata inactive until the import engine also consumes specifications.
+- Rewrite the full comparison service around specifications in one change.
+- Move localized `GMST` display and `FLST` item expansion into declarative metadata immediately.
+
+Consequences:
+
+- `RecordComparisonService` now has an optional constructor dependency on `IRecordSpecificationProvider`.
+- The pilot records' simple rows can be changed through specification metadata.
+- Existing direct test construction remains source-compatible through a default provider fallback.
+- Complex records, shared child rows, and import dispatch remain on the existing hand-written paths.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.Specification/Records/RecordComparisonSpecification.cs`
+- `CreationsForge.Specification/Records/RecordComparisonFieldSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+
+## 2026-06-26 - Extend Scalar Comparison Metadata To Keyword And Static
+
+Status: Accepted
+
+Context: The first comparison slice proved that `RecordComparisonService` can produce simple comparison rows from
+record specifications for `FLST`, `GMST`, and `GLOB`. The next low-risk step is to move additional scalar parent
+fields without disturbing complex child alignment, localized display hooks, or presentation DTO shape. `KYWD` has a
+small scalar parent shape, while `STAT` has useful scalar parent rows plus several child groups that should remain
+strategy-based.
+
+Decision: Add comparison metadata for `KYWD` and `STAT` scalar parent rows. Convert `CreateKeywordComparison` and
+`CreateStaticComparison` to call the shared specification comparison-field builder. Keep localized `Name` display as a
+custom value hook, and in that scalar slice keep `STAT` navmesh, keyword, property, model, and reflection rows on the
+existing strategy methods.
+
+Rationale: This expands production use of specification-driven comparison while keeping the change easy to validate.
+The spec now owns more scalar row selection and ordering, but row state, plugin column ordering, localized display,
+and complex child grouping remain in the comparison service until those behaviors have stronger declarative support.
+
+Alternatives considered:
+
+- Convert `BOOK` in the same slice.
+- Move `STAT` child groups into specification metadata immediately.
+- Leave `KYWD` and `STAT` hardcoded until the entire comparison engine can be rewritten.
+
+Consequences:
+
+- `KYWD` and `STAT` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- Existing localized-name display behavior was preserved through comparison-service hooks in this slice; a later
+  accepted decision moved ordinary localized scalar rows to metadata.
+- In that scalar slice, `STAT` child groups stayed strategy-based.
+- Later accepted decisions moved keyword, model, reflection, and property dispatch into comparison child-group
+  metadata while preserving the existing row builders.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-26 - Add Localized Spec Comparison And Book Scalars
+
+Status: Accepted
+
+Context: `KYWD` and `STAT` scalar comparison rows are selected from metadata, but localized scalar rows still required
+record-specific custom value hooks. `BOOK` is the next practical record family because its parent scalar rows are
+valuable to compare, while its keyword, model, sound, script, component, and reflection rows should remain
+strategy-based.
+
+Decision: Add a localized source-field override to `RecordComparisonFieldSpecification` and make
+`RecordComparisonService` resolve ordinary localized scalar rows from comparison metadata. Convert `BOOK` scalar parent
+rows to `RecordComparisonSpecification`. Keep `BOOK` body text on a custom hook because Starfield uses `Text` while
+Fallout 4 and Skyrim use `BookText` as the localized source field. Keep all `BOOK` child groups on existing strategy
+methods.
+
+Rationale: This removes another repeated custom-hook pattern before converting more records, while preserving the
+current localized fallback chain and avoiding an overbroad child-row metadata design. `BOOK` proves the scalar path can
+support localized fields, FormKey fields, nested DTO paths, and still coexist with strategy-owned child groups.
+
+Alternatives considered:
+
+- Convert `BOOK` with custom hooks for every localized scalar row.
+- Add game-specific localized source metadata for every comparison field in this slice.
+- Move `BOOK` child groups into specification metadata immediately.
+
+Consequences:
+
+- Ordinary localized scalar comparison rows can be driven by metadata.
+- `BOOK` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- `BOOK` child groups remain strategy-based.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonFieldSpecification.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-26 - Convert Door And Container Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: The scalar comparison path now supports ordinary localized fields and has moved `KYWD`, `STAT`, and `BOOK`
+parent rows behind specifications. `DOOR` and `CONT` are a natural next slice because their scalar parent rows are
+straightforward, while their models, keywords, sounds, scripts, components, reflection rows, and container-specific
+child rows still need strategy-based alignment.
+
+Decision: Add `DOOR` and `CONT` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreateDoorComparison` and `CreateContainerComparison` to use the shared specification comparison-field builder for
+scalar rows. In that scalar slice, keep all existing child/group rows on the current strategy methods.
+
+Rationale: This expands the spec-driven comparison surface with another pair of user-visible record families while
+preserving comparison DTO shape and avoiding premature child-row metadata. Door and container rows also exercise the
+generic localized display path, FormKey formatting, nested transform source paths, and animation scalar fields.
+
+Alternatives considered:
+
+- Convert only `DOOR` first.
+- Add `DOOR.MajorFlags` because the DTO has the property.
+- Move container item/property/forced-location groups into specification metadata immediately.
+
+Consequences:
+
+- `DOOR` and `CONT` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- `DOOR.MajorFlags` remains omitted because the existing comparison output does not emit it.
+- In that scalar slice, door and container child groups stayed strategy-based.
+- Later accepted decisions moved shared keyword, model, sound, script, component, reflection, and container
+  item/property/forced-location dispatch into comparison child-group metadata while preserving the existing row
+  builders.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-26 - Convert Condition Form And Constructible Object Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: `CNDF` and `COBJ` comparison both include a small scalar parent section followed by condition or child-group
+strategy rows. The scalar comparison path already handles localized fields, FormKey formatting, and numeric display,
+so these records can move their parent rows into metadata without solving condition or component alignment.
+
+Decision: Add `CNDF` and `COBJ` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreateConditionFormComparison` and `CreateConstructibleObjectComparison` to use the shared specification
+comparison-field builder for scalar rows. In that scalar slice, keep condition rules, COBJ components, categories,
+recipe filters, sounds, and scripts on existing strategy methods.
+
+Rationale: This continues expanding spec-driven comparison across records with condition-heavy behavior while keeping
+the hard part deliberately isolated. It also proves that the scalar metadata path can coexist with condition-rule
+groups and COBJ-specific child collections.
+
+Alternatives considered:
+
+- Convert only `CNDF` because it has fewer scalar fields.
+- Move condition-rule rows into specification metadata in the same slice.
+- Move COBJ component, category, and recipe-filter rows into specification metadata immediately.
+
+Consequences:
+
+- `CNDF` and `COBJ` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- In that scalar slice, condition rows and COBJ child groups stayed strategy-based.
+- Later accepted decisions moved condition, sound, script, component, category, and recipe-filter dispatch into
+  comparison child-group metadata while preserving the existing row builders.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-26 - Convert Misc Item Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: `MISC` comparison includes scalar parent rows followed by destructible, keyword, model, sound, scripting,
+component, and resource rows. The scalar comparison path already handles localized strings, FormKey display, numeric
+values, flag sets, and ordinary source-path resolution, so the parent rows can move into metadata without changing
+the child-row alignment strategies.
+
+Decision: Add `MISC` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreateMiscItemComparison` to use the shared specification comparison-field builder for scalar rows. Keep
+destructible rows and shared child groups on existing strategy methods.
+
+Rationale: This moves another high-value record family into the spec-driven scalar path while leaving complex child
+payloads on proven code. `MISC` is a useful bridge because it exercises localized strings, FormKeys, numbers, flags,
+object-bounds text, and several strategy-owned child groups in the same comparison output.
+
+Alternatives considered:
+
+- Move destructible and component rows into specification metadata in the same slice.
+- Convert a simpler remaining record family before `MISC`.
+- Leave `MISC` hardcoded until shared child-row metadata is designed.
+
+Consequences:
+
+- `MISC` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- Destructible, keyword, model, sound, scripting, component, and resource rows remain strategy-based.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-26 - Convert Class Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: `CLAS` comparison includes localized scalar parent rows followed by class property, skill-weight, and
+stat-weight groups. The scalar comparison path already handles localized strings, numbers, text fields, and ordinary
+source-path resolution, so the parent rows can move into metadata without changing child-row alignment.
+
+Decision: Add `CLAS` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreateClassComparison` to use the shared specification comparison-field builder for scalar rows. Keep class
+properties, skill weights, and stat weights on existing strategy methods.
+
+Rationale: This expands the spec-driven comparison surface to another shared cross-game record family while keeping
+the more structured child rows explicit. `CLAS` is a low-risk next step because its parent row shape is compact and
+exercises localized display without requiring condition, script, model, or record-component metadata.
+
+Alternatives considered:
+
+- Convert `FACT` next because it is adjacent in import order.
+- Move class property and weight groups into specification metadata in the same slice.
+- Leave `CLAS` hardcoded until all remaining import-only record families can be moved together.
+
+Consequences:
+
+- `CLAS` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- In that scalar slice, class property, skill-weight, and stat-weight rows stayed strategy-based.
+- A later accepted decision moved class child-row dispatch into comparison child-group metadata while preserving the
+  existing row builders.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-26 - Convert Actor Value Information Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: `AVIF` comparison includes localized scalar parent rows, nested skill scalar rows, and Skyrim perk-tree child
+rows. The scalar comparison path already handles localized strings, numbers, text fields, nested source paths, and
+ordinary source-path resolution, so the parent rows can move into metadata without changing perk-tree alignment.
+
+Decision: Add `AVIF` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreateActorValueInformationComparison` to use the shared specification comparison-field builder for scalar rows. Keep
+perk-tree rows on the existing strategy method.
+
+Rationale: This expands the spec-driven comparison surface to another shared record family while proving that nested
+scalar source paths can move through metadata without pulling in indexed child rows. Keeping the perk tree explicit
+avoids designing collection metadata before the scalar path is complete.
+
+Alternatives considered:
+
+- Convert `FACT` next because it is adjacent to `CLAS` in the import order.
+- Move AVIF perk-tree rows into specification metadata in the same slice.
+- Leave `AVIF` hardcoded until all Skyrim-specific display rows are revisited together.
+
+Consequences:
+
+- `AVIF` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- Perk-tree rows remained strategy-based in this scalar slice; this consequence was later superseded by
+  `2026-06-27 - Add Spec-Driven Bounded Child Group Dispatch`.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-26 - Convert Magic Effect Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: `MGEF` comparison includes localized scalar parent rows, FormKey reference rows, flattened DATA-style rows,
+and shared keyword, sound, and scripting adapter child groups. The scalar comparison path already handles localized
+strings, FormKeys, numbers, text fields, and ordinary source-path resolution, so the currently emitted parent rows can
+move into metadata without changing shared child-row alignment.
+
+Decision: Add `MGEF` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreateMagicEffectComparison` to use the shared specification comparison-field builder for scalar rows. Keep keyword,
+sound, and scripting adapter rows on existing strategy methods.
+
+Rationale: This moves another parent-field-heavy record family into the spec-driven comparison path while preserving
+the current comparison output surface. `MGEF` is a useful slice because it exercises localized rows, many FormKey
+references, and flattened Mutagen/Spriggit DATA fields without requiring collection metadata.
+
+Alternatives considered:
+
+- Convert `FACT` next because it has condition-heavy behavior that should eventually become more declarative.
+- Add every persisted `MGEF` DTO field to the comparison specification.
+- Move keyword, sound, and scripting adapter rows into specification metadata in the same slice.
+
+Consequences:
+
+- `MGEF` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- Keyword, sound, and scripting adapter rows remain strategy-based.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-26 - Convert Faction Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: `FACT` comparison includes localized scalar parent rows, many FormKey reference rows, nested crime and vendor
+value rows, and relation, rank, condition, component, and keyword child groups. The scalar comparison path already
+handles localized strings, FormKeys, numbers, text values, and nested source paths, so the parent rows can move into
+metadata without changing the current child-row alignment strategies.
+
+Decision: Add `FACT` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreateFactionComparison` to use the shared specification comparison-field builder for scalar rows. In that scalar
+slice, keep relation, rank, condition, component, and keyword rows on existing strategy methods.
+
+Rationale: This moves the last condition-heavy shared record with a manageable parent scalar surface into the
+spec-driven comparison path while deliberately avoiding collection metadata. `FACT` also proves the metadata path can
+handle a wider nested scalar shape before tackling larger records such as `NPC_`, `PERK`, or `TERM`.
+
+Alternatives considered:
+
+- Move relation and rank rows into specification metadata in the same slice.
+- Convert `PERK` next because its parent rows are smaller than `NPC_`.
+- Leave `FACT` hardcoded until a condition-row metadata model exists.
+
+Consequences:
+
+- `FACT` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- In that scalar slice, relation, rank, condition, component, and keyword rows stayed strategy-based.
+- Later accepted decisions moved condition, component, keyword, relation, and rank dispatch into comparison
+  child-group metadata while preserving the existing row builders.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Convert Perk Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: `PERK` comparison includes localized scalar parent rows and several strategy-owned child groups: effects,
+ranks, background skills, conditions, sounds, script fragments, and scripting adapters. The scalar comparison path
+already handles localized strings, FormKeys, numbers, text values, and ordinary source paths, so the parent rows can
+move into metadata without changing the child-row alignment strategies.
+
+Decision: Add `PERK` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreatePerkComparison` to use the shared specification comparison-field builder for scalar rows. Keep effects, ranks,
+background skills, conditions, sounds, script fragments, and scripting adapters on existing strategy methods.
+
+Rationale: This moves the next-largest remaining scalar parent surface behind metadata while avoiding the more complex
+collection strategy problem. It leaves `NPC_` and `TERM` as the last hardcoded comparison families because they have
+much broader UI-facing trees.
+
+Alternatives considered:
+
+- Move perk rank and effect rows into specification metadata in the same slice.
+- Convert `NPC_` next.
+- Leave `PERK` hardcoded until all remaining comparison families can be converted together.
+
+Consequences:
+
+- `PERK` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- Effect, rank, background skill, condition, sound, script fragment, and scripting adapter rows remain strategy-based.
+- No database schema, persisted data shape, import, reader, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Complete Spec-Driven Keyword Child Group Dispatch
+
+Status: Accepted
+
+Context: The Magic Effect keyword pilot proved that comparison metadata can select a shared child-row strategy without
+changing comparison DTO shape. The remaining keyword-bearing comparison families still called the shared keyword row
+builder directly, leaving the same dispatch rule duplicated across record-specific comparison methods.
+
+Decision: Declare `KeywordMappings` child-group metadata on all current keyword-bearing comparison record families:
+`FACT`, `MISC`, `NPC_`, `MGEF`, `STAT`, `BOOK`, `DOOR`, `CONT`, and `TERM`. Replace each explicit keyword-row call
+with the shared metadata-driven child-group dispatcher at the same row position. Keep all non-keyword child groups on
+their existing explicit strategy methods.
+
+Rationale: This turns the keyword pilot into a reusable production path while avoiding a premature generic collection
+engine. Keyword rows already share one repository and row-building strategy, making them the right first child group
+to complete before introducing additional child-group kinds.
+
+Alternatives considered:
+
+- Add sound, script, model, condition, and reflection child-group kinds in the same slice.
+- Leave keyword rows mixed between metadata dispatch and explicit calls.
+- Replace all child-row builders with a generic collection engine immediately.
+
+Consequences:
+
+- Keyword rows for current keyword-bearing comparison families are emitted only when the comparison specification
+  declares the `KeywordMappings` child group.
+- Existing keyword row order is preserved by calling the metadata dispatcher from the original row positions.
+- Non-keyword child groups remain strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/FactionRecordSpecification.cs`
+- `CreationsForge.Specification/Records/MiscItemRecordSpecification.cs`
+- `CreationsForge.Specification/Records/NPCRecordSpecification.cs`
+- `CreationsForge.Specification/Records/MagicEffectRecordSpecification.cs`
+- `CreationsForge.Specification/Records/StaticRecordSpecification.cs`
+- `CreationsForge.Specification/Records/BookRecordSpecification.cs`
+- `CreationsForge.Specification/Records/DoorRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
+- `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.GlobalClassFaction.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Complete Remaining Explicit Comparison Child Dispatch
+
+Status: Accepted
+
+Context: After the bounded child-group batch, the largest remaining explicit comparison child dispatch paths were
+`NPC_` actor-data children, `PERK` effect/rank/background-skill rows, and `STAT` navmesh geometry. These families are
+more deeply nested than the earlier bounded groups, but their row builders are already isolated in
+`RecordComparisonService`.
+
+Decision: Add metadata kinds for the remaining NPC, Perk, and Static child-row strategies. Declare those child groups
+in `NPCRecordSpecification`, `PerkRecordSpecification`, and `StaticRecordSpecification` in the same order the service
+already rendered them. Replace the explicit calls in `CreateNPCComparison`, `CreatePerkComparison`, and
+`CreateStaticComparison` with filtered metadata dispatch while keeping the existing Core row builders.
+
+Rationale: This completes the current comparison child-dispatch migration without introducing a generic nested
+collection engine. Specifications now decide whether the large child-row strategies are emitted, while Core remains
+the runtime owner for row construction, nesting, localized display behavior, and comparison state.
+
+Alternatives considered:
+
+- Introduce a generic nested collection specification before moving NPC, Perk, and Static navmesh dispatch.
+- Keep the largest nested families explicit until import and reader metadata are also complete for more record types.
+- Convert GameSetting `Data` in the same batch even though it is a localized scalar display strategy.
+- Split NPC, Perk, and Static navmesh into three smaller tasks.
+
+Consequences:
+
+- `NPC_` level/configuration/supplemental/list/actor-data rows, `PERK` effect/rank/background-skill rows, and `STAT`
+  navmesh geometry rows are emitted only when the comparison specification declares the matching child group.
+- Existing row names, row nesting, localized display behavior, ordering, and comparison DTO shape are preserved by
+  using the existing row builders.
+- GameSetting `Data`, game-dependent Book text source behavior, and remaining non-converted complex child groups for
+  `MGEF`, `BOOK`, `DOOR`, and `CNDF` remain explicit strategies.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/NPCRecordSpecification.cs`
+- `CreationsForge.Specification/Records/PerkRecordSpecification.cs`
+- `CreationsForge.Specification/Records/StaticRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.NPC.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.Perk.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.Static.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Bounded Child Group Dispatch
+
+Status: Accepted
+
+Context: Several comparison child families were still selected by explicit calls even though their row builders were
+small and already isolated: Form List indexed items, Misc Item destructible/component/resource rows, and Actor Value
+Information perk-tree rows. Larger nested families such as NPC children, Perk ranks/effects, and Static navmesh
+geometry still need narrower strategy slices.
+
+Decision: Add `FormListItems`, `MiscItemDestructible`, `MiscItemComponents`, `MiscItemResources`, and
+`ActorValueInformationPerkTree` child-group strategy kinds. Declare those child groups in the matching record
+specification files with the existing `Items`, `Destructible`, `Components`, `Resources`, and `PerkTree` group names.
+Replace the explicit comparison-service calls with filtered metadata dispatch while keeping the existing row builders
+as the Core implementation.
+
+Rationale: This batch moves the remaining bounded comparison child families behind metadata-selected dispatch without
+mixing them with the more complex nested comparison trees. Keeping the row builders in Core preserves row shape,
+ordering, localization behavior, and comparison value state while making specifications decide whether each group is
+emitted.
+
+Alternatives considered:
+
+- Convert all remaining explicit child groups, including NPC, Perk, and Static navmesh, in one batch.
+- Include GameSetting `Data` display even though it is a localized scalar strategy rather than child-group dispatch.
+- Introduce a generic nested collection specification immediately.
+- Leave the bounded families explicit until every child strategy can move together.
+
+Consequences:
+
+- `FLST` item rows, `MISC` destructible/component/resource rows, and `AVIF` perk-tree rows are emitted only when the
+  comparison specification declares the matching child group.
+- Existing row names, row ordering, and comparison DTO shape are preserved by using the existing row builders.
+- GameSetting `Data`, NPC children, Perk ranks/effects, Static navmesh geometry, and other larger complex families
+  remained on explicit strategies in this bounded slice; NPC, Perk, and Static navmesh dispatch were later superseded
+  by `2026-06-27 - Complete Remaining Explicit Comparison Child Dispatch`.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/FormListRecordSpecification.cs`
+- `CreationsForge.Specification/Records/MiscItemRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ActorValueInformationRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.FormList.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.MiscItem.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.ActorValueInformation.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.RecordFactories.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Terminal Child Group Dispatch
+
+Status: Accepted
+
+Context: `TERM` scalar parent rows and shared keyword, model, scripting adapter, condition, script-fragment, and
+reflection child groups already use comparison metadata, while terminal forced-location, marker-parameter, body-text,
+and menu-item rows still used explicit comparison-service calls. The body-text and menu-item rows need localized
+string context, but the metadata-driven child-group dispatcher already supports optional localized text inputs.
+
+Decision: Add `TerminalForcedLocations`, `TerminalMarkerParameters`, `TerminalBodyTexts`, and `TerminalMenuItems`
+child-group strategy kinds. Declare those child groups in `TerminalRecordSpecification` with the existing
+`ForcedLocations`, `Marker Parameters`, `BodyTexts`, and `MenuItems` group names. Replace the explicit
+`CreateTerminalComparison` child-row calls with filtered metadata dispatch at the same row positions, while keeping
+the existing terminal row builders as the Core implementation.
+
+Rationale: Terminal child rows are already modeled as first-class typed data and have focused row builders. Moving
+only dispatch into metadata keeps localized child text behavior intact while making the comparison specification the
+source of truth for whether those rows appear.
+
+Alternatives considered:
+
+- Leave terminal child groups explicit until every record-specific child family can move together.
+- Convert only forced locations and marker parameters, leaving localized body and menu rows explicit.
+- Introduce a generic nested collection specification immediately.
+- Flatten terminal body and menu rows into scalar dotted field names.
+
+Consequences:
+
+- `TERM` forced-location, marker-parameter, body-text, and menu-item rows are emitted only when the comparison
+  specification declares the matching terminal child group.
+- Existing terminal child row order, localized display behavior, and comparison DTO shape are preserved by using the
+  existing row builders.
+- Shared terminal child groups continue to use their existing metadata kinds.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.Terminal.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.RecordFactories.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Container Child Group Dispatch
+
+Status: Accepted
+
+Context: `CONT` scalar parent rows and shared keyword, model, sound, scripting adapter, record component, and
+reflection child groups already use comparison metadata, while container item, property, and forced-location rows
+still used explicit comparison-service calls. These rows are record-specific and indexed or position-based.
+
+Decision: Add `ContainerItems`, `ContainerProperties`, and `ContainerForcedLocations` child-group strategy kinds.
+Declare those child groups in `ContainerRecordSpecification` with the existing `Items`, `Properties`, and
+`ForcedLocations` group names. Replace the explicit `CreateContainerComparison` child-row calls with filtered metadata
+dispatch at the same row position, while keeping the existing container row builders as the Core implementation.
+
+Rationale: Container item, property, and forced-location rows are compact and already have focused row builders.
+Moving only dispatch into metadata continues the record-specific child-group migration while preserving the distinction
+between container-owned rows and shared keyword/model/sound/script/component/reflection rows.
+
+Alternatives considered:
+
+- Leave container child groups explicit until every record-specific child family can move together.
+- Convert container items only and keep properties and forced locations explicit.
+- Collapse all container child rows into one generic container-child metadata kind.
+- Introduce a generic nested collection specification immediately.
+
+Consequences:
+
+- `CONT` item, property, and forced-location rows are emitted only when the comparison specification declares the
+  matching container child group.
+- Existing container child row order and display shape are preserved by using the existing row builders.
+- Shared container child groups continue to use their existing metadata kinds.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.Container.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.RecordFactories.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Constructible Object Child Group Dispatch
+
+Status: Accepted
+
+Context: `COBJ` scalar parent rows and shared condition, sound, and scripting adapter child groups already use
+comparison metadata, while constructible object component, category, and recipe-filter rows still used explicit
+comparison-service calls. These rows are record-specific and distinct from shared record components and `MISC`
+component rows.
+
+Decision: Add `ConstructibleObjectComponents`, `ConstructibleObjectCategories`, and
+`ConstructibleObjectRecipeFilters` child-group strategy kinds. Declare those child groups in
+`ConstructibleObjectRecordSpecification` with the existing `Components`, `Categories`, and `RecipeFilters` group
+names. Replace the explicit `CreateConstructibleObjectComparison` child-row calls with filtered metadata dispatch at
+the same row position, while keeping the existing COBJ row builders as the Core implementation.
+
+Rationale: COBJ component, category, and recipe-filter rows are indexed, compact, and already have dedicated row
+builders. Moving only dispatch into metadata continues the record-specific child-group migration without blending COBJ
+recipe components with shared record components or `MISC` components.
+
+Alternatives considered:
+
+- Leave COBJ child groups explicit until every record-specific child family can move together.
+- Convert COBJ components only and keep categories and recipe filters explicit.
+- Reuse the shared `RecordComponents` metadata kind for COBJ recipe components.
+- Introduce a generic nested collection specification immediately.
+
+Consequences:
+
+- `COBJ` component, category, and recipe-filter rows are emitted only when the comparison specification declares the
+  matching constructible object child group.
+- Existing COBJ child row order and display shape are preserved by using the existing row builders.
+- COBJ recipe components remain distinct from shared record components and `MISC` components.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/ConstructibleObjectRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.ConstructibleObject.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.RecordFactories.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Static Property Child Group Dispatch
+
+Status: Accepted
+
+Context: `STAT` scalar parent comparison rows and shared keyword, model, and reflection child groups already use
+comparison metadata, while static property rows still used an explicit comparison-service call. Static navmesh rows
+remain a larger nested family, so this slice moves only the simple indexed property rows.
+
+Decision: Add a `StaticProperties` child-group strategy kind. Declare that child group in
+`StaticRecordSpecification` with the existing property row behavior and position after keywords. Replace the explicit
+`CreateStaticComparison` property call with filtered metadata dispatch at the same row position, while keeping the
+existing static property row builder as the Core implementation.
+
+Rationale: Static property rows are low-risk because they are indexed and compact. Moving only dispatch into metadata
+continues the record-specific child-group migration while leaving navmesh geometry explicit until a stronger nested
+collection strategy exists.
+
+Alternatives considered:
+
+- Convert static navmesh and properties together.
+- Leave static properties explicit until every record-specific child family can move together.
+- Introduce a generic nested collection specification immediately.
+- Collapse all static child rows into one generic static-child metadata kind.
+
+Consequences:
+
+- `STAT` property rows are emitted only when the comparison specification declares the `StaticProperties` child group.
+- Existing static property row order and display shape are preserved by using the existing row builder.
+- Static navmesh geometry remained strategy-owned in this property slice; this consequence was later superseded by
+  `2026-06-27 - Complete Remaining Explicit Comparison Child Dispatch`.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/StaticRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.Static.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.RecordFactories.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Faction Child Group Dispatch
+
+Status: Accepted
+
+Context: `FACT` scalar parent comparison rows and shared condition, component, and keyword child groups already use
+comparison metadata, while faction relation and rank rows still used explicit comparison-service calls. Faction ranks
+also use localized title display, so this slice needs metadata dispatch to carry localized text context into
+record-specific child row builders.
+
+Decision: Add `FactionRelations` and `FactionRanks` child-group strategy kinds. Declare those child groups in
+`FactionRecordSpecification` with the existing `Relations` and `Ranks` group names. Replace the explicit
+`CreateFactionComparison` relation and rank calls with filtered metadata dispatch at the same row position, while
+keeping the existing faction row builders as the Core implementation.
+
+Rationale: Faction relations and ranks are a low-risk next record-specific child group because their row builders are
+compact and already indexed. Moving only dispatch into metadata continues the spec-driven migration without forcing a
+generic nested collection model for more complex records.
+
+Alternatives considered:
+
+- Leave faction relation and rank groups explicit until every record-specific child family can move together.
+- Convert faction relations only and keep localized ranks explicit.
+- Introduce a generic nested collection specification immediately.
+- Collapse relation and rank rows into one generic faction-child metadata kind.
+
+Consequences:
+
+- `FACT` relation and rank rows are emitted only when the comparison specification declares the matching faction child
+  group.
+- Existing faction child row order, localized rank-title display, and row shape are preserved by using the existing
+  row builders.
+- More complex record-specific child groups remain strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/FactionRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.Faction.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Class Child Group Dispatch
+
+Status: Accepted
+
+Context: `CLAS` scalar parent comparison rows already use comparison metadata, while class property, skill-weight, and
+stat-weight rows still used explicit comparison-service calls. The shared child-group metadata path now covers several
+common row strategies, so `CLAS` is a small record-specific pilot for metadata-selected child groups without requiring
+a generic nested collection engine.
+
+Decision: Add `ClassProperties`, `ClassSkillWeights`, and `ClassStatWeights` child-group strategy kinds. Declare those
+child groups in `ClassRecordSpecification` with the existing `Properties`, `SkillWeights`, and `StatWeights` group
+names. Replace the explicit `CreateClassComparison` child-row calls with filtered metadata dispatch at the same row
+position, while keeping the existing class row builders as the Core implementation.
+
+Rationale: Class child rows are low-risk because they are record-local, already indexed, and have compact row shapes.
+Moving only dispatch into metadata proves record-specific child-group metadata without inventing a broad nested
+collection description for more complex families.
+
+Alternatives considered:
+
+- Leave `CLAS` child groups explicit until every record-specific child family can move together.
+- Convert `FACT` relation and rank rows first.
+- Introduce a generic nested collection specification immediately.
+- Collapse all class child rows into one generic class-child metadata kind.
+
+Consequences:
+
+- `CLAS` property and weight rows are emitted only when the comparison specification declares the matching class child
+  group.
+- Existing class child row order and display shape are preserved by using the existing row builders.
+- More complex record-specific child groups remain strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/ClassRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.Class.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Script Fragment Child Group Dispatch
+
+Status: Accepted
+
+Context: Keyword, model, sound, scripting adapter, reflection, condition-rule, and shared record component child
+groups now use comparison metadata to select shared child-row strategies while preserving row order and comparison DTO
+shape. Script fragments are shared child rows for `PERK` and `TERM`, but they represent VMAD fragment data and are
+distinct from general scripting adapter rows.
+
+Decision: Add a `ScriptFragments` child-group strategy kind. Declare script-fragment child-group metadata on the
+current comparison record families that use the shared script-fragment path: `PERK` and `TERM`. Replace each explicit
+shared script-fragment row call with the metadata-driven child-group dispatcher at the same row position. Keep perk
+effect/rank/background-skill rows and terminal forced-location, marker-parameter, body-text, and menu-item rows on
+their existing strategy methods.
+
+Rationale: Shared script-fragment rows are a metadata-dispatch fit because they already share slot/index alignment,
+visible-row filtering, and fragment field rendering. Keeping script fragments separate from scripting adapters
+preserves the domain distinction between VMAD fragment data and normal script adapter/property data.
+
+Alternatives considered:
+
+- Convert scripting adapters and script fragments as one metadata kind.
+- Convert perk-specific and terminal-specific child rows in the same slice.
+- Leave script fragments mixed between metadata dispatch and explicit calls.
+- Replace script-fragment row building with a fully declarative nested collection specification immediately.
+
+Consequences:
+
+- Script-fragment rows for current fragment-bearing comparison families are emitted only when the comparison
+  specification declares the `ScriptFragments` child group.
+- Existing script-fragment row order is preserved by calling the metadata dispatcher from the original row positions.
+- Perk effect/rank/background-skill rows, terminal forced-location/marker/body/menu rows, and non-keyword/non-model/
+  non-sound/non-scripting-adapter/non-reflection/non-condition/non-component/non-fragment child groups remain
+  strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/PerkRecordSpecification.cs`
+- `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.ConditionFormBookDoorTerminal.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.MagicEffectPerkStaticContainerConstructibleObject.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.RecordFactories.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Record Component Child Group Dispatch
+
+Status: Accepted
+
+Context: Keyword, model, sound, scripting adapter, reflection, and condition-rule child groups now use comparison
+metadata to select shared child-row strategies while preserving row order and comparison DTO shape. Shared record
+component rows use one row-builder strategy across several record families, but they are distinct from `MISC`
+component rows and `COBJ` recipe component rows.
+
+Decision: Add a `RecordComponents` child-group strategy kind. Declare record component child-group metadata on the
+current comparison record families that use the shared record component path: `FACT`, `BOOK`, `DOOR`, and `CONT`.
+Replace each explicit shared record component row call with the metadata-driven child-group dispatcher at the same row
+position. Keep `MISC` component rows, `COBJ` component/category/recipe-filter rows, container items/properties/forced
+locations, faction relations/ranks, navmesh rows, perk rows, NPC rows, terminal body/menu/marker rows, destructible
+rows, resource rows, script fragments, and other complex child groups on their existing strategy methods.
+
+Rationale: Shared record component rows are a good metadata-dispatch fit because they already share row alignment,
+display filtering, and component item expansion. Keeping `MISC` and `COBJ` component-shaped rows explicit prevents
+different domain concepts from being folded into one generic "components" bucket.
+
+Alternatives considered:
+
+- Convert all component-like rows together.
+- Convert record components and reflection rows together.
+- Leave shared record component rows mixed between metadata dispatch and explicit calls.
+- Replace component row building with a fully declarative nested collection specification immediately.
+
+Consequences:
+
+- Shared record component rows for current component-bearing comparison families are emitted only when the comparison
+  specification declares the `RecordComponents` child group.
+- Existing component row order is preserved by calling the metadata dispatcher from the original row positions.
+- `MISC` components, `COBJ` recipe components, and non-keyword/non-model/non-sound/non-scripting-adapter/
+  non-reflection/non-condition/non-component child groups remain strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/FactionRecordSpecification.cs`
+- `CreationsForge.Specification/Records/BookRecordSpecification.cs`
+- `CreationsForge.Specification/Records/DoorRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.GlobalClassFaction.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Condition Rule Child Group Dispatch
+
+Status: Accepted
+
+Context: Keyword, model, sound, scripting adapter, and reflection child groups now use comparison metadata to select
+shared child-row strategies while preserving row order and comparison DTO shape. Shared condition-rule rows use one
+row-builder strategy across several record families, but they are sourced from the compared DTOs through
+`IHasConditionsDTO` rather than from a repository.
+
+Decision: Add a `ConditionRules` child-group strategy kind. Declare condition-rule child-group metadata on the current
+comparison record families that use the shared condition-rule path: `FACT`, `PERK`, `CNDF`, `COBJ`, and `TERM`.
+Replace each explicit shared condition-rule row call with the metadata-driven child-group dispatcher at the same row
+position. Keep perk effect condition tabs, record components, script fragments, faction relations and ranks, terminal
+menu and body rows, constructible object components/categories/filters, and other complex child groups on their
+existing strategy methods.
+
+Rationale: Condition-rule rows are shared enough to benefit from specification dispatch, while the existing row builder
+still owns condition key alignment, summary formatting, and visible-row filtering. Keeping perk effect condition tabs
+explicit prevents nested perk effect condition structures from being collapsed into the top-level shared condition
+rule group.
+
+Alternatives considered:
+
+- Convert condition rules and perk effect condition tabs together.
+- Convert condition rules and record component rows together.
+- Leave condition-rule rows mixed between metadata dispatch and explicit calls.
+- Replace condition row building with a fully declarative nested collection specification immediately.
+
+Consequences:
+
+- Shared condition-rule rows for current condition-bearing comparison families are emitted only when the comparison
+  specification declares the `ConditionRules` child group.
+- Existing condition row order is preserved by calling the metadata dispatcher from the original row positions.
+- Perk effect condition tabs and non-keyword/non-model/non-sound/non-scripting-adapter/non-reflection/non-condition
+  child groups remain strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/FactionRecordSpecification.cs`
+- `CreationsForge.Specification/Records/PerkRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ConditionFormRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ConstructibleObjectRecordSpecification.cs`
+- `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.ConditionFormBookDoorTerminal.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Reflection Child Group Dispatch
+
+Status: Accepted
+
+Context: Keyword, model, sound, and scripting adapter child groups now use comparison metadata to select shared
+child-row strategies while preserving row order and comparison DTO shape. Shared reflection rows use one repository and
+one row-builder strategy across several record families, but reflection data must remain separate from record
+component rows and raw payload behavior.
+
+Decision: Add a `ReflectionMappings` child-group strategy kind. Declare reflection child-group metadata on the current
+comparison record families that use the shared reflection repository path: `STAT`, `BOOK`, `DOOR`, `CONT`, and
+`TERM`. Replace each explicit shared reflection row call with the metadata-driven child-group dispatcher at the same
+row position. Keep condition rules, record components, script fragments, container child rows, navmesh rows, faction
+rows, class rows, perk rows, misc destructible and resource rows, and other complex child groups on their existing
+strategy methods.
+
+Rationale: Reflection rows are shared enough to benefit from specification dispatch, while the existing row builder
+still owns component-index alignment, raw display formatting, detail values, and visible-row filtering. Moving only the
+dispatch keeps reflection modeling explicit and avoids blending first-class component rows with reflected `REFL`
+payloads.
+
+Alternatives considered:
+
+- Convert reflection and record component rows together.
+- Convert condition, reflection, component, and script fragment rows in the same slice.
+- Leave reflection rows mixed between metadata dispatch and explicit calls.
+- Replace reflection row building with a fully declarative nested collection specification immediately.
+
+Consequences:
+
+- Shared reflection rows for current reflection-bearing comparison families are emitted only when the comparison
+  specification declares the `ReflectionMappings` child group.
+- Existing reflection row order is preserved by calling the metadata dispatcher from the original row positions.
+- Record components, raw payloads, and non-keyword/non-model/non-sound/non-scripting-adapter/non-reflection child
+  groups remain strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/StaticRecordSpecification.cs`
+- `CreationsForge.Specification/Records/BookRecordSpecification.cs`
+- `CreationsForge.Specification/Records/DoorRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
+- `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.ActorValueKeywordStaticBookDoorContainer.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Scripting Adapter Child Group Dispatch
+
+Status: Accepted
+
+Context: Keyword, model, and sound child groups now use comparison metadata to select shared child-row strategies while
+preserving row order and comparison DTO shape. Shared scripting adapter rows use one repository and one row-builder
+strategy across several record families, but they are distinct from script fragments and should not be combined with
+fragment rendering.
+
+Decision: Add a `ScriptingAdapterMappings` child-group strategy kind. Declare scripting adapter child-group metadata
+on the current comparison record families that use the shared scripting adapter repository path: `MISC`, `NPC_`,
+`MGEF`, `PERK`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM`. Replace each explicit shared scripting adapter row call
+with the metadata-driven child-group dispatcher at the same row position. Keep condition rules, reflection rows,
+record components, script fragments, rank and effect rows, items, destructible rows, resource rows, and other complex
+child groups on their existing strategy methods.
+
+Rationale: Scripting adapter rows are shared enough to benefit from specification dispatch, while the existing row
+builder still owns script index alignment, property expansion, value formatting, and visible-row filtering. Keeping
+script fragments explicit prevents two different script-shaped concepts from being collapsed into one metadata kind.
+
+Alternatives considered:
+
+- Convert scripting adapters and script fragments together.
+- Convert condition, reflection, component, and scripting adapter rows in the same slice.
+- Leave scripting adapter rows mixed between metadata dispatch and explicit calls.
+- Replace script row building with a fully declarative nested collection specification immediately.
+
+Consequences:
+
+- Shared scripting adapter rows for current scripting-adapter-bearing comparison families are emitted only when the
+  comparison specification declares the `ScriptingAdapterMappings` child group.
+- Existing script row order is preserved by calling the metadata dispatcher from the original row positions.
+- Script fragments and non-keyword/non-model/non-sound/non-scripting-adapter child groups remain strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/MiscItemRecordSpecification.cs`
+- `CreationsForge.Specification/Records/NPCRecordSpecification.cs`
+- `CreationsForge.Specification/Records/MagicEffectRecordSpecification.cs`
+- `CreationsForge.Specification/Records/PerkRecordSpecification.cs`
+- `CreationsForge.Specification/Records/BookRecordSpecification.cs`
+- `CreationsForge.Specification/Records/DoorRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ConstructibleObjectRecordSpecification.cs`
+- `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.MagicEffectPerkStaticContainerConstructibleObject.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Model Child Group Dispatch
+
+Status: Accepted
+
+Context: Keyword and sound child groups now use comparison metadata to select shared child-row strategies while
+preserving row order and comparison DTO shape. Shared model rows use one repository and one row-builder strategy across
+several record families, but the renderer can emit multiple model group rows depending on model slot and gender.
+
+Decision: Add a `ModelMappings` child-group strategy kind. Declare model child-group metadata on the current
+model-bearing comparison record families that use the shared model repository path: `MISC`, `STAT`, `BOOK`, `DOOR`,
+`CONT`, and `TERM`. Replace each explicit shared model-row call with the metadata-driven child-group dispatcher at the
+same row position. Keep scripting adapters, conditions, reflection rows, destructible rows, rank rows, items,
+components, and other complex child groups on their existing strategy methods.
+
+Rationale: Model rows are shared enough to benefit from specification dispatch, but the existing row builder already
+owns model-slot alignment, material swap expansion, visible-row filtering, and display names. Moving dispatch metadata
+without replacing that builder keeps the slice narrow and avoids flattening record-specific model-like data into the
+generic model path.
+
+Alternatives considered:
+
+- Convert scripting adapter, condition, reflection, and model rows in the same slice.
+- Leave model rows mixed between metadata dispatch and explicit calls.
+- Replace model row building with a fully declarative nested collection specification immediately.
+
+Consequences:
+
+- Shared model rows for current model-bearing comparison families are emitted only when the comparison specification
+  declares the `ModelMappings` child group.
+- Existing model row order is preserved by calling the metadata dispatcher from the original row positions.
+- Non-keyword/non-model/non-sound child groups remain strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/MiscItemRecordSpecification.cs`
+- `CreationsForge.Specification/Records/StaticRecordSpecification.cs`
+- `CreationsForge.Specification/Records/BookRecordSpecification.cs`
+- `CreationsForge.Specification/Records/DoorRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
+- `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.ActorValueKeywordStaticBookDoorContainer.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.GameSettingFormListNpcMiscItem.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Sound Child Group Dispatch
+
+Status: Accepted
+
+Context: Keyword child groups now prove the comparison specification can select shared child-row strategies while
+preserving row order and comparison DTO shape. Shared sound rows use the same repository and row-builder pattern across
+multiple record families, making them the next low-risk child group to move behind metadata.
+
+Decision: Add a `SoundMappings` child-group strategy kind. Declare sound child-group metadata on the current
+sound-bearing comparison record families: `MISC`, `NPC_`, `MGEF`, `PERK`, `BOOK`, `DOOR`, `CONT`, and `COBJ`.
+Replace each explicit sound-row call with the shared metadata-driven child-group dispatcher at the same row position.
+Keep model, script, condition, component, reflection, rank, item, and other complex child groups on their existing
+strategy methods.
+
+Rationale: Sound rows are shared enough to benefit from specification dispatch, but still simple enough to avoid a
+generic child collection engine. This keeps the spec conversion moving in narrow slices and gives each record file an
+honest declaration of the sound rows it can emit.
+
+Alternatives considered:
+
+- Convert model, script, condition, and reflection child groups in the same slice.
+- Leave sound rows mixed between metadata dispatch and explicit calls.
+- Replace the child-group dispatcher with a generic repository collection engine immediately.
+
+Consequences:
+
+- Shared sound rows for current sound-bearing comparison families are emitted only when the comparison specification
+  declares the `SoundMappings` child group.
+- Existing sound row order is preserved by calling the metadata dispatcher from the original row positions.
+- Non-keyword/non-sound child groups remain strategy-owned.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/MiscItemRecordSpecification.cs`
+- `CreationsForge.Specification/Records/NPCRecordSpecification.cs`
+- `CreationsForge.Specification/Records/MagicEffectRecordSpecification.cs`
+- `CreationsForge.Specification/Records/PerkRecordSpecification.cs`
+- `CreationsForge.Specification/Records/BookRecordSpecification.cs`
+- `CreationsForge.Specification/Records/DoorRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
+- `CreationsForge.Specification/Records/ConstructibleObjectRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.MagicEffectPerkStaticContainerConstructibleObject.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Pilot Spec-Driven Child Group Dispatch For Magic Effect Keywords
+
+Status: Accepted
+
+Context: The current comparison catalog covers scalar parent rows for all compared record families, but most child
+groups are still invoked directly by record-specific comparison methods. Child groups have alignment, ordering, and
+repository dependencies, so moving them behind metadata should start with one simple shared strategy rather than a
+generic child-row framework.
+
+Decision: Add child-group comparison metadata with an initial `KeywordMappings` strategy kind. Declare the `MGEF`
+`Keywords` child group in `MagicEffectRecordSpecification`. Route `CreateMagicEffectComparison` through a small
+metadata-driven child-group dispatcher for keyword rows while keeping sound and scripting adapter rows explicit.
+
+Rationale: Magic Effect keywords are a low-risk pilot because they already use the shared keyword comparison strategy
+and sit between scalar parent rows and the remaining explicit sound/script groups. This proves specifications can
+select child-group dispatch without changing comparison DTO shape or pretending every child collection has a generic
+alignment model.
+
+Alternatives considered:
+
+- Move every shared keyword group behind metadata in the same slice.
+- Build a fully generic child collection comparison engine first.
+- Keep all child groups explicit until every scalar and child strategy can be converted together.
+
+Consequences:
+
+- `MGEF` keyword child rows are emitted only when the comparison specification declares the `KeywordMappings` child
+  group.
+- Sound and scripting adapter rows for `MGEF` remain explicit strategy calls.
+- At that point, the child-group metadata model was intentionally small and supported only the keyword pilot.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupSpecification.cs`
+- `CreationsForge.Specification/Records/RecordComparisonSpecification.cs`
+- `CreationsForge.Specification/Records/MagicEffectRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.MagicEffectPerkStaticContainerConstructibleObject.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Convert NPC Top-Level Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: `NPC_` comparison is the largest current comparison family. It includes simple localized and scalar parent
+rows, nested level and configuration groups, supplemental parent rows, form-key lists, actor data children, keywords,
+sounds, and scripting adapters. The scalar comparison path can handle the straightforward parent rows, but the nested
+and child groups still need explicit ordering and alignment strategies.
+
+Decision: Add `NPC_` top-level scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreateNPCComparison` to use the shared specification comparison-field builder for the pre-level scalar rows and the
+post-configuration scalar rows while preserving the existing row order. Keep height rows on the existing numeric
+precision display hook. Keep level, configuration, supplemental parent rows, form-key lists, actor data children,
+keyword rows, sound rows, and scripting adapter rows on existing strategy methods.
+
+Rationale: This completes the current scalar parent comparison metadata pass without forcing the most complex NPC
+child tree into a premature declarative model. Splitting the NPC scalar rows around the existing level and
+configuration groups preserves UI row ordering while making the selected parent rows specification-driven.
+
+Alternatives considered:
+
+- Convert the entire NPC comparison tree in one slice.
+- Leave `NPC_` hardcoded until child-row metadata exists.
+- Move height formatting into generic specification numeric formatting in the same slice.
+
+Consequences:
+
+- `NPC_` top-level scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- NPC level, configuration, supplemental, list, actor child, keyword, sound, and script rows remained strategy-based
+  in this scalar slice; NPC-specific rows were later superseded by
+  `2026-06-27 - Complete Remaining Explicit Comparison Child Dispatch`.
+- The current comparison catalog now covers scalar parent rows for all currently compared record families.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.GameSettingFormListNpcMiscItem.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Convert Terminal Scalar Comparison Metadata
+
+Status: Accepted
+
+Context: `TERM` comparison includes localized scalar parent rows, FormKey references, direct animation component
+fields, and several strategy-owned child groups: forced locations, marker parameters, body texts, menu items,
+conditions, scripts, keywords, models, and reflection rows. The scalar comparison path already handles localized
+strings, FormKeys, numbers, text values, and custom value hooks, so the parent rows can move into metadata while
+preserving the existing terminal-specific child alignment strategies.
+
+Decision: Add `TERM` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
+`CreateTerminalComparison` to use the shared specification comparison-field builder for scalar rows, with the existing
+marker flag display formatting kept as a custom value hook. Preserve Fallout 4's full-binary reader requirement in
+terminal reader metadata. Keep forced locations, marker parameters, body texts, menu items, conditions, scripts,
+keywords, models, and reflection rows on existing strategy methods.
+
+Rationale: This moved the final non-NPC scalar parent surface into the spec-driven comparison path without changing
+terminal child-row behavior. At that point, `NPC_` remained hardcoded because its comparison tree was much larger and
+needed a separate strategy-design slice.
+
+Alternatives considered:
+
+- Move terminal body text and menu item rows into specification metadata in the same slice.
+- Convert `NPC_` before `TERM`.
+- Leave `TERM` hardcoded because Fallout 4 uses the full-binary reader path.
+
+Consequences:
+
+- `TERM` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
+- Terminal child rows remained strategy-based in this scalar slice; this consequence was later superseded by
+  `2026-06-27 - Add Spec-Driven Terminal Child Group Dispatch`.
+- Fallout 4 `TERM` still requires a full binary Mutagen mod for reader dispatch.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-26 - Drive Pilot Import Dispatch From Specifications
+
+Status: Accepted
+
+Context: The first production specification catalog described `FLST`, `GMST`, and `GLOB`, and the comparison service
+already consumes pilot comparison metadata. `RecordImportService` still hardcoded those first three record families
+before continuing through the rest of the explicit record list. The project needs a low-risk path toward
+specification-driven import dispatch without changing game readers, typed importers, persistence, or import results.
+
+Decision: Add import metadata to `RecordSpecification` and route the `FLST`, `GMST`, and `GLOB` import loop through
+`IRecordSpecificationProvider`. Each pilot specification names the `PluginRecordSetDTO` collection that contains its
+mapped DTOs and whether the record type is required. `RecordImportService` resolves those collections generically,
+then reuses the existing typed importer lookup, progress reporting, per-record failure handling, and stale cleanup.
+Non-pilot record families remain on the existing explicit import calls.
+
+Rationale: This proves production specifications can drive import dispatch while preserving the behavior most likely
+to affect users: record order, unsupported importer accounting, result totals, progress messages, and stale cleanup.
+Keeping `PluginRecordSetDTO` and the current typed importers in place avoids bundling a reader rewrite into the import
+dispatch pilot.
+
+Alternatives considered:
+
+- Keep import dispatch hardcoded until all record types have specifications.
+- Replace `PluginRecordSetDTO` with a generic record bag in the same change.
+- Move all current record families behind the specification provider immediately.
+
+Consequences:
+
+- `RecordImportService` now has an optional constructor dependency on `IRecordSpecificationProvider`.
+- `FLST`, `GMST`, and `GLOB` dispatch order and record-set access are controlled by specification metadata.
+- A typo in a pilot `PluginRecordSetDTO` property is guarded by unit tests and fails at import time.
+- Non-pilot record families remain transitional and explicitly dispatched.
+- No database schema, persisted cache shape, game-reader mapping, or UI behavior changes.
+
+Related files:
+
+- `CreationsForge.Specification/Records/RecordImportSpecification.cs`
+- `CreationsForge.Specification/Records/RecordSpecification.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.Core/Services/RecordImportService.cs`
+- `CreationsForge.UnitTests/Services/RecordImportServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+
+## 2026-06-26 - Complete Spec-Driven Import Dispatch For Current Record Families
+
+Status: Accepted
+
+Context: The pilot import-dispatch slice proved that `RecordImportService` could resolve `PluginRecordSetDTO`
+collections through `IRecordSpecificationProvider` while preserving typed importer lookup, progress reporting, failure
+handling, and stale cleanup. The remaining current record families were still dispatched through explicit service
+calls, which left two sources of import order and required/optional record-family policy.
+
+Decision: Expand `CreationsForge.Specification` so the catalog contains import metadata for every currently imported
+record family. Add an explicit import order to `RecordImportSpecification`, preserve the existing dispatch order, and
+mark optional families through specification metadata. `RecordImportService` now loops over the ordered specification
+catalog for all current record families instead of mixing specification-driven pilot records with hardcoded calls.
+Import-only specifications do not add declarative comparison fields; record-specific Core comparison methods remain
+the runtime authority for those families until approved comparison migration slices move them.
+
+Rationale: Moving the full current import surface behind one catalog removes duplicated dispatch policy without
+changing game readers, typed importers, repositories, persisted schema, or UI-facing import results. Keeping comparison
+metadata limited to the existing pilot fields avoids implying that complex child-row and localization behavior has
+become declarative before the comparison engine is ready.
+
+Alternatives considered:
+
+- Keep only `FLST`, `GMST`, and `GLOB` import dispatch specification-driven until reader mapping also moves.
+- Move comparison metadata for all current record families in the same change.
+- Replace `PluginRecordSetDTO` with a generic record bag while completing dispatch migration.
+
+Consequences:
+
+- Import order, required record-type result emission, optional record-type omission, and record-set collection lookup
+  are now catalog metadata.
+- `RecordImportService` treats an injected `IRecordSpecificationProvider` as the complete dispatch source.
+- Tests now guard catalog coverage, contiguous import order, and valid `PluginRecordSetDTO` collection names.
+- No database schema, persisted data shape, game-reader mapping, or Avalonia UI behavior changes.
+- Existing imported SQLite data is not stale because this changes dispatch metadata only.
+
+Related files:
+
+- `CreationsForge.Specification/Records/RecordImportSpecification.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.Core/Services/RecordImportService.cs`
+- `CreationsForge.UnitTests/Services/RecordImportServiceTests.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-26 - Add Reader Metadata To Record Specifications
+
+Status: Accepted
+
+Context: Import dispatch now consumes specification metadata for the current record families, but the Starfield,
+Fallout 4, and Skyrim reader services still encode their reader targets and Mutagen collection choices directly in
+game-adapter code. A full reader rewrite would be too broad for one step because mapping logic still differs by game
+and record family.
+
+Decision: Add reader-facing metadata to each record specification. The new metadata names the destination
+`PluginRecordSetDTO` collection, the default Mutagen mod collection name, and whether current behavior still relies on
+game-adapter mapping code. Populate the catalog for every current imported record family and add catalog tests that
+guard valid DTO destination names, import-reader destination alignment, and populated Mutagen collection names. Do not
+change the runtime reader services in this slice.
+
+Rationale: This gives the next reader-dispatch migration a typed target without forcing game-specific Mutagen APIs or
+mapping code into `CreationsForge.Specification`. It also prevents the catalog from becoming import-only metadata when
+the long-term direction is spec-driven reader, import, comparison, and validation behavior.
+
+Alternatives considered:
+
+- Start rewriting the three game reader services immediately.
+- Keep reader targets implicit until every record family has declarative field mappings.
+- Store reader collection names only in `RecordGameSupportSpecification`.
+
+Consequences:
+
+- `RecordSpecification` now exposes reader metadata alongside import and comparison metadata.
+- Runtime reader behavior is unchanged; game adapters still map Mutagen records into Core DTOs.
+- Catalog tests now fail when reader metadata points at a missing `PluginRecordSetDTO` collection.
+- No database schema, persisted data shape, dependency injection, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Specification/Records/RecordReaderSpecification.cs`
+- `CreationsForge.Specification/Records/RecordSpecification.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-26 - Use Specifications For Starfield Record-Set Assembly
+
+Status: Accepted
+
+Context: Record specifications now describe reader-facing DTO destination collections, but the game reader services
+still manually assemble `PluginRecordSetDTO` objects after mapping each record family. Starfield is the broadest
+current adapter because it includes the shared record families plus `CNDF` and `TERM`, making it a useful pilot for
+specification-driven record-set assembly without changing Mutagen mapping.
+
+Decision: Add a Core `RecordSetSpecificationBuilder` that consumes `IRecordSpecificationProvider`, filters
+specifications by game, and assigns mapped record-family collections to the `PluginRecordSetDTO` properties named by
+reader metadata. Convert `StarfieldRecordReaderService.ReadPluginRecords` to keep its existing Mutagen mapping methods
+and cancellation points, then hand the mapped collections to the builder by Bethesda record ID. Fallout 4 and Skyrim
+remain on manual record-set assembly until later approved slices.
+
+Rationale: This moves the next repeatable reader responsibility behind specifications while keeping game-specific
+Mutagen APIs and record-field mapping inside the Starfield adapter. The builder also centralizes validation for
+missing mappings, invalid destination properties, and collection type mismatches before the same pattern is reused by
+other game adapters.
+
+Alternatives considered:
+
+- Convert all three game reader services in one change.
+- Move the builder into `CreationsForge.Specification`.
+- Rewrite Starfield mapping methods around declarative field metadata immediately.
+
+Consequences:
+
+- Core now owns specification-driven `PluginRecordSetDTO` assembly.
+- Starfield reader output should remain equivalent, but the final DTO assignment now depends on complete Starfield
+  reader metadata.
+- Starfield was converted first; a later accepted decision converted Fallout 4 and Skyrim to the same builder.
+- No database schema, persisted data shape, import result, or comparison UI behavior changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/Interfaces/IRecordSetSpecificationBuilder.cs`
+- `CreationsForge.Core/Services/RecordSetSpecificationBuilder.cs`
+- `CreationsForge.Core/CoreModule.cs`
+- `CreationsForge.Starfield/StarfieldRecordReaderService.cs`
+- `CreationsForge.UnitTests/Services/RecordSetSpecificationBuilderTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-26 - Complete Spec-Driven Record-Set Assembly For Supported Adapters
+
+Status: Accepted
+
+Context: Starfield record reads already use `RecordSetSpecificationBuilder` for the final `PluginRecordSetDTO`
+assembly step, but Fallout 4 and Skyrim still manually assign mapped record-family lists to DTO collection properties.
+That left the three game adapters using different assembly paths even though their supported record families are now
+described by the specification catalog.
+
+Decision: Convert `Fallout4RecordReaderService.ReadPluginRecords` and `SkyrimRecordReaderService.ReadPluginRecords`
+to keep their existing Mutagen mapping calls and cancellation checkpoints, then hand the mapped record-family
+collections to `RecordSetSpecificationBuilder` by Bethesda record ID. Preserve the one-argument constructors used by
+manual fixtures through default builder overloads. Add catalog tests that pin Fallout 4 and Skyrim supported record
+families, including Fallout 4 `TERM` support and Skyrim's exclusion of `CNDF` and `TERM`.
+
+Rationale: Completing the assembly migration makes the specification catalog the single source for supported
+record-set destination collections across the current game adapters while avoiding any field-mapping rewrite. The
+builder now protects all three adapters from silent drift between game-support metadata and `PluginRecordSetDTO`
+assignment.
+
+Alternatives considered:
+
+- Leave Fallout 4 and Skyrim on manual record-set assembly until field mapping becomes declarative.
+- Convert Fallout 4 and Skyrim in separate tasks.
+- Remove direct constructor compatibility from manual validation fixtures.
+
+Consequences:
+
+- Starfield, Fallout 4, and Skyrim all use Core specification-driven record-set assembly.
+- Game-specific reader services still own Mutagen loading and Mutagen-to-DTO field mapping.
+- The catalog's game-support metadata now directly controls which mapped collections each adapter must supply.
+- No database schema, persisted data shape, import result, or comparison UI behavior changes.
+
+Related files:
+
+- `CreationsForge.Fallout4/Fallout4RecordReaderService.cs`
+- `CreationsForge.Skyrim/SkyrimRecordReaderService.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-26 - Drive Starfield Reader Dispatch From Specifications
+
+Status: Accepted
+
+Context: All supported game adapters now use `RecordSetSpecificationBuilder` for final `PluginRecordSetDTO` assembly,
+but Starfield still manually listed every record-family mapping call before handing the mapped lists to the builder.
+That kept one more copy of Starfield's supported record-family order outside the specification catalog.
+
+Decision: Convert `StarfieldRecordReaderService.ReadPluginRecords` to load the Mutagen mod once, iterate the
+Starfield-supported specifications from `IRecordSpecificationProvider` in import order, resolve each record ID through
+a Starfield-local mapper registry, and pass the mapped collections to `RecordSetSpecificationBuilder`. Keep every
+existing `Map*` method intact and keep Fallout 4 and Skyrim reader dispatch on their current explicit mapping lists.
+
+Rationale: This makes the Starfield reader's record-family dispatch follow the same catalog that drives import
+dispatch and record-set assembly, while keeping Starfield-specific Mutagen field mapping in the Starfield adapter.
+Using a local mapper registry gives the next game-adapter conversions a repeatable shape without prematurely making
+field mapping declarative.
+
+Alternatives considered:
+
+- Convert Starfield, Fallout 4, and Skyrim reader dispatch in one change.
+- Move Starfield field mapping into declarative specification metadata immediately.
+- Keep Starfield dispatch explicit until all reader metadata is richer.
+
+Consequences:
+
+- Starfield reader dispatch order and supported record-family selection now come from record specifications.
+- Missing Starfield mappers for supported specifications fail at read time instead of silently omitting records.
+- Starfield Mutagen-to-DTO field mapping remains in existing mapper methods.
+- Starfield was converted first; a later accepted decision converted Fallout 4 and Skyrim to the same dispatch pattern.
+- No database schema, persisted data shape, import result, or comparison UI behavior changes.
+
+Related files:
+
+- `CreationsForge.Starfield/StarfieldRecordReaderService.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-26 - Complete Spec-Driven Reader Dispatch For Supported Adapters
+
+Status: Accepted
+
+Context: Starfield reader dispatch already uses `IRecordSpecificationProvider` to select supported record-family
+mappers in specification order, but Fallout 4 and Skyrim still manually listed every mapping call. Fallout 4 also has
+a `TERM` special case that must use a full binary mod because the overlay reader can omit repeated terminal menu
+items.
+
+Decision: Convert `Fallout4RecordReaderService.ReadPluginRecords` and `SkyrimRecordReaderService.ReadPluginRecords`
+to iterate supported record specifications in import order, resolve record IDs through game-local mapper registries,
+and pass mapped collections to `RecordSetSpecificationBuilder`. Preserve existing mapping methods and constructor
+compatibility overloads. Keep Fallout 4 `TERM` on the full binary mod path by loading that mod only when the
+specification loop reaches `TERM`.
+
+Rationale: This removes the remaining manually duplicated supported-family dispatch lists from current game readers
+while preserving all game-specific Mutagen mapping behavior. It also makes the specification catalog the single source
+for reader dispatch order, reader destination collections, and import dispatch order across Starfield, Fallout 4, and
+Skyrim.
+
+Alternatives considered:
+
+- Convert Fallout 4 and Skyrim in separate tasks.
+- Defer Fallout 4 because of the `TERM` full-binary special case.
+- Move all game-reader mapping functions into shared Core dispatch.
+
+Consequences:
+
+- Starfield, Fallout 4, and Skyrim all dispatch record-family reader mapping from specifications.
+- Missing mapper registrations for supported specifications fail at read time instead of silently omitting records.
+- Fallout 4 terminal reads still use the full binary mod construction path.
+- Game-specific Mutagen-to-DTO field mapping remains in the game adapter projects.
+- No database schema, persisted data shape, import result, or comparison UI behavior changes.
+
+Related files:
+
+- `CreationsForge.Fallout4/Fallout4RecordReaderService.cs`
+- `CreationsForge.Skyrim/SkyrimRecordReaderService.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-26 - Add Reader Behavior Metadata
+
+Status: Accepted
+
+Context: Reader dispatch now comes from record specifications for Starfield, Fallout 4, and Skyrim, but a few reader
+behaviors still need explicit policy. Most record families can use the normal overlay-safe Mutagen mod path. Fallout 4
+terminal records require the full binary mod path because the overlay reader can omit repeated terminal menu items.
+Future record families may also expose optional reader collections, but missing mapper coverage should remain an error
+unless a specification explicitly marks the collection optional.
+
+Decision: Extend `RecordReaderSpecification` with overlay-safe eligibility, optional collection policy, and per-game
+full-binary reader requirements. Mark only Fallout 4 `TERM` as requiring a full binary mod. Keep current production
+record families non-optional and overlay-safe by default. Update reader dispatch so Fallout 4 selects the full binary
+mod through metadata instead of a hardcoded record-ID check, while Starfield and Skyrim fail loudly if future metadata
+requires a full-binary path they do not implement.
+
+Rationale: Keeping reader quirks in specification metadata makes the catalog a better migration source for all 300+
+record types while avoiding a false global `TERM` rule that would affect Starfield. The game adapters still own the
+actual Mutagen load paths and DTO mapping, so the specification project remains dependency-free.
+
+Alternatives considered:
+
+- Keep the Fallout 4 `TERM` full-binary requirement hardcoded in `Fallout4RecordReaderService`.
+- Model full-binary requirements as a single global record flag.
+- Treat missing mapper registrations as optional by default.
+
+Consequences:
+
+- Reader behavior metadata now documents overlay-safe defaults, optional collection policy, and full-binary overrides.
+- Fallout 4 terminal dispatch is selected from specification metadata.
+- Starfield and Skyrim reader services guard against unsupported full-binary metadata.
+- No database schema, persisted data shape, import result, or comparison UI behavior changes.
+
+Related files:
+
+- `CreationsForge.Specification/Records/RecordReaderSpecification.cs`
+- `CreationsForge.Specification/Records/SupportedRecordSpecifications.cs`
+- `CreationsForge.Starfield/StarfieldRecordReaderService.cs`
+- `CreationsForge.Fallout4/Fallout4RecordReaderService.cs`
+- `CreationsForge.Skyrim/SkyrimRecordReaderService.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-25 - Keep Spriggit-Backed Rendered UI Validation With Data Validation
 
 Status: Accepted

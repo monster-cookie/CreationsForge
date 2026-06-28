@@ -1,6 +1,6 @@
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.DataValidationTests.Validation.Specs;
-using CreationsForge.DataValidationTests.Validation.Specs.ActorValueInformation;
+using CreationsForge.Specification.Validation.Specs.ActorValueInformation;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.Tests.ActorValueInformation.Fallout4;

@@ -5,6 +5,7 @@ using CreationsForge.Core.Helpers;
 using CreationsForge.DataValidationTests.Validation.Environment;
 using CreationsForge.DataValidationTests.Validation.Parsing;
 using CreationsForge.DataValidationTests.Validation.Services;
+using CreationsForge.Specification.Records;
 
 namespace CreationsForge.DataValidationTests.Validation.Tests;
 
@@ -47,6 +48,23 @@ public static class Helpers
         throw new InvalidOperationException("Unsupported Spriggit validation DTO type '" + typeof(TSpriggit).Name + "'.");
     }
 
+    /// <summary>
+    /// Gets a Spriggit validation sample using specification-layer game and record metadata.
+    /// </summary>
+    /// <typeparam name="TSpriggit">The Spriggit validation DTO type requested by the caller.</typeparam>
+    /// <param name="game">The specification-layer game identifier.</param>
+    /// <param name="recordType">The specification-owned record metadata.</param>
+    /// <param name="sampleName">The Spriggit YAML sample name.</param>
+    /// <returns>The requested Spriggit validation DTO.</returns>
+    public static TSpriggit GetSpriggit<TSpriggit>(SpecificationGame game, RecordSpecification recordType, string sampleName)
+        where TSpriggit : class
+    {
+        return GetSpriggit<TSpriggit>(
+            SpecificationGameAdapter.ToSupportedGame(game),
+            RecordTypeData.FromSpecification(recordType),
+            sampleName);
+    }
+
     public static TRecord GetDTO<TRecord>(SupportedGame game, RecordTypeData recordType, string formKey)
         where TRecord : RecordDTO
     {
@@ -57,6 +75,23 @@ public static class Helpers
         }
 
         return typedRecord;
+    }
+
+    /// <summary>
+    /// Gets an imported DTO using specification-layer game and record metadata.
+    /// </summary>
+    /// <typeparam name="TRecord">The expected imported DTO type.</typeparam>
+    /// <param name="game">The specification-layer game identifier.</param>
+    /// <param name="recordType">The specification-owned record metadata.</param>
+    /// <param name="formKey">The Spriggit-style form key identifying the record.</param>
+    /// <returns>The imported DTO read from the configured validation database.</returns>
+    public static TRecord GetDTO<TRecord>(SpecificationGame game, RecordSpecification recordType, string formKey)
+        where TRecord : RecordDTO
+    {
+        return GetDTO<TRecord>(
+            SpecificationGameAdapter.ToSupportedGame(game),
+            RecordTypeData.FromSpecification(recordType),
+            formKey);
     }
 
     private static SpriggitRecordDTO GetSpriggitRecord(SupportedGame game, RecordTypeData recordType, string sampleName)

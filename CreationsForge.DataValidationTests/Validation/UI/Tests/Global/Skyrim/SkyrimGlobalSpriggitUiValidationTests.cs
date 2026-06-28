@@ -1,5 +1,5 @@
 using Avalonia.Headless.XUnit;
-using CreationsForge.DataValidationTests.Validation.Specs.Global;
+using CreationsForge.Specification.Validation.Specs.Global;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.UI.Tests.Global.Skyrim;

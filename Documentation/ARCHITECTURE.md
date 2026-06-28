@@ -21,6 +21,20 @@ shared import orchestration, shared Mutagen primitive mapping, and repositories 
 may reference shared Mutagen packages such as `Mutagen.Bethesda.Core`, but it must not reference game-specific Mutagen
 packages.
 
+`CreationsForge.Specification` owns production game metadata, record-family identity metadata, and record-family
+metadata that can gradually drive shared reader, import, validation, and comparison behavior. The catalog includes the
+current imported record families and drives `RecordImportService` dispatch order and `PluginRecordSetDTO` collection
+lookup. It also describes reader-facing DTO destination collections and default Mutagen collection names for the current
+game adapters. `RecordComparisonService` consumes comparison metadata for the current comparison surface. Validation
+spec declarations and sample-specific Spriggit-to-DTO mapping rules live in this project so they share the same
+game/record metadata source as production readers, importers, and comparison. The existing game readers, typed
+importers, repositories, comparison row builders, and validation runners still own their current runtime behavior.
+`SupportedRecordSpecifications` is a public facade that preserves the catalog API and import order. Each record
+family's metadata lives in its own `*RecordSpecification.cs` file named after the canonical CreationsForge record
+type, and shared construction helpers live in `RecordSpecificationFactory`.
+The specification project does not reference Core, Avalonia, NPoco, Migrations, Assets, or game-specific Mutagen
+packages.
+
 `CreationsForge.Bethesda.Assets` owns UI-neutral Bethesda asset IO helpers, local-file resolution result DTOs, an
 in-memory asset provider, archive-reader contracts, and temporary extraction session infrastructure. It does not
 reference Avalonia, Mutagen, NPoco, game projects, or the database. Archive implementations are intended to be
@@ -49,12 +63,13 @@ adapter projects rather than persisted game metadata paths.
 
 `CreationsForge.UnitTests` tests non-database logic only.
 
-`CreationsForge.DataValidationTests` is a manual validation test project. It references Bootstrap and Core so it can
-resolve existing repositories and compare imported DTO readback against selected Spriggit YAML samples. It may also
-reference the Avalonia presentation project for Spriggit-backed rendered comparison validation, where the validation
-subject is imported data flowing through the production comparison UI rather than isolated presentation behavior. Its
-JSON configuration lives inside the test project under `Configuration`. It does not own production services or database
-schema.
+`CreationsForge.DataValidationTests` is a manual validation test project. It references Bootstrap, Core, and
+Specification so it can resolve existing repositories and compare imported DTO readback against selected Spriggit YAML
+samples declared by the specification project. It may also reference the Avalonia presentation project for
+Spriggit-backed rendered comparison validation, where the validation subject is imported data flowing through the
+production comparison UI rather than isolated presentation behavior. Its JSON configuration lives inside the test
+project under `Configuration`. It owns validation execution workers, Spriggit file loading, DTO flattening, UI
+fixtures, and assertions; it does not own production services, schema, or reusable spec definitions.
 
 `CreationsForge.PresentationTests` owns headless Avalonia unit and presentation behavior checks that do not require
 Spriggit extraction data or imported validation database state.
@@ -64,20 +79,22 @@ Spriggit extraction data or imported validation database state.
 - CreationsForge depends on Bootstrap and Core.
 - Console depends on Bootstrap and Core.
 - Bootstrap depends on Core, Migrations, Starfield, Fallout4, and Skyrim.
-- Core depends on Assets for asset resolution DTOs, Migrations for migration execution, and shared Mutagen core
-  primitives for game-agnostic DTO mapping.
+- Core depends on Assets for asset resolution DTOs, Migrations for migration execution, Specification for game,
+  record-family, reader, import, validation, and comparison metadata, and shared Mutagen core primitives for
+  game-agnostic DTO mapping.
+- Specification has no project dependencies.
 - Assets has no project dependencies.
 - Game projects depend on Core.
 - Migrations does not depend on Core or game projects.
-- UnitTests depend on Core and the console project for parser tests.
+- UnitTests depend on Core, Specification, and the console project for parser tests.
 
 ## Composition
 
 `CreationsForge.Bootstrap` provides shared Autofac module registration.
 
 - `CoreModule` registers configuration, SQLite options, connection factory, NPoco `IDatabase`, schema initializer,
-  shared services, UI-neutral workflow services, shared typed importers, the asset archive readers, and shared
-  repositories.
+  shared services, UI-neutral workflow services, shared typed importers, the asset archive readers, the record
+  specification provider, and shared repositories.
 - `MigrationsModule` registers `DatabaseMigrationRunner`.
 - Each game module registers that game's plugin reader service, plugin reader facade, record reader, and one
   `IGameImporter`. Game reader facades are keyed by `SupportedGame` so the shared `GameImporter` can be constructor
@@ -123,10 +140,29 @@ Fallout 4 import Terminals (`TERM`) through the same typed-record pipeline with 
 comparison fields. CNDF, FACT, COBJ, and PERK condition lists use shared condition-rule rows and generic condition-data
 parameter rows, not raw condition payload rows, when Mutagen exposes the condition list as typed condition objects.
 All typed record importers save the record's parent row before dispatching shared child import by DTO capability.
-Records that expose models, keywords, condition rules, record components, sounds, or scripting adapters persist those
-child rows through the common `RecordInstances` identity instead of game-specific child-table paths. Starfield FACT
-components use the shared record-component child path; Fallout 4 and Skyrim FACT records currently have no component
-payload to map.
+Records that expose models, keywords, condition rules, record components, sounds, scripting adapters, or script
+fragments persist those child rows through the common `RecordInstances` identity instead of game-specific child-table
+paths. Starfield FACT components use the shared record-component child path; Fallout 4 and Skyrim FACT records
+currently have no component payload to map.
+
+The `CreationsForge.Specification` catalog drives the import dispatch loop for all currently imported record
+families. `RecordImportService` reads specifications from `IRecordSpecificationProvider`, orders them by import
+metadata, resolves each `PluginRecordSetDTO` collection by name, and still uses the existing `ITypedRecordImporter`
+lookup, progress reporting, per-record failure handling, and stale cleanup behavior. Required and optional record-type
+result behavior is controlled by the specification's import metadata.
+
+The catalog also carries reader metadata for the current record families. Reader metadata names the
+`PluginRecordSetDTO` destination collection, default Mutagen mod collection, overlay-safe reader eligibility,
+full-binary reader overrides, and optional collection policy for each record family, but the Starfield, Fallout 4,
+and Skyrim reader services still own the actual Mutagen-to-DTO mapping. This keeps the next reader-dispatch migration
+target explicit without moving game-specific Mutagen APIs into Core or Specification.
+Core `RecordSetSpecificationBuilder` consumes that metadata to assemble `PluginRecordSetDTO` instances from mapped
+record-family collections. Starfield, Fallout 4, and Skyrim record reads now use the builder for the final record-set
+assembly step while retaining the existing game-specific Mutagen mapping methods.
+Starfield, Fallout 4, and Skyrim record-family dispatch also use `IRecordSpecificationProvider` to choose the
+supported record mappers in specification import order. The mapper registries still call the existing game-specific
+`Map*` methods, so Mutagen field mapping remains game-adapter behavior. Fallout 4 uses the reader metadata to keep
+terminal records on the full binary mod path because the overlay reader can omit repeated terminal menu items.
 
 Starfield plugin metadata, master-reference, and record reads use a Starfield-only construction helper. The helper
 prefers the full Mutagen environment load order's mod objects with the Starfield environment data folder from
@@ -180,9 +216,9 @@ It reads all persisted overrides for a selected origin FormKey from shared repos
 with plugin columns, field rows, and display values. The presentation project renders those DTOs with an Avalonia
 `TreeDataGrid` and does not query repositories, database tables, or Mutagen directly. The active plugin record browser
 renders record-type groups as expander sections with flat `TreeDataGrid` controls for record rows. The comparison
-slice covers common record header fields plus scalar persisted fields for `FLST`, `GMST`, `GLOB`, `CLAS`, `FACT`,
-`MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, and `CONT`. Global comparison displays `MutagenObjectType`,
-named `MajorFlags`, and `Data` when those values are persisted. GameSetting comparison displays the generic
+slice covers common record header fields plus scalar persisted fields for the approved typed comparison families.
+Global comparison displays `MutagenObjectType`, named `MajorFlags`, and `Data` when those values are persisted.
+GameSetting comparison displays the generic
 `Data` row instead of duplicating the Mutagen-derived typed data helper fields. MISC, NPC_, and MGEF comparison
 includes shared keyword rows.
 MISC and MGEF comparison includes shared sound rows. MISC comparison also includes persisted model rows, component
@@ -212,6 +248,22 @@ record text language, then falls back to English and finally the scalar `Data` v
 Core assigns comparison value states for neutral, identical, conflicting, and displayed winning-override values; the
 presentation layer maps those states to the green, red, and yellow comparison colors and shows the legend in the status
 area.
+
+The specification catalog now drives simple comparison rows for `FLST`, `GMST`, `GLOB`, `CLAS`, `FACT`, `MISC`,
+`KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, and `TERM`.
+`RecordComparisonService` reads type-specific comparison fields from `IRecordSpecificationProvider`, resolves simple
+DTO source paths generically, and uses comparison metadata for ordinary localized scalar rows. Explicit strategy hooks
+remain where behavior is not purely declarative. Keyword rows, shared model rows, shared sound rows, shared scripting
+adapter rows, shared reflection rows, shared condition-rule rows, shared record component rows, script fragment rows,
+class property/weight rows, faction relation/rank rows, static property rows, and constructible object component/
+category/recipe-filter rows, container item/property/forced-location rows, terminal forced-location/marker
+parameter/body-text/menu-item rows, Form List item rows, Misc Item destructible/component/resource rows, and Actor
+Value Information perk-tree rows, NPC level/configuration/supplemental/list/actor-data rows, Perk effect/rank/
+background-skill rows, and Static navmesh geometry rows for current supported comparison families are selected by
+comparison child-group metadata. The current explicit hooks include
+localized `GMST` `Data` display, game-dependent `BOOK` body-text source fields, and remaining complex child groups for
+`MGEF`, `BOOK`, `DOOR`, and `CNDF`. Those remaining complex child groups stay on the existing record-specific
+comparison methods until later approved slices move them behind specification metadata.
 
 `IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows.
 `IAssetFileResolverService` resolves readable local asset files from preview candidates by checking absolute paths,

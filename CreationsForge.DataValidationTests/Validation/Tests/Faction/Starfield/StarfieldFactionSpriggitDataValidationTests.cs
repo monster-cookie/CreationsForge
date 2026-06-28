@@ -1,6 +1,6 @@
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.DataValidationTests.Validation.Specs;
-using CreationsForge.DataValidationTests.Validation.Specs.Faction;
+using CreationsForge.Specification.Validation.Specs.Faction;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.Tests.Faction.Starfield;

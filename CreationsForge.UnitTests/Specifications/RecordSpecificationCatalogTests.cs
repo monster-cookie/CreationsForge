@@ -1,0 +1,752 @@
+using CreationsForge.Specification.Records;
+using CreationsForge.Core.DTOs.Records;
+using Shouldly;
+
+namespace CreationsForge.UnitTests.Specifications;
+
+/// <summary>
+/// Tests the static production record specification catalog used by specification-aware workflows.
+/// </summary>
+public class RecordSpecificationCatalogTests
+{
+    /// <summary>
+    /// Verifies that the catalog includes the current imported record families in import-dispatch order.
+    /// </summary>
+    [Fact]
+    public void All_ReturnsCurrentImportRecordSpecifications()
+    {
+        var recordIDs = RecordSpecificationCatalog.All
+            .OrderBy(specification => specification.Import.ImportOrder)
+            .Select(specification => specification.RecordID)
+            .ToList();
+
+        recordIDs.ShouldBe(
+        [
+            "FLST",
+            "GMST",
+            "GLOB",
+            "CLAS",
+            "FACT",
+            "MISC",
+            "KYWD",
+            "AVIF",
+            "NPC_",
+            "MGEF",
+            "PERK",
+            "STAT",
+            "CONT",
+            "COBJ",
+            "CNDF",
+            "BOOK",
+            "DOOR",
+            "TERM"
+        ]);
+    }
+
+    /// <summary>
+    /// Verifies that record identifiers are unique so registry lookups cannot silently choose between duplicates.
+    /// </summary>
+    [Fact]
+    public void All_DoesNotExposeDuplicateRecordIDs()
+    {
+        var duplicateRecordIDs = RecordSpecificationCatalog.All
+            .GroupBy(specification => specification.RecordID, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToList();
+
+        duplicateRecordIDs.ShouldBeEmpty();
+    }
+
+    /// <summary>
+    /// Verifies that import order values are unique and contiguous so dispatch order stays deterministic.
+    /// </summary>
+    [Fact]
+    public void All_DoesNotExposeDuplicateImportOrders()
+    {
+        var importOrders = RecordSpecificationCatalog.All
+            .Select(specification => specification.Import.ImportOrder)
+            .Order()
+            .ToList();
+
+        importOrders.ShouldBe(Enumerable.Range(0, RecordSpecificationCatalog.All.Count).ToList());
+    }
+
+    /// <summary>
+    /// Verifies that catalog lookup is case-insensitive because record IDs are stable Bethesda identifiers rather
+    /// than user-authored text.
+    /// </summary>
+    [Fact]
+    public void FindByRecordID_MatchesCaseInsensitiveRecordID()
+    {
+        var specification = RecordSpecificationCatalog.FindByRecordID("glob");
+
+        specification.ShouldNotBeNull();
+        specification.RecordID.ShouldBe("GLOB");
+    }
+
+    /// <summary>
+    /// Verifies that unknown or empty record identifiers return no specification instead of throwing.
+    /// </summary>
+    [Fact]
+    public void FindByRecordID_ReturnsNullForUnknownRecordID()
+    {
+        RecordSpecificationCatalog.FindByRecordID("NOPE").ShouldBeNull();
+        RecordSpecificationCatalog.FindByRecordID(string.Empty).ShouldBeNull();
+    }
+
+    /// <summary>
+    /// Verifies that game support filtering returns the current record families for the Starfield adapter.
+    /// </summary>
+    [Fact]
+    public void GetSupportedByGame_ReturnsStarfieldRecordsSupportedByRequestedGame()
+    {
+        var specifications = RecordSpecificationCatalog.GetSupportedByGame(SpecificationGame.Starfield);
+
+        specifications.Select(specification => specification.RecordID).ShouldBe(
+        [
+            "FLST",
+            "GMST",
+            "GLOB",
+            "CLAS",
+            "FACT",
+            "MISC",
+            "KYWD",
+            "AVIF",
+            "NPC_",
+            "MGEF",
+            "PERK",
+            "STAT",
+            "CONT",
+            "COBJ",
+            "CNDF",
+            "BOOK",
+            "DOOR",
+            "TERM"
+        ], ignoreOrder: true);
+    }
+
+    /// <summary>
+    /// Verifies that Starfield-supported specifications expose the dispatch sequence consumed by the Starfield reader.
+    /// </summary>
+    [Fact]
+    public void GetSupportedByGame_ReturnsStarfieldRecordsInReaderDispatchOrder()
+    {
+        var recordIDs = RecordSpecificationCatalog.GetSupportedByGame(SpecificationGame.Starfield)
+            .OrderBy(specification => specification.Import.ImportOrder)
+            .Select(specification => specification.RecordID)
+            .ToList();
+
+        recordIDs.ShouldBe(
+        [
+            "FLST",
+            "GMST",
+            "GLOB",
+            "CLAS",
+            "FACT",
+            "MISC",
+            "KYWD",
+            "AVIF",
+            "NPC_",
+            "MGEF",
+            "PERK",
+            "STAT",
+            "CONT",
+            "COBJ",
+            "CNDF",
+            "BOOK",
+            "DOOR",
+            "TERM"
+        ]);
+    }
+
+    /// <summary>
+    /// Verifies that game support filtering returns the current record families for the Fallout 4 adapter.
+    /// </summary>
+    [Fact]
+    public void GetSupportedByGame_ReturnsFallout4RecordsSupportedByRequestedGame()
+    {
+        var specifications = RecordSpecificationCatalog.GetSupportedByGame(SpecificationGame.Fallout4);
+
+        specifications.Select(specification => specification.RecordID).ShouldBe(
+        [
+            "FLST",
+            "GMST",
+            "GLOB",
+            "CLAS",
+            "FACT",
+            "MISC",
+            "KYWD",
+            "AVIF",
+            "NPC_",
+            "MGEF",
+            "PERK",
+            "STAT",
+            "CONT",
+            "COBJ",
+            "BOOK",
+            "DOOR",
+            "TERM"
+        ], ignoreOrder: true);
+    }
+
+    /// <summary>
+    /// Verifies that Fallout 4-supported specifications expose the dispatch sequence consumed by the Fallout 4
+    /// reader.
+    /// </summary>
+    [Fact]
+    public void GetSupportedByGame_ReturnsFallout4RecordsInReaderDispatchOrder()
+    {
+        var recordIDs = RecordSpecificationCatalog.GetSupportedByGame(SpecificationGame.Fallout4)
+            .OrderBy(specification => specification.Import.ImportOrder)
+            .Select(specification => specification.RecordID)
+            .ToList();
+
+        recordIDs.ShouldBe(
+        [
+            "FLST",
+            "GMST",
+            "GLOB",
+            "CLAS",
+            "FACT",
+            "MISC",
+            "KYWD",
+            "AVIF",
+            "NPC_",
+            "MGEF",
+            "PERK",
+            "STAT",
+            "CONT",
+            "COBJ",
+            "BOOK",
+            "DOOR",
+            "TERM"
+        ]);
+    }
+
+    /// <summary>
+    /// Verifies that game support filtering returns the current record families for the Skyrim adapter.
+    /// </summary>
+    [Fact]
+    public void GetSupportedByGame_ReturnsSkyrimRecordsSupportedByRequestedGame()
+    {
+        var specifications = RecordSpecificationCatalog.GetSupportedByGame(SpecificationGame.Skyrim);
+
+        specifications.Select(specification => specification.RecordID).ShouldBe(
+        [
+            "FLST",
+            "GMST",
+            "GLOB",
+            "CLAS",
+            "FACT",
+            "MISC",
+            "KYWD",
+            "AVIF",
+            "NPC_",
+            "MGEF",
+            "PERK",
+            "STAT",
+            "CONT",
+            "COBJ",
+            "BOOK",
+            "DOOR"
+        ], ignoreOrder: true);
+    }
+
+    /// <summary>
+    /// Verifies that Skyrim-supported specifications expose the dispatch sequence consumed by the Skyrim reader.
+    /// </summary>
+    [Fact]
+    public void GetSupportedByGame_ReturnsSkyrimRecordsInReaderDispatchOrder()
+    {
+        var recordIDs = RecordSpecificationCatalog.GetSupportedByGame(SpecificationGame.Skyrim)
+            .OrderBy(specification => specification.Import.ImportOrder)
+            .Select(specification => specification.RecordID)
+            .ToList();
+
+        recordIDs.ShouldBe(
+        [
+            "FLST",
+            "GMST",
+            "GLOB",
+            "CLAS",
+            "FACT",
+            "MISC",
+            "KYWD",
+            "AVIF",
+            "NPC_",
+            "MGEF",
+            "PERK",
+            "STAT",
+            "CONT",
+            "COBJ",
+            "BOOK",
+            "DOOR"
+        ]);
+    }
+
+    /// <summary>
+    /// Verifies that active scalar comparison specifications define at least one comparison row.
+    /// </summary>
+    [Fact]
+    public void All_ActiveScalarComparisonSpecificationsExposeComparisonFields()
+    {
+        var comparisonBackedRecordIDs = RecordSpecificationCatalog.All
+            .Where(specification => specification.Comparison.Fields.Count > 0)
+            .Select(specification => specification.RecordID)
+            .ToList();
+
+        comparisonBackedRecordIDs.ShouldBe(
+            ["FLST", "GMST", "GLOB", "CLAS", "FACT", "MISC", "KYWD", "AVIF", "NPC_", "MGEF", "PERK", "STAT", "CONT", "COBJ", "CNDF", "BOOK", "DOOR", "TERM"],
+            ignoreOrder: true);
+    }
+
+    /// <summary>
+    /// Verifies that child-group comparison metadata is declared by the current shared child-row record families.
+    /// </summary>
+    [Fact]
+    public void All_ComparisonChildGroupsExposeCurrentSharedStrategies()
+    {
+        var childGroups = RecordSpecificationCatalog.All
+            .SelectMany(specification => specification.Comparison.ChildGroups.Select(group => new
+            {
+                specification.RecordID,
+                Group = group
+            }))
+            .OrderBy(entry => entry.RecordID, StringComparer.Ordinal)
+            .ToList();
+
+        var keywordRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.KeywordMappings)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var soundRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.SoundMappings)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var modelRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ModelMappings)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var scriptingAdapterRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ScriptingAdapterMappings)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var reflectionRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ReflectionMappings)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var conditionRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ConditionRules)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var componentRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.RecordComponents)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var scriptFragmentRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ScriptFragments)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var classPropertyRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ClassProperties)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var classSkillWeightRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ClassSkillWeights)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var classStatWeightRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ClassStatWeights)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var factionRelationRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.FactionRelations)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var factionRankRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.FactionRanks)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var staticPropertyRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.StaticProperties)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var constructibleObjectComponentRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ConstructibleObjectComponents)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var constructibleObjectCategoryRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ConstructibleObjectCategories)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var constructibleObjectRecipeFilterRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ConstructibleObjectRecipeFilters)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var containerItemRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ContainerItems)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var containerPropertyRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ContainerProperties)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var containerForcedLocationRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ContainerForcedLocations)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var terminalForcedLocationRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.TerminalForcedLocations)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var terminalMarkerParameterRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.TerminalMarkerParameters)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var terminalBodyTextRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.TerminalBodyTexts)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var terminalMenuItemRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.TerminalMenuItems)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var formListItemRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.FormListItems)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var miscItemDestructibleRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.MiscItemDestructible)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var miscItemComponentRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.MiscItemComponents)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var miscItemResourceRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.MiscItemResources)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var actorValueInformationPerkTreeRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ActorValueInformationPerkTree)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var npcLevelRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCLevel).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcConfigurationRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCConfiguration).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcSupplementalFieldRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCSupplementalFields).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcPackageRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCPackages).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcForcedLocationRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCForcedLocations).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcHeadPartRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCHeadParts).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcActorEffectRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCActorEffects).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcFactionRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFactions).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcPropertyRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCProperties).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcItemRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCItems).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcPerkRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCPerks).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcMorphRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCMorphs).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcFaceMorphRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFaceMorphs).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcFaceDialPositionRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFaceDialPositions).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcFaceMorphGroupRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFaceMorphGroups).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcMorphBlendRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCMorphBlends).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcTintRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCTints).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcTintLayerRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCTintLayers).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcFaceTintingLayerRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFaceTintingLayers).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcPlayerSkillRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCPlayerSkills).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var perkEffectRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.PerkEffects).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var perkRankRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.PerkRanks).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var perkBackgroundSkillRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.PerkBackgroundSkills).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var staticNavmeshGeometryRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.StaticNavmeshGeometry).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+
+        keywordRecordIDs.ShouldBe(
+            ["BOOK", "CONT", "DOOR", "FACT", "MGEF", "MISC", "NPC_", "STAT", "TERM"]);
+        soundRecordIDs.ShouldBe(["BOOK", "COBJ", "CONT", "DOOR", "MGEF", "MISC", "NPC_", "PERK"]);
+        modelRecordIDs.ShouldBe(["BOOK", "CONT", "DOOR", "MISC", "STAT", "TERM"]);
+        scriptingAdapterRecordIDs.ShouldBe(["BOOK", "COBJ", "CONT", "DOOR", "MGEF", "MISC", "NPC_", "PERK", "TERM"]);
+        reflectionRecordIDs.ShouldBe(["BOOK", "CONT", "DOOR", "STAT", "TERM"]);
+        conditionRecordIDs.ShouldBe(["CNDF", "COBJ", "FACT", "PERK", "TERM"]);
+        componentRecordIDs.ShouldBe(["BOOK", "CONT", "DOOR", "FACT"]);
+        scriptFragmentRecordIDs.ShouldBe(["PERK", "TERM"]);
+        classPropertyRecordIDs.ShouldBe(["CLAS"]);
+        classSkillWeightRecordIDs.ShouldBe(["CLAS"]);
+        classStatWeightRecordIDs.ShouldBe(["CLAS"]);
+        factionRelationRecordIDs.ShouldBe(["FACT"]);
+        factionRankRecordIDs.ShouldBe(["FACT"]);
+        staticPropertyRecordIDs.ShouldBe(["STAT"]);
+        constructibleObjectComponentRecordIDs.ShouldBe(["COBJ"]);
+        constructibleObjectCategoryRecordIDs.ShouldBe(["COBJ"]);
+        constructibleObjectRecipeFilterRecordIDs.ShouldBe(["COBJ"]);
+        containerItemRecordIDs.ShouldBe(["CONT"]);
+        containerPropertyRecordIDs.ShouldBe(["CONT"]);
+        containerForcedLocationRecordIDs.ShouldBe(["CONT"]);
+        terminalForcedLocationRecordIDs.ShouldBe(["TERM"]);
+        terminalMarkerParameterRecordIDs.ShouldBe(["TERM"]);
+        terminalBodyTextRecordIDs.ShouldBe(["TERM"]);
+        terminalMenuItemRecordIDs.ShouldBe(["TERM"]);
+        formListItemRecordIDs.ShouldBe(["FLST"]);
+        miscItemDestructibleRecordIDs.ShouldBe(["MISC"]);
+        miscItemComponentRecordIDs.ShouldBe(["MISC"]);
+        miscItemResourceRecordIDs.ShouldBe(["MISC"]);
+        actorValueInformationPerkTreeRecordIDs.ShouldBe(["AVIF"]);
+        npcLevelRecordIDs.ShouldBe(["NPC_"]);
+        npcConfigurationRecordIDs.ShouldBe(["NPC_"]);
+        npcSupplementalFieldRecordIDs.ShouldBe(["NPC_"]);
+        npcPackageRecordIDs.ShouldBe(["NPC_"]);
+        npcForcedLocationRecordIDs.ShouldBe(["NPC_"]);
+        npcHeadPartRecordIDs.ShouldBe(["NPC_"]);
+        npcActorEffectRecordIDs.ShouldBe(["NPC_"]);
+        npcFactionRecordIDs.ShouldBe(["NPC_"]);
+        npcPropertyRecordIDs.ShouldBe(["NPC_"]);
+        npcItemRecordIDs.ShouldBe(["NPC_"]);
+        npcPerkRecordIDs.ShouldBe(["NPC_"]);
+        npcMorphRecordIDs.ShouldBe(["NPC_"]);
+        npcFaceMorphRecordIDs.ShouldBe(["NPC_"]);
+        npcFaceDialPositionRecordIDs.ShouldBe(["NPC_"]);
+        npcFaceMorphGroupRecordIDs.ShouldBe(["NPC_"]);
+        npcMorphBlendRecordIDs.ShouldBe(["NPC_"]);
+        npcTintRecordIDs.ShouldBe(["NPC_"]);
+        npcTintLayerRecordIDs.ShouldBe(["NPC_"]);
+        npcFaceTintingLayerRecordIDs.ShouldBe(["NPC_"]);
+        npcPlayerSkillRecordIDs.ShouldBe(["NPC_"]);
+        perkEffectRecordIDs.ShouldBe(["PERK"]);
+        perkRankRecordIDs.ShouldBe(["PERK"]);
+        perkBackgroundSkillRecordIDs.ShouldBe(["PERK"]);
+        staticNavmeshGeometryRecordIDs.ShouldBe(["STAT"]);
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.KeywordMappings)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Keywords");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.SoundMappings)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Sounds");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ModelMappings)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Models");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ScriptingAdapterMappings)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Scripts");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ReflectionMappings)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Reflection");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ConditionRules)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Conditions");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.RecordComponents)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Components");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ScriptFragments)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Script Fragments");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ClassProperties)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Properties");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ClassSkillWeights)
+            .ShouldAllBe(entry => entry.Group.GroupName == "SkillWeights");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ClassStatWeights)
+            .ShouldAllBe(entry => entry.Group.GroupName == "StatWeights");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.FactionRelations)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Relations");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.FactionRanks)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Ranks");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.StaticProperties)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Properties");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ConstructibleObjectComponents)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Components");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ConstructibleObjectCategories)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Categories");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ConstructibleObjectRecipeFilters)
+            .ShouldAllBe(entry => entry.Group.GroupName == "RecipeFilters");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ContainerItems)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Items");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ContainerProperties)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Properties");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ContainerForcedLocations)
+            .ShouldAllBe(entry => entry.Group.GroupName == "ForcedLocations");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.TerminalForcedLocations)
+            .ShouldAllBe(entry => entry.Group.GroupName == "ForcedLocations");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.TerminalMarkerParameters)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Marker Parameters");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.TerminalBodyTexts)
+            .ShouldAllBe(entry => entry.Group.GroupName == "BodyTexts");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.TerminalMenuItems)
+            .ShouldAllBe(entry => entry.Group.GroupName == "MenuItems");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.FormListItems)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Items");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.MiscItemDestructible)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Destructible");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.MiscItemComponents)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Components");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.MiscItemResources)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Resources");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ActorValueInformationPerkTree)
+            .ShouldAllBe(entry => entry.Group.GroupName == "PerkTree");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCLevel).ShouldAllBe(entry => entry.Group.GroupName == "Level");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCConfiguration).ShouldAllBe(entry => entry.Group.GroupName == "Configuration");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCSupplementalFields).ShouldAllBe(entry => entry.Group.GroupName == "Supplemental Fields");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCPackages).ShouldAllBe(entry => entry.Group.GroupName == "Packages");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCForcedLocations).ShouldAllBe(entry => entry.Group.GroupName == "ForcedLocations");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCHeadParts).ShouldAllBe(entry => entry.Group.GroupName == "HeadParts");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCActorEffects).ShouldAllBe(entry => entry.Group.GroupName == "ActorEffects");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFactions).ShouldAllBe(entry => entry.Group.GroupName == "Factions");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCProperties).ShouldAllBe(entry => entry.Group.GroupName == "Properties");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCItems).ShouldAllBe(entry => entry.Group.GroupName == "Items");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCPerks).ShouldAllBe(entry => entry.Group.GroupName == "Perks");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCMorphs).ShouldAllBe(entry => entry.Group.GroupName == "Morphs");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFaceMorphs).ShouldAllBe(entry => entry.Group.GroupName == "FaceMorphs");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFaceDialPositions).ShouldAllBe(entry => entry.Group.GroupName == "FaceDialPositions");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFaceMorphGroups).ShouldAllBe(entry => entry.Group.GroupName == "FaceMorphGroups");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCMorphBlends).ShouldAllBe(entry => entry.Group.GroupName == "MorphBlends");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCTints).ShouldAllBe(entry => entry.Group.GroupName == "Tints");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCTintLayers).ShouldAllBe(entry => entry.Group.GroupName == "TintLayers");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFaceTintingLayers).ShouldAllBe(entry => entry.Group.GroupName == "FaceTintingLayers");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCPlayerSkills).ShouldAllBe(entry => entry.Group.GroupName == "PlayerSkills");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.PerkEffects).ShouldAllBe(entry => entry.Group.GroupName == "Effects");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.PerkRanks).ShouldAllBe(entry => entry.Group.GroupName == "Ranks");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.PerkBackgroundSkills).ShouldAllBe(entry => entry.Group.GroupName == "Background Skills");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.StaticNavmeshGeometry).ShouldAllBe(entry => entry.Group.GroupName == "Navmesh Geometry");
+        childGroups.ShouldAllBe(entry => !string.IsNullOrWhiteSpace(entry.Group.Description));
+    }
+
+    /// <summary>
+    /// Verifies that import specifications point at real plugin record-set collections.
+    /// </summary>
+    [Fact]
+    public void All_ActivePilotSpecificationsReferencePluginRecordSetProperties()
+    {
+        var recordSetProperties = typeof(PluginRecordSetDTO)
+            .GetProperties()
+            .Select(property => property.Name)
+            .ToHashSet(StringComparer.Ordinal);
+
+        RecordSpecificationCatalog.All.ShouldAllBe(specification =>
+            recordSetProperties.Contains(specification.Import.PluginRecordSetPropertyName));
+    }
+
+    /// <summary>
+    /// Verifies that reader specifications point at real plugin record-set collections.
+    /// </summary>
+    [Fact]
+    public void All_ReaderSpecificationsReferencePluginRecordSetProperties()
+    {
+        var recordSetProperties = typeof(PluginRecordSetDTO)
+            .GetProperties()
+            .Select(property => property.Name)
+            .ToHashSet(StringComparer.Ordinal);
+
+        RecordSpecificationCatalog.All.ShouldAllBe(specification =>
+            recordSetProperties.Contains(specification.Reader.PluginRecordSetPropertyName));
+    }
+
+    /// <summary>
+    /// Verifies that reader and import metadata target the same DTO collection during the metadata foundation phase.
+    /// </summary>
+    [Fact]
+    public void All_ReaderSpecificationsMatchImportRecordSetProperties()
+    {
+        RecordSpecificationCatalog.All.ShouldAllBe(specification =>
+            specification.Reader.PluginRecordSetPropertyName == specification.Import.PluginRecordSetPropertyName);
+    }
+
+    /// <summary>
+    /// Verifies that reader-facing Mutagen collection names are populated for the catalog and supported game entries.
+    /// </summary>
+    [Fact]
+    public void All_ReaderSpecificationsExposeMutagenCollectionNames()
+    {
+        RecordSpecificationCatalog.All.ShouldAllBe(specification =>
+            !string.IsNullOrWhiteSpace(specification.Reader.DefaultMutagenCollectionName));
+
+        RecordSpecificationCatalog.All.ShouldAllBe(specification =>
+            specification.GameSupport.All(support => !string.IsNullOrWhiteSpace(support.MutagenCollectionName)));
+    }
+
+    /// <summary>
+    /// Verifies that reader behavior metadata defaults to the overlay-safe path and does not silently allow missing
+    /// collections.
+    /// </summary>
+    [Fact]
+    public void All_ReaderSpecificationsExposeCurrentBehaviorDefaults()
+    {
+        RecordSpecificationCatalog.All.ShouldAllBe(specification => specification.Reader.UsesOverlaySafeMod);
+        RecordSpecificationCatalog.All.ShouldAllBe(specification => !specification.Reader.IsOptionalCollection);
+    }
+
+    /// <summary>
+    /// Verifies that full-binary reader metadata is limited to the current Fallout 4 terminal workaround.
+    /// </summary>
+    [Fact]
+    public void All_ReaderSpecificationsExposeOnlyCurrentFullBinaryRequirements()
+    {
+        var fullBinarySpecifications = RecordSpecificationCatalog.All
+            .Where(specification => specification.Reader.RequiresFullBinaryMod)
+            .ToList();
+
+        fullBinarySpecifications.Count.ShouldBe(1);
+        fullBinarySpecifications[0].RecordID.ShouldBe("TERM");
+        fullBinarySpecifications[0].Reader.RequiresFullBinaryModForGame(SpecificationGame.Fallout4).ShouldBeTrue();
+        fullBinarySpecifications[0].Reader.RequiresFullBinaryModForGame(SpecificationGame.Starfield).ShouldBeFalse();
+        fullBinarySpecifications[0].Reader.RequiresFullBinaryModForGame(SpecificationGame.Skyrim).ShouldBeFalse();
+    }
+
+    /// <summary>
+    /// Verifies that game-specific full-binary reader overrides only target games that support the record family.
+    /// </summary>
+    [Fact]
+    public void All_ReaderFullBinaryRequirementsReferenceSupportedGames()
+    {
+        foreach (var specification in RecordSpecificationCatalog.All)
+        {
+            foreach (var game in specification.Reader.GamesRequiringFullBinaryMod)
+            {
+                specification.GameSupport.Any(support => support.Game == game).ShouldBeTrue();
+            }
+        }
+    }
+}

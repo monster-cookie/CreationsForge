@@ -1,6 +1,6 @@
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.DataValidationTests.Validation.Specs;
-using CreationsForge.DataValidationTests.Validation.Specs.Perk;
+using CreationsForge.Specification.Validation.Specs.Perk;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.Tests.Perk.Fallout4;

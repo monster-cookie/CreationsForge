@@ -29,6 +29,7 @@
         <ProjectReference Include="..\CreationsForge.Core\CreationsForge.Core.csproj" />
         <ProjectReference Include="..\CreationsForge.Fallout4\CreationsForge.Fallout4.csproj" />
         <ProjectReference Include="..\CreationsForge.Skyrim\CreationsForge.Skyrim.csproj" />
+        <ProjectReference Include="..\CreationsForge.Specification\CreationsForge.Specification.csproj" />
         <ProjectReference Include="..\CreationsForge.Starfield\CreationsForge.Starfield.csproj" />
     </ItemGroup>
 

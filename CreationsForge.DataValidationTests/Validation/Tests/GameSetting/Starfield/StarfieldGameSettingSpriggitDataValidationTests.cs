@@ -1,6 +1,6 @@
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.DataValidationTests.Validation.Specs;
-using CreationsForge.DataValidationTests.Validation.Specs.GameSetting;
+using CreationsForge.Specification.Validation.Specs.GameSetting;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.Tests.GameSetting.Starfield;

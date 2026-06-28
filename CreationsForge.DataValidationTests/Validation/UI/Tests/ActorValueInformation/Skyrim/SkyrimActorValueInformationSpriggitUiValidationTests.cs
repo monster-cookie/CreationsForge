@@ -1,5 +1,5 @@
 using Avalonia.Headless.XUnit;
-using CreationsForge.DataValidationTests.Validation.Specs.ActorValueInformation;
+using CreationsForge.Specification.Validation.Specs.ActorValueInformation;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.UI.Tests.ActorValueInformation.Skyrim;

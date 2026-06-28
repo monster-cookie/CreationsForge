@@ -1,5 +1,5 @@
 using Avalonia.Headless.XUnit;
-using CreationsForge.DataValidationTests.Validation.Specs.ConstructibleObject;
+using CreationsForge.Specification.Validation.Specs.ConstructibleObject;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.UI.Tests.ConstructibleObject.Starfield;

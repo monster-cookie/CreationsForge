@@ -27,7 +27,7 @@ the identity needed to group true overrides for comparison while avoiding collis
 
 Record instance: A persisted imported override identity combining the containing game/plugin, record type ID, and
 origin record identity. `RecordInstances` is the database parent for typed detail rows and shared child rows such as
-models, keywords, sounds, and scripting adapters.
+models, keywords, sounds, scripting adapters, condition rules, record components, reflections, and script fragments.
 
 Master reference: A relationship edge from a declaring plugin to a declared master plugin in the same game.
 
@@ -37,6 +37,19 @@ Classes (`CLAS`), Factions (`FACT`), Keywords (`KYWD`), ActorValueInformation (`
 (`MGEF`), Perks (`PERK`), Statics (`STAT`), Books (`BOOK`), Doors (`DOOR`), Containers (`CONT`), and
 ConstructibleObjects (`COBJ`). Starfield also persists typed detail rows for ConditionForms (`CNDF`), and Starfield
 plus Fallout 4 persist typed detail rows for Terminals (`TERM`).
+
+Record specification: Production metadata that describes a record family's Bethesda record ID, canonical
+CreationsForge name, current typed-detail table name, supported game adapters, source field hints, and comparison
+field intent. The specification catalog lives in `CreationsForge.Specification` and covers the current imported
+record families for Core import dispatch. Reader metadata names each record family's `PluginRecordSetDTO` destination
+collection, default Mutagen collection name, overlay-safe reader eligibility, full-binary reader overrides, and
+optional collection policy, but game adapters still own Mutagen-to-DTO mapping. Core import dispatch consumes
+specification import metadata to locate the matching `PluginRecordSetDTO` collections and preserve the approved
+record-family order. Core comparison consumes comparison metadata for `FLST`, `GMST`, `GLOB`, `CLAS`, `FACT`,
+`MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, and `TERM`
+simple scalar rows.
+Complex comparison strategies and the actual game-specific Mutagen mapping remain owned by the existing Core and
+game-adapter services until later approved work makes those paths specification-driven.
 
 Starfield master references require special construction through Mutagen's separated-master-aware load-order paths.
 The Starfield reader prefers the full Mutagen environment load order's mod objects so split masters, medium masters,
@@ -48,7 +61,8 @@ a future Mutagen or game-specific requirement proves otherwise.
 
 Core DTOs and repositories are shared only for the current approved schema: games, plugin metadata, plugin master
 references, FormLists, FormListItems, GameSettings, Globals, approved typed parent rows, shared model rows, shared
-keyword rows, shared sound rows, and shared scripting adapter rows. Shared child rows are persisted for approved record
+keyword rows, shared sound rows, shared scripting adapter rows, shared condition-rule rows, shared record-component
+rows, shared reflection rows, and shared script-fragment rows. Shared child rows are persisted for approved record
 types that expose the corresponding Core DTO capability interfaces.
 
 Game-specific projects own Mutagen package references and should own any mapping that depends on a specific game's
@@ -102,13 +116,27 @@ records. FormLists also display `AddToList` and indexed `Items[n]` rows. GameSet
 and the active typed `Data` value. Localized text rows use the Settings-selected record text language when a persisted
 localized value exists, then fall back to English and the DTO or scalar database fallback. Globals display
 `MutagenObjectType`, named `MajorFlags`, and `Data`.
+The specification catalog now drives the simple comparison fields for `FLST`, `GMST`, `GLOB`, `CLAS`, `FACT`,
+`MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, `CNDF`, and `TERM`.
+The Core comparison service remains the runtime authority for generated comparison DTOs, including row state, plugin
+column ordering, indexed `FLST` item expansion, localized `GMST` `Data` display, game-dependent `BOOK` body text
+source fields, and strategy-owned child rows. Keyword rows, shared model rows, shared sound rows, shared scripting
+adapter rows, shared reflection rows, shared condition-rule rows, shared record component rows, script fragment rows,
+class property/weight rows, faction relation/rank rows, static property rows, and constructible object component/
+category/recipe-filter rows, container item/property/forced-location rows, and terminal forced-location/marker
+parameter/body-text/menu-item rows, Form List item rows, Misc Item destructible/component/resource rows, and Actor
+Value Information perk-tree rows, NPC level/configuration/supplemental/list/actor-data rows, Perk effect/rank/
+background-skill rows, and Static navmesh geometry rows for current supported comparison families are selected by
+comparison child-group metadata.
+Other `MGEF`, `BOOK`, `DOOR`, and `CNDF` child groups remain strategy-owned.
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `CLAS`, `FACT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM`
 comparisons display their currently persisted parent fields and record-reference fields. CLAS comparison displays
 class property rows and skill-weight or stat-weight
 rows when those child rows are present. FACT comparison displays relation, rank, shared condition-rule, and Starfield
-component rows when those payloads are persisted. PERK comparison displays rank rows, nested rank-effect
-rows, background skill rows, and shared scripting adapter rows. `MISC` comparison displays component display indices
-and destructible data/stage rows when those payloads are persisted. `NPC_` comparison displays persisted actor
+component rows when those payloads are persisted. PERK comparison displays rank rows, nested rank-effect rows,
+background skill rows, shared scripting adapter rows, and script fragment rows. `MISC` comparison displays component
+display indices and destructible data/stage rows when those payloads are persisted. `NPC_` comparison displays
+persisted actor
 configuration, template, appearance, head part, package, property, perk, inventory, face morph, face dial, morph blend,
 tint, and player-skill rows when those payloads are persisted. `MISC`, `NPC_`, `MGEF`, `BOOK`, `DOOR`, `CONT`,
 `COBJ`, and `TERM` comparisons display shared child rows when those payloads are persisted. `CNDF` and `COBJ`
@@ -134,9 +162,11 @@ declared decimal precision only when comparison builds display values and compar
 
 The UI renders comparison DTOs from `IRecordComparisonService` and does not call repositories, database tables, or
 Mutagen APIs directly.
-Spriggit comparison UI validation includes a coverage audit that flags validation specs with meaningful DTO assertions
-but no explicit comparison row expectations, preventing record types from passing headless UI validation through the
-default `EditorID`-only fallback.
+Spriggit validation spec declarations live in `CreationsForge.Specification` beside the production game and record
+metadata they reference. `CreationsForge.DataValidationTests` owns the workers that load Spriggit YAML, flatten DTOs,
+run assertions, and render headless UI comparison rows. Spriggit comparison UI validation includes a coverage audit
+that flags validation specs with meaningful DTO assertions but no explicit comparison row expectations, preventing
+record types from passing headless UI validation through the default `EditorID`-only fallback.
 
 ## Localized Record Text
 
@@ -165,6 +195,17 @@ Typed record repositories persist a shared
 record
 instance before saving type-specific detail rows, and typed importers dispatch shared child persistence from the record
 DTO capability interfaces.
+
+`CreationsForge.Specification` currently provides production metadata for the supported games and imported record
+families. That metadata is registered through Core composition and drives the shared import dispatch loop. The catalog
+now describes record identity, current reader destination collections, default Mutagen collection names, overlay-safe
+reader eligibility, full-binary reader overrides, optional collection policy, comparison metadata, and validation spec
+declarations. Core can assemble a `PluginRecordSetDTO` from mapped record-family collections using specification
+reader metadata; Starfield, Fallout 4, and Skyrim use that assembly path while preserving their game-specific mapping
+methods. Starfield, Fallout 4, and Skyrim also use supported record specifications to select and order record-family
+mapper dispatch, but each mapper still calls the existing game-specific Mutagen mapping code.
+Fallout 4 terminal records use the full binary mod path because the reader metadata marks the Fallout 4 `TERM`
+adapter path as requiring it.
 
 ## Presentation Boundary
 

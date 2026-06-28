@@ -3,7 +3,9 @@ using CreationsForge.Bootstrap.Composition;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.Enums;
+using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Repositories.Interfaces;
+using CreationsForge.Specification.Records;
 
 namespace CreationsForge.DataValidationTests.Validation.Services;
 
@@ -22,6 +24,18 @@ public class GameRecordSetProvider
 
         return record ?? throw new InvalidOperationException(
             $"Unable to find record '{rawFormKey}' for record type '{recordType}' in game '{game}'.");
+    }
+
+    /// <summary>
+    /// Gets one imported record using specification-layer game metadata.
+    /// </summary>
+    /// <param name="game">The specification-layer game identifier.</param>
+    /// <param name="recordType">The Bethesda record identifier to resolve.</param>
+    /// <param name="rawFormKey">The Spriggit-style form key for the record.</param>
+    /// <returns>The imported record DTO read from the configured validation database.</returns>
+    public RecordDTO GetRecord(SpecificationGame game, string recordType, string rawFormKey)
+    {
+        return GetRecord(SpecificationGameAdapter.ToSupportedGame(game), recordType, rawFormKey);
     }
 
     private static IEnumerable<RecordDTO> GetRecords(ILifetimeScope scope, SupportedGame game, string recordType, FormKeyDTO formKey)

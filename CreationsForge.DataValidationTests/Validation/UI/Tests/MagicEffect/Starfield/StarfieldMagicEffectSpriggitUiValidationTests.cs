@@ -1,5 +1,5 @@
 using Avalonia.Headless.XUnit;
-using CreationsForge.DataValidationTests.Validation.Specs.MagicEffect;
+using CreationsForge.Specification.Validation.Specs.MagicEffect;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.UI.Tests.MagicEffect.Starfield;

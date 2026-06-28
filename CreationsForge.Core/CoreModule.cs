@@ -14,13 +14,21 @@ using CreationsForge.Core.Importers.Interfaces;
 using CreationsForge.Core.Models.Database;
 using CreationsForge.Core.Services;
 using CreationsForge.Core.Services.Interfaces;
+using CreationsForge.Specification.Records;
 using NPoco;
 using Module = Autofac.Module;
 
 namespace CreationsForge.Core;
 
+/// <summary>
+/// Registers Core services, repositories, importers, asset readers, and specification-aware helpers with Autofac.
+/// </summary>
 public class CoreModule : Module
 {
+    /// <summary>
+    /// Adds Core registrations to the Autofac container used by CreationsForge application surfaces.
+    /// </summary>
+    /// <param name="builder">The Autofac container builder receiving Core registrations.</param>
     protected override void Load(ContainerBuilder builder)
     {
         builder.RegisterType<ApplicationConfigurationStore>()
@@ -56,6 +64,14 @@ public class CoreModule : Module
         builder.RegisterType<ProcessTerminationDiagnosticsService>()
             .As<IProcessTerminationDiagnosticsService>()
             .SingleInstance();
+
+        builder.RegisterType<RecordSpecificationProvider>()
+            .As<IRecordSpecificationProvider>()
+            .SingleInstance();
+
+        builder.RegisterType<RecordSetSpecificationBuilder>()
+            .As<IRecordSetSpecificationBuilder>()
+            .InstancePerLifetimeScope();
 
         builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly())
             .Where(t => t.Name.EndsWith("Importer", StringComparison.OrdinalIgnoreCase) && t != typeof(GameImporter))

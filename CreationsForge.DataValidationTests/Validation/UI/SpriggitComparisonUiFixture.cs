@@ -2,9 +2,11 @@ using Autofac;
 using CreationsForge.Bootstrap.Composition;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.Enums;
+using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.DataValidationTests.Validation.Services;
 using CreationsForge.DataValidationTests.Validation.Specs;
+using CreationsForge.Specification.Validation;
 using CreationsForge.DataValidationTests.Validation.Tests;
 
 namespace CreationsForge.DataValidationTests.Validation.UI;
@@ -26,12 +28,13 @@ public class SpriggitComparisonUiFixture
     {
         var record = recordSetProvider.GetRecord(spec.Game, spec.RecordType.RecordID, spec.FormKey);
         var spriggit = Helpers.GetSpriggit<SpriggitRecordDTO>(spec.Game, spec.RecordType, spec.SampleName);
-        var plugin = CreatePlugin(spec.Game, record.ModKey.FileName);
+        var game = SpecificationGameAdapter.ToSupportedGame(spec.Game);
+        var plugin = CreatePlugin(game, record.ModKey.FileName);
         plugin.ModKey = record.ModKey;
         plugin.RecordCount = 1;
 
         return new SpriggitComparisonUiSample(
-            spec.Game,
+            game,
             spec.RecordType.RecordID,
             record,
             plugin,

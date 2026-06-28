@@ -1,5 +1,5 @@
 using Avalonia.Headless.XUnit;
-using CreationsForge.DataValidationTests.Validation.Specs.Door;
+using CreationsForge.Specification.Validation.Specs.Door;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.UI.Tests.Door.Starfield;

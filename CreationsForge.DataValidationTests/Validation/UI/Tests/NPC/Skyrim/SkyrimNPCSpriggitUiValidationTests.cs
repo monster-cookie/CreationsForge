@@ -1,5 +1,5 @@
 using Avalonia.Headless.XUnit;
-using CreationsForge.DataValidationTests.Validation.Specs.NPC;
+using CreationsForge.Specification.Validation.Specs.NPC;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.UI.Tests.NPC.Skyrim;

@@ -1,25 +1,52 @@
+using System.Collections;
 using CreationsForge.Core.DTOs.Plugins;
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.Core.DTOs.Results;
 using CreationsForge.Core.Helpers;
 using CreationsForge.Core.Importers.Interfaces;
 using CreationsForge.Core.Services.Interfaces;
+using CreationsForge.Specification.Records;
 using Serilog;
 
 namespace CreationsForge.Core.Services;
 
+/// <summary>
+/// Coordinates typed record import for a plugin by reading mapped record DTOs and dispatching them to typed detail
+/// importers.
+/// </summary>
 public class RecordImportService : IRecordImportService
 {
     private readonly Dictionary<(Enums.SupportedGame Game, string RecordType), ITypedRecordImporter> TypedRecordImporters;
     private readonly ILogger Logger = Log.ForContext<RecordImportService>();
+    private readonly IRecordSpecificationProvider RecordSpecificationProvider;
 
-    public RecordImportService(IEnumerable<ITypedRecordImporter> typedRecordImporters)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RecordImportService"/> class.
+    /// </summary>
+    /// <param name="typedRecordImporters">The typed detail importers available for record import.</param>
+    /// <param name="recordSpecificationProvider">The optional record specification provider used for spec-driven import dispatch.</param>
+    public RecordImportService(
+        IEnumerable<ITypedRecordImporter> typedRecordImporters,
+        IRecordSpecificationProvider? recordSpecificationProvider = null)
     {
         TypedRecordImporters = typedRecordImporters
             .SelectMany(importer => importer.SupportedGames.Select(game => new { Game = game, Importer = importer }))
             .ToDictionary(entry => (entry.Game, entry.Importer.RecordType), entry => entry.Importer);
+        RecordSpecificationProvider = recordSpecificationProvider ?? new RecordSpecificationProvider();
     }
 
+    /// <summary>
+    /// Imports the approved typed records for one plugin using the supplied game-specific record reader.
+    /// </summary>
+    /// <param name="plugin">The plugin whose mapped records should be imported.</param>
+    /// <param name="recordReader">The game-specific reader that maps Mutagen records into Core DTOs.</param>
+    /// <param name="progress">The optional progress sink for long-running import status.</param>
+    /// <param name="pluginIndex">The one-based plugin index used for progress reporting.</param>
+    /// <param name="pluginCount">The total plugin count used for progress reporting.</param>
+    /// <param name="cancellationToken">The token used to cancel record discovery and import.</param>
+    /// <returns>The aggregate import result for the plugin's typed records.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the plugin game does not match the record reader game.</exception>
+    /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled.</exception>
     public RecordImportResultDTO ImportPluginRecords(
         PluginDTO plugin,
         IGameRecordReader recordReader,
@@ -36,24 +63,7 @@ public class RecordImportService : IRecordImportService
         ReportProgress(progress, plugin, pluginIndex, pluginCount, string.Empty, 0, 0, $"Starting record import: {plugin.ModKey.FileName}", "Loading plugin records.");
         cancellationToken.ThrowIfCancellationRequested();
         var recordSet = recordReader.ReadPluginRecords(plugin, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.FormList, recordSet.FormLists, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.GameSetting, recordSet.GameSettings, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.Global, recordSet.Globals, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.Class, recordSet.Classes, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.Faction, recordSet.Factions, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.MiscItem, recordSet.MiscItems, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.Keyword, recordSet.Keywords, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.ActorValueInformation, recordSet.ActorValueInformation, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.NPC, recordSet.NPCs, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.MagicEffect, recordSet.MagicEffects, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportPluginRecordType(plugin, result, RecordTypeCatalog.Perk, recordSet.Perks, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Static, recordSet.Statics, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Container, recordSet.Containers, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.ConstructibleObject, recordSet.ConstructibleObjects, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.ConditionForm, recordSet.ConditionForms, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Book, recordSet.Books, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Door, recordSet.Doors, progress, pluginIndex, pluginCount, cancellationToken);
-        ImportOptionalPluginRecordType(plugin, result, RecordTypeCatalog.Terminal, recordSet.Terminals, progress, pluginIndex, pluginCount, cancellationToken);
+        ImportSpecDrivenRecordTypes(plugin, result, recordSet, progress, pluginIndex, pluginCount, cancellationToken);
         Logger.Information(
             "Finished record import for {ModKey} for {Game}: headers {HeadersImported}, details {DetailRowsImported}, FormList items {FormListItemsImported}, record failures {RecordsFailed}, unsupported record types {UnsupportedRecordTypes}",
             plugin.ModKey.FileName,
@@ -65,6 +75,72 @@ public class RecordImportService : IRecordImportService
             result.UnsupportedRecordTypes);
 
         return result;
+    }
+
+    /// <summary>
+    /// Imports record families whose dispatch metadata lives in the production specification catalog.
+    /// </summary>
+    /// <param name="plugin">The plugin whose records are being imported.</param>
+    /// <param name="result">The aggregate import result being populated.</param>
+    /// <param name="recordSet">The mapped record set returned by the game reader.</param>
+    /// <param name="progress">The optional progress sink for import status.</param>
+    /// <param name="pluginIndex">The one-based plugin index used for progress reporting.</param>
+    /// <param name="pluginCount">The total plugin count used for progress reporting.</param>
+    /// <param name="cancellationToken">The token used to cancel record import.</param>
+    private void ImportSpecDrivenRecordTypes(
+        PluginDTO plugin,
+        RecordImportResultDTO result,
+        PluginRecordSetDTO recordSet,
+        IProgress<GameImportProgressDTO>? progress,
+        int pluginIndex,
+        int pluginCount,
+        CancellationToken cancellationToken)
+    {
+        foreach (var specification in RecordSpecificationProvider.GetAll().OrderBy(specification => specification.Import.ImportOrder))
+        {
+            var recordType = new RecordTypeData
+            {
+                TableName = specification.TableName,
+                RecordType = specification.RecordType,
+                RecordID = specification.RecordID,
+                FriendlyName = specification.FriendlyName
+            };
+            var records = GetRecordSetRecords(recordSet, specification);
+            if (specification.Import.IsRequired)
+            {
+                ImportPluginRecordType(plugin, result, recordType, records, progress, pluginIndex, pluginCount, cancellationToken);
+                continue;
+            }
+
+            ImportOptionalPluginRecordType(plugin, result, recordType, records, progress, pluginIndex, pluginCount, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Reads the mapped record DTO list identified by a record specification from a plugin record set.
+    /// </summary>
+    /// <param name="recordSet">The record set returned by a game-specific record reader.</param>
+    /// <param name="specification">The specification that names the record-set collection property.</param>
+    /// <returns>The mapped records as objects while preserving the original DTO instances.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the specification points at a missing or non-enumerable record-set property.</exception>
+    private static IReadOnlyList<object> GetRecordSetRecords(
+        PluginRecordSetDTO recordSet,
+        RecordSpecification specification)
+    {
+        var property = typeof(PluginRecordSetDTO).GetProperty(specification.Import.PluginRecordSetPropertyName);
+        if (property == null)
+        {
+            throw new InvalidOperationException(
+                $"Record specification '{specification.RecordID}' references unknown PluginRecordSetDTO property '{specification.Import.PluginRecordSetPropertyName}'.");
+        }
+
+        if (property.GetValue(recordSet) is not IEnumerable values)
+        {
+            throw new InvalidOperationException(
+                $"PluginRecordSetDTO property '{specification.Import.PluginRecordSetPropertyName}' for record specification '{specification.RecordID}' is not enumerable.");
+        }
+
+        return values.Cast<object>().ToList();
     }
 
     private void ImportOptionalPluginRecordType<TRecordDTO>(

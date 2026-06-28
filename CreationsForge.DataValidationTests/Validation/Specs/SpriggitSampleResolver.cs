@@ -1,7 +1,9 @@
 using System.Globalization;
 using CreationsForge.Core.Enums;
+using CreationsForge.Core.Helpers;
 using CreationsForge.DataValidationTests.Validation.Environment;
 using CreationsForge.DataValidationTests.Validation.Parsing;
+using CreationsForge.Specification.Validation;
 
 namespace CreationsForge.DataValidationTests.Validation.Specs;
 
@@ -17,7 +19,10 @@ public class SpriggitSampleResolver
 
     public IReadOnlyDictionary<string, string> LoadFields(ValidationSpec spec)
     {
-        var path = FindSpriggitFile(spec.Game, spec.RecordType.TableName, spec.SampleName);
+        var path = FindSpriggitFile(
+            SpecificationGameAdapter.ToSupportedGame(spec.Game),
+            spec.RecordType.TableName,
+            spec.SampleName);
         var document = SpriggitYamlDocument.Load(path);
         return AddRootScalarLists(path, document.FlattenScalars());
     }

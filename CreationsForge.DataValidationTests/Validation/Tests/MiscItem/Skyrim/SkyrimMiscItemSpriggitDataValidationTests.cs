@@ -1,6 +1,6 @@
 using CreationsForge.Core.DTOs.Records;
 using CreationsForge.DataValidationTests.Validation.Specs;
-using CreationsForge.DataValidationTests.Validation.Specs.MiscItem;
+using CreationsForge.Specification.Validation.Specs.MiscItem;
 using Shouldly;
 
 namespace CreationsForge.DataValidationTests.Validation.Tests.MiscItem.Skyrim;
