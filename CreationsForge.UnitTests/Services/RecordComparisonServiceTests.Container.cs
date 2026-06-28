@@ -19,7 +19,8 @@ namespace CreationsForge.UnitTests.Services;
 public partial class RecordComparisonServiceTests
 {
     /// <summary>
-    /// Verifies that Container scalar rows are selected from the injected comparison specification.
+    /// Verifies that Container scalar rows are selected from the injected comparison specification while undeclared
+    /// child groups are omitted.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForContainer_UsesInjectedComparisonSpecification()
@@ -27,12 +28,20 @@ public partial class RecordComparisonServiceTests
         var formKey = CreateFormKey("Starfield.esm", 0x12B);
         var itemFormKey = CreateFormKey("Starfield.esm", 0x333);
         var terminalFormKey = CreateFormKey("Starfield.esm", 0x444);
+        var actorValueFormKey = CreateFormKey("Starfield.esm", 0x555);
+        var forcedLocationFormKey = CreateFormKey("Starfield.esm", 0x666);
+        var baseContainer = CreateContainer("Base.esm", formKey, "Storage Crate", terminalFormKey, [CreateContainerItem("Base.esm", formKey, itemFormKey, 0, 2)], "meshes\\base.anim");
+        baseContainer.Properties.Add(CreateContainerProperty("Base.esm", formKey, actorValueFormKey, 0, 10));
+        baseContainer.ForcedLocations.Add(forcedLocationFormKey);
+        var patchContainer = CreateContainer("Patch.esp", formKey, "Storage Crate", terminalFormKey, [CreateContainerItem("Patch.esp", formKey, itemFormKey, 0, 4)], "meshes\\patch.anim");
+        patchContainer.Properties.Add(CreateContainerProperty("Patch.esp", formKey, actorValueFormKey, 0, 20));
+        patchContainer.ForcedLocations.Add(forcedLocationFormKey);
         var containerRepository = new TestContainerRepository
         {
             Records =
             [
-                CreateContainer("Base.esm", formKey, "Storage Crate", terminalFormKey, [CreateContainerItem("Base.esm", formKey, itemFormKey, 0, 2)], "meshes\\base.anim"),
-                CreateContainer("Patch.esp", formKey, "Storage Crate", terminalFormKey, [CreateContainerItem("Patch.esp", formKey, itemFormKey, 0, 4)], "meshes\\patch.anim")
+                baseContainer,
+                patchContainer
             ]
         };
         var provider = new TestRecordSpecificationProvider(
@@ -66,10 +75,14 @@ public partial class RecordComparisonServiceTests
             .ShouldBe(["meshes\\base.anim", "meshes\\patch.anim"]);
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "NativeTerminalFormKey");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Items");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Property [0]");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "ForcedLocations[0]");
     }
 
     /// <summary>
-    /// Verifies that record comparison container maps container fields items models and animation fields.
+    /// Verifies that Container comparison maps scalar rows, item rows, property rows, forced locations, model rows,
+    /// and animation fields.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForContainer_MapsContainerFieldsItemsModelsAndAnimationFields()
@@ -77,12 +90,20 @@ public partial class RecordComparisonServiceTests
         var formKey = CreateFormKey("Starfield.esm", 0x2000);
         var itemFormKey = CreateFormKey("Starfield.esm", 0x333);
         var terminalFormKey = CreateFormKey("Starfield.esm", 0x444);
+        var actorValueFormKey = CreateFormKey("Starfield.esm", 0x555);
+        var forcedLocationFormKey = CreateFormKey("Starfield.esm", 0x666);
+        var baseContainer = CreateContainer("Base.esm", formKey, "Storage Crate", terminalFormKey, [CreateContainerItem("Base.esm", formKey, itemFormKey, 0, 2)], "meshes\\base.anim");
+        baseContainer.Properties.Add(CreateContainerProperty("Base.esm", formKey, actorValueFormKey, 0, 10));
+        baseContainer.ForcedLocations.Add(forcedLocationFormKey);
+        var patchContainer = CreateContainer("Patch.esp", formKey, "Storage Crate", terminalFormKey, [CreateContainerItem("Patch.esp", formKey, itemFormKey, 0, 4)], "meshes\\patch.anim");
+        patchContainer.Properties.Add(CreateContainerProperty("Patch.esp", formKey, actorValueFormKey, 0, 20));
+        patchContainer.ForcedLocations.Add(forcedLocationFormKey);
         var containerRepository = new TestContainerRepository
         {
             Records =
             [
-                CreateContainer("Base.esm", formKey, "Storage Crate", terminalFormKey, [CreateContainerItem("Base.esm", formKey, itemFormKey, 0, 2)], "meshes\\base.anim"),
-                CreateContainer("Patch.esp", formKey, "Storage Crate", terminalFormKey, [CreateContainerItem("Patch.esp", formKey, itemFormKey, 0, 4)], "meshes\\patch.anim")
+                baseContainer,
+                patchContainer
             ]
         };
         var modelRepository = new TestModelRepository
@@ -106,6 +127,10 @@ public partial class RecordComparisonServiceTests
         var item = items.Children.Single(field => field.FieldName == "Item [0]");
         item.Children.Single(field => field.FieldName == "Item").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000333", "Starfield.esm:00000333"]);
         item.Children.Single(field => field.FieldName == "Count").Values.Select(value => value.DisplayValue).ShouldBe(["2", "4"]);
+        var property = comparison.Fields.Single(field => field.FieldName == "Property [0]");
+        property.Children.Single(field => field.FieldName == "ActorValue").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000555", "Starfield.esm:00000555"]);
+        property.Children.Single(field => field.FieldName == "Value").Values.Select(value => value.DisplayValue).ShouldBe(["10", "20"]);
+        comparison.Fields.Single(field => field.FieldName == "ForcedLocations[0]").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000666", "Starfield.esm:00000666"]);
         var model = comparison.Fields.Single(field => field.FieldName == "Model");
         model.Children.Single(field => field.FieldName == "File").Values.Select(value => value.DisplayValue).ShouldBe(["Meshes\\SetDressing\\Container01.nif", "Meshes\\SetDressing\\Container01.nif"]);
         comparison.Fields.Single(field => field.FieldName == "AnimationGraph").Values.Select(value => value.DisplayValue).ShouldBe(["meshes\\base.anim", "meshes\\patch.anim"]);

@@ -1109,6 +1109,34 @@ public partial class RecordComparisonServiceTests
         };
     }
 
+    /// <summary>
+    /// Creates an indexed container property row for comparison tests.
+    /// </summary>
+    /// <param name="fileName">The plugin filename used to build the row's mod key.</param>
+    /// <param name="formKey">The owning container record form key.</param>
+    /// <param name="actorValue">The actor value reference assigned to the property.</param>
+    /// <param name="propertyIndex">The property index used for comparison row alignment.</param>
+    /// <param name="value">The numeric property value.</param>
+    /// <returns>A populated container property DTO suitable for container comparison fixtures.</returns>
+    private static ContainerPropertyDTO CreateContainerProperty(
+        string fileName,
+        FormKeyDTO formKey,
+        FormKeyDTO actorValue,
+        int propertyIndex,
+        double value)
+    {
+        return new ContainerPropertyDTO
+        {
+            Game = SupportedGame.Starfield,
+            ModKey = CreateModKey(fileName),
+            FormKey = formKey,
+            ActorValue = actorValue,
+            PropertyIndex = propertyIndex,
+            Value = value,
+            ImportedAtUTC = DateTime.UtcNow
+        };
+    }
+
     private static ReflectionDTO CreateReflection(string fileName, FormKeyDTO formKey, int componentIndex, string componentType, string sourcePath, string refl)
     {
         return new ReflectionDTO

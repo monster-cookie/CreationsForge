@@ -1058,7 +1058,7 @@ public class RecordComparisonService : IRecordComparisonService
 
     /// <summary>
     /// Creates the comparison output for imported Container overrides, using specification metadata for scalar parent
-    /// rows while leaving item and shared child collections on existing strategy code.
+    /// rows and child-group dispatch.
     /// </summary>
     /// <param name="game">The game whose imported container records should be compared.</param>
     /// <param name="formKey">The origin FormKey shared by the container overrides.</param>
@@ -1074,9 +1074,15 @@ public class RecordComparisonService : IRecordComparisonService
             records,
             localizedStrings: localizedStrings,
             recordTextLanguage: recordTextLanguage);
-        AddContainerItemGroups(fields, records);
-        AddContainerPropertyGroups(fields, records);
-        AddContainerForcedLocationGroups(fields, records);
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Container.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.ContainerItems,
+            RecordComparisonChildGroupKind.ContainerProperties,
+            RecordComparisonChildGroupKind.ContainerForcedLocations);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -1493,6 +1499,15 @@ public class RecordComparisonService : IRecordComparisonService
                     break;
                 case RecordComparisonChildGroupKind.ConstructibleObjectRecipeFilters:
                     AddConstructibleObjectRecipeFilterGroups(fields, records.Cast<ConstructibleObjectDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.ContainerItems:
+                    AddContainerItemGroups(fields, records.Cast<ContainerDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.ContainerProperties:
+                    AddContainerPropertyGroups(fields, records.Cast<ContainerDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.ContainerForcedLocations:
+                    AddContainerForcedLocationGroups(fields, records.Cast<ContainerDTO>().ToList());
                     break;
                 default:
                     throw new NotSupportedException(

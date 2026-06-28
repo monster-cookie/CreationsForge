@@ -94,5 +94,21 @@ public enum RecordComparisonChildGroupKind
     /// Indicates that persisted constructible object recipe-filter rows should be rendered as the
     /// <c>RecipeFilters</c> child group.
     /// </summary>
-    ConstructibleObjectRecipeFilters
+    ConstructibleObjectRecipeFilters,
+
+    /// <summary>
+    /// Indicates that persisted container item rows should be rendered as the <c>Items</c> child group.
+    /// </summary>
+    ContainerItems,
+
+    /// <summary>
+    /// Indicates that persisted container property rows should be rendered as indexed <c>Property</c> child rows.
+    /// </summary>
+    ContainerProperties,
+
+    /// <summary>
+    /// Indicates that persisted container forced-location links should be rendered as indexed
+    /// <c>ForcedLocations</c> rows.
+    /// </summary>
+    ContainerForcedLocations
 }

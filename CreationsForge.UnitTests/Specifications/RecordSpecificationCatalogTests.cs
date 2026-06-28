@@ -401,6 +401,21 @@ public class RecordSpecificationCatalogTests
             .Select(entry => entry.RecordID)
             .OrderBy(recordID => recordID, StringComparer.Ordinal)
             .ToList();
+        var containerItemRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ContainerItems)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var containerPropertyRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ContainerProperties)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var containerForcedLocationRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ContainerForcedLocations)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
 
         keywordRecordIDs.ShouldBe(
             ["BOOK", "CONT", "DOOR", "FACT", "MGEF", "MISC", "NPC_", "STAT", "TERM"]);
@@ -420,6 +435,9 @@ public class RecordSpecificationCatalogTests
         constructibleObjectComponentRecordIDs.ShouldBe(["COBJ"]);
         constructibleObjectCategoryRecordIDs.ShouldBe(["COBJ"]);
         constructibleObjectRecipeFilterRecordIDs.ShouldBe(["COBJ"]);
+        containerItemRecordIDs.ShouldBe(["CONT"]);
+        containerPropertyRecordIDs.ShouldBe(["CONT"]);
+        containerForcedLocationRecordIDs.ShouldBe(["CONT"]);
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.KeywordMappings)
             .ShouldAllBe(entry => entry.Group.GroupName == "Keywords");
@@ -471,6 +489,15 @@ public class RecordSpecificationCatalogTests
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ConstructibleObjectRecipeFilters)
             .ShouldAllBe(entry => entry.Group.GroupName == "RecipeFilters");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ContainerItems)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Items");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ContainerProperties)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Properties");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ContainerForcedLocations)
+            .ShouldAllBe(entry => entry.Group.GroupName == "ForcedLocations");
         childGroups.ShouldAllBe(entry => !string.IsNullOrWhiteSpace(entry.Group.Description));
     }
 

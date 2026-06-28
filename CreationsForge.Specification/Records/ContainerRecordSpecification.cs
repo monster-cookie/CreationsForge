@@ -220,6 +220,24 @@ internal static class ContainerRecordSpecification
             [
                 new RecordComparisonChildGroupSpecification
                 {
+                    GroupKind = RecordComparisonChildGroupKind.ContainerItems,
+                    GroupName = "Items",
+                    Description = "Container item rows appended after scalar parent rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.ContainerProperties,
+                    GroupName = "Properties",
+                    Description = "Container property rows appended after item rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.ContainerForcedLocations,
+                    GroupName = "ForcedLocations",
+                    Description = "Container forced-location rows appended after property rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
                     GroupKind = RecordComparisonChildGroupKind.KeywordMappings,
                     GroupName = "Keywords",
                     Description = "Shared keyword mapping rows appended after scalar parent and record-specific rows."
@@ -257,8 +275,7 @@ internal static class ContainerRecordSpecification
             ]
         },
         ImplementationNote = "Comparison metadata drives scalar parent rows and keyword/model/sound/script/" +
-            "component/reflection child-group dispatch; item, property, and forced-location rows remain " +
-            "strategy-based."
+            "component/reflection/item/property/forced-location child-group dispatch."
     };
 }
 

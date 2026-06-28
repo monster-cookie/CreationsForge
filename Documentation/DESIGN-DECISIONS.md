@@ -174,7 +174,7 @@ child rows still need strategy-based alignment.
 
 Decision: Add `DOOR` and `CONT` scalar parent comparison rows to `RecordComparisonSpecification`. Convert
 `CreateDoorComparison` and `CreateContainerComparison` to use the shared specification comparison-field builder for
-scalar rows. Keep all existing child/group rows on the current strategy methods.
+scalar rows. In that scalar slice, keep all existing child/group rows on the current strategy methods.
 
 Rationale: This expands the spec-driven comparison surface with another pair of user-visible record families while
 preserving comparison DTO shape and avoiding premature child-row metadata. Door and container rows also exercise the
@@ -190,7 +190,10 @@ Consequences:
 
 - `DOOR` and `CONT` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
 - `DOOR.MajorFlags` remains omitted because the existing comparison output does not emit it.
-- Door and container child groups remain strategy-based.
+- In that scalar slice, door and container child groups stayed strategy-based.
+- Later accepted decisions moved shared keyword, model, sound, script, component, reflection, and container
+  item/property/forced-location dispatch into comparison child-group metadata while preserving the existing row
+  builders.
 - No database schema, persisted data shape, import, reader, or UI workflow changes.
 
 Related files:
@@ -524,6 +527,50 @@ Related files:
 - `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
 - `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
 - `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.GlobalClassFaction.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
+## 2026-06-27 - Add Spec-Driven Container Child Group Dispatch
+
+Status: Accepted
+
+Context: `CONT` scalar parent rows and shared keyword, model, sound, scripting adapter, record component, and
+reflection child groups already use comparison metadata, while container item, property, and forced-location rows
+still used explicit comparison-service calls. These rows are record-specific and indexed or position-based.
+
+Decision: Add `ContainerItems`, `ContainerProperties`, and `ContainerForcedLocations` child-group strategy kinds.
+Declare those child groups in `ContainerRecordSpecification` with the existing `Items`, `Properties`, and
+`ForcedLocations` group names. Replace the explicit `CreateContainerComparison` child-row calls with filtered metadata
+dispatch at the same row position, while keeping the existing container row builders as the Core implementation.
+
+Rationale: Container item, property, and forced-location rows are compact and already have focused row builders.
+Moving only dispatch into metadata continues the record-specific child-group migration while preserving the distinction
+between container-owned rows and shared keyword/model/sound/script/component/reflection rows.
+
+Alternatives considered:
+
+- Leave container child groups explicit until every record-specific child family can move together.
+- Convert container items only and keep properties and forced locations explicit.
+- Collapse all container child rows into one generic container-child metadata kind.
+- Introduce a generic nested collection specification immediately.
+
+Consequences:
+
+- `CONT` item, property, and forced-location rows are emitted only when the comparison specification declares the
+  matching container child group.
+- Existing container child row order and display shape are preserved by using the existing row builders.
+- Shared container child groups continue to use their existing metadata kinds.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/ContainerRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.Container.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.RecordFactories.cs`
 - `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
 - `Documentation/ARCHITECTURE.md`
 - `Documentation/DOMAIN-MODEL.md`
