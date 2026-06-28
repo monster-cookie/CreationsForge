@@ -362,6 +362,12 @@ internal static class TerminalRecordSpecification
             [
                 new RecordComparisonChildGroupSpecification
                 {
+                    GroupKind = RecordComparisonChildGroupKind.TerminalForcedLocations,
+                    GroupName = "ForcedLocations",
+                    Description = "Terminal forced-location FormKeys appended after scalar parent rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
                     GroupKind = RecordComparisonChildGroupKind.KeywordMappings,
                     GroupName = "Keywords",
                     Description = "Shared keyword mapping rows appended after scalar parent and record-specific rows."
@@ -395,12 +401,30 @@ internal static class TerminalRecordSpecification
                     GroupKind = RecordComparisonChildGroupKind.ReflectionMappings,
                     GroupName = "Reflection",
                     Description = "Shared reflection rows appended after script fragment rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.TerminalMarkerParameters,
+                    GroupName = "Marker Parameters",
+                    Description = "Terminal marker parameter rows appended after shared child rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.TerminalBodyTexts,
+                    GroupName = "BodyTexts",
+                    Description = "Localized terminal body text rows appended after marker parameters."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.TerminalMenuItems,
+                    GroupName = "MenuItems",
+                    Description = "Localized terminal menu item rows appended after body text rows."
                 }
             ]
         },
         ImplementationNote = "Comparison metadata drives scalar parent rows and keyword/model/script/condition/" +
-            "script-fragment/reflection child-group dispatch; forced-location, marker parameter, body text, and " +
-            "menu item rows remain strategy-based."
+            "script-fragment/reflection child-group dispatch plus terminal forced-location, marker parameter, body " +
+            "text, and menu item row dispatch."
     };
 
     /// <summary>

@@ -416,6 +416,26 @@ public class RecordSpecificationCatalogTests
             .Select(entry => entry.RecordID)
             .OrderBy(recordID => recordID, StringComparer.Ordinal)
             .ToList();
+        var terminalForcedLocationRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.TerminalForcedLocations)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var terminalMarkerParameterRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.TerminalMarkerParameters)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var terminalBodyTextRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.TerminalBodyTexts)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
+        var terminalMenuItemRecordIDs = childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.TerminalMenuItems)
+            .Select(entry => entry.RecordID)
+            .OrderBy(recordID => recordID, StringComparer.Ordinal)
+            .ToList();
 
         keywordRecordIDs.ShouldBe(
             ["BOOK", "CONT", "DOOR", "FACT", "MGEF", "MISC", "NPC_", "STAT", "TERM"]);
@@ -438,6 +458,10 @@ public class RecordSpecificationCatalogTests
         containerItemRecordIDs.ShouldBe(["CONT"]);
         containerPropertyRecordIDs.ShouldBe(["CONT"]);
         containerForcedLocationRecordIDs.ShouldBe(["CONT"]);
+        terminalForcedLocationRecordIDs.ShouldBe(["TERM"]);
+        terminalMarkerParameterRecordIDs.ShouldBe(["TERM"]);
+        terminalBodyTextRecordIDs.ShouldBe(["TERM"]);
+        terminalMenuItemRecordIDs.ShouldBe(["TERM"]);
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.KeywordMappings)
             .ShouldAllBe(entry => entry.Group.GroupName == "Keywords");
@@ -498,6 +522,18 @@ public class RecordSpecificationCatalogTests
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ContainerForcedLocations)
             .ShouldAllBe(entry => entry.Group.GroupName == "ForcedLocations");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.TerminalForcedLocations)
+            .ShouldAllBe(entry => entry.Group.GroupName == "ForcedLocations");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.TerminalMarkerParameters)
+            .ShouldAllBe(entry => entry.Group.GroupName == "Marker Parameters");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.TerminalBodyTexts)
+            .ShouldAllBe(entry => entry.Group.GroupName == "BodyTexts");
+        childGroups
+            .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.TerminalMenuItems)
+            .ShouldAllBe(entry => entry.Group.GroupName == "MenuItems");
         childGroups.ShouldAllBe(entry => !string.IsNullOrWhiteSpace(entry.Group.Description));
     }
 

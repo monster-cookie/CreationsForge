@@ -532,6 +532,53 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-27 - Add Spec-Driven Terminal Child Group Dispatch
+
+Status: Accepted
+
+Context: `TERM` scalar parent rows and shared keyword, model, scripting adapter, condition, script-fragment, and
+reflection child groups already use comparison metadata, while terminal forced-location, marker-parameter, body-text,
+and menu-item rows still used explicit comparison-service calls. The body-text and menu-item rows need localized
+string context, but the metadata-driven child-group dispatcher already supports optional localized text inputs.
+
+Decision: Add `TerminalForcedLocations`, `TerminalMarkerParameters`, `TerminalBodyTexts`, and `TerminalMenuItems`
+child-group strategy kinds. Declare those child groups in `TerminalRecordSpecification` with the existing
+`ForcedLocations`, `Marker Parameters`, `BodyTexts`, and `MenuItems` group names. Replace the explicit
+`CreateTerminalComparison` child-row calls with filtered metadata dispatch at the same row positions, while keeping
+the existing terminal row builders as the Core implementation.
+
+Rationale: Terminal child rows are already modeled as first-class typed data and have focused row builders. Moving
+only dispatch into metadata keeps localized child text behavior intact while making the comparison specification the
+source of truth for whether those rows appear.
+
+Alternatives considered:
+
+- Leave terminal child groups explicit until every record-specific child family can move together.
+- Convert only forced locations and marker parameters, leaving localized body and menu rows explicit.
+- Introduce a generic nested collection specification immediately.
+- Flatten terminal body and menu rows into scalar dotted field names.
+
+Consequences:
+
+- `TERM` forced-location, marker-parameter, body-text, and menu-item rows are emitted only when the comparison
+  specification declares the matching terminal child group.
+- Existing terminal child row order, localized display behavior, and comparison DTO shape are preserved by using the
+  existing row builders.
+- Shared terminal child groups continue to use their existing metadata kinds.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/TerminalRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.Terminal.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.RecordFactories.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-27 - Add Spec-Driven Container Child Group Dispatch
 
 Status: Accepted
@@ -1228,7 +1275,8 @@ Alternatives considered:
 Consequences:
 
 - `TERM` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
-- Terminal child rows remain strategy-based.
+- Terminal child rows remained strategy-based in this scalar slice; this consequence was later superseded by
+  `2026-06-27 - Add Spec-Driven Terminal Child Group Dispatch`.
 - Fallout 4 `TERM` still requires a full binary Mutagen mod for reader dispatch.
 - No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
 

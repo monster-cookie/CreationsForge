@@ -1206,7 +1206,7 @@ public class RecordComparisonService : IRecordComparisonService
 
     /// <summary>
     /// Creates the comparison output for imported Terminal overrides, using specification metadata for scalar parent
-    /// rows while leaving terminal child collections on existing strategy code.
+    /// rows and child-group dispatch while Core keeps the row-building strategy implementations.
     /// </summary>
     /// <param name="game">The game whose imported terminal records should be compared.</param>
     /// <param name="formKey">The origin FormKey shared by the terminal overrides.</param>
@@ -1227,7 +1227,13 @@ public class RecordComparisonService : IRecordComparisonService
             customValueFactories,
             localizedStrings,
             recordTextLanguage);
-        AddTerminalForcedLocationGroups(fields, records);
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Terminal.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.TerminalForcedLocations);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -1270,9 +1276,17 @@ public class RecordComparisonService : IRecordComparisonService
             formKey,
             baseRecords,
             RecordComparisonChildGroupKind.ReflectionMappings);
-        AddTerminalMarkerParameterGroups(fields, records);
-        AddTerminalBodyTextGroups(fields, records, localizedStrings, recordTextLanguage);
-        AddTerminalMenuItemGroups(fields, records, localizedStrings, recordTextLanguage);
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Terminal.RecordID,
+            formKey,
+            baseRecords,
+            localizedStrings,
+            recordTextLanguage,
+            RecordComparisonChildGroupKind.TerminalMarkerParameters,
+            RecordComparisonChildGroupKind.TerminalBodyTexts,
+            RecordComparisonChildGroupKind.TerminalMenuItems);
 
         return CreateComparison(RecordTypeCatalog.Terminal.RecordID, formKey, baseRecords, fields);
     }
@@ -1508,6 +1522,26 @@ public class RecordComparisonService : IRecordComparisonService
                     break;
                 case RecordComparisonChildGroupKind.ContainerForcedLocations:
                     AddContainerForcedLocationGroups(fields, records.Cast<ContainerDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.TerminalForcedLocations:
+                    AddTerminalForcedLocationGroups(fields, records.Cast<TerminalDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.TerminalMarkerParameters:
+                    AddTerminalMarkerParameterGroups(fields, records.Cast<TerminalDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.TerminalBodyTexts:
+                    AddTerminalBodyTextGroups(
+                        fields,
+                        records.Cast<TerminalDTO>().ToList(),
+                        localizedStrings ?? Array.Empty<LocalizedStringDTO>(),
+                        recordTextLanguage ?? Language.English);
+                    break;
+                case RecordComparisonChildGroupKind.TerminalMenuItems:
+                    AddTerminalMenuItemGroups(
+                        fields,
+                        records.Cast<TerminalDTO>().ToList(),
+                        localizedStrings ?? Array.Empty<LocalizedStringDTO>(),
+                        recordTextLanguage ?? Language.English);
                     break;
                 default:
                     throw new NotSupportedException(

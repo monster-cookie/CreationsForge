@@ -797,8 +797,8 @@ public partial class RecordComparisonServiceTests
     }
 
     /// <summary>
-    /// Creates a Terminal test record with marker parameters and one VMAD script fragment so comparison tests can
-    /// exercise both strategy-owned and specification-declared child groups.
+    /// Creates a Terminal test record with typed child rows so comparison tests can exercise record-specific and
+    /// shared specification-declared child groups.
     /// </summary>
     /// <param name="fileName">The plugin filename used to build the record's mod key and fixture-specific values.</param>
     /// <param name="formKey">The shared origin form key used by all compared overrides.</param>
@@ -808,6 +808,8 @@ public partial class RecordComparisonServiceTests
     /// <returns>A populated terminal DTO suitable for comparison service tests.</returns>
     private static TerminalDTO CreateTerminal(string fileName, FormKeyDTO formKey, string name, string markerFlags, string entryTypes)
     {
+        var isBasePlugin = fileName.StartsWith("Base", StringComparison.Ordinal);
+
         return new TerminalDTO
         {
             Game = SupportedGame.Starfield,
@@ -831,6 +833,10 @@ public partial class RecordComparisonServiceTests
             WorkbenchData = "WorkbenchData",
             FurnitureTemplateFormKey = CreateFormKey("Starfield.esm", 0x222),
             MarkerModel = "MarkerModel.nif",
+            ForcedLocations =
+            [
+                CreateFormKey("Starfield.esm", isBasePlugin ? 0x333u : 0x334u)
+            ],
             MarkerParameters =
             [
                 new TerminalMarkerParameterDTO
@@ -842,6 +848,34 @@ public partial class RecordComparisonServiceTests
                     Offset = "0,0,0",
                     EntryTypes = entryTypes,
                     ExitTypes = "ExitType",
+                    ImportedAtUTC = DateTime.UtcNow
+                }
+            ],
+            BodyTexts =
+            [
+                new TerminalBodyTextDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    BodyTextIndex = 0,
+                    Text = Text(isBasePlugin ? "Base Body" : "Patch Body"),
+                    ImportedAtUTC = DateTime.UtcNow
+                }
+            ],
+            MenuItems =
+            [
+                new TerminalMenuItemDTO
+                {
+                    Game = SupportedGame.Starfield,
+                    ModKey = CreateModKey(fileName),
+                    FormKey = formKey,
+                    MenuItemIndex = 0,
+                    ItemText = Text(isBasePlugin ? "Base Item" : "Patch Item"),
+                    Type = isBasePlugin ? "BaseType" : "PatchType",
+                    ItemId = isBasePlugin ? 10 : 20,
+                    Submenu = CreateFormKey("Starfield.esm", isBasePlugin ? 0x555u : 0x556u),
+                    DisplayText = Text(isBasePlugin ? "Base Display" : "Patch Display"),
                     ImportedAtUTC = DateTime.UtcNow
                 }
             ],
@@ -858,7 +892,7 @@ public partial class RecordComparisonServiceTests
                     SourceFragmentIndex = 0,
                     MutagenObjectType = "TerminalScriptFragment",
                     ScriptName = "TerminalMenuScript",
-                    FragmentName = fileName.StartsWith("Base", StringComparison.Ordinal) ? "BaseFragment" : "PatchFragment",
+                    FragmentName = isBasePlugin ? "BaseFragment" : "PatchFragment",
                     Unknown2 = 2,
                     ExtraBindDataVersion = 1,
                     ImportedAtUTC = DateTime.UtcNow

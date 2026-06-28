@@ -110,5 +110,27 @@ public enum RecordComparisonChildGroupKind
     /// Indicates that persisted container forced-location links should be rendered as indexed
     /// <c>ForcedLocations</c> rows.
     /// </summary>
-    ContainerForcedLocations
+    ContainerForcedLocations,
+
+    /// <summary>
+    /// Indicates that persisted terminal forced-location links should be rendered as indexed
+    /// <c>ForcedLocations</c> rows.
+    /// </summary>
+    TerminalForcedLocations,
+
+    /// <summary>
+    /// Indicates that persisted terminal marker parameter rows should be rendered as the
+    /// <c>Marker Parameters</c> child group.
+    /// </summary>
+    TerminalMarkerParameters,
+
+    /// <summary>
+    /// Indicates that persisted terminal body text rows should be rendered as the <c>BodyTexts</c> child group.
+    /// </summary>
+    TerminalBodyTexts,
+
+    /// <summary>
+    /// Indicates that persisted terminal menu item rows should be rendered as the <c>MenuItems</c> child group.
+    /// </summary>
+    TerminalMenuItems
 }
