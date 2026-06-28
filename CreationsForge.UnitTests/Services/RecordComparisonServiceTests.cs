@@ -14,7 +14,7 @@ using Shouldly;
 namespace CreationsForge.UnitTests.Services;
 
 /// <summary>
-/// Groups partial test fixtures for the record comparison service.
+/// Defines the shared partial test class for record comparison service scenarios.
 /// </summary>
 public partial class RecordComparisonServiceTests
 {
