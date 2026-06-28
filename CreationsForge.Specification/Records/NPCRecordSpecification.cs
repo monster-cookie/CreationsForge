@@ -469,6 +469,126 @@ internal static class NPCRecordSpecification
             [
                 new RecordComparisonChildGroupSpecification
                 {
+                    GroupKind = RecordComparisonChildGroupKind.NPCLevel,
+                    GroupName = "Level",
+                    Description = "Nested NPC level data appended after pre-level scalar parent rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCConfiguration,
+                    GroupName = "Configuration",
+                    Description = "Nested NPC configuration data appended after level rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCSupplementalFields,
+                    GroupName = "Supplemental Fields",
+                    Description = "Supplemental NPC parent, weight, face, and template rows appended after core scalar rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCPackages,
+                    GroupName = "Packages",
+                    Description = "NPC package FormKey rows appended after supplemental rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCForcedLocations,
+                    GroupName = "ForcedLocations",
+                    Description = "NPC forced-location FormKey rows appended after package rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCHeadParts,
+                    GroupName = "HeadParts",
+                    Description = "NPC head-part FormKey rows appended after forced-location rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCActorEffects,
+                    GroupName = "ActorEffects",
+                    Description = "NPC actor-effect FormKey rows appended after head-part rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCFactions,
+                    GroupName = "Factions",
+                    Description = "NPC faction membership rows appended after actor-effect rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCProperties,
+                    GroupName = "Properties",
+                    Description = "NPC actor-value property rows appended after faction rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCItems,
+                    GroupName = "Items",
+                    Description = "NPC inventory item rows appended after property rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCPerks,
+                    GroupName = "Perks",
+                    Description = "NPC perk rows appended after item rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCMorphs,
+                    GroupName = "Morphs",
+                    Description = "NPC morph rows appended after perk rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCFaceMorphs,
+                    GroupName = "FaceMorphs",
+                    Description = "NPC face morph position rows appended after morph rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCFaceDialPositions,
+                    GroupName = "FaceDialPositions",
+                    Description = "NPC face dial position rows appended after face morph position rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCFaceMorphGroups,
+                    GroupName = "FaceMorphGroups",
+                    Description = "NPC nested face morph group rows appended after face dial position rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCMorphBlends,
+                    GroupName = "MorphBlends",
+                    Description = "NPC morph blend rows appended after face morph group rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCTints,
+                    GroupName = "Tints",
+                    Description = "NPC tint rows appended after morph blend rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCTintLayers,
+                    GroupName = "TintLayers",
+                    Description = "NPC tint layer rows appended after tint rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCFaceTintingLayers,
+                    GroupName = "FaceTintingLayers",
+                    Description = "NPC face tinting layer rows appended after tint layer rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.NPCPlayerSkills,
+                    GroupName = "PlayerSkills",
+                    Description = "NPC player skill rows appended after face tinting layer rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
                     GroupKind = RecordComparisonChildGroupKind.KeywordMappings,
                     GroupName = "Keywords",
                     Description = "Shared keyword mapping rows appended after scalar parent and record-specific rows."
@@ -488,8 +608,8 @@ internal static class NPCRecordSpecification
             ]
         },
         ImplementationNote = "Comparison metadata drives top-level scalar parent rows and keyword/sound/script " +
-            "child-group dispatch; level, configuration, supplemental parent rows, form-key list rows, and actor " +
-            "data children remain strategy-based."
+            "child-group dispatch plus NPC level, configuration, supplemental, form-key list, and actor data row " +
+            "dispatch."
     };
 }
 

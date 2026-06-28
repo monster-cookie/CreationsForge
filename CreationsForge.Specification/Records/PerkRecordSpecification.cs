@@ -242,6 +242,24 @@ internal static class PerkRecordSpecification
             [
                 new RecordComparisonChildGroupSpecification
                 {
+                    GroupKind = RecordComparisonChildGroupKind.PerkEffects,
+                    GroupName = "Effects",
+                    Description = "Perk effect rows appended after scalar parent rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.PerkRanks,
+                    GroupName = "Ranks",
+                    Description = "Perk rank rows appended after top-level effect rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
+                    GroupKind = RecordComparisonChildGroupKind.PerkBackgroundSkills,
+                    GroupName = "Background Skills",
+                    Description = "Perk background skill rows appended after rank rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
                     GroupKind = RecordComparisonChildGroupKind.ConditionRules,
                     GroupName = "Conditions",
                     Description = "Shared condition-rule rows appended after background skill rows."
@@ -267,7 +285,7 @@ internal static class PerkRecordSpecification
             ]
         },
         ImplementationNote = "Comparison metadata drives scalar parent rows and condition/sound/script-fragment/" +
-            "script child-group dispatch; effect, rank, and background skill rows remain strategy-based."
+            "script child-group dispatch plus effect, rank, and background skill row dispatch."
     };
 }
 

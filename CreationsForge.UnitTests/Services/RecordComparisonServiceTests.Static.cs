@@ -29,8 +29,34 @@ public partial class RecordComparisonServiceTests
         var actorValueFormKey = CreateFormKey("Starfield.esm", 0x201);
         var baseStatic = CreateStatic("Base.esm", formKey, 35, "0, 0, 0", null);
         baseStatic.Properties.Add(CreateStaticProperty("Base.esm", formKey, actorValueFormKey, 0, 10));
+        baseStatic.NavmeshGeometry = new StaticNavmeshGeometryDTO
+        {
+            GridMin = "0,0",
+            GridMax = "1,1",
+            Vertices =
+            {
+                new StaticNavmeshVertexDTO
+                {
+                    VertexIndex = 0,
+                    Point = "0,0,0"
+                }
+            }
+        };
         var patchStatic = CreateStatic("Patch.esp", formKey, 45, "1, 1, 1", 1.25);
         patchStatic.Properties.Add(CreateStaticProperty("Patch.esp", formKey, actorValueFormKey, 0, 20));
+        patchStatic.NavmeshGeometry = new StaticNavmeshGeometryDTO
+        {
+            GridMin = "2,2",
+            GridMax = "3,3",
+            Vertices =
+            {
+                new StaticNavmeshVertexDTO
+                {
+                    VertexIndex = 0,
+                    Point = "1,1,1"
+                }
+            }
+        };
         var staticRepository = new TestStaticRepository
         {
             Records =
@@ -90,6 +116,7 @@ public partial class RecordComparisonServiceTests
             .ShouldBe(["35", "45"]);
         comparison.Fields.ShouldNotContain(field => field.FieldName == "ObjectBoundsFirst");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Navmesh Geometry");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Property [0]");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Model");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Reflection");
@@ -140,8 +167,34 @@ public partial class RecordComparisonServiceTests
         var actorValueFormKey = CreateFormKey("Starfield.esm", 0x201);
         var baseStatic = CreateStatic("Base.esm", formKey, 35, "0, 0, 0", null);
         baseStatic.Properties.Add(CreateStaticProperty("Base.esm", formKey, actorValueFormKey, 0, 10));
+        baseStatic.NavmeshGeometry = new StaticNavmeshGeometryDTO
+        {
+            GridMin = "0,0",
+            GridMax = "1,1",
+            Vertices =
+            {
+                new StaticNavmeshVertexDTO
+                {
+                    VertexIndex = 0,
+                    Point = "0,0,0"
+                }
+            }
+        };
         var patchStatic = CreateStatic("Patch.esp", formKey, 45, "0, 0, 0", 1.25);
         patchStatic.Properties.Add(CreateStaticProperty("Patch.esp", formKey, actorValueFormKey, 0, 20));
+        patchStatic.NavmeshGeometry = new StaticNavmeshGeometryDTO
+        {
+            GridMin = "2,2",
+            GridMax = "3,3",
+            Vertices =
+            {
+                new StaticNavmeshVertexDTO
+                {
+                    VertexIndex = 0,
+                    Point = "1,1,1"
+                }
+            }
+        };
         var staticRepository = new TestStaticRepository
         {
             Records =
@@ -186,6 +239,9 @@ public partial class RecordComparisonServiceTests
         comparison.Fields.Single(field => field.FieldName == "MaxAngle").Values.Select(value => value.DisplayValue).ShouldBe(["35", "45"]);
         comparison.Fields.Single(field => field.FieldName == "ObjectBoundsFirst").Values.Select(value => value.DisplayValue).ShouldBe(["0, 0, 0", "0, 0, 0"]);
         comparison.Fields.Single(field => field.FieldName == "UnknownDNAMFloat").Values.Select(value => value.DisplayValue).ShouldBe(["", "1.25"]);
+        var navmeshGeometry = comparison.Fields.Single(field => field.FieldName == "Navmesh Geometry");
+        navmeshGeometry.Children.Single(field => field.FieldName == "GridMin").Values.Select(value => value.DisplayValue).ShouldBe(["0,0", "2,2"]);
+        navmeshGeometry.Children.Single(field => field.FieldName == "Vertex [0]").Children.Single(field => field.FieldName == "Point").Values.Select(value => value.DisplayValue).ShouldBe(["0,0,0", "1,1,1"]);
         var keywords = comparison.Fields.Single(field => field.FieldName == "Keywords");
         keywords.Children.Single(field => field.FieldName == "Keyword [0]").Values.Select(value => value.DisplayValue).ShouldBe(["Starfield.esm:00000555", "Starfield.esm:00000666"]);
         var property = comparison.Fields.Single(field => field.FieldName == "Property [0]");

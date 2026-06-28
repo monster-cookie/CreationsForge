@@ -254,11 +254,12 @@ adapter rows, shared reflection rows, shared condition-rule rows, shared record 
 class property/weight rows, faction relation/rank rows, static property rows, and constructible object component/
 category/recipe-filter rows, container item/property/forced-location rows, terminal forced-location/marker
 parameter/body-text/menu-item rows, Form List item rows, Misc Item destructible/component/resource rows, and Actor
-Value Information perk-tree rows for current supported comparison families are selected by comparison child-group
-metadata. The current explicit hooks include
+Value Information perk-tree rows, NPC level/configuration/supplemental/list/actor-data rows, Perk effect/rank/
+background-skill rows, and Static navmesh geometry rows for current supported comparison families are selected by
+comparison child-group metadata. The current explicit hooks include
 localized `GMST` `Data` display, game-dependent `BOOK` body-text source fields, and remaining complex child groups for
-`MGEF`, `PERK`, `NPC_`, `STAT`, `BOOK`, `DOOR`, and `CNDF`. Those remaining complex child groups stay on the existing
-record-specific comparison methods until later approved slices move them behind specification metadata.
+`MGEF`, `BOOK`, `DOOR`, and `CNDF`. Those remaining complex child groups stay on the existing record-specific
+comparison methods until later approved slices move them behind specification metadata.
 
 `IAssetPreviewPathResolverService` resolves UI-neutral asset preview candidates from persisted model rows.
 `IAssetFileResolverService` resolves readable local asset files from preview candidates by checking absolute paths,

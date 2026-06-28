@@ -125,9 +125,10 @@ adapter rows, shared reflection rows, shared condition-rule rows, shared record 
 class property/weight rows, faction relation/rank rows, static property rows, and constructible object component/
 category/recipe-filter rows, container item/property/forced-location rows, and terminal forced-location/marker
 parameter/body-text/menu-item rows, Form List item rows, Misc Item destructible/component/resource rows, and Actor
-Value Information perk-tree rows for current supported comparison families are selected by comparison child-group
-metadata.
-Other `NPC_`, `MGEF`, `PERK`, `STAT`, `BOOK`, `DOOR`, and `CNDF` child groups remain strategy-owned.
+Value Information perk-tree rows, NPC level/configuration/supplemental/list/actor-data rows, Perk effect/rank/
+background-skill rows, and Static navmesh geometry rows for current supported comparison families are selected by
+comparison child-group metadata.
+Other `MGEF`, `BOOK`, `DOOR`, and `CNDF` child groups remain strategy-owned.
 `MISC`, `KYWD`, `AVIF`, `NPC_`, `MGEF`, `PERK`, `STAT`, `CLAS`, `FACT`, `BOOK`, `DOOR`, `CONT`, `COBJ`, and `TERM`
 comparisons display their currently persisted parent fields and record-reference fields. CLAS comparison displays
 class property rows and skill-weight or stat-weight

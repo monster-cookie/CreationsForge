@@ -461,6 +461,30 @@ public class RecordSpecificationCatalogTests
             .Select(entry => entry.RecordID)
             .OrderBy(recordID => recordID, StringComparer.Ordinal)
             .ToList();
+        var npcLevelRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCLevel).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcConfigurationRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCConfiguration).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcSupplementalFieldRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCSupplementalFields).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcPackageRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCPackages).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcForcedLocationRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCForcedLocations).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcHeadPartRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCHeadParts).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcActorEffectRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCActorEffects).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcFactionRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFactions).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcPropertyRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCProperties).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcItemRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCItems).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcPerkRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCPerks).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcMorphRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCMorphs).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcFaceMorphRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFaceMorphs).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcFaceDialPositionRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFaceDialPositions).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcFaceMorphGroupRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFaceMorphGroups).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcMorphBlendRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCMorphBlends).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcTintRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCTints).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcTintLayerRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCTintLayers).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcFaceTintingLayerRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFaceTintingLayers).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var npcPlayerSkillRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCPlayerSkills).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var perkEffectRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.PerkEffects).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var perkRankRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.PerkRanks).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var perkBackgroundSkillRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.PerkBackgroundSkills).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
+        var staticNavmeshGeometryRecordIDs = childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.StaticNavmeshGeometry).Select(entry => entry.RecordID).OrderBy(recordID => recordID, StringComparer.Ordinal).ToList();
 
         keywordRecordIDs.ShouldBe(
             ["BOOK", "CONT", "DOOR", "FACT", "MGEF", "MISC", "NPC_", "STAT", "TERM"]);
@@ -492,6 +516,30 @@ public class RecordSpecificationCatalogTests
         miscItemComponentRecordIDs.ShouldBe(["MISC"]);
         miscItemResourceRecordIDs.ShouldBe(["MISC"]);
         actorValueInformationPerkTreeRecordIDs.ShouldBe(["AVIF"]);
+        npcLevelRecordIDs.ShouldBe(["NPC_"]);
+        npcConfigurationRecordIDs.ShouldBe(["NPC_"]);
+        npcSupplementalFieldRecordIDs.ShouldBe(["NPC_"]);
+        npcPackageRecordIDs.ShouldBe(["NPC_"]);
+        npcForcedLocationRecordIDs.ShouldBe(["NPC_"]);
+        npcHeadPartRecordIDs.ShouldBe(["NPC_"]);
+        npcActorEffectRecordIDs.ShouldBe(["NPC_"]);
+        npcFactionRecordIDs.ShouldBe(["NPC_"]);
+        npcPropertyRecordIDs.ShouldBe(["NPC_"]);
+        npcItemRecordIDs.ShouldBe(["NPC_"]);
+        npcPerkRecordIDs.ShouldBe(["NPC_"]);
+        npcMorphRecordIDs.ShouldBe(["NPC_"]);
+        npcFaceMorphRecordIDs.ShouldBe(["NPC_"]);
+        npcFaceDialPositionRecordIDs.ShouldBe(["NPC_"]);
+        npcFaceMorphGroupRecordIDs.ShouldBe(["NPC_"]);
+        npcMorphBlendRecordIDs.ShouldBe(["NPC_"]);
+        npcTintRecordIDs.ShouldBe(["NPC_"]);
+        npcTintLayerRecordIDs.ShouldBe(["NPC_"]);
+        npcFaceTintingLayerRecordIDs.ShouldBe(["NPC_"]);
+        npcPlayerSkillRecordIDs.ShouldBe(["NPC_"]);
+        perkEffectRecordIDs.ShouldBe(["PERK"]);
+        perkRankRecordIDs.ShouldBe(["PERK"]);
+        perkBackgroundSkillRecordIDs.ShouldBe(["PERK"]);
+        staticNavmeshGeometryRecordIDs.ShouldBe(["STAT"]);
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.KeywordMappings)
             .ShouldAllBe(entry => entry.Group.GroupName == "Keywords");
@@ -579,6 +627,30 @@ public class RecordSpecificationCatalogTests
         childGroups
             .Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.ActorValueInformationPerkTree)
             .ShouldAllBe(entry => entry.Group.GroupName == "PerkTree");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCLevel).ShouldAllBe(entry => entry.Group.GroupName == "Level");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCConfiguration).ShouldAllBe(entry => entry.Group.GroupName == "Configuration");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCSupplementalFields).ShouldAllBe(entry => entry.Group.GroupName == "Supplemental Fields");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCPackages).ShouldAllBe(entry => entry.Group.GroupName == "Packages");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCForcedLocations).ShouldAllBe(entry => entry.Group.GroupName == "ForcedLocations");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCHeadParts).ShouldAllBe(entry => entry.Group.GroupName == "HeadParts");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCActorEffects).ShouldAllBe(entry => entry.Group.GroupName == "ActorEffects");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFactions).ShouldAllBe(entry => entry.Group.GroupName == "Factions");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCProperties).ShouldAllBe(entry => entry.Group.GroupName == "Properties");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCItems).ShouldAllBe(entry => entry.Group.GroupName == "Items");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCPerks).ShouldAllBe(entry => entry.Group.GroupName == "Perks");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCMorphs).ShouldAllBe(entry => entry.Group.GroupName == "Morphs");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFaceMorphs).ShouldAllBe(entry => entry.Group.GroupName == "FaceMorphs");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFaceDialPositions).ShouldAllBe(entry => entry.Group.GroupName == "FaceDialPositions");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFaceMorphGroups).ShouldAllBe(entry => entry.Group.GroupName == "FaceMorphGroups");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCMorphBlends).ShouldAllBe(entry => entry.Group.GroupName == "MorphBlends");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCTints).ShouldAllBe(entry => entry.Group.GroupName == "Tints");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCTintLayers).ShouldAllBe(entry => entry.Group.GroupName == "TintLayers");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCFaceTintingLayers).ShouldAllBe(entry => entry.Group.GroupName == "FaceTintingLayers");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.NPCPlayerSkills).ShouldAllBe(entry => entry.Group.GroupName == "PlayerSkills");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.PerkEffects).ShouldAllBe(entry => entry.Group.GroupName == "Effects");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.PerkRanks).ShouldAllBe(entry => entry.Group.GroupName == "Ranks");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.PerkBackgroundSkills).ShouldAllBe(entry => entry.Group.GroupName == "Background Skills");
+        childGroups.Where(entry => entry.Group.GroupKind == RecordComparisonChildGroupKind.StaticNavmeshGeometry).ShouldAllBe(entry => entry.Group.GroupName == "Navmesh Geometry");
         childGroups.ShouldAllBe(entry => !string.IsNullOrWhiteSpace(entry.Group.Description));
     }
 

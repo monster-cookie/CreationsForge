@@ -49,8 +49,8 @@ public partial class RecordComparisonServiceTests
     }
 
     /// <summary>
-    /// Verifies that NPC top-level scalar parent rows are selected from the injected comparison specification while
-    /// child rows remain strategy-based.
+    /// Verifies that NPC top-level scalar parent rows and child rows are selected from the injected comparison
+    /// specification.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForNPC_UsesInjectedComparisonSpecification()
@@ -99,10 +99,7 @@ public partial class RecordComparisonServiceTests
             .ShouldBe(["Unaggressive", "Aggressive"]);
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "HeightMin");
-        comparison.Fields.Single(field => field.FieldName == "HeadParts")
-            .Children.Single(field => field.FieldName == "HeadPart [0]")
-            .Values.Select(value => value.DisplayValue)
-            .ShouldBe(["", "Starfield.esm:0003E2B2"]);
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "HeadParts");
     }
 
     /// <summary>

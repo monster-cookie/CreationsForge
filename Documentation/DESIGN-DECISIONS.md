@@ -352,7 +352,8 @@ Alternatives considered:
 Consequences:
 
 - `AVIF` scalar parent comparison rows are selected from `RecordComparisonSpecification`.
-- Perk-tree rows remain strategy-based.
+- Perk-tree rows remained strategy-based in this scalar slice; this consequence was later superseded by
+  `2026-06-27 - Add Spec-Driven Bounded Child Group Dispatch`.
 - No database schema, persisted data shape, import, reader, or UI workflow changes.
 
 Related files:
@@ -533,6 +534,56 @@ Related files:
 - `Documentation/DOMAIN-MODEL.md`
 - `Documentation/DESIGN-DECISIONS.md`
 
+## 2026-06-27 - Complete Remaining Explicit Comparison Child Dispatch
+
+Status: Accepted
+
+Context: After the bounded child-group batch, the largest remaining explicit comparison child dispatch paths were
+`NPC_` actor-data children, `PERK` effect/rank/background-skill rows, and `STAT` navmesh geometry. These families are
+more deeply nested than the earlier bounded groups, but their row builders are already isolated in
+`RecordComparisonService`.
+
+Decision: Add metadata kinds for the remaining NPC, Perk, and Static child-row strategies. Declare those child groups
+in `NPCRecordSpecification`, `PerkRecordSpecification`, and `StaticRecordSpecification` in the same order the service
+already rendered them. Replace the explicit calls in `CreateNPCComparison`, `CreatePerkComparison`, and
+`CreateStaticComparison` with filtered metadata dispatch while keeping the existing Core row builders.
+
+Rationale: This completes the current comparison child-dispatch migration without introducing a generic nested
+collection engine. Specifications now decide whether the large child-row strategies are emitted, while Core remains
+the runtime owner for row construction, nesting, localized display behavior, and comparison state.
+
+Alternatives considered:
+
+- Introduce a generic nested collection specification before moving NPC, Perk, and Static navmesh dispatch.
+- Keep the largest nested families explicit until import and reader metadata are also complete for more record types.
+- Convert GameSetting `Data` in the same batch even though it is a localized scalar display strategy.
+- Split NPC, Perk, and Static navmesh into three smaller tasks.
+
+Consequences:
+
+- `NPC_` level/configuration/supplemental/list/actor-data rows, `PERK` effect/rank/background-skill rows, and `STAT`
+  navmesh geometry rows are emitted only when the comparison specification declares the matching child group.
+- Existing row names, row nesting, localized display behavior, ordering, and comparison DTO shape are preserved by
+  using the existing row builders.
+- GameSetting `Data`, game-dependent Book text source behavior, and remaining non-converted complex child groups for
+  `MGEF`, `BOOK`, `DOOR`, and `CNDF` remain explicit strategies.
+- No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
+
+Related files:
+
+- `CreationsForge.Core/Services/RecordComparisonService.cs`
+- `CreationsForge.Specification/Records/RecordComparisonChildGroupKind.cs`
+- `CreationsForge.Specification/Records/NPCRecordSpecification.cs`
+- `CreationsForge.Specification/Records/PerkRecordSpecification.cs`
+- `CreationsForge.Specification/Records/StaticRecordSpecification.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.NPC.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.Perk.cs`
+- `CreationsForge.UnitTests/Services/RecordComparisonServiceTests.Static.cs`
+- `CreationsForge.UnitTests/Specifications/RecordSpecificationCatalogTests.cs`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/DOMAIN-MODEL.md`
+- `Documentation/DESIGN-DECISIONS.md`
+
 ## 2026-06-27 - Add Spec-Driven Bounded Child Group Dispatch
 
 Status: Accepted
@@ -566,7 +617,8 @@ Consequences:
   comparison specification declares the matching child group.
 - Existing row names, row ordering, and comparison DTO shape are preserved by using the existing row builders.
 - GameSetting `Data`, NPC children, Perk ranks/effects, Static navmesh geometry, and other larger complex families
-  remain on explicit strategies.
+  remained on explicit strategies in this bounded slice; NPC, Perk, and Static navmesh dispatch were later superseded
+  by `2026-06-27 - Complete Remaining Explicit Comparison Child Dispatch`.
 - No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
 
 Related files:
@@ -750,7 +802,8 @@ Consequences:
 
 - `STAT` property rows are emitted only when the comparison specification declares the `StaticProperties` child group.
 - Existing static property row order and display shape are preserved by using the existing row builder.
-- Static navmesh geometry remains strategy-owned.
+- Static navmesh geometry remained strategy-owned in this property slice; this consequence was later superseded by
+  `2026-06-27 - Complete Remaining Explicit Comparison Child Dispatch`.
 - No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
 
 Related files:
@@ -1285,7 +1338,9 @@ Alternatives considered:
 Consequences:
 
 - `NPC_` top-level scalar parent comparison rows are selected from `RecordComparisonSpecification`.
-- NPC level, configuration, supplemental, list, actor child, keyword, sound, and script rows remain strategy-based.
+- NPC level, configuration, supplemental, list, actor child, keyword, sound, and script rows remained strategy-based
+  in this scalar slice; NPC-specific rows were later superseded by
+  `2026-06-27 - Complete Remaining Explicit Comparison Child Dispatch`.
 - The current comparison catalog now covers scalar parent rows for all currently compared record families.
 - No database schema, persisted data shape, import, reader behavior, or UI workflow changes.
 

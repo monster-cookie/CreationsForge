@@ -534,8 +534,14 @@ public class RecordComparisonService : IRecordComparisonService
             localizedStrings,
             recordTextLanguage,
             fieldPredicate: fieldSpecification => preLevelFieldNames.Contains(fieldSpecification.FieldName));
-        AddNPCLevelGroup(fields, records);
-        AddNPCConfigurationGroup(fields, records);
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.NPC.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.NPCLevel,
+            RecordComparisonChildGroupKind.NPCConfiguration);
         fields.AddRange(CreateSpecComparisonFields(
             RecordTypeCatalog.NPC.RecordID,
             records,
@@ -544,24 +550,30 @@ public class RecordComparisonService : IRecordComparisonService
             recordTextLanguage,
             includeCommonFields: false,
             fieldPredicate: fieldSpecification => postConfigurationFieldNames.Contains(fieldSpecification.FieldName)));
-        AddNPCSupplementalFields(fields, records);
-        AddNPCFormKeyListGroup(fields, records, "Packages", record => record.Packages);
-        AddNPCFormKeyListGroup(fields, records, "ForcedLocations", record => record.ForcedLocations);
-        AddNPCFormKeyListGroup(fields, records, "HeadParts", record => record.HeadParts);
-        AddNPCFormKeyListGroup(fields, records, "ActorEffects", record => record.ActorEffects);
-        AddNPCFactionGroups(fields, records);
-        AddNPCPropertyGroups(fields, records);
-        AddNPCItemGroups(fields, records);
-        AddNPCPerkGroups(fields, records);
-        AddNPCMorphGroups(fields, records);
-        AddNPCFaceMorphPositionGroups(fields, records);
-        AddNPCFaceDialPositionGroups(fields, records);
-        AddNPCFaceMorphGroupSetGroups(fields, records);
-        AddNPCMorphBlendGroups(fields, records);
-        AddNPCTintGroups(fields, records);
-        AddNPCTintLayerGroups(fields, records);
-        AddNPCFaceTintingLayerGroups(fields, records);
-        AddNPCPlayerSkillsGroup(fields, records);
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.NPC.RecordID,
+            formKey,
+            baseRecords,
+            RecordComparisonChildGroupKind.NPCSupplementalFields,
+            RecordComparisonChildGroupKind.NPCPackages,
+            RecordComparisonChildGroupKind.NPCForcedLocations,
+            RecordComparisonChildGroupKind.NPCHeadParts,
+            RecordComparisonChildGroupKind.NPCActorEffects,
+            RecordComparisonChildGroupKind.NPCFactions,
+            RecordComparisonChildGroupKind.NPCProperties,
+            RecordComparisonChildGroupKind.NPCItems,
+            RecordComparisonChildGroupKind.NPCPerks,
+            RecordComparisonChildGroupKind.NPCMorphs,
+            RecordComparisonChildGroupKind.NPCFaceMorphs,
+            RecordComparisonChildGroupKind.NPCFaceDialPositions,
+            RecordComparisonChildGroupKind.NPCFaceMorphGroups,
+            RecordComparisonChildGroupKind.NPCMorphBlends,
+            RecordComparisonChildGroupKind.NPCTints,
+            RecordComparisonChildGroupKind.NPCTintLayers,
+            RecordComparisonChildGroupKind.NPCFaceTintingLayers,
+            RecordComparisonChildGroupKind.NPCPlayerSkills);
         AddSpecComparisonChildGroups(
             fields,
             game,
@@ -633,8 +645,7 @@ public class RecordComparisonService : IRecordComparisonService
 
     /// <summary>
     /// Creates the comparison output for imported Perk overrides, using specification metadata for scalar parent rows
-    /// while leaving effect, rank, background skill, condition, sound, script, and scripting adapter rows on existing
-    /// strategy code.
+    /// and child-group dispatch while Core keeps the row-building strategy implementations.
     /// </summary>
     /// <param name="game">The game whose imported perk records should be compared.</param>
     /// <param name="formKey">The origin FormKey shared by the perk overrides.</param>
@@ -649,44 +660,53 @@ public class RecordComparisonService : IRecordComparisonService
             records,
             localizedStrings: localizedStrings,
             recordTextLanguage: recordTextLanguage);
-        AddPerkEffectGroups(fields, records, localizedStrings, recordTextLanguage);
-        AddPerkRankGroups(fields, records, localizedStrings, recordTextLanguage);
-        AddPerkBackgroundSkillGroup(fields, records);
+        var baseRecords = records.Cast<RecordDTO>().ToList();
         AddSpecComparisonChildGroups(
             fields,
             game,
             RecordTypeCatalog.Perk.RecordID,
             formKey,
-            records.Cast<RecordDTO>().ToList(),
+            baseRecords,
+            localizedStrings,
+            recordTextLanguage,
+            RecordComparisonChildGroupKind.PerkEffects,
+            RecordComparisonChildGroupKind.PerkRanks,
+            RecordComparisonChildGroupKind.PerkBackgroundSkills);
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Perk.RecordID,
+            formKey,
+            baseRecords,
             RecordComparisonChildGroupKind.ConditionRules);
         AddSpecComparisonChildGroups(
             fields,
             game,
             RecordTypeCatalog.Perk.RecordID,
             formKey,
-            records.Cast<RecordDTO>().ToList(),
+            baseRecords,
             RecordComparisonChildGroupKind.SoundMappings);
         AddSpecComparisonChildGroups(
             fields,
             game,
             RecordTypeCatalog.Perk.RecordID,
             formKey,
-            records.Cast<RecordDTO>().ToList(),
+            baseRecords,
             RecordComparisonChildGroupKind.ScriptFragments);
         AddSpecComparisonChildGroups(
             fields,
             game,
             RecordTypeCatalog.Perk.RecordID,
             formKey,
-            records.Cast<RecordDTO>().ToList(),
+            baseRecords,
             RecordComparisonChildGroupKind.ScriptingAdapterMappings);
 
-        return CreateComparison(RecordTypeCatalog.Perk.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
+        return CreateComparison(RecordTypeCatalog.Perk.RecordID, formKey, baseRecords, fields);
     }
 
     /// <summary>
     /// Creates the comparison output for imported Static overrides, using specification metadata for scalar parent
-    /// rows and supported child-group dispatch while leaving navmesh groups on strategy code.
+    /// rows and child-group dispatch while Core keeps the row-building strategy implementations.
     /// </summary>
     /// <param name="game">The game whose imported static records should be compared.</param>
     /// <param name="formKey">The origin FormKey shared by the static overrides.</param>
@@ -701,37 +721,44 @@ public class RecordComparisonService : IRecordComparisonService
             records,
             localizedStrings: localizedStrings,
             recordTextLanguage: recordTextLanguage);
-        AddStaticNavmeshGeometryGroups(fields, records);
+        var baseRecords = records.Cast<RecordDTO>().ToList();
         AddSpecComparisonChildGroups(
             fields,
             game,
             RecordTypeCatalog.Static.RecordID,
             formKey,
-            records.Cast<RecordDTO>().ToList(),
+            baseRecords,
+            RecordComparisonChildGroupKind.StaticNavmeshGeometry);
+        AddSpecComparisonChildGroups(
+            fields,
+            game,
+            RecordTypeCatalog.Static.RecordID,
+            formKey,
+            baseRecords,
             RecordComparisonChildGroupKind.KeywordMappings);
         AddSpecComparisonChildGroups(
             fields,
             game,
             RecordTypeCatalog.Static.RecordID,
             formKey,
-            records.Cast<RecordDTO>().ToList(),
+            baseRecords,
             RecordComparisonChildGroupKind.StaticProperties);
         AddSpecComparisonChildGroups(
             fields,
             game,
             RecordTypeCatalog.Static.RecordID,
             formKey,
-            records.Cast<RecordDTO>().ToList(),
+            baseRecords,
             RecordComparisonChildGroupKind.ModelMappings);
         AddSpecComparisonChildGroups(
             fields,
             game,
             RecordTypeCatalog.Static.RecordID,
             formKey,
-            records.Cast<RecordDTO>().ToList(),
+            baseRecords,
             RecordComparisonChildGroupKind.ReflectionMappings);
 
-        return CreateComparison(RecordTypeCatalog.Static.RecordID, formKey, records.Cast<RecordDTO>().ToList(), fields);
+        return CreateComparison(RecordTypeCatalog.Static.RecordID, formKey, baseRecords, fields);
     }
 
     private static void AddStaticPropertyGroups(ICollection<RecordComparisonFieldDTO> fields, IReadOnlyList<StaticDTO> records)
@@ -1581,6 +1608,86 @@ public class RecordComparisonService : IRecordComparisonService
                     break;
                 case RecordComparisonChildGroupKind.ActorValueInformationPerkTree:
                     AddActorValueInformationPerkTreeGroups(fields, records.Cast<ActorValueInformationDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.NPCLevel:
+                    AddNPCLevelGroup(fields, records.Cast<NPCDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.NPCConfiguration:
+                    AddNPCConfigurationGroup(fields, records.Cast<NPCDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.NPCSupplementalFields:
+                    AddNPCSupplementalFields(fields, records.Cast<NPCDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.NPCPackages:
+                    AddNPCFormKeyListGroup(fields, records.Cast<NPCDTO>().ToList(), "Packages", record => record.Packages);
+                    break;
+                case RecordComparisonChildGroupKind.NPCForcedLocations:
+                    AddNPCFormKeyListGroup(fields, records.Cast<NPCDTO>().ToList(), "ForcedLocations", record => record.ForcedLocations);
+                    break;
+                case RecordComparisonChildGroupKind.NPCHeadParts:
+                    AddNPCFormKeyListGroup(fields, records.Cast<NPCDTO>().ToList(), "HeadParts", record => record.HeadParts);
+                    break;
+                case RecordComparisonChildGroupKind.NPCActorEffects:
+                    AddNPCFormKeyListGroup(fields, records.Cast<NPCDTO>().ToList(), "ActorEffects", record => record.ActorEffects);
+                    break;
+                case RecordComparisonChildGroupKind.NPCFactions:
+                    AddNPCFactionGroups(fields, records.Cast<NPCDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.NPCProperties:
+                    AddNPCPropertyGroups(fields, records.Cast<NPCDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.NPCItems:
+                    AddNPCItemGroups(fields, records.Cast<NPCDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.NPCPerks:
+                    AddNPCPerkGroups(fields, records.Cast<NPCDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.NPCMorphs:
+                    AddNPCMorphGroups(fields, records.Cast<NPCDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.NPCFaceMorphs:
+                    AddNPCFaceMorphPositionGroups(fields, records.Cast<NPCDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.NPCFaceDialPositions:
+                    AddNPCFaceDialPositionGroups(fields, records.Cast<NPCDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.NPCFaceMorphGroups:
+                    AddNPCFaceMorphGroupSetGroups(fields, records.Cast<NPCDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.NPCMorphBlends:
+                    AddNPCMorphBlendGroups(fields, records.Cast<NPCDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.NPCTints:
+                    AddNPCTintGroups(fields, records.Cast<NPCDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.NPCTintLayers:
+                    AddNPCTintLayerGroups(fields, records.Cast<NPCDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.NPCFaceTintingLayers:
+                    AddNPCFaceTintingLayerGroups(fields, records.Cast<NPCDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.NPCPlayerSkills:
+                    AddNPCPlayerSkillsGroup(fields, records.Cast<NPCDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.PerkEffects:
+                    AddPerkEffectGroups(
+                        fields,
+                        records.Cast<PerkDTO>().ToList(),
+                        localizedStrings ?? Array.Empty<LocalizedStringDTO>(),
+                        recordTextLanguage ?? Language.English);
+                    break;
+                case RecordComparisonChildGroupKind.PerkRanks:
+                    AddPerkRankGroups(
+                        fields,
+                        records.Cast<PerkDTO>().ToList(),
+                        localizedStrings ?? Array.Empty<LocalizedStringDTO>(),
+                        recordTextLanguage ?? Language.English);
+                    break;
+                case RecordComparisonChildGroupKind.PerkBackgroundSkills:
+                    AddPerkBackgroundSkillGroup(fields, records.Cast<PerkDTO>().ToList());
+                    break;
+                case RecordComparisonChildGroupKind.StaticNavmeshGeometry:
+                    AddStaticNavmeshGeometryGroups(fields, records.Cast<StaticDTO>().ToList());
                     break;
                 default:
                     throw new NotSupportedException(

@@ -157,5 +157,125 @@ public enum RecordComparisonChildGroupKind
     /// <summary>
     /// Indicates that persisted actor value perk-tree rows should be rendered as the <c>PerkTree</c> child group.
     /// </summary>
-    ActorValueInformationPerkTree
+    ActorValueInformationPerkTree,
+
+    /// <summary>
+    /// Indicates that persisted NPC level data should be rendered as the <c>Level</c> child group.
+    /// </summary>
+    NPCLevel,
+
+    /// <summary>
+    /// Indicates that persisted NPC configuration data should be rendered as the <c>Configuration</c> child group.
+    /// </summary>
+    NPCConfiguration,
+
+    /// <summary>
+    /// Indicates that persisted NPC supplemental parent and nested actor data should be rendered after scalar parent rows.
+    /// </summary>
+    NPCSupplementalFields,
+
+    /// <summary>
+    /// Indicates that persisted NPC package links should be rendered as the <c>Packages</c> child group.
+    /// </summary>
+    NPCPackages,
+
+    /// <summary>
+    /// Indicates that persisted NPC forced-location links should be rendered as the <c>ForcedLocations</c> child group.
+    /// </summary>
+    NPCForcedLocations,
+
+    /// <summary>
+    /// Indicates that persisted NPC head-part links should be rendered as the <c>HeadParts</c> child group.
+    /// </summary>
+    NPCHeadParts,
+
+    /// <summary>
+    /// Indicates that persisted NPC actor-effect links should be rendered as the <c>ActorEffects</c> child group.
+    /// </summary>
+    NPCActorEffects,
+
+    /// <summary>
+    /// Indicates that persisted NPC faction rows should be rendered as the <c>Factions</c> child group.
+    /// </summary>
+    NPCFactions,
+
+    /// <summary>
+    /// Indicates that persisted NPC actor-value property rows should be rendered as the <c>Properties</c> child group.
+    /// </summary>
+    NPCProperties,
+
+    /// <summary>
+    /// Indicates that persisted NPC inventory item rows should be rendered as the <c>Items</c> child group.
+    /// </summary>
+    NPCItems,
+
+    /// <summary>
+    /// Indicates that persisted NPC perk rows should be rendered as the <c>Perks</c> child group.
+    /// </summary>
+    NPCPerks,
+
+    /// <summary>
+    /// Indicates that persisted NPC morph rows should be rendered as the <c>Morphs</c> child group.
+    /// </summary>
+    NPCMorphs,
+
+    /// <summary>
+    /// Indicates that persisted NPC face morph position rows should be rendered as the <c>FaceMorphs</c> child group.
+    /// </summary>
+    NPCFaceMorphs,
+
+    /// <summary>
+    /// Indicates that persisted NPC face dial position rows should be rendered as the <c>FaceDialPositions</c> child group.
+    /// </summary>
+    NPCFaceDialPositions,
+
+    /// <summary>
+    /// Indicates that persisted NPC face morph group rows should be rendered as the <c>FaceMorphGroups</c> child group.
+    /// </summary>
+    NPCFaceMorphGroups,
+
+    /// <summary>
+    /// Indicates that persisted NPC morph blend rows should be rendered as the <c>MorphBlends</c> child group.
+    /// </summary>
+    NPCMorphBlends,
+
+    /// <summary>
+    /// Indicates that persisted NPC tint rows should be rendered as the <c>Tints</c> child group.
+    /// </summary>
+    NPCTints,
+
+    /// <summary>
+    /// Indicates that persisted NPC tint layer rows should be rendered as the <c>TintLayers</c> child group.
+    /// </summary>
+    NPCTintLayers,
+
+    /// <summary>
+    /// Indicates that persisted NPC face tinting layer rows should be rendered as the <c>FaceTintingLayers</c> child group.
+    /// </summary>
+    NPCFaceTintingLayers,
+
+    /// <summary>
+    /// Indicates that persisted NPC player skill rows should be rendered as the <c>PlayerSkills</c> child group.
+    /// </summary>
+    NPCPlayerSkills,
+
+    /// <summary>
+    /// Indicates that persisted perk effect rows should be rendered as the <c>Effects</c> child group.
+    /// </summary>
+    PerkEffects,
+
+    /// <summary>
+    /// Indicates that persisted perk rank rows should be rendered as the <c>Ranks</c> child group.
+    /// </summary>
+    PerkRanks,
+
+    /// <summary>
+    /// Indicates that persisted perk background skill rows should be rendered as the <c>Background Skills</c> child group.
+    /// </summary>
+    PerkBackgroundSkills,
+
+    /// <summary>
+    /// Indicates that persisted static navmesh geometry rows should be rendered as the <c>Navmesh Geometry</c> child group.
+    /// </summary>
+    StaticNavmeshGeometry
 }

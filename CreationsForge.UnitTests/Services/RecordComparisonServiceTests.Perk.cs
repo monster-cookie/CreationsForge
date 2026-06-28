@@ -74,8 +74,7 @@ public partial class RecordComparisonServiceTests
     }
 
     /// <summary>
-    /// Verifies that Perk scalar rows are selected from the injected comparison specification while strategy rows
-    /// remain outside the scalar metadata path.
+    /// Verifies that Perk scalar rows and child rows are selected from the injected comparison specification.
     /// </summary>
     [Fact]
     public void GetRecordComparison_ForPerk_UsesInjectedComparisonSpecification()
@@ -122,7 +121,8 @@ public partial class RecordComparisonServiceTests
             .ShouldBe(["Patch_Science_Chemistry", "Patch_Science_Chemistry"]);
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Name");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "SkillGroup");
-        comparison.Fields.Single(field => field.FieldName == "Ranks").Children.ShouldNotBeEmpty();
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Ranks");
+        comparison.Fields.ShouldNotContain(field => field.FieldName == "Background Skills");
         comparison.Fields.ShouldNotContain(field => field.FieldName == "Script Fragments");
     }
 

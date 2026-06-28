@@ -267,6 +267,12 @@ internal static class StaticRecordSpecification
             [
                 new RecordComparisonChildGroupSpecification
                 {
+                    GroupKind = RecordComparisonChildGroupKind.StaticNavmeshGeometry,
+                    GroupName = "Navmesh Geometry",
+                    Description = "Static navmesh geometry rows appended after scalar parent rows."
+                },
+                new RecordComparisonChildGroupSpecification
+                {
                     GroupKind = RecordComparisonChildGroupKind.KeywordMappings,
                     GroupName = "Keywords",
                     Description = "Shared keyword mapping rows appended after scalar parent and record-specific rows."
@@ -292,7 +298,7 @@ internal static class StaticRecordSpecification
             ]
         },
         ImplementationNote = "Comparison metadata drives scalar parent rows and keyword/property/model/reflection " +
-            "child-group dispatch; navmesh rows remain strategy-based."
+            "child-group dispatch plus navmesh geometry row dispatch."
     };
 }
 
