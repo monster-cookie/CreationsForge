@@ -31,7 +31,9 @@ The intended workflow contract for the current edits is:
 
 The workflow files are owned by the infrastructure task. After those edits are final, inspect their diff and run the focused YAML/actionlint checks available in the checkout. A local workflow syntax check does not prove hosted runner behavior. The package-release caller must resolve `ci.yml`; no `validate-pull-request.yml` caller should remain.
 
-The current workflow edit was checked locally by the infrastructure task with actionlint `1.7.12` against both workflow files, focused workflow assertions, PowerShell parsing of the embedded CI blocks, and a diff check; all passed. Hosted CI and the release workflow remain unrun.
+The current workflow edit was checked locally by the infrastructure task with actionlint `1.7.12` against both workflow files, focused workflow assertions, PowerShell parsing of the embedded CI blocks, and a diff check; all passed.
+
+Hosted CI passed for committed candidate `5858aabb4d37ae8b03c302a39c2e51dbd0d19854`: the [push run](https://github.com/monster-cookie/CreationsForge/actions/runs/34435351715) and [pull-request run](https://github.com/monster-cookie/CreationsForge/actions/runs/34435464898) both completed successfully, with `Lint PowerShell` and `Unit Tests` passing. The associated [PR #42](https://github.com/monster-cookie/CreationsForge/pull/42) is open and ready for review from `mcp-mutagen-base-refactor` into `master`. These hosted results cover that committed candidate; they do not establish validation for later documentation commits.
 
 ## Native FormList acceptance procedure
 
@@ -65,9 +67,9 @@ The installed Spriggit CLI reports `0.40.1+Branch.main.Sha.da8152cdfd0313fbf08b2
 
 ## Evidence status
 
-Executed and passed: local restore, Release build, filtered UnitTests, filtered PresentationTests, and local PSScriptAnalyzer baseline as listed above.
+Executed and passed: local restore, Release build, filtered UnitTests, filtered PresentationTests, and local PSScriptAnalyzer baseline on source snapshot `46d2d8c` as listed above. Hosted CI push and pull-request runs for committed candidate `5858aabb4d37ae8b03c302a39c2e51dbd0d19854` also passed both `Lint PowerShell` and `Unit Tests`, including analyzer installation/analysis and restore/build/test steps.
 
-Not run: hosted GitHub CI, hosted package workflow, Spriggit extraction/import validation, database reset/reimport, native FormList authoring, cross-game ESM output acceptance, stale independent workspace conflicts, cancellation at the commit boundary, save failure/reopen recovery, application/game runtime smoke tests, packaging, and gameplay acceptance. These checks require their listed environment or a later implementation task.
+Not run: hosted package-release workflow, hosted PresentationTests (the hosted headless test job remains disabled), Spriggit extraction/import validation, database reset/reimport, native FormList authoring, cross-game ESM output acceptance, stale independent workspace conflicts, cancellation at the commit boundary, save failure/reopen recovery, application/game runtime smoke tests, packaging, and gameplay acceptance. These checks require their listed environment or a later implementation task.
 
 The local presentation pass does not resolve the hosted random-hang history. A successful build, documentation check, or package artifact is not runtime or target-game evidence. Native save acceptance must also fail closed when the selected writer cannot preserve untouched data, must distinguish expected writer-header updates from semantic record-data changes, and must distinguish a known committed output followed by reopen failure from an output that was never committed.
 
