@@ -287,3 +287,13 @@ Starfield `MiscItem`, `Static`, `Book`, `Door`, `Container`, and `Terminal` expo
 by gendered world and first-person model structures, and weapon data combines direct model data with first-person and
 other custom model-related fields. Those records should map their model slots deliberately when their typed records are
 implemented.
+
+## Proposed FormList Authoring Model
+
+A FormList (`FLST`) is a native Mutagen major record whose identity is a `FormKey` resolved through an ordered game load order. An authoring workspace has a read-only source plugin, a separate output plugin, a captured source/output baseline, and a monotonic workspace revision. A new record receives its identity from the native output mod allocator; an override retains its origin `FormKey` while leaving the source record unchanged.
+
+The native field surface is game-specific. Starfield has typed `Components`, translated `Name`, ordered `Items` links to `IStarfieldMajorRecordGetter`, typed `ConditionalEntries`, and an optional scalar `AddToList` link to another FormList. Fallout 4 has translated `Name` and ordered `Items` links to `IFallout4MajorRecordGetter`. Skyrim Special Edition has ordered `Items` links to `ISkyrimMajorRecordGetter` and no native `Name` field in the exact target Mutagen version. All three also expose generated common header fields and game-specific major-record flags.
+
+`Items` uses native `ExtendedList` semantics: insertion order, duplicate links, and empty collections are meaningful. Null links and absent optional values remain distinct from empty values. Starfield component discriminators and complete nested payloads, and conditional-entry indexes plus complete typed condition data, remain native structured data. These concepts must not be flattened into a generic payload, custom shadow record, cache, index, or LinkCache.
+
+An authoring result envelope is operational metadata, not a domain record model. It may report workspace/edit/operation identifiers, source/output identity, revisions, counts, warnings, and typed errors. Reference lookup can resolve links into other native major-record families when the supplied load-order groups/getters expose them; it does not authorize editing those families. The complete lifecycle and preservation rules are defined in [FormList MVP Contracts](Engine/FORMLIST-MVP-CONTRACTS.md).

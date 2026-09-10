@@ -3372,3 +3372,39 @@ Related files:
 - `CreationsForge.Console/Program.cs`
 - `CreationsForge.sln`
 - `CreationsForge.UnitTests/CreationsForge.UnitTests.csproj`
+
+## 2026-09-09 - Define Proposed Native FormList Authoring Boundary
+
+Status: Proposed
+
+Context: The current application imports FormLists through game-specific Mutagen readers into Core DTOs and persists them through SQLite/NPoco repositories. VWCF-7 requires a FormList-only authoring slice for Starfield, Fallout 4, and Skyrim Special Edition before the engine rebuild, with independent MCP and Avalonia workspaces and a safe save/reopen lifecycle. Existing reader field-surface mapping is not evidence of complete authoring or serialized coverage.
+
+Decision: Define a shared headless native Mutagen engine as the future authoring authority. Use native getters, mutable records, groups, and load-order construction for record identity, typed fields, links, ordering, unknown data, and serialization. Keep MCP and Avalonia as independent consumers with minimal operational result envelopes. Do not introduce custom record models, shadow DTO storage, record caches, indexes, or Mutagen `LinkCache`. Make source/output roles, workspace revisions, operation IDs, staged edits, native preview, new-record allocation, overrides, guarded save, reopen verification, cancellation, disposal, and typed failure outcomes explicit in the FormList contract.
+
+Rationale: Native Mutagen state is the repository's verified record representation and preserves heterogeneous components, typed conditions, ordered `ExtendedList` values, duplicate links, nulls, and untouched data without creating a second authority. An exclusive cooperating-writer guard with an in-guard baseline comparison, sibling staging, native reopen validation, and platform-supported atomic replacement gives the save path explicit conflict and commit outcomes. A fingerprint by itself cannot prevent TOCTOU, and non-cooperating writers remain a documented limitation.
+
+Alternatives considered:
+
+- Add a new Core DTO/database schema for authoring records alongside the importer.
+- Build a generic record cache or index to support cross-family reference lookup.
+- Use Mutagen `LinkCache` as a hidden shared authority.
+- Treat FormList fields as generic JSON, raw binary, or flattened key/value data.
+- Remove the SQLite backend as soon as a native plugin can be opened.
+
+Consequences:
+
+- The first implementation is limited to FormLists across the three named games; other-family authoring, live workspace synchronization, remote hosting, conversion, merge/split/compaction, asset-preview expansion, and broad UI redesign remain excluded.
+- Skyrim Special Edition does not gain an invented native `Name` field, and Starfield component/conditional data requires complete typed native preservation.
+- Existing SQLite/import/readback behavior and tests remain the rollback reference until per-game native field round trips, source/output preservation, stale-workspace conflict handling, cancellation/save-failure recovery, and reopen evidence pass.
+- Spriggit spelling and sample parity remain an acceptance gap until configured extraction roots are available; package restoration does not prove complete binary serialization.
+
+Related files:
+
+- `Documentation/Engine/FORMLIST-MVP-CONTRACTS.md`
+- `Documentation/Engine/LEGACY-BACKEND-MIGRATION.md`
+- `Documentation/Instructions/WorkflowValidation.md`
+- `CreationsForge.Starfield/StarfieldRecordReaderService.cs`
+- `CreationsForge.Fallout4/Fallout4RecordReaderService.cs`
+- `CreationsForge.Skyrim/SkyrimRecordReaderService.cs`
+- `CreationsForge.Core/DTOs/Records/FormListDTO.cs`
+- `CreationsForge.Core/DTOs/Records/FormListItemDTO.cs`

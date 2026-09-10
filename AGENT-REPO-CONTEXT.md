@@ -21,8 +21,8 @@ Plane-backed work depends on a governing Plane work item or current Plane requir
 | Task                                                                                                          | Required context                                                                                                                                                                                      |
 | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Independent local inspection, instruction audits, provisional planning, or a fully specified local correction | Relevant repository files and these boundaries. Plane availability is not a prerequisite when the work does not depend on current Plane requirements. Identify unresolved external inputs explicitly. |
-| Decisions or implementation governed by Plane requirements; work-item operations                              | Retrieve the relevant current Plane information and read the applicable sections of [Plane lifecycle](Documentation/Agents/PlaneLifecycle.md) before dependent work.                                  |
-| Public roadmap content derived from Plane                                                                     | Read [Plane roadmap](Documentation/Agents/PlaneRoadmap.md) and the identity-verification section of [Plane lifecycle](Documentation/Agents/PlaneLifecycle.md) before using Plane content.             |
+| Decisions or implementation governed by Plane requirements; work-item operations                              | Retrieve the relevant current Plane information and read the applicable sections of [Plane lifecycle](.codex/references/PlaneLifecycle.md) before dependent work.                                  |
+| Public roadmap content derived from Plane                                                                     | Read [Plane roadmap](.codex/references/PlaneRoadmap.md) and the identity-verification section of [Plane lifecycle](.codex/references/PlaneLifecycle.md) before using Plane content.             |
 
 For Plane-backed implementation, verified Task scope, ready dependencies, the intended automation ownership, and In Progress state are prerequisites. Identify them while preparing the plan and satisfy them through explicitly authorized operations or verified existing/manual state before dependent implementation. Do not assume permission to mutate Plane from permission to edit local files.
 
@@ -91,13 +91,13 @@ Verify the configured automation member against current project membership and i
 
 Do not invent claims, lock labels, host labels, or comments that pretend to provide exclusive locking.
 
-The project currently has no dedicated Blocked workflow state. Preserve work and report blockers; do not invent workflow substitutes. Use the blocking section of [Plane lifecycle](Documentation/Agents/PlaneLifecycle.md) when a work item becomes blocked.
+The project currently has no dedicated Blocked workflow state. Preserve work and report blockers; do not invent workflow substitutes. Use the blocking section of [Plane lifecycle](.codex/references/PlaneLifecycle.md) when a work item becomes blocked.
 
 ## External actions and final acceptance
 
 Plane mutations and comments require explicit authorization in the user's request or approved plan. Local implementation approval alone does not authorize them. Perform only the authorized operations; do not perform unrelated Plane maintenance merely because a work item was opened.
 
-Only the user may approve final completion. Require explicit action-time confirmation immediately before recording final acceptance, moving a work item from In Review to Done, or removing its active assignee as part of completion. Plan approval does not replace that confirmation. Read the completion procedure in [Plane lifecycle](Documentation/Agents/PlaneLifecycle.md) before completion actions.
+Only the user may approve final completion. Require explicit action-time confirmation immediately before recording final acceptance, moving a work item from In Review to Done, or removing its active assignee as part of completion. Plan approval does not replace that confirmation. Read the completion procedure in [Plane lifecycle](.codex/references/PlaneLifecycle.md) before completion actions.
 
 Do not claim that a Plane mutation succeeded unless the corresponding operation completed and the resulting work item was re-read and verified. Preserve the actual outcome of partial mutations and resolve uncertainty before retrying or continuing dependent work.
 

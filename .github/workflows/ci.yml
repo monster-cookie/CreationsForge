@@ -12,6 +12,7 @@ on:
   push:
     branches:
       - master
+      - mcp-mutagen-base-refactor
 
   pull_request:
     branches:
@@ -37,8 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PSSCRIPTANALYZER_VERSION: "1.25.0"
-      PSSCRIPTANALYZER_PATH: ./Tools
-      PSSCRIPTANALYZER_SETTINGS: ./PSScriptAnalyzerSettings.psd1
+      PSSCRIPTANALYZER_PATH: .
     steps:
       # GitHub-authored actions must remain pinned to full commit SHAs.
       - name: Check out repository
@@ -65,8 +65,7 @@ jobs:
           $findings = @(
             Invoke-ScriptAnalyzer `
               -Path $env:PSSCRIPTANALYZER_PATH `
-              -Recurse `
-              -Settings $env:PSSCRIPTANALYZER_SETTINGS
+              -Recurse
           )
           foreach ($finding in $findings) {
             Write-Output ('{0} [{1}] {2}:{3} {4}' -f

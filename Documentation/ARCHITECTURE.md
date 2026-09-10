@@ -438,3 +438,11 @@ shape and currently map that direct model to `ModelSlot = Model`. `Terminal.Mark
 terminal-specific scalar. Starfield armor, armor addon, and weapon model data need custom mapping: armor and armor
 addon use gendered model wrappers, and weapons combine a direct `Model` with additional first-person/custom model
 data.
+
+## Proposed FormList Authoring Boundary
+
+The proposed VWCF-7 authoring slice adds a shared headless native Mutagen engine for FormLists (`FLST`) across Starfield, Fallout 4, and Skyrim Special Edition. The engine owns native load-order construction, getters, mutable records, staged edits, preview, guarded save, reopen verification, and disposal. MCP and Avalonia remain independent consumers with independent live workspaces; neither consumer owns a record cache, shadow DTO model, index, or synchronization layer.
+
+Native Mutagen objects remain authoritative for record fields, typed components and conditions, FormKey links, ordering, duplicates, nulls, unknown values, and untouched output data. The proposed contract deliberately excludes custom record models and Mutagen `LinkCache`; operational result envelopes carry only status, identity, revision, counts, warnings, and errors. See [FormList MVP Contracts](Engine/FORMLIST-MVP-CONTRACTS.md) and [Legacy Backend Migration](Engine/LEGACY-BACKEND-MIGRATION.md).
+
+The current SQLite importer and comparison architecture remains in place until the native engine satisfies the per-game acceptance matrix. The save boundary captures source/output baselines, compares state inside an exclusive cooperating-writer guard, stages a sibling output, validates by native reopen, and commits atomically where the platform supports it. Cancellation and indeterminate commit outcomes are part of the proposed contract rather than implicit rollback assumptions.

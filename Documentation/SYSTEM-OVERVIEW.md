@@ -162,3 +162,11 @@ Core DTO capability interfaces and linked through the owning `RecordInstances` r
 The current `MISC` implementation persists the parent scalar row plus shared model, keyword, sound, and scripting
 adapter rows. `BOOK`, `DOOR`, `CONT`, and `TERM` now persist typed parent scalar rows in addition to their shared
 children, and `TERM` also persists marker parameter child rows.
+
+## Proposed Native FormList Authoring
+
+VWCF-7 defines a Proposed FormList-only authoring slice for Starfield, Fallout 4, and Skyrim Special Edition. A shared headless native Mutagen engine will serve independent MCP and Avalonia workspaces, while the current SQLite importer remains the legacy read/import path until replacement acceptance is complete. This contract describes intended behavior before the engine rebuild; it does not describe an implemented authoring feature.
+
+The native engine will preserve typed FormList fields, list order, duplicates, nulls, unknown values, and untouched output data through native Mutagen getters and mutable records. Starfield includes typed components, conditional entries, translated `Name`, items, and optional scalar `AddToList`; Fallout 4 includes translated `Name` and items; Skyrim Special Edition includes items in the exact target Mutagen version, with no invented native `Name` field. Cross-family links may be resolved through native getters/groups, but other record families are outside the authoring scope.
+
+The workflow includes explicit source/output roles, workspace revisions, idempotent operation IDs, staged preview, guarded save, native reopen validation, cancellation outcomes, and deterministic disposal. This documentation task excludes live workspace synchronization, remote multi-user hosting, general plugin conversion, new asset-preview work, and legacy SQLite deletion; the proposed migration removes the legacy backend only after native consumers and acceptance evidence are complete. See [FormList MVP Contracts](Engine/FORMLIST-MVP-CONTRACTS.md), [Legacy Backend Migration](Engine/LEGACY-BACKEND-MIGRATION.md), and the [Workflow Validation Handoff](Instructions/WorkflowValidation.md).
