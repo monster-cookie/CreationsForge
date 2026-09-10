@@ -13,7 +13,7 @@ Version 1.1.x is currently maintained and may receive security fixes, compatibil
 
 Versions older than 1.1.x are no longer maintained. Security fixes are not backported to unsupported versions unless specifically noted by the maintainers.
 
-For a full version history, see `Documentation/CHANGE_LOG.md`.
+For a full version history, see [CHANGELOG.md](CHANGELOG.md).
 
 ## Reporting a Vulnerability
 
@@ -51,7 +51,7 @@ After a report is received, the maintainers will attempt to:
 3. Determine whether the report is a security vulnerability, a general bug, or expected behavior.
 4. Provide a fix, mitigation, or explanation when practical.
 
-If a vulnerability is accepted, it may be fixed in a future 1.1.x release or later supported release. The fix may also be documented in `Documentation/CHANGE_LOG.md`.
+If a vulnerability is accepted, it may be fixed in a future 1.1.x release or later supported release. The fix may also be documented in [CHANGELOG.md](CHANGELOG.md).
 
 If a report is declined, the maintainers may explain why it is not considered a vulnerability, such as when the issue only affects unsupported versions, requires unsafe local configuration, or is outside the scope of Creations Forge.
 

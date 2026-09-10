@@ -116,10 +116,10 @@ jobs:
               run: |
                   Copy-Item -LiteralPath ./Documentation/KNOWN-ISSUES.md -Destination ./artifacts/publish/windows/desktop
                   Copy-Item -LiteralPath ./Documentation/ROADMAP.md -Destination ./artifacts/publish/windows/desktop
-                  Copy-Item -LiteralPath ./Documentation/CHANGE-LOG.md -Destination ./artifacts/publish/windows/desktop
+                  Copy-Item -LiteralPath ./CHANGELOG.md -Destination ./artifacts/publish/windows/desktop
                   Copy-Item -LiteralPath ./Documentation/KNOWN-ISSUES.md -Destination ./artifacts/publish/windows/cli
                   Copy-Item -LiteralPath ./Documentation/ROADMAP.md -Destination ./artifacts/publish/windows/cli
-                  Copy-Item -LiteralPath ./Documentation/CHANGE-LOG.md -Destination ./artifacts/publish/windows/cli
+                  Copy-Item -LiteralPath ./CHANGELOG.md -Destination ./artifacts/publish/windows/cli
 
                   Compress-Archive `
                     -Path ./artifacts/publish/windows/desktop/* `
@@ -241,10 +241,10 @@ jobs:
               run: |
                   cp ./Documentation/KNOWN-ISSUES.md ./artifacts/publish/linux/desktop/
                   cp ./Documentation/ROADMAP.md ./artifacts/publish/linux/desktop/
-                  cp ./Documentation/CHANGE-LOG.md ./artifacts/publish/linux/desktop/
+                  cp ./CHANGELOG.md ./artifacts/publish/linux/desktop/
                   cp ./Documentation/KNOWN-ISSUES.md ./artifacts/publish/linux/cli/
                   cp ./Documentation/ROADMAP.md ./artifacts/publish/linux/cli/
-                  cp ./Documentation/CHANGE-LOG.md ./artifacts/publish/linux/cli/
+                  cp ./CHANGELOG.md ./artifacts/publish/linux/cli/
 
                   (cd ./artifacts/publish/linux/desktop && zip -r ../../../CreationsForge-Desktop-linux-x64-"$PACKAGE_VERSION".zip .)
                   (cd ./artifacts/publish/linux/cli && zip -r ../../../CreationsForge-Cli-linux-x64-"$PACKAGE_VERSION".zip .)
@@ -272,7 +272,7 @@ jobs:
                   cp -r ./artifacts/publish/linux/cli/. "$cli_app/"
                   cp ./Documentation/KNOWN-ISSUES.md "$app_root/"
                   cp ./Documentation/ROADMAP.md "$app_root/"
-                  cp ./Documentation/CHANGE-LOG.md "$app_root/"
+                  cp ./CHANGELOG.md "$app_root/"
                   cp ./Packaging/Linux/com.creationsforge.app.desktop "$desktop_entry_dir/"
                   cp ./Packaging/Linux/creationsforge.svg "$icon_dir/"
 
@@ -392,7 +392,7 @@ jobs:
                   cp -r ./artifacts/publish/arch/cli/. "$cli_app/"
                   cp ./Documentation/KNOWN-ISSUES.md "$app_root/"
                   cp ./Documentation/ROADMAP.md "$app_root/"
-                  cp ./Documentation/CHANGE-LOG.md "$app_root/"
+                  cp ./CHANGELOG.md "$app_root/"
                   cp ./Packaging/Linux/com.creationsforge.app.desktop "$desktop_entry_dir/"
                   cp ./Packaging/Linux/creationsforge.svg "$icon_dir/"
                   cp ./Packaging/Arch/PKGBUILD "$build_dir/PKGBUILD"
@@ -477,7 +477,7 @@ jobs:
               shell: pwsh
               run: |
                   $version = $env:PACKAGE_VERSION
-                  $changeLogPath = Join-Path $env:GITHUB_WORKSPACE 'Documentation/CHANGE-LOG.md'
+                  $changeLogPath = Join-Path $env:GITHUB_WORKSPACE 'CHANGELOG.md'
                   $releaseNotesPath = Join-Path $env:GITHUB_WORKSPACE 'artifacts/release/release-notes.md'
                   $content = Get-Content -LiteralPath $changeLogPath -Raw
                   $escapedVersion = [Regex]::Escape($version)
@@ -485,7 +485,7 @@ jobs:
                   $match = [Regex]::Match($content, $pattern)
 
                   if (-not $match.Success) {
-                      throw "Unable to find release notes in Documentation/CHANGE-LOG.md for version $version."
+                      throw "Unable to find release notes in CHANGELOG.md for version $version."
                   }
 
                   $releaseNotesDirectory = Split-Path -Path $releaseNotesPath -Parent

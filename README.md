@@ -2,34 +2,27 @@
 
 ![Creations Forge](./MarketingSites/Images/SFRecordCompareEngine-Header.png)
 
-Creations Forge is a cross-platform desktop and command-line application for importing, browsing, and comparing
-Bethesda plugin records. It imports selected plugin metadata and supported record details into a local SQLite cache,
-then provides workflows for browsing records, reviewing overrides, previewing selected assets, and comparing values
-across plugins.
+Creations Forge is a desktop and command-line application for importing, browsing, and comparing Bethesda plugin records. Browse supported records, review overrides, preview selected assets, and compare values across plugins.
 
-Creations Forge is the multi-game replacement for Starfield Record Compare Engine. The Avalonia desktop application
-currently targets Windows and Linux packaging, and the CLI harness remains available for import and validation
-workflows.
+Creations Forge replaces Starfield Record Compare Engine and supports multiple games. Desktop and command-line packages are available for Windows and Linux.
 
 ![Screen Shot of Record Comparison](./Documentation/Images/RecordCompare.png)
 
 ## Current Features
 
-1. Discovers local load-order plugins for supported games through game-specific Mutagen adapters
-2. Imports plugin metadata, declared master references, and supported record details into a local SQLite cache
-3. Skips unchanged plugins during later imports using source fingerprints
-4. Persists one multi-game schema for imported games, plugins, master references, supported typed records, and shared
-   child data
+1. Discovers plugins in your local game load order
+2. Imports supported plugin details and records for browsing and comparison
+3. Skips unchanged plugins during later imports
+4. Keeps imported records from multiple supported games available in one application
 5. Browses records owned by a selected plugin in a filterable record tree
 6. Filters records by FormID and EditorID
 7. Compares matching records across imported plugins in load-order order
 8. Highlights matching values in green, conflicts in red, and the visible winning override in yellow
-9. Displays supported child comparison rows, including models, keywords, sounds, scripts, raw payloads, container
-   items, constructible object components, perk ranks, condition rows, and terminal marker parameters
-10. Provides an experimental asset preview pane for persisted model paths
-11. Provides a hexadecimal/string viewer for retained binary reflection payloads
+9. Compares supported record details, including models, keywords, sounds, scripts, container items, crafting components, perk ranks, conditions, and terminal parameters
+10. Provides an experimental model preview pane
+11. Displays retained binary data as hexadecimal values and text
 12. Supports light and dark desktop themes
-13. Provides CLI imports for one selected game, forced reimport, and reset/import-all workflows
+13. Provides command-line imports for a selected game, forced reimport, and reset/import-all workflows
 
 ## Supported Games
 
@@ -100,31 +93,28 @@ Application data and logs are stored under:
 
 ## CLI Usage
 
-Run the console harness from the repository with:
+On Windows, open PowerShell in the extracted CLI ZIP folder or the installation's `Cli` folder, then run one command for the game you want to import:
 
 ```powershell
-dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --game Starfield
-dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --game Fallout4
-dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --game Skyrim
-dotnet run --project ./CreationsForge.Console/CreationsForge.Console.csproj -- --reset-all
+.\CreationsForge.Console.exe --game Starfield
+.\CreationsForge.Console.exe --game Fallout4
+.\CreationsForge.Console.exe --game Skyrim
 ```
+
+On Linux, open a terminal in the extracted CLI ZIP folder and run:
+
+```bash
+./CreationsForge.Console --game Starfield
+./CreationsForge.Console --game Fallout4
+./CreationsForge.Console --game Skyrim
+```
+
+Debian and Arch installations also provide the `creationsforge-cli` command; for example, `creationsforge-cli --game Starfield` imports Starfield records.
 
 Useful import options:
 
-1. `--force` or `--full` forces a full reimport for the selected game.
-2. `--reset-all` deletes the current application database and imports every supported game.
-
-## Required Development Environment
-
-1. .NET 10 SDK
-2. Visual Studio 2022 or later, VS Code, or JetBrains Rider
-3. A supported Bethesda game installation for runtime import testing
-
-## References
-
-- [Mutagen Documentation](https://mutagen-modding.github.io/Mutagen/)
-- [Mutagen GitHub Repository](https://github.com/Mutagen-Modding/Mutagen)
-- [Spriggit GitHub Repository](https://github.com/Mutagen-Modding/Spriggit)
+1. Add `--force` or `--full` to a game import command to force a full reimport for that game.
+2. Use `--reset-all` instead of `--game` only when you intend to delete the current application database and import every supported game. This affects the configured application database, even when the command is run from a different folder.
 
 ## Source Code
 

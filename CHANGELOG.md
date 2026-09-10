@@ -2,11 +2,11 @@
 
 ## Unreleased
 
-- Added CI checks for pushes to `mcp-mutagen-base-refactor` and repaired PowerShell analysis and release-validation workflow references.
-- Repaired workflow guidance links and added a [validation guide](Instructions/WorkflowValidation.md) that separates completed local checks from checks still requiring hosted CI, game data, or the future authoring engine.
-- Documented the proposed [FormList authoring contracts](Engine/FORMLIST-MVP-CONTRACTS.md) for Starfield, Fallout 4, and Skyrim Special Edition, including independent MCP and Avalonia workspaces, safeguards against stale saves, and preservation of source plugins and unrelated output data.
-- Added a proposed [legacy backend migration plan](Engine/LEGACY-BACKEND-MIGRATION.md) that retains the current importer and comparison workflows until replacement behavior is verified for all three games.
-- This documentation and CI update does not implement native FormList authoring or change application behavior. No database migration, reset, or reimport is required; serialization and game-runtime acceptance remain unverified.
+- Improved automated validation used when preparing releases.
+- Kept installation, usage, known issues, and release history in the repository, with engineering guidance now maintained in Plane.
+- Moved the change log to the repository root as `CHANGELOG.md` and updated release packaging and release-note extraction to use its new location.
+- Native FormList authoring for Starfield, Fallout 4, and Skyrim Special Edition remains planned and is not available in this update.
+- This documentation and CI update does not change application behavior. No database migration, reset, or reimport is required.
 
 ## Version 1.2.0 - 2026-06-28
 

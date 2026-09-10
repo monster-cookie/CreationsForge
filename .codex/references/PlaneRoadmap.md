@@ -1,6 +1,6 @@
 # Plane roadmap extraction
 
-Use this procedure only when the task requests public roadmap content derived from Plane. Read the project identity in [`AGENT-REPO-CONTEXT.md`](../../AGENT-REPO-CONTEXT.md) and the repository rules in [`AGENTS.md`](../../AGENTS.md). Roadmap work is read-only and does not require unrelated repository references or implementation work.
+Use this procedure only when the task requests public roadmap content derived from Plane. Read the project identity in [`AGENT-REPO-CONTEXT.md`](../../AGENT-REPO-CONTEXT.md) and the repository rules in [`AGENTS.md`](../../AGENTS.md). Roadmap work is read-only and does not require unrelated repository references or implementation work. Treat `Documentation/ROADMAP.md` as a retained public summary; Plane work items remain the current source of truth for roadmap state, scope, and sequencing.
 
 ## Current pending snapshot
 

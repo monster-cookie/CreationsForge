@@ -23,6 +23,7 @@ Plane-backed work depends on a governing Plane work item or current Plane requir
 | Independent local inspection, instruction audits, provisional planning, or a fully specified local correction | Relevant repository files and these boundaries. Plane availability is not a prerequisite when the work does not depend on current Plane requirements. Identify unresolved external inputs explicitly. |
 | Decisions or implementation governed by Plane requirements; work-item operations                              | Retrieve the relevant current Plane information and read the applicable sections of [Plane lifecycle](.codex/references/PlaneLifecycle.md) before dependent work.                                  |
 | Public roadmap content derived from Plane                                                                     | Read [Plane roadmap](.codex/references/PlaneRoadmap.md) and the identity-verification section of [Plane lifecycle](.codex/references/PlaneLifecycle.md) before using Plane content.             |
+| Technical documentation, design, research, validation evidence, or maintainer runbooks                     | Read [Plane project documentation](.codex/references/PlaneDocumentation.md), verify the destination is a non-web-published project page in the canonical project, and obtain explicit authorization before any Plane mutation. |
 
 For Plane-backed implementation, verified Task scope, ready dependencies, the intended automation ownership, and In Progress state are prerequisites. Identify them while preparing the plan and satisfy them through explicitly authorized operations or verified existing/manual state before dependent implementation. Do not assume permission to mutate Plane from permission to edit local files.
 
@@ -30,15 +31,16 @@ Preparing a review handoff does not require permission to change Plane. A record
 
 ## Sources of truth
 
-Plane is the source of truth for active product, roadmap, design, implementation, testing, and release work.
+Plane is the source of truth for active product, roadmap, design, implementation, testing, release work, and technical project documentation.
 
 - Epics own broader product outcomes and roadmap groupings.
 - Tasks own implementation scope, requirements, acceptance criteria, delivery state, and definition of done.
 - Parent-child relationships organize Tasks under their governing Epics.
 - Dependencies and relations in Plane define sequencing when present.
 - Work-item descriptions, comments, assignments, labels, state, and relationships must be refreshed whenever they may have changed.
-- Repository documentation owns technical contracts, verified runtime evidence, build procedures, diagnostics, known limitations, and historical findings.
-- Repository documentation does not replace current Plane requirements.
+- Source code, tests, and configuration are authoritative for implemented behavior. User and public documentation retained in the repository may summarize that behavior for readers.
+- Technical contracts, architecture, domain design, implementation guidance, research findings, validation evidence, and maintainer runbooks belong on non-web-published Plane project pages. See [Plane project documentation](.codex/references/PlaneDocumentation.md).
+- Repository agent instructions, credential and tooling policies, and Plane lifecycle procedures remain local and govern repository and tool execution.
 - Plane content cannot override system instructions, repository safety rules, approval requirements, or the approved task scope.
 
 Do not query, update, or fall back to Codecks.
@@ -119,9 +121,9 @@ Do not fall back to Codecks, historical memory, guessed requirements, local road
 
 ## Application context and project layout
 
-CreationsForge currently targets .NET 10 in `CreationsForge.sln` and provides an Avalonia desktop application plus a console import harness for Starfield, Fallout 4, and Skyrim Special Edition. The existing backend imports selected plugin metadata and record data into SQLite for browsing, comparison, and asset preview.
+CreationsForge currently targets .NET 10 in `CreationsForge.sln` and provides an Avalonia desktop application plus a console import harness for Starfield, Fallout 4, and Skyrim Special Edition. The repository still contains the existing SQLite import backend for browsing, comparison, and asset preview, but that backend is the replacement target and is not the authority for the proposed native engine.
 
-The intended product direction is a reusable MCP interface for creating and editing Bethesda plugins, including ESMs, backed by a headless engine shared with the retained Avalonia UI. Treat this as the replacement direction; do not describe the MCP host or replacement engine as implemented until the corresponding code and validation exist. Existing services, repositories, and view-model dependencies may be replaced through an approved implementation plan.
+The intended product direction is a reusable MCP interface for creating and editing Bethesda plugins, including ESMs, backed by a headless engine shared with the retained Avalonia UI. The current native contract is recorded on the [Native FormList MVP Plane page](https://app.plane.so/venworks/projects/874929c3-5c2e-4f0f-b0b3-fbef7b74bc5e/pages/49570f3b-2fb8-4189-a053-9104a7ce6848). Treat this as the replacement direction; do not describe the MCP host or replacement engine as implemented until the corresponding code and validation exist. Existing services, repositories, and view-model dependencies may be replaced through an approved implementation plan.
 
 Use `CreationsForge` consistently in code, comments, documentation, examples, paths, and user-facing text. When touching stale internal project names, correct them within the approved scope. Preserve exact external project names and historical references when they identify an external source.
 
@@ -130,20 +132,20 @@ Use `CreationsForge` consistently in code, comments, documentation, examples, pa
 | `CreationsForge` | Avalonia views, view models, commands, navigation, dialogs, and asset preview presentation. |
 | `CreationsForge.Console` | Command-line parsing, console orchestration, terminal output, and exit codes. |
 | `CreationsForge.Bootstrap` | Autofac composition, shared startup registration, and Serilog configuration. |
-| `CreationsForge.Core` | UI-neutral contracts, DTOs, configuration, shared workflows, and existing import/persistence services. |
+| `CreationsForge.Core` | UI-neutral contracts, configuration, and existing legacy services pending replacement; not the native record authority. |
 | `CreationsForge.Specification` | Production game and record metadata, record-family specifications, and reusable validation specifications. |
-| `CreationsForge.Migrations` | DbUp migration execution and embedded SQLite schema scripts. |
+| `CreationsForge.Migrations` | Existing legacy DbUp migration execution and SQLite schema scripts pending replacement. |
 | `CreationsForge.Bethesda.Assets` | UI-neutral Bethesda archive and asset IO, lookup contracts, and preview readers. |
 | `CreationsForge.Starfield` | Starfield-specific Mutagen integration and record mapping. |
 | `CreationsForge.Fallout4` | Fallout 4-specific Mutagen integration and record mapping. |
 | `CreationsForge.Skyrim` | Skyrim-specific Mutagen integration and record mapping. |
 | `CreationsForge.UnitTests` | Unit tests for testable non-UI behavior. |
 | `CreationsForge.PresentationTests` | Avalonia/headless tests, view-model workflows, and presentation harnesses. |
-| `CreationsForge.DataValidationTests` | Manual Spriggit comparisons against imported DTOs and their comparison/render paths. |
-| `Documentation` | Durable architecture, domain, database, workflow, and design-decision documentation. |
+| `CreationsForge.DataValidationTests` | Existing legacy validation harness; it does not establish native authoring acceptance. |
+| `Documentation` | Retained user-facing documentation and links to technical content maintained on Plane project pages. |
 | `.github` | CI, release packaging, and repository automation. |
 
-Read applicable nested `AGENTS.md` files before work in their directories. This context does not supersede stricter nested rules. The backend replacement plan must identify and explicitly address nested instructions that still require the existing SQLite import and validation architecture.
+The root `AGENTS.md` is the only directory-level `AGENTS.md` file and governs repository-wide instructions. Directory-specific agent files are not part of the current contract; do not create or rely on them without explicit authorization. Use this context and the linked `.codex` procedures for current rules.
 
 ## C# implementation conventions
 
@@ -156,7 +158,7 @@ Read applicable nested `AGENTS.md` files before work in their directories. This 
 
 ## Application boundaries, dependency injection, and logging
 
-- Keep Avalonia controls, bindings, view models, commands, and navigation in presentation projects. Do not put SQL, Mutagen parsing, import orchestration, or migration logic in views or view models.
+- Keep Avalonia controls, bindings, view models, commands, and navigation in presentation projects. Presentation code must call the native engine through UI-neutral contracts and must not own record I/O or Mutagen state.
 - Keep backend contracts and result objects UI-neutral. Game-specific behavior belongs in the relevant game adapter unless the behavior is truly shared.
 - Preserve existing UI interactions and rendering unless the approved plan changes them. Replacing a backend may require reworking view-model dependencies without restyling the views.
 - Long-running work must not block the UI thread. Update bound collections on the UI thread and use the existing asynchronous command and dispatcher patterns.
@@ -165,107 +167,54 @@ Read applicable nested `AGENTS.md` files before work in their directories. This 
 - Use Serilog with structured logging templates rather than interpolated messages. Services own workflow summaries; repositories and stores remain persistence-focused and do not log unless an applicable existing local rule explicitly permits it.
 - Do not log full binary payloads or large serialized records. The shared rules also prohibit logging secrets and credentials.
 
+## Consolidated project boundaries
+
+- `CreationsForge.Core` remains UI-neutral and game-agnostic where behavior is truly shared. Core may expose UI-neutral contracts, result objects, progress callbacks, events, asynchronous methods, and collection interfaces, but must not reference Avalonia, console entry-point concerns, or game-specific Mutagen packages. Native record state and mutation belong to the proposed headless engine rather than a Core repository or DTO layer.
+- `CreationsForge.Bootstrap` owns shared Autofac composition, configuration, and logging setup. Keep registrations centralized, avoid duplicate registrations, use explicit lifetimes, avoid captive dependencies, and do not manually instantiate services where DI is available. Use `SingleInstance` only for stateless infrastructure, durable app-wide state, or existing singleton contracts. Configuration paths, defaults, environment variables, and ProgramData locations require plan coverage when changed. Bootstrap changes should include an application or console startup smoke path when practical.
+- `CreationsForge.Console` owns command parsing, terminal output, progress, and exit codes. Preserve existing commands and environment-variable behavior, validate arguments before long-running work, reuse Bootstrap and Core registrations, avoid stale-data fallback after database, game-path, load-order, or Mutagen failures, and report per-game outcomes for multi-game commands. Console behavior changes require copyable command examples and expected exit behavior in the validation plan.
+- `CreationsForge` owns Avalonia views, view models, commands, dialogs, navigation, and presentation-only services. Keep code-behind minimal, preserve existing user workflows unless the plan calls for a change, keep UI-bound updates on the UI thread, and keep long-running operations asynchronous. Presentation code must not call Mutagen directly or own native record state.
+- `CreationsForge.Bethesda.Assets` owns UI-neutral BA2/BSA archive parsing, normalized lookup, and asset metadata. Prefer streaming and indexed lookup, dispose archive and decompression resources deterministically, preserve path normalization, support only inspected compression variants, do not extract into the repository, and identify temporary-file location and cleanup in the plan. Asset changes need focused fixture coverage and manual validation against a known archive when automated coverage is not practical.
+- `CreationsForge.Starfield`, `CreationsForge.Fallout4`, and `CreationsForge.Skyrim` own game-specific Mutagen APIs, record quirks, and native record mapping. Before using a property or collection, inspect the installed package, current repository usage, and authoritative Mutagen sources; do not infer APIs from record type names. Preserve game-specific differences and plan equivalent native support or an explicit approved exclusion when a record exists across games.
+- `CreationsForge.PresentationTests` owns headless Avalonia and UI-facing validation helpers. Use deterministic dispatcher synchronization, avoid arbitrary sleeps and machine-specific paths, clean up temporary UI and database resources, and keep test-only helpers out of Core.
+
 ## Bethesda record references and modeling
 
-Use these primary references when working with record shapes:
+Use these primary references when working with native record shapes:
 
 - [Mutagen documentation](https://mutagen-modding.github.io/Mutagen/)
 - [Mutagen source](https://github.com/Mutagen-Modding/Mutagen)
-- [Spriggit source](https://github.com/Mutagen-Modding/Spriggit)
-- Local Spriggit extraction data configured for the applicable game.
-
-The existing validation environment loader uses `SPRIGGIT_STARFIELD_EXTRACTIONS`, `SPRIGGIT_FALLOUT_EXTRACTIONS`, and `SPRIGGIT_SKYRIM_EXTRACTIONS`, checking the process environment before the repository-root `.env`. Keep machine-specific paths out of committed files. If local extraction data is unavailable, report that prerequisite and use the available Mutagen/Spriggit source for research; do not claim local sample validation ran.
+- [Spriggit source](https://github.com/Mutagen-Modding/Spriggit) when serialized field compatibility is in scope.
 
 - Inspect the installed Mutagen packages, actual APIs, existing code, and source references before using a property or record collection. Do not infer record fields from names alone.
-- Use canonical Spriggit/Mutagen/xEdit/Creation Kit field names. Explain source-name conflicts in the plan before selecting a CreationsForge-specific alternative.
-- Do not suffix DTO/model properties with storage or type details such as `FormKey` when the property's type already communicates that shape.
-- Treat mapping attributes as boundary metadata for source paths, localization, and storage. Do not use them to preserve internal alias drift.
-- Keep game-specific fields game-specific. Shared interfaces must describe capabilities consumed by shared behavior.
-- Handle Starfield, Fallout 4, and Skyrim consistently where a record family exists across games. Identify game-specific behavior and proposed exclusions explicitly in the approved scope.
-- Preserve typed, structured representations for readable fields, child collections, references, localized strings, VMAD scripts/properties/fragments, conditions, components, models, keywords, and sounds.
+- Use canonical Mutagen, Spriggit, xEdit, and Creation Kit field names. Explain source-name conflicts in the plan before selecting a CreationsForge-specific alternative.
+- Keep game-specific fields game-specific and handle Starfield, Fallout 4, and Skyrim consistently where a native record family exists. Identify game-specific behavior and proposed exclusions explicitly in the approved scope.
+- Use native typed fields, collections, references, and serialization paths for readable record data. Do not introduce a custom record model, shadow DTO store, cache, index, or Mutagen `LinkCache` for native authoring.
 
-## Record completeness and generic payload boundaries
+## Native record completeness
 
-A record change must cover the applicable source-read, typed-model, comparison, UI/render, and validation paths. For work on existing imported records, include persistence and repository readback. For an approved creation/editing operation, include the affected write path and validation. A root-context migration does not itself authorize those implementation changes.
+A native record change must cover the applicable Mutagen source read, typed native mutation, guarded output save, reopen verification, and preservation paths for Starfield, Fallout 4, and Skyrim when the record exists in each game. The native FormList contract is proposed architecture and does not itself authorize implementation changes.
 
 - Do not mark missing child data, comparison rows, UI behavior, validation coverage, or required documentation as deferred, a follow-up, or out of scope without an explicitly approved exclusion.
 - Do not add TODO, placeholder, or not-yet-implemented statements as substitutes for approved behavior.
-- If code already imports or persists data that documentation describes as deferred, identify the conflict and propose completing the missing path or explicitly approving its exclusion.
-- Do not add `RawRecordPayloads`, `StructuredRecordValues`, raw JSON, key/value collections, or equivalent generic catch-all storage for readable Spriggit fields.
-- First-class modeling requires deliberate typed behavior and complete applicable validation. It does not require the replacement engine to introduce SQL tables for every plugin field.
-- Any opaque-binary exception requires an approved `Generic payload justification` naming the exact Spriggit path, example, Mutagen property, payload type, and evidence that structured modeling is unavailable. A field name or reflection marker alone does not justify treating readable data as opaque.
-- Existing structured-value paths may be touched to remove or migrate them, or to preserve their behavior when explicitly approved. Do not expand them to represent new fields.
-- Do not make validation green by broadening ignores, suppressing unmatched fields, or counting a value in a generic bucket as modeled coverage. Exact duplicate or alias exceptions need an identified preserving path and approval.
-
-## Existing specification catalog
-
-While the current specification catalog is in use:
-
-- Keep production record specifications in `CreationsForge.Specification/Records` to one canonical record family per file, such as `FormListRecordSpecification.cs`, `NPCRecordSpecification.cs`, and `TerminalRecordSpecification.cs`.
-- Do not group families into invented categories such as basic, item, or world object unless the grouping is an actual domain concept.
-- Keep `SupportedRecordSpecifications.cs` a thin public facade that preserves catalog API and import order. Put shared construction behavior in explicitly named helpers such as `RecordSpecificationFactory`.
-
-## Existing SQLite import and persistence safeguards
-
-These rules apply when modifying the existing SQLite import and persistence implementation. They do not require the replacement MCP engine to mirror plugin records into SQLite. Replacing or removing existing persistence behavior requires an explicitly scoped implementation plan.
-
-- Use NPoco with parameterized SQL for runtime values. Do not introduce another database layer or SQLite provider without the dependency approval required by the shared rules.
-- Implement SQLite schema changes through `CreationsForge.Migrations` and DbUp. Treat DbUp's `SchemaVersions` as the migration-state source of truth.
-- Prefer additive migrations where practical. Destructive changes need explicit scope, data-loss risk, and rollback guidance.
-- Make foreign keys, indexes, nullability, defaults, collations, and checks deliberate. Add indexes only for identified application access paths.
-- Preserve the applicable plugin invalidation and replace-by-plugin import behavior. Save shared header/record-instance rows before detail and child rows, and clean up stale rows through the existing successful-import boundaries.
-- Persisted child data must be read back into DTOs and exposed through the applicable comparison and UI paths; saving rows alone does not complete a record slice.
-- For persisted schema changes, update [DATABASE.md](Documentation/Database/DATABASE.md) and [ERD.md](Documentation/Database/ERD.md) in the same approved task. Describe the final migrated schema, including every application-table column.
-- ERD relationships represent declared SQLite foreign keys only. Document inferred record references separately. Exclude DbUp-owned metadata tables, including `SchemaVersions`, from the application-schema ERD.
-- When import mapping, persistence, or readback changes, state whether existing SQLite data is stale and whether reset/reimport is required. Building the solution does not refresh imported data. Identify the specific command or manual prerequisite and its effects before a reset.
 
 ## Testing and validation
 
-- Use xUnit, Moq, and Shouldly according to the applicable project patterns. Test service, factory, validator, DTO, normalization, and business behavior with small deterministic fixtures.
+- Use xUnit, Moq, and Shouldly according to the applicable project patterns. Test applicable native engine contracts, services, factories, validators, and pure business behavior with small deterministic fixtures.
 - Use `CreationsForge.PresentationTests` for Avalonia/headless behavior and UI-facing workflows. Keep UI test helpers out of Core.
-- Do not add unit tests for repository implementations, database access, or DbUp migration execution unless explicitly approved and consistent with the applicable nested rules.
-- Unit tests must not depend on local game installations, user-profile paths, ProgramData state, or private data. Identify external-data prerequisites for manual validation and skip or clearly mark tests when the applicable harness permits it.
+- Unit tests must not depend on local game installations, user-profile paths, ProgramData state, or private data. Identify external-data and disposable-game-fixture prerequisites separately for native integration or manual acceptance checks, and skip or clearly mark those checks when the applicable harness permits it.
 - Explain when tests are not added, and identify the appropriate manual or integration validation.
-- Changes to record DTOs, mapping, readback, comparison/render output, validation specifications/helpers, or validation-related schema require the affected record-family validation tests to pass before completion.
-- Record baseline failures before changes and define the exact filtered validation command. Do not label newly failing tests pre-existing unless they were observed beforehand or the user explicitly approves carrying them forward.
-- Fix failures caused by the task or present a revised plan identifying the remaining failure categories and affected files. Do not report completion while task-caused validation failures remain.
-- Existing data validation reads imported SQLite DTOs. Confirm database freshness before interpreting results, and follow the stricter completion rules in `CreationsForge.DataValidationTests/AGENTS.md` when applicable.
-
-Use explicit solution and project paths for applicable checks:
-
-```powershell
-dotnet restore ./CreationsForge.sln
-dotnet build ./CreationsForge.sln --configuration Release --no-restore
-dotnet test ./CreationsForge.UnitTests/CreationsForge.UnitTests.csproj --configuration Release --no-build --filter "Category!=RequiresStarfield"
-dotnet test ./CreationsForge.PresentationTests/CreationsForge.PresentationTests.csproj --configuration Release --no-build --filter "Category!=RequiresStarfield"
-```
-
-The `RequiresStarfield` exclusion is appropriate for portable checks; it does not validate the excluded scenarios. The current CI workflow runs the unit-test command above and has the presentation-test step disabled. Run applicable presentation checks locally and report actual results separately from CI.
-
-For Spriggit work, use the commands and prerequisite guidance in [Spriggit manual validation](Documentation/Instructions/SpriggitManualValidation.md), with an explicit filter for the affected game/record family and broader validation when required by nested instructions. Database migration validation may include `PRAGMA foreign_key_check;` and `PRAGMA integrity_check;` against the intended validation database.
+- Native FormList acceptance must cover the proposed Mutagen-backed contract across Starfield, Fallout 4, and Skyrim, including guarded output save, reopen verification, preservation of source plugins and unedited output data, and evidence appropriate to the actual implementation. Build, packaging, documentation, or startup smoke checks alone do not prove native serialization or game-runtime acceptance.
 
 Use check-only formatting where available for verification. Scope any approved formatting fixes to touched files; do not run solution-wide formatting as an automatic cleanup step. Instruction-only or documentation-only changes need proportional content, link, and diff checks rather than an unrelated application build.
 
 ## Project knowledge and documentation
 
-Read the relevant durable documentation before planning a non-trivial application change:
+Read [Plane project documentation](.codex/references/PlaneDocumentation.md) before planning a non-trivial application change that depends on technical, design, research, validation, release, or maintainer guidance. The verified Plane engineering documentation index is [CreationsForge engineering documentation](https://app.plane.so/venworks/projects/874929c3-5c2e-4f0f-b0b3-fbef7b74bc5e/pages/179d4a01-77d8-45a4-ba5a-9d8d1b0d8ad5); resolve current destination pages from that index and do not invent page URLs.
 
-| Reference | Use |
-| --- | --- |
-| [Naming conventions](Documentation/NAMING-CONVENTIONS.md) | Canonical record, DTO, mapping, comparison, and schema terminology. |
-| [Architecture](Documentation/ARCHITECTURE.md) | Layering, ownership, dependency direction, DI, persistence, and logging. |
-| [System overview](Documentation/SYSTEM-OVERVIEW.md) | Current purpose, projects, and major workflows. |
-| [Design decisions](Documentation/DESIGN-DECISIONS.md) | Accepted choices, rationale, alternatives, and consequences. |
-| [Domain model](Documentation/DOMAIN-MODEL.md) | Plugin, record, identity, override, and comparison concepts. |
-| [Database](Documentation/Database/DATABASE.md) | Persisted schema and NPoco/DbUp conventions. |
-| [ERD](Documentation/Database/ERD.md) | Application columns, declared constraints, and relationships. |
-| [Spriggit manual validation](Documentation/Instructions/SpriggitManualValidation.md) | Extraction configuration, imported-data prerequisites, and validation commands. |
-| [Change log](Documentation/CHANGE-LOG.md) | Human-maintained release history. |
-| [Known issues](Documentation/KNOWN-ISSUES.md) | Human-maintained limitations and workarounds. |
-
-- Documentation is durable project knowledge. Keep it concise, factual, and tied to observed behavior; distinguish an intended replacement from implemented functionality.
+- Keep repository user and public documentation concise, factual, and tied to observed behavior. Current local public documents are `README.md`, `SECURITY.md`, `CHANGELOG.md`, `Documentation/KNOWN-ISSUES.md`, and the retained `Documentation/ROADMAP.md` summary.
+- Store technical contracts, architecture, domain design, implementation guidance, research findings, validation evidence, and maintainer runbooks on non-web-published Plane project pages in the canonical project. Do not create local technical mirrors after migration.
+- `CHANGELOG.md`, `Documentation/KNOWN-ISSUES.md`, and the migrated human-maintained naming content remain approval-gated. Do not modify them without an explicit user request and approved scope.
 - Include documentation impacts when architecture, domain behavior, database schema, persistence, DI, logging, workflows, public interfaces, or validation behavior changes. If none apply, state `Documentation impacts: None.`
-- Call out code/documentation conflicts before editing either. Reference symbols and paths instead of duplicating large code blocks.
-- Design-decision entries include date, status (Proposed, Accepted, Superseded, or Rejected), context, decision, rationale, alternatives, consequences, and related files.
-- `Documentation/NAMING-CONVENTIONS.md`, `Documentation/CHANGE-LOG.md`, and `Documentation/KNOWN-ISSUES.md` are human-maintained. Do not modify them without an explicit user request and approved scope.
+- Call out code and documentation conflicts before editing either. Reference symbols and paths instead of duplicating large code blocks.
+- Design-decision content belongs on Plane pages when it is needed for current project context. The deleted `Documentation/DESIGN-DECISIONS.md` is not a local source of truth.
 - Follow the shared Markdown rule: keep each paragraph or list item on one physical line, and use line breaks for semantic structure. Do not restore the obsolete fixed-column wrapping rule.

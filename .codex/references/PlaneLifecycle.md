@@ -4,6 +4,8 @@ Use this procedure after the repository context identifies the task as Plane-bac
 
 In this reference, an external action is authorized only when the current user request or an approved task-specific plan explicitly permits it. Permission to edit local files is not Plane permission. Final completion also requires the separate action-time user confirmation described below.
 
+Technical contracts, architecture, design, research, validation evidence, and maintainer runbooks follow [Plane project documentation](PlaneDocumentation.md). Resolve destinations through the verified engineering documentation index, require a non-web-published Plane project page in the canonical project, and do not create a local technical mirror or invent a page URL.
+
 ## Establish the current identity
 
 1. Verify that Plane MCP is available and authenticated, then list projects and match the canonical project UUID configured in `AGENT-REPO-CONTEXT.md`.
