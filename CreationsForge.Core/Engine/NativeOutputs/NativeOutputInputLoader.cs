@@ -456,7 +456,8 @@ public sealed class NativeOutputInputLoader
                 release,
                 new DirectoryPath(directoryPath),
                 modKey,
-                fileSystem)
+                fileSystem,
+                returnEmptyIfMissing: true)
             .Any())
         {
             throw new NativeSourceInputException(

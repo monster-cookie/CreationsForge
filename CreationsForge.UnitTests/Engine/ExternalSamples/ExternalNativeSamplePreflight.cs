@@ -243,7 +243,8 @@ internal static class ExternalNativeSamplePreflight
                 manifest.GameRelease,
                 new DirectoryPath(manifest.CanonicalDataDirectoryPath),
                 ModKey.FromNameAndExtension(plugin.ModKey),
-                fileSystem))
+                fileSystem,
+                returnEmptyIfMissing: true))
             .Select(path => Path.GetFullPath(path.ToString()))
             .Distinct(PathComparer)
             .OrderBy(path => path, PathComparer)

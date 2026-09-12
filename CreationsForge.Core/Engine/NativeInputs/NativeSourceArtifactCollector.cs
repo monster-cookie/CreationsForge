@@ -117,7 +117,8 @@ internal sealed class NativeSourceArtifactCollector
                     Release,
                     new DirectoryPath(DataDirectoryPath),
                     plugin.ModKey,
-                    FileSystem)
+                    FileSystem,
+                    returnEmptyIfMissing: true)
                 .Select(path => Path.GetFullPath(path.ToString()))
                 .OrderBy(path => path, PathComparer)
                 .ToArray();
