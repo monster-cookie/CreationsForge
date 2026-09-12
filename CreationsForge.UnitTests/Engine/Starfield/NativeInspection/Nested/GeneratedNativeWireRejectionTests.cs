@@ -263,6 +263,7 @@ public sealed class GeneratedNativeWireRejectionTests
     {
         const string nativeTypeName = "Mutagen.Bethesda.Starfield.Model";
         var root = CreateModelAssetRoot("Meshes\\CreationsForge\\Inspection.nif");
+        invalidValue = propertyName == "givenPath" ? Path.GetFullPath("Inspection.nif") : invalidValue;
         root["File"]!.AsObject()["value"]!.AsObject()[propertyName] = invalidValue;
 
         AssertInvalidRequestAtPath(nativeTypeName, root, expectedPath);

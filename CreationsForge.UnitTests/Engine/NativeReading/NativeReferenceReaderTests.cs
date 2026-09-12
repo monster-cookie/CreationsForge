@@ -72,7 +72,10 @@ public sealed class NativeReferenceReaderTests
         selected.Value!.Status.ShouldBe(ReferenceResolutionStatus.Resolved);
         selected.Value.Record!.EditorID.ShouldBe("OriginList");
         selected.Value.ContainingModKey.ShouldBe(source.ModKey);
-        selected.Value.SourcePath.ShouldBe("C:\\Native\\0-Origin.esm");
+        selected.Value.SourcePath.ShouldBe(Path.Combine(
+            Path.GetTempPath(),
+            "CreationsForge.NativeReading",
+            "0-Origin.esm"));
     }
 
     /// <summary>Verifies resolved records retain their concrete family and ordered native fields while remaining detached.</summary>
@@ -331,7 +334,7 @@ public sealed class NativeReferenceReaderTests
         using var cancellationSource = new CancellationTokenSource();
         var nativeSource = new NativeReferenceSource(
             source,
-            "C:\\Native\\Origin.esm",
+            Path.Combine(Path.GetTempPath(), "CreationsForge.NativeReading", "Origin.esm"),
             0,
             PluginRole.Source,
             record =>
@@ -391,7 +394,7 @@ public sealed class NativeReferenceReaderTests
         });
         var nativeSource = new NativeReferenceSource(
             source,
-            "C:\\Native\\Origin.esm",
+            Path.Combine(Path.GetTempPath(), "CreationsForge.NativeReading", "Origin.esm"),
             0,
             PluginRole.Source);
         var reader = new NativeReferenceReader(
@@ -467,7 +470,7 @@ public sealed class NativeReferenceReaderTests
         return new NativeReferenceReader(mods
             .Select((mod, index) => new NativeReferenceSource(
                 mod,
-                $"C:\\Native\\{index}-{mod.ModKey.FileName}",
+                Path.Combine(Path.GetTempPath(), "CreationsForge.NativeReading", $"{index}-{mod.ModKey.FileName}"),
                 index,
                 index == 0 ? PluginRole.Source : PluginRole.LoadOrder))
             .ToArray());

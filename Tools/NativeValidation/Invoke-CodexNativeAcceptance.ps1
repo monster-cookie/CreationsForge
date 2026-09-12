@@ -147,7 +147,7 @@ function Write-NewUtf8File {
     }
 }
 
-function Get-EvidenceMetadata {
+function Get-EvidenceDatum {
     param(
         [Parameter(Mandatory)]
         [string] $Path,
@@ -471,9 +471,9 @@ try {
 try {
     Assert-RegularDirectoryHierarchy -Path $taskPath -BoundaryPath $workRoot -Comparison $pathComparison
     Assert-RegularDirectory -Path $sessionPath -Description 'The Codex session directory'
-    $eventsEvidence = Get-EvidenceMetadata -Path $eventsPath -Description 'The JSONL event capture'
-    $stderrEvidence = Get-EvidenceMetadata -Path $stderrPath -Description 'The stderr capture'
-    $finalResponseEvidence = Get-EvidenceMetadata -Path $finalResponsePath -Description 'The final response'
+    $eventsEvidence = Get-EvidenceDatum -Path $eventsPath -Description 'The JSONL event capture'
+    $stderrEvidence = Get-EvidenceDatum -Path $stderrPath -Description 'The stderr capture'
+    $finalResponseEvidence = Get-EvidenceDatum -Path $finalResponsePath -Description 'The final response'
     $capturedOutputBytes = $eventsEvidence.lengthBytes + $stderrEvidence.lengthBytes
     if ($null -ne $finalResponseEvidence) {
         $capturedOutputBytes += $finalResponseEvidence.lengthBytes

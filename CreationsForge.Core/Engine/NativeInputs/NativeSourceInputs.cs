@@ -278,11 +278,8 @@ public sealed class NativeSourceInputs : INativeSourceSet
         }
         catch (NativeSourceInputException exception)
         {
-            var code = exception.Code is EngineErrorCode.InvalidRequest or EngineErrorCode.UnsupportedInput
-                ? EngineErrorCode.ExternalChangeDetected
-                : exception.Code;
             return EngineResult<IReadOnlyList<NativeArtifactAssociation>>.Failure(new EngineError(
-                code,
+                EngineErrorCode.ExternalChangeDetected,
                 exception.Message));
         }
         catch (OperationCanceledException)
