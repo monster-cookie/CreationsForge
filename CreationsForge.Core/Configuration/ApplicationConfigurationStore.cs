@@ -26,8 +26,6 @@ public class ApplicationConfigurationStore : IApplicationConfigurationStore
 
     public static string DefaultApplicationDataDirectory { get; } = GetDefaultApplicationDataDirectory();
 
-    public static string DefaultDatabaseDirectory { get; } = DefaultApplicationDataDirectory;
-
     public static string DefaultLoggingDirectory { get; } = Path.Combine(DefaultApplicationDataDirectory, "Logs");
 
     public string ConfigurationPath { get; }

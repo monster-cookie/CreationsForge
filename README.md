@@ -2,119 +2,89 @@
 
 ![Creations Forge](./MarketingSites/Images/SFRecordCompareEngine-Header.png)
 
-Creations Forge is a desktop and command-line application for importing, browsing, and comparing Bethesda plugin records. Browse supported records, review overrides, preview selected assets, and compare values across plugins.
+Creations Forge browses, compares, and edits FormLists in Bethesda plugins through a desktop application and a local MCP server. Open explicit source plugins and their load order, then create or edit a separate output plugin.
 
-Creations Forge replaces Starfield Record Compare Engine and supports multiple games. Desktop and command-line packages are available for Windows and Linux.
-
-![Screen Shot of Record Comparison](./Documentation/Images/RecordCompare.png)
+This README describes the current source implementation. Automated native checks and real Codex MCP save/reopen runs on generated fixtures have passed. Installed-game, live desktop/Codex conflict, and package acceptance checks are not complete. See [Known Issues](./Documentation/KNOWN-ISSUES.md) before choosing inputs.
 
 ## Current Features
 
-1. Discovers plugins in your local game load order
-2. Imports supported plugin details and records for browsing and comparison
-3. Skips unchanged plugins during later imports
-4. Keeps imported records from multiple supported games available in one application
-5. Browses records owned by a selected plugin in a filterable record tree
-6. Filters records by FormID and EditorID
-7. Compares matching records across imported plugins in load-order order
-8. Highlights matching values in green, conflicts in red, and the visible winning override in yellow
-9. Compares supported record details, including models, keywords, sounds, scripts, container items, crafting components, perk ranks, conditions, and terminal parameters
-10. Provides an experimental model preview pane
-11. Displays retained binary data as hexadecimal values and text
-12. Supports light and dark desktop themes
-13. Provides command-line imports for a selected game, forced reimport, and reset/import-all workflows
+1. Opens plugin files directly, without importing records into an application database.
+2. Browses and compares FormLists across plugin contexts, with reference lookup for selecting linked records.
+3. Creates FormLists, overrides selected FormLists, and edits staged output through typed edit controls.
+4. Separates unapplied form input, staged workspace changes, and saved output files.
+5. Reviews changes and warnings before saving or discarding staged changes.
+6. Checks for unfinished operations and unsaved changes before leaving a workspace.
+7. Provides save-outcome inspection and recovery actions.
+8. Provides a local MCP server over standard input and standard output.
+9. Supports light and dark desktop themes.
 
-## Supported Games
+## Supported Games and Record Types
 
-1. Fallout 4
-2. Skyrim
-3. Starfield
+Native FormList (FLST) workflows are implemented for Starfield, Fallout 4, and Skyrim Special Edition. Other record families may appear in reference lookup; they are not supported authoring targets. This workflow does not provide general plugin editing, automatic conflict resolution, or asset preview.
 
-## Currently Supported Record Types
-
-Cross-game record types:
-
-1. Actor Value Information (AVIF)
-2. Books (BOOK)
-3. Constructible Objects (COBJ)
-4. Containers (CONT)
-5. Doors (DOOR)
-6. Form Lists (FLST)
-7. Game Settings (GMST)
-8. Globals (GLOB)
-9. Keywords (KYWD)
-10. Magic Effects (MGEF)
-11. Miscellaneous Items (MISC)
-12. NPCs (NPC_)
-13. Perks (PERK)
-14. Statics (STAT)
-
-Additional Fallout 4 record types:
-
-1. Terminals (TERM)
-
-Additional Starfield record types:
-
-1. Condition Forms (CNDF)
-2. Terminals (TERM)
-
-## Planned Roadmap
-
-1. Expand supported record details for Starfield, Fallout 4, and Skyrim
-2. Add Spriggit-compatible plugin and record export/import
-3. Validate supported record types against Spriggit and xEdit
-4. Add record editing, plugin saving, plugin creation, and patch creation workflows
-
-Long-term goals include local LLM-assisted patch creation.
-
-## Current Limitations
-
-1. Only a subset of Bethesda record details are currently supported.
-2. Patch generation and conflict resolution workflows do not exist yet.
-3. Oblivion is not implemented.
-4. `BlueprintShips*.esm` Starfield plugins are intentionally skipped during import.
-5. Mod Organizer 2 can currently break Starfield split-master assembly through Mutagen, so Starfield imports through
-   MO2 are not supported at this time.
+Desktop and MCP workspaces are independent. Changes do not synchronize live between them. Save guards check for changed input or output files; resolve a reported conflict instead of assuming another workspace's changes have been adopted.
 
 ## Installation
 
-1. Windows users can download the x64 desktop ZIP archive or installer.
-2. Linux users can download the x64 desktop ZIP archive, CLI ZIP archive, Debian package, or Arch package.
-3. Do not install the application into a game's Data folder.
-4. The selected game must be installed and discoverable on your system, including Linux installations running through
-   Proton where supported by Mutagen's game discovery.
-5. If you used Starfield Record Compare Engine, uninstall or delete it before installing Creations Forge. Do not reuse
-   the old SFRecordCompareEngine application folder or cache/log directory.
+Use a desktop or console build containing the native replacement. Earlier releases may still contain the retired import workflow; these instructions do not describe those releases. Windows and Linux packaging exists in the repository, but the replacement's packaged launches and platform behavior remain unverified.
 
-Application data and logs are stored under:
+1. Install or extract the application outside the game's Data folder.
+2. Make the source plugin, required masters, explicit load order, and game data directory available. Supply localized-string directories when the inputs require them.
+3. Choose a separate output plugin. Keep source plugins available and unchanged while the workspace is open.
+
+Application configuration and logs use these default locations:
 
 1. Windows: `C:\ProgramData\CreationsForge`
 2. Linux/macOS: `~/.CreationsForge`
 
-## CLI Usage
+The macOS configuration path does not imply a validated macOS package.
 
-On Windows, open PowerShell in the extracted CLI ZIP folder or the installation's `Cli` folder, then run one command for the game you want to import:
+## Desktop Usage
+
+1. Choose **Open Workspace...** and select **Game**.
+2. Select **Source plugin** and **Game data directory**. Use **Select load order...** to include the source and required masters. Arrange the **Explicit load order (masters first; source included)** with **Move up** and **Move down**.
+3. Add **Localized-string directories (optional)** when needed. Under **Output**, select **Open mode**, **Output plugin**, **Localized strings**, and **Master style**, then choose **Open workspace**. Read any error before continuing. Paths are held for the workspace session.
+4. Select a FormList and inspect **Compare**. Use **Find Reference...** to look up linked records.
+5. In **Edit**, choose **New FormList**, **Override selected**, or **Edit staged output**. Select an edit action, choose **Open action**, and complete its controls. Available actions depend on the game and current selection.
+6. Resolve validation feedback, then choose **Apply to staged output**. This updates staged workspace changes; it does not save the output file.
+7. Choose **Review Changes...** to inspect changes and warnings. **Discard form changes** clears only unapplied form input; previously staged changes remain.
+8. Choose **Save Changes...** and confirm with **Save and Proceed** when available. To discard staged workspace changes, choose **Discard Changes...** and **Discard and Proceed**. Read disabled-action reasons and the resulting status before leaving.
+
+If an unapplied local draft blocks leaving, choose **Keep Editing** to return and preserve the input. For an exact pending editor operation, use **Return to editor** when offered, then **Retry exact pending operation** if available. During an active editor operation, the leave dialog offers **Wait for operation**, **Cancel operation and wait**, and **Keep Editing**. Cancellation requests do not prove that an operation failed or changes were discarded; wait for its outcome.
+
+If saving reports an uncertain outcome, read **Persistence status** and use **Inspect Save Outcome** when available. Follow the enabled recovery choices and their explanations. Completing a prepared save, restoring previous output, and resuming unsaved changes have different effects; they are not a sequence to run automatically. A committed save whose display refresh failed offers **Retry Refresh**. Do not treat a closed dialog as proof of a successful save.
+
+## CLI and MCP Usage
+
+Configure a stdio-capable MCP client to launch the console executable with the single argument `mcp`. Select the executable from your actual build or package. The client supplies workspace inputs through the server's advertised tools; no game or output arguments are accepted by the `mcp` subcommand.
+
+From a folder containing the Windows console executable:
 
 ```powershell
-.\CreationsForge.Console.exe --game Starfield
-.\CreationsForge.Console.exe --game Fallout4
-.\CreationsForge.Console.exe --game Skyrim
+.\CreationsForge.Console.exe mcp
 ```
 
-On Linux, open a terminal in the extracted CLI ZIP folder and run:
+From a folder containing the Linux console executable:
 
 ```bash
-./CreationsForge.Console --game Starfield
-./CreationsForge.Console --game Fallout4
-./CreationsForge.Console --game Skyrim
+./CreationsForge.Console mcp
 ```
 
-Debian and Arch installations also provide the `creationsforge-cli` command; for example, `creationsforge-cli --game Starfield` imports Starfield records.
+This starts a protocol server, not an interactive import prompt. Protocol messages use standard input/output; logs use standard error. Real Codex save/reopen checks on generated fixtures have passed; packaged invocation remains unverified.
 
-Useful import options:
+Running the console with no arguments, `--help`, `-h`, or `help` prints usage and exits with code 0. Unsupported commands print an error and usage to standard error and exit with code 2. The old `--game`, `--force`, `--full`, and `--reset-all` import/reset commands have been removed. Additional arguments after `mcp` are rejected with exit code 2. Source-build smoke checks verified these exit codes; packaged invocation checks remain unverified.
 
-1. Add `--force` or `--full` to a game import command to force a full reimport for that game.
-2. Use `--reset-all` instead of `--game` only when you intend to delete the current application database and import every supported game. This affects the configured application database, even when the command is run from a different folder.
+## Updating from the Import Workflow
+
+Open your original plugin files and explicit load order in a native workspace. Previously imported records are not the source for native editing, and old import databases are not converted into editable plugins. No database reset or reimport is required.
+
+The database-directory setting has been removed. Existing configuration can retain its old JSON property, which is ignored. Removing the import backend does not delete existing database files; do not delete application data as an upgrade step. Keep your configuration, source plugins, and separate output files.
+
+## Current Limitations
+
+FormList authoring is the current scope. Saving edits to an existing localized output that uses separate string files is rejected with `UnsupportedInput` to protect unedited localized data in all three games. Creating a new localized output and editing an existing output with embedded strings are different supported paths; this is not an instruction to convert an existing localized plugin.
+
+Post-removal restore, Release build, automated checks and focused rechecks have passed, with some platform and external-input checks skipped. Real Codex authoring and independent native-file verification passed on generated fixtures for all three games. Installed Starfield data has encountered an unresolved parser failure; installed Fallout 4 and Skyrim Special Edition validation inputs have not yet been supplied. Native Mod Organizer 2/virtual-file-system compatibility, packages, live desktop/Codex conflict checks, and game-runtime acceptance remain unverified. See [Known Issues](./Documentation/KNOWN-ISSUES.md) for symptoms and recovery guidance.
 
 ## Source Code
 

@@ -76,7 +76,6 @@ public class GameSelectionServiceTests
                 NifSkopeExecutablePath = "nifskope.exe",
                 PreferEspOverMatchingEsm = false,
                 ApplicationDataDirectory = "app-data",
-                DatabaseDirectory = "database",
                 LoggingDirectory = "logs"
             }
         };
@@ -91,7 +90,6 @@ public class GameSelectionServiceTests
         store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
         store.Current.PreferEspOverMatchingEsm.ShouldBeFalse();
         store.Current.ApplicationDataDirectory.ShouldBe("app-data");
-        store.Current.DatabaseDirectory.ShouldBe("database");
         store.Current.LoggingDirectory.ShouldBe("logs");
     }
 

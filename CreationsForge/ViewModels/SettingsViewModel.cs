@@ -8,13 +8,22 @@ using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.ViewModels;
 
+/// <summary>
+/// Edits persisted application preferences and returns to the native workspace shell.
+/// </summary>
 public class SettingsViewModel : ViewModelBase
 {
-    private readonly IApplicationNavigationService ApplicationNavigationService;
+    /// <summary>The native shell/settings navigation boundary.</summary>
+    private readonly INativeApplicationNavigationService NativeApplicationNavigationService;
+
+    /// <summary>The application window owner and theme service.</summary>
     private readonly IApplicationWindowService ApplicationWindowService;
+
+    /// <summary>The persisted application settings service.</summary>
     private readonly IApplicationSettingsService ApplicationSettingsService;
+
+    /// <summary>The supported and active game settings service.</summary>
     private readonly IGameSelectionService GameSelectionService;
-    private readonly SupportedGameDTO? InitialSelectedGame;
     private string? SelectedGameDisplayNameValue;
     private string SelectedThemeFamilyValue;
     private string SelectedThemeModeValue;
@@ -22,23 +31,32 @@ public class SettingsViewModel : ViewModelBase
     private string? NifSkopeExecutablePathValue;
     private bool PreferEspOverMatchingEsmValue;
 
+    /// <summary>Initializes editable settings from the current persisted configuration.</summary>
+    /// <param name="gameSelectionService">The supported and active game settings service.</param>
+    /// <param name="applicationSettingsService">The persisted display, localization, and tool settings service.</param>
+    /// <param name="nativeApplicationNavigationService">The native shell/settings navigation boundary.</param>
+    /// <param name="applicationWindowService">The application window owner and theme service.</param>
+    /// <exception cref="ArgumentNullException">Thrown when a required dependency is <see langword="null"/>.</exception>
     public SettingsViewModel(
         IGameSelectionService gameSelectionService,
         IApplicationSettingsService applicationSettingsService,
-        IApplicationNavigationService applicationNavigationService,
+        INativeApplicationNavigationService nativeApplicationNavigationService,
         IApplicationWindowService applicationWindowService)
     {
+        ArgumentNullException.ThrowIfNull(gameSelectionService);
+        ArgumentNullException.ThrowIfNull(applicationSettingsService);
+        ArgumentNullException.ThrowIfNull(nativeApplicationNavigationService);
+        ArgumentNullException.ThrowIfNull(applicationWindowService);
         GameSelectionService = gameSelectionService;
         ApplicationSettingsService = applicationSettingsService;
-        ApplicationNavigationService = applicationNavigationService;
+        NativeApplicationNavigationService = nativeApplicationNavigationService;
         ApplicationWindowService = applicationWindowService;
         SupportedGames = GameSelectionService.GetSupportedGames();
         GameOptions = SupportedGames.Select(game => game.DisplayName).ToList();
         ThemeFamilyOptions = ["Semi", "Fluent"];
         ThemeModeOptions = ["Dark", "Light"];
         RecordTextLanguageOptions = ApplicationSettingsService.GetRecordTextLanguages().Select(language => language.ToString()).ToList();
-        InitialSelectedGame = GetConfiguredGame();
-        SelectedGameDisplayNameValue = InitialSelectedGame?.DisplayName;
+        SelectedGameDisplayNameValue = GetConfiguredGame()?.DisplayName;
         SelectedThemeFamilyValue = ApplicationSettingsService.GetThemeFamily().ToString();
         SelectedThemeModeValue = ApplicationSettingsService.GetThemeMode().ToString();
         SelectedRecordTextLanguageValue = ApplicationSettingsService.GetRecordTextLanguage().ToString();
@@ -106,6 +124,7 @@ public class SettingsViewModel : ViewModelBase
         set => SetProperty(ref PreferEspOverMatchingEsmValue, value);
     }
 
+    /// <summary>Saves every editable preference, applies the theme, and returns to the native workspace shell.</summary>
     private void Save()
     {
         var selectedGame = SupportedGames.FirstOrDefault(game =>
@@ -123,12 +142,13 @@ public class SettingsViewModel : ViewModelBase
         }
 
         ApplicationWindowService.ApplyTheme(themeFamily, themeMode);
-        _ = ApplicationNavigationService.ShowMainViewAsync(selectedGame, ShouldRunImport(selectedGame));
+        NativeApplicationNavigationService.ShowWorkspaceShell();
     }
 
+    /// <summary>Discards unsaved edits and returns to the native workspace shell.</summary>
     private void Cancel()
     {
-        _ = ApplicationNavigationService.ShowMainViewAsync(InitialSelectedGame, runConfiguredGameImport: false);
+        NativeApplicationNavigationService.ShowWorkspaceShell();
     }
 
     private async Task BrowseNifSkopeExecutableAsync()
@@ -151,11 +171,6 @@ public class SettingsViewModel : ViewModelBase
         return activeGame.HasValue
             ? SupportedGames.FirstOrDefault(game => game.Game == activeGame.Value)
             : null;
-    }
-
-    private bool ShouldRunImport(SupportedGameDTO? selectedGame)
-    {
-        return selectedGame is not null && InitialSelectedGame?.Game != selectedGame.Game;
     }
 
     private ApplicationThemeFamily GetSelectedThemeFamily()

@@ -1,14 +1,19 @@
 using System.Text.Json;
 using CreationsForge.Core.Configuration;
-using CreationsForge.Core.DTOs.Results;
 using CreationsForge.Core.Models.Configuration;
 using CreationsForge.Core.Services;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Services;
 
+/// <summary>
+/// Verifies persisted process-session lifecycle and heartbeat diagnostics.
+/// </summary>
 public class ProcessTerminationDiagnosticsServiceTests
 {
+    /// <summary>
+    /// Verifies starting a session writes an unclean marker and resource snapshot.
+    /// </summary>
     [Fact]
     public void StartSession_WritesUncleanSessionMarker()
     {
@@ -32,8 +37,11 @@ public class ProcessTerminationDiagnosticsServiceTests
         }
     }
 
+    /// <summary>
+    /// Verifies a heartbeat records its phase and process resources without import-specific payload fields.
+    /// </summary>
     [Fact]
-    public void UpdateHeartbeat_WritesLastProgressAndMemorySnapshot()
+    public void UpdateHeartbeat_WritesPhaseAndMemorySnapshot()
     {
         var tempDirectory = Directory.CreateTempSubdirectory();
         try
@@ -41,21 +49,13 @@ public class ProcessTerminationDiagnosticsServiceTests
             var service = CreateService(tempDirectory.FullName);
             service.StartSession("UnitTest", "test.log");
 
-            service.UpdateHeartbeat(
-                "Import Starfield",
-                new GameImportProgressDTO
-                {
-                    StatusText = "Indexing Starfield asset archives",
-                    DetailText = "Starfield - Meshes01.ba2",
-                    ProgressValue = 1,
-                    ProgressMaximum = 2,
-                    IsIndeterminate = false
-                });
+            service.UpdateHeartbeat("Native workspace save");
 
             using var document = ReadSession(tempDirectory.FullName);
-            document.RootElement.GetProperty("LastPhase").GetString().ShouldBe("Import Starfield");
-            document.RootElement.GetProperty("LastStatusText").GetString().ShouldBe("Indexing Starfield asset archives");
-            document.RootElement.GetProperty("LastDetailText").GetString().ShouldBe("Starfield - Meshes01.ba2");
+            document.RootElement.GetProperty("LastPhase").GetString().ShouldBe("Native workspace save");
+            document.RootElement.TryGetProperty("LastStatusText", out _).ShouldBeFalse();
+            document.RootElement.TryGetProperty("LastDetailText", out _).ShouldBeFalse();
+            document.RootElement.TryGetProperty("LastGame", out _).ShouldBeFalse();
             document.RootElement.GetProperty("ManagedBytes").GetInt64().ShouldBeGreaterThan(0);
             document.RootElement.GetProperty("WorkingSetBytes").GetInt64().ShouldBeGreaterThan(0);
             document.RootElement.GetProperty("PrivateBytes").GetInt64().ShouldBeGreaterThan(0);
@@ -68,6 +68,9 @@ public class ProcessTerminationDiagnosticsServiceTests
         }
     }
 
+    /// <summary>
+    /// Verifies a completed session records a clean shutdown and completion timestamp.
+    /// </summary>
     [Fact]
     public void MarkCleanShutdown_MarksSessionClean()
     {
@@ -90,6 +93,11 @@ public class ProcessTerminationDiagnosticsServiceTests
         }
     }
 
+    /// <summary>
+    /// Creates diagnostics backed by an isolated application-data directory.
+    /// </summary>
+    /// <param name="applicationDataDirectory">The isolated directory used for configuration and session files.</param>
+    /// <returns>The diagnostics service under test.</returns>
     private static ProcessTerminationDiagnosticsService CreateService(string applicationDataDirectory)
     {
         var configurationPath = Path.Combine(applicationDataDirectory, "CreationsForge.Config.json");
@@ -97,12 +105,16 @@ public class ProcessTerminationDiagnosticsServiceTests
         configurationStore.Save(new ApplicationConfiguration
         {
             ApplicationDataDirectory = applicationDataDirectory,
-            DatabaseDirectory = applicationDataDirectory,
             LoggingDirectory = Path.Combine(applicationDataDirectory, "Logs")
         });
         return new ProcessTerminationDiagnosticsService(configurationStore);
     }
 
+    /// <summary>
+    /// Reads the persisted diagnostic session document.
+    /// </summary>
+    /// <param name="applicationDataDirectory">The isolated directory containing the session file.</param>
+    /// <returns>The parsed session document.</returns>
     private static JsonDocument ReadSession(string applicationDataDirectory)
     {
         var sessionPath = Path.Combine(applicationDataDirectory, "CreationsForge.Session.json");

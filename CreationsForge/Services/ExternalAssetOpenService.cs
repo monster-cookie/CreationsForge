@@ -1,53 +1,39 @@
 using System.Diagnostics;
-using Autofac;
-using CreationsForge.Bethesda.Assets.Files;
-using CreationsForge.Bethesda.Assets.Temp;
 using CreationsForge.Core.Configuration.Interfaces;
-using CreationsForge.Core.DTOs.Assets;
-using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Services.Interfaces;
 using Serilog;
 
 namespace CreationsForge.Services;
 
-public class ExternalAssetOpenService : IExternalAssetOpenService, IDisposable
+/// <summary>
+/// Opens an existing local asset with NifSkope when configured, or with the Windows shell association otherwise.
+/// </summary>
+public class ExternalAssetOpenService : IExternalAssetOpenService
 {
+    /// <summary>
+    /// Provides the configured NifSkope executable path.
+    /// </summary>
     private readonly IApplicationConfigurationStore ConfigurationStore;
-    private readonly ILifetimeScope LifetimeScope;
-    private readonly IAssetTempFileSession TempFileSession;
+
+    /// <summary>
+    /// Records failures that prevent an external viewer from opening the asset.
+    /// </summary>
     private readonly ILogger Logger;
 
+    /// <summary>
+    /// Initializes a service that opens local asset files outside CreationsForge.
+    /// </summary>
+    /// <param name="configurationStore">The application configuration containing the optional NifSkope executable path.</param>
+    /// <param name="logger">The logger used to report rejected paths and process-launch failures.</param>
     public ExternalAssetOpenService(
         IApplicationConfigurationStore configurationStore,
-        ILifetimeScope lifetimeScope,
         ILogger logger)
     {
         ConfigurationStore = configurationStore;
-        LifetimeScope = lifetimeScope;
-        TempFileSession = new AssetTempFileSession();
         Logger = logger.ForContext<ExternalAssetOpenService>();
     }
 
-    public bool OpenExternally(AssetPreviewCandidateDTO candidate)
-    {
-        if (!OperatingSystem.IsWindows())
-        {
-            Logger.Warning("NifSkope external open is only available on Windows");
-            return false;
-        }
-
-        var assetPath = ResolveLocalAssetPath(candidate);
-        if (string.IsNullOrWhiteSpace(assetPath))
-        {
-            return false;
-        }
-
-        var nifSkopePath = ConfigurationStore.Current.NifSkopeExecutablePath;
-        return string.IsNullOrWhiteSpace(nifSkopePath)
-            ? OpenWithShellAssociation(assetPath)
-            : OpenWithNifSkope(nifSkopePath, assetPath);
-    }
-
+    /// <inheritdoc />
     public bool OpenExternally(string assetPath)
     {
         if (!OperatingSystem.IsWindows())
@@ -62,57 +48,11 @@ public class ExternalAssetOpenService : IExternalAssetOpenService, IDisposable
             : OpenWithNifSkope(nifSkopePath, assetPath);
     }
 
-    public void Dispose()
-    {
-        TempFileSession.Dispose();
-    }
-
-    private string? ResolveLocalAssetPath(AssetPreviewCandidateDTO candidate)
-    {
-        using var scope = LifetimeScope.BeginLifetimeScope();
-        var assetFileResolverService = scope.Resolve<IAssetFileResolverService>();
-        var resolution = assetFileResolverService.ResolveAssetFile(candidate);
-        if (resolution.Status == AssetFileResolutionStatus.ResolvedLooseFile && !string.IsNullOrWhiteSpace(resolution.ResolvedPath))
-        {
-            return resolution.ResolvedPath;
-        }
-
-        if (resolution.Status == AssetFileResolutionStatus.ResolvedArchiveEntryInMemory && resolution.Data != null)
-        {
-            return WriteArchiveBackedAssetToTempFile(candidate, resolution);
-        }
-
-        Logger.Warning(
-            "Unable to resolve local NifSkope asset path for {MeshPath}: {StatusMessage}",
-            candidate.MeshPath,
-            resolution.StatusMessage);
-        return null;
-    }
-
-    private string? WriteArchiveBackedAssetToTempFile(AssetPreviewCandidateDTO candidate, AssetFileResolutionDTO resolution)
-    {
-        try
-        {
-            var directory = TempFileSession.CreateExtractionDirectory($"{candidate.Game}_{candidate.RecordType}_{candidate.FormKey.Id}");
-            var fileName = ExternalAssetPathPolicy.GetSafeFileName(resolution.NormalizedEntryPath ?? candidate.MeshPath);
-            var filePath = Path.Combine(directory, fileName);
-            File.WriteAllBytes(filePath, resolution.Data ?? []);
-            Logger.Information(
-                "Wrote archive-backed NIF {MeshPath} to temp path {TempPath} for NifSkope",
-                candidate.MeshPath,
-                filePath);
-            return filePath;
-        }
-        catch (Exception exception)
-        {
-            Logger.Warning(
-                exception,
-                "Unable to write archive-backed NIF {MeshPath} to a temp path for NifSkope",
-                candidate.MeshPath);
-            return null;
-        }
-    }
-
+    /// <summary>
+    /// Opens a validated local asset path through its Windows shell association.
+    /// </summary>
+    /// <param name="assetPath">The absolute path of the existing local asset.</param>
+    /// <returns><see langword="true" /> when process creation succeeds; otherwise, <see langword="false" />.</returns>
     private bool OpenWithShellAssociation(string assetPath)
     {
         if (!ExternalAssetPathPolicy.IsSafeExistingAssetPath(assetPath))
@@ -137,6 +77,12 @@ public class ExternalAssetOpenService : IExternalAssetOpenService, IDisposable
         }
     }
 
+    /// <summary>
+    /// Opens a validated local asset path with the configured NifSkope executable.
+    /// </summary>
+    /// <param name="nifSkopePath">The absolute path of the configured NifSkope executable.</param>
+    /// <param name="assetPath">The absolute path of the existing local asset.</param>
+    /// <returns><see langword="true" /> when process creation succeeds; otherwise, <see langword="false" />.</returns>
     private bool OpenWithNifSkope(string nifSkopePath, string assetPath)
     {
         if (!ExternalAssetPathPolicy.IsSafeExistingExecutablePath(nifSkopePath))
@@ -169,5 +115,4 @@ public class ExternalAssetOpenService : IExternalAssetOpenService, IDisposable
             return false;
         }
     }
-
 }

@@ -5,8 +5,11 @@
 - Improved automated validation used when preparing releases.
 - Kept installation, usage, known issues, and release history in the repository, with engineering guidance now maintained in Plane.
 - Moved the change log to the repository root as `CHANGELOG.md` and updated release packaging and release-note extraction to use its new location.
-- Native FormList authoring for Starfield, Fallout 4, and Skyrim Special Edition remains planned and is not available in this update.
-- This documentation and CI update does not change application behavior. No database migration, reset, or reimport is required.
+- Replaced the SQLite import workflow with explicit plugin workspaces for native FormList browsing, comparison, and authoring in Starfield, Fallout 4, and Skyrim Special Edition. Other record families are not authoring targets.
+- Added typed edit controls, staged-change review, guarded saving, save-outcome recovery, and checks before leaving with unfinished changes. Unapplied form input and staged workspace changes have separate discard actions.
+- Added a local stdio MCP server, launched with `CreationsForge.Console mcp`, with workspaces independent from the desktop application.
+- Removed the legacy game-import, forced-reimport, and database-reset commands. Existing database files are left untouched; no database conversion, reset, or reimport is required for native workspaces.
+- Updated usage and known issues for the native workflow, including the restriction on saving edits to existing localized outputs that use separate string files.
 
 ## Version 1.2.0 - 2026-06-28
 

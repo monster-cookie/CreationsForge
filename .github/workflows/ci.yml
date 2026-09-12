@@ -102,7 +102,7 @@ jobs:
 
       - name: Unit Tests
         shell: pwsh
-        run: dotnet test ./CreationsForge.UnitTests/CreationsForge.UnitTests.csproj --configuration Release --no-build --filter "Category!=RequiresStarfield"
+        run: dotnet ./CreationsForge.UnitTests/bin/Release/net10.0/CreationsForge.UnitTests.dll -noColor -filterVSTest "Category!=RequiresStarfield"
 
     # With the new avalonia headless tests this is randomly hanging on GitHub's Runners
     #   - name: Presentation Layer Tests

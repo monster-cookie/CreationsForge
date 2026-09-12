@@ -1,0 +1,85 @@
+using CreationsForge.Core.Engine.Contracts;
+using Mutagen.Bethesda.Plugins;
+
+namespace CreationsForge.ViewModels;
+
+/// <summary>
+/// Presents either a winning FormList root or one exact ordered context beneath that root.
+/// </summary>
+public sealed class NativeFormListRecordViewModel : ViewModelBase
+{
+    /// <summary>Tracks whether child contexts are expanded in the record tree.</summary>
+    private bool IsExpandedValue;
+
+    /// <summary>Initializes one FormList tree node.</summary>
+    /// <param name="formKey">The exact native FormList identity.</param>
+    /// <param name="editorId">The EditorID observed for this root or context, or <see langword="null"/>.</param>
+    /// <param name="overrideCount">The native override count reported for the FormList.</param>
+    /// <param name="context">The exact winning or containing-plugin selection.</param>
+    /// <param name="children">The exact ordered context nodes beneath a winning root.</param>
+    /// <param name="contextOptions">All valid comparison selections for the root, beginning with the winning selection.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="context"/>, <paramref name="children"/>, or <paramref name="contextOptions"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="overrideCount"/> is negative.</exception>
+    public NativeFormListRecordViewModel(
+        FormKey formKey,
+        string? editorId,
+        int overrideCount,
+        NativeFormListContextOption context,
+        IReadOnlyList<NativeFormListRecordViewModel> children,
+        IReadOnlyList<NativeFormListContextOption> contextOptions)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(overrideCount);
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(children);
+        ArgumentNullException.ThrowIfNull(contextOptions);
+        FormKey = formKey;
+        EditorId = editorId;
+        OverrideCount = overrideCount;
+        Context = context;
+        Children = Array.AsReadOnly(children.ToArray());
+        ContextOptions = Array.AsReadOnly(contextOptions.ToArray());
+    }
+
+    /// <summary>Gets the exact native FormList identity.</summary>
+    public FormKey FormKey { get; }
+
+    /// <summary>Gets the exact native FormList identity as display text.</summary>
+    public string FormKeyText => FormKey.ToString();
+
+    /// <summary>Gets the native FormID as an eight-digit hexadecimal value for display and filtering.</summary>
+    public string FormIdText => FormKey.ID.ToString("X8");
+
+    /// <summary>Gets the EditorID observed for this root or context, or <see langword="null"/>.</summary>
+    public string? EditorId { get; }
+
+    /// <summary>Gets the observed EditorID or an explicit absent-value label.</summary>
+    public string EditorIdText => EditorId ?? "(no EditorID)";
+
+    /// <summary>Gets the native override count reported for the FormList.</summary>
+    public int OverrideCount { get; }
+
+    /// <summary>Gets the exact winning or containing-plugin selection represented by this node.</summary>
+    public NativeFormListContextOption Context { get; }
+
+    /// <summary>Gets the exact context nodes in engine enumeration order.</summary>
+    public IReadOnlyList<NativeFormListRecordViewModel> Children { get; }
+
+    /// <summary>Gets the winning selector followed by all exact context selectors for this root.</summary>
+    public IReadOnlyList<NativeFormListContextOption> ContextOptions { get; }
+
+    /// <summary>Gets whether the node is a winning-override root.</summary>
+    public bool IsWinningOverride => Context.IsWinningOverride;
+
+    /// <summary>Gets the winning or exact containing-plugin context label.</summary>
+    public string ContextText => Context.Label;
+
+    /// <summary>Gets whether this node contains context children.</summary>
+    public bool HasChildren => Children.Count > 0;
+
+    /// <summary>Gets or sets whether child contexts are expanded in the record tree.</summary>
+    public bool IsExpanded
+    {
+        get => IsExpandedValue;
+        set => SetProperty(ref IsExpandedValue, value);
+    }
+}

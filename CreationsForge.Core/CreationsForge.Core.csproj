@@ -8,16 +8,12 @@
 
     <ItemGroup>
         <ProjectReference Include="..\CreationsForge.Bethesda.Assets\CreationsForge.Bethesda.Assets.csproj" />
-        <ProjectReference Include="..\CreationsForge.Migrations\CreationsForge.Migrations.csproj" />
-        <ProjectReference Include="..\CreationsForge.Specification\CreationsForge.Specification.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Autofac" Version="9.3.0" />
-        <PackageReference Include="Mutagen.Bethesda.Core" Version="0.54.0-alpha.276" />
-        <PackageReference Include="NPoco" Version="6.2.0" />
-        <PackageReference Include="Serilog" Version="4.3.1" />
-        <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
+        <PackageReference Include="Autofac" Version="9.3.2" />
+        <PackageReference Include="Mutagen.Bethesda.Core" Version="0.55.0-alpha.48" />
+        <PackageReference Include="Serilog" Version="4.4.0" />
     </ItemGroup>
 
 </Project>

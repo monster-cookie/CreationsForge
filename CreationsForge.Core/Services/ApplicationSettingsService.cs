@@ -114,7 +114,6 @@ public class ApplicationSettingsService : IApplicationSettingsService
             NifSkopeExecutablePath = nifSkopeExecutablePath,
             PreferEspOverMatchingEsm = preferEspOverMatchingEsm ?? ConfigurationStore.Current.PreferEspOverMatchingEsm,
             ApplicationDataDirectory = ConfigurationStore.Current.ApplicationDataDirectory,
-            DatabaseDirectory = ConfigurationStore.Current.DatabaseDirectory,
             LoggingDirectory = ConfigurationStore.Current.LoggingDirectory
         };
 
