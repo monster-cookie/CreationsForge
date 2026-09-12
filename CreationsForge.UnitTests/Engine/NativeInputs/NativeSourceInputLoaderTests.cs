@@ -259,7 +259,7 @@ public sealed class NativeSourceInputLoaderTests
         var verification = await inputs.VerifyUnchangedAsync(TestContext.Current.CancellationToken);
 
         verification.Succeeded.ShouldBeFalse();
-        verification.Error!.Code.ShouldBe(EngineErrorCode.ExternalChangeDetected);
+        verification.Error!.Code.ShouldBe(EngineErrorCode.ExternalChangeDetected, verification.Error.Message);
     }
 
     /// <summary>Verifies removal of an explicit empty strings directory changes the source set even when every candidate sidecar was absent.</summary>
