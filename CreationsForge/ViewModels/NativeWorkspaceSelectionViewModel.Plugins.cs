@@ -1,0 +1,230 @@
+using System.Collections.ObjectModel;
+using CreationsForge.Core.Engine.Contracts;
+
+namespace CreationsForge.ViewModels;
+
+/// <summary>Provides the installed-plugin selection workflow for <see cref="NativeWorkspaceSelectionViewModel"/>.</summary>
+public sealed partial class NativeWorkspaceSelectionViewModel
+{
+    /// <summary>Discovers installed plugins through Mutagen without using imported repository state.</summary>
+    private readonly INativePluginDiscoveryService? PluginDiscoveryService;
+
+    /// <summary>The last complete detected catalog for the selected game.</summary>
+    private NativePluginCatalog? PluginCatalogValue;
+
+    /// <summary>All detached rows before the user search is applied.</summary>
+    private IReadOnlyList<NativePluginSelectionRowViewModel> AllPluginRows = [];
+
+    /// <summary>The currently selected installed plugin.</summary>
+    private NativePluginSelectionRowViewModel? SelectedPluginValue;
+
+    /// <summary>The current case-insensitive filename filter.</summary>
+    private string PluginSearchTextValue = string.Empty;
+
+    /// <summary>Gets the filtered installed plugins shown in load-order order.</summary>
+    public ObservableCollection<NativePluginSelectionRowViewModel> PluginRows { get; } = [];
+
+    /// <summary>Gets or sets the selected installed plugin.</summary>
+    public NativePluginSelectionRowViewModel? SelectedPlugin
+    {
+        get => SelectedPluginValue;
+        set
+        {
+            if (SetProperty(ref SelectedPluginValue, value))
+            {
+                OnPropertyChanged(nameof(CanOpenSelectedPlugin));
+                OnPropertyChanged(nameof(SelectedPluginDetails));
+            }
+        }
+    }
+
+    /// <summary>Gets or sets the case-insensitive plugin filename filter.</summary>
+    public string PluginSearchText
+    {
+        get => PluginSearchTextValue;
+        set
+        {
+            if (SetProperty(ref PluginSearchTextValue, value ?? string.Empty))
+            {
+                ApplyPluginFilter();
+            }
+        }
+    }
+
+    /// <summary>Gets whether the selected plugin can be opened for guarded editing.</summary>
+    public bool CanOpenSelectedPlugin => !IsBusy && SelectedPlugin?.CanEdit == true;
+
+    /// <summary>Gets the selected plugin's dependency and availability summary.</summary>
+    public string SelectedPluginDetails => SelectedPlugin?.DetailsText ?? "Select a plugin to see its editing context.";
+
+    /// <summary>Gets the detected data directory or a discovery placeholder.</summary>
+    public string DetectedDataDirectoryText => PluginCatalogValue?.DataDirectoryPath ?? "No installed data directory detected yet.";
+
+    /// <summary>Refreshes installed plugin discovery for the selected game.</summary>
+    /// <param name="cancellationToken">A token that cancels discovery between filesystem reads.</param>
+    /// <returns>A task that completes after bound rows and status are updated.</returns>
+    public async Task RefreshPluginsAsync(CancellationToken cancellationToken = default)
+    {
+        if (IsBusy)
+        {
+            return;
+        }
+
+        if (PluginDiscoveryService is null)
+        {
+            ErrorText = "Installed plugin discovery is unavailable.";
+            StatusText = "Plugin discovery could not start.";
+            return;
+        }
+
+        IsBusy = true;
+        ErrorText = null;
+        StatusText = $"Finding installed {SelectedGame.DisplayName} plugins...";
+        try
+        {
+            var result = await PluginDiscoveryService.DiscoverAsync(SelectedGame.Game, cancellationToken);
+            if (!result.Succeeded || result.Value is null)
+            {
+                ResetPluginCatalog();
+                ErrorText = result.Error?.Message ?? "Plugin discovery returned no catalog or failure reason.";
+                StatusText = "Installed plugins could not be loaded.";
+                return;
+            }
+
+            PluginCatalogValue = result.Value;
+            AllPluginRows = result.Value.Plugins
+                .Select(entry => new NativePluginSelectionRowViewModel(entry))
+                .ToArray();
+            ApplyPluginFilter();
+            StatusText = $"{AllPluginRows.Count} installed plugin(s) found.";
+            OnPropertyChanged(nameof(DetectedDataDirectoryText));
+        }
+        catch (OperationCanceledException)
+        {
+            StatusText = "Plugin discovery canceled.";
+        }
+        finally
+        {
+            IsBusy = false;
+            OnPropertyChanged(nameof(CanOpenSelectedPlugin));
+        }
+    }
+
+    /// <summary>Opens the selected plugin as the guarded mutable output over its declared read-only masters.</summary>
+    /// <param name="cancellationToken">A token that cancels native workspace acquisition.</param>
+    /// <returns><see langword="true"/> when the plugin became active; otherwise <see langword="false"/>.</returns>
+    public async Task<bool> OpenSelectedPluginAsync(CancellationToken cancellationToken = default)
+    {
+        if (SelectedPlugin is not { CanEdit: true } row || PluginCatalogValue is null)
+        {
+            ErrorText = SelectedPlugin?.Entry.UnavailableReason ?? "Select an editable plugin.";
+            return false;
+        }
+
+        PopulateWorkspaceInputs(
+            row.Entry.DependencyPluginPaths,
+            PluginCatalogValue.DataDirectoryPath,
+            row.Entry.PluginPath,
+            OutputSelectionMode.OpenExisting,
+            row.Entry.LocalizedOutputMode,
+            row.Entry.MasterStyle);
+        return await OpenWorkspaceAsync(cancellationToken);
+    }
+
+    /// <summary>Prompts for a new plugin name and opens it over the detected enabled load order.</summary>
+    /// <param name="cancellationToken">A token checked during path selection and native workspace acquisition.</param>
+    /// <returns><see langword="true"/> when the new plugin workspace became active; otherwise <see langword="false"/>.</returns>
+    public async Task<bool> CreateNewPluginAsync(CancellationToken cancellationToken = default)
+    {
+        if (PluginCatalogValue is null)
+        {
+            ErrorText = "Refresh the installed plugin list before creating a plugin.";
+            return false;
+        }
+
+        var dependencies = PluginCatalogValue.Plugins
+            .Where(plugin => plugin.Enabled)
+            .Select(plugin => plugin.PluginPath)
+            .ToArray();
+        if (dependencies.Length == 0)
+        {
+            ErrorText = "No enabled installed plugins are available as the new plugin's read-only context.";
+            return false;
+        }
+
+        var outputPath = await RunPickerAsync(() => PathPicker.PickOutputPluginAsync(OutputSelectionMode.CreateNew, cancellationToken));
+        if (string.IsNullOrWhiteSpace(outputPath))
+        {
+            return false;
+        }
+
+        var outputStyle = Path.GetExtension(outputPath).Equals(".esl", StringComparison.OrdinalIgnoreCase)
+            && SelectedGame.SupportedMasterStyles.Contains(OutputMasterStyle.Small)
+                ? OutputMasterStyle.Small
+                : OutputMasterStyle.Full;
+        PopulateWorkspaceInputs(
+            dependencies,
+            PluginCatalogValue.DataDirectoryPath,
+            outputPath,
+            OutputSelectionMode.CreateNew,
+            LocalizedOutputMode.Embedded,
+            outputStyle);
+        return await OpenWorkspaceAsync(cancellationToken);
+    }
+
+    /// <summary>Clears discovered rows after the selected game changes or discovery fails.</summary>
+    private void ResetPluginCatalog()
+    {
+        PluginCatalogValue = null;
+        AllPluginRows = [];
+        PluginRows.Clear();
+        SelectedPlugin = null;
+        OnPropertyChanged(nameof(DetectedDataDirectoryText));
+    }
+
+    /// <summary>Applies the current filename filter while preserving load-order order.</summary>
+    private void ApplyPluginFilter()
+    {
+        var selectedPath = SelectedPlugin?.Entry.PluginPath;
+        PluginRows.Clear();
+        foreach (var row in AllPluginRows.Where(row =>
+                     string.IsNullOrWhiteSpace(PluginSearchText)
+                     || row.FileName.Contains(PluginSearchText.Trim(), StringComparison.OrdinalIgnoreCase)))
+        {
+            PluginRows.Add(row);
+        }
+
+        SelectedPlugin = selectedPath is null
+            ? null
+            : PluginRows.FirstOrDefault(row => PathComparer.Equals(row.Entry.PluginPath, selectedPath));
+    }
+
+    /// <summary>Translates one product-level plugin choice into the explicit engine request retained by the coordinator.</summary>
+    /// <param name="dependencyPluginPaths">The immutable dependency paths in load-order order.</param>
+    /// <param name="dataDirectoryPath">The detected installed data directory.</param>
+    /// <param name="outputPluginPath">The existing or new plugin selected by the user.</param>
+    /// <param name="outputMode">Whether the output already exists.</param>
+    /// <param name="localizedOutputMode">The existing or default localization representation.</param>
+    /// <param name="masterStyle">The existing or default master style.</param>
+    private void PopulateWorkspaceInputs(
+        IReadOnlyList<string> dependencyPluginPaths,
+        string dataDirectoryPath,
+        string outputPluginPath,
+        OutputSelectionMode outputMode,
+        LocalizedOutputMode localizedOutputMode,
+        OutputMasterStyle masterStyle)
+    {
+        SourcePluginPath = dependencyPluginPaths[^1];
+        ReplacePaths(LoadOrderPluginPaths, dependencyPluginPaths);
+        DataDirectoryPath = dataDirectoryPath;
+        ReplacePaths(
+            StringDirectoryPaths,
+            Directory.Exists(Path.Combine(dataDirectoryPath, "Strings"))
+                ? [Path.Combine(dataDirectoryPath, "Strings")]
+                : []);
+        OutputPluginPath = outputPluginPath;
+        OutputMode = outputMode;
+        LocalizedOutputMode = localizedOutputMode;
+        OutputMasterStyle = masterStyle;
+    }
+}

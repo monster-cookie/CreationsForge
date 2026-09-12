@@ -8,6 +8,7 @@
 - Replaced the SQLite import workflow with explicit plugin workspaces for native FormList browsing, comparison, and authoring in Starfield, Fallout 4, and Skyrim Special Edition. Other record families are not authoring targets.
 - Added typed edit controls, staged-change review, guarded saving, save-outcome recovery, and checks before leaving with unfinished changes. Unapplied form input and staged workspace changes have separate discard actions.
 - Added a dedicated local stdio MCP server, launched with `CreationsForge.Mcp`, with workspaces independent from the desktop application.
+- Restored the desktop plugin-first workflow: select a game, open an installed editable plugin, edit records, and save through the guarded workspace flow. Mutagen supplies the installed load order and native header metadata while Creations Forge keeps declared masters read-only.
 - Removed the legacy game-import, forced-reimport, and database-reset commands. Existing database files are left untouched; no database conversion, reset, or reimport is required for native workspaces.
 - Updated usage and known issues for the native workflow, including the restriction on saving edits to existing localized outputs that use separate string files.
 

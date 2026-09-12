@@ -17,7 +17,7 @@ using Shouldly;
 namespace CreationsForge.PresentationTests.Headless;
 
 /// <summary>
-/// Verifies the native workspace selection form exposes every required picker and output capability control headlessly.
+/// Verifies installed-plugin selection and guarded dialog lifecycle headlessly.
 /// </summary>
 [Collection(AvaloniaControlTestCollection.Name)]
 public sealed class NativeWorkspaceSelectionViewHeadlessTests
@@ -25,7 +25,7 @@ public sealed class NativeWorkspaceSelectionViewHeadlessTests
     /// <summary>Bounds asynchronous UI and engine coordination so a regression cannot hang the test process.</summary>
     private static readonly TimeSpan AsyncDeadline = TimeSpan.FromSeconds(5);
 
-    /// <summary>Verifies the complete explicit input and output selection surface can be rendered by Avalonia.</summary>
+    /// <summary>Verifies the product plugin-selection surface renders without exposing engine path assembly controls.</summary>
     [AvaloniaFact]
     public void NativeWorkspaceSelectionView_ShowHeadlessly_ExposesRequiredSelectionControls()
     {
@@ -55,17 +55,16 @@ public sealed class NativeWorkspaceSelectionViewHeadlessTests
             Dispatcher.UIThread.RunJobs();
 
             ControlFinder.FindByAutomationId<NativeWorkspaceSelectionView>(view, "NativeWorkspaceSelectionView").ShouldNotBeNull();
-            ControlFinder.FindByAutomationId<ComboBox>(view, "NativeWorkspaceGameSelector")!.ItemCount.ShouldBe(3);
-            ControlFinder.FindByAutomationId<TextBox>(view, "SourcePluginPath").ShouldNotBeNull();
-            ControlFinder.FindByAutomationId<ListBox>(view, "NativeWorkspaceLoadOrderList").ShouldNotBeNull();
-            ControlFinder.FindByAutomationId<TextBox>(view, "DataDirectoryPath").ShouldNotBeNull();
-            ControlFinder.FindByAutomationId<ListBox>(view, "NativeWorkspaceStringDirectoryList").ShouldNotBeNull();
-            ControlFinder.FindByAutomationId<ComboBox>(view, "OutputModeSelector")!.ItemCount.ShouldBe(2);
-            ControlFinder.FindByAutomationId<TextBox>(view, "OutputPluginPath").ShouldNotBeNull();
-            ControlFinder.FindByAutomationId<ComboBox>(view, "LocalizedOutputModeSelector")!.ItemCount.ShouldBe(2);
-            ControlFinder.FindByAutomationId<ComboBox>(view, "OutputMasterStyleSelector")!.ItemCount.ShouldBe(3);
-            ControlFinder.FindByAutomationId<Button>(view, "OpenNativeWorkspaceButton").ShouldNotBeNull();
-            ControlFinder.FindByAutomationId<Button>(view, "CancelNativeWorkspaceButton").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<ComboBox>(view, "NativePluginGameSelector")!.ItemCount.ShouldBe(3);
+            ControlFinder.FindByAutomationId<TextBox>(view, "NativePluginSearchBox").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<ListBox>(view, "NativePluginList").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<Button>(view, "RefreshNativePluginsButton").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<Button>(view, "CreateNativePluginButton").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<Button>(view, "OpenNativePluginButton").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<Button>(view, "CancelNativePluginButton").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<TextBox>(view, "SourcePluginPath").ShouldBeNull();
+            ControlFinder.FindByAutomationId<ListBox>(view, "NativeWorkspaceLoadOrderList").ShouldBeNull();
+            ControlFinder.FindByAutomationId<TextBox>(view, "OutputPluginPath").ShouldBeNull();
         }
         finally
         {

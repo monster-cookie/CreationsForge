@@ -55,7 +55,7 @@ public sealed class NativeWorkspaceShellViewHeadlessTests
             var contentHost = ControlFinder.FindByAutomationId<Border>(view, "NativeWorkspaceContentHost").ShouldNotBeNull();
             contentHost.Child.ShouldBeSameAs(browserView);
             ControlFinder.FindByAutomationId<NativeFormListBrowserView>(view, "NativeFormListBrowserView").ShouldNotBeNull();
-            ControlFinder.FindByAutomationId<TextBlock>(view, "NativeWorkspaceStatusText")!.Text.ShouldBe("No native workspace is open.");
+            ControlFinder.FindByAutomationId<TextBlock>(view, "NativeWorkspaceStatusText")!.Text.ShouldBe("No plugin is open.");
         }
         finally
         {

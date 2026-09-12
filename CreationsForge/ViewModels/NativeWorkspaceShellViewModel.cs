@@ -72,7 +72,7 @@ public sealed class NativeWorkspaceShellViewModel : ViewModelBase, INativeWorksp
         WorkspaceCoordinator.PropertyChanged += OnWorkspaceCoordinatorPropertyChanged;
     }
 
-    /// <summary>Gets the command that opens complete native source and output selection after guarded leave admission.</summary>
+    /// <summary>Gets the command that opens installed-plugin selection after guarded leave admission.</summary>
     public ICommand OpenWorkspaceCommand { get; }
 
     /// <summary>Gets the command that closes the active workspace, or safely repeats close when no workspace exists.</summary>
@@ -325,9 +325,9 @@ public sealed class NativeWorkspaceShellViewModel : ViewModelBase, INativeWorksp
     {
         if (workspace is null)
         {
-            return "No native workspace is open.";
+            return "No plugin is open.";
         }
 
-        return $"{workspace.Game}: {Path.GetFileName(workspace.SourcePluginPath)} -> {workspace.Output.ModKey.FileName}";
+        return $"{workspace.Game}: {workspace.Output.ModKey.FileName}";
     }
 }

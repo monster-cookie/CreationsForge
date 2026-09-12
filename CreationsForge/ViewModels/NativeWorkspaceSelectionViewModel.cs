@@ -10,9 +10,9 @@ using Serilog;
 namespace CreationsForge.ViewModels;
 
 /// <summary>
-/// Collects explicit native paths and activates a fully admitted source-and-output workspace asynchronously.
+/// Discovers installed plugins and activates a guarded native editing workspace asynchronously.
 /// </summary>
-public sealed class NativeWorkspaceSelectionViewModel : ViewModelBase
+public sealed partial class NativeWorkspaceSelectionViewModel : ViewModelBase
 {
     /// <summary>Compares paths using the host file system's case semantics.</summary>
     private static readonly StringComparer PathComparer = OperatingSystem.IsWindows()
@@ -79,13 +79,15 @@ public sealed class NativeWorkspaceSelectionViewModel : ViewModelBase
     /// <param name="gameSelectionService">The persisted active-game service.</param>
     /// <param name="uiDispatcher">The dispatcher used for engine progress.</param>
     /// <param name="logger">The structured logger for unexpected presentation failures.</param>
+    /// <param name="pluginDiscoveryService">The optional installed-plugin discovery boundary used by the product selection flow.</param>
     /// <exception cref="ArgumentNullException">Thrown when a required dependency is <see langword="null"/>.</exception>
     public NativeWorkspaceSelectionViewModel(
         INativeWorkspaceCoordinator workspaceCoordinator,
         INativeWorkspacePathPicker pathPicker,
         IGameSelectionService gameSelectionService,
         IUiDispatcher uiDispatcher,
-        ILogger logger)
+        ILogger logger,
+        INativePluginDiscoveryService? pluginDiscoveryService = null)
     {
         ArgumentNullException.ThrowIfNull(workspaceCoordinator);
         ArgumentNullException.ThrowIfNull(pathPicker);
@@ -97,13 +99,14 @@ public sealed class NativeWorkspaceSelectionViewModel : ViewModelBase
         GameSelectionService = gameSelectionService;
         UiDispatcher = uiDispatcher;
         Logger = logger.ForContext<NativeWorkspaceSelectionViewModel>();
+        PluginDiscoveryService = pluginDiscoveryService;
         Games = NativeWorkspaceGameOption.CreateSupportedGames();
         var configuredGame = GameSelectionService.GetActiveGame();
         SelectedGameValue = Games.FirstOrDefault(option => option.Game == configuredGame) ?? Games[0];
         OutputMasterStyleOptionsValue = SelectedGameValue.SupportedMasterStyles;
         StatusTextValue = WorkspaceCoordinator.CurrentWorkspace is null
-            ? "Select explicit source and output files to open a native workspace."
-            : $"Workspace ready: {WorkspaceCoordinator.CurrentWorkspace.Output.ModKey.FileName}.";
+            ? "Select an installed plugin to edit, or create a new plugin."
+            : $"Plugin ready: {WorkspaceCoordinator.CurrentWorkspace.Output.ModKey.FileName}.";
         LoadOrderPluginPaths = new ObservableCollection<string>();
         StringDirectoryPaths = new ObservableCollection<string>();
     }
@@ -129,6 +132,7 @@ public sealed class NativeWorkspaceSelectionViewModel : ViewModelBase
                 return;
             }
 
+            ResetPluginCatalog();
             OutputMasterStyleOptions = value.SupportedMasterStyles;
             if (!OutputMasterStyleOptions.Contains(OutputMasterStyle))
             {
@@ -225,6 +229,7 @@ public sealed class NativeWorkspaceSelectionViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(CanCancel));
                 OnPropertyChanged(nameof(CanOpen));
+                OnPropertyChanged(nameof(CanOpenSelectedPlugin));
             }
         }
     }

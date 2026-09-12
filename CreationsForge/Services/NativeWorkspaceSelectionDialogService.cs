@@ -28,9 +28,9 @@ public sealed class NativeWorkspaceSelectionDialogService : INativeWorkspaceSele
         ArgumentNullException.ThrowIfNull(viewModel);
         var dialog = new Window
         {
-            Title = "Open Native Workspace",
-            Width = 980,
-            Height = 820,
+            Title = "Open Plugin",
+            Width = 1040,
+            Height = 760,
             MinWidth = 760,
             MinHeight = 620,
             WindowStartupLocation = WindowStartupLocation.CenterOwner

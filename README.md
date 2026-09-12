@@ -2,7 +2,7 @@
 
 ![Creations Forge](./MarketingSites/Images/SFRecordCompareEngine-Header.png)
 
-Creations Forge browses, compares, and edits FormLists in Bethesda plugins through a desktop application and a local MCP server. Open explicit source plugins and their load order, then create or edit a separate output plugin.
+Creations Forge browses, compares, and edits FormLists in Bethesda plugins through a desktop application and a local MCP server. The desktop discovers installed plugins for the selected game so you can open the plugin you intend to edit or create a new one.
 
 This README describes the current source implementation. Automated native checks and real Codex MCP save/reopen runs on generated fixtures have passed. Installed-game, live desktop/Codex conflict, and package acceptance checks are not complete. See [Known Issues](./Documentation/KNOWN-ISSUES.md) before choosing inputs.
 
@@ -29,8 +29,8 @@ Desktop and MCP workspaces are independent. Changes do not synchronize live betw
 Use a desktop or MCP build containing the native replacement. Earlier releases may still contain the retired import workflow; these instructions do not describe those releases. Windows and Linux packaging exists in the repository, but the replacement's packaged launches and platform behavior remain unverified.
 
 1. Install or extract the application outside the game's Data folder.
-2. Make the source plugin, required masters, explicit load order, and game data directory available. Supply localized-string directories when the inputs require them.
-3. Choose a separate output plugin. Keep source plugins available and unchanged while the workspace is open.
+2. Keep the game's installed plugins and required masters available in its Data directory.
+3. Open the plugin you intend to edit, or choose a path for a new plugin. Creations Forge derives the read-only dependency context from the installed load order and plugin headers.
 
 Application configuration and logs use these default locations:
 
@@ -41,9 +41,9 @@ The macOS configuration path does not imply a validated macOS package.
 
 ## Desktop Usage
 
-1. Choose **Open Workspace...** and select **Game**.
-2. Select **Source plugin** and **Game data directory**. Use **Select load order...** to include the source and required masters. Arrange the **Explicit load order (masters first; source included)** with **Move up** and **Move down**.
-3. Add **Localized-string directories (optional)** when needed. Under **Output**, select **Open mode**, **Output plugin**, **Localized strings**, and **Master style**, then choose **Open workspace**. Read any error before continuing. Paths are held for the workspace session.
+1. Choose **Open Plugin...** and select the game. Creations Forge uses Mutagen to locate the installed Data directory and load order.
+2. Search or browse the detected plugin list. Select an editable plugin and choose **Open Plugin**, or choose **New Plugin...** and select the new plugin path. The selected existing plugin becomes the guarded editable output; its declared masters remain read-only workspace dependencies.
+3. Read any unavailable reason shown for a plugin before continuing. A plugin that declares no masters and a file marked read-only cannot be opened for editing.
 4. Select a FormList and inspect **Compare**. Use **Find Reference...** to look up linked records.
 5. In **Edit**, choose **New FormList**, **Override selected**, or **Edit staged output**. Select an edit action, choose **Open action**, and complete its controls. Available actions depend on the game and current selection.
 6. Resolve validation feedback, then choose **Apply to staged output**. This updates staged workspace changes; it does not save the output file.
@@ -76,7 +76,7 @@ The MCP executable starts the stdio server when invoked without arguments and re
 
 ## Updating from the Import Workflow
 
-Open your original plugin files and explicit load order in a native workspace. Previously imported records are not the source for native editing, and old import databases are not converted into editable plugins. No database reset or reimport is required.
+Open your original plugin from the installed plugin list. Previously imported records are not the source for native editing, and old import databases are not converted into editable plugins. No database reset or reimport is required.
 
 The database-directory setting has been removed. Existing configuration can retain its old JSON property, which is ignored. Removing the import backend does not delete existing database files; do not delete application data as an upgrade step. Keep your configuration, source plugins, and separate output files.
 

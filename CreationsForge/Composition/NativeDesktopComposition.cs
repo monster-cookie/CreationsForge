@@ -6,6 +6,7 @@ using CreationsForge.Bethesda.Assets.Nif;
 using CreationsForge.Bethesda.Assets.Resources;
 using CreationsForge.Bootstrap.Composition;
 using CreationsForge.Core.Configuration.Interfaces;
+using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Services;
 using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.NativeEditing.Drafts;
@@ -41,6 +42,7 @@ internal static class NativeDesktopComposition
 
         builder.RegisterType<ApplicationSettingsService>().As<IApplicationSettingsService>().InstancePerLifetimeScope();
         builder.RegisterType<GameSelectionService>().As<IGameSelectionService>().InstancePerLifetimeScope();
+        builder.RegisterType<NativePluginDiscoveryService>().As<INativePluginDiscoveryService>().SingleInstance();
         builder.RegisterType<ProcessTerminationDiagnosticsService>().As<IProcessTerminationDiagnosticsService>().SingleInstance();
 
         builder.RegisterType<Ba2ArchiveReader>().As<IAssetArchiveReader>().InstancePerLifetimeScope();

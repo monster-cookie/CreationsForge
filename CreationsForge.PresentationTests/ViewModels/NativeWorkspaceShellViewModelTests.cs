@@ -74,13 +74,13 @@ public sealed class NativeWorkspaceShellViewModelTests
         viewModel.PropertyChanged += (_, eventArgs) => changedProperties.Add(eventArgs.PropertyName);
 
         viewModel.HasWorkspace.ShouldBeTrue();
-        viewModel.WorkspaceStatusText.ShouldBe("Starfield: ChangesSource.esm -> ChangesOutput.esp");
+            viewModel.WorkspaceStatusText.ShouldBe("Starfield: ChangesOutput.esp");
 
         (await viewModel.CloseWorkspaceAsync()).ShouldBeTrue();
 
         context.Coordinator.CloseCount.ShouldBe(1);
         viewModel.HasWorkspace.ShouldBeFalse();
-        viewModel.WorkspaceStatusText.ShouldBe("No native workspace is open.");
+        viewModel.WorkspaceStatusText.ShouldBe("No plugin is open.");
         changedProperties.ShouldContain(nameof(NativeWorkspaceShellViewModel.HasWorkspace));
         changedProperties.ShouldContain(nameof(NativeWorkspaceShellViewModel.WorkspaceStatusText));
         context.Arbiter.IsWorkspaceTransitionPendingOrReserved.ShouldBeFalse();

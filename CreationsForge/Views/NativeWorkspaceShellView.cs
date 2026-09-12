@@ -46,8 +46,8 @@ public sealed class NativeWorkspaceShellView : UserControl
             Spacing = 8,
             Children =
             {
-                CreateCommandButton("Open Workspace...", nameof(NativeWorkspaceShellViewModel.OpenWorkspaceCommand), "OpenNativeWorkspaceShellButton"),
-                CreateCommandButton("Close Workspace", nameof(NativeWorkspaceShellViewModel.CloseWorkspaceCommand), "CloseNativeWorkspaceShellButton"),
+                CreateCommandButton("Open Plugin...", nameof(NativeWorkspaceShellViewModel.OpenWorkspaceCommand), "OpenNativeWorkspaceShellButton"),
+                CreateCommandButton("Close Plugin", nameof(NativeWorkspaceShellViewModel.CloseWorkspaceCommand), "CloseNativeWorkspaceShellButton"),
                 CreateCommandButton("Review Changes...", nameof(NativeWorkspaceShellViewModel.ReviewChangesCommand), "NativeWorkspaceReviewChangesButton"),
                 CreateCommandButton("Save Changes...", nameof(NativeWorkspaceShellViewModel.SaveChangesCommand), "NativeWorkspaceSaveChangesButton"),
                 CreateCommandButton("Discard Changes...", nameof(NativeWorkspaceShellViewModel.DiscardChangesCommand), "NativeWorkspaceDiscardChangesButton"),
