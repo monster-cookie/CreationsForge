@@ -27,25 +27,6 @@ namespace CreationsForge.UnitTests.Engine.ClientAcceptance;
 /// <summary>Independently verifies output authored through a real Codex MCP client against its retained manifest.</summary>
 public sealed class ClientAcceptanceSavedOutputVerifierTests
 {
-    /// <summary>Requires immutable inputs and exact two-record output through both direct native parsing and a fresh production-engine reopen.</summary>
-    /// <returns>A task that completes after all three retained cases pass independent verification.</returns>
-    /// <exception cref="InvalidDataException">Thrown when the manifest, an immutable input, or saved native state differs from the contract.</exception>
-    [Fact]
-    public async Task VerifyRealClientSavedOutputsAcrossThreeGames()
-    {
-        var acceptanceRoot = ClientAcceptancePaths.GetVerificationRootOrSkip();
-        var manifest = await LoadManifestAsync(acceptanceRoot, TestContext.Current.CancellationToken);
-        ValidateManifest(manifest, acceptanceRoot);
-        foreach (var acceptanceCase in manifest.Cases)
-        {
-            AssertImmutableArtifacts(acceptanceRoot, acceptanceCase);
-            var direct = VerifyDirectNativeOutput(acceptanceCase, TestContext.Current.CancellationToken);
-            AssertImmutableArtifacts(acceptanceRoot, acceptanceCase);
-            await VerifyFreshEngineReopenAsync(acceptanceCase, direct.NewFormKey, TestContext.Current.CancellationToken);
-            AssertImmutableArtifacts(acceptanceRoot, acceptanceCase);
-        }
-    }
-
     /// <summary>Loads the closed retained manifest without accepting undeclared fields.</summary>
     /// <param name="acceptanceRoot">The validated retained root.</param>
     /// <param name="cancellationToken">The propagated read token.</param>

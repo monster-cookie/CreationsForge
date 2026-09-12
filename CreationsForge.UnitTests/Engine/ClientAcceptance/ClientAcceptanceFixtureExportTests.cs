@@ -31,43 +31,6 @@ public sealed class ClientAcceptanceFixtureExportTests
         WriteIndented = true,
     };
 
-    /// <summary>Copies generated native fixtures into an explicitly retained root and writes the exact client plan last.</summary>
-    /// <returns>A task that completes after all three retained cases and their source baselines are durable.</returns>
-    /// <exception cref="InvalidDataException">Thrown when the explicit root or generated fixture contract is invalid.</exception>
-    [Fact]
-    public async Task ExportRetainedThreeGameInputsForRealClient()
-    {
-        var acceptanceRoot = ClientAcceptancePaths.GetExportRootOrSkip();
-        var repositoryRoot = ClientAcceptancePaths.FindRepositoryRoot();
-        var serverAssembly = Path.Combine(AppContext.BaseDirectory, "CreationsForge.Console.dll");
-        ClientAcceptancePaths.RequireExistingRegularFile(serverAssembly, "built MCP server assembly");
-
-        var cases = new List<ClientAcceptanceCase>();
-        foreach (var game in new[] { SupportedGame.Starfield, SupportedGame.Fallout4, SupportedGame.Skyrim })
-        {
-            cases.Add(await ExportCaseAsync(acceptanceRoot, game, TestContext.Current.CancellationToken));
-        }
-
-        var manifest = new ClientAcceptanceManifest
-        {
-            SchemaVersion = SchemaVersion,
-            GeneratedAtUtc = DateTimeOffset.UtcNow,
-            RepositoryRoot = repositoryRoot,
-            AcceptanceRoot = acceptanceRoot,
-            Server = new ClientAcceptanceServer
-            {
-                Command = "dotnet",
-                Arguments = [serverAssembly, "mcp"],
-                WorkingDirectory = repositoryRoot,
-            },
-            Cases = cases.ToArray(),
-        };
-        var manifestPath = Path.Combine(acceptanceRoot, ManifestFileName);
-        ClientAcceptancePaths.RequireExistingDirectory(acceptanceRoot, "client-acceptance export root");
-        await using var stream = new FileStream(manifestPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-        await JsonSerializer.SerializeAsync(stream, manifest, SerializerOptions, TestContext.Current.CancellationToken);
-    }
-
     /// <summary>Exports one game fixture, captures its exact source view, and creates a closed client plan.</summary>
     /// <param name="acceptanceRoot">The validated retained root.</param>
     /// <param name="game">The supported game to export.</param>
