@@ -245,7 +245,16 @@ public sealed class NativeSourceInputLoaderTests
         var completion = await inputs.CompleteOpenAsync(TestContext.Current.CancellationToken);
         completion.Succeeded.ShouldBeTrue(completion.Error?.Message);
         var archivePath = Path.Combine(fixture.DataDirectory.FullName, "NativeSmall - Main.ba2");
-        await File.WriteAllBytesAsync(archivePath, [0x42, 0x41, 0x32], TestContext.Current.CancellationToken);
+        await File.WriteAllBytesAsync(
+            archivePath,
+            [
+                0x42, 0x54, 0x44, 0x58,
+                0x01, 0x00, 0x00, 0x00,
+                0x47, 0x4E, 0x52, 0x4C,
+                0x00, 0x00, 0x00, 0x00,
+                0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            ],
+            TestContext.Current.CancellationToken);
 
         var verification = await inputs.VerifyUnchangedAsync(TestContext.Current.CancellationToken);
 
