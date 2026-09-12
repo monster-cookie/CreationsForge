@@ -239,12 +239,12 @@ internal static class ExternalNativeSamplePreflight
     {
         return plugins
             .Where(plugin => plugin.UsesLocalization)
-            .SelectMany(plugin => Archive.GetApplicableArchivePaths(
-                manifest.GameRelease,
-                new DirectoryPath(manifest.CanonicalDataDirectoryPath),
-                ModKey.FromNameAndExtension(plugin.ModKey),
-                fileSystem,
-                returnEmptyIfMissing: true))
+            .SelectMany(plugin => fileSystem.Directory
+                .EnumerateFiles(manifest.CanonicalDataDirectoryPath)
+                .Where(path => Archive.IsApplicable(
+                    manifest.GameRelease,
+                    ModKey.FromNameAndExtension(plugin.ModKey),
+                    new FileName(Path.GetFileName(path)))))
             .Select(path => Path.GetFullPath(path.ToString()))
             .Distinct(PathComparer)
             .OrderBy(path => path, PathComparer)

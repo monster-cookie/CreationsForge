@@ -113,12 +113,12 @@ internal sealed class NativeSourceArtifactCollector
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            var applicablePaths = Archive.GetApplicableArchivePaths(
+            var applicablePaths = FileSystem.Directory
+                .EnumerateFiles(DataDirectoryPath)
+                .Where(path => Archive.IsApplicable(
                     Release,
-                    new DirectoryPath(DataDirectoryPath),
                     plugin.ModKey,
-                    FileSystem,
-                    returnEmptyIfMissing: true)
+                    new FileName(Path.GetFileName(path))))
                 .Select(path => Path.GetFullPath(path.ToString()))
                 .OrderBy(path => path, PathComparer)
                 .ToArray();

@@ -452,13 +452,12 @@ public sealed class NativeOutputInputLoader
         string directoryPath,
         IFileSystem fileSystem)
     {
-        if (Archive.GetApplicableArchivePaths(
+        if (fileSystem.Directory
+            .EnumerateFiles(directoryPath)
+            .Any(path => Archive.IsApplicable(
                 release,
-                new DirectoryPath(directoryPath),
                 modKey,
-                fileSystem,
-                returnEmptyIfMissing: true)
-            .Any())
+                new FileName(Path.GetFileName(path)))))
         {
             throw new NativeSourceInputException(
                 EngineErrorCode.UnsupportedInput,
