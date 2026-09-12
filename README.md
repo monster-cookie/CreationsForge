@@ -26,7 +26,7 @@ Desktop and MCP workspaces are independent. Changes do not synchronize live betw
 
 ## Installation
 
-Use a desktop or console build containing the native replacement. Earlier releases may still contain the retired import workflow; these instructions do not describe those releases. Windows and Linux packaging exists in the repository, but the replacement's packaged launches and platform behavior remain unverified.
+Use a desktop or MCP build containing the native replacement. Earlier releases may still contain the retired import workflow; these instructions do not describe those releases. Windows and Linux packaging exists in the repository, but the replacement's packaged launches and platform behavior remain unverified.
 
 1. Install or extract the application outside the game's Data folder.
 2. Make the source plugin, required masters, explicit load order, and game data directory available. Supply localized-string directories when the inputs require them.
@@ -54,25 +54,25 @@ If an unapplied local draft blocks leaving, choose **Keep Editing** to return an
 
 If saving reports an uncertain outcome, read **Persistence status** and use **Inspect Save Outcome** when available. Follow the enabled recovery choices and their explanations. Completing a prepared save, restoring previous output, and resuming unsaved changes have different effects; they are not a sequence to run automatically. A committed save whose display refresh failed offers **Retry Refresh**. Do not treat a closed dialog as proof of a successful save.
 
-## CLI and MCP Usage
+## MCP Usage
 
-Configure a stdio-capable MCP client to launch the console executable with the single argument `mcp`. Select the executable from your actual build or package. The client supplies workspace inputs through the server's advertised tools; no game or output arguments are accepted by the `mcp` subcommand.
+Configure a stdio-capable MCP client to launch the dedicated MCP executable without command-line arguments. Select the executable from your actual build or package. The client supplies workspace inputs through the server's advertised tools; no game or output arguments are accepted by the server.
 
-From a folder containing the Windows console executable:
+From a folder containing the Windows MCP executable:
 
 ```powershell
-.\CreationsForge.Console.exe mcp
+.\CreationsForge.Mcp.exe
 ```
 
-From a folder containing the Linux console executable:
+From a folder containing the Linux MCP executable:
 
 ```bash
-./CreationsForge.Console mcp
+./CreationsForge.Mcp
 ```
 
 This starts a protocol server, not an interactive import prompt. Protocol messages use standard input/output; logs use standard error. Real Codex save/reopen checks on generated fixtures have passed; packaged invocation remains unverified.
 
-Running the console with no arguments, `--help`, `-h`, or `help` prints usage and exits with code 0. Unsupported commands print an error and usage to standard error and exit with code 2. The old `--game`, `--force`, `--full`, and `--reset-all` import/reset commands have been removed. Additional arguments after `mcp` are rejected with exit code 2. Source-build smoke checks verified these exit codes; packaged invocation checks remain unverified.
+The MCP executable starts the stdio server when invoked without arguments and rejects command-line arguments with exit code 2. The retired Console import commands `--game`, `--force`, `--full`, and `--reset-all` remain removed with the SQLite backend. Source-build smoke checks verified the MCP process lifecycle; packaged invocation checks remain unverified.
 
 ## Updating from the Import Workflow
 

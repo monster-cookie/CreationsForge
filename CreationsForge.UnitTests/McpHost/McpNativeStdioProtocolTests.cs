@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using CreationsForge.Bootstrap.Composition;
-using CreationsForge.Console.Mcp;
+using CreationsForge.Mcp;
 using CreationsForge.TestSupport;
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Enums;

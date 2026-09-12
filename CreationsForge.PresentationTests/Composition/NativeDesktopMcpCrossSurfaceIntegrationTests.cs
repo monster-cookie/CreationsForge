@@ -4,7 +4,7 @@ using Autofac;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
-using CreationsForge.Console.Mcp;
+using CreationsForge.Mcp;
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Enums;
 using CreationsForge.NativeEditing.Drafts;

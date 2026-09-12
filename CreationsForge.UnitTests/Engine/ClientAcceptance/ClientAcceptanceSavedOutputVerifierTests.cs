@@ -63,11 +63,10 @@ public sealed class ClientAcceptanceSavedOutputVerifierTests
         RequireSamePath(manifest.AcceptanceRoot, acceptanceRoot, "acceptanceRoot");
         RequireSamePath(manifest.RepositoryRoot, ClientAcceptancePaths.FindRepositoryRoot(), "repositoryRoot");
         if (!string.Equals(manifest.Server.Command, "dotnet", StringComparison.Ordinal)
-            || manifest.Server.Arguments.Length != 2
-            || !string.Equals(manifest.Server.Arguments[1], "mcp", StringComparison.Ordinal)
+            || manifest.Server.Arguments.Length != 1
             || !Path.IsPathFullyQualified(manifest.Server.Arguments[0]))
         {
-            throw new InvalidDataException("The retained server launch must identify the built CreationsForge.Console assembly followed by the 'mcp' argument.");
+            throw new InvalidDataException("The retained server launch must identify the built CreationsForge.Mcp assembly without command-line arguments.");
         }
 
         ClientAcceptancePaths.RequireExistingRegularFile(manifest.Server.Arguments[0], "manifest server assembly");

@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
-using CreationsForge.Console.Mcp;
+using CreationsForge.Mcp;
 using CreationsForge.Core.Engine.Contracts;
 using Mutagen.Bethesda.Plugins;
 using Shouldly;

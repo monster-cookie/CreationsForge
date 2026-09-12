@@ -15,48 +15,10 @@
       "preLaunchTask": "build"
     },
     {
-      "name": "Debug CLI <Starfield>",
+      "name": "Debug MCP",
       "type": "coreclr",
       "request": "launch",
-      "program": "${workspaceFolder}/CreationsForge.Console/bin/Debug/net10.0/CreationsForge.Console.dll",
-      "args": [
-        "--game",
-        "Starfield"
-      ],
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "stopAtEntry": false,
-      "env": {
-        "DOTNET_ENVIRONMENT": "Development"
-      },
-      "preLaunchTask": "build"
-    },
-    {
-      "name": "Debug CLI <Fallout>",
-      "type": "coreclr",
-      "request": "launch",
-      "program": "${workspaceFolder}/CreationsForge.Console/bin/Debug/net10.0/CreationsForge.Console.dll",
-      "args": [
-        "--game",
-        "Fallout4"
-      ],
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "stopAtEntry": false,
-      "env": {
-        "DOTNET_ENVIRONMENT": "Development"
-      },
-      "preLaunchTask": "build"
-    },
-    {
-      "name": "Debug CLI <Skyrim>",
-      "type": "coreclr",
-      "request": "launch",
-      "program": "${workspaceFolder}/CreationsForge.Console/bin/Debug/net10.0/CreationsForge.Console.dll",
-      "args": [
-        "--game",
-        "Skyrim"
-      ],
+      "program": "${workspaceFolder}/CreationsForge.Mcp/bin/Debug/net10.0/CreationsForge.Mcp.dll",
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "stopAtEntry": false,

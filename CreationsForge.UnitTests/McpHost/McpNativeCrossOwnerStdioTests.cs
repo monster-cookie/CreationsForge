@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using CreationsForge.Bootstrap.Composition;
-using CreationsForge.Console.Mcp;
+using CreationsForge.Mcp;
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Engine.Persistence;
 using CreationsForge.Core.Enums;

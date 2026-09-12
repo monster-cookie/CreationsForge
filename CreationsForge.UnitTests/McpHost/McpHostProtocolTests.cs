@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
-using CreationsForge.Console.Mcp;
+using CreationsForge.Mcp;
 using CreationsForge.TestSupport;
 using Shouldly;
 
@@ -105,7 +105,6 @@ public sealed class McpHostProtocolTests
             CreateNoWindow = true,
         };
         startInfo.ArgumentList.Add(typeof(McpHostRunner).Assembly.Location);
-        startInfo.ArgumentList.Add("mcp");
 
         using var process = new Process
         {
@@ -170,6 +169,32 @@ public sealed class McpHostProtocolTests
                 }
             }
         }
+    }
+
+    /// <summary>Verifies the dedicated MCP executable rejects command-line arguments before starting its stdio host.</summary>
+    [Fact]
+    public async Task McpExecutable_WithCommandLineArgument_ExitsTwoWithoutProtocolOutput()
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "dotnet",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        startInfo.ArgumentList.Add(typeof(McpHostRunner).Assembly.Location);
+        startInfo.ArgumentList.Add("unexpected");
+
+        using var process = Process.Start(startInfo).ShouldNotBeNull();
+        var standardOutputTask = process.StandardOutput.ReadToEndAsync();
+        var standardErrorTask = process.StandardError.ReadToEndAsync();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        await process.WaitForExitAsync(timeout.Token);
+
+        process.ExitCode.ShouldBe(2);
+        (await standardOutputTask.WaitAsync(timeout.Token)).ShouldBeEmpty();
+        (await standardErrorTask.WaitAsync(timeout.Token)).ShouldContain("does not accept command-line arguments");
     }
 
     /// <summary>Gets the exact output schema advertised by the production server information tool.</summary>

@@ -91,7 +91,7 @@ jobs:
               shell: pwsh
               run: |
                   New-Item -ItemType Directory -Path ./artifacts/publish/windows/desktop -Force | Out-Null
-                  New-Item -ItemType Directory -Path ./artifacts/publish/windows/cli -Force | Out-Null
+                  New-Item -ItemType Directory -Path ./artifacts/publish/windows/mcp -Force | Out-Null
 
                   dotnet publish ./CreationsForge/CreationsForge.csproj `
                     --configuration Release `
@@ -102,11 +102,11 @@ jobs:
                     -p:AssemblyVersion=$env:PACKAGE_VERSION `
                     -p:FileVersion=$env:PACKAGE_VERSION
 
-                  dotnet publish ./CreationsForge.Console/CreationsForge.Console.csproj `
+                  dotnet publish ./CreationsForge.Mcp/CreationsForge.Mcp.csproj `
                     --configuration Release `
                     --runtime win-x64 `
                     --self-contained true `
-                    --output ./artifacts/publish/windows/cli `
+                    --output ./artifacts/publish/windows/mcp `
                     -p:Version=$env:PACKAGE_VERSION `
                     -p:AssemblyVersion=$env:PACKAGE_VERSION `
                     -p:FileVersion=$env:PACKAGE_VERSION
@@ -117,17 +117,17 @@ jobs:
                   Copy-Item -LiteralPath ./Documentation/KNOWN-ISSUES.md -Destination ./artifacts/publish/windows/desktop
                   Copy-Item -LiteralPath ./Documentation/ROADMAP.md -Destination ./artifacts/publish/windows/desktop
                   Copy-Item -LiteralPath ./CHANGELOG.md -Destination ./artifacts/publish/windows/desktop
-                  Copy-Item -LiteralPath ./Documentation/KNOWN-ISSUES.md -Destination ./artifacts/publish/windows/cli
-                  Copy-Item -LiteralPath ./Documentation/ROADMAP.md -Destination ./artifacts/publish/windows/cli
-                  Copy-Item -LiteralPath ./CHANGELOG.md -Destination ./artifacts/publish/windows/cli
+                  Copy-Item -LiteralPath ./Documentation/KNOWN-ISSUES.md -Destination ./artifacts/publish/windows/mcp
+                  Copy-Item -LiteralPath ./Documentation/ROADMAP.md -Destination ./artifacts/publish/windows/mcp
+                  Copy-Item -LiteralPath ./CHANGELOG.md -Destination ./artifacts/publish/windows/mcp
 
                   Compress-Archive `
                     -Path ./artifacts/publish/windows/desktop/* `
                     -DestinationPath ./artifacts/CreationsForge-Desktop-win-x64-$env:PACKAGE_VERSION.zip `
                     -Force
                   Compress-Archive `
-                    -Path ./artifacts/publish/windows/cli/* `
-                    -DestinationPath ./artifacts/CreationsForge-Cli-win-x64-$env:PACKAGE_VERSION.zip `
+                    -Path ./artifacts/publish/windows/mcp/* `
+                    -DestinationPath ./artifacts/CreationsForge-Mcp-win-x64-$env:PACKAGE_VERSION.zip `
                     -Force
 
             - name: Install Inno Setup
@@ -151,7 +151,7 @@ jobs:
 
                   & $compilerPath `
                     "/DDesktopSourceDirectory=$((Resolve-Path ./artifacts/publish/windows/desktop).Path)" `
-                    "/DCliSourceDirectory=$((Resolve-Path ./artifacts/publish/windows/cli).Path)" `
+                    "/DMcpSourceDirectory=$((Resolve-Path ./artifacts/publish/windows/mcp).Path)" `
                     "/DOutputDirectory=$((Resolve-Path ./artifacts).Path)" `
                     "/DInstallerIconFile=$((Resolve-Path ./CreationsForge/Resources/AppIcon/CreationsForge.ico).Path)" `
                     "/DApplicationName=$env:APPLICATION_DISPLAY_NAME" `
@@ -166,11 +166,11 @@ jobs:
                   path: artifacts/CreationsForge-Desktop-win-x64-${{ env.PACKAGE_VERSION }}.zip
                   if-no-files-found: error
 
-            - name: Upload Windows CLI ZIP
+            - name: Upload Windows MCP ZIP
               uses: actions/upload-artifact@v7
               with:
-                  name: CreationsForge-Cli-win-x64-${{ env.PACKAGE_VERSION }}
-                  path: artifacts/CreationsForge-Cli-win-x64-${{ env.PACKAGE_VERSION }}.zip
+                  name: CreationsForge-Mcp-win-x64-${{ env.PACKAGE_VERSION }}
+                  path: artifacts/CreationsForge-Mcp-win-x64-${{ env.PACKAGE_VERSION }}.zip
                   if-no-files-found: error
 
             - name: Upload Windows installer
@@ -216,7 +216,7 @@ jobs:
               shell: bash
               run: |
                   mkdir -p ./artifacts/publish/linux/desktop
-                  mkdir -p ./artifacts/publish/linux/cli
+                  mkdir -p ./artifacts/publish/linux/mcp
 
                   dotnet publish ./CreationsForge/CreationsForge.csproj \
                     --configuration Release \
@@ -227,11 +227,11 @@ jobs:
                     -p:AssemblyVersion="$PACKAGE_VERSION" \
                     -p:FileVersion="$PACKAGE_VERSION"
 
-                  dotnet publish ./CreationsForge.Console/CreationsForge.Console.csproj \
+                  dotnet publish ./CreationsForge.Mcp/CreationsForge.Mcp.csproj \
                     --configuration Release \
                     --runtime linux-x64 \
                     --self-contained true \
-                    --output ./artifacts/publish/linux/cli \
+                    --output ./artifacts/publish/linux/mcp \
                     -p:Version="$PACKAGE_VERSION" \
                     -p:AssemblyVersion="$PACKAGE_VERSION" \
                     -p:FileVersion="$PACKAGE_VERSION"
@@ -242,12 +242,12 @@ jobs:
                   cp ./Documentation/KNOWN-ISSUES.md ./artifacts/publish/linux/desktop/
                   cp ./Documentation/ROADMAP.md ./artifacts/publish/linux/desktop/
                   cp ./CHANGELOG.md ./artifacts/publish/linux/desktop/
-                  cp ./Documentation/KNOWN-ISSUES.md ./artifacts/publish/linux/cli/
-                  cp ./Documentation/ROADMAP.md ./artifacts/publish/linux/cli/
-                  cp ./CHANGELOG.md ./artifacts/publish/linux/cli/
+                  cp ./Documentation/KNOWN-ISSUES.md ./artifacts/publish/linux/mcp/
+                  cp ./Documentation/ROADMAP.md ./artifacts/publish/linux/mcp/
+                  cp ./CHANGELOG.md ./artifacts/publish/linux/mcp/
 
                   (cd ./artifacts/publish/linux/desktop && zip -r ../../../CreationsForge-Desktop-linux-x64-"$PACKAGE_VERSION".zip .)
-                  (cd ./artifacts/publish/linux/cli && zip -r ../../../CreationsForge-Cli-linux-x64-"$PACKAGE_VERSION".zip .)
+                  (cd ./artifacts/publish/linux/mcp && zip -r ../../../CreationsForge-Mcp-linux-x64-"$PACKAGE_VERSION".zip .)
 
             - name: Package Debian installer
               shell: bash
@@ -255,21 +255,21 @@ jobs:
                   package_root="./artifacts/debian/package"
                   app_root="$package_root/opt/CreationsForge"
                   desktop_app="$app_root/Desktop"
-                  cli_app="$app_root/Cli"
+                  mcp_app="$app_root/Mcp"
                   control_dir="$package_root/DEBIAN"
                   launcher_dir="$package_root/usr/bin"
                   desktop_entry_dir="$package_root/usr/share/applications"
                   icon_dir="$package_root/usr/share/icons/hicolor/scalable/apps"
 
                   mkdir -p "$desktop_app"
-                  mkdir -p "$cli_app"
+                  mkdir -p "$mcp_app"
                   mkdir -p "$control_dir"
                   mkdir -p "$launcher_dir"
                   mkdir -p "$desktop_entry_dir"
                   mkdir -p "$icon_dir"
 
                   cp -r ./artifacts/publish/linux/desktop/. "$desktop_app/"
-                  cp -r ./artifacts/publish/linux/cli/. "$cli_app/"
+                  cp -r ./artifacts/publish/linux/mcp/. "$mcp_app/"
                   cp ./Documentation/KNOWN-ISSUES.md "$app_root/"
                   cp ./Documentation/ROADMAP.md "$app_root/"
                   cp ./CHANGELOG.md "$app_root/"
@@ -281,15 +281,15 @@ jobs:
                   exec /opt/CreationsForge/Desktop/CreationsForge "$@"
                   EOF
 
-                  cat > "$launcher_dir/creationsforge-cli" <<'EOF'
+                  cat > "$launcher_dir/creationsforge-mcp" <<'EOF'
                   #!/usr/bin/env bash
-                  exec /opt/CreationsForge/Cli/CreationsForge.Console "$@"
+                  exec /opt/CreationsForge/Mcp/CreationsForge.Mcp "$@"
                   EOF
 
                   chmod +x "$launcher_dir/creationsforge"
-                  chmod +x "$launcher_dir/creationsforge-cli"
+                  chmod +x "$launcher_dir/creationsforge-mcp"
                   chmod +x "$desktop_app/CreationsForge"
-                  chmod +x "$cli_app/CreationsForge.Console"
+                  chmod +x "$mcp_app/CreationsForge.Mcp"
 
                   cat > "$control_dir/control" <<EOF
                   Package: $LINUX_PACKAGE_NAME
@@ -312,11 +312,11 @@ jobs:
                   path: artifacts/CreationsForge-Desktop-linux-x64-${{ env.PACKAGE_VERSION }}.zip
                   if-no-files-found: error
 
-            - name: Upload Linux CLI ZIP
+            - name: Upload Linux MCP ZIP
               uses: actions/upload-artifact@v7
               with:
-                  name: CreationsForge-Cli-linux-x64-${{ env.PACKAGE_VERSION }}
-                  path: artifacts/CreationsForge-Cli-linux-x64-${{ env.PACKAGE_VERSION }}.zip
+                  name: CreationsForge-Mcp-linux-x64-${{ env.PACKAGE_VERSION }}
+                  path: artifacts/CreationsForge-Mcp-linux-x64-${{ env.PACKAGE_VERSION }}.zip
                   if-no-files-found: error
 
             - name: Upload Debian installer
@@ -350,7 +350,7 @@ jobs:
               shell: bash
               run: |
                   mkdir -p ./artifacts/publish/arch/desktop
-                  mkdir -p ./artifacts/publish/arch/cli
+                  mkdir -p ./artifacts/publish/arch/mcp
 
                   dotnet publish ./CreationsForge/CreationsForge.csproj \
                     --configuration Release \
@@ -361,11 +361,11 @@ jobs:
                     -p:AssemblyVersion="$PACKAGE_VERSION" \
                     -p:FileVersion="$PACKAGE_VERSION"
 
-                  dotnet publish ./CreationsForge.Console/CreationsForge.Console.csproj \
+                  dotnet publish ./CreationsForge.Mcp/CreationsForge.Mcp.csproj \
                     --configuration Release \
                     --runtime linux-x64 \
                     --self-contained true \
-                    --output ./artifacts/publish/arch/cli \
+                    --output ./artifacts/publish/arch/mcp \
                     -p:Version="$PACKAGE_VERSION" \
                     -p:AssemblyVersion="$PACKAGE_VERSION" \
                     -p:FileVersion="$PACKAGE_VERSION"
@@ -377,19 +377,19 @@ jobs:
                   package_root="$build_dir/package-root"
                   app_root="$package_root/opt/CreationsForge"
                   desktop_app="$app_root/Desktop"
-                  cli_app="$app_root/Cli"
+                  mcp_app="$app_root/Mcp"
                   launcher_dir="$package_root/usr/bin"
                   desktop_entry_dir="$package_root/usr/share/applications"
                   icon_dir="$package_root/usr/share/icons/hicolor/scalable/apps"
 
                   mkdir -p "$desktop_app"
-                  mkdir -p "$cli_app"
+                  mkdir -p "$mcp_app"
                   mkdir -p "$launcher_dir"
                   mkdir -p "$desktop_entry_dir"
                   mkdir -p "$icon_dir"
 
                   cp -r ./artifacts/publish/arch/desktop/. "$desktop_app/"
-                  cp -r ./artifacts/publish/arch/cli/. "$cli_app/"
+                  cp -r ./artifacts/publish/arch/mcp/. "$mcp_app/"
                   cp ./Documentation/KNOWN-ISSUES.md "$app_root/"
                   cp ./Documentation/ROADMAP.md "$app_root/"
                   cp ./CHANGELOG.md "$app_root/"
@@ -402,15 +402,15 @@ jobs:
                   exec /opt/CreationsForge/Desktop/CreationsForge "$@"
                   EOF
 
-                  cat > "$launcher_dir/creationsforge-cli" <<'EOF'
+                  cat > "$launcher_dir/creationsforge-mcp" <<'EOF'
                   #!/usr/bin/env bash
-                  exec /opt/CreationsForge/Cli/CreationsForge.Console "$@"
+                  exec /opt/CreationsForge/Mcp/CreationsForge.Mcp "$@"
                   EOF
 
                   chmod +x "$launcher_dir/creationsforge"
-                  chmod +x "$launcher_dir/creationsforge-cli"
+                  chmod +x "$launcher_dir/creationsforge-mcp"
                   chmod +x "$desktop_app/CreationsForge"
-                  chmod +x "$cli_app/CreationsForge.Console"
+                  chmod +x "$mcp_app/CreationsForge.Mcp"
 
                   sed -i "s/^pkgver=.*/pkgver=$PACKAGE_VERSION/" "$build_dir/PKGBUILD"
                   sed -i "s|^url=.*|url='https://github.com/${GITHUB_REPOSITORY}'|" "$build_dir/PKGBUILD"

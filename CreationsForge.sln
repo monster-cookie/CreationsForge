@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationsForge.Console", "CreationsForge.Console\CreationsForge.Console.csproj", "{D6E787E3-BBC1-46D3-A66E-89E5C7E576F7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationsForge.Mcp", "CreationsForge.Mcp\CreationsForge.Mcp.csproj", "{D6E787E3-BBC1-46D3-A66E-89E5C7E576F7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationsForge.Core", "CreationsForge.Core\CreationsForge.Core.csproj", "{58CE90C9-8FBA-4675-A0EC-0222820A0573}"
 EndProject

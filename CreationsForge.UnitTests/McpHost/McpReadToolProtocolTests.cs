@@ -2,7 +2,7 @@ using System.IO.Pipelines;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using CreationsForge.Console.Mcp;
+using CreationsForge.Mcp;
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Enums;
 using Microsoft.Extensions.DependencyInjection;

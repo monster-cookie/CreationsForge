@@ -15,7 +15,7 @@ param(
     [string] $CodexPath,
 
     [Parameter(Mandatory)]
-    [string] $ConsoleAssemblyPath,
+    [string] $McpAssemblyPath,
 
     [Parameter(Mandatory)]
     [string] $PromptPath,
@@ -228,13 +228,13 @@ if (-not $foundWorkRoot) {
 }
 
 $codexFullPath = Resolve-RegularFile -Path $CodexPath -Description 'CodexPath'
-$consoleAssemblyFullPath = Resolve-RegularFile -Path $ConsoleAssemblyPath -Description 'ConsoleAssemblyPath'
+$mcpAssemblyFullPath = Resolve-RegularFile -Path $McpAssemblyPath -Description 'McpAssemblyPath'
 $promptFullPath = Resolve-RegularFile -Path $PromptPath -Description 'PromptPath'
-if ([IO.Path]::GetExtension($consoleAssemblyFullPath) -ne '.dll') {
-    throw 'ConsoleAssemblyPath must identify the built CreationsForge console DLL.'
+if ([IO.Path]::GetExtension($mcpAssemblyFullPath) -ne '.dll') {
+    throw 'McpAssemblyPath must identify the built CreationsForge MCP DLL.'
 }
 $codexSha256 = (Get-FileHash -LiteralPath $codexFullPath -Algorithm SHA256).Hash.ToLowerInvariant()
-$consoleAssemblySha256 = (Get-FileHash -LiteralPath $consoleAssemblyFullPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$mcpAssemblySha256 = (Get-FileHash -LiteralPath $mcpAssemblyFullPath -Algorithm SHA256).Hash.ToLowerInvariant()
 $promptSha256 = (Get-FileHash -LiteralPath $promptFullPath -Algorithm SHA256).Hash.ToLowerInvariant()
 
 [IO.Directory]::CreateDirectory($taskPath) | Out-Null
@@ -248,7 +248,7 @@ $stderrPath = Join-Path $taskPath 'stderr.txt'
 $finalResponsePath = Join-Path $taskPath 'final-response.txt'
 $resultPath = Join-Path $taskPath 'process-result.json'
 
-$consoleAssemblyToml = ConvertTo-TomlBasicString -Value $consoleAssemblyFullPath
+$mcpAssemblyToml = ConvertTo-TomlBasicString -Value $mcpAssemblyFullPath
 $arguments = @(
     'exec',
     '--ignore-user-config',
@@ -270,7 +270,7 @@ $arguments = @(
     '-c',
     'mcp_servers.creationsforge.command="dotnet"',
     '-c',
-    "mcp_servers.creationsforge.args=[$consoleAssemblyToml,`"mcp`"]",
+    "mcp_servers.creationsforge.args=[$mcpAssemblyToml]",
     '-c',
     'mcp_servers.creationsforge.required=true',
     '-c',
@@ -508,8 +508,8 @@ $summary = [ordered]@{
     elapsedSeconds = [Math]::Round($elapsed.Elapsed.TotalSeconds, 3)
     codexPath = $codexFullPath
     codexSha256 = $codexSha256
-    consoleAssemblyPath = $consoleAssemblyFullPath
-    consoleAssemblySha256 = $consoleAssemblySha256
+    mcpAssemblyPath = $mcpAssemblyFullPath
+    mcpAssemblySha256 = $mcpAssemblySha256
     promptPath = $promptFullPath
     promptSha256 = $promptSha256
     sessionDirectory = $sessionPath

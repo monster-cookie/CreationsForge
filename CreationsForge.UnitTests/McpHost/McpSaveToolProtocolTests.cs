@@ -1,6 +1,6 @@
 using System.IO.Pipelines;
 using System.Text.Json;
-using CreationsForge.Console.Mcp;
+using CreationsForge.Mcp;
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Engine.NativeInputs;
 using CreationsForge.Core.Enums;

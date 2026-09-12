@@ -1,4 +1,4 @@
-using CreationsForge.Console.Mcp;
+using CreationsForge.Mcp;
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Enums;
 using Moq;

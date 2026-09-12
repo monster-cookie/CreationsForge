@@ -15,7 +15,7 @@ internal sealed class McpStdioProcessFixture : IAsyncDisposable
     /// <summary>The maximum time allowed for each failure-cleanup step.</summary>
     private static readonly TimeSpan CleanupTimeout = TimeSpan.FromSeconds(5);
 
-    /// <summary>The owned console child process.</summary>
+    /// <summary>The owned MCP child process.</summary>
     private readonly Process ChildProcess;
 
     /// <summary>The asynchronous complete standard-error capture.</summary>
@@ -28,7 +28,7 @@ internal sealed class McpStdioProcessFixture : IAsyncDisposable
     private int ClientDisposalStarted;
 
     /// <summary>Initializes ownership after the SDK has completed protocol initialization.</summary>
-    /// <param name="childProcess">The running console child process.</param>
+    /// <param name="childProcess">The running MCP child process.</param>
     /// <param name="client">The initialized SDK client connected to the child streams.</param>
     /// <param name="standardErrorTask">The complete asynchronous standard-error capture.</param>
     private McpStdioProcessFixture(
@@ -44,15 +44,15 @@ internal sealed class McpStdioProcessFixture : IAsyncDisposable
     /// <summary>Gets the initialized SDK client connected to the real child process.</summary>
     public McpClient Client { get; }
 
-    /// <summary>Starts the production console route and initializes an SDK client over its physical stdio streams.</summary>
-    /// <param name="consoleAssemblyPath">The absolute built console assembly path.</param>
+    /// <summary>Starts the production MCP host and initializes an SDK client over its physical stdio streams.</summary>
+    /// <param name="mcpAssemblyPath">The absolute built MCP assembly path.</param>
     /// <param name="cancellationToken">A token that bounds process and protocol initialization.</param>
     /// <returns>An owned initialized process fixture.</returns>
     public static async Task<McpStdioProcessFixture> StartAsync(
-        string consoleAssemblyPath,
+        string mcpAssemblyPath,
         CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(consoleAssemblyPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(mcpAssemblyPath);
         var startInfo = new ProcessStartInfo
         {
             FileName = "dotnet",
@@ -62,8 +62,7 @@ internal sealed class McpStdioProcessFixture : IAsyncDisposable
             UseShellExecute = false,
             CreateNoWindow = true,
         };
-        startInfo.ArgumentList.Add(consoleAssemblyPath);
-        startInfo.ArgumentList.Add("mcp");
+        startInfo.ArgumentList.Add(mcpAssemblyPath);
 
         var process = new Process
         {

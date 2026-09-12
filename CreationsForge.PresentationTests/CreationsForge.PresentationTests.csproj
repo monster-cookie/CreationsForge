@@ -24,7 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\CreationsForge.Console\CreationsForge.Console.csproj" />
+        <ProjectReference Include="..\CreationsForge.Mcp\CreationsForge.Mcp.csproj" />
         <ProjectReference Include="..\CreationsForge\CreationsForge.csproj" />
         <ProjectReference Include="..\CreationsForge.Fallout4\CreationsForge.Fallout4.csproj" />
         <ProjectReference Include="..\CreationsForge.Skyrim\CreationsForge.Skyrim.csproj" />
