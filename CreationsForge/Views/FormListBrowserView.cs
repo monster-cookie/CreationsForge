@@ -118,6 +118,23 @@ public sealed class FormListBrowserView : UserControl
         refreshButton.Bind(Button.CommandProperty, new Binding(nameof(FormListBrowserViewModel.RefreshCommand)));
         AutomationProperties.SetAutomationId(refreshButton, "FormListRefreshButton");
 
+        var sortLabel = CreateText("Sort records:", 12, FontWeight.Normal);
+        sortLabel.VerticalAlignment = VerticalAlignment.Center;
+        var sortSelector = new ComboBox
+        {
+            MinWidth = 100,
+            ItemsSource = Enum.GetValues<FormListRecordSortMode>(),
+            ItemTemplate = new FuncDataTemplate<FormListRecordSortMode>(
+                (mode, _) => CreateText(DescribeRecordSortMode(mode), 12, FontWeight.Normal))
+        };
+        sortSelector.Bind(
+            SelectingItemsControl.SelectedItemProperty,
+            new Binding(nameof(FormListBrowserViewModel.RecordSortMode))
+            {
+                Mode = BindingMode.TwoWay
+            });
+        AutomationProperties.SetAutomationId(sortSelector, "FormListRecordSortSelector");
+
         var actions = new StackPanel
         {
             Orientation = Orientation.Horizontal,
@@ -125,7 +142,9 @@ public sealed class FormListBrowserView : UserControl
             Children =
             {
                 pickerButton,
-                refreshButton
+                refreshButton,
+                sortLabel,
+                sortSelector
             }
         };
 
@@ -199,6 +218,20 @@ public sealed class FormListBrowserView : UserControl
                     recordTree
                 }
             }
+        };
+    }
+
+    /// <summary>Gets the user-facing label for one supported record sort mode.</summary>
+    /// <param name="mode">The record sort mode.</param>
+    /// <returns>The canonical FormID or EditorID field label.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="mode"/> is undefined.</exception>
+    private static string DescribeRecordSortMode(FormListRecordSortMode mode)
+    {
+        return mode switch
+        {
+            FormListRecordSortMode.FormId => "FormID",
+            FormListRecordSortMode.EditorId => "EditorID",
+            _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unsupported FormList record sort mode.")
         };
     }
 

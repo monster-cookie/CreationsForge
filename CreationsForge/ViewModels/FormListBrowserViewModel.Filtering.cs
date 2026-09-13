@@ -13,6 +13,9 @@ public sealed partial class FormListBrowserViewModel
     /// <summary>The case-insensitive EditorID filter.</summary>
     private string EditorIdFilterValue = string.Empty;
 
+    /// <summary>The field used to order records within each plugin and major-record group.</summary>
+    private FormListRecordSortMode RecordSortModeValue = FormListRecordSortMode.FormId;
+
     /// <summary>Gets or sets the hexadecimal FormID substring used to filter winning roots.</summary>
     public string FormIdFilter
     {
@@ -39,6 +42,25 @@ public sealed partial class FormListBrowserViewModel
         }
     }
 
+    /// <summary>Gets or sets the field used to order records within each plugin and major-record group.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the supplied mode is undefined.</exception>
+    public FormListRecordSortMode RecordSortMode
+    {
+        get => RecordSortModeValue;
+        set
+        {
+            if (!Enum.IsDefined(value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(value));
+            }
+
+            if (SetProperty(ref RecordSortModeValue, value))
+            {
+                ApplyRecordFilters();
+            }
+        }
+    }
+
     /// <summary>Replaces the complete record snapshot and reapplies the current presentation filters.</summary>
     /// <param name="records">The complete winning-root tree in engine order.</param>
     private void SetAllRecords(IReadOnlyList<FormListRecordViewModel> records)
@@ -48,7 +70,7 @@ public sealed partial class FormListBrowserViewModel
         ApplyRecordFilters();
     }
 
-    /// <summary>Filters roots and exact context children while preserving engine order and complete comparison options.</summary>
+    /// <summary>Filters roots and exact context children, applies the selected record order, and preserves complete comparison options.</summary>
     private void ApplyRecordFilters()
     {
         ClearEditorSelection();
@@ -75,7 +97,7 @@ public sealed partial class FormListBrowserViewModel
         }
 
         var selectedFormKey = SelectedRecordValue?.FormKey;
-        SetRecords(filteredRecords);
+        SetRecords(SortRecords(filteredRecords));
         if (!selectedFormKey.HasValue)
         {
             return;
@@ -92,6 +114,27 @@ public sealed partial class FormListBrowserViewModel
         ContextOptionsValue = visibleSelection.ContextOptions;
         OnPropertyChanged(nameof(SelectedRecord));
         OnPropertyChanged(nameof(ContextOptions));
+    }
+
+    /// <summary>Orders filtered records by the selected field with deterministic identity tie-breaking.</summary>
+    /// <param name="records">The filtered winning-root records.</param>
+    /// <returns>The records in the selected display order.</returns>
+    private IReadOnlyList<FormListRecordViewModel> SortRecords(
+        IReadOnlyList<FormListRecordViewModel> records)
+    {
+        IEnumerable<FormListRecordViewModel> sorted = RecordSortModeValue switch
+        {
+            FormListRecordSortMode.FormId => records
+                .OrderBy(record => record.FormKey.ID)
+                .ThenBy(record => record.FormKey.ModKey.FileName.String, StringComparer.OrdinalIgnoreCase),
+            FormListRecordSortMode.EditorId => records
+                .OrderBy(record => string.IsNullOrWhiteSpace(record.EditorId) ? 1 : 0)
+                .ThenBy(record => record.EditorId, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(record => record.FormKey.ID)
+                .ThenBy(record => record.FormKey.ModKey.FileName.String, StringComparer.OrdinalIgnoreCase),
+            _ => throw new InvalidOperationException($"Unsupported FormList record sort mode '{RecordSortModeValue}'.")
+        };
+        return Array.AsReadOnly(sorted.ToArray());
     }
 
     /// <summary>Creates one filtered winning root with only exact contexts matching the current EditorID filter.</summary>
@@ -124,6 +167,7 @@ public sealed partial class FormListBrowserViewModel
 
         return new FormListRecordViewModel(
             root.FormKey,
+            root.ContainingModKey,
             root.EditorId,
             root.OverrideCount,
             root.Context,

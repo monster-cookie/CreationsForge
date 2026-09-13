@@ -13,15 +13,18 @@ public sealed class FormListRecordViewModel : ViewModelBase, IRecordTreeNodeView
 
     /// <summary>Initializes one FormList tree node.</summary>
     /// <param name="formKey">The exact FormList identity.</param>
+    /// <param name="containingModKey">The plugin containing this exact context, or the winning context for a root.</param>
     /// <param name="editorId">The EditorID observed for this root or context, or <see langword="null"/>.</param>
     /// <param name="overrideCount">The plugin override count reported for the FormList.</param>
     /// <param name="context">The exact winning or containing-plugin selection.</param>
     /// <param name="children">The exact ordered context nodes beneath a winning root.</param>
     /// <param name="contextOptions">All valid comparison selections for the root, beginning with the winning selection.</param>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="containingModKey"/> is null.</exception>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="context"/>, <paramref name="children"/>, or <paramref name="contextOptions"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="overrideCount"/> is negative.</exception>
     public FormListRecordViewModel(
         FormKey formKey,
+        ModKey containingModKey,
         string? editorId,
         int overrideCount,
         FormListContextOption context,
@@ -29,10 +32,16 @@ public sealed class FormListRecordViewModel : ViewModelBase, IRecordTreeNodeView
         IReadOnlyList<FormListContextOption> contextOptions)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(overrideCount);
+        if (containingModKey == ModKey.Null)
+        {
+            throw new ArgumentException("A FormList presentation record requires a containing plugin.", nameof(containingModKey));
+        }
+
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(children);
         ArgumentNullException.ThrowIfNull(contextOptions);
         FormKey = formKey;
+        ContainingModKey = containingModKey;
         EditorId = editorId;
         OverrideCount = overrideCount;
         Context = context;
@@ -43,11 +52,14 @@ public sealed class FormListRecordViewModel : ViewModelBase, IRecordTreeNodeView
     /// <summary>Gets the exact FormList identity.</summary>
     public FormKey FormKey { get; }
 
+    /// <summary>Gets the plugin containing this exact context, or the winning context for a root.</summary>
+    public ModKey ContainingModKey { get; }
+
     /// <summary>Gets the exact FormList identity as display text.</summary>
     public string FormKeyText => FormKey.ToString();
 
     /// <inheritdoc />
-    public string PrimaryText => FormKeyText;
+    public string PrimaryText => FormIdText;
 
     /// <summary>Gets the plugin FormID as an eight-digit hexadecimal value for display and filtering.</summary>
     public string FormIdText => FormKey.ID.ToString("X8");

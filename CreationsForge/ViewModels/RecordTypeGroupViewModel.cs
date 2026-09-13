@@ -1,13 +1,13 @@
 namespace CreationsForge.ViewModels;
 
-/// <summary>Presents one collapsible record-type group above its alphabetically ordered record rows.</summary>
+/// <summary>Presents one collapsible major-record group above its records in the selected display order.</summary>
 public sealed class RecordTypeGroupViewModel : ViewModelBase, IRecordTreeNodeViewModel
 {
     /// <summary>Tracks whether the record-type group is expanded.</summary>
     private bool IsExpandedValue;
 
     /// <summary>Initializes one record-type group.</summary>
-    /// <param name="label">The friendly record type and plugin signature displayed in the primary column.</param>
+    /// <param name="label">The friendly major-record type and plugin signature displayed in the primary column.</param>
     /// <param name="children">The selectable record rows in display order.</param>
     /// <exception cref="ArgumentException">Thrown when <paramref name="label"/> is empty or whitespace.</exception>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="children"/> is <see langword="null"/>.</exception>
@@ -22,7 +22,7 @@ public sealed class RecordTypeGroupViewModel : ViewModelBase, IRecordTreeNodeVie
         IsExpandedValue = true;
     }
 
-    /// <summary>Gets the friendly record type and plugin signature.</summary>
+    /// <summary>Gets the friendly major-record type and plugin signature.</summary>
     public string Label { get; }
 
     /// <inheritdoc />

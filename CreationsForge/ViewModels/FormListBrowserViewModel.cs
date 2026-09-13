@@ -57,8 +57,8 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
     /// <summary>The grouped winning-root and exact-context record tree.</summary>
     private IReadOnlyList<FormListRecordViewModel> RecordsValue = Array.Empty<FormListRecordViewModel>();
 
-    /// <summary>The filtered top-level record-type groups.</summary>
-    private IReadOnlyList<RecordTypeGroupViewModel> RecordTypeGroupsValue = Array.Empty<RecordTypeGroupViewModel>();
+    /// <summary>The filtered top-level plugin groups in explicit load-order order.</summary>
+    private IReadOnlyList<PluginGroupViewModel> PluginGroupsValue = Array.Empty<PluginGroupViewModel>();
 
     /// <summary>The current hierarchical record-tree source.</summary>
     private HierarchicalTreeDataGridSource<IRecordTreeNodeViewModel> RecordTreeSourceValue;
@@ -156,7 +156,7 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
         Editor = editorFactory.Create(this)
             ?? throw new InvalidOperationException("The FormList editor factory returned no editor.");
         Editor.PropertyChanged += OnEditorPropertyChanged;
-        RecordTreeSourceValue = CreateRecordTreeSource(RecordTypeGroupsValue);
+        RecordTreeSourceValue = CreateRecordTreeSource(PluginGroupsValue);
         BeforeFieldSourceValue = CreateFieldTreeSource(BeforeFieldsValue);
         AfterFieldSourceValue = CreateFieldTreeSource(AfterFieldsValue);
         RetryRelayCommand = new AsyncRelayCommand(
@@ -175,11 +175,11 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
     /// <summary>Gets the revision-consistent participating plugins in engine order.</summary>
     public IReadOnlyList<PluginSummary> Plugins => PluginsValue;
 
-    /// <summary>Gets the filtered winning FormList roots in alphabetical EditorID order.</summary>
+    /// <summary>Gets the filtered winning FormList roots in the selected record order.</summary>
     public IReadOnlyList<FormListRecordViewModel> Records => RecordsValue;
 
-    /// <summary>Gets the filtered top-level record-type groups.</summary>
-    public IReadOnlyList<RecordTypeGroupViewModel> RecordTypeGroups => RecordTypeGroupsValue;
+    /// <summary>Gets the filtered top-level plugin groups in explicit load-order order.</summary>
+    public IReadOnlyList<PluginGroupViewModel> PluginGroups => PluginGroupsValue;
 
     /// <summary>Gets the hierarchical record source containing record-type groups, winning roots, and exact ordered contexts.</summary>
     public HierarchicalTreeDataGridSource<IRecordTreeNodeViewModel> RecordTreeSource => RecordTreeSourceValue;
@@ -467,10 +467,10 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
         }
     }
 
-    /// <summary>Builds alphabetical winning roots while preserving exact context children in engine order.</summary>
+    /// <summary>Builds winning roots while preserving exact context children in engine order.</summary>
     /// <param name="summaries">All FormList contexts in engine order.</param>
     /// <param name="cancellationToken">A token observed throughout grouping and projection.</param>
-    /// <returns>The grouped presentation records in alphabetical EditorID order with deterministic FormKey tie-breaking.</returns>
+    /// <returns>The grouped presentation records in engine enumeration order for subsequent presentation sorting.</returns>
     /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled.</exception>
     private static IReadOnlyList<FormListRecordViewModel> BuildRecordTree(
         IReadOnlyList<FormListSummary> summaries,
@@ -516,6 +516,7 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
                 options.Add(option);
                 children.Add(new FormListRecordViewModel(
                     context.FormKey,
+                    context.ContainingModKey!.Value,
                     context.EditorId,
                     context.OverrideCount,
                     option,
@@ -525,6 +526,7 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
 
             roots.Add(new FormListRecordViewModel(
                 formKey,
+                children[^1].ContainingModKey,
                 winningSummary.EditorId,
                 winningSummary.OverrideCount,
                 winningOption,
@@ -532,11 +534,7 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
                 options));
         }
 
-        return Array.AsReadOnly(roots
-            .OrderBy(root => string.IsNullOrWhiteSpace(root.EditorId) ? 1 : 0)
-            .ThenBy(root => root.EditorId, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(root => root.FormKey.ToString(), StringComparer.OrdinalIgnoreCase)
-            .ToArray());
+        return Array.AsReadOnly(roots.ToArray());
     }
 
     /// <summary>Creates one exact all-context selector from an engine summary.</summary>
@@ -752,21 +750,48 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
         RetryRelayCommand.RaiseCanExecuteChanged();
     }
 
-    /// <summary>Replaces the record tree and its hierarchical source.</summary>
-    /// <param name="records">The new winning-root record list.</param>
+    /// <summary>Replaces the record tree and groups winning roots beneath their winning plugin and major-record type.</summary>
+    /// <param name="records">The new winning-root record list in the selected display order.</param>
+    /// <exception cref="InvalidOperationException">Thrown when a winning record identifies a plugin absent from the workspace snapshot.</exception>
     private void SetRecords(IReadOnlyList<FormListRecordViewModel> records)
     {
         RecordsValue = records;
-        RecordTypeGroupsValue = records.Count == 0
-            ? Array.Empty<RecordTypeGroupViewModel>()
-            : new[]
-            {
-                new RecordTypeGroupViewModel("Form Lists (FLST)", records)
-            };
-        RecordTreeSourceValue = CreateRecordTreeSource(RecordTypeGroupsValue);
+        var remainingRecords = records.ToList();
+        var pluginGroups = new List<PluginGroupViewModel>(PluginsValue.Count);
+        foreach (var plugin in PluginsValue.OrderBy(plugin => plugin.LoadOrderIndex))
+        {
+            var pluginRecords = remainingRecords
+                .Where(record => GetWinningPlugin(record) == plugin.ModKey)
+                .ToArray();
+            remainingRecords.RemoveAll(record => GetWinningPlugin(record) == plugin.ModKey);
+            IReadOnlyList<IRecordTreeNodeViewModel> recordTypes = pluginRecords.Length == 0
+                ? Array.Empty<IRecordTreeNodeViewModel>()
+                : new IRecordTreeNodeViewModel[]
+                {
+                    new RecordTypeGroupViewModel("Form Lists (FLST)", pluginRecords)
+                };
+            pluginGroups.Add(new PluginGroupViewModel(plugin, recordTypes));
+        }
+
+        if (remainingRecords.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"The browser could not match {remainingRecords.Count} winning FormList record(s) to the workspace plugin list.");
+        }
+
+        PluginGroupsValue = Array.AsReadOnly(pluginGroups.ToArray());
+        RecordTreeSourceValue = CreateRecordTreeSource(PluginGroupsValue);
         OnPropertyChanged(nameof(Records));
-        OnPropertyChanged(nameof(RecordTypeGroups));
+        OnPropertyChanged(nameof(PluginGroups));
         OnPropertyChanged(nameof(RecordTreeSource));
+    }
+
+    /// <summary>Gets the plugin containing the winning context represented by one root.</summary>
+    /// <param name="record">The winning-root presentation record.</param>
+    /// <returns>The containing plugin of the final load-order context.</returns>
+    private static ModKey GetWinningPlugin(FormListRecordViewModel record)
+    {
+        return record.ContainingModKey;
     }
 
     /// <summary>Replaces the prior JSON tree and its hierarchical source.</summary>
@@ -820,15 +845,15 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
             : context.Status.ToString();
     }
 
-    /// <summary>Creates the hierarchical record-type, winning-root, and exact-context record source.</summary>
-    /// <param name="groups">The top-level record-type groups.</param>
+    /// <summary>Creates the hierarchical plugin, major-record-type, winning-root, and exact-context record source.</summary>
+    /// <param name="groups">The top-level plugin groups in explicit load-order order.</param>
     /// <returns>The read-only hierarchical source.</returns>
     private static HierarchicalTreeDataGridSource<IRecordTreeNodeViewModel> CreateRecordTreeSource(
-        IReadOnlyList<RecordTypeGroupViewModel> groups)
+        IReadOnlyList<PluginGroupViewModel> groups)
     {
         return new HierarchicalTreeDataGridSource<IRecordTreeNodeViewModel>(groups)
             .WithHierarchicalExpanderTextColumn(
-                "FormKey",
+                "FormID",
                 record => record.PrimaryText,
                 record => record.TreeChildren,
                 record => record.IsExpanded,

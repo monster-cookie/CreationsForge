@@ -68,6 +68,15 @@ public sealed class FormListBrowserViewHeadlessTests
             ControlFinder.FindByAutomationId<TreeDataGrid>(view, "FormListRecordTree").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<TextBox>(view, "FormListFormIdFilter").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<TextBox>(view, "FormListEditorIdFilter").ShouldNotBeNull();
+            var sortSelector = ControlFinder.FindByAutomationId<ComboBox>(
+                view,
+                "FormListRecordSortSelector").ShouldNotBeNull();
+            sortSelector.ItemsSource.ShouldNotBeNull().Cast<FormListRecordSortMode>()
+                .ShouldBe([FormListRecordSortMode.FormId, FormListRecordSortMode.EditorId]);
+            sortSelector.SelectedItem.ShouldBe(FormListRecordSortMode.FormId);
+            sortSelector.SelectedItem = FormListRecordSortMode.EditorId;
+            Dispatcher.UIThread.RunJobs();
+            viewModel.RecordSortMode.ShouldBe(FormListRecordSortMode.EditorId);
             ControlFinder.FindByAutomationId<ComboBox>(view, "FormListBeforeContextSelector").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<ComboBox>(view, "FormListAfterContextSelector").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<TreeDataGrid>(view, "FormListBeforeFieldTree").ShouldNotBeNull();

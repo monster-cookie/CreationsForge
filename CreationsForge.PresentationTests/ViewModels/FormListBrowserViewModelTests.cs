@@ -17,7 +17,7 @@ namespace CreationsForge.PresentationTests.ViewModels;
 /// </summary>
 public sealed partial class FormListBrowserViewModelTests
 {
-    /// <summary>Verifies the browser groups FormLists by record type, sorts roots by EditorID, preserves context order, and compares the earliest context with the winner.</summary>
+    /// <summary>Verifies the browser groups records by plugin and major type, supports FormID and EditorID ordering, preserves context order, and compares the earliest context with the winner.</summary>
     /// <returns>A task that completes after the comparison is published.</returns>
     [Fact]
     public async Task StartAndSelectRecord_AllContexts_PreserveOrderProvenanceAndDetachedComparison()
@@ -43,8 +43,9 @@ public sealed partial class FormListBrowserViewModelTests
             ],
             [
                 Summary(firstFormKey, "OriginalList", sourceMod, sourcePath, 0, PluginRole.Source, 1),
-                Summary(secondFormKey, "OtherList", otherMod, otherPath, 1, PluginRole.LoadOrder, 0),
-                Summary(firstFormKey, "WinningList", outputMod, outputPath, 2, PluginRole.Output, 1)
+                Summary(secondFormKey, "OtherList", otherMod, otherPath, 1, PluginRole.LoadOrder, 1),
+                Summary(firstFormKey, "WinningList", outputMod, outputPath, 2, PluginRole.Output, 1),
+                Summary(secondFormKey, "AlphaList", outputMod, outputPath, 2, PluginRole.Output, 1)
             ],
             request => SuccessfulComparison(
                 workspaceId,
@@ -63,14 +64,28 @@ public sealed partial class FormListBrowserViewModelTests
 
         workspace.ListScopes.ShouldBe([RecordScope.AllContexts]);
         viewModel.Plugins.Select(plugin => plugin.ModKey).ShouldBe([sourceMod, otherMod, outputMod]);
-        viewModel.Records.Select(record => record.FormKey).ShouldBe([secondFormKey, firstFormKey]);
-        var recordTypeGroup = viewModel.RecordTypeGroups.ShouldHaveSingleItem();
+        viewModel.RecordSortMode.ShouldBe(FormListRecordSortMode.FormId);
+        viewModel.Records.Select(record => record.FormKey).ShouldBe([firstFormKey, secondFormKey]);
+        viewModel.PluginGroups.Select(group => group.Plugin.ModKey).ShouldBe([sourceMod, otherMod, outputMod]);
+        viewModel.PluginGroups[0].Children.ShouldBeEmpty();
+        viewModel.PluginGroups[1].Children.ShouldBeEmpty();
+        var outputPluginGroup = viewModel.PluginGroups[2];
+        outputPluginGroup.IsExpanded.ShouldBeFalse();
+        var recordTypeGroup = outputPluginGroup.Children.Cast<RecordTypeGroupViewModel>().ShouldHaveSingleItem();
         recordTypeGroup.Label.ShouldBe("Form Lists (FLST)");
         recordTypeGroup.IsExpanded.ShouldBeTrue();
         recordTypeGroup.Children.Cast<FormListRecordViewModel>()
             .Select(record => record.FormKey)
+            .ShouldBe([firstFormKey, secondFormKey]);
+        viewModel.RecordSortMode = FormListRecordSortMode.EditorId;
+        viewModel.Records.Select(record => record.FormKey).ShouldBe([secondFormKey, firstFormKey]);
+        viewModel.PluginGroups[2].Children.Cast<RecordTypeGroupViewModel>().ShouldHaveSingleItem()
+            .Children.Cast<FormListRecordViewModel>()
+            .Select(record => record.FormKey)
             .ShouldBe([secondFormKey, firstFormKey]);
+        viewModel.RecordSortMode = FormListRecordSortMode.FormId;
         var firstRoot = viewModel.Records.Single(record => record.FormKey == firstFormKey);
+        firstRoot.PrimaryText.ShouldBe("00000123");
         firstRoot.Context.Selection.Scope.ShouldBe(RecordScope.WinningOverrides);
         firstRoot.EditorId.ShouldBe("WinningList");
         firstRoot.Children.Select(child => child.Context.ContainingModKey).ShouldBe([sourceMod, outputMod]);
@@ -575,7 +590,7 @@ public sealed partial class FormListBrowserViewModelTests
         viewModel.AfterFields.ShouldBeEmpty();
     }
 
-    /// <summary>Verifies FormID and EditorID filters retain engine order, matching contexts, and an exact visible selection.</summary>
+    /// <summary>Verifies FormID and EditorID filters retain winning-plugin grouping, matching contexts, and an exact visible selection.</summary>
     /// <returns>A task that completes after the selected filtered record is compared.</returns>
     [Fact]
     public async Task Filters_MatchRootsAndContextsWhilePreservingExactVisibleSelection()
@@ -623,6 +638,10 @@ public sealed partial class FormListBrowserViewModelTests
         filteredRoot.FormKey.ShouldBe(formKey);
         filteredRoot.Children.ShouldHaveSingleItem().EditorId.ShouldBe("SourceNeedle");
         filteredRoot.ContextOptions.Count.ShouldBe(3);
+        viewModel.PluginGroups[0].Children.ShouldBeEmpty();
+        viewModel.PluginGroups[1].Children.Cast<RecordTypeGroupViewModel>().ShouldHaveSingleItem()
+            .Children.Cast<FormListRecordViewModel>().ShouldHaveSingleItem()
+            .ShouldBeSameAs(filteredRoot);
         await viewModel.SelectRecordAsync(filteredRoot.Children.ShouldHaveSingleItem());
         var selectedBefore = viewModel.SelectedBeforeContext.ShouldNotBeNull();
         var selectedAfter = viewModel.SelectedAfterContext.ShouldNotBeNull();

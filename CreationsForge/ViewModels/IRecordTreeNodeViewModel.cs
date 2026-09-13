@@ -3,7 +3,7 @@ namespace CreationsForge.ViewModels;
 /// <summary>Defines the presentation fields and hierarchy shared by record-type groups and selectable record rows.</summary>
 public interface IRecordTreeNodeViewModel
 {
-    /// <summary>Gets the primary tree-column text, such as a record-type label or FormKey.</summary>
+    /// <summary>Gets the primary tree-column text, such as a plugin, major-record type, or FormID.</summary>
     string PrimaryText { get; }
 
     /// <summary>Gets the EditorID column text, or an empty value for a record-type group.</summary>
