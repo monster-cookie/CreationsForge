@@ -1,8 +1,8 @@
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
-using CreationsForge.Core.Engine.NativeOutputs;
-using CreationsForge.Skyrim.Native;
-using CreationsForge.Skyrim.Native.NativeInspection;
+using CreationsForge.Core.Engine.PluginInputs;
+using CreationsForge.Core.Engine.PluginOutputs;
+using CreationsForge.Skyrim.PluginAdapter;
+using CreationsForge.Skyrim.PluginAdapter.RecordInspection;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Skyrim;
 using Shouldly;
@@ -10,16 +10,16 @@ using Shouldly;
 namespace CreationsForge.UnitTests.Engine.Skyrim;
 
 /// <summary>
-/// Verifies complete Skyrim adapter composition, output-aware reads, private serialization, and strict native reopen preservation.
+/// Verifies complete Skyrim adapter composition, output-aware reads, private serialization, and strict plugin reopen preservation.
 /// </summary>
 public sealed class SkyrimFormListGameAdapterTests
 {
     /// <summary>Verifies staged output participates after sources in listing, winning selection, resolution, and bounded search.</summary>
-    /// <returns>A task that completes after all native source and output lifetimes are released.</returns>
+    /// <returns>A task that completes after all plugin source and output lifetimes are released.</returns>
     [Fact]
     public async Task Adapter_ReadsStagedOutputAcrossCompleteParticipatingLoadOrder()
     {
-        using var fixture = SkyrimNativeOutputTestFixture.Create();
+        using var fixture = SkyrimPluginOutputTestFixture.Create();
         var adapter = CreateAdapter();
         await using var sources = await OpenSourcesAsync(adapter, fixture.Sources);
         await using var output = await OpenOutputAsync(
@@ -98,11 +98,11 @@ public sealed class SkyrimFormListGameAdapterTests
     /// <summary>
     /// Verifies an unchanged embedded output produces no artifacts, while a material edit stages an exact complete plugin without touching sources or destination.
     /// </summary>
-    /// <returns>A task that completes after every staged and opened native lifetime is released.</returns>
+    /// <returns>A task that completes after every staged and opened plugin lifetime is released.</returns>
     [Fact]
-    public async Task WriteAndValidateAsync_ExistingEmbeddedOutputPreservesCompleteNativeState()
+    public async Task WriteAndValidateAsync_ExistingEmbeddedOutputPreservesCompletePluginState()
     {
-        using var fixture = SkyrimNativeOutputTestFixture.Create(LocalizedOutputMode.Embedded);
+        using var fixture = SkyrimPluginOutputTestFixture.Create(LocalizedOutputMode.Embedded);
         var sourceBefore = fixture.Sources.SnapshotArtifacts();
         var destinationBefore = fixture.SnapshotOutputArtifacts();
         var adapter = CreateAdapter();
@@ -117,10 +117,10 @@ public sealed class SkyrimFormListGameAdapterTests
         var noOp = await adapter.WriteAndValidateAsync(
             sources,
             output,
-            new NativeWriteRequest(noOpDirectory.FullName, output.Association, output.Baseline),
+            new PluginWriteRequest(noOpDirectory.FullName, output.Association, output.Baseline),
             TestContext.Current.CancellationToken);
         noOp.Succeeded.ShouldBeTrue(noOp.Error?.Message);
-        noOp.Value!.Disposition.ShouldBe(NativeWriteDisposition.Unchanged);
+        noOp.Value!.Disposition.ShouldBe(PluginWriteDisposition.Unchanged);
         noOp.Value.StagedOutput.ShouldBeNull();
         noOp.Value.ArtifactMappings.ShouldBeEmpty();
         noOpDirectory.EnumerateFileSystemInfos().ShouldBeEmpty();
@@ -157,19 +157,19 @@ public sealed class SkyrimFormListGameAdapterTests
         var stagedResult = await adapter.WriteAndValidateAsync(
             sources,
             output,
-            new NativeWriteRequest(stagingDirectory.FullName, output.Association, output.Baseline),
+            new PluginWriteRequest(stagingDirectory.FullName, output.Association, output.Baseline),
             TestContext.Current.CancellationToken);
         stagedResult.Succeeded.ShouldBeTrue(stagedResult.Error?.Message);
         var staged = stagedResult.Value.ShouldNotBeNull();
         try
         {
-            staged.Disposition.ShouldBe(NativeWriteDisposition.StagedChanges);
+            staged.Disposition.ShouldBe(PluginWriteDisposition.StagedChanges);
             staged.StagedOutput.ShouldNotBeNull();
             var pluginMapping = GetPluginMapping(staged);
             pluginMapping.StagedArtifact.Fingerprint.Exists.ShouldBeTrue();
             pluginMapping.DestinationPath.ShouldBe(Path.GetFullPath(fixture.ExistingOutputPath));
             staged.ArtifactMappings
-                .Where(mapping => mapping.StagedArtifact.Role != NativeArtifactRole.Plugin)
+                .Where(mapping => mapping.StagedArtifact.Role != PluginArtifactRole.Plugin)
                 .ShouldAllBe(mapping => !mapping.StagedArtifact.Fingerprint.Exists);
 
             await using var reopened = await OpenOutputAsync(
@@ -213,11 +213,11 @@ public sealed class SkyrimFormListGameAdapterTests
     /// <summary>
     /// Verifies a retained candidate rejects its stale original file identity but accepts a freshly adopted identical destination baseline without replacing candidate semantics.
     /// </summary>
-    /// <returns>A task that completes after all candidate, fresh-observation, and staged native lifetimes are released.</returns>
+    /// <returns>A task that completes after all candidate, fresh-observation, and staged plugin lifetimes are released.</returns>
     [Fact]
     public async Task WriteAndValidateAsync_RestoredIdenticalDestinationRequiresFreshSuppliedBaseline()
     {
-        using var fixture = SkyrimNativeOutputTestFixture.Create(LocalizedOutputMode.Embedded);
+        using var fixture = SkyrimPluginOutputTestFixture.Create(LocalizedOutputMode.Embedded);
         var sourceBefore = fixture.Sources.SnapshotArtifacts();
         var destinationBefore = fixture.SnapshotOutputArtifacts();
         var adapter = CreateAdapter();
@@ -229,7 +229,7 @@ public sealed class SkyrimFormListGameAdapterTests
             OutputSelectionMode.OpenExisting);
 
         var originalPlugin = candidate.Baseline.Artifacts.Single(
-            artifact => artifact.Role == NativeArtifactRole.Plugin);
+            artifact => artifact.Role == PluginArtifactRole.Plugin);
         var originalIdentity = originalPlugin.FileIdentity.ShouldNotBeNull();
         var editIdentity = BeginExisting(adapter, sources, candidate, fixture.OutputOwnListFormKey);
         Apply(
@@ -254,19 +254,19 @@ public sealed class SkyrimFormListGameAdapterTests
         {
             freshBaseline = freshObservation.Baseline;
             var freshPlugin = freshBaseline.Artifacts.Single(
-                artifact => artifact.Role == NativeArtifactRole.Plugin);
+                artifact => artifact.Role == PluginArtifactRole.Plugin);
             freshPlugin.Fingerprint.ShouldBe(originalPlugin.Fingerprint);
             freshPlugin.FileIdentity.ShouldNotBeNull().ShouldNotBe(originalIdentity);
         }
 
-        candidate.Baseline.Artifacts.Single(artifact => artifact.Role == NativeArtifactRole.Plugin)
+        candidate.Baseline.Artifacts.Single(artifact => artifact.Role == PluginArtifactRole.Plugin)
             .FileIdentity.ShouldBe(originalIdentity);
 
         var staleDirectory = fixture.Sources.RootDirectory.CreateSubdirectory("Stage-Restored-Stale");
         var stale = await adapter.WriteAndValidateAsync(
             sources,
             candidate,
-            new NativeWriteRequest(staleDirectory.FullName, candidate.Association, candidate.Baseline),
+            new PluginWriteRequest(staleDirectory.FullName, candidate.Association, candidate.Baseline),
             TestContext.Current.CancellationToken);
         stale.Succeeded.ShouldBeFalse();
         stale.Error!.Code.ShouldBe(EngineErrorCode.ExternalChangeDetected);
@@ -276,13 +276,13 @@ public sealed class SkyrimFormListGameAdapterTests
         var stagedResult = await adapter.WriteAndValidateAsync(
             sources,
             candidate,
-            new NativeWriteRequest(freshDirectory.FullName, candidate.Association, freshBaseline),
+            new PluginWriteRequest(freshDirectory.FullName, candidate.Association, freshBaseline),
             TestContext.Current.CancellationToken);
         stagedResult.Succeeded.ShouldBeTrue(stagedResult.Error?.Message);
         var staged = stagedResult.Value.ShouldNotBeNull();
         try
         {
-            staged.Disposition.ShouldBe(NativeWriteDisposition.StagedChanges);
+            staged.Disposition.ShouldBe(PluginWriteDisposition.StagedChanges);
             GetPluginMapping(staged).StagedArtifact.Fingerprint.Exists.ShouldBeTrue();
         }
         finally
@@ -293,7 +293,7 @@ public sealed class SkyrimFormListGameAdapterTests
             }
         }
 
-        candidate.Baseline.Artifacts.Single(artifact => artifact.Role == NativeArtifactRole.Plugin)
+        candidate.Baseline.Artifacts.Single(artifact => artifact.Role == PluginArtifactRole.Plugin)
             .FileIdentity.ShouldBe(originalIdentity);
         AssertArtifactsEqual(sourceBefore, fixture.Sources.SnapshotArtifacts());
         AssertArtifactsEqual(destinationBefore, fixture.SnapshotOutputArtifacts());
@@ -302,11 +302,11 @@ public sealed class SkyrimFormListGameAdapterTests
     /// <summary>
     /// Verifies a new localized small-master output writes only the plugin, reopens exactly, and retains ordered cross-master references and FormList values.
     /// </summary>
-    /// <returns>A task that completes after every staged and opened native lifetime is released.</returns>
+    /// <returns>A task that completes after every staged and opened plugin lifetime is released.</returns>
     [Fact]
     public async Task WriteAndValidateAsync_NewLocalizedOutputReopensExactFormListAndMasters()
     {
-        using var fixture = SkyrimNativeOutputTestFixture.Create();
+        using var fixture = SkyrimPluginOutputTestFixture.Create();
         var sourceBefore = fixture.Sources.SnapshotArtifacts();
         var destinationBefore = fixture.SnapshotOutputArtifacts();
         var adapter = CreateAdapter();
@@ -351,19 +351,19 @@ public sealed class SkyrimFormListGameAdapterTests
         var stagedResult = await adapter.WriteAndValidateAsync(
             sources,
             output,
-            new NativeWriteRequest(stagingDirectory.FullName, output.Association, output.Baseline),
+            new PluginWriteRequest(stagingDirectory.FullName, output.Association, output.Baseline),
             TestContext.Current.CancellationToken);
         stagedResult.Succeeded.ShouldBeTrue(stagedResult.Error?.Message);
         var staged = stagedResult.Value.ShouldNotBeNull();
         try
         {
-            staged.Disposition.ShouldBe(NativeWriteDisposition.StagedChanges);
+            staged.Disposition.ShouldBe(PluginWriteDisposition.StagedChanges);
             var pluginMapping = GetPluginMapping(staged);
             var emptyStrings = staged.ArtifactMappings
-                .Where(mapping => mapping.StagedArtifact.Role != NativeArtifactRole.Plugin
+                .Where(mapping => mapping.StagedArtifact.Role != PluginArtifactRole.Plugin
                     && mapping.StagedArtifact.Fingerprint.Exists)
                 .ShouldHaveSingleItem();
-            emptyStrings.StagedArtifact.Role.ShouldBe(NativeArtifactRole.Strings);
+            emptyStrings.StagedArtifact.Role.ShouldBe(PluginArtifactRole.Strings);
             emptyStrings.StagedArtifact.Language.ShouldBe("English");
             emptyStrings.StagedArtifact.Fingerprint.Length.ShouldBe(8L);
             File.ReadAllBytes(emptyStrings.StagedArtifact.Path).ShouldBe(new byte[8]);
@@ -410,11 +410,11 @@ public sealed class SkyrimFormListGameAdapterTests
     }
 
     /// <summary>Verifies existing localized no-op saves write nothing and material changes fail before private staging.</summary>
-    /// <returns>A task that completes after all native source and output lifetimes are released.</returns>
+    /// <returns>A task that completes after all plugin source and output lifetimes are released.</returns>
     [Fact]
     public async Task WriteAndValidateAsync_ExistingLocalizedMaterialChangeIsUnsupportedBeforeStaging()
     {
-        using var fixture = SkyrimNativeOutputTestFixture.Create();
+        using var fixture = SkyrimPluginOutputTestFixture.Create();
         var sourceBefore = fixture.Sources.SnapshotArtifacts();
         var destinationBefore = fixture.SnapshotOutputArtifacts();
         var adapter = CreateAdapter();
@@ -429,10 +429,10 @@ public sealed class SkyrimFormListGameAdapterTests
         var noOp = await adapter.WriteAndValidateAsync(
             sources,
             output,
-            new NativeWriteRequest(noOpDirectory.FullName, output.Association, output.Baseline),
+            new PluginWriteRequest(noOpDirectory.FullName, output.Association, output.Baseline),
             TestContext.Current.CancellationToken);
         noOp.Succeeded.ShouldBeTrue(noOp.Error?.Message);
-        noOp.Value!.Disposition.ShouldBe(NativeWriteDisposition.Unchanged);
+        noOp.Value!.Disposition.ShouldBe(PluginWriteDisposition.Unchanged);
         noOp.Value.ArtifactMappings.ShouldBeEmpty();
         noOpDirectory.EnumerateFileSystemInfos().ShouldBeEmpty();
 
@@ -443,7 +443,7 @@ public sealed class SkyrimFormListGameAdapterTests
         var rejected = await adapter.WriteAndValidateAsync(
             sources,
             output,
-            new NativeWriteRequest(rejectedDirectory.FullName, output.Association, output.Baseline),
+            new PluginWriteRequest(rejectedDirectory.FullName, output.Association, output.Baseline),
             TestContext.Current.CancellationToken);
 
         rejected.Succeeded.ShouldBeFalse();
@@ -453,30 +453,30 @@ public sealed class SkyrimFormListGameAdapterTests
         AssertArtifactsEqual(destinationBefore, fixture.SnapshotOutputArtifacts());
     }
 
-    /// <summary>Creates the composed Skyrim adapter used by focused native integration tests.</summary>
+    /// <summary>Creates the composed Skyrim adapter used by focused plugin integration tests.</summary>
     /// <returns>A complete adapter over the real source, output, edit, and inspection services.</returns>
     private static SkyrimFormListGameAdapter CreateAdapter()
     {
-        var outputService = new SkyrimNativeOutputService(new NativeOutputInputLoader());
+        var outputService = new SkyrimPluginOutputService(new PluginOutputInputLoader());
         return new SkyrimFormListGameAdapter(
-            new SkyrimNativeSourceLoader(new NativeSourceInputLoader()),
+            new SkyrimPluginSourceLoader(new PluginSourceInputLoader()),
             outputService,
-            new SkyrimNativeEditService(new SkyrimFormListNativeInspector()));
+            new SkyrimRecordEditService(new SkyrimFormListInspector()));
     }
 
     /// <summary>Opens the complete generated Skyrim source set through the composed adapter.</summary>
     /// <param name="adapter">The composed Skyrim adapter.</param>
     /// <param name="fixture">The generated source fixture.</param>
-    /// <returns>The independently owned native source set.</returns>
-    private static async Task<SkyrimNativeSourceSet> OpenSourcesAsync(
+    /// <returns>The independently owned plugin source set.</returns>
+    private static async Task<SkyrimPluginSourceSet> OpenSourcesAsync(
         SkyrimFormListGameAdapter adapter,
-        SkyrimNativeTestFixture fixture)
+        SkyrimPluginTestFixture fixture)
     {
         var result = await adapter.OpenSourcesAsync(
             fixture.CreateOpenRequest(),
             TestContext.Current.CancellationToken);
         result.Succeeded.ShouldBeTrue(result.Error?.Message);
-        return result.Value!.Sources.ShouldBeOfType<SkyrimNativeSourceSet>();
+        return result.Value!.Sources.ShouldBeOfType<SkyrimPluginSourceSet>();
     }
 
     /// <summary>Opens one new or existing output through the composed adapter.</summary>
@@ -484,10 +484,10 @@ public sealed class SkyrimFormListGameAdapterTests
     /// <param name="sources">The borrowed source set.</param>
     /// <param name="association">The exact output identity and representation.</param>
     /// <param name="mode">Whether the output must be absent or present.</param>
-    /// <returns>The independently owned complete native output state.</returns>
-    private static async Task<SkyrimNativeOutputState> OpenOutputAsync(
+    /// <returns>The independently owned complete plugin output state.</returns>
+    private static async Task<SkyrimPluginOutputState> OpenOutputAsync(
         SkyrimFormListGameAdapter adapter,
-        SkyrimNativeSourceSet sources,
+        SkyrimPluginSourceSet sources,
         OutputAssociation association,
         OutputSelectionMode mode)
     {
@@ -496,7 +496,7 @@ public sealed class SkyrimFormListGameAdapterTests
             new SelectOutputRequest(Guid.NewGuid(), sources.Revision, mode, association),
             TestContext.Current.CancellationToken);
         result.Succeeded.ShouldBeTrue(result.Error?.Message);
-        return result.Value!.Output.ShouldBeOfType<SkyrimNativeOutputState>();
+        return result.Value!.Output.ShouldBeOfType<SkyrimPluginOutputState>();
     }
 
     /// <summary>Begins editing one exact FormList already present in the output.</summary>
@@ -504,11 +504,11 @@ public sealed class SkyrimFormListGameAdapterTests
     /// <param name="sources">The borrowed source set.</param>
     /// <param name="output">The mutable test-owned output state.</param>
     /// <param name="target">The exact output-owned FormList identity.</param>
-    /// <returns>The native edit identity registered for the target.</returns>
-    private static NativeEditIdentity BeginExisting(
+    /// <returns>The record edit identity registered for the target.</returns>
+    private static RecordEditIdentity BeginExisting(
         SkyrimFormListGameAdapter adapter,
-        SkyrimNativeSourceSet sources,
-        SkyrimNativeOutputState output,
+        SkyrimPluginSourceSet sources,
+        SkyrimPluginOutputState output,
         FormKey target)
     {
         var result = adapter.BeginEdit(
@@ -528,11 +528,11 @@ public sealed class SkyrimFormListGameAdapterTests
     /// <param name="adapter">The composed Skyrim adapter.</param>
     /// <param name="sources">The borrowed source set.</param>
     /// <param name="output">The mutable test-owned output state.</param>
-    /// <returns>The newly allocated native edit identity.</returns>
-    private static NativeEditIdentity BeginNew(
+    /// <returns>The newly allocated record edit identity.</returns>
+    private static RecordEditIdentity BeginNew(
         SkyrimFormListGameAdapter adapter,
-        SkyrimNativeSourceSet sources,
-        SkyrimNativeOutputState output)
+        SkyrimPluginSourceSet sources,
+        SkyrimPluginOutputState output)
     {
         var result = adapter.BeginEdit(
             sources,
@@ -549,11 +549,11 @@ public sealed class SkyrimFormListGameAdapterTests
     /// <param name="output">The mutable test-owned output state.</param>
     /// <param name="target">The exact FormList target.</param>
     /// <param name="edit">The caller-owned typed edit.</param>
-    /// <returns>The successful native mutation result.</returns>
-    private static NativeEditMutationResult Apply(
+    /// <returns>The successful plugin mutation result.</returns>
+    private static RecordEditMutationResult Apply(
         SkyrimFormListGameAdapter adapter,
-        SkyrimNativeSourceSet sources,
-        SkyrimNativeOutputState output,
+        SkyrimPluginSourceSet sources,
+        SkyrimPluginOutputState output,
         FormKey target,
         FormListEdit edit)
     {
@@ -565,10 +565,10 @@ public sealed class SkyrimFormListGameAdapterTests
     /// <summary>Finds the single present staged plugin mapping.</summary>
     /// <param name="staged">The complete validated staged output set.</param>
     /// <returns>The staged plugin-to-destination mapping.</returns>
-    private static NativeStagedArtifactMapping GetPluginMapping(NativeStagedOutputSet staged)
+    private static StagedPluginArtifactMapping GetPluginMapping(StagedPluginOutputSet staged)
     {
         return staged.ArtifactMappings.Single(mapping =>
-            mapping.StagedArtifact.Role == NativeArtifactRole.Plugin);
+            mapping.StagedArtifact.Role == PluginArtifactRole.Plugin);
     }
 
     /// <summary>Asserts two complete physical artifact snapshots have identical ordered paths and bytes.</summary>

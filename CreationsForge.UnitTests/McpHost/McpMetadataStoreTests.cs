@@ -277,11 +277,11 @@ public sealed class McpMetadataStoreTests
             Guid.NewGuid(),
             Array.AsReadOnly(new[]
             {
-                new NativeArtifactAssociation(
+                new PluginArtifactAssociation(
                     CreateOutput(index).PluginPath,
-                    NativeArtifactRole.Plugin,
+                    PluginArtifactRole.Plugin,
                     null,
-                    new NativeArtifactFingerprint(false, 0, null)),
+                    new PluginArtifactFingerprint(false, 0, null)),
             }));
     }
 

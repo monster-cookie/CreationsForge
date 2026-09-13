@@ -3,12 +3,12 @@ using Mutagen.Bethesda.Plugins;
 namespace CreationsForge.Core.Engine.Contracts;
 
 /// <summary>
-/// Describes one native plugin participating in the current ephemeral workspace.
+/// Describes one plugin participating in the current ephemeral workspace.
 /// </summary>
 public sealed class PluginSummary
 {
     /// <summary>Initializes a plugin summary.</summary>
-    /// <param name="modKey">The native plugin identity.</param>
+    /// <param name="modKey">The plugin identity.</param>
     /// <param name="path">The canonical plugin path.</param>
     /// <param name="loadOrderIndex">The zero-based position in the explicit load order.</param>
     /// <param name="role">The plugin's role in the workspace.</param>
@@ -24,7 +24,7 @@ public sealed class PluginSummary
         Role = role;
     }
 
-    /// <summary>Gets the native plugin identity.</summary>
+    /// <summary>Gets the plugin identity.</summary>
     public ModKey ModKey { get; }
 
     /// <summary>Gets the canonical plugin path.</summary>

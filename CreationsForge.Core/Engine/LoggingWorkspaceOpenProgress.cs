@@ -4,7 +4,7 @@ using Serilog;
 
 namespace CreationsForge.Core.Engine;
 
-/// <summary>Logs native workspace-open progress synchronously before forwarding it to an optional caller observer.</summary>
+/// <summary>Logs workspace-open progress synchronously before forwarding it to an optional caller observer.</summary>
 internal sealed class LoggingWorkspaceOpenProgress : IProgress<WorkspaceOpenProgress>
 {
     /// <summary>The structured logger shared by the headless engine.</summary>
@@ -60,7 +60,7 @@ internal sealed class LoggingWorkspaceOpenProgress : IProgress<WorkspaceOpenProg
         }
 
         Logger.Information(
-            "Native workspace {WorkspaceId} open stage {OpenStage} after {ElapsedMilliseconds} ms: {ProgressMessage}",
+            "Workspace {WorkspaceId} open stage {OpenStage} after {ElapsedMilliseconds} ms: {ProgressMessage}",
             WorkspaceId,
             value.Stage,
             Elapsed.TotalMilliseconds,
@@ -68,12 +68,12 @@ internal sealed class LoggingWorkspaceOpenProgress : IProgress<WorkspaceOpenProg
         Observer?.Report(value);
     }
 
-    /// <summary>Writes a warning that native source acquisition remains incomplete at the most recently reported phase.</summary>
+    /// <summary>Writes a warning that plugin source acquisition remains incomplete at the most recently reported phase.</summary>
     public void LogStillRunning()
     {
         var (stage, message) = GetCurrentPhase();
         Logger.Warning(
-            "Native workspace {WorkspaceId} is still opening during {OpenStage} after {ElapsedMilliseconds} ms: {ProgressMessage}",
+            "Workspace {WorkspaceId} is still opening during {OpenStage} after {ElapsedMilliseconds} ms: {ProgressMessage}",
             WorkspaceId,
             stage,
             Elapsed.TotalMilliseconds,
@@ -85,7 +85,7 @@ internal sealed class LoggingWorkspaceOpenProgress : IProgress<WorkspaceOpenProg
     {
         var (stage, message) = GetCurrentPhase();
         Logger.Warning(
-            "Native workspace {WorkspaceId} opening was canceled during {OpenStage} after {ElapsedMilliseconds} ms: {ProgressMessage}",
+            "Workspace {WorkspaceId} opening was canceled during {OpenStage} after {ElapsedMilliseconds} ms: {ProgressMessage}",
             WorkspaceId,
             stage,
             Elapsed.TotalMilliseconds,

@@ -4,8 +4,8 @@ using CreationsForge.ViewModels;
 
 namespace CreationsForge.PresentationTests.Support;
 
-/// <summary>Records native changes dialogs and optionally runs deterministic user choices.</summary>
-internal sealed class RecordingWorkspaceChangesDialogService : INativeWorkspaceChangesDialogService
+/// <summary>Records plugin changes dialogs and optionally runs deterministic user choices.</summary>
+internal sealed class RecordingWorkspaceChangesDialogService : IWorkspaceChangesDialogService
 {
     /// <summary>Initializes a dialog recorder that keeps editing by default.</summary>
     internal RecordingWorkspaceChangesDialogService()
@@ -13,21 +13,21 @@ internal sealed class RecordingWorkspaceChangesDialogService : INativeWorkspaceC
     }
 
     /// <summary>Gets or sets the terminal result returned when no custom callback is configured.</summary>
-    internal NativeWorkspaceChangesDialogResult Result { get; set; } = NativeWorkspaceChangesDialogResult.KeepEditing;
+    internal WorkspaceChangesDialogResult Result { get; set; } = WorkspaceChangesDialogResult.KeepEditing;
 
     /// <summary>Gets or sets a custom modal callback.</summary>
-    internal Func<NativeWorkspaceChangesViewModel, NativeWorkspaceChangesDialogRequest, Task<NativeWorkspaceChangesDialogResult>>? OnShowAsync { get; set; }
+    internal Func<WorkspaceChangesViewModel, WorkspaceChangesDialogRequest, Task<WorkspaceChangesDialogResult>>? OnShowAsync { get; set; }
 
     /// <summary>Gets the view models shown in invocation order.</summary>
-    internal List<NativeWorkspaceChangesViewModel> ViewModels { get; } = [];
+    internal List<WorkspaceChangesViewModel> ViewModels { get; } = [];
 
     /// <summary>Gets the immutable requests shown in invocation order.</summary>
-    internal List<NativeWorkspaceChangesDialogRequest> Requests { get; } = [];
+    internal List<WorkspaceChangesDialogRequest> Requests { get; } = [];
 
     /// <inheritdoc />
-    public Task<NativeWorkspaceChangesDialogResult> ShowAsync(
-        NativeWorkspaceChangesViewModel viewModel,
-        NativeWorkspaceChangesDialogRequest request,
+    public Task<WorkspaceChangesDialogResult> ShowAsync(
+        WorkspaceChangesViewModel viewModel,
+        WorkspaceChangesDialogRequest request,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();

@@ -6,7 +6,7 @@ using ModelContextProtocol.Server;
 namespace CreationsForge.Mcp;
 
 /// <summary>
-/// Forwards bounded native reference searches without retaining an MCP-side index or cursor.
+/// Forwards bounded reference searches without retaining an MCP-side index or cursor.
 /// </summary>
 public sealed class ReferencesSearchTool : McpToolBase
 {
@@ -21,18 +21,18 @@ public sealed class ReferencesSearchTool : McpToolBase
         "cursor",
     };
 
-    /// <summary>The closed native-search input schema with engine-owned bounds.</summary>
+    /// <summary>The closed engine-search input schema with engine-owned bounds.</summary>
     private static readonly JsonElement InputSchema = ParseSchema(
         """{"type":"object","properties":{"workspaceId":{"type":"string","format":"uuid"},"query":{"type":"string","minLength":1,"maxLength":256},"scope":{"type":"string","enum":["winning_overrides","all_contexts","source","staged_output"]},"containingModKey":{"type":"string","minLength":1,"maxLength":1024},"maxResults":{"type":"integer","minimum":1,"maximum":250},"cursor":{"type":"string","minLength":1,"maxLength":16384}},"required":["workspaceId","query","scope"],"additionalProperties":false}""");
 
-    /// <summary>The closed native-search output schema.</summary>
+    /// <summary>The closed engine-search output schema.</summary>
     private static readonly JsonElement OutputSchema = McpToolSchema.Output(
         "{\"type\":\"object\",\"properties\":{\"workspaceId\":{\"type\":\"string\",\"format\":\"uuid\"},\"revision\":" + McpToolSchema.Revision + ",\"matches\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"formKey\":{\"type\":\"string\",\"minLength\":1},\"recordType\":{\"type\":\"string\",\"minLength\":1},\"editorId\":" + McpToolSchema.NullableString + ",\"containingModKey\":" + McpToolSchema.NullableString + ",\"sourcePath\":" + McpToolSchema.NullableString + ",\"loadOrderIndex\":" + McpToolSchema.NullableInteger + ",\"role\":" + McpToolSchema.NullableString + ",\"isDeleted\":{\"type\":\"boolean\"}},\"required\":[\"formKey\",\"recordType\",\"editorId\",\"containingModKey\",\"sourcePath\",\"loadOrderIndex\",\"role\",\"isDeleted\"],\"additionalProperties\":false}},\"cursor\":" + McpToolSchema.NullableString + ",\"warnings\":{\"type\":\"array\",\"items\":" + McpToolSchema.Warning + "}},\"required\":[\"workspaceId\",\"revision\",\"matches\",\"cursor\",\"warnings\"],\"additionalProperties\":false}");
 
     /// <summary>The host-owned workspace registry.</summary>
     private readonly McpWorkspaceRegistry WorkspaceRegistry;
 
-    /// <summary>Initializes the native reference-search tool.</summary>
+    /// <summary>Initializes the reference-search tool.</summary>
     /// <param name="workspaceRegistry">The registry that owns active engine workspaces.</param>
     public ReferencesSearchTool(McpWorkspaceRegistry workspaceRegistry)
     {
@@ -44,8 +44,8 @@ public sealed class ReferencesSearchTool : McpToolBase
     public override Tool ProtocolTool { get; } = new Tool
     {
         Name = "creationsforge_references_search",
-        Title = "Search native references",
-        Description = "Searches native record identities and EditorIDs through the engine's bounded deterministic pager.",
+        Title = "Search references",
+        Description = "Searches record identities and EditorIDs through the engine's bounded deterministic pager.",
         InputSchema = InputSchema,
         OutputSchema = OutputSchema,
         Annotations = new ToolAnnotations
@@ -59,7 +59,7 @@ public sealed class ReferencesSearchTool : McpToolBase
 
     /// <summary>Passes the normalized bounded request and engine-issued cursor unchanged to the workspace.</summary>
     /// <param name="request">The MCP request.</param>
-    /// <param name="cancellationToken">The token propagated through native traversal.</param>
+    /// <param name="cancellationToken">The token propagated through engine traversal.</param>
     /// <returns>One exact engine search page.</returns>
     /// <exception cref="OperationCanceledException">Thrown when cancellation is observed.</exception>
     public override async ValueTask<CallToolResult> InvokeAsync(
@@ -132,9 +132,9 @@ public sealed class ReferencesSearchTool : McpToolBase
         });
         if (!FitsStructuredResultBudget(projected))
         {
-            return Error("result_too_large", "The exact native search page exceeds the 64 KiB structured result budget; retry with a smaller maxResults value.");
+            return Error("result_too_large", "The exact engine search page exceeds the 64 KiB structured result budget; retry with a smaller maxResults value.");
         }
 
-        return Success(projected, $"Returned {page.Matches.Count} native reference match(es).");
+        return Success(projected, $"Returned {page.Matches.Count} reference match(es).");
     }
 }

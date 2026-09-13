@@ -1,5 +1,5 @@
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 
 namespace CreationsForge.Core.Engine.Persistence;
 
@@ -59,7 +59,7 @@ public sealed partial class WorkspaceSaveCoordinator
             ValidateLease(lease, request.Output);
             var paths = new SaveTransactionPaths(outputDirectory, request.WorkspaceId, request.SaveOperationId);
             var journal = await TransactionStore.ReadAsync(paths, cancellationToken).ConfigureAwait(false);
-            if (journal is null || !NativeSaveArtifactUtilities.MatchOutput(journal.Output, request.Output))
+            if (journal is null || !PluginSaveArtifactUtilities.MatchOutput(journal.Output, request.Output))
             {
                 return NoRecovery(request, new EngineError(
                     EngineErrorCode.NoRecoveryEvidence,
@@ -94,7 +94,7 @@ public sealed partial class WorkspaceSaveCoordinator
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var journal = entry.Journal;
-                if (!NativeSaveArtifactUtilities.MatchOutput(journal.Output, request.Output)
+                if (!PluginSaveArtifactUtilities.MatchOutput(journal.Output, request.Output)
                     || journal.Phase is SaveTransactionPhase.Committed or SaveTransactionPhase.NotCommitted)
                 {
                     continue;
@@ -147,9 +147,9 @@ public sealed partial class WorkspaceSaveCoordinator
             if (canonical is null
                 || recovery.Status != evidence.Status
                 || !canonical.EvidenceToken.Equals(evidence.EvidenceToken)
-                || !NativeSaveArtifactUtilities.MatchSourceBaseline(canonical.SourceBaseline, evidence.SourceBaseline)
-                || !NativeSaveArtifactUtilities.MatchOutput(canonical.Output, evidence.Output)
-                || !NativeSaveArtifactUtilities.MatchBaseline(canonical.ResolvedOutputBaseline, evidence.ResolvedOutputBaseline))
+                || !PluginSaveArtifactUtilities.MatchSourceBaseline(canonical.SourceBaseline, evidence.SourceBaseline)
+                || !PluginSaveArtifactUtilities.MatchOutput(canonical.Output, evidence.Output)
+                || !PluginSaveArtifactUtilities.MatchBaseline(canonical.ResolvedOutputBaseline, evidence.ResolvedOutputBaseline))
             {
                 return EngineResult<ResolvedOutputEvidence>.Failure(recovery.Error ?? new EngineError(
                     EngineErrorCode.ExternalChangeDetected,
@@ -184,14 +184,14 @@ public sealed partial class WorkspaceSaveCoordinator
     {
         try
         {
-            var output = await NativeSaveArtifactUtilities.CaptureOutputAsync(
+            var output = await PluginSaveArtifactUtilities.CaptureOutputAsync(
                 journal.Release,
                 journal.Output,
                 cancellationToken).ConfigureAwait(false);
-            var sourceArtifacts = await NativeSaveArtifactUtilities.RecaptureAsync(
+            var sourceArtifacts = await PluginSaveArtifactUtilities.RecaptureAsync(
                 journal.SourceBaseline.Artifacts,
                 cancellationToken).ConfigureAwait(false);
-            var sourceMatches = NativeSaveArtifactUtilities.MatchExact(
+            var sourceMatches = PluginSaveArtifactUtilities.MatchExact(
                 journal.SourceBaseline.Artifacts,
                 sourceArtifacts);
             var ownedArtifacts = await ObserveOwnedArtifactsAsync(journal, cancellationToken).ConfigureAwait(false);
@@ -199,12 +199,12 @@ public sealed partial class WorkspaceSaveCoordinator
 
             if (journal.Phase is SaveTransactionPhase.Committed or SaveTransactionPhase.NotCommitted)
             {
-                var token = NativeSaveArtifactUtilities.CreateEvidenceToken(journal, tokenObservations);
+                var token = PluginSaveArtifactUtilities.CreateEvidenceToken(journal, tokenObservations);
                 var status = journal.Phase == SaveTransactionPhase.Committed
                     ? RecoverSaveStatus.Committed
                     : RecoverSaveStatus.NotCommitted;
                 var terminal = journal.TerminalBaseline!;
-                if (!sourceMatches || !NativeSaveArtifactUtilities.MatchBaseline(terminal, output))
+                if (!sourceMatches || !PluginSaveArtifactUtilities.MatchBaseline(terminal, output))
                 {
                     return new RecoverSaveResult(
                         journal.WorkspaceId,
@@ -233,7 +233,7 @@ public sealed partial class WorkspaceSaveCoordinator
 
             if (journal.Phase == SaveTransactionPhase.Preparing)
             {
-                if (!NativeSaveArtifactUtilities.MatchBaseline(journal.BeforeBaseline, output))
+                if (!PluginSaveArtifactUtilities.MatchBaseline(journal.BeforeBaseline, output))
                 {
                     return UnknownExternalChange(journal);
                 }
@@ -260,10 +260,10 @@ public sealed partial class WorkspaceSaveCoordinator
                     null);
             }
 
-            if (journal.Disposition == NativeWriteDisposition.Unchanged
+            if (journal.Disposition == PluginWriteDisposition.Unchanged
                 && journal.Phase == SaveTransactionPhase.Prepared)
             {
-                if (!NativeSaveArtifactUtilities.MatchBaseline(journal.BeforeBaseline, output))
+                if (!PluginSaveArtifactUtilities.MatchBaseline(journal.BeforeBaseline, output))
                 {
                     return UnknownExternalChange(journal);
                 }
@@ -341,7 +341,7 @@ public sealed partial class WorkspaceSaveCoordinator
 
             if (classification == SavePhysicalState.OwnedMixed && OwnedRepairFilesMatch(journal, ownedArtifacts))
             {
-                var token = NativeSaveArtifactUtilities.CreateEvidenceToken(journal, tokenObservations);
+                var token = PluginSaveArtifactUtilities.CreateEvidenceToken(journal, tokenObservations);
                 return new RecoverSaveResult(
                     journal.WorkspaceId,
                     journal.SaveOperationId,
@@ -403,15 +403,15 @@ public sealed partial class WorkspaceSaveCoordinator
     {
         if (journal.Phase == SaveTransactionPhase.Preparing)
         {
-            return NativeSaveArtifactUtilities.MatchBaseline(journal.BeforeBaseline, actual)
+            return PluginSaveArtifactUtilities.MatchBaseline(journal.BeforeBaseline, actual)
                 ? SavePhysicalState.AllBefore
                 : SavePhysicalState.ForeignOrUnknown;
         }
 
-        if (journal.Disposition == NativeWriteDisposition.Unchanged
+        if (journal.Disposition == PluginWriteDisposition.Unchanged
             && journal.Phase == SaveTransactionPhase.Prepared)
         {
-            return NativeSaveArtifactUtilities.MatchBaseline(journal.BeforeBaseline, actual)
+            return PluginSaveArtifactUtilities.MatchBaseline(journal.BeforeBaseline, actual)
                 ? SavePhysicalState.AllPrepared
                 : SavePhysicalState.ForeignOrUnknown;
         }
@@ -426,7 +426,7 @@ public sealed partial class WorkspaceSaveCoordinator
             return SavePhysicalState.ForeignOrUnknown;
         }
 
-        var actualByPath = actual.Artifacts.ToDictionary(artifact => artifact.Path, NativeSaveArtifactUtilities.PathComparer);
+        var actualByPath = actual.Artifacts.ToDictionary(artifact => artifact.Path, PluginSaveArtifactUtilities.PathComparer);
         var sawBefore = false;
         var sawPrepared = false;
         for (var index = 0; index < journal.ArtifactPlans.Count; index++)
@@ -495,11 +495,11 @@ public sealed partial class WorkspaceSaveCoordinator
     private static bool IsRecognizedDestinationArtifact(
         SaveTransactionJournal journal,
         int artifactIndex,
-        NativeArtifactAssociation observed)
+        PluginArtifactAssociation observed)
     {
         var savePlan = journal.ArtifactPlans[artifactIndex];
-        if (NativeSaveArtifactUtilities.MatchExact([savePlan.Before], [observed])
-            || NativeSaveArtifactUtilities.MatchExact([CreatePreparedDestination(savePlan)], [observed]))
+        if (PluginSaveArtifactUtilities.MatchExact([savePlan.Before], [observed])
+            || PluginSaveArtifactUtilities.MatchExact([CreatePreparedDestination(savePlan)], [observed]))
         {
             return true;
         }
@@ -509,8 +509,8 @@ public sealed partial class WorkspaceSaveCoordinator
             if (attempt.ArtifactPlans.Count == journal.ArtifactPlans.Count)
             {
                 var repairPlan = attempt.ArtifactPlans[artifactIndex];
-                if (NativeSaveArtifactUtilities.MatchExact([repairPlan.Current], [observed])
-                    || NativeSaveArtifactUtilities.MatchExact([repairPlan.Target], [observed]))
+                if (PluginSaveArtifactUtilities.MatchExact([repairPlan.Current], [observed])
+                    || PluginSaveArtifactUtilities.MatchExact([repairPlan.Target], [observed]))
                 {
                     return true;
                 }
@@ -523,14 +523,14 @@ public sealed partial class WorkspaceSaveCoordinator
     /// <summary>Creates the expected destination association after one prepared plan is published.</summary>
     /// <param name="plan">The artifact plan.</param>
     /// <returns>The expected destination observation.</returns>
-    private static NativeArtifactAssociation CreatePreparedDestination(SaveArtifactPlan plan)
+    private static PluginArtifactAssociation CreatePreparedDestination(SaveArtifactPlan plan)
     {
         if (ArtifactContentMatches(plan.Before, plan.Staged))
         {
             return plan.Before;
         }
 
-        return new NativeArtifactAssociation(
+        return new PluginArtifactAssociation(
             plan.Before.Path,
             plan.Before.Role,
             plan.Before.Language,
@@ -543,7 +543,7 @@ public sealed partial class WorkspaceSaveCoordinator
     /// <returns>The expected prepared baseline.</returns>
     private static OutputArtifactSetBaseline CreatePreparedBaseline(SaveTransactionJournal journal)
     {
-        return NativeSaveArtifactUtilities.CreateOutputBaseline(
+        return PluginSaveArtifactUtilities.CreateOutputBaseline(
             journal.ArtifactPlans.Select(CreatePreparedDestination).ToArray());
     }
 
@@ -581,9 +581,9 @@ public sealed partial class WorkspaceSaveCoordinator
         SaveTransactionJournal journal,
         RecoverSaveStatus status,
         OutputArtifactSetBaseline terminalBaseline,
-        IReadOnlyList<NativeArtifactAssociation> observations)
+        IReadOnlyList<PluginArtifactAssociation> observations)
     {
-        return NativeSaveArtifactUtilities.CreateEvidenceToken(
+        return PluginSaveArtifactUtilities.CreateEvidenceToken(
             ProjectTerminalJournal(journal, status, terminalBaseline),
             observations);
     }
@@ -592,11 +592,11 @@ public sealed partial class WorkspaceSaveCoordinator
     /// <param name="journal">The recognized save journal.</param>
     /// <param name="cancellationToken">The token checked during hashing.</param>
     /// <returns>The current owned-file observations in stable plan order.</returns>
-    private static async Task<IReadOnlyList<NativeArtifactAssociation>> ObserveOwnedArtifactsAsync(
+    private static async Task<IReadOnlyList<PluginArtifactAssociation>> ObserveOwnedArtifactsAsync(
         SaveTransactionJournal journal,
         CancellationToken cancellationToken)
     {
-        var expected = new List<NativeArtifactAssociation>();
+        var expected = new List<PluginArtifactAssociation>();
         foreach (var plan in journal.ArtifactPlans)
         {
             expected.Add(plan.Staged);
@@ -610,7 +610,7 @@ public sealed partial class WorkspaceSaveCoordinator
                 expected.Add(plan.Backup);
             }
 
-            expected.Add(new NativeArtifactAssociation(
+            expected.Add(new PluginArtifactAssociation(
                 plan.RetiredPath,
                 plan.Before.Role,
                 plan.Before.Language,
@@ -634,7 +634,7 @@ public sealed partial class WorkspaceSaveCoordinator
             }
         }
 
-        return await NativeSaveArtifactUtilities.RecaptureAsync(expected, cancellationToken).ConfigureAwait(false);
+        return await PluginSaveArtifactUtilities.RecaptureAsync(expected, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Checks that every required staged or backup source remains exact for explicit repair.</summary>
@@ -643,20 +643,20 @@ public sealed partial class WorkspaceSaveCoordinator
     /// <returns><see langword="true"/> when each required source remains exact or has already moved to its recognized destination.</returns>
     private static bool OwnedRepairFilesMatch(
         SaveTransactionJournal journal,
-        IReadOnlyList<NativeArtifactAssociation> observed)
+        IReadOnlyList<PluginArtifactAssociation> observed)
     {
-        var observedByPath = observed.ToDictionary(artifact => artifact.Path, NativeSaveArtifactUtilities.PathComparer);
+        var observedByPath = observed.ToDictionary(artifact => artifact.Path, PluginSaveArtifactUtilities.PathComparer);
         foreach (var plan in journal.ArtifactPlans)
         {
             if (!observedByPath.TryGetValue(plan.Staged.Path, out var staged)
-                || !NativeSaveArtifactUtilities.MatchExact([plan.Staged], [staged]))
+                || !PluginSaveArtifactUtilities.MatchExact([plan.Staged], [staged]))
             {
                 return false;
             }
 
             if (plan.Backup is not null
                 && (!observedByPath.TryGetValue(plan.Backup.Path, out var backup)
-                    || !NativeSaveArtifactUtilities.MatchExact([plan.Backup], [backup])))
+                    || !PluginSaveArtifactUtilities.MatchExact([plan.Backup], [backup])))
             {
                 return false;
             }
@@ -664,12 +664,12 @@ public sealed partial class WorkspaceSaveCoordinator
             if (plan.Publish is not null
                 && observedByPath.TryGetValue(plan.Publish.Path, out var publish)
                 && publish.Fingerprint.Exists
-                && !NativeSaveArtifactUtilities.MatchExact([plan.Publish], [publish]))
+                && !PluginSaveArtifactUtilities.MatchExact([plan.Publish], [publish]))
             {
                 return false;
             }
 
-            var retired = new NativeArtifactAssociation(
+            var retired = new PluginArtifactAssociation(
                 plan.RetiredPath,
                 plan.Before.Role,
                 plan.Before.Language,
@@ -677,7 +677,7 @@ public sealed partial class WorkspaceSaveCoordinator
                 plan.Before.FileIdentity);
             if (observedByPath.TryGetValue(retired.Path, out var retiredNow)
                 && retiredNow.Fingerprint.Exists
-                && !NativeSaveArtifactUtilities.MatchExact([retired], [retiredNow]))
+                && !PluginSaveArtifactUtilities.MatchExact([retired], [retiredNow]))
             {
                 return false;
             }
@@ -690,7 +690,7 @@ public sealed partial class WorkspaceSaveCoordinator
                 if (plan.Publish is not null
                     && observedByPath.TryGetValue(plan.Publish.Path, out var publish)
                     && publish.Fingerprint.Exists
-                    && !NativeSaveArtifactUtilities.MatchExact([plan.Publish], [publish]))
+                    && !PluginSaveArtifactUtilities.MatchExact([plan.Publish], [publish]))
                 {
                     return false;
                 }
@@ -698,7 +698,7 @@ public sealed partial class WorkspaceSaveCoordinator
                 if (plan.Retired is not null
                     && observedByPath.TryGetValue(plan.Retired.Path, out var retired)
                     && retired.Fingerprint.Exists
-                    && !NativeSaveArtifactUtilities.MatchExact([plan.Retired], [retired]))
+                    && !PluginSaveArtifactUtilities.MatchExact([plan.Retired], [retired]))
                 {
                     return false;
                 }
@@ -769,8 +769,8 @@ public sealed partial class WorkspaceSaveCoordinator
             && evidence.SaveBaseRevision == journal.SaveBaseRevision
             && evidence.Game == journal.Game
             && evidence.Release == journal.Release
-            && NativeSaveArtifactUtilities.MatchSourceBaseline(evidence.SourceBaseline, journal.SourceBaseline)
-            && NativeSaveArtifactUtilities.MatchOutput(evidence.Output, journal.Output);
+            && PluginSaveArtifactUtilities.MatchSourceBaseline(evidence.SourceBaseline, journal.SourceBaseline)
+            && PluginSaveArtifactUtilities.MatchOutput(evidence.Output, journal.Output);
     }
 
     /// <summary>Creates a pending-save contract from one recognized nonterminal journal.</summary>

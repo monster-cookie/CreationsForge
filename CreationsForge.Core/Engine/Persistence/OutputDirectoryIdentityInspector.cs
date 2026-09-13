@@ -6,7 +6,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace CreationsForge.Core.Engine.Persistence;
 
-/// <summary>Retains and compares native directory identity while validating stable guard-file identity.</summary>
+/// <summary>Retains and compares operating-system directory identity while validating stable guard-file identity.</summary>
 internal static class OutputDirectoryIdentityInspector
 {
     /// <summary>Requests Windows file attributes without content access.</summary>
@@ -73,7 +73,7 @@ internal static class OutputDirectoryIdentityInspector
 
     /// <summary>Opens and retains one verified output directory without allowing Windows deletion or rename.</summary>
     /// <param name="canonicalDirectoryPath">The canonical existing output directory.</param>
-    /// <returns>The retained native handle and captured stable identity.</returns>
+    /// <returns>The retained operating-system handle and captured stable identity.</returns>
     /// <exception cref="OutputDirectoryLeaseException">Thrown when the platform cannot retain and verify the directory identity.</exception>
     internal static OutputDirectoryIdentityHandle OpenDirectory(string canonicalDirectoryPath)
     {
@@ -201,7 +201,7 @@ internal static class OutputDirectoryIdentityInspector
 
     /// <summary>Verifies that an opened handle resolves to the exact canonical path supplied by the caller.</summary>
     /// <param name="canonicalPath">The expected canonical path.</param>
-    /// <param name="handle">The opened native handle.</param>
+    /// <param name="handle">The opened operating-system handle.</param>
     /// <param name="description">The object description used in diagnostics.</param>
     /// <exception cref="OutputDirectoryLeaseException">Thrown when path resolution fails or reveals an alias.</exception>
     private static void VerifyResolvedPath(
@@ -222,12 +222,12 @@ internal static class OutputDirectoryIdentityInspector
         }
     }
 
-    /// <summary>Reads stable identity and validates the expected native object type.</summary>
+    /// <summary>Reads stable identity and validates the expected operating-system object type.</summary>
     /// <param name="handle">The opened file or directory handle.</param>
     /// <param name="requireDirectory">Whether the handle must identify a directory rather than a regular file.</param>
-    /// <returns>The native physical identity and hard-link count.</returns>
-    /// <exception cref="OutputDirectoryLeaseException">Thrown when identity is unavailable or the native object type is unsafe.</exception>
-    private static NativeFileIdentity ReadIdentity(SafeFileHandle handle, bool requireDirectory)
+    /// <returns>The physical artifact identity and hard-link count.</returns>
+    /// <exception cref="OutputDirectoryLeaseException">Thrown when identity is unavailable or the operating-system object type is unsafe.</exception>
+    private static ArtifactFileIdentity ReadIdentity(SafeFileHandle handle, bool requireDirectory)
     {
         if (OperatingSystem.IsWindows())
         {
@@ -257,7 +257,7 @@ internal static class OutputDirectoryIdentityInspector
             }
 
             var fileIndex = ((ulong)information.FileIndexHigh << 32) | information.FileIndexLow;
-            return new NativeFileIdentity(
+            return new ArtifactFileIdentity(
                 "windows-file-id-v1",
                 information.VolumeSerialNumber.ToString("X8"),
                 fileIndex.ToString("X16"),
@@ -286,7 +286,7 @@ internal static class OutputDirectoryIdentityInspector
                         : "The output-directory guard does not identify a regular file.");
             }
 
-            return new NativeFileIdentity(
+            return new ArtifactFileIdentity(
                 "linux-statx-v1",
                 $"{information.DeviceMajor:X8}:{information.DeviceMinor:X8}",
                 information.Inode.ToString("X16"),
@@ -302,7 +302,7 @@ internal static class OutputDirectoryIdentityInspector
     /// <param name="left">The retained identity.</param>
     /// <param name="right">The identity observed through the current path.</param>
     /// <returns><see langword="true"/> when both values identify the same physical object.</returns>
-    private static bool HasSameStableIdentity(NativeFileIdentity left, NativeFileIdentity right)
+    private static bool HasSameStableIdentity(ArtifactFileIdentity left, ArtifactFileIdentity right)
     {
         return string.Equals(left.Provider, right.Provider, StringComparison.Ordinal)
             && string.Equals(left.VolumeId, right.VolumeId, StringComparison.Ordinal)
@@ -315,7 +315,7 @@ internal static class OutputDirectoryIdentityInspector
     /// <exception cref="OutputDirectoryLeaseException">Thrown when the guard path was replaced or can no longer be verified.</exception>
     private static void VerifyLinuxGuardPathIdentity(
         string canonicalGuardPath,
-        NativeFileIdentity openedIdentity)
+        ArtifactFileIdentity openedIdentity)
     {
         var descriptor = Open(canonicalGuardPath, OpenReadOnly | OpenNonBlocking | OpenNoFollow | OpenCloseOnExec);
         if (descriptor < 0)
@@ -575,7 +575,7 @@ internal static class OutputDirectoryIdentityInspector
 
     /// <summary>Opens a Linux file-system object.</summary>
     /// <param name="path">The canonical path.</param>
-    /// <param name="flags">The native open flags.</param>
+    /// <param name="flags">The operating-system open flags.</param>
     /// <returns>The opened descriptor, or minus one on failure.</returns>
     [DllImport("libc", EntryPoint = "open", SetLastError = true)]
     private static extern int Open(string path, int flags);

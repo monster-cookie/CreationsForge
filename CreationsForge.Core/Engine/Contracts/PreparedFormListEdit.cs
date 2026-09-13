@@ -1,11 +1,11 @@
 namespace CreationsForge.Core.Engine.Contracts;
 
 /// <summary>
-/// Holds an adapter-owned defensively copied native command payload and its complete canonical identity.
+/// Holds an adapter-owned defensively copied plugin command payload and its complete canonical identity.
 /// </summary>
 public abstract class PreparedFormListEdit
 {
-    /// <summary>Initializes a prepared native command payload.</summary>
+    /// <summary>Initializes a prepared plugin command payload.</summary>
     /// <param name="fingerprint">The complete typed canonical SHA-256 identity.</param>
     /// <param name="error">A deterministic validation failure, or <see langword="null"/> when the payload is valid.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="fingerprint"/> is <see langword="null"/>.</exception>

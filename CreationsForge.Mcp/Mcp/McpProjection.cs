@@ -5,7 +5,7 @@ using CreationsForge.Core.Engine.Contracts;
 namespace CreationsForge.Mcp;
 
 /// <summary>
-/// Projects native engine contracts into stable MCP JSON without changing their identity or order.
+/// Projects engine contracts into stable MCP JSON without changing their identity or order.
 /// </summary>
 internal static class McpProjection
 {
@@ -21,7 +21,7 @@ internal static class McpProjection
         };
     }
 
-    /// <summary>Projects one exact contextual selection and its native resolution status.</summary>
+    /// <summary>Projects one exact contextual selection and its engine resolution status.</summary>
     /// <param name="context">The engine-owned context result.</param>
     /// <returns>A closed context object that preserves absence as JSON null.</returns>
     internal static object Context(FormListContext context)

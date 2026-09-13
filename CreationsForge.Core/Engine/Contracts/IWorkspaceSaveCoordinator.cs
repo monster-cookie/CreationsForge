@@ -5,7 +5,7 @@ namespace CreationsForge.Core.Engine.Contracts;
 /// </summary>
 public interface IWorkspaceSaveCoordinator
 {
-    /// <summary>Inspects stable save metadata while the caller holds the output-directory lease, before native output opening.</summary>
+    /// <summary>Inspects stable save metadata while the caller holds the output-directory lease, before plugin output opening.</summary>
     /// <param name="lease">The caller-owned lease for the request's output directory.</param>
     /// <param name="request">The exact workspace, source, game, release, and output identity seeking admission.</param>
     /// <param name="cancellationToken">A token that cancels metadata inspection.</param>
@@ -16,7 +16,7 @@ public interface IWorkspaceSaveCoordinator
         OutputAdmissionRequest request,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Stages, natively reopens, and guardedly commits a complete plugin-and-strings output set.</summary>
+    /// <summary>Stages, reopens through the game adapter, and guardedly commits a complete plugin-and-strings output set.</summary>
     /// <param name="context">Borrowed live workspace state held under the workspace operation gate.</param>
     /// <param name="request">The guarded save request.</param>
     /// <param name="cancellationToken">A token that may cancel before the first destination mutation.</param>

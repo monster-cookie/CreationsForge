@@ -8,7 +8,7 @@ public sealed class WorkspaceState
 {
     /// <summary>Initializes one immutable atomic workspace-state snapshot.</summary>
     /// <param name="game">The supported CreationsForge game selected when the workspace opened.</param>
-    /// <param name="release">The exact native release selected when the workspace opened.</param>
+    /// <param name="release">The exact plugin release selected when the workspace opened.</param>
     /// <param name="output">The selected output association, or <see langword="null"/> before output selection.</param>
     /// <param name="outputBaseline">The selected complete artifact baseline, or <see langword="null"/> before output selection.</param>
     /// <param name="outputSynchronization">The current ready, recovery-required, or reopen-required synchronization state.</param>
@@ -53,7 +53,7 @@ public sealed class WorkspaceState
     /// <summary>Gets the supported CreationsForge game selected when the workspace opened.</summary>
     public SupportedGame Game { get; }
 
-    /// <summary>Gets the exact native release selected when the workspace opened.</summary>
+    /// <summary>Gets the exact plugin release selected when the workspace opened.</summary>
     public GameRelease Release { get; }
 
     /// <summary>Gets the selected output association, or <see langword="null"/> before output selection.</summary>

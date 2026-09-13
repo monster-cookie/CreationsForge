@@ -18,13 +18,13 @@ using Shouldly;
 namespace CreationsForge.UnitTests.McpHost;
 
 /// <summary>
-/// Verifies the native MCP read tools through a real SDK client and stream server boundary.
+/// Verifies the plugin MCP read tools through a real SDK client and stream server boundary.
 /// </summary>
 public sealed class McpReadToolProtocolTests
 {
     /// <summary>Verifies that hostile argument names cannot expand structured or text error responses.</summary>
     [Fact]
-    public async Task NativeToolErrors_ThroughSdkProtocol_BoundAndSanitizeUntrustedDetails()
+    public async Task ToolErrors_ThroughSdkProtocol_BoundAndSanitizeUntrustedDetails()
     {
         await using var registry = new McpWorkspaceRegistry();
         var factory = new Mock<IFormListWorkspaceFactory>();
@@ -50,9 +50,9 @@ public sealed class McpReadToolProtocolTests
         text.ShouldNotContain(hostileName);
     }
 
-    /// <summary>Verifies that native domain tools and capability claims require an actual factory.</summary>
+    /// <summary>Verifies that plugin domain tools and capability claims require an actual factory.</summary>
     [Fact]
-    public async Task ToolCatalog_RegistersNativeToolsOnlyWhenFactoryIsProvided()
+    public async Task ToolCatalog_RegistersPluginToolsOnlyWhenFactoryIsProvided()
     {
         await using var registry = new McpWorkspaceRegistry();
         var factory = new Mock<IFormListWorkspaceFactory>();
@@ -75,9 +75,9 @@ public sealed class McpReadToolProtocolTests
         available.ShouldAllBe(tool => tool.ProtocolTool.InputSchema.GetProperty("additionalProperties").GetBoolean() == false);
     }
 
-    /// <summary>Verifies exact workspace-open forwarding, read-result revision fidelity, native search paging, and idempotent close.</summary>
+    /// <summary>Verifies exact workspace-open forwarding, read-result revision fidelity, plugin search paging, and idempotent close.</summary>
     [Fact]
-    public async Task NativeTools_ThroughSdkProtocol_ForwardOpenListSearchAndClose()
+    public async Task Tools_ThroughSdkProtocol_ForwardOpenListSearchAndClose()
     {
         var workspaceId = Guid.NewGuid();
         var openRevision = new WorkspaceRevision(Guid.NewGuid(), 7);
@@ -117,7 +117,7 @@ public sealed class McpReadToolProtocolTests
                                 0,
                                 PluginRole.Source),
                         }),
-                        searchRequest.ContinuationToken is null ? "native-next" : null),
+                        searchRequest.ContinuationToken is null ? "plugin-next" : null),
                     workspaceId: workspaceId,
                     resultRevision: readRevision)));
         WorkspaceOpenRequest? capturedOpenRequest = null;
@@ -179,7 +179,7 @@ public sealed class McpReadToolProtocolTests
             });
         var search = GetResult(searchResult);
         search.GetProperty("matches")[0].GetProperty("formKey").GetString().ShouldBe(formKey.ToString());
-        search.GetProperty("cursor").GetString().ShouldBe("native-next");
+        search.GetProperty("cursor").GetString().ShouldBe("plugin-next");
         workspace.Verify(candidate => candidate.SearchReferencesAsync(
             It.Is<ReferenceSearchRequest>(request =>
                 request.Query == "ExampleList" &&
@@ -201,10 +201,10 @@ public sealed class McpReadToolProtocolTests
         workspace.Verify(candidate => candidate.DisposeAsync(), Times.Once);
     }
 
-    /// <summary>Verifies that an SDK protocol cancellation notification reaches an active native read.</summary>
+    /// <summary>Verifies that an SDK protocol cancellation notification reaches an active plugin read.</summary>
     /// <returns>A task that completes after the server observes cancellation and the client request waiter stops.</returns>
     [Fact(Timeout = 30_000)]
-    public async Task NativeRead_ThroughSdkProtocol_PropagatesCancellation()
+    public async Task Read_ThroughSdkProtocol_PropagatesCancellation()
     {
         using var deadlineSource = CancellationTokenSource.CreateLinkedTokenSource(
             TestContext.Current.CancellationToken);
@@ -443,7 +443,7 @@ public sealed class McpReadToolProtocolTests
         });
         var warnings = Array.AsReadOnly(new[]
         {
-            new EngineWarning("writer_normalized", "The writer normalized one native value."),
+            new EngineWarning("writer_normalized", "The writer normalized one record value."),
         });
         var comparison = new FormListComparison(beforeContext, afterContext, before, after, changes, warnings);
         var workspace = CreateWorkspace(workspaceId, revision);
@@ -499,7 +499,7 @@ public sealed class McpReadToolProtocolTests
         return workspace;
     }
 
-    /// <summary>Creates a deterministic native factory for one workspace.</summary>
+    /// <summary>Creates a deterministic plugin factory for one workspace.</summary>
     /// <param name="workspace">The workspace returned after acquisition.</param>
     /// <returns>The configured factory mock.</returns>
     private static Mock<IFormListWorkspaceFactory> CreateFactory(IFormListWorkspace workspace)
@@ -512,7 +512,7 @@ public sealed class McpReadToolProtocolTests
         return factory;
     }
 
-    /// <summary>Opens one test workspace through the SDK protocol using explicit native inputs.</summary>
+    /// <summary>Opens one test workspace through the SDK protocol using explicit plugin inputs.</summary>
     /// <param name="client">The connected SDK client.</param>
     /// <param name="workspaceId">The workspace identity.</param>
     /// <param name="cancellationToken">The token that bounds the protocol request.</param>
@@ -568,7 +568,7 @@ public sealed class McpReadToolProtocolTests
         };
     }
 
-    /// <summary>Creates a complete comparison argument object for two exact native contexts.</summary>
+    /// <summary>Creates a complete comparison argument object for two exact record contexts.</summary>
     /// <param name="workspaceId">The workspace identity.</param>
     /// <param name="formKey">The shared FormList identity.</param>
     /// <param name="sourceModKey">The prior containing source plugin.</param>

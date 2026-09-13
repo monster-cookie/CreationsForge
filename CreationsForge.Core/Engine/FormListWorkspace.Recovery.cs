@@ -1,10 +1,10 @@
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 
 namespace CreationsForge.Core.Engine;
 
 /// <summary>
-/// Owns explicit evidence-validated output recovery adoption for one isolated native workspace.
+/// Owns explicit evidence-validated output recovery adoption for one isolated workspace.
 /// </summary>
 public sealed partial class FormListWorkspace
 {
@@ -125,7 +125,7 @@ public sealed partial class FormListWorkspace
                 return StoreRecoveryFailure(
                     request,
                     fingerprint,
-                    sourceVerification.Error ?? new EngineError(EngineErrorCode.ExternalChangeDetected, "The live native sources do not match the resolved save evidence."),
+                    sourceVerification.Error ?? new EngineError(EngineErrorCode.ExternalChangeDetected, "The live plugin sources do not match the resolved save evidence."),
                     warnings);
             }
 
@@ -173,12 +173,12 @@ public sealed partial class FormListWorkspace
     {
         if (evidence.Game != Request.Game || evidence.Release != Request.Release)
         {
-            return new EngineError(EngineErrorCode.InvalidRequest, "Resolved output evidence targets a different game or native release.");
+            return new EngineError(EngineErrorCode.InvalidRequest, "Resolved output evidence targets a different game or engine release.");
         }
 
         if (!SourceBaselinesMatch(evidence.SourceBaseline, Sources!.Baseline))
         {
-            return new EngineError(EngineErrorCode.ExternalChangeDetected, "Resolved output evidence targets a different native source baseline.");
+            return new EngineError(EngineErrorCode.ExternalChangeDetected, "Resolved output evidence targets a different plugin source baseline.");
         }
 
         var pendingSave = CurrentOutputSynchronization.PendingSave;
@@ -225,7 +225,7 @@ public sealed partial class FormListWorkspace
     /// <param name="fingerprint">The complete canonical request fingerprint.</param>
     /// <param name="lease">The caller-owned output-directory lease.</param>
     /// <param name="evidence">The coordinator-validated not-committed evidence.</param>
-    /// <param name="warnings">Warnings accumulated before native reopen proof.</param>
+    /// <param name="warnings">Warnings accumulated before engine reopen proof.</param>
     /// <param name="cancellationToken">A token that cancels before publication.</param>
     /// <returns>The resumed output receipt or a typed failure retaining the latch.</returns>
     private async ValueTask<EngineResult<OutputSelectionReceipt>> ResumeStagedOutputAsync(
@@ -244,7 +244,7 @@ public sealed partial class FormListWorkspace
             return StoreRecoveryFailure(
                 request,
                 fingerprint,
-                proofResult.Error ?? new EngineError(EngineErrorCode.OutputOpenFailed, "The restored output could not be reopened for native proof."),
+                proofResult.Error ?? new EngineError(EngineErrorCode.OutputOpenFailed, "The restored output could not be reopened for engine proof."),
                 warnings);
         }
 
@@ -277,12 +277,12 @@ public sealed partial class FormListWorkspace
             warnings));
     }
 
-    /// <summary>Natively reopens terminal resolved output state and replaces any selected candidate atomically.</summary>
+    /// <summary>Directly reopens terminal resolved output state and replaces any selected candidate atomically.</summary>
     /// <param name="request">The guarded recovery adoption request.</param>
     /// <param name="fingerprint">The complete canonical request fingerprint.</param>
     /// <param name="lease">The caller-owned output-directory lease.</param>
     /// <param name="evidence">The coordinator-validated terminal evidence.</param>
-    /// <param name="warnings">Warnings accumulated before native reopening.</param>
+    /// <param name="warnings">Warnings accumulated before engine reopening.</param>
     /// <param name="cancellationToken">A token that cancels before publication.</param>
     /// <returns>The reopened output receipt or a typed failure preserving existing state.</returns>
     private async ValueTask<EngineResult<OutputSelectionReceipt>> ReopenResolvedOutputAsync(
@@ -331,11 +331,11 @@ public sealed partial class FormListWorkspace
             CombineWarnings(warnings, disposalWarnings)));
     }
 
-    /// <summary>Asks the adapter to reopen the exact terminal output baseline for native proof.</summary>
+    /// <summary>Asks the adapter to reopen the exact terminal output baseline for engine proof.</summary>
     /// <param name="evidence">The coordinator-validated terminal evidence.</param>
-    /// <param name="cancellationToken">A token that cancels before native state is returned.</param>
-    /// <returns>The independently owned reopened native state or a typed adapter failure.</returns>
-    private async ValueTask<EngineResult<NativeOutputOpenResult>> ReopenRecoveryEvidenceAsync(
+    /// <param name="cancellationToken">A token that cancels before engine state is returned.</param>
+    /// <returns>The independently owned reopened engine state or a typed adapter failure.</returns>
+    private async ValueTask<EngineResult<PluginOutputOpenResult>> ReopenRecoveryEvidenceAsync(
         ResolvedOutputEvidence evidence,
         CancellationToken cancellationToken)
     {
@@ -356,11 +356,11 @@ public sealed partial class FormListWorkspace
         {
             Logger.Error(
                 exception,
-                "Failed to reopen resolved native output in workspace {WorkspaceId}",
+                "Failed to reopen resolved plugin output in workspace {WorkspaceId}",
                 WorkspaceId);
-            return EngineResult<NativeOutputOpenResult>.Failure(new EngineError(
+            return EngineResult<PluginOutputOpenResult>.Failure(new EngineError(
                 EngineErrorCode.OutputOpenFailed,
-                "The resolved native output could not be reopened."));
+                "The resolved plugin output could not be reopened."));
         }
     }
 
@@ -432,7 +432,7 @@ public sealed partial class FormListWorkspace
     private static bool ResolvedEvidenceMatches(
         ResolvedOutputEvidence evidence,
         PendingSaveIdentity pendingSave,
-        NativeSourceInputBaseline sourceBaseline,
+        PluginSourceInputBaseline sourceBaseline,
         OutputArtifactSetBaseline resolvedBaseline,
         RecoveryEvidenceToken evidenceToken,
         RecoverSaveStatus status)

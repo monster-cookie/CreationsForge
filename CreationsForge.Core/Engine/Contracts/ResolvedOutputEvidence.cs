@@ -1,18 +1,18 @@
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 using CreationsForge.Core.Enums;
 using Mutagen.Bethesda;
 
 namespace CreationsForge.Core.Engine.Contracts;
 
 /// <summary>
-/// Carries terminal recovery evidence without exposing native record state; a workspace must revalidate it before adoption.
+/// Carries terminal recovery evidence without exposing record state; a workspace must revalidate it before adoption.
 /// </summary>
 public sealed class ResolvedOutputEvidence
 {
     /// <summary>Initializes immutable terminal evidence for one recognized save journal.</summary>
     /// <param name="evidenceToken">The opaque token binding this evidence to the verified journal state.</param>
     /// <param name="game">The exact CreationsForge game recorded by the save.</param>
-    /// <param name="release">The exact native release recorded by the save.</param>
+    /// <param name="release">The exact plugin release recorded by the save.</param>
     /// <param name="originalWorkspaceId">The workspace that initiated the save.</param>
     /// <param name="saveOperationId">The original save operation identifier.</param>
     /// <param name="saveBaseRevision">The workspace revision journaled before the save.</param>
@@ -30,7 +30,7 @@ public sealed class ResolvedOutputEvidence
         Guid originalWorkspaceId,
         Guid saveOperationId,
         WorkspaceRevision saveBaseRevision,
-        NativeSourceInputBaseline sourceBaseline,
+        PluginSourceInputBaseline sourceBaseline,
         OutputAssociation output,
         OutputArtifactSetBaseline resolvedOutputBaseline,
         RecoverSaveStatus status)
@@ -82,7 +82,7 @@ public sealed class ResolvedOutputEvidence
     /// <summary>Gets the exact CreationsForge game recorded by the save.</summary>
     public SupportedGame Game { get; }
 
-    /// <summary>Gets the exact native release recorded by the save.</summary>
+    /// <summary>Gets the exact plugin release recorded by the save.</summary>
     public GameRelease Release { get; }
 
     /// <summary>Gets the workspace that initiated the save.</summary>
@@ -95,7 +95,7 @@ public sealed class ResolvedOutputEvidence
     public WorkspaceRevision SaveBaseRevision { get; }
 
     /// <summary>Gets the complete source baseline recorded by the save.</summary>
-    public NativeSourceInputBaseline SourceBaseline { get; }
+    public PluginSourceInputBaseline SourceBaseline { get; }
 
     /// <summary>Gets the exact output association recorded by the save.</summary>
     public OutputAssociation Output { get; }

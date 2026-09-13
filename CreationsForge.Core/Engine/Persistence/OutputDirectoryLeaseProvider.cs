@@ -1,6 +1,6 @@
 using System.ComponentModel;
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 
 namespace CreationsForge.Core.Engine.Persistence;
 
@@ -51,7 +51,7 @@ public sealed class OutputDirectoryLeaseProvider : IOutputDirectoryLeaseProvider
                 cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
 
-            NativeFileInspector.VerifyDirectory(canonicalDirectoryPath, "output directory");
+            PluginFileInspector.VerifyDirectory(canonicalDirectoryPath, "output directory");
             directoryHandle = OutputDirectoryIdentityInspector.OpenDirectory(canonicalDirectoryPath);
 
             var guardPath = Path.GetFullPath(Path.Combine(canonicalDirectoryPath, GuardFileName));
@@ -89,7 +89,7 @@ public sealed class OutputDirectoryLeaseProvider : IOutputDirectoryLeaseProvider
         {
             throw;
         }
-        catch (NativeSourceInputException exception)
+        catch (PluginSourceInputException exception)
         {
             var code = exception.Code == EngineErrorCode.SourceOpenFailed
                 ? EngineErrorCode.OutputOpenFailed
@@ -240,11 +240,11 @@ public sealed class OutputDirectoryLeaseProvider : IOutputDirectoryLeaseProvider
 
     /// <summary>Recognizes platform sharing and non-blocking lock failures without parsing error messages.</summary>
     /// <param name="exception">The file-open failure.</param>
-    /// <returns><see langword="true"/> when the native error identifies active contention.</returns>
+    /// <returns><see langword="true"/> when the plugin error identifies active contention.</returns>
     private static bool IsSharingContention(IOException exception)
     {
-        var nativeCode = exception.HResult & 0xffff;
-        return nativeCode is 11 or 13 or 32 or 33;
+        var platformErrorCode = exception.HResult & 0xffff;
+        return platformErrorCode is 11 or 13 or 32 or 33;
     }
 
     /// <summary>Creates a typed lease-acquisition failure.</summary>

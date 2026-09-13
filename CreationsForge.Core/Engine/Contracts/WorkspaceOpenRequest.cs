@@ -5,20 +5,20 @@ using Mutagen.Bethesda.Strings;
 namespace CreationsForge.Core.Engine.Contracts;
 
 /// <summary>
-/// Supplies every path and native release choice required to open a workspace without consulting an installed load order.
+/// Supplies every path and plugin release choice required to open a workspace without consulting an installed load order.
 /// </summary>
 public sealed class WorkspaceOpenRequest
 {
     /// <summary>Initializes an explicit workspace-open request and snapshots all caller-owned path collections.</summary>
     /// <param name="workspaceId">The non-empty caller-assigned workspace identifier.</param>
     /// <param name="game">The supported CreationsForge game.</param>
-    /// <param name="release">The exact native Mutagen release selection.</param>
+    /// <param name="release">The exact Mutagen game release selection.</param>
     /// <param name="sourcePluginPath">The source plugin that remains read-only.</param>
     /// <param name="loadOrderPluginPaths">Every plugin path in explicit load-order order.</param>
-    /// <param name="dataDirectoryPath">The data directory used to resolve native plugin resources.</param>
+    /// <param name="dataDirectoryPath">The data directory used to resolve plugin resources.</param>
     /// <param name="stringDirectoryPaths">Explicit directories used for localized string resolution.</param>
     /// <param name="progress">An optional observer for coarse-grained open progress.</param>
-    /// <param name="recordTextLanguage">The explicit native language used to resolve localized record text.</param>
+    /// <param name="recordTextLanguage">The explicit plugin language used to resolve localized record text.</param>
     /// <exception cref="ArgumentNullException">Thrown when a required path collection is <see langword="null"/>.</exception>
     public WorkspaceOpenRequest(
         Guid workspaceId,
@@ -55,7 +55,7 @@ public sealed class WorkspaceOpenRequest
     /// <summary>Gets the selected CreationsForge game.</summary>
     public SupportedGame Game { get; }
 
-    /// <summary>Gets the exact native Mutagen release selection.</summary>
+    /// <summary>Gets the exact Mutagen game release selection.</summary>
     public GameRelease Release { get; }
 
     /// <summary>Gets the source plugin path, which the workspace must never modify.</summary>
@@ -64,13 +64,13 @@ public sealed class WorkspaceOpenRequest
     /// <summary>Gets an immutable snapshot of plugin paths in explicit load-order order.</summary>
     public IReadOnlyList<string> LoadOrderPluginPaths { get; }
 
-    /// <summary>Gets the explicit data directory used for native resource resolution.</summary>
+    /// <summary>Gets the explicit data directory used for plugin resource resolution.</summary>
     public string DataDirectoryPath { get; }
 
     /// <summary>Gets an immutable snapshot of localized-string search directories.</summary>
     public IReadOnlyList<string> StringDirectoryPaths { get; }
 
-    /// <summary>Gets the explicit native language used to resolve localized record text.</summary>
+    /// <summary>Gets the explicit plugin language used to resolve localized record text.</summary>
     public Language RecordTextLanguage { get; }
 
     /// <summary>Gets the optional open-progress observer.</summary>
@@ -101,7 +101,7 @@ public sealed class WorkspaceOpenRequest
     }
 
     /// <summary>Creates an equivalent request with a replacement progress observer.</summary>
-    /// <param name="progress">The progress observer that receives native open stages.</param>
+    /// <param name="progress">The progress observer that receives plugin open stages.</param>
     /// <returns>A new immutable request containing the replacement progress observer.</returns>
     internal WorkspaceOpenRequest WithProgress(IProgress<WorkspaceOpenProgress> progress)
     {

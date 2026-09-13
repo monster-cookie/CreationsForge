@@ -32,7 +32,7 @@ internal sealed class FakeFormListWorkspace : IFormListWorkspace
     /// <inheritdoc />
     public WorkspaceRevision Revision { get; }
 
-    /// <summary>Gets the ready state used by presentation tests that do not perform native saves.</summary>
+    /// <summary>Gets the ready state used by presentation tests that do not perform plugin saves.</summary>
     public OutputSynchronizationState OutputSynchronization { get; } = new(OutputSynchronizationStatus.Ready, null);
 
     /// <summary>Gets the last output-selection request received by the fake.</summary>

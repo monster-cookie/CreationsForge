@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace CreationsForge.Core.Engine.Contracts;
 
-/// <summary>Carries one detached typed JSON FormList view with its exact native context.</summary>
+/// <summary>Carries one detached typed JSON FormList view with its exact record context.</summary>
 public sealed class FormListReadView
 {
     /// <summary>Initializes an immutable detached FormList read response.</summary>

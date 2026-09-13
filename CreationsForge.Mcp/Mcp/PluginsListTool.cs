@@ -6,7 +6,7 @@ using ModelContextProtocol.Server;
 namespace CreationsForge.Mcp;
 
 /// <summary>
-/// Lists participating native plugins in bounded stateless summary pages.
+/// Lists participating plugins in bounded stateless summary pages.
 /// </summary>
 public sealed class PluginsListTool : McpToolBase
 {
@@ -60,7 +60,7 @@ public sealed class PluginsListTool : McpToolBase
         },
     };
 
-    /// <summary>Re-reads the native plugin summary and applies stateless transport paging.</summary>
+    /// <summary>Re-reads the plugin summary and applies stateless transport paging.</summary>
     /// <param name="request">The MCP request.</param>
     /// <param name="cancellationToken">The token propagated through the engine read.</param>
     /// <returns>One bounded ordered plugin page.</returns>

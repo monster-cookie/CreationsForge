@@ -23,7 +23,7 @@ public sealed class ServerInfoTool : McpToolBase
     /// <summary>The informational version reported during protocol discovery and tool invocation.</summary>
     private readonly string ServerVersion;
 
-    /// <summary>Indicates whether a real native workspace factory enabled the domain tool surface.</summary>
+    /// <summary>Indicates whether a real workspace factory enabled the domain tool surface.</summary>
     private readonly bool DomainToolsAvailable;
 
     /// <summary>Indicates whether the complete authoring, save, recovery, and schema service set is available.</summary>
@@ -32,7 +32,7 @@ public sealed class ServerInfoTool : McpToolBase
     /// <summary>Initializes the server information tool.</summary>
     /// <param name="workspaceRegistry">The registry that owns active engine workspaces for this host.</param>
     /// <param name="serverVersion">The non-empty server informational version.</param>
-    /// <param name="domainToolsAvailable">Whether real native workspace composition enabled domain capabilities.</param>
+    /// <param name="domainToolsAvailable">Whether real workspace composition enabled domain capabilities.</param>
     /// <param name="authoringToolsAvailable">Whether the complete authoring service set enabled all production capabilities.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="workspaceRegistry"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="serverVersion"/> is empty.</exception>

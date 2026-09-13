@@ -15,7 +15,7 @@ using StarfieldRelease = Mutagen.Bethesda.Starfield.StarfieldRelease;
 
 namespace CreationsForge.UnitTests.Engine.ClientAcceptance;
 
-/// <summary>Exercises physical-path and complete native-record boundaries used by retained client acceptance.</summary>
+/// <summary>Exercises physical-path and complete plugin-record boundaries used by retained client acceptance.</summary>
 public sealed class ClientAcceptanceBoundaryTests
 {
     /// <summary>Verifies an apparent export root junction is rejected before any file reaches its sibling physical target.</summary>
@@ -95,12 +95,12 @@ public sealed class ClientAcceptanceBoundaryTests
     }
 
     /// <summary>Verifies each game-specific complete-record enumerator rejects a Book hidden beside two expected FormLists.</summary>
-    /// <param name="game">The native game whose real in-memory mod is inspected.</param>
+    /// <param name="game">The plugin game whose real in-memory mod is inspected.</param>
     [Theory]
     [InlineData("starfield")]
     [InlineData("fallout4")]
     [InlineData("skyrim")]
-    public void CompleteNativeRecordSetRejectsNonFormList(string game)
+    public void CompleteRecordSetRejectsNonFormList(string game)
     {
         switch (game)
         {
@@ -132,7 +132,7 @@ public sealed class ClientAcceptanceBoundaryTests
                 break;
             }
             default:
-                throw new ArgumentOutOfRangeException(nameof(game), game, "The boundary test requires a supported native game.");
+                throw new ArgumentOutOfRangeException(nameof(game), game, "The boundary test requires a supported plugin game.");
         }
     }
 }

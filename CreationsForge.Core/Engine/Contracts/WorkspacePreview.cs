@@ -6,8 +6,8 @@ namespace CreationsForge.Core.Engine.Contracts;
 public sealed class WorkspacePreview
 {
     /// <summary>Initializes an immutable workspace preview.</summary>
-    /// <param name="comparisons">The per-record detached native comparisons.</param>
-    /// <param name="unresolvedReferenceCount">The number of unresolved native references.</param>
+    /// <param name="comparisons">The per-record detached plugin comparisons.</param>
+    /// <param name="unresolvedReferenceCount">The number of unresolved references.</param>
     /// <param name="warnings">Warnings that must be reviewed before save.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="comparisons"/> or <paramref name="warnings"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="unresolvedReferenceCount"/> is negative.</exception>
@@ -24,10 +24,10 @@ public sealed class WorkspacePreview
         Warnings = Array.AsReadOnly(warnings.ToArray());
     }
 
-    /// <summary>Gets immutable per-record detached native comparisons.</summary>
+    /// <summary>Gets immutable per-record detached plugin comparisons.</summary>
     public IReadOnlyList<FormListComparison> Comparisons { get; }
 
-    /// <summary>Gets the number of unresolved native references.</summary>
+    /// <summary>Gets the number of unresolved references.</summary>
     public int UnresolvedReferenceCount { get; }
 
     /// <summary>Gets immutable warnings that must be reviewed before save.</summary>

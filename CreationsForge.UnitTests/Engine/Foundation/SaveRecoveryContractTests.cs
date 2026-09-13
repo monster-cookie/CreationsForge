@@ -1,5 +1,5 @@
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 using CreationsForge.Core.Enums;
 using Moq;
 using Mutagen.Bethesda;
@@ -130,30 +130,30 @@ public sealed class SaveRecoveryContractTests
             null));
     }
 
-    /// <summary>Verifies unchanged native validation cannot smuggle destination mutations into a no-op save.</summary>
+    /// <summary>Verifies unchanged plugin validation cannot smuggle destination mutations into a no-op save.</summary>
     [Fact]
-    public void NativeStagedOutputSet_WithUnchangedDisposition_RequiresNoMutationPayload()
+    public void StagedPluginOutputSet_WithUnchangedDisposition_RequiresNoMutationPayload()
     {
         var stagePath = Path.GetFullPath(Path.Combine("stage", "Output.esm"));
         var destinationPath = Path.GetFullPath("Output.esm");
-        var stage = new NativeArtifactAssociation(
+        var stage = new PluginArtifactAssociation(
             stagePath,
-            NativeArtifactRole.Plugin,
+            PluginArtifactRole.Plugin,
             null,
-            new NativeArtifactFingerprint(true, 1, new string('A', 64)));
-        var mapping = new NativeStagedArtifactMapping(stage, destinationPath);
-        var stagedLifetime = Mock.Of<INativeStagedOutputSet>();
+            new PluginArtifactFingerprint(true, 1, new string('A', 64)));
+        var mapping = new StagedPluginArtifactMapping(stage, destinationPath);
+        var stagedLifetime = Mock.Of<IStagedPluginOutputSet>();
 
-        var unchanged = new NativeStagedOutputSet(NativeWriteDisposition.Unchanged, null, []);
+        var unchanged = new StagedPluginOutputSet(PluginWriteDisposition.Unchanged, null, []);
 
         unchanged.StagedOutput.ShouldBeNull();
         unchanged.ArtifactMappings.ShouldBeEmpty();
-        Should.Throw<ArgumentException>(() => new NativeStagedOutputSet(
-            NativeWriteDisposition.Unchanged, null, [mapping]));
-        Should.Throw<ArgumentException>(() => new NativeStagedOutputSet(
-            NativeWriteDisposition.Unchanged, stagedLifetime, []));
-        Should.Throw<ArgumentException>(() => new NativeStagedOutputSet(
-            NativeWriteDisposition.StagedChanges, stagedLifetime, []));
+        Should.Throw<ArgumentException>(() => new StagedPluginOutputSet(
+            PluginWriteDisposition.Unchanged, null, [mapping]));
+        Should.Throw<ArgumentException>(() => new StagedPluginOutputSet(
+            PluginWriteDisposition.Unchanged, stagedLifetime, []));
+        Should.Throw<ArgumentException>(() => new StagedPluginOutputSet(
+            PluginWriteDisposition.StagedChanges, stagedLifetime, []));
     }
 
     /// <summary>Creates a terminal test envelope with optional conflicting outer identity fields.</summary>
@@ -183,7 +183,7 @@ public sealed class SaveRecoveryContractTests
 
     /// <summary>Creates immutable metadata for a hypothetical terminal save without touching the filesystem.</summary>
     /// <param name="status">The terminal commitment state to model.</param>
-    /// <returns>Complete native-record-free metadata for testing envelope consistency only.</returns>
+    /// <returns>Complete plugin-record-free metadata for testing envelope consistency only.</returns>
     private static ResolvedOutputEvidence CreateEvidence(RecoverSaveStatus status)
     {
         var output = new OutputAssociation(
@@ -193,11 +193,11 @@ public sealed class SaveRecoveryContractTests
             OutputMasterStyle.Full);
         var outputBaseline = new OutputArtifactSetBaseline(
             Guid.NewGuid(),
-            [new NativeArtifactAssociation(
+            [new PluginArtifactAssociation(
                 output.PluginPath,
-                NativeArtifactRole.Plugin,
+                PluginArtifactRole.Plugin,
                 null,
-                new NativeArtifactFingerprint(true, 1, new string('A', 64)))]);
+                new PluginArtifactFingerprint(true, 1, new string('A', 64)))]);
 
         return new ResolvedOutputEvidence(
             new RecoveryEvidenceToken("verified-test-observation"),
@@ -206,7 +206,7 @@ public sealed class SaveRecoveryContractTests
             Guid.NewGuid(),
             Guid.NewGuid(),
             new WorkspaceRevision(Guid.NewGuid(), 7),
-            new NativeSourceInputBaseline(Guid.NewGuid(), []),
+            new PluginSourceInputBaseline(Guid.NewGuid(), []),
             output,
             outputBaseline,
             status);

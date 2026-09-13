@@ -13,7 +13,7 @@ public sealed class McpWorkspaceRegistry : IAsyncDisposable
     /// <summary>Stores every workspace whose lifetime is owned by this registry.</summary>
     private readonly Dictionary<Guid, McpWorkspaceEntry> Workspaces = [];
 
-    /// <summary>Reserves identifiers while their factories are acquiring native state.</summary>
+    /// <summary>Reserves identifiers while their factories are acquiring engine state.</summary>
     private readonly HashSet<Guid> OpeningWorkspaceIds = [];
 
     /// <summary>Completes after the single registry disposal operation finishes.</summary>
@@ -60,10 +60,10 @@ public sealed class McpWorkspaceRegistry : IAsyncDisposable
     }
 
     /// <summary>Opens and publishes one independently owned engine workspace.</summary>
-    /// <param name="factory">The native workspace factory supplied by host composition.</param>
-    /// <param name="request">The explicit native workspace request.</param>
+    /// <param name="factory">The workspace factory supplied by host composition.</param>
+    /// <param name="request">The explicit workspace request.</param>
     /// <param name="cancellationToken">A token that cancels acquisition before registry publication.</param>
-    /// <returns>The opened workspace revision or a typed failure without publishing native state.</returns>
+    /// <returns>The opened workspace revision or a typed failure without publishing engine state.</returns>
     /// <exception cref="ArgumentNullException">Thrown when a required argument is <see langword="null"/>.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when shutdown begins before the workspace is published.</exception>
     /// <exception cref="OperationCanceledException">Thrown when cancellation is observed before publication.</exception>

@@ -3,20 +3,20 @@ using System.Text.Json;
 namespace CreationsForge.Core.Engine.Contracts;
 
 /// <summary>
-/// Carries detached typed before-and-after views, exact native contexts, and ephemeral semantic change locations.
+/// Carries detached typed before-and-after views, exact record contexts, and ephemeral semantic change locations.
 /// </summary>
 public sealed class FormListComparison
 {
     /// <summary>Initializes an immutable FormList comparison.</summary>
-    /// <param name="formKey">The native FormList identity.</param>
+    /// <param name="formKey">The FormList identity.</param>
     /// <param name="beforeContext">The exact prior context selection and outcome.</param>
     /// <param name="afterContext">The exact resulting context selection and outcome.</param>
     /// <param name="before">The detached typed prior JSON view, or <see langword="null"/> when no inspectable context exists.</param>
     /// <param name="after">The detached typed resulting JSON view, or <see langword="null"/> when no inspectable context exists.</param>
     /// <param name="changes">The semantic change descriptors.</param>
-    /// <param name="warnings">Native writer-normalization and validation warnings.</param>
+    /// <param name="warnings">Plugin writer-normalization and validation warnings.</param>
     /// <exception cref="ArgumentNullException">Thrown when a context, <paramref name="changes"/>, or <paramref name="warnings"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentException">Thrown when contexts identify different native records or a supplied JSON value is undefined.</exception>
+    /// <exception cref="ArgumentException">Thrown when contexts identify different records or a supplied JSON value is undefined.</exception>
     public FormListComparison(
         FormListContext beforeContext,
         FormListContext afterContext,
@@ -52,13 +52,13 @@ public sealed class FormListComparison
         Warnings = Array.AsReadOnly(warnings.ToArray());
     }
 
-    /// <summary>Gets the native FormList identity.</summary>
+    /// <summary>Gets the FormList identity.</summary>
     public Mutagen.Bethesda.Plugins.FormKey FormKey => BeforeContext.Selection.FormKey;
 
-    /// <summary>Gets the exact prior native context selection and outcome.</summary>
+    /// <summary>Gets the exact prior record context selection and outcome.</summary>
     public FormListContext BeforeContext { get; }
 
-    /// <summary>Gets the exact resulting native context selection and outcome.</summary>
+    /// <summary>Gets the exact resulting record context selection and outcome.</summary>
     public FormListContext AfterContext { get; }
 
     /// <summary>Gets the detached typed prior JSON view, or <see langword="null"/> when no inspectable context exists.</summary>

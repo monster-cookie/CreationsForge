@@ -5,7 +5,7 @@ using Serilog;
 namespace CreationsForge.Core.Engine;
 
 /// <summary>
-/// Opens independently owned FormList workspaces from complete caller-supplied native inputs.
+/// Opens independently owned FormList workspaces from complete caller-supplied plugin inputs.
 /// </summary>
 public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
 {
@@ -27,9 +27,9 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
     private readonly ILogger Logger;
 
     /// <summary>
-    /// Initializes a workspace factory with externally supplied native adapters and infrastructure.
+    /// Initializes a workspace factory with externally supplied engine adapters and infrastructure.
     /// </summary>
-    /// <param name="adapters">The game adapters eligible to open explicit native sources.</param>
+    /// <param name="adapters">The game adapters eligible to open explicit plugin sources.</param>
     /// <param name="saveCoordinator">The coordinator used by each returned workspace for guarded saves.</param>
     /// <param name="outputDirectoryLeaseProvider">The lease provider used by each returned workspace for output admission and recovery.</param>
     /// <param name="logger">The structured logger used for workflow diagnostics.</param>
@@ -63,7 +63,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
         WorkspaceOpenRequest request,
         CancellationToken cancellationToken = default)
     {
-        NativeSourceOpenResult? sourceOpenResult = null;
+        PluginSourceOpenResult? sourceOpenResult = null;
         FormListWorkspace? workspace = null;
         var diagnosticProgress = new LoggingWorkspaceOpenProgress(Logger, request?.WorkspaceId, request?.Progress);
 
@@ -102,10 +102,10 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
             cancellationToken.ThrowIfCancellationRequested();
             canonicalRequest.Progress?.Report(new WorkspaceOpenProgress(
                 WorkspaceOpenStage.PreparingInputs,
-                "Preparing explicit native sources."));
+                "Preparing explicit plugin sources."));
             cancellationToken.ThrowIfCancellationRequested();
 
-            EngineResult<NativeSourceOpenResult> openResult;
+            EngineResult<PluginSourceOpenResult> openResult;
             using var slowOpenCancellation = new CancellationTokenSource();
             var slowOpenTask = LogSlowOpenAsync(diagnosticProgress, slowOpenCancellation.Token);
             try
@@ -122,12 +122,12 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
             {
                 Logger.Error(
                     exception,
-                    "The game adapter failed while opening native sources for workspace {WorkspaceId}.",
+                    "The game adapter failed while opening plugin sources for workspace {WorkspaceId}.",
                     canonicalRequest.WorkspaceId);
                 return EngineResult<IFormListWorkspace>.Failure(
                     new EngineError(
                         EngineErrorCode.SourceOpenFailed,
-                        "The selected game adapter could not open the explicit native sources."),
+                        "The selected game adapter could not open the explicit plugin sources."),
                     workspaceId: canonicalRequest.WorkspaceId);
             }
             finally
@@ -139,7 +139,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
             if (!openResult.Succeeded)
             {
                 Logger.Warning(
-                    "Native workspace {WorkspaceId} source acquisition failed after {ElapsedMilliseconds} ms; error code: {ErrorCode}; message: {ErrorMessage}",
+                    "Workspace {WorkspaceId} source acquisition failed after {ElapsedMilliseconds} ms; error code: {ErrorCode}; message: {ErrorMessage}",
                     canonicalRequest.WorkspaceId,
                     diagnosticProgress.Elapsed.TotalMilliseconds,
                     openResult.Error?.Code,
@@ -158,7 +158,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
                 return EngineResult<IFormListWorkspace>.Failure(
                     new EngineError(
                         EngineErrorCode.UnexpectedFailure,
-                        "The selected game adapter returned no native source state."),
+                        "The selected game adapter returned no plugin source state."),
                     workspaceId: canonicalRequest.WorkspaceId,
                     warnings: openResult.Warnings);
             }
@@ -208,8 +208,8 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
         }
     }
 
-    /// <summary>Reports an incomplete native source open after ten seconds and every thirty seconds thereafter.</summary>
-    /// <param name="progress">The observer holding the most recent native acquisition phase.</param>
+    /// <summary>Reports an incomplete plugin source open after ten seconds and every thirty seconds thereafter.</summary>
+    /// <param name="progress">The observer holding the most recent engine acquisition phase.</param>
     /// <param name="cancellationToken">A token canceled when the adapter finishes.</param>
     /// <returns>A task that completes when source acquisition finishes or is canceled.</returns>
     private static async Task LogSlowOpenAsync(
@@ -225,7 +225,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
     }
 
     /// <summary>Observes the slow-open monitor's expected internal cancellation without hiding unexpected failures.</summary>
-    /// <param name="slowOpenTask">The monitor task canceled after native acquisition returns.</param>
+    /// <param name="slowOpenTask">The monitor task canceled after engine acquisition returns.</param>
     /// <returns>A task that completes after the monitor has stopped.</returns>
     private static async Task ObserveSlowOpenTaskAsync(Task slowOpenTask)
     {
@@ -260,7 +260,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
 
         if (!Enum.IsDefined(request.Release))
         {
-            return InvalidRequest("The requested native game release is invalid.");
+            return InvalidRequest("The requested engine game release is invalid.");
         }
 
         if (!TryCanonicalizeFile(request.SourcePluginPath, "source plugin", out var sourcePluginPath, out var pathError))
@@ -340,7 +340,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
             canonicalStringDirectoryPaths));
     }
 
-    /// <summary>Selects the single adapter matching the request's exact game and native release pair.</summary>
+    /// <summary>Selects the single adapter matching the request's exact game and engine release pair.</summary>
     /// <param name="request">The validated canonical request.</param>
     /// <returns>The unique matching adapter or a stable selection failure.</returns>
     private EngineResult<IFormListGameAdapter> SelectAdapter(WorkspaceOpenRequest request)
@@ -353,14 +353,14 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
         {
             return EngineResult<IFormListGameAdapter>.Failure(new EngineError(
                 EngineErrorCode.UnsupportedGameRelease,
-                $"No registered game adapter supports {request.Game} with native release {request.Release}."));
+                $"No registered game adapter supports {request.Game} with engine release {request.Release}."));
         }
 
         if (matchingAdapters.Length > 1)
         {
             return EngineResult<IFormListGameAdapter>.Failure(new EngineError(
                 EngineErrorCode.UnexpectedFailure,
-                $"Multiple registered game adapters support {request.Game} with native release {request.Release}."));
+                $"Multiple registered game adapters support {request.Game} with engine release {request.Release}."));
         }
 
         return EngineResult<IFormListGameAdapter>.Success(matchingAdapters[0]);
@@ -454,9 +454,9 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
 
     /// <summary>Parses a plugin identity from the canonical plugin file name.</summary>
     /// <param name="canonicalPath">The canonical existing plugin path.</param>
-    /// <param name="modKey">The parsed native plugin identity when successful.</param>
+    /// <param name="modKey">The parsed plugin identity when successful.</param>
     /// <param name="error">The validation failure when unsuccessful.</param>
-    /// <returns><see langword="true"/> when the file name is a valid native plugin identity.</returns>
+    /// <returns><see langword="true"/> when the file name is a valid plugin identity.</returns>
     private static bool TryReadModKey(string canonicalPath, out ModKey modKey, out string error)
     {
         var pluginFileName = Path.GetFileName(canonicalPath);
@@ -480,14 +480,14 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
             message));
     }
 
-    /// <summary>Disposes native state that was acquired but not returned to the caller.</summary>
+    /// <summary>Disposes engine state that was acquired but not returned to the caller.</summary>
     /// <param name="workspace">A constructed workspace whose ownership was not returned.</param>
     /// <param name="sourceOpenResult">A source result whose ownership was not transferred to a workspace.</param>
     /// <param name="workspaceId">The requested workspace identifier for cleanup diagnostics.</param>
     /// <returns>A task that completes after acquired state is released or a cleanup failure is logged.</returns>
     private async ValueTask DisposeFailedOpenStateAsync(
         FormListWorkspace? workspace,
-        NativeSourceOpenResult? sourceOpenResult,
+        PluginSourceOpenResult? sourceOpenResult,
         Guid? workspaceId)
     {
         try
@@ -505,7 +505,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
         {
             Logger.Error(
                 exception,
-                "Failed to dispose native state after workspace {WorkspaceId} did not open.",
+                "Failed to dispose engine state after workspace {WorkspaceId} did not open.",
                 workspaceId);
         }
     }

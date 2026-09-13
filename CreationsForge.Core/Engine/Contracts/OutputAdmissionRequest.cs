@@ -1,16 +1,16 @@
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 using CreationsForge.Core.Enums;
 using Mutagen.Bethesda;
 
 namespace CreationsForge.Core.Engine.Contracts;
 
-/// <summary>Requests journal admission for one exact output before native state is opened or published.</summary>
+/// <summary>Requests journal admission for one exact output before plugin state is opened or published.</summary>
 public sealed class OutputAdmissionRequest
 {
     /// <summary>Initializes an immutable output admission request.</summary>
     /// <param name="workspaceId">The workspace attempting to select or reopen the output.</param>
     /// <param name="game">The exact CreationsForge game selected by the workspace.</param>
-    /// <param name="release">The exact native release selected by the workspace.</param>
+    /// <param name="release">The exact plugin release selected by the workspace.</param>
     /// <param name="sourceBaseline">The complete source baseline owned by the workspace.</param>
     /// <param name="output">The exact output association being admitted.</param>
     /// <exception cref="ArgumentException">Thrown when <paramref name="workspaceId"/> is empty.</exception>
@@ -20,7 +20,7 @@ public sealed class OutputAdmissionRequest
         Guid workspaceId,
         SupportedGame game,
         GameRelease release,
-        NativeSourceInputBaseline sourceBaseline,
+        PluginSourceInputBaseline sourceBaseline,
         OutputAssociation output)
     {
         if (workspaceId == Guid.Empty)
@@ -53,11 +53,11 @@ public sealed class OutputAdmissionRequest
     /// <summary>Gets the exact CreationsForge game selected by the workspace.</summary>
     public SupportedGame Game { get; }
 
-    /// <summary>Gets the exact native release selected by the workspace.</summary>
+    /// <summary>Gets the exact plugin release selected by the workspace.</summary>
     public GameRelease Release { get; }
 
     /// <summary>Gets the complete source baseline owned by the workspace.</summary>
-    public NativeSourceInputBaseline SourceBaseline { get; }
+    public PluginSourceInputBaseline SourceBaseline { get; }
 
     /// <summary>Gets the exact output association being admitted.</summary>
     public OutputAssociation Output { get; }

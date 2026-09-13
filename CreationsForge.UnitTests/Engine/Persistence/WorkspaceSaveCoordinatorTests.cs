@@ -1,5 +1,5 @@
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 using CreationsForge.Core.Engine.Persistence;
 using CreationsForge.Core.Enums;
 using Moq;
@@ -41,13 +41,13 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         var output = CreateOutput(directory.FullName);
         var originalBytes = new byte[] { 1, 2, 3, 4 };
         await File.WriteAllBytesAsync(output.PluginPath, originalBytes);
-        var baseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var baseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
         var source = new TestSourceSet();
         var adapter = CreateAdapter(
-            (_, _) => Task.FromResult(new NativeStagedOutputSet(
-                NativeWriteDisposition.Unchanged,
+            (_, _) => Task.FromResult(new StagedPluginOutputSet(
+                PluginWriteDisposition.Unchanged,
                 null,
-                Array.Empty<NativeStagedArtifactMapping>())));
+                Array.Empty<StagedPluginArtifactMapping>())));
         var context = CreateContext(output, baseline, source, adapter.Object);
         var operationId = Guid.NewGuid();
         var coordinator = new WorkspaceSaveCoordinator(new TestLeaseProvider());
@@ -74,12 +74,12 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         using var directory = new TestDirectory();
         var output = CreateOutput(directory.FullName, LocalizedOutputMode.SeparateStringFiles);
         await File.WriteAllBytesAsync(output.PluginPath, [1, 1, 1]);
-        var emptyBaseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
-        var strings = emptyBaseline.Artifacts.First(artifact => artifact.Role == NativeArtifactRole.Strings);
+        var emptyBaseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var strings = emptyBaseline.Artifacts.First(artifact => artifact.Role == PluginArtifactRole.Strings);
         Directory.CreateDirectory(Path.GetDirectoryName(strings.Path)!);
         await File.WriteAllBytesAsync(strings.Path, [2, 2, 2]);
-        var baseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
-        var desired = new Dictionary<string, byte[]>(NativeSaveArtifactUtilities.PathComparer)
+        var baseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var desired = new Dictionary<string, byte[]>(PluginSaveArtifactUtilities.PathComparer)
         {
             [output.PluginPath] = [9, 9, 9],
             [strings.Path] = [8, 8, 8]
@@ -125,12 +125,12 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         using var directory = new TestDirectory();
         var output = CreateOutput(directory.FullName, LocalizedOutputMode.SeparateStringFiles);
         await File.WriteAllBytesAsync(output.PluginPath, [1]);
-        var emptyBaseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
-        var strings = emptyBaseline.Artifacts.First(artifact => artifact.Role == NativeArtifactRole.Strings);
+        var emptyBaseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var strings = emptyBaseline.Artifacts.First(artifact => artifact.Role == PluginArtifactRole.Strings);
         Directory.CreateDirectory(Path.GetDirectoryName(strings.Path)!);
         await File.WriteAllBytesAsync(strings.Path, [2]);
-        var baseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
-        var desired = new Dictionary<string, byte[]>(NativeSaveArtifactUtilities.PathComparer)
+        var baseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var desired = new Dictionary<string, byte[]>(PluginSaveArtifactUtilities.PathComparer)
         {
             [output.PluginPath] = [3],
             [strings.Path] = [4]
@@ -180,12 +180,12 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         using var directory = new TestDirectory();
         var output = CreateOutput(directory.FullName);
         await File.WriteAllBytesAsync(output.PluginPath, [1]);
-        var firstBaseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var firstBaseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
         var source = new TestSourceSet();
         var firstAdapter = CreateAdapter((request, token) => CreateStagedSetAsync(
             request,
             firstBaseline,
-            new Dictionary<string, byte[]>(NativeSaveArtifactUtilities.PathComparer) { [output.PluginPath] = [2] },
+            new Dictionary<string, byte[]>(PluginSaveArtifactUtilities.PathComparer) { [output.PluginPath] = [2] },
             token));
         var firstContext = CreateContext(output, firstBaseline, source, firstAdapter.Object);
         var provider = new TestLeaseProvider();
@@ -194,11 +194,11 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         (await coordinator.SaveAsync(firstContext, new SaveRequest(firstOperation, firstContext.Revision, firstBaseline)))
             .Status.ShouldBe(SaveCommitStatus.Committed);
 
-        var secondBaseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var secondBaseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
         var secondAdapter = CreateAdapter((request, token) => CreateStagedSetAsync(
             request,
             secondBaseline,
-            new Dictionary<string, byte[]>(NativeSaveArtifactUtilities.PathComparer) { [output.PluginPath] = [3] },
+            new Dictionary<string, byte[]>(PluginSaveArtifactUtilities.PathComparer) { [output.PluginPath] = [3] },
             token));
         var secondContext = CreateContext(output, secondBaseline, source, secondAdapter.Object);
         var secondOperation = Guid.NewGuid();
@@ -221,12 +221,12 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         using var directory = new TestDirectory();
         var output = CreateOutput(directory.FullName, LocalizedOutputMode.SeparateStringFiles);
         await File.WriteAllBytesAsync(output.PluginPath, [1]);
-        var emptyBaseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
-        var strings = emptyBaseline.Artifacts.First(artifact => artifact.Role == NativeArtifactRole.Strings);
+        var emptyBaseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var strings = emptyBaseline.Artifacts.First(artifact => artifact.Role == PluginArtifactRole.Strings);
         Directory.CreateDirectory(Path.GetDirectoryName(strings.Path)!);
         await File.WriteAllBytesAsync(strings.Path, [2]);
-        var baseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
-        var desired = new Dictionary<string, byte[]>(NativeSaveArtifactUtilities.PathComparer)
+        var baseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var desired = new Dictionary<string, byte[]>(PluginSaveArtifactUtilities.PathComparer)
         {
             [output.PluginPath] = [3],
             [strings.Path] = [2]
@@ -252,17 +252,17 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         using var directory = new TestDirectory();
         var output = CreateOutput(directory.FullName);
         await File.WriteAllBytesAsync(output.PluginPath, [1]);
-        var baseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var baseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
         var adapter = CreateAdapter((request, token) => CreateStagedSetAsync(
             request,
             baseline,
-            new Dictionary<string, byte[]>(NativeSaveArtifactUtilities.PathComparer) { [output.PluginPath] = [2] },
+            new Dictionary<string, byte[]>(PluginSaveArtifactUtilities.PathComparer) { [output.PluginPath] = [2] },
             token));
         var context = CreateContext(output, baseline, new TestSourceSet(), adapter.Object);
         var operationId = Guid.NewGuid();
         var pluginIndex = baseline.Artifacts
             .Select((artifact, index) => (artifact, index))
-            .Single(entry => entry.artifact.Role == NativeArtifactRole.Plugin)
+            .Single(entry => entry.artifact.Role == PluginArtifactRole.Plugin)
             .index;
         var publishPath = Path.Combine(
             directory.FullName,
@@ -292,18 +292,18 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         using var directory = new TestDirectory();
         var output = CreateOutput(directory.FullName, LocalizedOutputMode.SeparateStringFiles);
         await File.WriteAllBytesAsync(output.PluginPath, [1]);
-        var shape = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
-        foreach (var artifact in shape.Artifacts.Where(artifact => artifact.Role == NativeArtifactRole.Strings))
+        var shape = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        foreach (var artifact in shape.Artifacts.Where(artifact => artifact.Role == PluginArtifactRole.Strings))
         {
             Directory.CreateDirectory(Path.GetDirectoryName(artifact.Path)!);
             await File.WriteAllBytesAsync(artifact.Path, [2]);
         }
 
-        var baseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var baseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
         var desired = baseline.Artifacts.ToDictionary(
             artifact => artifact.Path,
-            artifact => artifact.Role == NativeArtifactRole.Plugin ? new byte[] { 9 } : new byte[] { 8 },
-            NativeSaveArtifactUtilities.PathComparer);
+            artifact => artifact.Role == PluginArtifactRole.Plugin ? new byte[] { 9 } : new byte[] { 8 },
+            PluginSaveArtifactUtilities.PathComparer);
         var adapter = CreateAdapter((request, token) => CreateStagedSetAsync(request, baseline, desired, token));
         var context = CreateContext(output, baseline, new TestSourceSet(), adapter.Object);
         var saveOperationId = Guid.NewGuid();
@@ -358,11 +358,11 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         using var directory = new TestDirectory();
         var output = CreateOutput(directory.FullName);
         await File.WriteAllBytesAsync(output.PluginPath, [1]);
-        var baseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var baseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
         var adapter = CreateAdapter((request, token) => CreateStagedSetAsync(
             request,
             baseline,
-            new Dictionary<string, byte[]>(NativeSaveArtifactUtilities.PathComparer) { [output.PluginPath] = [2] },
+            new Dictionary<string, byte[]>(PluginSaveArtifactUtilities.PathComparer) { [output.PluginPath] = [2] },
             token));
         var context = CreateContext(output, baseline, new TestSourceSet(), adapter.Object);
         using var cancellationSource = new CancellationTokenSource();
@@ -388,12 +388,12 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         using var directory = new TestDirectory();
         var output = CreateOutput(directory.FullName, LocalizedOutputMode.SeparateStringFiles);
         await File.WriteAllBytesAsync(output.PluginPath, [1]);
-        var shape = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
-        var strings = shape.Artifacts.First(artifact => artifact.Role == NativeArtifactRole.Strings);
+        var shape = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var strings = shape.Artifacts.First(artifact => artifact.Role == PluginArtifactRole.Strings);
         Directory.CreateDirectory(Path.GetDirectoryName(strings.Path)!);
         await File.WriteAllBytesAsync(strings.Path, [2]);
-        var baseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
-        var desired = new Dictionary<string, byte[]>(NativeSaveArtifactUtilities.PathComparer)
+        var baseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var desired = new Dictionary<string, byte[]>(PluginSaveArtifactUtilities.PathComparer)
         {
             [output.PluginPath] = [8],
             [strings.Path] = [9]
@@ -423,12 +423,12 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         using var directory = new TestDirectory();
         var output = CreateOutput(directory.FullName, LocalizedOutputMode.SeparateStringFiles);
         await File.WriteAllBytesAsync(output.PluginPath, [1]);
-        var shape = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
-        var strings = shape.Artifacts.First(artifact => artifact.Role == NativeArtifactRole.Strings);
+        var shape = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var strings = shape.Artifacts.First(artifact => artifact.Role == PluginArtifactRole.Strings);
         Directory.CreateDirectory(Path.GetDirectoryName(strings.Path)!);
         await File.WriteAllBytesAsync(strings.Path, [2]);
-        var baseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
-        var desired = new Dictionary<string, byte[]>(NativeSaveArtifactUtilities.PathComparer)
+        var baseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var desired = new Dictionary<string, byte[]>(PluginSaveArtifactUtilities.PathComparer)
         {
             [output.PluginPath] = [3],
             [strings.Path] = [4]
@@ -474,11 +474,11 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         using var directory = new TestDirectory();
         var output = CreateOutput(directory.FullName, LocalizedOutputMode.SeparateStringFiles);
         await File.WriteAllBytesAsync(output.PluginPath, [1]);
-        var shape = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
-        var strings = shape.Artifacts.First(artifact => artifact.Role == NativeArtifactRole.Strings);
+        var shape = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var strings = shape.Artifacts.First(artifact => artifact.Role == PluginArtifactRole.Strings);
         Directory.CreateDirectory(Path.GetDirectoryName(strings.Path)!);
         await File.WriteAllBytesAsync(strings.Path, [2]);
-        var baseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var baseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
         await using var retainedOriginalIdentity = OperatingSystem.IsWindows()
             ? null
             : new FileStream(
@@ -486,7 +486,7 @@ public sealed partial class WorkspaceSaveCoordinatorTests
                 FileMode.Open,
                 FileAccess.Read,
                 FileShare.ReadWrite | FileShare.Delete);
-        var firstDesired = new Dictionary<string, byte[]>(NativeSaveArtifactUtilities.PathComparer)
+        var firstDesired = new Dictionary<string, byte[]>(PluginSaveArtifactUtilities.PathComparer)
         {
             [output.PluginPath] = [3],
             [strings.Path] = [4]
@@ -514,11 +514,11 @@ public sealed partial class WorkspaceSaveCoordinatorTests
 
         restore.Status.ShouldBe(RepairSaveStatus.BaselineRestored);
         restore.ResultingBaseline.ShouldNotBeNull();
-        NativeSaveArtifactUtilities.MatchBaseline(baseline, restore.ResultingBaseline!).ShouldBeFalse();
+        PluginSaveArtifactUtilities.MatchBaseline(baseline, restore.ResultingBaseline!).ShouldBeFalse();
         (await File.ReadAllBytesAsync(output.PluginPath)).ShouldBe([1]);
         (await File.ReadAllBytesAsync(strings.Path)).ShouldBe([2]);
         var secondBaseline = restore.ResultingBaseline!;
-        var secondDesired = new Dictionary<string, byte[]>(NativeSaveArtifactUtilities.PathComparer)
+        var secondDesired = new Dictionary<string, byte[]>(PluginSaveArtifactUtilities.PathComparer)
         {
             [output.PluginPath] = [7],
             [strings.Path] = [6]
@@ -541,12 +541,12 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         using var directory = new TestDirectory();
         var output = CreateOutput(directory.FullName);
         await File.WriteAllBytesAsync(output.PluginPath, [1]);
-        var baseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        var baseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
         var source = new TestSourceSet(reportDifferentBaseline: true);
         var adapter = CreateAdapter((request, token) => CreateStagedSetAsync(
             request,
             baseline,
-            new Dictionary<string, byte[]>(NativeSaveArtifactUtilities.PathComparer) { [output.PluginPath] = [2] },
+            new Dictionary<string, byte[]>(PluginSaveArtifactUtilities.PathComparer) { [output.PluginPath] = [2] },
             token));
         var context = CreateContext(output, baseline, source, adapter.Object);
         var coordinator = new WorkspaceSaveCoordinator(new TestLeaseProvider());
@@ -558,9 +558,9 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         save.Status.ShouldBe(SaveCommitStatus.NotCommitted);
         save.Error!.Code.ShouldBe(EngineErrorCode.ExternalChangeDetected);
         adapter.Verify(value => value.WriteAndValidateAsync(
-            It.IsAny<INativeSourceSet>(),
-            It.IsAny<INativeOutputState>(),
-            It.IsAny<NativeWriteRequest>(),
+            It.IsAny<IPluginSourceSet>(),
+            It.IsAny<IPluginOutputState>(),
+            It.IsAny<PluginWriteRequest>(),
             It.IsAny<CancellationToken>()), Times.Never);
         (await File.ReadAllBytesAsync(output.PluginPath)).ShouldBe([1]);
     }
@@ -604,30 +604,30 @@ public sealed partial class WorkspaceSaveCoordinatorTests
             baseline);
     }
 
-    /// <summary>Creates a strict-enough adapter mock for native staging and final reopen behavior.</summary>
+    /// <summary>Creates a strict-enough adapter mock for plugin staging and final reopen behavior.</summary>
     /// <param name="stage">The staged-write implementation.</param>
     /// <returns>The configured adapter mock.</returns>
     private static Mock<IFormListGameAdapter> CreateAdapter(
-        Func<NativeWriteRequest, CancellationToken, Task<NativeStagedOutputSet>> stage)
+        Func<PluginWriteRequest, CancellationToken, Task<StagedPluginOutputSet>> stage)
     {
         var adapter = new Mock<IFormListGameAdapter>();
         adapter.SetupGet(value => value.Game).Returns(SupportedGame.Skyrim);
         adapter.Setup(value => value.SupportsRelease(GameRelease.SkyrimSE)).Returns(true);
         adapter.Setup(value => value.WriteAndValidateAsync(
-                It.IsAny<INativeSourceSet>(),
-                It.IsAny<INativeOutputState>(),
-                It.IsAny<NativeWriteRequest>(),
+                It.IsAny<IPluginSourceSet>(),
+                It.IsAny<IPluginOutputState>(),
+                It.IsAny<PluginWriteRequest>(),
                 It.IsAny<CancellationToken>()))
-            .Returns((INativeSourceSet _, INativeOutputState _, NativeWriteRequest request, CancellationToken token) =>
-                new ValueTask<EngineResult<NativeStagedOutputSet>>(StageResultAsync(stage, request, token)));
+            .Returns((IPluginSourceSet _, IPluginOutputState _, PluginWriteRequest request, CancellationToken token) =>
+                new ValueTask<EngineResult<StagedPluginOutputSet>>(StageResultAsync(stage, request, token)));
         adapter.Setup(value => value.ReopenOutputAsync(
-                It.IsAny<INativeSourceSet>(),
+                It.IsAny<IPluginSourceSet>(),
                 It.IsAny<OutputAssociation>(),
                 It.IsAny<OutputArtifactSetBaseline>(),
                 It.IsAny<CancellationToken>()))
-            .Returns((INativeSourceSet _, OutputAssociation output, OutputArtifactSetBaseline baseline, CancellationToken _) =>
-                new ValueTask<EngineResult<NativeOutputOpenResult>>(EngineResult<NativeOutputOpenResult>.Success(
-                    new NativeOutputOpenResult(new TestOutputState(), output, baseline))));
+            .Returns((IPluginSourceSet _, OutputAssociation output, OutputArtifactSetBaseline baseline, CancellationToken _) =>
+                new ValueTask<EngineResult<PluginOutputOpenResult>>(EngineResult<PluginOutputOpenResult>.Success(
+                    new PluginOutputOpenResult(new TestOutputState(), output, baseline))));
         return adapter;
     }
 
@@ -636,12 +636,12 @@ public sealed partial class WorkspaceSaveCoordinatorTests
     /// <param name="request">The adapter write request.</param>
     /// <param name="cancellationToken">The staging cancellation token.</param>
     /// <returns>The successful staged engine result.</returns>
-    private static async Task<EngineResult<NativeStagedOutputSet>> StageResultAsync(
-        Func<NativeWriteRequest, CancellationToken, Task<NativeStagedOutputSet>> stage,
-        NativeWriteRequest request,
+    private static async Task<EngineResult<StagedPluginOutputSet>> StageResultAsync(
+        Func<PluginWriteRequest, CancellationToken, Task<StagedPluginOutputSet>> stage,
+        PluginWriteRequest request,
         CancellationToken cancellationToken)
     {
-        return EngineResult<NativeStagedOutputSet>.Success(await stage(request, cancellationToken));
+        return EngineResult<StagedPluginOutputSet>.Success(await stage(request, cancellationToken));
     }
 
     /// <summary>Writes a complete staged artifact set for the requested destination baseline.</summary>
@@ -650,14 +650,14 @@ public sealed partial class WorkspaceSaveCoordinatorTests
     /// <param name="desiredFiles">The desired present file bytes keyed by destination path.</param>
     /// <param name="cancellationToken">The staging cancellation token.</param>
     /// <returns>The complete staged set.</returns>
-    private static async Task<NativeStagedOutputSet> CreateStagedSetAsync(
-        NativeWriteRequest request,
+    private static async Task<StagedPluginOutputSet> CreateStagedSetAsync(
+        PluginWriteRequest request,
         OutputArtifactSetBaseline baseline,
         IReadOnlyDictionary<string, byte[]> desiredFiles,
         CancellationToken cancellationToken)
     {
         var outputDirectory = Path.GetDirectoryName(request.Output.PluginPath)!;
-        var mappings = new List<NativeStagedArtifactMapping>();
+        var mappings = new List<StagedPluginArtifactMapping>();
         foreach (var destination in baseline.Artifacts)
         {
             var relative = Path.GetRelativePath(outputDirectory, destination.Path);
@@ -668,23 +668,23 @@ public sealed partial class WorkspaceSaveCoordinatorTests
                 await File.WriteAllBytesAsync(stagedPath, bytes, cancellationToken);
             }
 
-            var staged = await NativeFileInspector.InspectAsync(
+            var staged = await PluginFileInspector.InspectAsync(
                 stagedPath,
                 destination.Role,
                 destination.Language,
                 mustExist: false,
                 cancellationToken);
-            mappings.Add(new NativeStagedArtifactMapping(staged, destination.Path));
+            mappings.Add(new StagedPluginArtifactMapping(staged, destination.Path));
         }
 
-        return new NativeStagedOutputSet(
-            NativeWriteDisposition.StagedChanges,
+        return new StagedPluginOutputSet(
+            PluginWriteDisposition.StagedChanges,
             new TestStagedOutputSet(),
             mappings);
     }
 
     /// <summary>Owns an immutable empty source baseline for coordinator tests.</summary>
-    private sealed class TestSourceSet : INativeSourceSet
+    private sealed class TestSourceSet : IPluginSourceSet
     {
         /// <summary>Whether verification should deliberately return another successful baseline.</summary>
         private readonly bool ReportDifferentBaseline;
@@ -693,28 +693,28 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         /// <param name="reportDifferentBaseline">Whether verification reports success with a different baseline identity.</param>
         internal TestSourceSet(bool reportDifferentBaseline = false)
         {
-            Baseline = new NativeSourceInputBaseline(Guid.NewGuid(), Array.Empty<NativeArtifactAssociation>());
+            Baseline = new PluginSourceInputBaseline(Guid.NewGuid(), Array.Empty<PluginArtifactAssociation>());
             ReportDifferentBaseline = reportDifferentBaseline;
         }
 
         /// <summary>Initializes a source set with one exact physical test baseline.</summary>
         /// <param name="baseline">The exact source baseline returned by normal verification.</param>
-        internal TestSourceSet(NativeSourceInputBaseline baseline)
+        internal TestSourceSet(PluginSourceInputBaseline baseline)
         {
             Baseline = baseline;
         }
 
         /// <inheritdoc />
-        public NativeSourceInputBaseline Baseline { get; }
+        public PluginSourceInputBaseline Baseline { get; }
 
         /// <inheritdoc />
-        public Task<EngineResult<NativeSourceInputBaseline>> VerifyUnchangedAsync(CancellationToken cancellationToken = default)
+        public Task<EngineResult<PluginSourceInputBaseline>> VerifyUnchangedAsync(CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var verified = ReportDifferentBaseline
-                ? new NativeSourceInputBaseline(Guid.NewGuid(), Array.Empty<NativeArtifactAssociation>())
+                ? new PluginSourceInputBaseline(Guid.NewGuid(), Array.Empty<PluginArtifactAssociation>())
                 : Baseline;
-            return Task.FromResult(EngineResult<NativeSourceInputBaseline>.Success(verified));
+            return Task.FromResult(EngineResult<PluginSourceInputBaseline>.Success(verified));
         }
 
         /// <inheritdoc />
@@ -725,7 +725,7 @@ public sealed partial class WorkspaceSaveCoordinatorTests
     }
 
     /// <summary>Provides an opaque disposable output state for adapter mocks.</summary>
-    private sealed class TestOutputState : INativeOutputState
+    private sealed class TestOutputState : IPluginOutputState
     {
         /// <inheritdoc />
         public ValueTask DisposeAsync()
@@ -734,8 +734,8 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         }
     }
 
-    /// <summary>Provides an opaque disposable natively reopened staged state for adapter mocks.</summary>
-    private sealed class TestStagedOutputSet : INativeStagedOutputSet
+    /// <summary>Provides an opaque disposable staged state reopened through an adapter mock.</summary>
+    private sealed class TestStagedOutputSet : IStagedPluginOutputSet
     {
         /// <inheritdoc />
         public ValueTask DisposeAsync()

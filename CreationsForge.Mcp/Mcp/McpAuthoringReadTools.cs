@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeWire;
+using CreationsForge.Core.Engine.RecordWire;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
@@ -29,7 +29,7 @@ internal sealed class WorkspacePreviewTool : McpToolBase
     /// <summary>Gets the preview descriptor.</summary>
     public override Tool ProtocolTool { get; } = new()
     {
-        Name = "creationsforge_workspace_preview", Title = "Preview staged FormList changes", Description = "Builds a fresh complete native preview and pages its comparisons, warnings, and detached before/after views without writing output files.",
+        Name = "creationsforge_workspace_preview", Title = "Preview staged FormList changes", Description = "Builds a fresh complete engine preview and pages its comparisons, warnings, and detached before/after views without writing output files.",
         InputSchema = InputSchema, OutputSchema = OutputSchema,
         Annotations = new ToolAnnotations { ReadOnlyHint = true, IdempotentHint = true, DestructiveHint = false, OpenWorldHint = false },
     };
@@ -90,7 +90,7 @@ internal sealed class WorkspacePreviewTool : McpToolBase
     }
 }
 
-/// <summary>Lists bounded immutable native edit schema keys for one exact game and release.</summary>
+/// <summary>Lists bounded immutable record edit schema keys for one exact game and release.</summary>
 internal sealed class FormListEditSchemasListTool : McpToolBase
 {
     /// <summary>The accepted argument names.</summary>
@@ -112,7 +112,7 @@ internal sealed class FormListEditSchemasListTool : McpToolBase
     /// <summary>Gets the schema-list descriptor.</summary>
     public override Tool ProtocolTool { get; } = new()
     {
-        Name = "creationsforge_formlist_edit_schemas_list", Title = "List FormList edit schemas", Description = "Lists command and native-type schema keys from one immutable game catalog. Resolve referenced type URIs lazily with the schema-read tool under the same catalog identity.",
+        Name = "creationsforge_formlist_edit_schemas_list", Title = "List FormList edit schemas", Description = "Lists command and engine-type schema keys from one immutable game catalog. Resolve referenced type URIs lazily with the schema-read tool under the same catalog identity.",
         InputSchema = InputSchema, OutputSchema = OutputSchema,
         Annotations = new ToolAnnotations { ReadOnlyHint = true, IdempotentHint = true, DestructiveHint = false, OpenWorldHint = false },
     };
@@ -126,7 +126,7 @@ internal sealed class FormListEditSchemasListTool : McpToolBase
         cancellationToken.ThrowIfCancellationRequested();
         if (!McpInput.TryGetArguments(request, AllowedArguments, out var arguments, out var error) || !McpInput.TryGetGameRelease(arguments, out var game, out var release, out error) || !McpInput.TryGetMaximumResults(arguments, out var maximumResults, out error) || !McpInput.TryGetOptionalString(arguments, "cursor", McpInput.MaximumCursorLength, null, out var cursor, out error)) return ValueTask.FromResult(Error("invalid_arguments", error));
         var catalog = Catalogs.SingleOrDefault(candidate => candidate.Identity.Game == game && candidate.Identity.Release == release);
-        if (catalog is null) return ValueTask.FromResult(Error("unsupported_game_release", "No native edit schema catalog is available for the requested game and release."));
+        if (catalog is null) return ValueTask.FromResult(Error("unsupported_game_release", "No record edit schema catalog is available for the requested game and release."));
         var (syntheticId, revision) = CursorIdentity(catalog.Identity.CatalogId);
         var fingerprint = McpPageCursor.CreateFingerprint(catalog.Identity.CatalogId, maximumResults.ToString(System.Globalization.CultureInfo.InvariantCulture));
         var position = 0;
@@ -134,7 +134,7 @@ internal sealed class FormListEditSchemasListTool : McpToolBase
         if (position > catalog.Nodes.Count) return ValueTask.FromResult(Error("invalid_cursor", "The schema-list cursor position is outside the immutable catalog."));
         for (var count = maximumResults; count >= 1; count--)
         {
-            var nodes = catalog.Nodes.Skip(position).Take(count).Select(node => new { kind = node.Kind == NativeWireSchemaNodeKind.Command ? "command" : "type", name = node.Name }).ToArray();
+            var nodes = catalog.Nodes.Skip(position).Take(count).Select(node => new { kind = node.Kind == RecordWireSchemaNodeKind.Command ? "command" : "type", name = node.Name }).ToArray();
             var next = position + nodes.Length;
             var projected = McpProjection.Json(new
             {
@@ -184,7 +184,7 @@ internal sealed class FormListEditSchemaReadTool : McpToolBase
     /// <summary>Gets the schema-read descriptor.</summary>
     public override Tool ProtocolTool { get; } = new()
     {
-        Name = "creationsforge_formlist_edit_schema_read", Title = "Read a FormList edit schema", Description = "Reads one immutable command or native-type schema section. Resolve each schema $ref lazily as a type node in the same catalog.",
+        Name = "creationsforge_formlist_edit_schema_read", Title = "Read a FormList edit schema", Description = "Reads one immutable command or engine-type schema section. Resolve each schema $ref lazily as a type node in the same catalog.",
         InputSchema = InputSchema, OutputSchema = OutputSchema,
         Annotations = new ToolAnnotations { ReadOnlyHint = true, IdempotentHint = true, DestructiveHint = false, OpenWorldHint = false },
     };
@@ -199,10 +199,10 @@ internal sealed class FormListEditSchemaReadTool : McpToolBase
         if (!McpInput.TryGetArguments(request, AllowedArguments, out var arguments, out var error) || !McpInput.TryGetGameRelease(arguments, out var game, out var release, out error) || !McpInput.TryGetRequiredString(arguments, "catalogId", 64, out var catalogId, out error) || !McpInput.TryGetRequiredString(arguments, "kind", 16, out var kindText, out error) || !McpInput.TryGetRequiredString(arguments, "name", 4096, out var name, out error) || !McpInput.TryGetRequiredString(arguments, "section", 16, out var section, out error) || !McpInput.TryGetOptionalString(arguments, "path", McpInput.MaximumJsonPointerLength, string.Empty, out var path, out error) || !McpInput.TryGetMaximumResults(arguments, out var maximumResults, out error) || !McpInput.TryGetOptionalString(arguments, "cursor", McpInput.MaximumCursorLength, null, out var cursor, out error) || !McpJsonPager.TryValidatePath(path!, out error)) return ValueTask.FromResult(Error("invalid_arguments", error));
         var catalog = Catalogs.SingleOrDefault(candidate => candidate.Identity.Game == game && candidate.Identity.Release == release && string.Equals(candidate.Identity.CatalogId, catalogId, StringComparison.Ordinal));
         if (catalog is null) return ValueTask.FromResult(Error("invalid_schema_key", "The catalog identity is stale, foreign, or unavailable for the requested game and release."));
-        var kind = kindText switch { "command" => NativeWireSchemaNodeKind.Command, "type" => NativeWireSchemaNodeKind.Type, _ => (NativeWireSchemaNodeKind)(-1) };
+        var kind = kindText switch { "command" => RecordWireSchemaNodeKind.Command, "type" => RecordWireSchemaNodeKind.Type, _ => (RecordWireSchemaNodeKind)(-1) };
         if (!Enum.IsDefined(kind) || section is not "schema" and not "default") return ValueTask.FromResult(Error("invalid_arguments", "Arguments 'kind' and 'section' must identify command or type and schema or default."));
-        NativeWireSchemaNodeKey key;
-        try { key = new NativeWireSchemaNodeKey(catalogId, kind, name); } catch (ArgumentException exception) { return ValueTask.FromResult(Error("invalid_schema_key", exception.Message)); }
+        RecordWireSchemaNodeKey key;
+        try { key = new RecordWireSchemaNodeKey(catalogId, kind, name); } catch (ArgumentException exception) { return ValueTask.FromResult(Error("invalid_schema_key", exception.Message)); }
         var nodeResult = catalog.ReadNode(key, cancellationToken);
         if (!nodeResult.Succeeded) return ValueTask.FromResult(EngineFailure(nodeResult));
         if (nodeResult.Value is null) return ValueTask.FromResult(Error("unexpected_failure", "The schema catalog reported success without a node."));

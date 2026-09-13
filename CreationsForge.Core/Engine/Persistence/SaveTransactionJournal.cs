@@ -1,11 +1,11 @@
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 using CreationsForge.Core.Enums;
 using Mutagen.Bethesda;
 
 namespace CreationsForge.Core.Engine.Persistence;
 
-/// <summary>Describes the durable phase of one guarded native save transaction.</summary>
+/// <summary>Describes the durable phase of one guarded plugin save transaction.</summary>
 internal enum SaveTransactionPhase
 {
     /// <summary>The request and original baselines are durable, but staging is not yet complete.</summary>
@@ -72,10 +72,10 @@ internal sealed class SaveRepairArtifactPlan
     /// <param name="publish">The flushed repair publication file, or <see langword="null"/> when no present file is published.</param>
     /// <param name="retired">The exact transaction-owned retirement result, or <see langword="null"/> when no present file is retired.</param>
     internal SaveRepairArtifactPlan(
-        NativeArtifactAssociation current,
-        NativeArtifactAssociation target,
-        NativeArtifactAssociation? publish,
-        NativeArtifactAssociation? retired)
+        PluginArtifactAssociation current,
+        PluginArtifactAssociation target,
+        PluginArtifactAssociation? publish,
+        PluginArtifactAssociation? retired)
     {
         Current = current;
         Target = target;
@@ -84,16 +84,16 @@ internal sealed class SaveRepairArtifactPlan
     }
 
     /// <summary>Gets the exact recognized destination state before this repair mutation.</summary>
-    internal NativeArtifactAssociation Current { get; }
+    internal PluginArtifactAssociation Current { get; }
 
     /// <summary>Gets the exact destination state after this repair mutation.</summary>
-    internal NativeArtifactAssociation Target { get; }
+    internal PluginArtifactAssociation Target { get; }
 
     /// <summary>Gets the flushed repair publication file, or <see langword="null"/> when no present file is published.</summary>
-    internal NativeArtifactAssociation? Publish { get; }
+    internal PluginArtifactAssociation? Publish { get; }
 
     /// <summary>Gets the exact transaction-owned retirement result, or <see langword="null"/> when no present file is retired.</summary>
-    internal NativeArtifactAssociation? Retired { get; }
+    internal PluginArtifactAssociation? Retired { get; }
 }
 
 /// <summary>Records one staged-to-destination publication plan with independently observed owned files.</summary>
@@ -106,10 +106,10 @@ internal sealed class SaveArtifactPlan
     /// <param name="backup">The flushed transaction-owned copy of prior bytes, or <see langword="null"/> when the destination was absent.</param>
     /// <param name="retiredPath">The transaction-owned path used for an atomic removal from the destination namespace.</param>
     internal SaveArtifactPlan(
-        NativeArtifactAssociation before,
-        NativeArtifactAssociation staged,
-        NativeArtifactAssociation? publish,
-        NativeArtifactAssociation? backup,
+        PluginArtifactAssociation before,
+        PluginArtifactAssociation staged,
+        PluginArtifactAssociation? publish,
+        PluginArtifactAssociation? backup,
         string retiredPath)
     {
         Before = before;
@@ -120,22 +120,22 @@ internal sealed class SaveArtifactPlan
     }
 
     /// <summary>Gets the exact destination observation before the save.</summary>
-    internal NativeArtifactAssociation Before { get; }
+    internal PluginArtifactAssociation Before { get; }
 
     /// <summary>Gets the exact adapter-staged observation, including intended absence.</summary>
-    internal NativeArtifactAssociation Staged { get; }
+    internal PluginArtifactAssociation Staged { get; }
 
     /// <summary>Gets the flushed same-volume publication file, or <see langword="null"/> for an intended deletion.</summary>
-    internal NativeArtifactAssociation? Publish { get; }
+    internal PluginArtifactAssociation? Publish { get; }
 
     /// <summary>Gets the flushed transaction-owned prior-byte copy, or <see langword="null"/> when originally absent.</summary>
-    internal NativeArtifactAssociation? Backup { get; }
+    internal PluginArtifactAssociation? Backup { get; }
 
     /// <summary>Gets the transaction-owned path used for an atomic removal from the destination namespace.</summary>
     internal string RetiredPath { get; }
 }
 
-/// <summary>Contains one complete immutable snapshot of a guarded native save transaction.</summary>
+/// <summary>Contains one complete immutable snapshot of a guarded plugin save transaction.</summary>
 internal sealed class SaveTransactionJournal
 {
     /// <summary>The supported on-disk journal version.</summary>
@@ -147,7 +147,7 @@ internal sealed class SaveTransactionJournal
     /// <param name="requestFingerprint">The canonical original save request digest.</param>
     /// <param name="saveBaseRevision">The exact original workspace revision.</param>
     /// <param name="game">The exact supported game.</param>
-    /// <param name="release">The exact native release.</param>
+    /// <param name="release">The exact plugin release.</param>
     /// <param name="sourceBaseline">The complete immutable source baseline.</param>
     /// <param name="output">The full output association.</param>
     /// <param name="beforeBaseline">The complete output set before the save.</param>
@@ -164,10 +164,10 @@ internal sealed class SaveTransactionJournal
         WorkspaceRevision saveBaseRevision,
         SupportedGame game,
         GameRelease release,
-        NativeSourceInputBaseline sourceBaseline,
+        PluginSourceInputBaseline sourceBaseline,
         OutputAssociation output,
         OutputArtifactSetBaseline beforeBaseline,
-        NativeWriteDisposition disposition,
+        PluginWriteDisposition disposition,
         SaveTransactionPhase phase,
         int mutationProgress,
         IReadOnlyList<SaveArtifactPlan> artifactPlans,
@@ -206,11 +206,11 @@ internal sealed class SaveTransactionJournal
     /// <summary>Gets the exact supported game.</summary>
     internal SupportedGame Game { get; }
 
-    /// <summary>Gets the exact native release.</summary>
+    /// <summary>Gets the exact plugin release.</summary>
     internal GameRelease Release { get; }
 
     /// <summary>Gets the complete immutable source baseline.</summary>
-    internal NativeSourceInputBaseline SourceBaseline { get; }
+    internal PluginSourceInputBaseline SourceBaseline { get; }
 
     /// <summary>Gets the full output association.</summary>
     internal OutputAssociation Output { get; }
@@ -219,7 +219,7 @@ internal sealed class SaveTransactionJournal
     internal OutputArtifactSetBaseline BeforeBaseline { get; }
 
     /// <summary>Gets whether the adapter proved a whole-output no-op or staged changes.</summary>
-    internal NativeWriteDisposition Disposition { get; }
+    internal PluginWriteDisposition Disposition { get; }
 
     /// <summary>Gets the last durable transaction phase.</summary>
     internal SaveTransactionPhase Phase { get; }
@@ -269,7 +269,7 @@ internal sealed class SaveTransactionJournal
     /// <param name="plans">The complete validated artifact plans.</param>
     /// <returns>A prepared immutable snapshot.</returns>
     internal SaveTransactionJournal WithPreparedArtifacts(
-        NativeWriteDisposition disposition,
+        PluginWriteDisposition disposition,
         IReadOnlyList<SaveArtifactPlan> plans)
     {
         return new SaveTransactionJournal(

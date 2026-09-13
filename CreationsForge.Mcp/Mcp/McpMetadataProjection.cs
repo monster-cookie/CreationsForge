@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 using CreationsForge.Core.Enums;
 using Mutagen.Bethesda;
 
@@ -170,7 +170,7 @@ internal static class McpMetadataProjection
     /// <summary>Projects a complete source baseline in its existing engine order.</summary>
     /// <param name="baseline">The immutable source baseline.</param>
     /// <returns>A closed source-baseline object.</returns>
-    private static object SourceBaseline(NativeSourceInputBaseline baseline)
+    private static object SourceBaseline(PluginSourceInputBaseline baseline)
     {
         return new
         {
@@ -182,7 +182,7 @@ internal static class McpMetadataProjection
     /// <summary>Projects one exact artifact, preserving nullable identity fields and 64-bit values as decimal strings.</summary>
     /// <param name="artifact">The artifact association.</param>
     /// <returns>A closed artifact object.</returns>
-    private static object Artifact(NativeArtifactAssociation artifact)
+    private static object Artifact(PluginArtifactAssociation artifact)
     {
         return new
         {
@@ -235,8 +235,8 @@ internal static class McpMetadataProjection
         };
     }
 
-    /// <summary>Returns the stable native release name.</summary>
-    /// <param name="release">The exact native release.</param>
+    /// <summary>Returns the stable engine release name.</summary>
+    /// <param name="release">The exact engine release.</param>
     /// <returns>The lower-snake-case wire name.</returns>
     internal static string Release(GameRelease release)
     {
@@ -250,7 +250,7 @@ internal static class McpMetadataProjection
     }
 
     /// <summary>Returns the stable localized-output mode.</summary>
-    /// <param name="mode">The native localized-output mode.</param>
+    /// <param name="mode">The engine localized-output mode.</param>
     /// <returns>The lower-snake-case wire name.</returns>
     private static string LocalizedOutputMode(CreationsForge.Core.Engine.Contracts.LocalizedOutputMode mode)
     {
@@ -263,7 +263,7 @@ internal static class McpMetadataProjection
     }
 
     /// <summary>Returns the stable output master style.</summary>
-    /// <param name="style">The native output master style.</param>
+    /// <param name="style">The plugin output master style.</param>
     /// <returns>The lower-snake-case wire name.</returns>
     private static string MasterStyle(OutputMasterStyle style)
     {
@@ -277,17 +277,17 @@ internal static class McpMetadataProjection
     }
 
     /// <summary>Returns the stable artifact role.</summary>
-    /// <param name="role">The native artifact role.</param>
+    /// <param name="role">The plugin artifact role.</param>
     /// <returns>The lower-snake-case wire name.</returns>
-    private static string ArtifactRole(NativeArtifactRole role)
+    private static string ArtifactRole(PluginArtifactRole role)
     {
         return role switch
         {
-            NativeArtifactRole.Plugin => "plugin",
-            NativeArtifactRole.Strings => "strings",
-            NativeArtifactRole.DlStrings => "dlstrings",
-            NativeArtifactRole.IlStrings => "ilstrings",
-            NativeArtifactRole.StringsArchive => "strings_archive",
+            PluginArtifactRole.Plugin => "plugin",
+            PluginArtifactRole.Strings => "strings",
+            PluginArtifactRole.DlStrings => "dlstrings",
+            PluginArtifactRole.IlStrings => "ilstrings",
+            PluginArtifactRole.StringsArchive => "strings_archive",
             _ => throw new ArgumentOutOfRangeException(nameof(role)),
         };
     }

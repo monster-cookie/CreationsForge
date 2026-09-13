@@ -1,10 +1,10 @@
 using System.Text.Json;
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeWire;
+using CreationsForge.Core.Engine.RecordWire;
 using CreationsForge.Core.Enums;
-using CreationsForge.Skyrim.Native;
-using CreationsForge.Skyrim.Native.NativeInspection;
-using CreationsForge.Skyrim.Native.Wire;
+using CreationsForge.Skyrim.PluginAdapter;
+using CreationsForge.Skyrim.PluginAdapter.RecordInspection;
+using CreationsForge.Skyrim.PluginAdapter.Wire;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Records;
@@ -16,7 +16,7 @@ namespace CreationsForge.UnitTests.Engine.Skyrim;
 /// <summary>Verifies strict bounded decoding of every Skyrim Special Edition FormList wire command.</summary>
 public sealed class SkyrimFormListEditWireCodecTests
 {
-    /// <summary>Verifies the codec advertises the one exact game and native release it constructs.</summary>
+    /// <summary>Verifies the codec advertises the one exact game and plugin release it constructs.</summary>
     [Fact]
     public void Identity_UsesSkyrimSpecialEdition()
     {
@@ -97,7 +97,7 @@ public sealed class SkyrimFormListEditWireCodecTests
         edit.Items.ShouldBeEmpty();
     }
 
-    /// <summary>Verifies an explicit null link accepts the canonical FormKey.Null string emitted by the native inspector.</summary>
+    /// <summary>Verifies an explicit null link accepts the canonical FormKey.Null string emitted by the plugin inspector.</summary>
     [Fact]
     public void Decode_NullLinkAcceptsCanonicalFormKeyNullString()
     {
@@ -111,7 +111,7 @@ public sealed class SkyrimFormListEditWireCodecTests
 
     /// <summary>Verifies the readable inspector FormLink representation round-trips into a typed replacement without losing duplicates or null links.</summary>
     [Fact]
-    public void Decode_FormLinksRoundTripFromNativeReadJson()
+    public void Decode_FormLinksRoundTripFromPluginReadJson()
     {
         var first = new FormKey("Master.esm", 0x0123);
         var formList = new FormList(new FormKey("Output.esp", 0x0800), SkyrimRelease.SkyrimSE);
@@ -121,7 +121,7 @@ public sealed class SkyrimFormListEditWireCodecTests
         using var stream = new MemoryStream();
         using (var writer = new Utf8JsonWriter(stream))
         {
-            new SkyrimFormListNativeInspector().WriteReadView(
+            new SkyrimFormListInspector().WriteReadView(
                 formList,
                 writer,
                 TestContext.Current.CancellationToken);
@@ -164,7 +164,7 @@ public sealed class SkyrimFormListEditWireCodecTests
         var result = new SkyrimFormListEditWireCodec().Decode(
             commandName,
             document.RootElement,
-            NativeWireReadLimits.Default,
+            RecordWireReadLimits.Default,
             TestContext.Current.CancellationToken);
 
         result.Succeeded.ShouldBeFalse();
@@ -189,7 +189,7 @@ public sealed class SkyrimFormListEditWireCodecTests
         var result = new SkyrimFormListEditWireCodec().Decode(
             "form-list.replace-items",
             document.RootElement,
-            NativeWireReadLimits.Default,
+            RecordWireReadLimits.Default,
             TestContext.Current.CancellationToken);
 
         result.Succeeded.ShouldBeFalse();
@@ -204,12 +204,12 @@ public sealed class SkyrimFormListEditWireCodecTests
     {
         var item = Link(new FormKey("Master.esm", 0x0123));
         using var document = JsonDocument.Parse($"{{\"items\":[{item},{item}]}}");
-        var limits = new NativeWireReadLimits(
-            NativeWireReadLimits.DefaultMaximumDepth,
-            NativeWireReadLimits.DefaultMaximumNodes,
+        var limits = new RecordWireReadLimits(
+            RecordWireReadLimits.DefaultMaximumDepth,
+            RecordWireReadLimits.DefaultMaximumNodes,
             maximumArrayElements: 1,
-            NativeWireReadLimits.DefaultMaximumStringLength,
-            NativeWireReadLimits.DefaultMaximumDecodedByteLength);
+            RecordWireReadLimits.DefaultMaximumStringLength,
+            RecordWireReadLimits.DefaultMaximumDecodedByteLength);
 
         var result = new SkyrimFormListEditWireCodec().Decode(
             "form-list.replace-items",
@@ -235,7 +235,7 @@ public sealed class SkyrimFormListEditWireCodecTests
             new SkyrimFormListEditWireCodec().Decode(
                 "form-list.clear-items",
                 document.RootElement,
-                NativeWireReadLimits.Default,
+                RecordWireReadLimits.Default,
                 cancellationSource.Token));
     }
 
@@ -255,7 +255,7 @@ public sealed class SkyrimFormListEditWireCodecTests
         var result = codec.Decode(
             commandName,
             document.RootElement,
-            NativeWireReadLimits.Default,
+            RecordWireReadLimits.Default,
             TestContext.Current.CancellationToken);
 
         result.Succeeded.ShouldBeTrue(result.Error?.Message);
@@ -263,7 +263,7 @@ public sealed class SkyrimFormListEditWireCodecTests
     }
 
     /// <summary>Creates the exact readable non-null FormLink JSON for one canonical FormKey.</summary>
-    /// <param name="formKey">The non-null native identity to represent.</param>
+    /// <param name="formKey">The non-null record identity to represent.</param>
     /// <returns>The closed explicit non-null FormLink JSON.</returns>
     private static string Link(FormKey formKey)
     {

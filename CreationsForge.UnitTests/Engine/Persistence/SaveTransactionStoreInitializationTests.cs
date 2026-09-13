@@ -1,5 +1,5 @@
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 using CreationsForge.Core.Engine.Persistence;
 using Mutagen.Bethesda;
 using Shouldly;
@@ -173,7 +173,7 @@ public sealed partial class WorkspaceSaveCoordinatorTests
                 Assert.Skip($"The host could not create a directory symbolic-link fixture: {exception.Message}");
             }
     
-            await Should.ThrowAsync<NativeSourceInputException>(async () =>
+            await Should.ThrowAsync<PluginSourceInputException>(async () =>
                 await new SaveTransactionStore().ReadAllAsync(directory.FullName, CancellationToken.None));
         }
     
@@ -201,7 +201,7 @@ public sealed partial class WorkspaceSaveCoordinatorTests
     {
         var output = CreateOutput(directoryPath);
         await File.WriteAllBytesAsync(output.PluginPath, [1]);
-        var baseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(
+        var baseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(
             GameRelease.SkyrimSE,
             output,
             CancellationToken.None);
@@ -215,7 +215,7 @@ public sealed partial class WorkspaceSaveCoordinatorTests
             source.Baseline,
             output,
             baseline,
-            NativeWriteDisposition.StagedChanges,
+            PluginWriteDisposition.StagedChanges,
             SaveTransactionPhase.Preparing);
         return (new SaveTransactionPaths(directoryPath, workspaceId, operationId), journal);
     }

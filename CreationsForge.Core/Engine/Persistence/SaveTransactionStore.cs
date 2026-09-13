@@ -1,4 +1,4 @@
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 
 namespace CreationsForge.Core.Engine.Persistence;
 
@@ -173,7 +173,7 @@ internal sealed class SaveTransactionStore
         }
 
         Directory.CreateDirectory(initializationDirectoryPath);
-        NativeFileInspector.VerifyDirectory(initializationDirectoryPath, "unpublished save transaction initialization directory");
+        PluginFileInspector.VerifyDirectory(initializationDirectoryPath, "unpublished save transaction initialization directory");
         var initializationJournalPath = Path.Combine(initializationDirectoryPath, JournalFileName);
         await using (var stream = new FileStream(
             initializationJournalPath,
@@ -209,7 +209,7 @@ internal sealed class SaveTransactionStore
 
         if (Directory.Exists(path))
         {
-            NativeFileInspector.VerifyDirectory(path, description);
+            PluginFileInspector.VerifyDirectory(path, description);
             if (Directory.EnumerateFileSystemEntries(path).Any())
             {
                 throw new InvalidDataException($"The {description} is not empty: '{path}'.");
@@ -219,7 +219,7 @@ internal sealed class SaveTransactionStore
         }
 
         Directory.CreateDirectory(path);
-        NativeFileInspector.VerifyDirectory(path, description);
+        PluginFileInspector.VerifyDirectory(path, description);
     }
 
     /// <summary>Reads one exact recognized journal without creating metadata.</summary>
@@ -332,7 +332,7 @@ internal sealed class SaveTransactionStore
                 0);
         }
 
-        NativeFileInspector.VerifyDirectory(root, "save transaction metadata root");
+        PluginFileInspector.VerifyDirectory(root, "save transaction metadata root");
         var rootFiles = EnumerateFilesBounded(root, "save transaction metadata-root file collection");
         if (rootFiles.Count != 0)
         {
@@ -350,7 +350,7 @@ internal sealed class SaveTransactionStore
         foreach (var workspaceDirectory in workspaceDirectories)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            NativeFileInspector.VerifyDirectory(workspaceDirectory, "save transaction workspace directory");
+            PluginFileInspector.VerifyDirectory(workspaceDirectory, "save transaction workspace directory");
             if (!TryParseCanonicalGuidDirectory(workspaceDirectory, out var workspaceId))
             {
                 throw new InvalidDataException($"The save metadata root contains an unrecognized workspace directory: '{workspaceDirectory}'.");
@@ -376,7 +376,7 @@ internal sealed class SaveTransactionStore
                 cancellationToken.ThrowIfCancellationRequested();
                 if (TryParseCanonicalGuidDirectory(transactionDirectory, out var operationId))
                 {
-                    NativeFileInspector.VerifyDirectory(transactionDirectory, "save transaction operation directory");
+                    PluginFileInspector.VerifyDirectory(transactionDirectory, "save transaction operation directory");
                     canonicalTransactions.Add((
                         new SaveTransactionPaths(outputDirectoryPath, workspaceId, operationId),
                         transactionDirectory));
@@ -431,7 +431,7 @@ internal sealed class SaveTransactionStore
     /// <param name="paths">The exact transaction paths.</param>
     private void ValidateExistingHierarchy(SaveTransactionPaths paths)
     {
-        NativeFileInspector.VerifyDirectory(paths.MetadataRootPath, "save transaction metadata root");
+        PluginFileInspector.VerifyDirectory(paths.MetadataRootPath, "save transaction metadata root");
         if (File.Exists(paths.WorkspaceDirectoryPath))
         {
             throw new InvalidDataException($"The save transaction workspace path identifies a file: '{paths.WorkspaceDirectoryPath}'.");
@@ -442,7 +442,7 @@ internal sealed class SaveTransactionStore
             return;
         }
 
-        NativeFileInspector.VerifyDirectory(paths.WorkspaceDirectoryPath, "save transaction workspace directory");
+        PluginFileInspector.VerifyDirectory(paths.WorkspaceDirectoryPath, "save transaction workspace directory");
         if (File.Exists(paths.TransactionDirectoryPath))
         {
             throw new InvalidDataException($"The save transaction operation path identifies a file: '{paths.TransactionDirectoryPath}'.");
@@ -453,7 +453,7 @@ internal sealed class SaveTransactionStore
             return;
         }
 
-        NativeFileInspector.VerifyDirectory(paths.TransactionDirectoryPath, "save transaction operation directory");
+        PluginFileInspector.VerifyDirectory(paths.TransactionDirectoryPath, "save transaction operation directory");
         ValidateTransactionContents(paths.TransactionDirectoryPath);
     }
 
@@ -468,7 +468,7 @@ internal sealed class SaveTransactionStore
         }
 
         Directory.CreateDirectory(path);
-        NativeFileInspector.VerifyDirectory(path, description);
+        PluginFileInspector.VerifyDirectory(path, description);
     }
 
     /// <summary>Rejects foreign names inside a recognized transaction directory.</summary>
@@ -481,7 +481,7 @@ internal sealed class SaveTransactionStore
             "save transaction owned-directory collection");
         foreach (var directory in directories)
         {
-            NativeFileInspector.VerifyDirectory(directory, "save transaction owned directory");
+            PluginFileInspector.VerifyDirectory(directory, "save transaction owned directory");
             if (!AllowedTransactionDirectories.Contains(Path.GetFileName(directory)))
             {
                 throw new InvalidDataException($"The save transaction contains an unrecognized directory: '{directory}'.");
@@ -506,7 +506,7 @@ internal sealed class SaveTransactionStore
     /// <param name="initializationDirectoryPath">The strict recognized initialization directory.</param>
     private void ValidateInitializationContents(string initializationDirectoryPath)
     {
-        NativeFileInspector.VerifyDirectory(
+        PluginFileInspector.VerifyDirectory(
             initializationDirectoryPath,
             "unpublished save transaction initialization directory");
         var directories = EnumerateDirectoriesBounded(

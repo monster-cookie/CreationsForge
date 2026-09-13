@@ -4,13 +4,13 @@ using System.Text.Json;
 namespace CreationsForge.Core.Engine;
 
 /// <summary>
-/// Contains serialized reads, output publication, replay support, and mutation guards for the native workspace.
+/// Contains serialized reads, output publication, replay support, and mutation guards for the workspace.
 /// </summary>
 public sealed partial class FormListWorkspace
 {
-    /// <summary>Adapts a contextual native read to the legacy detached-getter workspace response.</summary>
+    /// <summary>Adapts a contextual engine read to the legacy detached-getter workspace response.</summary>
     /// <param name="request">The exact FormList identity and scope to read.</param>
-    /// <param name="cancellationToken">A token observed during native selection and copying.</param>
+    /// <param name="cancellationToken">A token observed during engine selection and copying.</param>
     /// <returns>The detached resolved getter or a typed non-resolved failure.</returns>
     private EngineResult<Mutagen.Bethesda.Plugins.Records.IMajorRecordGetter> ReadLegacyFormList(
         ReferenceRequest request,
@@ -20,7 +20,7 @@ public sealed partial class FormListWorkspace
         if (!readResult.Succeeded || readResult.Value is null)
         {
             return EngineResult<Mutagen.Bethesda.Plugins.Records.IMajorRecordGetter>.Failure(
-                readResult.Error ?? new EngineError(EngineErrorCode.UnexpectedFailure, "The native adapter returned an invalid contextual FormList read."),
+                readResult.Error ?? new EngineError(EngineErrorCode.UnexpectedFailure, "The engine adapter returned an invalid contextual FormList read."),
                 warnings: readResult.Warnings);
         }
 
@@ -37,9 +37,9 @@ public sealed partial class FormListWorkspace
             warnings: readResult.Warnings);
     }
 
-    /// <summary>Creates a detached typed JSON response from one resolved or deleted contextual native FormList read.</summary>
+    /// <summary>Creates a detached typed JSON response from one resolved or deleted contextual FormList read.</summary>
     /// <param name="request">The exact FormList identity, scope, and optional containing-plugin selection.</param>
-    /// <param name="cancellationToken">A token observed during native selection, copying, and typed JSON traversal.</param>
+    /// <param name="cancellationToken">A token observed during engine selection, copying, and typed JSON traversal.</param>
     /// <returns>The contextual detached read view or a typed adapter failure.</returns>
     private EngineResult<FormListReadView> CreateReadView(
         ReferenceRequest request,
@@ -49,7 +49,7 @@ public sealed partial class FormListWorkspace
         if (!readResult.Succeeded || readResult.Value is null)
         {
             return EngineResult<FormListReadView>.Failure(
-                readResult.Error ?? new EngineError(EngineErrorCode.UnexpectedFailure, "The native adapter returned an invalid contextual FormList read."),
+                readResult.Error ?? new EngineError(EngineErrorCode.UnexpectedFailure, "The engine adapter returned an invalid contextual FormList read."),
                 warnings: readResult.Warnings);
         }
 
@@ -62,7 +62,7 @@ public sealed partial class FormListWorkspace
             warnings: readResult.Warnings);
     }
 
-    /// <summary>Reads, inspects, and compares two explicit native contexts inside the current workspace operation gate.</summary>
+    /// <summary>Reads, inspects, and compares two explicit record contexts inside the current workspace operation gate.</summary>
     /// <param name="request">The explicit prior and resulting selections for one FormList.</param>
     /// <param name="cancellationToken">A token observed throughout both reads, JSON traversal, and typed comparison.</param>
     /// <returns>The detached comparison or a typed contextual-read failure.</returns>
@@ -74,7 +74,7 @@ public sealed partial class FormListWorkspace
         if (!beforeResult.Succeeded || beforeResult.Value is null)
         {
             return EngineResult<FormListComparison>.Failure(
-                beforeResult.Error ?? new EngineError(EngineErrorCode.UnexpectedFailure, "The native adapter returned an invalid prior FormList context."),
+                beforeResult.Error ?? new EngineError(EngineErrorCode.UnexpectedFailure, "The engine adapter returned an invalid prior FormList context."),
                 warnings: beforeResult.Warnings);
         }
 
@@ -92,7 +92,7 @@ public sealed partial class FormListWorkspace
         if (!afterResult.Succeeded || afterResult.Value is null)
         {
             return EngineResult<FormListComparison>.Failure(
-                afterResult.Error ?? new EngineError(EngineErrorCode.UnexpectedFailure, "The native adapter returned an invalid resulting FormList context."),
+                afterResult.Error ?? new EngineError(EngineErrorCode.UnexpectedFailure, "The engine adapter returned an invalid resulting FormList context."),
                 warnings: warnings);
         }
 
@@ -121,7 +121,7 @@ public sealed partial class FormListWorkspace
     }
 
     /// <summary>Rejects uncertain or uninspectable comparison contexts without treating them as record absence.</summary>
-    /// <param name="context">The explicit native context and selection outcome to validate.</param>
+    /// <param name="context">The explicit record context and selection outcome to validate.</param>
     /// <param name="sideName">The human-readable comparison side used in diagnostics.</param>
     /// <returns>A typed failure for an invalid semantic side, or <see langword="null"/> for resolved, deleted, or confirmed unresolved contexts.</returns>
     private static EngineError? CreateComparisonContextError(FormListContext context, string sideName)
@@ -144,7 +144,7 @@ public sealed partial class FormListWorkspace
     }
 
     /// <summary>Formats the exact comparison selection without discarding scope or containing-plugin context.</summary>
-    /// <param name="selection">The native record identity and context selection.</param>
+    /// <param name="selection">The record identity and context selection.</param>
     /// <returns>A stable diagnostic containing the FormKey, scope, and optional containing plugin.</returns>
     private static string DescribeSelection(ReferenceRequest selection)
     {
@@ -154,8 +154,8 @@ public sealed partial class FormListWorkspace
         return $"FormKey {selection.FormKey}, scope {selection.Scope}{containingPlugin}";
     }
 
-    /// <summary>Writes one complete typed native record into a detached JSON element.</summary>
-    /// <param name="record">The detached native FormList getter to inspect.</param>
+    /// <summary>Writes one complete typed record into a detached JSON element.</summary>
+    /// <param name="record">The detached FormList getter to inspect.</param>
     /// <param name="cancellationToken">A token observed while writing and parsing the transient response.</param>
     /// <returns>An independently owned clone of the complete typed JSON value.</returns>
     private JsonElement WriteReadView(
@@ -176,19 +176,19 @@ public sealed partial class FormListWorkspace
     }
 
     /// <summary>Maps a non-resolved contextual read outcome to the legacy typed failure contract.</summary>
-    /// <param name="status">The contextual native read outcome.</param>
+    /// <param name="status">The contextual engine read outcome.</param>
     /// <returns>The stable legacy read failure.</returns>
     private static EngineError CreateReadStatusError(ReferenceResolutionStatus status)
     {
         return status switch
         {
             ReferenceResolutionStatus.Unresolved or ReferenceResolutionStatus.Deleted =>
-                new EngineError(EngineErrorCode.RecordNotFound, "The selected native FormList context is absent or deleted."),
+                new EngineError(EngineErrorCode.RecordNotFound, "The selected FormList context is absent or deleted."),
             ReferenceResolutionStatus.Ambiguous =>
-                new EngineError(EngineErrorCode.InvalidRequest, "The native FormList selection is ambiguous; specify a containing plugin."),
+                new EngineError(EngineErrorCode.InvalidRequest, "The FormList selection is ambiguous; specify a containing plugin."),
             ReferenceResolutionStatus.Unsupported or ReferenceResolutionStatus.UnknownFamily =>
-                new EngineError(EngineErrorCode.UnsupportedOperation, "The selected native record family cannot be read as a FormList."),
-            _ => new EngineError(EngineErrorCode.UnexpectedFailure, "The contextual native read did not provide a resolved FormList record.")
+                new EngineError(EngineErrorCode.UnsupportedOperation, "The selected record family cannot be read as a FormList."),
+            _ => new EngineError(EngineErrorCode.UnexpectedFailure, "The contextual engine read did not provide a resolved FormList record.")
         };
     }
 
@@ -231,9 +231,9 @@ public sealed partial class FormListWorkspace
             }
             catch (Exception exception)
             {
-                Logger.Error(exception, "Native read failed in workspace {WorkspaceId}", WorkspaceId);
+                Logger.Error(exception, "Plugin read failed in workspace {WorkspaceId}", WorkspaceId);
                 return EngineResult<T>.Failure(
-                    new EngineError(EngineErrorCode.UnexpectedFailure, "The native read operation failed."),
+                    new EngineError(EngineErrorCode.UnexpectedFailure, "The engine read operation failed."),
                     WorkspaceId,
                     baseRevision: CurrentRevision,
                     resultRevision: CurrentRevision);
@@ -245,7 +245,7 @@ public sealed partial class FormListWorkspace
         }
     }
 
-    /// <summary>Reopens selected output state and publishes it only after full native success.</summary>
+    /// <summary>Reopens selected output state and publishes it only after full engine success.</summary>
     /// <param name="request">The idempotent reopen request guarded by the current revision and baseline.</param>
     /// <param name="cancellationToken">A token that cancels before reopened state is published.</param>
     /// <returns>The reopened output receipt, or a typed failure that preserves current state.</returns>
@@ -341,7 +341,7 @@ public sealed partial class FormListWorkspace
             if (!openResult.Succeeded || openResult.Value is null)
             {
                 return StoreFinalization(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
-                    openResult.Error ?? new EngineError(EngineErrorCode.OutputOpenFailed, "The selected native output could not be reopened."),
+                    openResult.Error ?? new EngineError(EngineErrorCode.OutputOpenFailed, "The selected plugin output could not be reopened."),
                     WorkspaceId,
                     request.OperationId,
                     request.ExpectedRevision,
@@ -370,9 +370,9 @@ public sealed partial class FormListWorkspace
         }
         catch (Exception exception)
         {
-            Logger.Error(exception, "Failed to reopen native output in workspace {WorkspaceId} for operation {OperationId}", WorkspaceId, request.OperationId);
+            Logger.Error(exception, "Failed to reopen plugin output in workspace {WorkspaceId} for operation {OperationId}", WorkspaceId, request.OperationId);
             return StoreFinalization(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
-                new EngineError(EngineErrorCode.UnexpectedFailure, "The selected native output could not be reopened."),
+                new EngineError(EngineErrorCode.UnexpectedFailure, "The selected plugin output could not be reopened."),
                 WorkspaceId,
                 request.OperationId,
                 request.ExpectedRevision,
@@ -443,13 +443,13 @@ public sealed partial class FormListWorkspace
         return null;
     }
 
-    /// <summary>Publishes a newly opened output and disposes the superseded native output.</summary>
-    /// <param name="openResult">The complete newly opened native state, association, and baseline.</param>
+    /// <summary>Publishes a newly opened output and disposes the superseded plugin output.</summary>
+    /// <param name="openResult">The complete newly opened engine state, association, and baseline.</param>
     /// <param name="clearEdits">Whether staged edit identities must be invalidated.</param>
     /// <param name="revision">The revision to publish atomically with the new state.</param>
-    /// <returns>Warnings reported while disposing superseded native state.</returns>
+    /// <returns>Warnings reported while disposing superseded engine state.</returns>
     private async ValueTask<IReadOnlyList<EngineWarning>> PublishOutputAsync(
-        NativeOutputOpenResult openResult,
+        PluginOutputOpenResult openResult,
         bool clearEdits,
         WorkspaceRevision revision)
     {
@@ -469,9 +469,9 @@ public sealed partial class FormListWorkspace
     /// <summary>Publishes a mutated candidate while preserving output association and baseline identity.</summary>
     /// <param name="candidate">The complete unpublished candidate that becomes live state.</param>
     /// <param name="revision">The revision to publish atomically with the candidate.</param>
-    /// <returns>Warnings reported while disposing superseded native state.</returns>
+    /// <returns>Warnings reported while disposing superseded engine state.</returns>
     private async ValueTask<IReadOnlyList<EngineWarning>> PublishCandidateAsync(
-        INativeOutputState candidate,
+        IPluginOutputState candidate,
         WorkspaceRevision revision)
     {
         var oldOutput = Output;
@@ -480,10 +480,10 @@ public sealed partial class FormListWorkspace
         return await DisposeSupersededOutputAsync(oldOutput).ConfigureAwait(false);
     }
 
-    /// <summary>Disposes superseded native output state and converts disposal failure into a visible warning.</summary>
-    /// <param name="oldOutput">The previously published native output, or <see langword="null"/>.</param>
+    /// <summary>Disposes superseded plugin output state and converts disposal failure into a visible warning.</summary>
+    /// <param name="oldOutput">The previously published plugin output, or <see langword="null"/>.</param>
     /// <returns>An immutable warning collection describing any disposal failure.</returns>
-    private async ValueTask<IReadOnlyList<EngineWarning>> DisposeSupersededOutputAsync(INativeOutputState? oldOutput)
+    private async ValueTask<IReadOnlyList<EngineWarning>> DisposeSupersededOutputAsync(IPluginOutputState? oldOutput)
     {
         if (oldOutput is null)
         {
@@ -497,19 +497,19 @@ public sealed partial class FormListWorkspace
         }
         catch (Exception exception)
         {
-            Logger.Error(exception, "Failed to dispose superseded native output in workspace {WorkspaceId}", WorkspaceId);
+            Logger.Error(exception, "Failed to dispose superseded plugin output in workspace {WorkspaceId}", WorkspaceId);
             return Array.AsReadOnly(new[]
             {
-                new EngineWarning("native-output-disposal-failed", "The new state was published, but disposal of superseded native output reported a failure.")
+                new EngineWarning("engine-output-disposal-failed", "The new state was published, but disposal of superseded plugin output reported a failure.")
             });
         }
     }
 
     /// <summary>Attempts candidate cleanup without replacing the primary operation failure.</summary>
-    /// <param name="candidate">The unpublished native candidate to dispose.</param>
+    /// <param name="candidate">The unpublished engine candidate to dispose.</param>
     /// <param name="primaryFailure">The failure whose outcome cleanup must not replace.</param>
     /// <returns>A task that completes after cleanup succeeds or its failure is logged.</returns>
-    private async ValueTask DisposeCandidateAfterFailureAsync(INativeOutputState candidate, Exception primaryFailure)
+    private async ValueTask DisposeCandidateAfterFailureAsync(IPluginOutputState candidate, Exception primaryFailure)
     {
         try
         {
@@ -517,17 +517,17 @@ public sealed partial class FormListWorkspace
         }
         catch (Exception disposalFailure)
         {
-            Logger.Error(disposalFailure, "Failed to dispose rejected native output candidate in workspace {WorkspaceId} after {FailureType}", WorkspaceId, primaryFailure.GetType().Name);
+            Logger.Error(disposalFailure, "Failed to dispose rejected plugin output candidate in workspace {WorkspaceId} after {FailureType}", WorkspaceId, primaryFailure.GetType().Name);
         }
     }
 
-    /// <summary>Disposes a newly acquired output before propagating cancellation observed after native open.</summary>
-    /// <param name="openResult">The newly acquired unpublished native output.</param>
+    /// <summary>Disposes a newly acquired output before propagating cancellation observed after engine open.</summary>
+    /// <param name="openResult">The newly acquired unpublished plugin output.</param>
     /// <param name="cancellationToken">The token checked after acquisition.</param>
     /// <returns>A task that completes immediately when active, or after canceled output cleanup is attempted.</returns>
     /// <exception cref="OperationCanceledException">Thrown after unpublished output cleanup is attempted when cancellation was requested.</exception>
     private async ValueTask DisposeOpenedOutputIfCanceledAsync(
-        NativeOutputOpenResult openResult,
+        PluginOutputOpenResult openResult,
         CancellationToken cancellationToken)
     {
         if (!cancellationToken.IsCancellationRequested)
@@ -541,7 +541,7 @@ public sealed partial class FormListWorkspace
         }
         catch (Exception exception)
         {
-            Logger.Error(exception, "Failed to dispose canceled unpublished native output in workspace {WorkspaceId}", WorkspaceId);
+            Logger.Error(exception, "Failed to dispose canceled unpublished plugin output in workspace {WorkspaceId}", WorkspaceId);
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -561,7 +561,7 @@ public sealed partial class FormListWorkspace
         }
 
         return EngineResult<T>.Failure(
-            result.Error ?? new EngineError(EngineErrorCode.UnexpectedFailure, "The native adapter returned an invalid failed result."),
+            result.Error ?? new EngineError(EngineErrorCode.UnexpectedFailure, "The engine adapter returned an invalid failed result."),
             WorkspaceId,
             baseRevision: CurrentRevision,
             resultRevision: CurrentRevision,
@@ -625,7 +625,7 @@ public sealed partial class FormListWorkspace
             CurrentRevision);
     }
 
-    /// <summary>Determines whether a fresh operation can reserve replay capacity before native side effects.</summary>
+    /// <summary>Determines whether a fresh operation can reserve replay capacity before engine side effects.</summary>
     /// <param name="operationId">The fresh operation identifier.</param>
     /// <returns><see langword="true"/> when the result can be retained.</returns>
     private bool CanStoreOperation(Guid operationId)
@@ -720,7 +720,7 @@ public sealed partial class FormListWorkspace
     /// <summary>Compares every immutable field of two ordered complete artifact baselines.</summary>
     /// <param name="expected">The caller-observed baseline.</param>
     /// <param name="actual">The workspace-owned baseline.</param>
-    /// <returns><see langword="true"/> when both values describe the same exact native file-set observation.</returns>
+    /// <returns><see langword="true"/> when both values describe the same exact engine file-set observation.</returns>
     private static bool BaselinesMatch(OutputArtifactSetBaseline expected, OutputArtifactSetBaseline actual)
     {
         return expected.BaselineId == actual.BaselineId

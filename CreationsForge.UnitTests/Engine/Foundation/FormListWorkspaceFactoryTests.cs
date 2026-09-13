@@ -10,11 +10,11 @@ using Shouldly;
 namespace CreationsForge.UnitTests.Engine.Foundation;
 
 /// <summary>
-/// Verifies explicit workspace input validation, native lifetime ownership, and isolated engine composition.
+/// Verifies explicit workspace input validation, plugin lifetime ownership, and isolated engine composition.
 /// </summary>
 public sealed class FormListWorkspaceFactoryTests
 {
-    /// <summary>Verifies that a missing source plugin is rejected before native acquisition.</summary>
+    /// <summary>Verifies that a missing source plugin is rejected before plugin acquisition.</summary>
     [Fact]
     public async Task OpenAsync_WhenSourcePluginIsMissing_ReturnsInvalidRequestWithoutOpeningAdapter()
     {
@@ -175,7 +175,7 @@ public sealed class FormListWorkspaceFactoryTests
         }
     }
 
-    /// <summary>Verifies that two paths cannot represent the same native plugin identity.</summary>
+    /// <summary>Verifies that two paths cannot represent the same plugin identity.</summary>
     [Fact]
     public async Task OpenAsync_WhenLoadOrderRepeatsModKey_ReturnsInvalidRequest()
     {
@@ -245,7 +245,7 @@ public sealed class FormListWorkspaceFactoryTests
         }
     }
 
-    /// <summary>Verifies that an adapter's stable native-open failure is preserved.</summary>
+    /// <summary>Verifies that an adapter's stable plugin-open failure is preserved.</summary>
     [Fact]
     public async Task OpenAsync_WhenAdapterReturnsFailure_PreservesFailure()
     {
@@ -255,13 +255,13 @@ public sealed class FormListWorkspaceFactoryTests
             var request = CreateValidRequest(tempDirectory);
             var expectedError = new EngineError(
                 EngineErrorCode.SourceOpenFailed,
-                "The native test source could not be opened.");
+                "The plugin test source could not be opened.");
             var adapter = CreateSupportingAdapter();
             adapter.Setup(candidate => candidate.OpenSourcesAsync(
                     It.IsAny<WorkspaceOpenRequest>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(ValueTask.FromResult(
-                    EngineResult<NativeSourceOpenResult>.Failure(expectedError)));
+                    EngineResult<PluginSourceOpenResult>.Failure(expectedError)));
             var factory = CreateFactory(adapter.Object);
 
             var result = await factory.OpenAsync(request);
@@ -276,7 +276,7 @@ public sealed class FormListWorkspaceFactoryTests
         }
     }
 
-    /// <summary>Verifies that cancellation already requested is observed before native acquisition.</summary>
+    /// <summary>Verifies that cancellation already requested is observed before plugin acquisition.</summary>
     [Fact]
     public async Task OpenAsync_WhenCancelledBeforeAcquisition_DoesNotOpenAdapter()
     {
@@ -304,9 +304,9 @@ public sealed class FormListWorkspaceFactoryTests
         }
     }
 
-    /// <summary>Verifies that cancellation observed after acquisition disposes the acquired native sources.</summary>
+    /// <summary>Verifies that cancellation observed after acquisition disposes the acquired plugin sources.</summary>
     [Fact]
-    public async Task OpenAsync_WhenCancelledAfterAcquisition_DisposesNativeSources()
+    public async Task OpenAsync_WhenCancelledAfterAcquisition_DisposesPluginSources()
     {
         var tempDirectory = Directory.CreateTempSubdirectory();
         try
@@ -322,7 +322,7 @@ public sealed class FormListWorkspaceFactoryTests
                 .Returns(() =>
                 {
                     cancellationSource.Cancel();
-                    return ValueTask.FromResult(EngineResult<NativeSourceOpenResult>.Success(sourceOpenResult));
+                    return ValueTask.FromResult(EngineResult<PluginSourceOpenResult>.Success(sourceOpenResult));
                 });
             var factory = CreateFactory(adapter.Object);
 
@@ -337,9 +337,9 @@ public sealed class FormListWorkspaceFactoryTests
         }
     }
 
-    /// <summary>Verifies that a progress observer failure after workspace construction disposes its native lifetime.</summary>
+    /// <summary>Verifies that a progress observer failure after workspace construction disposes its plugin lifetime.</summary>
     [Fact]
-    public async Task OpenAsync_WhenCompletedProgressObserverThrows_DisposesNativeSources()
+    public async Task OpenAsync_WhenCompletedProgressObserverThrows_DisposesPluginSources()
     {
         var tempDirectory = Directory.CreateTempSubdirectory();
         try
@@ -361,7 +361,7 @@ public sealed class FormListWorkspaceFactoryTests
             adapter.Setup(candidate => candidate.OpenSourcesAsync(
                     It.IsAny<WorkspaceOpenRequest>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(ValueTask.FromResult(EngineResult<NativeSourceOpenResult>.Success(
+                .Returns(ValueTask.FromResult(EngineResult<PluginSourceOpenResult>.Success(
                     CreateSourceOpenResult(sourceSet.Object))));
             var factory = CreateFactory(adapter.Object);
 
@@ -419,7 +419,7 @@ public sealed class FormListWorkspaceFactoryTests
                     It.IsAny<CancellationToken>()))
                 .Callback<WorkspaceOpenRequest, CancellationToken>((canonicalRequest, _) =>
                     forwardedRequest = canonicalRequest)
-                .Returns(ValueTask.FromResult(EngineResult<NativeSourceOpenResult>.Success(
+                .Returns(ValueTask.FromResult(EngineResult<PluginSourceOpenResult>.Success(
                     CreateSourceOpenResult(sourceSet.Object))));
             var factory = CreateFactory(adapter.Object);
 
@@ -464,14 +464,14 @@ public sealed class FormListWorkspaceFactoryTests
             var secondRequest = CreateValidRequest(tempDirectory, workspaceId: Guid.NewGuid());
             var firstSourceSet = CreateSourceSet();
             var secondSourceSet = CreateSourceSet();
-            var sourceResults = new Queue<NativeSourceOpenResult>([
+            var sourceResults = new Queue<PluginSourceOpenResult>([
                 CreateSourceOpenResult(firstSourceSet.Object),
                 CreateSourceOpenResult(secondSourceSet.Object)]);
             var adapter = CreateSupportingAdapter();
             adapter.Setup(candidate => candidate.OpenSourcesAsync(
                     It.IsAny<WorkspaceOpenRequest>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(() => ValueTask.FromResult(EngineResult<NativeSourceOpenResult>.Success(
+                .Returns(() => ValueTask.FromResult(EngineResult<PluginSourceOpenResult>.Success(
                     sourceResults.Dequeue())));
             var saveCoordinator = new Mock<IWorkspaceSaveCoordinator>();
             var logger = new Mock<ILogger>();
@@ -561,28 +561,28 @@ public sealed class FormListWorkspaceFactoryTests
             Mock.Of<ILogger>());
     }
 
-    /// <summary>Creates an independently verifiable native source lifetime.</summary>
-    /// <returns>A loose native source mock with an awaitable disposal operation.</returns>
-    private static Mock<INativeSourceSet> CreateSourceSet()
+    /// <summary>Creates an independently verifiable plugin source lifetime.</summary>
+    /// <returns>A loose plugin source mock with an awaitable disposal operation.</returns>
+    private static Mock<IPluginSourceSet> CreateSourceSet()
     {
-        var sourceSet = new Mock<INativeSourceSet>();
+        var sourceSet = new Mock<IPluginSourceSet>();
         sourceSet.Setup(source => source.DisposeAsync()).Returns(ValueTask.CompletedTask);
         return sourceSet;
     }
 
-    /// <summary>Creates a successful native source result with a deterministic adapter baseline.</summary>
-    /// <param name="sourceSet">The independently owned native source lifetime.</param>
+    /// <summary>Creates a successful plugin source result with a deterministic adapter baseline.</summary>
+    /// <param name="sourceSet">The independently owned plugin source lifetime.</param>
     /// <returns>A source result suitable for constructing a workspace.</returns>
-    private static NativeSourceOpenResult CreateSourceOpenResult(INativeSourceSet sourceSet)
+    private static PluginSourceOpenResult CreateSourceOpenResult(IPluginSourceSet sourceSet)
     {
         var baselineId = new Guid("6195dcd8-7cab-49ba-b25a-56af1a86a4e7");
         TestWorkspaceInfrastructure.ConfigureSourceBaseline(
             sourceSet,
             baselineId,
             Path.Combine(Path.GetTempPath(), "Source.esp"));
-        return new NativeSourceOpenResult(
+        return new PluginSourceOpenResult(
             sourceSet,
             baselineId,
-            Array.Empty<NativeArtifactAssociation>());
+            Array.Empty<PluginArtifactAssociation>());
     }
 }

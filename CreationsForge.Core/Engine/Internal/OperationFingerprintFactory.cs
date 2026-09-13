@@ -79,10 +79,10 @@ internal sealed class OperationFingerprintFactory
         });
     }
 
-    /// <summary>Creates a fingerprint that combines Core request context with an adapter-prepared native payload.</summary>
+    /// <summary>Creates a fingerprint that combines Core request context with an adapter-prepared engine payload.</summary>
     /// <param name="workspaceId">The workspace in which the operation executes.</param>
     /// <param name="request">The guarded typed-edit request.</param>
-    /// <param name="preparedEdit">The immutable adapter-prepared payload and native fingerprint.</param>
+    /// <param name="preparedEdit">The immutable adapter-prepared payload and engine fingerprint.</param>
     /// <returns>The deterministic complete operation fingerprint.</returns>
     internal OperationFingerprint Create(
         Guid workspaceId,
@@ -220,10 +220,10 @@ internal sealed class OperationFingerprintFactory
         writer.Write((int)evidence.Status);
     }
 
-    /// <summary>Writes every field of a complete ordered native artifact collection.</summary>
+    /// <summary>Writes every field of a complete ordered plugin artifact collection.</summary>
     /// <param name="writer">The canonical binary writer.</param>
     /// <param name="artifacts">The ordered artifacts to encode.</param>
-    private static void WriteArtifacts(BinaryWriter writer, IReadOnlyList<NativeArtifactAssociation> artifacts)
+    private static void WriteArtifacts(BinaryWriter writer, IReadOnlyList<PluginArtifactAssociation> artifacts)
     {
         writer.Write(artifacts.Count);
 
@@ -250,9 +250,9 @@ internal sealed class OperationFingerprintFactory
         }
     }
 
-    /// <summary>Writes an optional native FormKey without using lossy string conversion.</summary>
+    /// <summary>Writes an optional engine FormKey without using lossy string conversion.</summary>
     /// <param name="writer">The canonical binary writer.</param>
-    /// <param name="formKey">The optional native identity.</param>
+    /// <param name="formKey">The optional record identity.</param>
     private static void WriteNullableFormKey(BinaryWriter writer, FormKey? formKey)
     {
         writer.Write(formKey.HasValue);
@@ -266,9 +266,9 @@ internal sealed class OperationFingerprintFactory
         writer.Write(formKey.Value.ID);
     }
 
-    /// <summary>Writes every field of an optional native context selector.</summary>
+    /// <summary>Writes every field of an optional record context selector.</summary>
     /// <param name="writer">The canonical binary writer.</param>
-    /// <param name="request">The optional native context selector.</param>
+    /// <param name="request">The optional record context selector.</param>
     private static void WriteNullableReferenceRequest(BinaryWriter writer, ReferenceRequest? request)
     {
         writer.Write(request is not null);

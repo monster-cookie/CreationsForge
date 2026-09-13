@@ -4,9 +4,9 @@ using System.Text.Json;
 using CreationsForge.Bootstrap.Composition;
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Enums;
-using CreationsForge.Fallout4.Native.NativeInspection;
-using CreationsForge.Skyrim.Native.NativeInspection;
-using CreationsForge.Starfield.Native.NativeInspection;
+using CreationsForge.Fallout4.PluginAdapter.RecordInspection;
+using CreationsForge.Skyrim.PluginAdapter.RecordInspection;
+using CreationsForge.Starfield.PluginAdapter.RecordInspection;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Binary.Headers;
@@ -267,12 +267,12 @@ public sealed class ClientAcceptanceSavedOutputVerifierTests
         }
     }
 
-    /// <summary>Directly parses one output with game-native readers and checks its exact record set and requested values.</summary>
+    /// <summary>Directly parses one output with game-plugin readers and checks its exact record set and requested values.</summary>
     /// <param name="acceptanceCase">The retained game case.</param>
-    /// <param name="cancellationToken">A token observed during native parsing and inspection.</param>
+    /// <param name="cancellationToken">A token observed during plugin parsing and inspection.</param>
     /// <returns>The newly allocated output-owned FormKey discovered by unique EditorID.</returns>
-    /// <exception cref="InvalidDataException">Thrown when direct native state differs from the contract.</exception>
-    private static DirectVerificationResult VerifyDirectNativeOutput(ClientAcceptanceCase acceptanceCase, CancellationToken cancellationToken)
+    /// <exception cref="InvalidDataException">Thrown when direct plugin state differs from the contract.</exception>
+    private static DirectVerificationResult VerifyDirectPluginOutput(ClientAcceptanceCase acceptanceCase, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var gameRelease = ParseRelease(acceptanceCase);
@@ -293,7 +293,7 @@ public sealed class ClientAcceptanceSavedOutputVerifierTests
             {
                 var mod = StarfieldMod.CreateFromBinary(frame, StarfieldRelease.Starfield, new Mutagen.Bethesda.Starfield.GroupMask(true));
                 RequireExactStarfieldRecordSet(mod, acceptanceCase.Expected.OutputFormListCount);
-                records = mod.FormLists.ToDictionary(record => record.FormKey, record => WriteReadView(new StarfieldFormListNativeInspector(), record, cancellationToken));
+                records = mod.FormLists.ToDictionary(record => record.FormKey, record => WriteReadView(new StarfieldFormListInspector(), record, cancellationToken));
                 masters = mod.ModHeader.MasterReferences.Select(reference => reference.Master).ToArray();
                 break;
             }
@@ -301,7 +301,7 @@ public sealed class ClientAcceptanceSavedOutputVerifierTests
             {
                 var mod = Fallout4Mod.CreateFromBinary(frame, Fallout4Release.Fallout4, new Mutagen.Bethesda.Fallout4.GroupMask(true));
                 RequireExactFallout4RecordSet(mod, acceptanceCase.Expected.OutputFormListCount);
-                records = mod.FormLists.ToDictionary(record => record.FormKey, record => WriteReadView(new Fallout4FormListNativeInspector(), record, cancellationToken));
+                records = mod.FormLists.ToDictionary(record => record.FormKey, record => WriteReadView(new Fallout4FormListInspector(), record, cancellationToken));
                 masters = mod.ModHeader.MasterReferences.Select(reference => reference.Master).ToArray();
                 break;
             }
@@ -309,7 +309,7 @@ public sealed class ClientAcceptanceSavedOutputVerifierTests
             {
                 var mod = SkyrimMod.CreateFromBinary(frame, SkyrimRelease.SkyrimSE, new Mutagen.Bethesda.Skyrim.GroupMask(true));
                 RequireExactSkyrimRecordSet(mod, acceptanceCase.Expected.OutputFormListCount);
-                records = mod.FormLists.ToDictionary(record => record.FormKey, record => WriteReadView(new SkyrimFormListNativeInspector(), record, cancellationToken));
+                records = mod.FormLists.ToDictionary(record => record.FormKey, record => WriteReadView(new SkyrimFormListInspector(), record, cancellationToken));
                 masters = mod.ModHeader.MasterReferences.Select(reference => reference.Master).ToArray();
                 break;
             }
@@ -334,15 +334,15 @@ public sealed class ClientAcceptanceSavedOutputVerifierTests
             throw new InvalidDataException($"Direct {acceptanceCase.Game} output did not contain exactly one output-owned new FormList with EditorID '{acceptanceCase.Expected.NewRecord.EditorId}'.");
         }
 
-        AssertExpectedRecord(newMatches[0].Value, acceptanceCase.Expected.NewRecord, "direct native new record");
+        AssertExpectedRecord(newMatches[0].Value, acceptanceCase.Expected.NewRecord, "direct plugin new record");
         var overrideFormKey = ParseFormKey(acceptanceCase.Source.FormListFormKey, "source.formListFormKey");
         if (!records.TryGetValue(overrideFormKey, out var overrideRecord))
         {
             throw new InvalidDataException($"Direct {acceptanceCase.Game} output did not contain source override '{overrideFormKey}'.");
         }
 
-        AssertExpectedRecord(overrideRecord, acceptanceCase.Expected.OverrideRecord, "direct native override");
-        AssertUneditedFields(acceptanceCase.Source.Baseline, overrideRecord, acceptanceCase.Source.AllowedChangedProperties, "direct native override");
+        AssertExpectedRecord(overrideRecord, acceptanceCase.Expected.OverrideRecord, "direct plugin override");
+        AssertUneditedFields(acceptanceCase.Source.Baseline, overrideRecord, acceptanceCase.Source.AllowedChangedProperties, "direct plugin override");
         return new DirectVerificationResult(newMatches[0].Key);
     }
 
@@ -389,11 +389,11 @@ public sealed class ClientAcceptanceSavedOutputVerifierTests
     }
 
     /// <summary>Enumerates every major record and rejects extra counts or non-FormList families.</summary>
-    /// <param name="records">Every major record from one native mod enumerator.</param>
+    /// <param name="records">Every major record from one plugin mod enumerator.</param>
     /// <param name="expectedFormListCount">The exact accepted FormList count.</param>
     /// <param name="isFormList">The game-specific FormList type predicate.</param>
     /// <param name="game">The diagnostic game name.</param>
-    /// <exception cref="InvalidDataException">Thrown when the complete native record set is not exactly the expected FormLists.</exception>
+    /// <exception cref="InvalidDataException">Thrown when the complete record set is not exactly the expected FormLists.</exception>
     private static void RequireOnlyExpectedFormLists(
         IEnumerable<IMajorRecordGetter> records,
         int expectedFormListCount,
@@ -409,12 +409,12 @@ public sealed class ClientAcceptanceSavedOutputVerifierTests
 
     /// <summary>Reopens one saved output through a new production engine composition and repeats semantic assertions.</summary>
     /// <param name="acceptanceCase">The retained game case.</param>
-    /// <param name="newFormKey">The output-owned key discovered by direct native parsing.</param>
+    /// <param name="newFormKey">The output-owned key discovered by direct plugin parsing.</param>
     /// <param name="cancellationToken">The propagated operation token.</param>
     /// <returns>A task that completes after fresh engine reads and an empty preview.</returns>
     private static async Task VerifyFreshEngineReopenAsync(ClientAcceptanceCase acceptanceCase, FormKey newFormKey, CancellationToken cancellationToken)
     {
-        await using var services = NativeEngineComposition.Create();
+        await using var services = EngineComposition.Create();
         var openRequest = new WorkspaceOpenRequest(
             acceptanceCase.ReopenWorkspaceId,
             ParseGame(acceptanceCase.Game),
@@ -468,7 +468,7 @@ public sealed class ClientAcceptanceSavedOutputVerifierTests
         }
     }
 
-    /// <summary>Reads one exact output record through the fresh engine's complete native inspector view.</summary>
+    /// <summary>Reads one exact output record through the fresh engine's complete plugin inspector view.</summary>
     /// <param name="workspace">The fresh workspace.</param>
     /// <param name="outputModKey">The containing output identity.</param>
     /// <param name="formKey">The exact record identity.</param>
@@ -488,9 +488,9 @@ public sealed class ClientAcceptanceSavedOutputVerifierTests
 
     /// <summary>Creates strict parsing master-style metadata from every copied plugin header.</summary>
     /// <param name="acceptanceCase">The explicit case inputs.</param>
-    /// <param name="release">The exact native release.</param>
+    /// <param name="release">The exact plugin release.</param>
     /// <param name="outputModKey">The full-master output identity.</param>
-    /// <returns>A complete native master-style lookup.</returns>
+    /// <returns>A complete plugin master-style lookup.</returns>
     private static Cache<IModMasterStyledGetter, ModKey> CreateMasterFlags(ClientAcceptanceCase acceptanceCase, GameRelease release, ModKey outputModKey)
     {
         var fileSystem = new FileSystem();
@@ -506,12 +506,12 @@ public sealed class ClientAcceptanceSavedOutputVerifierTests
         return result;
     }
 
-    /// <summary>Writes one direct native record through the production complete inspector.</summary>
+    /// <summary>Writes one direct record through the production complete inspector.</summary>
     /// <param name="inspector">The stateless game inspector.</param>
-    /// <param name="record">The direct native FormList.</param>
+    /// <param name="record">The direct FormList.</param>
     /// <param name="cancellationToken">The propagated traversal token.</param>
     /// <returns>A detached complete inspector value.</returns>
-    private static JsonElement WriteReadView(IFormListNativeInspector inspector, IMajorRecordGetter record, CancellationToken cancellationToken)
+    private static JsonElement WriteReadView(IFormListInspector inspector, IMajorRecordGetter record, CancellationToken cancellationToken)
     {
         using var stream = new MemoryStream();
         using (var writer = new Utf8JsonWriter(stream))
@@ -524,7 +524,7 @@ public sealed class ClientAcceptanceSavedOutputVerifierTests
     }
 
     /// <summary>Checks one detached record's EditorID, optional English name, and exact ordered item identities.</summary>
-    /// <param name="record">The complete native inspector value.</param>
+    /// <param name="record">The complete plugin inspector value.</param>
     /// <param name="expected">The independent semantic expectation.</param>
     /// <param name="context">The diagnostic verification context.</param>
     /// <exception cref="InvalidDataException">Thrown when any requested field differs.</exception>
@@ -613,9 +613,9 @@ public sealed class ClientAcceptanceSavedOutputVerifierTests
         };
     }
 
-    /// <summary>Parses and verifies one game-specific native release token.</summary>
+    /// <summary>Parses and verifies one game-specific plugin release token.</summary>
     /// <param name="acceptanceCase">The case carrying both game and release.</param>
-    /// <returns>The exact native release.</returns>
+    /// <returns>The exact plugin release.</returns>
     /// <exception cref="InvalidDataException">Thrown when the game or release pair is unsupported.</exception>
     private static GameRelease ParseRelease(ClientAcceptanceCase acceptanceCase)
     {
@@ -628,10 +628,10 @@ public sealed class ClientAcceptanceSavedOutputVerifierTests
         };
     }
 
-    /// <summary>Parses one canonical native FormKey string.</summary>
+    /// <summary>Parses one canonical plugin FormKey string.</summary>
     /// <param name="value">The manifest value.</param>
     /// <param name="field">The diagnostic field name.</param>
-    /// <returns>The non-null native identity.</returns>
+    /// <returns>The non-null record identity.</returns>
     /// <exception cref="InvalidDataException">Thrown when the value is malformed or null.</exception>
     private static FormKey ParseFormKey(string value, string field)
     {

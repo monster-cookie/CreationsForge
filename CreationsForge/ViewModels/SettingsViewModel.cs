@@ -9,12 +9,12 @@ using Mutagen.Bethesda.Strings;
 namespace CreationsForge.ViewModels;
 
 /// <summary>
-/// Edits persisted application preferences and returns to the native workspace shell.
+/// Edits persisted application preferences and returns to the workspace shell.
 /// </summary>
 public class SettingsViewModel : ViewModelBase
 {
-    /// <summary>The native shell/settings navigation boundary.</summary>
-    private readonly INativeApplicationNavigationService NativeApplicationNavigationService;
+    /// <summary>The plugin shell/settings navigation boundary.</summary>
+    private readonly IApplicationNavigationService ApplicationNavigationService;
 
     /// <summary>The application window owner and theme service.</summary>
     private readonly IApplicationWindowService ApplicationWindowService;
@@ -34,22 +34,22 @@ public class SettingsViewModel : ViewModelBase
     /// <summary>Initializes editable settings from the current persisted configuration.</summary>
     /// <param name="gameSelectionService">The supported and active game settings service.</param>
     /// <param name="applicationSettingsService">The persisted display, localization, and tool settings service.</param>
-    /// <param name="nativeApplicationNavigationService">The native shell/settings navigation boundary.</param>
+    /// <param name="applicationNavigationService">The plugin shell/settings navigation boundary.</param>
     /// <param name="applicationWindowService">The application window owner and theme service.</param>
     /// <exception cref="ArgumentNullException">Thrown when a required dependency is <see langword="null"/>.</exception>
     public SettingsViewModel(
         IGameSelectionService gameSelectionService,
         IApplicationSettingsService applicationSettingsService,
-        INativeApplicationNavigationService nativeApplicationNavigationService,
+        IApplicationNavigationService applicationNavigationService,
         IApplicationWindowService applicationWindowService)
     {
         ArgumentNullException.ThrowIfNull(gameSelectionService);
         ArgumentNullException.ThrowIfNull(applicationSettingsService);
-        ArgumentNullException.ThrowIfNull(nativeApplicationNavigationService);
+        ArgumentNullException.ThrowIfNull(applicationNavigationService);
         ArgumentNullException.ThrowIfNull(applicationWindowService);
         GameSelectionService = gameSelectionService;
         ApplicationSettingsService = applicationSettingsService;
-        NativeApplicationNavigationService = nativeApplicationNavigationService;
+        ApplicationNavigationService = applicationNavigationService;
         ApplicationWindowService = applicationWindowService;
         SupportedGames = GameSelectionService.GetSupportedGames();
         GameOptions = SupportedGames.Select(game => game.DisplayName).ToList();
@@ -124,7 +124,7 @@ public class SettingsViewModel : ViewModelBase
         set => SetProperty(ref PreferEspOverMatchingEsmValue, value);
     }
 
-    /// <summary>Saves every editable preference, applies the theme, and returns to the native workspace shell.</summary>
+    /// <summary>Saves every editable preference, applies the theme, and returns to the workspace shell.</summary>
     private void Save()
     {
         var selectedGame = SupportedGames.FirstOrDefault(game =>
@@ -142,13 +142,13 @@ public class SettingsViewModel : ViewModelBase
         }
 
         ApplicationWindowService.ApplyTheme(themeFamily, themeMode);
-        NativeApplicationNavigationService.ShowWorkspaceShell();
+        ApplicationNavigationService.ShowWorkspaceShell();
     }
 
-    /// <summary>Discards unsaved edits and returns to the native workspace shell.</summary>
+    /// <summary>Discards unsaved edits and returns to the workspace shell.</summary>
     private void Cancel()
     {
-        NativeApplicationNavigationService.ShowWorkspaceShell();
+        ApplicationNavigationService.ShowWorkspaceShell();
     }
 
     private async Task BrowseNifSkopeExecutableAsync()

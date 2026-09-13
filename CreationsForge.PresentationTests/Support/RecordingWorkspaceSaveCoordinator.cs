@@ -56,7 +56,7 @@ internal sealed class RecordingWorkspaceSaveCoordinator : IWorkspaceSaveCoordina
         WorkspaceSaveContext context,
         SaveRequest request,
         CancellationToken cancellationToken = default)
-        => throw new NotSupportedException("The presentation recording coordinator does not persist native files.");
+        => throw new NotSupportedException("The presentation recording coordinator does not persist plugin files.");
 
     /// <inheritdoc />
     public ValueTask<EngineResult<ResolvedOutputEvidence>> ValidateResolvedEvidenceAsync(

@@ -47,7 +47,7 @@ public sealed class SaveTool : McpToolBase
     {
         Name = "creationsforge_save",
         Title = "Save a CreationsForge workspace",
-        Description = "Guardedly saves the selected native output against an exact retained baseline and returns commitment knowledge with metadata handles.",
+        Description = "Guardedly saves the selected plugin output against an exact retained baseline and returns commitment knowledge with metadata handles.",
         InputSchema = InputSchema,
         OutputSchema = OutputSchema,
         Annotations = new ToolAnnotations

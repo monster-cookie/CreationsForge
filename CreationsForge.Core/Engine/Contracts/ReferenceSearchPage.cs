@@ -1,7 +1,7 @@
 namespace CreationsForge.Core.Engine.Contracts;
 
 /// <summary>
-/// Carries one bounded page of native reference-search matches.
+/// Carries one bounded page of reference-search matches.
 /// </summary>
 public sealed class ReferenceSearchPage
 {

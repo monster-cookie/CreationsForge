@@ -61,7 +61,7 @@ internal sealed class ClientAcceptanceCase
     /// <summary>Gets or initializes every copied immutable input artifact and its baseline digest.</summary>
     public ClientAcceptanceArtifact[] Artifacts { get; init; } = [];
 
-    /// <summary>Gets or initializes the exact selected source identity and complete native baseline.</summary>
+    /// <summary>Gets or initializes the exact selected source identity and complete plugin baseline.</summary>
     public ClientAcceptanceSource Source { get; init; } = new();
 
     /// <summary>Gets or initializes representative non-FormList targets accepted by the common item commands.</summary>
@@ -95,7 +95,7 @@ internal sealed class ClientAcceptanceWorkspaceOpen
     /// <summary>Gets or initializes the copied read-only source plugin path.</summary>
     public string SourcePluginPath { get; init; } = string.Empty;
 
-    /// <summary>Gets or initializes copied plugins in exact native load-order order.</summary>
+    /// <summary>Gets or initializes copied plugins in exact plugin load-order order.</summary>
     public string[] LoadOrderPluginPaths { get; init; } = [];
 
     /// <summary>Gets or initializes the copied Data directory.</summary>
@@ -136,7 +136,7 @@ internal sealed class ClientAcceptanceSource
     /// <summary>Gets or initializes the exact source FormList identity used for the override.</summary>
     public string FormListFormKey { get; init; } = string.Empty;
 
-    /// <summary>Gets or initializes the complete detached native inspector JSON before authoring.</summary>
+    /// <summary>Gets or initializes the complete detached plugin inspector JSON before authoring.</summary>
     public JsonElement Baseline { get; init; }
 
     /// <summary>Gets or initializes root JSON properties that the requested override is allowed to change.</summary>
@@ -191,7 +191,7 @@ internal sealed class ClientAcceptancePlanStep
     public string? ExactReplayOf { get; init; }
 }
 
-/// <summary>Defines the saved output shape that both native and engine reopen paths must observe.</summary>
+/// <summary>Defines the saved output shape that both plugin and engine reopen paths must observe.</summary>
 internal sealed class ClientAcceptanceExpected
 {
     /// <summary>Gets or initializes the exact number of FormLists physically present in the output.</summary>

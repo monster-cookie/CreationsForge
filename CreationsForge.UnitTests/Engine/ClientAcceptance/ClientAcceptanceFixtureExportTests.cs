@@ -34,7 +34,7 @@ public sealed class ClientAcceptanceFixtureExportTests
     /// <summary>Exports one game fixture, captures its exact source view, and creates a closed client plan.</summary>
     /// <param name="acceptanceRoot">The validated retained root.</param>
     /// <param name="game">The supported game to export.</param>
-    /// <param name="cancellationToken">A token observed throughout native inspection and file copying.</param>
+    /// <param name="cancellationToken">A token observed throughout plugin inspection and file copying.</param>
     /// <returns>The complete retained case manifest.</returns>
     private static async Task<ClientAcceptanceCase> ExportCaseAsync(
         string acceptanceRoot,
@@ -42,7 +42,7 @@ public sealed class ClientAcceptanceFixtureExportTests
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        using var fixture = NativeWorkspaceIntegrationFixture.Create(game);
+        using var fixture = WorkspaceIntegrationFixture.Create(game);
         var generatedRequest = fixture.CreateOpenRequest();
         ClientAcceptancePaths.RequireExistingDirectory(generatedRequest.DataDirectoryPath, $"generated {game} Data directory");
         foreach (var stringDirectory in generatedRequest.StringDirectoryPaths)
@@ -161,16 +161,16 @@ public sealed class ClientAcceptanceFixtureExportTests
     }
 
     /// <summary>Reads a complete source-scoped inspector view before the generated fixture is disposed.</summary>
-    /// <param name="fixture">The generated native fixture.</param>
+    /// <param name="fixture">The generated plugin fixture.</param>
     /// <param name="request">The explicit generated workspace request.</param>
     /// <param name="cancellationToken">The propagated operation token.</param>
     /// <returns>A detached complete source FormList JSON value.</returns>
     private static async Task<JsonElement> ReadSourceBaselineAsync(
-        NativeWorkspaceIntegrationFixture fixture,
+        WorkspaceIntegrationFixture fixture,
         WorkspaceOpenRequest request,
         CancellationToken cancellationToken)
     {
-        await using var services = NativeEngineComposition.Create();
+        await using var services = EngineComposition.Create();
         var opened = await services.WorkspaceFactory.OpenAsync(request, cancellationToken);
         if (!opened.Succeeded || opened.Value is null)
         {
@@ -195,7 +195,7 @@ public sealed class ClientAcceptanceFixtureExportTests
     /// <returns>The exact saved-output expectations.</returns>
     private static ClientAcceptanceExpected CreateExpected(
         SupportedGame game,
-        NativeWorkspaceIntegrationFixture fixture)
+        WorkspaceIntegrationFixture fixture)
     {
         return new ClientAcceptanceExpected
         {
@@ -510,7 +510,7 @@ public sealed class ClientAcceptanceFixtureExportTests
             SupportedGame.Starfield => "starfield",
             SupportedGame.Fallout4 => "fallout4",
             SupportedGame.Skyrim => "skyrim",
-            _ => throw new ArgumentOutOfRangeException(nameof(game), game, "Client acceptance requires a supported native game."),
+            _ => throw new ArgumentOutOfRangeException(nameof(game), game, "Client acceptance requires a supported plugin game."),
         };
     }
 
@@ -525,7 +525,7 @@ public sealed class ClientAcceptanceFixtureExportTests
             SupportedGame.Starfield => "starfield",
             SupportedGame.Fallout4 => "fallout4",
             SupportedGame.Skyrim => "skyrim_se",
-            _ => throw new ArgumentOutOfRangeException(nameof(game), game, "Client acceptance requires a supported native game."),
+            _ => throw new ArgumentOutOfRangeException(nameof(game), game, "Client acceptance requires a supported plugin game."),
         };
     }
 

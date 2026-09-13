@@ -1,5 +1,5 @@
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 
 namespace CreationsForge.Core.Engine.Persistence;
 
@@ -19,7 +19,7 @@ public sealed partial class WorkspaceSaveCoordinator
             return SaveFailure(context, request, EngineErrorCode.RevisionConflict, "The workspace revision changed before guarded save coordination.");
         }
 
-        if (!NativeSaveArtifactUtilities.MatchBaseline(context.OutputBaseline, request.ExpectedOutputBaseline))
+        if (!PluginSaveArtifactUtilities.MatchBaseline(context.OutputBaseline, request.ExpectedOutputBaseline))
         {
             return SaveFailure(context, request, EngineErrorCode.ExternalChangeDetected, "The save request output baseline differs from the borrowed workspace baseline.");
         }
@@ -108,20 +108,20 @@ public sealed partial class WorkspaceSaveCoordinator
             var sourceBefore = await context.Sources.VerifyUnchangedAsync(cancellationToken).ConfigureAwait(false);
             if (!sourceBefore.Succeeded
                 || sourceBefore.Value is null
-                || !NativeSaveArtifactUtilities.MatchSourceBaseline(context.Sources.Baseline, sourceBefore.Value))
+                || !PluginSaveArtifactUtilities.MatchSourceBaseline(context.Sources.Baseline, sourceBefore.Value))
             {
                 return SaveFailure(
                     context,
                     request,
                     sourceBefore.Error?.Code ?? EngineErrorCode.ExternalChangeDetected,
-                    sourceBefore.Error?.Message ?? "The native source baseline changed before staging.");
+                    sourceBefore.Error?.Message ?? "The plugin source baseline changed before staging.");
             }
 
-            var outputBefore = await NativeSaveArtifactUtilities.CaptureOutputAsync(
+            var outputBefore = await PluginSaveArtifactUtilities.CaptureOutputAsync(
                 context.Release,
                 context.OutputAssociation,
                 cancellationToken).ConfigureAwait(false);
-            if (!NativeSaveArtifactUtilities.MatchBaseline(context.OutputBaseline, outputBefore))
+            if (!PluginSaveArtifactUtilities.MatchBaseline(context.OutputBaseline, outputBefore))
             {
                 return SaveFailure(context, request, EngineErrorCode.ExternalChangeDetected, "The complete output artifact set changed before staging.");
             }
@@ -136,7 +136,7 @@ public sealed partial class WorkspaceSaveCoordinator
                 context.Sources.Baseline,
                 context.OutputAssociation,
                 outputBefore,
-                NativeWriteDisposition.StagedChanges,
+                PluginWriteDisposition.StagedChanges,
                 SaveTransactionPhase.Preparing,
                 0,
                 Array.Empty<SaveArtifactPlan>(),
@@ -144,12 +144,12 @@ public sealed partial class WorkspaceSaveCoordinator
                 Array.Empty<SaveRepairAttempt>());
             await TransactionStore.InitializeAsync(paths, initialJournal, cancellationToken).ConfigureAwait(false);
             journal = initialJournal;
-            TransactionStore.CreateEmptySubdirectory(paths.StagingDirectoryPath, "private native save staging directory");
+            TransactionStore.CreateEmptySubdirectory(paths.StagingDirectoryPath, "private plugin save staging directory");
 
             var stagedResult = await context.Adapter.WriteAndValidateAsync(
                 context.Sources,
                 context.Output,
-                new NativeWriteRequest(paths.StagingDirectoryPath, context.OutputAssociation, context.OutputBaseline),
+                new PluginWriteRequest(paths.StagingDirectoryPath, context.OutputAssociation, context.OutputBaseline),
                 cancellationToken).ConfigureAwait(false);
             warnings.AddRange(stagedResult.Warnings);
             if (!stagedResult.Succeeded || stagedResult.Value is null)
@@ -159,40 +159,40 @@ public sealed partial class WorkspaceSaveCoordinator
                     context,
                     request,
                     stagedResult.Error?.Code ?? EngineErrorCode.ValidationFailed,
-                    stagedResult.Error?.Message ?? "Native staging and reopen validation failed.",
+                    stagedResult.Error?.Message ?? "Plugin staging and reopen validation failed.",
                     warnings);
             }
 
             var staged = stagedResult.Value;
             await using var stagedLifetime = staged.StagedOutput;
-            if (staged.Disposition == NativeWriteDisposition.Unchanged)
+            if (staged.Disposition == PluginWriteDisposition.Unchanged)
             {
-                if (!journal.BeforeBaseline.Artifacts.Single(artifact => artifact.Role == NativeArtifactRole.Plugin).Fingerprint.Exists)
+                if (!journal.BeforeBaseline.Artifacts.Single(artifact => artifact.Role == PluginArtifactRole.Plugin).Fingerprint.Exists)
                 {
                     journal = await FinalizeNotCommittedAsync(paths, journal, context.Release, CancellationToken.None).ConfigureAwait(false);
-                    return SaveFailure(context, request, EngineErrorCode.ValidationFailed, "A native no-op save requires an existing complete output.", warnings);
+                    return SaveFailure(context, request, EngineErrorCode.ValidationFailed, "A plugin no-op save requires an existing complete output.", warnings);
                 }
 
                 var sourceNow = await context.Sources.VerifyUnchangedAsync(cancellationToken).ConfigureAwait(false);
-                var outputNow = await NativeSaveArtifactUtilities.CaptureOutputAsync(
+                var outputNow = await PluginSaveArtifactUtilities.CaptureOutputAsync(
                     context.Release,
                     context.OutputAssociation,
                     cancellationToken).ConfigureAwait(false);
                 if (!sourceNow.Succeeded
                     || sourceNow.Value is null
-                    || !NativeSaveArtifactUtilities.MatchSourceBaseline(context.Sources.Baseline, sourceNow.Value)
-                    || !NativeSaveArtifactUtilities.MatchBaseline(journal.BeforeBaseline, outputNow))
+                    || !PluginSaveArtifactUtilities.MatchSourceBaseline(context.Sources.Baseline, sourceNow.Value)
+                    || !PluginSaveArtifactUtilities.MatchBaseline(journal.BeforeBaseline, outputNow))
                 {
                     journal = await FinalizeNotCommittedAsync(paths, journal, context.Release, CancellationToken.None).ConfigureAwait(false);
                     return SaveFailure(
                         context,
                         request,
                         sourceNow.Error?.Code ?? EngineErrorCode.ExternalChangeDetected,
-                        sourceNow.Error?.Message ?? "The native source or complete output changed while validating a no-op save.",
+                        sourceNow.Error?.Message ?? "The plugin source or complete output changed while validating a no-op save.",
                         warnings);
                 }
 
-                journal = journal.WithPreparedArtifacts(NativeWriteDisposition.Unchanged, Array.Empty<SaveArtifactPlan>());
+                journal = journal.WithPreparedArtifacts(PluginWriteDisposition.Unchanged, Array.Empty<SaveArtifactPlan>());
                 await TransactionStore.WriteAsync(paths, journal, CancellationToken.None).ConfigureAwait(false);
                 journal = journal.WithProgress(SaveTransactionPhase.Committed, 0, outputNow);
                 await TransactionStore.WriteAsync(paths, journal, CancellationToken.None).ConfigureAwait(false);
@@ -205,25 +205,25 @@ public sealed partial class WorkspaceSaveCoordinator
                 staged.ArtifactMappings,
                 context.Sources.Baseline,
                 cancellationToken).ConfigureAwait(false);
-            journal = journal.WithPreparedArtifacts(NativeWriteDisposition.StagedChanges, plans);
+            journal = journal.WithPreparedArtifacts(PluginWriteDisposition.StagedChanges, plans);
             await TransactionStore.WriteAsync(paths, journal, cancellationToken).ConfigureAwait(false);
 
             var sourceImmediatelyBefore = await context.Sources.VerifyUnchangedAsync(cancellationToken).ConfigureAwait(false);
-            var outputImmediatelyBefore = await NativeSaveArtifactUtilities.CaptureOutputAsync(
+            var outputImmediatelyBefore = await PluginSaveArtifactUtilities.CaptureOutputAsync(
                 context.Release,
                 context.OutputAssociation,
                 cancellationToken).ConfigureAwait(false);
             if (!sourceImmediatelyBefore.Succeeded
                 || sourceImmediatelyBefore.Value is null
-                || !NativeSaveArtifactUtilities.MatchSourceBaseline(context.Sources.Baseline, sourceImmediatelyBefore.Value)
-                || !NativeSaveArtifactUtilities.MatchBaseline(journal.BeforeBaseline, outputImmediatelyBefore))
+                || !PluginSaveArtifactUtilities.MatchSourceBaseline(context.Sources.Baseline, sourceImmediatelyBefore.Value)
+                || !PluginSaveArtifactUtilities.MatchBaseline(journal.BeforeBaseline, outputImmediatelyBefore))
             {
                 journal = await FinalizeNotCommittedAsync(paths, journal, context.Release, CancellationToken.None).ConfigureAwait(false);
                 return SaveFailure(
                     context,
                     request,
                     sourceImmediatelyBefore.Error?.Code ?? EngineErrorCode.ExternalChangeDetected,
-                    sourceImmediatelyBefore.Error?.Message ?? "The native source or complete output changed immediately before publication.",
+                    sourceImmediatelyBefore.Error?.Message ?? "The plugin source or complete output changed immediately before publication.",
                     warnings);
             }
 
@@ -265,12 +265,12 @@ public sealed partial class WorkspaceSaveCoordinator
                 await TransactionStore.WriteAsync(paths, journal, CancellationToken.None).ConfigureAwait(false);
             }
 
-            var committedBaseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(
+            var committedBaseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(
                 context.Release,
                 context.OutputAssociation,
                 CancellationToken.None).ConfigureAwait(false);
             var preparedBaseline = CreatePreparedBaseline(journal);
-            if (!NativeSaveArtifactUtilities.MatchBaseline(preparedBaseline, committedBaseline))
+            if (!PluginSaveArtifactUtilities.MatchBaseline(preparedBaseline, committedBaseline))
             {
                 return await CreateUnknownSaveResultAsync(context, request, journal, warnings).ConfigureAwait(false);
             }
@@ -343,21 +343,21 @@ public sealed partial class WorkspaceSaveCoordinator
     private async Task<IReadOnlyList<SaveArtifactPlan>> PrepareArtifactPlansAsync(
         SaveTransactionPaths paths,
         OutputArtifactSetBaseline beforeBaseline,
-        IReadOnlyList<NativeStagedArtifactMapping> mappings,
-        NativeSourceInputBaseline sourceBaseline,
+        IReadOnlyList<StagedPluginArtifactMapping> mappings,
+        PluginSourceInputBaseline sourceBaseline,
         CancellationToken cancellationToken)
     {
         if (mappings.Count != beforeBaseline.Artifacts.Count)
         {
-            throw new InvalidDataException("The native staged mapping does not cover the complete output artifact association.");
+            throw new InvalidDataException("The plugin staged mapping does not cover the complete output artifact association.");
         }
 
         var mappingByDestination = mappings.ToDictionary(
             mapping => Path.GetFullPath(mapping.DestinationPath),
-            NativeSaveArtifactUtilities.PathComparer);
+            PluginSaveArtifactUtilities.PathComparer);
         if (mappingByDestination.Count != mappings.Count)
         {
-            throw new InvalidDataException("The native staged mapping contains duplicate destination paths.");
+            throw new InvalidDataException("The plugin staged mapping contains duplicate destination paths.");
         }
 
         TransactionStore.CreateEmptySubdirectory(paths.PublishDirectoryPath, "save publication directory");
@@ -369,36 +369,36 @@ public sealed partial class WorkspaceSaveCoordinator
         {
             cancellationToken.ThrowIfCancellationRequested();
             var before = beforeBaseline.Artifacts[index];
-            NativeSaveArtifactUtilities.RequireDescendant(before.Path, paths.OutputDirectoryPath, "output artifact");
+            PluginSaveArtifactUtilities.RequireDescendant(before.Path, paths.OutputDirectoryPath, "output artifact");
             if (!mappingByDestination.TryGetValue(before.Path, out var mapping))
             {
-                throw new InvalidDataException($"The native staged set omitted output artifact '{before.Path}'.");
+                throw new InvalidDataException($"The plugin staged set omitted output artifact '{before.Path}'.");
             }
 
-            NativeSaveArtifactUtilities.RequireDescendant(mapping.StagedArtifact.Path, paths.StagingDirectoryPath, "staged artifact");
+            PluginSaveArtifactUtilities.RequireDescendant(mapping.StagedArtifact.Path, paths.StagingDirectoryPath, "staged artifact");
             if (mapping.StagedArtifact.Role != before.Role
                 || !string.Equals(mapping.StagedArtifact.Language, before.Language, StringComparison.Ordinal))
             {
-                throw new InvalidDataException("A native staged artifact role or language differs from its complete destination association.");
+                throw new InvalidDataException("A plugin staged artifact role or language differs from its complete destination association.");
             }
 
-            var staged = await NativeFileInspector.InspectAsync(
+            var staged = await PluginFileInspector.InspectAsync(
                 mapping.StagedArtifact.Path,
                 mapping.StagedArtifact.Role,
                 mapping.StagedArtifact.Language,
                 mustExist: false,
                 cancellationToken).ConfigureAwait(false);
-            if (!NativeSaveArtifactUtilities.MatchExact([mapping.StagedArtifact], [staged]))
+            if (!PluginSaveArtifactUtilities.MatchExact([mapping.StagedArtifact], [staged]))
             {
-                throw new InvalidDataException($"The native staged artifact changed after adapter validation: '{mapping.StagedArtifact.Path}'.");
+                throw new InvalidDataException($"The plugin staged artifact changed after adapter validation: '{mapping.StagedArtifact.Path}'.");
             }
 
-            NativeArtifactAssociation? publish = null;
+            PluginArtifactAssociation? publish = null;
             if (staged.Fingerprint.Exists)
             {
                 var publishPath = Path.Combine(paths.PublishDirectoryPath, $"{index:D4}.bin");
-                await NativeSaveArtifactUtilities.CopyAndFlushAsync(staged.Path, publishPath, cancellationToken).ConfigureAwait(false);
-                publish = await NativeFileInspector.InspectAsync(
+                await PluginSaveArtifactUtilities.CopyAndFlushAsync(staged.Path, publishPath, cancellationToken).ConfigureAwait(false);
+                publish = await PluginFileInspector.InspectAsync(
                     publishPath,
                     staged.Role,
                     staged.Language,
@@ -406,16 +406,16 @@ public sealed partial class WorkspaceSaveCoordinator
                     cancellationToken).ConfigureAwait(false);
                 if (!ArtifactContentMatches(staged, publish))
                 {
-                    throw new InvalidDataException("A flushed publication copy differs from its natively validated staged artifact.");
+                    throw new InvalidDataException("A flushed publication copy differs from its game-adapter-validated staged artifact.");
                 }
             }
 
-            NativeArtifactAssociation? backup = null;
+            PluginArtifactAssociation? backup = null;
             if (before.Fingerprint.Exists)
             {
                 var backupPath = Path.Combine(paths.BackupDirectoryPath, $"{index:D4}.bin");
-                await NativeSaveArtifactUtilities.CopyAndFlushAsync(before.Path, backupPath, cancellationToken).ConfigureAwait(false);
-                backup = await NativeFileInspector.InspectAsync(
+                await PluginSaveArtifactUtilities.CopyAndFlushAsync(before.Path, backupPath, cancellationToken).ConfigureAwait(false);
+                backup = await PluginFileInspector.InspectAsync(
                     backupPath,
                     before.Role,
                     before.Language,
@@ -455,7 +455,7 @@ public sealed partial class WorkspaceSaveCoordinator
         int nextIndex,
         CancellationToken cancellationToken)
     {
-        var output = await NativeSaveArtifactUtilities.CaptureOutputAsync(
+        var output = await PluginSaveArtifactUtilities.CaptureOutputAsync(
             journal.Release,
             journal.Output,
             cancellationToken).ConfigureAwait(false);
@@ -464,13 +464,13 @@ public sealed partial class WorkspaceSaveCoordinator
             throw new InvalidDataException("The complete output association changed during guarded publication.");
         }
 
-        var actual = output.Artifacts.ToDictionary(artifact => artifact.Path, NativeSaveArtifactUtilities.PathComparer);
+        var actual = output.Artifacts.ToDictionary(artifact => artifact.Path, PluginSaveArtifactUtilities.PathComparer);
         for (var index = 0; index < journal.ArtifactPlans.Count; index++)
         {
             var plan = journal.ArtifactPlans[index];
             var expected = index < nextIndex ? CreatePreparedDestination(plan) : plan.Before;
             if (!actual.TryGetValue(plan.Before.Path, out var observed)
-                || !NativeSaveArtifactUtilities.MatchExact([expected], [observed]))
+                || !PluginSaveArtifactUtilities.MatchExact([expected], [observed]))
             {
                 throw new InvalidDataException($"Output artifact '{plan.Before.Path}' changed outside the guarded publication plan.");
             }
@@ -487,13 +487,13 @@ public sealed partial class WorkspaceSaveCoordinator
     {
         if (plan.Publish is not null)
         {
-            var publish = await NativeFileInspector.InspectAsync(
+            var publish = await PluginFileInspector.InspectAsync(
                 plan.Publish.Path,
                 plan.Publish.Role,
                 plan.Publish.Language,
                 mustExist: true,
                 cancellationToken).ConfigureAwait(false);
-            if (!NativeSaveArtifactUtilities.MatchExact([plan.Publish], [publish]))
+            if (!PluginSaveArtifactUtilities.MatchExact([plan.Publish], [publish]))
             {
                 throw new InvalidDataException($"Publication artifact '{plan.Publish.Path}' changed before its destination move.");
             }
@@ -510,7 +510,7 @@ public sealed partial class WorkspaceSaveCoordinator
     /// <summary>Finalizes a physically unchanged pre-boundary transaction as not committed.</summary>
     /// <param name="paths">The transaction paths.</param>
     /// <param name="journal">The current complete journal.</param>
-    /// <param name="release">The exact native release.</param>
+    /// <param name="release">The exact plugin release.</param>
     /// <param name="cancellationToken">The bookkeeping token.</param>
     /// <returns>The terminal not-committed journal.</returns>
     private async Task<SaveTransactionJournal> FinalizeNotCommittedAsync(
@@ -519,11 +519,11 @@ public sealed partial class WorkspaceSaveCoordinator
         Mutagen.Bethesda.GameRelease release,
         CancellationToken cancellationToken)
     {
-        var output = await NativeSaveArtifactUtilities.CaptureOutputAsync(
+        var output = await PluginSaveArtifactUtilities.CaptureOutputAsync(
             release,
             journal.Output,
             cancellationToken).ConfigureAwait(false);
-        if (!NativeSaveArtifactUtilities.MatchBaseline(journal.BeforeBaseline, output))
+        if (!PluginSaveArtifactUtilities.MatchBaseline(journal.BeforeBaseline, output))
         {
             throw new InvalidDataException("A pre-boundary save failure could not prove that the complete output remained unchanged.");
         }
@@ -549,13 +549,13 @@ public sealed partial class WorkspaceSaveCoordinator
         {
             var journal = entry.Journal;
             if (journal.SaveOperationId == currentOperationId
-                || !NativeSaveArtifactUtilities.MatchOutput(journal.Output, output)
+                || !PluginSaveArtifactUtilities.MatchOutput(journal.Output, output)
                 || journal.Phase is SaveTransactionPhase.Committed or SaveTransactionPhase.NotCommitted)
             {
                 continue;
             }
 
-            var current = await NativeSaveArtifactUtilities.CaptureOutputAsync(
+            var current = await PluginSaveArtifactUtilities.CaptureOutputAsync(
                 journal.Release,
                 journal.Output,
                 cancellationToken).ConfigureAwait(false);
@@ -582,7 +582,7 @@ public sealed partial class WorkspaceSaveCoordinator
         return null;
     }
 
-    /// <summary>Creates a committed result after terminal evidence and a temporary native destination reopen.</summary>
+    /// <summary>Creates a committed result after terminal evidence and a temporary plugin destination reopen.</summary>
     /// <param name="context">The borrowed workspace context.</param>
     /// <param name="request">The original save request.</param>
     /// <param name="journal">The terminal committed journal.</param>
@@ -632,7 +632,7 @@ public sealed partial class WorkspaceSaveCoordinator
                 baseline,
                 recovery.EvidenceToken,
                 evidence,
-                reopen.Error ?? new EngineError(EngineErrorCode.OutputOpenFailed, "The committed native output could not be reopened."),
+                reopen.Error ?? new EngineError(EngineErrorCode.OutputOpenFailed, "The committed plugin output could not be reopened."),
                 warnings);
         }
 
@@ -723,7 +723,7 @@ public sealed partial class WorkspaceSaveCoordinator
                 recovery.ResolvedEvidence.ResolvedOutputBaseline,
                 recovery.EvidenceToken,
                 recovery.ResolvedEvidence,
-                new EngineError(EngineErrorCode.OutputOpenFailed, exception?.Message ?? "The destination committed, but final native reopen did not complete."),
+                new EngineError(EngineErrorCode.OutputOpenFailed, exception?.Message ?? "The destination committed, but final plugin reopen did not complete."),
                 warnings);
         }
 
@@ -786,7 +786,7 @@ public sealed partial class WorkspaceSaveCoordinator
     /// <param name="left">The first artifact.</param>
     /// <param name="right">The second artifact.</param>
     /// <returns><see langword="true"/> when content semantics match independently of path and file identity.</returns>
-    private static bool ArtifactContentMatches(NativeArtifactAssociation left, NativeArtifactAssociation right)
+    private static bool ArtifactContentMatches(PluginArtifactAssociation left, PluginArtifactAssociation right)
     {
         return left.Role == right.Role
             && string.Equals(left.Language, right.Language, StringComparison.Ordinal)
@@ -798,9 +798,9 @@ public sealed partial class WorkspaceSaveCoordinator
     /// <param name="sourceBaseline">The complete source baseline.</param>
     private static void ValidateOwnedIdentities(
         IReadOnlyList<SaveArtifactPlan> plans,
-        NativeSourceInputBaseline sourceBaseline)
+        PluginSourceInputBaseline sourceBaseline)
     {
-        var identities = new HashSet<NativeFileIdentity>();
+        var identities = new HashSet<ArtifactFileIdentity>();
         foreach (var source in sourceBaseline.Artifacts.Where(artifact => artifact.FileIdentity is not null))
         {
             identities.Add(source.FileIdentity!);
@@ -831,13 +831,13 @@ public sealed partial class WorkspaceSaveCoordinator
     private static void EnsureDestinationParent(string destinationPath, string outputDirectory)
     {
         var parent = Path.GetDirectoryName(destinationPath)!;
-        if (NativeSaveArtifactUtilities.PathComparer.Equals(parent, outputDirectory))
+        if (PluginSaveArtifactUtilities.PathComparer.Equals(parent, outputDirectory))
         {
             return;
         }
 
-        NativeSaveArtifactUtilities.RequireDescendant(parent, outputDirectory, "output artifact directory");
+        PluginSaveArtifactUtilities.RequireDescendant(parent, outputDirectory, "output artifact directory");
         Directory.CreateDirectory(parent);
-        NativeFileInspector.VerifyDirectory(parent, "output artifact directory");
+        PluginFileInspector.VerifyDirectory(parent, "output artifact directory");
     }
 }

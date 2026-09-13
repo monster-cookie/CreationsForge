@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 using CreationsForge.Core.Enums;
 using Moq;
 using Mutagen.Bethesda;
@@ -14,14 +14,14 @@ namespace CreationsForge.UnitTests.Engine.Foundation;
 /// <summary>Verifies guarded save publication, synchronization latches, and explicit recovery adoption.</summary>
 public sealed class FormListWorkspacePersistenceRecoveryTests
 {
-    /// <summary>Verifies a committed save publishes a fresh native output, clears edit sessions, and replays the final result.</summary>
+    /// <summary>Verifies a committed save publishes a fresh plugin output, clears edit sessions, and replays the final result.</summary>
     [Fact]
     public async Task SaveAsync_WhenCommitted_ReopensFullOutputAndClearsDirtyEditState()
     {
         await using var fixture = await WorkspaceFixture.OpenAsync(selectOutput: true);
         var staged = await fixture.StageEditAsync();
         var stagedOutput = staged.Output;
-        var committedOutput = CreateDisposableMock<INativeOutputState>();
+        var committedOutput = CreateDisposableMock<IPluginOutputState>();
         var committedBaseline = fixture.CreateOutputBaseline(Guid.NewGuid(), "committed", 2);
         var saveRequest = new SaveRequest(Guid.NewGuid(), fixture.Workspace.Revision, fixture.SelectedBaseline!);
         fixture.ConfigureCommittedSave(saveRequest, committedBaseline);
@@ -30,8 +30,8 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
                 fixture.OutputAssociation,
                 committedBaseline,
                 It.IsAny<CancellationToken>()))
-            .Returns(ValueTask.FromResult(EngineResult<NativeOutputOpenResult>.Success(
-                new NativeOutputOpenResult(committedOutput.Object, fixture.OutputAssociation, committedBaseline))));
+            .Returns(ValueTask.FromResult(EngineResult<PluginOutputOpenResult>.Success(
+                new PluginOutputOpenResult(committedOutput.Object, fixture.OutputAssociation, committedBaseline))));
 
         var result = await fixture.Workspace.SaveAsync(saveRequest);
         var replay = await fixture.Workspace.SaveAsync(saveRequest);
@@ -105,8 +105,8 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
         newSave.Error!.Code.ShouldBe(EngineErrorCode.RepairRequired);
         staged.Output.Verify(candidate => candidate.DisposeAsync(), Times.Never);
         fixture.Adapter.Verify(candidate => candidate.ListPlugins(
-            It.IsAny<INativeSourceSet>(),
-            It.IsAny<INativeOutputState?>(),
+            It.IsAny<IPluginSourceSet>(),
+            It.IsAny<IPluginOutputState?>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -124,7 +124,7 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
                 fixture.OutputAssociation,
                 committedBaseline,
                 It.IsAny<CancellationToken>()))
-            .Returns(ValueTask.FromResult(EngineResult<NativeOutputOpenResult>.Failure(
+            .Returns(ValueTask.FromResult(EngineResult<PluginOutputOpenResult>.Failure(
                 new EngineError(EngineErrorCode.OutputOpenFailed, "Synthetic reopen failure."))));
 
         var result = await fixture.Workspace.SaveAsync(saveRequest);
@@ -158,14 +158,14 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
             RecoverSaveStatus.NotCommitted,
             "restored-not-committed");
         fixture.ConfigureValidatedEvidence(evidence);
-        var proofOutput = CreateDisposableMock<INativeOutputState>();
+        var proofOutput = CreateDisposableMock<IPluginOutputState>();
         fixture.Adapter.Setup(candidate => candidate.ReopenOutputAsync(
                 fixture.Sources.Object,
                 fixture.OutputAssociation,
                 restoredBaseline,
                 It.IsAny<CancellationToken>()))
-            .Returns(ValueTask.FromResult(EngineResult<NativeOutputOpenResult>.Success(
-                new NativeOutputOpenResult(proofOutput.Object, fixture.OutputAssociation, restoredBaseline))));
+            .Returns(ValueTask.FromResult(EngineResult<PluginOutputOpenResult>.Success(
+                new PluginOutputOpenResult(proofOutput.Object, fixture.OutputAssociation, restoredBaseline))));
         var resolveRequest = new ResolveOutputRecoveryRequest(
             Guid.NewGuid(),
             fixture.Workspace.Revision,
@@ -173,7 +173,7 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
             evidence);
 
         var resolved = await fixture.Workspace.ResolveOutputRecoveryAsync(resolveRequest);
-        var appliedOutput = CreateDisposableMock<INativeOutputState>();
+        var appliedOutput = CreateDisposableMock<IPluginOutputState>();
         fixture.Adapter.Setup(candidate => candidate.CloneOutput(staged.Output.Object, It.IsAny<CancellationToken>()))
             .Returns(appliedOutput.Object);
         fixture.Adapter.Setup(candidate => candidate.PrepareEdit(It.IsAny<FormListEdit>()))
@@ -183,7 +183,7 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
                 appliedOutput.Object,
                 staged.Result.Value!.FormKey,
                 It.IsAny<PreparedFormListEdit>()))
-            .Returns(EngineResult<NativeEditMutationResult>.Success(new NativeEditMutationResult(true)));
+            .Returns(EngineResult<RecordEditMutationResult>.Success(new RecordEditMutationResult(true)));
         var applied = await fixture.Workspace.ApplyFormListEditAsync(new FormListEditRequest(
             Guid.NewGuid(),
             fixture.Workspace.Revision,
@@ -224,7 +224,7 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
     }
 
     /// <summary>Verifies validated terminal evidence can reopen a matching selected or unselected output.</summary>
-    /// <param name="selectOutput">Whether the workspace starts with selected native state.</param>
+    /// <param name="selectOutput">Whether the workspace starts with selected plugin state.</param>
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -242,14 +242,14 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
             "external-committed",
             originalWorkspaceId);
         fixture.ConfigureValidatedEvidence(evidence);
-        var reopenedOutput = CreateDisposableMock<INativeOutputState>();
+        var reopenedOutput = CreateDisposableMock<IPluginOutputState>();
         fixture.Adapter.Setup(candidate => candidate.ReopenOutputAsync(
                 fixture.Sources.Object,
                 fixture.OutputAssociation,
                 resolvedBaseline,
                 It.IsAny<CancellationToken>()))
-            .Returns(ValueTask.FromResult(EngineResult<NativeOutputOpenResult>.Success(
-                new NativeOutputOpenResult(reopenedOutput.Object, fixture.OutputAssociation, resolvedBaseline))));
+            .Returns(ValueTask.FromResult(EngineResult<PluginOutputOpenResult>.Success(
+                new PluginOutputOpenResult(reopenedOutput.Object, fixture.OutputAssociation, resolvedBaseline))));
 
         var result = await fixture.Workspace.ResolveOutputRecoveryAsync(new ResolveOutputRecoveryRequest(
             Guid.NewGuid(),
@@ -270,7 +270,7 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
 
     /// <summary>Verifies cross-game, cross-release, stale-source, wrong-output, and invalid-token evidence cannot be adopted.</summary>
     [Fact]
-    public async Task ResolveOutputRecoveryAsync_WhenEvidenceIdentityIsWrong_RejectsBeforeNativePublication()
+    public async Task ResolveOutputRecoveryAsync_WhenEvidenceIdentityIsWrong_RejectsBeforePluginPublication()
     {
         await using var fixture = await WorkspaceFixture.OpenAsync(selectOutput: true);
         var baseline = fixture.CreateOutputBaseline(Guid.NewGuid(), "resolved", 3);
@@ -306,7 +306,7 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
             valid.OriginalWorkspaceId,
             valid.SaveOperationId,
             valid.SaveBaseRevision,
-            new NativeSourceInputBaseline(Guid.NewGuid(), valid.SourceBaseline.Artifacts),
+            new PluginSourceInputBaseline(Guid.NewGuid(), valid.SourceBaseline.Artifacts),
             valid.Output,
             valid.ResolvedOutputBaseline,
             valid.Status);
@@ -350,15 +350,15 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
         }
 
         fixture.Adapter.Verify(candidate => candidate.ReopenOutputAsync(
-            It.IsAny<INativeSourceSet>(),
+            It.IsAny<IPluginSourceSet>(),
             It.IsAny<OutputAssociation>(),
             It.IsAny<OutputArtifactSetBaseline>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    /// <summary>Verifies cancellation after native recovery acquisition disposes both the unpublished output and the held lease.</summary>
+    /// <summary>Verifies cancellation after plugin recovery acquisition disposes both the unpublished output and the held lease.</summary>
     [Fact]
-    public async Task ResolveOutputRecoveryAsync_WhenCanceledAfterNativeOpen_CleansUpAndRetainsState()
+    public async Task ResolveOutputRecoveryAsync_WhenCanceledAfterPluginOpen_CleansUpAndRetainsState()
     {
         await using var fixture = await WorkspaceFixture.OpenAsync(selectOutput: false);
         var baseline = fixture.CreateOutputBaseline(Guid.NewGuid(), "resolved", 3);
@@ -370,7 +370,7 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
             "cancel-recovery",
             Guid.NewGuid());
         fixture.ConfigureValidatedEvidence(evidence);
-        var reopenedOutput = CreateDisposableMock<INativeOutputState>();
+        var reopenedOutput = CreateDisposableMock<IPluginOutputState>();
         using var cancellationSource = new CancellationTokenSource();
         fixture.Adapter.Setup(candidate => candidate.ReopenOutputAsync(
                 fixture.Sources.Object,
@@ -380,8 +380,8 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
             .Returns(() =>
             {
                 cancellationSource.Cancel();
-                return ValueTask.FromResult(EngineResult<NativeOutputOpenResult>.Success(
-                    new NativeOutputOpenResult(reopenedOutput.Object, fixture.OutputAssociation, baseline)));
+                return ValueTask.FromResult(EngineResult<PluginOutputOpenResult>.Success(
+                    new PluginOutputOpenResult(reopenedOutput.Object, fixture.OutputAssociation, baseline)));
             });
 
         await Should.ThrowAsync<OperationCanceledException>(async () =>
@@ -396,9 +396,9 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
         fixture.Workspace.Revision.Sequence.ShouldBe(0UL);
     }
 
-    /// <summary>Verifies lease contention rejects output selection before admission or native opening.</summary>
+    /// <summary>Verifies lease contention rejects output selection before admission or plugin opening.</summary>
     [Fact]
-    public async Task SelectOutputAsync_WhenLeaseIsBusy_ReturnsTypedFailureBeforeNativeOpen()
+    public async Task SelectOutputAsync_WhenLeaseIsBusy_ReturnsTypedFailureBeforePluginOpen()
     {
         await using var fixture = await WorkspaceFixture.OpenAsync(selectOutput: false);
         fixture.LeaseProvider.Reset();
@@ -422,13 +422,13 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
             It.IsAny<OutputAdmissionRequest>(),
             It.IsAny<CancellationToken>()), Times.Never);
         fixture.Adapter.Verify(candidate => candidate.OpenOutputAsync(
-            It.IsAny<INativeSourceSet>(),
+            It.IsAny<IPluginSourceSet>(),
             It.IsAny<SelectOutputRequest>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    /// <summary>Creates an independently verifiable asynchronous native lifetime mock.</summary>
-    /// <typeparam name="T">The native lifetime contract.</typeparam>
+    /// <summary>Creates an independently verifiable asynchronous plugin lifetime mock.</summary>
+    /// <typeparam name="T">The plugin lifetime contract.</typeparam>
     /// <returns>The configured disposable mock.</returns>
     private static Mock<T> CreateDisposableMock<T>()
         where T : class, IAsyncDisposable
@@ -444,7 +444,7 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
         /// <summary>Initializes the already-open fixture.</summary>
         private WorkspaceFixture(
             DirectoryInfo directory,
-            Mock<INativeSourceSet> sources,
+            Mock<IPluginSourceSet> sources,
             Mock<IFormListGameAdapter> adapter,
             Mock<IWorkspaceSaveCoordinator> saveCoordinator,
             Mock<IOutputDirectoryLeaseProvider> leaseProvider,
@@ -468,7 +468,7 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
         internal DirectoryInfo Directory { get; }
 
         /// <summary>Gets the mocked source lifetime.</summary>
-        internal Mock<INativeSourceSet> Sources { get; }
+        internal Mock<IPluginSourceSet> Sources { get; }
 
         /// <summary>Gets the mocked game adapter.</summary>
         internal Mock<IFormListGameAdapter> Adapter { get; }
@@ -509,7 +509,7 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
                 LocalizedOutputMode.Embedded,
                 OutputMasterStyle.Full);
             var sourceBaselineId = Guid.NewGuid();
-            var sources = CreateDisposableMock<INativeSourceSet>();
+            var sources = CreateDisposableMock<IPluginSourceSet>();
             var sourceBaseline = TestWorkspaceInfrastructure.ConfigureSourceBaseline(
                 sources.Object,
                 sourceBaselineId,
@@ -520,11 +520,11 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
             adapter.Setup(candidate => candidate.OpenSourcesAsync(
                     It.IsAny<WorkspaceOpenRequest>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(ValueTask.FromResult(EngineResult<NativeSourceOpenResult>.Success(
-                    new NativeSourceOpenResult(sources.Object, sourceBaseline.BaselineId, sourceBaseline.Artifacts))));
+                .Returns(ValueTask.FromResult(EngineResult<PluginSourceOpenResult>.Success(
+                    new PluginSourceOpenResult(sources.Object, sourceBaseline.BaselineId, sourceBaseline.Artifacts))));
             adapter.Setup(candidate => candidate.ListPlugins(
-                    It.IsAny<INativeSourceSet>(),
-                    It.IsAny<INativeOutputState?>(),
+                    It.IsAny<IPluginSourceSet>(),
+                    It.IsAny<IPluginOutputState?>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(EngineResult<IReadOnlyList<PluginSummary>>.Success(Array.Empty<PluginSummary>()));
             var saveCoordinator = new Mock<IWorkspaceSaveCoordinator>();
@@ -567,14 +567,14 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
             OutputArtifactSetBaseline? selectedBaseline = null;
             if (selectOutput)
             {
-                var initialOutput = CreateDisposableMock<INativeOutputState>();
+                var initialOutput = CreateDisposableMock<IPluginOutputState>();
                 selectedBaseline = CreateOutputBaseline(outputAssociation, Guid.NewGuid(), "original", 1);
                 adapter.Setup(candidate => candidate.OpenOutputAsync(
                         sources.Object,
                         It.IsAny<SelectOutputRequest>(),
                         It.IsAny<CancellationToken>()))
-                    .Returns(ValueTask.FromResult(EngineResult<NativeOutputOpenResult>.Success(
-                        new NativeOutputOpenResult(initialOutput.Object, outputAssociation, selectedBaseline))));
+                    .Returns(ValueTask.FromResult(EngineResult<PluginOutputOpenResult>.Success(
+                        new PluginOutputOpenResult(initialOutput.Object, outputAssociation, selectedBaseline))));
                 var selection = await workspace.SelectOutputAsync(new SelectOutputRequest(
                     Guid.NewGuid(),
                     workspace.Revision,
@@ -599,11 +599,11 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
         /// <returns>The staged edit fixture.</returns>
         internal async Task<StagedEditFixture> StageEditAsync()
         {
-            var candidate = CreateDisposableMock<INativeOutputState>();
+            var candidate = CreateDisposableMock<IPluginOutputState>();
             var editId = Guid.NewGuid();
             var target = new FormKey(OutputAssociation.ModKey, 0x800);
             Adapter.Setup(candidateAdapter => candidateAdapter.CloneOutput(
-                    It.IsAny<INativeOutputState>(),
+                    It.IsAny<IPluginOutputState>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(candidate.Object);
             Adapter.Setup(candidateAdapter => candidateAdapter.BeginEdit(
@@ -611,8 +611,8 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
                     candidate.Object,
                     It.IsAny<BeginEditRequest>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(EngineResult<NativeEditIdentity>.Success(
-                    new NativeEditIdentity(editId, target, null, FormListEditRole.New)));
+                .Returns(EngineResult<RecordEditIdentity>.Success(
+                    new RecordEditIdentity(editId, target, null, FormListEditRole.New)));
             var request = new BeginEditRequest(Guid.NewGuid(), Workspace.Revision, FormListEditRole.New);
             var result = await Workspace.BeginEditAsync(request);
             result.Succeeded.ShouldBeTrue(result.Error?.Message);
@@ -726,7 +726,7 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
         }
 
         /// <summary>Creates another canonical output association under the fixture directory.</summary>
-        /// <param name="pluginFileName">The requested native plugin file name.</param>
+        /// <param name="pluginFileName">The requested plugin file name.</param>
         /// <returns>The canonical output association.</returns>
         internal OutputAssociation CreateOutputAssociation(string pluginFileName)
         {
@@ -761,18 +761,18 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
                 baselineId,
                 Array.AsReadOnly(new[]
                 {
-                    new NativeArtifactAssociation(
+                    new PluginArtifactAssociation(
                         output.PluginPath,
-                        NativeArtifactRole.Plugin,
+                        PluginArtifactRole.Plugin,
                         null,
-                        new NativeArtifactFingerprint(true, content.LongLength, Convert.ToHexString(SHA256.HashData(content))),
-                        new NativeFileIdentity("test", "volume", $"output-{fileIdentity}", 1)),
+                        new PluginArtifactFingerprint(true, content.LongLength, Convert.ToHexString(SHA256.HashData(content))),
+                        new ArtifactFileIdentity("test", "volume", $"output-{fileIdentity}", 1)),
                 }));
         }
 
-        /// <summary>Parses a native ModKey for a synthetic plugin file name.</summary>
-        /// <param name="pluginFileName">The native plugin file name.</param>
-        /// <returns>The parsed native ModKey.</returns>
+        /// <summary>Parses a plugin ModKey for a synthetic plugin file name.</summary>
+        /// <param name="pluginFileName">The plugin file name.</param>
+        /// <returns>The parsed plugin ModKey.</returns>
         private static ModKey CreateModKey(string pluginFileName)
         {
             ModKey.TryFromNameAndExtension(pluginFileName, out var modKey, out var error).ShouldBeTrue(error);
@@ -790,7 +790,7 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
         internal StagedEditFixture(
             BeginEditRequest request,
             EngineResult<EditReceipt> result,
-            Mock<INativeOutputState> output)
+            Mock<IPluginOutputState> output)
         {
             Request = request;
             Result = result;
@@ -807,6 +807,6 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
         internal Guid EditId => Result.Value!.EditId;
 
         /// <summary>Gets the published staged output candidate.</summary>
-        internal Mock<INativeOutputState> Output { get; }
+        internal Mock<IPluginOutputState> Output { get; }
     }
 }

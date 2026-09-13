@@ -2,12 +2,12 @@ using Mutagen.Bethesda.Plugins;
 
 namespace CreationsForge.Core.Engine.Contracts;
 
-/// <summary>Requests resolution of one native FormKey without persisting a custom record model.</summary>
+/// <summary>Requests resolution of one plugin FormKey without persisting a custom record model.</summary>
 public sealed class ReferenceRequest
 {
-    /// <summary>Initializes a native reference request.</summary>
-    /// <param name="formKey">The native identity to resolve.</param>
-    /// <param name="scope">The native record contexts to consider.</param>
+    /// <summary>Initializes a reference request.</summary>
+    /// <param name="formKey">The record identity to resolve.</param>
+    /// <param name="scope">The record contexts to consider.</param>
     /// <param name="containingModKey">An optional containing plugin used to select one source or output context.</param>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="scope"/> is undefined.</exception>
     /// <exception cref="ArgumentException">Thrown when a containing plugin is supplied for the winning-override view.</exception>
@@ -30,10 +30,10 @@ public sealed class ReferenceRequest
         ContainingModKey = containingModKey;
     }
 
-    /// <summary>Gets the native identity to resolve.</summary>
+    /// <summary>Gets the record identity to resolve.</summary>
     public FormKey FormKey { get; }
 
-    /// <summary>Gets the native record contexts to consider.</summary>
+    /// <summary>Gets the record contexts to consider.</summary>
     public RecordScope Scope { get; }
 
     /// <summary>Gets the containing plugin filter, or <see langword="null"/> when the scope selects it.</summary>

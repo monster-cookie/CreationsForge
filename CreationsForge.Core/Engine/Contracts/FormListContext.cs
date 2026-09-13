@@ -2,12 +2,12 @@ using Mutagen.Bethesda.Plugins;
 
 namespace CreationsForge.Core.Engine.Contracts;
 
-/// <summary>Identifies the exact requested and selected native context for one FormList read.</summary>
+/// <summary>Identifies the exact requested and selected record context for one FormList read.</summary>
 public sealed class FormListContext
 {
     /// <summary>Initializes immutable FormList read provenance.</summary>
-    /// <param name="selection">The exact native identity, scope, and optional containing-plugin selection.</param>
-    /// <param name="status">The outcome of selecting one native context.</param>
+    /// <param name="selection">The exact record identity, scope, and optional containing-plugin selection.</param>
+    /// <param name="status">The outcome of selecting one record context.</param>
     /// <param name="containingModKey">The plugin containing the selected context, when singular.</param>
     /// <param name="path">The canonical path of the selected containing plugin, when singular.</param>
     /// <param name="loadOrderIndex">The explicit load-order position of the selected containing plugin, when singular.</param>
@@ -59,10 +59,10 @@ public sealed class FormListContext
         Role = role;
     }
 
-    /// <summary>Gets the exact requested native identity, scope, and containing-plugin selection.</summary>
+    /// <summary>Gets the exact requested record identity, scope, and containing-plugin selection.</summary>
     public ReferenceRequest Selection { get; }
 
-    /// <summary>Gets the native context-selection outcome.</summary>
+    /// <summary>Gets the record context-selection outcome.</summary>
     public ReferenceResolutionStatus Status { get; }
 
     /// <summary>Gets the plugin containing the selected context, or <see langword="null"/> when no singular context was selected.</summary>

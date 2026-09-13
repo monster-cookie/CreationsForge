@@ -1,6 +1,6 @@
 namespace CreationsForge.Core.Engine.Contracts;
 
-/// <summary>Requests replacement of staged edits with the selected output's unchanged native baseline.</summary>
+/// <summary>Requests replacement of staged edits with the selected output's unchanged plugin baseline.</summary>
 public sealed class DiscardChangesRequest
 {
     /// <summary>Initializes a discard-changes request.</summary>

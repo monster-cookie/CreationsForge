@@ -1,6 +1,6 @@
 namespace CreationsForge.Core.Engine.Contracts;
 
-/// <summary>Identifies which native record contexts an enumeration or read operation considers.</summary>
+/// <summary>Identifies which record contexts an enumeration or read operation considers.</summary>
 public enum RecordScope
 {
     /// <summary>Resolve each record to its winning override across sources and staged output.</summary>

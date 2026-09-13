@@ -497,7 +497,7 @@ public sealed class OutputDirectoryLeaseProviderTests
     /// <summary>Creates a Linux FIFO used to prove guard verification cannot wait for a writer.</summary>
     /// <param name="path">The absent guard path to replace with a FIFO.</param>
     /// <param name="mode">The owner-only permission bits for the fixture.</param>
-    /// <returns>Zero on success; otherwise minus one with the native error available through the runtime.</returns>
+    /// <returns>Zero on success; otherwise minus one with the plugin error available through the runtime.</returns>
     [DllImport("libc", EntryPoint = "mkfifo", SetLastError = true)]
     private static extern int MakeFifo([MarshalAs(UnmanagedType.LPUTF8Str)] string path, uint mode);
 

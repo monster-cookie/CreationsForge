@@ -51,7 +51,7 @@ public sealed class OutputRecoveryResolveTool : McpToolBase
     {
         Name = "creationsforge_output_recovery_resolve",
         Title = "Resolve CreationsForge output recovery",
-        Description = "Revalidates exact terminal evidence and explicitly resumes staged state or reopens the resolved native output.",
+        Description = "Revalidates exact terminal evidence and explicitly resumes staged state or reopens the resolved plugin output.",
         InputSchema = InputSchema,
         OutputSchema = OutputSchema,
         Annotations = new ToolAnnotations

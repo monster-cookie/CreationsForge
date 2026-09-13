@@ -2,7 +2,7 @@ using CreationsForge.Core.Engine.Contracts;
 
 namespace CreationsForge.Core.Engine;
 
-/// <content>Provides serialized metadata snapshots that remain available while output recovery blocks native record reads.</content>
+/// <content>Provides serialized metadata snapshots that remain available while output recovery blocks record reads.</content>
 public sealed partial class FormListWorkspace
 {
     /// <inheritdoc />

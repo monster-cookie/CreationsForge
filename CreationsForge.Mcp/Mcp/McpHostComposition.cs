@@ -1,5 +1,5 @@
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeWire;
+using CreationsForge.Core.Engine.RecordWire;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -16,7 +16,7 @@ public static class McpHostComposition
     /// <summary>Creates the complete production MCP builder with authoring, save, recovery, metadata, and schema tools.</summary>
     /// <param name="workspaceRegistry">The host-owned workspace registry.</param>
     /// <param name="serverVersion">The informational server version.</param>
-    /// <param name="workspaceFactory">The complete native workspace factory.</param>
+    /// <param name="workspaceFactory">The complete workspace factory.</param>
     /// <param name="saveCoordinator">The guarded save and recovery coordinator.</param>
     /// <param name="codecs">The exact per-game typed edit codecs.</param>
     /// <param name="schemaCatalogs">The immutable per-game schema catalogs.</param>
@@ -52,8 +52,8 @@ public static class McpHostComposition
     /// <summary>Creates an MCP host builder whose domain tools are enabled only by an actual workspace factory.</summary>
     /// <param name="workspaceRegistry">The registry shared by workspace tools.</param>
     /// <param name="serverVersion">The informational version advertised during initialization.</param>
-    /// <param name="workspaceFactory">The real native workspace factory, or <see langword="null"/> while game adapters are unavailable.</param>
-    /// <param name="configureServices">An optional composition hook for other native infrastructure.</param>
+    /// <param name="workspaceFactory">The real workspace factory, or <see langword="null"/> while game adapters are unavailable.</param>
+    /// <param name="configureServices">An optional composition hook for other engine infrastructure.</param>
     /// <returns>A configured builder with an honest tool catalog for its supplied capabilities.</returns>
     public static HostApplicationBuilder CreateBuilder(
         McpWorkspaceRegistry workspaceRegistry,
@@ -83,7 +83,7 @@ public static class McpHostComposition
     /// <param name="workspaceRegistry">The registry shared by current and future workspace tools.</param>
     /// <param name="tools">The explicit tool catalog for this host.</param>
     /// <param name="serverVersion">The informational version advertised during initialization.</param>
-    /// <param name="configureServices">An optional composition hook for native adapters and engine infrastructure.</param>
+    /// <param name="configureServices">An optional composition hook for engine adapters and engine infrastructure.</param>
     /// <returns>A configured builder whose protocol output is reserved for stdio transport.</returns>
     /// <exception cref="ArgumentNullException">Thrown when a required argument is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="serverVersion"/> is empty.</exception>

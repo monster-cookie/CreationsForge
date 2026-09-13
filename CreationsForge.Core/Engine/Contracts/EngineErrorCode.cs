@@ -8,19 +8,19 @@ public enum EngineErrorCode
     /// <summary>The request is structurally invalid or contains inconsistent inputs.</summary>
     InvalidRequest,
 
-    /// <summary>No registered game adapter supports the requested game and native release.</summary>
+    /// <summary>No registered game adapter supports the requested game and plugin release.</summary>
     UnsupportedGameRelease,
 
-    /// <summary>Native source state could not be opened.</summary>
+    /// <summary>Plugin source state could not be opened.</summary>
     SourceOpenFailed,
 
-    /// <summary>A native source plugin declares a master that is absent from the explicit load order.</summary>
+    /// <summary>A source plugin declares a master that is absent from the explicit load order.</summary>
     MissingMaster,
 
-    /// <summary>An explicit native input uses a format or capability unsupported by the selected release.</summary>
+    /// <summary>An explicit plugin input uses a format or capability unsupported by the selected release.</summary>
     UnsupportedInput,
 
-    /// <summary>Native output state could not be opened.</summary>
+    /// <summary>Plugin output state could not be opened.</summary>
     OutputOpenFailed,
 
     /// <summary>The workspace has already been disposed.</summary>
@@ -44,13 +44,13 @@ public enum EngineErrorCode
     /// <summary>The requested edit identifier is unknown to the workspace.</summary>
     EditNotFound,
 
-    /// <summary>A requested native record was not found in the selected scope.</summary>
+    /// <summary>A requested record was not found in the selected scope.</summary>
     RecordNotFound,
 
     /// <summary>The requested operation is not supported by the selected game adapter.</summary>
     UnsupportedOperation,
 
-    /// <summary>Native or engine validation rejected the requested operation.</summary>
+    /// <summary>Plugin or engine validation rejected the requested operation.</summary>
     ValidationFailed,
 
     /// <summary>An input or output file changed after its recorded baseline was established.</summary>

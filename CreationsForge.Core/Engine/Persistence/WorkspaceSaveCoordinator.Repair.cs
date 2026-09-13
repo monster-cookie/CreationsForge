@@ -1,5 +1,5 @@
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 
 namespace CreationsForge.Core.Engine.Persistence;
 
@@ -63,7 +63,7 @@ public sealed partial class WorkspaceSaveCoordinator
                 || journal.WorkspaceId != request.WorkspaceId
                 || journal.SaveOperationId != request.SaveOperationId
                 || journal.SaveBaseRevision != request.ExpectedSaveRevision
-                || !NativeSaveArtifactUtilities.MatchOutput(journal.Output, request.Output))
+                || !PluginSaveArtifactUtilities.MatchOutput(journal.Output, request.Output))
             {
                 return RepairFailure(request, RepairSaveStatus.NotStarted, EngineErrorCode.NoRecoveryEvidence, "No recognized save journal matches the exact repair request.");
             }
@@ -116,10 +116,10 @@ public sealed partial class WorkspaceSaveCoordinator
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
-            IReadOnlyList<NativeArtifactAssociation> currentSources;
+            IReadOnlyList<PluginArtifactAssociation> currentSources;
             try
             {
-                currentSources = await NativeSaveArtifactUtilities.RecaptureAsync(
+                currentSources = await PluginSaveArtifactUtilities.RecaptureAsync(
                     journal.SourceBaseline.Artifacts,
                     cancellationToken).ConfigureAwait(false);
             }
@@ -133,16 +133,16 @@ public sealed partial class WorkspaceSaveCoordinator
                     request,
                     RepairSaveStatus.BlockedByExternalChange,
                     EngineErrorCode.ExternalChangeDetected,
-                    $"The native source baseline could not be verified immediately before repair publication: {exception.Message}");
+                    $"The plugin source baseline could not be verified immediately before repair publication: {exception.Message}");
             }
 
-            if (!NativeSaveArtifactUtilities.MatchExact(journal.SourceBaseline.Artifacts, currentSources))
+            if (!PluginSaveArtifactUtilities.MatchExact(journal.SourceBaseline.Artifacts, currentSources))
             {
                 return RepairFailure(
                     request,
                     RepairSaveStatus.BlockedByExternalChange,
                     EngineErrorCode.ExternalChangeDetected,
-                    "The native source baseline changed before repair publication.");
+                    "The plugin source baseline changed before repair publication.");
             }
 
             var targetStatus = request.Direction == RepairSaveDirection.CompletePrepared
@@ -152,22 +152,22 @@ public sealed partial class WorkspaceSaveCoordinator
             {
                 var plan = journal.ArtifactPlans[index];
                 var repairPlan = attempt.ArtifactPlans[index];
-                var output = await NativeSaveArtifactUtilities.CaptureOutputAsync(
+                var output = await PluginSaveArtifactUtilities.CaptureOutputAsync(
                     journal.Release,
                     journal.Output,
                     CancellationToken.None).ConfigureAwait(false);
-                var currentByPath = output.Artifacts.ToDictionary(artifact => artifact.Path, NativeSaveArtifactUtilities.PathComparer);
+                var currentByPath = output.Artifacts.ToDictionary(artifact => artifact.Path, PluginSaveArtifactUtilities.PathComparer);
                 if (!currentByPath.TryGetValue(plan.Before.Path, out var current))
                 {
                     throw new InvalidDataException("The complete output association changed during explicit repair.");
                 }
 
-                if (NativeSaveArtifactUtilities.MatchExact([repairPlan.Target], [current]))
+                if (PluginSaveArtifactUtilities.MatchExact([repairPlan.Target], [current]))
                 {
                     continue;
                 }
 
-                if (!NativeSaveArtifactUtilities.MatchExact([repairPlan.Current], [current]))
+                if (!PluginSaveArtifactUtilities.MatchExact([repairPlan.Current], [current]))
                 {
                     return RepairFailure(
                         request,
@@ -178,13 +178,13 @@ public sealed partial class WorkspaceSaveCoordinator
 
                 if (repairPlan.Publish is not null)
                 {
-                    var publishNow = await NativeFileInspector.InspectAsync(
+                    var publishNow = await PluginFileInspector.InspectAsync(
                         repairPlan.Publish.Path,
                         repairPlan.Publish.Role,
                         repairPlan.Publish.Language,
                         mustExist: true,
                         CancellationToken.None).ConfigureAwait(false);
-                    if (!NativeSaveArtifactUtilities.MatchExact([repairPlan.Publish], [publishNow]))
+                    if (!PluginSaveArtifactUtilities.MatchExact([repairPlan.Publish], [publishNow]))
                     {
                         return RepairFailure(
                             request,
@@ -194,13 +194,13 @@ public sealed partial class WorkspaceSaveCoordinator
                     }
                 }
 
-                var recheck = await NativeFileInspector.InspectAsync(
+                var recheck = await PluginFileInspector.InspectAsync(
                     plan.Before.Path,
                     plan.Before.Role,
                     plan.Before.Language,
                     mustExist: false,
                     CancellationToken.None).ConfigureAwait(false);
-                if (!NativeSaveArtifactUtilities.MatchExact([repairPlan.Current], [recheck]))
+                if (!PluginSaveArtifactUtilities.MatchExact([repairPlan.Current], [recheck]))
                 {
                     return RepairFailure(
                         request,
@@ -240,13 +240,13 @@ public sealed partial class WorkspaceSaveCoordinator
                 FileOperations.AfterDestinationMutation(journal.SaveOperationId, index);
             }
 
-            var finalOutput = await NativeSaveArtifactUtilities.CaptureOutputAsync(
+            var finalOutput = await PluginSaveArtifactUtilities.CaptureOutputAsync(
                 journal.Release,
                 journal.Output,
                 CancellationToken.None).ConfigureAwait(false);
-            var exactTarget = NativeSaveArtifactUtilities.CreateOutputBaseline(
+            var exactTarget = PluginSaveArtifactUtilities.CreateOutputBaseline(
                 attempt.ArtifactPlans.Select(plan => plan.Target).ToArray());
-            if (!NativeSaveArtifactUtilities.MatchBaseline(exactTarget, finalOutput))
+            if (!PluginSaveArtifactUtilities.MatchBaseline(exactTarget, finalOutput))
             {
                 return await RepairUnknownAsync(request, journal, destinationMutationCount).ConfigureAwait(false);
             }
@@ -329,7 +329,7 @@ public sealed partial class WorkspaceSaveCoordinator
         string requestFingerprint,
         CancellationToken cancellationToken)
     {
-        var output = await NativeSaveArtifactUtilities.CaptureOutputAsync(
+        var output = await PluginSaveArtifactUtilities.CaptureOutputAsync(
             journal.Release,
             journal.Output,
             cancellationToken).ConfigureAwait(false);
@@ -340,7 +340,7 @@ public sealed partial class WorkspaceSaveCoordinator
 
         var outputByPath = output.Artifacts.ToDictionary(
             artifact => artifact.Path,
-            NativeSaveArtifactUtilities.PathComparer);
+            PluginSaveArtifactUtilities.PathComparer);
         var preparationId = Guid.NewGuid();
         var repairPlans = new List<SaveRepairArtifactPlan>(journal.ArtifactPlans.Count);
         for (var index = 0; index < journal.ArtifactPlans.Count; index++)
@@ -367,13 +367,13 @@ public sealed partial class WorkspaceSaveCoordinator
                 var ownedSource = request.Direction == RepairSaveDirection.CompletePrepared
                     ? savePlan.Staged
                     : savePlan.Backup!;
-                var sourceNow = await NativeFileInspector.InspectAsync(
+                var sourceNow = await PluginFileInspector.InspectAsync(
                     ownedSource.Path,
                     ownedSource.Role,
                     ownedSource.Language,
                     mustExist: true,
                     cancellationToken).ConfigureAwait(false);
-                if (!NativeSaveArtifactUtilities.MatchExact([ownedSource], [sourceNow]))
+                if (!PluginSaveArtifactUtilities.MatchExact([ownedSource], [sourceNow]))
                 {
                     throw new InvalidDataException($"Transaction-owned repair source '{ownedSource.Path}' changed.");
                 }
@@ -381,11 +381,11 @@ public sealed partial class WorkspaceSaveCoordinator
                 var publishPath = Path.Combine(
                     paths.PublishDirectoryPath,
                     $"repair-{request.RepairOperationId:N}-{preparationId:N}-{index:D4}.bin");
-                await NativeSaveArtifactUtilities.CopyAndFlushAsync(
+                await PluginSaveArtifactUtilities.CopyAndFlushAsync(
                     ownedSource.Path,
                     publishPath,
                     cancellationToken).ConfigureAwait(false);
-                var publish = await NativeFileInspector.InspectAsync(
+                var publish = await PluginFileInspector.InspectAsync(
                     publishPath,
                     savePlan.Before.Role,
                     savePlan.Before.Language,
@@ -396,7 +396,7 @@ public sealed partial class WorkspaceSaveCoordinator
                     throw new InvalidDataException($"Repair publication '{publishPath}' differs from its validated source.");
                 }
 
-                var target = new NativeArtifactAssociation(
+                var target = new PluginArtifactAssociation(
                     savePlan.Before.Path,
                     savePlan.Before.Role,
                     savePlan.Before.Language,
@@ -414,12 +414,12 @@ public sealed partial class WorkspaceSaveCoordinator
                 throw new InvalidDataException($"The repair retirement path is unexpectedly occupied: '{retiredPath}'.");
             }
 
-            var targetAbsent = new NativeArtifactAssociation(
+            var targetAbsent = new PluginArtifactAssociation(
                 savePlan.Before.Path,
                 savePlan.Before.Role,
                 savePlan.Before.Language,
                 desiredContent.Fingerprint);
-            var retired = new NativeArtifactAssociation(
+            var retired = new PluginArtifactAssociation(
                 retiredPath,
                 current.Role,
                 current.Language,
@@ -444,26 +444,26 @@ public sealed partial class WorkspaceSaveCoordinator
         SaveRepairArtifactPlan plan,
         CancellationToken cancellationToken)
     {
-        var destination = await NativeFileInspector.InspectAsync(
+        var destination = await PluginFileInspector.InspectAsync(
             plan.Current.Path,
             plan.Current.Role,
             plan.Current.Language,
             mustExist: plan.Current.Fingerprint.Exists,
             cancellationToken).ConfigureAwait(false);
-        if (!NativeSaveArtifactUtilities.MatchExact([plan.Current], [destination]))
+        if (!PluginSaveArtifactUtilities.MatchExact([plan.Current], [destination]))
         {
             throw new InvalidDataException($"Repair destination '{plan.Current.Path}' changed at the final mutation boundary.");
         }
 
         if (plan.Publish is not null)
         {
-            var publish = await NativeFileInspector.InspectAsync(
+            var publish = await PluginFileInspector.InspectAsync(
                 plan.Publish.Path,
                 plan.Publish.Role,
                 plan.Publish.Language,
                 mustExist: true,
                 cancellationToken).ConfigureAwait(false);
-            if (!NativeSaveArtifactUtilities.MatchExact([plan.Publish], [publish]))
+            if (!PluginSaveArtifactUtilities.MatchExact([plan.Publish], [publish]))
             {
                 throw new InvalidDataException($"Repair publication '{plan.Publish.Path}' changed at the final mutation boundary.");
             }

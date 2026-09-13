@@ -37,7 +37,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <EmbeddedResource Include="..\CreationsForge.Starfield\Native\NativeInspection\Nested\StarfieldNativeFieldManifest.json" LogicalName="CreationsForge.Starfield.NativeFieldManifest.json" />
+        <EmbeddedResource Include="..\CreationsForge.Starfield\PluginAdapter\RecordInspection\Nested\StarfieldRecordFieldManifest.json" LogicalName="CreationsForge.Starfield.RecordFieldManifest.json" />
     </ItemGroup>
 
     <ItemGroup>

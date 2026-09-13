@@ -5,14 +5,14 @@ using Mutagen.Bethesda.Strings.DI;
 namespace CreationsForge.UnitTests.Engine.Skyrim;
 
 /// <summary>
-/// Supplies Mutagen's public native encodings when generated localized Skyrim fixtures are written.
+/// Supplies Mutagen's public plugin encodings when generated localized Skyrim fixtures are written.
 /// </summary>
 internal sealed class SkyrimTestEncodingProvider : IMutagenEncodingProvider
 {
     /// <summary>
-    /// Gets the native encoding for a fixture's game release and language.
+    /// Gets the plugin encoding for a fixture's game release and language.
     /// </summary>
-    /// <param name="release">The fixture's native game release.</param>
+    /// <param name="release">The fixture's plugin game release.</param>
     /// <param name="language">The localized string language being written.</param>
     /// <returns>The Mutagen encoding registered for the release and language.</returns>
     public IMutagenEncoding GetEncoding(GameRelease release, Language language)

@@ -1,7 +1,7 @@
 namespace CreationsForge.Core.Engine.Contracts;
 
 /// <summary>
-/// Identifies the exact current native baseline composition and a monotonically increasing in-memory workspace sequence.
+/// Identifies the exact current plugin baseline composition and a monotonically increasing in-memory workspace sequence.
 /// </summary>
 public readonly struct WorkspaceRevision : IEquatable<WorkspaceRevision>
 {
@@ -20,13 +20,13 @@ public readonly struct WorkspaceRevision : IEquatable<WorkspaceRevision>
         Sequence = sequence;
     }
 
-    /// <summary>Gets the identity of the current source and selected-output native baseline composition.</summary>
+    /// <summary>Gets the identity of the current source and selected-output plugin baseline composition.</summary>
     public Guid BaselineId { get; }
 
     /// <summary>Gets the monotonically increasing in-memory mutation sequence.</summary>
     public ulong Sequence { get; }
 
-    /// <summary>Creates the next revision for the same native baseline composition.</summary>
+    /// <summary>Creates the next revision for the same plugin baseline composition.</summary>
     /// <returns>The next revision in the sequence.</returns>
     /// <exception cref="OverflowException">Thrown when the sequence has reached <see cref="ulong.MaxValue"/>.</exception>
     public WorkspaceRevision Next()

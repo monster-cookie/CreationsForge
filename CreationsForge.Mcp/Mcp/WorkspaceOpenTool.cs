@@ -7,7 +7,7 @@ using Mutagen.Bethesda.Strings;
 namespace CreationsForge.Mcp;
 
 /// <summary>
-/// Opens one independently owned native workspace from explicit caller-supplied inputs.
+/// Opens one independently owned workspace from explicit caller-supplied inputs.
 /// </summary>
 public sealed class WorkspaceOpenTool : McpToolBase
 {
@@ -36,14 +36,14 @@ public sealed class WorkspaceOpenTool : McpToolBase
     private static readonly JsonElement OutputSchema = McpToolSchema.Output(
         "{\"type\":\"object\",\"properties\":{\"workspaceId\":{\"type\":\"string\",\"format\":\"uuid\"},\"revision\":" + McpToolSchema.Revision + ",\"warnings\":{\"type\":\"array\",\"items\":" + McpToolSchema.Warning + "}},\"required\":[\"workspaceId\",\"revision\",\"warnings\"],\"additionalProperties\":false}");
 
-    /// <summary>The real native workspace factory supplied by host composition.</summary>
+    /// <summary>The real workspace factory supplied by host composition.</summary>
     private readonly IFormListWorkspaceFactory WorkspaceFactory;
 
     /// <summary>The host-owned registry that receives successful workspace ownership.</summary>
     private readonly McpWorkspaceRegistry WorkspaceRegistry;
 
     /// <summary>Initializes the explicit workspace-open tool.</summary>
-    /// <param name="workspaceFactory">The real native factory selected by host composition.</param>
+    /// <param name="workspaceFactory">The real engine factory selected by host composition.</param>
     /// <param name="workspaceRegistry">The host-owned workspace registry.</param>
     public WorkspaceOpenTool(
         IFormListWorkspaceFactory workspaceFactory,
@@ -60,7 +60,7 @@ public sealed class WorkspaceOpenTool : McpToolBase
     {
         Name = "creationsforge_workspace_open",
         Title = "Open a CreationsForge workspace",
-        Description = "Opens an isolated native workspace from an explicit source, load order, data directory, and ordered string directories without installed-game discovery.",
+        Description = "Opens an isolated workspace from an explicit source, load order, data directory, and ordered string directories without installed-game discovery.",
         InputSchema = InputSchema,
         OutputSchema = OutputSchema,
         Annotations = new ToolAnnotations
@@ -74,7 +74,7 @@ public sealed class WorkspaceOpenTool : McpToolBase
 
     /// <summary>Validates the closed request, forwards it exactly once, and publishes successful registry ownership.</summary>
     /// <param name="request">The MCP request.</param>
-    /// <param name="cancellationToken">The token propagated through native acquisition.</param>
+    /// <param name="cancellationToken">The token propagated through engine acquisition.</param>
     /// <returns>The exact engine result revision and warnings.</returns>
     /// <exception cref="OperationCanceledException">Thrown when cancellation is observed.</exception>
     public override async ValueTask<CallToolResult> InvokeAsync(

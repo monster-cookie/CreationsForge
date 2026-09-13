@@ -11,7 +11,7 @@ public sealed class PendingSaveIdentity
     /// <param name="saveOperationId">The original save operation identifier.</param>
     /// <param name="saveBaseRevision">The workspace revision journaled before the save.</param>
     /// <param name="game">The exact CreationsForge game recorded by the save.</param>
-    /// <param name="release">The exact native release recorded by the save.</param>
+    /// <param name="release">The exact plugin release recorded by the save.</param>
     /// <param name="output">The exact output association recorded by the save.</param>
     /// <exception cref="ArgumentException">Thrown when a workspace or operation identifier is empty.</exception>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="output"/> is <see langword="null"/>.</exception>
@@ -65,7 +65,7 @@ public sealed class PendingSaveIdentity
     /// <summary>Gets the exact CreationsForge game recorded by the save.</summary>
     public SupportedGame Game { get; }
 
-    /// <summary>Gets the exact native release recorded by the save.</summary>
+    /// <summary>Gets the exact plugin release recorded by the save.</summary>
     public GameRelease Release { get; }
 
     /// <summary>Gets the exact output association recorded by the save.</summary>

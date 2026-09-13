@@ -9,7 +9,7 @@ namespace CreationsForge.Mcp;
 /// <summary>Shares closed authoring input parsing and projections across the MCP mutation tools.</summary>
 internal static class McpAuthoringSupport
 {
-    /// <summary>The only properties accepted by a native output association.</summary>
+    /// <summary>The only properties accepted by a plugin output association.</summary>
     private static readonly IReadOnlySet<string> OutputArgumentNames = new HashSet<string>(StringComparer.Ordinal) { "pluginPath", "modKey", "localizedOutputMode", "masterStyle" };
 
     /// <summary>The largest accepted serialized command payload in UTF-8 bytes.</summary>
@@ -92,7 +92,7 @@ internal static class McpAuthoringSupport
 
         try
         {
-            using var document = JsonDocument.Parse(json, new JsonDocumentOptions { MaxDepth = CreationsForge.Core.Engine.NativeWire.NativeWireReadLimits.DefaultMaximumDepth });
+            using var document = JsonDocument.Parse(json, new JsonDocumentOptions { MaxDepth = CreationsForge.Core.Engine.RecordWire.RecordWireReadLimits.DefaultMaximumDepth });
             value = document.RootElement.Clone();
             error = string.Empty;
             return true;
@@ -149,7 +149,7 @@ internal static class McpAuthoringSupport
     };
 
     /// <summary>Maps an exact release to its stable protocol name.</summary>
-    /// <param name="release">The native release.</param>
+    /// <param name="release">The engine release.</param>
     /// <returns>The lower-case release name.</returns>
     internal static string Release(GameRelease release) => release switch
     {

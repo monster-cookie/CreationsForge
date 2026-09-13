@@ -5,14 +5,14 @@
 - Improved automated validation used when preparing releases.
 - Kept installation, usage, known issues, and release history in the repository, with engineering guidance now maintained in Plane.
 - Moved the change log to the repository root as `CHANGELOG.md` and updated release packaging and release-note extraction to use its new location.
-- Replaced the SQLite import workflow with explicit plugin workspaces for native FormList browsing, comparison, and authoring in Starfield, Fallout 4, and Skyrim Special Edition. Other record families are not authoring targets.
+- Replaced the SQLite import workflow with explicit plugin workspaces for FormList browsing, comparison, and authoring in Starfield, Fallout 4, and Skyrim Special Edition. Other record families are not authoring targets.
 - Added typed edit controls, staged-change review, guarded saving, save-outcome recovery, and checks before leaving with unfinished changes. Unapplied form input and staged workspace changes have separate discard actions.
 - Added a dedicated local stdio MCP server, launched with `CreationsForge.Mcp`, with workspaces independent from the desktop application.
-- Restored the desktop plugin-first workflow: select a game, open an installed editable plugin, edit records, and save through the guarded workspace flow. Mutagen supplies the installed load order, Bethesda implicit-plugin identities, and native header metadata while Creations Forge keeps Bethesda plugins and declared masters read-only.
-- Added read-only plugin workspaces as the default desktop inspection path, restored selected-plugin header details, and added durable structured diagnostics for plugin discovery, each native source-open phase, slow workspace opens, and terminal open outcomes.
+- Restored the desktop plugin-first workflow: select a game, open an installed editable plugin, edit records, and save through the guarded workspace flow. Mutagen supplies the installed load order, Bethesda implicit-plugin identities, and plugin header metadata while Creations Forge keeps Bethesda plugins and declared masters read-only.
+- Added read-only plugin workspaces as the default desktop inspection path, restored selected-plugin header details, and added durable structured diagnostics for plugin discovery, each plugin source-open phase, slow workspace opens, and terminal open outcomes.
 - Changed Starfield source opening to materialize only FormLists for authoring and use disposable read-only overlays for general reference discovery. Localized archive baselines now hash matching string entries instead of every payload byte in all applicable BA2/BSA files.
-- Removed the legacy game-import, forced-reimport, and database-reset commands. Existing database files are left untouched; no database conversion, reset, or reimport is required for native workspaces.
-- Updated usage and known issues for the native workflow, including the restriction on saving edits to existing localized outputs that use separate string files.
+- Removed the legacy game-import, forced-reimport, and database-reset commands. Existing database files are left untouched; no database conversion, reset, or reimport is required for workspaces.
+- Updated usage and known issues for the plugin workflow, including the restriction on saving edits to existing localized outputs that use separate string files.
 
 ## Version 1.2.0 - 2026-06-28
 

@@ -1,11 +1,11 @@
 using System.Text.Json;
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInspection;
-using CreationsForge.Core.Engine.NativeWire;
+using CreationsForge.Core.Engine.RecordInspection;
+using CreationsForge.Core.Engine.RecordWire;
 using CreationsForge.Core.Enums;
-using CreationsForge.Fallout4.Native.Edits;
-using CreationsForge.Fallout4.Native.NativeInspection;
-using CreationsForge.Fallout4.Native.Wire;
+using CreationsForge.Fallout4.PluginAdapter.Edits;
+using CreationsForge.Fallout4.PluginAdapter.RecordInspection;
+using CreationsForge.Fallout4.PluginAdapter.Wire;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Fallout4;
 using Mutagen.Bethesda.Plugins;
@@ -58,9 +58,9 @@ public sealed class Fallout4FormListEditWireCodecTests
                 | Fallout4MajorRecord.Fallout4MajorRecordFlag.NotPlayable);
     }
 
-    /// <summary>Ordered item commands retain duplicates and distinguish native null links from non-null FormKeys.</summary>
+    /// <summary>Ordered item commands retain duplicates and distinguish plugin null links from non-null FormKeys.</summary>
     [Fact]
-    public void Decode_ItemCommands_PreserveOrderDuplicatesEmptyAndNativeNullLinks()
+    public void Decode_ItemCommands_PreserveOrderDuplicatesEmptyAndPluginNullLinks()
     {
         var codec = new Fallout4FormListEditWireCodec();
         var modKey = ModKey.FromNameAndExtension("WireItems.esm");
@@ -105,7 +105,7 @@ public sealed class Fallout4FormListEditWireCodecTests
         moved.DestinationIndex.ShouldBe(1);
     }
 
-    /// <summary>Translated-name decoding retains full, sparse, and empty native language maps exactly.</summary>
+    /// <summary>Translated-name decoding retains full, sparse, and empty plugin language maps exactly.</summary>
     [Fact]
     public void Decode_SetName_PreservesCompleteSparseAndEmptyTranslatedStrings()
     {
@@ -196,7 +196,7 @@ public sealed class Fallout4FormListEditWireCodecTests
 
     /// <summary>Form links reject JSON null containers, contradictory null markers, and noncanonical FormKeys.</summary>
     [Theory]
-    [InlineData("null", "Expected a native form link object")]
+    [InlineData("null", "Expected a plugin form link object")]
     [InlineData("{\"isNull\":true,\"formKey\":\"000001:Wire.esm\"}", "requires JSON null or canonical FormKey.Null")]
     [InlineData("{\"isNull\":false,\"formKey\":null}", "requires a canonical FormKey")]
     [InlineData("{\"isNull\":false,\"formKey\":\"Null\"}", "cannot contain FormKey.Null")]
@@ -215,7 +215,7 @@ public sealed class Fallout4FormListEditWireCodecTests
     [InlineData("{\"name\":{\"targetLanguage\":\"English\",\"value\":\"A\",\"translations\":[{\"language\":\"English\",\"value\":\"A\"},{\"language\":\"English\",\"value\":\"B\"}]}}", "occurs more than once")]
     [InlineData("{\"name\":{\"targetLanguage\":\"English\",\"value\":\"A\",\"translations\":[{\"language\":\"English\",\"value\":\"B\"}]}}", "does not match")]
     [InlineData("{\"name\":null}", "Expected a translated string object")]
-    public void Decode_TranslatedStrings_RejectInconsistentNativeShapes(string json, string expectedMessage)
+    public void Decode_TranslatedStrings_RejectInconsistentPluginShapes(string json, string expectedMessage)
     {
         DecodeFailure(new Fallout4FormListEditWireCodec(), "fallout4.form-list.set-name", json)
             .Message.ShouldContain(expectedMessage);
@@ -226,10 +226,10 @@ public sealed class Fallout4FormListEditWireCodecTests
     public void Decode_EnforcesResourceLimitsAndCancellation()
     {
         var codec = new Fallout4FormListEditWireCodec();
-        var shortStrings = new NativeWireReadLimits(64, 100, 10, 8, 32);
-        var shortArrays = new NativeWireReadLimits(64, 100, 1, 100, 32);
-        var shallow = new NativeWireReadLimits(1, 100, 10, 100, 32);
-        var fewNodes = new NativeWireReadLimits(64, 1, 10, 100, 32);
+        var shortStrings = new RecordWireReadLimits(64, 100, 10, 8, 32);
+        var shortArrays = new RecordWireReadLimits(64, 100, 1, 100, 32);
+        var shallow = new RecordWireReadLimits(1, 100, 10, 100, 32);
+        var fewNodes = new RecordWireReadLimits(64, 1, 10, 100, 32);
 
         DecodeFailure(codec, "form-list.set-editor-id", "{\"editorId\":\"123456789\"}", shortStrings)
             .Message.ShouldContain("exceeds the limit of 8");
@@ -248,11 +248,11 @@ public sealed class Fallout4FormListEditWireCodecTests
         Should.Throw<OperationCanceledException>(() => codec.Decode(
             "form-list.clear-items",
             Parse("{}"),
-            NativeWireReadLimits.Default,
+            RecordWireReadLimits.Default,
             cancellation.Token));
     }
 
-    /// <summary>Inspector-emitted native leaves feed the matching edit commands without an alternate wire representation.</summary>
+    /// <summary>Inspector-emitted plugin leaves feed the matching edit commands without an alternate wire representation.</summary>
     [Fact]
     public void Decode_InspectorReadLeaves_RoundTripIntoTypedEdits()
     {
@@ -322,7 +322,7 @@ public sealed class Fallout4FormListEditWireCodecTests
         string json)
         where TEdit : FormListEdit
     {
-        var result = codec.Decode(commandName, Parse(json), NativeWireReadLimits.Default);
+        var result = codec.Decode(commandName, Parse(json), RecordWireReadLimits.Default);
         result.Succeeded.ShouldBeTrue(result.Error?.Message);
         result.Error.ShouldBeNull();
         return result.Value.ShouldBeOfType<TEdit>();
@@ -338,7 +338,7 @@ public sealed class Fallout4FormListEditWireCodecTests
         string commandName,
         string json)
     {
-        return DecodeFailure(codec, commandName, json, NativeWireReadLimits.Default);
+        return DecodeFailure(codec, commandName, json, RecordWireReadLimits.Default);
     }
 
     /// <summary>Decodes one expected invalid request under caller-selected resource limits.</summary>
@@ -351,7 +351,7 @@ public sealed class Fallout4FormListEditWireCodecTests
         Fallout4FormListEditWireCodec codec,
         string commandName,
         string json,
-        NativeWireReadLimits limits)
+        RecordWireReadLimits limits)
     {
         var result = codec.Decode(commandName, Parse(json), limits);
         result.Succeeded.ShouldBeFalse();
@@ -359,9 +359,9 @@ public sealed class Fallout4FormListEditWireCodecTests
         return result.Error.ShouldNotBeNull();
     }
 
-    /// <summary>Creates the exact inspector-compatible JSON for one native link.</summary>
+    /// <summary>Creates the exact inspector-compatible JSON for one record link.</summary>
     /// <param name="formKey">The non-null key or explicit <see cref="FormKey.Null"/>.</param>
-    /// <returns>The closed native form-link object JSON.</returns>
+    /// <returns>The closed plugin form-link object JSON.</returns>
     private static string LinkJson(FormKey formKey)
     {
         return formKey.IsNull
@@ -369,8 +369,8 @@ public sealed class Fallout4FormListEditWireCodecTests
             : $"{{\"isNull\":false,\"formKey\":{JsonSerializer.Serialize(formKey.ToString())}}}";
     }
 
-    /// <summary>Writes one translated string through the production native leaf writer and wraps it as set-name arguments.</summary>
-    /// <param name="name">The exact native translated string.</param>
+    /// <summary>Writes one translated string through the production plugin leaf writer and wraps it as set-name arguments.</summary>
+    /// <param name="name">The exact record translated string.</param>
     /// <returns>Closed set-name argument JSON using the read-view shape.</returns>
     private static string NameArgumentsJson(ITranslatedStringGetter name)
     {
@@ -379,7 +379,7 @@ public sealed class Fallout4FormListEditWireCodecTests
         {
             writer.WriteStartObject();
             writer.WritePropertyName("name");
-            NativeJsonLeafWriter.WriteTranslatedString(writer, name, CancellationToken.None);
+            RecordJsonLeafWriter.WriteTranslatedString(writer, name, CancellationToken.None);
             writer.WriteEndObject();
         }
 
@@ -387,14 +387,14 @@ public sealed class Fallout4FormListEditWireCodecTests
     }
 
     /// <summary>Writes one complete Fallout 4 FormList through the production typed inspector.</summary>
-    /// <param name="formList">The complete detached native record.</param>
+    /// <param name="formList">The complete detached record.</param>
     /// <returns>A detached typed JSON read view.</returns>
     private static JsonElement WriteReadView(FormList formList)
     {
         using var stream = new MemoryStream();
         using (var writer = new Utf8JsonWriter(stream))
         {
-            new Fallout4FormListNativeInspector().WriteReadView(
+            new Fallout4FormListInspector().WriteReadView(
                 formList,
                 writer,
                 CancellationToken.None);
@@ -413,8 +413,8 @@ public sealed class Fallout4FormListEditWireCodecTests
     }
 
     /// <summary>Asserts complete target-language and translation-map equality.</summary>
-    /// <param name="expected">The expected native translated string.</param>
-    /// <param name="actual">The decoded native translated string.</param>
+    /// <param name="expected">The expected record translated string.</param>
+    /// <param name="actual">The decoded record translated string.</param>
     private static void AssertTranslatedStringEqual(
         ITranslatedStringGetter expected,
         ITranslatedStringGetter actual)

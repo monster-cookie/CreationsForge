@@ -4,7 +4,7 @@ using Mutagen.Bethesda;
 namespace CreationsForge.Core.Engine.Contracts;
 
 /// <summary>
-/// Borrows a workspace's selected native state while its operation gate remains held by the caller.
+/// Borrows a workspace's selected plugin state while its operation gate remains held by the caller.
 /// </summary>
 public sealed class WorkspaceSaveContext
 {
@@ -12,10 +12,10 @@ public sealed class WorkspaceSaveContext
     /// <param name="workspaceId">The live workspace identifier.</param>
     /// <param name="revision">The live workspace revision.</param>
     /// <param name="game">The immutable CreationsForge game selected when the workspace opened.</param>
-    /// <param name="release">The exact native release selected when the workspace opened.</param>
+    /// <param name="release">The exact plugin release selected when the workspace opened.</param>
     /// <param name="adapter">The selected game adapter.</param>
-    /// <param name="sources">The borrowed native source-set handle.</param>
-    /// <param name="output">The borrowed native output-state handle.</param>
+    /// <param name="sources">The borrowed plugin source-set handle.</param>
+    /// <param name="output">The borrowed plugin output-state handle.</param>
     /// <param name="outputAssociation">The selected output association.</param>
     /// <param name="outputBaseline">The complete selected-output baseline.</param>
     /// <exception cref="ArgumentException">Thrown when <paramref name="workspaceId"/> is empty or the adapter does not match the selected game and release.</exception>
@@ -27,8 +27,8 @@ public sealed class WorkspaceSaveContext
         SupportedGame game,
         GameRelease release,
         IFormListGameAdapter adapter,
-        INativeSourceSet sources,
-        INativeOutputState output,
+        IPluginSourceSet sources,
+        IPluginOutputState output,
         OutputAssociation outputAssociation,
         OutputArtifactSetBaseline outputBaseline)
     {
@@ -77,17 +77,17 @@ public sealed class WorkspaceSaveContext
     /// <summary>Gets the immutable CreationsForge game selected when the workspace opened.</summary>
     public SupportedGame Game { get; }
 
-    /// <summary>Gets the exact native release selected when the workspace opened.</summary>
+    /// <summary>Gets the exact plugin release selected when the workspace opened.</summary>
     public GameRelease Release { get; }
 
     /// <summary>Gets the borrowed selected game adapter.</summary>
     public IFormListGameAdapter Adapter { get; }
 
-    /// <summary>Gets the borrowed native source-set handle, which the save coordinator must not dispose.</summary>
-    public INativeSourceSet Sources { get; }
+    /// <summary>Gets the borrowed plugin source-set handle, which the save coordinator must not dispose.</summary>
+    public IPluginSourceSet Sources { get; }
 
-    /// <summary>Gets the borrowed native output-state handle, which the save coordinator must not dispose.</summary>
-    public INativeOutputState Output { get; }
+    /// <summary>Gets the borrowed plugin output-state handle, which the save coordinator must not dispose.</summary>
+    public IPluginOutputState Output { get; }
 
     /// <summary>Gets the selected output association.</summary>
     public OutputAssociation OutputAssociation { get; }

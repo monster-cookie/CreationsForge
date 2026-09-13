@@ -1,9 +1,9 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeWire;
+using CreationsForge.Core.Engine.RecordWire;
 using CreationsForge.Core.Enums;
-using CreationsForge.Skyrim.Native.Wire;
+using CreationsForge.Skyrim.PluginAdapter.Wire;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Skyrim;
@@ -11,31 +11,31 @@ using Shouldly;
 
 namespace CreationsForge.UnitTests.Engine.Skyrim;
 
-/// <summary>Verifies the immutable content-bound Skyrim FormList wire schema and native defaults catalog.</summary>
+/// <summary>Verifies the immutable content-bound Skyrim FormList wire schema and plugin defaults catalog.</summary>
 public sealed class SkyrimFormListEditWireSchemaCatalogTests
 {
     /// <summary>The exact command-first, type-second order exposed by the first Skyrim catalog version.</summary>
-    private static readonly IReadOnlyList<(NativeWireSchemaNodeKind Kind, string Name)> ExpectedNodes =
-        Array.AsReadOnly<(NativeWireSchemaNodeKind Kind, string Name)>(
+    private static readonly IReadOnlyList<(RecordWireSchemaNodeKind Kind, string Name)> ExpectedNodes =
+        Array.AsReadOnly<(RecordWireSchemaNodeKind Kind, string Name)>(
         [
-            (NativeWireSchemaNodeKind.Command, "form-list.clear-editor-id"),
-            (NativeWireSchemaNodeKind.Command, "form-list.clear-items"),
-            (NativeWireSchemaNodeKind.Command, "form-list.insert-item"),
-            (NativeWireSchemaNodeKind.Command, "form-list.move-item"),
-            (NativeWireSchemaNodeKind.Command, "form-list.remove-item"),
-            (NativeWireSchemaNodeKind.Command, "form-list.replace-items"),
-            (NativeWireSchemaNodeKind.Command, "form-list.set-compressed"),
-            (NativeWireSchemaNodeKind.Command, "form-list.set-deleted"),
-            (NativeWireSchemaNodeKind.Command, "form-list.set-editor-id"),
-            (NativeWireSchemaNodeKind.Command, "form-list.set-form-version"),
-            (NativeWireSchemaNodeKind.Command, "form-list.set-version-2"),
-            (NativeWireSchemaNodeKind.Command, "form-list.set-version-control"),
-            (NativeWireSchemaNodeKind.Command, "skyrim.form-list.set-major-record-flags"),
-            (NativeWireSchemaNodeKind.Type, "native.form-link"),
-            (NativeWireSchemaNodeKind.Type, "skyrim.form-list")
+            (RecordWireSchemaNodeKind.Command, "form-list.clear-editor-id"),
+            (RecordWireSchemaNodeKind.Command, "form-list.clear-items"),
+            (RecordWireSchemaNodeKind.Command, "form-list.insert-item"),
+            (RecordWireSchemaNodeKind.Command, "form-list.move-item"),
+            (RecordWireSchemaNodeKind.Command, "form-list.remove-item"),
+            (RecordWireSchemaNodeKind.Command, "form-list.replace-items"),
+            (RecordWireSchemaNodeKind.Command, "form-list.set-compressed"),
+            (RecordWireSchemaNodeKind.Command, "form-list.set-deleted"),
+            (RecordWireSchemaNodeKind.Command, "form-list.set-editor-id"),
+            (RecordWireSchemaNodeKind.Command, "form-list.set-form-version"),
+            (RecordWireSchemaNodeKind.Command, "form-list.set-version-2"),
+            (RecordWireSchemaNodeKind.Command, "form-list.set-version-control"),
+            (RecordWireSchemaNodeKind.Command, "skyrim.form-list.set-major-record-flags"),
+            (RecordWireSchemaNodeKind.Type, "record.form-link"),
+            (RecordWireSchemaNodeKind.Type, "skyrim.form-list")
         ]);
 
-    /// <summary>Verifies identity, ordering, closed schemas, and read-only native fields are stable and complete.</summary>
+    /// <summary>Verifies identity, ordering, closed schemas, and read-only record fields are stable and complete.</summary>
     [Fact]
     public void Catalog_ExposesDeterministicClosedCommandAndTypeNodes()
     {
@@ -59,7 +59,7 @@ public sealed class SkyrimFormListEditWireSchemaCatalogTests
             node.Schema.GetProperty("additionalProperties").GetBoolean().ShouldBeFalse();
         }
 
-        var formList = Read(catalog, NativeWireSchemaNodeKind.Type, "skyrim.form-list");
+        var formList = Read(catalog, RecordWireSchemaNodeKind.Type, "skyrim.form-list");
         formList.DefaultTemplate.ShouldBeNull();
         var properties = formList.Schema.GetProperty("properties");
         properties.EnumerateObject().Select(property => property.Name).ShouldBe(
@@ -86,13 +86,13 @@ public sealed class SkyrimFormListEditWireSchemaCatalogTests
             | SkyrimMajorRecord.SkyrimMajorRecordFlag.Dangerous_OffLimits_InteriorCell
             | SkyrimMajorRecord.SkyrimMajorRecordFlag.Compressed
             | SkyrimMajorRecord.SkyrimMajorRecordFlag.CantWait;
-        Read(catalog, NativeWireSchemaNodeKind.Command, "skyrim.form-list.set-major-record-flags")
+        Read(catalog, RecordWireSchemaNodeKind.Command, "skyrim.form-list.set-major-record-flags")
             .Schema.GetProperty("properties").GetProperty("majorRecordFlags")
             .GetProperty("x-supported-bit-mask").GetString()
             .ShouldBe($"0x{unchecked((uint)(int)supportedFlags):X8}");
     }
 
-    /// <summary>Verifies every supplied command default is syntax-valid for the same strict codec and matches native FormList defaults.</summary>
+    /// <summary>Verifies every supplied command default is syntax-valid for the same strict codec and matches FormList defaults.</summary>
     [Fact]
     public void Catalog_DefaultTemplatesDecodeThroughTheTypedCodec()
     {
@@ -111,7 +111,7 @@ public sealed class SkyrimFormListEditWireSchemaCatalogTests
             ["skyrim.form-list.set-major-record-flags"] = "{\"majorRecordFlags\":0}"
         };
 
-        foreach (var key in catalog.Nodes.Where(key => key.Kind == NativeWireSchemaNodeKind.Command))
+        foreach (var key in catalog.Nodes.Where(key => key.Kind == RecordWireSchemaNodeKind.Command))
         {
             var node = catalog.ReadNode(key, TestContext.Current.CancellationToken).Value.ShouldNotBeNull();
             if (!expectedDefaults.TryGetValue(key.Name, out var expectedDefault))
@@ -125,14 +125,14 @@ public sealed class SkyrimFormListEditWireSchemaCatalogTests
             var decoded = codec.Decode(
                 key.Name,
                 node.DefaultTemplate.Value,
-                NativeWireReadLimits.Default,
+                RecordWireReadLimits.Default,
                 TestContext.Current.CancellationToken);
             decoded.Succeeded.ShouldBeTrue(decoded.Error?.Message);
             decoded.Value.ShouldNotBeNull();
             decoded.Value.CommandName.ShouldBe(key.Name);
         }
 
-        Read(catalog, NativeWireSchemaNodeKind.Type, "native.form-link")
+        Read(catalog, RecordWireSchemaNodeKind.Type, "record.form-link")
             .DefaultTemplate!.Value.GetRawText()
             .ShouldBe($"{{\"isNull\":true,\"formKey\":\"{FormKey.Null}\"}}");
     }
@@ -186,15 +186,15 @@ public sealed class SkyrimFormListEditWireSchemaCatalogTests
         var catalog = new SkyrimFormListEditWireSchemaCatalog();
         var foreignCatalogId = new string('0', 64);
         var foreign = catalog.ReadNode(
-            new NativeWireSchemaNodeKey(
+            new RecordWireSchemaNodeKey(
                 foreignCatalogId,
-                NativeWireSchemaNodeKind.Command,
+                RecordWireSchemaNodeKind.Command,
                 catalog.Nodes[0].Name),
             TestContext.Current.CancellationToken);
         var unknown = catalog.ReadNode(
-            new NativeWireSchemaNodeKey(
+            new RecordWireSchemaNodeKey(
                 catalog.Identity.CatalogId,
-                NativeWireSchemaNodeKind.Command,
+                RecordWireSchemaNodeKind.Command,
                 "form-list.unknown"),
             TestContext.Current.CancellationToken);
 
@@ -238,9 +238,9 @@ public sealed class SkyrimFormListEditWireSchemaCatalogTests
     /// <param name="kind">The expected command or type node role.</param>
     /// <param name="name">The exact stable node name.</param>
     /// <returns>The successfully detached schema node.</returns>
-    private static NativeWireSchemaNode Read(
+    private static RecordWireSchemaNode Read(
         SkyrimFormListEditWireSchemaCatalog catalog,
-        NativeWireSchemaNodeKind kind,
+        RecordWireSchemaNodeKind kind,
         string name)
     {
         var key = catalog.Nodes.Single(candidate =>

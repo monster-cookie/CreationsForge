@@ -1,5 +1,5 @@
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInspection;
+using CreationsForge.Core.Engine.RecordInspection;
 using CreationsForge.Core.Enums;
 using Moq;
 using Mutagen.Bethesda;
@@ -10,19 +10,19 @@ using Shouldly;
 namespace CreationsForge.UnitTests.Engine.Foundation;
 
 /// <summary>
-/// Verifies serialized native workspace mutation, replay, cancellation, and disposal behavior.
+/// Verifies serialized workspace mutation, replay, cancellation, and disposal behavior.
 /// </summary>
 public sealed class FormListWorkspaceTests
 {
-    /// <summary>Verifies repeated disposal releases each owned native handle exactly once.</summary>
+    /// <summary>Verifies repeated disposal releases each owned plugin handle exactly once.</summary>
     [Fact]
     public async Task DisposeAsync_WhenRepeated_DisposesOutputAndSourcesOnce()
     {
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var output = CreateAsyncDisposableMock<INativeOutputState>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var output = CreateAsyncDisposableMock<IPluginOutputState>();
             var adapter = CreateAdapter(directory, source.Object);
             var saveCoordinator = new Mock<IWorkspaceSaveCoordinator>();
             var workspace = await OpenWorkspaceAsync(directory, adapter, saveCoordinator.Object);
@@ -47,10 +47,10 @@ public sealed class FormListWorkspaceTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var initialOutput = CreateAsyncDisposableMock<INativeOutputState>();
-            var editOutput = CreateAsyncDisposableMock<INativeOutputState>();
-            var rejectedCandidate = CreateAsyncDisposableMock<INativeOutputState>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var initialOutput = CreateAsyncDisposableMock<IPluginOutputState>();
+            var editOutput = CreateAsyncDisposableMock<IPluginOutputState>();
+            var rejectedCandidate = CreateAsyncDisposableMock<IPluginOutputState>();
             var adapter = CreateAdapter(directory, source.Object);
             var saveCoordinator = new Mock<IWorkspaceSaveCoordinator>();
             var workspace = await OpenWorkspaceAsync(directory, adapter, saveCoordinator.Object);
@@ -58,26 +58,26 @@ public sealed class FormListWorkspaceTests
             var target = CreateFormKey("Output.esp", 0x800);
             var editId = Guid.NewGuid();
             adapter.SetupSequence(candidate => candidate.CloneOutput(
-                    It.IsAny<INativeOutputState>(),
+                    It.IsAny<IPluginOutputState>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(editOutput.Object)
                 .Returns(rejectedCandidate.Object);
             adapter.Setup(candidate => candidate.BeginEdit(
-                    It.IsAny<INativeSourceSet>(),
+                    It.IsAny<IPluginSourceSet>(),
                     editOutput.Object,
                     It.IsAny<BeginEditRequest>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(EngineResult<NativeEditIdentity>.Success(
-                    new NativeEditIdentity(editId, target, null, FormListEditRole.New)));
+                .Returns(EngineResult<RecordEditIdentity>.Success(
+                    new RecordEditIdentity(editId, target, null, FormListEditRole.New)));
             adapter.Setup(candidate => candidate.PrepareEdit(It.IsAny<FormListEdit>()))
                 .Returns(new TestPreparedFormListEdit("set-editor-id:Rejected"));
             adapter.Setup(candidate => candidate.ApplyEdit(
-                    It.IsAny<INativeSourceSet>(),
+                    It.IsAny<IPluginSourceSet>(),
                     rejectedCandidate.Object,
                     target,
                     It.IsAny<PreparedFormListEdit>()))
-                .Returns(EngineResult<NativeEditMutationResult>.Failure(
-                    new EngineError(EngineErrorCode.ValidationFailed, "Synthetic native validation failed.")));
+                .Returns(EngineResult<RecordEditMutationResult>.Failure(
+                    new EngineError(EngineErrorCode.ValidationFailed, "Synthetic plugin validation failed.")));
             var beginResult = await workspace.BeginEditAsync(new BeginEditRequest(
                 Guid.NewGuid(),
                 workspace.Revision,
@@ -107,44 +107,44 @@ public sealed class FormListWorkspaceTests
         }
     }
 
-    /// <summary>Verifies a successful native no-op advances revision, exact replay returns it, and differing reuse is rejected.</summary>
+    /// <summary>Verifies a successful plugin no-op advances revision, exact replay returns it, and differing reuse is rejected.</summary>
     [Fact]
     public async Task ApplyFormListEditAsync_WhenOperationRepeats_ReplaysOrRejectsByCanonicalPayload()
     {
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var initialOutput = CreateAsyncDisposableMock<INativeOutputState>();
-            var editOutput = CreateAsyncDisposableMock<INativeOutputState>();
-            var appliedOutput = CreateAsyncDisposableMock<INativeOutputState>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var initialOutput = CreateAsyncDisposableMock<IPluginOutputState>();
+            var editOutput = CreateAsyncDisposableMock<IPluginOutputState>();
+            var appliedOutput = CreateAsyncDisposableMock<IPluginOutputState>();
             var adapter = CreateAdapter(directory, source.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter, Mock.Of<IWorkspaceSaveCoordinator>());
             await SelectOutputAsync(directory, workspace, adapter, initialOutput.Object);
             var target = CreateFormKey("Output.esp", 0x801);
             var editId = Guid.NewGuid();
             adapter.SetupSequence(candidate => candidate.CloneOutput(
-                    It.IsAny<INativeOutputState>(),
+                    It.IsAny<IPluginOutputState>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(editOutput.Object)
                 .Returns(appliedOutput.Object);
             adapter.Setup(candidate => candidate.BeginEdit(
-                    It.IsAny<INativeSourceSet>(),
+                    It.IsAny<IPluginSourceSet>(),
                     editOutput.Object,
                     It.IsAny<BeginEditRequest>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(EngineResult<NativeEditIdentity>.Success(
-                    new NativeEditIdentity(editId, target, null, FormListEditRole.New)));
+                .Returns(EngineResult<RecordEditIdentity>.Success(
+                    new RecordEditIdentity(editId, target, null, FormListEditRole.New)));
             adapter.Setup(candidate => candidate.PrepareEdit(It.IsAny<FormListEdit>()))
                 .Returns<FormListEdit>(edit => new TestPreparedFormListEdit(
                     edit is SetEditorIdEdit setEditorId ? $"set:{setEditorId.EditorId}" : edit.CommandName));
             adapter.Setup(candidate => candidate.ApplyEdit(
-                    It.IsAny<INativeSourceSet>(),
+                    It.IsAny<IPluginSourceSet>(),
                     appliedOutput.Object,
                     target,
                     It.IsAny<PreparedFormListEdit>()))
-                .Returns(EngineResult<NativeEditMutationResult>.Success(
-                    new NativeEditMutationResult(changed: false)));
+                .Returns(EngineResult<RecordEditMutationResult>.Success(
+                    new RecordEditMutationResult(changed: false)));
             var begin = await workspace.BeginEditAsync(new BeginEditRequest(
                 Guid.NewGuid(),
                 workspace.Revision,
@@ -173,8 +173,8 @@ public sealed class FormListWorkspaceTests
             conflict.Error.ShouldNotBeNull();
             conflict.Error.Code.ShouldBe(EngineErrorCode.OperationIdReuse);
             adapter.Verify(candidate => candidate.ApplyEdit(
-                It.IsAny<INativeSourceSet>(),
-                It.IsAny<INativeOutputState>(),
+                It.IsAny<IPluginSourceSet>(),
+                It.IsAny<IPluginOutputState>(),
                 It.IsAny<FormKey>(),
                 It.IsAny<PreparedFormListEdit>()), Times.Once);
 
@@ -193,25 +193,25 @@ public sealed class FormListWorkspaceTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var initialOutput = CreateAsyncDisposableMock<INativeOutputState>();
-            var editOutput = CreateAsyncDisposableMock<INativeOutputState>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var initialOutput = CreateAsyncDisposableMock<IPluginOutputState>();
+            var editOutput = CreateAsyncDisposableMock<IPluginOutputState>();
             var adapter = CreateAdapter(directory, source.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter, Mock.Of<IWorkspaceSaveCoordinator>());
             await SelectOutputAsync(directory, workspace, adapter, initialOutput.Object);
             var target = CreateFormKey("Output.esp", 0x802);
             var editId = Guid.NewGuid();
             adapter.Setup(candidate => candidate.CloneOutput(
-                    It.IsAny<INativeOutputState>(),
+                    It.IsAny<IPluginOutputState>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(editOutput.Object);
             adapter.Setup(candidate => candidate.BeginEdit(
-                    It.IsAny<INativeSourceSet>(),
+                    It.IsAny<IPluginSourceSet>(),
                     editOutput.Object,
                     It.IsAny<BeginEditRequest>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(EngineResult<NativeEditIdentity>.Success(
-                    new NativeEditIdentity(editId, target, null, FormListEditRole.New)));
+                .Returns(EngineResult<RecordEditIdentity>.Success(
+                    new RecordEditIdentity(editId, target, null, FormListEditRole.New)));
             adapter.Setup(candidate => candidate.PrepareEdit(It.IsAny<FormListEdit>()))
                 .Returns<FormListEdit>(edit => PrepareEditorIdEdit((SetEditorIdEdit)edit));
             var begin = await workspace.BeginEditAsync(new BeginEditRequest(
@@ -242,8 +242,8 @@ public sealed class FormListWorkspaceTests
             conflict.Error!.Code.ShouldBe(EngineErrorCode.OperationIdReuse);
             workspace.Revision.ShouldBe(revision);
             adapter.Verify(candidate => candidate.ApplyEdit(
-                It.IsAny<INativeSourceSet>(),
-                It.IsAny<INativeOutputState>(),
+                It.IsAny<IPluginSourceSet>(),
+                It.IsAny<IPluginOutputState>(),
                 It.IsAny<FormKey>(),
                 It.IsAny<PreparedFormListEdit>()), Times.Never);
 
@@ -255,20 +255,20 @@ public sealed class FormListWorkspaceTests
         }
     }
 
-    /// <summary>Verifies disposal waits for an in-flight native read before releasing its source handle.</summary>
+    /// <summary>Verifies disposal waits for an in-flight plugin read before releasing its source handle.</summary>
     [Fact]
     public async Task DisposeAsync_DuringRead_WaitsForOperationBeforeDisposingSources()
     {
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
             var adapter = CreateAdapter(directory, source.Object);
             var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             adapter.Setup(candidate => candidate.ListPlugins(
-                    It.IsAny<INativeSourceSet>(),
-                    It.IsAny<INativeOutputState?>(),
+                    It.IsAny<IPluginSourceSet>(),
+                    It.IsAny<IPluginOutputState?>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(() =>
                 {
@@ -307,7 +307,7 @@ public sealed class FormListWorkspaceTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
             var adapter = CreateAdapter(directory, source.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter, Mock.Of<IWorkspaceSaveCoordinator>());
             await workspace.DisposeAsync();
@@ -318,8 +318,8 @@ public sealed class FormListWorkspaceTests
             result.Error.ShouldNotBeNull();
             result.Error.Code.ShouldBe(EngineErrorCode.WorkspaceDisposed);
             adapter.Verify(candidate => candidate.ListPlugins(
-                It.IsAny<INativeSourceSet>(),
-                It.IsAny<INativeOutputState?>(),
+                It.IsAny<IPluginSourceSet>(),
+                It.IsAny<IPluginOutputState?>(),
                 It.IsAny<CancellationToken>()), Times.Never);
         }
         finally
@@ -335,8 +335,8 @@ public sealed class FormListWorkspaceTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var output = CreateAsyncDisposableMock<INativeOutputState>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var output = CreateAsyncDisposableMock<IPluginOutputState>();
             var adapter = CreateAdapter(directory, source.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter, Mock.Of<IWorkspaceSaveCoordinator>());
             await SelectOutputAsync(directory, workspace, adapter, output.Object);
@@ -353,7 +353,7 @@ public sealed class FormListWorkspaceTests
                     It.IsAny<Guid>(),
                     It.IsAny<WorkspaceRevision>(),
                     It.IsAny<CancellationToken>()))
-                .Returns<INativeSourceSet, INativeOutputState?, ReferenceSearchRequest, Guid, WorkspaceRevision, CancellationToken>(
+                .Returns<IPluginSourceSet, IPluginOutputState?, ReferenceSearchRequest, Guid, WorkspaceRevision, CancellationToken>(
                     (_, _, _, workspaceId, revision, cancellationToken) =>
                     {
                         observedWorkspaceId = workspaceId;
@@ -395,7 +395,7 @@ public sealed class FormListWorkspaceTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
             var adapter = CreateAdapter(directory, source.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter, Mock.Of<IWorkspaceSaveCoordinator>());
             var request = new ReferenceRequest(CreateFormKey("Master.esm", 0x123), RecordScope.Source);
@@ -437,22 +437,22 @@ public sealed class FormListWorkspaceTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var output = CreateAsyncDisposableMock<INativeOutputState>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var output = CreateAsyncDisposableMock<IPluginOutputState>();
             var adapter = CreateAdapter(directory, source.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter, Mock.Of<IWorkspaceSaveCoordinator>());
             using var cancellationSource = new CancellationTokenSource();
             var association = CreateOutputAssociation(directory);
             var baseline = CreateBaseline(association.PluginPath, Guid.NewGuid(), false);
             adapter.Setup(candidate => candidate.OpenOutputAsync(
-                    It.IsAny<INativeSourceSet>(),
+                    It.IsAny<IPluginSourceSet>(),
                     It.IsAny<SelectOutputRequest>(),
                     cancellationSource.Token))
                 .Returns(() =>
                 {
                     cancellationSource.Cancel();
-                    return ValueTask.FromResult(EngineResult<NativeOutputOpenResult>.Success(
-                        new NativeOutputOpenResult(output.Object, association, baseline)));
+                    return ValueTask.FromResult(EngineResult<PluginOutputOpenResult>.Success(
+                        new PluginOutputOpenResult(output.Object, association, baseline)));
                 });
             var revision = workspace.Revision;
 
@@ -482,7 +482,7 @@ public sealed class FormListWorkspaceTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
             var adapter = CreateAdapter(directory, source.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter, Mock.Of<IWorkspaceSaveCoordinator>());
             var operationId = Guid.NewGuid();
@@ -514,7 +514,7 @@ public sealed class FormListWorkspaceTests
             conflict.Error.ShouldNotBeNull();
             conflict.Error.Code.ShouldBe(EngineErrorCode.OperationIdReuse);
             adapter.Verify(candidate => candidate.OpenOutputAsync(
-                It.IsAny<INativeSourceSet>(),
+                It.IsAny<IPluginSourceSet>(),
                 It.IsAny<SelectOutputRequest>(),
                 It.IsAny<CancellationToken>()), Times.Never);
 
@@ -533,12 +533,12 @@ public sealed class FormListWorkspaceTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var firstSource = CreateAsyncDisposableMock<INativeSourceSet>();
-            var secondSource = CreateAsyncDisposableMock<INativeSourceSet>();
-            var differentSourceHandle = CreateAsyncDisposableMock<INativeSourceSet>();
-            var firstOutput = CreateAsyncDisposableMock<INativeOutputState>();
-            var secondOutput = CreateAsyncDisposableMock<INativeOutputState>();
-            var differentOutput = CreateAsyncDisposableMock<INativeOutputState>();
+            var firstSource = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var secondSource = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var differentSourceHandle = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var firstOutput = CreateAsyncDisposableMock<IPluginOutputState>();
+            var secondOutput = CreateAsyncDisposableMock<IPluginOutputState>();
+            var differentOutput = CreateAsyncDisposableMock<IPluginOutputState>();
             var firstAdapter = CreateAdapter(directory, firstSource.Object);
             var secondAdapter = CreateAdapter(directory, secondSource.Object);
             var differentAdapter = CreateAdapter(directory, differentSourceHandle.Object);
@@ -591,9 +591,9 @@ public sealed class FormListWorkspaceTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var output = CreateAsyncDisposableMock<INativeOutputState>();
-            var reopenedOutput = CreateAsyncDisposableMock<INativeOutputState>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var output = CreateAsyncDisposableMock<IPluginOutputState>();
+            var reopenedOutput = CreateAsyncDisposableMock<IPluginOutputState>();
             var adapter = CreateAdapter(directory, source.Object);
             var saveCoordinator = new Mock<IWorkspaceSaveCoordinator>();
             var workspace = await OpenWorkspaceAsync(directory, adapter, saveCoordinator.Object);
@@ -606,8 +606,8 @@ public sealed class FormListWorkspaceTests
                     selection.Value.Output,
                     savedBaseline,
                     It.IsAny<CancellationToken>()))
-                .Returns(ValueTask.FromResult(EngineResult<NativeOutputOpenResult>.Success(
-                    new NativeOutputOpenResult(reopenedOutput.Object, selection.Value.Output, savedBaseline))));
+                .Returns(ValueTask.FromResult(EngineResult<PluginOutputOpenResult>.Success(
+                    new PluginOutputOpenResult(reopenedOutput.Object, selection.Value.Output, savedBaseline))));
             saveCoordinator.Setup(candidate => candidate.SaveAsync(
                     It.IsAny<WorkspaceSaveContext>(),
                     saveRequest,
@@ -667,21 +667,21 @@ public sealed class FormListWorkspaceTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var output = CreateAsyncDisposableMock<INativeOutputState>();
-            var reopenedOutput = CreateAsyncDisposableMock<INativeOutputState>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var output = CreateAsyncDisposableMock<IPluginOutputState>();
+            var reopenedOutput = CreateAsyncDisposableMock<IPluginOutputState>();
             var adapter = CreateAdapter(directory, source.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter, Mock.Of<IWorkspaceSaveCoordinator>());
             var selection = await SelectOutputAsync(directory, workspace, adapter, output.Object);
             var selectedOutput = selection.Value!;
             var revisionBeforeReopen = workspace.Revision;
             adapter.Setup(candidate => candidate.ReopenOutputAsync(
-                    It.IsAny<INativeSourceSet>(),
+                    It.IsAny<IPluginSourceSet>(),
                     selectedOutput.Output,
                     selectedOutput.Baseline,
                     It.IsAny<CancellationToken>()))
-                .Returns(ValueTask.FromResult(EngineResult<NativeOutputOpenResult>.Success(
-                    new NativeOutputOpenResult(reopenedOutput.Object, selectedOutput.Output, selectedOutput.Baseline))));
+                .Returns(ValueTask.FromResult(EngineResult<PluginOutputOpenResult>.Success(
+                    new PluginOutputOpenResult(reopenedOutput.Object, selectedOutput.Output, selectedOutput.Baseline))));
             var request = new ReopenOutputRequest(
                 Guid.NewGuid(),
                 revisionBeforeReopen,
@@ -696,7 +696,7 @@ public sealed class FormListWorkspaceTests
             workspace.Revision.ShouldBe(first.Value.Revision);
             replay.ShouldBeSameAs(first);
             adapter.Verify(candidate => candidate.ReopenOutputAsync(
-                It.IsAny<INativeSourceSet>(),
+                It.IsAny<IPluginSourceSet>(),
                 selectedOutput.Output,
                 selectedOutput.Baseline,
                 It.IsAny<CancellationToken>()), Times.Once);
@@ -716,21 +716,21 @@ public sealed class FormListWorkspaceTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var output = CreateAsyncDisposableMock<INativeOutputState>();
-            var reopenedOutput = CreateAsyncDisposableMock<INativeOutputState>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var output = CreateAsyncDisposableMock<IPluginOutputState>();
+            var reopenedOutput = CreateAsyncDisposableMock<IPluginOutputState>();
             var adapter = CreateAdapter(directory, source.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter, Mock.Of<IWorkspaceSaveCoordinator>());
             var selection = await SelectOutputAsync(directory, workspace, adapter, output.Object);
             var selectedOutput = selection.Value!;
             var revisionBeforeDiscard = workspace.Revision;
             adapter.Setup(candidate => candidate.ReopenOutputAsync(
-                    It.IsAny<INativeSourceSet>(),
+                    It.IsAny<IPluginSourceSet>(),
                     selectedOutput.Output,
                     selectedOutput.Baseline,
                     It.IsAny<CancellationToken>()))
-                .Returns(ValueTask.FromResult(EngineResult<NativeOutputOpenResult>.Success(
-                    new NativeOutputOpenResult(reopenedOutput.Object, selectedOutput.Output, selectedOutput.Baseline))));
+                .Returns(ValueTask.FromResult(EngineResult<PluginOutputOpenResult>.Success(
+                    new PluginOutputOpenResult(reopenedOutput.Object, selectedOutput.Output, selectedOutput.Baseline))));
             var request = new DiscardChangesRequest(
                 Guid.NewGuid(),
                 revisionBeforeDiscard,
@@ -745,7 +745,7 @@ public sealed class FormListWorkspaceTests
             workspace.Revision.ShouldBe(first.Value.Revision);
             replay.ShouldBeSameAs(first);
             adapter.Verify(candidate => candidate.ReopenOutputAsync(
-                It.IsAny<INativeSourceSet>(),
+                It.IsAny<IPluginSourceSet>(),
                 selectedOutput.Output,
                 selectedOutput.Baseline,
                 It.IsAny<CancellationToken>()), Times.Once);
@@ -765,8 +765,8 @@ public sealed class FormListWorkspaceTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var output = CreateAsyncDisposableMock<INativeOutputState>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var output = CreateAsyncDisposableMock<IPluginOutputState>();
             var adapter = CreateAdapter(directory, source.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter, Mock.Of<IWorkspaceSaveCoordinator>());
             var selection = await SelectOutputAsync(directory, workspace, adapter, output.Object);
@@ -784,7 +784,7 @@ public sealed class FormListWorkspaceTests
             result.Error.ShouldNotBeNull();
             result.Error.Code.ShouldBe(EngineErrorCode.ExternalChangeDetected);
             adapter.Verify(candidate => candidate.ReopenOutputAsync(
-                It.IsAny<INativeSourceSet>(),
+                It.IsAny<IPluginSourceSet>(),
                 It.IsAny<OutputAssociation>(),
                 It.IsAny<OutputArtifactSetBaseline>(),
                 It.IsAny<CancellationToken>()), Times.Never);
@@ -802,19 +802,19 @@ public sealed class FormListWorkspaceTests
     /// <returns>A prepared edit containing the complete fingerprint and deterministic validation result.</returns>
     private static PreparedFormListEdit PrepareEditorIdEdit(SetEditorIdEdit edit)
     {
-        var result = NativeEditFingerprintFactory.Create(
+        var result = RecordEditFingerprintFactory.Create(
             edit.CommandName,
             (writer, context) =>
             {
                 writer.WriteStartObject();
                 writer.WritePropertyName("editorId");
-                NativeJsonLeafWriter.WriteString(writer, edit.EditorId, context);
+                RecordJsonLeafWriter.WriteString(writer, edit.EditorId, context);
                 writer.WriteEndObject();
             });
         return new TestPreparedFormListEdit(result.Fingerprint, result.ValidationError);
     }
 
-    /// <summary>Creates and opens a workspace through the production factory with synthetic native state.</summary>
+    /// <summary>Creates and opens a workspace through the production factory with synthetic plugin state.</summary>
     private static async Task<IFormListWorkspace> OpenWorkspaceAsync(
         DirectoryInfo directory,
         Mock<IFormListGameAdapter> adapter,
@@ -853,7 +853,7 @@ public sealed class FormListWorkspaceTests
     }
 
     /// <summary>Creates a loose game adapter with successful explicit source opening.</summary>
-    private static Mock<IFormListGameAdapter> CreateAdapter(DirectoryInfo directory, INativeSourceSet sources)
+    private static Mock<IFormListGameAdapter> CreateAdapter(DirectoryInfo directory, IPluginSourceSet sources)
     {
         var baselineId = new Guid("6195dcd8-7cab-49ba-b25a-56af1a86a4e7");
         TestWorkspaceInfrastructure.ConfigureSourceBaseline(
@@ -866,18 +866,18 @@ public sealed class FormListWorkspaceTests
         adapter.Setup(candidate => candidate.OpenSourcesAsync(
                 It.IsAny<WorkspaceOpenRequest>(),
                 It.IsAny<CancellationToken>()))
-            .Returns(ValueTask.FromResult(EngineResult<NativeSourceOpenResult>.Success(
-                new NativeSourceOpenResult(
+            .Returns(ValueTask.FromResult(EngineResult<PluginSourceOpenResult>.Success(
+                new PluginSourceOpenResult(
                     sources,
                     baselineId,
                     Array.AsReadOnly(new[]
                     {
-                        new NativeArtifactAssociation(
+                        new PluginArtifactAssociation(
                             Path.Combine(directory.FullName, "Data", "Source.esp"),
-                            NativeArtifactRole.Plugin,
+                            PluginArtifactRole.Plugin,
                             null,
-                            new NativeArtifactFingerprint(true, 0, new string('A', 64)),
-                            new NativeFileIdentity("test", "volume", "source", 1))
+                            new PluginArtifactFingerprint(true, 0, new string('A', 64)),
+                            new ArtifactFileIdentity("test", "volume", "source", 1))
                     })))));
         return adapter;
     }
@@ -886,13 +886,13 @@ public sealed class FormListWorkspaceTests
     /// <param name="directory">The temporary root containing the synthetic output.</param>
     /// <param name="workspace">The open workspace that receives the output.</param>
     /// <param name="adapter">The synthetic adapter used to open the output.</param>
-    /// <param name="output">The disposable native output handle to publish.</param>
+    /// <param name="output">The disposable plugin output handle to publish.</param>
     /// <returns>The successful output-selection result.</returns>
     private static async Task<EngineResult<OutputSelectionReceipt>> SelectOutputAsync(
         DirectoryInfo directory,
         IFormListWorkspace workspace,
         Mock<IFormListGameAdapter> adapter,
-        INativeOutputState output)
+        IPluginOutputState output)
     {
         var association = CreateOutputAssociation(directory);
         var baseline = CreateBaseline(association.PluginPath, Guid.NewGuid(), false);
@@ -902,23 +902,23 @@ public sealed class FormListWorkspaceTests
     /// <summary>Selects a supplied synthetic output observation and returns its receipt.</summary>
     /// <param name="workspace">The open workspace that receives the output.</param>
     /// <param name="adapter">The synthetic adapter used to open the output.</param>
-    /// <param name="output">The disposable native output handle to publish.</param>
+    /// <param name="output">The disposable plugin output handle to publish.</param>
     /// <param name="association">The canonical output association to publish.</param>
     /// <param name="baseline">The complete output artifact-set observation to publish.</param>
     /// <returns>The successful output-selection result.</returns>
     private static async Task<EngineResult<OutputSelectionReceipt>> SelectOutputAsync(
         IFormListWorkspace workspace,
         Mock<IFormListGameAdapter> adapter,
-        INativeOutputState output,
+        IPluginOutputState output,
         OutputAssociation association,
         OutputArtifactSetBaseline baseline)
     {
         adapter.Setup(candidate => candidate.OpenOutputAsync(
-                It.IsAny<INativeSourceSet>(),
+                It.IsAny<IPluginSourceSet>(),
                 It.IsAny<SelectOutputRequest>(),
                 It.IsAny<CancellationToken>()))
-            .Returns(ValueTask.FromResult(EngineResult<NativeOutputOpenResult>.Success(
-                new NativeOutputOpenResult(output, association, baseline))));
+            .Returns(ValueTask.FromResult(EngineResult<PluginOutputOpenResult>.Success(
+                new PluginOutputOpenResult(output, association, baseline))));
         var result = await workspace.SelectOutputAsync(new SelectOutputRequest(
             Guid.NewGuid(),
             workspace.Revision,
@@ -930,7 +930,7 @@ public sealed class FormListWorkspaceTests
 
     /// <summary>Creates a canonical synthetic output association.</summary>
     /// <param name="directory">The temporary root containing the synthetic output.</param>
-    /// <param name="pluginFileName">The native output plugin file name.</param>
+    /// <param name="pluginFileName">The output plugin file name.</param>
     /// <returns>The canonical synthetic output association.</returns>
     private static OutputAssociation CreateOutputAssociation(
         DirectoryInfo directory,
@@ -950,31 +950,31 @@ public sealed class FormListWorkspaceTests
             baselineId,
             Array.AsReadOnly(new[]
             {
-                new NativeArtifactAssociation(
+                new PluginArtifactAssociation(
                     path,
-                    NativeArtifactRole.Plugin,
+                    PluginArtifactRole.Plugin,
                     null,
                     exists
-                        ? new NativeArtifactFingerprint(true, 1, new string('B', 64))
-                        : new NativeArtifactFingerprint(false, 0, null),
-                    exists ? new NativeFileIdentity("test", "volume", "output", 1) : null)
+                        ? new PluginArtifactFingerprint(true, 1, new string('B', 64))
+                        : new PluginArtifactFingerprint(false, 0, null),
+                    exists ? new ArtifactFileIdentity("test", "volume", "output", 1) : null)
             }));
     }
 
-    /// <summary>Creates a native FormKey for synthetic tests.</summary>
+    /// <summary>Creates a plugin FormKey for synthetic tests.</summary>
     private static FormKey CreateFormKey(string pluginFileName, uint id)
     {
         return new FormKey(CreateModKey(pluginFileName), id);
     }
 
-    /// <summary>Parses a native ModKey for synthetic tests.</summary>
+    /// <summary>Parses a plugin ModKey for synthetic tests.</summary>
     private static ModKey CreateModKey(string pluginFileName)
     {
         ModKey.TryFromNameAndExtension(pluginFileName, out var modKey, out var error).ShouldBeTrue(error);
         return modKey;
     }
 
-    /// <summary>Creates an independently verifiable asynchronous native lifetime mock.</summary>
+    /// <summary>Creates an independently verifiable asynchronous plugin lifetime mock.</summary>
     private static Mock<T> CreateAsyncDisposableMock<T>()
         where T : class, IAsyncDisposable
     {

@@ -1,8 +1,8 @@
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
-using CreationsForge.Core.Engine.NativeOutputs;
-using CreationsForge.Fallout4.Native;
-using CreationsForge.Fallout4.Native.Edits;
+using CreationsForge.Core.Engine.PluginInputs;
+using CreationsForge.Core.Engine.PluginOutputs;
+using CreationsForge.Fallout4.PluginAdapter;
+using CreationsForge.Fallout4.PluginAdapter.Edits;
 using Mutagen.Bethesda.Fallout4;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Strings;
@@ -14,11 +14,11 @@ namespace CreationsForge.UnitTests.Engine.Fallout4;
 public sealed class Fallout4FormListGameAdapterTests
 {
     /// <summary>Selected output participates in plugin enumeration, winning reads, and staged-output FormList enumeration.</summary>
-    /// <returns>A task that completes after the generated native lifetimes are released.</returns>
+    /// <returns>A task that completes after the generated plugin lifetimes are released.</returns>
     [Fact]
-    public async Task AdapterReads_IncludeSelectedOutputWithoutMutatingNativeFiles()
+    public async Task AdapterReads_IncludeSelectedOutputWithoutMutatingPluginFiles()
     {
-        using var fixture = Fallout4NativeOutputTestFixture.Create();
+        using var fixture = Fallout4PluginOutputTestFixture.Create();
         var existing = fixture.WriteExistingOutput();
         var sourceArtifacts = fixture.Sources.SnapshotArtifacts();
         var destinationBytes = File.ReadAllBytes(existing.Association.PluginPath);
@@ -66,11 +66,11 @@ public sealed class Fallout4FormListGameAdapterTests
     }
 
     /// <summary>An unchanged existing output returns the explicit zero-write disposition and leaves private staging empty.</summary>
-    /// <returns>A task that completes after the generated native lifetimes are released.</returns>
+    /// <returns>A task that completes after the generated plugin lifetimes are released.</returns>
     [Fact]
     public async Task WriteAndValidateAsync_UnchangedExistingOutput_PerformsZeroArtifactWrites()
     {
-        using var fixture = Fallout4NativeOutputTestFixture.Create();
+        using var fixture = Fallout4PluginOutputTestFixture.Create();
         var existing = fixture.WriteExistingOutput();
         var sourceArtifacts = fixture.Sources.SnapshotArtifacts();
         var destinationBytes = File.ReadAllBytes(existing.Association.PluginPath);
@@ -91,11 +91,11 @@ public sealed class Fallout4FormListGameAdapterTests
         var result = await adapter.WriteAndValidateAsync(
             sources,
             output,
-            new NativeWriteRequest(stagingDirectory.FullName, open.Value.Association, open.Value.Baseline),
+            new PluginWriteRequest(stagingDirectory.FullName, open.Value.Association, open.Value.Baseline),
             TestContext.Current.CancellationToken);
 
         result.Succeeded.ShouldBeTrue(result.Error?.Message);
-        result.Value!.Disposition.ShouldBe(NativeWriteDisposition.Unchanged);
+        result.Value!.Disposition.ShouldBe(PluginWriteDisposition.Unchanged);
         result.Value.StagedOutput.ShouldBeNull();
         result.Value.ArtifactMappings.ShouldBeEmpty();
         stagingDirectory.EnumerateFileSystemInfos().ShouldBeEmpty();
@@ -104,11 +104,11 @@ public sealed class Fallout4FormListGameAdapterTests
     }
 
     /// <summary>An identical-byte destination replacement invalidates the old file identity while a fresh baseline remains writable.</summary>
-    /// <returns>A task that completes after the selected, replacement, and staged native lifetimes are released.</returns>
+    /// <returns>A task that completes after the selected, replacement, and staged plugin lifetimes are released.</returns>
     [Fact]
     public async Task WriteAndValidateAsync_IdenticalByteReplacement_RejectsOldBaselineAndAcceptsFreshBaseline()
     {
-        using var fixture = Fallout4NativeOutputTestFixture.Create();
+        using var fixture = Fallout4PluginOutputTestFixture.Create();
         var existing = fixture.WriteExistingOutput();
         var sourceArtifacts = fixture.Sources.SnapshotArtifacts();
         var destinationBytes = File.ReadAllBytes(existing.Association.PluginPath);
@@ -128,7 +128,7 @@ public sealed class Fallout4FormListGameAdapterTests
         originalOpen.Succeeded.ShouldBeTrue(originalOpen.Error?.Message);
         await using var originalOutput = originalOpen.Value!.Output;
         var originalPlugin = originalOpen.Value.Baseline.Artifacts.Single(
-            artifact => artifact.Role == NativeArtifactRole.Plugin);
+            artifact => artifact.Role == PluginArtifactRole.Plugin);
         var originalIdentity = originalPlugin.FileIdentity.ShouldNotBeNull();
         var replacementPath = Path.Combine(
             fixture.OutputDirectory.FullName,
@@ -147,14 +147,14 @@ public sealed class Fallout4FormListGameAdapterTests
         freshOpen.Succeeded.ShouldBeTrue(freshOpen.Error?.Message);
         await using var freshOutput = freshOpen.Value!.Output;
         var freshPlugin = freshOpen.Value.Baseline.Artifacts.Single(
-            artifact => artifact.Role == NativeArtifactRole.Plugin);
+            artifact => artifact.Role == PluginArtifactRole.Plugin);
         freshPlugin.Fingerprint.ShouldBe(originalPlugin.Fingerprint);
         freshPlugin.FileIdentity.ShouldNotBeNull().ShouldNotBe(originalIdentity);
 
         var stale = await adapter.WriteAndValidateAsync(
             sources,
             originalOutput,
-            new NativeWriteRequest(
+            new PluginWriteRequest(
                 stagingDirectory.FullName,
                 originalOpen.Value.Association,
                 originalOpen.Value.Baseline),
@@ -165,10 +165,10 @@ public sealed class Fallout4FormListGameAdapterTests
         stagingDirectory.EnumerateFileSystemInfos().ShouldBeEmpty();
 
         await using var candidate = adapter.CloneOutput(originalOutput, TestContext.Current.CancellationToken);
-        candidate.ShouldBeOfType<Fallout4NativeOutputState>()
+        candidate.ShouldBeOfType<Fallout4PluginOutputState>()
             .Baseline
             .Artifacts
-            .Single(artifact => artifact.Role == NativeArtifactRole.Plugin)
+            .Single(artifact => artifact.Role == PluginArtifactRole.Plugin)
             .FileIdentity
             .ShouldBe(originalIdentity);
         var begin = adapter.BeginEdit(
@@ -190,26 +190,26 @@ public sealed class Fallout4FormListGameAdapterTests
         var fresh = await adapter.WriteAndValidateAsync(
             sources,
             candidate,
-            new NativeWriteRequest(
+            new PluginWriteRequest(
                 freshStagingDirectory.FullName,
                 freshOpen.Value.Association,
                 freshOpen.Value.Baseline),
             TestContext.Current.CancellationToken);
 
         fresh.Succeeded.ShouldBeTrue(fresh.Error?.Message);
-        fresh.Value!.Disposition.ShouldBe(NativeWriteDisposition.StagedChanges);
+        fresh.Value!.Disposition.ShouldBe(PluginWriteDisposition.StagedChanges);
         fresh.Value.ArtifactMappings.ShouldNotBeEmpty();
         await fresh.Value.StagedOutput!.DisposeAsync();
         AssertArtifactsUnchanged(sourceArtifacts);
         File.ReadAllBytes(existing.Association.PluginPath).ShouldBe(destinationBytes);
     }
 
-    /// <summary>A changed nonlocalized output stages complete preserved native state while retaining unedited records and embedded names.</summary>
+    /// <summary>A changed nonlocalized output stages complete preserved plugin state while retaining unedited records and embedded names.</summary>
     /// <returns>A task that completes after all selected and staged output lifetimes are released.</returns>
     [Fact]
-    public async Task WriteAndValidateAsync_ExistingOutput_PreservesUneditedNativeStateAndStagesMappings()
+    public async Task WriteAndValidateAsync_ExistingOutput_PreservesUneditedPluginStateAndStagesMappings()
     {
-        using var fixture = Fallout4NativeOutputTestFixture.Create();
+        using var fixture = Fallout4PluginOutputTestFixture.Create();
         var existing = fixture.WriteExistingOutput();
         var sourceArtifacts = fixture.Sources.SnapshotArtifacts();
         var destinationBytes = File.ReadAllBytes(existing.Association.PluginPath);
@@ -250,19 +250,19 @@ public sealed class Fallout4FormListGameAdapterTests
         var result = await adapter.WriteAndValidateAsync(
             sources,
             candidate,
-            new NativeWriteRequest(stagingDirectory.FullName, open.Value.Association, open.Value.Baseline),
+            new PluginWriteRequest(stagingDirectory.FullName, open.Value.Association, open.Value.Baseline),
             TestContext.Current.CancellationToken);
 
         result.Succeeded.ShouldBeTrue(result.Error?.Message);
-        result.Value!.Disposition.ShouldBe(NativeWriteDisposition.StagedChanges);
+        result.Value!.Disposition.ShouldBe(PluginWriteDisposition.StagedChanges);
         result.Value.StagedOutput.ShouldNotBeNull();
         result.Value.ArtifactMappings.ShouldNotBeEmpty();
         var pluginMapping = result.Value.ArtifactMappings.Single(
-            mapping => mapping.StagedArtifact.Role == NativeArtifactRole.Plugin);
+            mapping => mapping.StagedArtifact.Role == PluginArtifactRole.Plugin);
         pluginMapping.StagedArtifact.Fingerprint.Exists.ShouldBeTrue();
         pluginMapping.DestinationPath.ShouldBe(Path.GetFullPath(existing.Association.PluginPath));
         result.Value.ArtifactMappings
-            .Where(mapping => mapping.StagedArtifact.Role != NativeArtifactRole.Plugin)
+            .Where(mapping => mapping.StagedArtifact.Role != PluginArtifactRole.Plugin)
             .ShouldAllBe(mapping => !mapping.StagedArtifact.Fingerprint.Exists);
 
         var stagedAssociation = new OutputAssociation(
@@ -279,7 +279,7 @@ public sealed class Fallout4FormListGameAdapterTests
                 stagedAssociation),
             TestContext.Current.CancellationToken);
         stagedOpen.Succeeded.ShouldBeTrue(stagedOpen.Error?.Message);
-        await using var stagedState = stagedOpen.Value!.Output.ShouldBeOfType<Fallout4NativeOutputState>();
+        await using var stagedState = stagedOpen.Value!.Output.ShouldBeOfType<Fallout4PluginOutputState>();
         var stagedMod = stagedState.CreateSnapshot(TestContext.Current.CancellationToken);
         var edited = stagedMod.FormLists.Single(record => record.FormKey == existing.SourceOverrideFormKey);
         edited.Name!.String.ShouldBe("First line\nSecond line");
@@ -296,11 +296,11 @@ public sealed class Fallout4FormListGameAdapterTests
     }
 
     /// <summary>An embedded output with an unrepresentable nondefault translation fails closed before any destination mutation.</summary>
-    /// <returns>A task that completes after all selected and candidate native lifetimes are released.</returns>
+    /// <returns>A task that completes after all selected and candidate plugin lifetimes are released.</returns>
     [Fact]
     public async Task WriteAndValidateAsync_ExistingEmbeddedOutputWithMultipleLanguages_FailsClosed()
     {
-        using var fixture = Fallout4NativeOutputTestFixture.Create();
+        using var fixture = Fallout4PluginOutputTestFixture.Create();
         var existing = fixture.WriteExistingOutput();
         var sourceArtifacts = fixture.Sources.SnapshotArtifacts();
         var destinationBytes = File.ReadAllBytes(existing.Association.PluginPath);
@@ -342,7 +342,7 @@ public sealed class Fallout4FormListGameAdapterTests
         var result = await adapter.WriteAndValidateAsync(
             sources,
             candidate,
-            new NativeWriteRequest(stagingDirectory.FullName, open.Value.Association, open.Value.Baseline),
+            new PluginWriteRequest(stagingDirectory.FullName, open.Value.Association, open.Value.Baseline),
             TestContext.Current.CancellationToken);
 
         result.Succeeded.ShouldBeFalse();
@@ -353,12 +353,12 @@ public sealed class Fallout4FormListGameAdapterTests
         File.ReadAllBytes(existing.Association.PluginPath).ShouldBe(destinationBytes);
     }
 
-    /// <summary>A new localized output retains authored translations, null and duplicate item slots, and only the required native masters.</summary>
+    /// <summary>A new localized output retains authored translations, null and duplicate item slots, and only the required plugin masters.</summary>
     /// <returns>A task that completes after all selected and staged output lifetimes are released.</returns>
     [Fact]
     public async Task WriteAndValidateAsync_NewLocalizedOutput_RetainsAllFormListTranslationsAndMasters()
     {
-        using var fixture = Fallout4NativeOutputTestFixture.Create();
+        using var fixture = Fallout4PluginOutputTestFixture.Create();
         var sourceArtifacts = fixture.Sources.SnapshotArtifacts();
         var association = fixture.CreateAssociation(
             "LocalizedOutput.esm",
@@ -403,13 +403,13 @@ public sealed class Fallout4FormListGameAdapterTests
         var result = await adapter.WriteAndValidateAsync(
             sources,
             output,
-            new NativeWriteRequest(stagingDirectory.FullName, open.Value.Association, open.Value.Baseline),
+            new PluginWriteRequest(stagingDirectory.FullName, open.Value.Association, open.Value.Baseline),
             TestContext.Current.CancellationToken);
 
         result.Succeeded.ShouldBeTrue(result.Error?.Message);
-        result.Value!.Disposition.ShouldBe(NativeWriteDisposition.StagedChanges);
+        result.Value!.Disposition.ShouldBe(PluginWriteDisposition.StagedChanges);
         var existingSidecars = result.Value.ArtifactMappings
-            .Where(mapping => mapping.StagedArtifact.Role != NativeArtifactRole.Plugin
+            .Where(mapping => mapping.StagedArtifact.Role != PluginArtifactRole.Plugin
                 && mapping.StagedArtifact.Fingerprint.Exists)
             .ToArray();
         existingSidecars.ShouldNotBeEmpty();
@@ -417,7 +417,7 @@ public sealed class Fallout4FormListGameAdapterTests
         existingSidecars.Select(mapping => mapping.StagedArtifact.Language).ShouldContain(Language.French.ToString());
 
         var stagedPlugin = result.Value.ArtifactMappings.Single(
-            mapping => mapping.StagedArtifact.Role == NativeArtifactRole.Plugin);
+            mapping => mapping.StagedArtifact.Role == PluginArtifactRole.Plugin);
         var stagedAssociation = new OutputAssociation(
             stagedPlugin.StagedArtifact.Path,
             association.ModKey,
@@ -432,7 +432,7 @@ public sealed class Fallout4FormListGameAdapterTests
                 stagedAssociation),
             TestContext.Current.CancellationToken);
         stagedOpen.Succeeded.ShouldBeTrue(stagedOpen.Error?.Message);
-        await using var stagedState = stagedOpen.Value!.Output.ShouldBeOfType<Fallout4NativeOutputState>();
+        await using var stagedState = stagedOpen.Value!.Output.ShouldBeOfType<Fallout4PluginOutputState>();
         var stagedMod = stagedState.CreateSnapshot(TestContext.Current.CancellationToken);
         var formList = stagedMod.FormLists.ShouldHaveSingleItem();
         formList.Name!.String.ShouldBe("Localized\nEnglish");
@@ -448,12 +448,12 @@ public sealed class Fallout4FormListGameAdapterTests
         AssertArtifactsUnchanged(sourceArtifacts);
     }
 
-    /// <summary>A blank localized FormList stages an explicit empty English strings table and reopens without inventing native data.</summary>
+    /// <summary>A blank localized FormList stages an explicit empty English strings table and reopens without inventing plugin data.</summary>
     /// <returns>A task that completes after all selected and staged output lifetimes are released.</returns>
     [Fact]
     public async Task WriteAndValidateAsync_BlankLocalizedOutput_StagesExplicitEmptyStringTable()
     {
-        using var fixture = Fallout4NativeOutputTestFixture.Create();
+        using var fixture = Fallout4PluginOutputTestFixture.Create();
         var sourceArtifacts = fixture.Sources.SnapshotArtifacts();
         var association = fixture.CreateAssociation(
             "BlankLocalizedOutput.esm",
@@ -483,20 +483,20 @@ public sealed class Fallout4FormListGameAdapterTests
         var result = await adapter.WriteAndValidateAsync(
             sources,
             output,
-            new NativeWriteRequest(stagingDirectory.FullName, open.Value.Association, open.Value.Baseline),
+            new PluginWriteRequest(stagingDirectory.FullName, open.Value.Association, open.Value.Baseline),
             TestContext.Current.CancellationToken);
 
         result.Succeeded.ShouldBeTrue(result.Error?.Message);
-        result.Value!.Disposition.ShouldBe(NativeWriteDisposition.StagedChanges);
+        result.Value!.Disposition.ShouldBe(PluginWriteDisposition.StagedChanges);
         var stringMapping = result.Value.ArtifactMappings
-            .Where(mapping => mapping.StagedArtifact.Role != NativeArtifactRole.Plugin
+            .Where(mapping => mapping.StagedArtifact.Role != PluginArtifactRole.Plugin
                 && mapping.StagedArtifact.Fingerprint.Exists)
             .ShouldHaveSingleItem();
         stringMapping.StagedArtifact.Language.ShouldBe(Language.English.ToString());
         stringMapping.StagedArtifact.Fingerprint.Length.ShouldBe(8L);
 
         var stagedPlugin = result.Value.ArtifactMappings.Single(
-            mapping => mapping.StagedArtifact.Role == NativeArtifactRole.Plugin);
+            mapping => mapping.StagedArtifact.Role == PluginArtifactRole.Plugin);
         var stagedAssociation = new OutputAssociation(
             stagedPlugin.StagedArtifact.Path,
             association.ModKey,
@@ -511,7 +511,7 @@ public sealed class Fallout4FormListGameAdapterTests
                 stagedAssociation),
             TestContext.Current.CancellationToken);
         stagedOpen.Succeeded.ShouldBeTrue(stagedOpen.Error?.Message);
-        await using var stagedState = stagedOpen.Value!.Output.ShouldBeOfType<Fallout4NativeOutputState>();
+        await using var stagedState = stagedOpen.Value!.Output.ShouldBeOfType<Fallout4PluginOutputState>();
         var stagedMod = stagedState.CreateSnapshot(TestContext.Current.CancellationToken);
         var formList = stagedMod.FormLists.ShouldHaveSingleItem();
         formList.Name.ShouldBeNull();
@@ -524,11 +524,11 @@ public sealed class Fallout4FormListGameAdapterTests
     }
 
     /// <summary>An existing localized output may prove unchanged without writes but rejects a material rewrite before staging.</summary>
-    /// <returns>A task that completes after all generated native lifetimes are released.</returns>
+    /// <returns>A task that completes after all generated plugin lifetimes are released.</returns>
     [Fact]
     public async Task WriteAndValidateAsync_ExistingLocalizedOutput_AllowsNoOpAndRejectsMaterialRewrite()
     {
-        using var fixture = Fallout4NativeOutputTestFixture.Create();
+        using var fixture = Fallout4PluginOutputTestFixture.Create();
         var sourceArtifacts = fixture.Sources.SnapshotArtifacts();
         var association = fixture.CreateAssociation(
             "ExistingLocalized.esm",
@@ -564,7 +564,7 @@ public sealed class Fallout4FormListGameAdapterTests
             var staged = await adapter.WriteAndValidateAsync(
                 sources,
                 newOutput,
-                new NativeWriteRequest(initialStaging.FullName, create.Value.Association, create.Value.Baseline),
+                new PluginWriteRequest(initialStaging.FullName, create.Value.Association, create.Value.Baseline),
                 TestContext.Current.CancellationToken);
             staged.Succeeded.ShouldBeTrue(staged.Error?.Message);
             CommitStagedArtifacts(staged.Value!.ArtifactMappings);
@@ -586,14 +586,14 @@ public sealed class Fallout4FormListGameAdapterTests
         var noOp = await adapter.WriteAndValidateAsync(
             sources,
             existingOutput,
-            new NativeWriteRequest(noOpDirectory.FullName, open.Value.Association, open.Value.Baseline),
+            new PluginWriteRequest(noOpDirectory.FullName, open.Value.Association, open.Value.Baseline),
             TestContext.Current.CancellationToken);
         noOp.Succeeded.ShouldBeTrue(noOp.Error?.Message);
-        noOp.Value!.Disposition.ShouldBe(NativeWriteDisposition.Unchanged);
+        noOp.Value!.Disposition.ShouldBe(PluginWriteDisposition.Unchanged);
         noOpDirectory.EnumerateFileSystemInfos().ShouldBeEmpty();
 
         await using var candidate = adapter.CloneOutput(existingOutput, TestContext.Current.CancellationToken);
-        var target = candidate.ShouldBeOfType<Fallout4NativeOutputState>()
+        var target = candidate.ShouldBeOfType<Fallout4PluginOutputState>()
             .CreateSnapshot(TestContext.Current.CancellationToken)
             .FormLists
             .ShouldHaveSingleItem()
@@ -617,7 +617,7 @@ public sealed class Fallout4FormListGameAdapterTests
         var rejected = await adapter.WriteAndValidateAsync(
             sources,
             candidate,
-            new NativeWriteRequest(rejectedDirectory.FullName, open.Value.Association, open.Value.Baseline),
+            new PluginWriteRequest(rejectedDirectory.FullName, open.Value.Association, open.Value.Baseline),
             TestContext.Current.CancellationToken);
 
         rejected.Succeeded.ShouldBeFalse();
@@ -627,15 +627,15 @@ public sealed class Fallout4FormListGameAdapterTests
         AssertArtifactsUnchanged(sourceArtifacts);
     }
 
-    /// <summary>Creates the concrete adapter graph without a service locator or duplicated native state.</summary>
+    /// <summary>Creates the concrete adapter graph without a service locator or duplicated plugin state.</summary>
     /// <param name="outputService">Returns the shared typed output service for staged inspection.</param>
     /// <returns>A complete Fallout 4 game adapter.</returns>
-    private static Fallout4FormListGameAdapter CreateAdapter(out Fallout4NativeOutputService outputService)
+    private static Fallout4FormListGameAdapter CreateAdapter(out Fallout4PluginOutputService outputService)
     {
-        var sourceLoader = new Fallout4NativeSourceLoader(new NativeSourceInputLoader());
-        outputService = new Fallout4NativeOutputService(new NativeOutputInputLoader());
-        var editService = new Fallout4NativeEditService(outputService.Inspector);
-        var writeService = new Fallout4NativeWriteService(outputService);
+        var sourceLoader = new Fallout4PluginSourceLoader(new PluginSourceInputLoader());
+        outputService = new Fallout4PluginOutputService(new PluginOutputInputLoader());
+        var editService = new Fallout4RecordEditService(outputService.Inspector);
+        var writeService = new Fallout4PluginWriteService(outputService);
         return new Fallout4FormListGameAdapter(sourceLoader, outputService, editService, writeService);
     }
 
@@ -643,15 +643,15 @@ public sealed class Fallout4FormListGameAdapterTests
     /// <param name="adapter">The complete game adapter.</param>
     /// <param name="fixture">The generated source and output fixture.</param>
     /// <returns>The typed independently owned source lifetime.</returns>
-    private static async Task<Fallout4NativeSourceSet> OpenSourcesAsync(
+    private static async Task<Fallout4PluginSourceSet> OpenSourcesAsync(
         Fallout4FormListGameAdapter adapter,
-        Fallout4NativeOutputTestFixture fixture)
+        Fallout4PluginOutputTestFixture fixture)
     {
         var result = await adapter.OpenSourcesAsync(
             fixture.Sources.CreateOpenRequest(),
             TestContext.Current.CancellationToken);
         result.Succeeded.ShouldBeTrue(result.Error?.Message);
-        return result.Value!.Sources.ShouldBeOfType<Fallout4NativeSourceSet>();
+        return result.Value!.Sources.ShouldBeOfType<Fallout4PluginSourceSet>();
     }
 
     /// <summary>Asserts that every generated source plugin and strings artifact retains its exact bytes.</summary>
@@ -667,7 +667,7 @@ public sealed class Fallout4FormListGameAdapterTests
 
     /// <summary>Copies a validated private staged set into initially absent test destinations to create an existing localized fixture.</summary>
     /// <param name="mappings">The explicit verified staged-to-destination mappings.</param>
-    private static void CommitStagedArtifacts(IReadOnlyList<NativeStagedArtifactMapping> mappings)
+    private static void CommitStagedArtifacts(IReadOnlyList<StagedPluginArtifactMapping> mappings)
     {
         foreach (var mapping in mappings.Where(mapping => mapping.StagedArtifact.Fingerprint.Exists))
         {

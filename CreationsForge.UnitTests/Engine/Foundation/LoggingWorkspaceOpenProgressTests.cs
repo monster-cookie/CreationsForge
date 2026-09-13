@@ -7,7 +7,7 @@ using Shouldly;
 
 namespace CreationsForge.UnitTests.Engine.Foundation;
 
-/// <summary>Verifies native workspace progress is both forwarded and retained in structured diagnostics.</summary>
+/// <summary>Verifies workspace progress is both forwarded and retained in structured diagnostics.</summary>
 public sealed class LoggingWorkspaceOpenProgressTests
 {
     /// <summary>Verifies phase, slow-open, and cancellation events identify the most recent plugin operation.</summary>
@@ -54,7 +54,7 @@ public sealed class LoggingWorkspaceOpenProgressTests
         }
     }
 
-    /// <summary>Records forwarded native workspace progress synchronously.</summary>
+    /// <summary>Records forwarded workspace progress synchronously.</summary>
     private sealed class RecordingProgress : IProgress<WorkspaceOpenProgress>
     {
         /// <summary>Gets forwarded updates in publication order.</summary>

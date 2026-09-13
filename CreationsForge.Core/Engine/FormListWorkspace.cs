@@ -7,26 +7,26 @@ using Serilog;
 namespace CreationsForge.Core.Engine;
 
 /// <summary>
-/// Owns one isolated native workspace and serializes reads, mutations, saves, and disposal through one gate.
+/// Owns one isolated workspace and serializes reads, mutations, saves, and disposal through one gate.
 /// </summary>
 public sealed partial class FormListWorkspace : IFormListWorkspace
 {
     /// <summary>Stores the canonical explicit inputs used to open this workspace.</summary>
     private readonly WorkspaceOpenRequest Request;
 
-    /// <summary>Stores the selected game adapter for all native operations.</summary>
+    /// <summary>Stores the selected game adapter for all engine operations.</summary>
     private readonly IFormListGameAdapter Adapter;
 
     /// <summary>Stores the recoverable output-set save coordinator.</summary>
     private readonly IWorkspaceSaveCoordinator SaveCoordinator;
 
-    /// <summary>Acquires exclusive output-directory leases for native open and recovery publication.</summary>
+    /// <summary>Acquires exclusive output-directory leases for engine open and recovery publication.</summary>
     private readonly IOutputDirectoryLeaseProvider OutputDirectoryLeaseProvider;
 
     /// <summary>Stores the structured diagnostic logger.</summary>
     private readonly ILogger Logger;
 
-    /// <summary>Serializes all native operations and asynchronous disposal.</summary>
+    /// <summary>Serializes all engine operations and asynchronous disposal.</summary>
     private readonly SemaphoreSlim OperationGate = new(1, 1);
 
     /// <summary>Protects synchronous revision reads from concurrent mutation publication.</summary>
@@ -38,17 +38,17 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
     /// <summary>Creates canonical Core-owned operation fingerprints.</summary>
     private readonly OperationFingerprintFactory FingerprintFactory = new();
 
-    /// <summary>Stores the immutable native source-set baseline established while opening.</summary>
+    /// <summary>Stores the immutable plugin source-set baseline established while opening.</summary>
     private readonly Guid SourceBaselineId;
 
-    /// <summary>Tracks the native target of each staged edit identifier.</summary>
-    private readonly Dictionary<Guid, NativeEditIdentity> Edits = new();
+    /// <summary>Tracks the engine target of each staged edit identifier.</summary>
+    private readonly Dictionary<Guid, RecordEditIdentity> Edits = new();
 
-    /// <summary>Owns the native source/load-order/string lifetime until disposal.</summary>
-    private INativeSourceSet? Sources;
+    /// <summary>Owns the plugin source/load-order/string lifetime until disposal.</summary>
+    private IPluginSourceSet? Sources;
 
-    /// <summary>Owns the current complete mutable native output state when selected.</summary>
-    private INativeOutputState? Output;
+    /// <summary>Owns the current complete mutable plugin output state when selected.</summary>
+    private IPluginOutputState? Output;
 
     /// <summary>Stores the selected canonical output association when present.</summary>
     private OutputAssociation? SelectedOutput;
@@ -56,7 +56,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
     /// <summary>Stores the complete selected output-set baseline when present.</summary>
     private OutputArtifactSetBaseline? SelectedOutputBaseline;
 
-    /// <summary>Stores the current exact native baseline composition and mutation sequence.</summary>
+    /// <summary>Stores the current exact engine baseline composition and mutation sequence.</summary>
     private WorkspaceRevision CurrentRevision;
 
     /// <summary>Stores the atomic output synchronization state published with save and recovery transitions.</summary>
@@ -68,11 +68,11 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
     private bool Disposed;
 
     /// <summary>
-    /// Initializes an independently owned workspace and transfers ownership of the opened native source handle.
+    /// Initializes an independently owned workspace and transfers ownership of the opened plugin source handle.
     /// </summary>
     /// <param name="request">The validated canonical open request.</param>
     /// <param name="adapter">The exact game and release adapter selected by the factory.</param>
-    /// <param name="sourceOpenResult">The acquired native sources and adapter-derived deterministic baseline.</param>
+    /// <param name="sourceOpenResult">The acquired plugin sources and adapter-derived deterministic baseline.</param>
     /// <param name="saveCoordinator">The recoverable multi-file save coordinator.</param>
     /// <param name="outputDirectoryLeaseProvider">The exclusive output-directory lease provider.</param>
     /// <param name="logger">The structured diagnostic logger.</param>
@@ -80,7 +80,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
     internal FormListWorkspace(
         WorkspaceOpenRequest request,
         IFormListGameAdapter adapter,
-        NativeSourceOpenResult sourceOpenResult,
+        PluginSourceOpenResult sourceOpenResult,
         IWorkspaceSaveCoordinator saveCoordinator,
         IOutputDirectoryLeaseProvider outputDirectoryLeaseProvider,
         ILogger logger,
@@ -258,7 +258,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
                 }
 
                 return Store(canonicalRequest.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
-                    new EngineError(EngineErrorCode.RepairRequired, "The selected output has an unresolved save journal that must be recovered before native opening."),
+                    new EngineError(EngineErrorCode.RepairRequired, "The selected output has an unresolved save journal that must be recovered before engine opening."),
                     WorkspaceId,
                     canonicalRequest.OperationId,
                     canonicalRequest.ExpectedRevision,
@@ -266,7 +266,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
                     admissionWarnings));
             }
 
-            EngineResult<NativeOutputOpenResult> openResult;
+            EngineResult<PluginOutputOpenResult> openResult;
             try
             {
                 openResult = await Task.Run(
@@ -279,9 +279,9 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
             }
             catch (Exception exception)
             {
-                Logger.Error(exception, "Failed to open native output for workspace {WorkspaceId} and operation {OperationId}", WorkspaceId, canonicalRequest.OperationId);
+                Logger.Error(exception, "Failed to open plugin output for workspace {WorkspaceId} and operation {OperationId}", WorkspaceId, canonicalRequest.OperationId);
                 return Store(canonicalRequest.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
-                    new EngineError(EngineErrorCode.OutputOpenFailed, "The selected native output could not be opened."),
+                    new EngineError(EngineErrorCode.OutputOpenFailed, "The selected plugin output could not be opened."),
                     WorkspaceId,
                     canonicalRequest.OperationId,
                     canonicalRequest.ExpectedRevision,
@@ -292,7 +292,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
             if (!openResult.Succeeded || openResult.Value is null)
             {
                 return Store(canonicalRequest.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
-                    openResult.Error ?? new EngineError(EngineErrorCode.OutputOpenFailed, "The selected native output could not be opened."),
+                    openResult.Error ?? new EngineError(EngineErrorCode.OutputOpenFailed, "The selected plugin output could not be opened."),
                     WorkspaceId,
                     canonicalRequest.OperationId,
                     canonicalRequest.ExpectedRevision,
@@ -461,47 +461,47 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
                 }
             }
 
-            INativeOutputState? candidate = null;
+            IPluginOutputState? candidate = null;
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 candidate = await Task.Run(() => Adapter.CloneOutput(Output, cancellationToken)).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
-                var nativeResult = await Task.Run(
+                var adapterResult = await Task.Run(
                     () => Adapter.BeginEdit(Sources!, candidate, request, cancellationToken))
                     .ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
-                if (!nativeResult.Succeeded || nativeResult.Value is null)
+                if (!adapterResult.Succeeded || adapterResult.Value is null)
                 {
                     await candidate.DisposeAsync().ConfigureAwait(false);
                     candidate = null;
                     return Store(request.OperationId, fingerprint, EngineResult<EditReceipt>.Failure(
-                        nativeResult.Error ?? new EngineError(EngineErrorCode.ValidationFailed, "The native adapter rejected the begin-edit request."),
+                        adapterResult.Error ?? new EngineError(EngineErrorCode.ValidationFailed, "The engine adapter rejected the begin-edit request."),
                         WorkspaceId,
                         request.OperationId,
                         request.ExpectedRevision,
                         CurrentRevision,
-                        nativeResult.Warnings));
+                        adapterResult.Warnings));
                 }
 
-                if (Edits.ContainsKey(nativeResult.Value.EditId))
+                if (Edits.ContainsKey(adapterResult.Value.EditId))
                 {
                     await candidate.DisposeAsync().ConfigureAwait(false);
                     candidate = null;
                     return Store(request.OperationId, fingerprint, EngineResult<EditReceipt>.Failure(
-                        new EngineError(EngineErrorCode.ValidationFailed, "The native adapter returned a duplicate staged edit identifier."),
+                        new EngineError(EngineErrorCode.ValidationFailed, "The engine adapter returned a duplicate staged edit identifier."),
                         WorkspaceId,
                         request.OperationId,
                         request.ExpectedRevision,
                         CurrentRevision));
                 }
 
-                if (Edits.Values.Any(edit => edit.FormKey == nativeResult.Value.FormKey))
+                if (Edits.Values.Any(edit => edit.FormKey == adapterResult.Value.FormKey))
                 {
                     await candidate.DisposeAsync().ConfigureAwait(false);
                     candidate = null;
                     return Store(request.OperationId, fingerprint, EngineResult<EditReceipt>.Failure(
-                        new EngineError(EngineErrorCode.ValidationFailed, "The native FormList already has a staged edit session in this workspace."),
+                        new EngineError(EngineErrorCode.ValidationFailed, "The FormList already has a staged edit session in this workspace."),
                         WorkspaceId,
                         request.OperationId,
                         request.ExpectedRevision,
@@ -513,12 +513,12 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
                 var resultRevision = baseRevision.Next();
                 var disposalWarnings = await PublishCandidateAsync(candidate, resultRevision).ConfigureAwait(false);
                 candidate = null;
-                Edits.Add(nativeResult.Value.EditId, nativeResult.Value);
+                Edits.Add(adapterResult.Value.EditId, adapterResult.Value);
                 var receipt = new EditReceipt(
-                    nativeResult.Value.EditId,
-                    nativeResult.Value.FormKey,
-                    nativeResult.Value.OriginFormKey,
-                    nativeResult.Value.Role,
+                    adapterResult.Value.EditId,
+                    adapterResult.Value.FormKey,
+                    adapterResult.Value.OriginFormKey,
+                    adapterResult.Value.Role,
                     resultRevision);
                 return Store(request.OperationId, fingerprint, EngineResult<EditReceipt>.Success(
                     receipt,
@@ -526,7 +526,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
                     request.OperationId,
                     baseRevision,
                     resultRevision,
-                    CombineWarnings(nativeResult.Warnings, disposalWarnings)));
+                    CombineWarnings(adapterResult.Warnings, disposalWarnings)));
             }
             catch (OperationCanceledException exception)
             {
@@ -544,7 +544,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
                     await DisposeCandidateAfterFailureAsync(candidate, exception).ConfigureAwait(false);
                 }
 
-                Logger.Error(exception, "Failed to begin native FormList edit in workspace {WorkspaceId} for operation {OperationId}", WorkspaceId, request.OperationId);
+                Logger.Error(exception, "Failed to begin FormList edit in workspace {WorkspaceId} for operation {OperationId}", WorkspaceId, request.OperationId);
                 return Store(request.OperationId, fingerprint, EngineResult<EditReceipt>.Failure(
                     new EngineError(EngineErrorCode.UnexpectedFailure, "The FormList edit could not be started."),
                     WorkspaceId,
@@ -573,9 +573,9 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
         }
         catch (Exception exception)
         {
-            Logger.Error(exception, "Failed to snapshot native FormList command {CommandName} for workspace {WorkspaceId} and operation {OperationId}", request.Edit.CommandName, WorkspaceId, request.OperationId);
+            Logger.Error(exception, "Failed to snapshot FormList command {CommandName} for workspace {WorkspaceId} and operation {OperationId}", request.Edit.CommandName, WorkspaceId, request.OperationId);
             return EngineResult<OperationReceipt>.Failure(
-                new EngineError(EngineErrorCode.UnexpectedFailure, "The native edit payload could not be defensively prepared."),
+                new EngineError(EngineErrorCode.UnexpectedFailure, "The record edit payload could not be defensively prepared."),
                 WorkspaceId,
                 request.OperationId,
                 request.ExpectedRevision,
@@ -647,26 +647,26 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
                     CurrentRevision));
             }
 
-            INativeOutputState? candidate = null;
+            IPluginOutputState? candidate = null;
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 candidate = await Task.Run(() => Adapter.CloneOutput(Output, cancellationToken)).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
-                var nativeResult = await Task.Run(
+                var adapterResult = await Task.Run(
                     () => Adapter.ApplyEdit(Sources!, candidate, editIdentity.FormKey, preparedEdit))
                     .ConfigureAwait(false);
-                if (!nativeResult.Succeeded)
+                if (!adapterResult.Succeeded)
                 {
                     await candidate.DisposeAsync().ConfigureAwait(false);
                     candidate = null;
                     return Store(request.OperationId, fingerprint, EngineResult<OperationReceipt>.Failure(
-                        nativeResult.Error ?? new EngineError(EngineErrorCode.ValidationFailed, "The native adapter rejected the typed FormList edit."),
+                        adapterResult.Error ?? new EngineError(EngineErrorCode.ValidationFailed, "The engine adapter rejected the typed FormList edit."),
                         WorkspaceId,
                         request.OperationId,
                         request.ExpectedRevision,
                         CurrentRevision,
-                        nativeResult.Warnings));
+                        adapterResult.Warnings));
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
@@ -681,7 +681,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
                     request.OperationId,
                     baseRevision,
                     resultRevision,
-                    CombineWarnings(nativeResult.Warnings, disposalWarnings)));
+                    CombineWarnings(adapterResult.Warnings, disposalWarnings)));
             }
             catch (OperationCanceledException exception)
             {
@@ -699,7 +699,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
                     await DisposeCandidateAfterFailureAsync(candidate, exception).ConfigureAwait(false);
                 }
 
-                Logger.Error(exception, "Failed to apply native FormList edit in workspace {WorkspaceId} for operation {OperationId}", WorkspaceId, request.OperationId);
+                Logger.Error(exception, "Failed to apply FormList edit in workspace {WorkspaceId} for operation {OperationId}", WorkspaceId, request.OperationId);
                 return Store(request.OperationId, fingerprint, EngineResult<OperationReceipt>.Failure(
                     new EngineError(EngineErrorCode.UnexpectedFailure, "The typed FormList edit could not be applied."),
                     WorkspaceId,
@@ -867,7 +867,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
         }
         catch (Exception exception)
         {
-            Logger.Error(exception, "Failed to discard staged native output in workspace {WorkspaceId} for operation {OperationId}", WorkspaceId, request.OperationId);
+            Logger.Error(exception, "Failed to discard staged plugin output in workspace {WorkspaceId} for operation {OperationId}", WorkspaceId, request.OperationId);
             return StoreFinalization(request.OperationId, fingerprint, EngineResult<OperationReceipt>.Failure(
                 new EngineError(EngineErrorCode.UnexpectedFailure, "Staged output changes could not be discarded."),
                 WorkspaceId,
@@ -911,7 +911,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
                 catch (Exception exception)
                 {
                     failures = [exception];
-                    Logger.Error(exception, "Failed to dispose native output for workspace {WorkspaceId}", WorkspaceId);
+                    Logger.Error(exception, "Failed to dispose plugin output for workspace {WorkspaceId}", WorkspaceId);
                 }
             }
 
@@ -925,11 +925,11 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
                 {
                     failures ??= [];
                     failures.Add(exception);
-                    Logger.Error(exception, "Failed to dispose native sources for workspace {WorkspaceId}", WorkspaceId);
+                    Logger.Error(exception, "Failed to dispose plugin sources for workspace {WorkspaceId}", WorkspaceId);
                 }
             }
 
-            Logger.Debug("Disposed native FormList workspace {WorkspaceId}", WorkspaceId);
+            Logger.Debug("Disposed FormList workspace {WorkspaceId}", WorkspaceId);
             if (failures is { Count: 1 })
             {
                 throw failures[0];
@@ -937,7 +937,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
 
             if (failures is { Count: > 1 })
             {
-                throw new AggregateException("Multiple native workspace resources failed to dispose.", failures);
+                throw new AggregateException("Multiple workspace resources failed to dispose.", failures);
             }
         }
         finally

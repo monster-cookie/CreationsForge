@@ -18,8 +18,8 @@ public sealed class FormListWorkspaceAllocationTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var output = CreateAsyncDisposableMock<INativeOutputState>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var output = CreateAsyncDisposableMock<IPluginOutputState>();
             var adapter = CreateAdapter(directory, source.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter);
             var association = CreateOutputAssociation(directory);
@@ -28,8 +28,8 @@ public sealed class FormListWorkspaceAllocationTests
                     source.Object,
                     It.IsAny<SelectOutputRequest>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(ValueTask.FromResult(EngineResult<NativeOutputOpenResult>.Success(
-                    new NativeOutputOpenResult(output.Object, association, baseline))));
+                .Returns(ValueTask.FromResult(EngineResult<PluginOutputOpenResult>.Success(
+                    new PluginOutputOpenResult(output.Object, association, baseline))));
             var operationId = Guid.NewGuid();
             var revision = workspace.Revision;
             var createRequest = new SelectOutputRequest(
@@ -62,23 +62,23 @@ public sealed class FormListWorkspaceAllocationTests
         }
     }
 
-    /// <summary>Verifies override selectors ignore native filename casing while retaining every semantic identity field.</summary>
+    /// <summary>Verifies override selectors ignore plugin filename casing while retaining every semantic identity field.</summary>
     [Fact]
     public async Task BeginEditAsync_WhenOriginSelectorChanges_DistinguishesSemanticChangesFromCasing()
     {
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var initialOutput = CreateAsyncDisposableMock<INativeOutputState>();
-            var candidate = CreateAsyncDisposableMock<INativeOutputState>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var initialOutput = CreateAsyncDisposableMock<IPluginOutputState>();
+            var candidate = CreateAsyncDisposableMock<IPluginOutputState>();
             var adapter = CreateAdapter(directory, source.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter);
             await SelectOutputAsync(directory, workspace, adapter, initialOutput.Object);
             var origin = CreateFormKey("Source.esp", 0x800);
             var editId = Guid.NewGuid();
             adapter.Setup(candidateAdapter => candidateAdapter.CloneOutput(
-                    It.IsAny<INativeOutputState>(),
+                    It.IsAny<IPluginOutputState>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(candidate.Object);
             adapter.Setup(candidateAdapter => candidateAdapter.BeginEdit(
@@ -86,8 +86,8 @@ public sealed class FormListWorkspaceAllocationTests
                     candidate.Object,
                     It.IsAny<BeginEditRequest>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(EngineResult<NativeEditIdentity>.Success(
-                    new NativeEditIdentity(editId, origin, origin, FormListEditRole.Override)));
+                .Returns(EngineResult<RecordEditIdentity>.Success(
+                    new RecordEditIdentity(editId, origin, origin, FormListEditRole.Override)));
             var operationId = Guid.NewGuid();
             var revision = workspace.Revision;
             var sourceSelection = new ReferenceRequest(origin, RecordScope.Source, origin.ModKey);
@@ -146,23 +146,23 @@ public sealed class FormListWorkspaceAllocationTests
         }
     }
 
-    /// <summary>Verifies an output-owned target ignores native filename casing and reuses its existing staged edit session without another mutation.</summary>
+    /// <summary>Verifies an output-owned target ignores plugin filename casing and reuses its existing staged edit session without another mutation.</summary>
     [Fact]
     public async Task BeginEditAsync_WhenExistingOutputTargetAlreadyStaged_ReusesSession()
     {
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var initialOutput = CreateAsyncDisposableMock<INativeOutputState>();
-            var candidate = CreateAsyncDisposableMock<INativeOutputState>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var initialOutput = CreateAsyncDisposableMock<IPluginOutputState>();
+            var candidate = CreateAsyncDisposableMock<IPluginOutputState>();
             var adapter = CreateAdapter(directory, source.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter);
             await SelectOutputAsync(directory, workspace, adapter, initialOutput.Object);
             var target = CreateFormKey("Output.esp", 0x800);
             var editId = Guid.NewGuid();
             adapter.Setup(candidateAdapter => candidateAdapter.CloneOutput(
-                    It.IsAny<INativeOutputState>(),
+                    It.IsAny<IPluginOutputState>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(candidate.Object);
             adapter.Setup(candidateAdapter => candidateAdapter.BeginEdit(
@@ -170,8 +170,8 @@ public sealed class FormListWorkspaceAllocationTests
                     candidate.Object,
                     It.IsAny<BeginEditRequest>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(EngineResult<NativeEditIdentity>.Success(
-                    new NativeEditIdentity(editId, target, null, FormListEditRole.ExistingOutput)));
+                .Returns(EngineResult<RecordEditIdentity>.Success(
+                    new RecordEditIdentity(editId, target, null, FormListEditRole.ExistingOutput)));
             var operationId = Guid.NewGuid();
             var revision = workspace.Revision;
             var firstRequest = new BeginEditRequest(
@@ -210,11 +210,11 @@ public sealed class FormListWorkspaceAllocationTests
             reuse.Value.Revision.ShouldBe(revisionAfterFirst);
             workspace.Revision.ShouldBe(revisionAfterFirst);
             adapter.Verify(candidateAdapter => candidateAdapter.CloneOutput(
-                It.IsAny<INativeOutputState>(),
+                It.IsAny<IPluginOutputState>(),
                 It.IsAny<CancellationToken>()), Times.Once);
             adapter.Verify(candidateAdapter => candidateAdapter.BeginEdit(
-                It.IsAny<INativeSourceSet>(),
-                It.IsAny<INativeOutputState>(),
+                It.IsAny<IPluginSourceSet>(),
+                It.IsAny<IPluginOutputState>(),
                 It.IsAny<BeginEditRequest>(),
                 It.IsAny<CancellationToken>()), Times.Once);
 
@@ -226,22 +226,22 @@ public sealed class FormListWorkspaceAllocationTests
         }
     }
 
-    /// <summary>Verifies cancellation observed after native candidate copying disposes the unpublished copy before allocation.</summary>
+    /// <summary>Verifies cancellation observed after plugin candidate copying disposes the unpublished copy before allocation.</summary>
     [Fact]
     public async Task BeginEditAsync_WhenCanceledAfterClone_DisposesCandidateWithoutAllocation()
     {
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var initialOutput = CreateAsyncDisposableMock<INativeOutputState>();
-            var candidate = CreateAsyncDisposableMock<INativeOutputState>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var initialOutput = CreateAsyncDisposableMock<IPluginOutputState>();
+            var candidate = CreateAsyncDisposableMock<IPluginOutputState>();
             var adapter = CreateAdapter(directory, source.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter);
             await SelectOutputAsync(directory, workspace, adapter, initialOutput.Object);
             using var cancellationSource = new CancellationTokenSource();
             adapter.Setup(candidateAdapter => candidateAdapter.CloneOutput(
-                    It.IsAny<INativeOutputState>(),
+                    It.IsAny<IPluginOutputState>(),
                     cancellationSource.Token))
                 .Returns(() =>
                 {
@@ -258,8 +258,8 @@ public sealed class FormListWorkspaceAllocationTests
             workspace.Revision.ShouldBe(revision);
             candidate.Verify(value => value.DisposeAsync(), Times.Once);
             adapter.Verify(candidateAdapter => candidateAdapter.BeginEdit(
-                It.IsAny<INativeSourceSet>(),
-                It.IsAny<INativeOutputState>(),
+                It.IsAny<IPluginSourceSet>(),
+                It.IsAny<IPluginOutputState>(),
                 It.IsAny<BeginEditRequest>(),
                 It.IsAny<CancellationToken>()), Times.Never);
 
@@ -271,23 +271,23 @@ public sealed class FormListWorkspaceAllocationTests
         }
     }
 
-    /// <summary>Verifies cancellation observed after native allocation disposes the unpublished candidate without publishing identity or revision.</summary>
+    /// <summary>Verifies cancellation observed after plugin allocation disposes the unpublished candidate without publishing identity or revision.</summary>
     [Fact]
     public async Task BeginEditAsync_WhenCanceledAfterAllocation_DisposesCandidateWithoutPublication()
     {
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var initialOutput = CreateAsyncDisposableMock<INativeOutputState>();
-            var candidate = CreateAsyncDisposableMock<INativeOutputState>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var initialOutput = CreateAsyncDisposableMock<IPluginOutputState>();
+            var candidate = CreateAsyncDisposableMock<IPluginOutputState>();
             var adapter = CreateAdapter(directory, source.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter);
             await SelectOutputAsync(directory, workspace, adapter, initialOutput.Object);
             using var cancellationSource = new CancellationTokenSource();
             var target = CreateFormKey("Output.esp", 0x800);
             adapter.Setup(candidateAdapter => candidateAdapter.CloneOutput(
-                    It.IsAny<INativeOutputState>(),
+                    It.IsAny<IPluginOutputState>(),
                     cancellationSource.Token))
                 .Returns(candidate.Object);
             adapter.Setup(candidateAdapter => candidateAdapter.BeginEdit(
@@ -298,8 +298,8 @@ public sealed class FormListWorkspaceAllocationTests
                 .Returns(() =>
                 {
                     cancellationSource.Cancel();
-                    return EngineResult<NativeEditIdentity>.Success(
-                        new NativeEditIdentity(Guid.NewGuid(), target, null, FormListEditRole.New));
+                    return EngineResult<RecordEditIdentity>.Success(
+                        new RecordEditIdentity(Guid.NewGuid(), target, null, FormListEditRole.New));
                 });
             var revision = workspace.Revision;
 
@@ -319,7 +319,7 @@ public sealed class FormListWorkspaceAllocationTests
         }
     }
 
-    /// <summary>Creates and opens a workspace through the production factory with synthetic native state.</summary>
+    /// <summary>Creates and opens a workspace through the production factory with synthetic plugin state.</summary>
     /// <param name="directory">The temporary workspace root.</param>
     /// <param name="adapter">The synthetic game adapter.</param>
     /// <returns>The successfully opened workspace.</returns>
@@ -343,22 +343,22 @@ public sealed class FormListWorkspaceAllocationTests
     /// <param name="directory">The temporary workspace root.</param>
     /// <param name="workspace">The workspace receiving output state.</param>
     /// <param name="adapter">The synthetic game adapter.</param>
-    /// <param name="output">The native output state to publish.</param>
+    /// <param name="output">The plugin output state to publish.</param>
     /// <returns>The successful selection result.</returns>
     private static async Task<EngineResult<OutputSelectionReceipt>> SelectOutputAsync(
         DirectoryInfo directory,
         IFormListWorkspace workspace,
         Mock<IFormListGameAdapter> adapter,
-        INativeOutputState output)
+        IPluginOutputState output)
     {
         var association = CreateOutputAssociation(directory);
         var baseline = CreateBaseline(association.PluginPath);
         adapter.Setup(candidate => candidate.OpenOutputAsync(
-                It.IsAny<INativeSourceSet>(),
+                It.IsAny<IPluginSourceSet>(),
                 It.IsAny<SelectOutputRequest>(),
                 It.IsAny<CancellationToken>()))
-            .Returns(ValueTask.FromResult(EngineResult<NativeOutputOpenResult>.Success(
-                new NativeOutputOpenResult(output, association, baseline))));
+            .Returns(ValueTask.FromResult(EngineResult<PluginOutputOpenResult>.Success(
+                new PluginOutputOpenResult(output, association, baseline))));
         var result = await workspace.SelectOutputAsync(new SelectOutputRequest(
             Guid.NewGuid(),
             workspace.Revision,
@@ -370,9 +370,9 @@ public sealed class FormListWorkspaceAllocationTests
 
     /// <summary>Creates a loose game adapter with successful explicit source opening.</summary>
     /// <param name="directory">The temporary workspace root.</param>
-    /// <param name="sources">The synthetic native source handle.</param>
+    /// <param name="sources">The synthetic plugin source handle.</param>
     /// <returns>The configured adapter mock.</returns>
-    private static Mock<IFormListGameAdapter> CreateAdapter(DirectoryInfo directory, INativeSourceSet sources)
+    private static Mock<IFormListGameAdapter> CreateAdapter(DirectoryInfo directory, IPluginSourceSet sources)
     {
         var baselineId = new Guid("6195dcd8-7cab-49ba-b25a-56af1a86a4e7");
         TestWorkspaceInfrastructure.ConfigureSourceBaseline(
@@ -385,18 +385,18 @@ public sealed class FormListWorkspaceAllocationTests
         adapter.Setup(candidate => candidate.OpenSourcesAsync(
                 It.IsAny<WorkspaceOpenRequest>(),
                 It.IsAny<CancellationToken>()))
-            .Returns(ValueTask.FromResult(EngineResult<NativeSourceOpenResult>.Success(
-                new NativeSourceOpenResult(
+            .Returns(ValueTask.FromResult(EngineResult<PluginSourceOpenResult>.Success(
+                new PluginSourceOpenResult(
                     sources,
                     baselineId,
                     new[]
                     {
-                        new NativeArtifactAssociation(
+                        new PluginArtifactAssociation(
                             Path.Combine(directory.FullName, "Data", "Source.esp"),
-                            NativeArtifactRole.Plugin,
+                            PluginArtifactRole.Plugin,
                             null,
-                            new NativeArtifactFingerprint(true, 0, new string('A', 64)),
-                            new NativeFileIdentity("test", "volume", "source", 1)),
+                            new PluginArtifactFingerprint(true, 0, new string('A', 64)),
+                            new ArtifactFileIdentity("test", "volume", "source", 1)),
                     }))));
         return adapter;
     }
@@ -443,25 +443,25 @@ public sealed class FormListWorkspaceAllocationTests
             Guid.NewGuid(),
             new[]
             {
-                new NativeArtifactAssociation(
+                new PluginArtifactAssociation(
                     path,
-                    NativeArtifactRole.Plugin,
+                    PluginArtifactRole.Plugin,
                     null,
-                    new NativeArtifactFingerprint(false, 0, null)),
+                    new PluginArtifactFingerprint(false, 0, null)),
             });
     }
 
-    /// <summary>Creates a native FormKey for a synthetic plugin.</summary>
-    /// <param name="pluginFileName">The native plugin name.</param>
-    /// <param name="id">The native local record identifier.</param>
-    /// <returns>The native FormKey.</returns>
+    /// <summary>Creates a plugin FormKey for a synthetic plugin.</summary>
+    /// <param name="pluginFileName">The plugin name.</param>
+    /// <param name="id">The plugin local record identifier.</param>
+    /// <returns>The plugin FormKey.</returns>
     private static FormKey CreateFormKey(string pluginFileName, uint id)
     {
         return new FormKey(ModKey.FromNameAndExtension(pluginFileName), id);
     }
 
-    /// <summary>Creates an independently verifiable asynchronous native lifetime mock.</summary>
-    /// <typeparam name="T">The native handle contract.</typeparam>
+    /// <summary>Creates an independently verifiable asynchronous plugin lifetime mock.</summary>
+    /// <typeparam name="T">The plugin handle contract.</typeparam>
     /// <returns>The configured disposable handle mock.</returns>
     private static Mock<T> CreateAsyncDisposableMock<T>()
         where T : class, IAsyncDisposable

@@ -49,10 +49,10 @@ public class ProcessTerminationDiagnosticsServiceTests
             var service = CreateService(tempDirectory.FullName);
             service.StartSession("UnitTest", "test.log");
 
-            service.UpdateHeartbeat("Native workspace save");
+            service.UpdateHeartbeat("Workspace save");
 
             using var document = ReadSession(tempDirectory.FullName);
-            document.RootElement.GetProperty("LastPhase").GetString().ShouldBe("Native workspace save");
+            document.RootElement.GetProperty("LastPhase").GetString().ShouldBe("Workspace save");
             document.RootElement.TryGetProperty("LastStatusText", out _).ShouldBeFalse();
             document.RootElement.TryGetProperty("LastDetailText", out _).ShouldBeFalse();
             document.RootElement.TryGetProperty("LastGame", out _).ShouldBeFalse();

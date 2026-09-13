@@ -5,7 +5,7 @@ using ModelContextProtocol.Server;
 namespace CreationsForge.Mcp;
 
 /// <summary>
-/// Closes one registry-owned workspace and awaits its native disposal.
+/// Closes one registry-owned workspace and awaits its engine disposal.
 /// </summary>
 public sealed class WorkspaceCloseTool : McpToolBase
 {
@@ -27,7 +27,7 @@ public sealed class WorkspaceCloseTool : McpToolBase
     private readonly McpWorkspaceRegistry WorkspaceRegistry;
 
     /// <summary>Initializes the workspace-close tool.</summary>
-    /// <param name="workspaceRegistry">The registry that owns active native workspaces.</param>
+    /// <param name="workspaceRegistry">The registry that owns active workspaces.</param>
     public WorkspaceCloseTool(McpWorkspaceRegistry workspaceRegistry)
     {
         ArgumentNullException.ThrowIfNull(workspaceRegistry);
@@ -39,7 +39,7 @@ public sealed class WorkspaceCloseTool : McpToolBase
     {
         Name = "creationsforge_workspace_close",
         Title = "Close a CreationsForge workspace",
-        Description = "Stops new operations for one workspace, waits for active work, and releases its native resources.",
+        Description = "Stops new operations for one workspace, waits for active work, and releases its engine resources.",
         InputSchema = InputSchema,
         OutputSchema = OutputSchema,
         Annotations = new ToolAnnotations

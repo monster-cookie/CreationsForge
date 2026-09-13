@@ -1,6 +1,6 @@
 using ModelContextProtocol.Server;
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeWire;
+using CreationsForge.Core.Engine.RecordWire;
 
 namespace CreationsForge.Mcp;
 
@@ -12,7 +12,7 @@ public sealed class McpToolCatalog
     /// <summary>Creates tools bound to the supplied host-owned state.</summary>
     /// <param name="workspaceRegistry">The registry shared by lifecycle-aware tools.</param>
     /// <param name="serverVersion">The server informational version reported by discovery tools.</param>
-    /// <param name="workspaceFactory">The actual engine factory that enables native domain tools, or <see langword="null"/> when production adapters are not composed.</param>
+    /// <param name="workspaceFactory">The actual engine factory that enables engine domain tools, or <see langword="null"/> when production adapters are not composed.</param>
     /// <returns>An immutable tool list suitable for <c>WithTools</c> registration.</returns>
     public IReadOnlyList<McpServerTool> CreateTools(
         McpWorkspaceRegistry workspaceRegistry,
@@ -43,7 +43,7 @@ public sealed class McpToolCatalog
     /// <summary>Creates the complete production tool catalog when every authoring dependency is composed.</summary>
     /// <param name="workspaceRegistry">The registry shared by lifecycle-aware tools.</param>
     /// <param name="serverVersion">The server informational version.</param>
-    /// <param name="workspaceFactory">The complete native workspace factory.</param>
+    /// <param name="workspaceFactory">The complete workspace factory.</param>
     /// <param name="saveCoordinator">The guarded save and recovery coordinator.</param>
     /// <param name="codecs">The exact per-game typed edit codecs.</param>
     /// <param name="schemaCatalogs">The exact immutable per-game schema catalogs.</param>

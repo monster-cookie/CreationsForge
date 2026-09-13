@@ -20,33 +20,33 @@ public sealed class FormListWorkspaceInspectionTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var inspector = new Mock<IFormListNativeInspector>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var inspector = new Mock<IFormListInspector>();
             var adapter = CreateAdapter(directory, source.Object, inspector.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter);
             var formKey = CreateFormKey("Source.esp", 0x800);
             var record = CreateRecord(formKey, "DetachedView");
             var request = new ReferenceRequest(formKey, RecordScope.Source, formKey.ModKey);
             var context = CreateContext(directory, request, ReferenceResolutionStatus.Resolved, PluginRole.Source, 1);
-            var warning = new EngineWarning("missing-native-reference", "Synthetic missing native reference.");
+            var warning = new EngineWarning("missing-plugin-reference", "Synthetic missing reference.");
             adapter.Setup(candidate => candidate.ReadFormListContext(
                     source.Object,
                     null,
                     request,
                     It.IsAny<CancellationToken>()))
-                .Returns(EngineResult<NativeRecordRead>.Success(
-                    new NativeRecordRead(context, "FormList", record.Object),
+                .Returns(EngineResult<RecordRead>.Success(
+                    new RecordRead(context, "FormList", record.Object),
                     warnings: new[] { warning }));
             inspector.Setup(candidate => candidate.WriteReadView(
                     record.Object,
                     It.IsAny<Utf8JsonWriter>(),
                     It.IsAny<CancellationToken>()))
-                .Callback<IMajorRecordGetter, Utf8JsonWriter, CancellationToken>((nativeRecord, writer, cancellationToken) =>
+                .Callback<IMajorRecordGetter, Utf8JsonWriter, CancellationToken>((record, writer, cancellationToken) =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     writer.WriteStartObject();
-                    writer.WriteString("formKey", nativeRecord.FormKey.ToString());
-                    writer.WriteString("editorId", nativeRecord.EditorID);
+                    writer.WriteString("formKey", record.FormKey.ToString());
+                    writer.WriteString("editorId", record.EditorID);
                     writer.WriteEndObject();
                 });
 
@@ -76,8 +76,8 @@ public sealed class FormListWorkspaceInspectionTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var inspector = new Mock<IFormListNativeInspector>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var inspector = new Mock<IFormListInspector>();
             var adapter = CreateAdapter(directory, source.Object, inspector.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter);
             var formKey = CreateFormKey("Source.esp", 0x800);
@@ -89,18 +89,18 @@ public sealed class FormListWorkspaceInspectionTests
                     null,
                     request,
                     It.IsAny<CancellationToken>()))
-                .Returns(EngineResult<NativeRecordRead>.Success(
-                    new NativeRecordRead(context, "FormList", record.Object)));
+                .Returns(EngineResult<RecordRead>.Success(
+                    new RecordRead(context, "FormList", record.Object)));
             inspector.Setup(candidate => candidate.WriteReadView(
                     record.Object,
                     It.IsAny<Utf8JsonWriter>(),
                     It.IsAny<CancellationToken>()))
-                .Callback<IMajorRecordGetter, Utf8JsonWriter, CancellationToken>((nativeRecord, writer, cancellationToken) =>
+                .Callback<IMajorRecordGetter, Utf8JsonWriter, CancellationToken>((record, writer, cancellationToken) =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     writer.WriteStartObject();
-                    writer.WriteString("editorId", nativeRecord.EditorID);
-                    writer.WriteBoolean("isDeleted", nativeRecord.IsDeleted);
+                    writer.WriteString("editorId", record.EditorID);
+                    writer.WriteBoolean("isDeleted", record.IsDeleted);
                     writer.WriteEndObject();
                 });
 
@@ -129,8 +129,8 @@ public sealed class FormListWorkspaceInspectionTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var inspector = new Mock<IFormListNativeInspector>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var inspector = new Mock<IFormListInspector>();
             var adapter = CreateAdapter(directory, source.Object, inspector.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter);
             var request = new ReferenceRequest(CreateFormKey("Source.esp", 0x800), RecordScope.AllContexts);
@@ -146,7 +146,7 @@ public sealed class FormListWorkspaceInspectionTests
                     null,
                     request,
                     It.IsAny<CancellationToken>()))
-                .Returns(EngineResult<NativeRecordRead>.Success(new NativeRecordRead(context, "FormList", null)));
+                .Returns(EngineResult<RecordRead>.Success(new RecordRead(context, "FormList", null)));
 
             var result = await workspace.ReadFormListViewAsync(request, TestContext.Current.CancellationToken);
 
@@ -173,8 +173,8 @@ public sealed class FormListWorkspaceInspectionTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var inspector = new Mock<IFormListNativeInspector>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var inspector = new Mock<IFormListInspector>();
             var adapter = CreateAdapter(directory, source.Object, inspector.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter);
             var formKey = CreateFormKey("Source.esp", 0x800);
@@ -191,18 +191,18 @@ public sealed class FormListWorkspaceInspectionTests
                 Path.Combine(directory.FullName, "Data", "Patch.esp"),
                 2,
                 PluginRole.LoadOrder);
-            var beforeWarning = new EngineWarning("missing-native-reference", "Synthetic prior missing reference.");
-            var afterWarning = new EngineWarning("missing-native-reference", "Synthetic resulting missing reference.");
+            var beforeWarning = new EngineWarning("missing-plugin-reference", "Synthetic prior missing reference.");
+            var afterWarning = new EngineWarning("missing-plugin-reference", "Synthetic resulting missing reference.");
             adapter.SetupSequence(candidate => candidate.ReadFormListContext(
                     source.Object,
                     null,
                     It.IsAny<ReferenceRequest>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(EngineResult<NativeRecordRead>.Success(
-                    new NativeRecordRead(beforeContext, "FormList", beforeRecord.Object),
+                .Returns(EngineResult<RecordRead>.Success(
+                    new RecordRead(beforeContext, "FormList", beforeRecord.Object),
                     warnings: new[] { beforeWarning }))
-                .Returns(EngineResult<NativeRecordRead>.Success(
-                    new NativeRecordRead(afterContext, "FormList", afterRecord.Object),
+                .Returns(EngineResult<RecordRead>.Success(
+                    new RecordRead(afterContext, "FormList", afterRecord.Object),
                     warnings: new[] { afterWarning }));
             inspector.Setup(candidate => candidate.Compare(
                     beforeRecord.Object,
@@ -216,12 +216,12 @@ public sealed class FormListWorkspaceInspectionTests
                     It.IsAny<IMajorRecordGetter>(),
                     It.IsAny<Utf8JsonWriter>(),
                     It.IsAny<CancellationToken>()))
-                .Callback<IMajorRecordGetter, Utf8JsonWriter, CancellationToken>((nativeRecord, writer, cancellationToken) =>
+                .Callback<IMajorRecordGetter, Utf8JsonWriter, CancellationToken>((record, writer, cancellationToken) =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     writer.WriteStartObject();
-                    writer.WriteString("editorId", nativeRecord.EditorID);
-                    writer.WriteBoolean("isDeleted", nativeRecord.IsDeleted);
+                    writer.WriteString("editorId", record.EditorID);
+                    writer.WriteBoolean("isDeleted", record.IsDeleted);
                     writer.WriteEndObject();
                 });
             var request = new CompareFormListRequest(beforeRequest, afterRequest);
@@ -271,8 +271,8 @@ public sealed class FormListWorkspaceInspectionTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var inspector = new Mock<IFormListNativeInspector>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var inspector = new Mock<IFormListInspector>();
             var adapter = CreateAdapter(directory, source.Object, inspector.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter);
             var formKey = CreateFormKey("Source.esp", 0x800);
@@ -283,8 +283,8 @@ public sealed class FormListWorkspaceInspectionTests
                     null,
                     It.IsAny<ReferenceRequest>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(EngineResult<NativeRecordRead>.Success(before))
-                .Returns(EngineResult<NativeRecordRead>.Success(after));
+                .Returns(EngineResult<RecordRead>.Success(before))
+                .Returns(EngineResult<RecordRead>.Success(after));
 
             var result = await workspace.CompareFormListAsync(
                 new CompareFormListRequest(before.Context.Selection, after.Context.Selection),
@@ -327,8 +327,8 @@ public sealed class FormListWorkspaceInspectionTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var source = CreateAsyncDisposableMock<INativeSourceSet>();
-            var inspector = new Mock<IFormListNativeInspector>();
+            var source = CreateAsyncDisposableMock<IPluginSourceSet>();
+            var inspector = new Mock<IFormListInspector>();
             var adapter = CreateAdapter(directory, source.Object, inspector.Object);
             var workspace = await OpenWorkspaceAsync(directory, adapter);
             var formKey = CreateFormKey("Source.esp", 0x800);
@@ -341,8 +341,8 @@ public sealed class FormListWorkspaceInspectionTests
                     null,
                     selection,
                     It.IsAny<CancellationToken>()))
-                .Returns(EngineResult<NativeRecordRead>.Success(new NativeRecordRead(context, "FormList", beforeRecord.Object)))
-                .Returns(EngineResult<NativeRecordRead>.Success(new NativeRecordRead(context, "FormList", afterRecord.Object)));
+                .Returns(EngineResult<RecordRead>.Success(new RecordRead(context, "FormList", beforeRecord.Object)))
+                .Returns(EngineResult<RecordRead>.Success(new RecordRead(context, "FormList", afterRecord.Object)));
             using var cancellationSource = new CancellationTokenSource();
             inspector.Setup(candidate => candidate.Compare(
                     beforeRecord.Object,
@@ -375,10 +375,10 @@ public sealed class FormListWorkspaceInspectionTests
         }
     }
 
-    /// <summary>Creates and opens a workspace through the production factory with synthetic native state.</summary>
+    /// <summary>Creates and opens a workspace through the production factory with synthetic plugin state.</summary>
     /// <param name="directory">The temporary workspace root.</param>
     /// <param name="adapter">The synthetic game adapter.</param>
-    /// <returns>The successfully opened native workspace.</returns>
+    /// <returns>The successfully opened workspace.</returns>
     private static async Task<IFormListWorkspace> OpenWorkspaceAsync(
         DirectoryInfo directory,
         Mock<IFormListGameAdapter> adapter)
@@ -418,13 +418,13 @@ public sealed class FormListWorkspaceInspectionTests
 
     /// <summary>Creates a loose adapter with successful explicit source opening and the supplied inspector.</summary>
     /// <param name="directory">The temporary workspace root.</param>
-    /// <param name="sources">The synthetic native source handle.</param>
+    /// <param name="sources">The synthetic plugin source handle.</param>
     /// <param name="inspector">The stateless typed record inspector.</param>
     /// <returns>The configured adapter mock.</returns>
     private static Mock<IFormListGameAdapter> CreateAdapter(
         DirectoryInfo directory,
-        INativeSourceSet sources,
-        IFormListNativeInspector inspector)
+        IPluginSourceSet sources,
+        IFormListInspector inspector)
     {
         var baselineId = new Guid("6195dcd8-7cab-49ba-b25a-56af1a86a4e7");
         TestWorkspaceInfrastructure.ConfigureSourceBaseline(
@@ -438,25 +438,25 @@ public sealed class FormListWorkspaceInspectionTests
         adapter.Setup(candidate => candidate.OpenSourcesAsync(
                 It.IsAny<WorkspaceOpenRequest>(),
                 It.IsAny<CancellationToken>()))
-            .Returns(ValueTask.FromResult(EngineResult<NativeSourceOpenResult>.Success(
-                new NativeSourceOpenResult(
+            .Returns(ValueTask.FromResult(EngineResult<PluginSourceOpenResult>.Success(
+                new PluginSourceOpenResult(
                     sources,
                     baselineId,
                     new[]
                     {
-                        new NativeArtifactAssociation(
+                        new PluginArtifactAssociation(
                             Path.Combine(directory.FullName, "Data", "Source.esp"),
-                            NativeArtifactRole.Plugin,
+                            PluginArtifactRole.Plugin,
                             null,
-                            new NativeArtifactFingerprint(true, 0, new string('A', 64)),
-                            new NativeFileIdentity("test", "volume", "source", 1)),
+                            new PluginArtifactFingerprint(true, 0, new string('A', 64)),
+                            new ArtifactFileIdentity("test", "volume", "source", 1)),
                     }))));
         return adapter;
     }
 
-    /// <summary>Creates one complete singular FormList context under the supplied native selection.</summary>
+    /// <summary>Creates one complete singular FormList context under the supplied plugin selection.</summary>
     /// <param name="directory">The temporary workspace root.</param>
-    /// <param name="request">The exact native context selection.</param>
+    /// <param name="request">The exact record context selection.</param>
     /// <param name="status">The selected context status.</param>
     /// <param name="role">The selected plugin's workspace role.</param>
     /// <param name="loadOrderIndex">The selected plugin's load-order position.</param>
@@ -479,11 +479,11 @@ public sealed class FormListWorkspaceInspectionTests
 
     /// <summary>Creates a valid detached contextual read for a requested synthetic resolution status.</summary>
     /// <param name="directory">The temporary workspace root.</param>
-    /// <param name="formKey">The native FormList identity.</param>
+    /// <param name="formKey">The FormList identity.</param>
     /// <param name="status">The synthetic context-selection outcome.</param>
     /// <param name="editorId">The EditorID used when the status requires a detached record.</param>
     /// <returns>A contextual read whose record presence and provenance match the supplied status.</returns>
-    private static NativeRecordRead CreateReadForStatus(
+    private static RecordRead CreateReadForStatus(
         DirectoryInfo directory,
         FormKey formKey,
         ReferenceResolutionStatus status,
@@ -503,12 +503,12 @@ public sealed class FormListWorkspaceInspectionTests
             ? CreateRecord(formKey, editorId, status == ReferenceResolutionStatus.Deleted).Object
             : null;
         var recordType = status == ReferenceResolutionStatus.UnknownFamily ? null : "FormList";
-        return new NativeRecordRead(context, recordType, record);
+        return new RecordRead(context, recordType, record);
     }
 
-    /// <summary>Creates a detached native record mock with stable identity and status.</summary>
-    /// <param name="formKey">The native record identity.</param>
-    /// <param name="editorId">The native EditorID.</param>
+    /// <summary>Creates a detached record mock with stable identity and status.</summary>
+    /// <param name="formKey">The record identity.</param>
+    /// <param name="editorId">The plugin EditorID.</param>
     /// <param name="isDeleted">Whether this exact context carries the deletion flag.</param>
     /// <returns>The configured detached getter mock.</returns>
     private static Mock<IMajorRecordGetter> CreateRecord(FormKey formKey, string editorId, bool isDeleted = false)
@@ -520,26 +520,26 @@ public sealed class FormListWorkspaceInspectionTests
         return record;
     }
 
-    /// <summary>Parses a native ModKey for synthetic tests.</summary>
+    /// <summary>Parses a plugin ModKey for synthetic tests.</summary>
     /// <param name="pluginFileName">The plugin file name.</param>
-    /// <returns>The parsed native ModKey.</returns>
+    /// <returns>The parsed plugin ModKey.</returns>
     private static ModKey CreateModKey(string pluginFileName)
     {
         ModKey.TryFromNameAndExtension(pluginFileName, out var modKey, out var error).ShouldBeTrue(error);
         return modKey;
     }
 
-    /// <summary>Creates a native FormKey for synthetic tests.</summary>
+    /// <summary>Creates a plugin FormKey for synthetic tests.</summary>
     /// <param name="pluginFileName">The origin plugin file name.</param>
-    /// <param name="id">The numeric native identity.</param>
-    /// <returns>The native FormKey.</returns>
+    /// <param name="id">The numeric record identity.</param>
+    /// <returns>The plugin FormKey.</returns>
     private static FormKey CreateFormKey(string pluginFileName, uint id)
     {
         return new FormKey(CreateModKey(pluginFileName), id);
     }
 
-    /// <summary>Creates an independently verifiable asynchronous native lifetime mock.</summary>
-    /// <typeparam name="T">The native handle contract.</typeparam>
+    /// <summary>Creates an independently verifiable asynchronous plugin lifetime mock.</summary>
+    /// <typeparam name="T">The plugin handle contract.</typeparam>
     /// <returns>The configured disposable handle mock.</returns>
     private static Mock<T> CreateAsyncDisposableMock<T>()
         where T : class, IAsyncDisposable

@@ -1,8 +1,8 @@
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
-using CreationsForge.Core.Engine.NativeOutputs;
-using CreationsForge.Starfield.Native;
-using CreationsForge.Starfield.Native.Edits;
+using CreationsForge.Core.Engine.PluginInputs;
+using CreationsForge.Core.Engine.PluginOutputs;
+using CreationsForge.Starfield.PluginAdapter;
+using CreationsForge.Starfield.PluginAdapter.Edits;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Binary.Parameters;
@@ -19,11 +19,11 @@ namespace CreationsForge.UnitTests.Engine.Starfield;
 public sealed class StarfieldFormListGameAdapterTests
 {
     /// <summary>Selected output participates in plugin enumeration, staged enumeration, and winning contextual reads.</summary>
-    /// <returns>A task that completes after generated native lifetimes are released.</returns>
+    /// <returns>A task that completes after generated plugin lifetimes are released.</returns>
     [Fact]
     public async Task AdapterReads_IncludeSelectedOutputWithoutMutatingArtifacts()
     {
-        using var fixture = StarfieldNativeTestFixture.Create();
+        using var fixture = StarfieldPluginTestFixture.Create();
         var sourceArtifacts = fixture.SnapshotArtifacts();
         var outputDirectory = fixture.RootDirectory.CreateSubdirectory("AdapterReads");
         FormKey outputFormKey = default;
@@ -85,11 +85,11 @@ public sealed class StarfieldFormListGameAdapterTests
     }
 
     /// <summary>An unchanged existing output returns the explicit zero-write result and leaves private staging empty.</summary>
-    /// <returns>A task that completes after generated native lifetimes are released.</returns>
+    /// <returns>A task that completes after generated plugin lifetimes are released.</returns>
     [Fact]
     public async Task WriteAndValidateAsync_UnchangedExistingOutput_PerformsZeroArtifactWrites()
     {
-        using var fixture = StarfieldNativeTestFixture.Create();
+        using var fixture = StarfieldPluginTestFixture.Create();
         var sourceArtifacts = fixture.SnapshotArtifacts();
         var outputDirectory = fixture.RootDirectory.CreateSubdirectory("UnchangedOutput");
         var outputPath = WriteOutput(
@@ -119,7 +119,7 @@ public sealed class StarfieldFormListGameAdapterTests
         result.Succeeded.ShouldBeTrue(result.Error?.Message);
         result.WorkspaceId.ShouldBe(sources.WorkspaceId);
         result.ResultRevision.ShouldBe(sources.Revision);
-        result.Value!.Disposition.ShouldBe(NativeWriteDisposition.Unchanged);
+        result.Value!.Disposition.ShouldBe(PluginWriteDisposition.Unchanged);
         result.Value.StagedOutput.ShouldBeNull();
         result.Value.ArtifactMappings.ShouldBeEmpty();
         stagingDirectory.EnumerateFileSystemInfos().ShouldBeEmpty();
@@ -128,11 +128,11 @@ public sealed class StarfieldFormListGameAdapterTests
     }
 
     /// <summary>An identical destination restored as another file identity rejects the stale baseline and stages the next edit with a fresh baseline.</summary>
-    /// <returns>A task that completes after every independently opened native lifetime is released.</returns>
+    /// <returns>A task that completes after every independently opened plugin lifetime is released.</returns>
     [Fact]
     public async Task WriteAndValidateAsync_RestoredIdenticalDestination_RequiresFreshExpectedBaseline()
     {
-        using var fixture = StarfieldNativeTestFixture.Create();
+        using var fixture = StarfieldPluginTestFixture.Create();
         var outputDirectory = fixture.RootDirectory.CreateSubdirectory("RestoredDestination");
         FormKey listKey = default;
         var outputPath = WriteOutput(
@@ -164,7 +164,7 @@ public sealed class StarfieldFormListGameAdapterTests
         var stale = await adapter.WriteAndValidateAsync(
             sources,
             output,
-            new NativeWriteRequest(staleStage.FullName, selected.Value.Association, selected.Value.Baseline),
+            new PluginWriteRequest(staleStage.FullName, selected.Value.Association, selected.Value.Baseline),
             TestContext.Current.CancellationToken);
         stale.Succeeded.ShouldBeFalse();
         stale.Error!.Code.ShouldBe(EngineErrorCode.ExternalChangeDetected);
@@ -179,7 +179,7 @@ public sealed class StarfieldFormListGameAdapterTests
         refreshed.Value.Baseline.BaselineId.ShouldNotBe(selected.Value.Baseline.BaselineId);
 
         await using var candidate = adapter.CloneOutput(output, TestContext.Current.CancellationToken);
-        var candidateState = candidate.ShouldBeOfType<StarfieldNativeOutputState>();
+        var candidateState = candidate.ShouldBeOfType<StarfieldPluginOutputState>();
         candidateState.Baseline.BaselineId.ShouldBe(selected.Value.Baseline.BaselineId);
         candidateState.Baseline.BaselineId.ShouldNotBe(refreshed.Value.Baseline.BaselineId);
         var begin = adapter.BeginEdit(
@@ -195,7 +195,7 @@ public sealed class StarfieldFormListGameAdapterTests
         Apply(adapter, sources, candidate, listKey, new SetEditorIdEdit("EditedAfterRestore"));
 
         var freshStage = fixture.RootDirectory.CreateSubdirectory("RestoredDestinationFreshStage");
-        var freshRequest = new NativeWriteRequest(
+        var freshRequest = new PluginWriteRequest(
             freshStage.FullName,
             selected.Value.Association,
             refreshed.Value.Baseline);
@@ -206,18 +206,18 @@ public sealed class StarfieldFormListGameAdapterTests
             freshRequest,
             TestContext.Current.CancellationToken);
         accepted.Succeeded.ShouldBeTrue(accepted.Error?.Message);
-        accepted.Value!.Disposition.ShouldBe(NativeWriteDisposition.StagedChanges);
-        accepted.Value.ArtifactMappings.Single(mapping => mapping.StagedArtifact.Role == NativeArtifactRole.Plugin)
+        accepted.Value!.Disposition.ShouldBe(PluginWriteDisposition.StagedChanges);
+        accepted.Value.ArtifactMappings.Single(mapping => mapping.StagedArtifact.Role == PluginArtifactRole.Plugin)
             .DestinationPath.ShouldBe(Path.GetFullPath(outputPath));
         await accepted.Value.StagedOutput!.DisposeAsync();
     }
 
     /// <summary>A changed embedded output stages preserved unrelated, duplicate, null, component, and conditional state.</summary>
-    /// <returns>A task that completes after selected and staged native lifetimes are released.</returns>
+    /// <returns>A task that completes after selected and staged plugin lifetimes are released.</returns>
     [Fact]
     public async Task WriteAndValidateAsync_ExistingOutput_PreservesCompleteUneditedState()
     {
-        using var fixture = StarfieldNativeTestFixture.Create();
+        using var fixture = StarfieldPluginTestFixture.Create();
         var sourceArtifacts = fixture.SnapshotArtifacts();
         var outputDirectory = fixture.RootDirectory.CreateSubdirectory("CompleteExisting");
         FormKey listKey = default;
@@ -299,9 +299,9 @@ public sealed class StarfieldFormListGameAdapterTests
             TestContext.Current.CancellationToken);
 
         result.Succeeded.ShouldBeTrue(result.Error?.Message);
-        result.Value!.Disposition.ShouldBe(NativeWriteDisposition.StagedChanges);
+        result.Value!.Disposition.ShouldBe(PluginWriteDisposition.StagedChanges);
         var pluginMapping = result.Value.ArtifactMappings.Single(
-            mapping => mapping.StagedArtifact.Role == NativeArtifactRole.Plugin);
+            mapping => mapping.StagedArtifact.Role == PluginArtifactRole.Plugin);
         pluginMapping.DestinationPath.ShouldBe(Path.GetFullPath(outputPath));
         var stagedOpen = await outputService.OpenAsync(
             sources,
@@ -312,7 +312,7 @@ public sealed class StarfieldFormListGameAdapterTests
                 CreateAssociation(pluginMapping.StagedArtifact.Path, OutputMasterStyle.Full, LocalizedOutputMode.Embedded)),
             TestContext.Current.CancellationToken);
         stagedOpen.Succeeded.ShouldBeTrue(stagedOpen.Error?.Message);
-        await using var stagedState = stagedOpen.Value!.Output.ShouldBeOfType<StarfieldNativeOutputState>();
+        await using var stagedState = stagedOpen.Value!.Output.ShouldBeOfType<StarfieldPluginOutputState>();
         var stagedMod = stagedState.CreateSnapshot(TestContext.Current.CancellationToken);
         stagedMod.ModHeader.Author.ShouldBe("Starfield staged writer test");
         stagedMod.Keywords.ShouldHaveSingleItem().FormKey.ShouldBe(keywordKey);
@@ -333,9 +333,9 @@ public sealed class StarfieldFormListGameAdapterTests
     }
 
     /// <summary>A new localized output retains master style, multilingual text, references, nulls, duplicates, and exact master order.</summary>
-    /// <param name="style">The full, small, or medium native master style to roundtrip.</param>
-    /// <param name="includeName">Whether the native writer has real translated entries or must retain an explicit empty table.</param>
-    /// <returns>A task that completes after selected and staged native lifetimes are released.</returns>
+    /// <param name="style">The full, small, or medium plugin master style to roundtrip.</param>
+    /// <param name="includeName">Whether the plugin writer has real translated entries or must retain an explicit empty table.</param>
+    /// <returns>A task that completes after selected and staged plugin lifetimes are released.</returns>
     [Theory]
     [InlineData(OutputMasterStyle.Full, true)]
     [InlineData(OutputMasterStyle.Small, true)]
@@ -343,7 +343,7 @@ public sealed class StarfieldFormListGameAdapterTests
     [InlineData(OutputMasterStyle.Full, false)]
     public async Task WriteAndValidateAsync_NewLocalizedOutput_PreservesAllStarfieldFields(OutputMasterStyle style, bool includeName)
     {
-        using var fixture = StarfieldNativeTestFixture.Create();
+        using var fixture = StarfieldPluginTestFixture.Create();
         var sourceArtifacts = fixture.SnapshotArtifacts();
         var outputDirectory = fixture.RootDirectory.CreateSubdirectory("LocalizedOutput");
         var association = CreateAssociation(
@@ -367,7 +367,7 @@ public sealed class StarfieldFormListGameAdapterTests
             TestContext.Current.CancellationToken);
         begin.Succeeded.ShouldBeTrue(begin.Error?.Message);
         begin.Value.ShouldNotBeNull();
-        ((StarfieldNativeOutputState)output).CreateSnapshot(TestContext.Current.CancellationToken)
+        ((StarfieldPluginOutputState)output).CreateSnapshot(TestContext.Current.CancellationToken)
             .IsMaster.ShouldBeTrue();
         if (includeName)
         {
@@ -404,9 +404,9 @@ public sealed class StarfieldFormListGameAdapterTests
             TestContext.Current.CancellationToken);
 
         result.Succeeded.ShouldBeTrue(result.Error?.Message);
-        result.Value!.Disposition.ShouldBe(NativeWriteDisposition.StagedChanges);
+        result.Value!.Disposition.ShouldBe(PluginWriteDisposition.StagedChanges);
         var presentSidecars = result.Value.ArtifactMappings
-            .Where(mapping => mapping.StagedArtifact.Role != NativeArtifactRole.Plugin
+            .Where(mapping => mapping.StagedArtifact.Role != PluginArtifactRole.Plugin
                 && mapping.StagedArtifact.Fingerprint.Exists)
             .ToArray();
         presentSidecars.Select(mapping => mapping.StagedArtifact.Language).ShouldContain(Language.English.ToString());
@@ -415,7 +415,7 @@ public sealed class StarfieldFormListGameAdapterTests
             presentSidecars.Select(mapping => mapping.StagedArtifact.Language).ShouldContain(Language.French.ToString());
         }
         var pluginMapping = result.Value.ArtifactMappings.Single(
-            mapping => mapping.StagedArtifact.Role == NativeArtifactRole.Plugin);
+            mapping => mapping.StagedArtifact.Role == PluginArtifactRole.Plugin);
         var stagedOpen = await outputService.OpenAsync(
             sources,
             new SelectOutputRequest(
@@ -428,7 +428,7 @@ public sealed class StarfieldFormListGameAdapterTests
                     LocalizedOutputMode.SeparateStringFiles)),
             TestContext.Current.CancellationToken);
         stagedOpen.Succeeded.ShouldBeTrue(stagedOpen.Error?.Message);
-        await using var stagedState = stagedOpen.Value!.Output.ShouldBeOfType<StarfieldNativeOutputState>();
+        await using var stagedState = stagedOpen.Value!.Output.ShouldBeOfType<StarfieldPluginOutputState>();
         var stagedMod = stagedState.CreateSnapshot(TestContext.Current.CancellationToken);
         stagedMod.IsSmallMaster.ShouldBe(style == OutputMasterStyle.Small);
         stagedMod.IsMediumMaster.ShouldBe(style == OutputMasterStyle.Medium);
@@ -444,7 +444,7 @@ public sealed class StarfieldFormListGameAdapterTests
         {
             stagedList.Name.ShouldBeNull();
             result.Value.ArtifactMappings
-                .Where(mapping => mapping.StagedArtifact.Role != NativeArtifactRole.Plugin
+                .Where(mapping => mapping.StagedArtifact.Role != PluginArtifactRole.Plugin
                     && mapping.StagedArtifact.Fingerprint.Exists)
                 .ShouldHaveSingleItem().StagedArtifact.Fingerprint.Length.ShouldBe(8L);
         }
@@ -459,12 +459,12 @@ public sealed class StarfieldFormListGameAdapterTests
         AssertArtifactsUnchanged(sourceArtifacts);
     }
 
-    /// <summary>An existing localized output retains its native master flag independently of its filename, permits no-op saves, and rejects material rewrites.</summary>
-    /// <returns>A task that completes after generated native lifetimes are released.</returns>
+    /// <summary>An existing localized output retains its plugin master flag independently of its filename, permits no-op saves, and rejects material rewrites.</summary>
+    /// <returns>A task that completes after generated plugin lifetimes are released.</returns>
     [Fact]
     public async Task WriteAndValidateAsync_ExistingLocalizedOutput_AllowsNoOpAndRejectsChange()
     {
-        using var fixture = StarfieldNativeTestFixture.Create();
+        using var fixture = StarfieldPluginTestFixture.Create();
         var outputDirectory = fixture.RootDirectory.CreateSubdirectory("ExistingLocalized");
         FormKey listKey = default;
         var outputPath = WriteOutput(
@@ -495,7 +495,7 @@ public sealed class StarfieldFormListGameAdapterTests
         open.Succeeded.ShouldBeTrue(open.Error?.Message);
         await using var output = open.Value!.Output;
         var destinationArtifacts = SnapshotExistingArtifacts(open.Value.Baseline);
-        ((StarfieldNativeOutputState)output).CreateSnapshot(TestContext.Current.CancellationToken)
+        ((StarfieldPluginOutputState)output).CreateSnapshot(TestContext.Current.CancellationToken)
             .IsMaster.ShouldBeFalse();
         var noOpDirectory = fixture.RootDirectory.CreateSubdirectory("ExistingLocalizedNoOp");
         var noOp = await adapter.WriteAndValidateAsync(
@@ -504,7 +504,7 @@ public sealed class StarfieldFormListGameAdapterTests
             CreateWriteRequest(noOpDirectory.FullName, open.Value),
             TestContext.Current.CancellationToken);
         noOp.Succeeded.ShouldBeTrue(noOp.Error?.Message);
-        noOp.Value!.Disposition.ShouldBe(NativeWriteDisposition.Unchanged);
+        noOp.Value!.Disposition.ShouldBe(PluginWriteDisposition.Unchanged);
         noOpDirectory.EnumerateFileSystemInfos().ShouldBeEmpty();
 
         await using var candidate = adapter.CloneOutput(output, TestContext.Current.CancellationToken);
@@ -532,12 +532,12 @@ public sealed class StarfieldFormListGameAdapterTests
         AssertArtifactsUnchanged(destinationArtifacts);
     }
 
-    /// <summary>Private staging must be empty, and pre-cancellation stops before any native artifact is created.</summary>
-    /// <returns>A task that completes after the generated native lifetimes are released.</returns>
+    /// <summary>Private staging must be empty, and pre-cancellation stops before any plugin artifact is created.</summary>
+    /// <returns>A task that completes after the generated plugin lifetimes are released.</returns>
     [Fact]
     public async Task WriteAndValidateAsync_ValidatesStagingAndHonorsCancellationBeforeWrite()
     {
-        using var fixture = StarfieldNativeTestFixture.Create();
+        using var fixture = StarfieldPluginTestFixture.Create();
         var outputDirectory = fixture.RootDirectory.CreateSubdirectory("StagingValidationOutput");
         var association = CreateAssociation(
             Path.Combine(outputDirectory.FullName, "StagingValidation.esp"),
@@ -581,12 +581,12 @@ public sealed class StarfieldFormListGameAdapterTests
     /// <summary>Creates the complete typed Starfield adapter graph without a service locator.</summary>
     /// <param name="outputService">Returns the shared output service used for staged inspection.</param>
     /// <returns>The complete Starfield game adapter.</returns>
-    private static StarfieldFormListGameAdapter CreateAdapter(out StarfieldNativeOutputService outputService)
+    private static StarfieldFormListGameAdapter CreateAdapter(out StarfieldPluginOutputService outputService)
     {
-        var sourceLoader = new StarfieldNativeSourceLoader(new NativeSourceInputLoader());
-        outputService = new StarfieldNativeOutputService(new NativeOutputInputLoader());
-        var editService = new StarfieldNativeEditService();
-        var writer = new StarfieldNativeWriter(outputService);
+        var sourceLoader = new StarfieldPluginSourceLoader(new PluginSourceInputLoader());
+        outputService = new StarfieldPluginOutputService(new PluginOutputInputLoader());
+        var editService = new StarfieldRecordEditService();
+        var writer = new StarfieldPluginWriter(outputService);
         return new StarfieldFormListGameAdapter(sourceLoader, outputService, editService, writer);
     }
 
@@ -594,27 +594,27 @@ public sealed class StarfieldFormListGameAdapterTests
     /// <param name="adapter">The complete Starfield adapter.</param>
     /// <param name="fixture">The generated source fixture.</param>
     /// <returns>The independently owned typed source lifetime.</returns>
-    private static async Task<StarfieldNativeSourceSet> OpenSourcesAsync(
+    private static async Task<StarfieldPluginSourceSet> OpenSourcesAsync(
         StarfieldFormListGameAdapter adapter,
-        StarfieldNativeTestFixture fixture)
+        StarfieldPluginTestFixture fixture)
     {
         var result = await adapter.OpenSourcesAsync(
             fixture.CreateOpenRequest(),
             TestContext.Current.CancellationToken);
         result.Succeeded.ShouldBeTrue(result.Error?.Message);
-        return result.Value!.Sources.ShouldBeOfType<StarfieldNativeSourceSet>();
+        return result.Value!.Sources.ShouldBeOfType<StarfieldPluginSourceSet>();
     }
 
     /// <summary>Prepares and applies one typed edit through the complete adapter.</summary>
     /// <param name="adapter">The complete Starfield adapter.</param>
-    /// <param name="sources">The borrowed immutable native sources.</param>
+    /// <param name="sources">The borrowed immutable plugin sources.</param>
     /// <param name="output">The unpublished complete output candidate.</param>
     /// <param name="target">The target FormList identity.</param>
     /// <param name="edit">The typed caller-owned edit.</param>
     private static void Apply(
         StarfieldFormListGameAdapter adapter,
-        StarfieldNativeSourceSet sources,
-        INativeOutputState output,
+        StarfieldPluginSourceSet sources,
+        IPluginOutputState output,
         FormKey target,
         FormListEdit edit)
     {
@@ -624,7 +624,7 @@ public sealed class StarfieldFormListGameAdapterTests
 
     /// <summary>Creates a canonical output association for one generated destination.</summary>
     /// <param name="path">The output plugin path.</param>
-    /// <param name="style">The requested native master style.</param>
+    /// <param name="style">The requested plugin master style.</param>
     /// <param name="localizedOutputMode">The requested localization representation.</param>
     /// <returns>The immutable output association.</returns>
     private static OutputAssociation CreateAssociation(
@@ -642,20 +642,20 @@ public sealed class StarfieldFormListGameAdapterTests
     /// <summary>Creates a staged-write request using the current selected output baseline.</summary>
     /// <param name="stagingDirectoryPath">The dedicated empty private staging directory.</param>
     /// <param name="open">The current selected output and artifact baseline.</param>
-    /// <returns>The guarded native staged-write request.</returns>
-    private static NativeWriteRequest CreateWriteRequest(
+    /// <returns>The guarded plugin staged-write request.</returns>
+    private static PluginWriteRequest CreateWriteRequest(
         string stagingDirectoryPath,
-        NativeOutputOpenResult open)
+        PluginOutputOpenResult open)
     {
-        return new NativeWriteRequest(stagingDirectoryPath, open.Association, open.Baseline);
+        return new PluginWriteRequest(stagingDirectoryPath, open.Association, open.Baseline);
     }
 
     /// <summary>Writes one deterministic complete output fixture through Mutagen's public writer.</summary>
     /// <param name="outputDirectory">The existing output directory.</param>
     /// <param name="fileName">The output plugin file name.</param>
-    /// <param name="style">The native master style.</param>
-    /// <param name="localized">Whether native strings use loose sidecars.</param>
-    /// <param name="configure">The caller that builds representative native content.</param>
+    /// <param name="style">The plugin master style.</param>
+    /// <param name="localized">Whether record strings use loose sidecars.</param>
+    /// <param name="configure">The caller that builds representative plugin content.</param>
     /// <param name="sourceMasterStyles">Optional exact styles for source masters referenced by the generated fixture.</param>
     /// <returns>The canonical generated plugin path.</returns>
     private static string WriteOutput(
@@ -716,7 +716,7 @@ public sealed class StarfieldFormListGameAdapterTests
         return outputPath;
     }
 
-    /// <summary>Creates a deterministic English and French native translated string.</summary>
+    /// <summary>Creates a deterministic English and French record translated string.</summary>
     /// <param name="english">The default English text.</param>
     /// <param name="french">The French translation.</param>
     /// <returns>A mutable translated string containing both languages.</returns>

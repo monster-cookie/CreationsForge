@@ -1,6 +1,6 @@
 namespace CreationsForge.Core.Engine.Contracts;
 
-/// <summary>Requests selection or creation of a separate native output for a workspace.</summary>
+/// <summary>Requests selection or creation of a separate plugin output for a workspace.</summary>
 public sealed class SelectOutputRequest
 {
     /// <summary>Initializes an output-selection request.</summary>

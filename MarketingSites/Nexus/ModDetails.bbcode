@@ -4,11 +4,11 @@ Creations Forge browses, compares, and edits FormLists in Bethesda plugins throu
 Open explicit source plugins and their load order, then create or edit a separate output plugin. Source and load-order plugins remain inputs; Creations Forge stages authoring changes in the selected output workspace and applies save guards before publishing files.
 
 [quote]
-IMPORTANT: The native FormList workflow replaces the earlier SQLite import workflow. Existing import databases are not converted into editable plugins, and no database reset or reimport is required. Removing the old backend does not delete existing database files.
+IMPORTANT: The FormList workflow replaces the earlier SQLite import workflow. Existing import databases are not converted into editable plugins, and no database reset or reimport is required. Removing the old backend does not delete existing database files.
 [/quote]
 
 [quote]
-NOTE: Native FormList authoring is implemented for Fallout 4, Skyrim Special Edition, and Starfield. Packaged launches, installed-game coverage, Mod Organizer 2 and other virtual-file-system workflows, and game-runtime acceptance are not yet fully validated.
+NOTE: Plugin FormList authoring is implemented for Fallout 4, Skyrim Special Edition, and Starfield. Packaged launches, installed-game coverage, Mod Organizer 2 and other virtual-file-system workflows, and game-runtime acceptance are not yet fully validated.
 [/quote]
 
 Please report bugs here: [url=https://github.com/monster-cookie/CreationsForge/issues]https://github.com/monster-cookie/CreationsForge/issues[/url]
@@ -61,17 +61,17 @@ Application configuration and logs use ~/.CreationsForge. The macOS configuratio
 Application configuration and logs use C:\ProgramData\CreationsForge.
 
 [size=4][b][u]Installation[/u][/b][/size]
-Use a desktop or console build that contains the native replacement. Earlier releases may still contain the retired import workflow. Windows and Linux packaging exists in the source repository, but packaged native-workflow launches remain unverified.
+Use a desktop or console build that contains the plugin authoring replacement. Earlier releases may still contain the retired import workflow. Windows and Linux packaging exists in the source repository, but packaged plugin-workflow launches remain unverified.
 
 Do not install the application into a game's Data folder. Keep source plugins, required masters, localized-string directories when needed, and the separate output location available while a workspace is open.
 
 [size=4][b][u]Current Limitations[/u][/b][/size]
 [list]
-[*]Native authoring is limited to FormLists for Fallout 4, Skyrim Special Edition, and Starfield.[/*]
+[*]Plugin authoring is limited to FormLists for Fallout 4, Skyrim Special Edition, and Starfield.[/*]
 [*]Saving edits to an existing localized output that uses separate string files is rejected to protect unedited localized data.[/*]
 [*]An installed Starfield source has encountered an unresolved parser failure while reading navmesh data.[/*]
 [*]Installed Fallout 4 and Skyrim Special Edition validation inputs have not yet been supplied.[/*]
-[*]Native Mod Organizer 2 and other virtual-file-system workflows remain unverified.[/*]
+[*]Plugin Mod Organizer 2 and other virtual-file-system workflows remain unverified.[/*]
 [*]Packaged launches, live desktop/MCP conflict checks, and game-runtime acceptance remain unverified.[/*]
 [/list]
 

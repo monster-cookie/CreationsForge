@@ -1,6 +1,6 @@
 namespace CreationsForge.Core.Engine.Contracts;
 
-/// <summary>Requests replacement of staged output state with a fresh native reopen from its selected association.</summary>
+/// <summary>Requests replacement of staged output state with a fresh plugin reopen from its selected association.</summary>
 public sealed class ReopenOutputRequest
 {
     /// <summary>Initializes an output-reopen request.</summary>

@@ -13,7 +13,7 @@ internal sealed class McpWorkspaceEntry : IAsyncDisposable
     /// <summary>The opaque engine workspace owned by this entry.</summary>
     private readonly IFormListWorkspace Workspace;
 
-    /// <summary>Shares the single native disposal outcome with every close and shutdown waiter.</summary>
+    /// <summary>Shares the single engine disposal outcome with every close and shutdown waiter.</summary>
     private readonly TaskCompletionSource DisposalCompletion = new(
         TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -89,8 +89,8 @@ internal sealed class McpWorkspaceEntry : IAsyncDisposable
         return new ValueTask(DisposalCompletion.Task);
     }
 
-    /// <summary>Waits for active work, attempts native disposal once, and publishes the exact outcome to every waiter.</summary>
-    /// <returns>A task that completes after the native disposal outcome has been recorded.</returns>
+    /// <summary>Waits for active work, attempts engine disposal once, and publishes the exact outcome to every waiter.</summary>
+    /// <returns>A task that completes after the engine disposal outcome has been recorded.</returns>
     private async Task DisposeCoreAsync()
     {
         await OperationGate.WaitAsync().ConfigureAwait(false);

@@ -3,15 +3,15 @@ using Mutagen.Bethesda.Plugins;
 namespace CreationsForge.Core.Engine.Contracts;
 
 /// <summary>
-/// Describes one native FormList for lightweight enumeration without becoming a record authority.
+/// Describes one FormList for lightweight enumeration without becoming a record authority.
 /// </summary>
 public sealed class FormListSummary
 {
     /// <summary>Initializes an ephemeral FormList summary.</summary>
-    /// <param name="formKey">The native FormList identity.</param>
-    /// <param name="editorId">The native EditorID, or <see langword="null"/> when absent.</param>
+    /// <param name="formKey">The FormList identity.</param>
+    /// <param name="editorId">The plugin EditorID, or <see langword="null"/> when absent.</param>
     /// <param name="overrideCount">The number of matching contexts in the complete participating load order whose containing plugin differs from the FormKey's origin plugin, including deleted and staged-output contexts.</param>
-    /// <param name="scope">The native record view represented by the summary.</param>
+    /// <param name="scope">The record view represented by the summary.</param>
     /// <param name="containingModKey">The plugin containing the represented context, when singular.</param>
     /// <param name="sourcePath">The canonical path of the containing plugin, when singular.</param>
     /// <param name="loadOrderIndex">The explicit load-order position of the containing plugin, when singular.</param>
@@ -51,19 +51,19 @@ public sealed class FormListSummary
         Role = role;
     }
 
-    /// <summary>Gets the native FormList identity.</summary>
+    /// <summary>Gets the FormList identity.</summary>
     public FormKey FormKey { get; }
 
-    /// <summary>Gets the native EditorID, or <see langword="null"/> when absent.</summary>
+    /// <summary>Gets the plugin EditorID, or <see langword="null"/> when absent.</summary>
     public string? EditorId { get; }
 
     /// <summary>Gets the complete participating-load-order count of matching contexts whose containing plugin differs from the FormKey's origin plugin.</summary>
     public int OverrideCount { get; }
 
-    /// <summary>Gets the native record scope represented by the summary.</summary>
+    /// <summary>Gets the record scope represented by the summary.</summary>
     public RecordScope Scope { get; }
 
-    /// <summary>Gets the containing plugin when the summary represents one concrete native context.</summary>
+    /// <summary>Gets the containing plugin when the summary represents one concrete record context.</summary>
     public ModKey? ContainingModKey { get; }
 
     /// <summary>Gets the canonical path of the containing plugin, or <see langword="null"/>.</summary>

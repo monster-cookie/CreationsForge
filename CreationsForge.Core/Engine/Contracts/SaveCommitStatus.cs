@@ -14,6 +14,6 @@ public enum SaveCommitStatus
     /// <summary>The save may have partially changed destination files and requires recovery inspection.</summary>
     CommitOutcomeUnknown,
 
-    /// <summary>The complete intended file set is known to be committed, but its final native reopen failed.</summary>
+    /// <summary>The complete intended file set is known to be committed, but its final plugin reopen failed.</summary>
     CommittedButReopenFailed
 }

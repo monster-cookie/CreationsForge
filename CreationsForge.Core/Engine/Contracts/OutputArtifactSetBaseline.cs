@@ -10,7 +10,7 @@ public sealed class OutputArtifactSetBaseline
     /// <param name="artifacts">Every expected present or absent plugin and strings artifact; the constructor snapshots and canonically orders them.</param>
     /// <exception cref="ArgumentException">Thrown when the identifier is empty or the artifact set is incomplete or ambiguous.</exception>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="artifacts"/> is <see langword="null"/>.</exception>
-    public OutputArtifactSetBaseline(Guid baselineId, IReadOnlyList<NativeArtifactAssociation> artifacts)
+    public OutputArtifactSetBaseline(Guid baselineId, IReadOnlyList<PluginArtifactAssociation> artifacts)
     {
         if (baselineId == Guid.Empty)
         {
@@ -19,7 +19,7 @@ public sealed class OutputArtifactSetBaseline
 
         ArgumentNullException.ThrowIfNull(artifacts);
         var snapshot = artifacts.ToArray();
-        if (snapshot.Count(artifact => artifact.Role == NativeArtifactRole.Plugin) != 1)
+        if (snapshot.Count(artifact => artifact.Role == PluginArtifactRole.Plugin) != 1)
         {
             throw new ArgumentException("A complete output baseline requires exactly one plugin artifact.", nameof(artifacts));
         }
@@ -43,5 +43,5 @@ public sealed class OutputArtifactSetBaseline
     public Guid BaselineId { get; }
 
     /// <summary>Gets every expected present or absent plugin and strings artifact in canonical path order.</summary>
-    public IReadOnlyList<NativeArtifactAssociation> Artifacts { get; }
+    public IReadOnlyList<PluginArtifactAssociation> Artifacts { get; }
 }

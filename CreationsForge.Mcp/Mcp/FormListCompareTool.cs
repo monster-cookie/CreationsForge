@@ -7,7 +7,7 @@ using ModelContextProtocol.Server;
 namespace CreationsForge.Mcp;
 
 /// <summary>
-/// Compares two exact native FormList contexts and pages typed views, semantic changes, or warnings independently.
+/// Compares two exact FormList contexts and pages typed views, semantic changes, or warnings independently.
 /// </summary>
 public sealed class FormListCompareTool : McpToolBase
 {
@@ -53,7 +53,7 @@ public sealed class FormListCompareTool : McpToolBase
     public override Tool ProtocolTool { get; } = new Tool
     {
         Name = "creationsforge_formlist_compare",
-        Title = "Compare native FormList contexts",
+        Title = "Compare FormList contexts",
         Description = "Re-reads two exact contexts and independently pages semantic changes, prior fields, resulting fields, or warnings.",
         InputSchema = InputSchema,
         OutputSchema = OutputSchema,
@@ -66,9 +66,9 @@ public sealed class FormListCompareTool : McpToolBase
         },
     };
 
-    /// <summary>Performs a fresh native comparison before validating revision and cursor bindings.</summary>
+    /// <summary>Performs a fresh engine comparison before validating revision and cursor bindings.</summary>
     /// <param name="request">The MCP request.</param>
-    /// <param name="cancellationToken">The token propagated through both native reads and typed comparison.</param>
+    /// <param name="cancellationToken">The token propagated through both engine reads and typed comparison.</param>
     /// <returns>One independently navigable comparison section page.</returns>
     /// <exception cref="OperationCanceledException">Thrown when cancellation is observed.</exception>
     public override async ValueTask<CallToolResult> InvokeAsync(

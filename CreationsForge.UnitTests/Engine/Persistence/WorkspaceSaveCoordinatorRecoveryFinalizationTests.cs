@@ -1,5 +1,5 @@
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 using CreationsForge.Core.Engine.Persistence;
 using CreationsForge.Core.Enums;
 using Moq;
@@ -21,14 +21,14 @@ public sealed partial class WorkspaceSaveCoordinatorTests
             using var directory = new TestDirectory();
             var output = CreateOutput(directory.FullName);
             await File.WriteAllBytesAsync(output.PluginPath, [1]);
-            var baseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(
+            var baseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(
                 GameRelease.SkyrimSE,
                 output,
                 CancellationToken.None);
             var adapter = CreateAdapter((request, token) => CreateStagedSetAsync(
                 request,
                 baseline,
-                new Dictionary<string, byte[]>(NativeSaveArtifactUtilities.PathComparer)
+                new Dictionary<string, byte[]>(PluginSaveArtifactUtilities.PathComparer)
                 {
                     [output.PluginPath] = [2]
                 },
@@ -44,13 +44,13 @@ public sealed partial class WorkspaceSaveCoordinatorTests
             var replay = await coordinator.SaveAsync(context, request);
             var sourcePath = Path.Combine(directory.FullName, "DifferentSource.esm");
             await File.WriteAllBytesAsync(sourcePath, [7]);
-            var sourceArtifact = await NativeFileInspector.InspectAsync(
+            var sourceArtifact = await PluginFileInspector.InspectAsync(
                 sourcePath,
-                NativeArtifactRole.Plugin,
+                PluginArtifactRole.Plugin,
                 language: null,
                 mustExist: true,
                 CancellationToken.None);
-            var differentSource = new TestSourceSet(new NativeSourceInputBaseline(Guid.NewGuid(), [sourceArtifact]));
+            var differentSource = new TestSourceSet(new PluginSourceInputBaseline(Guid.NewGuid(), [sourceArtifact]));
             var conflictingContext = new WorkspaceSaveContext(
                 context.WorkspaceId,
                 context.Revision,
@@ -68,9 +68,9 @@ public sealed partial class WorkspaceSaveCoordinatorTests
             conflict.Status.ShouldBe(SaveCommitStatus.NotCommitted);
             conflict.Error!.Code.ShouldBe(EngineErrorCode.OperationIdReuse);
             adapter.Verify(value => value.WriteAndValidateAsync(
-                It.IsAny<INativeSourceSet>(),
-                It.IsAny<INativeOutputState>(),
-                It.IsAny<NativeWriteRequest>(),
+                It.IsAny<IPluginSourceSet>(),
+                It.IsAny<IPluginOutputState>(),
+                It.IsAny<PluginWriteRequest>(),
                 It.IsAny<CancellationToken>()), Times.Once);
         }
     
@@ -81,14 +81,14 @@ public sealed partial class WorkspaceSaveCoordinatorTests
             using var directory = new TestDirectory();
             var output = CreateOutput(directory.FullName);
             await File.WriteAllBytesAsync(output.PluginPath, [1]);
-            var baseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(
+            var baseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(
                 GameRelease.SkyrimSE,
                 output,
                 CancellationToken.None);
             var adapter = CreateAdapter((request, token) => CreateStagedSetAsync(
                 request,
                 baseline,
-                new Dictionary<string, byte[]>(NativeSaveArtifactUtilities.PathComparer)
+                new Dictionary<string, byte[]>(PluginSaveArtifactUtilities.PathComparer)
                 {
                     [output.PluginPath] = [2]
                 },
@@ -114,9 +114,9 @@ public sealed partial class WorkspaceSaveCoordinatorTests
             Directory.Exists(new SaveTransactionPaths(directory.FullName, context.WorkspaceId, operationId).TransactionDirectoryPath)
                 .ShouldBeFalse();
             adapter.Verify(value => value.WriteAndValidateAsync(
-                It.IsAny<INativeSourceSet>(),
-                It.IsAny<INativeOutputState>(),
-                It.IsAny<NativeWriteRequest>(),
+                It.IsAny<IPluginSourceSet>(),
+                It.IsAny<IPluginOutputState>(),
+                It.IsAny<PluginWriteRequest>(),
                 It.IsAny<CancellationToken>()), Times.Never);
         }
     
@@ -148,7 +148,7 @@ public sealed partial class WorkspaceSaveCoordinatorTests
             validated.Value!.EvidenceToken.ShouldBe(recovery.EvidenceToken);
             var terminal = await store.ReadAsync(setup.Paths, CancellationToken.None);
             terminal!.Phase.ShouldBe(SaveTransactionPhase.NotCommitted);
-            NativeSaveArtifactUtilities.MatchBaseline(
+            PluginSaveArtifactUtilities.MatchBaseline(
                 terminal.TerminalBaseline!,
                 recovery.ResolvedEvidence!.ResolvedOutputBaseline).ShouldBeTrue();
             var afterFinalization = await coordinator.RecoverAsync(new RecoverSaveRequest(
@@ -243,7 +243,7 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         {
             var output = CreateOutput(directoryPath);
             await File.WriteAllBytesAsync(output.PluginPath, [1]);
-            var before = await NativeSaveArtifactUtilities.CaptureOutputAsync(
+            var before = await PluginSaveArtifactUtilities.CaptureOutputAsync(
                 GameRelease.SkyrimSE,
                 output,
                 CancellationToken.None);
@@ -258,30 +258,30 @@ public sealed partial class WorkspaceSaveCoordinatorTests
             store.CreateEmptySubdirectory(paths.RetiredDirectoryPath, "test retirement directory");
             var pluginIndex = before.Artifacts
                 .Select((artifact, index) => (Artifact: artifact, Index: index))
-                .Single(candidate => candidate.Artifact.Role == NativeArtifactRole.Plugin)
+                .Single(candidate => candidate.Artifact.Role == PluginArtifactRole.Plugin)
                 .Index;
             var stagedPath = Path.Combine(paths.StagingDirectoryPath, $"{pluginIndex:D4}.bin");
             await File.WriteAllBytesAsync(stagedPath, [2]);
-            var staged = await NativeFileInspector.InspectAsync(
+            var staged = await PluginFileInspector.InspectAsync(
                 stagedPath,
-                NativeArtifactRole.Plugin,
+                PluginArtifactRole.Plugin,
                 language: null,
                 mustExist: true,
                 CancellationToken.None);
             var publishPath = Path.Combine(paths.PublishDirectoryPath, $"{pluginIndex:D4}.bin");
-            await NativeSaveArtifactUtilities.CopyAndFlushAsync(stagedPath, publishPath, CancellationToken.None);
-            var publish = await NativeFileInspector.InspectAsync(
+            await PluginSaveArtifactUtilities.CopyAndFlushAsync(stagedPath, publishPath, CancellationToken.None);
+            var publish = await PluginFileInspector.InspectAsync(
                 publishPath,
-                NativeArtifactRole.Plugin,
+                PluginArtifactRole.Plugin,
                 language: null,
                 mustExist: true,
                 CancellationToken.None);
             var beforePlugin = before.Artifacts[pluginIndex];
             var backupPath = Path.Combine(paths.BackupDirectoryPath, $"{pluginIndex:D4}.bin");
-            await NativeSaveArtifactUtilities.CopyAndFlushAsync(output.PluginPath, backupPath, CancellationToken.None);
-            var backup = await NativeFileInspector.InspectAsync(
+            await PluginSaveArtifactUtilities.CopyAndFlushAsync(output.PluginPath, backupPath, CancellationToken.None);
+            var backup = await PluginFileInspector.InspectAsync(
                 backupPath,
-                NativeArtifactRole.Plugin,
+                PluginArtifactRole.Plugin,
                 language: null,
                 mustExist: true,
                 CancellationToken.None);
@@ -296,7 +296,7 @@ public sealed partial class WorkspaceSaveCoordinatorTests
                 }
 
                 var unchangedStagedPath = Path.Combine(paths.StagingDirectoryPath, $"{indexed.Index:D4}.bin");
-                var unchangedStaged = await NativeFileInspector.InspectAsync(
+                var unchangedStaged = await PluginFileInspector.InspectAsync(
                     unchangedStagedPath,
                     indexed.Artifact.Role,
                     indexed.Artifact.Language,
@@ -320,7 +320,7 @@ public sealed partial class WorkspaceSaveCoordinatorTests
                 source.Baseline,
                 output,
                 before,
-                NativeWriteDisposition.StagedChanges,
+                PluginWriteDisposition.StagedChanges,
                 SaveTransactionPhase.Prepared,
                 0,
                 plans,

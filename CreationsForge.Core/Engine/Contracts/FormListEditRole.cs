@@ -1,6 +1,6 @@
 namespace CreationsForge.Core.Engine.Contracts;
 
-/// <summary>Identifies how a staged edit selects or creates its native FormList target.</summary>
+/// <summary>Identifies how a staged edit selects or creates its FormList target.</summary>
 public enum FormListEditRole
 {
     /// <summary>Allocate a new FormList in the selected output.</summary>

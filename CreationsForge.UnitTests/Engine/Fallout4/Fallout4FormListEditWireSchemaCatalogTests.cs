@@ -1,9 +1,9 @@
 using System.Text.Json;
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeWire;
+using CreationsForge.Core.Engine.RecordWire;
 using CreationsForge.Core.Enums;
-using CreationsForge.Fallout4.Native.Edits;
-using CreationsForge.Fallout4.Native.Wire;
+using CreationsForge.Fallout4.PluginAdapter.Edits;
+using CreationsForge.Fallout4.PluginAdapter.Wire;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Shouldly;
@@ -13,7 +13,7 @@ namespace CreationsForge.UnitTests.Engine.Fallout4;
 /// <summary>Verifies the deterministic content-bound Fallout 4 FormList wire schema catalog.</summary>
 public sealed class Fallout4FormListEditWireSchemaCatalogTests
 {
-    /// <summary>The catalog exposes every approved command followed by the shared native leaf types in ordinal order.</summary>
+    /// <summary>The catalog exposes every approved command followed by the shared plugin leaf types in ordinal order.</summary>
     [Fact]
     public void IdentityAndNodes_AreCompleteDeterministicAndContentBound()
     {
@@ -39,8 +39,8 @@ public sealed class Fallout4FormListEditWireSchemaCatalogTests
         };
         var expectedTypes = new[]
         {
-            "native.form-link",
-            "native.translated-string",
+            "record.form-link",
+            "record.translated-string",
         };
 
         catalog.Identity.Game.ShouldBe(SupportedGame.Fallout4);
@@ -51,11 +51,11 @@ public sealed class Fallout4FormListEditWireSchemaCatalogTests
         second.Identity.CatalogId.ShouldBe(catalog.Identity.CatalogId);
         catalog.Nodes.Count.ShouldBe(17);
         catalog.Nodes.Take(expectedCommands.Length).ShouldAllBe(
-            node => node.Kind == NativeWireSchemaNodeKind.Command);
+            node => node.Kind == RecordWireSchemaNodeKind.Command);
         catalog.Nodes.Take(expectedCommands.Length).Select(node => node.Name)
             .ShouldBe(expectedCommands, ignoreOrder: false);
         catalog.Nodes.Skip(expectedCommands.Length).ShouldAllBe(
-            node => node.Kind == NativeWireSchemaNodeKind.Type);
+            node => node.Kind == RecordWireSchemaNodeKind.Type);
         catalog.Nodes.Skip(expectedCommands.Length).Select(node => node.Name)
             .ShouldBe(expectedTypes, ignoreOrder: false);
         catalog.Nodes.ShouldAllBe(node => node.CatalogId == catalog.Identity.CatalogId);
@@ -63,7 +63,7 @@ public sealed class Fallout4FormListEditWireSchemaCatalogTests
             .ShouldBe(catalog.Nodes.Count);
     }
 
-    /// <summary>Every catalog node contains only closed object schemas, including all nested inline native leaf objects.</summary>
+    /// <summary>Every catalog node contains only closed object schemas, including all nested inline plugin leaf objects.</summary>
     [Fact]
     public void ReadNode_AllSchemasAreDetachedClosedObjects()
     {
@@ -87,7 +87,7 @@ public sealed class Fallout4FormListEditWireSchemaCatalogTests
 
     /// <summary>Every advertised command default is valid for its codec, while target-dependent commands explicitly omit defaults.</summary>
     [Fact]
-    public void CommandDefaults_AreHonestNativeConstructibleTemplates()
+    public void CommandDefaults_AreHonestPluginConstructibleTemplates()
     {
         var catalog = new Fallout4FormListEditWireSchemaCatalog();
         var codec = new Fallout4FormListEditWireCodec();
@@ -100,7 +100,7 @@ public sealed class Fallout4FormListEditWireSchemaCatalogTests
             "form-list.set-editor-id",
         };
 
-        foreach (var key in catalog.Nodes.Where(node => node.Kind == NativeWireSchemaNodeKind.Command))
+        foreach (var key in catalog.Nodes.Where(node => node.Kind == RecordWireSchemaNodeKind.Command))
         {
             var node = catalog.ReadNode(key).Value!;
             if (unavailableDefaults.Contains(key.Name))
@@ -113,27 +113,27 @@ public sealed class Fallout4FormListEditWireSchemaCatalogTests
             var decoded = codec.Decode(
                 key.Name,
                 node.DefaultTemplate!.Value,
-                NativeWireReadLimits.Default);
+                RecordWireReadLimits.Default);
             decoded.Succeeded.ShouldBeTrue(decoded.Error?.Message);
             decoded.Value.ShouldNotBeNull();
             decoded.Value!.CommandName.ShouldBe(key.Name);
         }
 
         var formVersionKey = catalog.Nodes.Single(node =>
-            node.Kind == NativeWireSchemaNodeKind.Command
+            node.Kind == RecordWireSchemaNodeKind.Command
             && node.Name == "form-list.set-form-version");
         catalog.ReadNode(formVersionKey).Value!.DefaultTemplate!.Value
             .GetProperty("formVersion").GetUInt16().ShouldBe((ushort)131);
     }
 
-    /// <summary>The shared type defaults preserve a native null link and a valid empty translated string.</summary>
+    /// <summary>The shared type defaults preserve a plugin null link and a valid empty translated string.</summary>
     [Fact]
-    public void TypeDefaults_AreValidInspectorCompatibleNativeLeaves()
+    public void TypeDefaults_AreValidInspectorCompatiblePluginLeaves()
     {
         var catalog = new Fallout4FormListEditWireSchemaCatalog();
         var codec = new Fallout4FormListEditWireCodec();
-        var linkKey = catalog.Nodes.Single(node => node.Name == "native.form-link");
-        var translatedStringKey = catalog.Nodes.Single(node => node.Name == "native.translated-string");
+        var linkKey = catalog.Nodes.Single(node => node.Name == "record.form-link");
+        var translatedStringKey = catalog.Nodes.Single(node => node.Name == "record.translated-string");
         var linkDefault = catalog.ReadNode(linkKey).Value!.DefaultTemplate!.Value;
         var translatedStringDefault = catalog.ReadNode(translatedStringKey).Value!.DefaultTemplate!.Value;
 
@@ -144,7 +144,7 @@ public sealed class Fallout4FormListEditWireSchemaCatalogTests
         var insert = codec.Decode(
             "form-list.insert-item",
             insertArguments,
-            NativeWireReadLimits.Default);
+            RecordWireReadLimits.Default);
         insert.Succeeded.ShouldBeTrue(insert.Error?.Message);
         insert.Value.ShouldBeOfType<InsertItemEdit>().Item.ShouldBe(FormKey.Null);
 
@@ -152,7 +152,7 @@ public sealed class Fallout4FormListEditWireSchemaCatalogTests
         var setName = codec.Decode(
             "fallout4.form-list.set-name",
             nameArguments,
-            NativeWireReadLimits.Default);
+            RecordWireReadLimits.Default);
         setName.Succeeded.ShouldBeTrue(setName.Error?.Message);
         var name = setName.Value.ShouldBeOfType<Fallout4SetNameEdit>().Name;
         name.TargetLanguage.ToString().ShouldBe("English");
@@ -187,7 +187,7 @@ public sealed class Fallout4FormListEditWireSchemaCatalogTests
         foreach (var command in expectedArguments)
         {
             var key = catalog.Nodes.Single(node =>
-                node.Kind == NativeWireSchemaNodeKind.Command
+                node.Kind == RecordWireSchemaNodeKind.Command
                 && node.Name == command.Key);
             var schema = catalog.ReadNode(key).Value!.Schema;
             schema.GetProperty("properties").EnumerateObject().Select(property => property.Name)
@@ -211,17 +211,17 @@ public sealed class Fallout4FormListEditWireSchemaCatalogTests
     public void ReadNode_RejectsStaleForeignAndUnknownKeysAndHonorsCancellation()
     {
         var catalog = new Fallout4FormListEditWireSchemaCatalog();
-        var stale = new NativeWireSchemaNodeKey(
+        var stale = new RecordWireSchemaNodeKey(
             new string('0', 64),
-            NativeWireSchemaNodeKind.Command,
+            RecordWireSchemaNodeKind.Command,
             "form-list.clear-items");
-        var unknown = new NativeWireSchemaNodeKey(
+        var unknown = new RecordWireSchemaNodeKey(
             catalog.Identity.CatalogId,
-            NativeWireSchemaNodeKind.Command,
+            RecordWireSchemaNodeKind.Command,
             "form-list.unknown");
-        var wrongKind = new NativeWireSchemaNodeKey(
+        var wrongKind = new RecordWireSchemaNodeKey(
             catalog.Identity.CatalogId,
-            NativeWireSchemaNodeKind.Type,
+            RecordWireSchemaNodeKind.Type,
             "form-list.clear-items");
 
         catalog.ReadNode(stale).Error!.Code.ShouldBe(EngineErrorCode.InvalidRequest);

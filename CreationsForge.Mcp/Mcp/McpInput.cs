@@ -11,14 +11,14 @@ using Mutagen.Bethesda.Strings;
 namespace CreationsForge.Mcp;
 
 /// <summary>
-/// Parses closed MCP argument objects into exact native engine request values.
+/// Parses closed MCP argument objects into exact engine request values.
 /// </summary>
 internal static class McpInput
 {
     /// <summary>The only properties accepted by an exact revision object.</summary>
     private static readonly IReadOnlySet<string> RevisionArgumentNames = new HashSet<string>(StringComparer.Ordinal) { "baselineId", "sequence" };
 
-    /// <summary>The only properties accepted by a nested native reference selection.</summary>
+    /// <summary>The only properties accepted by a nested reference selection.</summary>
     private static readonly IReadOnlySet<string> ReferenceArgumentNames = new HashSet<string>(StringComparer.Ordinal) { "formKey", "scope", "containingModKey" };
 
     /// <summary>The largest accepted path or JSON Pointer string at the MCP boundary.</summary>
@@ -36,7 +36,7 @@ internal static class McpInput
     /// <summary>The largest number of bounded transport results.</summary>
     internal const int MaximumResults = 250;
 
-    /// <summary>Reads a required native localized-record language name.</summary>
+    /// <summary>Reads a required engine localized-record language name.</summary>
     /// <param name="arguments">The request arguments.</param>
     /// <param name="name">The required property name.</param>
     /// <param name="value">Receives the defined Mutagen language.</param>
@@ -297,7 +297,7 @@ internal static class McpInput
     /// <summary>Reads a canonical FormKey string without accepting alternate spellings.</summary>
     /// <param name="arguments">The request arguments.</param>
     /// <param name="name">The required property name.</param>
-    /// <param name="value">Receives the parsed native FormKey.</param>
+    /// <param name="value">Receives the parsed engine FormKey.</param>
     /// <param name="error">Receives a validation error.</param>
     /// <returns><see langword="true"/> when the value round-trips through Mutagen's canonical form.</returns>
     internal static bool TryGetFormKey(
@@ -470,7 +470,7 @@ internal static class McpInput
     /// <param name="game">Receives the supported game.</param>
     /// <param name="release">Receives the Mutagen release.</param>
     /// <param name="error">Receives a validation error.</param>
-    /// <returns><see langword="true"/> when the pair is one of the three supported native releases.</returns>
+    /// <returns><see langword="true"/> when the pair is one of the three supported engine releases.</returns>
     internal static bool TryGetGameRelease(
         IReadOnlyDictionary<string, JsonElement> arguments,
         out SupportedGame game,

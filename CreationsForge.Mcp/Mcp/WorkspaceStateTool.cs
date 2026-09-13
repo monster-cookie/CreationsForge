@@ -44,7 +44,7 @@ public sealed class WorkspaceStateTool : McpToolBase
     {
         Name = "creationsforge_workspace_state",
         Title = "Read CreationsForge workspace state",
-        Description = "Reads one atomic workspace state and issues exact metadata handles without traversing native records.",
+        Description = "Reads one atomic workspace state and issues exact metadata handles without traversing records.",
         InputSchema = InputSchema,
         OutputSchema = OutputSchema,
         Annotations = new ToolAnnotations

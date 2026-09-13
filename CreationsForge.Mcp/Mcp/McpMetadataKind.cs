@@ -3,7 +3,7 @@ namespace CreationsForge.Mcp;
 /// <summary>Identifies the exact immutable Core metadata type retained behind an MCP handle.</summary>
 internal enum McpMetadataKind
 {
-    /// <summary>An exact native output association.</summary>
+    /// <summary>An exact plugin output association.</summary>
     OutputAssociation,
 
     /// <summary>A complete observed output artifact baseline.</summary>

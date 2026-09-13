@@ -1,12 +1,12 @@
 using System.Text.Json;
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeWire;
+using CreationsForge.Core.Engine.RecordWire;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace CreationsForge.Mcp;
 
-/// <summary>Selects or creates a native output and publishes exact immutable metadata handles.</summary>
+/// <summary>Selects or creates a plugin output and publishes exact immutable metadata handles.</summary>
 internal sealed class OutputSelectTool : McpToolBase
 {
     /// <summary>The accepted argument names.</summary>
@@ -40,7 +40,7 @@ internal sealed class OutputSelectTool : McpToolBase
     public override Tool ProtocolTool { get; } = new()
     {
         Name = "creationsforge_output_select",
-        Title = "Select a native output",
+        Title = "Select a plugin output",
         Description = "Creates a new output or opens an existing output and returns opaque handles for its exact association and complete artifact baseline.",
         InputSchema = InputSchema,
         OutputSchema = OutputSchema,
@@ -295,7 +295,7 @@ internal sealed class FormListApplyEditTool : McpToolBase
     /// <summary>Gets the typed-edit descriptor.</summary>
     public override Tool ProtocolTool { get; } = new()
     {
-        Name = "creationsforge_formlist_apply_edit", Title = "Apply a typed FormList edit", Description = "Decodes one schema-discovered closed command payload into a native typed edit and applies it to a staged FormList.",
+        Name = "creationsforge_formlist_apply_edit", Title = "Apply a typed FormList edit", Description = "Decodes one schema-discovered closed command payload into a typed edit and applies it to a staged FormList.",
         InputSchema = InputSchema, OutputSchema = OutputSchema,
         Annotations = new ToolAnnotations { ReadOnlyHint = false, IdempotentHint = true, DestructiveHint = false, OpenWorldHint = false },
     };
@@ -325,10 +325,10 @@ internal sealed class FormListApplyEditTool : McpToolBase
         var codec = Codecs.SingleOrDefault(candidate => candidate.Game == stateResult.Value.Game && candidate.Release == stateResult.Value.Release);
         if (codec is null) return Error("unsupported_game_release", "No typed FormList edit codec is available for the workspace game and release.");
 
-        var decoded = codec.Decode(commandName, commandArguments, NativeWireReadLimits.Default, cancellationToken);
+        var decoded = codec.Decode(commandName, commandArguments, RecordWireReadLimits.Default, cancellationToken);
         if (!decoded.Succeeded || decoded.Value is null)
         {
-            var decodeError = decoded.Error ?? new EngineError(EngineErrorCode.InvalidRequest, "The native wire codec rejected the command without an error.");
+            var decodeError = decoded.Error ?? new EngineError(EngineErrorCode.InvalidRequest, "The engine wire codec rejected the command without an error.");
             return Error(McpProjection.ErrorCode(decodeError.Code), decodeError.Message);
         }
 

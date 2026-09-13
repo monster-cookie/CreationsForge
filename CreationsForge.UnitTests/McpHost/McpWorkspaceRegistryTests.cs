@@ -65,7 +65,7 @@ public sealed class McpWorkspaceRegistryTests
         var request = CreateRequest();
         var expectedError = new EngineError(
             EngineErrorCode.UnsupportedGameRelease,
-            "No native adapter supports the requested release.");
+            "No plugin adapter supports the requested release.");
         var factory = CreateFactory(
             EngineResult<IFormListWorkspace>.Failure(expectedError, workspaceId: request.WorkspaceId));
 
@@ -77,7 +77,7 @@ public sealed class McpWorkspaceRegistryTests
         registry.ActiveWorkspaceCount.ShouldBe(0);
     }
 
-    /// <summary>Verifies that cancellation after factory acquisition disposes native state before releasing the reservation.</summary>
+    /// <summary>Verifies that cancellation after factory acquisition disposes plugin state before releasing the reservation.</summary>
     [Fact]
     public async Task OpenAsync_WhenCancelledAfterAcquisition_DisposesUnpublishedWorkspace()
     {
@@ -101,7 +101,7 @@ public sealed class McpWorkspaceRegistryTests
         workspace.Verify(candidate => candidate.DisposeAsync(), Times.Once);
     }
 
-    /// <summary>Verifies that host shutdown waits for a pending open to release acquired native state.</summary>
+    /// <summary>Verifies that host shutdown waits for a pending open to release acquired plugin state.</summary>
     [Fact]
     public async Task DisposeAsync_WhenOpenIsPending_WaitsForOpenCleanup()
     {
@@ -208,9 +208,9 @@ public sealed class McpWorkspaceRegistryTests
         secondWorkspace.Verify(candidate => candidate.DisposeAsync(), Times.Once);
     }
 
-    /// <summary>Verifies that close and shutdown observe the same single native disposal failure.</summary>
+    /// <summary>Verifies that close and shutdown observe the same single plugin disposal failure.</summary>
     [Fact]
-    public async Task CloseAsync_WhenNativeDisposalFails_PropagatesSameFailureToShutdown()
+    public async Task CloseAsync_WhenPluginDisposalFails_PropagatesSameFailureToShutdown()
     {
         var registry = new McpWorkspaceRegistry();
         var request = CreateRequest();
@@ -226,7 +226,7 @@ public sealed class McpWorkspaceRegistryTests
         closeTask.IsCompleted.ShouldBeFalse();
         var shutdownTask = registry.DisposeAsync().AsTask();
         shutdownTask.IsCompleted.ShouldBeFalse();
-        var expectedException = new InvalidOperationException("Native disposal failed.");
+        var expectedException = new InvalidOperationException("Plugin disposal failed.");
 
         disposalCompletion.SetException(expectedException);
 

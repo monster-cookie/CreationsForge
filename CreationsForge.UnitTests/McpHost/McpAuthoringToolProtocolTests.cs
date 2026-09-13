@@ -2,9 +2,9 @@ using System.IO.Pipelines;
 using System.Text.Json;
 using CreationsForge.Mcp;
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeWire;
+using CreationsForge.Core.Engine.RecordWire;
 using CreationsForge.Core.Enums;
-using CreationsForge.Starfield.Native.Wire;
+using CreationsForge.Starfield.PluginAdapter.Wire;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -31,7 +31,7 @@ public sealed class McpAuthoringToolProtocolTests
         var selectedRevision = new WorkspaceRevision(initialRevision.BaselineId, 1);
         var resetRevision = new WorkspaceRevision(initialRevision.BaselineId, 2);
         var output = new OutputAssociation(Path.GetFullPath("Output.esm"), ModKey.FromNameAndExtension("Output.esm"), LocalizedOutputMode.Embedded, OutputMasterStyle.Full);
-        var baseline = new OutputArtifactSetBaseline(Guid.NewGuid(), [new NativeArtifactAssociation(output.PluginPath, NativeArtifactRole.Plugin, null, new NativeArtifactFingerprint(false, 0, null))]);
+        var baseline = new OutputArtifactSetBaseline(Guid.NewGuid(), [new PluginArtifactAssociation(output.PluginPath, PluginArtifactRole.Plugin, null, new PluginArtifactFingerprint(false, 0, null))]);
         var workspace = CreateWorkspace(workspaceId, initialRevision);
         workspace.Setup(candidate => candidate.SelectOutputAsync(It.IsAny<SelectOutputRequest>(), It.IsAny<CancellationToken>()))
             .Returns(ValueTask.FromResult(EngineResult<OutputSelectionReceipt>.Success(new OutputSelectionReceipt(output, baseline, selectedRevision), workspaceId: workspaceId, resultRevision: selectedRevision)));
@@ -145,7 +145,7 @@ public sealed class McpAuthoringToolProtocolTests
             ["originSelection"] = malformedNameObject,
         }, "originSelection", out _, out _).ShouldBeFalse();
 
-        codec.Verify(candidate => candidate.Decode(It.IsAny<string>(), It.IsAny<JsonElement>(), It.IsAny<NativeWireReadLimits>(), It.IsAny<CancellationToken>()), Times.Never);
+        codec.Verify(candidate => candidate.Decode(It.IsAny<string>(), It.IsAny<JsonElement>(), It.IsAny<RecordWireReadLimits>(), It.IsAny<CancellationToken>()), Times.Never);
         workspace.Verify(candidate => candidate.ReadStateAsync(It.IsAny<CancellationToken>()), Times.Never);
         workspace.Verify(candidate => candidate.ApplyFormListEditAsync(It.IsAny<FormListEditRequest>(), It.IsAny<CancellationToken>()), Times.Never);
         workspace.Verify(candidate => candidate.SelectOutputAsync(It.IsAny<SelectOutputRequest>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -162,7 +162,7 @@ public sealed class McpAuthoringToolProtocolTests
         var revision = new WorkspaceRevision(Guid.NewGuid(), 0);
         var selectedRevision = revision.Next();
         var output = new OutputAssociation(Path.GetFullPath("CapacityOutput.esm"), ModKey.FromNameAndExtension("CapacityOutput.esm"), LocalizedOutputMode.Embedded, OutputMasterStyle.Full);
-        var baseline = new OutputArtifactSetBaseline(Guid.NewGuid(), [new NativeArtifactAssociation(output.PluginPath, NativeArtifactRole.Plugin, null, new NativeArtifactFingerprint(false, 0, null))]);
+        var baseline = new OutputArtifactSetBaseline(Guid.NewGuid(), [new PluginArtifactAssociation(output.PluginPath, PluginArtifactRole.Plugin, null, new PluginArtifactFingerprint(false, 0, null))]);
         var workspace = CreateWorkspace(workspaceId, revision);
         workspace.Setup(candidate => candidate.SelectOutputAsync(It.IsAny<SelectOutputRequest>(), It.IsAny<CancellationToken>()))
             .Returns(ValueTask.FromResult(EngineResult<OutputSelectionReceipt>.Success(
@@ -196,7 +196,7 @@ public sealed class McpAuthoringToolProtocolTests
     }
 
     /// <summary>Verifies escaped invalid UTF-16 inside command JSON becomes a typed input failure before Core mutation.</summary>
-    /// <returns>A task that completes after the native codec rejection is verified.</returns>
+    /// <returns>A task that completes after the plugin codec rejection is verified.</returns>
     [Fact]
     public async Task ApplyEdit_ThroughSdkProtocol_RejectsInnerInvalidUnicodeBeforeMutation()
     {
@@ -239,7 +239,7 @@ public sealed class McpAuthoringToolProtocolTests
         var formKey = new FormKey(ModKey.FromNameAndExtension("Output.esm"), 0x800);
         var edit = new ClearItemsEdit();
         var output = new OutputAssociation(Path.GetFullPath("Output.esm"), ModKey.FromNameAndExtension("Output.esm"), LocalizedOutputMode.Embedded, OutputMasterStyle.Full);
-        var baseline = new OutputArtifactSetBaseline(Guid.NewGuid(), [new NativeArtifactAssociation(output.PluginPath, NativeArtifactRole.Plugin, null, new NativeArtifactFingerprint(false, 0, null))]);
+        var baseline = new OutputArtifactSetBaseline(Guid.NewGuid(), [new PluginArtifactAssociation(output.PluginPath, PluginArtifactRole.Plugin, null, new PluginArtifactFingerprint(false, 0, null))]);
         var workspace = CreateWorkspace(workspaceId, revision0);
         workspace.Setup(candidate => candidate.BeginEditAsync(It.IsAny<BeginEditRequest>(), It.IsAny<CancellationToken>()))
             .Returns((BeginEditRequest request, CancellationToken _) =>
@@ -263,8 +263,8 @@ public sealed class McpAuthoringToolProtocolTests
         var codec = new Mock<IFormListEditWireCodec>();
         codec.SetupGet(candidate => candidate.Game).Returns(SupportedGame.Starfield);
         codec.SetupGet(candidate => candidate.Release).Returns(GameRelease.Starfield);
-        codec.Setup(candidate => candidate.Decode("form-list.clear-items", It.Is<JsonElement>(value => value.ValueKind == JsonValueKind.Object && !value.EnumerateObject().Any()), It.IsAny<NativeWireReadLimits>(), It.IsAny<CancellationToken>()))
-            .Returns(NativeWireDecodeResult<FormListEdit>.Success(edit));
+        codec.Setup(candidate => candidate.Decode("form-list.clear-items", It.Is<JsonElement>(value => value.ValueKind == JsonValueKind.Object && !value.EnumerateObject().Any()), It.IsAny<RecordWireReadLimits>(), It.IsAny<CancellationToken>()))
+            .Returns(RecordWireDecodeResult<FormListEdit>.Success(edit));
 
         await using var registry = new McpWorkspaceRegistry();
         await OpenRegistryAsync(registry, workspace.Object, workspaceId);
@@ -301,7 +301,7 @@ public sealed class McpAuthoringToolProtocolTests
         var workspaceId = Guid.NewGuid();
         var revision = new WorkspaceRevision(Guid.NewGuid(), 1);
         var output = new OutputAssociation(Path.GetFullPath("Output.esm"), ModKey.FromNameAndExtension("Output.esm"), LocalizedOutputMode.Embedded, OutputMasterStyle.Full);
-        var baseline = new OutputArtifactSetBaseline(Guid.NewGuid(), [new NativeArtifactAssociation(output.PluginPath, NativeArtifactRole.Plugin, null, new NativeArtifactFingerprint(false, 0, null))]);
+        var baseline = new OutputArtifactSetBaseline(Guid.NewGuid(), [new PluginArtifactAssociation(output.PluginPath, PluginArtifactRole.Plugin, null, new PluginArtifactFingerprint(false, 0, null))]);
         var workspace = CreateWorkspace(workspaceId, revision);
         workspace.Setup(candidate => candidate.ReadStateAsync(It.IsAny<CancellationToken>()))
             .Returns(ValueTask.FromResult(EngineResult<WorkspaceState>.Success(new WorkspaceState(SupportedGame.Starfield, GameRelease.Starfield, output, baseline, new OutputSynchronizationState(OutputSynchronizationStatus.Ready, null), revision), workspaceId: workspaceId, resultRevision: revision)));
@@ -333,7 +333,7 @@ public sealed class McpAuthoringToolProtocolTests
         var workspaceId = Guid.NewGuid();
         var revision = new WorkspaceRevision(Guid.NewGuid(), 1);
         var output = new OutputAssociation(Path.GetFullPath("Output.esm"), ModKey.FromNameAndExtension("Output.esm"), LocalizedOutputMode.Embedded, OutputMasterStyle.Full);
-        var baseline = new OutputArtifactSetBaseline(Guid.NewGuid(), [new NativeArtifactAssociation(output.PluginPath, NativeArtifactRole.Plugin, null, new NativeArtifactFingerprint(false, 0, null))]);
+        var baseline = new OutputArtifactSetBaseline(Guid.NewGuid(), [new PluginArtifactAssociation(output.PluginPath, PluginArtifactRole.Plugin, null, new PluginArtifactFingerprint(false, 0, null))]);
         var workspace = CreateWorkspace(workspaceId, revision);
         workspace.Setup(candidate => candidate.ReadStateAsync(It.IsAny<CancellationToken>()))
             .Returns(ValueTask.FromResult(EngineResult<WorkspaceState>.Success(new WorkspaceState(SupportedGame.Starfield, GameRelease.Starfield, output, baseline, new OutputSynchronizationState(OutputSynchronizationStatus.Ready, null), revision), workspaceId: workspaceId, resultRevision: revision)));
@@ -364,7 +364,7 @@ public sealed class McpAuthoringToolProtocolTests
         var currentRevision = new WorkspaceRevision(staleRevision.BaselineId, 1);
         var editId = Guid.NewGuid();
         var output = new OutputAssociation(Path.GetFullPath("Output.esm"), ModKey.FromNameAndExtension("Output.esm"), LocalizedOutputMode.Embedded, OutputMasterStyle.Full);
-        var baseline = new OutputArtifactSetBaseline(Guid.NewGuid(), [new NativeArtifactAssociation(output.PluginPath, NativeArtifactRole.Plugin, null, new NativeArtifactFingerprint(false, 0, null))]);
+        var baseline = new OutputArtifactSetBaseline(Guid.NewGuid(), [new PluginArtifactAssociation(output.PluginPath, PluginArtifactRole.Plugin, null, new PluginArtifactFingerprint(false, 0, null))]);
         var workspace = CreateWorkspace(workspaceId, currentRevision);
         workspace.Setup(candidate => candidate.ReadStateAsync(It.IsAny<CancellationToken>()))
             .Returns(ValueTask.FromResult(EngineResult<WorkspaceState>.Success(new WorkspaceState(SupportedGame.Starfield, GameRelease.Starfield, output, baseline, new OutputSynchronizationState(OutputSynchronizationStatus.Ready, null), currentRevision), workspaceId: workspaceId, resultRevision: currentRevision)));
@@ -375,8 +375,8 @@ public sealed class McpAuthoringToolProtocolTests
         var codec = new Mock<IFormListEditWireCodec>();
         codec.SetupGet(candidate => candidate.Game).Returns(SupportedGame.Starfield);
         codec.SetupGet(candidate => candidate.Release).Returns(GameRelease.Starfield);
-        codec.Setup(candidate => candidate.Decode("form-list.clear-items", It.IsAny<JsonElement>(), It.IsAny<NativeWireReadLimits>(), It.IsAny<CancellationToken>()))
-            .Returns(NativeWireDecodeResult<FormListEdit>.Success(new ClearItemsEdit()));
+        codec.Setup(candidate => candidate.Decode("form-list.clear-items", It.IsAny<JsonElement>(), It.IsAny<RecordWireReadLimits>(), It.IsAny<CancellationToken>()))
+            .Returns(RecordWireDecodeResult<FormListEdit>.Success(new ClearItemsEdit()));
 
         await using var registry = new McpWorkspaceRegistry();
         await OpenRegistryAsync(registry, workspace.Object, workspaceId);
@@ -404,15 +404,15 @@ public sealed class McpAuthoringToolProtocolTests
     public async Task SchemaTools_ThroughSdkProtocol_ListKeysAndPageExactNodeSections()
     {
         var catalogId = new string('A', 64);
-        var key = new NativeWireSchemaNodeKey(catalogId, NativeWireSchemaNodeKind.Command, "form-list.clear-items");
+        var key = new RecordWireSchemaNodeKey(catalogId, RecordWireSchemaNodeKind.Command, "form-list.clear-items");
         var schema = JsonSerializer.SerializeToElement(new { type = "object", additionalProperties = false, properties = new { value = new { type = "string" } } });
         var template = JsonSerializer.SerializeToElement(new { value = "example" });
-        var node = new NativeWireSchemaNode(key, schema, template);
+        var node = new RecordWireSchemaNode(key, schema, template);
         var catalog = new Mock<IFormListEditWireSchemaCatalog>();
-        catalog.SetupGet(candidate => candidate.Identity).Returns(new NativeWireSchemaCatalogIdentity(SupportedGame.Starfield, GameRelease.Starfield, "v1", catalogId));
+        catalog.SetupGet(candidate => candidate.Identity).Returns(new RecordWireSchemaCatalogIdentity(SupportedGame.Starfield, GameRelease.Starfield, "v1", catalogId));
         catalog.SetupGet(candidate => candidate.Nodes).Returns([key]);
-        catalog.Setup(candidate => candidate.ReadNode(It.Is<NativeWireSchemaNodeKey>(value => value.CatalogId == catalogId && value.Kind == key.Kind && value.Name == key.Name), It.IsAny<CancellationToken>()))
-            .Returns(EngineResult<NativeWireSchemaNode>.Success(node));
+        catalog.Setup(candidate => candidate.ReadNode(It.Is<RecordWireSchemaNodeKey>(value => value.CatalogId == catalogId && value.Kind == key.Kind && value.Name == key.Name), It.IsAny<CancellationToken>()))
+            .Returns(EngineResult<RecordWireSchemaNode>.Success(node));
 
         await using var harness = await ProtocolHarness.CreateAsync([new FormListEditSchemasListTool([catalog.Object]), new FormListEditSchemaReadTool([catalog.Object])]);
         var listed = GetResult(await harness.Client.CallToolAsync("creationsforge_formlist_edit_schemas_list", new Dictionary<string, object?> { ["game"] = "starfield", ["release"] = "starfield", ["maxResults"] = 1 }));

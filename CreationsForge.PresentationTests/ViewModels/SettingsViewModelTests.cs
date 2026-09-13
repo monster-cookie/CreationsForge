@@ -10,13 +10,13 @@ using Shouldly;
 namespace CreationsForge.PresentationTests.ViewModels;
 
 /// <summary>
-/// Verifies settings preserve application preferences while returning through native navigation.
+/// Verifies settings preserve application preferences while returning through plugin navigation.
 /// </summary>
 public sealed class SettingsViewModelTests
 {
-    /// <summary>Verifies Save persists editable preferences, preserves the platform-specific NifSkope contract, applies the theme, and returns to the native shell.</summary>
+    /// <summary>Verifies Save persists editable preferences, preserves the platform-specific NifSkope contract, applies the theme, and returns to the plugin shell.</summary>
     [Fact]
-    public void SaveCommand_WithSelectedGame_PreservesSettingsBehaviorAndShowsNativeShell()
+    public void SaveCommand_WithSelectedGame_PreservesSettingsBehaviorAndShowsPluginShell()
     {
         var game = new SupportedGameDTO
         {
@@ -30,7 +30,7 @@ public sealed class SettingsViewModelTests
             SupportedGames = [game]
         };
         var settings = new FakeApplicationSettingsService();
-        var navigation = new FakeNativeApplicationNavigationService();
+        var navigation = new FakeApplicationNavigationService();
         var window = new FakeApplicationWindowService();
         var viewModel = new SettingsViewModel(gameSelection, settings, navigation, window)
         {
@@ -54,12 +54,12 @@ public sealed class SettingsViewModelTests
         navigation.WorkspaceShellCount.ShouldBe(1);
     }
 
-    /// <summary>Verifies Cancel leaves persisted settings unchanged and returns to the native shell.</summary>
+    /// <summary>Verifies Cancel leaves persisted settings unchanged and returns to the plugin shell.</summary>
     [Fact]
-    public void CancelCommand_WhenExecuted_ShowsNativeShellWithoutSaving()
+    public void CancelCommand_WhenExecuted_ShowsPluginShellWithoutSaving()
     {
         var settings = new FakeApplicationSettingsService();
-        var navigation = new FakeNativeApplicationNavigationService();
+        var navigation = new FakeApplicationNavigationService();
         var viewModel = new SettingsViewModel(
             new FakeGameSelectionService(),
             settings,

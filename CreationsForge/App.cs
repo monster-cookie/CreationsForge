@@ -24,7 +24,7 @@ using Semi.Avalonia.DataGrid;
 namespace CreationsForge;
 
 /// <summary>
-/// Composes and owns the Avalonia desktop application and its native engine lifetime.
+/// Composes and owns the Avalonia desktop application and its engine lifetime.
 /// </summary>
 public class App : Application
 {
@@ -61,12 +61,12 @@ public class App : Application
         var configurationStore = new ApplicationConfigurationStore();
         SerilogConfigurator.Configure(configurationStore, writeToConsole: false);
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
-        Container = NativeDesktopComposition.Create(configurationStore, Log.Logger);
+        Container = DesktopComposition.Create(configurationStore, Log.Logger);
         CloseLog = Log.CloseAndFlush;
     }
 
     /// <summary>Initializes an application that assumes ownership of a supplied container without accessing profile configuration.</summary>
-    /// <param name="container">The complete native desktop dependency container whose lifetime transfers to the application.</param>
+    /// <param name="container">The complete plugin desktop dependency container whose lifetime transfers to the application.</param>
     /// <param name="closeLog">The optional log finalizer; <see langword="null"/> selects a no-op finalizer for isolated tests.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="container"/> is <see langword="null"/>.</exception>
     internal App(IContainer container, Action? closeLog = null)
@@ -82,7 +82,7 @@ public class App : Application
         ApplyTheme(this, GetConfiguredThemeFamily(), GetConfiguredThemeMode());
     }
 
-    /// <summary>Starts diagnostics, publishes the native shell, and attaches guarded desktop startup and shutdown behavior.</summary>
+    /// <summary>Starts diagnostics, publishes the plugin shell, and attaches guarded desktop startup and shutdown behavior.</summary>
     public override void OnFrameworkInitializationCompleted()
     {
         try
@@ -92,7 +92,7 @@ public class App : Application
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 var mainWindow = Container.Resolve<MainWindow>();
-                Container.Resolve<INativeApplicationNavigationService>().ShowWorkspaceShell();
+                Container.Resolve<IApplicationNavigationService>().ShowWorkspaceShell();
                 mainWindow.Opened += OnMainWindowOpened;
                 desktop.ShutdownRequested += OnDesktopShutdownRequested;
                 desktop.MainWindow = mainWindow;
@@ -238,7 +238,7 @@ public class App : Application
         application.Resources[BorderBrushKey] = new SolidColorBrush(Color.FromRgb(80, 88, 96));
     }
 
-    /// <summary>Shows complete native source-and-output selection once the owner window is visible.</summary>
+    /// <summary>Shows complete plugin source-and-output selection once the owner window is visible.</summary>
     /// <param name="sender">The opened main window.</param>
     /// <param name="eventArgs">The window-open event arguments.</param>
     private async void OnMainWindowOpened(object? sender, EventArgs eventArgs)
@@ -250,17 +250,17 @@ public class App : Application
 
         try
         {
-            var selectionViewModel = Container.Resolve<Func<NativeWorkspaceSelectionViewModel>>()();
-            await Container.Resolve<INativeWorkspaceSelectionDialogService>().ShowAsync(selectionViewModel);
+            var selectionViewModel = Container.Resolve<Func<WorkspaceSelectionViewModel>>()();
+            await Container.Resolve<IWorkspaceSelectionDialogService>().ShowAsync(selectionViewModel);
         }
         catch (Exception exception)
         {
-            Log.Error(exception, "Unable to show initial native workspace selection.");
+            Log.Error(exception, "Unable to show initial workspace selection.");
         }
     }
 
     /// <summary>Begins the guarded application shutdown path.</summary>
-    /// <remarks>The desktop lifetime remains open until native ownership and the container have been released.</remarks>
+    /// <remarks>The desktop lifetime remains open until plugin ownership and the container have been released.</remarks>
     public void ShutDown()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
@@ -327,20 +327,20 @@ public class App : Application
         }
     }
 
-    /// <summary>Reserves safe shutdown, releases native ownership, records clean termination when possible, and disposes the application container before exit.</summary>
+    /// <summary>Reserves safe shutdown, releases plugin ownership, records clean termination when possible, and disposes the application container before exit.</summary>
     /// <param name="desktop">The desktop lifetime to close after cleanup, or <see langword="null"/>.</param>
     /// <returns><see langword="false"/> only when shutdown is rejected or fails before teardown begins; otherwise <see langword="true"/> after the accepted terminal attempt.</returns>
     private async Task<bool> CleanUpForExitAsync(IClassicDesktopStyleApplicationLifetime? desktop)
     {
         await Task.Yield();
-        NativeApplicationShutdownLease? shutdownLease;
+        ApplicationShutdownLease? shutdownLease;
         try
         {
-            shutdownLease = await Container.Resolve<INativeApplicationNavigationService>().ReserveShutdownAsync();
+            shutdownLease = await Container.Resolve<IApplicationNavigationService>().ReserveShutdownAsync();
         }
         catch (Exception exception)
         {
-            Log.Error(exception, "Unable to reserve guarded native workspace shutdown.");
+            Log.Error(exception, "Unable to reserve guarded workspace shutdown.");
             return false;
         }
 
@@ -357,12 +357,12 @@ public class App : Application
             try
             {
                 diagnostics = Container.Resolve<IProcessTerminationDiagnosticsService>();
-                await Container.Resolve<INativeWorkspaceCoordinator>().DisposeAsync();
+                await Container.Resolve<IWorkspaceCoordinator>().DisposeAsync();
             }
             catch (Exception exception)
             {
                 canMarkCleanShutdown = false;
-                Log.Error(exception, "Unable to finish native workspace shutdown cleanly.");
+                Log.Error(exception, "Unable to finish workspace shutdown cleanly.");
             }
 
             try

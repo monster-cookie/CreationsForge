@@ -1,6 +1,6 @@
 namespace CreationsForge.Core.Engine.Contracts;
 
-/// <summary>Reports whether output admission may proceed or an unresolved journal blocks native opening.</summary>
+/// <summary>Reports whether output admission may proceed or an unresolved journal blocks plugin opening.</summary>
 public sealed class OutputAdmissionResult
 {
     /// <summary>Initializes an immutable output admission result.</summary>
@@ -26,7 +26,7 @@ public sealed class OutputAdmissionResult
         UnresolvedSave = unresolvedSave;
     }
 
-    /// <summary>Gets whether native output opening may proceed or recovery is required.</summary>
+    /// <summary>Gets whether plugin output opening may proceed or recovery is required.</summary>
     public OutputSynchronizationStatus Status { get; }
 
     /// <summary>Gets the original unresolved save when recovery is required.</summary>

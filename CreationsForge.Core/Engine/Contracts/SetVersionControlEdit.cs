@@ -1,9 +1,9 @@
 namespace CreationsForge.Core.Engine.Contracts;
 
-/// <summary>Sets the native FormList version-control value through its typed unsigned field.</summary>
+/// <summary>Sets the FormList version-control value through its typed unsigned field.</summary>
 public sealed class SetVersionControlEdit : FormListEdit
 {
-    /// <summary>Initializes a native version-control command.</summary>
+    /// <summary>Initializes a plugin version-control command.</summary>
     /// <param name="versionControl">The exact unsigned version-control value to assign.</param>
     public SetVersionControlEdit(uint versionControl)
         : base("form-list.set-version-control")

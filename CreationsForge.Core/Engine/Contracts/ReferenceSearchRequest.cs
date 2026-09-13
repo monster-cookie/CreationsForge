@@ -2,7 +2,7 @@ using Mutagen.Bethesda.Plugins;
 
 namespace CreationsForge.Core.Engine.Contracts;
 
-/// <summary>Requests a bounded native reference search without materializing a persistent index.</summary>
+/// <summary>Requests a bounded reference search without materializing a persistent index.</summary>
 public sealed class ReferenceSearchRequest
 {
     /// <summary>The largest accepted deterministic page size.</summary>
@@ -12,10 +12,10 @@ public sealed class ReferenceSearchRequest
     public const int MaximumQueryLength = 256;
 
     /// <summary>Initializes a bounded reference search.</summary>
-    /// <param name="query">The non-empty native identity or EditorID search text.</param>
+    /// <param name="query">The non-empty record identity or EditorID search text.</param>
     /// <param name="maximumResults">The positive maximum number of matches to return.</param>
     /// <param name="continuationToken">An optional adapter-issued token for the next deterministic page.</param>
-    /// <param name="scope">The native record contexts to search.</param>
+    /// <param name="scope">The record contexts to search.</param>
     /// <param name="containingModKey">An optional containing plugin filter for non-winning scopes.</param>
     /// <exception cref="ArgumentException">Thrown when <paramref name="query"/> is empty or whitespace.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the query is too long, the page size is outside the supported bounds, or <paramref name="scope"/> is undefined.</exception>
@@ -61,7 +61,7 @@ public sealed class ReferenceSearchRequest
         ContainingModKey = containingModKey;
     }
 
-    /// <summary>Gets the native identity or EditorID search text.</summary>
+    /// <summary>Gets the record identity or EditorID search text.</summary>
     public string Query { get; }
 
     /// <summary>Gets the maximum number of matches to return.</summary>
@@ -70,7 +70,7 @@ public sealed class ReferenceSearchRequest
     /// <summary>Gets the adapter-issued continuation token, or <see langword="null"/> for the first page.</summary>
     public string? ContinuationToken { get; }
 
-    /// <summary>Gets the native record contexts to search.</summary>
+    /// <summary>Gets the record contexts to search.</summary>
     public RecordScope Scope { get; }
 
     /// <summary>Gets the containing plugin filter, or <see langword="null"/> when all contexts in the scope participate.</summary>

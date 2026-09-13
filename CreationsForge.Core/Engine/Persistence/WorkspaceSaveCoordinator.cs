@@ -4,7 +4,7 @@ using CreationsForge.Core.Engine.Contracts;
 
 namespace CreationsForge.Core.Engine.Persistence;
 
-/// <summary>Coordinates recoverable, lease-guarded publication of complete native output artifact sets.</summary>
+/// <summary>Coordinates recoverable, lease-guarded publication of complete plugin output artifact sets.</summary>
 public sealed partial class WorkspaceSaveCoordinator : IWorkspaceSaveCoordinator
 {
     /// <summary>The injected process-wide and cooperating cross-process directory lease provider.</summary>
@@ -47,7 +47,7 @@ public sealed partial class WorkspaceSaveCoordinator : IWorkspaceSaveCoordinator
     private static string GetOutputDirectory(OutputAssociation output)
     {
         var pluginPath = Path.GetFullPath(output.PluginPath);
-        if (!NativeSaveArtifactUtilities.PathComparer.Equals(pluginPath, output.PluginPath))
+        if (!PluginSaveArtifactUtilities.PathComparer.Equals(pluginPath, output.PluginPath))
         {
             throw new InvalidDataException("The output plugin path must be canonical before save coordination.");
         }
@@ -71,7 +71,7 @@ public sealed partial class WorkspaceSaveCoordinator : IWorkspaceSaveCoordinator
         ArgumentNullException.ThrowIfNull(lease);
         var outputDirectory = GetOutputDirectory(output);
         var leaseDirectory = Path.GetFullPath(lease.OutputDirectoryPath);
-        if (!NativeSaveArtifactUtilities.PathComparer.Equals(outputDirectory, leaseDirectory))
+        if (!PluginSaveArtifactUtilities.PathComparer.Equals(outputDirectory, leaseDirectory))
         {
             throw new InvalidDataException("The supplied output-directory lease does not protect the requested output association.");
         }
@@ -129,7 +129,7 @@ public sealed partial class WorkspaceSaveCoordinator : IWorkspaceSaveCoordinator
     /// <summary>Appends complete ordered artifact metadata to a canonical digest.</summary>
     /// <param name="hash">The digest receiving the artifacts.</param>
     /// <param name="artifacts">The artifacts to append.</param>
-    private static void AppendArtifacts(IncrementalHash hash, IReadOnlyList<NativeArtifactAssociation> artifacts)
+    private static void AppendArtifacts(IncrementalHash hash, IReadOnlyList<PluginArtifactAssociation> artifacts)
     {
         foreach (var artifact in artifacts)
         {
@@ -159,7 +159,7 @@ public sealed partial class WorkspaceSaveCoordinator : IWorkspaceSaveCoordinator
     /// <summary>Creates a stable engine error for an unexpected coordinator exception.</summary>
     /// <param name="operation">The operation description.</param>
     /// <param name="exception">The unexpected exception.</param>
-    /// <returns>The typed error without native payload data.</returns>
+    /// <returns>The typed error without plugin payload data.</returns>
     private static EngineError Unexpected(string operation, Exception exception)
     {
         return new EngineError(EngineErrorCode.UnexpectedFailure, $"{operation} failed: {exception.Message}");

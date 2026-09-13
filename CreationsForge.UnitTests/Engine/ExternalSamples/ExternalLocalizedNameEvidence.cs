@@ -1,6 +1,6 @@
 namespace CreationsForge.UnitTests.Engine.ExternalSamples;
 
-/// <summary>Reports one source localized-name value proven against its selected native strings table.</summary>
+/// <summary>Reports one source localized-name value proven against its selected record strings table.</summary>
 internal sealed class ExternalLocalizedNameEvidence
 {
     /// <summary>Initializes an empty serializable localized-name evidence entry.</summary>
@@ -10,7 +10,7 @@ internal sealed class ExternalLocalizedNameEvidence
     /// <summary>Gets or initializes the selected source FormList identity.</summary>
     public string FormKey { get; init; } = string.Empty;
 
-    /// <summary>Gets or initializes the native language.</summary>
+    /// <summary>Gets or initializes the plugin language.</summary>
     public string Language { get; init; } = string.Empty;
 
     /// <summary>Gets or initializes the original source string-table key.</summary>

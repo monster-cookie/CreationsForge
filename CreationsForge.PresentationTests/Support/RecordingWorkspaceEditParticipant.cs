@@ -6,7 +6,7 @@ using CreationsForge.ViewModels;
 namespace CreationsForge.PresentationTests.Support;
 
 /// <summary>Exposes configurable editor state and records post-persistence refresh requests.</summary>
-internal sealed class RecordingWorkspaceEditParticipant : INativeWorkspaceEditParticipant
+internal sealed class RecordingWorkspaceEditParticipant : IWorkspaceEditParticipant
 {
     /// <summary>Initializes an idle recording editor participant.</summary>
     internal RecordingWorkspaceEditParticipant()
@@ -26,7 +26,7 @@ internal sealed class RecordingWorkspaceEditParticipant : INativeWorkspaceEditPa
     public bool IsEditorBusy { get; private set; }
 
     /// <inheritdoc />
-    public NativeFormListEditorOperationState EditorOperationState { get; private set; } = NativeFormListEditorOperationState.Idle;
+    public FormListEditorOperationState EditorOperationState { get; private set; } = FormListEditorOperationState.Idle;
 
     /// <summary>Gets the number of request-local discard calls.</summary>
     internal int DiscardRequestLocalCount { get; private set; }
@@ -46,7 +46,7 @@ internal sealed class RecordingWorkspaceEditParticipant : INativeWorkspaceEditPa
         bool hasDraftChanges,
         bool hasPendingOperation = false,
         bool isEditorBusy = false,
-        NativeFormListEditorOperationState operationState = NativeFormListEditorOperationState.Idle)
+        FormListEditorOperationState operationState = FormListEditorOperationState.Idle)
     {
         HasDraftChanges = hasDraftChanges;
         HasPendingOperation = hasPendingOperation;

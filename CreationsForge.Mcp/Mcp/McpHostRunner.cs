@@ -31,16 +31,16 @@ public static class McpHostRunner
             .MinimumLevel.Verbose()
             .WriteTo.Console(standardErrorFromLevel: LogEventLevel.Verbose)
             .CreateLogger();
-        await using var nativeServices = NativeEngineComposition.Create(logger);
+        await using var engineServices = EngineComposition.Create(logger);
         using var metadataStore = new McpMetadataStore();
         await using var workspaceRegistry = new McpWorkspaceRegistry();
         var builder = McpHostComposition.CreateProductionBuilder(
             workspaceRegistry,
             serverVersion,
-            nativeServices.WorkspaceFactory,
-            nativeServices.SaveCoordinator,
-            nativeServices.FormListEditWireCodecs,
-            nativeServices.FormListEditWireSchemaCatalogs,
+            engineServices.WorkspaceFactory,
+            engineServices.SaveCoordinator,
+            engineServices.FormListEditWireCodecs,
+            engineServices.FormListEditWireSchemaCatalogs,
             metadataStore);
 
         using var host = builder.Build();

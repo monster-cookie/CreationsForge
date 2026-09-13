@@ -2,7 +2,7 @@ using System.IO.Pipelines;
 using System.Text.Json;
 using CreationsForge.Mcp;
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 using CreationsForge.Core.Enums;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -626,7 +626,7 @@ public sealed class McpSaveToolProtocolTests
         };
     }
 
-    /// <summary>Creates a deterministic native output association.</summary>
+    /// <summary>Creates a deterministic plugin output association.</summary>
     /// <param name="fileName">The unique output plugin file name.</param>
     /// <returns>An immutable output association.</returns>
     private static OutputAssociation CreateOutput(string fileName)
@@ -644,17 +644,17 @@ public sealed class McpSaveToolProtocolTests
     /// <returns>An immutable complete output baseline.</returns>
     private static OutputArtifactSetBaseline CreateBaseline(OutputAssociation output, bool includeStrings)
     {
-        var artifacts = new List<NativeArtifactAssociation>
+        var artifacts = new List<PluginArtifactAssociation>
         {
-            new(output.PluginPath, NativeArtifactRole.Plugin, null, new NativeArtifactFingerprint(false, 0, null)),
+            new(output.PluginPath, PluginArtifactRole.Plugin, null, new PluginArtifactFingerprint(false, 0, null)),
         };
         if (includeStrings)
         {
-            artifacts.Add(new NativeArtifactAssociation(
+            artifacts.Add(new PluginArtifactAssociation(
                 Path.Combine(Path.GetDirectoryName(output.PluginPath)!, $"{Path.GetFileNameWithoutExtension(output.PluginPath)}_en.strings"),
-                NativeArtifactRole.Strings,
+                PluginArtifactRole.Strings,
                 "en",
-                new NativeArtifactFingerprint(false, 0, null)));
+                new PluginArtifactFingerprint(false, 0, null)));
         }
 
         return new OutputArtifactSetBaseline(Guid.NewGuid(), artifacts);
@@ -679,9 +679,9 @@ public sealed class McpSaveToolProtocolTests
         RecoverSaveStatus status)
     {
         var sourcePath = Path.Combine(Path.GetTempPath(), "Source.esm");
-        var sourceBaseline = new NativeSourceInputBaseline(
+        var sourceBaseline = new PluginSourceInputBaseline(
             revision.BaselineId,
-            [new NativeArtifactAssociation(sourcePath, NativeArtifactRole.Plugin, null, new NativeArtifactFingerprint(false, 0, null))]);
+            [new PluginArtifactAssociation(sourcePath, PluginArtifactRole.Plugin, null, new PluginArtifactFingerprint(false, 0, null))]);
         return new ResolvedOutputEvidence(
             token,
             SupportedGame.Starfield,

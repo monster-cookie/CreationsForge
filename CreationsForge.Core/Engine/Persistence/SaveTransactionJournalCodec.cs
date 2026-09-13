@@ -1,6 +1,6 @@
 using System.Text;
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 using CreationsForge.Core.Enums;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
@@ -111,7 +111,7 @@ internal static class SaveTransactionJournalCodec
             var sourceBaseline = ReadSourceBaseline(reader);
             var output = ReadOutput(reader);
             var beforeBaseline = ReadOutputBaseline(reader);
-            var disposition = ReadEnum<NativeWriteDisposition>(reader, "write disposition");
+            var disposition = ReadEnum<PluginWriteDisposition>(reader, "write disposition");
             var phase = ReadEnum<SaveTransactionPhase>(reader, "transaction phase");
             var mutationProgress = reader.ReadInt32();
             var planCount = ReadCount(reader, MaximumArtifactCount, "artifact plan");
@@ -191,7 +191,7 @@ internal static class SaveTransactionJournalCodec
     }
 
     /// <summary>Validates phase-dependent completeness after bounded parsing.</summary>
-    /// <param name="disposition">The recorded native write disposition.</param>
+    /// <param name="disposition">The recorded plugin write disposition.</param>
     /// <param name="phase">The recorded durable phase.</param>
     /// <param name="mutationProgress">The recorded artifact progress.</param>
     /// <param name="plans">The complete artifact plans.</param>
@@ -199,7 +199,7 @@ internal static class SaveTransactionJournalCodec
     /// <param name="repairAttempts">The bounded repair attempts and exact per-artifact plans.</param>
     /// <exception cref="InvalidDataException">Thrown when the phase and metadata disagree.</exception>
     private static void ValidateState(
-        NativeWriteDisposition disposition,
+        PluginWriteDisposition disposition,
         SaveTransactionPhase phase,
         int mutationProgress,
         IReadOnlyList<SaveArtifactPlan> plans,
@@ -211,12 +211,12 @@ internal static class SaveTransactionJournalCodec
             throw new InvalidDataException("The save journal mutation progress is outside its artifact plan.");
         }
 
-        if (disposition == NativeWriteDisposition.Unchanged && plans.Count != 0)
+        if (disposition == PluginWriteDisposition.Unchanged && plans.Count != 0)
         {
             throw new InvalidDataException("A no-op save journal cannot contain artifact mutation plans.");
         }
 
-        if (disposition == NativeWriteDisposition.StagedChanges
+        if (disposition == PluginWriteDisposition.StagedChanges
             && phase is (SaveTransactionPhase.Prepared or SaveTransactionPhase.MutationStarted or SaveTransactionPhase.Committed)
             && plans.Count == 0)
         {
@@ -309,7 +309,7 @@ internal static class SaveTransactionJournalCodec
     /// <summary>Writes one complete source baseline.</summary>
     /// <param name="writer">The journal writer.</param>
     /// <param name="baseline">The source baseline.</param>
-    private static void WriteSourceBaseline(BinaryWriter writer, NativeSourceInputBaseline baseline)
+    private static void WriteSourceBaseline(BinaryWriter writer, PluginSourceInputBaseline baseline)
     {
         WriteGuid(writer, baseline.BaselineId);
         WriteAssociations(writer, baseline.Artifacts);
@@ -318,9 +318,9 @@ internal static class SaveTransactionJournalCodec
     /// <summary>Reads one complete source baseline.</summary>
     /// <param name="reader">The journal reader.</param>
     /// <returns>The parsed source baseline.</returns>
-    private static NativeSourceInputBaseline ReadSourceBaseline(BinaryReader reader)
+    private static PluginSourceInputBaseline ReadSourceBaseline(BinaryReader reader)
     {
-        return new NativeSourceInputBaseline(
+        return new PluginSourceInputBaseline(
             ReadNonEmptyGuid(reader, "source baseline"),
             ReadAssociations(reader));
     }
@@ -397,7 +397,7 @@ internal static class SaveTransactionJournalCodec
     /// <summary>Writes an ordered artifact association collection.</summary>
     /// <param name="writer">The journal writer.</param>
     /// <param name="artifacts">The artifacts to write.</param>
-    private static void WriteAssociations(BinaryWriter writer, IReadOnlyList<NativeArtifactAssociation> artifacts)
+    private static void WriteAssociations(BinaryWriter writer, IReadOnlyList<PluginArtifactAssociation> artifacts)
     {
         WriteCount(writer, artifacts.Count, MaximumArtifactCount, "artifact");
         foreach (var artifact in artifacts)
@@ -409,10 +409,10 @@ internal static class SaveTransactionJournalCodec
     /// <summary>Reads an ordered artifact association collection.</summary>
     /// <param name="reader">The journal reader.</param>
     /// <returns>The parsed artifact collection.</returns>
-    private static IReadOnlyList<NativeArtifactAssociation> ReadAssociations(BinaryReader reader)
+    private static IReadOnlyList<PluginArtifactAssociation> ReadAssociations(BinaryReader reader)
     {
         var count = ReadCount(reader, MaximumArtifactCount, "artifact");
-        var artifacts = new NativeArtifactAssociation[count];
+        var artifacts = new PluginArtifactAssociation[count];
         for (var index = 0; index < count; index++)
         {
             artifacts[index] = ReadAssociation(reader);
@@ -424,7 +424,7 @@ internal static class SaveTransactionJournalCodec
     /// <summary>Writes one complete artifact association.</summary>
     /// <param name="writer">The journal writer.</param>
     /// <param name="artifact">The artifact to write.</param>
-    private static void WriteAssociation(BinaryWriter writer, NativeArtifactAssociation artifact)
+    private static void WriteAssociation(BinaryWriter writer, PluginArtifactAssociation artifact)
     {
         WriteString(writer, artifact.Path);
         writer.Write((int)artifact.Role);
@@ -449,36 +449,36 @@ internal static class SaveTransactionJournalCodec
     /// <summary>Reads one complete artifact association.</summary>
     /// <param name="reader">The journal reader.</param>
     /// <returns>The parsed artifact association.</returns>
-    private static NativeArtifactAssociation ReadAssociation(BinaryReader reader)
+    private static PluginArtifactAssociation ReadAssociation(BinaryReader reader)
     {
         var path = ReadAbsolutePath(reader, "artifact");
-        var role = ReadEnum<NativeArtifactRole>(reader, "artifact role");
+        var role = ReadEnum<PluginArtifactRole>(reader, "artifact role");
         var language = ReadOptionalString(reader);
         var exists = reader.ReadBoolean();
         var length = reader.ReadInt64();
         var digest = ReadOptionalString(reader);
-        NativeFileIdentity? identity = null;
+        ArtifactFileIdentity? identity = null;
         if (reader.ReadBoolean())
         {
             var provider = ReadString(reader);
             var volume = ReadString(reader);
             var fileId = ReadString(reader);
             ulong? linkCount = reader.ReadBoolean() ? reader.ReadUInt64() : null;
-            identity = new NativeFileIdentity(provider, volume, fileId, linkCount);
+            identity = new ArtifactFileIdentity(provider, volume, fileId, linkCount);
         }
 
-        return new NativeArtifactAssociation(
+        return new PluginArtifactAssociation(
             path,
             role,
             language,
-            new NativeArtifactFingerprint(exists, length, digest),
+            new PluginArtifactFingerprint(exists, length, digest),
             identity);
     }
 
     /// <summary>Writes an optional artifact association.</summary>
     /// <param name="writer">The journal writer.</param>
     /// <param name="artifact">The optional artifact.</param>
-    private static void WriteOptionalAssociation(BinaryWriter writer, NativeArtifactAssociation? artifact)
+    private static void WriteOptionalAssociation(BinaryWriter writer, PluginArtifactAssociation? artifact)
     {
         writer.Write(artifact is not null);
         if (artifact is not null)
@@ -490,7 +490,7 @@ internal static class SaveTransactionJournalCodec
     /// <summary>Reads an optional artifact association.</summary>
     /// <param name="reader">The journal reader.</param>
     /// <returns>The optional parsed artifact.</returns>
-    private static NativeArtifactAssociation? ReadOptionalAssociation(BinaryReader reader)
+    private static PluginArtifactAssociation? ReadOptionalAssociation(BinaryReader reader)
     {
         return reader.ReadBoolean() ? ReadAssociation(reader) : null;
     }

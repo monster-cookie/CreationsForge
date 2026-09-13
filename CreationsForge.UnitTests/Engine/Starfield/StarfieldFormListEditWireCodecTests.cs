@@ -1,12 +1,12 @@
 using System.Text;
 using System.Text.Json;
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInspection;
-using CreationsForge.Core.Engine.NativeWire;
+using CreationsForge.Core.Engine.RecordInspection;
+using CreationsForge.Core.Engine.RecordWire;
 using CreationsForge.Core.Enums;
-using CreationsForge.Starfield.Native.Edits;
-using CreationsForge.Starfield.Native.NativeInspection;
-using CreationsForge.Starfield.Native.Wire;
+using CreationsForge.Starfield.PluginAdapter.Edits;
+using CreationsForge.Starfield.PluginAdapter.RecordInspection;
+using CreationsForge.Starfield.PluginAdapter.Wire;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Records;
@@ -20,7 +20,7 @@ namespace CreationsForge.UnitTests.Engine.Starfield;
 /// <summary>Verifies bounded closed Starfield FormList wire decoding into every existing typed edit.</summary>
 public sealed class StarfieldFormListEditWireCodecTests
 {
-    /// <summary>Verifies the codec advertises the exact game and release used by its native constructors.</summary>
+    /// <summary>Verifies the codec advertises the exact game and release used by its plugin constructors.</summary>
     [Fact]
     public void Identity_UsesExactStarfieldRelease()
     {
@@ -117,7 +117,7 @@ public sealed class StarfieldFormListEditWireCodecTests
             .Message.ShouldContain("cannot contain FormKey.Null");
     }
 
-    /// <summary>Verifies a real inspector-emitted native null link uses and decodes the canonical FormKey.Null string.</summary>
+    /// <summary>Verifies a real inspector-emitted plugin null link uses and decodes the canonical FormKey.Null string.</summary>
     [Fact]
     public void Decode_InspectorNullLink_RoundTripsCanonicalFormKeyNullString()
     {
@@ -249,7 +249,7 @@ public sealed class StarfieldFormListEditWireCodecTests
         error.Message.ShouldContain(expectedMessage);
     }
 
-    /// <summary>Verifies installed typed flags reject the first raw bit absent from the complete native enum mask.</summary>
+    /// <summary>Verifies installed typed flags reject the first raw bit absent from the complete plugin enum mask.</summary>
     [Fact]
     public void Decode_SetMajorFlags_RejectsBitsOutsideInstalledTypedMask()
     {
@@ -271,7 +271,7 @@ public sealed class StarfieldFormListEditWireCodecTests
     public void Decode_EnforcesResourceLimitsAndCancellation()
     {
         var codec = new StarfieldFormListEditWireCodec();
-        var shortArrays = new NativeWireReadLimits(64, 100, 1, 100, 32);
+        var shortArrays = new RecordWireReadLimits(64, 100, 1, 100, 32);
         DecodeFailure(
             codec,
             "starfield.form-list.replace-components",
@@ -283,7 +283,7 @@ public sealed class StarfieldFormListEditWireCodecTests
         Should.Throw<OperationCanceledException>(() => codec.Decode(
             "form-list.clear-items",
             Parse("{}"),
-            NativeWireReadLimits.Default,
+            RecordWireReadLimits.Default,
             cancellation.Token));
     }
 
@@ -299,7 +299,7 @@ public sealed class StarfieldFormListEditWireCodecTests
         string json)
         where TEdit : FormListEdit
     {
-        var result = codec.Decode(commandName, Parse(json), NativeWireReadLimits.Default);
+        var result = codec.Decode(commandName, Parse(json), RecordWireReadLimits.Default);
         result.Succeeded.ShouldBeTrue(result.Error?.Message);
         result.Error.ShouldBeNull();
         return result.Value.ShouldBeOfType<TEdit>();
@@ -315,7 +315,7 @@ public sealed class StarfieldFormListEditWireCodecTests
         string commandName,
         string json)
     {
-        return DecodeFailure(codec, commandName, json, NativeWireReadLimits.Default);
+        return DecodeFailure(codec, commandName, json, RecordWireReadLimits.Default);
     }
 
     /// <summary>Decodes one expected invalid request under caller-selected resource limits.</summary>
@@ -328,7 +328,7 @@ public sealed class StarfieldFormListEditWireCodecTests
         StarfieldFormListEditWireCodec codec,
         string commandName,
         string json,
-        NativeWireReadLimits limits)
+        RecordWireReadLimits limits)
     {
         var result = codec.Decode(commandName, Parse(json), limits);
         result.Succeeded.ShouldBeFalse();
@@ -336,9 +336,9 @@ public sealed class StarfieldFormListEditWireCodecTests
         return result.Error.ShouldNotBeNull();
     }
 
-    /// <summary>Creates the exact inspector-compatible JSON for one native link.</summary>
+    /// <summary>Creates the exact inspector-compatible JSON for one record link.</summary>
     /// <param name="formKey">The non-null key or explicit <see cref="FormKey.Null"/>.</param>
-    /// <returns>The closed native form-link JSON object.</returns>
+    /// <returns>The closed plugin form-link JSON object.</returns>
     private static string LinkJson(FormKey formKey)
     {
         return formKey.IsNull
@@ -346,8 +346,8 @@ public sealed class StarfieldFormListEditWireCodecTests
             : $"{{\"isNull\":false,\"formKey\":{JsonSerializer.Serialize(formKey.ToString())}}}";
     }
 
-    /// <summary>Writes one translated string through the production native leaf writer and wraps it as set-name arguments.</summary>
-    /// <param name="name">The exact native translated string.</param>
+    /// <summary>Writes one translated string through the production plugin leaf writer and wraps it as set-name arguments.</summary>
+    /// <param name="name">The exact record translated string.</param>
     /// <returns>Closed set-name arguments using the inspector read shape.</returns>
     private static string NameArgumentsJson(ITranslatedStringGetter name)
     {
@@ -356,7 +356,7 @@ public sealed class StarfieldFormListEditWireCodecTests
         {
             writer.WriteStartObject();
             writer.WritePropertyName("name");
-            NativeJsonLeafWriter.WriteTranslatedString(writer, name, CancellationToken.None);
+            RecordJsonLeafWriter.WriteTranslatedString(writer, name, CancellationToken.None);
             writer.WriteEndObject();
         }
 
@@ -398,14 +398,14 @@ public sealed class StarfieldFormListEditWireCodecTests
     }
 
     /// <summary>Writes one complete Starfield FormList through the production typed inspector.</summary>
-    /// <param name="formList">The complete detached native record.</param>
+    /// <param name="formList">The complete detached record.</param>
     /// <returns>A detached typed JSON read view.</returns>
     private static JsonElement WriteReadView(FormList formList)
     {
         using var stream = new MemoryStream();
         using (var writer = new Utf8JsonWriter(stream))
         {
-            new StarfieldFormListNativeInspector().WriteReadView(formList, writer, CancellationToken.None);
+            new StarfieldFormListInspector().WriteReadView(formList, writer, CancellationToken.None);
         }
 
         return Parse(Encoding.UTF8.GetString(stream.ToArray()));
@@ -433,7 +433,7 @@ public sealed class StarfieldFormListEditWireCodecTests
             CancellationToken.None));
     }
 
-    /// <summary>Writes exactly one nested native JSON value into an owned UTF-8 buffer.</summary>
+    /// <summary>Writes exactly one nested record JSON value into an owned UTF-8 buffer.</summary>
     /// <param name="write">The generated writer invocation.</param>
     /// <returns>The exact JSON text.</returns>
     private static string WriteNested(Action<Utf8JsonWriter> write)
@@ -448,8 +448,8 @@ public sealed class StarfieldFormListEditWireCodecTests
     }
 
     /// <summary>Asserts complete target-language and translation-map equality.</summary>
-    /// <param name="expected">The expected native translated string.</param>
-    /// <param name="actual">The decoded native translated string.</param>
+    /// <param name="expected">The expected record translated string.</param>
+    /// <param name="actual">The decoded record translated string.</param>
     private static void AssertTranslatedStringEqual(
         ITranslatedStringGetter expected,
         ITranslatedStringGetter actual)

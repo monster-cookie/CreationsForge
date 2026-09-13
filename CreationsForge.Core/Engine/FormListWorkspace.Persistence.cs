@@ -1,10 +1,10 @@
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 
 namespace CreationsForge.Core.Engine;
 
 /// <summary>
-/// Owns output-directory admission and synchronization helpers for one isolated native workspace.
+/// Owns output-directory admission and synchronization helpers for one isolated workspace.
 /// </summary>
 public sealed partial class FormListWorkspace
 {
@@ -188,7 +188,7 @@ public sealed partial class FormListWorkspace
 
     /// <summary>Inspects durable save metadata while the caller holds the output-directory lease.</summary>
     /// <param name="lease">The caller-owned output-directory lease.</param>
-    /// <param name="output">The exact output seeking native-open admission.</param>
+    /// <param name="output">The exact output seeking engine-open admission.</param>
     /// <param name="cancellationToken">A token that cancels metadata inspection.</param>
     /// <returns>Ready admission, unresolved-save admission, or a typed inspection failure.</returns>
     private async ValueTask<EngineResult<OutputAdmissionResult>> InspectOutputAdmissionAsync(
@@ -228,7 +228,7 @@ public sealed partial class FormListWorkspace
     /// <summary>Recaptures the complete source baseline and converts unexpected verification failure to a typed result.</summary>
     /// <param name="cancellationToken">A token that cancels source recapture and hashing.</param>
     /// <returns>The recaptured unchanged baseline or a typed verification failure.</returns>
-    private async ValueTask<EngineResult<NativeSourceInputBaseline>> VerifySourcesUnchangedAsync(
+    private async ValueTask<EngineResult<PluginSourceInputBaseline>> VerifySourcesUnchangedAsync(
         CancellationToken cancellationToken)
     {
         try
@@ -241,10 +241,10 @@ public sealed partial class FormListWorkspace
         }
         catch (Exception exception)
         {
-            Logger.Error(exception, "Failed to verify native sources for workspace {WorkspaceId}", WorkspaceId);
-            return EngineResult<NativeSourceInputBaseline>.Failure(new EngineError(
+            Logger.Error(exception, "Failed to verify plugin sources for workspace {WorkspaceId}", WorkspaceId);
+            return EngineResult<PluginSourceInputBaseline>.Failure(new EngineError(
                 EngineErrorCode.UnexpectedFailure,
-                "The native source baseline could not be verified."));
+                "The plugin source baseline could not be verified."));
         }
     }
 
@@ -315,7 +315,7 @@ public sealed partial class FormListWorkspace
     /// <param name="request">The original save request.</param>
     /// <param name="pendingSave">The immutable original save identity retained for adoption.</param>
     /// <param name="coordinatorResult">The coordinator result carrying exact committed evidence.</param>
-    /// <param name="error">The native reopen or validation failure.</param>
+    /// <param name="error">The engine reopen or validation failure.</param>
     /// <param name="warnings">Combined coordinator, lease, admission, reopen, and cleanup warnings.</param>
     /// <returns>A committed result that leaves the staged candidate and live revision unchanged.</returns>
     private SaveResult CreateCommittedButReopenFailedResult(
@@ -339,7 +339,7 @@ public sealed partial class FormListWorkspace
             warnings);
     }
 
-    /// <summary>Reopens a known committed destination and publishes only exact fully validated native state.</summary>
+    /// <summary>Reopens a known committed destination and publishes only exact fully validated engine state.</summary>
     /// <param name="request">The original guarded save request.</param>
     /// <param name="pendingSave">The immutable original save identity.</param>
     /// <param name="coordinatorResult">The consistent coordinator result carrying committed evidence.</param>
@@ -410,11 +410,11 @@ public sealed partial class FormListWorkspace
                 request,
                 pendingSave,
                 coordinatorResult,
-                sourceVerification.Error ?? new EngineError(EngineErrorCode.ExternalChangeDetected, "The native source baseline changed before the committed output could be reopened."),
+                sourceVerification.Error ?? new EngineError(EngineErrorCode.ExternalChangeDetected, "The plugin source baseline changed before the committed output could be reopened."),
                 warnings);
         }
 
-        EngineResult<NativeOutputOpenResult> openResult;
+        EngineResult<PluginOutputOpenResult> openResult;
         try
         {
             openResult = await Task.Run(
@@ -428,14 +428,14 @@ public sealed partial class FormListWorkspace
         {
             Logger.Error(
                 exception,
-                "Failed to reopen committed native output in workspace {WorkspaceId} for save {OperationId}",
+                "Failed to reopen committed plugin output in workspace {WorkspaceId} for save {OperationId}",
                 WorkspaceId,
                 request.OperationId);
             return CreateCommittedButReopenFailedResult(
                 request,
                 pendingSave,
                 coordinatorResult,
-                new EngineError(EngineErrorCode.OutputOpenFailed, "The committed native output could not be reopened."),
+                new EngineError(EngineErrorCode.OutputOpenFailed, "The committed plugin output could not be reopened."),
                 warnings);
         }
 
@@ -446,7 +446,7 @@ public sealed partial class FormListWorkspace
                 request,
                 pendingSave,
                 coordinatorResult,
-                openResult.Error ?? new EngineError(EngineErrorCode.OutputOpenFailed, "The committed native output could not be reopened."),
+                openResult.Error ?? new EngineError(EngineErrorCode.OutputOpenFailed, "The committed plugin output could not be reopened."),
                 warnings);
         }
 
@@ -460,7 +460,7 @@ public sealed partial class FormListWorkspace
                 request,
                 pendingSave,
                 coordinatorResult,
-                new EngineError(EngineErrorCode.ExternalChangeDetected, "The reopened native output did not match the exact committed association and baseline."),
+                new EngineError(EngineErrorCode.ExternalChangeDetected, "The reopened plugin output did not match the exact committed association and baseline."),
                 warnings);
         }
 
@@ -487,11 +487,11 @@ public sealed partial class FormListWorkspace
     }
 
     /// <summary>Disposes a successfully opened state that failed workspace-level identity validation.</summary>
-    /// <param name="openResult">The rejected independently owned native output.</param>
+    /// <param name="openResult">The rejected independently owned plugin output.</param>
     /// <param name="reason">The validation stage used for structured diagnostics.</param>
     /// <returns>A task that completes after cleanup succeeds or its failure is logged.</returns>
     private async ValueTask DisposeRejectedOpenedOutputAsync(
-        NativeOutputOpenResult openResult,
+        PluginOutputOpenResult openResult,
         string reason)
     {
         try
@@ -502,7 +502,7 @@ public sealed partial class FormListWorkspace
         {
             Logger.Error(
                 exception,
-                "Failed to dispose rejected reopened native output in workspace {WorkspaceId} after {Reason}",
+                "Failed to dispose rejected reopened plugin output in workspace {WorkspaceId} after {Reason}",
                 WorkspaceId,
                 reason);
         }
@@ -541,7 +541,7 @@ public sealed partial class FormListWorkspace
         }
     }
 
-    /// <summary>Determines whether two output associations identify the same path, plugin, and native modes.</summary>
+    /// <summary>Determines whether two output associations identify the same path, plugin, and engine modes.</summary>
     /// <param name="expected">The expected output association.</param>
     /// <param name="actual">The actual output association.</param>
     /// <returns><see langword="true"/> when every canonical identity field matches.</returns>
@@ -559,20 +559,20 @@ public sealed partial class FormListWorkspace
     /// <param name="actual">The actual source baseline.</param>
     /// <returns><see langword="true"/> when the deterministic identity and every artifact field match.</returns>
     private static bool SourceBaselinesMatch(
-        NativeSourceInputBaseline expected,
-        NativeSourceInputBaseline actual)
+        PluginSourceInputBaseline expected,
+        PluginSourceInputBaseline actual)
     {
         return expected.BaselineId == actual.BaselineId
             && ArtifactCollectionsMatch(expected.Artifacts, actual.Artifacts);
     }
 
-    /// <summary>Determines whether two ordered native artifact collections match exactly.</summary>
+    /// <summary>Determines whether two ordered plugin artifact collections match exactly.</summary>
     /// <param name="expected">The expected artifact collection.</param>
     /// <param name="actual">The actual artifact collection.</param>
     /// <returns><see langword="true"/> when every physical and logical identity field matches.</returns>
     private static bool ArtifactCollectionsMatch(
-        IReadOnlyList<NativeArtifactAssociation> expected,
-        IReadOnlyList<NativeArtifactAssociation> actual)
+        IReadOnlyList<PluginArtifactAssociation> expected,
+        IReadOnlyList<PluginArtifactAssociation> actual)
     {
         if (expected.Count != actual.Count)
         {

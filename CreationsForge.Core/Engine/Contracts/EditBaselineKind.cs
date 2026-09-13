@@ -1,6 +1,6 @@
 namespace CreationsForge.Core.Engine.Contracts;
 
-/// <summary>Identifies the immutable native state used as the before-view for one staged edit session.</summary>
+/// <summary>Identifies the immutable plugin state used as the before-view for one staged edit session.</summary>
 public enum EditBaselineKind
 {
     /// <summary>The target did not exist before the edit session allocated it.</summary>

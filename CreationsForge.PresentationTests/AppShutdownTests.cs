@@ -14,13 +14,13 @@ public sealed class AppShutdownTests
     [Fact]
     public async Task BeginShutdownAsync_AfterKeepEditing_AllowsSuccessfulRetry()
     {
-        var navigation = new FakeNativeApplicationNavigationService();
-        var coordinator = new FakeNativeWorkspaceCoordinator();
+        var navigation = new FakeApplicationNavigationService();
+        var coordinator = new FakeWorkspaceCoordinator();
         var diagnostics = new RecordingTerminationDiagnosticsService();
         var disposeProbe = new ContainerDisposeProbe();
         var attempt = 0;
         navigation.ShutdownAction = _ => Task.FromResult(
-            ++attempt == 1 ? null : NativeApplicationShutdownLease.CreateForSettings());
+            ++attempt == 1 ? null : ApplicationShutdownLease.CreateForSettings());
         var container = CreateContainer(navigation, coordinator, diagnostics, disposeProbe);
         var app = new App(container);
 
@@ -56,8 +56,8 @@ public sealed class AppShutdownTests
     [Fact]
     public async Task BeginShutdownAsync_WhenCoordinatorDisposalFails_RemainsTerminalAfterContainerDisposal()
     {
-        var navigation = new FakeNativeApplicationNavigationService();
-        var coordinator = new FakeNativeWorkspaceCoordinator
+        var navigation = new FakeApplicationNavigationService();
+        var coordinator = new FakeWorkspaceCoordinator
         {
             DisposeAction = () => new ValueTask(Task.FromException(
                 new IOException("The test coordinator failed during accepted teardown.")))
@@ -85,19 +85,19 @@ public sealed class AppShutdownTests
 
     /// <summary>Creates the minimal application shutdown graph without configuration or profile filesystem access.</summary>
     /// <param name="navigation">The guarded shutdown admission recorder.</param>
-    /// <param name="coordinator">The native workspace owner.</param>
+    /// <param name="coordinator">The workspace owner.</param>
     /// <param name="diagnostics">The clean-shutdown recorder.</param>
     /// <param name="disposeProbe">The container-owned teardown probe.</param>
     /// <returns>The application container used by one shutdown test.</returns>
     private static IContainer CreateContainer(
-        FakeNativeApplicationNavigationService navigation,
-        FakeNativeWorkspaceCoordinator coordinator,
+        FakeApplicationNavigationService navigation,
+        FakeWorkspaceCoordinator coordinator,
         RecordingTerminationDiagnosticsService diagnostics,
         ContainerDisposeProbe disposeProbe)
     {
         var builder = new ContainerBuilder();
-        builder.RegisterInstance(navigation).As<INativeApplicationNavigationService>();
-        builder.RegisterInstance(coordinator).As<INativeWorkspaceCoordinator>();
+        builder.RegisterInstance(navigation).As<IApplicationNavigationService>();
+        builder.RegisterInstance(coordinator).As<IWorkspaceCoordinator>();
         builder.RegisterInstance(diagnostics).As<IProcessTerminationDiagnosticsService>().ExternallyOwned();
         builder.RegisterInstance(disposeProbe).AsSelf().OwnedByLifetimeScope();
         var container = builder.Build();

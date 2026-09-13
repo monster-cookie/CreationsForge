@@ -1,17 +1,17 @@
 using System.Text;
 using System.Text.Json;
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeWire;
+using CreationsForge.Core.Engine.RecordWire;
 using CreationsForge.Core.Enums;
-using CreationsForge.Starfield.Native.NativeInspection;
-using CreationsForge.Starfield.Native.Wire;
+using CreationsForge.Starfield.PluginAdapter.RecordInspection;
+using CreationsForge.Starfield.PluginAdapter.Wire;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Engine.Starfield;
 
-/// <summary>Verifies the content-bound Starfield command and complete generated native-type schema catalog.</summary>
+/// <summary>Verifies the content-bound Starfield command and complete generated plugin-type schema catalog.</summary>
 public sealed class StarfieldFormListEditWireSchemaCatalogTests
 {
     /// <summary>Verifies catalog identity and deterministic command-first node coverage include all generated types exactly once.</summary>
@@ -51,7 +51,7 @@ public sealed class StarfieldFormListEditWireSchemaCatalogTests
                 StarfieldFormListEditWireSchemaCatalog.FormLinkTypeName,
                 StarfieldFormListEditWireSchemaCatalog.TranslatedStringTypeName,
             }
-            .Concat(StarfieldGeneratedNativeFieldSchema.TypeNames)
+            .Concat(StarfieldGeneratedRecordFieldSchema.TypeNames)
             .ToArray();
 
         first.Identity.Game.ShouldBe(SupportedGame.Starfield);
@@ -64,11 +64,11 @@ public sealed class StarfieldFormListEditWireSchemaCatalogTests
             ignoreOrder: false);
         first.Nodes.Select(node => (node.Kind, node.Name)).Distinct().Count().ShouldBe(first.Nodes.Count);
         first.Nodes
-            .Where(node => node.Kind == NativeWireSchemaNodeKind.Command)
+            .Where(node => node.Kind == RecordWireSchemaNodeKind.Command)
             .Select(node => node.Name)
             .ShouldBe(expectedCommands, ignoreOrder: false);
         first.Nodes
-            .Where(node => node.Kind == NativeWireSchemaNodeKind.Type)
+            .Where(node => node.Kind == RecordWireSchemaNodeKind.Type)
             .Select(node => node.Name)
             .ShouldBe(expectedTypes, ignoreOrder: false);
     }
@@ -78,15 +78,15 @@ public sealed class StarfieldFormListEditWireSchemaCatalogTests
     public void ReadNode_ComplexCommandsReferenceGeneratedUnionsAndHonestDefaults()
     {
         var catalog = new StarfieldFormListEditWireSchemaCatalog();
-        var add = ReadNode(catalog, NativeWireSchemaNodeKind.Command, "starfield.form-list.add-component");
-        var replaceAll = ReadNode(catalog, NativeWireSchemaNodeKind.Command, "starfield.form-list.replace-components");
-        var conditional = ReadNode(catalog, NativeWireSchemaNodeKind.Command, "starfield.form-list.set-conditional-entries");
+        var add = ReadNode(catalog, RecordWireSchemaNodeKind.Command, "starfield.form-list.add-component");
+        var replaceAll = ReadNode(catalog, RecordWireSchemaNodeKind.Command, "starfield.form-list.replace-components");
+        var conditional = ReadNode(catalog, RecordWireSchemaNodeKind.Command, "starfield.form-list.set-conditional-entries");
         var commandFormLink = ReadNode(
             catalog,
-            NativeWireSchemaNodeKind.Type,
+            RecordWireSchemaNodeKind.Type,
             StarfieldFormListEditWireSchemaCatalog.FormLinkTypeName);
-        var expectedComponentReference = StarfieldGeneratedNativeFieldSchema.TypeUriPrefix + "native.component";
-        var expectedConditionReference = StarfieldGeneratedNativeFieldSchema.TypeUriPrefix + "native.condition";
+        var expectedComponentReference = StarfieldGeneratedRecordFieldSchema.TypeUriPrefix + "record.component";
+        var expectedConditionReference = StarfieldGeneratedRecordFieldSchema.TypeUriPrefix + "record.condition";
 
         add.Schema.GetProperty("properties").GetProperty("component").GetProperty("$ref").GetString()
             .ShouldBe(expectedComponentReference);
@@ -112,19 +112,19 @@ public sealed class StarfieldFormListEditWireSchemaCatalogTests
     {
         const string typeName = "Mutagen.Bethesda.Starfield.PropertySheetComponent";
         var catalog = new StarfieldFormListEditWireSchemaCatalog();
-        var node = ReadNode(catalog, NativeWireSchemaNodeKind.Type, typeName);
+        var node = ReadNode(catalog, RecordWireSchemaNodeKind.Type, typeName);
         node.DefaultTemplate.ShouldNotBeNull();
         var defaultTemplate = node.DefaultTemplate.Value;
 
-        var decoded = NativeWireReadContext.Decode(
+        var decoded = RecordWireReadContext.Decode(
             defaultTemplate,
-            NativeWireReadLimits.Default,
+            RecordWireReadLimits.Default,
             TestContext.Current.CancellationToken,
-            (context, value) => StarfieldNestedFieldCodec.ReadNativeType(context, value, typeName));
+            (context, value) => StarfieldNestedFieldCodec.ReadRecordType(context, value, typeName));
 
         decoded.Succeeded.ShouldBeTrue(decoded.Error?.Message);
         decoded.Error.ShouldBeNull();
-        WriteNativeType(typeName, decoded.Value.ShouldNotBeNull())
+        WriteRecordType(typeName, decoded.Value.ShouldNotBeNull())
             .ShouldBe(defaultTemplate.GetRawText());
     }
 
@@ -139,17 +139,17 @@ public sealed class StarfieldFormListEditWireSchemaCatalogTests
             foreignId = new string('1', 64);
         }
 
-        var foreign = catalog.ReadNode(new NativeWireSchemaNodeKey(
+        var foreign = catalog.ReadNode(new RecordWireSchemaNodeKey(
             foreignId,
-            NativeWireSchemaNodeKind.Command,
+            RecordWireSchemaNodeKind.Command,
             "form-list.clear-items"));
         foreign.Succeeded.ShouldBeFalse();
         foreign.Error.ShouldNotBeNull().Code.ShouldBe(EngineErrorCode.InvalidRequest);
 
-        var unknown = catalog.ReadNode(new NativeWireSchemaNodeKey(
+        var unknown = catalog.ReadNode(new RecordWireSchemaNodeKey(
             catalog.Identity.CatalogId,
-            NativeWireSchemaNodeKind.Type,
-            "native.unknown"));
+            RecordWireSchemaNodeKind.Type,
+            "record.unknown"));
         unknown.Succeeded.ShouldBeFalse();
         unknown.Error.ShouldNotBeNull().Code.ShouldBe(EngineErrorCode.InvalidRequest);
     }
@@ -159,9 +159,9 @@ public sealed class StarfieldFormListEditWireSchemaCatalogTests
     /// <param name="kind">The required node kind.</param>
     /// <param name="name">The exact command or type name.</param>
     /// <returns>The detached successful schema node.</returns>
-    private static NativeWireSchemaNode ReadNode(
+    private static RecordWireSchemaNode ReadNode(
         StarfieldFormListEditWireSchemaCatalog catalog,
-        NativeWireSchemaNodeKind kind,
+        RecordWireSchemaNodeKind kind,
         string name)
     {
         var key = catalog.Nodes.Single(node => node.Kind == kind && node.Name == name);
@@ -171,16 +171,16 @@ public sealed class StarfieldFormListEditWireSchemaCatalogTests
         return result.Value.ShouldNotBeNull();
     }
 
-    /// <summary>Writes one decoded generated native type through the exact catalog-selected writer.</summary>
-    /// <param name="typeName">The generated mutable native full name.</param>
-    /// <param name="value">The matching decoded mutable native value.</param>
+    /// <summary>Writes one decoded generated plugin type through the exact catalog-selected writer.</summary>
+    /// <param name="typeName">The generated mutable plugin full name.</param>
+    /// <param name="value">The matching decoded mutable record value.</param>
     /// <returns>The compact writer-compatible JSON.</returns>
-    private static string WriteNativeType(string typeName, object value)
+    private static string WriteRecordType(string typeName, object value)
     {
         using var stream = new MemoryStream();
         using (var writer = new Utf8JsonWriter(stream))
         {
-            StarfieldNestedFieldCodec.WriteNativeType(
+            StarfieldNestedFieldCodec.WriteRecordType(
                 writer,
                 typeName,
                 value,

@@ -6,7 +6,7 @@ using ModelContextProtocol.Server;
 namespace CreationsForge.Mcp;
 
 /// <summary>
-/// Reads one exact native FormList context and exposes its detached JSON through stateless pointer pages.
+/// Reads one exact FormList context and exposes its detached JSON through stateless pointer pages.
 /// </summary>
 public sealed class FormListInspectTool : McpToolBase
 {
@@ -47,8 +47,8 @@ public sealed class FormListInspectTool : McpToolBase
     public override Tool ProtocolTool { get; } = new Tool
     {
         Name = "creationsforge_formlist_inspect",
-        Title = "Inspect a native FormList",
-        Description = "Re-reads one exact native FormList context and pages its detached typed JSON by immediate JSON Pointer children or Unicode-safe scalar chunks.",
+        Title = "Inspect a FormList",
+        Description = "Re-reads one exact FormList context and pages its detached typed JSON by immediate JSON Pointer children or Unicode-safe scalar chunks.",
         InputSchema = InputSchema,
         OutputSchema = OutputSchema,
         Annotations = new ToolAnnotations
@@ -62,7 +62,7 @@ public sealed class FormListInspectTool : McpToolBase
 
     /// <summary>Validates the selection, performs a fresh engine read, and only then validates paging bindings.</summary>
     /// <param name="request">The MCP request.</param>
-    /// <param name="cancellationToken">The token propagated through native read and typed inspection.</param>
+    /// <param name="cancellationToken">The token propagated through engine read and typed inspection.</param>
     /// <returns>One bounded contextual JSON page.</returns>
     /// <exception cref="OperationCanceledException">Thrown when cancellation is observed.</exception>
     public override async ValueTask<CallToolResult> InvokeAsync(

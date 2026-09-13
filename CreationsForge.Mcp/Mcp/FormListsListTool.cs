@@ -6,7 +6,7 @@ using ModelContextProtocol.Server;
 namespace CreationsForge.Mcp;
 
 /// <summary>
-/// Lists native FormLists in bounded stateless summary pages.
+/// Lists FormLists in bounded stateless summary pages.
 /// </summary>
 public sealed class FormListsListTool : McpToolBase
 {
@@ -49,7 +49,7 @@ public sealed class FormListsListTool : McpToolBase
     {
         Name = "creationsforge_formlists_list",
         Title = "List workspace FormLists",
-        Description = "Lists native FormList summaries for one explicit record scope in bounded deterministic transport pages.",
+        Description = "Lists FormList summaries for one explicit record scope in bounded deterministic transport pages.",
         InputSchema = InputSchema,
         OutputSchema = OutputSchema,
         Annotations = new ToolAnnotations
@@ -61,7 +61,7 @@ public sealed class FormListsListTool : McpToolBase
         },
     };
 
-    /// <summary>Re-reads the selected native scope and applies stateless transport paging.</summary>
+    /// <summary>Re-reads the selected engine scope and applies stateless transport paging.</summary>
     /// <param name="request">The MCP request.</param>
     /// <param name="cancellationToken">The token propagated through the engine read.</param>
     /// <returns>One bounded ordered FormList summary page.</returns>

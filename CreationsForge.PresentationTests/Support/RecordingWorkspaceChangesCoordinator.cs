@@ -6,7 +6,7 @@ using CreationsForge.Services.Interfaces;
 namespace CreationsForge.PresentationTests.Support;
 
 /// <summary>Publishes and lends one recording workspace while exposing coordinator call counts.</summary>
-internal sealed class RecordingWorkspaceChangesCoordinator : INativeWorkspaceCoordinator
+internal sealed class RecordingWorkspaceChangesCoordinator : IWorkspaceCoordinator
 {
     /// <summary>Initializes an empty recording coordinator.</summary>
     internal RecordingWorkspaceChangesCoordinator()
@@ -20,7 +20,7 @@ internal sealed class RecordingWorkspaceChangesCoordinator : INativeWorkspaceCoo
     public event PropertyChangedEventHandler? PropertyChanged;
 
     /// <inheritdoc />
-    public NativeWorkspaceDescriptor? CurrentWorkspace { get; private set; }
+    public WorkspaceDescriptor? CurrentWorkspace { get; private set; }
 
     /// <summary>Gets the current recording workspace, or <see langword="null"/> when none is published.</summary>
     internal RecordingWorkspaceChangesWorkspace? Workspace => WorkspaceValue;
@@ -35,10 +35,10 @@ internal sealed class RecordingWorkspaceChangesCoordinator : INativeWorkspaceCoo
     internal int DisposeCount { get; private set; }
 
     /// <summary>Gets the exact open requests in invocation order.</summary>
-    internal List<NativeWorkspaceOpenRequest> OpenRequests { get; } = [];
+    internal List<WorkspaceLaunchRequest> OpenRequests { get; } = [];
 
     /// <summary>Gets or sets a custom open implementation.</summary>
-    internal Func<NativeWorkspaceOpenRequest, CancellationToken, ValueTask<EngineResult<NativeWorkspaceDescriptor>>>? OnOpenAsync { get; set; }
+    internal Func<WorkspaceLaunchRequest, CancellationToken, ValueTask<EngineResult<WorkspaceDescriptor>>>? OnOpenAsync { get; set; }
 
     /// <summary>Publishes a recording workspace and its presentation descriptor.</summary>
     /// <param name="workspace">The recording workspace, or <see langword="null"/> to publish no workspace.</param>
@@ -46,7 +46,7 @@ internal sealed class RecordingWorkspaceChangesCoordinator : INativeWorkspaceCoo
     /// <exception cref="ArgumentException">Thrown when workspace and descriptor presence or identity disagree.</exception>
     internal void SetWorkspace(
         RecordingWorkspaceChangesWorkspace? workspace,
-        NativeWorkspaceDescriptor? descriptor)
+        WorkspaceDescriptor? descriptor)
     {
         if ((workspace is null) != (descriptor is null)
             || workspace is not null && descriptor!.WorkspaceId != workspace.WorkspaceId)
@@ -60,14 +60,14 @@ internal sealed class RecordingWorkspaceChangesCoordinator : INativeWorkspaceCoo
     }
 
     /// <inheritdoc />
-    public ValueTask<EngineResult<NativeWorkspaceDescriptor>> OpenAsync(
-        NativeWorkspaceOpenRequest request,
+    public ValueTask<EngineResult<WorkspaceDescriptor>> OpenAsync(
+        WorkspaceLaunchRequest request,
         CancellationToken cancellationToken = default)
     {
         OpenRequests.Add(request);
         cancellationToken.ThrowIfCancellationRequested();
         return OnOpenAsync?.Invoke(request, cancellationToken)
-            ?? ValueTask.FromResult(EngineResult<NativeWorkspaceDescriptor>.Failure(
+            ?? ValueTask.FromResult(EngineResult<WorkspaceDescriptor>.Failure(
                 new EngineError(EngineErrorCode.InvalidRequest, "The recording coordinator open was not configured.")));
     }
 

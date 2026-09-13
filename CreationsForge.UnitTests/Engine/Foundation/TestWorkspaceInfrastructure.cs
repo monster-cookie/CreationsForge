@@ -1,5 +1,5 @@
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Engine.NativeInputs;
+using CreationsForge.Core.Engine.PluginInputs;
 using Moq;
 
 namespace CreationsForge.UnitTests.Engine.Foundation;
@@ -42,31 +42,31 @@ internal static class TestWorkspaceInfrastructure
         return provider.Object;
     }
 
-    /// <summary>Configures a mocked native source set with a complete immutable and re-verifiable baseline.</summary>
-    /// <param name="sources">The mocked native source set.</param>
+    /// <summary>Configures a mocked plugin source set with a complete immutable and re-verifiable baseline.</summary>
+    /// <param name="sources">The mocked plugin source set.</param>
     /// <param name="baselineId">The deterministic source baseline identifier returned by the adapter.</param>
     /// <param name="sourcePluginPath">The canonical synthetic source plugin path.</param>
     /// <returns>The configured source baseline.</returns>
-    internal static NativeSourceInputBaseline ConfigureSourceBaseline(
-        INativeSourceSet sources,
+    internal static PluginSourceInputBaseline ConfigureSourceBaseline(
+        IPluginSourceSet sources,
         Guid baselineId,
         string sourcePluginPath)
     {
-        var baseline = new NativeSourceInputBaseline(
+        var baseline = new PluginSourceInputBaseline(
             baselineId,
             Array.AsReadOnly(new[]
             {
-                new NativeArtifactAssociation(
+                new PluginArtifactAssociation(
                     sourcePluginPath,
-                    NativeArtifactRole.Plugin,
+                    PluginArtifactRole.Plugin,
                     null,
-                    new NativeArtifactFingerprint(true, 0, new string('A', 64)),
-                    new NativeFileIdentity("test", "volume", "source", 1)),
+                    new PluginArtifactFingerprint(true, 0, new string('A', 64)),
+                    new ArtifactFileIdentity("test", "volume", "source", 1)),
             }));
         var sourceMock = Mock.Get(sources);
         sourceMock.SetupGet(candidate => candidate.Baseline).Returns(baseline);
         sourceMock.Setup(candidate => candidate.VerifyUnchangedAsync(It.IsAny<CancellationToken>()))
-            .Returns(Task.FromResult(EngineResult<NativeSourceInputBaseline>.Success(baseline)));
+            .Returns(Task.FromResult(EngineResult<PluginSourceInputBaseline>.Success(baseline)));
         return baseline;
     }
 }

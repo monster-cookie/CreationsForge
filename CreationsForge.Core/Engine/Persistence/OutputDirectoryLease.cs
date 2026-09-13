@@ -11,7 +11,7 @@ internal sealed class OutputDirectoryLease : IOutputDirectoryLease
     /// <summary>Initializes ownership of every acquired lease resource.</summary>
     /// <param name="outputDirectoryPath">The canonical protected output directory.</param>
     /// <param name="guardStream">The exclusively opened stable guard stream.</param>
-    /// <param name="directoryHandle">The retained native directory identity.</param>
+    /// <param name="directoryHandle">The retained operating-system directory identity.</param>
     /// <param name="processGate">The acquired process-wide directory gate.</param>
     internal OutputDirectoryLease(
         string outputDirectoryPath,
@@ -58,7 +58,7 @@ internal sealed class OutputDirectoryLease : IOutputDirectoryLease
     {
         /// <summary>Initializes ownership of every acquired lease resource.</summary>
         /// <param name="guardStream">The exclusively opened stable guard stream.</param>
-        /// <param name="directoryHandle">The retained native directory identity.</param>
+        /// <param name="directoryHandle">The retained operating-system directory identity.</param>
         /// <param name="processGate">The acquired process-wide directory gate.</param>
         internal LeaseResources(
             FileStream guardStream,
@@ -73,7 +73,7 @@ internal sealed class OutputDirectoryLease : IOutputDirectoryLease
         /// <summary>Gets the exclusively opened stable guard stream.</summary>
         internal FileStream GuardStream { get; }
 
-        /// <summary>Gets the retained native output-directory identity.</summary>
+        /// <summary>Gets the retained plugin output-directory identity.</summary>
         internal OutputDirectoryIdentityHandle DirectoryHandle { get; }
 
         /// <summary>Gets the acquired process-wide directory gate.</summary>

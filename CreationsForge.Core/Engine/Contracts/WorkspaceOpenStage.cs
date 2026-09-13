@@ -11,13 +11,13 @@ public enum WorkspaceOpenStage
     /// <summary>A compatible game adapter has been selected.</summary>
     SelectingAdapter,
 
-    /// <summary>The game adapter is validating and fingerprinting the explicit native inputs.</summary>
+    /// <summary>The game adapter is validating and fingerprinting the explicit plugin inputs.</summary>
     PreparingInputs,
 
-    /// <summary>The game adapter is opening the explicitly supplied native inputs.</summary>
+    /// <summary>The game adapter is opening the explicitly supplied plugin inputs.</summary>
     OpeningSources,
 
-    /// <summary>The game adapter is parsing one explicitly supplied native plugin.</summary>
+    /// <summary>The game adapter is parsing one explicitly supplied plugin.</summary>
     ParsingPlugin,
 
     /// <summary>The game adapter is completing immutable source baseline verification.</summary>

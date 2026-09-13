@@ -1,7 +1,7 @@
 namespace CreationsForge.Core.Engine.Contracts;
 
 /// <summary>
-/// Identifies the semantic shape of a native FormList change.
+/// Identifies the semantic shape of a FormList change.
 /// </summary>
 public enum SemanticChangeKind
 {
@@ -17,6 +17,6 @@ public enum SemanticChangeKind
     /// <summary>An ordered collection item changed in place.</summary>
     ItemChanged,
 
-    /// <summary>The native writer normalized a value without changing its intended meaning.</summary>
+    /// <summary>The plugin writer normalized a value without changing its intended meaning.</summary>
     WriterNormalized
 }

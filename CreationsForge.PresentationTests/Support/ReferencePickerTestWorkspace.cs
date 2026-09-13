@@ -4,7 +4,7 @@ using Mutagen.Bethesda.Plugins.Records;
 
 namespace CreationsForge.PresentationTests.Support;
 
-/// <summary>Supplies programmable native reference search and resolution behavior to picker presentation tests.</summary>
+/// <summary>Supplies programmable reference search and resolution behavior to picker presentation tests.</summary>
 internal sealed class ReferencePickerTestWorkspace : IFormListWorkspace
 {
     /// <summary>Initializes a reference picker test workspace.</summary>
@@ -25,11 +25,11 @@ internal sealed class ReferencePickerTestWorkspace : IFormListWorkspace
     /// <inheritdoc />
     public OutputSynchronizationState OutputSynchronization { get; } = new(OutputSynchronizationStatus.Ready, null);
 
-    /// <summary>Gets or sets the callback used for native reference searches.</summary>
+    /// <summary>Gets or sets the callback used for reference searches.</summary>
     public Func<ReferenceSearchRequest, CancellationToken, ValueTask<EngineResult<ReferenceSearchPage>>> SearchAction { get; set; } =
         (_, _) => throw new NotSupportedException("No reference search behavior was configured.");
 
-    /// <summary>Gets or sets the callback used for exact native reference resolution.</summary>
+    /// <summary>Gets or sets the callback used for exact reference resolution.</summary>
     public Func<ReferenceRequest, CancellationToken, ValueTask<EngineResult<ReferenceResolution>>> ResolveAction { get; set; } =
         (_, _) => throw new NotSupportedException("No reference resolution behavior was configured.");
 

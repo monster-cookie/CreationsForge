@@ -4,15 +4,15 @@ using Mutagen.Bethesda.Plugins.Records;
 namespace CreationsForge.Core.Engine.Contracts;
 
 /// <summary>
-/// Carries native reference-resolution status and an optional detached native getter.
+/// Carries reference-resolution status and an optional detached record getter.
 /// </summary>
 public sealed class ReferenceResolution
 {
-    /// <summary>Initializes a native reference resolution.</summary>
+    /// <summary>Initializes a reference resolution.</summary>
     /// <param name="status">The observed resolution status.</param>
-    /// <param name="formKey">The requested native identity.</param>
-    /// <param name="recordType">The native record-type identifier, when known.</param>
-    /// <param name="record">The detached native getter for a resolved record, otherwise <see langword="null"/>.</param>
+    /// <param name="formKey">The requested record identity.</param>
+    /// <param name="recordType">The record-type identifier, when known.</param>
+    /// <param name="record">The detached record getter for a resolved record, otherwise <see langword="null"/>.</param>
     /// <param name="containingModKey">The plugin containing the selected record context, when singular.</param>
     /// <param name="sourcePath">The canonical path of the selected containing plugin, when singular.</param>
     /// <param name="loadOrderIndex">The explicit load-order position of the selected containing plugin, when singular.</param>
@@ -36,12 +36,12 @@ public sealed class ReferenceResolution
 
         if (status == ReferenceResolutionStatus.Resolved && record is null)
         {
-            throw new ArgumentException("A resolved reference requires a detached native record.", nameof(record));
+            throw new ArgumentException("A resolved reference requires a detached record.", nameof(record));
         }
 
         if (status != ReferenceResolutionStatus.Resolved && record is not null)
         {
-            throw new ArgumentException("Only a resolved reference may include a detached native record.", nameof(record));
+            throw new ArgumentException("Only a resolved reference may include a detached record.", nameof(record));
         }
 
         if (loadOrderIndex < 0)
@@ -66,15 +66,15 @@ public sealed class ReferenceResolution
     /// <summary>Gets the resolution status.</summary>
     public ReferenceResolutionStatus Status { get; }
 
-    /// <summary>Gets the requested native identity.</summary>
+    /// <summary>Gets the requested record identity.</summary>
     public FormKey FormKey { get; }
 
-    /// <summary>Gets the native record-type identifier, when known.</summary>
+    /// <summary>Gets the record-type identifier, when known.</summary>
     public string? RecordType { get; }
 
     /// <summary>
-    /// Gets a detached semantic native getter that cannot mutate workspace state, or <see langword="null"/>.
-    /// Mutable native copies retain record values but may regenerate binary storage metadata such as localized string-table keys when written.
+    /// Gets a detached semantic record getter that cannot mutate workspace state, or <see langword="null"/>.
+    /// Mutable plugin copies retain record values but may regenerate binary storage metadata such as localized string-table keys when written.
     /// </summary>
     public IMajorRecordGetter? Record { get; }
 

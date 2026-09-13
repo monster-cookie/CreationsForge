@@ -7,10 +7,10 @@ namespace CreationsForge.Mcp;
 /// </summary>
 internal static class McpToolSchema
 {
-    /// <summary>A nullable string schema used for optional native identifiers and paths.</summary>
+    /// <summary>A nullable string schema used for optional engine identifiers and paths.</summary>
     internal const string NullableString = "{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"null\"}]}";
 
-    /// <summary>A nullable integer schema used for optional native positions.</summary>
+    /// <summary>A nullable integer schema used for optional engine positions.</summary>
     internal const string NullableInteger = "{\"oneOf\":[{\"type\":\"integer\",\"minimum\":0},{\"type\":\"null\"}]}";
 
     /// <summary>The closed exact-revision schema with an unsigned decimal string sequence.</summary>
@@ -19,7 +19,7 @@ internal static class McpToolSchema
     /// <summary>The closed engine-warning schema.</summary>
     internal const string Warning = "{\"type\":\"object\",\"properties\":{\"code\":{\"type\":\"string\",\"minLength\":1},\"message\":{\"type\":\"string\",\"minLength\":1}},\"required\":[\"code\",\"message\"],\"additionalProperties\":false}";
 
-    /// <summary>The closed contextual native selection schema.</summary>
+    /// <summary>The closed contextual engine selection schema.</summary>
     internal const string Context = "{\"type\":\"object\",\"properties\":{\"formKey\":{\"type\":\"string\",\"minLength\":1},\"scope\":{\"type\":\"string\",\"enum\":[\"winning_overrides\",\"all_contexts\",\"source\",\"staged_output\"]},\"requestedContainingModKey\":" + NullableString + ",\"status\":{\"type\":\"string\",\"enum\":[\"resolved\",\"unresolved\",\"unsupported\",\"deleted\",\"ambiguous\",\"unknown_family\"]},\"containingModKey\":" + NullableString + ",\"sourcePath\":" + NullableString + ",\"loadOrderIndex\":" + NullableInteger + ",\"role\":" + NullableString + "},\"required\":[\"formKey\",\"scope\",\"requestedContainingModKey\",\"status\",\"containingModKey\",\"sourcePath\",\"loadOrderIndex\",\"role\"],\"additionalProperties\":false}";
 
     /// <summary>The closed opaque metadata-reference schema shared by output mutation receipts.</summary>

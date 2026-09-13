@@ -5,44 +5,44 @@ using Shouldly;
 namespace CreationsForge.UnitTests.Engine.Foundation;
 
 /// <summary>
-/// Verifies immutable engine value contracts and complete native artifact baseline invariants.
+/// Verifies immutable engine value contracts and complete plugin artifact baseline invariants.
 /// </summary>
 public sealed class EngineContractTests
 {
     /// <summary>Verifies content digests are validated as SHA-256 hexadecimal values and stored canonically.</summary>
     [Fact]
-    public void NativeArtifactFingerprint_WithDigest_ValidatesAndNormalizesHexadecimalValue()
+    public void PluginArtifactFingerprint_WithDigest_ValidatesAndNormalizesHexadecimalValue()
     {
-        var fingerprint = new NativeArtifactFingerprint(true, 12, new string('a', 64));
+        var fingerprint = new PluginArtifactFingerprint(true, 12, new string('a', 64));
 
         fingerprint.Sha256.ShouldBe(new string('A', 64));
         Should.Throw<ArgumentException>(() =>
-            new NativeArtifactFingerprint(true, 12, new string('Z', 64)));
+            new PluginArtifactFingerprint(true, 12, new string('Z', 64)));
     }
 
     /// <summary>Verifies role, language, existence, and platform identity cannot describe an incoherent artifact.</summary>
     [Fact]
-    public void NativeArtifactAssociation_WithIncoherentMetadata_RejectsValue()
+    public void PluginArtifactAssociation_WithIncoherentMetadata_RejectsValue()
     {
-        var present = new NativeArtifactFingerprint(true, 0, new string('B', 64));
-        var absent = new NativeArtifactFingerprint(false, 0, null);
+        var present = new PluginArtifactFingerprint(true, 0, new string('B', 64));
+        var absent = new PluginArtifactFingerprint(false, 0, null);
         var pluginPath = Path.GetFullPath("Output.esp");
         var stringsPath = Path.GetFullPath("Output_en.STRINGS");
 
         Should.Throw<ArgumentException>(() =>
-            new NativeArtifactAssociation(pluginPath, NativeArtifactRole.Plugin, "English", present));
+            new PluginArtifactAssociation(pluginPath, PluginArtifactRole.Plugin, "English", present));
         Should.Throw<ArgumentException>(() =>
-            new NativeArtifactAssociation(stringsPath, NativeArtifactRole.Strings, null, present));
+            new PluginArtifactAssociation(stringsPath, PluginArtifactRole.Strings, null, present));
         Should.Throw<ArgumentException>(() =>
-            new NativeArtifactAssociation(
+            new PluginArtifactAssociation(
                 pluginPath,
-                NativeArtifactRole.Plugin,
+                PluginArtifactRole.Plugin,
                 null,
                 absent,
-                new NativeFileIdentity("test", "volume", "file", 1)));
+                new ArtifactFileIdentity("test", "volume", "file", 1)));
     }
 
-    /// <summary>Verifies an output path, native identity, and closed output modes must agree.</summary>
+    /// <summary>Verifies an output path, record identity, and closed output modes must agree.</summary>
     [Fact]
     public void OutputAssociation_WithMismatchedIdentityOrUndefinedMode_RejectsValue()
     {
@@ -115,7 +115,7 @@ public sealed class EngineContractTests
         existingOutput.TargetFormKey.ShouldBe(other);
     }
 
-    /// <summary>Verifies common typed edit commands preserve exact ordered and native header values.</summary>
+    /// <summary>Verifies common typed edit commands preserve exact ordered and plugin header values.</summary>
     [Fact]
     public void CommonFormListEdits_PreserveExactTypedValues()
     {
@@ -145,7 +145,7 @@ public sealed class EngineContractTests
 
     /// <summary>Verifies staged-edit provenance admits only exact absent, original-output, or immutable source baselines.</summary>
     [Fact]
-    public void NativeEditProvenance_WithBaselineCombination_ValidatesExactOrigin()
+    public void RecordEditProvenance_WithBaselineCombination_ValidatesExactOrigin()
     {
         var target = new FormKey(ModKey.FromNameAndExtension("Source.esm"), 0x800);
         var outputModKey = ModKey.FromNameAndExtension("Output.esp");
@@ -165,23 +165,23 @@ public sealed class EngineContractTests
             PluginRole.Source);
         var sourceBaselineId = Guid.NewGuid();
 
-        var absent = new NativeEditProvenance(
+        var absent = new RecordEditProvenance(
             Guid.NewGuid(), target, EditBaselineKind.Absent);
-        var originalOutput = new NativeEditProvenance(
+        var originalOutput = new RecordEditProvenance(
             Guid.NewGuid(), target, EditBaselineKind.OriginalOutput, outputContext);
-        var source = new NativeEditProvenance(
+        var source = new RecordEditProvenance(
             Guid.NewGuid(), target, EditBaselineKind.SourceContext, sourceContext, sourceBaselineId);
 
         absent.BaselineContext.ShouldBeNull();
         originalOutput.BaselineContext.ShouldBeSameAs(outputContext);
         source.SourceBaselineId.ShouldBe(sourceBaselineId);
-        Should.Throw<ArgumentException>(() => new NativeEditProvenance(
+        Should.Throw<ArgumentException>(() => new RecordEditProvenance(
             Guid.NewGuid(), target, EditBaselineKind.Absent, sourceContext));
-        Should.Throw<ArgumentException>(() => new NativeEditProvenance(
+        Should.Throw<ArgumentException>(() => new RecordEditProvenance(
             Guid.NewGuid(), target, EditBaselineKind.OriginalOutput, sourceContext));
-        Should.Throw<ArgumentException>(() => new NativeEditProvenance(
+        Should.Throw<ArgumentException>(() => new RecordEditProvenance(
             Guid.NewGuid(), target, EditBaselineKind.SourceContext, sourceContext));
-        Should.Throw<ArgumentException>(() => new NativeEditProvenance(
+        Should.Throw<ArgumentException>(() => new RecordEditProvenance(
             Guid.NewGuid(), target, EditBaselineKind.SourceContext,
             new FormListContext(
                 new ReferenceRequest(target, RecordScope.Source, target.ModKey),
@@ -197,38 +197,38 @@ public sealed class EngineContractTests
     [Fact]
     public void OutputArtifactSetBaseline_WithCompleteArtifacts_SnapshotsCanonicalOrder()
     {
-        var fingerprint = new NativeArtifactFingerprint(true, 0, new string('C', 64));
+        var fingerprint = new PluginArtifactFingerprint(true, 0, new string('C', 64));
         var pluginPath = Path.GetFullPath("Output.esp");
         var stringsPath = Path.GetFullPath("Output_en.STRINGS");
-        var artifacts = new List<NativeArtifactAssociation>
+        var artifacts = new List<PluginArtifactAssociation>
         {
-            new(stringsPath, NativeArtifactRole.Strings, "English", fingerprint),
-            new(pluginPath, NativeArtifactRole.Plugin, null, fingerprint)
+            new(stringsPath, PluginArtifactRole.Strings, "English", fingerprint),
+            new(pluginPath, PluginArtifactRole.Plugin, null, fingerprint)
         };
 
         var baseline = new OutputArtifactSetBaseline(Guid.NewGuid(), artifacts);
         artifacts.Clear();
 
         baseline.Artifacts.Count.ShouldBe(2);
-        baseline.Artifacts[0].Role.ShouldBe(NativeArtifactRole.Plugin);
-        baseline.Artifacts[1].Role.ShouldBe(NativeArtifactRole.Strings);
+        baseline.Artifacts[0].Role.ShouldBe(PluginArtifactRole.Plugin);
+        baseline.Artifacts[1].Role.ShouldBe(PluginArtifactRole.Strings);
     }
 
     /// <summary>Verifies a complete output baseline rejects missing plugin identity and path aliases.</summary>
     [Fact]
     public void OutputArtifactSetBaseline_WithIncompleteOrDuplicateArtifacts_RejectsValue()
     {
-        var fingerprint = new NativeArtifactFingerprint(true, 0, new string('D', 64));
+        var fingerprint = new PluginArtifactFingerprint(true, 0, new string('D', 64));
         var pluginPath = Path.GetFullPath("Output.esp");
         var stringsPath = Path.GetFullPath("Output_en.STRINGS");
         var stringsOnly = new[]
         {
-            new NativeArtifactAssociation(stringsPath, NativeArtifactRole.Strings, "English", fingerprint)
+            new PluginArtifactAssociation(stringsPath, PluginArtifactRole.Strings, "English", fingerprint)
         };
         var duplicatePath = new[]
         {
-            new NativeArtifactAssociation(pluginPath, NativeArtifactRole.Plugin, null, fingerprint),
-            new NativeArtifactAssociation(pluginPath, NativeArtifactRole.Strings, "English", fingerprint)
+            new PluginArtifactAssociation(pluginPath, PluginArtifactRole.Plugin, null, fingerprint),
+            new PluginArtifactAssociation(pluginPath, PluginArtifactRole.Strings, "English", fingerprint)
         };
 
         Should.Throw<ArgumentException>(() => new OutputArtifactSetBaseline(Guid.NewGuid(), stringsOnly));

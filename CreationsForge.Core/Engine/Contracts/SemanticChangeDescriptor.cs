@@ -1,7 +1,7 @@
 namespace CreationsForge.Core.Engine.Contracts;
 
 /// <summary>
-/// Describes where a semantic change occurred while values remain authoritative on detached native getters.
+/// Describes where a semantic change occurred while values remain authoritative on detached record getters.
 /// </summary>
 public sealed class SemanticChangeDescriptor
 {

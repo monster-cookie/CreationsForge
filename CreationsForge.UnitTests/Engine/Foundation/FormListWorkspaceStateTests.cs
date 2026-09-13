@@ -10,7 +10,7 @@ using Shouldly;
 
 namespace CreationsForge.UnitTests.Engine.Foundation;
 
-/// <summary>Verifies serialized atomic workspace metadata snapshots independently of native record traversal.</summary>
+/// <summary>Verifies serialized atomic workspace metadata snapshots independently of record traversal.</summary>
 public sealed class FormListWorkspaceStateTests
 {
     /// <summary>Verifies output association and baseline cannot be observed as a torn pair.</summary>
@@ -68,20 +68,20 @@ public sealed class FormListWorkspaceStateTests
             Guid.NewGuid(),
             new[]
             {
-                new NativeArtifactAssociation(
+                new PluginArtifactAssociation(
                     outputPath,
-                    NativeArtifactRole.Plugin,
+                    PluginArtifactRole.Plugin,
                     null,
-                    new NativeArtifactFingerprint(false, 0, null))
+                    new PluginArtifactFingerprint(false, 0, null))
             });
-        var nativeOutput = new Mock<INativeOutputState>();
-        nativeOutput.Setup(candidate => candidate.DisposeAsync()).Returns(ValueTask.CompletedTask);
+        var pluginOutput = new Mock<IPluginOutputState>();
+        pluginOutput.Setup(candidate => candidate.DisposeAsync()).Returns(ValueTask.CompletedTask);
         fixture.Adapter.Setup(candidate => candidate.OpenOutputAsync(
                 fixture.Sources.Object,
                 It.IsAny<SelectOutputRequest>(),
                 It.IsAny<CancellationToken>()))
-            .Returns(ValueTask.FromResult(EngineResult<NativeOutputOpenResult>.Success(
-                new NativeOutputOpenResult(nativeOutput.Object, output, baseline))));
+            .Returns(ValueTask.FromResult(EngineResult<PluginOutputOpenResult>.Success(
+                new PluginOutputOpenResult(pluginOutput.Object, output, baseline))));
         var selection = await fixture.Workspace.SelectOutputAsync(new SelectOutputRequest(
             Guid.NewGuid(),
             fixture.Workspace.Revision,
@@ -112,7 +112,7 @@ public sealed class FormListWorkspaceStateTests
         result.ResultRevision.ShouldBe(fixture.Workspace.Revision);
     }
 
-    /// <summary>Verifies exact replays remain available while fresh mutations are rejected before native work at capacity.</summary>
+    /// <summary>Verifies exact replays remain available while fresh mutations are rejected before plugin work at capacity.</summary>
     [Fact]
     public async Task BeginEditAsync_AtReplayCapacity_ReplaysExistingAndRejectsFreshOperation()
     {
@@ -133,8 +133,8 @@ public sealed class FormListWorkspaceStateTests
         rejected.Succeeded.ShouldBeFalse();
         rejected.Error!.Code.ShouldBe(EngineErrorCode.OperationCapacityExceeded);
         fixture.Adapter.Verify(candidate => candidate.BeginEdit(
-            It.IsAny<INativeSourceSet>(),
-            It.IsAny<INativeOutputState>(),
+            It.IsAny<IPluginSourceSet>(),
+            It.IsAny<IPluginOutputState>(),
             It.IsAny<BeginEditRequest>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -152,27 +152,27 @@ public sealed class FormListWorkspaceStateTests
             OutputMasterStyle.Full);
         var initialBaseline = new OutputArtifactSetBaseline(
             Guid.NewGuid(),
-            [new NativeArtifactAssociation(outputPath, NativeArtifactRole.Plugin, null, new NativeArtifactFingerprint(false, 0, null))]);
+            [new PluginArtifactAssociation(outputPath, PluginArtifactRole.Plugin, null, new PluginArtifactFingerprint(false, 0, null))]);
         var savedBaseline = new OutputArtifactSetBaseline(
             Guid.NewGuid(),
-            [new NativeArtifactAssociation(outputPath, NativeArtifactRole.Plugin, null, new NativeArtifactFingerprint(true, 1, new string('A', 64)), new NativeFileIdentity("test", "volume", "saved", 1))]);
-        var initialOutput = new Mock<INativeOutputState>();
-        var editOutput = new Mock<INativeOutputState>();
-        var appliedOutput = new Mock<INativeOutputState>();
-        var reopenedOutput = new Mock<INativeOutputState>();
-        foreach (var nativeOutput in new[] { initialOutput, editOutput, appliedOutput, reopenedOutput })
+            [new PluginArtifactAssociation(outputPath, PluginArtifactRole.Plugin, null, new PluginArtifactFingerprint(true, 1, new string('A', 64)), new ArtifactFileIdentity("test", "volume", "saved", 1))]);
+        var initialOutput = new Mock<IPluginOutputState>();
+        var editOutput = new Mock<IPluginOutputState>();
+        var appliedOutput = new Mock<IPluginOutputState>();
+        var reopenedOutput = new Mock<IPluginOutputState>();
+        foreach (var pluginOutput in new[] { initialOutput, editOutput, appliedOutput, reopenedOutput })
         {
-            nativeOutput.Setup(candidate => candidate.DisposeAsync()).Returns(ValueTask.CompletedTask);
+            pluginOutput.Setup(candidate => candidate.DisposeAsync()).Returns(ValueTask.CompletedTask);
         }
 
         fixture.Adapter.Setup(candidate => candidate.OpenOutputAsync(
                 fixture.Sources.Object,
                 It.IsAny<SelectOutputRequest>(),
                 It.IsAny<CancellationToken>()))
-            .Returns(ValueTask.FromResult(EngineResult<NativeOutputOpenResult>.Success(
-                new NativeOutputOpenResult(initialOutput.Object, outputAssociation, initialBaseline))));
+            .Returns(ValueTask.FromResult(EngineResult<PluginOutputOpenResult>.Success(
+                new PluginOutputOpenResult(initialOutput.Object, outputAssociation, initialBaseline))));
         fixture.Adapter.SetupSequence(candidate => candidate.CloneOutput(
-                It.IsAny<INativeOutputState>(),
+                It.IsAny<IPluginOutputState>(),
                 It.IsAny<CancellationToken>()))
             .Returns(editOutput.Object)
             .Returns(appliedOutput.Object);
@@ -183,8 +183,8 @@ public sealed class FormListWorkspaceStateTests
                 editOutput.Object,
                 It.IsAny<BeginEditRequest>(),
                 It.IsAny<CancellationToken>()))
-            .Returns(EngineResult<NativeEditIdentity>.Success(
-                new NativeEditIdentity(editId, formKey, null, FormListEditRole.New)));
+            .Returns(EngineResult<RecordEditIdentity>.Success(
+                new RecordEditIdentity(editId, formKey, null, FormListEditRole.New)));
         fixture.Adapter.Setup(candidate => candidate.PrepareEdit(It.IsAny<FormListEdit>()))
             .Returns(new TestPreparedFormListEdit("capacity-edit"));
         fixture.Adapter.Setup(candidate => candidate.ApplyEdit(
@@ -192,14 +192,14 @@ public sealed class FormListWorkspaceStateTests
                 appliedOutput.Object,
                 formKey,
                 It.IsAny<PreparedFormListEdit>()))
-            .Returns(EngineResult<NativeEditMutationResult>.Success(new NativeEditMutationResult(changed: true)));
+            .Returns(EngineResult<RecordEditMutationResult>.Success(new RecordEditMutationResult(changed: true)));
         fixture.Adapter.Setup(candidate => candidate.ReopenOutputAsync(
                 fixture.Sources.Object,
                 outputAssociation,
                 savedBaseline,
                 It.IsAny<CancellationToken>()))
-            .Returns(ValueTask.FromResult(EngineResult<NativeOutputOpenResult>.Success(
-                new NativeOutputOpenResult(reopenedOutput.Object, outputAssociation, savedBaseline))));
+            .Returns(ValueTask.FromResult(EngineResult<PluginOutputOpenResult>.Success(
+                new PluginOutputOpenResult(reopenedOutput.Object, outputAssociation, savedBaseline))));
 
         var selection = await fixture.Workspace.SelectOutputAsync(new SelectOutputRequest(
             Guid.NewGuid(), fixture.Workspace.Revision, OutputSelectionMode.CreateNew, outputAssociation));
@@ -291,7 +291,7 @@ public sealed class FormListWorkspaceStateTests
         var workspaceId = Guid.NewGuid();
         var baselineId = Guid.NewGuid();
         var sourcePath = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "WorkspaceStateSource.esm"));
-        var sources = new Mock<INativeSourceSet>();
+        var sources = new Mock<IPluginSourceSet>();
         var sourceBaseline = TestWorkspaceInfrastructure.ConfigureSourceBaseline(
             sources.Object,
             baselineId,
@@ -310,7 +310,7 @@ public sealed class FormListWorkspaceStateTests
             new[] { sourcePath },
             Path.GetDirectoryName(sourcePath)!,
             Array.Empty<string>());
-        var sourceOpenResult = new NativeSourceOpenResult(
+        var sourceOpenResult = new PluginSourceOpenResult(
             sources.Object,
             baselineId,
             sourceBaseline.Artifacts);
@@ -336,7 +336,7 @@ public sealed class FormListWorkspaceStateTests
         internal WorkspaceFixture(
             FormListWorkspace workspace,
             Mock<IFormListGameAdapter> adapter,
-            Mock<INativeSourceSet> sources,
+            Mock<IPluginSourceSet> sources,
             Mock<IWorkspaceSaveCoordinator> saveCoordinator)
         {
             Workspace = workspace;
@@ -352,7 +352,7 @@ public sealed class FormListWorkspaceStateTests
         internal Mock<IFormListGameAdapter> Adapter { get; }
 
         /// <summary>Gets the source lifetime mock.</summary>
-        internal Mock<INativeSourceSet> Sources { get; }
+        internal Mock<IPluginSourceSet> Sources { get; }
 
         /// <summary>Gets the save coordinator mock.</summary>
         internal Mock<IWorkspaceSaveCoordinator> SaveCoordinator { get; }

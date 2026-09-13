@@ -5,7 +5,7 @@ using Mutagen.Bethesda.Plugins.Records;
 namespace CreationsForge.PresentationTests.Support;
 
 /// <summary>
-/// Supplies configurable native browser reads while rejecting mutation and persistence operations outside browser tests.
+/// Supplies configurable plugin browser reads while rejecting mutation and persistence operations outside browser tests.
 /// </summary>
 internal sealed class RecordingFormListBrowserWorkspace : IFormListWorkspace
 {
@@ -213,6 +213,6 @@ internal sealed class RecordingFormListBrowserWorkspace : IFormListWorkspace
     /// <returns>The unsupported-operation exception.</returns>
     private static NotSupportedException Unsupported()
     {
-        return new NotSupportedException("This presentation fake supports native FormList browser reads only.");
+        return new NotSupportedException("This presentation fake supports FormList browser reads only.");
     }
 }
