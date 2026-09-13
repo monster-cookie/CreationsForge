@@ -379,11 +379,11 @@ public sealed class NativeOutputInputLoader
                 continue;
             }
 
-            if (identity.LinkCount is null or > 1)
+            if (identity.LinkCount is null)
             {
                 throw new NativeSourceInputException(
                     EngineErrorCode.UnsupportedInput,
-                    $"Output artifact '{outputArtifact.Path}' has unverified or multiple hard-link identities.");
+                    $"Output artifact '{outputArtifact.Path}' has no verified hard-link identity.");
             }
 
             if (!outputIdentities.Add(identity)

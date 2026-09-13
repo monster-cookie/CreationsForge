@@ -316,10 +316,10 @@ public sealed class NativeOutputInputLoaderTests
         sourceVerification.Succeeded.ShouldBeTrue(sourceVerification.Error?.Message);
     }
 
-    /// <summary>A hard-linked existing output is rejected before it can alias source or unrelated physical state.</summary>
-    /// <returns>A task that completes after the Windows physical-identity check, or immediately on other platforms.</returns>
+    /// <summary>A hard-linked existing output that physically aliases an admitted source is still rejected.</summary>
+    /// <returns>A task that completes after the Windows physical-alias check, or immediately on other platforms.</returns>
     [Fact]
-    public async Task PrepareAsync_WithHardLinkedOutput_ReturnsUnsupportedInputOnWindows()
+    public async Task PrepareAsync_WithHardLinkedSourceAlias_ReturnsInvalidRequestOnWindows()
     {
         if (!OperatingSystem.IsWindows())
         {
@@ -348,7 +348,8 @@ public sealed class NativeOutputInputLoaderTests
             TestContext.Current.CancellationToken);
 
         result.Succeeded.ShouldBeFalse();
-        result.Error!.Code.ShouldBe(EngineErrorCode.UnsupportedInput);
+        result.Error!.Code.ShouldBe(EngineErrorCode.InvalidRequest);
+        result.Error.Message.ShouldContain("aliases another admitted native artifact");
     }
 
     /// <summary>Prepares and completes the generated native source input lifetime used by output tests.</summary>

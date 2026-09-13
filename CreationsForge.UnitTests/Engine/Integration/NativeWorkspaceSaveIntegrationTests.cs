@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using CreationsForge.Bootstrap.Composition;
 using CreationsForge.Core.Engine.Contracts;
@@ -206,6 +207,69 @@ public sealed class NativeWorkspaceSaveIntegrationTests
         AssertArtifactsUnchanged(sourceArtifacts, fixture.SnapshotArtifacts());
     }
 
+    /// <summary>Verifies a hard-link-deployed existing output opens and guarded publication replaces only the selected directory entry.</summary>
+    /// <returns>A task that completes after the replacement output and retained deployment artifact are compared.</returns>
+    [Fact]
+    public async Task HardLinkedExistingOutput_SaveBreaksLinkWithoutChangingDeploymentArtifactOnWindows()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        using var fixture = NativeWorkspaceIntegrationFixture.Create(SupportedGame.Starfield);
+        var association = CreateAssociation(fixture, "HardLinkedOutput.esm", LocalizedOutputMode.Embedded);
+        await using var services = NativeEngineComposition.Create();
+        FormKey formKey;
+        var initialOpen = await services.WorkspaceFactory.OpenAsync(
+            fixture.CreateOpenRequest(),
+            TestContext.Current.CancellationToken);
+        initialOpen.Succeeded.ShouldBeTrue(initialOpen.Error?.Message);
+        await using (var workspace = initialOpen.Value!)
+        {
+            var selection = await SelectOutputAsync(workspace, association, OutputSelectionMode.CreateNew);
+            var edit = await BeginNewEditAsync(workspace);
+            formKey = edit.FormKey;
+            await ApplyEditAsync(workspace, edit.EditId, new SetEditorIdEdit("DeployedOriginal"));
+            var save = await workspace.SaveAsync(
+                new SaveRequest(Guid.NewGuid(), workspace.Revision, selection.Baseline),
+                TestContext.Current.CancellationToken);
+            AssertCommittedSave(workspace, save);
+        }
+
+        var originalBytes = await File.ReadAllBytesAsync(association.PluginPath, TestContext.Current.CancellationToken);
+        var deploymentArtifactPath = Path.Combine(Path.GetDirectoryName(association.PluginPath)!, "HardLinkedOutput.deployed");
+        if (!CreateHardLink(deploymentArtifactPath, association.PluginPath, IntPtr.Zero))
+        {
+            throw new InvalidOperationException($"Could not create the deployed-output hard-link fixture: {Marshal.GetLastPInvokeError()}.");
+        }
+
+        var reopen = await services.WorkspaceFactory.OpenAsync(
+            fixture.CreateOpenRequest(),
+            TestContext.Current.CancellationToken);
+        reopen.Succeeded.ShouldBeTrue(reopen.Error?.Message);
+        await using (var workspace = reopen.Value!)
+        {
+            var selection = await SelectOutputAsync(workspace, association, OutputSelectionMode.OpenExisting);
+            var edit = await workspace.BeginEditAsync(
+                new BeginEditRequest(
+                    Guid.NewGuid(),
+                    workspace.Revision,
+                    FormListEditRole.ExistingOutput,
+                    targetFormKey: formKey),
+                TestContext.Current.CancellationToken);
+            edit.Succeeded.ShouldBeTrue(edit.Error?.Message);
+            await ApplyEditAsync(workspace, edit.Value!.EditId, new SetEditorIdEdit("PublishedReplacement"));
+            var save = await workspace.SaveAsync(
+                new SaveRequest(Guid.NewGuid(), workspace.Revision, selection.Baseline),
+                TestContext.Current.CancellationToken);
+            AssertCommittedSave(workspace, save);
+        }
+
+        File.ReadAllBytes(deploymentArtifactPath).ShouldBe(originalBytes);
+        File.ReadAllBytes(association.PluginPath).ShouldNotBe(originalBytes);
+    }
+
     /// <summary>Creates a canonical full-master output association under the fixture-owned temporary root.</summary>
     /// <param name="fixture">The generated native fixture that owns the output directory.</param>
     /// <param name="fileName">The output plugin file name.</param>
@@ -403,4 +467,16 @@ public sealed class NativeWorkspaceSaveIntegrationTests
             actual[artifact.Key].ShouldBe(artifact.Value);
         }
     }
+
+    /// <summary>Creates a Windows hard link for deployed-output replacement validation.</summary>
+    /// <param name="fileName">The new deployment-artifact path.</param>
+    /// <param name="existingFileName">The selected output path whose current bytes are shared.</param>
+    /// <param name="securityAttributes">Reserved security attributes, always zero.</param>
+    /// <returns><see langword="true"/> when Windows creates the link.</returns>
+    [DllImport("kernel32.dll", EntryPoint = "CreateHardLinkW", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CreateHardLink(
+        string fileName,
+        string existingFileName,
+        IntPtr securityAttributes);
 }

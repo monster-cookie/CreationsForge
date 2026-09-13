@@ -793,7 +793,7 @@ public sealed partial class WorkspaceSaveCoordinator
             && left.Fingerprint.Equals(right.Fingerprint);
     }
 
-    /// <summary>Rejects untrusted or multiply linked transaction-owned files and aliases with source or destination artifacts.</summary>
+    /// <summary>Rejects untrusted or aliased destination identities and untrusted, multiply linked, or aliased transaction-owned files.</summary>
     /// <param name="plans">The complete prepared plans.</param>
     /// <param name="sourceBaseline">The complete source baseline.</param>
     private static void ValidateOwnedIdentities(
@@ -808,7 +808,13 @@ public sealed partial class WorkspaceSaveCoordinator
 
         foreach (var plan in plans)
         {
-            foreach (var artifact in new[] { plan.Before, plan.Staged, plan.Publish, plan.Backup }.Where(artifact => artifact?.FileIdentity is not null))
+            if (plan.Before.FileIdentity is { } destinationIdentity
+                && (destinationIdentity.LinkCount is null || !identities.Add(destinationIdentity)))
+            {
+                throw new InvalidDataException($"Save destination '{plan.Before.Path}' has an untrusted or aliased physical identity.");
+            }
+
+            foreach (var artifact in new[] { plan.Staged, plan.Publish, plan.Backup }.Where(artifact => artifact?.FileIdentity is not null))
             {
                 var identity = artifact!.FileIdentity!;
                 if (identity.LinkCount is null or > 1 || !identities.Add(identity))
