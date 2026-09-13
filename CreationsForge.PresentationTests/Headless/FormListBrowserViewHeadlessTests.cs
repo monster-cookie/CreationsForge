@@ -188,9 +188,8 @@ public sealed class FormListBrowserViewHeadlessTests
             var firstWarning = warnings.GetVisualDescendants().OfType<TextBlock>().First();
             firstWarning.Bounds.Width.ShouldBeLessThanOrEqualTo(diagnosticsScroller.Viewport.Width);
             firstWarning.Bounds.Height.ShouldBeGreaterThan(20d);
-            status.IsEffectivelyVisible.ShouldBeTrue();
+            status.IsEffectivelyVisible.ShouldBeFalse();
             retry.IsEffectivelyVisible.ShouldBeTrue();
-            GetBottomWithinView(status, view).ShouldBeLessThanOrEqualTo(view.Bounds.Height);
             GetBottomWithinView(retry, view).ShouldBeLessThanOrEqualTo(view.Bounds.Height);
             beforeTree.GetVisualDescendants()
                 .OfType<Border>()

@@ -248,7 +248,7 @@ public sealed partial class FormListBrowserViewModel
         SetWarnings(CombineWarnings(LoadWarnings, warnings));
         ClearError();
         RetryKindValue = RetryKind.None;
-        SetStatus($"Compared {comparison.FormKey}: {comparison.BeforeContext.Status} -> {comparison.AfterContext.Status}.");
+        SetStatus(string.Empty);
     }
 
 }

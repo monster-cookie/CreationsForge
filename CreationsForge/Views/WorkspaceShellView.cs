@@ -81,19 +81,46 @@ public sealed class WorkspaceShellView : UserControl
         status.Bind(TextBlock.TextProperty, new Binding(nameof(WorkspaceShellViewModel.WorkspaceStatusText)));
         AutomationProperties.SetAutomationId(status, "WorkspaceStatusText");
 
+        var activePluginCount = CreateBrowserStatusText(
+            nameof(FormListBrowserViewModel.ActivePluginFormListCount),
+            "Plugin FormLists: {0:N0}",
+            "ActivePluginFormListCountText");
+        var loadedCount = CreateBrowserStatusText(
+            nameof(FormListBrowserViewModel.LoadedFormListCount),
+            "Loaded FormLists: {0:N0}",
+            "LoadedFormListCountText");
+        var statusFields = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 18,
+            VerticalAlignment = VerticalAlignment.Center,
+            Children =
+            {
+                status,
+                activePluginCount,
+                loadedCount
+            }
+        };
+        AutomationProperties.SetAutomationId(statusFields, "WorkspaceStatusFields");
+
+        var legend = BuildComparisonLegend();
+        legend.HorizontalAlignment = HorizontalAlignment.Right;
+        Grid.SetColumn(legend, 1);
+
         var statusBar = new Border
         {
             Background = App.GetApplicationBrush(App.PanelSurfaceBrushKey),
             BorderBrush = App.GetApplicationBrush(App.BorderBrushKey),
             BorderThickness = new Thickness(0, 1, 0, 0),
             Padding = new Thickness(18, 8),
-            Child = new StackPanel
+            Child = new Grid
             {
-                Spacing = 4,
+                ColumnDefinitions = new ColumnDefinitions("*,Auto"),
+                ColumnSpacing = 18,
                 Children =
                 {
-                    BuildComparisonLegend(),
-                    status
+                    statusFields,
+                    legend
                 }
             }
         };
@@ -111,6 +138,28 @@ public sealed class WorkspaceShellView : UserControl
                 statusBar
             }
         };
+    }
+
+    /// <summary>Creates one footer count bound directly to the hosted browser's unfiltered snapshot.</summary>
+    /// <param name="propertyName">The numeric browser property to display.</param>
+    /// <param name="format">The user-facing count label and numeric format.</param>
+    /// <param name="automationId">The stable automation identity.</param>
+    /// <returns>The configured footer text.</returns>
+    private TextBlock CreateBrowserStatusText(string propertyName, string format, string automationId)
+    {
+        var text = new TextBlock
+        {
+            FontSize = 13,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        App.ApplyApplicationTextForeground(text);
+        text.Bind(TextBlock.TextProperty, new Binding(propertyName)
+        {
+            Source = FormListBrowserView.BrowserViewModel,
+            StringFormat = format
+        });
+        AutomationProperties.SetAutomationId(text, automationId);
+        return text;
     }
 
     /// <summary>Builds the persistent comparison-color legend restored from the established status bar.</summary>

@@ -247,6 +247,29 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
     /// <summary>Gets the current browser operation status.</summary>
     public string StatusText => StatusTextValue;
 
+    /// <summary>Gets whether the browser has a current operation message that should be presented.</summary>
+    public bool HasStatusText => !string.IsNullOrWhiteSpace(StatusTextValue);
+
+    /// <summary>Gets the number of FormLists defined or overridden by the active output or source plugin.</summary>
+    public int ActivePluginFormListCount
+    {
+        get
+        {
+            var activePlugin = PluginsValue.FirstOrDefault(plugin => plugin.Role == PluginRole.Output)
+                ?? PluginsValue.FirstOrDefault(plugin => plugin.Role == PluginRole.Source);
+            if (activePlugin is null)
+            {
+                return 0;
+            }
+
+            return AllRecordsValue.Count(record => record.Contexts.Any(
+                context => context.ContainingModKey == activePlugin.ModKey));
+        }
+    }
+
+    /// <summary>Gets the number of distinct FormLists loaded across the complete unfiltered workspace snapshot.</summary>
+    public int LoadedFormListCount => AllRecordsValue.Count;
+
     /// <summary>Gets the engine-reported prior resolution and provenance as presentation text.</summary>
     public string BeforeProvenanceText => FormatContext(BeforeContextValue, SelectedBeforeContextValue);
 
@@ -849,11 +872,14 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
         OnPropertyChanged(nameof(HasWarnings));
     }
 
-    /// <summary>Replaces the browser status text.</summary>
-    /// <param name="status">The new non-empty status.</param>
+    /// <summary>Replaces the browser status text, including clearing a completed transient operation.</summary>
+    /// <param name="status">The new status, or an empty string when no operation message should remain visible.</param>
     private void SetStatus(string status)
     {
-        SetProperty(ref StatusTextValue, status, nameof(StatusText));
+        if (SetProperty(ref StatusTextValue, status, nameof(StatusText)))
+        {
+            OnPropertyChanged(nameof(HasStatusText));
+        }
     }
 
     /// <summary>Formats exact engine resolution status and containing-plugin provenance.</summary>

@@ -59,6 +59,7 @@ public sealed class WorkspaceShellViewHeadlessTests
             var legend = ControlFinder.FindByAutomationId<StackPanel>(
                 view,
                 "WorkspaceComparisonLegend").ShouldNotBeNull();
+            legend.HorizontalAlignment.ShouldBe(Avalonia.Layout.HorizontalAlignment.Right);
             var legendItems = legend.Children.OfType<StackPanel>().ToArray();
             legendItems.Select(item => item.Children.OfType<TextBlock>().Single().Text)
                 .ShouldBe(["Identical", "Conflict", "Winning Override"]);
@@ -72,6 +73,10 @@ public sealed class WorkspaceShellViewHeadlessTests
                     Color.FromArgb(80, 192, 160, 0)
                 ]);
             ControlFinder.FindByAutomationId<TextBlock>(view, "WorkspaceStatusText")!.Text.ShouldBe("No plugin is open.");
+            ControlFinder.FindByAutomationId<TextBlock>(view, "ActivePluginFormListCountText")!
+                .Text.ShouldBe("Plugin FormLists: 0");
+            ControlFinder.FindByAutomationId<TextBlock>(view, "LoadedFormListCountText")!
+                .Text.ShouldBe("Loaded FormLists: 0");
         }
         finally
         {

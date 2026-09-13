@@ -84,6 +84,8 @@ public sealed partial class FormListBrowserViewModelTests
             .Children.Cast<FormListRecordViewModel>()
             .Select(record => record.FormKey)
             .ShouldBe([secondFormKey, firstFormKey]);
+        viewModel.ActivePluginFormListCount.ShouldBe(2);
+        viewModel.LoadedFormListCount.ShouldBe(2);
         viewModel.RecordSortMode = FormListRecordSortMode.FormId;
         var firstRoot = viewModel.Records.Single(record => record.FormKey == firstFormKey);
         firstRoot.PrimaryText.ShouldBe("00000123");
@@ -133,7 +135,8 @@ public sealed partial class FormListBrowserViewModelTests
         afterRoot.Children.Single(node => node.Name == "Name").Children.ShouldHaveSingleItem().ComparisonState
             .ShouldBe(ComparisonFieldState.WinningOverride);
         viewModel.SemanticChanges.ShouldHaveSingleItem().ShouldBeSameAs(semanticChange);
-        viewModel.StatusText.ShouldContain("Resolved -> Resolved");
+        viewModel.StatusText.ShouldBeEmpty();
+        viewModel.HasStatusText.ShouldBeFalse();
 
         await viewModel.SelectRecordAsync(firstRoot.Contexts[0]);
         var sourceSelection = viewModel.Selection.ShouldNotBeNull();

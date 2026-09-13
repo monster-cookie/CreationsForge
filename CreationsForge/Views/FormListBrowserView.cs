@@ -34,6 +34,9 @@ public sealed class FormListBrowserView : UserControl
         Content = BuildContent();
     }
 
+    /// <summary>Gets the browser presentation state hosted by this view for shell-level status bindings.</summary>
+    internal FormListBrowserViewModel BrowserViewModel => ViewModel;
+
     /// <summary>Starts plugin loading once this navigation-owned view enters the visual tree.</summary>
     /// <param name="eventArgs">The visual-tree attachment event.</param>
     protected override async void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs eventArgs)
@@ -474,6 +477,7 @@ public sealed class FormListBrowserView : UserControl
 
         var status = CreateBoundText(nameof(FormListBrowserViewModel.StatusText), 12, FontWeight.Normal);
         status.TextWrapping = TextWrapping.Wrap;
+        status.Bind(IsVisibleProperty, new Binding(nameof(FormListBrowserViewModel.HasStatusText)));
         AutomationProperties.SetAutomationId(status, "FormListBrowserStatusText");
         var diagnosticDetails = new StackPanel
         {

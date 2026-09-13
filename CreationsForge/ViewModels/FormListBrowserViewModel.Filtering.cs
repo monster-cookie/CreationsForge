@@ -67,6 +67,8 @@ public sealed partial class FormListBrowserViewModel
     {
         ArgumentNullException.ThrowIfNull(records);
         AllRecordsValue = records;
+        OnPropertyChanged(nameof(ActivePluginFormListCount));
+        OnPropertyChanged(nameof(LoadedFormListCount));
         ApplyRecordFilters();
     }
 
