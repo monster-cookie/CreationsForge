@@ -176,23 +176,18 @@ public sealed class StarfieldFormListGameAdapter : IFormListGameAdapter
         }
 
         var (starfieldSources, starfieldOutput) = stateResult.Value!;
-        var sourceResult = starfieldSources.ListPlugins(cancellationToken);
-        if (!sourceResult.Succeeded || sourceResult.Value is null || starfieldOutput is null)
+        if (starfieldOutput is null)
         {
-            return sourceResult;
+            return starfieldSources.ListPlugins(cancellationToken);
         }
 
-        cancellationToken.ThrowIfCancellationRequested();
-        var summaries = sourceResult.Value.ToList();
-        summaries.Add(new PluginSummary(
-            starfieldOutput.Association.ModKey,
-            starfieldOutput.Association.PluginPath,
-            summaries.Count,
-            PluginRole.Output));
-        return Success<IReadOnlyList<PluginSummary>>(
-            starfieldSources,
-            Array.AsReadOnly(summaries.ToArray()),
-            sourceResult.Warnings);
+        var result = PluginSummaryBuilder.Build(
+            starfieldSources.GetReferenceMods(),
+            starfieldSources.BorrowInputs().Plugins,
+            starfieldOutput.BorrowMod(),
+            starfieldOutput.Association,
+            cancellationToken);
+        return Success(starfieldSources, result.Value!, result.Warnings);
     }
 
     /// <inheritdoc />

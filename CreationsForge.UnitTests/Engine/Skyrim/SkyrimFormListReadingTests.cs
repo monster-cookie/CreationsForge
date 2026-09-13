@@ -40,6 +40,10 @@ public sealed class SkyrimFormListReadingTests
                 .ShouldBe([PluginRole.Source, PluginRole.LoadOrder, PluginRole.LoadOrder]);
             pluginValues.Select(plugin => plugin.Path)
                 .ShouldBe(fixture.OrderedPluginPaths);
+            pluginValues.ShouldAllBe(plugin => plugin.RecordCount.HasValue);
+            pluginValues.ShouldAllBe(plugin => plugin.UniqueRecordContributionCount.HasValue);
+            pluginValues.Sum(plugin => plugin.RecordCount!.Value).ShouldBeGreaterThan(
+                pluginValues.Sum(plugin => plugin.UniqueRecordContributionCount!.Value));
 
             source.Succeeded.ShouldBeTrue(source.Error?.Message);
             var sourceValues = source.Value.ShouldNotBeNull();

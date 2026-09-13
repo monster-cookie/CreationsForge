@@ -59,6 +59,8 @@ public sealed class StarfieldFormListGameAdapterTests
         plugins.ResultRevision.ShouldBe(sources.Revision);
         plugins.Value![^1].ModKey.ShouldBe(association.ModKey);
         plugins.Value[^1].Role.ShouldBe(PluginRole.Output);
+        plugins.Value[^1].RecordCount.ShouldNotBeNull();
+        plugins.Value.ShouldAllBe(plugin => plugin.UniqueRecordContributionCount.HasValue);
 
         var staged = adapter.ListFormLists(
             sources,

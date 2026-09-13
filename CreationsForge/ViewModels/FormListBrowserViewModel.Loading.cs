@@ -247,6 +247,8 @@ public sealed partial class FormListBrowserViewModel
         OnPropertyChanged(nameof(HasWorkspace));
         PluginsValue = snapshot.Plugins;
         OnPropertyChanged(nameof(Plugins));
+        OnPropertyChanged(nameof(ActivePluginRecordCountText));
+        OnPropertyChanged(nameof(LoadedRecordCountText));
         SetAllRecords(records);
         LoadWarnings = Array.AsReadOnly(warnings.ToArray());
         SetWarnings(LoadWarnings);

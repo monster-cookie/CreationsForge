@@ -39,6 +39,8 @@ public sealed class Fallout4FormListGameAdapterTests
         plugins.Succeeded.ShouldBeTrue(plugins.Error?.Message);
         plugins.Value![^1].ModKey.ShouldBe(existing.Association.ModKey);
         plugins.Value[^1].Role.ShouldBe(PluginRole.Output);
+        plugins.Value[^1].RecordCount.ShouldNotBeNull();
+        plugins.Value.ShouldAllBe(plugin => plugin.UniqueRecordContributionCount.HasValue);
 
         var staged = adapter.ListFormLists(
             sources,

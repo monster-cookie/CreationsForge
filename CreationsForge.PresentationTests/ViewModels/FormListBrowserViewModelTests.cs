@@ -37,9 +37,9 @@ public sealed partial class FormListBrowserViewModelTests
             workspaceId,
             revision,
             [
-                new PluginSummary(sourceMod, sourcePath, 0, PluginRole.Source),
-                new PluginSummary(otherMod, otherPath, 1, PluginRole.LoadOrder),
-                new PluginSummary(outputMod, outputPath, 2, PluginRole.Output)
+                new PluginSummary(sourceMod, sourcePath, 0, PluginRole.Source, 8, 8),
+                new PluginSummary(otherMod, otherPath, 1, PluginRole.LoadOrder, 5, 4),
+                new PluginSummary(outputMod, outputPath, 2, PluginRole.Output, 3, 1)
             ],
             [
                 Summary(firstFormKey, "OriginalList", sourceMod, sourcePath, 0, PluginRole.Source, 2),
@@ -84,8 +84,8 @@ public sealed partial class FormListBrowserViewModelTests
             .Children.Cast<FormListRecordViewModel>()
             .Select(record => record.FormKey)
             .ShouldBe([secondFormKey, firstFormKey]);
-        viewModel.ActivePluginFormListCount.ShouldBe(2);
-        viewModel.LoadedFormListCount.ShouldBe(2);
+        viewModel.ActivePluginRecordCountText.ShouldBe("Plugin records: 3");
+        viewModel.LoadedRecordCountText.ShouldBe("Unique loaded records: 13");
         viewModel.RecordSortMode = FormListRecordSortMode.FormId;
         var firstRoot = viewModel.Records.Single(record => record.FormKey == firstFormKey);
         firstRoot.PrimaryText.ShouldBe("00000123");

@@ -250,8 +250,8 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
     /// <summary>Gets whether the browser has a current operation message that should be presented.</summary>
     public bool HasStatusText => !string.IsNullOrWhiteSpace(StatusTextValue);
 
-    /// <summary>Gets the number of FormLists defined or overridden by the active output or source plugin.</summary>
-    public int ActivePluginFormListCount
+    /// <summary>Gets the physical major-record count for the active output or source plugin as footer text.</summary>
+    public string ActivePluginRecordCountText
     {
         get
         {
@@ -259,16 +259,33 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
                 ?? PluginsValue.FirstOrDefault(plugin => plugin.Role == PluginRole.Source);
             if (activePlugin is null)
             {
-                return 0;
+                return "Plugin records: 0";
             }
 
-            return AllRecordsValue.Count(record => record.Contexts.Any(
-                context => context.ContainingModKey == activePlugin.ModKey));
+            return activePlugin.RecordCount.HasValue
+                ? $"Plugin records: {activePlugin.RecordCount.Value:N0}"
+                : "Plugin records: Unavailable";
         }
     }
 
-    /// <summary>Gets the number of distinct FormLists loaded across the complete unfiltered workspace snapshot.</summary>
-    public int LoadedFormListCount => AllRecordsValue.Count;
+    /// <summary>Gets the number of distinct major-record FormKeys across the admitted load order as footer text.</summary>
+    public string LoadedRecordCountText
+    {
+        get
+        {
+            if (PluginsValue.Count == 0)
+            {
+                return "Unique loaded records: 0";
+            }
+
+            if (PluginsValue.Any(plugin => !plugin.UniqueRecordContributionCount.HasValue))
+            {
+                return "Unique loaded records: Unavailable";
+            }
+
+            return $"Unique loaded records: {PluginsValue.Sum(plugin => plugin.UniqueRecordContributionCount!.Value):N0}";
+        }
+    }
 
     /// <summary>Gets the engine-reported prior resolution and provenance as presentation text.</summary>
     public string BeforeProvenanceText => FormatContext(BeforeContextValue, SelectedBeforeContextValue);
@@ -665,6 +682,8 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
         SetComparisonBusy(false);
         PluginsValue = Array.Empty<PluginSummary>();
         OnPropertyChanged(nameof(Plugins));
+        OnPropertyChanged(nameof(ActivePluginRecordCountText));
+        OnPropertyChanged(nameof(LoadedRecordCountText));
         SetAllRecords(Array.Empty<FormListRecordViewModel>());
         SelectedRecordValue = null;
         ContextOptionsValue = Array.Empty<FormListContextOption>();

@@ -82,13 +82,11 @@ public sealed class WorkspaceShellView : UserControl
         AutomationProperties.SetAutomationId(status, "WorkspaceStatusText");
 
         var activePluginCount = CreateBrowserStatusText(
-            nameof(FormListBrowserViewModel.ActivePluginFormListCount),
-            "Plugin FormLists: {0:N0}",
-            "ActivePluginFormListCountText");
+            nameof(FormListBrowserViewModel.ActivePluginRecordCountText),
+            "ActivePluginRecordCountText");
         var loadedCount = CreateBrowserStatusText(
-            nameof(FormListBrowserViewModel.LoadedFormListCount),
-            "Loaded FormLists: {0:N0}",
-            "LoadedFormListCountText");
+            nameof(FormListBrowserViewModel.LoadedRecordCountText),
+            "LoadedRecordCountText");
         var statusFields = new StackPanel
         {
             Orientation = Orientation.Horizontal,
@@ -141,11 +139,10 @@ public sealed class WorkspaceShellView : UserControl
     }
 
     /// <summary>Creates one footer count bound directly to the hosted browser's unfiltered snapshot.</summary>
-    /// <param name="propertyName">The numeric browser property to display.</param>
-    /// <param name="format">The user-facing count label and numeric format.</param>
+    /// <param name="propertyName">The formatted browser property to display.</param>
     /// <param name="automationId">The stable automation identity.</param>
     /// <returns>The configured footer text.</returns>
-    private TextBlock CreateBrowserStatusText(string propertyName, string format, string automationId)
+    private TextBlock CreateBrowserStatusText(string propertyName, string automationId)
     {
         var text = new TextBlock
         {
@@ -155,8 +152,7 @@ public sealed class WorkspaceShellView : UserControl
         App.ApplyApplicationTextForeground(text);
         text.Bind(TextBlock.TextProperty, new Binding(propertyName)
         {
-            Source = FormListBrowserView.BrowserViewModel,
-            StringFormat = format
+            Source = FormListBrowserView.BrowserViewModel
         });
         AutomationProperties.SetAutomationId(text, automationId);
         return text;

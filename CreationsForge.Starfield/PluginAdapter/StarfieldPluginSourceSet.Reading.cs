@@ -27,18 +27,10 @@ public sealed partial class StarfieldPluginSourceSet
                 resultRevision: Revision);
         }
 
-        var snapshot = snapshotResult.Value!;
-        var summaries = new List<PluginSummary>(snapshot.Plugins.Count);
-        foreach (var plugin in snapshot.Plugins)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            summaries.Add(new PluginSummary(plugin.ModKey, plugin.Path, plugin.LoadOrderIndex, plugin.Role));
-        }
-
-        return EngineResult<IReadOnlyList<PluginSummary>>.Success(
-            Array.AsReadOnly(summaries.ToArray()),
-            WorkspaceId,
-            resultRevision: Revision);
+        return BindResult(PluginSummaryBuilder.Build(
+            GetReferenceMods(),
+            BorrowInputs().Plugins,
+            cancellationToken: cancellationToken));
     }
 
     /// <summary>Lists source FormLists in deterministic containing-plugin and Mutagen group order.</summary>

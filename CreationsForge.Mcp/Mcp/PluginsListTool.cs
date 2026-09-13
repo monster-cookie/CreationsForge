@@ -14,7 +14,7 @@ public sealed class PluginsListTool : McpToolBase
     private const string Section = "plugins";
 
     /// <summary>The summary cursor policy identifier.</summary>
-    private const string Policy = "summary_v1";
+    private const string Policy = "summary_v2";
 
     /// <summary>The exact accepted argument names.</summary>
     private static readonly IReadOnlySet<string> AllowedArguments = new HashSet<string>(StringComparer.Ordinal)
@@ -30,7 +30,7 @@ public sealed class PluginsListTool : McpToolBase
 
     /// <summary>The closed plugin summary output schema.</summary>
     private static readonly JsonElement OutputSchema = McpToolSchema.Output(
-        "{\"type\":\"object\",\"properties\":{\"workspaceId\":{\"type\":\"string\",\"format\":\"uuid\"},\"revision\":" + McpToolSchema.Revision + ",\"offset\":{\"type\":\"integer\",\"minimum\":0},\"count\":{\"type\":\"integer\",\"minimum\":0},\"totalCount\":{\"type\":\"integer\",\"minimum\":0},\"plugins\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"modKey\":{\"type\":\"string\",\"minLength\":1},\"path\":{\"type\":\"string\",\"minLength\":1},\"loadOrderIndex\":{\"type\":\"integer\",\"minimum\":0},\"role\":{\"type\":\"string\",\"enum\":[\"source\",\"load_order\",\"output\"]}},\"required\":[\"modKey\",\"path\",\"loadOrderIndex\",\"role\"],\"additionalProperties\":false}},\"cursor\":" + McpToolSchema.NullableString + ",\"warnings\":{\"type\":\"array\",\"items\":" + McpToolSchema.Warning + "}},\"required\":[\"workspaceId\",\"revision\",\"offset\",\"count\",\"totalCount\",\"plugins\",\"cursor\",\"warnings\"],\"additionalProperties\":false}");
+        "{\"type\":\"object\",\"properties\":{\"workspaceId\":{\"type\":\"string\",\"format\":\"uuid\"},\"revision\":" + McpToolSchema.Revision + ",\"offset\":{\"type\":\"integer\",\"minimum\":0},\"count\":{\"type\":\"integer\",\"minimum\":0},\"totalCount\":{\"type\":\"integer\",\"minimum\":0},\"uniqueRecordCount\":" + McpToolSchema.NullableInteger + ",\"plugins\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"modKey\":{\"type\":\"string\",\"minLength\":1},\"path\":{\"type\":\"string\",\"minLength\":1},\"loadOrderIndex\":{\"type\":\"integer\",\"minimum\":0},\"role\":{\"type\":\"string\",\"enum\":[\"source\",\"load_order\",\"output\"]},\"recordCount\":" + McpToolSchema.NullableInteger + ",\"uniqueRecordContributionCount\":" + McpToolSchema.NullableInteger + "},\"required\":[\"modKey\",\"path\",\"loadOrderIndex\",\"role\",\"recordCount\",\"uniqueRecordContributionCount\"],\"additionalProperties\":false}},\"cursor\":" + McpToolSchema.NullableString + ",\"warnings\":{\"type\":\"array\",\"items\":" + McpToolSchema.Warning + "}},\"required\":[\"workspaceId\",\"revision\",\"offset\",\"count\",\"totalCount\",\"uniqueRecordCount\",\"plugins\",\"cursor\",\"warnings\"],\"additionalProperties\":false}");
 
     /// <summary>The host-owned workspace registry.</summary>
     private readonly McpWorkspaceRegistry WorkspaceRegistry;
@@ -112,6 +112,9 @@ public sealed class PluginsListTool : McpToolBase
         }
 
         var plugins = engineResult.Value;
+        var uniqueRecordCount = plugins.All(plugin => plugin.UniqueRecordContributionCount.HasValue)
+            ? plugins.Sum(plugin => plugin.UniqueRecordContributionCount!.Value)
+            : (long?)null;
         if (position > plugins.Count)
         {
             return Error("invalid_cursor", "The plugin-list cursor position is outside the fresh result.");
@@ -129,12 +132,15 @@ public sealed class PluginsListTool : McpToolBase
                 offset = position,
                 count = page.Length,
                 totalCount = plugins.Count,
+                uniqueRecordCount,
                 plugins = page.Select(plugin => new
                 {
                     modKey = plugin.ModKey.ToString(),
                     path = plugin.Path,
                     loadOrderIndex = plugin.LoadOrderIndex,
                     role = McpProjection.PluginRole(plugin.Role),
+                    recordCount = plugin.RecordCount,
+                    uniqueRecordContributionCount = plugin.UniqueRecordContributionCount,
                 }).ToArray(),
                 cursor = nextPosition < plugins.Count
                     ? McpPageCursor.Encode(workspaceId, revision, fingerprint, string.Empty, Section, Policy, nextPosition)

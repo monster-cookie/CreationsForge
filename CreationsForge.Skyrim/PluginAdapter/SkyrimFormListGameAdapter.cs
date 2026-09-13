@@ -1,4 +1,5 @@
 using CreationsForge.Core.Engine.Contracts;
+using CreationsForge.Core.Engine.RecordReading;
 using CreationsForge.Core.Enums;
 using Mutagen.Bethesda;
 
@@ -147,21 +148,20 @@ public sealed class SkyrimFormListGameAdapter : IFormListGameAdapter
             return WrongState<IReadOnlyList<PluginSummary>>("source or output");
         }
 
-        var sourceResult = skyrimSources.ListPlugins(cancellationToken);
-        if (!sourceResult.Succeeded || skyrimOutput is null)
+        if (skyrimOutput is null)
         {
-            return sourceResult;
+            return skyrimSources.ListPlugins(cancellationToken);
         }
 
-        var plugins = sourceResult.Value!.ToList();
-        plugins.Add(new PluginSummary(
-            skyrimOutput.Association.ModKey,
-            skyrimOutput.Association.PluginPath,
-            plugins.Count,
-            PluginRole.Output));
+        var result = PluginSummaryBuilder.Build(
+            skyrimSources.GetMutagenMods(),
+            skyrimSources.BorrowInputs().Plugins,
+            skyrimOutput.GetMutableMod(),
+            skyrimOutput.Association,
+            cancellationToken);
         return EngineResult<IReadOnlyList<PluginSummary>>.Success(
-            Array.AsReadOnly(plugins.ToArray()),
-            warnings: sourceResult.Warnings);
+            result.Value!,
+            warnings: result.Warnings);
     }
 
     /// <inheritdoc />

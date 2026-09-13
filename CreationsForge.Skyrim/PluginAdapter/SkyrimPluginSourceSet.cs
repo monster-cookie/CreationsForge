@@ -108,16 +108,10 @@ public sealed class SkyrimPluginSourceSet : IPluginSourceSet
                 resultRevision: Revision);
         }
 
-        var sources = sourcesResult.Value!;
-        var summaries = new List<PluginSummary>(sources.Count);
-        foreach (var source in sources)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            summaries.Add(new PluginSummary(source.Mod.ModKey, source.Path, source.LoadOrderIndex, source.Role));
-        }
-
-        return BindResult(EngineResult<IReadOnlyList<PluginSummary>>.Success(
-            Array.AsReadOnly(summaries.ToArray())));
+        return BindResult(PluginSummaryBuilder.Build(
+            _mutagenMods,
+            _inputs.Plugins,
+            cancellationToken: cancellationToken));
     }
 
     /// <summary>

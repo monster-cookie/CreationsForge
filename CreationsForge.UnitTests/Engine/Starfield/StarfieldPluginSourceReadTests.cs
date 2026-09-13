@@ -2,6 +2,7 @@ using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Engine.PluginInputs;
 using CreationsForge.Starfield.PluginAdapter;
 using Mutagen.Bethesda.Plugins;
+using Mutagen.Bethesda.Plugins.Records;
 using Mutagen.Bethesda.Starfield;
 using Shouldly;
 
@@ -46,6 +47,15 @@ public sealed class StarfieldPluginSourceReadTests
                 PluginRole.LoadOrder,
                 PluginRole.LoadOrder,
             });
+            pluginSummaries.Select(plugin => plugin.RecordCount).ShouldBe(
+                sources.GetReferenceMods()
+                    .Select(mod => (long?)mod.EnumerateMajorRecords().LongCount()));
+            pluginSummaries.Sum(plugin => plugin.UniqueRecordContributionCount!.Value).ShouldBe(
+                sources.GetReferenceMods()
+                    .SelectMany(mod => mod.EnumerateMajorRecords())
+                    .Select(record => record.FormKey)
+                    .Distinct()
+                    .LongCount());
 
             sourceLists.Succeeded.ShouldBeTrue(sourceLists.Error?.Message);
             var sourceSummaries = sourceLists.Value!;

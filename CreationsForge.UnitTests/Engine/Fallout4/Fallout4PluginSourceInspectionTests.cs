@@ -31,6 +31,10 @@ public sealed class Fallout4PluginSourceInspectionTests
         pluginValues.Select(plugin => plugin.LoadOrderIndex).ShouldBe([0, 1, 2]);
         pluginValues.Select(plugin => plugin.Role)
             .ShouldBe([PluginRole.Source, PluginRole.LoadOrder, PluginRole.LoadOrder]);
+        pluginValues.ShouldAllBe(plugin => plugin.RecordCount.HasValue);
+        pluginValues.ShouldAllBe(plugin => plugin.UniqueRecordContributionCount.HasValue);
+        pluginValues.Sum(plugin => plugin.RecordCount!.Value).ShouldBeGreaterThan(
+            pluginValues.Sum(plugin => plugin.UniqueRecordContributionCount!.Value));
 
         var source = sources.ListFormLists(RecordScope.Source, TestContext.Current.CancellationToken);
         var all = sources.ListFormLists(RecordScope.AllContexts, TestContext.Current.CancellationToken);

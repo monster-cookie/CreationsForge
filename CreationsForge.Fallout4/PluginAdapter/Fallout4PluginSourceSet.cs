@@ -100,21 +100,10 @@ public sealed class Fallout4PluginSourceSet : IPluginSourceSet
                 resultRevision: Revision);
         }
 
-        var summaries = new List<PluginSummary>(_inputs.Plugins.Count);
-        foreach (var plugin in _inputs.Plugins)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            summaries.Add(new PluginSummary(
-                plugin.ModKey,
-                plugin.Path,
-                plugin.LoadOrderIndex,
-                plugin.Role));
-        }
-
-        return EngineResult<IReadOnlyList<PluginSummary>>.Success(
-            Array.AsReadOnly(summaries.ToArray()),
-            workspaceId: WorkspaceId,
-            resultRevision: Revision);
+        return BindResult(PluginSummaryBuilder.Build(
+            _mutagenMods,
+            _inputs.Plugins,
+            cancellationToken: cancellationToken));
     }
 
     /// <summary>Lists typed Fallout 4 FormList contexts without building or retaining a record index.</summary>

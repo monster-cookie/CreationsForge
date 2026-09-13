@@ -96,7 +96,7 @@ public sealed class McpReadToolProtocolTests
             .Returns(ValueTask.FromResult(EngineResult<IReadOnlyList<PluginSummary>>.Success(
                 Array.AsReadOnly(new[]
                 {
-                    new PluginSummary(sourceModKey, sourcePath, 0, PluginRole.Source),
+                    new PluginSummary(sourceModKey, sourcePath, 0, PluginRole.Source, 12, 10),
                 }),
                 workspaceId: workspaceId,
                 resultRevision: readRevision)));
@@ -165,7 +165,10 @@ public sealed class McpReadToolProtocolTests
             });
         var plugins = GetResult(pluginsResult);
         plugins.GetProperty("revision").GetProperty("sequence").GetString().ShouldBe(ulong.MaxValue.ToString());
+        plugins.GetProperty("uniqueRecordCount").GetInt64().ShouldBe(10);
         plugins.GetProperty("plugins")[0].GetProperty("modKey").GetString().ShouldBe(sourceModKey.ToString());
+        plugins.GetProperty("plugins")[0].GetProperty("recordCount").GetInt64().ShouldBe(12);
+        plugins.GetProperty("plugins")[0].GetProperty("uniqueRecordContributionCount").GetInt64().ShouldBe(10);
 
         var searchResult = await harness.Client.CallToolAsync(
             "creationsforge_references_search",

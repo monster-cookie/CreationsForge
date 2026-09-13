@@ -73,10 +73,10 @@ public sealed class WorkspaceShellViewHeadlessTests
                     Color.FromArgb(80, 192, 160, 0)
                 ]);
             ControlFinder.FindByAutomationId<TextBlock>(view, "WorkspaceStatusText")!.Text.ShouldBe("No plugin is open.");
-            ControlFinder.FindByAutomationId<TextBlock>(view, "ActivePluginFormListCountText")!
-                .Text.ShouldBe("Plugin FormLists: 0");
-            ControlFinder.FindByAutomationId<TextBlock>(view, "LoadedFormListCountText")!
-                .Text.ShouldBe("Loaded FormLists: 0");
+            ControlFinder.FindByAutomationId<TextBlock>(view, "ActivePluginRecordCountText")!
+                .Text.ShouldBe("Plugin records: 0");
+            ControlFinder.FindByAutomationId<TextBlock>(view, "LoadedRecordCountText")!
+                .Text.ShouldBe("Unique loaded records: 0");
         }
         finally
         {

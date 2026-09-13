@@ -338,7 +338,18 @@ public sealed class McpPluginStdioProtocolTests
             actual[index].GetProperty("path").GetString().ShouldBe(expected[index].Path);
             actual[index].GetProperty("loadOrderIndex").GetInt32().ShouldBe(expected[index].LoadOrderIndex);
             actual[index].GetProperty("role").GetString().ShouldBe(RoleName(expected[index].Role));
+            ReadNullableInt64(actual[index].GetProperty("recordCount")).ShouldBe(expected[index].RecordCount);
+            ReadNullableInt64(actual[index].GetProperty("uniqueRecordContributionCount"))
+                .ShouldBe(expected[index].UniqueRecordContributionCount);
         }
+    }
+
+    /// <summary>Reads a nullable 64-bit integer from a closed MCP projection.</summary>
+    /// <param name="element">The JSON number or null value.</param>
+    /// <returns>The projected integer, or <see langword="null"/>.</returns>
+    private static long? ReadNullableInt64(JsonElement element)
+    {
+        return element.ValueKind == JsonValueKind.Null ? null : element.GetInt64();
     }
 
     /// <summary>Checks complete MCP FormList summary projections against public direct engine results.</summary>

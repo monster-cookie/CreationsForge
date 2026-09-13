@@ -161,24 +161,25 @@ public sealed class Fallout4FormListGameAdapter : IFormListGameAdapter
             return EngineResult<IReadOnlyList<PluginSummary>>.Failure(sourceFailure!);
         }
 
-        var sourceResult = falloutSources!.ListPlugins(cancellationToken);
-        if (!sourceResult.Succeeded || output is null)
+        var validatedSources = falloutSources!;
+
+        if (output is null)
         {
-            return sourceResult;
+            return validatedSources.ListPlugins(cancellationToken);
         }
 
         if (!TryGetOutput(output, out var falloutOutput, out var outputFailure))
         {
-            return Failure<IReadOnlyList<PluginSummary>>(falloutSources, outputFailure!);
+            return Failure<IReadOnlyList<PluginSummary>>(validatedSources, outputFailure!);
         }
 
-        var summaries = sourceResult.Value!.ToList();
-        summaries.Add(new PluginSummary(
-            falloutOutput!.Association.ModKey,
-            falloutOutput.Association.PluginPath,
-            summaries.Count,
-            PluginRole.Output));
-        return Success<IReadOnlyList<PluginSummary>>(falloutSources, Array.AsReadOnly(summaries.ToArray()));
+        var result = PluginSummaryBuilder.Build(
+            validatedSources.GetMutagenMods(),
+            validatedSources.BorrowInputs().Plugins,
+            falloutOutput!.BorrowMod(),
+            falloutOutput.Association,
+            cancellationToken);
+        return Success(validatedSources, result.Value!, result.Warnings);
     }
 
     /// <inheritdoc />

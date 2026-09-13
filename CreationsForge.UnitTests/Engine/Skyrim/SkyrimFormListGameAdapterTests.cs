@@ -34,6 +34,8 @@ public sealed class SkyrimFormListGameAdapterTests
         plugins.Value!.Last().ModKey.ShouldBe(fixture.ExistingOutputModKey);
         plugins.Value.Last().Role.ShouldBe(PluginRole.Output);
         plugins.Value.Last().LoadOrderIndex.ShouldBe(plugins.Value.Count - 1);
+        plugins.Value.Last().RecordCount.ShouldNotBeNull();
+        plugins.Value.ShouldAllBe(plugin => plugin.UniqueRecordContributionCount.HasValue);
 
         var stagedLists = adapter.ListFormLists(
             sources,
