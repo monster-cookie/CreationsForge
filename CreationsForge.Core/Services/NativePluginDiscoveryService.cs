@@ -73,6 +73,8 @@ public sealed class NativePluginDiscoveryService : INativePluginDiscoveryService
             var masterKeys = new Dictionary<ModKey, IReadOnlyList<ModKey>>();
             var styles = new Dictionary<ModKey, OutputMasterStyle>();
             var localizationModes = new Dictionary<ModKey, LocalizedOutputMode>();
+            var authors = new Dictionary<ModKey, string?>();
+            var descriptions = new Dictionary<ModKey, string?>();
             var unavailableReasons = new Dictionary<ModKey, string>();
             foreach (var listing in listings)
             {
@@ -105,6 +107,9 @@ public sealed class NativePluginDiscoveryService : INativePluginDiscoveryService
                         .Masters
                         .Select(master => master.Master)
                         .ToArray());
+                    var textMetadata = ReadHeaderTextMetadata(header);
+                    authors[listing.ModKey] = textMetadata.Author;
+                    descriptions[listing.ModKey] = textMetadata.Description;
                 }
                 catch (Exception exception)
                 {
@@ -168,7 +173,10 @@ public sealed class NativePluginDiscoveryService : INativePluginDiscoveryService
                     localizationModes.GetValueOrDefault(listing.ModKey, LocalizedOutputMode.Embedded),
                     styles.GetValueOrDefault(listing.ModKey, OutputMasterStyle.Full),
                     canEdit,
-                    unavailableReason));
+                    unavailableReason,
+                    masterKeys.GetValueOrDefault(listing.ModKey, Array.Empty<ModKey>()),
+                    authors.GetValueOrDefault(listing.ModKey),
+                    descriptions.GetValueOrDefault(listing.ModKey)));
             }
 
             return ValueTask.FromResult(EngineResult<NativePluginCatalog>.Success(
@@ -241,6 +249,57 @@ public sealed class NativePluginDiscoveryService : INativePluginDiscoveryService
 
         requiredMasters = Array.AsReadOnly(ordered.ToArray());
         return true;
+    }
+
+    /// <summary>Reads bounded author and description text directly from a native plugin header.</summary>
+    /// <param name="header">The already loaded native plugin header.</param>
+    /// <returns>The optional author and description fields.</returns>
+    private static (string? Author, string? Description) ReadHeaderTextMetadata(ModHeaderFrame header)
+    {
+        string? author = null;
+        string? description = null;
+        var remaining = header.Content;
+        while (remaining.Length > 0)
+        {
+            if (remaining.Length < header.Meta.SubConstants.HeaderLength)
+            {
+                throw new InvalidDataException("The plugin header ends with an incomplete subrecord header.");
+            }
+
+            var subrecord = new SubrecordFrame(header.Meta, remaining);
+            if (subrecord.TotalLength <= 0 || subrecord.TotalLength > remaining.Length)
+            {
+                throw new InvalidDataException("The plugin header contains an invalid subrecord length.");
+            }
+
+            var value = subrecord.RecordType.ToString() switch
+            {
+                "CNAM" => NormalizeHeaderText(subrecord.AsString(header.Meta.Encodings.NonTranslated)),
+                "SNAM" => NormalizeHeaderText(subrecord.AsString(header.Meta.Encodings.NonTranslated)),
+                _ => null
+            };
+            if (subrecord.RecordType.ToString() == "CNAM")
+            {
+                author = value;
+            }
+            else if (subrecord.RecordType.ToString() == "SNAM")
+            {
+                description = value;
+            }
+
+            remaining = remaining.Slice(subrecord.TotalLength);
+        }
+
+        return (author, description);
+    }
+
+    /// <summary>Normalizes optional native header text for product display.</summary>
+    /// <param name="value">The decoded native text.</param>
+    /// <returns>Trimmed text, or <see langword="null"/> when no visible text exists.</returns>
+    private static string? NormalizeHeaderText(string? value)
+    {
+        var normalized = value?.Trim().TrimEnd('\0').Trim();
+        return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
     }
 
     /// <summary>Maps a supported UI game to its exact native release.</summary>

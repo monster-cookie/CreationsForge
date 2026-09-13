@@ -4,7 +4,6 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
-using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using CreationsForge.ViewModels;
@@ -46,23 +45,36 @@ public sealed class NativeWorkspaceSelectionView : UserControl
         guidance.TextWrapping = TextWrapping.Wrap;
 
         var selectors = BuildSelectors();
-        var pluginList = BuildPluginList();
-        var details = BuildDetails();
+        var body = BuildBody();
         var status = BuildStatus();
         var footer = BuildFooter();
 
         Grid.SetRow(guidance, 1);
         Grid.SetRow(selectors, 2);
-        Grid.SetRow(pluginList, 3);
-        Grid.SetRow(details, 4);
-        Grid.SetRow(status, 5);
-        Grid.SetRow(footer, 6);
+        Grid.SetRow(body, 3);
+        Grid.SetRow(status, 4);
+        Grid.SetRow(footer, 5);
         return new Grid
         {
-            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*,Auto,Auto,Auto"),
+            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*,Auto,Auto"),
             RowSpacing = 12,
             Margin = new Thickness(24),
-            Children = { heading, guidance, selectors, pluginList, details, status, footer }
+            Children = { heading, guidance, selectors, body, status, footer }
+        };
+    }
+
+    /// <summary>Builds the plugin list and selected-plugin details as a stable two-pane layout.</summary>
+    /// <returns>The complete selector body.</returns>
+    private Control BuildBody()
+    {
+        var pluginList = BuildPluginList();
+        var details = BuildPluginDetails();
+        Grid.SetColumn(details, 1);
+        return new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("7*,3*"),
+            ColumnSpacing = 14,
+            Children = { pluginList, details }
         };
     }
 
@@ -112,7 +124,7 @@ public sealed class NativeWorkspaceSelectionView : UserControl
             CreateCell("Load Order", FontWeight.SemiBold),
             CreateCell("Type", FontWeight.SemiBold),
             CreateCell("State", FontWeight.SemiBold),
-            CreateCell("Access", FontWeight.SemiBold));
+            CreateCell("Availability", FontWeight.SemiBold));
         var headerBorder = new Border
         {
             Background = App.GetApplicationBrush(App.PanelSurfaceBrushKey),
@@ -130,13 +142,6 @@ public sealed class NativeWorkspaceSelectionView : UserControl
         });
         list.ItemTemplate = new FuncDataTemplate<NativePluginSelectionRowViewModel>(
             (row, _) => row is null ? new TextBlock() : BuildPluginRow(row));
-        list.DoubleTapped += async (_, _) =>
-        {
-            if (await ViewModel.OpenSelectedPluginAsync())
-            {
-                CloseAction(true);
-            }
-        };
         AutomationProperties.SetAutomationId(list, "NativePluginList");
 
         Grid.SetRow(list, 1);
@@ -213,16 +218,57 @@ public sealed class NativeWorkspaceSelectionView : UserControl
         return cell;
     }
 
-    /// <summary>Builds selected-plugin and detected-location details.</summary>
-    /// <returns>The details surface.</returns>
-    private Control BuildDetails()
+    /// <summary>Builds the selected plugin's native header and availability details.</summary>
+    /// <returns>The bordered details pane.</returns>
+    private Control BuildPluginDetails()
     {
-        var directory = CreateCell(string.Empty, fontSize: 12);
-        directory.Bind(TextBlock.TextProperty, new Binding(nameof(NativeWorkspaceSelectionViewModel.DetectedDataDirectoryText)));
-        var details = CreateCell(string.Empty);
-        details.TextWrapping = TextWrapping.Wrap;
-        details.Bind(TextBlock.TextProperty, new Binding(nameof(NativeWorkspaceSelectionViewModel.SelectedPluginDetails)));
-        return new StackPanel { Spacing = 4, Children = { directory, details } };
+        var contents = new StackPanel
+        {
+            Spacing = 12,
+            Children =
+            {
+                CreateCell("Plugin Details", FontWeight.SemiBold, 16),
+                CreateBoundDetail("Plugin", "SelectedPlugin.FileName", "SelectedPluginFileName"),
+                CreateBoundDetail("Type", "SelectedPlugin.PluginTypeText", "SelectedPluginType"),
+                CreateBoundDetail("Parent Masters", "SelectedPlugin.ParentMastersText", "SelectedPluginParentMasters", true),
+                CreateBoundDetail("Load Order Position", "SelectedPlugin.LoadOrderText", "SelectedPluginLoadOrder"),
+                CreateBoundDetail("State", "SelectedPlugin.EnabledText", "SelectedPluginState"),
+                CreateBoundDetail("Availability", "SelectedPlugin.AvailabilityText", "SelectedPluginAvailability"),
+                CreateBoundDetail("Localized Strings", "SelectedPlugin.LocalizationText", "SelectedPluginLocalization"),
+                CreateBoundDetail("Author", "SelectedPlugin.AuthorText", "SelectedPluginAuthor", true),
+                CreateBoundDetail("Description", "SelectedPlugin.DescriptionText", "SelectedPluginDescription", true),
+                CreateBoundDetail("Path", "SelectedPlugin.PluginPathText", "SelectedPluginPath", true),
+                CreateBoundDetail("Editing Context", nameof(NativeWorkspaceSelectionViewModel.SelectedPluginDetails), "SelectedPluginEditingContext", true),
+                CreateBoundDetail("Data Directory", nameof(NativeWorkspaceSelectionViewModel.DetectedDataDirectoryText), "DetectedPluginDataDirectory", true)
+            }
+        };
+        var scroll = new ScrollViewer { Content = contents };
+        ScrollViewer.SetVerticalScrollBarVisibility(scroll, ScrollBarVisibility.Auto);
+        var border = new Border
+        {
+            BorderBrush = App.GetApplicationBrush(App.BorderBrushKey),
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(14),
+            Child = scroll
+        };
+        AutomationProperties.SetAutomationId(border, "NativePluginDetailsPanel");
+        return border;
+    }
+
+    /// <summary>Creates one labeled, bound plugin detail.</summary>
+    /// <param name="label">The visible detail label.</param>
+    /// <param name="bindingPath">The view-model binding path.</param>
+    /// <param name="automationId">The value control's automation identity.</param>
+    /// <param name="wrap">Whether the value may wrap across lines.</param>
+    /// <returns>The labeled detail control.</returns>
+    private static Control CreateBoundDetail(string label, string bindingPath, string automationId, bool wrap = false)
+    {
+        var labelText = CreateCell(label, FontWeight.SemiBold, 12);
+        var valueText = CreateCell(string.Empty);
+        valueText.TextWrapping = wrap ? TextWrapping.Wrap : TextWrapping.NoWrap;
+        valueText.Bind(TextBlock.TextProperty, new Binding(bindingPath));
+        AutomationProperties.SetAutomationId(valueText, automationId);
+        return new StackPanel { Spacing = 3, Children = { labelText, valueText } };
     }
 
     /// <summary>Builds progress, status, and error feedback.</summary>
@@ -268,7 +314,7 @@ public sealed class NativeWorkspaceSelectionView : UserControl
         };
         AutomationProperties.SetAutomationId(create, "CreateNativePluginButton");
 
-        var open = new Button { Content = "Open Plugin", MinWidth = 130, Padding = new Thickness(16, 8) };
+        var open = new Button { Content = "Open for Editing", MinWidth = 150, Padding = new Thickness(16, 8) };
         open.Bind(IsEnabledProperty, new Binding(nameof(NativeWorkspaceSelectionViewModel.CanOpenSelectedPlugin)));
         open.Click += async (_, _) =>
         {

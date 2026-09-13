@@ -221,7 +221,7 @@ public sealed partial class NativeWorkspaceSelectionViewModel
             StringDirectoryPaths,
             Directory.Exists(Path.Combine(dataDirectoryPath, "Strings"))
                 ? [Path.Combine(dataDirectoryPath, "Strings")]
-                : []);
+                : [dataDirectoryPath]);
         OutputPluginPath = outputPluginPath;
         OutputMode = outputMode;
         LocalizedOutputMode = localizedOutputMode;

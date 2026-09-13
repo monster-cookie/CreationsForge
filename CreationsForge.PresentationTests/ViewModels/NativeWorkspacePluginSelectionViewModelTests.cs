@@ -30,6 +30,14 @@ public sealed class NativeWorkspacePluginSelectionViewModelTests
         discovery.RequestedGames.ShouldBe([SupportedGame.Starfield]);
         viewModel.PluginRows.Select(row => row.FileName).ShouldBe(["Base.esm", "Editable.esp"]);
         viewModel.DetectedDataDirectoryText.ShouldBe(root);
+        var editable = viewModel.PluginRows.Single(row => row.FileName == "Editable.esp");
+        editable.FileTypeText.ShouldBe("ESP");
+        editable.MasterStyleText.ShouldBe("Small");
+        editable.PluginTypeText.ShouldBe("ESP");
+        editable.ParentMastersText.ShouldBe("Base.esm");
+        editable.AuthorText.ShouldBe("Venworks");
+        editable.DescriptionText.ShouldBe("Editable test plugin");
+        editable.AvailabilityText.ShouldBe("Available");
         viewModel.PluginSearchText = "edit";
         viewModel.PluginRows.Select(row => row.FileName).ShouldBe(["Editable.esp"]);
     }
@@ -56,6 +64,7 @@ public sealed class NativeWorkspacePluginSelectionViewModelTests
         factory.Requests.Single().SourcePluginPath.ShouldBe(Path.Combine(root, "Base.esm"));
         factory.Requests.Single().LoadOrderPluginPaths.ShouldBe([Path.Combine(root, "Base.esm")]);
         factory.Requests.Single().DataDirectoryPath.ShouldBe(root);
+        factory.Requests.Single().StringDirectoryPaths.ShouldBe([root]);
         workspace.LastSelectOutputRequest.ShouldNotBeNull();
         workspace.LastSelectOutputRequest.Mode.ShouldBe(OutputSelectionMode.OpenExisting);
         workspace.LastSelectOutputRequest.Output.PluginPath.ShouldBe(Path.Combine(root, "Editable.esp"));
@@ -125,7 +134,10 @@ public sealed class NativeWorkspacePluginSelectionViewModelTests
                     LocalizedOutputMode.SeparateStringFiles,
                     OutputMasterStyle.Small,
                     true,
-                    null)
+                    null,
+                    [ModKey.FromNameAndExtension("Base.esm")],
+                    "Venworks",
+                    "Editable test plugin")
             ]);
     }
 

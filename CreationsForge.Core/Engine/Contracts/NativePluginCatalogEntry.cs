@@ -15,6 +15,9 @@ public sealed class NativePluginCatalogEntry
     /// <param name="masterStyle">The master style read from the native header.</param>
     /// <param name="canEdit">Whether the plugin has enough dependency context to open as an editable output.</param>
     /// <param name="unavailableReason">The user-facing reason editing is unavailable, or <see langword="null"/>.</param>
+    /// <param name="declaredMasters">The direct parent masters read from the plugin header.</param>
+    /// <param name="author">The optional author read from the plugin header.</param>
+    /// <param name="description">The optional description read from the plugin header.</param>
     public NativePluginCatalogEntry(
         ModKey modKey,
         string pluginPath,
@@ -24,7 +27,10 @@ public sealed class NativePluginCatalogEntry
         LocalizedOutputMode localizedOutputMode,
         OutputMasterStyle masterStyle,
         bool canEdit,
-        string? unavailableReason)
+        string? unavailableReason,
+        IReadOnlyList<ModKey>? declaredMasters = null,
+        string? author = null,
+        string? description = null)
     {
         ArgumentNullException.ThrowIfNull(dependencyPluginPaths);
         ModKey = modKey;
@@ -36,6 +42,9 @@ public sealed class NativePluginCatalogEntry
         MasterStyle = masterStyle;
         CanEdit = canEdit;
         UnavailableReason = unavailableReason;
+        DeclaredMasters = Array.AsReadOnly((declaredMasters ?? []).ToArray());
+        Author = author;
+        Description = description;
     }
 
     /// <summary>Gets the native plugin identity.</summary>
@@ -64,4 +73,13 @@ public sealed class NativePluginCatalogEntry
 
     /// <summary>Gets the user-facing reason editing is unavailable, or <see langword="null"/>.</summary>
     public string? UnavailableReason { get; }
+
+    /// <summary>Gets the direct parent masters read from the plugin header.</summary>
+    public IReadOnlyList<ModKey> DeclaredMasters { get; }
+
+    /// <summary>Gets the optional author read from the plugin header.</summary>
+    public string? Author { get; }
+
+    /// <summary>Gets the optional description read from the plugin header.</summary>
+    public string? Description { get; }
 }

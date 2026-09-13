@@ -58,9 +58,14 @@ public sealed class NativeWorkspaceSelectionViewHeadlessTests
             ControlFinder.FindByAutomationId<ComboBox>(view, "NativePluginGameSelector")!.ItemCount.ShouldBe(3);
             ControlFinder.FindByAutomationId<TextBox>(view, "NativePluginSearchBox").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<ListBox>(view, "NativePluginList").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<Border>(view, "NativePluginDetailsPanel").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<TextBlock>(view, "SelectedPluginType").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<TextBlock>(view, "SelectedPluginParentMasters").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<TextBlock>(view, "SelectedPluginAuthor").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<TextBlock>(view, "SelectedPluginDescription").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<Button>(view, "RefreshNativePluginsButton").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<Button>(view, "CreateNativePluginButton").ShouldNotBeNull();
-            ControlFinder.FindByAutomationId<Button>(view, "OpenNativePluginButton").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<Button>(view, "OpenNativePluginButton")!.Content.ShouldBe("Open for Editing");
             ControlFinder.FindByAutomationId<Button>(view, "CancelNativePluginButton").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<TextBox>(view, "SourcePluginPath").ShouldBeNull();
             ControlFinder.FindByAutomationId<ListBox>(view, "NativeWorkspaceLoadOrderList").ShouldBeNull();
