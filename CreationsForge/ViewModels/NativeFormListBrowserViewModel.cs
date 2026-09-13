@@ -57,8 +57,11 @@ public sealed partial class NativeFormListBrowserViewModel : ViewModelBase, INat
     /// <summary>The grouped winning-root and exact-context record tree.</summary>
     private IReadOnlyList<NativeFormListRecordViewModel> RecordsValue = Array.Empty<NativeFormListRecordViewModel>();
 
+    /// <summary>The filtered top-level native record-type groups.</summary>
+    private IReadOnlyList<NativeRecordTypeGroupViewModel> RecordTypeGroupsValue = Array.Empty<NativeRecordTypeGroupViewModel>();
+
     /// <summary>The current hierarchical record-tree source.</summary>
-    private HierarchicalTreeDataGridSource<NativeFormListRecordViewModel> RecordTreeSourceValue;
+    private HierarchicalTreeDataGridSource<INativeRecordTreeNodeViewModel> RecordTreeSourceValue;
 
     /// <summary>The currently selected winning record root.</summary>
     private NativeFormListRecordViewModel? SelectedRecordValue;
@@ -153,7 +156,7 @@ public sealed partial class NativeFormListBrowserViewModel : ViewModelBase, INat
         Editor = editorFactory.Create(this)
             ?? throw new InvalidOperationException("The native FormList editor factory returned no editor.");
         Editor.PropertyChanged += OnEditorPropertyChanged;
-        RecordTreeSourceValue = CreateRecordTreeSource(RecordsValue);
+        RecordTreeSourceValue = CreateRecordTreeSource(RecordTypeGroupsValue);
         BeforeFieldSourceValue = CreateFieldTreeSource(BeforeFieldsValue);
         AfterFieldSourceValue = CreateFieldTreeSource(AfterFieldsValue);
         RetryRelayCommand = new AsyncRelayCommand(
@@ -172,11 +175,14 @@ public sealed partial class NativeFormListBrowserViewModel : ViewModelBase, INat
     /// <summary>Gets the revision-consistent participating plugins in native engine order.</summary>
     public IReadOnlyList<PluginSummary> Plugins => PluginsValue;
 
-    /// <summary>Gets the filtered winning FormList roots in first-engine-occurrence order.</summary>
+    /// <summary>Gets the filtered winning FormList roots in alphabetical EditorID order.</summary>
     public IReadOnlyList<NativeFormListRecordViewModel> Records => RecordsValue;
 
-    /// <summary>Gets the hierarchical record source containing winning roots and exact ordered contexts.</summary>
-    public HierarchicalTreeDataGridSource<NativeFormListRecordViewModel> RecordTreeSource => RecordTreeSourceValue;
+    /// <summary>Gets the filtered top-level native record-type groups.</summary>
+    public IReadOnlyList<NativeRecordTypeGroupViewModel> RecordTypeGroups => RecordTypeGroupsValue;
+
+    /// <summary>Gets the hierarchical record source containing record-type groups, winning roots, and exact ordered contexts.</summary>
+    public HierarchicalTreeDataGridSource<INativeRecordTreeNodeViewModel> RecordTreeSource => RecordTreeSourceValue;
 
     /// <summary>Gets the selected winning FormList root.</summary>
     public NativeFormListRecordViewModel? SelectedRecord => SelectedRecordValue;
@@ -461,10 +467,10 @@ public sealed partial class NativeFormListBrowserViewModel : ViewModelBase, INat
         }
     }
 
-    /// <summary>Builds grouped winning roots and exact context children without reordering engine results.</summary>
+    /// <summary>Builds alphabetical winning roots while preserving exact context children in engine order.</summary>
     /// <param name="summaries">All native FormList contexts in engine order.</param>
     /// <param name="cancellationToken">A token observed throughout grouping and projection.</param>
-    /// <returns>The grouped presentation tree in first-FormKey occurrence order.</returns>
+    /// <returns>The grouped presentation records in alphabetical EditorID order with deterministic FormKey tie-breaking.</returns>
     /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled.</exception>
     private static IReadOnlyList<NativeFormListRecordViewModel> BuildRecordTree(
         IReadOnlyList<FormListSummary> summaries,
@@ -526,7 +532,11 @@ public sealed partial class NativeFormListBrowserViewModel : ViewModelBase, INat
                 options));
         }
 
-        return Array.AsReadOnly(roots.ToArray());
+        return Array.AsReadOnly(roots
+            .OrderBy(root => string.IsNullOrWhiteSpace(root.EditorId) ? 1 : 0)
+            .ThenBy(root => root.EditorId, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(root => root.FormKey.ToString(), StringComparer.OrdinalIgnoreCase)
+            .ToArray());
     }
 
     /// <summary>Creates one exact all-context selector from an engine summary.</summary>
@@ -747,8 +757,15 @@ public sealed partial class NativeFormListBrowserViewModel : ViewModelBase, INat
     private void SetRecords(IReadOnlyList<NativeFormListRecordViewModel> records)
     {
         RecordsValue = records;
-        RecordTreeSourceValue = CreateRecordTreeSource(records);
+        RecordTypeGroupsValue = records.Count == 0
+            ? Array.Empty<NativeRecordTypeGroupViewModel>()
+            : new[]
+            {
+                new NativeRecordTypeGroupViewModel("Form Lists (FLST)", records)
+            };
+        RecordTreeSourceValue = CreateRecordTreeSource(RecordTypeGroupsValue);
         OnPropertyChanged(nameof(Records));
+        OnPropertyChanged(nameof(RecordTypeGroups));
         OnPropertyChanged(nameof(RecordTreeSource));
     }
 
@@ -803,23 +820,23 @@ public sealed partial class NativeFormListBrowserViewModel : ViewModelBase, INat
             : context.Status.ToString();
     }
 
-    /// <summary>Creates the hierarchical winning-root and exact-context record source.</summary>
-    /// <param name="records">The winning-root records.</param>
+    /// <summary>Creates the hierarchical record-type, winning-root, and exact-context record source.</summary>
+    /// <param name="groups">The top-level record-type groups.</param>
     /// <returns>The read-only hierarchical source.</returns>
-    private static HierarchicalTreeDataGridSource<NativeFormListRecordViewModel> CreateRecordTreeSource(
-        IReadOnlyList<NativeFormListRecordViewModel> records)
+    private static HierarchicalTreeDataGridSource<INativeRecordTreeNodeViewModel> CreateRecordTreeSource(
+        IReadOnlyList<NativeRecordTypeGroupViewModel> groups)
     {
-        return new HierarchicalTreeDataGridSource<NativeFormListRecordViewModel>(records)
+        return new HierarchicalTreeDataGridSource<INativeRecordTreeNodeViewModel>(groups)
             .WithHierarchicalExpanderTextColumn(
                 "FormKey",
-                record => record.FormKeyText,
-                record => record.Children,
+                record => record.PrimaryText,
+                record => record.TreeChildren,
                 record => record.IsExpanded,
                 record => record.HasChildren,
                 options => options.BeginEditGestures = BeginEditGestures.None)
             .WithTextColumn("EditorID", record => record.EditorIdText, options => options.BeginEditGestures = BeginEditGestures.None)
             .WithTextColumn("Context", record => record.ContextText, options => options.BeginEditGestures = BeginEditGestures.None)
-            .WithTextColumn("Overrides", record => record.OverrideCount, options => options.BeginEditGestures = BeginEditGestures.None);
+            .WithTextColumn("Overrides", record => record.OverrideCountText, options => options.BeginEditGestures = BeginEditGestures.None);
     }
 
     /// <summary>Creates a hierarchical field source that displays every JSON name, kind, and scalar or container marker.</summary>

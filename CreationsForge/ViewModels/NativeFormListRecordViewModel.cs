@@ -6,7 +6,7 @@ namespace CreationsForge.ViewModels;
 /// <summary>
 /// Presents either a winning FormList root or one exact ordered context beneath that root.
 /// </summary>
-public sealed class NativeFormListRecordViewModel : ViewModelBase
+public sealed class NativeFormListRecordViewModel : ViewModelBase, INativeRecordTreeNodeViewModel
 {
     /// <summary>Tracks whether child contexts are expanded in the record tree.</summary>
     private bool IsExpandedValue;
@@ -46,6 +46,9 @@ public sealed class NativeFormListRecordViewModel : ViewModelBase
     /// <summary>Gets the exact native FormList identity as display text.</summary>
     public string FormKeyText => FormKey.ToString();
 
+    /// <inheritdoc />
+    public string PrimaryText => FormKeyText;
+
     /// <summary>Gets the native FormID as an eight-digit hexadecimal value for display and filtering.</summary>
     public string FormIdText => FormKey.ID.ToString("X8");
 
@@ -58,11 +61,17 @@ public sealed class NativeFormListRecordViewModel : ViewModelBase
     /// <summary>Gets the native override count reported for the FormList.</summary>
     public int OverrideCount { get; }
 
+    /// <inheritdoc />
+    public string OverrideCountText => OverrideCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
     /// <summary>Gets the exact winning or containing-plugin selection represented by this node.</summary>
     public NativeFormListContextOption Context { get; }
 
     /// <summary>Gets the exact context nodes in engine enumeration order.</summary>
     public IReadOnlyList<NativeFormListRecordViewModel> Children { get; }
+
+    /// <inheritdoc />
+    public IReadOnlyList<INativeRecordTreeNodeViewModel> TreeChildren => Children;
 
     /// <summary>Gets the winning selector followed by all exact context selectors for this root.</summary>
     public IReadOnlyList<NativeFormListContextOption> ContextOptions { get; }

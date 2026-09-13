@@ -17,7 +17,7 @@ namespace CreationsForge.PresentationTests.ViewModels;
 /// </summary>
 public sealed partial class NativeFormListBrowserViewModelTests
 {
-    /// <summary>Verifies the browser groups all contexts without reordering and compares the earliest context with the winning override by default.</summary>
+    /// <summary>Verifies the browser groups FormLists by record type, sorts roots by EditorID, preserves context order, and compares the earliest context with the winner.</summary>
     /// <returns>A task that completes after the comparison is published.</returns>
     [Fact]
     public async Task StartAndSelectRecord_AllContexts_PreserveOrderProvenanceAndDetachedComparison()
@@ -63,8 +63,14 @@ public sealed partial class NativeFormListBrowserViewModelTests
 
         workspace.ListScopes.ShouldBe([RecordScope.AllContexts]);
         viewModel.Plugins.Select(plugin => plugin.ModKey).ShouldBe([sourceMod, otherMod, outputMod]);
-        viewModel.Records.Select(record => record.FormKey).ShouldBe([firstFormKey, secondFormKey]);
-        var firstRoot = viewModel.Records[0];
+        viewModel.Records.Select(record => record.FormKey).ShouldBe([secondFormKey, firstFormKey]);
+        var recordTypeGroup = viewModel.RecordTypeGroups.ShouldHaveSingleItem();
+        recordTypeGroup.Label.ShouldBe("Form Lists (FLST)");
+        recordTypeGroup.IsExpanded.ShouldBeTrue();
+        recordTypeGroup.Children.Cast<NativeFormListRecordViewModel>()
+            .Select(record => record.FormKey)
+            .ShouldBe([secondFormKey, firstFormKey]);
+        var firstRoot = viewModel.Records.Single(record => record.FormKey == firstFormKey);
         firstRoot.Context.Selection.Scope.ShouldBe(RecordScope.WinningOverrides);
         firstRoot.EditorId.ShouldBe("WinningList");
         firstRoot.Children.Select(child => child.Context.ContainingModKey).ShouldBe([sourceMod, outputMod]);
