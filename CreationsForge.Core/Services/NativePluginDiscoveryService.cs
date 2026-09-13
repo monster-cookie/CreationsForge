@@ -37,6 +37,7 @@ public sealed class NativePluginDiscoveryService : INativePluginDiscoveryService
             var loadOrderListings = LoadOrder
                 .GetLoadOrderListings(release, dataDirectory, throwOnMissingMods: false)
                 .ToArray();
+            var implicitPluginKeys = Implicits.Get(release).Listings.ToHashSet();
             var listings = new List<(ModKey ModKey, string FileName, bool Enabled)>();
             var observedModKeys = new HashSet<ModKey>();
             foreach (var listing in loadOrderListings)
@@ -138,7 +139,11 @@ public sealed class NativePluginDiscoveryService : INativePluginDiscoveryService
                     .Cast<string>()
                     .ToArray();
                 unavailableReasons.TryGetValue(listing.ModKey, out var unavailableReason);
-                if (unavailableReason is null && missingMasters.Length > 0)
+                if (implicitPluginKeys.Contains(listing.ModKey))
+                {
+                    unavailableReason = "Bethesda-supplied game plugins are read-only.";
+                }
+                else if (unavailableReason is null && missingMasters.Length > 0)
                 {
                     unavailableReason = $"Required master files are unavailable: {string.Join(", ", missingMasters)}.";
                 }

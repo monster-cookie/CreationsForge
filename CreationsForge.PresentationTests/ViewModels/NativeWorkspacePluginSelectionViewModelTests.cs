@@ -115,7 +115,7 @@ public sealed class NativeWorkspacePluginSelectionViewModelTests
                     LocalizedOutputMode.Embedded,
                     OutputMasterStyle.Full,
                     false,
-                    "The first installed master is read-only."),
+                    "Bethesda-supplied game plugins are read-only."),
                 new NativePluginCatalogEntry(
                     ModKey.FromNameAndExtension("Editable.esp"),
                     editablePath,
