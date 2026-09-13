@@ -122,12 +122,14 @@ public sealed class NativeSourceInputLoader
                 plugins,
                 dataDirectoryPath,
                 stringDirectoryPaths,
+                request.RecordTextLanguage,
                 fileSystem);
             var inputs = new NativeSourceInputs(
                 request.Release,
                 plugins,
                 dataDirectoryPath,
                 stringDirectoryPaths,
+                request.RecordTextLanguage,
                 masterFlags,
                 lookups,
                 artifactCollector,
@@ -433,6 +435,7 @@ public sealed class NativeSourceInputLoader
     /// <param name="plugins">The explicit plugin descriptors.</param>
     /// <param name="dataDirectoryPath">The explicit directory used for archive lookup.</param>
     /// <param name="stringDirectoryPaths">The explicit loose strings directories in priority order.</param>
+    /// <param name="recordTextLanguage">The explicit language used for localized native record text.</param>
     /// <param name="fileSystem">The file-system adapter used by Mutagen.</param>
     /// <returns>An immutable plugin-keyed dictionary of native strings lookups.</returns>
     private static IReadOnlyDictionary<ModKey, NativeStringsFolderLookup> CreateStringsLookups(
@@ -440,6 +443,7 @@ public sealed class NativeSourceInputLoader
         IReadOnlyList<NativeSourcePluginInput> plugins,
         string dataDirectoryPath,
         IReadOnlyList<string> stringDirectoryPaths,
+        Language recordTextLanguage,
         IFileSystem fileSystem)
     {
         var result = new Dictionary<ModKey, NativeStringsFolderLookup>();
@@ -457,7 +461,7 @@ public sealed class NativeSourceInputLoader
                     {
                         StringsFolderOverride = directoryPath,
                         BsaFolderOverride = dataDirectoryPath,
-                        TargetLanguage = Language.English
+                        TargetLanguage = recordTextLanguage
                     };
                     return StringsFolderLookupOverlay.TypicalFactory(
                         release,

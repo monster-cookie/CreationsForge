@@ -257,9 +257,14 @@ public sealed partial class FormListWorkspace
         await OperationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (TryReplay(request.OperationId, fingerprint, out EngineResult<OutputSelectionReceipt>? replay, out var conflict))
+            if (TryReplay(request.OperationId, fingerprint, out EngineResult<OutputSelectionReceipt>? replay, out var conflict, out var expired))
             {
                 return replay!;
+            }
+
+            if (expired)
+            {
+                return CreateOperationReplayExpiredFailure<OutputSelectionReceipt>(request.OperationId, request.ExpectedRevision);
             }
 
             if (conflict)
@@ -267,10 +272,15 @@ public sealed partial class FormListWorkspace
                 return CreateReuseFailure<OutputSelectionReceipt>(request.OperationId, request.ExpectedRevision);
             }
 
+            if (!CanStoreFinalizationOperation(request.OperationId))
+            {
+                return CreateOperationCapacityFailure<OutputSelectionReceipt>(request.OperationId, request.ExpectedRevision);
+            }
+
             var guardFailure = ValidateOutputMutation(request.OperationId, request.ExpectedRevision, request.ExpectedBaseline);
             if (guardFailure is not null)
             {
-                return Store(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
+                return StoreFinalization(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
                     guardFailure,
                     WorkspaceId,
                     request.OperationId,
@@ -283,7 +293,7 @@ public sealed partial class FormListWorkspace
                 cancellationToken).ConfigureAwait(false);
             if (!leaseResult.Succeeded || leaseResult.Value is null)
             {
-                return Store(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
+                return StoreFinalization(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
                     leaseResult.Error ?? new EngineError(EngineErrorCode.UnexpectedFailure, "The output-directory lease provider returned no lease."),
                     WorkspaceId,
                     request.OperationId,
@@ -300,7 +310,7 @@ public sealed partial class FormListWorkspace
             var admissionWarnings = CombineWarnings(leaseResult.Warnings, admissionResult.Warnings);
             if (!admissionResult.Succeeded || admissionResult.Value is null)
             {
-                return Store(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
+                return StoreFinalization(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
                     admissionResult.Error ?? new EngineError(EngineErrorCode.UnexpectedFailure, "Output admission returned no result."),
                     WorkspaceId,
                     request.OperationId,
@@ -312,7 +322,7 @@ public sealed partial class FormListWorkspace
             if (admissionResult.Value.Status == OutputSynchronizationStatus.RecoveryRequired)
             {
                 SetOutputSynchronization(OutputSynchronizationStatus.RecoveryRequired, admissionResult.Value.UnresolvedSave!);
-                return Store(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
+                return StoreFinalization(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
                     new EngineError(EngineErrorCode.RepairRequired, "The selected output has an unresolved save journal that must be recovered before reopening."),
                     WorkspaceId,
                     request.OperationId,
@@ -330,7 +340,7 @@ public sealed partial class FormListWorkspace
                 .ConfigureAwait(false);
             if (!openResult.Succeeded || openResult.Value is null)
             {
-                return Store(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
+                return StoreFinalization(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
                     openResult.Error ?? new EngineError(EngineErrorCode.OutputOpenFailed, "The selected native output could not be reopened."),
                     WorkspaceId,
                     request.OperationId,
@@ -344,7 +354,7 @@ public sealed partial class FormListWorkspace
             var resultRevision = CreateOutputRevision(openResult.Value.Association, openResult.Value.Baseline);
             var disposalWarnings = await PublishOutputAsync(openResult.Value, true, resultRevision).ConfigureAwait(false);
             var receipt = new OutputSelectionReceipt(SelectedOutput!, SelectedOutputBaseline!, resultRevision);
-            return Store(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Success(
+            return StoreFinalization(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Success(
                 receipt,
                 WorkspaceId,
                 request.OperationId,
@@ -361,7 +371,7 @@ public sealed partial class FormListWorkspace
         catch (Exception exception)
         {
             Logger.Error(exception, "Failed to reopen native output in workspace {WorkspaceId} for operation {OperationId}", WorkspaceId, request.OperationId);
-            return Store(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
+            return StoreFinalization(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
                 new EngineError(EngineErrorCode.UnexpectedFailure, "The selected native output could not be reopened."),
                 WorkspaceId,
                 request.OperationId,
@@ -559,14 +569,22 @@ public sealed partial class FormListWorkspace
     }
 
     /// <summary>Gets an exact replay or conflicting reuse state.</summary>
+    /// <typeparam name="T">The immutable result type expected by the operation.</typeparam>
+    /// <param name="operationId">The operation identifier.</param>
+    /// <param name="fingerprint">The complete canonical request fingerprint.</param>
+    /// <param name="result">The exact retained result when available.</param>
+    /// <param name="conflict">Whether the identifier belongs to another payload or result type.</param>
+    /// <param name="expired">Whether the exact finalization replay left the bounded result window.</param>
+    /// <returns><see langword="true"/> when an exact retained result is available.</returns>
     private bool TryReplay<T>(
         Guid operationId,
         OperationFingerprint fingerprint,
         out T? result,
-        out bool conflict)
+        out bool conflict,
+        out bool expired)
         where T : class
     {
-        return ReplayStore.TryGet(operationId, fingerprint, out result, out conflict);
+        return ReplayStore.TryGet(operationId, fingerprint, out result, out conflict, out expired);
     }
 
     /// <summary>Stores the first result for an operation and returns it.</summary>
@@ -574,6 +592,65 @@ public sealed partial class FormListWorkspace
         where T : class
     {
         ReplayStore.Store(operationId, fingerprint, result);
+        return result;
+    }
+
+    /// <summary>Creates a stable failure before a fresh operation would exceed retained replay capacity.</summary>
+    /// <typeparam name="T">The result value type requested by the operation.</typeparam>
+    /// <param name="operationId">The fresh operation identifier.</param>
+    /// <param name="expectedRevision">The caller's expected workspace revision.</param>
+    /// <returns>A typed capacity failure with the unchanged workspace revision.</returns>
+    private EngineResult<T> CreateOperationCapacityFailure<T>(Guid operationId, WorkspaceRevision expectedRevision)
+    {
+        return EngineResult<T>.Failure(
+            new EngineError(EngineErrorCode.OperationCapacityExceeded, "The workspace operation replay capacity has been reached. Close and reopen the workspace before issuing another mutation."),
+            WorkspaceId,
+            operationId,
+            expectedRevision,
+            CurrentRevision);
+    }
+
+    /// <summary>Creates a stable failure when an exact finalization result has left the bounded replay window.</summary>
+    /// <typeparam name="T">The result value type requested by the operation.</typeparam>
+    /// <param name="operationId">The expired operation identifier.</param>
+    /// <param name="expectedRevision">The caller's expected workspace revision.</param>
+    /// <returns>A typed replay-expiration failure with the unchanged workspace revision.</returns>
+    private EngineResult<T> CreateOperationReplayExpiredFailure<T>(Guid operationId, WorkspaceRevision expectedRevision)
+    {
+        return EngineResult<T>.Failure(
+            new EngineError(EngineErrorCode.OperationReplayExpired, "The exact finalization result has expired from the bounded workspace replay window. Use a new operation identifier after refreshing workspace state."),
+            WorkspaceId,
+            operationId,
+            expectedRevision,
+            CurrentRevision);
+    }
+
+    /// <summary>Determines whether a fresh operation can reserve replay capacity before native side effects.</summary>
+    /// <param name="operationId">The fresh operation identifier.</param>
+    /// <returns><see langword="true"/> when the result can be retained.</returns>
+    private bool CanStoreOperation(Guid operationId)
+    {
+        return ReplayStore.CanStore(operationId, reservedEntryCount: 2);
+    }
+
+    /// <summary>Determines whether a save, reset, or recovery result can use bounded evictable finalization capacity.</summary>
+    /// <param name="operationId">The finalization operation identifier.</param>
+    /// <returns><see langword="true"/> when finalization capacity remains available.</returns>
+    private bool CanStoreFinalizationOperation(Guid operationId)
+    {
+        return ReplayStore.CanStoreFinalization(operationId);
+    }
+
+    /// <summary>Retains a finalization result while permitting older finalization results to yield bounded retry capacity.</summary>
+    /// <typeparam name="T">The immutable finalization result type.</typeparam>
+    /// <param name="operationId">The finalization operation identifier.</param>
+    /// <param name="fingerprint">The complete canonical request fingerprint.</param>
+    /// <param name="result">The result to replay while retained.</param>
+    /// <returns>The supplied immutable result.</returns>
+    private T StoreFinalization<T>(Guid operationId, OperationFingerprint fingerprint, T result)
+        where T : class
+    {
+        ReplayStore.StoreFinalization(operationId, fingerprint, result);
         return result;
     }
 

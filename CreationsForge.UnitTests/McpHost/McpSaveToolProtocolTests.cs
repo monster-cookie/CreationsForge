@@ -367,8 +367,8 @@ public sealed class McpSaveToolProtocolTests
         var revision = new WorkspaceRevision(Guid.NewGuid(), 1);
         var output = CreateOutput("CapacityOutput.esm");
         using var store = new McpMetadataStore(maximumHandles: 32, operationReservationSize: 16);
-        await FillReservationAsync(store, workspaceId, saveOperationId, McpMetadataOperationKind.Recover, 13, 100);
-        await FillReservationAsync(store, workspaceId, repairOperationId, McpMetadataOperationKind.Repair, 13, 200);
+        await FillReservationAsync(store, Guid.NewGuid(), Guid.NewGuid(), McpMetadataOperationKind.WorkspaceMutation, 16, 100);
+        await FillReservationAsync(store, Guid.NewGuid(), Guid.NewGuid(), McpMetadataOperationKind.WorkspaceMutation, 16, 200);
         var coordinator = new Mock<IWorkspaceSaveCoordinator>(MockBehavior.Strict);
         await using var harness = await ProtocolHarness.CreateAsync(
             [new SaveRecoverTool(coordinator.Object, store), new SaveRepairTool(coordinator.Object, store)]);
@@ -475,7 +475,7 @@ public sealed class McpSaveToolProtocolTests
         }
     }
 
-    /// <summary>Fills one permanent operation reservation while leaving fewer than four slots unused.</summary>
+    /// <summary>Fills one operation's requested publication capacity with retained metadata handles.</summary>
     /// <param name="store">The host metadata store.</param>
     /// <param name="workspaceId">The operation workspace identity.</param>
     /// <param name="operationId">The operation identity.</param>
@@ -491,7 +491,7 @@ public sealed class McpSaveToolProtocolTests
         int count,
         int indexOffset)
     {
-        await using var lease = await store.AcquireOperationAsync(workspaceId, operationId, kind, 4);
+        await using var lease = await store.AcquireOperationAsync(workspaceId, operationId, kind, count);
         lease.ShouldNotBeNull();
         for (var index = 0; index < count; index++)
         {

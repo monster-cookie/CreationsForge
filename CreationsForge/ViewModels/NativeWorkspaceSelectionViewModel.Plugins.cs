@@ -9,6 +9,15 @@ public sealed partial class NativeWorkspaceSelectionViewModel
     /// <summary>Discovers installed plugins through Mutagen without using imported repository state.</summary>
     private readonly INativePluginDiscoveryService? PluginDiscoveryService;
 
+    /// <summary>Cancels the discovery generation currently allowed to publish presentation state.</summary>
+    private CancellationTokenSource? PluginDiscoveryCancellationTokenSource;
+
+    /// <summary>Identifies the most recent discovery request so superseded work cannot publish stale results.</summary>
+    private long PluginDiscoveryGeneration;
+
+    /// <summary>Tracks whether the shared busy state currently belongs to plugin discovery.</summary>
+    private bool IsPluginDiscoveryBusy;
+
     /// <summary>The last complete detected catalog for the selected game.</summary>
     private NativePluginCatalog? PluginCatalogValue;
 
@@ -69,7 +78,7 @@ public sealed partial class NativeWorkspaceSelectionViewModel
     /// <returns>A task that completes after bound rows and status are updated.</returns>
     public async Task RefreshPluginsAsync(CancellationToken cancellationToken = default)
     {
-        if (IsBusy)
+        if (IsBusy && !IsPluginDiscoveryBusy)
         {
             return;
         }
@@ -81,43 +90,91 @@ public sealed partial class NativeWorkspaceSelectionViewModel
             return;
         }
 
-        IsBusy = true;
-        ErrorText = null;
-        StatusText = $"Finding installed {SelectedGame.DisplayName} plugins...";
-        try
+        PluginDiscoveryCancellationTokenSource?.Cancel();
+        using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        PluginDiscoveryCancellationTokenSource = linkedCancellation;
+        var generation = Interlocked.Increment(ref PluginDiscoveryGeneration);
+        var selectedGame = SelectedGame;
+        await UiDispatcher.InvokeAsync(() =>
         {
-            var result = await PluginDiscoveryService.DiscoverAsync(SelectedGame.Game, cancellationToken);
-            if (!result.Succeeded || result.Value is null)
+            if (!IsCurrentPluginDiscovery(generation, linkedCancellation))
             {
-                Logger.Warning(
-                    "Installed plugin discovery failed for {Game}; error code: {ErrorCode}; message: {ErrorMessage}",
-                    SelectedGame.Game,
-                    result.Error?.Code,
-                    result.Error?.Message ?? "No error description was returned.");
-                ResetPluginCatalog();
-                ErrorText = result.Error?.Message ?? "Plugin discovery returned no catalog or failure reason.";
-                StatusText = "Installed plugins could not be loaded.";
                 return;
             }
 
-            PluginCatalogValue = result.Value;
-            AllPluginRows = result.Value.Plugins
-                .Select(entry => new NativePluginSelectionRowViewModel(entry))
-                .ToArray();
-            ApplyPluginFilter();
-            StatusText = $"{AllPluginRows.Count} installed plugin(s) found.";
-            OnPropertyChanged(nameof(DetectedDataDirectoryText));
+            IsPluginDiscoveryBusy = true;
+            IsBusy = true;
+            ErrorText = null;
+            StatusText = $"Finding installed {selectedGame.DisplayName} plugins...";
+        });
+        try
+        {
+            var result = await PluginDiscoveryService.DiscoverAsync(selectedGame.Game, linkedCancellation.Token);
+            await UiDispatcher.InvokeAsync(() =>
+            {
+                if (!IsCurrentPluginDiscovery(generation, linkedCancellation))
+                {
+                    return;
+                }
+
+                if (!result.Succeeded || result.Value is null)
+                {
+                    Logger.Warning(
+                        "Installed plugin discovery failed for {Game}; error code: {ErrorCode}; message: {ErrorMessage}",
+                        selectedGame.Game,
+                        result.Error?.Code,
+                        result.Error?.Message ?? "No error description was returned.");
+                    ResetPluginCatalog();
+                    ErrorText = result.Error?.Message ?? "Plugin discovery returned no catalog or failure reason.";
+                    StatusText = "Installed plugins could not be loaded.";
+                    return;
+                }
+
+                PluginCatalogValue = result.Value;
+                AllPluginRows = result.Value.Plugins
+                    .Select(entry => new NativePluginSelectionRowViewModel(entry))
+                    .ToArray();
+                ApplyPluginFilter();
+                StatusText = $"{AllPluginRows.Count} installed plugin(s) found.";
+                OnPropertyChanged(nameof(DetectedDataDirectoryText));
+            });
         }
         catch (OperationCanceledException)
         {
-            StatusText = "Plugin discovery canceled.";
+            await UiDispatcher.InvokeAsync(() =>
+            {
+                if (IsCurrentPluginDiscovery(generation, linkedCancellation))
+                {
+                    StatusText = "Plugin discovery canceled.";
+                }
+            });
         }
         finally
         {
-            IsBusy = false;
-            OnPropertyChanged(nameof(CanOpenSelectedPluginReadOnly));
-            OnPropertyChanged(nameof(CanOpenSelectedPlugin));
+            await UiDispatcher.InvokeAsync(() =>
+            {
+                if (!IsCurrentPluginDiscovery(generation, linkedCancellation))
+                {
+                    return;
+                }
+
+                PluginDiscoveryCancellationTokenSource = null;
+                IsPluginDiscoveryBusy = false;
+                IsBusy = false;
+                OnPropertyChanged(nameof(CanOpenSelectedPluginReadOnly));
+                OnPropertyChanged(nameof(CanOpenSelectedPlugin));
+            });
         }
+    }
+
+    /// <summary>Determines whether a discovery generation still owns publication rights.</summary>
+    /// <param name="generation">The generation captured by the running request.</param>
+    /// <param name="cancellationTokenSource">The cancellation source owned by the running request.</param>
+    /// <returns><see langword="true"/> when no newer discovery request has superseded the caller.</returns>
+    private bool IsCurrentPluginDiscovery(long generation, CancellationTokenSource cancellationTokenSource)
+    {
+        return generation == PluginDiscoveryGeneration
+            && ReferenceEquals(PluginDiscoveryCancellationTokenSource, cancellationTokenSource);
     }
 
     /// <summary>Opens the selected plugin and its declared masters as an immutable inspection workspace.</summary>

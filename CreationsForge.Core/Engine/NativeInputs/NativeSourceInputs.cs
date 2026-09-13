@@ -45,6 +45,7 @@ public sealed class NativeSourceInputs : INativeSourceSet
     /// <param name="plugins">The explicit plugin descriptors in load-order order.</param>
     /// <param name="dataDirectoryPath">The explicit native data directory used for archive lookup.</param>
     /// <param name="stringDirectoryPaths">The explicit loose localized-string directories in lookup-priority order.</param>
+    /// <param name="recordTextLanguage">The explicit language used for localized native record text.</param>
     /// <param name="masterFlagsLookup">The private immutable-surface master-style lookup.</param>
     /// <param name="stringsLookups">The plugin-specific strings lookups.</param>
     /// <param name="artifactCollector">The collector used for later source verification.</param>
@@ -54,6 +55,7 @@ public sealed class NativeSourceInputs : INativeSourceSet
         IReadOnlyList<NativeSourcePluginInput> plugins,
         string dataDirectoryPath,
         IReadOnlyList<string> stringDirectoryPaths,
+        Language recordTextLanguage,
         IReadOnlyCache<IModMasterStyledGetter, Mutagen.Bethesda.Plugins.ModKey> masterFlagsLookup,
         IReadOnlyDictionary<Mutagen.Bethesda.Plugins.ModKey, NativeStringsFolderLookup> stringsLookups,
         NativeSourceArtifactCollector artifactCollector,
@@ -63,6 +65,7 @@ public sealed class NativeSourceInputs : INativeSourceSet
         Plugins = Array.AsReadOnly(plugins.ToArray());
         DataDirectoryPath = dataDirectoryPath;
         StringDirectoryPaths = Array.AsReadOnly(stringDirectoryPaths.ToArray());
+        RecordTextLanguage = recordTextLanguage;
         MasterFlagsLookup = masterFlagsLookup;
         StringsLookups = stringsLookups;
         ArtifactCollector = artifactCollector;
@@ -71,6 +74,9 @@ public sealed class NativeSourceInputs : INativeSourceSet
 
     /// <summary>Gets the exact native game release selected by the explicit open request.</summary>
     public GameRelease Release { get; }
+
+    /// <summary>Gets the explicit language used for localized native record text.</summary>
+    public Language RecordTextLanguage { get; }
 
     /// <summary>Gets the completed immutable baseline for every physical source artifact.</summary>
     /// <exception cref="InvalidOperationException">Thrown before native opening establishes the complete baseline.</exception>
@@ -156,7 +162,7 @@ public sealed class NativeSourceInputs : INativeSourceSet
             {
                 StringsFolderOverride = StringDirectoryPaths[0],
                 BsaFolderOverride = DataDirectoryPath,
-                TargetLanguage = Language.English
+                TargetLanguage = RecordTextLanguage
             }
         };
     }

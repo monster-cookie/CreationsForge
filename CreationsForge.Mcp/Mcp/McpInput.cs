@@ -6,6 +6,7 @@ using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
+using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Mcp;
 
@@ -34,6 +35,30 @@ internal static class McpInput
 
     /// <summary>The largest number of bounded transport results.</summary>
     internal const int MaximumResults = 250;
+
+    /// <summary>Reads a required native localized-record language name.</summary>
+    /// <param name="arguments">The request arguments.</param>
+    /// <param name="name">The required property name.</param>
+    /// <param name="value">Receives the defined Mutagen language.</param>
+    /// <param name="error">Receives a validation error.</param>
+    /// <returns><see langword="true"/> when the value names a defined language, ignoring case.</returns>
+    internal static bool TryGetRequiredLanguage(
+        IReadOnlyDictionary<string, JsonElement> arguments,
+        string name,
+        out Language value,
+        out string error)
+    {
+        value = default;
+        if (!TryGetRequiredString(arguments, name, 64, out var text, out error)
+            || !Enum.TryParse(text, true, out value)
+            || !Enum.IsDefined(value))
+        {
+            error = $"Argument '{name}' must name a supported record-text language.";
+            return false;
+        }
+
+        return true;
+    }
 
     /// <summary>Reads and validates the complete closed argument object.</summary>
     /// <param name="request">The MCP request whose arguments are inspected.</param>

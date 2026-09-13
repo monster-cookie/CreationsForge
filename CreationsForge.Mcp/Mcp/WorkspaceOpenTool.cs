@@ -2,6 +2,7 @@ using System.Text.Json;
 using CreationsForge.Core.Engine.Contracts;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
+using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Mcp;
 
@@ -20,11 +21,16 @@ public sealed class WorkspaceOpenTool : McpToolBase
         "loadOrderPluginPaths",
         "dataDirectoryPath",
         "stringDirectoryPaths",
+        "recordTextLanguage",
     };
+
+    /// <summary>The closed lower-case names accepted for localized record text.</summary>
+    private static readonly string RecordTextLanguageSchema = JsonSerializer.Serialize(
+        Enum.GetNames<Language>().Select(name => name.ToLowerInvariant()).ToArray());
 
     /// <summary>The explicit installed-discovery-free input schema.</summary>
     private static readonly JsonElement InputSchema = ParseSchema(
-        """{"type":"object","properties":{"workspaceId":{"type":"string","format":"uuid"},"game":{"type":"string","enum":["starfield","fallout4","skyrim"]},"release":{"type":"string","enum":["starfield","fallout4","skyrim_se"]},"sourcePluginPath":{"type":"string","minLength":1,"maxLength":32767},"loadOrderPluginPaths":{"type":"array","maxItems":4096,"items":{"type":"string","minLength":1,"maxLength":32767}},"dataDirectoryPath":{"type":"string","minLength":1,"maxLength":32767},"stringDirectoryPaths":{"type":"array","maxItems":4096,"items":{"type":"string","minLength":1,"maxLength":32767}}},"required":["workspaceId","game","release","sourcePluginPath","loadOrderPluginPaths","dataDirectoryPath","stringDirectoryPaths"],"additionalProperties":false}""");
+        "{\"type\":\"object\",\"properties\":{\"workspaceId\":{\"type\":\"string\",\"format\":\"uuid\"},\"game\":{\"type\":\"string\",\"enum\":[\"starfield\",\"fallout4\",\"skyrim\"]},\"release\":{\"type\":\"string\",\"enum\":[\"starfield\",\"fallout4\",\"skyrim_se\"]},\"sourcePluginPath\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":32767},\"loadOrderPluginPaths\":{\"type\":\"array\",\"maxItems\":4096,\"items\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":32767}},\"dataDirectoryPath\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":32767},\"stringDirectoryPaths\":{\"type\":\"array\",\"maxItems\":4096,\"items\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":32767}},\"recordTextLanguage\":{\"type\":\"string\",\"enum\":" + RecordTextLanguageSchema + "}},\"required\":[\"workspaceId\",\"game\",\"release\",\"sourcePluginPath\",\"loadOrderPluginPaths\",\"dataDirectoryPath\",\"stringDirectoryPaths\",\"recordTextLanguage\"],\"additionalProperties\":false}");
 
     /// <summary>The exact success and engine-error output schema.</summary>
     private static readonly JsonElement OutputSchema = McpToolSchema.Output(
@@ -82,7 +88,8 @@ public sealed class WorkspaceOpenTool : McpToolBase
             !McpInput.TryGetRequiredString(arguments, "sourcePluginPath", McpInput.MaximumPathLength, out var sourcePath, out error) ||
             !McpInput.TryGetRequiredStringArray(arguments, "loadOrderPluginPaths", 4096, out var loadOrderPaths, out error) ||
             !McpInput.TryGetRequiredString(arguments, "dataDirectoryPath", McpInput.MaximumPathLength, out var dataDirectoryPath, out error) ||
-            !McpInput.TryGetRequiredStringArray(arguments, "stringDirectoryPaths", 4096, out var stringDirectoryPaths, out error))
+            !McpInput.TryGetRequiredStringArray(arguments, "stringDirectoryPaths", 4096, out var stringDirectoryPaths, out error) ||
+            !McpInput.TryGetRequiredLanguage(arguments, "recordTextLanguage", out var recordTextLanguage, out error))
         {
             return Error("invalid_arguments", error);
         }
@@ -94,7 +101,8 @@ public sealed class WorkspaceOpenTool : McpToolBase
             sourcePath,
             loadOrderPaths,
             dataDirectoryPath,
-            stringDirectoryPaths);
+            stringDirectoryPaths,
+            recordTextLanguage: recordTextLanguage);
         EngineResult<WorkspaceRevision> result;
         try
         {

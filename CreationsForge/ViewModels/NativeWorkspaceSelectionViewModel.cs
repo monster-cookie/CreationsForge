@@ -28,6 +28,9 @@ public sealed partial class NativeWorkspaceSelectionViewModel : ViewModelBase
     /// <summary>Reads and persists the configured active game while preserving other settings.</summary>
     private readonly IGameSelectionService GameSelectionService;
 
+    /// <summary>Reads the explicit localized-record language selected in application settings.</summary>
+    private readonly IApplicationSettingsService? ApplicationSettingsService;
+
     /// <summary>Dispatches engine progress to bound presentation state.</summary>
     private readonly IUiDispatcher UiDispatcher;
 
@@ -80,6 +83,7 @@ public sealed partial class NativeWorkspaceSelectionViewModel : ViewModelBase
     /// <param name="uiDispatcher">The dispatcher used for engine progress.</param>
     /// <param name="logger">The structured logger for unexpected presentation failures.</param>
     /// <param name="pluginDiscoveryService">The optional installed-plugin discovery boundary used by the product selection flow.</param>
+    /// <param name="applicationSettingsService">The optional application settings boundary used to select localized record text.</param>
     /// <exception cref="ArgumentNullException">Thrown when a required dependency is <see langword="null"/>.</exception>
     public NativeWorkspaceSelectionViewModel(
         INativeWorkspaceCoordinator workspaceCoordinator,
@@ -87,7 +91,8 @@ public sealed partial class NativeWorkspaceSelectionViewModel : ViewModelBase
         IGameSelectionService gameSelectionService,
         IUiDispatcher uiDispatcher,
         ILogger logger,
-        INativePluginDiscoveryService? pluginDiscoveryService = null)
+        INativePluginDiscoveryService? pluginDiscoveryService = null,
+        IApplicationSettingsService? applicationSettingsService = null)
     {
         ArgumentNullException.ThrowIfNull(workspaceCoordinator);
         ArgumentNullException.ThrowIfNull(pathPicker);
@@ -97,6 +102,7 @@ public sealed partial class NativeWorkspaceSelectionViewModel : ViewModelBase
         WorkspaceCoordinator = workspaceCoordinator;
         PathPicker = pathPicker;
         GameSelectionService = gameSelectionService;
+        ApplicationSettingsService = applicationSettingsService;
         UiDispatcher = uiDispatcher;
         Logger = logger.ForContext<NativeWorkspaceSelectionViewModel>();
         PluginDiscoveryService = pluginDiscoveryService;
@@ -132,6 +138,11 @@ public sealed partial class NativeWorkspaceSelectionViewModel : ViewModelBase
                 return;
             }
 
+            PluginDiscoveryCancellationTokenSource?.Cancel();
+            Interlocked.Increment(ref PluginDiscoveryGeneration);
+            PluginDiscoveryCancellationTokenSource = null;
+            IsPluginDiscoveryBusy = false;
+            IsBusy = false;
             ResetPluginCatalog();
             OutputMasterStyleOptions = value.SupportedMasterStyles;
             if (!OutputMasterStyleOptions.Contains(OutputMasterStyle))
@@ -389,7 +400,8 @@ public sealed partial class NativeWorkspaceSelectionViewModel : ViewModelBase
                 LoadOrderPluginPaths.ToArray(),
                 DataDirectoryPath,
                 StringDirectoryPaths.ToArray(),
-                progress);
+                progress,
+                ApplicationSettingsService?.GetRecordTextLanguage() ?? Mutagen.Bethesda.Strings.Language.English);
             var request = includeOutput
                 ? new NativeWorkspaceOpenRequest(
                     sources,

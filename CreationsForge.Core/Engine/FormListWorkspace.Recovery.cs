@@ -18,14 +18,24 @@ public sealed partial class FormListWorkspace
         await OperationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (TryReplay(request.OperationId, fingerprint, out EngineResult<OutputSelectionReceipt>? replay, out var conflict))
+            if (TryReplay(request.OperationId, fingerprint, out EngineResult<OutputSelectionReceipt>? replay, out var conflict, out var expired))
             {
                 return replay!;
+            }
+
+            if (expired)
+            {
+                return CreateOperationReplayExpiredFailure<OutputSelectionReceipt>(request.OperationId, request.ExpectedRevision);
             }
 
             if (conflict)
             {
                 return CreateReuseFailure<OutputSelectionReceipt>(request.OperationId, request.ExpectedRevision);
+            }
+
+            if (!CanStoreFinalizationOperation(request.OperationId))
+            {
+                return CreateOperationCapacityFailure<OutputSelectionReceipt>(request.OperationId, request.ExpectedRevision);
             }
 
             var guardFailure = ValidateRecoveryMutation(request.OperationId, request.ExpectedRevision);
@@ -258,7 +268,7 @@ public sealed partial class FormListWorkspace
         SetRevision(resultRevision);
         SetOutputSynchronization(OutputSynchronizationStatus.Ready, null);
         var receipt = new OutputSelectionReceipt(SelectedOutput!, SelectedOutputBaseline, resultRevision);
-        return Store(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Success(
+        return StoreFinalization(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Success(
             receipt,
             WorkspaceId,
             request.OperationId,
@@ -312,7 +322,7 @@ public sealed partial class FormListWorkspace
         var disposalWarnings = await PublishOutputAsync(openResult.Value, true, resultRevision).ConfigureAwait(false);
         SetOutputSynchronization(OutputSynchronizationStatus.Ready, null);
         var receipt = new OutputSelectionReceipt(SelectedOutput!, SelectedOutputBaseline!, resultRevision);
-        return Store(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Success(
+        return StoreFinalization(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Success(
             receipt,
             WorkspaceId,
             request.OperationId,
@@ -366,7 +376,7 @@ public sealed partial class FormListWorkspace
         EngineError error,
         IReadOnlyList<EngineWarning>? warnings = null)
     {
-        return Store(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
+        return StoreFinalization(request.OperationId, fingerprint, EngineResult<OutputSelectionReceipt>.Failure(
             error,
             WorkspaceId,
             request.OperationId,

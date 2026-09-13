@@ -10,27 +10,35 @@ namespace CreationsForge.Core.Engine.NativeOutputs;
 public static class NativeStagedStringTables
 {
     /// <summary>
-    /// Creates an empty English strings table only when the private staging directory contains no native table for the output.
+    /// Creates an empty selected-language strings table only when the private staging directory contains no native table for the output.
     /// A localized plugin with no translated fields still needs an explicit loose table for later archive-free native admission.
     /// Existing tables and their entries are never rewritten.
     /// </summary>
     /// <param name="release">The exact native release determining table names and supported languages.</param>
     /// <param name="modKey">The identity of the privately staged output plugin.</param>
     /// <param name="stringsDirectoryPath">The existing, caller-owned private staging strings directory after the native writer has been disposed.</param>
+    /// <param name="recordTextLanguage">The explicit native language used for the empty table name.</param>
     /// <param name="cancellationToken">A token checked before discovering or creating an empty table.</param>
     /// <exception cref="ArgumentException">Thrown when a required path or native strings naming format is unavailable.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="recordTextLanguage"/> is undefined.</exception>
     /// <exception cref="IOException">Thrown when the private table cannot be created or flushed.</exception>
     /// <exception cref="OperationCanceledException">Thrown when cancellation is requested before table creation.</exception>
     public static void EnsureExplicitTable(
         GameRelease release,
         ModKey modKey,
         string stringsDirectoryPath,
+        Language recordTextLanguage,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(stringsDirectoryPath);
         if (modKey.IsNull)
         {
             throw new ArgumentException("An empty strings table requires an explicit output plugin identity.", nameof(modKey));
+        }
+
+        if (!Enum.IsDefined(recordTextLanguage))
+        {
+            throw new ArgumentOutOfRangeException(nameof(recordTextLanguage));
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -55,7 +63,7 @@ public static class NativeStagedStringTables
         cancellationToken.ThrowIfCancellationRequested();
         var emptyTablePath = Path.Combine(
             stringsDirectoryPath,
-            StringsUtility.GetFileName(languageFormat, modKey, Language.English, StringsSource.Normal));
+            StringsUtility.GetFileName(languageFormat, modKey, recordTextLanguage, StringsSource.Normal));
         using var stream = new FileStream(emptyTablePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
         using var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, leaveOpen: true);
         writer.Write(0U); // Entry count in the native little-endian strings-table header.

@@ -65,13 +65,13 @@ internal sealed class McpMetadataOperationLease : IAsyncDisposable
         return Store.TryPublish(Reservation, value, McpMetadataKind.RepairSaveResult);
     }
 
-    /// <summary>Releases operation serialization while retaining every reserved slot and published entry until host shutdown.</summary>
+    /// <summary>Releases operation serialization and every unused provisional slot while retaining published entries.</summary>
     /// <returns>A completed value task after the operation gate is released.</returns>
     public ValueTask DisposeAsync()
     {
         if (Interlocked.Exchange(ref IsDisposed, 1) == 0)
         {
-            Reservation.Gate.Release();
+            Store.ReleaseOperation(Reservation);
         }
 
         return ValueTask.CompletedTask;

@@ -146,6 +146,8 @@ internal static class McpProjection
             EngineErrorCode.WorkspaceDisposed => "workspace_disposed",
             EngineErrorCode.RevisionConflict => "revision_conflict",
             EngineErrorCode.OperationIdReuse => "operation_id_reuse",
+            EngineErrorCode.OperationReplayExpired => "operation_replay_expired",
+            EngineErrorCode.OperationCapacityExceeded => "operation_capacity_exceeded",
             EngineErrorCode.OutputNotSelected => "output_not_selected",
             EngineErrorCode.EditNotFound => "edit_not_found",
             EngineErrorCode.RecordNotFound => "record_not_found",

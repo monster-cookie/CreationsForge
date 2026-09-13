@@ -1,5 +1,6 @@
 using CreationsForge.Core.Enums;
 using Mutagen.Bethesda;
+using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Core.Engine.Contracts;
 
@@ -17,6 +18,7 @@ public sealed class WorkspaceOpenRequest
     /// <param name="dataDirectoryPath">The data directory used to resolve native plugin resources.</param>
     /// <param name="stringDirectoryPaths">Explicit directories used for localized string resolution.</param>
     /// <param name="progress">An optional observer for coarse-grained open progress.</param>
+    /// <param name="recordTextLanguage">The explicit native language used to resolve localized record text.</param>
     /// <exception cref="ArgumentNullException">Thrown when a required path collection is <see langword="null"/>.</exception>
     public WorkspaceOpenRequest(
         Guid workspaceId,
@@ -26,10 +28,16 @@ public sealed class WorkspaceOpenRequest
         IReadOnlyList<string> loadOrderPluginPaths,
         string dataDirectoryPath,
         IReadOnlyList<string> stringDirectoryPaths,
-        IProgress<WorkspaceOpenProgress>? progress = null)
+        IProgress<WorkspaceOpenProgress>? progress = null,
+        Language recordTextLanguage = Language.English)
     {
         ArgumentNullException.ThrowIfNull(loadOrderPluginPaths);
         ArgumentNullException.ThrowIfNull(stringDirectoryPaths);
+        if (!Enum.IsDefined(recordTextLanguage))
+        {
+            throw new ArgumentOutOfRangeException(nameof(recordTextLanguage));
+        }
+
         WorkspaceId = workspaceId;
         Game = game;
         Release = release;
@@ -38,6 +46,7 @@ public sealed class WorkspaceOpenRequest
         DataDirectoryPath = dataDirectoryPath;
         StringDirectoryPaths = Array.AsReadOnly(stringDirectoryPaths.ToArray());
         Progress = progress;
+        RecordTextLanguage = recordTextLanguage;
     }
 
     /// <summary>Gets the caller-assigned workspace identifier.</summary>
@@ -60,6 +69,9 @@ public sealed class WorkspaceOpenRequest
 
     /// <summary>Gets an immutable snapshot of localized-string search directories.</summary>
     public IReadOnlyList<string> StringDirectoryPaths { get; }
+
+    /// <summary>Gets the explicit native language used to resolve localized record text.</summary>
+    public Language RecordTextLanguage { get; }
 
     /// <summary>Gets the optional open-progress observer.</summary>
     public IProgress<WorkspaceOpenProgress>? Progress { get; }
@@ -84,7 +96,8 @@ public sealed class WorkspaceOpenRequest
             loadOrderPluginPaths,
             dataDirectoryPath,
             stringDirectoryPaths,
-            Progress);
+            Progress,
+            RecordTextLanguage);
     }
 
     /// <summary>Creates an equivalent request with a replacement progress observer.</summary>
@@ -101,6 +114,7 @@ public sealed class WorkspaceOpenRequest
             LoadOrderPluginPaths,
             DataDirectoryPath,
             StringDirectoryPaths,
-            progress);
+            progress,
+            RecordTextLanguage);
     }
 }

@@ -103,6 +103,9 @@ internal sealed class ClientAcceptanceWorkspaceOpen
 
     /// <summary>Gets or initializes explicit copied string directories in lookup order.</summary>
     public string[] StringDirectoryPaths { get; init; } = [];
+
+    /// <summary>Gets or initializes the explicit localized record-text language token.</summary>
+    public string RecordTextLanguage { get; init; } = string.Empty;
 }
 
 /// <summary>Records one copied immutable input artifact and its exact export baseline.</summary>

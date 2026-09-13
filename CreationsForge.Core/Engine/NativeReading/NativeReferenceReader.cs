@@ -490,11 +490,35 @@ public sealed class NativeReferenceReader
         IMajorRecordGetter record,
         CancellationToken cancellationToken)
     {
-        var warnings = new List<EngineWarning>();
-        foreach (var reference in EnumerateDirectLinks(record))
+        var references = EnumerateDirectLinks(record);
+        var unresolvedKeys = references
+            .Select(reference => reference.FormKey)
+            .ToHashSet();
+        var liveByFormKey = new Dictionary<FormKey, bool>();
+        for (var sourceIndex = Sources.Count - 1; sourceIndex >= 0 && unresolvedKeys.Count > 0; sourceIndex--)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (HasLiveWinningContext(reference.FormKey, cancellationToken))
+            foreach (var candidate in Sources[sourceIndex].Mod.EnumerateMajorRecords())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!unresolvedKeys.Remove(candidate.FormKey))
+                {
+                    continue;
+                }
+
+                liveByFormKey.Add(candidate.FormKey, !candidate.IsDeleted);
+                if (unresolvedKeys.Count == 0)
+                {
+                    break;
+                }
+            }
+        }
+
+        var warnings = new List<EngineWarning>();
+        foreach (var reference in references)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (liveByFormKey.GetValueOrDefault(reference.FormKey))
             {
                 continue;
             }
@@ -506,28 +530,6 @@ public sealed class NativeReferenceReader
         }
 
         return Array.AsReadOnly(warnings.ToArray());
-    }
-
-    /// <summary>Checks whether the winning native context for one FormKey exists and is not deleted.</summary>
-    /// <param name="formKey">The linked native target identity.</param>
-    /// <param name="cancellationToken">A token observed during the reverse load-order scan.</param>
-    /// <returns><see langword="true"/> when the winning context is live.</returns>
-    private bool HasLiveWinningContext(FormKey formKey, CancellationToken cancellationToken)
-    {
-        for (var sourceIndex = Sources.Count - 1; sourceIndex >= 0; sourceIndex--)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            foreach (var record in Sources[sourceIndex].Mod.EnumerateMajorRecords())
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (record.FormKey == formKey)
-                {
-                    return !record.IsDeleted;
-                }
-            }
-        }
-
-        return false;
     }
 
     /// <summary>Enumerates non-null native link targets with stable fallback positions when no game-aware visitor is supplied.</summary>

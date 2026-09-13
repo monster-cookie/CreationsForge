@@ -10,6 +10,9 @@ internal sealed class FakeNativePluginDiscoveryService : INativePluginDiscoveryS
     public EngineResult<NativePluginCatalog> Result { get; set; } = EngineResult<NativePluginCatalog>.Failure(
         new EngineError(EngineErrorCode.SourceOpenFailed, "No fake plugin catalog was configured."));
 
+    /// <summary>Gets or sets an optional asynchronous discovery handler used for cancellation and ordering tests.</summary>
+    public Func<SupportedGame, CancellationToken, ValueTask<EngineResult<NativePluginCatalog>>>? Handler { get; set; }
+
     /// <summary>Gets requested games in call order.</summary>
     public List<SupportedGame> RequestedGames { get; } = [];
 
@@ -20,6 +23,6 @@ internal sealed class FakeNativePluginDiscoveryService : INativePluginDiscoveryS
     {
         cancellationToken.ThrowIfCancellationRequested();
         RequestedGames.Add(game);
-        return ValueTask.FromResult(Result);
+        return Handler is null ? ValueTask.FromResult(Result) : Handler(game, cancellationToken);
     }
 }

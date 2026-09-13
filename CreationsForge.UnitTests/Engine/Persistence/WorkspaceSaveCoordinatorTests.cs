@@ -479,6 +479,13 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         Directory.CreateDirectory(Path.GetDirectoryName(strings.Path)!);
         await File.WriteAllBytesAsync(strings.Path, [2]);
         var baseline = await NativeSaveArtifactUtilities.CaptureOutputAsync(GameRelease.SkyrimSE, output, CancellationToken.None);
+        await using var retainedOriginalIdentity = OperatingSystem.IsWindows()
+            ? null
+            : new FileStream(
+                output.PluginPath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete);
         var firstDesired = new Dictionary<string, byte[]>(NativeSaveArtifactUtilities.PathComparer)
         {
             [output.PluginPath] = [3],

@@ -155,6 +155,7 @@ public sealed class NativeOutputInputLoader
                 borrowedSources.Release,
                 output,
                 initialArtifacts,
+                borrowedSources.RecordTextLanguage,
                 fileSystem);
 
             var sourceAfter = await borrowedSources.VerifyUnchangedAsync(cancellationToken).ConfigureAwait(false);
@@ -400,6 +401,7 @@ public sealed class NativeOutputInputLoader
     /// <param name="release">The selected native game release.</param>
     /// <param name="output">The output descriptor.</param>
     /// <param name="artifacts">The complete output artifact observations.</param>
+    /// <param name="recordTextLanguage">The explicit language used for localized native record text.</param>
     /// <param name="fileSystem">The native file-system adapter.</param>
     /// <returns>A loose strings lookup, or <see langword="null"/> for new or embedded-string output.</returns>
     /// <exception cref="NativeSourceInputException">Thrown when an existing localized output cannot be preserved through explicit loose files.</exception>
@@ -407,6 +409,7 @@ public sealed class NativeOutputInputLoader
         GameRelease release,
         NativeOutputPluginInput output,
         IReadOnlyList<NativeArtifactAssociation> artifacts,
+        Language recordTextLanguage,
         IFileSystem fileSystem)
     {
         if (!output.Exists || !output.UsesLocalization)
@@ -430,7 +433,7 @@ public sealed class NativeOutputInputLoader
         {
             StringsFolderOverride = stringsDirectory,
             BsaFolderOverride = stringsDirectory,
-            TargetLanguage = Language.English
+            TargetLanguage = recordTextLanguage
         };
         return StringsFolderLookupOverlay.TypicalFactory(
             release,

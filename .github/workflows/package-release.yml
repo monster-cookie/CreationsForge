@@ -72,10 +72,10 @@ jobs:
 
         steps:
             - name: Check out repository
-              uses: actions/checkout@v6
+              uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
             - name: Set up .NET
-              uses: actions/setup-dotnet@v5
+              uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
               with:
                   dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -160,21 +160,21 @@ jobs:
                     ./Packaging/Windows/CreationsForge.iss
 
             - name: Upload Windows desktop ZIP
-              uses: actions/upload-artifact@v7
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
               with:
                   name: CreationsForge-Desktop-win-x64-${{ env.PACKAGE_VERSION }}
                   path: artifacts/CreationsForge-Desktop-win-x64-${{ env.PACKAGE_VERSION }}.zip
                   if-no-files-found: error
 
             - name: Upload Windows MCP ZIP
-              uses: actions/upload-artifact@v7
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
               with:
                   name: CreationsForge-Mcp-win-x64-${{ env.PACKAGE_VERSION }}
                   path: artifacts/CreationsForge-Mcp-win-x64-${{ env.PACKAGE_VERSION }}.zip
                   if-no-files-found: error
 
             - name: Upload Windows installer
-              uses: actions/upload-artifact@v7
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
               with:
                   name: CreationsForge-Setup-${{ env.PACKAGE_VERSION }}
                   path: artifacts/CreationsForge-Setup-${{ env.PACKAGE_VERSION }}.exe
@@ -191,10 +191,10 @@ jobs:
 
         steps:
             - name: Check out repository
-              uses: actions/checkout@v6
+              uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
             - name: Set up .NET
-              uses: actions/setup-dotnet@v5
+              uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
               with:
                   dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -306,21 +306,21 @@ jobs:
                   dpkg-deb --build --root-owner-group "$package_root" "./artifacts/CreationsForge_${PACKAGE_VERSION}_amd64.deb"
 
             - name: Upload Linux desktop ZIP
-              uses: actions/upload-artifact@v7
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
               with:
                   name: CreationsForge-Desktop-linux-x64-${{ env.PACKAGE_VERSION }}
                   path: artifacts/CreationsForge-Desktop-linux-x64-${{ env.PACKAGE_VERSION }}.zip
                   if-no-files-found: error
 
             - name: Upload Linux MCP ZIP
-              uses: actions/upload-artifact@v7
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
               with:
                   name: CreationsForge-Mcp-linux-x64-${{ env.PACKAGE_VERSION }}
                   path: artifacts/CreationsForge-Mcp-linux-x64-${{ env.PACKAGE_VERSION }}.zip
                   if-no-files-found: error
 
             - name: Upload Debian installer
-              uses: actions/upload-artifact@v7
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
               with:
                   name: CreationsForge-${{ env.PACKAGE_VERSION }}-amd64-deb
                   path: artifacts/CreationsForge_${{ env.PACKAGE_VERSION }}_amd64.deb
@@ -344,7 +344,7 @@ jobs:
                   pacman -S --noconfirm dotnet-sdk git zstd zip fontconfig libglvnd dbus libxrandr libxi
 
             - name: Check out repository
-              uses: actions/checkout@v6
+              uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
             - name: Publish Arch Linux applications
               shell: bash
@@ -433,7 +433,7 @@ jobs:
                   cp ./*.pkg.tar.zst "$GITHUB_WORKSPACE/artifacts/"
 
             - name: Upload Arch Linux package
-              uses: actions/upload-artifact@v7
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
               with:
                   name: creationsforge-${{ env.PACKAGE_VERSION }}-1-x86_64-pkg
                   path: artifacts/creationsforge-${{ env.PACKAGE_VERSION }}-1-x86_64.pkg.tar.zst
@@ -453,22 +453,22 @@ jobs:
 
         steps:
             - name: Check out repository
-              uses: actions/checkout@v6
+              uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
             - name: Download Windows installer artifact
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
               with:
                   name: CreationsForge-Setup-${{ env.PACKAGE_VERSION }}
                   path: ./artifacts/release/windows
 
             - name: Download Debian package artifact
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
               with:
                   name: CreationsForge-${{ env.PACKAGE_VERSION }}-amd64-deb
                   path: ./artifacts/release/linux-deb
 
             - name: Download Arch package artifact
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
               with:
                   name: creationsforge-${{ env.PACKAGE_VERSION }}-1-x86_64-pkg
                   path: ./artifacts/release/linux-arch

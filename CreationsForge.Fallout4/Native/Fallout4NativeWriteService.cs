@@ -560,6 +560,7 @@ public sealed class Fallout4NativeWriteService
                 GameRelease.Fallout4,
                 association.ModKey,
                 stringsDirectory,
+                sources.BorrowInputs().RecordTextLanguage,
                 cancellationToken);
         }
         else

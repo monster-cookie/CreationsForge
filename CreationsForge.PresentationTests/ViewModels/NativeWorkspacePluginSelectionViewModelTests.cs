@@ -45,6 +45,41 @@ public sealed class NativeWorkspacePluginSelectionViewModelTests
         viewModel.PluginRows.Select(row => row.FileName).ShouldBe(["Editable.esp"]);
     }
 
+    /// <summary>Verifies a newer game discovery cancels and supersedes an older result without publishing stale rows.</summary>
+    [Fact]
+    public async Task RefreshPluginsAsync_WhenGameChanges_PublishesOnlyNewestCatalog()
+    {
+        var firstStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondRoot = CreateTestRoot();
+        var discovery = new FakeNativePluginDiscoveryService
+        {
+            Handler = async (game, token) =>
+            {
+                if (game == SupportedGame.Starfield)
+                {
+                    firstStarted.SetResult(true);
+                    await Task.Delay(Timeout.InfiniteTimeSpan, token);
+                }
+
+                return EngineResult<NativePluginCatalog>.Success(CreateCatalog(secondRoot));
+            }
+        };
+        await using var coordinator = CreateCoordinator(CreateSuccessfulWorkspace());
+        var viewModel = CreateViewModel(coordinator, new FakeNativeWorkspacePathPicker(), discovery);
+
+        var first = viewModel.RefreshPluginsAsync();
+        await firstStarted.Task;
+        viewModel.SelectedGame = viewModel.Games.Single(option => option.Game == SupportedGame.Fallout4);
+        var second = viewModel.RefreshPluginsAsync();
+        await Task.WhenAll(first, second);
+
+        discovery.RequestedGames.ShouldBe([SupportedGame.Starfield, SupportedGame.Fallout4]);
+        viewModel.DetectedDataDirectoryText.ShouldBe(secondRoot);
+        viewModel.PluginRows.Count.ShouldBe(2);
+        viewModel.StatusText.ShouldBe("2 installed plugin(s) found.");
+        viewModel.IsBusy.ShouldBeFalse();
+    }
+
     /// <summary>Verifies opening a selected plugin hides engine setup while preserving exact dependency and header metadata.</summary>
     [Fact]
     public async Task OpenSelectedPluginAsync_WithEditableEntry_UsesDeclaredMastersAsReadOnlySources()

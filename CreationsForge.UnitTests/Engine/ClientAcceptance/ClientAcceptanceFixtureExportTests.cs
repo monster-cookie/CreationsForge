@@ -128,6 +128,7 @@ public sealed class ClientAcceptanceFixtureExportTests
             LoadOrderPluginPaths = copiedPluginPaths.ToArray(),
             DataDirectoryPath = dataDirectory,
             StringDirectoryPaths = [stringsDirectory],
+            RecordTextLanguage = "english",
         };
 
         return new ClientAcceptanceCase
@@ -339,6 +340,7 @@ public sealed class ClientAcceptanceFixtureExportTests
             loadOrderPluginPaths = workspaceOpen.LoadOrderPluginPaths,
             dataDirectoryPath = workspaceOpen.DataDirectoryPath,
             stringDirectoryPaths = workspaceOpen.StringDirectoryPaths,
+            recordTextLanguage = workspaceOpen.RecordTextLanguage.ToString().ToLowerInvariant(),
         }, []));
         steps.Add(Step("open-existing-output", "creationsforge_output_select", new
         {

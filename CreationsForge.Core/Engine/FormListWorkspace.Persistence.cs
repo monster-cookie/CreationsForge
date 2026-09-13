@@ -16,9 +16,14 @@ public sealed partial class FormListWorkspace
         await OperationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (TryReplay(request.OperationId, fingerprint, out SaveResult? replay, out var conflict))
+            if (TryReplay(request.OperationId, fingerprint, out SaveResult? replay, out var conflict, out var expired))
             {
                 return replay!;
+            }
+
+            if (expired)
+            {
+                return CreateSaveFailure(request, EngineErrorCode.OperationReplayExpired, "The exact save result has expired from the bounded workspace replay window. Use a new operation identifier after refreshing workspace state.");
             }
 
             if (conflict)
@@ -26,20 +31,25 @@ public sealed partial class FormListWorkspace
                 return CreateSaveFailure(request, EngineErrorCode.OperationIdReuse, "The operation identifier was already used with a different canonical request payload.");
             }
 
+            if (!CanStoreFinalizationOperation(request.OperationId))
+            {
+                return CreateSaveFailure(request, EngineErrorCode.OperationCapacityExceeded, "The workspace operation replay capacity has been reached. Close and reopen the workspace before issuing another mutation.");
+            }
+
             var guardFailure = ValidateMutation(request.OperationId, request.ExpectedRevision);
             if (guardFailure is not null)
             {
-                return Store(request.OperationId, fingerprint, CreateSaveFailure(request, guardFailure.Code, guardFailure.Message));
+                return StoreFinalization(request.OperationId, fingerprint, CreateSaveFailure(request, guardFailure.Code, guardFailure.Message));
             }
 
             if (Output is null || SelectedOutput is null || SelectedOutputBaseline is null)
             {
-                return Store(request.OperationId, fingerprint, CreateSaveFailure(request, EngineErrorCode.OutputNotSelected, "Select an output before saving staged changes."));
+                return StoreFinalization(request.OperationId, fingerprint, CreateSaveFailure(request, EngineErrorCode.OutputNotSelected, "Select an output before saving staged changes."));
             }
 
             if (!BaselinesMatch(request.ExpectedOutputBaseline, SelectedOutputBaseline))
             {
-                return Store(request.OperationId, fingerprint, CreateSaveFailure(request, EngineErrorCode.ExternalChangeDetected, "The selected output baseline differs from the caller's expected baseline."));
+                return StoreFinalization(request.OperationId, fingerprint, CreateSaveFailure(request, EngineErrorCode.ExternalChangeDetected, "The selected output baseline differs from the caller's expected baseline."));
             }
 
             var context = new WorkspaceSaveContext(
@@ -74,7 +84,7 @@ public sealed partial class FormListWorkspace
             catch (Exception exception)
             {
                 Logger.Error(exception, "Save coordinator failed without a definitive result for workspace {WorkspaceId} and operation {OperationId}", WorkspaceId, request.OperationId);
-                return Store(request.OperationId, fingerprint, CreateUnknownSaveResult(
+                return StoreFinalization(request.OperationId, fingerprint, CreateUnknownSaveResult(
                     request,
                     pendingSave,
                     "The save coordinator failed without establishing the destination outcome.",
@@ -84,7 +94,7 @@ public sealed partial class FormListWorkspace
 
             if (!IsCoordinatorSaveResultConsistent(coordinatorResult, request, pendingSave))
             {
-                return Store(request.OperationId, fingerprint, CreateUnknownSaveResult(
+                return StoreFinalization(request.OperationId, fingerprint, CreateUnknownSaveResult(
                     request,
                     pendingSave,
                     "The save coordinator returned an inconsistent status, identity, revision, baseline, or evidence envelope.",
@@ -94,12 +104,12 @@ public sealed partial class FormListWorkspace
 
             if (coordinatorResult.Status == SaveCommitStatus.NotCommitted)
             {
-                return Store(request.OperationId, fingerprint, coordinatorResult);
+                return StoreFinalization(request.OperationId, fingerprint, coordinatorResult);
             }
 
             if (coordinatorResult.Status == SaveCommitStatus.CommitOutcomeUnknown)
             {
-                return Store(request.OperationId, fingerprint, CreateUnknownSaveResult(
+                return StoreFinalization(request.OperationId, fingerprint, CreateUnknownSaveResult(
                     request,
                     pendingSave,
                     coordinatorResult.Error?.Message ?? "The destination save outcome remains unknown.",
@@ -111,7 +121,7 @@ public sealed partial class FormListWorkspace
                 request,
                 pendingSave,
                 coordinatorResult).ConfigureAwait(false);
-            return Store(request.OperationId, fingerprint, result);
+            return StoreFinalization(request.OperationId, fingerprint, result);
         }
         finally
         {

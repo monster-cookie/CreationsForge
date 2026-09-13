@@ -33,7 +33,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
     private readonly object RevisionSync = new();
 
     /// <summary>Tracks immutable operation results for exact replay.</summary>
-    private readonly OperationReplayStore ReplayStore = new();
+    private readonly OperationReplayStore ReplayStore;
 
     /// <summary>Creates canonical Core-owned operation fingerprints.</summary>
     private readonly OperationFingerprintFactory FingerprintFactory = new();
@@ -76,13 +76,15 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
     /// <param name="saveCoordinator">The recoverable multi-file save coordinator.</param>
     /// <param name="outputDirectoryLeaseProvider">The exclusive output-directory lease provider.</param>
     /// <param name="logger">The structured diagnostic logger.</param>
+    /// <param name="operationReplayCapacity">The positive maximum number of replayable mutation results retained by this workspace.</param>
     internal FormListWorkspace(
         WorkspaceOpenRequest request,
         IFormListGameAdapter adapter,
         NativeSourceOpenResult sourceOpenResult,
         IWorkspaceSaveCoordinator saveCoordinator,
         IOutputDirectoryLeaseProvider outputDirectoryLeaseProvider,
-        ILogger logger)
+        ILogger logger,
+        int operationReplayCapacity = OperationReplayStore.DefaultMaximumEntryCount)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(adapter);
@@ -95,6 +97,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
         SaveCoordinator = saveCoordinator;
         OutputDirectoryLeaseProvider = outputDirectoryLeaseProvider;
         Logger = logger;
+        ReplayStore = new OperationReplayStore(operationReplayCapacity);
         Sources = sourceOpenResult.Sources;
         SourceBaselineId = sourceOpenResult.BaselineId;
         CurrentRevision = new WorkspaceRevision(SourceBaselineId, 0);
@@ -162,14 +165,24 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
         await OperationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (TryReplay(fingerprintRequest.OperationId, fingerprint, out EngineResult<OutputSelectionReceipt>? replay, out var conflict))
+            if (TryReplay(fingerprintRequest.OperationId, fingerprint, out EngineResult<OutputSelectionReceipt>? replay, out var conflict, out var expired))
             {
                 return replay!;
+            }
+
+            if (expired)
+            {
+                return CreateOperationReplayExpiredFailure<OutputSelectionReceipt>(fingerprintRequest.OperationId, fingerprintRequest.ExpectedRevision);
             }
 
             if (conflict)
             {
                 return CreateReuseFailure<OutputSelectionReceipt>(fingerprintRequest.OperationId, fingerprintRequest.ExpectedRevision);
+            }
+
+            if (!CanStoreOperation(fingerprintRequest.OperationId))
+            {
+                return CreateOperationCapacityFailure<OutputSelectionReceipt>(fingerprintRequest.OperationId, fingerprintRequest.ExpectedRevision);
             }
 
             if (canonicalizationError is not null)
@@ -387,14 +400,24 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
         await OperationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (TryReplay(request.OperationId, fingerprint, out EngineResult<EditReceipt>? replay, out var conflict))
+            if (TryReplay(request.OperationId, fingerprint, out EngineResult<EditReceipt>? replay, out var conflict, out var expired))
             {
                 return replay!;
+            }
+
+            if (expired)
+            {
+                return CreateOperationReplayExpiredFailure<EditReceipt>(request.OperationId, request.ExpectedRevision);
             }
 
             if (conflict)
             {
                 return CreateReuseFailure<EditReceipt>(request.OperationId, request.ExpectedRevision);
+            }
+
+            if (!CanStoreOperation(request.OperationId))
+            {
+                return CreateOperationCapacityFailure<EditReceipt>(request.OperationId, request.ExpectedRevision);
             }
 
             var guardFailure = ValidateMutation(request.OperationId, request.ExpectedRevision);
@@ -563,14 +586,24 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
         await OperationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (TryReplay(request.OperationId, fingerprint, out EngineResult<OperationReceipt>? replay, out var conflict))
+            if (TryReplay(request.OperationId, fingerprint, out EngineResult<OperationReceipt>? replay, out var conflict, out var expired))
             {
                 return replay!;
+            }
+
+            if (expired)
+            {
+                return CreateOperationReplayExpiredFailure<OperationReceipt>(request.OperationId, request.ExpectedRevision);
             }
 
             if (conflict)
             {
                 return CreateReuseFailure<OperationReceipt>(request.OperationId, request.ExpectedRevision);
+            }
+
+            if (!CanStoreOperation(request.OperationId))
+            {
+                return CreateOperationCapacityFailure<OperationReceipt>(request.OperationId, request.ExpectedRevision);
             }
 
             var guardFailure = ValidateMutation(request.OperationId, request.ExpectedRevision);
@@ -721,9 +754,14 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
         await OperationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (TryReplay(request.OperationId, fingerprint, out EngineResult<OperationReceipt>? replay, out var conflict))
+            if (TryReplay(request.OperationId, fingerprint, out EngineResult<OperationReceipt>? replay, out var conflict, out var expired))
             {
                 return replay!;
+            }
+
+            if (expired)
+            {
+                return CreateOperationReplayExpiredFailure<OperationReceipt>(request.OperationId, request.ExpectedRevision);
             }
 
             if (conflict)
@@ -731,10 +769,15 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
                 return CreateReuseFailure<OperationReceipt>(request.OperationId, request.ExpectedRevision);
             }
 
+            if (!CanStoreFinalizationOperation(request.OperationId))
+            {
+                return CreateOperationCapacityFailure<OperationReceipt>(request.OperationId, request.ExpectedRevision);
+            }
+
             var guardFailure = ValidateOutputMutation(request.OperationId, request.ExpectedRevision, request.ExpectedBaseline);
             if (guardFailure is not null)
             {
-                return Store(request.OperationId, fingerprint, EngineResult<OperationReceipt>.Failure(
+                return StoreFinalization(request.OperationId, fingerprint, EngineResult<OperationReceipt>.Failure(
                     guardFailure,
                     WorkspaceId,
                     request.OperationId,
@@ -747,7 +790,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
                 cancellationToken).ConfigureAwait(false);
             if (!leaseResult.Succeeded || leaseResult.Value is null)
             {
-                return Store(request.OperationId, fingerprint, EngineResult<OperationReceipt>.Failure(
+                return StoreFinalization(request.OperationId, fingerprint, EngineResult<OperationReceipt>.Failure(
                     leaseResult.Error ?? new EngineError(EngineErrorCode.UnexpectedFailure, "The output-directory lease provider returned no lease."),
                     WorkspaceId,
                     request.OperationId,
@@ -764,7 +807,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
             var admissionWarnings = CombineWarnings(leaseResult.Warnings, admissionResult.Warnings);
             if (!admissionResult.Succeeded || admissionResult.Value is null)
             {
-                return Store(request.OperationId, fingerprint, EngineResult<OperationReceipt>.Failure(
+                return StoreFinalization(request.OperationId, fingerprint, EngineResult<OperationReceipt>.Failure(
                     admissionResult.Error ?? new EngineError(EngineErrorCode.UnexpectedFailure, "Output admission returned no result."),
                     WorkspaceId,
                     request.OperationId,
@@ -776,7 +819,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
             if (admissionResult.Value.Status == OutputSynchronizationStatus.RecoveryRequired)
             {
                 SetOutputSynchronization(OutputSynchronizationStatus.RecoveryRequired, admissionResult.Value.UnresolvedSave!);
-                return Store(request.OperationId, fingerprint, EngineResult<OperationReceipt>.Failure(
+                return StoreFinalization(request.OperationId, fingerprint, EngineResult<OperationReceipt>.Failure(
                     new EngineError(EngineErrorCode.RepairRequired, "The selected output has an unresolved save journal that must be recovered before discarding staged changes."),
                     WorkspaceId,
                     request.OperationId,
@@ -794,7 +837,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
                 .ConfigureAwait(false);
             if (!openResult.Succeeded || openResult.Value is null)
             {
-                return Store(request.OperationId, fingerprint, EngineResult<OperationReceipt>.Failure(
+                return StoreFinalization(request.OperationId, fingerprint, EngineResult<OperationReceipt>.Failure(
                     openResult.Error ?? new EngineError(EngineErrorCode.OutputOpenFailed, "The selected output could not be reopened for discard."),
                     WorkspaceId,
                     request.OperationId,
@@ -808,7 +851,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
             var resultRevision = CreateOutputRevision(openResult.Value.Association, openResult.Value.Baseline);
             var disposalWarnings = await PublishOutputAsync(openResult.Value, true, resultRevision).ConfigureAwait(false);
             var receipt = new OperationReceipt(request.OperationId, resultRevision);
-            return Store(request.OperationId, fingerprint, EngineResult<OperationReceipt>.Success(
+            return StoreFinalization(request.OperationId, fingerprint, EngineResult<OperationReceipt>.Success(
                 receipt,
                 WorkspaceId,
                 request.OperationId,
@@ -825,7 +868,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
         catch (Exception exception)
         {
             Logger.Error(exception, "Failed to discard staged native output in workspace {WorkspaceId} for operation {OperationId}", WorkspaceId, request.OperationId);
-            return Store(request.OperationId, fingerprint, EngineResult<OperationReceipt>.Failure(
+            return StoreFinalization(request.OperationId, fingerprint, EngineResult<OperationReceipt>.Failure(
                 new EngineError(EngineErrorCode.UnexpectedFailure, "Staged output changes could not be discarded."),
                 WorkspaceId,
                 request.OperationId,

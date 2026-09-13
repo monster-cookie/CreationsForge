@@ -142,6 +142,7 @@ public sealed class McpReadToolProtocolTests
                 ["loadOrderPluginPaths"] = new[] { sourcePath },
                 ["dataDirectoryPath"] = dataPath,
                 ["stringDirectoryPaths"] = new[] { stringsPath },
+                ["recordTextLanguage"] = "french",
             });
 
         GetResult(openResult).GetProperty("revision").GetProperty("sequence").GetString().ShouldBe("7");
@@ -153,6 +154,7 @@ public sealed class McpReadToolProtocolTests
         capturedOpenRequest.LoadOrderPluginPaths.ShouldBe([sourcePath]);
         capturedOpenRequest.DataDirectoryPath.ShouldBe(dataPath);
         capturedOpenRequest.StringDirectoryPaths.ShouldBe([stringsPath]);
+        capturedOpenRequest.RecordTextLanguage.ShouldBe(Mutagen.Bethesda.Strings.Language.French);
 
         workspace.SetupGet(candidate => candidate.Revision).Returns(sampledRevision);
         var pluginsResult = await harness.Client.CallToolAsync(
@@ -532,6 +534,7 @@ public sealed class McpReadToolProtocolTests
                 ["loadOrderPluginPaths"] = new[] { Path.GetFullPath("Source.esm") },
                 ["dataDirectoryPath"] = Path.GetFullPath("Data"),
                 ["stringDirectoryPaths"] = Array.Empty<string>(),
+                ["recordTextLanguage"] = "english",
             },
             cancellationToken: cancellationToken);
         result.IsError.ShouldNotBe(true);

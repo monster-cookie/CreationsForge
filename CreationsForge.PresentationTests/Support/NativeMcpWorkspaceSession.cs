@@ -78,6 +78,7 @@ internal sealed class NativeMcpWorkspaceSession
                 ["loadOrderPluginPaths"] = request.LoadOrderPluginPaths,
                 ["dataDirectoryPath"] = request.DataDirectoryPath,
                 ["stringDirectoryPaths"] = request.StringDirectoryPaths,
+                ["recordTextLanguage"] = request.RecordTextLanguage.ToString().ToLowerInvariant(),
             },
             cancellationToken: cancellationToken));
         open.GetProperty("workspaceId").GetString().ShouldBe(workspaceId.ToString("D"));

@@ -153,6 +153,48 @@ public sealed class McpAuthoringToolProtocolTests
         store.AllocatedSlots.ShouldBe(0);
     }
 
+    /// <summary>Verifies rejected output selections release provisional metadata capacity before a later valid selection.</summary>
+    /// <returns>A task that completes after invalid and valid protocol requests are observed.</returns>
+    [Fact]
+    public async Task OutputSelect_UnknownWorkspaces_DoNotConsumeLaterPublicationCapacity()
+    {
+        var workspaceId = Guid.NewGuid();
+        var revision = new WorkspaceRevision(Guid.NewGuid(), 0);
+        var selectedRevision = revision.Next();
+        var output = new OutputAssociation(Path.GetFullPath("CapacityOutput.esm"), ModKey.FromNameAndExtension("CapacityOutput.esm"), LocalizedOutputMode.Embedded, OutputMasterStyle.Full);
+        var baseline = new OutputArtifactSetBaseline(Guid.NewGuid(), [new NativeArtifactAssociation(output.PluginPath, NativeArtifactRole.Plugin, null, new NativeArtifactFingerprint(false, 0, null))]);
+        var workspace = CreateWorkspace(workspaceId, revision);
+        workspace.Setup(candidate => candidate.SelectOutputAsync(It.IsAny<SelectOutputRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(ValueTask.FromResult(EngineResult<OutputSelectionReceipt>.Success(
+                new OutputSelectionReceipt(output, baseline, selectedRevision),
+                workspaceId: workspaceId,
+                resultRevision: selectedRevision)));
+        await using var registry = new McpWorkspaceRegistry();
+        using var store = new McpMetadataStore(maximumHandles: 2, operationReservationSize: 2);
+        await using var harness = await ProtocolHarness.CreateAsync([new OutputSelectTool(registry, store)]);
+
+        for (var index = 0; index < 5; index++)
+        {
+            var rejected = await harness.Client.CallToolAsync("creationsforge_output_select", new Dictionary<string, object?>
+            {
+                ["workspaceId"] = Guid.NewGuid().ToString("D"), ["operationId"] = Guid.NewGuid().ToString("D"), ["expectedRevision"] = Revision(revision), ["mode"] = "create_new",
+                ["output"] = new Dictionary<string, object?> { ["pluginPath"] = output.PluginPath, ["modKey"] = output.ModKey.ToString(), ["localizedOutputMode"] = "embedded", ["masterStyle"] = "full" },
+            });
+            GetErrorCode(rejected).ShouldBe("workspace_disposed");
+        }
+
+        store.AllocatedSlots.ShouldBe(0);
+        await OpenRegistryAsync(registry, workspace.Object, workspaceId);
+        var selected = GetResult(await harness.Client.CallToolAsync("creationsforge_output_select", new Dictionary<string, object?>
+        {
+            ["workspaceId"] = workspaceId.ToString("D"), ["operationId"] = Guid.NewGuid().ToString("D"), ["expectedRevision"] = Revision(revision), ["mode"] = "create_new",
+            ["output"] = new Dictionary<string, object?> { ["pluginPath"] = output.PluginPath, ["modKey"] = output.ModKey.ToString(), ["localizedOutputMode"] = "embedded", ["masterStyle"] = "full" },
+        }));
+
+        selected.GetProperty("baselineReference").GetProperty("kind").GetString().ShouldBe("output_baseline");
+        store.AllocatedSlots.ShouldBe(2);
+    }
+
     /// <summary>Verifies escaped invalid UTF-16 inside command JSON becomes a typed input failure before Core mutation.</summary>
     /// <returns>A task that completes after the native codec rejection is verified.</returns>
     [Fact]

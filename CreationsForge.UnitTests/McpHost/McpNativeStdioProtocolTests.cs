@@ -263,6 +263,7 @@ public sealed class McpNativeStdioProtocolTests
             ["loadOrderPluginPaths"] = request.LoadOrderPluginPaths,
             ["dataDirectoryPath"] = request.DataDirectoryPath,
             ["stringDirectoryPaths"] = request.StringDirectoryPaths,
+            ["recordTextLanguage"] = request.RecordTextLanguage.ToString().ToLowerInvariant(),
         };
     }
 

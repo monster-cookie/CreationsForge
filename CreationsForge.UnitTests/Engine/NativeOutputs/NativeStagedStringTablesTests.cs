@@ -24,19 +24,19 @@ public sealed class NativeStagedStringTablesTests
         try
         {
             var modKey = ModKey.FromNameAndExtension("Empty.esm");
-            NativeStagedStringTables.EnsureExplicitTable(release, modKey, directory.FullName);
+            NativeStagedStringTables.EnsureExplicitTable(release, modKey, directory.FullName, Language.French);
             var file = directory.EnumerateFiles().ShouldHaveSingleItem();
             var expectedName = StringsUtility.GetFileName(
                 GameConstants.Get(release).StringsLanguageFormat!.Value,
                 modKey,
-                Language.English,
+                Language.French,
                 StringsSource.Normal);
             file.Name.ShouldBe(expectedName);
             file.Length.ShouldBe(8L);
             var lookup = new StringsLookupOverlay(
                 file.FullName,
                 StringsSource.Normal,
-                MutagenEncoding.GetEncoding(release, Language.English),
+                MutagenEncoding.GetEncoding(release, Language.French),
                 new FileSystem());
             lookup.Count.ShouldBe(0);
             lookup.ShouldBeEmpty();
@@ -67,7 +67,7 @@ public sealed class NativeStagedStringTablesTests
 
             var before = directory.EnumerateFiles().ToDictionary(file => file.FullName, file => File.ReadAllBytes(file.FullName));
             before.Count.ShouldBe(6);
-            NativeStagedStringTables.EnsureExplicitTable(release, modKey, directory.FullName);
+            NativeStagedStringTables.EnsureExplicitTable(release, modKey, directory.FullName, Language.English);
             directory.EnumerateFiles().Select(file => file.FullName).Order().ShouldBe(before.Keys.Order());
             foreach (var artifact in before)
             {

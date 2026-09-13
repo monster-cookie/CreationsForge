@@ -574,6 +574,7 @@ public sealed class StarfieldNativeWriter
                 GameRelease.Starfield,
                 association.ModKey,
                 stringsDirectory,
+                sources.BorrowInputs().RecordTextLanguage,
                 cancellationToken);
         }
         else

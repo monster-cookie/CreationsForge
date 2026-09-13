@@ -345,6 +345,7 @@ public sealed partial class SkyrimNativeOutputService
                 GameRelease.SkyrimSE,
                 association.ModKey,
                 stringsDirectory,
+                sources.BorrowInputs().RecordTextLanguage,
                 cancellationToken);
         }
         else

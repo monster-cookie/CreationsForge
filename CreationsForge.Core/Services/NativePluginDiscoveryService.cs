@@ -18,9 +18,22 @@ public sealed class NativePluginDiscoveryService : INativePluginDiscoveryService
     private const uint LocalizedHeaderFlag = 0x00000080;
 
     /// <inheritdoc />
-    public ValueTask<EngineResult<NativePluginCatalog>> DiscoverAsync(
+    public async ValueTask<EngineResult<NativePluginCatalog>> DiscoverAsync(
         SupportedGame game,
         CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(
+            () => Discover(game, cancellationToken),
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Builds one detached installed-plugin catalog on a background worker.</summary>
+    /// <param name="game">The supported game whose installed plugins are discovered.</param>
+    /// <param name="cancellationToken">A token observed between filesystem and header reads.</param>
+    /// <returns>The detached catalog or a typed discovery failure.</returns>
+    private static EngineResult<NativePluginCatalog> Discover(
+        SupportedGame game,
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -28,9 +41,9 @@ public sealed class NativePluginDiscoveryService : INativePluginDiscoveryService
             var release = GetRelease(game);
             if (!GameLocations.TryGetDataFolder(release, out var dataDirectory))
             {
-                return ValueTask.FromResult(EngineResult<NativePluginCatalog>.Failure(new EngineError(
+                return EngineResult<NativePluginCatalog>.Failure(new EngineError(
                     EngineErrorCode.SourceOpenFailed,
-                    $"Mutagen could not locate the installed {GetDisplayName(game)} data directory.")));
+                    $"Mutagen could not locate the installed {GetDisplayName(game)} data directory."));
             }
 
             var dataDirectoryPath = Path.GetFullPath(dataDirectory.ToString());
@@ -179,8 +192,8 @@ public sealed class NativePluginDiscoveryService : INativePluginDiscoveryService
                     descriptions.GetValueOrDefault(listing.ModKey)));
             }
 
-            return ValueTask.FromResult(EngineResult<NativePluginCatalog>.Success(
-                new NativePluginCatalog(game, release, dataDirectoryPath, entries)));
+            return EngineResult<NativePluginCatalog>.Success(
+                new NativePluginCatalog(game, release, dataDirectoryPath, entries));
         }
         catch (OperationCanceledException)
         {
@@ -188,9 +201,9 @@ public sealed class NativePluginDiscoveryService : INativePluginDiscoveryService
         }
         catch (Exception exception)
         {
-            return ValueTask.FromResult(EngineResult<NativePluginCatalog>.Failure(new EngineError(
+            return EngineResult<NativePluginCatalog>.Failure(new EngineError(
                 EngineErrorCode.SourceOpenFailed,
-                $"The installed plugin list could not be read: {exception.Message}")));
+                $"The installed plugin list could not be read: {exception.Message}"));
         }
     }
 

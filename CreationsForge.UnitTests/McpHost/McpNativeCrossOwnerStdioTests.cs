@@ -826,6 +826,7 @@ public sealed class McpNativeCrossOwnerStdioTests
             ["loadOrderPluginPaths"] = request.LoadOrderPluginPaths,
             ["dataDirectoryPath"] = request.DataDirectoryPath,
             ["stringDirectoryPaths"] = request.StringDirectoryPaths,
+            ["recordTextLanguage"] = request.RecordTextLanguage.ToString().ToLowerInvariant(),
         };
     }
 

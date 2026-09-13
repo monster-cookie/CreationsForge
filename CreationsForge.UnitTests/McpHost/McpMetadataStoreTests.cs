@@ -10,12 +10,12 @@ namespace CreationsForge.UnitTests.McpHost;
 /// <summary>Verifies bounded exact-reference retention and pre-invocation operation admission.</summary>
 public sealed class McpMetadataStoreTests
 {
-    /// <summary>Verifies that a first operation reserves its full budget and same-key retries reuse the admission at global capacity.</summary>
+    /// <summary>Verifies published handles consume capacity while a known operation can still replay exact references at the global bound.</summary>
     /// <returns>A task that completes after the asynchronous admissions are observed.</returns>
     [Fact]
     public async Task AcquireOperationAsync_AtHostCapacity_ReusesKnownKeyOnly()
     {
-        using var store = new McpMetadataStore(maximumHandles: 32, operationReservationSize: 16);
+        using var store = new McpMetadataStore(maximumHandles: 4, operationReservationSize: 2);
         var firstWorkspaceId = Guid.NewGuid();
         var firstOperationId = Guid.NewGuid();
         var secondWorkspaceId = Guid.NewGuid();
@@ -28,6 +28,8 @@ public sealed class McpMetadataStoreTests
             2))
         {
             first.ShouldNotBeNull();
+            first.Publish(CreateOutput(0)).ShouldNotBeNull();
+            first.Publish(CreateOutput(1)).ShouldNotBeNull();
         }
 
         await using (var second = await store.AcquireOperationAsync(
@@ -37,9 +39,11 @@ public sealed class McpMetadataStoreTests
             2))
         {
             second.ShouldNotBeNull();
+            second.Publish(CreateOutput(2)).ShouldNotBeNull();
+            second.Publish(CreateOutput(3)).ShouldNotBeNull();
         }
 
-        store.AllocatedSlots.ShouldBe(32);
+        store.AllocatedSlots.ShouldBe(4);
         await using var replay = await store.AcquireOperationAsync(
             firstWorkspaceId,
             firstOperationId,
@@ -157,12 +161,12 @@ public sealed class McpMetadataStoreTests
         resolved.ShouldBeSameAs(baseline);
     }
 
-    /// <summary>Verifies every fresh observation retry requires its full publication allowance from the retained reservation.</summary>
-    /// <returns>A task that completes after same-key recovery and repair admissions are rejected.</returns>
+    /// <summary>Verifies provisional publication capacity is bounded and unused slots are returned after each invocation.</summary>
+    /// <returns>A task that completes after publication and retry capacity are observed.</returns>
     [Fact]
     public async Task AcquireOperationAsync_WhenReservationHasOnlyThreeSlots_RejectsFreshObservationRetries()
     {
-        using var store = new McpMetadataStore(maximumHandles: 16, operationReservationSize: 16);
+        using var store = new McpMetadataStore(maximumHandles: 4, operationReservationSize: 4);
         var workspaceId = Guid.NewGuid();
         var operationId = Guid.NewGuid();
 
@@ -173,25 +177,20 @@ public sealed class McpMetadataStoreTests
             4))
         {
             first.ShouldNotBeNull();
-            for (var index = 0; index < 13; index++)
+            for (var index = 0; index < 4; index++)
             {
                 first.Publish(CreateOutput(index)).ShouldNotBeNull();
             }
         }
 
-        var recovery = await store.AcquireOperationAsync(
+        await using var recovery = await store.AcquireOperationAsync(
             workspaceId,
             operationId,
             McpMetadataOperationKind.Recover,
             4);
-        var repair = await store.AcquireOperationAsync(
-            workspaceId,
-            operationId,
-            McpMetadataOperationKind.Repair,
-            4);
-
-        recovery.ShouldBeNull();
-        repair.ShouldBeNull();
+        recovery.ShouldNotBeNull();
+        recovery.Publish(CreateOutput(5)).ShouldBeNull();
+        store.AllocatedSlots.ShouldBe(4);
     }
 
     /// <summary>Verifies an insufficient save metadata budget publishes no partial committed baseline or detail handle.</summary>

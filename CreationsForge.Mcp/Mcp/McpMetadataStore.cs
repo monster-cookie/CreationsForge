@@ -8,7 +8,7 @@ internal sealed class McpMetadataStore : IDisposable
     /// <summary>The production maximum for published and operation-reserved handle slots.</summary>
     internal const int DefaultMaximumHandles = 4096;
 
-    /// <summary>The number of handle slots permanently reserved for each first-seen mutation identity.</summary>
+    /// <summary>The maximum number of handle slots one operation invocation may reserve provisionally.</summary>
     internal const int DefaultOperationReservationSize = 16;
 
     /// <summary>Synchronizes reservations, entries, origins, capacity, and disposal.</summary>
@@ -17,7 +17,7 @@ internal sealed class McpMetadataStore : IDisposable
     /// <summary>The maximum number of published and reserved handle slots.</summary>
     private readonly int MaximumHandles;
 
-    /// <summary>The fixed reservation size for a first-seen operation identity.</summary>
+    /// <summary>The maximum provisional reservation size for one operation invocation.</summary>
     private readonly int OperationReservationSize;
 
     /// <summary>Indexes retained entries by their opaque handle.</summary>
@@ -26,7 +26,7 @@ internal sealed class McpMetadataStore : IDisposable
     /// <summary>Reuses one handle for repeated publication of the same Core object reference.</summary>
     private readonly Dictionary<object, MetadataEntry> EntriesByReference = new(ReferenceEqualityComparer.Instance);
 
-    /// <summary>Retains every operation admission and its unused slots until host shutdown.</summary>
+    /// <summary>Retains operation gates only while an invocation or waiter still owns them.</summary>
     private readonly Dictionary<OperationKey, OperationReservation> Operations = [];
 
     /// <summary>Counts published handles plus unused reserved slots.</summary>
@@ -81,7 +81,7 @@ internal sealed class McpMetadataStore : IDisposable
         }
     }
 
-    /// <summary>Reserves a first operation atomically and serializes every invocation sharing its identity.</summary>
+    /// <summary>Provisionally reserves publication capacity and serializes every active invocation sharing its identity.</summary>
     /// <param name="workspaceId">The non-empty workspace identity used by the Core operation.</param>
     /// <param name="operationId">The non-empty idempotency identity used by the Core operation.</param>
     /// <param name="kind">The calling workflow, used only to enforce publication admission policy.</param>
@@ -121,18 +121,23 @@ internal sealed class McpMetadataStore : IDisposable
             var key = new OperationKey(workspaceId, operationId);
             if (!Operations.TryGetValue(key, out reservation!))
             {
-                if (MaximumHandles - AllocatedSlotCount < OperationReservationSize)
-                {
-                    return null;
-                }
-
-                reservation = new OperationReservation(workspaceId, operationId, kind, OperationReservationSize);
+                reservation = new OperationReservation(workspaceId, operationId, kind);
                 Operations.Add(key, reservation);
-                AllocatedSlotCount += OperationReservationSize;
             }
+
+            reservation.AcquisitionCount++;
         }
 
-        await reservation.Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await reservation.Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            ReleaseFailedAcquisition(reservation);
+            throw;
+        }
+
         lock (SyncRoot)
         {
             if (IsDisposed)
@@ -141,14 +146,61 @@ internal sealed class McpMetadataStore : IDisposable
                 throw new ObjectDisposedException(nameof(McpMetadataStore));
             }
 
-            if (reservation.UnusedSlots < requiredPublicationSlots)
+            var availableSlots = MaximumHandles - AllocatedSlotCount;
+            if (availableSlots < requiredPublicationSlots && !reservation.HasPublishedValues)
             {
+                ReleaseAcquisitionUnderLock(reservation);
                 reservation.Gate.Release();
                 return null;
             }
+
+            reservation.UnusedSlots = Math.Min(requiredPublicationSlots, availableSlots);
+            AllocatedSlotCount += reservation.UnusedSlots;
         }
 
         return new McpMetadataOperationLease(this, reservation);
+    }
+
+    /// <summary>Releases provisional unused capacity and operation serialization for one completed invocation.</summary>
+    /// <param name="reservation">The acquired operation reservation.</param>
+    internal void ReleaseOperation(OperationReservation reservation)
+    {
+        ArgumentNullException.ThrowIfNull(reservation);
+        lock (SyncRoot)
+        {
+            if (!IsDisposed)
+            {
+                AllocatedSlotCount -= reservation.UnusedSlots;
+                reservation.UnusedSlots = 0;
+                ReleaseAcquisitionUnderLock(reservation);
+            }
+        }
+
+        reservation.Gate.Release();
+    }
+
+    /// <summary>Releases ownership recorded before a canceled gate wait.</summary>
+    /// <param name="reservation">The reservation whose gate was not acquired.</param>
+    private void ReleaseFailedAcquisition(OperationReservation reservation)
+    {
+        lock (SyncRoot)
+        {
+            if (!IsDisposed)
+            {
+                ReleaseAcquisitionUnderLock(reservation);
+            }
+        }
+    }
+
+    /// <summary>Removes an idle operation gate while the store lock is held.</summary>
+    /// <param name="reservation">The reservation losing one active invocation or waiter.</param>
+    private void ReleaseAcquisitionUnderLock(OperationReservation reservation)
+    {
+        reservation.AcquisitionCount--;
+        if (reservation.AcquisitionCount == 0 && !reservation.HasPublishedValues)
+        {
+            Operations.Remove(new OperationKey(reservation.WorkspaceId, reservation.OperationId));
+        }
     }
 
     /// <summary>Publishes current workspace metadata without retaining a separate workspace-state wrapper.</summary>
@@ -379,6 +431,7 @@ internal sealed class McpMetadataStore : IDisposable
             if (EntriesByReference.TryGetValue(value, out var existing))
             {
                 existing.Origins.Add(new MetadataOrigin(reservation.WorkspaceId, reservation.OperationId));
+                reservation.HasPublishedValues = true;
                 return existing.Reference;
             }
 
@@ -388,6 +441,7 @@ internal sealed class McpMetadataStore : IDisposable
             }
 
             reservation.UnusedSlots--;
+            reservation.HasPublishedValues = true;
             return AddEntry(value, kind, new MetadataOrigin(reservation.WorkspaceId, reservation.OperationId));
         }
     }
@@ -571,24 +625,21 @@ internal sealed class McpMetadataStore : IDisposable
         }
     }
 
-    /// <summary>Owns the permanent slot reservation and invocation gate for one operation identity.</summary>
+    /// <summary>Owns the provisional slot reservation and invocation gate for one active operation identity.</summary>
     internal sealed class OperationReservation
     {
         /// <summary>Initializes a permanent operation reservation.</summary>
         /// <param name="workspaceId">The operation workspace identity.</param>
         /// <param name="operationId">The Core idempotency identity.</param>
         /// <param name="ownerKind">The workflow that first reserved this cross-tool operation identity.</param>
-        /// <param name="unusedSlots">The pre-reserved publication capacity.</param>
         internal OperationReservation(
             Guid workspaceId,
             Guid operationId,
-            McpMetadataOperationKind ownerKind,
-            int unusedSlots)
+            McpMetadataOperationKind ownerKind)
         {
             WorkspaceId = workspaceId;
             OperationId = operationId;
             OwnerKind = ownerKind;
-            UnusedSlots = unusedSlots;
         }
 
         /// <summary>Gets the workspace identity.</summary>
@@ -605,6 +656,12 @@ internal sealed class McpMetadataStore : IDisposable
 
         /// <summary>Gets or sets the number of unused slots retained for future exact results.</summary>
         internal int UnusedSlots { get; set; }
+
+        /// <summary>Gets or sets the number of active invocations and waiters sharing this operation identity.</summary>
+        internal int AcquisitionCount { get; set; }
+
+        /// <summary>Gets or sets whether this operation published at least one retained value and remains replay-addressable.</summary>
+        internal bool HasPublishedValues { get; set; }
 
     }
 

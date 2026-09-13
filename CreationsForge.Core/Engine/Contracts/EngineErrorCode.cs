@@ -32,6 +32,12 @@ public enum EngineErrorCode
     /// <summary>An operation identifier was reused with a different canonical request payload.</summary>
     OperationIdReuse,
 
+    /// <summary>The workspace has retained its maximum number of replayable operation results.</summary>
+    OperationCapacityExceeded,
+
+    /// <summary>The exact operation is known but its bounded finalization replay result has expired.</summary>
+    OperationReplayExpired,
+
     /// <summary>The requested operation requires an output that has not been selected.</summary>
     OutputNotSelected,
 
