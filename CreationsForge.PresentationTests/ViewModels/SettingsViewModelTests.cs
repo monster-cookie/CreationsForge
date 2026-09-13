@@ -14,7 +14,7 @@ namespace CreationsForge.PresentationTests.ViewModels;
 /// </summary>
 public sealed class SettingsViewModelTests
 {
-    /// <summary>Verifies Save persists all editable preferences, applies the theme, and returns to the native shell.</summary>
+    /// <summary>Verifies Save persists editable preferences, preserves the platform-specific NifSkope contract, applies the theme, and returns to the native shell.</summary>
     [Fact]
     public void SaveCommand_WithSelectedGame_PreservesSettingsBehaviorAndShowsNativeShell()
     {
@@ -47,7 +47,7 @@ public sealed class SettingsViewModelTests
         settings.SavedThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
         settings.SavedThemeMode.ShouldBe(ApplicationThemeMode.Light);
         settings.SavedRecordTextLanguage.ShouldBe(Language.German);
-        settings.SavedNifSkopeExecutablePath.ShouldBe("NifSkope.exe");
+        settings.SavedNifSkopeExecutablePath.ShouldBe(OperatingSystem.IsWindows() ? "NifSkope.exe" : null);
         settings.SavedPreferEspOverMatchingEsm.ShouldBeFalse();
         window.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
         window.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
