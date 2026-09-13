@@ -70,7 +70,7 @@ public sealed partial class FormListBrowserViewModel
         ApplyRecordFilters();
     }
 
-    /// <summary>Filters roots and exact context children, applies the selected record order, and preserves complete comparison options.</summary>
+    /// <summary>Filters winning records and their retained contexts, applies the selected record order, and preserves complete comparison options.</summary>
     private void ApplyRecordFilters()
     {
         ClearEditorSelection();
@@ -137,11 +137,11 @@ public sealed partial class FormListBrowserViewModel
         return Array.AsReadOnly(sorted.ToArray());
     }
 
-    /// <summary>Creates one filtered winning root with only exact contexts matching the current EditorID filter.</summary>
+    /// <summary>Retains one winning root when its identity or any exact context matches the current filters.</summary>
     /// <param name="root">The complete winning root.</param>
     /// <param name="formIdFilter">The trimmed hexadecimal FormID filter.</param>
     /// <param name="editorIdFilter">The trimmed EditorID filter.</param>
-    /// <returns>The matching root with filtered children, or <see langword="null"/> when it does not match.</returns>
+    /// <returns>The complete matching root, or <see langword="null"/> when it does not match.</returns>
     private static FormListRecordViewModel? FilterRoot(
         FormListRecordViewModel root,
         string formIdFilter,
@@ -157,25 +157,13 @@ public sealed partial class FormListBrowserViewModel
             return root;
         }
 
-        var matchingChildren = root.Children
-            .Where(child => MatchesEditorId(child, editorIdFilter))
-            .ToArray();
-        if (!MatchesEditorId(root, editorIdFilter) && matchingChildren.Length == 0)
+        if (!MatchesEditorId(root, editorIdFilter) &&
+            !root.Contexts.Any(context => MatchesEditorId(context, editorIdFilter)))
         {
             return null;
         }
 
-        return new FormListRecordViewModel(
-            root.FormKey,
-            root.ContainingModKey,
-            root.EditorId,
-            root.OverrideCount,
-            root.Context,
-            matchingChildren,
-            root.ContextOptions)
-        {
-            IsExpanded = root.IsExpanded,
-        };
+        return root;
     }
 
     /// <summary>Checks one root or context EditorID using the established case-insensitive substring behavior.</summary>

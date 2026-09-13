@@ -4,11 +4,11 @@ using Mutagen.Bethesda.Plugins;
 namespace CreationsForge.ViewModels;
 
 /// <summary>
-/// Presents either a winning FormList root or one exact ordered context beneath that root.
+/// Presents one FormList in navigation while retaining its exact ordered contexts for comparison selectors.
 /// </summary>
 public sealed class FormListRecordViewModel : ViewModelBase, IRecordTreeNodeViewModel
 {
-    /// <summary>Tracks whether child contexts are expanded in the record tree.</summary>
+    /// <summary>Tracks the interface expansion value; FormList records expose no navigation children.</summary>
     private bool IsExpandedValue;
 
     /// <summary>Initializes one FormList tree node.</summary>
@@ -17,10 +17,10 @@ public sealed class FormListRecordViewModel : ViewModelBase, IRecordTreeNodeView
     /// <param name="editorId">The EditorID observed for this root or context, or <see langword="null"/>.</param>
     /// <param name="overrideCount">The plugin override count reported for the FormList.</param>
     /// <param name="context">The exact winning or containing-plugin selection.</param>
-    /// <param name="children">The exact ordered context nodes beneath a winning root.</param>
+    /// <param name="contexts">The exact ordered context records retained for selection and editing.</param>
     /// <param name="contextOptions">All valid comparison selections for the root, beginning with the winning selection.</param>
     /// <exception cref="ArgumentException">Thrown when <paramref name="containingModKey"/> is null.</exception>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="context"/>, <paramref name="children"/>, or <paramref name="contextOptions"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="context"/>, <paramref name="contexts"/>, or <paramref name="contextOptions"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="overrideCount"/> is negative.</exception>
     public FormListRecordViewModel(
         FormKey formKey,
@@ -28,7 +28,7 @@ public sealed class FormListRecordViewModel : ViewModelBase, IRecordTreeNodeView
         string? editorId,
         int overrideCount,
         FormListContextOption context,
-        IReadOnlyList<FormListRecordViewModel> children,
+        IReadOnlyList<FormListRecordViewModel> contexts,
         IReadOnlyList<FormListContextOption> contextOptions)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(overrideCount);
@@ -38,14 +38,14 @@ public sealed class FormListRecordViewModel : ViewModelBase, IRecordTreeNodeView
         }
 
         ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(children);
+        ArgumentNullException.ThrowIfNull(contexts);
         ArgumentNullException.ThrowIfNull(contextOptions);
         FormKey = formKey;
         ContainingModKey = containingModKey;
         EditorId = editorId;
         OverrideCount = overrideCount;
         Context = context;
-        Children = Array.AsReadOnly(children.ToArray());
+        Contexts = Array.AsReadOnly(contexts.ToArray());
         ContextOptions = Array.AsReadOnly(contextOptions.ToArray());
     }
 
@@ -79,11 +79,11 @@ public sealed class FormListRecordViewModel : ViewModelBase, IRecordTreeNodeView
     /// <summary>Gets the exact winning or containing-plugin selection represented by this node.</summary>
     public FormListContextOption Context { get; }
 
-    /// <summary>Gets the exact context nodes in engine enumeration order.</summary>
-    public IReadOnlyList<FormListRecordViewModel> Children { get; }
+    /// <summary>Gets the exact context records in engine enumeration order for comparison and editing.</summary>
+    public IReadOnlyList<FormListRecordViewModel> Contexts { get; }
 
     /// <inheritdoc />
-    public IReadOnlyList<IRecordTreeNodeViewModel> TreeChildren => Children;
+    public IReadOnlyList<IRecordTreeNodeViewModel> TreeChildren => Array.Empty<IRecordTreeNodeViewModel>();
 
     /// <summary>Gets the winning selector followed by all exact context selectors for this root.</summary>
     public IReadOnlyList<FormListContextOption> ContextOptions { get; }
@@ -94,10 +94,10 @@ public sealed class FormListRecordViewModel : ViewModelBase, IRecordTreeNodeView
     /// <summary>Gets the winning or exact containing-plugin context label.</summary>
     public string ContextText => Context.Label;
 
-    /// <summary>Gets whether this node contains context children.</summary>
-    public bool HasChildren => Children.Count > 0;
+    /// <summary>Gets whether the record exposes navigation children.</summary>
+    public bool HasChildren => false;
 
-    /// <summary>Gets or sets whether child contexts are expanded in the record tree.</summary>
+    /// <summary>Gets or sets the interface expansion value; records remain navigation leaves.</summary>
     public bool IsExpanded
     {
         get => IsExpandedValue;

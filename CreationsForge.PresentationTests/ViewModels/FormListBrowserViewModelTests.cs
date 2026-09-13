@@ -42,9 +42,10 @@ public sealed partial class FormListBrowserViewModelTests
                 new PluginSummary(outputMod, outputPath, 2, PluginRole.Output)
             ],
             [
-                Summary(firstFormKey, "OriginalList", sourceMod, sourcePath, 0, PluginRole.Source, 1),
+                Summary(firstFormKey, "OriginalList", sourceMod, sourcePath, 0, PluginRole.Source, 2),
+                Summary(firstFormKey, "IntermediateList", otherMod, otherPath, 1, PluginRole.LoadOrder, 2),
                 Summary(secondFormKey, "OtherList", otherMod, otherPath, 1, PluginRole.LoadOrder, 1),
-                Summary(firstFormKey, "WinningList", outputMod, outputPath, 2, PluginRole.Output, 1),
+                Summary(firstFormKey, "WinningList", outputMod, outputPath, 2, PluginRole.Output, 2),
                 Summary(secondFormKey, "AlphaList", outputMod, outputPath, 2, PluginRole.Output, 1)
             ],
             request => SuccessfulComparison(
@@ -88,9 +89,13 @@ public sealed partial class FormListBrowserViewModelTests
         firstRoot.PrimaryText.ShouldBe("00000123");
         firstRoot.Context.Selection.Scope.ShouldBe(RecordScope.WinningOverrides);
         firstRoot.EditorId.ShouldBe("WinningList");
-        firstRoot.Children.Select(child => child.Context.ContainingModKey).ShouldBe([sourceMod, outputMod]);
-        firstRoot.Children.Select(child => child.Context.LoadOrderIndex).ShouldBe([0, 2]);
-        firstRoot.Children.Select(child => child.Context.Role).ShouldBe([PluginRole.Source, PluginRole.Output]);
+        firstRoot.TreeChildren.ShouldBeEmpty();
+        firstRoot.HasChildren.ShouldBeFalse();
+        firstRoot.Contexts.Select(context => context.Context.ContainingModKey).ShouldBe([sourceMod, otherMod, outputMod]);
+        firstRoot.Contexts.Select(context => context.Context.LoadOrderIndex).ShouldBe([0, 1, 2]);
+        firstRoot.Contexts.Select(context => context.Context.Role).ShouldBe([PluginRole.Source, PluginRole.LoadOrder, PluginRole.Output]);
+        firstRoot.ContextOptions[0].Label.ShouldBe("Winning override (Output.esm)");
+        firstRoot.ContextOptions.Skip(1).Select(option => option.ContainingModKey).ShouldBe([sourceMod, otherMod, outputMod]);
 
         await viewModel.SelectRecordAsync(firstRoot);
 
@@ -100,6 +105,7 @@ public sealed partial class FormListBrowserViewModelTests
         request.Before.ContainingModKey.ShouldBe(sourceMod);
         request.After.Scope.ShouldBe(RecordScope.WinningOverrides);
         request.After.ContainingModKey.ShouldBeNull();
+        viewModel.SelectedBeforeContext!.ContainingModKey.ShouldBe(sourceMod);
         viewModel.BeforeContext!.Status.ShouldBe(ReferenceResolutionStatus.Resolved);
         viewModel.AfterContext!.Status.ShouldBe(ReferenceResolutionStatus.Resolved);
         viewModel.BeforeProvenanceText.ShouldContain(sourceMod.FileName);
@@ -116,6 +122,12 @@ public sealed partial class FormListBrowserViewModelTests
             .ShouldBe(ComparisonFieldState.Identical);
         afterRoot.Children.Single(node => node.Name == "$type").ComparisonState
             .ShouldBe(ComparisonFieldState.Identical);
+        beforeRoot.Children.Single(node => node.Name == "Items").ComparisonState
+            .ShouldBe(ComparisonFieldState.Conflict);
+        afterRoot.Children.Single(node => node.Name == "Items").ComparisonState
+            .ShouldBe(ComparisonFieldState.WinningOverride);
+        afterRoot.Children.Single(node => node.Name == "Items").Children[^1].ComparisonState
+            .ShouldBe(ComparisonFieldState.WinningOverride);
         beforeRoot.Children.Single(node => node.Name == "Name").Children.ShouldHaveSingleItem().ComparisonState
             .ShouldBe(ComparisonFieldState.Conflict);
         afterRoot.Children.Single(node => node.Name == "Name").Children.ShouldHaveSingleItem().ComparisonState
@@ -123,15 +135,15 @@ public sealed partial class FormListBrowserViewModelTests
         viewModel.SemanticChanges.ShouldHaveSingleItem().ShouldBeSameAs(semanticChange);
         viewModel.StatusText.ShouldContain("Resolved -> Resolved");
 
-        await viewModel.SelectRecordAsync(firstRoot.Children[0]);
+        await viewModel.SelectRecordAsync(firstRoot.Contexts[0]);
         var sourceSelection = viewModel.Selection.ShouldNotBeNull();
         sourceSelection.WorkspaceId.ShouldBe(workspaceId);
         sourceSelection.Revision.ShouldBe(revision);
         sourceSelection.FormKey.ShouldBe(firstFormKey);
-        sourceSelection.ExactReferenceRequest.ShouldBeSameAs(firstRoot.Children[0].Context.Selection);
+        sourceSelection.ExactReferenceRequest.ShouldBeSameAs(firstRoot.Contexts[0].Context.Selection);
         sourceSelection.IsStagedOutput.ShouldBeFalse();
 
-        await viewModel.SelectRecordAsync(firstRoot.Children[1]);
+        await viewModel.SelectRecordAsync(firstRoot.Contexts[^1]);
         var outputSelection = viewModel.Selection.ShouldNotBeNull();
         outputSelection.WorkspaceId.ShouldBe(workspaceId);
         outputSelection.Revision.ShouldBe(revision);
@@ -636,13 +648,14 @@ public sealed partial class FormListBrowserViewModelTests
 
         var filteredRoot = viewModel.Records.ShouldHaveSingleItem();
         filteredRoot.FormKey.ShouldBe(formKey);
-        filteredRoot.Children.ShouldHaveSingleItem().EditorId.ShouldBe("SourceNeedle");
+        filteredRoot.Contexts.Select(context => context.EditorId).ShouldBe(["SourceNeedle", "WinningName"]);
+        filteredRoot.TreeChildren.ShouldBeEmpty();
         filteredRoot.ContextOptions.Count.ShouldBe(3);
         viewModel.PluginGroups[0].Children.ShouldBeEmpty();
         viewModel.PluginGroups[1].Children.Cast<RecordTypeGroupViewModel>().ShouldHaveSingleItem()
             .Children.Cast<FormListRecordViewModel>().ShouldHaveSingleItem()
             .ShouldBeSameAs(filteredRoot);
-        await viewModel.SelectRecordAsync(filteredRoot.Children.ShouldHaveSingleItem());
+        await viewModel.SelectRecordAsync(filteredRoot.Contexts[0]);
         var selectedBefore = viewModel.SelectedBeforeContext.ShouldNotBeNull();
         var selectedAfter = viewModel.SelectedAfterContext.ShouldNotBeNull();
 

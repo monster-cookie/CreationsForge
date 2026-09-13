@@ -268,7 +268,7 @@ public sealed partial class FormListBrowserViewModel
             return root;
         }
 
-        return root.Children.LastOrDefault(child => child.Context.Role == PluginRole.Output) ?? root;
+        return root.Contexts.LastOrDefault(context => context.Context.Role == PluginRole.Output) ?? root;
     }
 
 }

@@ -71,7 +71,7 @@ public sealed class DesktopMcpCrossSurfaceIntegrationTests
         await browser.StartAsync();
         var editor = browser.Editor;
         var outputNode = browser.Records.Single(record => record.FormKey == fixture.ExistingOutputFormKey)
-            .Children.Single(record => record.Context.Role == PluginRole.Output);
+            .Contexts.Single(record => record.Context.Role == PluginRole.Output);
         await browser.SelectRecordAsync(outputNode);
         await editor.BeginExistingOutputAsync(cancellationToken);
         editor.HasError.ShouldBeFalse(editor.ErrorMessage);

@@ -54,7 +54,7 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
     /// <summary>The revision-consistent participating plugin list.</summary>
     private IReadOnlyList<PluginSummary> PluginsValue = Array.Empty<PluginSummary>();
 
-    /// <summary>The grouped winning-root and exact-context record tree.</summary>
+    /// <summary>The winning records retained independently from their exact comparison contexts.</summary>
     private IReadOnlyList<FormListRecordViewModel> RecordsValue = Array.Empty<FormListRecordViewModel>();
 
     /// <summary>The filtered top-level plugin groups in explicit load-order order.</summary>
@@ -181,7 +181,7 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
     /// <summary>Gets the filtered top-level plugin groups in explicit load-order order.</summary>
     public IReadOnlyList<PluginGroupViewModel> PluginGroups => PluginGroupsValue;
 
-    /// <summary>Gets the hierarchical record source containing record-type groups, winning roots, and exact ordered contexts.</summary>
+    /// <summary>Gets the hierarchical record source containing plugins, major-record groups, and one row per winning record.</summary>
     public HierarchicalTreeDataGridSource<IRecordTreeNodeViewModel> RecordTreeSource => RecordTreeSourceValue;
 
     /// <summary>Gets the selected winning FormList root.</summary>
@@ -309,15 +309,18 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
 
         var root = RecordsValue.FirstOrDefault(candidate =>
             ReferenceEquals(candidate, record) ||
-            candidate.Children.Any(child => ReferenceEquals(child, record)));
+            candidate.Contexts.Any(context => ReferenceEquals(context, record)));
         if (root is null)
         {
             return Task.CompletedTask;
         }
 
         var winning = root.ContextOptions.First(option => option.IsWinningOverride);
+        var baseContext = root.ContextOptions.FirstOrDefault(option =>
+            !option.IsWinningOverride &&
+            option.ContainingModKey == root.FormKey.ModKey);
         var prior = record.Context.IsWinningOverride
-            ? root.ContextOptions.FirstOrDefault(option => !option.IsWinningOverride) ?? winning
+            ? baseContext ?? root.ContextOptions.FirstOrDefault(option => !option.IsWinningOverride) ?? winning
             : root.ContextOptions.FirstOrDefault(option => SameSelection(option.Selection, record.Context.Selection)) ?? winning;
         SetProperty(ref SelectedRecordValue, root, nameof(SelectedRecord));
         SetProperty(ref ContextOptionsValue, root.ContextOptions, nameof(ContextOptions));
@@ -467,7 +470,7 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
         }
     }
 
-    /// <summary>Builds winning roots while preserving exact context children in engine order.</summary>
+    /// <summary>Builds winning records while retaining exact comparison contexts in engine order.</summary>
     /// <param name="summaries">All FormList contexts in engine order.</param>
     /// <param name="cancellationToken">A token observed throughout grouping and projection.</param>
     /// <returns>The grouped presentation records in engine enumeration order for subsequent presentation sorting.</returns>
@@ -497,9 +500,11 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
             cancellationToken.ThrowIfCancellationRequested();
             var contexts = contextsByFormKey[formKey];
             var winningSummary = contexts[^1];
+            var winningModKey = winningSummary.ContainingModKey ?? throw new InvalidOperationException(
+                $"FormList context {winningSummary.FormKey} did not include its winning plugin provenance.");
             var winningOption = new FormListContextOption(
                 new ReferenceRequest(formKey, RecordScope.WinningOverrides),
-                "Winning override",
+                $"Winning override ({winningModKey.FileName})",
                 winningSummary.EditorId,
                 sourcePath: null,
                 loadOrderIndex: null,
@@ -508,13 +513,13 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
             {
                 winningOption
             };
-            var children = new List<FormListRecordViewModel>(contexts.Count);
+            var contextRecords = new List<FormListRecordViewModel>(contexts.Count);
             foreach (var context in contexts)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var option = CreateContextOption(context);
                 options.Add(option);
-                children.Add(new FormListRecordViewModel(
+                contextRecords.Add(new FormListRecordViewModel(
                     context.FormKey,
                     context.ContainingModKey!.Value,
                     context.EditorId,
@@ -526,11 +531,11 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
 
             roots.Add(new FormListRecordViewModel(
                 formKey,
-                children[^1].ContainingModKey,
+                winningModKey,
                 winningSummary.EditorId,
                 winningSummary.OverrideCount,
                 winningOption,
-                children,
+                contextRecords,
                 options));
         }
 
@@ -845,7 +850,7 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
             : context.Status.ToString();
     }
 
-    /// <summary>Creates the hierarchical plugin, major-record-type, winning-root, and exact-context record source.</summary>
+    /// <summary>Creates the hierarchical plugin, major-record-type, and winning-record source.</summary>
     /// <param name="groups">The top-level plugin groups in explicit load-order order.</param>
     /// <returns>The read-only hierarchical source.</returns>
     private static HierarchicalTreeDataGridSource<IRecordTreeNodeViewModel> CreateRecordTreeSource(

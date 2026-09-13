@@ -101,7 +101,7 @@ public sealed partial class DesktopChangeIntegrationTests
         await ApplyItemsAsync(editor, intendedItems);
 
         var sourceNode = browser.Records.Single(record => record.FormKey == fixture.SourceFormKey)
-            .Children.Single(record => record.Context.Role == PluginRole.Source);
+            .Contexts.Single(record => record.Context.Role == PluginRole.Source);
         await browser.SelectRecordAsync(sourceNode);
         await editor.BeginOverrideAsync(TestContext.Current.CancellationToken);
         editor.HasError.ShouldBeFalse(editor.ErrorMessage);
@@ -155,7 +155,7 @@ public sealed partial class DesktopChangeIntegrationTests
         await AssertIndependentReopenAsync(fixture, savedRecords);
 
         var savedNode = browser.Records.Single(record => record.FormKey == newFormKey)
-            .Children.Single(record => record.Context.Role == PluginRole.Output);
+            .Contexts.Single(record => record.Context.Role == PluginRole.Output);
         await browser.SelectRecordAsync(savedNode);
         await editor.BeginExistingOutputAsync(TestContext.Current.CancellationToken);
         editor.HasError.ShouldBeFalse(editor.ErrorMessage);
