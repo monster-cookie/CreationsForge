@@ -21,7 +21,17 @@ public sealed class StarfieldNativeSourceLoaderTests
     {
         using var fixture = StarfieldNativeTestFixture.Create();
         var before = fixture.SnapshotArtifacts();
-        var request = fixture.CreateOpenRequest();
+        var baseRequest = fixture.CreateOpenRequest();
+        var progress = new RecordingProgress();
+        var request = new WorkspaceOpenRequest(
+            baseRequest.WorkspaceId,
+            baseRequest.Game,
+            baseRequest.Release,
+            baseRequest.SourcePluginPath,
+            baseRequest.LoadOrderPluginPaths,
+            baseRequest.DataDirectoryPath,
+            baseRequest.StringDirectoryPaths,
+            progress);
         var loader = new StarfieldNativeSourceLoader(new NativeSourceInputLoader());
 
         var result = await loader.OpenAsync(request, TestContext.Current.CancellationToken);
@@ -79,6 +89,13 @@ public sealed class StarfieldNativeSourceLoaderTests
         }
 
         var after = fixture.SnapshotArtifacts();
+        progress.Updates.First().Stage.ShouldBe(WorkspaceOpenStage.OpeningSources);
+        progress.Updates.Count(update => update.Stage == WorkspaceOpenStage.ParsingPlugin)
+            .ShouldBe(request.LoadOrderPluginPaths.Count * 2);
+        progress.Updates.ShouldContain(update =>
+            update.Stage == WorkspaceOpenStage.ParsingPlugin
+            && update.Message.Contains(fixture.SourcePluginPath, StringComparison.Ordinal));
+        progress.Updates.Last().Stage.ShouldBe(WorkspaceOpenStage.FinalizingSources);
         after.Keys.ShouldBe(before.Keys, ignoreOrder: false);
         foreach (var artifact in before)
         {
@@ -181,5 +198,19 @@ public sealed class StarfieldNativeSourceLoaderTests
         disposedResolution.Error!.Code.ShouldBe(EngineErrorCode.WorkspaceDisposed);
         disposedVerification.Succeeded.ShouldBeFalse();
         disposedVerification.Error!.Code.ShouldBe(EngineErrorCode.WorkspaceDisposed);
+    }
+
+    /// <summary>Records native workspace progress synchronously for deterministic phase assertions.</summary>
+    private sealed class RecordingProgress : IProgress<WorkspaceOpenProgress>
+    {
+        /// <summary>Gets the progress updates in publication order.</summary>
+        public IList<WorkspaceOpenProgress> Updates { get; } = [];
+
+        /// <summary>Records one native workspace-open phase.</summary>
+        /// <param name="value">The progress update to retain.</param>
+        public void Report(WorkspaceOpenProgress value)
+        {
+            Updates.Add(value);
+        }
     }
 }

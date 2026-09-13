@@ -65,11 +65,12 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
     {
         NativeSourceOpenResult? sourceOpenResult = null;
         FormListWorkspace? workspace = null;
+        var diagnosticProgress = new LoggingWorkspaceOpenProgress(Logger, request?.WorkspaceId, request?.Progress);
 
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            request?.Progress?.Report(new WorkspaceOpenProgress(
+            diagnosticProgress.Report(new WorkspaceOpenProgress(
                 WorkspaceOpenStage.Validating,
                 "Validating explicit workspace inputs."));
 
@@ -82,7 +83,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
                     warnings: canonicalRequestResult.Warnings);
             }
 
-            var canonicalRequest = canonicalRequestResult.Value!;
+            var canonicalRequest = canonicalRequestResult.Value!.WithProgress(diagnosticProgress);
             cancellationToken.ThrowIfCancellationRequested();
             canonicalRequest.Progress?.Report(new WorkspaceOpenProgress(
                 WorkspaceOpenStage.SelectingAdapter,
@@ -100,11 +101,13 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
             var adapter = adapterResult.Value!;
             cancellationToken.ThrowIfCancellationRequested();
             canonicalRequest.Progress?.Report(new WorkspaceOpenProgress(
-                WorkspaceOpenStage.OpeningSources,
-                "Opening explicit native sources."));
+                WorkspaceOpenStage.PreparingInputs,
+                "Preparing explicit native sources."));
             cancellationToken.ThrowIfCancellationRequested();
 
             EngineResult<NativeSourceOpenResult> openResult;
+            using var slowOpenCancellation = new CancellationTokenSource();
+            var slowOpenTask = LogSlowOpenAsync(diagnosticProgress, slowOpenCancellation.Token);
             try
             {
                 openResult = await Task.Run(async () =>
@@ -127,9 +130,20 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
                         "The selected game adapter could not open the explicit native sources."),
                     workspaceId: canonicalRequest.WorkspaceId);
             }
+            finally
+            {
+                slowOpenCancellation.Cancel();
+                await ObserveSlowOpenTaskAsync(slowOpenTask).ConfigureAwait(false);
+            }
 
             if (!openResult.Succeeded)
             {
+                Logger.Warning(
+                    "Native workspace {WorkspaceId} source acquisition failed after {ElapsedMilliseconds} ms; error code: {ErrorCode}; message: {ErrorMessage}",
+                    canonicalRequest.WorkspaceId,
+                    diagnosticProgress.Elapsed.TotalMilliseconds,
+                    openResult.Error?.Code,
+                    openResult.Error?.Message ?? "No error description was returned.");
                 return EngineResult<IFormListWorkspace>.Failure(
                     openResult.Error ?? new EngineError(
                         EngineErrorCode.SourceOpenFailed,
@@ -173,6 +187,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
         }
         catch (OperationCanceledException)
         {
+            diagnosticProgress.LogCancellation();
             throw;
         }
         catch (Exception exception)
@@ -190,6 +205,36 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
         finally
         {
             await DisposeFailedOpenStateAsync(workspace, sourceOpenResult, request?.WorkspaceId);
+        }
+    }
+
+    /// <summary>Reports an incomplete native source open after ten seconds and every thirty seconds thereafter.</summary>
+    /// <param name="progress">The observer holding the most recent native acquisition phase.</param>
+    /// <param name="cancellationToken">A token canceled when the adapter finishes.</param>
+    /// <returns>A task that completes when source acquisition finishes or is canceled.</returns>
+    private static async Task LogSlowOpenAsync(
+        LoggingWorkspaceOpenProgress progress,
+        CancellationToken cancellationToken)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken).ConfigureAwait(false);
+        while (true)
+        {
+            progress.LogStillRunning();
+            await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>Observes the slow-open monitor's expected internal cancellation without hiding unexpected failures.</summary>
+    /// <param name="slowOpenTask">The monitor task canceled after native acquisition returns.</param>
+    /// <returns>A task that completes after the monitor has stopped.</returns>
+    private static async Task ObserveSlowOpenTaskAsync(Task slowOpenTask)
+    {
+        try
+        {
+            await slowOpenTask.ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
         }
     }
 

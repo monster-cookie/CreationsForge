@@ -373,7 +373,7 @@ public sealed class FormListWorkspaceFactoryTests
             reportedStages.ShouldBe([
                 WorkspaceOpenStage.Validating,
                 WorkspaceOpenStage.SelectingAdapter,
-                WorkspaceOpenStage.OpeningSources,
+                WorkspaceOpenStage.PreparingInputs,
                 WorkspaceOpenStage.Completed]);
             sourceSet.Verify(source => source.DisposeAsync(), Times.Once);
         }
@@ -441,7 +441,7 @@ public sealed class FormListWorkspaceFactoryTests
             stages.ShouldBe([
                 WorkspaceOpenStage.Validating,
                 WorkspaceOpenStage.SelectingAdapter,
-                WorkspaceOpenStage.OpeningSources,
+                WorkspaceOpenStage.PreparingInputs,
                 WorkspaceOpenStage.Completed]);
 
             await result.Value.DisposeAsync();

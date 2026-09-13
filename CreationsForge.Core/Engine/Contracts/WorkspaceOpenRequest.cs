@@ -86,4 +86,21 @@ public sealed class WorkspaceOpenRequest
             stringDirectoryPaths,
             Progress);
     }
+
+    /// <summary>Creates an equivalent request with a replacement progress observer.</summary>
+    /// <param name="progress">The progress observer that receives native open stages.</param>
+    /// <returns>A new immutable request containing the replacement progress observer.</returns>
+    internal WorkspaceOpenRequest WithProgress(IProgress<WorkspaceOpenProgress> progress)
+    {
+        ArgumentNullException.ThrowIfNull(progress);
+        return new WorkspaceOpenRequest(
+            WorkspaceId,
+            Game,
+            Release,
+            SourcePluginPath,
+            LoadOrderPluginPaths,
+            DataDirectoryPath,
+            StringDirectoryPaths,
+            progress);
+    }
 }

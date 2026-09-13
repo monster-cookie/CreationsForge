@@ -9,7 +9,7 @@
 - Added typed edit controls, staged-change review, guarded saving, save-outcome recovery, and checks before leaving with unfinished changes. Unapplied form input and staged workspace changes have separate discard actions.
 - Added a dedicated local stdio MCP server, launched with `CreationsForge.Mcp`, with workspaces independent from the desktop application.
 - Restored the desktop plugin-first workflow: select a game, open an installed editable plugin, edit records, and save through the guarded workspace flow. Mutagen supplies the installed load order, Bethesda implicit-plugin identities, and native header metadata while Creations Forge keeps Bethesda plugins and declared masters read-only.
-- Added read-only plugin workspaces as the default desktop inspection path, restored selected-plugin header details, and added structured diagnostics for plugin discovery and workspace-open failures.
+- Added read-only plugin workspaces as the default desktop inspection path, restored selected-plugin header details, and added durable structured diagnostics for plugin discovery, each native source-open phase, slow workspace opens, and terminal open outcomes.
 - Removed the legacy game-import, forced-reimport, and database-reset commands. Existing database files are left untouched; no database conversion, reset, or reimport is required for native workspaces.
 - Updated usage and known issues for the native workflow, including the restriction on saving edits to existing localized outputs that use separate string files.
 

@@ -37,6 +37,8 @@ Application configuration and logs use these default locations:
 1. Windows configuration: `C:\ProgramData\CreationsForge`; logs: `C:\ProgramData\CreationsForge\Logs\CreationsForge-<startup timestamp>.log`
 2. Linux/macOS: `~/.CreationsForge`
 
+Desktop logs are flushed to disk at least once per second. Native workspace opening records validation, input preparation, each plugin parse, baseline finalization, completion or failure, and periodic warnings while an open remains incomplete.
+
 The macOS configuration path does not imply a validated macOS package.
 
 ## Desktop Usage

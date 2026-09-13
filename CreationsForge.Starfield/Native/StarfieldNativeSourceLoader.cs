@@ -64,10 +64,17 @@ public sealed class StarfieldNativeSourceLoader
 
         try
         {
+            request.Progress?.Report(new WorkspaceOpenProgress(
+                WorkspaceOpenStage.OpeningSources,
+                $"Prepared {inputs.Plugins.Count} Starfield native plugin inputs."));
             var sourceMods = new List<IStarfieldModGetter>(inputs.Plugins.Count);
-            foreach (var plugin in inputs.Plugins)
+            for (var pluginIndex = 0; pluginIndex < inputs.Plugins.Count; pluginIndex++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                var plugin = inputs.Plugins[pluginIndex];
+                request.Progress?.Report(new WorkspaceOpenProgress(
+                    WorkspaceOpenStage.ParsingPlugin,
+                    $"Parsing Starfield plugin {pluginIndex + 1} of {inputs.Plugins.Count}: '{plugin.Path}'."));
 
                 using var stream = inputs.OpenReadStream(plugin, cancellationToken);
                 var frame = new MutagenFrame(stream);
@@ -87,8 +94,14 @@ public sealed class StarfieldNativeSourceLoader
                 }
 
                 sourceMods.Add(mod);
+                request.Progress?.Report(new WorkspaceOpenProgress(
+                    WorkspaceOpenStage.ParsingPlugin,
+                    $"Parsed Starfield plugin {pluginIndex + 1} of {inputs.Plugins.Count}: '{plugin.Path}'."));
             }
 
+            request.Progress?.Report(new WorkspaceOpenProgress(
+                WorkspaceOpenStage.FinalizingSources,
+                $"Verifying the immutable baseline for {inputs.Plugins.Count} Starfield plugins."));
             var baselineResult = await inputs.CompleteOpenAsync(cancellationToken).ConfigureAwait(false);
             if (!baselineResult.Succeeded)
             {

@@ -64,9 +64,16 @@ public sealed class Fallout4NativeSourceLoader
 
         try
         {
-            foreach (var plugin in inputs.Plugins)
+            request.Progress?.Report(new WorkspaceOpenProgress(
+                WorkspaceOpenStage.OpeningSources,
+                $"Prepared {inputs.Plugins.Count} Fallout 4 native plugin inputs."));
+            for (var pluginIndex = 0; pluginIndex < inputs.Plugins.Count; pluginIndex++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                var plugin = inputs.Plugins[pluginIndex];
+                request.Progress?.Report(new WorkspaceOpenProgress(
+                    WorkspaceOpenStage.ParsingPlugin,
+                    $"Parsing Fallout 4 plugin {pluginIndex + 1} of {inputs.Plugins.Count}: '{plugin.Path}'."));
                 using MutagenBinaryReadStream stream = inputs.OpenReadStream(plugin, cancellationToken);
                 var nativeMod = Fallout4Mod.CreateFromBinary(
                     new MutagenFrame(stream),
@@ -84,8 +91,14 @@ public sealed class Fallout4NativeSourceLoader
                 }
 
                 nativeMods.Add(nativeMod);
+                request.Progress?.Report(new WorkspaceOpenProgress(
+                    WorkspaceOpenStage.ParsingPlugin,
+                    $"Parsed Fallout 4 plugin {pluginIndex + 1} of {inputs.Plugins.Count}: '{plugin.Path}'."));
             }
 
+            request.Progress?.Report(new WorkspaceOpenProgress(
+                WorkspaceOpenStage.FinalizingSources,
+                $"Verifying the immutable baseline for {inputs.Plugins.Count} Fallout 4 plugins."));
             var baselineResult = await inputs.CompleteOpenAsync(cancellationToken).ConfigureAwait(false);
             if (!baselineResult.Succeeded)
             {
