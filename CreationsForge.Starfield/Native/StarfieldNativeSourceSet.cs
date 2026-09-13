@@ -17,10 +17,16 @@ public sealed partial class StarfieldNativeSourceSet : INativeSourceSet
     /// <summary>The shared validated input lifetime, including resource fingerprints.</summary>
     private readonly NativeSourceInputs Inputs;
 
-    /// <summary>The independently materialized native Starfield plugins in explicit load-order order.</summary>
+    /// <summary>The independently materialized FormList-only Starfield plugins in explicit load-order order.</summary>
     private readonly List<IStarfieldModGetter> SourceMods;
 
-    /// <summary>The bounded reader that borrows the materialized native plugin handles.</summary>
+    /// <summary>The lazy complete-record views used for general native reference discovery.</summary>
+    private readonly List<IStarfieldModGetter> ReferenceMods;
+
+    /// <summary>The disposable overlays and caller-owned backing streams retained in creation order.</summary>
+    private readonly List<IDisposable> OwnedOverlayResources;
+
+    /// <summary>The bounded reader that borrows the complete lazy or materialized reference views.</summary>
     private NativeReferenceReader? ReferenceReader;
 
     /// <summary>The immutable source-listing snapshot retained while this source lifetime is active.</summary>
@@ -34,7 +40,9 @@ public sealed partial class StarfieldNativeSourceSet : INativeSourceSet
     /// </summary>
     /// <param name="workspaceId">The non-empty workspace identifier associated with reference cursors.</param>
     /// <param name="inputs">The validated shared native input lifetime.</param>
-    /// <param name="sourceMods">The materialized native Starfield plugins in admitted order.</param>
+    /// <param name="sourceMods">The materialized FormList-only native Starfield plugins in admitted order.</param>
+    /// <param name="referenceMods">The complete lazy or materialized native reference views in admitted order.</param>
+    /// <param name="ownedOverlayResources">The overlay objects and backing streams owned by this source lifetime.</param>
     /// <param name="baseline">The complete source baseline established after parsing.</param>
     /// <exception cref="ArgumentException">Thrown when <paramref name="workspaceId"/> is empty or the native source counts disagree.</exception>
     /// <exception cref="ArgumentNullException">Thrown when a required lifetime or collection is <see langword="null"/>.</exception>
@@ -42,6 +50,8 @@ public sealed partial class StarfieldNativeSourceSet : INativeSourceSet
         Guid workspaceId,
         NativeSourceInputs inputs,
         IReadOnlyList<IStarfieldModGetter> sourceMods,
+        IReadOnlyList<IStarfieldModGetter> referenceMods,
+        IReadOnlyList<IDisposable> ownedOverlayResources,
         NativeSourceInputBaseline baseline)
     {
         if (workspaceId == Guid.Empty)
@@ -51,27 +61,31 @@ public sealed partial class StarfieldNativeSourceSet : INativeSourceSet
 
         ArgumentNullException.ThrowIfNull(inputs);
         ArgumentNullException.ThrowIfNull(sourceMods);
+        ArgumentNullException.ThrowIfNull(referenceMods);
+        ArgumentNullException.ThrowIfNull(ownedOverlayResources);
         ArgumentNullException.ThrowIfNull(baseline);
 
-        if (inputs.Plugins.Count != sourceMods.Count)
+        if (inputs.Plugins.Count != sourceMods.Count || inputs.Plugins.Count != referenceMods.Count)
         {
-            throw new ArgumentException("Every admitted Starfield plugin must have exactly one materialized native source.", nameof(sourceMods));
+            throw new ArgumentException("Every admitted Starfield plugin must have aligned authoring and reference sources.", nameof(sourceMods));
         }
 
         OwningWorkspaceId = workspaceId;
         Inputs = inputs;
         SourceMods = sourceMods.ToList();
+        ReferenceMods = referenceMods.ToList();
+        OwnedOverlayResources = ownedOverlayResources.ToList();
         Baseline = baseline;
         Revision = new WorkspaceRevision(baseline.BaselineId, 0);
         ReadSnapshot = new StarfieldNativeReadSnapshot(inputs.Plugins, SourceMods);
         ReferenceReader = new NativeReferenceReader(
             inputs.Plugins
                 .Select((plugin, index) => new NativeReferenceSource(
-                    SourceMods[index],
+                    ReferenceMods[index],
                     plugin.Path,
                     plugin.LoadOrderIndex,
                     plugin.Role,
-                    CreateDetachedStarfieldRecord))
+                    record => CreateDetachedRecord(index, record)))
                 .ToArray());
     }
 
@@ -87,11 +101,33 @@ public sealed partial class StarfieldNativeSourceSet : INativeSourceSet
     /// <summary>
     /// Gets the same-game native source handles for later Starfield adapter composition within this assembly.
     /// </summary>
-    /// <returns>The immutable ordered collection of owned native Starfield source getters.</returns>
+    /// <returns>The immutable ordered collection of owned FormList-only Starfield source getters.</returns>
     internal IReadOnlyList<IStarfieldModGetter> GetNativeMods()
     {
         ObjectDisposedException.ThrowIf(Volatile.Read(ref IsDisposed) != 0, this);
         return SourceMods.AsReadOnly();
+    }
+
+    /// <summary>Gets the aligned complete-record views used by same-game general reference operations.</summary>
+    /// <returns>The immutable ordered collection of owned Starfield reference getters.</returns>
+    internal IReadOnlyList<IStarfieldModGetter> GetNativeReferenceMods()
+    {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref IsDisposed) != 0, this);
+        return ReferenceMods.AsReadOnly();
+    }
+
+    /// <summary>Creates a detached Starfield record while restoring complete FormList localization from the authoring source.</summary>
+    /// <param name="sourceIndex">The admitted containing-plugin position.</param>
+    /// <param name="record">The borrowed record selected from the aligned reference view.</param>
+    /// <returns>A complete detached Starfield record.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="sourceIndex"/> is outside the admitted source sequence.</exception>
+    /// <exception cref="ObjectDisposedException">Thrown after this source lifetime is disposed.</exception>
+    internal IMajorRecordGetter CreateDetachedRecord(int sourceIndex, IMajorRecordGetter record)
+    {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref IsDisposed) != 0, this);
+        ArgumentOutOfRangeException.ThrowIfNegative(sourceIndex);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(sourceIndex, SourceMods.Count);
+        return CreateDetachedStarfieldRecord(record, SourceMods[sourceIndex]);
     }
 
     /// <summary>
@@ -190,8 +226,20 @@ public sealed partial class StarfieldNativeSourceSet : INativeSourceSet
 
         ReferenceReader = null;
         ReadSnapshot = null;
-        SourceMods.Clear();
-        await Inputs.DisposeAsync().ConfigureAwait(false);
+        try
+        {
+            foreach (var resource in OwnedOverlayResources)
+            {
+                resource.Dispose();
+            }
+        }
+        finally
+        {
+            OwnedOverlayResources.Clear();
+            ReferenceMods.Clear();
+            SourceMods.Clear();
+            await Inputs.DisposeAsync().ConfigureAwait(false);
+        }
     }
 
     /// <summary>
@@ -237,10 +285,22 @@ public sealed partial class StarfieldNativeSourceSet : INativeSourceSet
     /// Creates and validates a complete detached Starfield record rather than accepting another game's native subtype.
     /// </summary>
     /// <param name="record">The borrowed native Starfield record selected by the shared reader.</param>
+    /// <param name="authoringSource">The aligned FormList-only source used to restore complete localized FormList data.</param>
     /// <returns>A complete detached getter retaining its concrete Starfield record family and fields.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the source or copied record is not a Starfield native record.</exception>
-    private static IMajorRecordGetter CreateDetachedStarfieldRecord(IMajorRecordGetter record)
+    private static IMajorRecordGetter CreateDetachedStarfieldRecord(
+        IMajorRecordGetter record,
+        IStarfieldModGetter authoringSource)
     {
+        if (record is IFormListGetter)
+        {
+            var authoringFormList = authoringSource.FormLists.FirstOrDefault(candidate => candidate.FormKey == record.FormKey);
+            if (authoringFormList is not null)
+            {
+                return authoringFormList.DeepCopy();
+            }
+        }
+
         if (record is not IStarfieldMajorRecordGetter starfieldRecord)
         {
             throw new InvalidOperationException($"Record {record.FormKey} is not a Starfield native record.");

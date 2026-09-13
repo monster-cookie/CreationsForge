@@ -16,6 +16,12 @@ public sealed class NativeSourceInputs : INativeSourceSet
     /// <summary>The immutable master-style lookup retained behind native parsing setup.</summary>
     private readonly IReadOnlyCache<IModMasterStyledGetter, Mutagen.Bethesda.Plugins.ModKey> MasterFlagsLookup;
 
+    /// <summary>The explicit native data directory used for archive-backed localized strings.</summary>
+    private readonly string DataDirectoryPath;
+
+    /// <summary>The explicit loose localized-string directories in caller priority order.</summary>
+    private readonly IReadOnlyList<string> StringDirectoryPaths;
+
     /// <summary>The plugin-specific native localized-string lookups.</summary>
     private readonly IReadOnlyDictionary<Mutagen.Bethesda.Plugins.ModKey, NativeStringsFolderLookup> StringsLookups;
 
@@ -37,6 +43,8 @@ public sealed class NativeSourceInputs : INativeSourceSet
     /// <summary>Initializes a prepared native source-input lifetime.</summary>
     /// <param name="release">The selected native release.</param>
     /// <param name="plugins">The explicit plugin descriptors in load-order order.</param>
+    /// <param name="dataDirectoryPath">The explicit native data directory used for archive lookup.</param>
+    /// <param name="stringDirectoryPaths">The explicit loose localized-string directories in lookup-priority order.</param>
     /// <param name="masterFlagsLookup">The private immutable-surface master-style lookup.</param>
     /// <param name="stringsLookups">The plugin-specific strings lookups.</param>
     /// <param name="artifactCollector">The collector used for later source verification.</param>
@@ -44,6 +52,8 @@ public sealed class NativeSourceInputs : INativeSourceSet
     internal NativeSourceInputs(
         GameRelease release,
         IReadOnlyList<NativeSourcePluginInput> plugins,
+        string dataDirectoryPath,
+        IReadOnlyList<string> stringDirectoryPaths,
         IReadOnlyCache<IModMasterStyledGetter, Mutagen.Bethesda.Plugins.ModKey> masterFlagsLookup,
         IReadOnlyDictionary<Mutagen.Bethesda.Plugins.ModKey, NativeStringsFolderLookup> stringsLookups,
         NativeSourceArtifactCollector artifactCollector,
@@ -51,6 +61,8 @@ public sealed class NativeSourceInputs : INativeSourceSet
     {
         Release = release;
         Plugins = Array.AsReadOnly(plugins.ToArray());
+        DataDirectoryPath = dataDirectoryPath;
+        StringDirectoryPaths = Array.AsReadOnly(stringDirectoryPaths.ToArray());
         MasterFlagsLookup = masterFlagsLookup;
         StringsLookups = stringsLookups;
         ArtifactCollector = artifactCollector;
@@ -97,6 +109,76 @@ public sealed class NativeSourceInputs : INativeSourceSet
         }
 
         return metadata;
+    }
+
+    /// <summary>Reports whether Mutagen's public overlay API can preserve this plugin's explicit localized-string lookup contract.</summary>
+    /// <param name="plugin">A descriptor obtained from <see cref="Plugins"/>.</param>
+    /// <returns><see langword="true"/> for nonlocalized plugins or localized plugins with exactly one explicit lookup directory.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="plugin"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when the descriptor does not belong to this input set.</exception>
+    /// <exception cref="ObjectDisposedException">Thrown after this source-input lifetime is disposed.</exception>
+    public bool SupportsBinaryOverlay(NativeSourcePluginInput plugin)
+    {
+        ThrowIfDisposed();
+        ValidatePluginMembership(plugin);
+        return !plugin.UsesLocalization || StringDirectoryPaths.Count == 1;
+    }
+
+    /// <summary>Creates native binary-read parameters for a disposable read-only overlay without ambient path discovery.</summary>
+    /// <param name="plugin">A descriptor obtained from <see cref="Plugins"/>.</param>
+    /// <returns>Fresh parameters containing the verified master styles and, when needed, the one explicit strings lookup location.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="plugin"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when the descriptor does not belong to this input set.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when a localized plugin requires multiple prioritized loose-string directories that the public overlay API cannot represent.</exception>
+    /// <exception cref="ObjectDisposedException">Thrown after this source-input lifetime is disposed.</exception>
+    public BinaryReadParameters CreateOverlayReadParameters(NativeSourcePluginInput plugin)
+    {
+        ThrowIfDisposed();
+        ValidatePluginMembership(plugin);
+        if (!SupportsBinaryOverlay(plugin))
+        {
+            throw new InvalidOperationException(
+                "Mutagen's public binary overlay API cannot represent multiple prioritized localized-string directories.");
+        }
+
+        if (!plugin.UsesLocalization)
+        {
+            return new BinaryReadParameters
+            {
+                MasterFlagsLookup = MasterFlagsLookup
+            };
+        }
+
+        return new BinaryReadParameters
+        {
+            MasterFlagsLookup = MasterFlagsLookup,
+            StringsParam = new StringsReadParameters
+            {
+                StringsFolderOverride = StringDirectoryPaths[0],
+                BsaFolderOverride = DataDirectoryPath,
+                TargetLanguage = Language.English
+            }
+        };
+    }
+
+    /// <summary>Opens a caller-owned read stream for a lazy overlay while allowing external writers and atomic path replacement.</summary>
+    /// <param name="plugin">A descriptor obtained from <see cref="Plugins"/>.</param>
+    /// <returns>A seekable source stream that must remain open for the overlay lifetime.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="plugin"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when the descriptor does not belong to this input set.</exception>
+    /// <exception cref="ObjectDisposedException">Thrown after this source-input lifetime is disposed.</exception>
+    /// <exception cref="IOException">Thrown when the source file cannot be opened for reading.</exception>
+    public Stream OpenOverlayStream(NativeSourcePluginInput plugin)
+    {
+        ThrowIfDisposed();
+        ValidatePluginMembership(plugin);
+        return new FileStream(
+            plugin.Path,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.ReadWrite | FileShare.Delete,
+            131072,
+            FileOptions.RandomAccess);
     }
 
     /// <summary>Opens a caller-owned native read stream whose synchronous parser reads and seeks observe an operation-scoped cancellation token.</summary>

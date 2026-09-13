@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Engine.NativeInputs;
 using CreationsForge.Core.Enums;
@@ -81,6 +82,8 @@ public sealed class NativeSourceInputLoaderTests
         preparation.Succeeded.ShouldBeTrue(preparation.Error?.Message);
         await using var inputs = preparation.Value!;
         var plugin = inputs.Plugins.Single();
+        inputs.SupportsBinaryOverlay(plugin).ShouldBeFalse();
+        Should.Throw<InvalidOperationException>(() => inputs.CreateOverlayReadParameters(plugin));
         var metadata = inputs.CreateParsingMeta(plugin);
         metadata.StringsLookup.ShouldNotBeNull();
         var translated = metadata.StringsLookup.CreateString(StringsSource.Normal, 1, Language.English);
@@ -260,6 +263,37 @@ public sealed class NativeSourceInputLoaderTests
 
         verification.Succeeded.ShouldBeFalse();
         verification.Error!.Code.ShouldBe(EngineErrorCode.ExternalChangeDetected, verification.Error.Message);
+    }
+
+    /// <summary>Verifies an applicable archive fingerprints only localized entries rather than unrelated payload bytes.</summary>
+    [Fact]
+    public async Task PrepareAsync_WithApplicableArchiveWithoutStrings_DoesNotHashUnrelatedPayload()
+    {
+        using var fixture = StarfieldNativeTestFixture.Create();
+        var archivePath = Path.Combine(fixture.DataDirectory.FullName, "NativeSmall - Main.ba2");
+        var archiveBytes = new byte[]
+        {
+            0x42, 0x54, 0x44, 0x58,
+            0x01, 0x00, 0x00, 0x00,
+            0x47, 0x4E, 0x52, 0x4C,
+            0x00, 0x00, 0x00, 0x00,
+            0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x10, 0x20, 0x30, 0x40
+        };
+        await File.WriteAllBytesAsync(archivePath, archiveBytes, TestContext.Current.CancellationToken);
+
+        var preparation = await new NativeSourceInputLoader().PrepareAsync(
+            fixture.CreateOpenRequest(),
+            TestContext.Current.CancellationToken);
+
+        preparation.Succeeded.ShouldBeTrue(preparation.Error?.Message);
+        await using var inputs = preparation.Value!;
+        var completion = await inputs.CompleteOpenAsync(TestContext.Current.CancellationToken);
+        completion.Succeeded.ShouldBeTrue(completion.Error?.Message);
+        var archive = completion.Value!.Artifacts
+            .Single(artifact => string.Equals(artifact.Path, archivePath, StringComparison.OrdinalIgnoreCase));
+        archive.Fingerprint.Sha256.ShouldBe(Convert.ToHexString(SHA256.HashData([])));
+        archive.Fingerprint.Sha256.ShouldNotBe(Convert.ToHexString(SHA256.HashData(archiveBytes)));
     }
 
     /// <summary>Verifies removal of an explicit empty strings directory changes the source set even when every candidate sidecar was absent.</summary>

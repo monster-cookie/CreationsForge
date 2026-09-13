@@ -458,18 +458,19 @@ public sealed class StarfieldFormListGameAdapter : IFormListGameAdapter
         StarfieldNativeOutputState? output,
         CancellationToken cancellationToken)
     {
-        var mods = sources.GetNativeMods();
+        var mods = sources.GetNativeReferenceMods();
         var plugins = sources.BorrowInputs().Plugins;
         var nativeSources = new List<NativeReferenceSource>(mods.Count + (output is null ? 0 : 1));
         for (var index = 0; index < mods.Count; index++)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var sourceIndex = index;
             nativeSources.Add(new NativeReferenceSource(
                 mods[index],
                 plugins[index].Path,
                 plugins[index].LoadOrderIndex,
                 plugins[index].Role,
-                CreateDetachedRecord));
+                record => sources.CreateDetachedRecord(sourceIndex, record)));
         }
 
         if (output is not null)

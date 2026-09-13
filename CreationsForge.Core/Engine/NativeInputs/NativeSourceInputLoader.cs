@@ -126,6 +126,8 @@ public sealed class NativeSourceInputLoader
             var inputs = new NativeSourceInputs(
                 request.Release,
                 plugins,
+                dataDirectoryPath,
+                stringDirectoryPaths,
                 masterFlags,
                 lookups,
                 artifactCollector,

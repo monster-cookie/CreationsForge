@@ -74,37 +74,38 @@ internal sealed class NativeSourceArtifactCollector
         }
 
         var constants = GameConstants.Get(Release);
-        if (constants.StringsLanguageFormat is { } languageFormat)
+        var languageFormat = constants.StringsLanguageFormat
+            ?? throw new NativeSourceInputException(
+                EngineErrorCode.UnsupportedInput,
+                $"Native localized-string discovery is unavailable for release {Release}.");
+        foreach (var plugin in Plugins)
         {
-            foreach (var plugin in Plugins)
+            if (!plugin.UsesLocalization)
             {
-                if (!plugin.UsesLocalization)
-                {
-                    continue;
-                }
+                continue;
+            }
 
-                foreach (var directoryPath in StringDirectoryPaths)
+            foreach (var directoryPath in StringDirectoryPaths)
+            {
+                foreach (var source in OrderedStringsSources)
                 {
-                    foreach (var source in OrderedStringsSources)
+                    foreach (var language in constants.Languages.OrderBy(language => language))
                     {
-                        foreach (var language in constants.Languages.OrderBy(language => language))
-                        {
-                            cancellationToken.ThrowIfCancellationRequested();
-                            var fileName = StringsUtility.GetFileName(languageFormat, plugin.ModKey, language, source);
-                            var path = Path.GetFullPath(Path.Combine(directoryPath, fileName));
-                            artifacts.Add(await NativeFileInspector.InspectAsync(
-                                path,
-                                MapRole(source),
-                                language.ToString(),
-                                mustExist: false,
-                                cancellationToken).ConfigureAwait(false));
-                        }
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var fileName = StringsUtility.GetFileName(languageFormat, plugin.ModKey, language, source);
+                        var path = Path.GetFullPath(Path.Combine(directoryPath, fileName));
+                        artifacts.Add(await NativeFileInspector.InspectAsync(
+                            path,
+                            MapRole(source),
+                            language.ToString(),
+                            mustExist: false,
+                            cancellationToken).ConfigureAwait(false));
                     }
                 }
             }
         }
 
-        var archivePaths = new HashSet<string>(PathComparer);
+        var archiveTargets = new Dictionary<string, HashSet<string>>(PathComparer);
         foreach (var plugin in Plugins)
         {
             if (!plugin.UsesLocalization)
@@ -125,18 +126,32 @@ internal sealed class NativeSourceArtifactCollector
             foreach (var path in applicablePaths)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (!archivePaths.Add(path))
+                if (!archiveTargets.TryGetValue(path, out var targetFileNames))
                 {
-                    continue;
+                    targetFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    archiveTargets.Add(path, targetFileNames);
                 }
 
-                artifacts.Add(await NativeFileInspector.InspectAsync(
-                    path,
-                    NativeArtifactRole.StringsArchive,
-                    null,
-                    mustExist: true,
-                    cancellationToken).ConfigureAwait(false));
+                foreach (var source in OrderedStringsSources)
+                {
+                    foreach (var language in constants.Languages.OrderBy(language => language))
+                    {
+                        targetFileNames.Add(StringsUtility
+                            .GetFileName(languageFormat, plugin.ModKey, language, source)
+                            .ToString());
+                    }
+                }
             }
+        }
+
+        foreach (var archiveTarget in archiveTargets.OrderBy(pair => pair.Key, PathComparer))
+        {
+            artifacts.Add(await NativeFileInspector.InspectArchiveStringsAsync(
+                archiveTarget.Key,
+                Release,
+                archiveTarget.Value,
+                FileSystem,
+                cancellationToken).ConfigureAwait(false));
         }
 
         return Array.AsReadOnly(artifacts.ToArray());

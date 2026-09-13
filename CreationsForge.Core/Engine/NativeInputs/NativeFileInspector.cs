@@ -1,8 +1,12 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 using CreationsForge.Core.Engine.Contracts;
+using Mutagen.Bethesda;
+using Mutagen.Bethesda.Archives;
+using System.IO.Abstractions;
 
 namespace CreationsForge.Core.Engine.NativeInputs;
 
@@ -149,6 +153,103 @@ internal static class NativeFileInspector
             throw new NativeSourceInputException(
                 EngineErrorCode.SourceOpenFailed,
                 $"The native {DescribeRole(role)} could not be inspected safely: '{path}'.",
+                exception);
+        }
+    }
+
+    /// <summary>Fingerprints only localized-string entries from an applicable archive while retaining its physical identity and size.</summary>
+    /// <param name="path">The canonical absolute archive path.</param>
+    /// <param name="release">The native game release used to select the archive reader.</param>
+    /// <param name="targetFileNames">The exact localized-string file names that the admitted plugins can request.</param>
+    /// <param name="fileSystem">The filesystem adapter used by Mutagen's archive reader.</param>
+    /// <param name="cancellationToken">The token checked while reading the archive directory and matching localized entries.</param>
+    /// <returns>An archive association whose digest covers matching entry names, sizes, and uncompressed bytes.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when a required argument is <see langword="null"/>.</exception>
+    /// <exception cref="OperationCanceledException">Thrown when cancellation is requested.</exception>
+    /// <exception cref="NativeSourceInputException">Thrown when the archive changes, is aliased, or cannot be inspected safely.</exception>
+    internal static async Task<NativeArtifactAssociation> InspectArchiveStringsAsync(
+        string path,
+        GameRelease release,
+        IReadOnlySet<string> targetFileNames,
+        IFileSystem fileSystem,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(targetFileNames);
+        ArgumentNullException.ThrowIfNull(fileSystem);
+        cancellationToken.ThrowIfCancellationRequested();
+        VerifyPathComponents(path, DescribeRole(NativeArtifactRole.StringsArchive));
+
+        try
+        {
+            await using var identityStream = new FileStream(
+                path,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read | FileShare.Delete,
+                1,
+                FileOptions.Asynchronous);
+            VerifyResolvedFilePath(path, identityStream.SafeFileHandle);
+            var initialIdentity = ReadIdentity(identityStream.SafeFileHandle);
+            var initialLength = identityStream.Length;
+            var archive = Archive.CreateReader(release, path, fileSystem);
+            using var combinedHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            foreach (var file in archive.Files
+                         .Where(file => targetFileNames.Contains(Path.GetFileName(file.Path)))
+                         .OrderBy(file => file.Path, StringComparer.OrdinalIgnoreCase))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await using var entryStream = file.AsStream();
+                var entryDigest = await SHA256.HashDataAsync(entryStream, cancellationToken).ConfigureAwait(false);
+                var descriptor = Encoding.UTF8.GetBytes(
+                    $"{file.Path.Replace('\\', '/').ToUpperInvariant()}\0{file.Size}\0{Convert.ToHexString(entryDigest)}\n");
+                combinedHash.AppendData(descriptor);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            var finalHandleIdentity = ReadIdentity(identityStream.SafeFileHandle);
+            if (!initialIdentity.Equals(finalHandleIdentity) || initialLength != identityStream.Length)
+            {
+                throw new NativeSourceInputException(
+                    EngineErrorCode.ExternalChangeDetected,
+                    $"The native strings archive changed while it was being inspected: '{path}'.");
+            }
+
+            await using var currentPathStream = new FileStream(
+                path,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read | FileShare.Delete,
+                1,
+                FileOptions.Asynchronous);
+            VerifyResolvedFilePath(path, currentPathStream.SafeFileHandle);
+            if (!initialIdentity.Equals(ReadIdentity(currentPathStream.SafeFileHandle)))
+            {
+                throw new NativeSourceInputException(
+                    EngineErrorCode.ExternalChangeDetected,
+                    $"The native strings archive path was replaced while it was being inspected: '{path}'.");
+            }
+
+            return new NativeArtifactAssociation(
+                path,
+                NativeArtifactRole.StringsArchive,
+                null,
+                new NativeArtifactFingerprint(true, initialLength, Convert.ToHexString(combinedHash.GetHashAndReset())),
+                initialIdentity);
+        }
+        catch (NativeSourceInputException)
+        {
+            throw;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or InvalidDataException or OverflowException or ArgumentException)
+        {
+            throw new NativeSourceInputException(
+                EngineErrorCode.SourceOpenFailed,
+                $"The native strings archive could not be inspected safely: '{path}'.",
                 exception);
         }
     }

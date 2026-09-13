@@ -61,13 +61,15 @@ public sealed class StarfieldNativeSourceLoader
         }
 
         var inputs = inputResult.Value!;
+        var sourceMods = new List<IStarfieldModGetter>(inputs.Plugins.Count);
+        var referenceMods = new List<IStarfieldModGetter>(inputs.Plugins.Count);
+        var ownedOverlayResources = new List<IDisposable>();
 
         try
         {
             request.Progress?.Report(new WorkspaceOpenProgress(
                 WorkspaceOpenStage.OpeningSources,
                 $"Prepared {inputs.Plugins.Count} Starfield native plugin inputs."));
-            var sourceMods = new List<IStarfieldModGetter>(inputs.Plugins.Count);
             for (var pluginIndex = 0; pluginIndex < inputs.Plugins.Count; pluginIndex++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -76,24 +78,64 @@ public sealed class StarfieldNativeSourceLoader
                     WorkspaceOpenStage.ParsingPlugin,
                     $"Parsing Starfield plugin {pluginIndex + 1} of {inputs.Plugins.Count}: '{plugin.Path}'."));
 
-                using var stream = inputs.OpenReadStream(plugin, cancellationToken);
-                var frame = new MutagenFrame(stream);
-                var mod = StarfieldMod.CreateFromBinary(
-                    frame,
-                    StarfieldRelease.Starfield,
-                    new GroupMask(true));
-
-                if (mod.ModKey != plugin.ModKey)
+                using (var formListStream = inputs.OpenReadStream(plugin, cancellationToken))
                 {
-                    await inputs.DisposeAsync().ConfigureAwait(false);
+                    sourceMods.Add(StarfieldMod.CreateFromBinary(
+                        new MutagenFrame(formListStream),
+                        StarfieldRelease.Starfield,
+                        new GroupMask(false) { FormLists = true }));
+                }
+
+                IStarfieldModGetter referenceMod;
+                if (inputs.SupportsBinaryOverlay(plugin))
+                {
+                    var overlayStream = inputs.OpenOverlayStream(plugin);
+                    try
+                    {
+                        referenceMod = StarfieldMod.CreateFromBinaryOverlay(
+                            overlayStream,
+                            StarfieldRelease.Starfield,
+                            plugin.ModKey,
+                            inputs.CreateOverlayReadParameters(plugin));
+                        ownedOverlayResources.Add((IDisposable)referenceMod);
+                        ownedOverlayResources.Add(overlayStream);
+                    }
+                    catch
+                    {
+                        overlayStream.Dispose();
+                        throw;
+                    }
+                }
+                else
+                {
+                    using var stream = inputs.OpenReadStream(plugin, cancellationToken);
+                    var frame = new MutagenFrame(stream);
+                    referenceMod = StarfieldMod.CreateFromBinary(
+                        frame,
+                        StarfieldRelease.Starfield,
+                        new GroupMask(true));
+                }
+
+                referenceMods.Add(referenceMod);
+
+                if (sourceMods[^1].ModKey != plugin.ModKey || referenceMod.ModKey != plugin.ModKey)
+                {
+                    try
+                    {
+                        DisposeResources(ownedOverlayResources);
+                    }
+                    finally
+                    {
+                        await inputs.DisposeAsync().ConfigureAwait(false);
+                    }
+
                     return EngineResult<NativeSourceOpenResult>.Failure(
                         new EngineError(
                             EngineErrorCode.SourceOpenFailed,
-                            $"Native plugin identity {mod.ModKey} did not match the admitted input {plugin.ModKey} at '{plugin.Path}'."),
+                            $"Native plugin identity {referenceMod.ModKey} did not match the admitted input {plugin.ModKey} at '{plugin.Path}'."),
                         request.WorkspaceId);
                 }
 
-                sourceMods.Add(mod);
                 request.Progress?.Report(new WorkspaceOpenProgress(
                     WorkspaceOpenStage.ParsingPlugin,
                     $"Parsed Starfield plugin {pluginIndex + 1} of {inputs.Plugins.Count}: '{plugin.Path}'."));
@@ -105,7 +147,15 @@ public sealed class StarfieldNativeSourceLoader
             var baselineResult = await inputs.CompleteOpenAsync(cancellationToken).ConfigureAwait(false);
             if (!baselineResult.Succeeded)
             {
-                await inputs.DisposeAsync().ConfigureAwait(false);
+                try
+                {
+                    DisposeResources(ownedOverlayResources);
+                }
+                finally
+                {
+                    await inputs.DisposeAsync().ConfigureAwait(false);
+                }
+
                 return EngineResult<NativeSourceOpenResult>.Failure(
                     baselineResult.Error!,
                     request.WorkspaceId,
@@ -113,7 +163,13 @@ public sealed class StarfieldNativeSourceLoader
             }
 
             var baseline = baselineResult.Value!;
-            var sources = new StarfieldNativeSourceSet(request.WorkspaceId, inputs, sourceMods, baseline);
+            var sources = new StarfieldNativeSourceSet(
+                request.WorkspaceId,
+                inputs,
+                sourceMods,
+                referenceMods,
+                ownedOverlayResources,
+                baseline);
             var revision = sources.Revision;
             var openResult = new NativeSourceOpenResult(sources, baseline.BaselineId, baseline.Artifacts);
             return EngineResult<NativeSourceOpenResult>.Success(
@@ -124,17 +180,43 @@ public sealed class StarfieldNativeSourceLoader
         }
         catch (OperationCanceledException)
         {
-            await inputs.DisposeAsync().ConfigureAwait(false);
+            try
+            {
+                DisposeResources(ownedOverlayResources);
+            }
+            finally
+            {
+                await inputs.DisposeAsync().ConfigureAwait(false);
+            }
+
             throw;
         }
         catch (Exception exception)
         {
-            await inputs.DisposeAsync().ConfigureAwait(false);
+            try
+            {
+                DisposeResources(ownedOverlayResources);
+            }
+            finally
+            {
+                await inputs.DisposeAsync().ConfigureAwait(false);
+            }
+
             return EngineResult<NativeSourceOpenResult>.Failure(
                 new EngineError(
                     EngineErrorCode.SourceOpenFailed,
                     $"Starfield native source parsing failed: {exception.Message}"),
                 request.WorkspaceId);
+        }
+    }
+
+    /// <summary>Releases every overlay and backing stream opened before ownership transfers to a native source set.</summary>
+    /// <param name="resources">The partially opened overlay resources in creation order.</param>
+    private static void DisposeResources(IEnumerable<IDisposable> resources)
+    {
+        foreach (var resource in resources)
+        {
+            resource.Dispose();
         }
     }
 }

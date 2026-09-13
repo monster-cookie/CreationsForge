@@ -47,6 +47,7 @@ public sealed class StarfieldNativeSourceLoaderTests
             sources.Revision.Sequence.ShouldBe(0UL);
             result.ResultRevision.ShouldBe(sources.Revision);
             sources.Baseline.Artifacts.ShouldNotBeEmpty();
+            sources.GetNativeReferenceMods().ShouldAllBe(mod => mod is IStarfieldModDisposableGetter);
 
             var small = sources.Resolve(
                 new ReferenceRequest(fixture.SourceListFormKey, RecordScope.Source),
@@ -180,15 +181,22 @@ public sealed class StarfieldNativeSourceLoaderTests
         var open = await loader.OpenAsync(fixture.CreateOpenRequest(), TestContext.Current.CancellationToken);
         open.Succeeded.ShouldBeTrue(open.Error?.Message);
         var sources = open.Value!.Sources.ShouldBeOfType<StarfieldNativeSourceSet>();
+        try
+        {
+            var replacementPath = Path.Combine(fixture.DataDirectory.FullName, "replacement.tmp");
+            File.Copy(fixture.PatchPluginPath, replacementPath);
+            File.Delete(fixture.PatchPluginPath);
+            File.Move(replacementPath, fixture.PatchPluginPath);
+            var verification = await sources.VerifyUnchangedAsync(TestContext.Current.CancellationToken);
 
-        File.AppendAllText(fixture.PatchPluginPath, "changed");
-        var verification = await sources.VerifyUnchangedAsync(TestContext.Current.CancellationToken);
-
-        verification.Succeeded.ShouldBeFalse();
-        verification.Error!.Code.ShouldBe(EngineErrorCode.ExternalChangeDetected);
-
-        await sources.DisposeAsync();
-        await sources.DisposeAsync();
+            verification.Succeeded.ShouldBeFalse();
+            verification.Error!.Code.ShouldBe(EngineErrorCode.ExternalChangeDetected);
+        }
+        finally
+        {
+            await sources.DisposeAsync();
+            await sources.DisposeAsync();
+        }
 
         var disposedResolution = sources.Resolve(
             new ReferenceRequest(fixture.SourceListFormKey, RecordScope.Source),
