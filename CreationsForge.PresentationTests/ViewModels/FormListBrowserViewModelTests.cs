@@ -593,10 +593,12 @@ public sealed partial class FormListBrowserViewModelTests
 
         var refreshTask = viewModel.RefreshAsync(formKey, refreshCancellation.Token);
         await comparisonStarted.Task;
+        viewModel.IsComparisonBusy.ShouldBeTrue();
         refreshCancellation.Cancel();
         await refreshTask;
 
         comparisonToken.IsCancellationRequested.ShouldBeTrue();
+        viewModel.IsComparisonBusy.ShouldBeFalse();
         workspace.ComparisonRequests.ShouldHaveSingleItem();
         viewModel.BeforeFields.ShouldBeEmpty();
         viewModel.AfterFields.ShouldBeEmpty();
@@ -787,6 +789,7 @@ public sealed partial class FormListBrowserViewModelTests
         await viewModel.StartAsync();
         var firstComparison = viewModel.SelectRecordAsync(viewModel.Records.ShouldHaveSingleItem());
         await firstComparisonStarted.Task;
+        viewModel.IsComparisonBusy.ShouldBeTrue();
 
         var outputOption = viewModel.ContextOptions.Single(option => option.Role == PluginRole.Output);
         var secondComparison = viewModel.SelectAfterContextAsync(outputOption);
@@ -795,6 +798,7 @@ public sealed partial class FormListBrowserViewModelTests
 
         firstComparisonToken.IsCancellationRequested.ShouldBeTrue();
         compareAttempt.ShouldBe(2);
+        viewModel.IsComparisonBusy.ShouldBeFalse();
         viewModel.AfterContext!.Selection.Scope.ShouldBe(RecordScope.AllContexts);
         viewModel.AfterContext.Selection.ContainingModKey.ShouldBe(outputMod);
         viewModel.AfterFields.ShouldHaveSingleItem()

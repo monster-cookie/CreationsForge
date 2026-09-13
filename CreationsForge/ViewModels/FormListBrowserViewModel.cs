@@ -111,6 +111,9 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
     /// <summary>The current browser operation status.</summary>
     private string StatusTextValue = "No workspace is open.";
 
+    /// <summary>Whether the selected record's comparison hierarchy is still resolving.</summary>
+    private bool IsComparisonBusyValue;
+
     /// <summary>The latest accepted reference-picker identity.</summary>
     private string SelectedReferenceTextValue = "No reference selected.";
 
@@ -231,6 +234,12 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
 
     /// <summary>Gets whether a workspace is currently published by the coordinator.</summary>
     public bool HasWorkspace => WorkspaceCoordinator.CurrentWorkspace is not null;
+
+    /// <summary>Gets whether the active workspace admits a mutable output plugin.</summary>
+    public bool IsEditingWorkspace => WorkspaceCoordinator.CurrentWorkspace?.Output is not null;
+
+    /// <summary>Gets whether the selected record's comparison hierarchy is still resolving.</summary>
+    public bool IsComparisonBusy => IsComparisonBusyValue;
 
     /// <summary>Gets the current browser operation status.</summary>
     public string StatusText => StatusTextValue;
@@ -626,6 +635,8 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
     private void ClearWorkspacePresentation()
     {
         WorkspaceStateValue = null;
+        OnPropertyChanged(nameof(IsEditingWorkspace));
+        SetComparisonBusy(false);
         PluginsValue = Array.Empty<PluginSummary>();
         OnPropertyChanged(nameof(Plugins));
         SetAllRecords(Array.Empty<FormListRecordViewModel>());
@@ -662,6 +673,13 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
         SetWarnings(LoadWarnings);
         ClearError();
         RetryKindValue = RetryKind.None;
+    }
+
+    /// <summary>Publishes whether the right-side comparison hierarchy is still resolving.</summary>
+    /// <param name="isBusy">Whether comparison work remains in progress.</param>
+    private void SetComparisonBusy(bool isBusy)
+    {
+        SetProperty(ref IsComparisonBusyValue, isBusy, nameof(IsComparisonBusy));
     }
 
     /// <summary>Publishes a typed engine failure and enables the appropriate retry path.</summary>
@@ -956,6 +974,7 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
 
         UiDispatcher.Post(() =>
         {
+            OnPropertyChanged(nameof(IsEditingWorkspace));
             if (!IsDisposed && IsStarted)
             {
                 _ = BeginWorkspaceGeneration(WorkspaceCoordinator.CurrentWorkspace);

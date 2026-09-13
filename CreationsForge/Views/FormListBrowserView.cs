@@ -70,7 +70,7 @@ public sealed class FormListBrowserView : UserControl
         return layout;
     }
 
-    /// <summary>Builds retained comparison and typed editing as sibling tabs in the right pane.</summary>
+    /// <summary>Builds retained comparison and conditionally visible typed editing as sibling tabs in the right pane.</summary>
     /// <returns>The complete right-side details pane.</returns>
     private Control BuildDetailsPane()
     {
@@ -86,6 +86,7 @@ public sealed class FormListBrowserView : UserControl
             Content = new FormListEditorView(ViewModel.Editor)
         };
         AutomationProperties.SetAutomationId(edit, "FormListEditTab");
+        edit.Bind(IsVisibleProperty, new Binding(nameof(FormListBrowserViewModel.IsEditingWorkspace)));
         var tabs = new TabControl
         {
             ItemsSource = new[] { compare, edit },
@@ -257,7 +258,7 @@ public sealed class FormListBrowserView : UserControl
         return textBox;
     }
 
-    /// <summary>Builds selectors, exact provenance, independent JSON hierarchies, and semantic diagnostics.</summary>
+    /// <summary>Builds selectors, exact provenance, independent JSON hierarchies, diagnostics, and loading feedback.</summary>
     /// <returns>The right comparison pane.</returns>
     private Control BuildComparisonPane()
     {
@@ -309,7 +310,7 @@ public sealed class FormListBrowserView : UserControl
         Grid.SetRow(legend, 1);
         Grid.SetRow(fieldTrees, 2);
         Grid.SetRow(diagnostics, 3);
-        return new Grid
+        var comparisonContent = new Grid
         {
             RowDefinitions = new RowDefinitions("Auto,Auto,*,Auto"),
             RowSpacing = 12,
@@ -319,6 +320,38 @@ public sealed class FormListBrowserView : UserControl
                 legend,
                 fieldTrees,
                 diagnostics
+            }
+        };
+        var progress = new ProgressBar
+        {
+            IsIndeterminate = true,
+            MinWidth = 280,
+            MinHeight = 4
+        };
+        AutomationProperties.SetAutomationId(progress, "FormListComparisonProgress");
+        var loading = new Border
+        {
+            Background = App.GetApplicationBrush(App.PanelSurfaceBrushKey),
+            Child = new StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Spacing = 12,
+                Children =
+                {
+                    CreateText("Resolving record hierarchy...", 16, FontWeight.SemiBold),
+                    progress
+                }
+            }
+        };
+        loading.Bind(IsVisibleProperty, new Binding(nameof(FormListBrowserViewModel.IsComparisonBusy)));
+        AutomationProperties.SetAutomationId(loading, "FormListComparisonLoadingView");
+        return new Grid
+        {
+            Children =
+            {
+                comparisonContent,
+                loading
             }
         };
     }
@@ -451,18 +484,10 @@ public sealed class FormListBrowserView : UserControl
         return pane;
     }
 
-    /// <summary>Builds semantic changes, warnings, typed errors, retry, and operation status.</summary>
+    /// <summary>Builds warnings, typed errors, retry, and operation status.</summary>
     /// <returns>The comparison diagnostics pane.</returns>
     private Control BuildDiagnosticsPane()
     {
-        var changes = new ItemsControl
-        {
-            ItemTemplate = new FuncDataTemplate<SemanticChangeDescriptor>(
-                (change, _) => CreateWrappedText(FormatChange(change), 12))
-        };
-        changes.Bind(ItemsControl.ItemsSourceProperty, new Binding(nameof(FormListBrowserViewModel.SemanticChanges)));
-        AutomationProperties.SetAutomationId(changes, "FormListSemanticChanges");
-
         var warnings = new ItemsControl
         {
             ItemTemplate = new FuncDataTemplate<EngineWarning>(
@@ -505,8 +530,6 @@ public sealed class FormListBrowserView : UserControl
             Spacing = 6,
             Children =
             {
-                CreateText("Semantic changes", 13, FontWeight.SemiBold),
-                changes,
                 CreateText("Warnings", 13, FontWeight.SemiBold),
                 warnings
             }
@@ -529,21 +552,6 @@ public sealed class FormListBrowserView : UserControl
                 status
             }
         };
-    }
-
-    /// <summary>Formats one semantic descriptor without interpreting its field identifier as a JSON path.</summary>
-    /// <param name="change">The exact engine descriptor.</param>
-    /// <returns>The verbatim field identifier, kind, and optional positions.</returns>
-    private static string FormatChange(SemanticChangeDescriptor? change)
-    {
-        if (change is null)
-        {
-            return string.Empty;
-        }
-
-        var before = change.BeforePosition.HasValue ? change.BeforePosition.Value.ToString() : "-";
-        var after = change.AfterPosition.HasValue ? change.AfterPosition.Value.ToString() : "-";
-        return $"{change.FieldIdentifier} | {change.Kind} | before {before} | after {after}";
     }
 
     /// <summary>Creates unbound application-styled text.</summary>

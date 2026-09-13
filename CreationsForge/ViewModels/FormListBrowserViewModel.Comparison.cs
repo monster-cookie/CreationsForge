@@ -18,6 +18,7 @@ public sealed partial class FormListBrowserViewModel
             WorkspaceStateValue is null ||
             WorkspaceCoordinator.CurrentWorkspace is not { } workspace)
         {
+            SetComparisonBusy(false);
             return Task.CompletedTask;
         }
 
@@ -29,6 +30,7 @@ public sealed partial class FormListBrowserViewModel
         var expectedRevision = WorkspaceStateValue.Revision;
         var before = SelectedBeforeContextValue;
         var after = SelectedAfterContextValue;
+        SetComparisonBusy(true);
         SetStatus($"Comparing {SelectedRecordValue.FormKey}...");
         return CompareAsync(
             workspace.WorkspaceId,
@@ -128,6 +130,46 @@ public sealed partial class FormListBrowserViewModel
                 after.Selection,
                 exception).ConfigureAwait(false);
         }
+        finally
+        {
+            PostClearComparisonBusyIfCurrent(
+                workspaceId,
+                workspaceGeneration,
+                comparisonGeneration,
+                expectedRevision,
+                before.Selection,
+                after.Selection);
+        }
+    }
+
+    /// <summary>Posts busy-indicator cleanup only when the completed comparison still owns the current selection.</summary>
+    /// <param name="workspaceId">The captured workspace identity.</param>
+    /// <param name="workspaceGeneration">The captured workspace generation.</param>
+    /// <param name="comparisonGeneration">The captured comparison generation.</param>
+    /// <param name="revision">The captured workspace revision.</param>
+    /// <param name="before">The captured prior selection.</param>
+    /// <param name="after">The captured resulting selection.</param>
+    private void PostClearComparisonBusyIfCurrent(
+        Guid workspaceId,
+        long workspaceGeneration,
+        long comparisonGeneration,
+        WorkspaceRevision revision,
+        ReferenceRequest before,
+        ReferenceRequest after)
+    {
+        UiDispatcher.Post(() =>
+        {
+            if (IsCurrentComparisonGeneration(
+                workspaceId,
+                workspaceGeneration,
+                comparisonGeneration,
+                revision,
+                before,
+                after))
+            {
+                SetComparisonBusy(false);
+            }
+        });
     }
 
     /// <summary>Checks the live workspace revision immediately before executing one plugin comparison.</summary>

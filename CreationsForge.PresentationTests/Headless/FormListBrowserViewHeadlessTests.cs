@@ -64,6 +64,7 @@ public sealed class FormListBrowserViewHeadlessTests
                 "FormListDetailsTabs").ShouldNotBeNull();
             var tabItems = detailsTabs.ItemsSource.ShouldNotBeNull().Cast<TabItem>().ToArray();
             tabItems.Select(tab => tab.Header).ShouldBe(["Compare", "Edit"]);
+            tabItems[1].IsVisible.ShouldBeFalse();
             detailsTabs.SelectedIndex.ShouldBe(0);
             ControlFinder.FindByAutomationId<TreeDataGrid>(view, "FormListRecordTree").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<TextBox>(view, "FormListFormIdFilter").ShouldNotBeNull();
@@ -96,7 +97,12 @@ public sealed class FormListBrowserViewHeadlessTests
                     Color.FromArgb(80, 192, 0, 0),
                     Color.FromArgb(80, 192, 160, 0)
                 ]);
-            ControlFinder.FindByAutomationId<ItemsControl>(view, "FormListSemanticChanges").ShouldNotBeNull();
+            var loadingView = ControlFinder.FindByAutomationId<Border>(
+                view,
+                "FormListComparisonLoadingView").ShouldNotBeNull();
+            loadingView.IsVisible.ShouldBeFalse();
+            ControlFinder.FindByAutomationId<ProgressBar>(view, "FormListComparisonProgress").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<ItemsControl>(view, "FormListSemanticChanges").ShouldBeNull();
             var diagnosticsScroller = ControlFinder.FindByAutomationId<ScrollViewer>(
                 view,
                 "FormListDiagnosticsScroller").ShouldNotBeNull();
@@ -109,27 +115,7 @@ public sealed class FormListBrowserViewHeadlessTests
             ControlFinder.FindByAutomationId<TextBlock>(view, "FormListBrowserStatusText")!
                 .Text.ShouldBe("No workspace is open.");
 
-            detailsTabs.SelectedIndex = 1;
-            Dispatcher.UIThread.RunJobs();
-            ControlFinder.FindByAutomationId<FormListEditorView>(
-                view,
-                "FormListEditorView").ShouldNotBeNull();
-            ControlFinder.FindByAutomationId<Button>(view, "FormListBeginNewButton").ShouldNotBeNull();
-            ControlFinder.FindByAutomationId<Button>(view, "FormListBeginOverrideButton").ShouldNotBeNull();
-            ControlFinder.FindByAutomationId<Button>(view, "FormListBeginExistingOutputButton").ShouldNotBeNull();
-            ControlFinder.FindByAutomationId<ComboBox>(view, "FormListCommandGroupSelector").ShouldNotBeNull();
-            ControlFinder.FindByAutomationId<ComboBox>(view, "FormListCommandSelector").ShouldNotBeNull();
-            ControlFinder.FindByAutomationId<ScrollViewer>(view, "FormListTypedDraftScroller").ShouldNotBeNull();
-            var clearComponents = ControlFinder.FindByAutomationId<Button>(view, "FormListClearComponentsButton").ShouldNotBeNull();
-            clearComponents.IsVisible.ShouldBeFalse();
-            ControlFinder.FindByAutomationId<Button>(view, "FormListEditorApplyButton").ShouldNotBeNull();
-            ControlFinder.FindByAutomationId<Button>(view, "FormListEditorRetryPendingButton").ShouldNotBeNull();
-            var discardFormChanges = ControlFinder.FindByAutomationId<Button>(
-                view,
-                "FormListDiscardFormChangesButton").ShouldNotBeNull();
-            discardFormChanges.IsEnabled.ShouldBeFalse();
-            ControlFinder.FindByAutomationId<TextBlock>(view, "FormListDiscardFormChangesHelp")!
-                .Text.ShouldBe("Discards unapplied form input only; staged changes remain.");
+            ControlFinder.FindByAutomationId<TabItem>(view, "FormListEditTab")!.IsVisible.ShouldBeFalse();
         }
         finally
         {
@@ -137,7 +123,7 @@ public sealed class FormListBrowserViewHeadlessTests
         }
     }
 
-    /// <summary>Verifies crowded diagnostics remain bounded at a compact desktop size and writes the rendered review artifact.</summary>
+    /// <summary>Verifies crowded warnings remain bounded at a compact desktop size and writes the rendered review artifact.</summary>
     /// <remarks>The PNG is retained under the task-owned <c>.work/PluginAuthoring/screenshots</c> directory for visual inspection.</remarks>
     [AvaloniaFact]
     public async Task FormListBrowserView_CrowdedDiagnostics_PreserveFieldHeightAndWriteScreenshot()
@@ -155,9 +141,6 @@ public sealed class FormListBrowserViewHeadlessTests
         {
             window.Show();
             Dispatcher.UIThread.RunJobs();
-            var changes = ControlFinder.FindByAutomationId<ItemsControl>(
-                view,
-                "FormListSemanticChanges").ShouldNotBeNull();
             var warnings = ControlFinder.FindByAutomationId<ItemsControl>(
                 view,
                 "FormListWarnings").ShouldNotBeNull();
@@ -167,11 +150,6 @@ public sealed class FormListBrowserViewHeadlessTests
             var errorText = ControlFinder.FindByAutomationId<TextBlock>(
                 view,
                 "FormListErrorText").ShouldNotBeNull();
-            changes.ItemsSource = Enumerable.Range(0, 48).Select(index => new SemanticChangeDescriptor(
-                $"Items[{index}].A_very_long_plugin_field_identifier_that_must_wrap_inside_the_comparison_pane_and_continue_across_multiple_visual_lines_without_horizontal_clipping_or_inaccessible_tail_content",
-                SemanticChangeKind.ItemChanged,
-                index,
-                index + 1));
             warnings.ItemsSource = Enumerable.Range(0, 48).Select(index => new EngineWarning(
                 $"Crowded-{index}",
                 "A long plugin warning message that must wrap within the fixed comparison pane without reducing either field tree to zero height."));
@@ -195,6 +173,12 @@ public sealed class FormListBrowserViewHeadlessTests
             var retry = ControlFinder.FindByAutomationId<Button>(
                 view,
                 "FormListRetryButton").ShouldNotBeNull();
+            var detailsTabs = ControlFinder.FindByAutomationId<TabControl>(
+                view,
+                "FormListDetailsTabs").ShouldNotBeNull();
+            detailsTabs.ItemsSource.ShouldNotBeNull().Cast<TabItem>()
+                .Single(tab => Equals(tab.Header, "Edit"))
+                .IsVisible.ShouldBeTrue();
             if (HeadlessTestApp.UsesRenderedArtifactRenderer)
             {
                 using var bitmap = window.CaptureRenderedFrame().ShouldNotBeNull();
@@ -208,9 +192,9 @@ public sealed class FormListBrowserViewHeadlessTests
             diagnosticsScroller.Extent.Height.ShouldBeGreaterThan(diagnosticsScroller.Viewport.Height);
             beforeTree.Bounds.Height.ShouldBeGreaterThan(100d);
             afterTree.Bounds.Height.ShouldBeGreaterThan(100d);
-            var firstChange = changes.GetVisualDescendants().OfType<TextBlock>().First();
-            firstChange.Bounds.Width.ShouldBeLessThanOrEqualTo(diagnosticsScroller.Viewport.Width);
-            firstChange.Bounds.Height.ShouldBeGreaterThan(20d);
+            var firstWarning = warnings.GetVisualDescendants().OfType<TextBlock>().First();
+            firstWarning.Bounds.Width.ShouldBeLessThanOrEqualTo(diagnosticsScroller.Viewport.Width);
+            firstWarning.Bounds.Height.ShouldBeGreaterThan(20d);
             status.IsEffectivelyVisible.ShouldBeTrue();
             retry.IsEffectivelyVisible.ShouldBeTrue();
             GetBottomWithinView(status, view).ShouldBeLessThanOrEqualTo(view.Bounds.Height);
