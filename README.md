@@ -30,11 +30,11 @@ Use a desktop or MCP build containing the native replacement. Earlier releases m
 
 1. Install or extract the application outside the game's Data folder.
 2. Keep the game's installed plugins and required masters available in its Data directory.
-3. Open the plugin you intend to edit, or choose a path for a new plugin. Creations Forge derives the read-only dependency context from the installed load order and plugin headers.
+3. Open a plugin read-only to inspect it, explicitly open an eligible plugin for editing, or choose a path for a new plugin. Creations Forge derives the dependency context from the installed load order and plugin headers.
 
 Application configuration and logs use these default locations:
 
-1. Windows: `C:\ProgramData\CreationsForge`
+1. Windows configuration: `C:\ProgramData\CreationsForge`; logs: `C:\ProgramData\CreationsForge\Logs\CreationsForge-<startup timestamp>.log`
 2. Linux/macOS: `~/.CreationsForge`
 
 The macOS configuration path does not imply a validated macOS package.
@@ -42,13 +42,14 @@ The macOS configuration path does not imply a validated macOS package.
 ## Desktop Usage
 
 1. Choose **Open Plugin...** and select the game. Creations Forge uses Mutagen to locate the installed Data directory and load order.
-2. Search or browse the detected plugin list. Select an editable plugin and choose **Open Plugin**, or choose **New Plugin...** and select the new plugin path. The selected existing plugin becomes the guarded editable output; its declared masters remain read-only workspace dependencies.
-3. Read any unavailable reason shown for a plugin before continuing. Creations Forge treats Bethesda-supplied plugins identified by Mutagen, plugins that declare no masters, and files marked read-only as read-only.
-4. Select a FormList and inspect **Compare**. Use **Find Reference...** to look up linked records.
-5. In **Edit**, choose **New FormList**, **Override selected**, or **Edit staged output**. Select an edit action, choose **Open action**, and complete its controls. Available actions depend on the game and current selection.
-6. Resolve validation feedback, then choose **Apply to staged output**. This updates staged workspace changes; it does not save the output file.
-7. Choose **Review Changes...** to inspect changes and warnings. **Discard form changes** clears only unapplied form input; previously staged changes remain.
-8. Choose **Save Changes...** and confirm with **Save and Proceed** when available. To discard staged workspace changes, choose **Discard Changes...** and **Discard and Proceed**. Read disabled-action reasons and the resulting status before leaving.
+2. Search or browse the detected plugin list. Choose **Open Read-Only** to inspect the selected plugin and its records without selecting an output. This is the default action and works for Bethesda-supplied plugins when their native inputs are readable.
+3. Choose **Open for Editing** only when the selected plugin should become the guarded mutable output, or choose **New Plugin...** and select a new plugin path. Declared masters remain read-only workspace dependencies.
+4. Read any unavailable editing reason shown for a plugin before continuing. Creations Forge identifies Bethesda-supplied plugins through Mutagen and does not admit them as editable outputs.
+5. Select a FormList and inspect **Compare**. Use **Find Reference...** to look up linked records.
+6. In an editing workspace, choose **New FormList**, **Override selected**, or **Edit staged output**. Select an edit action, choose **Open action**, and complete its controls. Available actions depend on the game and current selection.
+7. Resolve validation feedback, then choose **Apply to staged output**. This updates staged workspace changes; it does not save the output file.
+8. Choose **Review Changes...** to inspect changes and warnings. **Discard form changes** clears only unapplied form input; previously staged changes remain.
+9. Choose **Save Changes...** and confirm with **Save and Proceed** when available. To discard staged workspace changes, choose **Discard Changes...** and **Discard and Proceed**. Read disabled-action reasons and the resulting status before leaving.
 
 If an unapplied local draft blocks leaving, choose **Keep Editing** to return and preserve the input. For an exact pending editor operation, use **Return to editor** when offered, then **Retry exact pending operation** if available. During an active editor operation, the leave dialog offers **Wait for operation**, **Cancel operation and wait**, and **Keep Editing**. Cancellation requests do not prove that an operation failed or changes were discarded; wait for its outcome.
 

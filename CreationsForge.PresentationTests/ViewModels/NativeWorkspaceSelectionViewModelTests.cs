@@ -5,6 +5,8 @@ using CreationsForge.Services;
 using CreationsForge.ViewModels;
 using Mutagen.Bethesda;
 using Serilog;
+using Serilog.Core;
+using Serilog.Events;
 using Shouldly;
 
 namespace CreationsForge.PresentationTests.ViewModels;
@@ -160,7 +162,7 @@ public sealed class NativeWorkspaceSelectionViewModelTests
         workspace.LastSelectOutputRequest.Output.ModKey.FileName.ToString().ShouldBe("Patch.esl");
         gameSelection.SavedGame.ShouldBe(SupportedGame.Skyrim);
         dispatcher.PostCount.ShouldBe(1);
-        viewModel.StatusText.ShouldBe("Workspace ready: Patch.esl.");
+        viewModel.StatusText.ShouldBe("Editing workspace ready: Patch.esl.");
         viewModel.HasError.ShouldBeFalse();
     }
 
@@ -194,11 +196,14 @@ public sealed class NativeWorkspaceSelectionViewModelTests
             ValueTask.FromResult(EngineResult<IFormListWorkspace>.Failure(expectedError, workspaceId: request.WorkspaceId)));
         var dispatcher = new InlineUiDispatcher();
         var gameSelection = new FakeGameSelectionService();
+        var logSink = new CollectingLogSink();
+        using var logger = new LoggerConfiguration().WriteTo.Sink(logSink).CreateLogger();
         var viewModel = CreateViewModel(
             CreateCoordinator(factory, dispatcher),
             new FakeNativeWorkspacePathPicker(),
             gameSelection,
-            dispatcher);
+            dispatcher,
+            logger);
         PopulateRequiredPaths(viewModel);
 
         var succeeded = await viewModel.OpenWorkspaceAsync();
@@ -207,6 +212,10 @@ public sealed class NativeWorkspaceSelectionViewModelTests
         viewModel.ErrorText.ShouldBe(expectedError.Message);
         viewModel.StatusText.ShouldBe("Native workspace opening failed.");
         gameSelection.SavedGame.ShouldBeNull();
+        logSink.Events.ShouldContain(logEvent =>
+            logEvent.Level == LogEventLevel.Warning
+            && logEvent.RenderMessage().Contains("MissingMaster", StringComparison.Ordinal)
+            && logEvent.RenderMessage().Contains(expectedError.Message, StringComparison.Ordinal));
     }
 
     /// <summary>Verifies a post-activation preference failure remains a successful activation with truthful warning state.</summary>
@@ -314,19 +323,21 @@ public sealed class NativeWorkspaceSelectionViewModelTests
     /// <param name="picker">The configured path picker.</param>
     /// <param name="gameSelection">The active-game preference fake.</param>
     /// <param name="dispatcher">The synchronous presentation dispatcher.</param>
+    /// <param name="logger">The optional logger used to verify structured diagnostics.</param>
     /// <returns>The view model under test.</returns>
     private static NativeWorkspaceSelectionViewModel CreateViewModel(
         NativeWorkspaceCoordinator coordinator,
         FakeNativeWorkspacePathPicker picker,
         FakeGameSelectionService gameSelection,
-        InlineUiDispatcher dispatcher)
+        InlineUiDispatcher dispatcher,
+        ILogger? logger = null)
     {
         return new NativeWorkspaceSelectionViewModel(
             coordinator,
             picker,
             gameSelection,
             dispatcher,
-            new LoggerConfiguration().CreateLogger());
+            logger ?? new LoggerConfiguration().CreateLogger());
     }
 
     /// <summary>Creates a coordinator with deterministic test dependencies.</summary>
@@ -392,5 +403,18 @@ public sealed class NativeWorkspaceSelectionViewModelTests
     private static string CreateTestRoot()
     {
         return Path.Combine(Path.GetTempPath(), "CreationsForge-PresentationTests", Guid.NewGuid().ToString("N"));
+    }
+
+    /// <summary>Collects structured Serilog events emitted during one isolated test.</summary>
+    private sealed class CollectingLogSink : ILogEventSink
+    {
+        /// <summary>Gets emitted log events in publication order.</summary>
+        internal IList<LogEvent> Events { get; } = [];
+
+        /// <inheritdoc />
+        public void Emit(LogEvent logEvent)
+        {
+            Events.Add(logEvent);
+        }
     }
 }

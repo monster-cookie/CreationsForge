@@ -167,7 +167,7 @@ public sealed partial class NativeFormListBrowserViewModelTests
         var workspace = new ParticipantTestWorkspace(
             workspaceId,
             initialRevision,
-            descriptor.Output,
+            descriptor.Output!,
             sourceMod,
             formKey);
         var coordinator = new RecordingNativeWorkspaceCoordinator();

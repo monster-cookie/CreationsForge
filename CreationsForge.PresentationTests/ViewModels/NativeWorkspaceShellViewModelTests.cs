@@ -74,7 +74,7 @@ public sealed class NativeWorkspaceShellViewModelTests
         viewModel.PropertyChanged += (_, eventArgs) => changedProperties.Add(eventArgs.PropertyName);
 
         viewModel.HasWorkspace.ShouldBeTrue();
-            viewModel.WorkspaceStatusText.ShouldBe("Starfield: ChangesOutput.esp");
+        viewModel.WorkspaceStatusText.ShouldBe("Starfield: ChangesOutput.esp (Editing)");
 
         (await viewModel.CloseWorkspaceAsync()).ShouldBeTrue();
 
@@ -83,6 +83,25 @@ public sealed class NativeWorkspaceShellViewModelTests
         viewModel.WorkspaceStatusText.ShouldBe("No plugin is open.");
         changedProperties.ShouldContain(nameof(NativeWorkspaceShellViewModel.HasWorkspace));
         changedProperties.ShouldContain(nameof(NativeWorkspaceShellViewModel.WorkspaceStatusText));
+        context.Arbiter.IsWorkspaceTransitionPendingOrReserved.ShouldBeFalse();
+    }
+
+    /// <summary>Verifies a read-only workspace closes without invoking output review or persistence UI.</summary>
+    [Fact]
+    public async Task CloseWorkspaceAsync_WhenReadOnly_ClosesAfterSourceStateProof()
+    {
+        await using var context = NativeWorkspaceChangesTestContext.CreateReadOnly();
+        using var viewModel = CreateShellViewModel(context);
+
+        viewModel.WorkspaceStatusText.ShouldBe("Starfield: ChangesSource.esm (Read-Only)");
+        context.ViewModel.CanReviewChanges.ShouldBeFalse();
+        context.ViewModel.CanOpenPersistenceDialog.ShouldBeFalse();
+
+        (await viewModel.CloseWorkspaceAsync()).ShouldBeTrue();
+
+        context.Coordinator.CloseCount.ShouldBe(1);
+        context.DialogService.Requests.ShouldBeEmpty();
+        context.Coordinator.CurrentWorkspace.ShouldBeNull();
         context.Arbiter.IsWorkspaceTransitionPendingOrReserved.ShouldBeFalse();
     }
 

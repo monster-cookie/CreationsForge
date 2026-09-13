@@ -328,6 +328,8 @@ public sealed class NativeWorkspaceShellViewModel : ViewModelBase, INativeWorksp
             return "No plugin is open.";
         }
 
-        return $"{workspace.Game}: {workspace.Output.ModKey.FileName}";
+        return workspace.Output is null
+            ? $"{workspace.Game}: {Path.GetFileName(workspace.SourcePluginPath)} (Read-Only)"
+            : $"{workspace.Game}: {workspace.Output.ModKey.FileName} (Editing)";
     }
 }

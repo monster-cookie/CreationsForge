@@ -15,8 +15,8 @@ public sealed class NativeWorkspaceDescriptor
     /// <param name="release">The exact native game release.</param>
     /// <param name="sourcePluginPath">The read-only source plugin path.</param>
     /// <param name="loadOrderPluginPaths">The explicit plugin paths in load-order order.</param>
-    /// <param name="output">The admitted output association.</param>
-    /// <param name="revision">The revision after output selection.</param>
+    /// <param name="output">The admitted output association, or <see langword="null"/> for a read-only workspace.</param>
+    /// <param name="revision">The source revision, advanced when an output was selected.</param>
     /// <exception cref="ArgumentNullException">Thrown when a required reference is <see langword="null"/>.</exception>
     public NativeWorkspaceDescriptor(
         Guid workspaceId,
@@ -24,11 +24,10 @@ public sealed class NativeWorkspaceDescriptor
         GameRelease release,
         string sourcePluginPath,
         IReadOnlyList<string> loadOrderPluginPaths,
-        OutputAssociation output,
+        OutputAssociation? output,
         WorkspaceRevision revision)
     {
         ArgumentNullException.ThrowIfNull(loadOrderPluginPaths);
-        ArgumentNullException.ThrowIfNull(output);
         WorkspaceId = workspaceId;
         Game = game;
         Release = release;
@@ -53,9 +52,9 @@ public sealed class NativeWorkspaceDescriptor
     /// <summary>Gets the explicit plugin paths in load-order order.</summary>
     public IReadOnlyList<string> LoadOrderPluginPaths { get; }
 
-    /// <summary>Gets the admitted output association.</summary>
-    public OutputAssociation Output { get; }
+    /// <summary>Gets the admitted output association, or <see langword="null"/> for a read-only workspace.</summary>
+    public OutputAssociation? Output { get; }
 
-    /// <summary>Gets the revision after output selection.</summary>
+    /// <summary>Gets the source revision, advanced when an output was selected.</summary>
     public WorkspaceRevision Revision { get; }
 }

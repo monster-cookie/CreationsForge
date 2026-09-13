@@ -38,7 +38,7 @@ public sealed partial class NativeFormListEditorViewModel
         var coreResponded = false;
         try
         {
-            if (descriptor is null || descriptor.WorkspaceId != session.WorkspaceId)
+            if (descriptor is null || descriptor.Output is null || descriptor.WorkspaceId != session.WorkspaceId)
             {
                 await PublishApplyFailureAsync(generation, session.WorkspaceId, draft, new EngineError(EngineErrorCode.InvalidRequest, "The active workspace does not match the editor session.")).ConfigureAwait(false);
                 return;
@@ -272,7 +272,7 @@ public sealed partial class NativeFormListEditorViewModel
             try
             {
                 var viewResult = await workspace.ReadFormListViewAsync(
-                    new ReferenceRequest(session.FormKey, RecordScope.StagedOutput, descriptor.Output.ModKey),
+                    new ReferenceRequest(session.FormKey, RecordScope.StagedOutput, descriptor.Output!.ModKey),
                     cancellationToken).ConfigureAwait(false);
                 warnings.AddRange(viewResult.Warnings);
                 if (viewResult.Succeeded && viewResult.Value?.Record is { } record && viewResult.ResultRevision == receipt.Revision)

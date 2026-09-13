@@ -32,6 +32,7 @@ public sealed partial class NativeWorkspaceSelectionViewModel
         {
             if (SetProperty(ref SelectedPluginValue, value))
             {
+                OnPropertyChanged(nameof(CanOpenSelectedPluginReadOnly));
                 OnPropertyChanged(nameof(CanOpenSelectedPlugin));
                 OnPropertyChanged(nameof(SelectedPluginDetails));
             }
@@ -50,6 +51,9 @@ public sealed partial class NativeWorkspaceSelectionViewModel
             }
         }
     }
+
+    /// <summary>Gets whether the selected plugin can be opened as an immutable inspection workspace.</summary>
+    public bool CanOpenSelectedPluginReadOnly => !IsBusy && SelectedPlugin is not null;
 
     /// <summary>Gets whether the selected plugin can be opened for guarded editing.</summary>
     public bool CanOpenSelectedPlugin => !IsBusy && SelectedPlugin?.CanEdit == true;
@@ -85,6 +89,11 @@ public sealed partial class NativeWorkspaceSelectionViewModel
             var result = await PluginDiscoveryService.DiscoverAsync(SelectedGame.Game, cancellationToken);
             if (!result.Succeeded || result.Value is null)
             {
+                Logger.Warning(
+                    "Installed plugin discovery failed for {Game}; error code: {ErrorCode}; message: {ErrorMessage}",
+                    SelectedGame.Game,
+                    result.Error?.Code,
+                    result.Error?.Message ?? "No error description was returned.");
                 ResetPluginCatalog();
                 ErrorText = result.Error?.Message ?? "Plugin discovery returned no catalog or failure reason.";
                 StatusText = "Installed plugins could not be loaded.";
@@ -106,8 +115,31 @@ public sealed partial class NativeWorkspaceSelectionViewModel
         finally
         {
             IsBusy = false;
+            OnPropertyChanged(nameof(CanOpenSelectedPluginReadOnly));
             OnPropertyChanged(nameof(CanOpenSelectedPlugin));
         }
+    }
+
+    /// <summary>Opens the selected plugin and its declared masters as an immutable inspection workspace.</summary>
+    /// <param name="cancellationToken">A token that cancels native workspace acquisition.</param>
+    /// <returns><see langword="true"/> when the read-only plugin workspace became active; otherwise <see langword="false"/>.</returns>
+    public async Task<bool> OpenSelectedPluginReadOnlyAsync(CancellationToken cancellationToken = default)
+    {
+        if (SelectedPlugin is not { } row || PluginCatalogValue is null)
+        {
+            ErrorText = "Select a plugin to inspect.";
+            return false;
+        }
+
+        var loadOrderPluginPaths = row.Entry.DependencyPluginPaths
+            .Append(row.Entry.PluginPath)
+            .ToArray();
+        SourcePluginPath = row.Entry.PluginPath;
+        ReplacePaths(LoadOrderPluginPaths, loadOrderPluginPaths);
+        DataDirectoryPath = PluginCatalogValue.DataDirectoryPath;
+        PopulateStringDirectoryPaths(PluginCatalogValue.DataDirectoryPath);
+        OutputPluginPath = string.Empty;
+        return await OpenWorkspaceAsync(includeOutput: false, cancellationToken);
     }
 
     /// <summary>Opens the selected plugin as the guarded mutable output over its declared read-only masters.</summary>
@@ -217,14 +249,21 @@ public sealed partial class NativeWorkspaceSelectionViewModel
         SourcePluginPath = dependencyPluginPaths[^1];
         ReplacePaths(LoadOrderPluginPaths, dependencyPluginPaths);
         DataDirectoryPath = dataDirectoryPath;
+        PopulateStringDirectoryPaths(dataDirectoryPath);
+        OutputPluginPath = outputPluginPath;
+        OutputMode = outputMode;
+        LocalizedOutputMode = localizedOutputMode;
+        OutputMasterStyle = masterStyle;
+    }
+
+    /// <summary>Uses loose strings when present and retains the data directory as explicit archive-only lookup context otherwise.</summary>
+    /// <param name="dataDirectoryPath">The detected installed game data directory.</param>
+    private void PopulateStringDirectoryPaths(string dataDirectoryPath)
+    {
         ReplacePaths(
             StringDirectoryPaths,
             Directory.Exists(Path.Combine(dataDirectoryPath, "Strings"))
                 ? [Path.Combine(dataDirectoryPath, "Strings")]
                 : [dataDirectoryPath]);
-        OutputPluginPath = outputPluginPath;
-        OutputMode = outputMode;
-        LocalizedOutputMode = localizedOutputMode;
-        OutputMasterStyle = masterStyle;
     }
 }

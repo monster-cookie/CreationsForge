@@ -7,7 +7,7 @@ using Serilog;
 namespace CreationsForge.Services;
 
 /// <summary>
-/// Owns one root-lifetime native workspace and publishes replacements only after source and output acquisition succeeds.
+/// Owns one root-lifetime native workspace and publishes replacements only after source and optional output acquisition succeeds.
 /// </summary>
 public sealed class NativeWorkspaceCoordinator : INativeWorkspaceCoordinator
 {
@@ -82,21 +82,29 @@ public sealed class NativeWorkspaceCoordinator : INativeWorkspaceCoordinator
 
             candidate = openResult.Value;
             cancellationToken.ThrowIfCancellationRequested();
-            var outputRequest = new SelectOutputRequest(
-                Guid.NewGuid(),
-                candidate.Revision,
-                request.OutputMode,
-                request.Output);
-            var outputResult = await candidate.SelectOutputAsync(outputRequest, cancellationToken).ConfigureAwait(false);
-            if (!outputResult.Succeeded || outputResult.Value is null)
+            OutputSelectionReceipt? outputReceipt = null;
+            EngineResult<OutputSelectionReceipt>? outputResult = null;
+            SelectOutputRequest? outputRequest = null;
+            if (request.Output is not null)
             {
-                return EngineResult<NativeWorkspaceDescriptor>.Failure(
-                    outputResult.Error ?? UnexpectedError("The native workspace returned no output-selection result or failure reason."),
-                    workspaceId: candidate.WorkspaceId,
-                    operationId: outputRequest.OperationId,
-                    baseRevision: outputRequest.ExpectedRevision,
-                    resultRevision: outputResult.ResultRevision,
-                    warnings: outputResult.Warnings);
+                outputRequest = new SelectOutputRequest(
+                    Guid.NewGuid(),
+                    candidate.Revision,
+                    request.OutputMode,
+                    request.Output);
+                outputResult = await candidate.SelectOutputAsync(outputRequest, cancellationToken).ConfigureAwait(false);
+                if (!outputResult.Succeeded || outputResult.Value is null)
+                {
+                    return EngineResult<NativeWorkspaceDescriptor>.Failure(
+                        outputResult.Error ?? UnexpectedError("The native workspace returned no output-selection result or failure reason."),
+                        workspaceId: candidate.WorkspaceId,
+                        operationId: outputRequest.OperationId,
+                        baseRevision: outputRequest.ExpectedRevision,
+                        resultRevision: outputResult.ResultRevision,
+                        warnings: outputResult.Warnings);
+                }
+
+                outputReceipt = outputResult.Value;
             }
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -106,8 +114,8 @@ public sealed class NativeWorkspaceCoordinator : INativeWorkspaceCoordinator
                 request.Sources.Release,
                 request.Sources.SourcePluginPath,
                 request.Sources.LoadOrderPluginPaths,
-                outputResult.Value.Output,
-                outputResult.Value.Revision);
+                outputReceipt?.Output,
+                outputReceipt?.Revision ?? candidate.Revision);
             var previous = OwnedWorkspace;
             OwnedWorkspace = candidate;
             var publicationCommitted = false;
@@ -139,10 +147,10 @@ public sealed class NativeWorkspaceCoordinator : INativeWorkspaceCoordinator
             return EngineResult<NativeWorkspaceDescriptor>.Success(
                 descriptor,
                 workspaceId: descriptor.WorkspaceId,
-                operationId: outputRequest.OperationId,
-                baseRevision: outputRequest.ExpectedRevision,
+                operationId: outputRequest?.OperationId,
+                baseRevision: outputRequest?.ExpectedRevision,
                 resultRevision: descriptor.Revision,
-                warnings: openResult.Warnings.Concat(outputResult.Warnings).ToArray());
+                warnings: openResult.Warnings.Concat(outputResult?.Warnings ?? []).ToArray());
         }
         catch (OperationCanceledException)
         {

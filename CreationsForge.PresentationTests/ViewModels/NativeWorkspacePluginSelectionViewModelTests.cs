@@ -38,6 +38,9 @@ public sealed class NativeWorkspacePluginSelectionViewModelTests
         editable.AuthorText.ShouldBe("Venworks");
         editable.DescriptionText.ShouldBe("Editable test plugin");
         editable.AvailabilityText.ShouldBe("Available");
+        viewModel.SelectedPlugin = viewModel.PluginRows.Single(row => row.FileName == "Base.esm");
+        viewModel.CanOpenSelectedPluginReadOnly.ShouldBeTrue();
+        viewModel.CanOpenSelectedPlugin.ShouldBeFalse();
         viewModel.PluginSearchText = "edit";
         viewModel.PluginRows.Select(row => row.FileName).ShouldBe(["Editable.esp"]);
     }
@@ -70,6 +73,35 @@ public sealed class NativeWorkspacePluginSelectionViewModelTests
         workspace.LastSelectOutputRequest.Output.PluginPath.ShouldBe(Path.Combine(root, "Editable.esp"));
         workspace.LastSelectOutputRequest.Output.LocalizedOutputMode.ShouldBe(LocalizedOutputMode.SeparateStringFiles);
         workspace.LastSelectOutputRequest.Output.MasterStyle.ShouldBe(OutputMasterStyle.Small);
+    }
+
+    /// <summary>Verifies read-only opening keeps the selected plugin in immutable source inputs and admits no output.</summary>
+    [Fact]
+    public async Task OpenSelectedPluginReadOnlyAsync_WithSelectedEntry_UsesPluginAndMastersAsSources()
+    {
+        var root = CreateTestRoot();
+        var workspace = CreateSuccessfulWorkspace();
+        var factory = CreateFactory(workspace);
+        await using var coordinator = CreateCoordinator(factory);
+        var discovery = new FakeNativePluginDiscoveryService
+        {
+            Result = EngineResult<NativePluginCatalog>.Success(CreateCatalog(root))
+        };
+        var viewModel = CreateViewModel(coordinator, new FakeNativeWorkspacePathPicker(), discovery);
+        await viewModel.RefreshPluginsAsync();
+        viewModel.SelectedPlugin = viewModel.PluginRows.Single(row => row.FileName == "Editable.esp");
+
+        var opened = await viewModel.OpenSelectedPluginReadOnlyAsync();
+
+        opened.ShouldBeTrue();
+        factory.Requests.Single().SourcePluginPath.ShouldBe(Path.Combine(root, "Editable.esp"));
+        factory.Requests.Single().LoadOrderPluginPaths.ShouldBe([
+            Path.Combine(root, "Base.esm"),
+            Path.Combine(root, "Editable.esp")]);
+        factory.Requests.Single().StringDirectoryPaths.ShouldBe([root]);
+        workspace.LastSelectOutputRequest.ShouldBeNull();
+        var descriptor = coordinator.CurrentWorkspace.ShouldNotBeNull();
+        descriptor.Output.ShouldBeNull();
     }
 
     /// <summary>Verifies new-plugin creation uses the detected enabled load order and the existing save-file picker.</summary>

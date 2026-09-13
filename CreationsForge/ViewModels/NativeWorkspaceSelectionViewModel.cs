@@ -105,8 +105,8 @@ public sealed partial class NativeWorkspaceSelectionViewModel : ViewModelBase
         SelectedGameValue = Games.FirstOrDefault(option => option.Game == configuredGame) ?? Games[0];
         OutputMasterStyleOptionsValue = SelectedGameValue.SupportedMasterStyles;
         StatusTextValue = WorkspaceCoordinator.CurrentWorkspace is null
-            ? "Select an installed plugin to edit, or create a new plugin."
-            : $"Plugin ready: {WorkspaceCoordinator.CurrentWorkspace.Output.ModKey.FileName}.";
+            ? "Select an installed plugin to inspect or edit, or create a new plugin."
+            : CreateReadyStatus(WorkspaceCoordinator.CurrentWorkspace);
         LoadOrderPluginPaths = new ObservableCollection<string>();
         StringDirectoryPaths = new ObservableCollection<string>();
     }
@@ -350,12 +350,21 @@ public sealed partial class NativeWorkspaceSelectionViewModel : ViewModelBase
     /// <returns><see langword="true"/> when a new workspace became active; otherwise <see langword="false"/>.</returns>
     public async Task<bool> OpenWorkspaceAsync(CancellationToken cancellationToken = default)
     {
+        return await OpenWorkspaceAsync(includeOutput: true, cancellationToken);
+    }
+
+    /// <summary>Validates and activates native sources with an optional mutable output without disturbing a prior workspace on failure.</summary>
+    /// <param name="includeOutput">Whether the populated output fields must be admitted for editing.</param>
+    /// <param name="cancellationToken">A token linked with the dialog's explicit cancel action.</param>
+    /// <returns><see langword="true"/> when a new workspace became active; otherwise <see langword="false"/>.</returns>
+    private async Task<bool> OpenWorkspaceAsync(bool includeOutput, CancellationToken cancellationToken)
+    {
         if (IsBusy)
         {
             return false;
         }
 
-        ErrorText = ValidateSelection();
+        ErrorText = ValidateSelection(includeOutput);
         if (ErrorText is not null)
         {
             StatusText = "Correct the workspace inputs and try again.";
@@ -381,13 +390,36 @@ public sealed partial class NativeWorkspaceSelectionViewModel : ViewModelBase
                 DataDirectoryPath,
                 StringDirectoryPaths.ToArray(),
                 progress);
-            var modKey = ModKey.FromNameAndExtension(Path.GetFileName(OutputPluginPath));
-            var output = new OutputAssociation(OutputPluginPath, modKey, LocalizedOutputMode, OutputMasterStyle);
+            var request = includeOutput
+                ? new NativeWorkspaceOpenRequest(
+                    sources,
+                    OutputMode,
+                    new OutputAssociation(
+                        OutputPluginPath,
+                        ModKey.FromNameAndExtension(Path.GetFileName(OutputPluginPath)),
+                        LocalizedOutputMode,
+                        OutputMasterStyle))
+                : new NativeWorkspaceOpenRequest(sources);
+            Logger.Information(
+                "Opening native {AccessMode} workspace for {Game}; source: {SourcePluginPath}; output: {OutputPluginPath}; load-order plugin count: {LoadOrderPluginCount}",
+                includeOutput ? "editing" : "read-only",
+                SelectedGame.Game,
+                SourcePluginPath,
+                includeOutput ? OutputPluginPath : null,
+                LoadOrderPluginPaths.Count);
             var result = await WorkspaceCoordinator.OpenAsync(
-                new NativeWorkspaceOpenRequest(sources, OutputMode, output),
+                request,
                 linkedCancellation.Token);
             if (!result.Succeeded || result.Value is null)
             {
+                Logger.Warning(
+                    "Native {AccessMode} workspace opening failed for {Game}; source: {SourcePluginPath}; output: {OutputPluginPath}; error code: {ErrorCode}; message: {ErrorMessage}",
+                    includeOutput ? "editing" : "read-only",
+                    SelectedGame.Game,
+                    SourcePluginPath,
+                    includeOutput ? OutputPluginPath : null,
+                    result.Error?.Code,
+                    result.Error?.Message ?? "No error description was returned.");
                 ErrorText = result.Error?.Message ?? "The native engine returned no workspace or failure reason.";
                 StatusText = WorkspaceCoordinator.CurrentWorkspace is null
                     ? "Native workspace opening failed."
@@ -396,8 +428,15 @@ public sealed partial class NativeWorkspaceSelectionViewModel : ViewModelBase
             }
 
             activationSucceeded = true;
+            Logger.Information(
+                "Native {AccessMode} workspace {WorkspaceId} opened for {Game}; source: {SourcePluginPath}; output: {OutputPluginPath}",
+                includeOutput ? "editing" : "read-only",
+                result.Value.WorkspaceId,
+                result.Value.Game,
+                result.Value.SourcePluginPath,
+                result.Value.Output?.PluginPath);
             ErrorText = null;
-            StatusText = $"Workspace ready: {result.Value.Output.ModKey.FileName}.";
+            StatusText = CreateReadyStatus(result.Value);
             try
             {
                 GameSelectionService.SetActiveGame(SelectedGame.Game);
@@ -406,7 +445,7 @@ public sealed partial class NativeWorkspaceSelectionViewModel : ViewModelBase
             {
                 Logger.Warning(exception, "Native workspace {WorkspaceId} opened, but its active-game preference could not be saved.", result.Value.WorkspaceId);
                 ErrorText = "The workspace opened, but the active-game preference could not be saved.";
-                StatusText = $"Workspace ready: {result.Value.Output.ModKey.FileName}. The game preference was not saved.";
+                StatusText = $"{CreateReadyStatus(result.Value)} The game preference was not saved.";
             }
 
             return true;
@@ -460,7 +499,7 @@ public sealed partial class NativeWorkspaceSelectionViewModel : ViewModelBase
     private string GetCurrentWorkspaceStatus(string detail)
     {
         return WorkspaceCoordinator.CurrentWorkspace is { } workspace
-            ? $"Workspace ready: {workspace.Output.ModKey.FileName}. {detail}"
+            ? $"{CreateReadyStatus(workspace)} {detail}"
             : $"The workspace opened. {detail}";
     }
 
@@ -524,7 +563,7 @@ public sealed partial class NativeWorkspaceSelectionViewModel : ViewModelBase
 
     /// <summary>Validates the complete selection before any native workspace is acquired.</summary>
     /// <returns>An actionable error, or <see langword="null"/> when the selection is structurally complete.</returns>
-    private string? ValidateSelection()
+    private string? ValidateSelection(bool requireOutput = true)
     {
         if (string.IsNullOrWhiteSpace(SourcePluginPath))
         {
@@ -549,6 +588,11 @@ public sealed partial class NativeWorkspaceSelectionViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(DataDirectoryPath))
         {
             return "Select the game data directory.";
+        }
+
+        if (!requireOutput)
+        {
+            return null;
         }
 
         if (string.IsNullOrWhiteSpace(OutputPluginPath))
@@ -582,6 +626,17 @@ public sealed partial class NativeWorkspaceSelectionViewModel : ViewModelBase
         }
 
         return null;
+    }
+
+    /// <summary>Formats the active plugin and access mode after successful workspace publication.</summary>
+    /// <param name="workspace">The published native workspace descriptor.</param>
+    /// <returns>A complete ready-state sentence.</returns>
+    private static string CreateReadyStatus(NativeWorkspaceDescriptor workspace)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
+        return workspace.Output is null
+            ? $"Read-only workspace ready: {Path.GetFileName(workspace.SourcePluginPath)}."
+            : $"Editing workspace ready: {workspace.Output.ModKey.FileName}.";
     }
 
     /// <summary>Replaces an editable path collection with unique non-empty entries in caller order.</summary>

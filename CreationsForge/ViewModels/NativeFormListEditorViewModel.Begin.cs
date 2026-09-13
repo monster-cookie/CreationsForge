@@ -76,9 +76,9 @@ public sealed partial class NativeFormListEditorViewModel
         var coreResponded = false;
         try
         {
-            if (descriptor is null)
+            if (descriptor is null || descriptor.Output is null)
             {
-                await PublishBeginFailureAsync(generation, Guid.Empty, new EngineError(EngineErrorCode.InvalidRequest, "No native workspace is open.")).ConfigureAwait(false);
+                await PublishBeginFailureAsync(generation, descriptor?.WorkspaceId ?? Guid.Empty, new EngineError(EngineErrorCode.InvalidRequest, "No editable native workspace is open.")).ConfigureAwait(false);
                 return;
             }
 
@@ -281,7 +281,7 @@ public sealed partial class NativeFormListEditorViewModel
         try
         {
             var viewResult = await workspace.ReadFormListViewAsync(
-                new ReferenceRequest(receipt.FormKey, RecordScope.StagedOutput, descriptor.Output.ModKey),
+                new ReferenceRequest(receipt.FormKey, RecordScope.StagedOutput, descriptor.Output!.ModKey),
                 cancellationToken).ConfigureAwait(false);
             warnings.AddRange(viewResult.Warnings);
             if (viewResult.Succeeded &&
@@ -373,7 +373,7 @@ public sealed partial class NativeFormListEditorViewModel
                 descriptor.WorkspaceId,
                 descriptor.Game,
                 descriptor.Release,
-                descriptor.Output,
+                descriptor.Output!,
                 outcome.CatalogContext.Identity,
                 outcome.Receipt);
             CatalogContextValue = outcome.CatalogContext;

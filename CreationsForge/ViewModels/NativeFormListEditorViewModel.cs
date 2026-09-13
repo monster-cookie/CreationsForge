@@ -320,7 +320,12 @@ public sealed partial class NativeFormListEditorViewModel : ViewModelBase, IDisp
     }
 
     /// <summary>Gets whether ordinary begin actions are currently permitted without discarding a locally changed draft.</summary>
-    private bool CanBegin => !IsDisposed && !IsBusy && !HasPendingOperation && !HasDraftChanges && IsEditorAdmissionOpen;
+    private bool CanBegin => !IsDisposed
+        && !IsBusy
+        && !HasPendingOperation
+        && !HasDraftChanges
+        && WorkspaceCoordinator.CurrentWorkspace?.Output is not null
+        && IsEditorAdmissionOpen;
 
     /// <summary>Gets whether no workspace transition is waiting for or owns presentation admission.</summary>
     private bool IsEditorAdmissionOpen => !OperationArbiter.IsWorkspaceTransitionPendingOrReserved;

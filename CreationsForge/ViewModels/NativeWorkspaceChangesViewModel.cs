@@ -441,7 +441,7 @@ public sealed partial class NativeWorkspaceChangesViewModel : ViewModelBase, IDi
     private bool IsCapturedEditorOperationActive => OwnedTransitionRequest?.IsEditorOperationActive == true;
 
     /// <summary>Gets whether a new toolbar modal session can reserve presentation admission.</summary>
-    private bool CanOpenDialog => WorkspaceCoordinator.CurrentWorkspace is not null
+    private bool CanOpenDialog => WorkspaceCoordinator.CurrentWorkspace?.Output is not null
         && !IsBusy
         && !IsDialogSessionActive
         && !IsShutdownRequested;

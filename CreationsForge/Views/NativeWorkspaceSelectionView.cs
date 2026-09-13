@@ -10,7 +10,7 @@ using CreationsForge.ViewModels;
 
 namespace CreationsForge.Views;
 
-/// <summary>Presents installed plugins as the entry point into native record editing.</summary>
+/// <summary>Presents installed plugins as the entry point into native record inspection and editing.</summary>
 public sealed class NativeWorkspaceSelectionView : UserControl
 {
     /// <summary>The installed-plugin selection state.</summary>
@@ -41,7 +41,7 @@ public sealed class NativeWorkspaceSelectionView : UserControl
     {
         var heading = CreateCell("Open Plugin", FontWeight.SemiBold, 22);
         var guidance = CreateCell(
-            "Choose the plugin you want to edit. CreationsForge opens its declared masters read-only and stages changes safely until you save.");
+            "Choose a plugin to inspect read-only, or explicitly open an eligible plugin for editing. Declared masters always remain read-only.");
         guidance.TextWrapping = TextWrapping.Wrap;
 
         var selectors = BuildSelectors();
@@ -286,7 +286,7 @@ public sealed class NativeWorkspaceSelectionView : UserControl
         return new StackPanel { Spacing = 6, Children = { progress, status, error } };
     }
 
-    /// <summary>Builds cancel, create, and open actions.</summary>
+    /// <summary>Builds cancel, create, read-only open, and editing actions.</summary>
     /// <returns>The right-aligned footer.</returns>
     private Control BuildFooter()
     {
@@ -314,6 +314,23 @@ public sealed class NativeWorkspaceSelectionView : UserControl
         };
         AutomationProperties.SetAutomationId(create, "CreateNativePluginButton");
 
+        var inspect = new Button
+        {
+            Content = "Open Read-Only",
+            MinWidth = 145,
+            Padding = new Thickness(16, 8),
+            IsDefault = true
+        };
+        inspect.Bind(IsEnabledProperty, new Binding(nameof(NativeWorkspaceSelectionViewModel.CanOpenSelectedPluginReadOnly)));
+        inspect.Click += async (_, _) =>
+        {
+            if (await ViewModel.OpenSelectedPluginReadOnlyAsync())
+            {
+                CloseAction(true);
+            }
+        };
+        AutomationProperties.SetAutomationId(inspect, "OpenNativePluginReadOnlyButton");
+
         var open = new Button { Content = "Open for Editing", MinWidth = 150, Padding = new Thickness(16, 8) };
         open.Bind(IsEnabledProperty, new Binding(nameof(NativeWorkspaceSelectionViewModel.CanOpenSelectedPlugin)));
         open.Click += async (_, _) =>
@@ -330,7 +347,7 @@ public sealed class NativeWorkspaceSelectionView : UserControl
             Orientation = Orientation.Horizontal,
             Spacing = 8,
             HorizontalAlignment = HorizontalAlignment.Right,
-            Children = { cancel, create, open }
+            Children = { cancel, create, open, inspect }
         };
     }
 }

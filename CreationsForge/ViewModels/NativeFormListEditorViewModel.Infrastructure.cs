@@ -228,7 +228,7 @@ public sealed partial class NativeFormListEditorViewModel
             return new EngineError(EngineErrorCode.UnsupportedGameRelease, "The active workspace game or release does not match the captured editor context.");
         }
 
-        if (state.Output is null || !SameOutput(state.Output, descriptor.Output))
+        if (state.Output is null || descriptor.Output is null || !SameOutput(state.Output, descriptor.Output))
         {
             return new EngineError(EngineErrorCode.ExternalChangeDetected, "The selected native output changed before the editor operation began.");
         }

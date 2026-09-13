@@ -45,6 +45,25 @@ public sealed class NativeWorkspaceCoordinatorTests
         dispatcher.InvokeCount.ShouldBe(1);
     }
 
+    /// <summary>Verifies source-only activation publishes a read-only workspace without selecting an output.</summary>
+    [Fact]
+    public async Task OpenAsync_WithSourceOnlyRequest_PublishesReadOnlyDescriptor()
+    {
+        var workspace = CreateSuccessfulWorkspace();
+        var factory = CreateFactory(workspace);
+        await using var coordinator = CreateCoordinator(factory, new InlineUiDispatcher());
+        var editableRequest = CreateRequest(SupportedGame.Starfield, GameRelease.Starfield);
+
+        var result = await coordinator.OpenAsync(new NativeWorkspaceOpenRequest(editableRequest.Sources));
+
+        result.Succeeded.ShouldBeTrue();
+        result.Value.ShouldNotBeNull();
+        result.Value.Output.ShouldBeNull();
+        result.Value.SourcePluginPath.ShouldBe(editableRequest.Sources.SourcePluginPath);
+        result.Value.Revision.ShouldBe(workspace.Revision);
+        workspace.LastSelectOutputRequest.ShouldBeNull();
+    }
+
     /// <summary>Verifies a failed replacement disposes only its candidate and leaves the prior workspace active.</summary>
     [Fact]
     public async Task OpenAsync_WhenReplacementOutputFails_PreservesPriorWorkspaceAndDisposesCandidate()

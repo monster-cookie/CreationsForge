@@ -92,6 +92,16 @@ public sealed class NativeDesktopWorkspaceIntegrationTests
         var coordinator = container.Resolve<INativeWorkspaceCoordinator>();
         var createdOutput = fixture.CreateNewOutput(game.ToString());
 
+        var readOnlyResult = await coordinator.OpenAsync(
+            new NativeWorkspaceOpenRequest(fixture.CreateSourceRequest()),
+            TestContext.Current.CancellationToken);
+
+        readOnlyResult.Succeeded.ShouldBeTrue(readOnlyResult.Error?.Message);
+        readOnlyResult.Value.ShouldNotBeNull();
+        readOnlyResult.Value.Output.ShouldBeNull();
+        await AssertReadableFormListAsync(coordinator, fixture.SourceFormKey, RecordScope.Source);
+        await coordinator.CloseAsync();
+
         var createResult = await coordinator.OpenAsync(new NativeWorkspaceOpenRequest(
             fixture.CreateSourceRequest(),
             OutputSelectionMode.CreateNew,
@@ -99,7 +109,7 @@ public sealed class NativeDesktopWorkspaceIntegrationTests
 
         createResult.Succeeded.ShouldBeTrue(createResult.Error?.Message);
         createResult.Value!.Game.ShouldBe(game);
-        createResult.Value.Output.PluginPath.ShouldBe(Path.GetFullPath(createdOutput.PluginPath));
+        createResult.Value.Output!.PluginPath.ShouldBe(Path.GetFullPath(createdOutput.PluginPath));
         File.Exists(createdOutput.PluginPath).ShouldBeFalse();
         await AssertReadableFormListAsync(coordinator, fixture.SourceFormKey, RecordScope.Source);
         using (var browserScope = container.BeginLifetimeScope())
@@ -137,7 +147,7 @@ public sealed class NativeDesktopWorkspaceIntegrationTests
 
         existingResult.Succeeded.ShouldBeTrue(existingResult.Error?.Message);
         existingResult.Value!.Game.ShouldBe(game);
-        existingResult.Value.Output.PluginPath.ShouldBe(Path.GetFullPath(fixture.ExistingOutput.PluginPath));
+        existingResult.Value.Output!.PluginPath.ShouldBe(Path.GetFullPath(fixture.ExistingOutput.PluginPath));
         var plugins = await coordinator.ExecuteAsync(
             static (workspace, cancellationToken) => workspace.ListPluginsAsync(cancellationToken),
             TestContext.Current.CancellationToken);

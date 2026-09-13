@@ -65,6 +65,9 @@ public sealed class NativeWorkspaceSelectionViewHeadlessTests
             ControlFinder.FindByAutomationId<TextBlock>(view, "SelectedPluginDescription").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<Button>(view, "RefreshNativePluginsButton").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<Button>(view, "CreateNativePluginButton").ShouldNotBeNull();
+            var readOnlyButton = ControlFinder.FindByAutomationId<Button>(view, "OpenNativePluginReadOnlyButton").ShouldNotBeNull();
+            readOnlyButton.Content.ShouldBe("Open Read-Only");
+            readOnlyButton.IsDefault.ShouldBeTrue();
             ControlFinder.FindByAutomationId<Button>(view, "OpenNativePluginButton")!.Content.ShouldBe("Open for Editing");
             ControlFinder.FindByAutomationId<Button>(view, "CancelNativePluginButton").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<TextBox>(view, "SourcePluginPath").ShouldBeNull();

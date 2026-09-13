@@ -89,6 +89,38 @@ internal sealed class NativeWorkspaceChangesTestContext : IDisposable, IAsyncDis
             uiDispatcher: null);
     }
 
+    /// <summary>Creates a source-only Starfield workspace with no mutable output.</summary>
+    /// <returns>The configured read-only workspace test context.</returns>
+    internal static NativeWorkspaceChangesTestContext CreateReadOnly()
+    {
+        var workspaceId = Guid.NewGuid();
+        var sourceModKey = ModKey.FromNameAndExtension("ChangesSource.esm");
+        var sourcePath = AbsolutePath(sourceModKey.FileName);
+        var revision = new WorkspaceRevision(Guid.NewGuid(), 0);
+        var state = new WorkspaceState(
+            SupportedGame.Starfield,
+            GameRelease.Starfield,
+            output: null,
+            outputBaseline: null,
+            new OutputSynchronizationState(OutputSynchronizationStatus.Ready, null),
+            revision);
+        var workspace = new RecordingWorkspaceChangesWorkspace(workspaceId, state)
+        {
+            Preview = new WorkspacePreview([], 0, [])
+        };
+        var descriptor = new NativeWorkspaceDescriptor(
+            workspaceId,
+            state.Game,
+            state.Release,
+            sourcePath,
+            [sourcePath],
+            output: null,
+            revision);
+        var coordinator = new RecordingWorkspaceChangesCoordinator();
+        coordinator.SetWorkspace(workspace, descriptor);
+        return Create(coordinator, workspace, hasDraftChanges: false);
+    }
+
     /// <summary>Creates a ready Starfield workspace with explicit production-facing presentation services.</summary>
     /// <param name="dialogService">The dialog service used by the change lifecycle.</param>
     /// <param name="uiDispatcher">The dispatcher used for bound presentation state.</param>

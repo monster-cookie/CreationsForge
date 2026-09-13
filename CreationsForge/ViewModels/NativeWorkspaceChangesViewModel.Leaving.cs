@@ -262,6 +262,16 @@ public sealed partial class NativeWorkspaceChangesViewModel
             return NativeWorkspaceLeaveChoiceOutcome.ContinueDialog;
         }
 
+        if (WorkspaceCoordinator.CurrentWorkspace.Output is null)
+        {
+            lock (LifecycleGate)
+            {
+                PendingLeaveDisposition = NativeWorkspaceLeaveDisposition.ReadyAndClean;
+            }
+
+            return NativeWorkspaceLeaveChoiceOutcome.Proceed;
+        }
+
         var acceptedReview = await CaptureAndPublishReviewAsync(
             cancellationToken,
             allowBlockedSynchronization: true).ConfigureAwait(false);
@@ -428,6 +438,31 @@ public sealed partial class NativeWorkspaceChangesViewModel
             return null;
         }
 
+        var currentDescriptor = WorkspaceCoordinator.CurrentWorkspace;
+        if (currentDescriptor.Output is null)
+        {
+            var stateResult = await WorkspaceCoordinator.ExecuteAsync(
+                (workspace, token) => workspace.ReadStateAsync(token),
+                cancellationToken).ConfigureAwait(false);
+            if (!stateResult.Succeeded
+                || stateResult.Value is null
+                || stateResult.WorkspaceId != currentDescriptor.WorkspaceId
+                || stateResult.Value.Game != currentDescriptor.Game
+                || stateResult.Value.Release != currentDescriptor.Release
+                || stateResult.Value.Output is not null
+                || stateResult.Value.Revision != currentDescriptor.Revision
+                || WorkspaceCoordinator.CurrentWorkspace?.WorkspaceId != currentDescriptor.WorkspaceId)
+            {
+                await PublishFailureAsync(
+                    stateResult.Error ?? new EngineError(EngineErrorCode.RevisionConflict, "The read-only workspace changed before the final leave proof completed."),
+                    "Keep the workspace open until its read-only state can be verified.",
+                    stateResult.Warnings).ConfigureAwait(false);
+                return null;
+            }
+
+            return currentDescriptor.WorkspaceId;
+        }
+
         Guid? provedWorkspaceId = null;
         await RunOperationAsync(
             NativeWorkspaceChangesOperationState.Reviewing,
@@ -455,6 +490,7 @@ public sealed partial class NativeWorkspaceChangesViewModel
                     || descriptor.WorkspaceId != capture.WorkspaceId
                     || descriptor.Game != capture.State.Game
                     || descriptor.Release != capture.State.Release
+                    || descriptor.Output is null
                     || capture.State.Output is null
                     || !OutputAssociationsMatch(descriptor.Output, capture.State.Output)
                     || capture.Preview.Comparisons.Count != 0
@@ -535,6 +571,7 @@ public sealed partial class NativeWorkspaceChangesViewModel
             || envelope is null
             || descriptor is null
             || descriptor.WorkspaceId != envelope.WorkspaceId
+            || descriptor.Output is null
             || !OutputAssociationsMatch(descriptor.Output, envelope.Output))
         {
             return false;
