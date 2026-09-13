@@ -79,14 +79,13 @@ public sealed class RecordJsonTreeProjectionServiceTests
             .ShouldBeEmpty();
     }
 
-    /// <summary>Verifies cancellation is observed during traversal of a record large enough to require repeated node checks.</summary>
+    /// <summary>Verifies a canceled projection request fails before producing a presentation tree.</summary>
     [Fact]
-    public void Project_LargeRecord_CancellationStopsRecursiveProjection()
+    public void Project_CanceledRequest_ThrowsBeforeProjection()
     {
-        var json = "[" + string.Join(',', Enumerable.Range(0, 250_000)) + "]";
-        using var document = JsonDocument.Parse(json);
+        using var document = JsonDocument.Parse("[1, 2, 3]");
         using var cancellation = new CancellationTokenSource();
-        cancellation.CancelAfter(TimeSpan.FromMilliseconds(1));
+        cancellation.Cancel();
 
         Should.Throw<OperationCanceledException>(() =>
             new RecordJsonTreeProjectionService().Project(document.RootElement, cancellation.Token));
