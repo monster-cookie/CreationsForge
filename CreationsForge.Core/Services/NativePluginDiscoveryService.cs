@@ -127,14 +127,16 @@ public sealed class NativePluginDiscoveryService : INativePluginDiscoveryService
                     continue;
                 }
 
-                var requiredMasters = GetRequiredMasters(listing.ModKey, masterKeys);
+                var hasValidMasterGraph = TryGetRequiredMastersInLoadOrder(
+                    listing.ModKey,
+                    masterKeys,
+                    out var requiredMasters);
                 var missingMasters = requiredMasters
                     .Where(master => !pluginPaths.ContainsKey(master))
                     .Select(master => master.FileName.String)
                     .ToArray();
-                var dependencySnapshot = listings
-                    .Where(candidate => requiredMasters.Contains(candidate.ModKey))
-                    .Select(candidate => pluginPaths.TryGetValue(candidate.ModKey, out var path) ? path : null)
+                var dependencySnapshot = requiredMasters
+                    .Select(master => pluginPaths.TryGetValue(master, out var path) ? path : null)
                     .Where(path => path is not null)
                     .Cast<string>()
                     .ToArray();
@@ -142,6 +144,10 @@ public sealed class NativePluginDiscoveryService : INativePluginDiscoveryService
                 if (implicitPluginKeys.Contains(listing.ModKey))
                 {
                     unavailableReason = "Bethesda-supplied game plugins are read-only.";
+                }
+                else if (unavailableReason is null && !hasValidMasterGraph)
+                {
+                    unavailableReason = "The plugin's declared master graph contains a dependency cycle.";
                 }
                 else if (unavailableReason is null && missingMasters.Length > 0)
                 {
@@ -180,38 +186,61 @@ public sealed class NativePluginDiscoveryService : INativePluginDiscoveryService
         }
     }
 
-    /// <summary>Computes the transitive declared-master closure for one installed plugin.</summary>
+    /// <summary>Orders the transitive declared-master closure with every master before its dependent plugin.</summary>
     /// <param name="modKey">The plugin whose dependency closure is requested.</param>
     /// <param name="masterKeys">Declared master keys indexed by installed plugin identity.</param>
-    /// <returns>Every reachable declared master identity.</returns>
-    private static IReadOnlySet<ModKey> GetRequiredMasters(
+    /// <param name="requiredMasters">Receives every reachable master in valid native order, or an empty list for a cycle.</param>
+    /// <returns><see langword="true"/> when the declared master graph is acyclic; otherwise <see langword="false"/>.</returns>
+    internal static bool TryGetRequiredMastersInLoadOrder(
         ModKey modKey,
-        IReadOnlyDictionary<ModKey, IReadOnlyList<ModKey>> masterKeys)
+        IReadOnlyDictionary<ModKey, IReadOnlyList<ModKey>> masterKeys,
+        out IReadOnlyList<ModKey> requiredMasters)
     {
-        var required = new HashSet<ModKey>();
-        var pending = new Stack<ModKey>();
-        if (masterKeys.TryGetValue(modKey, out var directMasters))
+        var ordered = new List<ModKey>();
+        var visited = new HashSet<ModKey>();
+        var visiting = new HashSet<ModKey>();
+
+        bool Visit(ModKey current)
         {
-            foreach (var master in directMasters)
+            if (visited.Contains(current))
             {
-                pending.Push(master);
+                return true;
             }
+
+            if (!visiting.Add(current))
+            {
+                return false;
+            }
+
+            if (masterKeys.TryGetValue(current, out var declaredMasters))
+            {
+                foreach (var master in declaredMasters)
+                {
+                    if (!Visit(master))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            visiting.Remove(current);
+            visited.Add(current);
+            if (current != modKey)
+            {
+                ordered.Add(current);
+            }
+
+            return true;
         }
 
-        while (pending.TryPop(out var current))
+        if (!Visit(modKey))
         {
-            if (!required.Add(current) || !masterKeys.TryGetValue(current, out var parents))
-            {
-                continue;
-            }
-
-            foreach (var parent in parents)
-            {
-                pending.Push(parent);
-            }
+            requiredMasters = Array.Empty<ModKey>();
+            return false;
         }
 
-        return required;
+        requiredMasters = Array.AsReadOnly(ordered.ToArray());
+        return true;
     }
 
     /// <summary>Maps a supported UI game to its exact native release.</summary>
