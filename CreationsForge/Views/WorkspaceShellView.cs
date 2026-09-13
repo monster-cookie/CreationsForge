@@ -87,7 +87,15 @@ public sealed class WorkspaceShellView : UserControl
             BorderBrush = App.GetApplicationBrush(App.BorderBrushKey),
             BorderThickness = new Thickness(0, 1, 0, 0),
             Padding = new Thickness(18, 8),
-            Child = status
+            Child = new StackPanel
+            {
+                Spacing = 4,
+                Children =
+                {
+                    BuildComparisonLegend(),
+                    status
+                }
+            }
         };
 
         Grid.SetRow(header, 0);
@@ -101,6 +109,58 @@ public sealed class WorkspaceShellView : UserControl
                 header,
                 contentHost,
                 statusBar
+            }
+        };
+    }
+
+    /// <summary>Builds the persistent comparison-color legend restored from the established status bar.</summary>
+    /// <returns>The complete field-state legend.</returns>
+    private static Control BuildComparisonLegend()
+    {
+        var legend = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 14,
+            Children =
+            {
+                CreateLegendItem("Identical", ComparisonFieldState.Identical),
+                CreateLegendItem("Conflict", ComparisonFieldState.Conflict),
+                CreateLegendItem("Winning Override", ComparisonFieldState.WinningOverride)
+            }
+        };
+        AutomationProperties.SetAutomationId(legend, "WorkspaceComparisonLegend");
+        return legend;
+    }
+
+    /// <summary>Creates one text-labelled comparison-state swatch for the persistent legend.</summary>
+    /// <param name="label">The visible state label.</param>
+    /// <param name="state">The field state represented by the swatch.</param>
+    /// <returns>The configured legend item.</returns>
+    private static Control CreateLegendItem(string label, ComparisonFieldState state)
+    {
+        var labelText = new TextBlock
+        {
+            Text = label,
+            FontSize = 12,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        App.ApplyApplicationTextForeground(labelText);
+        return new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 6,
+            Children =
+            {
+                new Border
+                {
+                    Width = 18,
+                    Height = 10,
+                    Background = FormListBrowserViewModel.GetComparisonFieldBrush(state),
+                    BorderBrush = App.GetApplicationBrush(App.BorderBrushKey),
+                    BorderThickness = new Thickness(1),
+                    VerticalAlignment = VerticalAlignment.Center
+                },
+                labelText
             }
         };
     }

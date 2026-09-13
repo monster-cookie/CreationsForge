@@ -82,27 +82,15 @@ public sealed class FormListBrowserViewHeadlessTests
             ControlFinder.FindByAutomationId<ComboBox>(view, "FormListAfterContextSelector").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<TreeDataGrid>(view, "FormListBeforeFieldTree").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<TreeDataGrid>(view, "FormListAfterFieldTree").ShouldNotBeNull();
-            var legend = ControlFinder.FindByAutomationId<StackPanel>(
-                view,
-                "FormListComparisonLegend").ShouldNotBeNull();
-            var legendItems = legend.Children.OfType<StackPanel>().ToArray();
-            legendItems.Select(item => item.Children.OfType<TextBlock>().Single().Text)
-                .ShouldBe(["Identical", "Conflict", "Winning Override"]);
-            legendItems.Select(item => item.Children.OfType<Border>().Single().Background)
-                .Cast<SolidColorBrush>()
-                .Select(brush => brush.Color)
-                .ShouldBe(
-                [
-                    Color.FromArgb(80, 0, 128, 0),
-                    Color.FromArgb(80, 192, 0, 0),
-                    Color.FromArgb(80, 192, 160, 0)
-                ]);
+            ControlFinder.FindByAutomationId<StackPanel>(view, "FormListComparisonLegend").ShouldBeNull();
             var loadingView = ControlFinder.FindByAutomationId<Border>(
                 view,
                 "FormListComparisonLoadingView").ShouldNotBeNull();
             loadingView.IsVisible.ShouldBeFalse();
             ControlFinder.FindByAutomationId<ProgressBar>(view, "FormListComparisonProgress").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<ItemsControl>(view, "FormListSemanticChanges").ShouldBeNull();
+            ControlFinder.FindByAutomationId<StackPanel>(view, "FormListWarningsPanel")!
+                .IsVisible.ShouldBeFalse();
             var diagnosticsScroller = ControlFinder.FindByAutomationId<ScrollViewer>(
                 view,
                 "FormListDiagnosticsScroller").ShouldNotBeNull();
@@ -144,6 +132,9 @@ public sealed class FormListBrowserViewHeadlessTests
             var warnings = ControlFinder.FindByAutomationId<ItemsControl>(
                 view,
                 "FormListWarnings").ShouldNotBeNull();
+            var warningsPanel = ControlFinder.FindByAutomationId<StackPanel>(
+                view,
+                "FormListWarningsPanel").ShouldNotBeNull();
             var errorPanel = ControlFinder.FindByAutomationId<StackPanel>(
                 view,
                 "FormListErrorPanel").ShouldNotBeNull();
@@ -153,6 +144,8 @@ public sealed class FormListBrowserViewHeadlessTests
             warnings.ItemsSource = Enumerable.Range(0, 48).Select(index => new EngineWarning(
                 $"Crowded-{index}",
                 "A long plugin warning message that must wrap within the fixed comparison pane without reducing either field tree to zero height."));
+            warningsPanel.ClearValue(Visual.IsVisibleProperty);
+            warningsPanel.IsVisible = true;
             errorPanel.ClearValue(Visual.IsVisibleProperty);
             errorPanel.IsVisible = true;
             errorText.Text = "A compact-layout failure keeps Retry visible while diagnostics scroll independently.";

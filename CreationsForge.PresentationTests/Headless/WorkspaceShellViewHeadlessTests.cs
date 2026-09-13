@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Media;
 using Avalonia.Threading;
 using CreationsForge.PresentationTests.Support;
 using CreationsForge.Services;
@@ -55,6 +56,21 @@ public sealed class WorkspaceShellViewHeadlessTests
             var contentHost = ControlFinder.FindByAutomationId<Border>(view, "WorkspaceContentHost").ShouldNotBeNull();
             contentHost.Child.ShouldBeSameAs(browserView);
             ControlFinder.FindByAutomationId<FormListBrowserView>(view, "FormListBrowserView").ShouldNotBeNull();
+            var legend = ControlFinder.FindByAutomationId<StackPanel>(
+                view,
+                "WorkspaceComparisonLegend").ShouldNotBeNull();
+            var legendItems = legend.Children.OfType<StackPanel>().ToArray();
+            legendItems.Select(item => item.Children.OfType<TextBlock>().Single().Text)
+                .ShouldBe(["Identical", "Conflict", "Winning Override"]);
+            legendItems.Select(item => item.Children.OfType<Border>().Single().Background)
+                .Cast<SolidColorBrush>()
+                .Select(brush => brush.Color)
+                .ShouldBe(
+                [
+                    Color.FromArgb(80, 0, 128, 0),
+                    Color.FromArgb(80, 192, 0, 0),
+                    Color.FromArgb(80, 192, 160, 0)
+                ]);
             ControlFinder.FindByAutomationId<TextBlock>(view, "WorkspaceStatusText")!.Text.ShouldBe("No plugin is open.");
         }
         finally

@@ -305,19 +305,16 @@ public sealed class FormListBrowserView : UserControl
         };
 
         var diagnostics = BuildDiagnosticsPane();
-        var legend = BuildComparisonLegend();
         Grid.SetRow(contextSelectors, 0);
-        Grid.SetRow(legend, 1);
-        Grid.SetRow(fieldTrees, 2);
-        Grid.SetRow(diagnostics, 3);
+        Grid.SetRow(fieldTrees, 1);
+        Grid.SetRow(diagnostics, 2);
         var comparisonContent = new Grid
         {
-            RowDefinitions = new RowDefinitions("Auto,Auto,*,Auto"),
+            RowDefinitions = new RowDefinitions("Auto,*,Auto"),
             RowSpacing = 12,
             Children =
             {
                 contextSelectors,
-                legend,
                 fieldTrees,
                 diagnostics
             }
@@ -352,53 +349,6 @@ public sealed class FormListBrowserView : UserControl
             {
                 comparisonContent,
                 loading
-            }
-        };
-    }
-
-    /// <summary>Builds the text-labelled retained comparison-color legend.</summary>
-    /// <returns>The complete field-state legend.</returns>
-    private static Control BuildComparisonLegend()
-    {
-        var legend = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Spacing = 14,
-            Children =
-            {
-                CreateLegendItem("Identical", ComparisonFieldState.Identical),
-                CreateLegendItem("Conflict", ComparisonFieldState.Conflict),
-                CreateLegendItem("Winning Override", ComparisonFieldState.WinningOverride)
-            }
-        };
-        AutomationProperties.SetAutomationId(legend, "FormListComparisonLegend");
-        return legend;
-    }
-
-    /// <summary>Creates one text-labelled field-state swatch.</summary>
-    /// <param name="label">The visible state label.</param>
-    /// <param name="state">The field state represented by the swatch.</param>
-    /// <returns>The configured legend item.</returns>
-    private static Control CreateLegendItem(string label, ComparisonFieldState state)
-    {
-        var labelText = CreateText(label, 12, FontWeight.Normal);
-        labelText.VerticalAlignment = VerticalAlignment.Center;
-        return new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Spacing = 6,
-            Children =
-            {
-                new Border
-                {
-                    Width = 18,
-                    Height = 10,
-                    Background = FormListBrowserViewModel.GetComparisonFieldBrush(state),
-                    BorderBrush = App.GetApplicationBrush(App.BorderBrushKey),
-                    BorderThickness = new Thickness(1),
-                    VerticalAlignment = VerticalAlignment.Center
-                },
-                labelText
             }
         };
     }
@@ -534,6 +484,8 @@ public sealed class FormListBrowserView : UserControl
                 warnings
             }
         };
+        diagnosticDetails.Bind(IsVisibleProperty, new Binding(nameof(FormListBrowserViewModel.HasWarnings)));
+        AutomationProperties.SetAutomationId(diagnosticDetails, "FormListWarningsPanel");
         var diagnosticsScroller = new ScrollViewer
         {
             MaxHeight = 120,

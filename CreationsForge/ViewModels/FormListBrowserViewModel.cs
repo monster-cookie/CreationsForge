@@ -223,6 +223,9 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
     /// <summary>Gets non-fatal load and comparison warnings in engine order.</summary>
     public IReadOnlyList<EngineWarning> Warnings => WarningsValue;
 
+    /// <summary>Gets whether the current load or comparison produced non-fatal warnings.</summary>
+    public bool HasWarnings => WarningsValue.Count > 0;
+
     /// <summary>Gets the stable typed error code for the current failure, or <see langword="null"/>.</summary>
     public EngineErrorCode? ErrorCode => ErrorCodeValue;
 
@@ -843,6 +846,7 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
     {
         WarningsValue = Array.AsReadOnly(warnings.ToArray());
         OnPropertyChanged(nameof(Warnings));
+        OnPropertyChanged(nameof(HasWarnings));
     }
 
     /// <summary>Replaces the browser status text.</summary>
