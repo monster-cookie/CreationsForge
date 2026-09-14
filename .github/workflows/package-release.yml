@@ -76,6 +76,7 @@ jobs:
     validate-release:
         name: Validate Release
         needs: package-context
+        if: needs.package-context.outputs.is-release == 'true'
         uses: ./.github/workflows/ci.yml
         with:
             dotnet-version: ${{ vars.DOTNET_VERSION || '10.0.x' }}
@@ -86,6 +87,15 @@ jobs:
         needs:
             - package-context
             - validate-release
+        if: >-
+            ${{
+              !cancelled() &&
+              needs.package-context.result == 'success' &&
+              (
+                (needs.package-context.outputs.is-release == 'false' && needs.validate-release.result == 'skipped') ||
+                (needs.package-context.outputs.is-release == 'true' && needs.validate-release.result == 'success')
+              )
+            }}
         runs-on: windows-latest
         env:
             ASSEMBLY_VERSION: ${{ needs.package-context.outputs.assembly-version }}
@@ -241,6 +251,15 @@ jobs:
         needs:
             - package-context
             - validate-release
+        if: >-
+            ${{
+              !cancelled() &&
+              needs.package-context.result == 'success' &&
+              (
+                (needs.package-context.outputs.is-release == 'false' && needs.validate-release.result == 'skipped') ||
+                (needs.package-context.outputs.is-release == 'true' && needs.validate-release.result == 'success')
+              )
+            }}
         runs-on: ubuntu-latest
         env:
             ASSEMBLY_VERSION: ${{ needs.package-context.outputs.assembly-version }}
@@ -416,6 +435,15 @@ jobs:
         needs:
             - package-context
             - validate-release
+        if: >-
+            ${{
+              !cancelled() &&
+              needs.package-context.result == 'success' &&
+              (
+                (needs.package-context.outputs.is-release == 'false' && needs.validate-release.result == 'skipped') ||
+                (needs.package-context.outputs.is-release == 'true' && needs.validate-release.result == 'success')
+              )
+            }}
         runs-on: ubuntu-latest
         container: archlinux:base-devel
         env:
@@ -562,6 +590,15 @@ jobs:
         needs:
             - package-context
             - validate-release
+        if: >-
+            ${{
+              !cancelled() &&
+              needs.package-context.result == 'success' &&
+              (
+                (needs.package-context.outputs.is-release == 'false' && needs.validate-release.result == 'skipped') ||
+                (needs.package-context.outputs.is-release == 'true' && needs.validate-release.result == 'success')
+              )
+            }}
         strategy:
             fail-fast: false
             matrix:
