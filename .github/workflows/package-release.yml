@@ -715,6 +715,9 @@ jobs:
                   export CREATIONSFORGE_PACKAGED_MCP_PATH="$GITHUB_WORKSPACE/${mcp_executable#./}"
                   dotnet ./CreationsForge.UnitTests/bin/Release/net10.0/CreationsForge.UnitTests.dll \
                     -noColor \
+                    -class CreationsForge.UnitTests.Engine.Persistence.OutputDirectoryLeaseProviderTests \
+                    -class CreationsForge.UnitTests.Engine.PluginInputs.PluginSourceInputLoaderTests \
+                    -class CreationsForge.UnitTests.Engine.PluginOutputs.PluginOutputInputLoaderTests \
                     -class CreationsForge.UnitTests.McpHost.McpHostProtocolTests \
                     -class CreationsForge.UnitTests.McpHost.McpPluginStdioProtocolTests
                   dotnet ./CreationsForge.PresentationTests/bin/Release/net10.0/CreationsForge.PresentationTests.dll \

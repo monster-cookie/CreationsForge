@@ -316,20 +316,22 @@ public sealed class PluginOutputInputLoaderTests
         sourceVerification.Succeeded.ShouldBeTrue(sourceVerification.Error?.Message);
     }
 
-    /// <summary>A hard-linked existing output that physically aliases an admitted source is still rejected.</summary>
-    /// <returns>A task that completes after the Windows physical-alias check, or immediately on other platforms.</returns>
+    /// <summary>Verifies a hard-linked existing output that physically aliases an admitted source is rejected on supported hosts.</summary>
+    /// <returns>A task that completes after the physical-alias rejection is validated.</returns>
     [Fact]
-    public async Task PrepareAsync_WithHardLinkedSourceAlias_ReturnsInvalidRequestOnWindows()
+    public async Task PrepareAsync_WithHardLinkedSourceAlias_ReturnsInvalidRequestOnSupportedHosts()
     {
-        if (!OperatingSystem.IsWindows())
-        {
-            return;
-        }
+        Assert.SkipUnless(
+            OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS(),
+            "Physical plugin identity is supported only on Windows, Linux, and macOS.");
 
         using var fixture = StarfieldPluginTestFixture.Create();
         var outputDirectory = fixture.RootDirectory.CreateSubdirectory("HardLink");
         var outputPath = Path.Combine(outputDirectory.FullName, "Alias.esp");
-        if (!CreateHardLink(outputPath, fixture.SourcePluginPath, IntPtr.Zero))
+        var linkCreated = OperatingSystem.IsWindows()
+            ? CreateHardLinkWindows(outputPath, fixture.SourcePluginPath, IntPtr.Zero)
+            : CreateHardLinkUnix(fixture.SourcePluginPath, outputPath) == 0;
+        if (!linkCreated)
         {
             throw new InvalidOperationException($"Could not create the hard-link fixture: {Marshal.GetLastPInvokeError()}.");
         }
@@ -446,8 +448,17 @@ public sealed class PluginOutputInputLoaderTests
     /// <returns><see langword="true"/> when Windows creates the link.</returns>
     [DllImport("kernel32.dll", EntryPoint = "CreateHardLinkW", CharSet = CharSet.Unicode, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool CreateHardLink(
+    private static extern bool CreateHardLinkWindows(
         string fileName,
         string existingFileName,
         IntPtr securityAttributes);
+
+    /// <summary>Creates a Unix hard link for physical-alias validation.</summary>
+    /// <param name="existingFileName">The existing source file path.</param>
+    /// <param name="fileName">The new hard-link path.</param>
+    /// <returns>Zero when Unix creates the link; otherwise minus one with the native error retained.</returns>
+    [DllImport("libc", EntryPoint = "link", SetLastError = true)]
+    private static extern int CreateHardLinkUnix(
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string existingFileName,
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string fileName);
 }

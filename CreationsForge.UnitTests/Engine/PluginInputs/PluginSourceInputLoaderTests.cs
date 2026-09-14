@@ -57,6 +57,41 @@ public sealed class PluginSourceInputLoaderTests
             && string.Equals(artifact.Language, Language.French.ToString(), StringComparison.Ordinal));
     }
 
+    /// <summary>Verifies that supported hosts capture stable physical identity for the source plugin through an open descriptor.</summary>
+    /// <returns>A task that completes after physical source identity is captured and validated.</returns>
+    [Fact]
+    public async Task CompleteOpenAsync_OnSupportedHost_CapturesStablePhysicalPluginIdentity()
+    {
+        Assert.SkipUnless(
+            OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS(),
+            "Physical plugin identity is supported only on Windows, Linux, and macOS.");
+
+        using var fixture = StarfieldPluginTestFixture.Create();
+        var preparation = await new PluginSourceInputLoader().PrepareAsync(
+            fixture.CreateOpenRequest(),
+            TestContext.Current.CancellationToken);
+        preparation.Succeeded.ShouldBeTrue(preparation.Error?.Message);
+        await using var inputs = preparation.Value!;
+
+        var completion = await inputs.CompleteOpenAsync(TestContext.Current.CancellationToken);
+
+        completion.Succeeded.ShouldBeTrue(completion.Error?.Message);
+        var sourceArtifact = completion.Value!.Artifacts.Single(artifact =>
+            artifact.Role == PluginArtifactRole.Plugin
+            && string.Equals(artifact.Path, fixture.SourcePluginPath, StringComparison.Ordinal));
+        var identity = sourceArtifact.FileIdentity.ShouldNotBeNull();
+        var expectedProvider = OperatingSystem.IsWindows()
+            ? "windows-file-id-v1"
+            : OperatingSystem.IsLinux()
+                ? "linux-statx-v1"
+                : "macos-fstat-v1";
+        identity.Provider.ShouldBe(expectedProvider);
+        identity.VolumeId.ShouldNotBeNullOrWhiteSpace();
+        identity.FileId.ShouldNotBeNullOrWhiteSpace();
+        identity.LinkCount.ShouldNotBeNull();
+        identity.LinkCount.Value.ShouldBeGreaterThanOrEqualTo(1UL);
+    }
+
     /// <summary>Verifies an empty first directory falls through to the second plugin lookup without losing the record string key or source path.</summary>
     [Fact]
     public async Task TryLookupString_WithEmptyFirstDirectory_PreservesKeyLanguagesAndWinningSourcePath()

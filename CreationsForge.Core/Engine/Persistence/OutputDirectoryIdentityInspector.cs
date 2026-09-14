@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 using CreationsForge.Core.Engine.Contracts;
+using CreationsForge.Core.Engine.Internal;
 using Microsoft.Win32.SafeHandles;
 
 namespace CreationsForge.Core.Engine.Persistence;
@@ -87,9 +88,14 @@ internal static class OutputDirectoryIdentityInspector
             return OpenLinuxDirectory(canonicalDirectoryPath);
         }
 
+        if (OperatingSystem.IsMacOS())
+        {
+            return OpenDarwinDirectory(canonicalDirectoryPath);
+        }
+
         throw new OutputDirectoryLeaseException(
             EngineErrorCode.UnsupportedInput,
-            "Output-directory lease identity is currently supported only on Windows and Linux.");
+            "Output-directory lease identity is currently supported only on Windows, Linux, and macOS.");
     }
 
     /// <summary>Verifies that the canonical path still identifies the retained directory.</summary>
@@ -123,9 +129,9 @@ internal static class OutputDirectoryIdentityInspector
                 $"The output-directory guard must have exactly one physical link: '{canonicalGuardPath}'.");
         }
 
-        if (OperatingSystem.IsLinux())
+        if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
         {
-            VerifyLinuxGuardPathIdentity(canonicalGuardPath, identity);
+            VerifyUnixGuardPathIdentity(canonicalGuardPath, identity);
         }
 
         VerifyResolvedPath(canonicalGuardPath, guardHandle, "output-directory guard");
@@ -199,6 +205,36 @@ internal static class OutputDirectoryIdentityInspector
         }
     }
 
+    /// <summary>Opens a Darwin directory descriptor without following its final path component.</summary>
+    /// <param name="canonicalDirectoryPath">The canonical existing directory.</param>
+    /// <returns>The retained Darwin directory descriptor.</returns>
+    /// <exception cref="OutputDirectoryLeaseException">Thrown when macOS cannot open or verify the directory.</exception>
+    private static OutputDirectoryIdentityHandle OpenDarwinDirectory(string canonicalDirectoryPath)
+    {
+        var handle = DarwinFileSystemInterop.OpenDirectory(canonicalDirectoryPath);
+        if (handle.IsInvalid)
+        {
+            var exception = new Win32Exception(Marshal.GetLastPInvokeError());
+            handle.Dispose();
+            throw new OutputDirectoryLeaseException(
+                EngineErrorCode.OutputOpenFailed,
+                $"macOS could not retain the output directory for lease acquisition: '{canonicalDirectoryPath}'.",
+                exception);
+        }
+
+        try
+        {
+            VerifyResolvedPath(canonicalDirectoryPath, handle, "output directory");
+            var identity = ReadIdentity(handle, requireDirectory: true);
+            return new OutputDirectoryIdentityHandle(handle, identity);
+        }
+        catch
+        {
+            handle.Dispose();
+            throw;
+        }
+    }
+
     /// <summary>Verifies that an opened handle resolves to the exact canonical path supplied by the caller.</summary>
     /// <param name="canonicalPath">The expected canonical path.</param>
     /// <param name="handle">The opened operating-system handle.</param>
@@ -209,9 +245,26 @@ internal static class OutputDirectoryIdentityInspector
         SafeFileHandle handle,
         string description)
     {
-        var resolvedPath = OperatingSystem.IsWindows()
-            ? ResolveWindowsHandlePath(handle)
-            : ResolveLinuxHandlePath(handle);
+        string resolvedPath;
+        if (OperatingSystem.IsWindows())
+        {
+            resolvedPath = ResolveWindowsHandlePath(handle);
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            resolvedPath = ResolveLinuxHandlePath(handle);
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            resolvedPath = ResolveDarwinHandlePath(handle);
+        }
+        else
+        {
+            throw new OutputDirectoryLeaseException(
+                EngineErrorCode.UnsupportedInput,
+                "Output-directory lease path resolution is currently supported only on Windows, Linux, and macOS.");
+        }
+
         var expectedPath = Path.TrimEndingDirectorySeparator(canonicalPath);
         var actualPath = Path.TrimEndingDirectorySeparator(resolvedPath);
         if (!PathComparer.Equals(expectedPath, actualPath))
@@ -293,9 +346,39 @@ internal static class OutputDirectoryIdentityInspector
                 information.LinkCount);
         }
 
+        if (OperatingSystem.IsMacOS())
+        {
+            DarwinFileSystemInterop.DarwinFileStatus information;
+            try
+            {
+                information = DarwinFileSystemInterop.ReadStatus(handle);
+            }
+            catch (Exception exception) when (exception is Win32Exception or PlatformNotSupportedException)
+            {
+                throw new OutputDirectoryLeaseException(
+                    EngineErrorCode.UnsupportedInput,
+                    "macOS could not provide fstat identity for an output-directory lease object.",
+                    exception);
+            }
+
+            var isExpectedType = requireDirectory
+                ? information.IsDirectory
+                : information.IsRegularFile;
+            if (!isExpectedType)
+            {
+                throw new OutputDirectoryLeaseException(
+                    EngineErrorCode.UnsupportedInput,
+                    requireDirectory
+                        ? "The output-directory lease path does not identify a directory."
+                        : "The output-directory guard does not identify a regular file.");
+            }
+
+            return information.CreateIdentity();
+        }
+
         throw new OutputDirectoryLeaseException(
             EngineErrorCode.UnsupportedInput,
-            "Output-directory lease identity is currently supported only on Windows and Linux.");
+            "Output-directory lease identity is currently supported only on Windows, Linux, and macOS.");
     }
 
     /// <summary>Compares only immutable volume and object identifiers, excluding mutable link counts.</summary>
@@ -309,38 +392,50 @@ internal static class OutputDirectoryIdentityInspector
             && string.Equals(left.FileId, right.FileId, StringComparison.Ordinal);
     }
 
-    /// <summary>Verifies that the current Linux guard path still identifies the exclusively opened descriptor.</summary>
+    /// <summary>Verifies that the current Unix guard path still identifies the exclusively opened descriptor.</summary>
     /// <param name="canonicalGuardPath">The canonical stable guard path.</param>
     /// <param name="openedIdentity">The identity captured from the exclusively opened descriptor.</param>
     /// <exception cref="OutputDirectoryLeaseException">Thrown when the guard path was replaced or can no longer be verified.</exception>
-    private static void VerifyLinuxGuardPathIdentity(
+    private static void VerifyUnixGuardPathIdentity(
         string canonicalGuardPath,
         ArtifactFileIdentity openedIdentity)
     {
-        var descriptor = Open(canonicalGuardPath, OpenReadOnly | OpenNonBlocking | OpenNoFollow | OpenCloseOnExec);
-        if (descriptor < 0)
+        SafeFileHandle currentHandle;
+        if (OperatingSystem.IsLinux())
         {
-            throw new OutputDirectoryLeaseException(
-                EngineErrorCode.ExternalChangeDetected,
-                $"The output-directory guard path changed while its lease was being acquired: '{canonicalGuardPath}'.",
-                new Win32Exception(Marshal.GetLastPInvokeError()));
+            var descriptor = Open(canonicalGuardPath, OpenReadOnly | OpenNonBlocking | OpenNoFollow | OpenCloseOnExec);
+            currentHandle = new SafeFileHandle(new IntPtr(descriptor), ownsHandle: true);
+        }
+        else
+        {
+            currentHandle = DarwinFileSystemInterop.OpenGuardForIdentityVerification(canonicalGuardPath);
         }
 
-        using var currentHandle = new SafeFileHandle(new IntPtr(descriptor), ownsHandle: true);
-        VerifyResolvedPath(canonicalGuardPath, currentHandle, "output-directory guard");
-        var currentIdentity = ReadIdentity(currentHandle, requireDirectory: false);
-        if (!HasSameStableIdentity(openedIdentity, currentIdentity))
+        using (currentHandle)
         {
-            throw new OutputDirectoryLeaseException(
-                EngineErrorCode.ExternalChangeDetected,
-                $"The output-directory guard path was replaced while its lease was being acquired: '{canonicalGuardPath}'.");
-        }
+            if (currentHandle.IsInvalid)
+            {
+                throw new OutputDirectoryLeaseException(
+                    EngineErrorCode.ExternalChangeDetected,
+                    $"The output-directory guard path changed while its lease was being acquired: '{canonicalGuardPath}'.",
+                    new Win32Exception(Marshal.GetLastPInvokeError()));
+            }
 
-        if (currentIdentity.LinkCount != 1)
-        {
-            throw new OutputDirectoryLeaseException(
-                EngineErrorCode.UnsupportedInput,
-                $"The output-directory guard must have exactly one physical link: '{canonicalGuardPath}'.");
+            VerifyResolvedPath(canonicalGuardPath, currentHandle, "output-directory guard");
+            var currentIdentity = ReadIdentity(currentHandle, requireDirectory: false);
+            if (!HasSameStableIdentity(openedIdentity, currentIdentity))
+            {
+                throw new OutputDirectoryLeaseException(
+                    EngineErrorCode.ExternalChangeDetected,
+                    $"The output-directory guard path was replaced while its lease was being acquired: '{canonicalGuardPath}'.");
+            }
+
+            if (currentIdentity.LinkCount != 1)
+            {
+                throw new OutputDirectoryLeaseException(
+                    EngineErrorCode.UnsupportedInput,
+                    $"The output-directory guard must have exactly one physical link: '{canonicalGuardPath}'.");
+            }
         }
     }
 
@@ -414,6 +509,25 @@ internal static class OutputDirectoryIdentityInspector
             }
 
             buffer = new byte[buffer.Length * 2];
+        }
+    }
+
+    /// <summary>Resolves the object held by a Darwin descriptor through fixed-signature libproc metadata.</summary>
+    /// <param name="handle">The retained Darwin handle.</param>
+    /// <returns>The absolute physical path currently associated with the descriptor.</returns>
+    /// <exception cref="OutputDirectoryLeaseException">Thrown when macOS cannot resolve the held descriptor.</exception>
+    private static string ResolveDarwinHandlePath(SafeFileHandle handle)
+    {
+        try
+        {
+            return DarwinFileSystemInterop.ResolvePath(handle);
+        }
+        catch (Exception exception) when (exception is Win32Exception or IOException or PlatformNotSupportedException)
+        {
+            throw new OutputDirectoryLeaseException(
+                EngineErrorCode.UnsupportedInput,
+                "macOS could not resolve an output-directory lease object from its retained descriptor.",
+                exception);
         }
     }
 

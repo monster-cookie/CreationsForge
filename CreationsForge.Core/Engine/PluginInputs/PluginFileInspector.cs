@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 using CreationsForge.Core.Engine.Contracts;
+using CreationsForge.Core.Engine.Internal;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Archives;
 using System.IO.Abstractions;
@@ -288,7 +289,9 @@ internal static class PluginFileInspector
     {
         var realPath = OperatingSystem.IsWindows()
             ? ResolveWindowsHandlePath(handle)
-            : ResolveRealPath(path);
+            : OperatingSystem.IsMacOS()
+                ? ResolveDarwinHandlePath(handle)
+                : ResolveRealPath(path);
         if (!PathComparer.Equals(path, realPath))
         {
             throw new PluginSourceInputException(
@@ -308,11 +311,11 @@ internal static class PluginFileInspector
             return Path.GetFullPath(path);
         }
 
-        if (!OperatingSystem.IsLinux())
+        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
         {
             throw new PluginSourceInputException(
                 EngineErrorCode.UnsupportedInput,
-                "Plugin input identity verification is currently supported only on Windows and Linux.");
+                "Plugin input identity verification is currently supported only on Windows, Linux, and macOS.");
         }
 
         var pointer = RealPath(path, IntPtr.Zero);
@@ -372,6 +375,25 @@ internal static class PluginFileInspector
         return Path.GetFullPath(resolved);
     }
 
+    /// <summary>Resolves the physical path represented by an open Darwin file handle.</summary>
+    /// <param name="handle">The open Darwin file handle.</param>
+    /// <returns>The canonical absolute macOS path.</returns>
+    /// <exception cref="PluginSourceInputException">Thrown when Darwin cannot resolve the handle path.</exception>
+    private static string ResolveDarwinHandlePath(SafeFileHandle handle)
+    {
+        try
+        {
+            return DarwinFileSystemInterop.ResolvePath(handle);
+        }
+        catch (Exception exception) when (exception is Win32Exception or IOException or PlatformNotSupportedException)
+        {
+            throw new PluginSourceInputException(
+                EngineErrorCode.SourceOpenFailed,
+                "macOS could not resolve a plugin input path from its open handle.",
+                exception);
+        }
+    }
+
     /// <summary>Reads stable platform identity from an open file handle.</summary>
     /// <param name="handle">The open source file handle.</param>
     /// <returns>The platform identity and hard-link count.</returns>
@@ -414,9 +436,24 @@ internal static class PluginFileInspector
                 information.LinkCount);
         }
 
+        if (OperatingSystem.IsMacOS())
+        {
+            try
+            {
+                return DarwinFileSystemInterop.ReadStatus(handle).CreateIdentity();
+            }
+            catch (Exception exception) when (exception is Win32Exception or PlatformNotSupportedException)
+            {
+                throw new PluginSourceInputException(
+                    EngineErrorCode.UnsupportedInput,
+                    "macOS could not provide fstat identity for a plugin input file.",
+                    exception);
+            }
+        }
+
         throw new PluginSourceInputException(
             EngineErrorCode.UnsupportedInput,
-            "Plugin input identity verification is currently supported only on Windows and Linux.");
+            "Plugin input identity verification is currently supported only on Windows, Linux, and macOS.");
     }
 
     /// <summary>Returns a stable human-readable artifact role.</summary>
@@ -572,7 +609,7 @@ internal static class PluginFileInspector
         uint filePathLength,
         uint flags);
 
-    /// <summary>Resolves a Linux path through libc.</summary>
+    /// <summary>Resolves a Unix path through libc.</summary>
     /// <param name="path">The existing path to resolve.</param>
     /// <param name="resolvedPath">A caller buffer, or zero for libc allocation.</param>
     /// <returns>A newly allocated UTF-8 path pointer, or zero on failure.</returns>
