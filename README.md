@@ -4,7 +4,7 @@
 
 Creations Forge browses, compares, and edits FormLists in Bethesda plugins through a desktop application and a local MCP server. The desktop discovers installed plugins for the selected game so you can open the plugin you intend to edit or create a new one.
 
-This README describes the current source implementation. Automated plugin checks and real Codex MCP save/reopen runs on generated fixtures have passed. Installed-game, live desktop/Codex conflict, and package acceptance checks are not complete. See [Known Issues](./Documentation/KNOWN-ISSUES.md) before choosing inputs.
+This README describes the current source implementation. Automated plugin checks and real Codex MCP save/reopen runs on generated fixtures have passed. Installed-game and live desktop/Codex conflict acceptance checks are not complete. Package CI exercises extracted MCP executables against generated fixtures, but does not establish installed-game or graphical desktop runtime acceptance. See [Known Issues](./Documentation/KNOWN-ISSUES.md) before choosing inputs.
 
 ## Current Features
 
@@ -26,7 +26,17 @@ Desktop and MCP workspaces are independent. Changes do not synchronize live betw
 
 ## Installation
 
-Use a desktop or MCP build containing the plugin replacement. Earlier releases may still contain the retired import workflow; these instructions do not describe those releases. Windows and Linux packaging exists in the repository, but the replacement's packaged launches and platform behavior remain unverified.
+Use a desktop or MCP build containing the plugin replacement. Earlier releases may still contain the retired import workflow; these instructions do not describe those releases. Pull requests build the complete package matrix for inspection, while newly created `v<major>.<minor>.<patch>` tags on the current `master` head create releases containing the same standalone archives and native installers.
+
+| Platform | Desktop package | MCP package | Native package |
+| --- | --- | --- | --- |
+| Windows x64 | `CreationsForge-Desktop-win-x64-<version>.zip` | `CreationsForge-Mcp-win-x64-<version>.zip` | `CreationsForge-Setup-<version>.exe`, containing both applications |
+| Ubuntu/Debian x64 | `CreationsForge-Desktop-linux-x64-<version>.zip` | `CreationsForge-Mcp-linux-x64-<version>.zip` | `CreationsForge_<version>_amd64.deb`, containing both applications and the `creationsforge` and `creationsforge-mcp` launchers |
+| Arch Linux x64 | The `linux-x64` desktop archive can be extracted directly | The `linux-x64` MCP archive can be extracted directly | `creationsforge-<version>-1-x86_64.pkg.tar.zst`, containing both applications and the `creationsforge` and `creationsforge-mcp` launchers |
+| macOS Intel | `CreationsForge-Desktop-osx-x64-<version>.zip`, containing `CreationsForge.app` | `CreationsForge-Mcp-osx-x64-<version>.tar.gz` | None |
+| macOS Apple Silicon | `CreationsForge-Desktop-osx-arm64-<version>.zip`, containing `CreationsForge.app` | `CreationsForge-Mcp-osx-arm64-<version>.tar.gz` | None |
+
+The macOS archives are unsigned and unnotarized. macOS may warn about or block their first launch according to the system's security settings. Intel and Apple Silicon are separate native packages; no universal binary is provided.
 
 1. Install or extract the application outside the game's Data folder.
 2. Keep the game's installed plugins and required masters available in its Data directory.
@@ -39,7 +49,7 @@ Application configuration and logs use these default locations:
 
 Desktop logs are flushed to disk at least once per second. Workspace opening records validation, input preparation, each plugin parse, baseline finalization, completion or failure, and periodic warnings while an open remains incomplete.
 
-The macOS configuration path does not imply a validated macOS package.
+Package validation publishes and inspects each desktop archive but does not launch the graphical application. A successful package build therefore does not establish interactive desktop behavior on Windows, Linux, or macOS.
 
 ## Desktop Usage
 
@@ -67,15 +77,15 @@ From a folder containing the Windows MCP executable:
 .\CreationsForge.Mcp.exe
 ```
 
-From a folder containing the Linux MCP executable:
+From a folder containing the Linux or macOS MCP executable:
 
 ```bash
 ./CreationsForge.Mcp
 ```
 
-This starts a protocol server, not an interactive import prompt. Protocol messages use standard input/output; logs use standard error. Real Codex save/reopen checks on generated fixtures have passed; packaged invocation remains unverified.
+This starts a protocol server, not an interactive import prompt. Protocol messages use standard input/output; logs use standard error. Package CI runs MCP checks against executables extracted from the standalone Windows, Linux, and macOS archives and from the Arch package payload. It inspects the Debian package contents but executes the Linux standalone archive, and it builds the Windows installer without installing or executing it. The executed MCP checks cover initialization, tool discovery, three-game generated-fixture access, save/reopen, standard-stream separation, normal shutdown, and argument rejection.
 
-The MCP executable starts the stdio server when invoked without arguments and rejects command-line arguments with exit code 2. The retired Console import commands `--game`, `--force`, `--full`, and `--reset-all` remain removed with the SQLite backend. Source-build smoke checks verified the MCP process lifecycle; packaged invocation checks remain unverified.
+The MCP executable starts the stdio server when invoked without arguments and rejects command-line arguments with exit code 2. The retired Console import commands `--game`, `--force`, `--full`, and `--reset-all` remain removed with the SQLite backend. The native Debian and Arch packages install `/usr/bin/creationsforge-mcp`; the Windows installer places the executable under its `Mcp` directory. Standalone archives can be configured by passing their extracted executable path directly to the MCP client.
 
 ## Updating from the Import Workflow
 
@@ -87,7 +97,7 @@ The database-directory setting has been removed. Existing configuration can reta
 
 FormList authoring is the current scope. Saving edits to an existing localized output that uses separate string files is rejected with `UnsupportedInput` to protect unedited localized data in all three games. Creating a new localized output and editing an existing output with embedded strings are different supported paths; this is not an instruction to convert an existing localized plugin.
 
-Post-removal restore, Release build, automated checks and focused rechecks have passed, with some platform and external-input checks skipped. Real Codex authoring and independent plugin-file verification passed on generated fixtures for all three games. A correction for the installed Starfield parser failure is implemented but has not yet been retested on the affected machine; installed Fallout 4 and Skyrim Special Edition validation inputs have not yet been supplied. Plugin Mod Organizer 2/virtual-file-system compatibility, packages, live desktop/Codex conflict checks, and game-runtime acceptance remain unverified. See [Known Issues](./Documentation/KNOWN-ISSUES.md) for symptoms and recovery guidance.
+Post-removal restore, Release build, automated checks and focused rechecks have passed, with some platform and external-input checks skipped. Real Codex authoring and independent plugin-file verification passed on generated fixtures for all three games. Package CI adds native executable and archive coverage, but hosted results for a particular change must still be checked and graphical applications are not launched. A correction for the installed Starfield parser failure is implemented but has not yet been retested on the affected machine; installed Fallout 4 and Skyrim Special Edition validation inputs have not yet been supplied. Plugin Mod Organizer 2/virtual-file-system compatibility, live desktop/Codex conflict checks, and game-runtime acceptance remain unverified. See [Known Issues](./Documentation/KNOWN-ISSUES.md) for symptoms and recovery guidance.
 
 ## Source Code
 

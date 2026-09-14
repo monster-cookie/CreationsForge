@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added separate Windows x64, Linux x64, macOS Intel, and macOS Apple Silicon desktop and MCP archives while retaining the combined Windows, Debian, and Arch Linux packages.
+- Added pull-request package builds and extracted-package MCP checks for initialization, tool discovery, three-game generated-fixture access, save/reopen, standard streams, shutdown, and argument rejection. Tagged releases now attach every standalone archive and native installer.
 - Improved automated validation used when preparing releases.
 - Kept installation, usage, known issues, and release history in the repository, with engineering guidance now maintained in Plane.
 - Moved the change log to the repository root as `CHANGELOG.md` and updated release packaging and release-note extraction to use its new location.

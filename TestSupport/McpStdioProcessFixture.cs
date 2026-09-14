@@ -9,6 +9,9 @@ namespace CreationsForge.TestSupport;
 /// </summary>
 internal sealed class McpStdioProcessFixture : IAsyncDisposable
 {
+    /// <summary>The process-local override used by package validation to launch an extracted self-contained MCP executable.</summary>
+    public const string PackagedMcpPathEnvironmentVariable = "CREATIONSFORGE_PACKAGED_MCP_PATH";
+
     /// <summary>The maximum time allowed for normal host exit after standard input closes.</summary>
     private static readonly TimeSpan GracefulExitTimeout = TimeSpan.FromSeconds(15);
 
@@ -45,24 +48,16 @@ internal sealed class McpStdioProcessFixture : IAsyncDisposable
     public McpClient Client { get; }
 
     /// <summary>Starts the production MCP host and initializes an SDK client over its physical stdio streams.</summary>
-    /// <param name="mcpAssemblyPath">The absolute built MCP assembly path.</param>
+    /// <param name="mcpAssemblyPath">The absolute built MCP assembly path used when no packaged executable override is configured.</param>
     /// <param name="cancellationToken">A token that bounds process and protocol initialization.</param>
     /// <returns>An owned initialized process fixture.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="mcpAssemblyPath"/> is empty.</exception>
+    /// <exception cref="FileNotFoundException">Thrown when the selected assembly or packaged executable does not exist.</exception>
     public static async Task<McpStdioProcessFixture> StartAsync(
         string mcpAssemblyPath,
         CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(mcpAssemblyPath);
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = "dotnet",
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-        startInfo.ArgumentList.Add(mcpAssemblyPath);
+        var startInfo = CreateStartInfo(mcpAssemblyPath);
 
         var process = new Process
         {
@@ -91,6 +86,43 @@ internal sealed class McpStdioProcessFixture : IAsyncDisposable
             process.Dispose();
             throw;
         }
+    }
+
+    /// <summary>Creates redirected process settings for the built MCP assembly or an explicitly configured packaged executable.</summary>
+    /// <param name="mcpAssemblyPath">The absolute built MCP assembly path used when the package-validation override is absent.</param>
+    /// <returns>Process settings that preserve standard output for MCP frames and standard error for diagnostics.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="mcpAssemblyPath"/> is empty.</exception>
+    /// <exception cref="FileNotFoundException">Thrown when the selected assembly or packaged executable does not exist.</exception>
+    public static ProcessStartInfo CreateStartInfo(string mcpAssemblyPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(mcpAssemblyPath);
+        var packagedMcpPath = Environment.GetEnvironmentVariable(PackagedMcpPathEnvironmentVariable);
+        var selectedPath = string.IsNullOrWhiteSpace(packagedMcpPath)
+            ? mcpAssemblyPath
+            : packagedMcpPath;
+        var fullPath = Path.GetFullPath(selectedPath);
+        if (!File.Exists(fullPath))
+        {
+            throw new FileNotFoundException("The selected CreationsForge MCP program was not found.", fullPath);
+        }
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = string.Equals(Path.GetExtension(fullPath), ".dll", StringComparison.OrdinalIgnoreCase)
+                ? "dotnet"
+                : fullPath,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        if (string.Equals(Path.GetExtension(fullPath), ".dll", StringComparison.OrdinalIgnoreCase))
+        {
+            startInfo.ArgumentList.Add(fullPath);
+        }
+
+        return startInfo;
     }
 
     /// <summary>Closes child input, requires normal bounded process exit, captures diagnostics, and then disposes the SDK client.</summary>

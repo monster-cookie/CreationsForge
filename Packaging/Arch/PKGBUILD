@@ -1,7 +1,7 @@
 pkgname=creationsforge
 pkgver=0.0.0
 pkgrel=1
-pkgdesc='Creations Forge imports and compares selected Bethesda plugin records.'
+pkgdesc='Creations Forge browses, compares, and edits FormLists in Bethesda plugins.'
 arch=('x86_64')
 url='https://github.com/Venpi/CreationsForge'
 license=('custom')
