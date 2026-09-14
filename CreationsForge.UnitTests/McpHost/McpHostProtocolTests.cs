@@ -95,16 +95,7 @@ public sealed class McpHostProtocolTests
     [Fact]
     public async Task StdioHost_WhenInputCloses_ExitsZeroWithPristineStandardOutput()
     {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = "dotnet",
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-        startInfo.ArgumentList.Add(typeof(McpHostRunner).Assembly.Location);
+        var startInfo = McpStdioProcessFixture.CreateStartInfo(typeof(McpHostRunner).Assembly.Location);
 
         using var process = new Process
         {
@@ -175,15 +166,7 @@ public sealed class McpHostProtocolTests
     [Fact]
     public async Task McpExecutable_WithCommandLineArgument_ExitsTwoWithoutProtocolOutput()
     {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = "dotnet",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-        startInfo.ArgumentList.Add(typeof(McpHostRunner).Assembly.Location);
+        var startInfo = McpStdioProcessFixture.CreateStartInfo(typeof(McpHostRunner).Assembly.Location);
         startInfo.ArgumentList.Add("unexpected");
 
         using var process = Process.Start(startInfo).ShouldNotBeNull();

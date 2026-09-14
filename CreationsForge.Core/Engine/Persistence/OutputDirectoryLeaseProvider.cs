@@ -238,13 +238,14 @@ public sealed class OutputDirectoryLeaseProvider : IOutputDirectoryLeaseProvider
         }
     }
 
-    /// <summary>Recognizes platform sharing and non-blocking lock failures without parsing error messages.</summary>
+    /// <summary>Recognizes Windows, Linux, and Darwin sharing or non-blocking lock failures without parsing error messages.</summary>
     /// <param name="exception">The file-open failure.</param>
     /// <returns><see langword="true"/> when the plugin error identifies active contention.</returns>
     private static bool IsSharingContention(IOException exception)
     {
         var platformErrorCode = exception.HResult & 0xffff;
-        return platformErrorCode is 11 or 13 or 32 or 33;
+        return platformErrorCode is 11 or 13 or 32 or 33
+            || (OperatingSystem.IsMacOS() && platformErrorCode == 35);
     }
 
     /// <summary>Creates a typed lease-acquisition failure.</summary>

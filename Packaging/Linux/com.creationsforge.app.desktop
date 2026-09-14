@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Creations Forge
-Comment=Import and compare Bethesda plugin records
+Comment=Browse, compare, and edit FormLists in Bethesda plugins
 Exec=/usr/bin/creationsforge
 Icon=creationsforge
 Terminal=false

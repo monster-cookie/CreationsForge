@@ -1,12 +1,20 @@
 name: Package Release
 
 on:
+    pull_request:
+        branches:
+            - master
+        types:
+            - opened
+            - synchronize
+            - reopened
+            - ready_for_review
     push:
         tags:
             - "v*.*.*"
 
 permissions:
-    contents: write
+    contents: read
 
 env:
     DOTNET_VERSION: ${{ vars.DOTNET_VERSION || '10.0.x' }}
@@ -16,22 +24,32 @@ env:
     AVALONIA_UI_LICENSE_KEY: ${{ secrets.AVALONIA_UI_LICENSE_KEY }}
 
 jobs:
-    validate-tag-source:
-        name: Validate Tag Source
+    package-context:
+        name: Resolve Package Context
         runs-on: ubuntu-latest
         outputs:
-            version: ${{ steps.validate.outputs.version }}
+            assembly-version: ${{ steps.resolve.outputs.assembly-version }}
+            is-release: ${{ steps.resolve.outputs.is-release }}
+            version: ${{ steps.resolve.outputs.version }}
 
         steps:
-            - name: Verify tag and master HEAD
-              id: validate
+            - name: Resolve package version and release eligibility
+              id: resolve
               shell: bash
               env:
+                  EVENT_NAME: ${{ github.event_name }}
                   GH_TOKEN: ${{ github.token }}
                   TAG_CREATED: ${{ github.event.created }}
                   TAG_NAME: ${{ github.ref_name }}
                   TAG_SHA: ${{ github.sha }}
               run: |
+                  if [ "$EVENT_NAME" = "pull_request" ]; then
+                    echo "assembly-version=0.0.0.0" >> "$GITHUB_OUTPUT"
+                    echo "is-release=false" >> "$GITHUB_OUTPUT"
+                    echo "version=0.0.$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+
                   if [ "$TAG_CREATED" != "true" ]; then
                     echo "Release tag '$TAG_NAME' was updated instead of newly created."
                     exit 1
@@ -51,11 +69,14 @@ jobs:
                     exit 1
                   fi
 
+                  echo "assembly-version=${TAG_NAME#v}.0" >> "$GITHUB_OUTPUT"
+                  echo "is-release=true" >> "$GITHUB_OUTPUT"
                   echo "version=${TAG_NAME#v}" >> "$GITHUB_OUTPUT"
 
     validate-release:
         name: Validate Release
-        needs: validate-tag-source
+        needs: package-context
+        if: needs.package-context.outputs.is-release == 'true'
         uses: ./.github/workflows/ci.yml
         with:
             dotnet-version: ${{ vars.DOTNET_VERSION || '10.0.x' }}
@@ -64,11 +85,21 @@ jobs:
     package-windows:
         name: Package Windows
         needs:
-            - validate-tag-source
+            - package-context
             - validate-release
+        if: >-
+            ${{
+              !cancelled() &&
+              needs.package-context.result == 'success' &&
+              (
+                (needs.package-context.outputs.is-release == 'false' && needs.validate-release.result == 'skipped') ||
+                (needs.package-context.outputs.is-release == 'true' && needs.validate-release.result == 'success')
+              )
+            }}
         runs-on: windows-latest
         env:
-            PACKAGE_VERSION: ${{ needs.validate-tag-source.outputs.version }}
+            ASSEMBLY_VERSION: ${{ needs.package-context.outputs.assembly-version }}
+            PACKAGE_VERSION: ${{ needs.package-context.outputs.version }}
 
         steps:
             - name: Check out repository
@@ -99,8 +130,8 @@ jobs:
                     --self-contained true `
                     --output ./artifacts/publish/windows/desktop `
                     -p:Version=$env:PACKAGE_VERSION `
-                    -p:AssemblyVersion=$env:PACKAGE_VERSION `
-                    -p:FileVersion=$env:PACKAGE_VERSION
+                    -p:AssemblyVersion=$env:ASSEMBLY_VERSION `
+                    -p:FileVersion=$env:ASSEMBLY_VERSION
 
                   dotnet publish ./CreationsForge.Mcp/CreationsForge.Mcp.csproj `
                     --configuration Release `
@@ -108,8 +139,8 @@ jobs:
                     --self-contained true `
                     --output ./artifacts/publish/windows/mcp `
                     -p:Version=$env:PACKAGE_VERSION `
-                    -p:AssemblyVersion=$env:PACKAGE_VERSION `
-                    -p:FileVersion=$env:PACKAGE_VERSION
+                    -p:AssemblyVersion=$env:ASSEMBLY_VERSION `
+                    -p:FileVersion=$env:ASSEMBLY_VERSION
 
             - name: Package Windows ZIPs
               shell: pwsh
@@ -129,6 +160,41 @@ jobs:
                     -Path ./artifacts/publish/windows/mcp/* `
                     -DestinationPath ./artifacts/CreationsForge-Mcp-win-x64-$env:PACKAGE_VERSION.zip `
                     -Force
+
+            - name: Validate Windows package contents and MCP executable
+              shell: pwsh
+              timeout-minutes: 15
+              run: |
+                  $desktopValidationRoot = './artifacts/validation/windows/desktop'
+                  $mcpValidationRoot = './artifacts/validation/windows/mcp'
+                  Expand-Archive `
+                    -LiteralPath ./artifacts/CreationsForge-Desktop-win-x64-$env:PACKAGE_VERSION.zip `
+                    -DestinationPath $desktopValidationRoot
+                  Expand-Archive `
+                    -LiteralPath ./artifacts/CreationsForge-Mcp-win-x64-$env:PACKAGE_VERSION.zip `
+                    -DestinationPath $mcpValidationRoot
+
+                  $desktopExecutable = Join-Path $desktopValidationRoot 'CreationsForge.exe'
+                  if (-not (Test-Path -LiteralPath $desktopExecutable -PathType Leaf)) {
+                      throw "The Windows desktop archive does not contain CreationsForge.exe."
+                  }
+
+                  $env:CREATIONSFORGE_PACKAGED_MCP_PATH = (Resolve-Path (Join-Path $mcpValidationRoot 'CreationsForge.Mcp.exe')).Path
+                  & dotnet ./CreationsForge.UnitTests/bin/Release/net10.0/CreationsForge.UnitTests.dll `
+                    -noColor `
+                    -class CreationsForge.UnitTests.McpHost.McpHostProtocolTests `
+                    -class CreationsForge.UnitTests.McpHost.McpPluginStdioProtocolTests
+                  if ($LASTEXITCODE -ne 0) {
+                      throw "Packaged Windows MCP protocol validation failed with exit code $LASTEXITCODE."
+                  }
+
+                  & dotnet ./CreationsForge.PresentationTests/bin/Release/net10.0/CreationsForge.PresentationTests.dll `
+                    -noColor `
+                    -class CreationsForge.PresentationTests.Composition.DesktopMcpCrossSurfaceIntegrationTests `
+                    -longRunning 60
+                  if ($LASTEXITCODE -ne 0) {
+                      throw "Packaged Windows MCP three-game save/reopen validation failed with exit code $LASTEXITCODE."
+                  }
 
             - name: Install Inno Setup
               shell: pwsh
@@ -183,11 +249,21 @@ jobs:
     package-linux:
         name: Package Linux
         needs:
-            - validate-tag-source
+            - package-context
             - validate-release
+        if: >-
+            ${{
+              !cancelled() &&
+              needs.package-context.result == 'success' &&
+              (
+                (needs.package-context.outputs.is-release == 'false' && needs.validate-release.result == 'skipped') ||
+                (needs.package-context.outputs.is-release == 'true' && needs.validate-release.result == 'success')
+              )
+            }}
         runs-on: ubuntu-latest
         env:
-            PACKAGE_VERSION: ${{ needs.validate-tag-source.outputs.version }}
+            ASSEMBLY_VERSION: ${{ needs.package-context.outputs.assembly-version }}
+            PACKAGE_VERSION: ${{ needs.package-context.outputs.version }}
 
         steps:
             - name: Check out repository
@@ -224,8 +300,8 @@ jobs:
                     --self-contained true \
                     --output ./artifacts/publish/linux/desktop \
                     -p:Version="$PACKAGE_VERSION" \
-                    -p:AssemblyVersion="$PACKAGE_VERSION" \
-                    -p:FileVersion="$PACKAGE_VERSION"
+                    -p:AssemblyVersion="$ASSEMBLY_VERSION" \
+                    -p:FileVersion="$ASSEMBLY_VERSION"
 
                   dotnet publish ./CreationsForge.Mcp/CreationsForge.Mcp.csproj \
                     --configuration Release \
@@ -233,8 +309,8 @@ jobs:
                     --self-contained true \
                     --output ./artifacts/publish/linux/mcp \
                     -p:Version="$PACKAGE_VERSION" \
-                    -p:AssemblyVersion="$PACKAGE_VERSION" \
-                    -p:FileVersion="$PACKAGE_VERSION"
+                    -p:AssemblyVersion="$ASSEMBLY_VERSION" \
+                    -p:FileVersion="$ASSEMBLY_VERSION"
 
             - name: Package Linux ZIPs
               shell: bash
@@ -299,11 +375,39 @@ jobs:
                   Architecture: amd64
                   Depends: libgl1, dbus, libfontconfig1, libxrandr2, libxi6
                   Maintainer: $APPLICATION_PUBLISHER
-                  Description: Multi-game Bethesda plugin import and comparison tool
-                   $APPLICATION_DISPLAY_NAME imports and compares selected Bethesda plugin records.
+                  Description: Multi-game Bethesda FormList browser and editor
+                   $APPLICATION_DISPLAY_NAME browses, compares, and edits FormLists in Bethesda plugins.
                   EOF
 
                   dpkg-deb --build --root-owner-group "$package_root" "./artifacts/CreationsForge_${PACKAGE_VERSION}_amd64.deb"
+
+            - name: Validate Linux package contents and MCP executable
+              shell: bash
+              timeout-minutes: 15
+              run: |
+                  desktop_validation_root="./artifacts/validation/linux/desktop"
+                  mcp_validation_root="./artifacts/validation/linux/mcp"
+                  deb_validation_root="./artifacts/validation/linux/deb"
+                  mkdir -p "$desktop_validation_root" "$mcp_validation_root" "$deb_validation_root"
+                  unzip -q ./artifacts/CreationsForge-Desktop-linux-x64-"$PACKAGE_VERSION".zip -d "$desktop_validation_root"
+                  unzip -q ./artifacts/CreationsForge-Mcp-linux-x64-"$PACKAGE_VERSION".zip -d "$mcp_validation_root"
+                  dpkg-deb --extract ./artifacts/CreationsForge_"${PACKAGE_VERSION}"_amd64.deb "$deb_validation_root"
+
+                  test -x "$desktop_validation_root/CreationsForge"
+                  test -x "$deb_validation_root/usr/bin/creationsforge"
+                  test -x "$deb_validation_root/usr/bin/creationsforge-mcp"
+                  test -x "$deb_validation_root/opt/CreationsForge/Desktop/CreationsForge"
+                  test -x "$deb_validation_root/opt/CreationsForge/Mcp/CreationsForge.Mcp"
+
+                  export CREATIONSFORGE_PACKAGED_MCP_PATH="$GITHUB_WORKSPACE/${mcp_validation_root#./}/CreationsForge.Mcp"
+                  dotnet ./CreationsForge.UnitTests/bin/Release/net10.0/CreationsForge.UnitTests.dll \
+                    -noColor \
+                    -class CreationsForge.UnitTests.McpHost.McpHostProtocolTests \
+                    -class CreationsForge.UnitTests.McpHost.McpPluginStdioProtocolTests
+                  dotnet ./CreationsForge.PresentationTests/bin/Release/net10.0/CreationsForge.PresentationTests.dll \
+                    -noColor \
+                    -class CreationsForge.PresentationTests.Composition.DesktopMcpCrossSurfaceIntegrationTests \
+                    -longRunning 60
 
             - name: Upload Linux desktop ZIP
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -329,12 +433,22 @@ jobs:
     package-arch:
         name: Package Arch Linux
         needs:
-            - validate-tag-source
+            - package-context
             - validate-release
+        if: >-
+            ${{
+              !cancelled() &&
+              needs.package-context.result == 'success' &&
+              (
+                (needs.package-context.outputs.is-release == 'false' && needs.validate-release.result == 'skipped') ||
+                (needs.package-context.outputs.is-release == 'true' && needs.validate-release.result == 'success')
+              )
+            }}
         runs-on: ubuntu-latest
         container: archlinux:base-devel
         env:
-            PACKAGE_VERSION: ${{ needs.validate-tag-source.outputs.version }}
+            ASSEMBLY_VERSION: ${{ needs.package-context.outputs.assembly-version }}
+            PACKAGE_VERSION: ${{ needs.package-context.outputs.version }}
 
         steps:
             - name: Install build tools
@@ -345,6 +459,14 @@ jobs:
 
             - name: Check out repository
               uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+            - name: Restore
+              shell: bash
+              run: dotnet restore ./CreationsForge.sln
+
+            - name: Build
+              shell: bash
+              run: dotnet build ./CreationsForge.sln --configuration Release --no-restore
 
             - name: Publish Arch Linux applications
               shell: bash
@@ -358,8 +480,8 @@ jobs:
                     --self-contained true \
                     --output ./artifacts/publish/arch/desktop \
                     -p:Version="$PACKAGE_VERSION" \
-                    -p:AssemblyVersion="$PACKAGE_VERSION" \
-                    -p:FileVersion="$PACKAGE_VERSION"
+                    -p:AssemblyVersion="$ASSEMBLY_VERSION" \
+                    -p:FileVersion="$ASSEMBLY_VERSION"
 
                   dotnet publish ./CreationsForge.Mcp/CreationsForge.Mcp.csproj \
                     --configuration Release \
@@ -367,8 +489,8 @@ jobs:
                     --self-contained true \
                     --output ./artifacts/publish/arch/mcp \
                     -p:Version="$PACKAGE_VERSION" \
-                    -p:AssemblyVersion="$PACKAGE_VERSION" \
-                    -p:FileVersion="$PACKAGE_VERSION"
+                    -p:AssemblyVersion="$ASSEMBLY_VERSION" \
+                    -p:FileVersion="$ASSEMBLY_VERSION"
 
             - name: Stage Arch package files
               shell: bash
@@ -432,6 +554,30 @@ jobs:
                   mkdir -p "$GITHUB_WORKSPACE/artifacts"
                   cp ./*.pkg.tar.zst "$GITHUB_WORKSPACE/artifacts/"
 
+            - name: Validate Arch package contents and MCP executable
+              shell: bash
+              timeout-minutes: 15
+              run: |
+                  package_path="./artifacts/creationsforge-${PACKAGE_VERSION}-1-x86_64.pkg.tar.zst"
+                  validation_root="./artifacts/validation/arch"
+                  mkdir -p "$validation_root"
+                  bsdtar -xf "$package_path" -C "$validation_root"
+
+                  test -x "$validation_root/usr/bin/creationsforge"
+                  test -x "$validation_root/usr/bin/creationsforge-mcp"
+                  test -x "$validation_root/opt/CreationsForge/Desktop/CreationsForge"
+                  test -x "$validation_root/opt/CreationsForge/Mcp/CreationsForge.Mcp"
+
+                  export CREATIONSFORGE_PACKAGED_MCP_PATH="$GITHUB_WORKSPACE/${validation_root#./}/opt/CreationsForge/Mcp/CreationsForge.Mcp"
+                  dotnet ./CreationsForge.UnitTests/bin/Release/net10.0/CreationsForge.UnitTests.dll \
+                    -noColor \
+                    -class CreationsForge.UnitTests.McpHost.McpHostProtocolTests \
+                    -class CreationsForge.UnitTests.McpHost.McpPluginStdioProtocolTests
+                  dotnet ./CreationsForge.PresentationTests/bin/Release/net10.0/CreationsForge.PresentationTests.dll \
+                    -noColor \
+                    -class CreationsForge.PresentationTests.Composition.DesktopMcpCrossSurfaceIntegrationTests \
+                    -longRunning 60
+
             - name: Upload Arch Linux package
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
               with:
@@ -439,39 +585,186 @@ jobs:
                   path: artifacts/creationsforge-${{ env.PACKAGE_VERSION }}-1-x86_64.pkg.tar.zst
                   if-no-files-found: error
 
-    create-release:
-        name: Create GitHub Release
+    package-macos:
+        name: Package macOS (${{ matrix.rid }})
         needs:
-            - validate-tag-source
+            - package-context
             - validate-release
-            - package-windows
-            - package-linux
-            - package-arch
-        runs-on: ubuntu-latest
+        if: >-
+            ${{
+              !cancelled() &&
+              needs.package-context.result == 'success' &&
+              (
+                (needs.package-context.outputs.is-release == 'false' && needs.validate-release.result == 'skipped') ||
+                (needs.package-context.outputs.is-release == 'true' && needs.validate-release.result == 'success')
+              )
+            }}
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - runner: macos-15-intel
+                      rid: osx-x64
+                      binary-architecture: x86_64
+                    - runner: macos-15
+                      rid: osx-arm64
+                      binary-architecture: arm64
+        runs-on: ${{ matrix.runner }}
         env:
-            PACKAGE_VERSION: ${{ needs.validate-tag-source.outputs.version }}
+            ASSEMBLY_VERSION: ${{ needs.package-context.outputs.assembly-version }}
+            PACKAGE_RID: ${{ matrix.rid }}
+            PACKAGE_VERSION: ${{ needs.package-context.outputs.version }}
 
         steps:
             - name: Check out repository
               uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
-            - name: Download Windows installer artifact
-              uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+            - name: Set up .NET
+              uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
               with:
-                  name: CreationsForge-Setup-${{ env.PACKAGE_VERSION }}
-                  path: ./artifacts/release/windows
+                  dotnet-version: ${{ env.DOTNET_VERSION }}
 
-            - name: Download Debian package artifact
-              uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
-              with:
-                  name: CreationsForge-${{ env.PACKAGE_VERSION }}-amd64-deb
-                  path: ./artifacts/release/linux-deb
+            - name: Restore
+              shell: bash
+              run: dotnet restore ./CreationsForge.sln
 
-            - name: Download Arch package artifact
+            - name: Build
+              shell: bash
+              run: dotnet build ./CreationsForge.sln --configuration Release --no-restore
+
+            - name: Publish macOS applications
+              shell: bash
+              run: |
+                  desktop_publish_root="./artifacts/publish/macos/$PACKAGE_RID/desktop"
+                  mcp_publish_root="./artifacts/publish/macos/$PACKAGE_RID/mcp"
+                  mkdir -p "$desktop_publish_root" "$mcp_publish_root"
+
+                  dotnet publish ./CreationsForge/CreationsForge.csproj \
+                    --configuration Release \
+                    --runtime "$PACKAGE_RID" \
+                    --self-contained true \
+                    --output "$desktop_publish_root" \
+                    -p:Version="$PACKAGE_VERSION" \
+                    -p:AssemblyVersion="$ASSEMBLY_VERSION" \
+                    -p:FileVersion="$ASSEMBLY_VERSION"
+
+                  dotnet publish ./CreationsForge.Mcp/CreationsForge.Mcp.csproj \
+                    --configuration Release \
+                    --runtime "$PACKAGE_RID" \
+                    --self-contained true \
+                    --output "$mcp_publish_root" \
+                    -p:Version="$PACKAGE_VERSION" \
+                    -p:AssemblyVersion="$ASSEMBLY_VERSION" \
+                    -p:FileVersion="$ASSEMBLY_VERSION"
+
+            - name: Package macOS archives
+              shell: bash
+              run: |
+                  desktop_publish_root="./artifacts/publish/macos/$PACKAGE_RID/desktop"
+                  mcp_publish_root="./artifacts/publish/macos/$PACKAGE_RID/mcp"
+                  app_root="./artifacts/package/macos/$PACKAGE_RID/CreationsForge.app"
+                  contents_root="$app_root/Contents"
+                  resources_root="$contents_root/Resources"
+                  desktop_archive="./artifacts/CreationsForge-Desktop-$PACKAGE_RID-$PACKAGE_VERSION.zip"
+                  mcp_archive="$GITHUB_WORKSPACE/artifacts/CreationsForge-Mcp-$PACKAGE_RID-$PACKAGE_VERSION.tar.gz"
+
+                  mkdir -p "$contents_root/MacOS" "$resources_root/Documentation"
+                  cp -R "$desktop_publish_root/." "$contents_root/MacOS/"
+                  cp ./Packaging/MacOS/Info.plist "$contents_root/Info.plist"
+                  cp ./Documentation/KNOWN-ISSUES.md "$resources_root/Documentation/"
+                  cp ./Documentation/ROADMAP.md "$resources_root/Documentation/"
+                  cp ./CHANGELOG.md "$resources_root/Documentation/"
+                  cp ./Documentation/KNOWN-ISSUES.md "$mcp_publish_root/"
+                  cp ./Documentation/ROADMAP.md "$mcp_publish_root/"
+                  cp ./CHANGELOG.md "$mcp_publish_root/"
+
+                  chmod +x "$contents_root/MacOS/CreationsForge"
+                  chmod +x "$mcp_publish_root/CreationsForge.Mcp"
+                  plutil -replace CFBundleShortVersionString -string "$PACKAGE_VERSION" "$contents_root/Info.plist"
+                  plutil -replace CFBundleVersion -string "$PACKAGE_VERSION" "$contents_root/Info.plist"
+                  ditto -c -k --keepParent "$app_root" "$desktop_archive"
+                  tar -C "$mcp_publish_root" -czf "$mcp_archive" .
+
+            - name: Validate macOS package contents and MCP executable
+              shell: bash
+              timeout-minutes: 15
+              env:
+                  EXPECTED_BINARY_ARCHITECTURE: ${{ matrix.binary-architecture }}
+              run: |
+                  desktop_archive="./artifacts/CreationsForge-Desktop-$PACKAGE_RID-$PACKAGE_VERSION.zip"
+                  mcp_archive="./artifacts/CreationsForge-Mcp-$PACKAGE_RID-$PACKAGE_VERSION.tar.gz"
+                  validation_root="./artifacts/validation/macos/$PACKAGE_RID"
+                  desktop_validation_root="$validation_root/desktop"
+                  mcp_validation_root="$validation_root/mcp"
+                  mkdir -p "$desktop_validation_root" "$mcp_validation_root"
+                  ditto -x -k "$desktop_archive" "$desktop_validation_root"
+                  tar -C "$mcp_validation_root" -xzf "$mcp_archive"
+
+                  desktop_executable="$desktop_validation_root/CreationsForge.app/Contents/MacOS/CreationsForge"
+                  mcp_executable="$mcp_validation_root/CreationsForge.Mcp"
+                  test -x "$desktop_executable"
+                  test -x "$mcp_executable"
+                  plutil -lint "$desktop_validation_root/CreationsForge.app/Contents/Info.plist"
+                  lipo -archs "$desktop_executable" | grep -qw "$EXPECTED_BINARY_ARCHITECTURE"
+                  lipo -archs "$mcp_executable" | grep -qw "$EXPECTED_BINARY_ARCHITECTURE"
+
+                  canonical_runner_temp="$(cd "$RUNNER_TEMP" && pwd -P)"
+                  test_temp_root="$canonical_runner_temp/creationsforge-package-tests-$PACKAGE_RID"
+                  mkdir -p "$test_temp_root"
+                  export TMPDIR="$test_temp_root"
+                  export CREATIONSFORGE_PACKAGED_MCP_PATH="$GITHUB_WORKSPACE/${mcp_executable#./}"
+                  dotnet ./CreationsForge.UnitTests/bin/Release/net10.0/CreationsForge.UnitTests.dll \
+                    -noColor \
+                    -class CreationsForge.UnitTests.Engine.Persistence.OutputDirectoryLeaseProviderTests \
+                    -class CreationsForge.UnitTests.Engine.PluginInputs.PluginSourceInputLoaderTests \
+                    -class CreationsForge.UnitTests.Engine.PluginOutputs.PluginOutputInputLoaderTests \
+                    -class CreationsForge.UnitTests.McpHost.McpHostProtocolTests \
+                    -class CreationsForge.UnitTests.McpHost.McpPluginStdioProtocolTests
+                  dotnet ./CreationsForge.PresentationTests/bin/Release/net10.0/CreationsForge.PresentationTests.dll \
+                    -noColor \
+                    -class CreationsForge.PresentationTests.Composition.DesktopMcpCrossSurfaceIntegrationTests \
+                    -longRunning 60
+
+            - name: Upload macOS desktop archive
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+              with:
+                  name: CreationsForge-Desktop-${{ env.PACKAGE_RID }}-${{ env.PACKAGE_VERSION }}
+                  path: artifacts/CreationsForge-Desktop-${{ env.PACKAGE_RID }}-${{ env.PACKAGE_VERSION }}.zip
+                  if-no-files-found: error
+
+            - name: Upload macOS MCP archive
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+              with:
+                  name: CreationsForge-Mcp-${{ env.PACKAGE_RID }}-${{ env.PACKAGE_VERSION }}
+                  path: artifacts/CreationsForge-Mcp-${{ env.PACKAGE_RID }}-${{ env.PACKAGE_VERSION }}.tar.gz
+                  if-no-files-found: error
+
+    create-release:
+        name: Create GitHub Release
+        if: needs.package-context.outputs.is-release == 'true'
+        needs:
+            - package-context
+            - validate-release
+            - package-windows
+            - package-linux
+            - package-arch
+            - package-macos
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        env:
+            PACKAGE_VERSION: ${{ needs.package-context.outputs.version }}
+
+        steps:
+            - name: Check out repository
+              uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+            - name: Download release artifacts
               uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
               with:
-                  name: creationsforge-${{ env.PACKAGE_VERSION }}-1-x86_64-pkg
-                  path: ./artifacts/release/linux-arch
+                  pattern: '*-${{ env.PACKAGE_VERSION }}*'
+                  path: ./artifacts/release/assets
+                  merge-multiple: true
 
             - name: Extract release notes from change log
               shell: pwsh
@@ -492,38 +785,38 @@ jobs:
                   New-Item -ItemType Directory -Force -Path $releaseNotesDirectory | Out-Null
                   [System.IO.File]::WriteAllText($releaseNotesPath, $match.Value.Trim())
 
-            - name: Resolve release asset paths
-              id: release-assets
+            - name: Validate release asset set
               shell: pwsh
               run: |
-                  $windowsInstaller = Get-ChildItem -Path ./artifacts/release/windows -Recurse -File | Select-Object -First 1 -ExpandProperty FullName
-                  $debianPackage = Get-ChildItem -Path ./artifacts/release/linux-deb -Recurse -Filter *.deb -File | Select-Object -First 1 -ExpandProperty FullName
-                  $archPackage = Get-ChildItem -Path ./artifacts/release/linux-arch -Recurse -Filter *.pkg.tar.zst -File | Select-Object -First 1 -ExpandProperty FullName
-
-                  if (-not $windowsInstaller) {
-                      throw "Unable to find downloaded Windows installer artifact."
+                  $expectedNames = @(
+                      "CreationsForge-Desktop-win-x64-$env:PACKAGE_VERSION.zip",
+                      "CreationsForge-Mcp-win-x64-$env:PACKAGE_VERSION.zip",
+                      "CreationsForge-Setup-$env:PACKAGE_VERSION.exe",
+                      "CreationsForge-Desktop-linux-x64-$env:PACKAGE_VERSION.zip",
+                      "CreationsForge-Mcp-linux-x64-$env:PACKAGE_VERSION.zip",
+                      "CreationsForge_$($env:PACKAGE_VERSION)_amd64.deb",
+                      "creationsforge-$env:PACKAGE_VERSION-1-x86_64.pkg.tar.zst",
+                      "CreationsForge-Desktop-osx-x64-$env:PACKAGE_VERSION.zip",
+                      "CreationsForge-Mcp-osx-x64-$env:PACKAGE_VERSION.tar.gz",
+                      "CreationsForge-Desktop-osx-arm64-$env:PACKAGE_VERSION.zip",
+                      "CreationsForge-Mcp-osx-arm64-$env:PACKAGE_VERSION.tar.gz"
+                  )
+                  $actualNames = @(
+                      Get-ChildItem -LiteralPath ./artifacts/release/assets -File |
+                          Select-Object -ExpandProperty Name
+                  )
+                  $missingNames = @($expectedNames | Where-Object { $_ -notin $actualNames })
+                  $unexpectedNames = @($actualNames | Where-Object { $_ -notin $expectedNames })
+                  if ($missingNames.Count -ne 0 -or $unexpectedNames.Count -ne 0) {
+                      throw "Release asset mismatch. Missing: $($missingNames -join ', '); unexpected: $($unexpectedNames -join ', ')."
                   }
-
-                  if (-not $debianPackage) {
-                      throw "Unable to find downloaded Debian package artifact."
-                  }
-
-                  if (-not $archPackage) {
-                      throw "Unable to find downloaded Arch package artifact."
-                  }
-
-                  "windows_installer=$windowsInstaller" >> $env:GITHUB_OUTPUT
-                  "debian_package=$debianPackage" >> $env:GITHUB_OUTPUT
-                  "arch_package=$archPackage" >> $env:GITHUB_OUTPUT
 
             - name: Create GitHub release
               shell: bash
               env:
-                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  GH_TOKEN: ${{ github.token }}
               run: |
                   gh release create "${{ github.ref_name }}" \
-                    "${{ steps.release-assets.outputs.windows_installer }}" \
-                    "${{ steps.release-assets.outputs.debian_package }}" \
-                    "${{ steps.release-assets.outputs.arch_package }}" \
+                    ./artifacts/release/assets/* \
                     --title "${{ github.ref_name }}" \
                     --notes-file "./artifacts/release/release-notes.md"

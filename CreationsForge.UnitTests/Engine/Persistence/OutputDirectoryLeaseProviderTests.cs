@@ -282,17 +282,23 @@ public sealed class OutputDirectoryLeaseProviderTests
         result.Error.Code.ShouldBe(EngineErrorCode.UnsupportedInput);
     }
 
-    /// <summary>Verifies that a hard-linked guard is rejected as ambiguous physical metadata on Windows.</summary>
+    /// <summary>Verifies that a hard-linked guard is rejected as ambiguous physical metadata on supported hosts.</summary>
+    /// <returns>A task that completes after the hard-linked guard is rejected.</returns>
     [Fact]
-    public async Task AcquireAsync_WithHardLinkedGuard_ReturnsUnsupportedInputOnWindows()
+    public async Task AcquireAsync_WithHardLinkedGuard_ReturnsUnsupportedInputOnSupportedHosts()
     {
-        Assert.SkipUnless(OperatingSystem.IsWindows(), "This fixture uses the Windows hard-link API.");
+        Assert.SkipUnless(
+            OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS(),
+            "Output-directory physical identity is supported only on Windows, Linux, and macOS.");
 
         using var tempDirectory = TemporaryDirectory.Create();
         var targetPath = Path.Combine(tempDirectory.FullName, "Target.lock");
         await File.WriteAllBytesAsync(targetPath, [], TestContext.Current.CancellationToken);
         var guardPath = Path.Combine(tempDirectory.FullName, GuardFileName);
-        if (!CreateHardLink(guardPath, targetPath, IntPtr.Zero))
+        var linkCreated = OperatingSystem.IsWindows()
+            ? CreateHardLinkWindows(guardPath, targetPath, IntPtr.Zero)
+            : CreateHardLinkUnix(targetPath, guardPath) == 0;
+        if (!linkCreated)
         {
             throw new InvalidOperationException(
                 $"Could not create the output-guard hard-link fixture: {Marshal.GetLastPInvokeError()}.");
@@ -308,11 +314,14 @@ public sealed class OutputDirectoryLeaseProviderTests
         result.Error.Code.ShouldBe(EngineErrorCode.UnsupportedInput);
     }
 
-    /// <summary>Verifies that Linux rejects a guard replaced after its descriptor is opened and releases acquired resources.</summary>
+    /// <summary>Verifies that Unix rejects a guard replaced after its descriptor is opened and releases acquired resources.</summary>
+    /// <returns>A task that completes after replacement detection and resource release are validated.</returns>
     [Fact]
-    public async Task AcquireAsync_OnLinux_WhenOpenedGuardIsReplaced_ReturnsExternalChangeAndReleasesResources()
+    public async Task AcquireAsync_OnUnix_WhenOpenedGuardIsReplaced_ReturnsExternalChangeAndReleasesResources()
     {
-        Assert.SkipUnless(OperatingSystem.IsLinux(), "This regression exercises Linux descriptor and path identity.");
+        Assert.SkipUnless(
+            OperatingSystem.IsLinux() || OperatingSystem.IsMacOS(),
+            "This regression exercises Unix descriptor and path identity.");
 
         using var tempDirectory = TemporaryDirectory.Create();
         var movedGuardPath = Path.Combine(tempDirectory.FullName, "Moved.lock");
@@ -349,11 +358,14 @@ public sealed class OutputDirectoryLeaseProviderTests
         await retry.Value!.Lease!.DisposeAsync();
     }
 
-    /// <summary>Verifies that a Linux FIFO substituted for an opened guard is rejected promptly and releases the lease gate.</summary>
+    /// <summary>Verifies that a Unix FIFO substituted for an opened guard is rejected promptly and releases the lease gate.</summary>
+    /// <returns>A task that completes after prompt special-file rejection and resource release are validated.</returns>
     [Fact(Timeout = 15000)]
-    public async Task AcquireAsync_OnLinux_WhenOpenedGuardIsReplacedWithFifo_RejectsWithoutBlocking()
+    public async Task AcquireAsync_OnUnix_WhenOpenedGuardIsReplacedWithFifo_RejectsWithoutBlocking()
     {
-        Assert.SkipUnless(OperatingSystem.IsLinux(), "This regression exercises Linux FIFO and descriptor behavior.");
+        Assert.SkipUnless(
+            OperatingSystem.IsLinux() || OperatingSystem.IsMacOS(),
+            "This regression exercises Unix FIFO and descriptor behavior.");
 
         using var tempDirectory = TemporaryDirectory.Create();
         var guardPath = Path.Combine(tempDirectory.FullName, GuardFileName);
@@ -385,7 +397,7 @@ public sealed class OutputDirectoryLeaseProviderTests
         {
             if (!acquisition.IsCompleted)
             {
-                // Linux permits opening a FIFO for read/write without another peer, releasing a regressed blocking read.
+                // Unix permits opening a FIFO for read/write without another peer, releasing a regressed blocking read.
                 using var releaseBlockedOpen = new FileStream(guardPath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
                 await acquisition.WaitAsync(TimeSpan.FromSeconds(5));
             }
@@ -494,7 +506,7 @@ public sealed class OutputDirectoryLeaseProviderTests
         return (OutputDirectoryLeaseProvider)constructor!.Invoke([guardOpenedObserver]);
     }
 
-    /// <summary>Creates a Linux FIFO used to prove guard verification cannot wait for a writer.</summary>
+    /// <summary>Creates a Unix FIFO used to prove guard verification cannot wait for a writer.</summary>
     /// <param name="path">The absent guard path to replace with a FIFO.</param>
     /// <param name="mode">The owner-only permission bits for the fixture.</param>
     /// <returns>Zero on success; otherwise minus one with the plugin error available through the runtime.</returns>
@@ -508,10 +520,19 @@ public sealed class OutputDirectoryLeaseProviderTests
     /// <returns><see langword="true"/> when Windows creates the link.</returns>
     [DllImport("kernel32.dll", EntryPoint = "CreateHardLinkW", CharSet = CharSet.Unicode, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool CreateHardLink(
+    private static extern bool CreateHardLinkWindows(
         string fileName,
         string existingFileName,
         IntPtr securityAttributes);
+
+    /// <summary>Creates a Unix hard link for guard identity validation.</summary>
+    /// <param name="existingFileName">The existing target path.</param>
+    /// <param name="fileName">The new hard-link path.</param>
+    /// <returns>Zero when Unix creates the link; otherwise minus one with the native error retained.</returns>
+    [DllImport("libc", EntryPoint = "link", SetLastError = true)]
+    private static extern int CreateHardLinkUnix(
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string existingFileName,
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string fileName);
 
     /// <summary>Captures one child-process guard probe result.</summary>
     private sealed class ChildProcessResult
