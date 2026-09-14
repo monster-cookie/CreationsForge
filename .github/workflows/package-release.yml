@@ -708,6 +708,10 @@ jobs:
                   lipo -archs "$desktop_executable" | grep -qw "$EXPECTED_BINARY_ARCHITECTURE"
                   lipo -archs "$mcp_executable" | grep -qw "$EXPECTED_BINARY_ARCHITECTURE"
 
+                  canonical_runner_temp="$(cd "$RUNNER_TEMP" && pwd -P)"
+                  test_temp_root="$canonical_runner_temp/creationsforge-package-tests-$PACKAGE_RID"
+                  mkdir -p "$test_temp_root"
+                  export TMPDIR="$test_temp_root"
                   export CREATIONSFORGE_PACKAGED_MCP_PATH="$GITHUB_WORKSPACE/${mcp_executable#./}"
                   dotnet ./CreationsForge.UnitTests/bin/Release/net10.0/CreationsForge.UnitTests.dll \
                     -noColor \
