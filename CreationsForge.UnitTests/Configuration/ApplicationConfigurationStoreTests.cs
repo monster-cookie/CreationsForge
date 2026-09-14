@@ -7,6 +7,9 @@ using Shouldly;
 
 namespace CreationsForge.UnitTests.Configuration;
 
+/// <summary>
+/// Verifies durable application configuration defaults, compatibility, and persistence.
+/// </summary>
 public class ApplicationConfigurationStoreTests : IDisposable
 {
     private static readonly JsonSerializerOptions SerializerOptions = new()
@@ -96,6 +99,41 @@ public class ApplicationConfigurationStoreTests : IDisposable
         store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Dark);
         store.Current.NifSkopeExecutablePath.ShouldBeNull();
         store.Current.PreferEspOverMatchingEsm.ShouldBeTrue();
+    }
+
+    /// <summary>
+    /// Verifies an obsolete database-directory value is ignored while retained settings survive a load and save.
+    /// </summary>
+    [Fact]
+    public void Load_WithLegacyDatabaseDirectory_IgnoresItAndPreservesRetainedSettings()
+    {
+        var legacyDatabaseDirectory = Path.Combine(DirectoryPath, "LegacyDatabase");
+        var configurationPath = CreateConfigurationFile(JsonSerializer.Serialize(new
+        {
+            ActiveGame = "Skyrim",
+            ThemeFamily = "Fluent",
+            ThemeMode = "Light",
+            RecordTextLanguage = "German",
+            NifSkopeExecutablePath = "nifskope.exe",
+            PreferEspOverMatchingEsm = false,
+            ApplicationDataDirectory = "app-data",
+            DatabaseDirectory = legacyDatabaseDirectory,
+            LoggingDirectory = "logs"
+        }));
+        var store = new ApplicationConfigurationStore(configurationPath);
+
+        store.Save(store.Current);
+
+        store.Current.ActiveGame.ShouldBe("Skyrim");
+        store.Current.ThemeFamily.ShouldBe(ApplicationThemeFamily.Fluent);
+        store.Current.ThemeMode.ShouldBe(ApplicationThemeMode.Light);
+        store.Current.RecordTextLanguage.ShouldBe("German");
+        store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
+        store.Current.PreferEspOverMatchingEsm.ShouldBeFalse();
+        store.Current.ApplicationDataDirectory.ShouldBe("app-data");
+        store.Current.LoggingDirectory.ShouldBe("logs");
+        File.ReadAllText(configurationPath).ShouldNotContain("DatabaseDirectory");
+        Directory.Exists(legacyDatabaseDirectory).ShouldBeFalse();
     }
 
     public void Dispose()

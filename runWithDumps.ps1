@@ -16,10 +16,10 @@ $env:DOTNET_CreateDumpDiagnostics = "1"
 $env:DOTNET_CreateDumpLogToFile = "$crashDumpPath\createdump.log"
 
 dotnet build
-.\CreationsForge.Console\bin\Debug\net10.0\CreationsForge.Console.exe --reset-all
+.\CreationsForge\bin\Debug\net10.0\CreationsForge.exe
 $exitCode = $LASTEXITCODE
 
-# Only show dump info if the console app crashed or otherwise failed.
+# Only show dump info if the desktop app crashed or otherwise failed.
 if ($exitCode -ne 0) {
     Get-ChildItem C:\ProgramData\CreationsForge\CrashDumps |
         Sort-Object LastWriteTime -Descending |

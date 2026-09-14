@@ -39,7 +39,5 @@ public class ApplicationConfiguration
 
     public string ApplicationDataDirectory { get; set; } = ApplicationConfigurationStore.DefaultApplicationDataDirectory;
 
-    public string DatabaseDirectory { get; set; } = ApplicationConfigurationStore.DefaultDatabaseDirectory;
-
     public string LoggingDirectory { get; set; } = ApplicationConfigurationStore.DefaultLoggingDirectory;
 }

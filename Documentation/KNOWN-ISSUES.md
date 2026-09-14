@@ -1,27 +1,12 @@
 ﻿# Known Issues
 
-- Only a subset of the record types are supported at this time.
-  - The supported record types in all games are:
-    - ActorValueInformation (AVIF)
-    - Book (BOOK)
-    - Class (CLAS)
-    - ConstructibleObject (COBJ)
-    - Container (CONT)
-    - Door (DOOR)
-    - Faction (FACT)
-    - FormList (FLST)
-    - GameSetting (GMST)
-    - Global (GLOB)
-    - Keyword (KYWD)
-    - MagicEffect (MGEF)
-    - MiscItem (MISC)
-    - NPC (NPC_)
-    - Perk (PERK)
-    - Static (STAT)
-  - Fallout 4 Also Support:
-    - Terminal (TERM)
-  - Starfield also supports:
-    - ConditionForm (CNDF)
-    - Terminal (TERM)
-- FormKey and ModKey lists are showing raw information instead of the more helpful EditorID.
-- Currently we cannot support MO2, it virtual file system is causing problems with how mutagen looks up plugins and especially starfield partial/split masters.
+- Plugin authoring is limited to FormLists (FLST) for Starfield, Fallout 4, and Skyrim Special Edition. Finding another record family in reference lookup does not make it editable. General plugin editing, automatic conflict resolution, and asset preview are not provided by this workflow.
+- An installed Starfield source failed when a prior build eagerly parsed unrelated base-game record groups. The current implementation materializes FormLists separately and uses lazy read-only overlays for general reference discovery, but the correction still requires validation against installed data on the affected machine. If opening or a later reference search fails, retain the complete phase log.
+- Installed Fallout 4 and Skyrim Special Edition validation inputs have not yet been supplied. Their plugin implementations do not establish compatibility with every installed plugin or game version.
+- Desktop and MCP workspaces are independent and do not synchronize live. If source or output files change externally, saving or continuing may be blocked. Read the diagnostic and resolve the conflict; do not assume another workspace's edits are visible.
+- A canceled or interrupted operation may require its outcome to be resolved before saving, discarding, or leaving. Use **Keep Editing** for unapplied input, **Return to editor** for a pending editor operation when offered, or **Inspect Save Outcome** for an uncertain save. Use only the recovery actions enabled for the reported state. Cancellation alone does not establish whether a write occurred.
+- Plugin Mod Organizer 2 and other virtual-file-system workflows remain unverified. The former import-specific limitation is not evidence of plugin compatibility or incompatibility.
+- Saving edits to an existing localized output that uses separate string files is rejected with `UnsupportedInput` in all three games to protect unedited localized data. Creating a new localized output and editing an existing output with embedded strings are separate supported paths; do not treat this limitation as guidance to convert an existing localized plugin.
+- Post-removal restore, Release build, automated checks and focused rechecks have passed, with some platform and external-input checks skipped. Real Codex save/reopen and independent plugin-file verification passed on generated fixtures for all three games. Packaged launches, live desktop/Codex conflict checks, and game-runtime acceptance remain unverified; the generated-fixture results do not establish those outcomes.
+
+The legacy SQLite import and reset commands have been removed. Reimporting or resetting a database is not a recovery procedure for a workspace. See [installation, desktop usage, and migration guidance](../README.md).

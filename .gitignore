@@ -162,6 +162,7 @@ riderModule.iml
 *.env
 
 # Codex Temporary Files (It should be cleaning these up)
+.work/
 **/bin/CodexTemp/
 **/bin/Validation/
 

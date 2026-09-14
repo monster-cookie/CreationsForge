@@ -53,7 +53,6 @@ public class GameSelectionService : IGameSelectionService
             NifSkopeExecutablePath = ConfigurationStore.Current.NifSkopeExecutablePath,
             PreferEspOverMatchingEsm = ConfigurationStore.Current.PreferEspOverMatchingEsm,
             ApplicationDataDirectory = ConfigurationStore.Current.ApplicationDataDirectory,
-            DatabaseDirectory = ConfigurationStore.Current.DatabaseDirectory,
             LoggingDirectory = ConfigurationStore.Current.LoggingDirectory
         };
         ConfigurationStore.Save(configuration);

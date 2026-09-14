@@ -2,12 +2,14 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CreationsForge.Core.Configuration.Interfaces;
-using CreationsForge.Core.DTOs.Results;
 using CreationsForge.Core.Services.Interfaces;
 using Serilog;
 
 namespace CreationsForge.Core.Services;
 
+/// <summary>
+/// Persists process-session health snapshots and reports abnormal termination from the previous run.
+/// </summary>
 public class ProcessTerminationDiagnosticsService : IProcessTerminationDiagnosticsService
 {
     private static readonly JsonSerializerOptions SerializerOptions = new()
@@ -66,7 +68,8 @@ public class ProcessTerminationDiagnosticsService : IProcessTerminationDiagnosti
         }
     }
 
-    public void UpdateHeartbeat(string phaseName, GameImportProgressDTO? progress = null)
+    /// <inheritdoc />
+    public void UpdateHeartbeat(string phaseName)
     {
         lock (SyncRoot)
         {
@@ -77,9 +80,6 @@ public class ProcessTerminationDiagnosticsService : IProcessTerminationDiagnosti
 
             CurrentSession.LastHeartbeatUTC = DateTime.UtcNow;
             CurrentSession.LastPhase = phaseName;
-            CurrentSession.LastStatusText = progress?.StatusText;
-            CurrentSession.LastDetailText = progress?.DetailText;
-            CurrentSession.LastGame = progress?.CurrentPluginName;
             UpdateProcessSnapshot(CurrentSession);
             WriteSession();
         }
@@ -147,12 +147,10 @@ public class ProcessTerminationDiagnosticsService : IProcessTerminationDiagnosti
                 UpdateProcessSnapshot(CurrentSession);
                 WriteSession();
                 Logger.Warning(
-                    "Process exit observed before clean shutdown; pid: {ProcessId}; surface: {SurfaceName}; phase: {LastPhase}; status: {LastStatusText}; detail: {LastDetailText}; managed bytes: {ManagedBytes}; working set bytes: {WorkingSetBytes}; private bytes: {PrivateBytes}; handle count: {HandleCount}; thread count: {ThreadCount}",
+                    "Process exit observed before clean shutdown; pid: {ProcessId}; surface: {SurfaceName}; phase: {LastPhase}; managed bytes: {ManagedBytes}; working set bytes: {WorkingSetBytes}; private bytes: {PrivateBytes}; handle count: {HandleCount}; thread count: {ThreadCount}",
                     CurrentSession.ProcessId,
                     CurrentSession.SurfaceName,
                     CurrentSession.LastPhase,
-                    CurrentSession.LastStatusText,
-                    CurrentSession.LastDetailText,
                     CurrentSession.ManagedBytes,
                     CurrentSession.WorkingSetBytes,
                     CurrentSession.PrivateBytes,
@@ -175,12 +173,10 @@ public class ProcessTerminationDiagnosticsService : IProcessTerminationDiagnosti
                 UpdateProcessSnapshot(CurrentSession);
                 WriteSession();
                 Logger.Fatal(
-                    "Unhandled exception observed before clean shutdown; pid: {ProcessId}; surface: {SurfaceName}; phase: {LastPhase}; status: {LastStatusText}; detail: {LastDetailText}; exception: {UnhandledException}",
+                    "Unhandled exception observed before clean shutdown; pid: {ProcessId}; surface: {SurfaceName}; phase: {LastPhase}; exception: {UnhandledException}",
                     CurrentSession.ProcessId,
                     CurrentSession.SurfaceName,
                     CurrentSession.LastPhase,
-                    CurrentSession.LastStatusText,
-                    CurrentSession.LastDetailText,
                     message);
             }
         }
@@ -199,12 +195,10 @@ public class ProcessTerminationDiagnosticsService : IProcessTerminationDiagnosti
                 WriteSession();
                 Logger.Error(
                     e.Exception,
-                    "Unobserved task exception observed; pid: {ProcessId}; surface: {SurfaceName}; phase: {LastPhase}; status: {LastStatusText}; detail: {LastDetailText}",
+                    "Unobserved task exception observed; pid: {ProcessId}; surface: {SurfaceName}; phase: {LastPhase}",
                     CurrentSession.ProcessId,
                     CurrentSession.SurfaceName,
-                    CurrentSession.LastPhase,
-                    CurrentSession.LastStatusText,
-                    CurrentSession.LastDetailText);
+                    CurrentSession.LastPhase);
             }
         }
     }
@@ -247,14 +241,12 @@ public class ProcessTerminationDiagnosticsService : IProcessTerminationDiagnosti
             if (previous is not null && !previous.CleanShutdown)
             {
                 Logger.Warning(
-                    "Previous CreationsForge session ended unexpectedly; pid: {PreviousProcessId}; surface: {SurfaceName}; started: {StartedAtUTC}; last heartbeat: {LastHeartbeatUTC}; phase: {LastPhase}; status: {LastStatusText}; detail: {LastDetailText}; managed bytes: {ManagedBytes}; working set bytes: {WorkingSetBytes}; private bytes: {PrivateBytes}; handle count: {HandleCount}; thread count: {ThreadCount}; log path: {LogPath}; termination requested: {TerminationRequested}; termination reason: {TerminationReason}; unhandled exception: {LastUnhandledException}",
+                    "Previous CreationsForge session ended unexpectedly; pid: {PreviousProcessId}; surface: {SurfaceName}; started: {StartedAtUTC}; last heartbeat: {LastHeartbeatUTC}; phase: {LastPhase}; managed bytes: {ManagedBytes}; working set bytes: {WorkingSetBytes}; private bytes: {PrivateBytes}; handle count: {HandleCount}; thread count: {ThreadCount}; log path: {LogPath}; termination requested: {TerminationRequested}; termination reason: {TerminationReason}; unhandled exception: {LastUnhandledException}",
                     previous.ProcessId,
                     previous.SurfaceName,
                     previous.StartedAtUTC,
                     previous.LastHeartbeatUTC,
                     previous.LastPhase,
-                    previous.LastStatusText,
-                    previous.LastDetailText,
                     previous.ManagedBytes,
                     previous.WorkingSetBytes,
                     previous.PrivateBytes,
@@ -321,12 +313,6 @@ public class ProcessTerminationDiagnosticsService : IProcessTerminationDiagnosti
         public string? LogPath { get; set; }
 
         public string? LastPhase { get; set; }
-
-        public string? LastStatusText { get; set; }
-
-        public string? LastDetailText { get; set; }
-
-        public string? LastGame { get; set; }
 
         public long ManagedBytes { get; set; }
 

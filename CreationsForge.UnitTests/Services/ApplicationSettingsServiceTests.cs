@@ -113,7 +113,6 @@ public class ApplicationSettingsServiceTests
                 NifSkopeExecutablePath = "nifskope.exe",
                 PreferEspOverMatchingEsm = false,
                 ApplicationDataDirectory = "app-data",
-                DatabaseDirectory = "database",
                 LoggingDirectory = "logs"
             }
         };
@@ -128,7 +127,6 @@ public class ApplicationSettingsServiceTests
         store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
         store.Current.PreferEspOverMatchingEsm.ShouldBeFalse();
         store.Current.ApplicationDataDirectory.ShouldBe("app-data");
-        store.Current.DatabaseDirectory.ShouldBe("database");
         store.Current.LoggingDirectory.ShouldBe("logs");
     }
 
@@ -148,7 +146,6 @@ public class ApplicationSettingsServiceTests
                 NifSkopeExecutablePath = "nifskope.exe",
                 PreferEspOverMatchingEsm = false,
                 ApplicationDataDirectory = "app-data",
-                DatabaseDirectory = "database",
                 LoggingDirectory = "logs"
             }
         };
@@ -163,7 +160,6 @@ public class ApplicationSettingsServiceTests
         store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
         store.Current.PreferEspOverMatchingEsm.ShouldBeFalse();
         store.Current.ApplicationDataDirectory.ShouldBe("app-data");
-        store.Current.DatabaseDirectory.ShouldBe("database");
         store.Current.LoggingDirectory.ShouldBe("logs");
     }
 
@@ -182,7 +178,6 @@ public class ApplicationSettingsServiceTests
                 NifSkopeExecutablePath = "nifskope.exe",
                 PreferEspOverMatchingEsm = false,
                 ApplicationDataDirectory = "app-data",
-                DatabaseDirectory = "database",
                 LoggingDirectory = "logs"
             }
         };
@@ -197,7 +192,6 @@ public class ApplicationSettingsServiceTests
         store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
         store.Current.PreferEspOverMatchingEsm.ShouldBeFalse();
         store.Current.ApplicationDataDirectory.ShouldBe("app-data");
-        store.Current.DatabaseDirectory.ShouldBe("database");
         store.Current.LoggingDirectory.ShouldBe("logs");
     }
 
@@ -213,7 +207,6 @@ public class ApplicationSettingsServiceTests
             {
                 ActiveGame = "Starfield",
                 ApplicationDataDirectory = "app-data",
-                DatabaseDirectory = "database",
                 LoggingDirectory = "logs"
             }
         };
@@ -228,7 +221,6 @@ public class ApplicationSettingsServiceTests
         store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
         store.Current.PreferEspOverMatchingEsm.ShouldBeFalse();
         store.Current.ApplicationDataDirectory.ShouldBe("app-data");
-        store.Current.DatabaseDirectory.ShouldBe("database");
         store.Current.LoggingDirectory.ShouldBe("logs");
     }
 
@@ -246,7 +238,6 @@ public class ApplicationSettingsServiceTests
                 RecordTextLanguage = "German",
                 PreferEspOverMatchingEsm = false,
                 ApplicationDataDirectory = "app-data",
-                DatabaseDirectory = "database",
                 LoggingDirectory = "logs"
             }
         };
@@ -261,7 +252,6 @@ public class ApplicationSettingsServiceTests
         store.Current.NifSkopeExecutablePath.ShouldBeNull();
         store.Current.PreferEspOverMatchingEsm.ShouldBeFalse();
         store.Current.ApplicationDataDirectory.ShouldBe("app-data");
-        store.Current.DatabaseDirectory.ShouldBe("database");
         store.Current.LoggingDirectory.ShouldBe("logs");
     }
 
@@ -276,7 +266,6 @@ public class ApplicationSettingsServiceTests
             Current = new ApplicationConfiguration
             {
                 ApplicationDataDirectory = "app-data",
-                DatabaseDirectory = "database",
                 LoggingDirectory = "logs"
             }
         };
@@ -291,7 +280,6 @@ public class ApplicationSettingsServiceTests
         store.Current.NifSkopeExecutablePath.ShouldBe("nifskope.exe");
         store.Current.PreferEspOverMatchingEsm.ShouldBeFalse();
         store.Current.ApplicationDataDirectory.ShouldBe("app-data");
-        store.Current.DatabaseDirectory.ShouldBe("database");
         store.Current.LoggingDirectory.ShouldBe("logs");
     }
 

@@ -8,8 +8,6 @@
 #define InstallerIconFile "..\..\CreationsForge\Resources\AppIcon\CreationsForge.ico"
 #endif
 #define DesktopExecutable "CreationsForge.exe"
-#define CliExecutable "CreationsForge.Console.exe"
-
 [Setup]
 AppId={{BB63D3B0-E9B9-4C14-BE6A-F656C644524F}
 AppName={#ApplicationName}
@@ -31,8 +29,7 @@ WizardStyle=modern
 
 [Files]
 Source: "{#DesktopSourceDirectory}\*"; DestDir: "{app}\Desktop"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "{#CliSourceDirectory}\*"; DestDir: "{app}\Cli"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#McpSourceDirectory}\*"; DestDir: "{app}\Mcp"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\{#ApplicationName}"; Filename: "{app}\Desktop\{#DesktopExecutable}"
-Name: "{autoprograms}\{#ApplicationName} CLI"; Filename: "{cmd}"; Parameters: "/K ""{app}\Cli\{#CliExecutable}"""

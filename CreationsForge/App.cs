@@ -7,11 +7,10 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.Themes.Fluent;
-using CreationsForge.Bootstrap.Composition;
 using CreationsForge.Bootstrap.Logging;
+using CreationsForge.Composition;
 using CreationsForge.Core.Configuration;
 using CreationsForge.Core.Configuration.Interfaces;
-using CreationsForge.Core.Database.Interfaces;
 using CreationsForge.Core.Models.Configuration;
 using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Services;
@@ -24,39 +23,79 @@ using Semi.Avalonia.DataGrid;
 
 namespace CreationsForge;
 
+/// <summary>
+/// Composes and owns the Avalonia desktop application and its engine lifetime.
+/// </summary>
 public class App : Application
 {
+    /// <summary>The resource key for the application background brush.</summary>
     public const string ApplicationSurfaceBrushKey = "CreationsForge.ApplicationSurfaceBrush";
+
+    /// <summary>The resource key for panel background brushes.</summary>
     public const string PanelSurfaceBrushKey = "CreationsForge.PanelSurfaceBrush";
+
+    /// <summary>The resource key for application foreground text.</summary>
     public const string ApplicationForegroundBrushKey = "CreationsForge.ApplicationForegroundBrush";
+
+    /// <summary>The resource key for application border brushes.</summary>
     public const string BorderBrushKey = "CreationsForge.BorderBrush";
 
+    /// <summary>The application-owned dependency container.</summary>
     private readonly IContainer Container;
-    private bool HasShutDown;
 
+    /// <summary>Flushes process-wide logging after the accepted terminal shutdown attempt.</summary>
+    private readonly Action CloseLog;
+
+    /// <summary>Synchronizes creation of the one application cleanup task.</summary>
+    private readonly object ShutdownSync = new();
+
+    /// <summary>The shared cleanup task once shutdown begins.</summary>
+    private Task? ShutdownTask;
+
+    /// <summary>Whether an accepted teardown reached its terminal desktop-exit phase.</summary>
+    private bool ShutdownAuthorized;
+
+    /// <summary>Initializes logging and the application dependency graph without opening plugins.</summary>
     public App()
     {
-        SerilogConfigurator.Configure(new ApplicationConfigurationStore(), writeToConsole: false);
+        var configurationStore = new ApplicationConfigurationStore();
+        SerilogConfigurator.Configure(configurationStore, writeToConsole: false);
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
-        Container = AutofacConfigurator.Configure(RegisterPresentationServices);
+        Container = DesktopComposition.Create(configurationStore, Log.Logger);
+        CloseLog = Log.CloseAndFlush;
     }
 
+    /// <summary>Initializes an application that assumes ownership of a supplied container without accessing profile configuration.</summary>
+    /// <param name="container">The complete plugin desktop dependency container whose lifetime transfers to the application.</param>
+    /// <param name="closeLog">The optional log finalizer; <see langword="null"/> selects a no-op finalizer for isolated tests.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="container"/> is <see langword="null"/>.</exception>
+    internal App(IContainer container, Action? closeLog = null)
+    {
+        ArgumentNullException.ThrowIfNull(container);
+        Container = container;
+        CloseLog = closeLog ?? (() => { });
+    }
+
+    /// <summary>Applies persisted theme resources before desktop controls are created.</summary>
     public override void Initialize()
     {
         ApplyTheme(this, GetConfiguredThemeFamily(), GetConfiguredThemeMode());
     }
 
+    /// <summary>Starts diagnostics, publishes the plugin shell, and attaches guarded desktop startup and shutdown behavior.</summary>
     public override void OnFrameworkInitializationCompleted()
     {
         try
         {
             Log.Information("Starting CreationsForge UI");
             Container.Resolve<IProcessTerminationDiagnosticsService>().StartSession("UI", SerilogConfigurator.CurrentLogPath);
-            Container.Resolve<IDatabaseSchemaInitializer>().Initialize();
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                desktop.MainWindow = Container.Resolve<MainWindow>();
-                desktop.Exit += OnDesktopExit;
+                var mainWindow = Container.Resolve<MainWindow>();
+                Container.Resolve<IApplicationNavigationService>().ShowWorkspaceShell();
+                mainWindow.Opened += OnMainWindowOpened;
+                desktop.ShutdownRequested += OnDesktopShutdownRequested;
+                desktop.MainWindow = mainWindow;
             }
         }
         catch (Exception ex)
@@ -81,29 +120,6 @@ public class App : Application
         }
 
         Log.CloseAndFlush();
-    }
-
-    private static void RegisterPresentationServices(ContainerBuilder builder)
-    {
-        builder.RegisterType<MainWindow>().SingleInstance();
-        builder.RegisterType<ActivePluginLoadView>();
-        builder.RegisterType<ActivePluginLoadViewModel>();
-        builder.RegisterType<AssetPreviewPaneView>();
-        builder.RegisterType<AssetPreviewPaneViewModel>().InstancePerLifetimeScope();
-        builder.RegisterType<ImportProgressView>();
-        builder.RegisterType<ImportProgressViewModel>();
-        builder.RegisterType<MainView>();
-        builder.RegisterType<MainViewModel>();
-        builder.RegisterType<SettingsView>();
-        builder.RegisterType<SettingsViewModel>();
-        builder.RegisterType<ApplicationWindowService>().As<IApplicationWindowService>().SingleInstance();
-        builder.RegisterType<ApplicationNavigationService>().As<IApplicationNavigationService>().SingleInstance();
-        builder.RegisterType<AssetPreviewRenderMeshFactory>().As<IAssetPreviewRenderMeshFactory>().SingleInstance();
-        builder.RegisterType<AssetPreviewSceneService>().As<IAssetPreviewSceneService>().InstancePerLifetimeScope();
-        builder.RegisterType<BethesdaAssetPreviewGeometryReader>().As<IAssetPreviewGeometryReader>().InstancePerLifetimeScope();
-        builder.RegisterType<ExternalAssetOpenService>().As<IExternalAssetOpenService>().SingleInstance();
-        builder.RegisterType<UserDialogService>().As<IUserDialogService>().SingleInstance();
-        builder.RegisterInstance(Log.Logger).As<ILogger>().SingleInstance();
     }
 
     private ApplicationThemeMode GetConfiguredThemeMode()
@@ -222,35 +238,179 @@ public class App : Application
         application.Resources[BorderBrushKey] = new SolidColorBrush(Color.FromRgb(80, 88, 96));
     }
 
-    private void OnDesktopExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
+    /// <summary>Shows complete plugin source-and-output selection once the owner window is visible.</summary>
+    /// <param name="sender">The opened main window.</param>
+    /// <param name="eventArgs">The window-open event arguments.</param>
+    private async void OnMainWindowOpened(object? sender, EventArgs eventArgs)
     {
-        CleanUpForExit();
+        if (sender is MainWindow mainWindow)
+        {
+            mainWindow.Opened -= OnMainWindowOpened;
+        }
+
+        try
+        {
+            var selectionViewModel = Container.Resolve<Func<WorkspaceSelectionViewModel>>()();
+            await Container.Resolve<IWorkspaceSelectionDialogService>().ShowAsync(selectionViewModel);
+        }
+        catch (Exception exception)
+        {
+            Log.Error(exception, "Unable to show initial workspace selection.");
+        }
     }
 
+    /// <summary>Begins the guarded application shutdown path.</summary>
+    /// <remarks>The desktop lifetime remains open until plugin ownership and the container have been released.</remarks>
     public void ShutDown()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.Exit -= OnDesktopExit;
-            CleanUpForExit();
-            desktop.Shutdown();
+            desktop.TryShutdown();
             return;
         }
 
-        CleanUpForExit();
+        _ = BeginShutdownAsync(desktop: null);
     }
 
-    private void CleanUpForExit()
+    /// <summary>Cancels a desktop shutdown request until the shared asynchronous cleanup task finishes.</summary>
+    /// <param name="sender">The desktop lifetime requesting shutdown.</param>
+    /// <param name="eventArgs">The cancelable shutdown request.</param>
+    private void OnDesktopShutdownRequested(object? sender, ShutdownRequestedEventArgs eventArgs)
     {
-        if (HasShutDown)
+        if (ShutdownAuthorized)
         {
             return;
         }
 
-        HasShutDown = true;
-        Log.Information("Exiting CreationsForge UI");
-        Container.Resolve<IProcessTerminationDiagnosticsService>().MarkCleanShutdown("UI exit");
-        Container.Dispose();
-        Log.CloseAndFlush();
+        eventArgs.Cancel = true;
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            _ = BeginShutdownAsync(desktop);
+        }
+    }
+
+    /// <summary>Returns the one cleanup task shared by repeated shutdown requests.</summary>
+    /// <param name="desktop">The desktop lifetime to close after cleanup, or <see langword="null"/>.</param>
+    /// <returns>The shared cleanup task.</returns>
+    internal Task BeginShutdownAsync(IClassicDesktopStyleApplicationLifetime? desktop)
+    {
+        lock (ShutdownSync)
+        {
+            ShutdownTask ??= RunShutdownAttemptAsync(desktop);
+            return ShutdownTask;
+        }
+    }
+
+    /// <summary>Runs one shared shutdown attempt and permits a later attempt only when teardown never began.</summary>
+    /// <param name="desktop">The desktop lifetime to close after cleanup, or <see langword="null"/>.</param>
+    /// <returns>A task that completes when the shutdown attempt reaches a terminal result.</returns>
+    private async Task RunShutdownAttemptAsync(IClassicDesktopStyleApplicationLifetime? desktop)
+    {
+        var completed = false;
+        try
+        {
+            completed = await CleanUpForExitAsync(desktop);
+        }
+        catch (Exception exception)
+        {
+            Log.Error(exception, "The guarded application shutdown attempt failed unexpectedly.");
+        }
+        finally
+        {
+            if (!completed)
+            {
+                lock (ShutdownSync)
+                {
+                    ShutdownTask = null;
+                }
+            }
+        }
+    }
+
+    /// <summary>Reserves safe shutdown, releases plugin ownership, records clean termination when possible, and disposes the application container before exit.</summary>
+    /// <param name="desktop">The desktop lifetime to close after cleanup, or <see langword="null"/>.</param>
+    /// <returns><see langword="false"/> only when shutdown is rejected or fails before teardown begins; otherwise <see langword="true"/> after the accepted terminal attempt.</returns>
+    private async Task<bool> CleanUpForExitAsync(IClassicDesktopStyleApplicationLifetime? desktop)
+    {
+        await Task.Yield();
+        ApplicationShutdownLease? shutdownLease;
+        try
+        {
+            shutdownLease = await Container.Resolve<IApplicationNavigationService>().ReserveShutdownAsync();
+        }
+        catch (Exception exception)
+        {
+            Log.Error(exception, "Unable to reserve guarded workspace shutdown.");
+            return false;
+        }
+
+        if (shutdownLease is null)
+        {
+            return false;
+        }
+
+        using (shutdownLease)
+        {
+            var canMarkCleanShutdown = true;
+            IProcessTerminationDiagnosticsService? diagnostics = null;
+            Log.Information("Exiting CreationsForge UI");
+            try
+            {
+                diagnostics = Container.Resolve<IProcessTerminationDiagnosticsService>();
+                await Container.Resolve<IWorkspaceCoordinator>().DisposeAsync();
+            }
+            catch (Exception exception)
+            {
+                canMarkCleanShutdown = false;
+                Log.Error(exception, "Unable to finish workspace shutdown cleanly.");
+            }
+
+            try
+            {
+                await Container.DisposeAsync();
+            }
+            catch (Exception exception)
+            {
+                canMarkCleanShutdown = false;
+                Log.Error(exception, "Unable to dispose the CreationsForge application container cleanly.");
+            }
+
+            if (canMarkCleanShutdown && diagnostics is not null)
+            {
+                try
+                {
+                    diagnostics.MarkCleanShutdown("UI exit");
+                }
+                catch (Exception exception)
+                {
+                    Log.Error(exception, "Unable to record clean CreationsForge application shutdown.");
+                }
+            }
+
+            if (desktop is not null)
+            {
+                ShutdownAuthorized = true;
+                desktop.ShutdownRequested -= OnDesktopShutdownRequested;
+                try
+                {
+                    desktop.Shutdown();
+                }
+                catch (Exception exception)
+                {
+                    Log.Error(exception, "Unable to complete the accepted Avalonia desktop shutdown cleanly.");
+                }
+            }
+
+            try
+            {
+                CloseLog();
+            }
+            catch (Exception exception)
+            {
+                Log.Error(exception, "Unable to flush logging during the accepted application shutdown.");
+            }
+
+            return true;
+        }
     }
 }

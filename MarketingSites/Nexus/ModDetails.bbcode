@@ -1,116 +1,78 @@
 [size=4][b][u]Overview[/u][/b][/size]
-Creations Forge is a cross-platform desktop and command-line application for importing, browsing, and comparing Bethesda plugin records for Fallout 4, Skyrim, and Starfield.
+Creations Forge browses, compares, and edits FormLists in Bethesda plugins through a cross-platform desktop application. The source tree also includes a local MCP server for compatible clients.
 
-The application discovers your local game load order, imports supported plugin records into a local SQLite cache, and presents record differences in a comparison workspace. It is intended for mod authors and developers reviewing overrides, debugging compatibility issues, and inspecting plugin data across supported Bethesda games.
+Open explicit source plugins and their load order, then create or edit a separate output plugin. Source and load-order plugins remain inputs; Creations Forge stages authoring changes in the selected output workspace and applies save guards before publishing files.
 
 [quote]
-IMPORTANT: Version 1.2.0 has a breaking change requiring the database to be regenerated. Please us the Full Reset option or delete the database in C:\ProgramData\CreationsForge or ~/CreationsForge
+IMPORTANT: The FormList workflow replaces the earlier SQLite import workflow. Existing import databases are not converted into editable plugins, and no database reset or reimport is required. Removing the old backend does not delete existing database files.
 [/quote]
 
 [quote]
-NOTE: This is an early multi-game release. Fallout 4, Skyrim, and Starfield currently support the record-types listed below, and record-type support will expand over time.
-
-The selected game must be installed on the system so the application can discover the local load order and plugin files.
-
-Currently MO2 breaks how Mutagen assembles and accesses Starfield split masters. So using Creations Forge with MO2 for Starfield currently is not supported, but I'm looking into the issue.
+NOTE: Plugin FormList authoring is implemented for Fallout 4, Skyrim Special Edition, and Starfield. Packaged launches, installed-game coverage, Mod Organizer 2 and other virtual-file-system workflows, and game-runtime acceptance are not yet fully validated.
 [/quote]
 
-Please report bugs here: [url=https://github.com/monster-cookie/CreationsForge/issues]https://github.com/monster-cookie/CreationsForge/issues[/url]
+Please report bugs here: [url=https://github.com/monster-cookie/CreationsForge/issues]https://github.com/monster-cookie/CreationsForge/issues[/url]
 
 [size=4][b][u]Features[/u][/b][/size]
 [list]
-[*]Imports Fallout 4, Skyrim, and Starfield plugin metadata, declared master references, and supported record details for high-speed comparison and searching.[/*]
-[*]Skips unchanged plugins during later imports using source fingerprints for quicker load times.[/*]
-[*]Browses records owned by the active plugin in a filterable record tree.[/*]
-[*]Compares matching records across imported plugins in load-order order.[/*]
-[*]Highlights matching values in green, conflicts in red, and the visible winning override in yellow.[/*]
-[*]Includes a CLI harness for selected-game imports, forced reimports, and reset/import-all workflows.[/*]
-[*]NEW: Model previewer[/*]
-[*]NEW: Binary Reflection Viewer as Hexadecimal with strings[/*]
+[*]Opens explicit source plugins and load order directly without importing records into an application database.[/*]
+[*]Browses and compares FormLists across the active plugin context.[/*]
+[*]Creates new FormLists, overrides source FormLists into an output plugin, and edits FormLists already staged in that output.[/*]
+[*]Provides typed edit actions and reference lookup for linked records.[/*]
+[*]Separates unapplied editor input, staged workspace changes, and saved output files.[/*]
+[*]Reviews changes and warnings before saving or discarding staged work.[/*]
+[*]Detects changed source or output files and blocks stale saves.[/*]
+[*]Provides save-outcome inspection and recovery actions for interrupted or uncertain publication.[/*]
+[*]Includes a local MCP server over standard input and standard output.[/*]
+[*]Supports light and dark desktop themes.[/*]
 [/list]
 
-[size=4][b][u]Supported Games[/u][/b][/size]
+[size=4][b][u]Supported Games and Record Types[/u][/b][/size]
 [list]
-[*]Fallout 4[/*]
-[*]Skyrim Special Edition[/*]
-[*]Starfield[/*]
+[*]Fallout 4: FormList (FLST) authoring.[/*]
+[*]Skyrim Special Edition: FormList (FLST) authoring.[/*]
+[*]Starfield: FormList (FLST) authoring.[/*]
 [/list]
 
-[size=4][b][u]Currently Supported Record Types Across All Games[/u][/b][/size]
-[list]
-[*]Actor Value Information (AVIF)[/*]
-[*]Book (BOOK)[/*]
-[*]Class (CLAS)[/*]
-[*]ConstructibleObject (COBJ)[/*]
-[*]Container (CONT)[/*]
-[*]Door (DOOR)[/*]
-[*]Faction (FACT)[/*]
-[*]Form Lists (FLST)[/*]
-[*]Game Settings (GMST)[/*]
-[*]Globals (GLOB)[/*]
-[*]Keywords (KYWD)[/*]
-[*]Magic Effects (MGEF)[/*]
-[*]Miscellaneous Items (MISC)[/*]
-[*]NPCs (NPC_)[/*]
-[*]Perks (PERK)[/*]
-[*]Static (STAT)[/*]
-[/list]
+Other record families may appear in reference lookup, but they are not supported authoring targets. This workflow does not provide general plugin editing, automatic conflict resolution, or asset preview.
 
-[size=4][b][u]Additionally Supported Fallout 4 Record Types[/u][/b][/size]
-[list]
-[*]Terminals (TERM)[/*]
-[/list]
-
-[size=4][b][u]Additionally Supported Starfield Record Types[/u][/b][/size]
-[list]
-[*]ConditionForm (CNDF)[/*]
-[*]Terminals (TERM)[/*]
-[/list]
-
-[size=4][b][u]Planned Features[/u][/b][/size]
-[list]
-[*]Expand supported record details for Fallout 4, Skyrim, and Starfield.[/*]
-[*]Add Spriggit-compatible plugin and record export/import.[/*]
-[*]Validate supported record types against Spriggit and xEdit.[/*]
-[*]Add record editing, plugin saving, plugin creation, and patch creation workflows.[/*]
-[*]Explore local LLM-assisted patch creation as a long-term goal.[/*]
-[/list]
-
-[size=4][b][u]Usage[/u][/b][/size]
+[size=4][b][u]Desktop Usage[/u][/b][/size]
 [list=1]
-[*]Launch Creations Forge.[/*]
-[*]Select Fallout 4, Skyrim, or Starfield as the active game if it is not already configured.[/*]
-[*]Approve the import when prompted and wait for the application to process your local load order.[/*]
-[*]Select an active plugin.[/*]
-[*]Use the record tree and filters to find a supported record.[/*]
-[*]Select a record to view its values across imported plugins.[/*]
+[*]Launch Creations Forge and choose Open Workspace.[/*]
+[*]Select Fallout 4, Skyrim Special Edition, or Starfield.[/*]
+[*]Select a source plugin, game data directory, and explicit load order with required masters first and the source included.[/*]
+[*]Choose whether to create a new output plugin or open an existing output plugin. Keep the output separate from the admitted source files.[/*]
+[*]Select a FormList to compare, create a new FormList, override the selected source FormList, or edit a FormList already in staged output.[/*]
+[*]Apply typed edit actions to staged output, then review changes and warnings.[/*]
+[*]Choose Save Changes and confirm publication. Read any conflict, uncertain-outcome, or recovery message before continuing.[/*]
 [/list]
 
-[size=4][b][u]Comparison Colors[/u][/b][/size]
-[list]
-[*][color=green]Green[/color]: all visible plugin values match.[/*]
-[*][color=red]Red[/color]: at least one visible plugin value differs.[/*]
-[*][color=yellow]Yellow[/color]: the far-right visible value is the winning override for a conflicting row.[/*]
-[/list]
+Desktop and MCP workspaces are independent and do not synchronize live. If another workspace or application changes a source or output file, resolve the reported conflict instead of assuming those changes were adopted.
+
+[size=4][b][u]MCP Usage[/u][/b][/size]
+Configure a standard-input/standard-output MCP client to launch the console executable with the single argument [code]mcp[/code]. The client opens explicit workspaces and performs bounded FormList operations through the advertised tools. The removed game-import and database-reset arguments are not supported.
 
 [size=4][b][u]Application Data and Logging[/u][/b][/size]
 
-[size=3][b]Linux[/b][/size]
-The application data directory is ~/.CreationsForge. This is where the database lives, and application logs live in the Logs subdirectory.
+[size=3][b]Linux and macOS[/b][/size]
+Application configuration and logs use ~/.CreationsForge. The macOS configuration path does not imply a validated macOS package.
 
 [size=3][b]Windows[/b][/size]
-The application data directory is C:\ProgramData\CreationsForge. This is where the database lives, and application logs live in the Logs subdirectory.
+Application configuration and logs use C:\ProgramData\CreationsForge.
 
 [size=4][b][u]Installation[/u][/b][/size]
-Windows users can download the x64 desktop ZIP archive or installer. Linux users can download the x64 desktop ZIP archive, CLI ZIP archive, Debian package, or Arch package.
+Use a desktop or console build that contains the plugin authoring replacement. Earlier releases may still contain the retired import workflow. Windows and Linux packaging exists in the source repository, but packaged plugin-workflow launches remain unverified.
 
-Do not install the application into your game's Data folder. The selected game must be installed and discoverable on your system, including Linux installations running through Proton where supported by Mutagen's game discovery.
+Do not install the application into a game's Data folder. Keep source plugins, required masters, localized-string directories when needed, and the separate output location available while a workspace is open.
 
 [size=4][b][u]Current Limitations[/u][/b][/size]
 [list]
-[*]Only a subset of Fallout 4, Skyrim Special Edition, and Starfield record details are currently supported.[/*]
-[*]Starfield BlueprintShips*.esm plugins are intentionally skipped during import.[/*]
-[*]Starfield through MO2 is not currently supported because of split master assembly/access behavior in Mutagen.[/*]
+[*]Plugin authoring is limited to FormLists for Fallout 4, Skyrim Special Edition, and Starfield.[/*]
+[*]Saving edits to an existing localized output that uses separate string files is rejected to protect unedited localized data.[/*]
+[*]An installed Starfield source has encountered an unresolved parser failure while reading navmesh data.[/*]
+[*]Installed Fallout 4 and Skyrim Special Edition validation inputs have not yet been supplied.[/*]
+[*]Plugin Mod Organizer 2 and other virtual-file-system workflows remain unverified.[/*]
+[*]Packaged launches, live desktop/MCP conflict checks, and game-runtime acceptance remain unverified.[/*]
 [/list]
 
 [size=4][b][u]Social Presence[/u][/b][/size]

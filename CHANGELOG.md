@@ -1,0 +1,84 @@
+﻿# Change Log
+
+## Unreleased
+
+- Improved automated validation used when preparing releases.
+- Kept installation, usage, known issues, and release history in the repository, with engineering guidance now maintained in Plane.
+- Moved the change log to the repository root as `CHANGELOG.md` and updated release packaging and release-note extraction to use its new location.
+- Replaced the SQLite import workflow with explicit plugin workspaces for FormList browsing, comparison, and authoring in Starfield, Fallout 4, and Skyrim Special Edition. Other record families are not authoring targets.
+- Added typed edit controls, staged-change review, guarded saving, save-outcome recovery, and checks before leaving with unfinished changes. Unapplied form input and staged workspace changes have separate discard actions.
+- Added a dedicated local stdio MCP server, launched with `CreationsForge.Mcp`, with workspaces independent from the desktop application.
+- Restored the desktop plugin-first workflow: select a game, open an installed editable plugin, edit records, and save through the guarded workspace flow. Mutagen supplies the installed load order, Bethesda implicit-plugin identities, and plugin header metadata while Creations Forge keeps Bethesda plugins and declared masters read-only.
+- Added read-only plugin workspaces as the default desktop inspection path, restored selected-plugin header details, and added durable structured diagnostics for plugin discovery, each plugin source-open phase, slow workspace opens, and terminal open outcomes.
+- Changed Starfield source opening to materialize only FormLists for authoring and use disposable read-only overlays for general reference discovery. Localized archive baselines now hash matching string entries instead of every payload byte in all applicable BA2/BSA files.
+- Removed the legacy game-import, forced-reimport, and database-reset commands. Existing database files are left untouched; no database conversion, reset, or reimport is required for workspaces.
+- Updated usage and known issues for the plugin workflow, including the restriction on saving edits to existing localized outputs that use separate string files.
+
+## Version 1.2.0 - 2026-06-28
+
+- Again with missing child data on NPCs.
+- Display UI for condition rules vs storing them as binary.
+- On multiple game imports the progress bar reliably shows which game it is currently processing.
+- Added data validation test harness and all current record types now match base game spriggit data.
+- Might finally have the fix for the random killed application. Nice side effect we can do larger batch inserts again.
+- Adds “Prefer ESP over matching ESM” to de‑duplicate selector results; exposed in Settings
+- Improves Open Plugin UX: no auto/hover selection, selection persists through search
+- Added Additional Major Record Types: Class (CLAS), Faction (FACT)
+
+### BREAKING CHANGES
+
+- Somewhere in the conversion to Creations Forge DB, Models, DTOs, etc. stopped being based on the spriggit/mutagen names and became based on generic gaming naming. Once we support editing this would have been a disaster. I've made the decision while the project is still small to reset to spriggit naming this also makes the data validation harness less of a nightmare.
+
+## Version 1.1.9 - 2026-06-16
+
+- Moved the active game/plugin dropdowns in to an open plugin dialog.
+- Now use friendly names fro the record type selector not the record IDs.
+- Added Additional Major Record Types: ConstructibleObject (COBJ), ConditionForm (CNDF)
+
+## Version 1.1.8 - 2026-06-14
+
+- Fixed regression that removed several major record types child data.
+- Fixed regression that renamed MiscItem back to MiscObject.
+
+## Version 1.1.7 - 2026-06-13
+
+- Added an experimental NIF Preview Pane (Starfield, FO4, and Skyrim).
+- Added early support for previewing textured meshes in the preview pane.
+- Added support for launching models in [Nifskope](https://www.nexusmods.com/starfield/mods/10748)
+- Added a hexadecimal editor type display for binary and binary reflection data.
+- Added Additional Major Record Types: Static (STAT), and Containers (CONT)
+
+## Version 1.1.2 - 2026-06-08
+
+- Added Fallout 4 and Skyrim import support for the same approved typed record categories Starfield currently imports:
+  MiscObjects, Keywords, ActorValueInformation, NPCs, MagicEffects, and Perks.
+
+## Version 1.1.1 - 2026-06-07 [Beta]
+
+- Due to supporting all BGS games technically, it has been rebranded to Creations Forge
+- Full multi game support (implemented currently Skyrim, Fallout 4, and Starfield)
+- Converted to Avalonia UI after major issues with UNO and WinUI compatibility
+- Added support for Virtual Machine Adapters aka Scripts.
+- Added missing child schemas for Perks (Ranks, Skills, etc.)
+- Added missing child schemas for MiscItems (Transforms, models, sounds).
+
+### BREAKING CHANGES FOR v1.1.1
+
+- This is a completely new application and data model. You should uninstall/remove the old SFRecordComparisonEngine
+  version.
+
+## Version 1.0.3 - 2026-06-01 [BETA]
+
+- Replaced the WinUI-only application host with Uno Platform Skia Desktop.
+- Changed the Linux application-data default to `~/.SFRecordCompareEngine` so Debian-installed launches can write
+  configuration, SQLite database, and log files without elevated permissions.
+- Added persisted plugin header record counts and header-flag-based plugin classification.
+- Added migration-triggered and manual full plugin reimport support.
+- Added total and active-plugin record counts plus plugin type details to the main status area.
+
+## Version 1.0.0 - 2026-05-31 [BETA]
+
+- Initial release of the Starfield Record Compare Engine.
+- This version includes the core features of plugin discovery, record browsing, and record comparison for a subset of
+  Starfield record types.
+- Future updates will expand supported record types, add editing capabilities, and improve performance.

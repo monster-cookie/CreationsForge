@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  workflow_call:
+    inputs:
+      dotnet-version:
+        description: .NET SDK version to install.
+        required: false
+        type: string
+        default: '10.0.x'
+
+  push:
+    branches:
+      - master
+
+  pull_request:
+    branches:
+      - master
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: ${{ inputs.dotnet-version || '10.0.x' }}
+  AVALONIA_UI_LICENSE_KEY: ${{ secrets.AVALONIA_UI_LICENSE_KEY }}
+
+jobs:
+  lint-powershell:
+    name: Lint PowerShell
+    runs-on: ubuntu-latest
+    env:
+      PSSCRIPTANALYZER_VERSION: "1.25.0"
+      PSSCRIPTANALYZER_PATH: .
+    steps:
+      # GitHub-authored actions must remain pinned to full commit SHAs.
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          if ($null -eq (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue)) {
+            Register-PSRepository -Default
+          }
+          Install-Module -Name PSScriptAnalyzer -RequiredVersion $env:PSSCRIPTANALYZER_VERSION -Repository PSGallery -Scope CurrentUser -Force
+
+      - name: Analyze PowerShell sources
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          Import-Module PSScriptAnalyzer -RequiredVersion $env:PSSCRIPTANALYZER_VERSION -Force
+          $findings = @(
+            Invoke-ScriptAnalyzer `
+              -Path $env:PSSCRIPTANALYZER_PATH `
+              -Recurse
+          )
+          foreach ($finding in $findings) {
+            Write-Output ('{0} [{1}] {2}:{3} {4}' -f
+              $finding.RuleName,
+              $finding.Severity,
+              $finding.ScriptPath,
+              $finding.Line,
+              $finding.Message)
+          }
+          if ($findings.Count -ne 0) {
+            throw "PSScriptAnalyzer reported $($findings.Count) finding(s)."
+          }
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        shell: pwsh
+        run: dotnet restore ./CreationsForge.sln
+
+      - name: Build
+        shell: pwsh
+        run: dotnet build ./CreationsForge.sln --configuration Release --no-restore
+
+      - name: Unit Tests
+        shell: pwsh
+        run: dotnet ./CreationsForge.UnitTests/bin/Release/net10.0/CreationsForge.UnitTests.dll -noColor -filterVSTest "Category!=RequiresStarfield"
+
+  presentation-tests:
+    name: Presentation Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        shell: pwsh
+        run: dotnet restore ./CreationsForge.PresentationTests/CreationsForge.PresentationTests.csproj
+
+      - name: Build
+        shell: pwsh
+        run: dotnet build ./CreationsForge.PresentationTests/CreationsForge.PresentationTests.csproj --configuration Release --no-restore
+
+      - name: Presentation Layer Tests
+        shell: pwsh
+        timeout-minutes: 10
+        run: dotnet ./CreationsForge.PresentationTests/bin/Release/net10.0/CreationsForge.PresentationTests.dll -noColor -trait- "Category=RequiresStarfield" -longRunning 60
