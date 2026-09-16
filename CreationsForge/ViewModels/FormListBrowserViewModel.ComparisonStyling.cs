@@ -65,6 +65,7 @@ public sealed partial class FormListBrowserViewModel
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        before.SynchronizeExpansionWith(after);
         var identical = AreEquivalent(before, after, cancellationToken);
         before.SetComparisonState(identical
             ? ComparisonFieldState.Identical

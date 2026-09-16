@@ -143,7 +143,7 @@ public sealed partial class MajorRecordBrowserViewModel
         }
 
         var pageResult = await workspace.ListMajorRecordsAsync(
-            new MajorRecordListRequest(PageSize, continuationToken, RecordScope.WinningOverrides),
+            new MajorRecordListRequest(PageSize, continuationToken, RecordScope.Source),
             cancellationToken).ConfigureAwait(false);
         if (!pageResult.Succeeded || pageResult.Value is null)
         {
@@ -169,7 +169,7 @@ public sealed partial class MajorRecordBrowserViewModel
             warnings: warnings);
     }
 
-    /// <summary>Clears prior selection work and loads exact contexts for the selected winning record.</summary>
+    /// <summary>Clears prior selection work and loads exact contexts for the selected source-plugin record.</summary>
     /// <returns>A task that completes after context options and their default comparison publish.</returns>
     private Task BeginSelectionGenerationAsync()
     {
@@ -199,7 +199,7 @@ public sealed partial class MajorRecordBrowserViewModel
     /// <param name="workspaceGeneration">The captured workspace generation.</param>
     /// <param name="selectionGeneration">The captured selection generation.</param>
     /// <param name="revision">The exact record-page revision.</param>
-    /// <param name="record">The selected winning record.</param>
+    /// <param name="record">The selected source-plugin record.</param>
     /// <param name="cancellationToken">The selection generation token.</param>
     /// <returns>A task that completes after conditional publication and default comparison.</returns>
     private async Task LoadContextsAsync(
@@ -345,25 +345,30 @@ public sealed partial class MajorRecordBrowserViewModel
     }
 
     /// <summary>Creates a winning option followed by exact context options.</summary>
-    /// <param name="record">The selected winning record.</param>
+    /// <param name="record">The selected source-plugin record.</param>
     /// <param name="contexts">The exact context matches.</param>
     /// <returns>Immutable selector options in display order.</returns>
     private static IReadOnlyList<MajorRecordContextOption> CreateContextOptions(
         MajorRecordViewModel record,
         IReadOnlyList<ReferenceSearchMatch> contexts)
     {
-        var winnerLabel = record.ContainingModKey.HasValue
-            ? $"Winning override ({record.ContainingModKey.Value.FileName})"
+        var winningContext = contexts
+            .Where(context => context.ContainingModKey.HasValue)
+            .OrderBy(context => context.LoadOrderIndex ?? int.MinValue)
+            .LastOrDefault();
+        var winningModKey = winningContext?.ContainingModKey ?? record.ContainingModKey;
+        var winnerLabel = winningModKey.HasValue
+            ? $"Winning override ({winningModKey.Value.FileName})"
             : "Winning override";
         var options = new List<MajorRecordContextOption>(contexts.Count + 1)
         {
             new(
                 new ReferenceRequest(record.FormKey, RecordScope.WinningOverrides),
                 winnerLabel,
-                record.SourcePath,
-                record.LoadOrderIndex,
-                record.Role,
-                record.IsDeleted)
+                winningContext?.SourcePath ?? record.SourcePath,
+                winningContext?.LoadOrderIndex ?? record.LoadOrderIndex,
+                winningContext?.Role ?? record.Role,
+                winningContext?.IsDeleted ?? record.IsDeleted)
         };
         foreach (var context in contexts)
         {

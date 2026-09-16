@@ -305,19 +305,10 @@ public sealed class MajorRecordBrowserView : UserControl
         return pane;
     }
 
-    /// <summary>Builds semantic changes, warnings, typed errors, retry, and status.</summary>
+    /// <summary>Builds warnings, typed errors, retry, and status without duplicating field-level comparison details.</summary>
     /// <returns>The complete diagnostics pane.</returns>
     private Control BuildDiagnosticsPane()
     {
-        var changes = new ItemsControl
-        {
-            ItemTemplate = new FuncDataTemplate<SemanticChangeDescriptor>(
-                (change, _) => CreateWrappedText(
-                    change is null ? string.Empty : $"{change.Kind}: {change.FieldIdentifier}",
-                    12))
-        };
-        changes.Bind(ItemsControl.ItemsSourceProperty, new Binding(nameof(MajorRecordBrowserViewModel.SemanticChanges)));
-        AutomationProperties.SetAutomationId(changes, "MajorRecordSemanticChanges");
         var warnings = new ItemsControl
         {
             ItemTemplate = new FuncDataTemplate<EngineWarning>(
@@ -326,24 +317,24 @@ public sealed class MajorRecordBrowserView : UserControl
                     12))
         };
         warnings.Bind(ItemsControl.ItemsSourceProperty, new Binding(nameof(MajorRecordBrowserViewModel.Warnings)));
-        var details = new StackPanel
+        var warningDetails = new StackPanel
         {
             Spacing = 6,
             Children =
             {
-                CreateText("Native changes", 13, FontWeight.SemiBold),
-                changes,
                 CreateText("Warnings", 13, FontWeight.SemiBold),
                 warnings
             }
         };
+        AutomationProperties.SetAutomationId(warningDetails, "MajorRecordWarnings");
         var scroller = new ScrollViewer
         {
             MaxHeight = 130,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            Content = details
+            Content = warningDetails
         };
+        scroller.Bind(IsVisibleProperty, new Binding(nameof(MajorRecordBrowserViewModel.HasWarnings)));
         var error = CreateBoundText(nameof(MajorRecordBrowserViewModel.ErrorMessage), 12, FontWeight.Normal);
         error.TextWrapping = TextWrapping.Wrap;
         var retry = new Button

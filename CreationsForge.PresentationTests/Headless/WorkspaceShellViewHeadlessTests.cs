@@ -62,6 +62,7 @@ public sealed class WorkspaceShellViewHeadlessTests
             ControlFinder.FindByAutomationId<TabItem>(view, "MajorRecordBrowserTab").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<TabItem>(view, "FormListBrowserTab").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<MajorRecordBrowserView>(view, "MajorRecordBrowserView").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<ItemsControl>(view, "MajorRecordSemanticChanges").ShouldBeNull();
             tabs.SelectedIndex = 1;
             Dispatcher.UIThread.RunJobs();
             ControlFinder.FindByAutomationId<FormListBrowserView>(view, "FormListBrowserView").ShouldNotBeNull();

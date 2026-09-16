@@ -269,7 +269,7 @@ public sealed partial class MajorRecordBrowserViewModel
                 record => record.HasChildren,
                 options => options.BeginEditGestures = BeginEditGestures.None)
             .WithTextColumn("EditorID", record => record.EditorIdText, options => options.BeginEditGestures = BeginEditGestures.None)
-            .WithTextColumn("Winning context", record => record.ContextText, options => options.BeginEditGestures = BeginEditGestures.None);
+            .WithTextColumn("Plugin context", record => record.ContextText, options => options.BeginEditGestures = BeginEditGestures.None);
     }
 
     /// <summary>Checks whether one page result still belongs to the current workspace generation.</summary>

@@ -13,10 +13,10 @@ namespace CreationsForge.PresentationTests.ViewModels;
 /// <summary>Verifies paged major-record grouping, exact contexts, and native field comparison presentation.</summary>
 public sealed class MajorRecordBrowserViewModelTests
 {
-    /// <summary>Verifies bounded pages append by family and a selected record compares origin fields with the winner.</summary>
+    /// <summary>Verifies source-plugin pages append by family and a selected record compares synchronized origin and winner fields.</summary>
     /// <returns>A task that completes after paging and comparison publication.</returns>
     [Fact]
-    public async Task StartLoadMoreAndSelectRecord_PreservePagesContextsAndNativeChanges()
+    public async Task StartLoadMoreAndSelectRecord_PreserveSourcePagesContextsAndSynchronizedFields()
     {
         var workspaceId = Guid.NewGuid();
         var revision = new WorkspaceRevision(Guid.NewGuid(), 9);
@@ -49,7 +49,7 @@ public sealed class MajorRecordBrowserViewModelTests
             {
                 pageRequests.Add(request);
                 var records = request.ContinuationToken is null
-                    ? new[] { Match(bookKey, "Book", "ExampleBook", patchMod, patchPath, 1, PluginRole.LoadOrder) }
+                    ? new[] { Match(bookKey, "Book", "OriginalBook", sourceMod, sourcePath, 0, PluginRole.Source) }
                     : new[] { Match(keywordKey, "Keyword", "ExampleKeyword", sourceMod, sourcePath, 0, PluginRole.Source) };
                 return ValueTask.FromResult(EngineResult<MajorRecordListPage>.Success(
                     new MajorRecordListPage(records, request.ContinuationToken is null ? "page-two" : null),
@@ -86,8 +86,8 @@ public sealed class MajorRecordBrowserViewModelTests
                     patchPath,
                     1,
                     PluginRole.LoadOrder);
-                var before = JsonSerializer.SerializeToElement(new { Type = "Book", Name = "Before", Value = 10 });
-                var after = JsonSerializer.SerializeToElement(new { Type = "Book", Name = "After", Value = 10 });
+                var before = JsonSerializer.SerializeToElement(new { Type = "Book", Name = new { Value = "Before" }, Value = 10 });
+                var after = JsonSerializer.SerializeToElement(new { Type = "Book", Name = new { Value = "After" }, Value = 10 });
                 return ValueTask.FromResult(EngineResult<MajorRecordComparison>.Success(
                     new MajorRecordComparison(
                         beforeContext,
@@ -111,7 +111,7 @@ public sealed class MajorRecordBrowserViewModelTests
 
         pageRequests.Count.ShouldBe(1);
         pageRequests[0].MaximumResults.ShouldBe(MajorRecordBrowserViewModel.PageSize);
-        pageRequests[0].Scope.ShouldBe(RecordScope.WinningOverrides);
+        pageRequests[0].Scope.ShouldBe(RecordScope.Source);
         viewModel.Records.ShouldHaveSingleItem().RecordType.ShouldBe("Book");
         viewModel.RecordGroups.ShouldHaveSingleItem().Label.ShouldBe("Book (1)");
         viewModel.HasMoreRecords.ShouldBeTrue();
@@ -130,6 +130,10 @@ public sealed class MajorRecordBrowserViewModelTests
         search.Query.ShouldBe(bookKey.ToString());
         search.Scope.ShouldBe(RecordScope.AllContexts);
         viewModel.ContextOptions.Count.ShouldBe(3);
+        viewModel.ContextOptions[0].Label.ShouldContain(patchMod.FileName.String);
+        viewModel.ContextOptions[0].SourcePath.ShouldBe(patchPath);
+        viewModel.ContextOptions[0].LoadOrderIndex.ShouldBe(1);
+        viewModel.ContextOptions[0].Role.ShouldBe(PluginRole.LoadOrder);
         viewModel.SelectedBeforeContext!.ContainingModKey.ShouldBe(sourceMod);
         viewModel.SelectedAfterContext!.IsWinningOverride.ShouldBeTrue();
         var comparison = comparisonRequests.ShouldHaveSingleItem();
@@ -141,6 +145,12 @@ public sealed class MajorRecordBrowserViewModelTests
             .ComparisonState.ShouldBe(ComparisonFieldState.Identical);
         viewModel.AfterFields.ShouldHaveSingleItem().Children.Single(field => field.Name == "Name")
             .ComparisonState.ShouldBe(ComparisonFieldState.WinningOverride);
+        var beforeName = viewModel.BeforeFields.Single().Children.Single(field => field.Name == "Name");
+        var afterName = viewModel.AfterFields.Single().Children.Single(field => field.Name == "Name");
+        beforeName.IsExpanded = true;
+        afterName.IsExpanded.ShouldBeTrue();
+        afterName.IsExpanded = false;
+        beforeName.IsExpanded.ShouldBeFalse();
         viewModel.SemanticChanges.ShouldHaveSingleItem().FieldIdentifier.ShouldBe("$record.Name");
         viewModel.HasError.ShouldBeFalse();
     }

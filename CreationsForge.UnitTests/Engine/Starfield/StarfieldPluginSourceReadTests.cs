@@ -183,7 +183,10 @@ public sealed class StarfieldPluginSourceReadTests
             book.Value!.Context.Status.ShouldBe(ReferenceResolutionStatus.Resolved);
             book.Value.Context.ContainingModKey.ShouldBe(fixture.SourceModKey);
             book.Value.RecordType.ShouldBe("Book");
-            book.Value.Record.ShouldBeOfType<Book>();
+            var bookRecord = book.Value.Record.ShouldBeOfType<Book>();
+            bookRecord.Name!.String.ShouldBe("Referenced book");
+            bookRecord.Name.TryLookup(Mutagen.Bethesda.Strings.Language.French, out var frenchBookName).ShouldBeTrue();
+            frenchBookName.ShouldBe("Livre référence");
             using var bookStream = new MemoryStream();
             using (var writer = new System.Text.Json.Utf8JsonWriter(bookStream))
             {
@@ -194,6 +197,7 @@ public sealed class StarfieldPluginSourceReadTests
             }
             using var bookDocument = System.Text.Json.JsonDocument.Parse(bookStream.ToArray());
             bookDocument.RootElement.GetProperty("$type").GetString().ShouldBe(typeof(Book).FullName);
+            bookDocument.RootElement.GetProperty("Name").GetProperty("value").GetString().ShouldBe("Referenced book");
 
             warning.Succeeded.ShouldBeTrue(warning.Error?.Message);
             warning.Value!.Context.Status.ShouldBe(ReferenceResolutionStatus.Resolved);

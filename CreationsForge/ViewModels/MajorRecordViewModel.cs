@@ -3,14 +3,14 @@ using Mutagen.Bethesda.Plugins;
 
 namespace CreationsForge.ViewModels;
 
-/// <summary>Presents one winning major-record context as a selectable browser row.</summary>
+/// <summary>Presents one source-plugin major-record context as a selectable browser row.</summary>
 public sealed class MajorRecordViewModel : ViewModelBase, IRecordTreeNodeViewModel
 {
     /// <summary>Tracks the interface expansion value; records expose no navigation children.</summary>
     private bool IsExpandedValue;
 
-    /// <summary>Initializes one winning major-record row.</summary>
-    /// <param name="match">The lightweight winning context supplied by the engine.</param>
+    /// <summary>Initializes one source-plugin major-record row.</summary>
+    /// <param name="match">The lightweight source context supplied by the engine.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="match"/> is <see langword="null"/>.</exception>
     public MajorRecordViewModel(ReferenceSearchMatch match)
     {
@@ -31,22 +31,22 @@ public sealed class MajorRecordViewModel : ViewModelBase, IRecordTreeNodeViewMod
     /// <summary>Gets the stable registered record family.</summary>
     public string RecordType { get; }
 
-    /// <summary>Gets the EditorID observed in the winning context, or <see langword="null"/>.</summary>
+    /// <summary>Gets the EditorID observed in the listed plugin context, or <see langword="null"/>.</summary>
     public string? EditorId { get; }
 
-    /// <summary>Gets the plugin containing the winning context, or <see langword="null"/> when unavailable.</summary>
+    /// <summary>Gets the plugin containing the listed context, or <see langword="null"/> when unavailable.</summary>
     public ModKey? ContainingModKey { get; }
 
-    /// <summary>Gets the canonical plugin path containing the winning context, or <see langword="null"/>.</summary>
+    /// <summary>Gets the canonical plugin path containing the listed context, or <see langword="null"/>.</summary>
     public string? SourcePath { get; }
 
-    /// <summary>Gets the winning context's explicit load-order index, or <see langword="null"/>.</summary>
+    /// <summary>Gets the listed context's explicit load-order index, or <see langword="null"/>.</summary>
     public int? LoadOrderIndex { get; }
 
-    /// <summary>Gets the winning context's workspace role, or <see langword="null"/>.</summary>
+    /// <summary>Gets the listed context's workspace role, or <see langword="null"/>.</summary>
     public PluginRole? Role { get; }
 
-    /// <summary>Gets whether the winning context carries the deletion flag.</summary>
+    /// <summary>Gets whether the listed context carries the deletion flag.</summary>
     public bool IsDeleted { get; }
 
     /// <inheritdoc />
@@ -58,7 +58,7 @@ public sealed class MajorRecordViewModel : ViewModelBase, IRecordTreeNodeViewMod
     /// <inheritdoc />
     public string ContextText => ContainingModKey.HasValue
         ? $"{ContainingModKey.Value.FileName}{(IsDeleted ? " (deleted)" : string.Empty)}"
-        : IsDeleted ? "Deleted" : "Winning override";
+        : IsDeleted ? "Deleted" : "Plugin context";
 
     /// <inheritdoc />
     public string OverrideCountText => string.Empty;

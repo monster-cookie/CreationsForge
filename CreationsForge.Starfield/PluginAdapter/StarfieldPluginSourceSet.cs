@@ -127,7 +127,7 @@ public sealed partial class StarfieldPluginSourceSet : IPluginSourceSet
         ObjectDisposedException.ThrowIf(Volatile.Read(ref IsDisposed) != 0, this);
         ArgumentOutOfRangeException.ThrowIfNegative(sourceIndex);
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(sourceIndex, SourceMods.Count);
-        return CreateDetachedStarfieldRecord(record, SourceMods[sourceIndex]);
+        return CreateDetachedStarfieldRecord(sourceIndex, record);
     }
 
     /// <summary>
@@ -285,13 +285,14 @@ public sealed partial class StarfieldPluginSourceSet : IPluginSourceSet
     /// Creates and validates a complete detached Starfield record rather than accepting another game's Mutagen subtype.
     /// </summary>
     /// <param name="record">The borrowed Mutagen Starfield record selected by the shared reader.</param>
-    /// <param name="authoringSource">The aligned FormList-only source used to restore complete localized FormList data.</param>
+    /// <param name="sourceIndex">The aligned plugin position used to restore complete localized data.</param>
     /// <returns>A complete detached getter retaining its concrete Starfield record family and fields.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the source or copied record is not a Starfield record.</exception>
-    private static IMajorRecordGetter CreateDetachedStarfieldRecord(
-        IMajorRecordGetter record,
-        IStarfieldModGetter authoringSource)
+    private IMajorRecordGetter CreateDetachedStarfieldRecord(
+        int sourceIndex,
+        IMajorRecordGetter record)
     {
+        var authoringSource = SourceMods[sourceIndex];
         if (record is IFormListGetter)
         {
             var authoringFormList = authoringSource.FormLists.FirstOrDefault(candidate => candidate.FormKey == record.FormKey);
@@ -312,6 +313,7 @@ public sealed partial class StarfieldPluginSourceSet : IPluginSourceSet
             throw new InvalidOperationException($"Detached record {record.FormKey} did not retain its Starfield record family.");
         }
 
+        StarfieldLocalizedStringRepair.Repair(copy, Inputs, Inputs.Plugins[sourceIndex]);
         return copy;
     }
 }

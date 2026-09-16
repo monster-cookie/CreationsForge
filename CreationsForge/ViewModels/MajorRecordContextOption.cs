@@ -9,7 +9,7 @@ public sealed class MajorRecordContextOption
     /// <summary>Initializes one immutable major-record context option.</summary>
     /// <param name="selection">The exact engine request represented by this option.</param>
     /// <param name="label">The concise selector label.</param>
-    /// <param name="sourcePath">The canonical containing-plugin path, or <see langword="null"/> for the winning selector.</param>
+    /// <param name="sourcePath">The canonical containing-plugin path, or <see langword="null"/> when enumeration provenance is unavailable.</param>
     /// <param name="loadOrderIndex">The containing plugin's load-order position, or <see langword="null"/>.</param>
     /// <param name="role">The containing plugin's workspace role, or <see langword="null"/>.</param>
     /// <param name="isDeleted">Whether the selected context carries the deletion flag.</param>
@@ -39,7 +39,7 @@ public sealed class MajorRecordContextOption
     /// <summary>Gets the concise selector label.</summary>
     public string Label { get; }
 
-    /// <summary>Gets the canonical containing-plugin path, or <see langword="null"/> for the winning selector.</summary>
+    /// <summary>Gets the canonical containing-plugin path, or <see langword="null"/> when enumeration provenance is unavailable.</summary>
     public string? SourcePath { get; }
 
     /// <summary>Gets the containing plugin's load-order position, or <see langword="null"/>.</summary>
