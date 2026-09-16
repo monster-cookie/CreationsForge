@@ -602,6 +602,65 @@ public sealed class McpReadToolProtocolTests
             .GetProperty("page").GetProperty("value").GetString().ShouldBe("After");
     }
 
+    /// <summary>Verifies large warning collections are independently paged without blocking a small record page.</summary>
+    [Fact]
+    public async Task MajorRecordInspect_ThroughSdkProtocol_PagesWarningsSeparatelyFromFields()
+    {
+        var workspaceId = Guid.NewGuid();
+        var revision = new WorkspaceRevision(Guid.NewGuid(), 20);
+        var sourceModKey = ModKey.FromNameAndExtension("Source.esm");
+        var formKey = new FormKey(sourceModKey, 0xB13);
+        var selection = new ReferenceRequest(formKey, RecordScope.Source, sourceModKey);
+        var context = new FormListContext(
+            selection,
+            ReferenceResolutionStatus.Resolved,
+            sourceModKey,
+            Path.GetFullPath("Source.esm"),
+            0,
+            PluginRole.Source);
+        var warnings = Enumerable.Range(0, 500)
+            .Select(index => new EngineWarning("unresolved_link", new string('w', 180) + index))
+            .ToArray();
+        var workspace = CreateWorkspace(workspaceId, revision);
+        workspace.Setup(candidate => candidate.ReadMajorRecordViewAsync(
+                It.IsAny<ReferenceRequest>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(ValueTask.FromResult(EngineResult<MajorRecordReadView>.Success(
+                new MajorRecordReadView(context, "Book", JsonSerializer.SerializeToElement(new { Name = "Example" })),
+                workspaceId,
+                resultRevision: revision,
+                warnings: warnings)));
+        var factory = CreateFactory(workspace.Object);
+
+        await using var registry = new McpWorkspaceRegistry();
+        var tools = new McpToolCatalog().CreateTools(registry, "protocol-test", factory.Object);
+        await using var harness = await ProtocolHarness.CreateAsync(tools);
+        await OpenWorkspaceAsync(harness.Client, workspaceId);
+
+        var recordArguments = CreateInspectArguments(workspaceId, formKey, sourceModKey, string.Empty, 10);
+        var record = GetResult(await harness.Client.CallToolAsync("creationsforge_record_inspect", recordArguments));
+        record.GetProperty("section").GetString().ShouldBe("record");
+        record.GetProperty("page").GetProperty("totalCount").GetInt32().ShouldBe(1);
+
+        var warningArguments = CreateInspectArguments(workspaceId, formKey, sourceModKey, string.Empty, 50);
+        warningArguments.Remove("path");
+        warningArguments["section"] = "warnings";
+        var firstResult = await harness.Client.CallToolAsync("creationsforge_record_inspect", warningArguments);
+        var first = GetResult(firstResult);
+        first.GetProperty("section").GetString().ShouldBe("warnings");
+        first.GetProperty("page").GetProperty("warnings").GetArrayLength().ShouldBe(50);
+        first.GetProperty("page").GetProperty("totalCount").GetInt32().ShouldBe(500);
+        Encoding.UTF8.GetByteCount(firstResult.StructuredContent!.Value.GetRawText()).ShouldBeLessThanOrEqualTo(64 * 1024);
+        warningArguments["cursor"] = first.GetProperty("page").GetProperty("cursor").GetString();
+        var second = GetResult(await harness.Client.CallToolAsync("creationsforge_record_inspect", warningArguments));
+        second.GetProperty("page").GetProperty("offset").GetInt32().ShouldBe(50);
+        recordArguments["cursor"] = warningArguments["cursor"];
+        var mixedSection = await harness.Client.CallToolAsync("creationsforge_record_inspect", recordArguments);
+        mixedSection.IsError.ShouldBe(true);
+        mixedSection.StructuredContent!.Value.GetProperty("error").GetProperty("code").GetString()
+            .ShouldBe("invalid_cursor");
+    }
+
     /// <summary>Creates a deterministic workspace mock with registry-compatible identity and disposal behavior.</summary>
     /// <param name="workspaceId">The workspace identity.</param>
     /// <param name="revision">The open revision.</param>

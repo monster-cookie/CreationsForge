@@ -63,8 +63,18 @@ public sealed class WorkspaceShellViewHeadlessTests
             ControlFinder.FindByAutomationId<TabItem>(view, "FormListBrowserTab").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<MajorRecordBrowserView>(view, "MajorRecordBrowserView").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<ItemsControl>(view, "MajorRecordSemanticChanges").ShouldBeNull();
+            var activePluginCount = ControlFinder.FindByAutomationId<TextBlock>(view, "ActivePluginRecordCountText")!;
+            var loadedFormListCount = ControlFinder.FindByAutomationId<TextBlock>(view, "LoadedRecordCountText")!;
+            var loadedMajorRecordCount = ControlFinder.FindByAutomationId<TextBlock>(view, "WorkspaceMajorRecordLoadedCountText")!;
+            activePluginCount.IsVisible.ShouldBeFalse();
+            loadedFormListCount.IsVisible.ShouldBeFalse();
+            loadedMajorRecordCount.IsVisible.ShouldBeTrue();
+            loadedMajorRecordCount.Text.ShouldBe("Loaded records: 0");
             tabs.SelectedIndex = 1;
             Dispatcher.UIThread.RunJobs();
+            activePluginCount.IsVisible.ShouldBeTrue();
+            loadedFormListCount.IsVisible.ShouldBeTrue();
+            loadedMajorRecordCount.IsVisible.ShouldBeFalse();
             ControlFinder.FindByAutomationId<FormListBrowserView>(view, "FormListBrowserView").ShouldNotBeNull();
             var legend = ControlFinder.FindByAutomationId<StackPanel>(
                 view,
@@ -83,10 +93,8 @@ public sealed class WorkspaceShellViewHeadlessTests
                     Color.FromArgb(80, 192, 160, 0)
                 ]);
             ControlFinder.FindByAutomationId<TextBlock>(view, "WorkspaceStatusText")!.Text.ShouldBe("No plugin is open.");
-            ControlFinder.FindByAutomationId<TextBlock>(view, "ActivePluginRecordCountText")!
-                .Text.ShouldBe("Plugin records: 0");
-            ControlFinder.FindByAutomationId<TextBlock>(view, "LoadedRecordCountText")!
-                .Text.ShouldBe("Unique loaded records: 0");
+            activePluginCount.Text.ShouldBe("Plugin records: 0");
+            loadedFormListCount.Text.ShouldBe("Unique loaded records: 0");
         }
         finally
         {

@@ -45,7 +45,7 @@ public sealed class SkyrimFormListGameAdapter : IFormListGameAdapter
     public IFormListInspector Inspector => _outputService.Inspector;
 
     /// <inheritdoc />
-    public IMajorRecordInspector MajorRecordInspector { get; } = new NativeMajorRecordInspector(
+    public IMajorRecordInspector MajorRecordInspector { get; } = new MutagenMajorRecordInspector(
         typeof(Mutagen.Bethesda.Skyrim.SkyrimMajorRecord),
         "Mutagen.Bethesda.Skyrim/0.55.0-alpha.53");
 

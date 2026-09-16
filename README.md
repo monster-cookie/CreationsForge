@@ -57,7 +57,7 @@ Package validation publishes and inspects each desktop archive but does not laun
 2. Search or browse the detected plugin list. Choose **Open Read-Only** to inspect the selected plugin and its records without selecting an output. This is the default action and works for Bethesda-supplied plugins when their plugin inputs are readable.
 3. Choose **Open for Editing** only when the selected plugin should become the guarded mutable output, or choose **New Plugin...** and select a new plugin path. Declared masters remain read-only workspace dependencies.
 4. Read any unavailable editing reason shown for a plugin before continuing. Creations Forge identifies Bethesda-supplied plugins through Mutagen and does not admit them as editable outputs.
-5. Use **All Records** to page winning records grouped by major-record family. Select a record, then choose its before and after plugin contexts to inspect both complete typed field trees and their semantic changes.
+5. Use **All Records** to page records physically present in the opened plugin, grouped by major-record family. Select a record, then choose its before and after plugin contexts to inspect both complete typed field trees and their semantic changes.
 6. Use **FormList Authoring** to compare or edit FormLists. **Find Reference...** looks up linked records.
 7. In an editing workspace, choose **New FormList**, **Override selected**, or **Edit staged output**. Select an edit action, choose **Open action**, and complete its controls. Available actions depend on the game and current selection.
 8. Resolve validation feedback, then choose **Apply to staged output**. This updates staged workspace changes; it does not save the output file.
@@ -72,7 +72,7 @@ If saving reports an uncertain outcome, read **Persistence status** and use **In
 
 Configure a stdio-capable MCP client to launch the dedicated MCP executable without command-line arguments. Select the executable from your actual build or package. The client supplies workspace inputs through the server's advertised tools; no game or output arguments are accepted by the server.
 
-Use `creationsforge_records_list` to page major records, `creationsforge_record_inspect` to read a complete typed record tree from an exact plugin context, and `creationsforge_record_compare` to page semantic changes and the complete before and after trees. These tools are read-only and use revision-bound continuation tokens. FormList-specific tools continue to provide authoring and save workflows.
+Use `creationsforge_records_list` to page major records, `creationsforge_record_inspect` to page a typed record tree or its warnings from an exact plugin context, and `creationsforge_record_compare` to page semantic changes and the complete before and after trees. Select the `warnings` section of `creationsforge_record_inspect` to page warnings independently. These tools are read-only and use revision-bound continuation tokens. FormList-specific tools continue to provide authoring and save workflows.
 
 From a folder containing the Windows MCP executable:
 

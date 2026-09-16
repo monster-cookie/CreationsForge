@@ -190,7 +190,7 @@ public sealed class StarfieldPluginSourceReadTests
             using var bookStream = new MemoryStream();
             using (var writer = new System.Text.Json.Utf8JsonWriter(bookStream))
             {
-                new CreationsForge.Core.Engine.RecordInspection.NativeMajorRecordInspector(
+                new CreationsForge.Core.Engine.RecordInspection.MutagenMajorRecordInspector(
                     typeof(StarfieldMajorRecord),
                     "Mutagen.Bethesda.Starfield/0.55.0-alpha.53")
                     .WriteReadView(book.Value.Record!, writer, TestContext.Current.CancellationToken);

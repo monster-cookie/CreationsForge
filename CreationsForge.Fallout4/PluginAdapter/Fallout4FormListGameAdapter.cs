@@ -53,7 +53,7 @@ public sealed class Fallout4FormListGameAdapter : IFormListGameAdapter
     public IFormListInspector Inspector => _outputService.Inspector;
 
     /// <inheritdoc />
-    public IMajorRecordInspector MajorRecordInspector { get; } = new NativeMajorRecordInspector(
+    public IMajorRecordInspector MajorRecordInspector { get; } = new MutagenMajorRecordInspector(
         typeof(Fallout4MajorRecord),
         "Mutagen.Bethesda.Fallout4/0.55.0-alpha.53");
 

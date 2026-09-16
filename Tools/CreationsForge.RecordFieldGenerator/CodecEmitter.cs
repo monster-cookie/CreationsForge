@@ -55,20 +55,6 @@ internal sealed partial class CodecEmitter
         ValidateCoverage();
     }
 
-    /// <summary>Initializes a metadata-only visitor over one installed game's concrete record model types.</summary>
-    /// <param name="majorRecordType">The game's abstract native major-record base class.</param>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="majorRecordType"/> is <see langword="null"/>.</exception>
-    internal CodecEmitter(Type majorRecordType)
-    {
-        ArgumentNullException.ThrowIfNull(majorRecordType);
-        ConcreteTypes = majorRecordType.Assembly.GetTypes()
-            .Where(static type => type.IsClass && !type.IsAbstract && !type.IsGenericTypeDefinition)
-            .ToArray();
-        Models = Array.Empty<RecordTypeModel>();
-        MutableByGetter = new Dictionary<Type, Type>();
-        PolymorphicTypes = Array.Empty<Type>();
-    }
-
     /// <summary>
     /// Emits and validates the complete production source and coverage manifest before writing exact owned paths.
     /// </summary>

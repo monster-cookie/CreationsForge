@@ -8,11 +8,12 @@ using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Assets;
 using Mutagen.Bethesda.Plugins.Records;
 using Mutagen.Bethesda.Strings;
+using Noggog;
 
 namespace CreationsForge.Core.Engine.RecordInspection;
 
-/// <summary>Inspects detached mutable Mutagen records through installed native field metadata and values.</summary>
-public sealed class NativeMajorRecordInspector : IMajorRecordInspector
+/// <summary>Inspects detached Mutagen records through installed field metadata and typed values.</summary>
+public sealed class MutagenMajorRecordInspector : IMajorRecordInspector
 {
     /// <summary>The maximum supported nested native-value depth.</summary>
     private const int MaximumDepth = 128;
@@ -31,13 +32,13 @@ public sealed class NativeMajorRecordInspector : IMajorRecordInspector
     /// <param name="packageIdentity">The stable package name and selected version.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="majorRecordType"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when the package identity is empty or the supplied type is not an abstract major-record base.</exception>
-    public NativeMajorRecordInspector(Type majorRecordType, string packageIdentity)
+    public MutagenMajorRecordInspector(Type majorRecordType, string packageIdentity)
     {
         ArgumentNullException.ThrowIfNull(majorRecordType);
         ArgumentException.ThrowIfNullOrWhiteSpace(packageIdentity);
         if (!majorRecordType.IsAbstract || !typeof(IMajorRecordGetter).IsAssignableFrom(majorRecordType))
         {
-            throw new ArgumentException("The native inspector requires an abstract mutable Mutagen major-record base type.", nameof(majorRecordType));
+            throw new ArgumentException("The Mutagen inspector requires an abstract mutable major-record base type.", nameof(majorRecordType));
         }
 
         MajorRecordType = majorRecordType;
@@ -242,6 +243,21 @@ public sealed class NativeMajorRecordInspector : IMajorRecordInspector
         {
             case string text:
                 RecordJsonLeafWriter.WriteString(writer, text, null);
+                return true;
+            case byte[] bytes:
+                RecordJsonLeafWriter.WriteBytes(writer, bytes, cancellationToken);
+                return true;
+            case Memory<byte> bytes:
+                RecordJsonLeafWriter.WriteBytes(writer, bytes.ToArray(), cancellationToken);
+                return true;
+            case ReadOnlyMemory<byte> bytes:
+                RecordJsonLeafWriter.WriteBytes(writer, bytes.ToArray(), cancellationToken);
+                return true;
+            case MemorySlice<byte> bytes:
+                RecordJsonLeafWriter.WriteBytes(writer, bytes.ToArray(), cancellationToken);
+                return true;
+            case ReadOnlyMemorySlice<byte> bytes:
+                RecordJsonLeafWriter.WriteBytes(writer, bytes.ToArray(), cancellationToken);
                 return true;
             case bool boolean:
                 writer.WriteBooleanValue(boolean);
@@ -529,6 +545,21 @@ public sealed class NativeMajorRecordInspector : IMajorRecordInspector
             case string beforeText when after is string afterText:
                 equal = RecordSemanticComparer.StringEquals(beforeText, afterText);
                 return true;
+            case byte[] beforeBytes when after is byte[] afterBytes:
+                equal = BytesEqual(beforeBytes, afterBytes, cancellationToken);
+                return true;
+            case Memory<byte> beforeBytes when after is Memory<byte> afterBytes:
+                equal = BytesEqual(beforeBytes.Span, afterBytes.Span, cancellationToken);
+                return true;
+            case ReadOnlyMemory<byte> beforeBytes when after is ReadOnlyMemory<byte> afterBytes:
+                equal = BytesEqual(beforeBytes.Span, afterBytes.Span, cancellationToken);
+                return true;
+            case MemorySlice<byte> beforeBytes when after is MemorySlice<byte> afterBytes:
+                equal = BytesEqual(beforeBytes.Span, afterBytes.Span, cancellationToken);
+                return true;
+            case ReadOnlyMemorySlice<byte> beforeBytes when after is ReadOnlyMemorySlice<byte> afterBytes:
+                equal = BytesEqual(beforeBytes.Span, afterBytes.Span, cancellationToken);
+                return true;
             case FormKey beforeKey when after is FormKey afterKey:
                 equal = RecordSemanticComparer.FormKeyEquals(beforeKey, afterKey);
                 return true;
@@ -559,6 +590,30 @@ public sealed class NativeMajorRecordInspector : IMajorRecordInspector
 
         equal = false;
         return false;
+    }
+
+    /// <summary>Compares a native byte buffer as one value while observing cancellation throughout the scan.</summary>
+    /// <param name="before">The prior byte buffer.</param>
+    /// <param name="after">The resulting byte buffer.</param>
+    /// <param name="cancellationToken">A token observed at each byte position.</param>
+    /// <returns><see langword="true"/> when both buffers contain the same bytes in order.</returns>
+    private static bool BytesEqual(ReadOnlySpan<byte> before, ReadOnlySpan<byte> after, CancellationToken cancellationToken)
+    {
+        if (before.Length != after.Length)
+        {
+            return false;
+        }
+
+        for (var index = 0; index < before.Length; index++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (before[index] != after[index])
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>Reads the exact double payload of one installed Noggog percentage value.</summary>
@@ -670,11 +725,10 @@ public sealed class NativeMajorRecordInspector : IMajorRecordInspector
         var snapshots = new List<DictionaryEntrySnapshot>();
         if (value is IDictionary dictionary)
         {
-            var position = 0;
             foreach (DictionaryEntry entry in dictionary)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                snapshots.Add(new DictionaryEntrySnapshot(GetStableKey(entry.Key), entry.Key, entry.Value, position++));
+                snapshots.Add(new DictionaryEntrySnapshot(GetStableKey(entry.Key), entry.Key, entry.Value));
             }
         }
         else
@@ -687,7 +741,6 @@ public sealed class NativeMajorRecordInspector : IMajorRecordInspector
                 return false;
             }
 
-            var position = 0;
             foreach (var entry in enumerable)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -699,11 +752,15 @@ public sealed class NativeMajorRecordInspector : IMajorRecordInspector
                 var entryType = entry.GetType();
                 var key = entryType.GetProperty("Key")?.GetValue(entry);
                 var entryValue = entryType.GetProperty("Value")?.GetValue(entry);
-                snapshots.Add(new DictionaryEntrySnapshot(GetStableKey(key), key, entryValue, position++));
+                snapshots.Add(new DictionaryEntrySnapshot(GetStableKey(key), key, entryValue));
             }
         }
 
         snapshots.Sort(static (left, right) => string.CompareOrdinal(left.StableKey, right.StableKey));
+        for (var index = 0; index < snapshots.Count; index++)
+        {
+            snapshots[index].Position = index;
+        }
         if (snapshots.Select(static entry => entry.StableKey).Distinct(StringComparer.Ordinal).Count() != snapshots.Count)
         {
             throw new NotSupportedException("Native dictionary keys do not have unique deterministic representations.");
@@ -777,20 +834,17 @@ public sealed class NativeMajorRecordInspector : IMajorRecordInspector
     /// <param name="stableKey">The type-qualified invariant key identity.</param>
     /// <param name="key">The native key value.</param>
     /// <param name="value">The native entry value.</param>
-    /// <param name="position">The original enumeration position.</param>
     private sealed class DictionaryEntrySnapshot
     {
         /// <summary>Initializes one temporary native dictionary entry.</summary>
         /// <param name="stableKey">The type-qualified invariant key identity.</param>
         /// <param name="key">The native key value.</param>
         /// <param name="value">The native entry value.</param>
-        /// <param name="position">The original enumeration position.</param>
-        internal DictionaryEntrySnapshot(string stableKey, object? key, object? value, int position)
+        internal DictionaryEntrySnapshot(string stableKey, object? key, object? value)
         {
             StableKey = stableKey;
             Key = key;
             Value = value;
-            Position = position;
         }
 
         /// <summary>Gets the type-qualified invariant key identity.</summary>
@@ -802,7 +856,7 @@ public sealed class NativeMajorRecordInspector : IMajorRecordInspector
         /// <summary>Gets the native entry value.</summary>
         internal object? Value { get; }
 
-        /// <summary>Gets the original enumeration position.</summary>
-        internal int Position { get; }
+        /// <summary>Gets or sets the position in the stable-key-sorted field-tree array.</summary>
+        internal int Position { get; set; }
     }
 }
