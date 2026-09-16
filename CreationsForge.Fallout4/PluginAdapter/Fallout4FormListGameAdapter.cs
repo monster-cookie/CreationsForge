@@ -1,5 +1,6 @@
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Engine.RecordReading;
+using CreationsForge.Core.Engine.RecordInspection;
 using CreationsForge.Core.Enums;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Fallout4;
@@ -50,6 +51,11 @@ public sealed class Fallout4FormListGameAdapter : IFormListGameAdapter
 
     /// <inheritdoc />
     public IFormListInspector Inspector => _outputService.Inspector;
+
+    /// <inheritdoc />
+    public IMajorRecordInspector MajorRecordInspector { get; } = new NativeMajorRecordInspector(
+        typeof(Fallout4MajorRecord),
+        "Mutagen.Bethesda.Fallout4/0.55.0-alpha.53");
 
     /// <inheritdoc />
     public bool SupportsRelease(GameRelease release)
@@ -306,6 +312,29 @@ public sealed class Fallout4FormListGameAdapter : IFormListGameAdapter
         }
 
         return Success(falloutSources!, read, readResult.Warnings);
+    }
+
+    /// <inheritdoc />
+    public EngineResult<RecordRead> ReadRecordContext(
+        IPluginSourceSet sources,
+        IPluginOutputState? output,
+        ReferenceRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetSources(sources, out var falloutSources, out var sourceFailure))
+        {
+            return EngineResult<RecordRead>.Failure(sourceFailure!);
+        }
+
+        if (output is null)
+        {
+            return falloutSources!.ReadRecordContext(request, cancellationToken);
+        }
+
+        var readerResult = CreateReader(falloutSources!, output);
+        return readerResult.Succeeded
+            ? Bind(falloutSources!, readerResult.Value!.Read(request, cancellationToken))
+            : Failure<RecordRead>(falloutSources!, readerResult.Error!);
     }
 
     /// <inheritdoc />

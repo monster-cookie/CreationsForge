@@ -11,7 +11,7 @@ namespace CreationsForge.RecordFieldGenerator;
 internal sealed partial class CodecEmitter
 {
     /// <summary>The installed package version represented by the generated source.</summary>
-    private const string PackageVersion = "0.55.0-alpha.48";
+    private const string PackageVersion = "0.55.0-alpha.53";
 
     /// <summary>The maximum concrete visitor count emitted into one generated source file.</summary>
     private const int TypesPerFile = 16;
@@ -53,6 +53,20 @@ internal sealed partial class CodecEmitter
         PolymorphicTypes = polymorphic.OrderBy(type => type.FullName, StringComparer.Ordinal).ToArray();
 
         ValidateCoverage();
+    }
+
+    /// <summary>Initializes a metadata-only visitor over one installed game's concrete record model types.</summary>
+    /// <param name="majorRecordType">The game's abstract native major-record base class.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="majorRecordType"/> is <see langword="null"/>.</exception>
+    internal CodecEmitter(Type majorRecordType)
+    {
+        ArgumentNullException.ThrowIfNull(majorRecordType);
+        ConcreteTypes = majorRecordType.Assembly.GetTypes()
+            .Where(static type => type.IsClass && !type.IsAbstract && !type.IsGenericTypeDefinition)
+            .ToArray();
+        Models = Array.Empty<RecordTypeModel>();
+        MutableByGetter = new Dictionary<Type, Type>();
+        PolymorphicTypes = Array.Empty<Type>();
     }
 
     /// <summary>

@@ -69,6 +69,9 @@ public sealed class McpReadToolProtocolTests
             "creationsforge_plugins_list",
             "creationsforge_formlists_list",
             "creationsforge_references_search",
+            "creationsforge_records_list",
+            "creationsforge_record_inspect",
+            "creationsforge_record_compare",
             "creationsforge_formlist_inspect",
             "creationsforge_formlist_compare",
         ]);
@@ -487,6 +490,116 @@ public sealed class McpReadToolProtocolTests
         var warningPage = GetResult(await harness.Client.CallToolAsync("creationsforge_formlist_compare", warningArguments))
             .GetProperty("page");
         warningPage.GetProperty("warnings")[0].GetProperty("code").GetString().ShouldBe("writer_normalized");
+    }
+
+    /// <summary>Verifies bounded major-record listing, complete field paging, and native semantic comparison through the SDK protocol.</summary>
+    [Fact]
+    public async Task MajorRecordTools_ThroughSdkProtocol_ForwardPagedTypedReadsAndComparisons()
+    {
+        var workspaceId = Guid.NewGuid();
+        var revision = new WorkspaceRevision(Guid.NewGuid(), 18);
+        var sourceModKey = ModKey.FromNameAndExtension("Source.esm");
+        var outputModKey = ModKey.FromNameAndExtension("Output.esp");
+        var formKey = new FormKey(sourceModKey, 0xB12);
+        var sourceSelection = new ReferenceRequest(formKey, RecordScope.Source, sourceModKey);
+        var outputSelection = new ReferenceRequest(formKey, RecordScope.StagedOutput, outputModKey);
+        var sourceContext = new FormListContext(
+            sourceSelection,
+            ReferenceResolutionStatus.Resolved,
+            sourceModKey,
+            Path.GetFullPath("Source.esm"),
+            0,
+            PluginRole.Source);
+        var outputContext = new FormListContext(
+            outputSelection,
+            ReferenceResolutionStatus.Resolved,
+            outputModKey,
+            Path.GetFullPath("Output.esp"),
+            1,
+            PluginRole.Output);
+        var before = JsonSerializer.SerializeToElement(new { Type = "Book", Name = "Before", Values = new[] { 1, 2 } });
+        var after = JsonSerializer.SerializeToElement(new { Type = "Book", Name = "After", Values = new[] { 1, 3 } });
+        var workspace = CreateWorkspace(workspaceId, revision);
+        workspace.Setup(candidate => candidate.ListMajorRecordsAsync(
+                It.IsAny<MajorRecordListRequest>(),
+                It.IsAny<CancellationToken>()))
+            .Returns((MajorRecordListRequest request, CancellationToken _) => ValueTask.FromResult(
+                EngineResult<MajorRecordListPage>.Success(
+                    new MajorRecordListPage(
+                        [new ReferenceSearchMatch(formKey, "Book", "ExampleBook", sourceModKey, Path.GetFullPath("Source.esm"), 0, PluginRole.Source)],
+                        request.ContinuationToken is null ? "record-next" : null),
+                    workspaceId,
+                    resultRevision: revision)));
+        workspace.Setup(candidate => candidate.ReadMajorRecordViewAsync(
+                It.IsAny<ReferenceRequest>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(ValueTask.FromResult(EngineResult<MajorRecordReadView>.Success(
+                new MajorRecordReadView(sourceContext, "Book", before),
+                workspaceId,
+                resultRevision: revision)));
+        workspace.Setup(candidate => candidate.CompareMajorRecordAsync(
+                It.IsAny<CompareMajorRecordRequest>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(ValueTask.FromResult(EngineResult<MajorRecordComparison>.Success(
+                new MajorRecordComparison(
+                    sourceContext,
+                    outputContext,
+                    "Book",
+                    before,
+                    after,
+                    [
+                        new SemanticChangeDescriptor("$record.Name", SemanticChangeKind.ValueChanged),
+                        new SemanticChangeDescriptor("$record.Values", SemanticChangeKind.ItemChanged, 1, 1)
+                    ],
+                    []),
+                workspaceId,
+                resultRevision: revision)));
+        var factory = CreateFactory(workspace.Object);
+
+        await using var registry = new McpWorkspaceRegistry();
+        var tools = new McpToolCatalog().CreateTools(registry, "protocol-test", factory.Object);
+        await using var harness = await ProtocolHarness.CreateAsync(tools);
+        await OpenWorkspaceAsync(harness.Client, workspaceId);
+
+        var listArguments = new Dictionary<string, object?>
+        {
+            ["workspaceId"] = workspaceId.ToString("D"),
+            ["scope"] = "source",
+            ["containingModKey"] = sourceModKey.ToString(),
+            ["maxResults"] = 7,
+        };
+        var firstList = GetResult(await harness.Client.CallToolAsync("creationsforge_records_list", listArguments));
+        firstList.GetProperty("records")[0].GetProperty("recordType").GetString().ShouldBe("Book");
+        firstList.GetProperty("cursor").GetString().ShouldBe("record-next");
+        listArguments["cursor"] = "record-next";
+        GetResult(await harness.Client.CallToolAsync("creationsforge_records_list", listArguments))
+            .GetProperty("cursor").ValueKind.ShouldBe(JsonValueKind.Null);
+        workspace.Verify(candidate => candidate.ListMajorRecordsAsync(
+            It.Is<MajorRecordListRequest>(request =>
+                request.MaximumResults == 7 &&
+                request.Scope == RecordScope.Source &&
+                request.ContainingModKey == sourceModKey),
+            It.IsAny<CancellationToken>()), Times.Exactly(2));
+
+        var inspectArguments = CreateInspectArguments(workspaceId, formKey, sourceModKey, "/Values/1", 50);
+        var inspect = GetResult(await harness.Client.CallToolAsync("creationsforge_record_inspect", inspectArguments));
+        inspect.GetProperty("recordType").GetString().ShouldBe("Book");
+        inspect.GetProperty("page").GetProperty("rawValue").GetString().ShouldBe("2");
+
+        var compareArguments = CreateCompareArguments(workspaceId, formKey, sourceModKey, outputModKey, "changes", 1);
+        var firstChanges = GetResult(await harness.Client.CallToolAsync("creationsforge_record_compare", compareArguments));
+        firstChanges.GetProperty("recordType").GetString().ShouldBe("Book");
+        firstChanges.GetProperty("page").GetProperty("changes")[0].GetProperty("fieldIdentifier").GetString()
+            .ShouldBe("$record.Name");
+        compareArguments["cursor"] = firstChanges.GetProperty("page").GetProperty("cursor").GetString();
+        GetResult(await harness.Client.CallToolAsync("creationsforge_record_compare", compareArguments))
+            .GetProperty("page").GetProperty("changes")[0].GetProperty("fieldIdentifier").GetString()
+            .ShouldBe("$record.Values");
+
+        var afterArguments = CreateCompareArguments(workspaceId, formKey, sourceModKey, outputModKey, "after", 50);
+        afterArguments["path"] = "/Name";
+        GetResult(await harness.Client.CallToolAsync("creationsforge_record_compare", afterArguments))
+            .GetProperty("page").GetProperty("value").GetString().ShouldBe("After");
     }
 
     /// <summary>Creates a deterministic workspace mock with registry-compatible identity and disposal behavior.</summary>

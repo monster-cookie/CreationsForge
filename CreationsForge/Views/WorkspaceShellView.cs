@@ -19,18 +19,25 @@ public sealed class WorkspaceShellView : UserControl
     /// <summary>The FormList browser hosted for the current navigation scope.</summary>
     private readonly FormListBrowserView FormListBrowserView;
 
+    /// <summary>The read-only major-record browser hosted for the current navigation scope.</summary>
+    private readonly MajorRecordBrowserView MajorRecordBrowserView;
+
     /// <summary>Initializes the workspace shell view.</summary>
     /// <param name="viewModel">The shell state and commands.</param>
     /// <param name="formListBrowserView">The FormList browser for this navigation scope.</param>
+    /// <param name="majorRecordBrowserView">The read-only major-record browser for this navigation scope.</param>
     /// <exception cref="ArgumentNullException">Thrown when a required dependency is <see langword="null"/>.</exception>
     public WorkspaceShellView(
         WorkspaceShellViewModel viewModel,
-        FormListBrowserView formListBrowserView)
+        FormListBrowserView formListBrowserView,
+        MajorRecordBrowserView majorRecordBrowserView)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(formListBrowserView);
+        ArgumentNullException.ThrowIfNull(majorRecordBrowserView);
         ViewModel = viewModel;
         FormListBrowserView = formListBrowserView;
+        MajorRecordBrowserView = majorRecordBrowserView;
         DataContext = ViewModel;
         AutomationProperties.SetAutomationId(this, "WorkspaceShellView");
         Content = BuildContent();
@@ -64,11 +71,29 @@ public sealed class WorkspaceShellView : UserControl
             Child = toolbar
         };
 
+        var recordsTab = new TabItem
+        {
+            Header = "All Records",
+            Content = MajorRecordBrowserView
+        };
+        AutomationProperties.SetAutomationId(recordsTab, "MajorRecordBrowserTab");
+        var formListsTab = new TabItem
+        {
+            Header = "FormList Authoring",
+            Content = FormListBrowserView
+        };
+        AutomationProperties.SetAutomationId(formListsTab, "FormListBrowserTab");
+        var browsers = new TabControl
+        {
+            ItemsSource = new[] { recordsTab, formListsTab },
+            SelectedIndex = 0
+        };
+        AutomationProperties.SetAutomationId(browsers, "WorkspaceBrowserTabs");
         var contentHost = new Border
         {
             Background = App.GetApplicationBrush(App.ApplicationSurfaceBrushKey),
             Padding = new Thickness(24),
-            Child = FormListBrowserView
+            Child = browsers
         };
         AutomationProperties.SetAutomationId(contentHost, "WorkspaceContentHost");
 

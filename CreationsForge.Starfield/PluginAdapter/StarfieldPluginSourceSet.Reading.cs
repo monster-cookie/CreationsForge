@@ -160,6 +160,26 @@ public sealed partial class StarfieldPluginSourceSet
             warnings: readResult.Warnings));
     }
 
+    /// <summary>Reads one exact native major-record context as an independent Starfield getter copy.</summary>
+    /// <param name="request">The FormKey, source view, and optional containing-plugin selection.</param>
+    /// <param name="cancellationToken">A token observed during selection, copying, and direct-link diagnostics.</param>
+    /// <returns>The detached record and provenance, including selected deleted contexts, or a typed source failure.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="request"/> is <see langword="null"/>.</exception>
+    /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled.</exception>
+    public EngineResult<RecordRead> ReadRecordContext(
+        ReferenceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var readerResult = GetReferenceReader();
+        return readerResult.Succeeded
+            ? BindResult(readerResult.Value!.Read(request, cancellationToken))
+            : EngineResult<RecordRead>.Failure(
+                readerResult.Error!,
+                WorkspaceId,
+                resultRevision: Revision);
+    }
+
     /// <summary>Checks whether a later containing plugin has a FormList context for the same record identity.</summary>
     /// <param name="snapshot">The immutable aligned plugin and Mutagen-mod view.</param>
     /// <param name="sourceIndex">The current containing plugin position.</param>

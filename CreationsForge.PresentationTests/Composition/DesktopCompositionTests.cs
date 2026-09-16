@@ -1,4 +1,5 @@
 using Autofac;
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using CreationsForge.Bethesda.Assets.Archives;
@@ -61,6 +62,14 @@ public sealed class DesktopCompositionTests
 
             mainWindow.Content.ShouldBeOfType<WorkspaceShellView>();
             var shell = (WorkspaceShellView)mainWindow.Content;
+            CreationsForge.PresentationTests.Headless.ControlFinder
+                .FindByAutomationId<MajorRecordBrowserView>(shell, "MajorRecordBrowserView")
+                .ShouldNotBeNull();
+            var tabs = CreationsForge.PresentationTests.Headless.ControlFinder
+                .FindByAutomationId<TabControl>(shell, "WorkspaceBrowserTabs")
+                .ShouldNotBeNull();
+            tabs.SelectedIndex = 1;
+            Dispatcher.UIThread.RunJobs();
             CreationsForge.PresentationTests.Headless.ControlFinder
                 .FindByAutomationId<FormListBrowserView>(shell, "FormListBrowserView")
                 .ShouldNotBeNull();

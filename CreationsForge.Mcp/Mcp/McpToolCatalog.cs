@@ -33,6 +33,9 @@ public sealed class McpToolCatalog
             tools.Add(new PluginsListTool(workspaceRegistry));
             tools.Add(new FormListsListTool(workspaceRegistry));
             tools.Add(new ReferencesSearchTool(workspaceRegistry));
+            tools.Add(new MajorRecordsListTool(workspaceRegistry));
+            tools.Add(new MajorRecordInspectTool(workspaceRegistry));
+            tools.Add(new MajorRecordCompareTool(workspaceRegistry));
             tools.Add(new FormListInspectTool(workspaceRegistry));
             tools.Add(new FormListCompareTool(workspaceRegistry));
         }
@@ -74,6 +77,9 @@ public sealed class McpToolCatalog
             new PluginsListTool(workspaceRegistry),
             new FormListsListTool(workspaceRegistry),
             new ReferencesSearchTool(workspaceRegistry),
+            new MajorRecordsListTool(workspaceRegistry),
+            new MajorRecordInspectTool(workspaceRegistry),
+            new MajorRecordCompareTool(workspaceRegistry),
             new FormListInspectTool(workspaceRegistry),
             new FormListCompareTool(workspaceRegistry),
             new WorkspaceStateTool(workspaceRegistry, metadataStore),

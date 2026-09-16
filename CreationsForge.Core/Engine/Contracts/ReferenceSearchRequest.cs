@@ -25,9 +25,30 @@ public sealed class ReferenceSearchRequest
         string? continuationToken = null,
         RecordScope scope = RecordScope.WinningOverrides,
         ModKey? containingModKey = null)
+        : this(query, maximumResults, continuationToken, scope, containingModKey, allowEmptyQuery: false)
+    { }
+
+    /// <summary>Initializes a search request, optionally reserving an empty query for internal match-all listing.</summary>
+    /// <param name="query">The search text, or empty text only for an internal listing request.</param>
+    /// <param name="maximumResults">The positive maximum number of matches.</param>
+    /// <param name="continuationToken">The optional continuation token.</param>
+    /// <param name="scope">The record contexts to search.</param>
+    /// <param name="containingModKey">The optional containing plugin filter.</param>
+    /// <param name="allowEmptyQuery">Whether an empty query represents match-all listing.</param>
+    private ReferenceSearchRequest(
+        string query,
+        int maximumResults,
+        string? continuationToken,
+        RecordScope scope,
+        ModKey? containingModKey,
+        bool allowEmptyQuery)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(query);
+        ArgumentNullException.ThrowIfNull(query);
         var normalizedQuery = query.Trim();
+        if (!allowEmptyQuery && normalizedQuery.Length == 0)
+        {
+            throw new ArgumentException("Reference search queries cannot be empty or whitespace.", nameof(query));
+        }
         if (normalizedQuery.Length > MaximumQueryLength)
         {
             throw new ArgumentOutOfRangeException(
@@ -59,6 +80,27 @@ public sealed class ReferenceSearchRequest
         ContinuationToken = continuationToken;
         Scope = scope;
         ContainingModKey = containingModKey;
+    }
+
+    /// <summary>Creates the internal match-all search used by bounded major-record listing.</summary>
+    /// <param name="maximumResults">The positive maximum page size.</param>
+    /// <param name="continuationToken">The optional engine-issued continuation token.</param>
+    /// <param name="scope">The record contexts to list.</param>
+    /// <param name="containingModKey">The optional containing plugin filter.</param>
+    /// <returns>A cursor-compatible search request whose empty query matches every record.</returns>
+    internal static ReferenceSearchRequest CreateListing(
+        int maximumResults,
+        string? continuationToken,
+        RecordScope scope,
+        ModKey? containingModKey)
+    {
+        return new ReferenceSearchRequest(
+            string.Empty,
+            maximumResults,
+            continuationToken,
+            scope,
+            containingModKey,
+            allowEmptyQuery: true);
     }
 
     /// <summary>Gets the record identity or EditorID search text.</summary>

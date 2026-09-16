@@ -80,6 +80,30 @@ public sealed class SkyrimFormListGameAdapterTests
         resolution.Value!.Status.ShouldBe(ReferenceResolutionStatus.Resolved);
         resolution.Value.Record.ShouldBeOfType<Keyword>().EditorID.ShouldBe("OutputKeyword");
 
+        var keyword = adapter.ReadRecordContext(
+            sources,
+            output,
+            new ReferenceRequest(
+                fixture.OutputKeywordFormKey,
+                RecordScope.StagedOutput,
+                fixture.ExistingOutputModKey),
+            TestContext.Current.CancellationToken);
+        keyword.Succeeded.ShouldBeTrue(keyword.Error?.Message);
+        keyword.Value!.Context.Status.ShouldBe(ReferenceResolutionStatus.Resolved);
+        keyword.Value.Context.ContainingModKey.ShouldBe(fixture.ExistingOutputModKey);
+        keyword.Value.RecordType.ShouldBe("Keyword");
+        keyword.Value.Record.ShouldBeOfType<Keyword>().EditorID.ShouldBe("OutputKeyword");
+        using var keywordStream = new MemoryStream();
+        using (var writer = new System.Text.Json.Utf8JsonWriter(keywordStream))
+        {
+            adapter.MajorRecordInspector.WriteReadView(
+                keyword.Value.Record!,
+                writer,
+                TestContext.Current.CancellationToken);
+        }
+        using var keywordDocument = System.Text.Json.JsonDocument.Parse(keywordStream.ToArray());
+        keywordDocument.RootElement.GetProperty("$type").GetString().ShouldBe(typeof(Keyword).FullName);
+
         var liveRevision = sources.Revision.Next();
         var search = adapter.SearchReferences(
             sources,

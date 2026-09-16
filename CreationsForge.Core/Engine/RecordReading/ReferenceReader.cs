@@ -320,7 +320,8 @@ public sealed class ReferenceReader
         IMajorRecordGetter record,
         CancellationToken cancellationToken)
     {
-        var queryMatches = record.FormKey.ToString().Contains(request.Query, StringComparison.OrdinalIgnoreCase) ||
+        var queryMatches = request.Query.Length == 0 ||
+            record.FormKey.ToString().Contains(request.Query, StringComparison.OrdinalIgnoreCase) ||
             (record.EditorID?.Contains(request.Query, StringComparison.OrdinalIgnoreCase) ?? false);
         if (!queryMatches)
         {

@@ -15,7 +15,7 @@ public sealed partial class FormListBrowserViewModel
     /// <param name="resultIsWinningOverride">Whether the resulting selection explicitly requests winning overrides.</param>
     /// <param name="cancellationToken">A token observed throughout projection pairing.</param>
     /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled.</exception>
-    private static void ApplyComparisonStates(
+    internal static void ApplyComparisonStates(
         IReadOnlyList<RecordJsonFieldNodeViewModel> beforeFields,
         IReadOnlyList<RecordJsonFieldNodeViewModel> afterFields,
         bool resultIsWinningOverride,

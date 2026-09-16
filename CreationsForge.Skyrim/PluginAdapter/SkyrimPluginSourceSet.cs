@@ -264,6 +264,28 @@ public sealed class SkyrimPluginSourceSet : IPluginSourceSet
         return BindResult(EngineResult<RecordRead>.Success(unsupported, warnings: result.Warnings));
     }
 
+    /// <summary>Reads one exact native Skyrim major-record context from sources and an optional staged output.</summary>
+    /// <param name="request">The FormKey, source view, and optional containing-plugin selection.</param>
+    /// <param name="output">The borrowed staged output appended after sources, or <see langword="null"/>.</param>
+    /// <param name="cancellationToken">A token observed during selection, copying, and direct-link diagnostics.</param>
+    /// <returns>The detached record and provenance, including selected deleted contexts, or a typed source failure.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="request"/> is <see langword="null"/>.</exception>
+    /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled.</exception>
+    internal EngineResult<RecordRead> ReadRecordContext(
+        ReferenceRequest request,
+        SkyrimPluginOutputState? output,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var readerResult = GetReferenceReader(output);
+        return readerResult.Succeeded
+            ? BindResult(readerResult.Value!.Read(request, cancellationToken))
+            : EngineResult<RecordRead>.Failure(
+                readerResult.Error!,
+                workspaceId: WorkspaceId,
+                resultRevision: Revision);
+    }
+
     /// <summary>
     /// Resolves one reference against the requested source scope and returns only a detached record copy.
     /// </summary>

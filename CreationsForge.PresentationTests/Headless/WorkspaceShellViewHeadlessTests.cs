@@ -25,15 +25,18 @@ public sealed class WorkspaceShellViewHeadlessTests
         using var viewModel = CreateViewModel(context);
         var picker = new RecordingReferencePickerService();
         var dispatcher = new InlineUiDispatcher();
+        var projector = new RecordJsonTreeProjectionService();
         using var browserViewModel = new FormListBrowserViewModel(
             context.Coordinator,
             context.Arbiter,
-            new RecordJsonTreeProjectionService(),
+            projector,
             picker,
             dispatcher,
             HeadlessRecordEditorFactory.Create(context.Coordinator, context.Arbiter, picker, dispatcher));
+        using var majorRecordViewModel = new MajorRecordBrowserViewModel(context.Coordinator, projector, dispatcher);
         var browserView = new FormListBrowserView(browserViewModel);
-        var view = new WorkspaceShellView(viewModel, browserView);
+        var majorRecordView = new MajorRecordBrowserView(majorRecordViewModel);
+        var view = new WorkspaceShellView(viewModel, browserView, majorRecordView);
         var window = new Window
         {
             Width = 1200,
@@ -54,7 +57,13 @@ public sealed class WorkspaceShellViewHeadlessTests
             ControlFinder.FindByAutomationId<Button>(view, "WorkspaceDiscardChangesButton").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<Button>(view, "WorkspaceSettingsButton").ShouldNotBeNull();
             var contentHost = ControlFinder.FindByAutomationId<Border>(view, "WorkspaceContentHost").ShouldNotBeNull();
-            contentHost.Child.ShouldBeSameAs(browserView);
+            var tabs = contentHost.Child.ShouldBeOfType<TabControl>();
+            tabs.ItemCount.ShouldBe(2);
+            ControlFinder.FindByAutomationId<TabItem>(view, "MajorRecordBrowserTab").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<TabItem>(view, "FormListBrowserTab").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<MajorRecordBrowserView>(view, "MajorRecordBrowserView").ShouldNotBeNull();
+            tabs.SelectedIndex = 1;
+            Dispatcher.UIThread.RunJobs();
             ControlFinder.FindByAutomationId<FormListBrowserView>(view, "FormListBrowserView").ShouldNotBeNull();
             var legend = ControlFinder.FindByAutomationId<StackPanel>(
                 view,

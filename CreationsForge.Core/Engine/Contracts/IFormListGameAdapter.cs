@@ -16,6 +16,9 @@ public interface IFormListGameAdapter
     /// <summary>Gets the stateless game-specific typed FormList view writer and semantic comparer.</summary>
     IFormListInspector Inspector { get; }
 
+    /// <summary>Gets the stateless native major-record field inspector and semantic comparer.</summary>
+    IMajorRecordInspector MajorRecordInspector { get; }
+
     /// <summary>Determines whether this adapter supports an exact plugin release selection.</summary>
     /// <param name="release">The requested Mutagen release.</param>
     /// <returns><see langword="true"/> when this adapter can safely open and write that release.</returns>
@@ -119,6 +122,18 @@ public interface IFormListGameAdapter
     /// <param name="cancellationToken">A token observed while selecting and copying the record.</param>
     /// <returns>The contextual detached plugin read, or a typed adapter failure.</returns>
     EngineResult<RecordRead> ReadFormListContext(
+        IPluginSourceSet sources,
+        IPluginOutputState? output,
+        ReferenceRequest request,
+        CancellationToken cancellationToken);
+
+    /// <summary>Reads one exact major-record context without restricting its native Mutagen family.</summary>
+    /// <param name="sources">The borrowed plugin source lifetime.</param>
+    /// <param name="output">The borrowed selected output state, or <see langword="null"/> before output selection.</param>
+    /// <param name="request">The exact record identity, scope, and optional containing-plugin selection.</param>
+    /// <param name="cancellationToken">A token observed during selection, copying, and direct-link diagnostics.</param>
+    /// <returns>A contextual detached native record for resolved or deleted contexts, or an explicit unavailable status.</returns>
+    EngineResult<RecordRead> ReadRecordContext(
         IPluginSourceSet sources,
         IPluginOutputState? output,
         ReferenceRequest request,

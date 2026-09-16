@@ -25,8 +25,8 @@ public sealed class McpHostProtocolTests
 
         var tools = await client.ListToolsAsync(cancellationToken: cancellationToken);
 
-        tools.Count.ShouldBe(22);
-        tools.Select(candidate => candidate.Name).Distinct(StringComparer.Ordinal).Count().ShouldBe(22);
+        tools.Count.ShouldBe(25);
+        tools.Select(candidate => candidate.Name).Distinct(StringComparer.Ordinal).Count().ShouldBe(25);
         var tool = tools.Single(candidate => candidate.Name == "creationsforge_server_info");
         tool.JsonSchema.GetProperty("type").GetString().ShouldBe("object");
         tool.JsonSchema.GetProperty("additionalProperties").GetBoolean().ShouldBeFalse();
@@ -48,7 +48,7 @@ public sealed class McpHostProtocolTests
         lifecycle.GetProperty("state").GetString().ShouldBe("running");
         lifecycle.GetProperty("activeWorkspaceCount").GetInt32().ShouldBe(0);
         lifecycle.GetProperty("activeWorkspaceIds").GetArrayLength().ShouldBe(0);
-        serverResult.GetProperty("capabilities").GetArrayLength().ShouldBe(23);
+        serverResult.GetProperty("capabilities").GetArrayLength().ShouldBe(26);
         var outputSchema = await GetOutputSchemaAsync();
         MatchesSchema(outputSchema, structuredContent).ShouldBeTrue();
 

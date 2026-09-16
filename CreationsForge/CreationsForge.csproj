@@ -10,7 +10,7 @@
         <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
         <ApplicationVersion>1</ApplicationVersion>
         <ApplicationPublisher>Venpi</ApplicationPublisher>
-        <Description>Browse, compare, and edit FormLists in Bethesda plugins.</Description>
+        <Description>Browse and compare Bethesda major records, and edit FormLists.</Description>
         <ApplicationIcon>Resources\AppIcon\CreationsForge.ico</ApplicationIcon>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

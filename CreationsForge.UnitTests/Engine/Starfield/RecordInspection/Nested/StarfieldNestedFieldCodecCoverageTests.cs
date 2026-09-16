@@ -17,7 +17,7 @@ public sealed class StarfieldNestedFieldCodecCoverageTests
     private const string ManifestResourceName = "CreationsForge.Starfield.RecordFieldManifest.json";
 
     /// <summary>The package-scoped prefix required on every generated concrete plugin type discriminator.</summary>
-    private const string RecordTypePrefix = "Mutagen.Bethesda.Starfield/0.55.0-alpha.48:";
+    private const string RecordTypePrefix = "Mutagen.Bethesda.Starfield/0.55.0-alpha.53:";
 
     /// <summary>
     /// Verifies the manifest contains every installed concrete root type and every FieldIndex member of each reachable type.

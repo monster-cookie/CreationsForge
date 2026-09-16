@@ -38,6 +38,9 @@
 
     <ItemGroup>
         <EmbeddedResource Include="..\CreationsForge.Starfield\PluginAdapter\RecordInspection\Nested\StarfieldRecordFieldManifest.json" LogicalName="CreationsForge.Starfield.RecordFieldManifest.json" />
+        <EmbeddedResource Include="..\CreationsForge.Starfield\PluginAdapter\RecordInspection\MajorRecords\StarfieldMajorRecordCoverage.json" LogicalName="CreationsForge.Starfield.MajorRecordCoverage.json" />
+        <EmbeddedResource Include="..\CreationsForge.Fallout4\PluginAdapter\RecordInspection\MajorRecords\Fallout4MajorRecordCoverage.json" LogicalName="CreationsForge.Fallout4.MajorRecordCoverage.json" />
+        <EmbeddedResource Include="..\CreationsForge.Skyrim\PluginAdapter\RecordInspection\MajorRecords\SkyrimMajorRecordCoverage.json" LogicalName="CreationsForge.Skyrim.MajorRecordCoverage.json" />
     </ItemGroup>
 
     <ItemGroup>
