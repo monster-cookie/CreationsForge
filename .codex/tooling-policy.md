@@ -19,17 +19,17 @@ Per the user's direction for this repository, apply these tool and identity sele
 | Operations | task-scoped; repository inspection and GitHub operations only when authorized by the current task and applicable repository instructions. Pull requests must be ready for review. This entry grants no standing permission to publish, change repository settings, manage credentials, merge, approve, deploy, or release. Prohibited: draft pull requests, force updates, and commits or pushes directly to a protected branch. |
 | Fallbacks | Installed GitHub CLI (`gh`) when the MCP service-account context is unavailable and the CLI context independently verifies as the same Codex AI account. The same target, identity, and operation limits apply. Existing CLI browser authentication is permitted; an API token stored in Proton Pass is not mandatory for that authentication method. No personal-account fallback. |
 
-## Tool: plane
+## Tool: linear
 
 | Field | Value |
 | --- | --- |
-| Service | plane |
+| Service | linear |
 | Roles | all |
 | Requirement | required |
-| Tool | The Plane MCP integration exposed as `mcp__plane__*`, using the Codex AI service-account context from the `Plane (Codex AI)` Proton Pass item. |
-| Identity | plane-automation |
-| Target | MCP endpoint=https://mcp.plane.so/http/api-key/mcp; only the Plane workspace and project for CreationsForge authorized by the current task or existing user setup. Resolve workspace metadata from the named Plane item when available, and resolve the project through a scoped Plane lookup. Require a unique project match and agreement with the task and any item-stored workspace metadata before using the returned project ID. If the mapping is missing or ambiguous, defer only the dependent Plane operation and continue independent authorized work. Do not save resolved identifiers in this policy or require a nonexistent repository context file. |
-| Operations | task-scoped; read current requirements and perform only explicitly authorized operations on related work items in the Target project. Supply the resolved project UUID whenever the tool supports project scoping, and verify the returned project for unscoped retrieval. Comments, assignments, state changes, and completion actions require explicit task authorization; this entry supplies no standing grant for them. Prohibited: unrelated workspace maintenance. |
+| Tool | The configured Linear connection exposed as `mcp__linear_codex__*`, using its Codex OAuth app-user context. Verify the consuming connection's identity before dependent operations. |
+| Identity | linear-automation |
+| Target | Only the Venworks workspace and Creations Forge team mapped in `AGENT-REPO-CONTEXT.md`. Verify both UUIDs through the current Linear connection, supply the team UUID wherever team scoping is supported, and verify each unscoped issue or document belongs to that team. The current migration has no Linear project; do not infer one from a name or historical Plane annotation. |
+| Operations | Task-scoped reads of current requirements and only explicitly authorized mutations of related team issues or documents. Comments, assignments, state changes, document writes, and completion actions require explicit task authorization; this entry supplies no standing grant for them. Read back every mutation. Prohibited: unrelated workspace maintenance. |
 | Fallbacks | none |
 
 ## Tool: dotnet
@@ -47,7 +47,7 @@ Per the user's direction for this repository, apply these tool and identity sele
 
 ## Codex and personal application separation
 
-The Codex AI account is required only for Codex's GitHub MCP connection and Codex-initiated GitHub CLI operations. Preserve the user's personal browser sessions, GitKraken connection, and ordinary GitHub CLI login.
+The dedicated Codex identities are required for Codex's GitHub MCP and CLI operations and for the configured Linear OAuth connection. Preserve the user's personal browser sessions, GitKraken connection, and ordinary GitHub CLI login.
 
 For Codex-initiated `gh` calls, prefer a service-account token injected only into the child process as `GH_TOKEN`, with a dedicated `GH_CONFIG_DIR`. These process settings must not be persisted as Windows User or Machine environment variables. Do not run `gh auth switch`, `gh auth logout`, or `gh auth setup-git` against the user's ordinary configuration, and do not change shared Git credential helpers, signing settings, or commit authorship as part of service-account API setup.
 
