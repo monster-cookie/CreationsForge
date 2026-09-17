@@ -9,7 +9,7 @@ This README describes the current source implementation. Automated plugin checks
 ## Current Features
 
 1. Opens plugin files directly, without importing records into an application database.
-2. Browses and compares complete typed fields for major records across plugin contexts, with deterministic record-family grouping and paging.
+2. Loads all major records from the opened plugin and its admitted masters into a family-grouped desktop tree, then compares complete typed fields across plugin contexts. MCP listings remain paged.
 3. Creates FormLists, overrides selected FormLists, and edits staged output through typed edit controls.
 4. Separates unapplied form input, staged workspace changes, and saved output files.
 5. Reviews changes and warnings before saving or discarding staged changes.
@@ -55,9 +55,9 @@ Package validation publishes and inspects each desktop archive but does not laun
 
 1. Choose **Open Plugin...** and select the game. Creations Forge uses Mutagen to locate the installed Data directory and load order.
 2. Search or browse the detected plugin list. Choose **Open Read-Only** to inspect the selected plugin and its records without selecting an output. This is the default action and works for Bethesda-supplied plugins when their plugin inputs are readable.
-3. Choose **Open for Editing** only when the selected plugin should become the guarded mutable output, or choose **New Plugin...** and select a new plugin path. Declared masters remain read-only workspace dependencies.
+3. Choose **Open for Editing** only when the selected plugin should become the guarded mutable output. For **New Plugin...**, choose the game, plugin file type, and master size in the creation screen, then select a new plugin path; the picker starts in the detected game Data directory. A new plugin initially admits only that game's base plugin as a master; existing plugins retain their declared read-only master dependencies.
 4. Read any unavailable editing reason shown for a plugin before continuing. Creations Forge identifies Bethesda-supplied plugins through Mutagen and does not admit them as editable outputs.
-5. Use **All Records** to page records physically present in the opened plugin, grouped by major-record family. Select a record, then choose its before and after plugin contexts to inspect both complete typed field trees and their semantic changes.
+5. Use **All Records** to browse the complete family-grouped tree from the opened plugin and its admitted masters. The screen shows the current plugin and record count while loading. Select a record, then choose its before and after plugin contexts to inspect both complete typed field trees and their semantic changes.
 6. Use **FormList Authoring** to compare or edit FormLists. **Find Reference...** looks up linked records.
 7. In an editing workspace, choose **New FormList**, **Override selected**, or **Edit staged output**. Select an edit action, choose **Open action**, and complete its controls. Available actions depend on the game and current selection.
 8. Resolve validation feedback, then choose **Apply to staged output**. This updates staged workspace changes; it does not save the output file.

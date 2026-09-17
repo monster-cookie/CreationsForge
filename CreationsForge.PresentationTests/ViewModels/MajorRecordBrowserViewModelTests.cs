@@ -10,19 +10,20 @@ using Shouldly;
 
 namespace CreationsForge.PresentationTests.ViewModels;
 
-/// <summary>Verifies paged major-record grouping, exact contexts, and native field comparison presentation.</summary>
+/// <summary>Verifies complete major-record grouping, exact contexts, and native field comparison presentation.</summary>
 public sealed class MajorRecordBrowserViewModelTests
 {
-    /// <summary>Verifies winning pages include master records and a selected record compares synchronized origin and winner fields.</summary>
-    /// <returns>A task that completes after paging and comparison publication.</returns>
+    /// <summary>Verifies automatic loading includes admitted records and a selected record compares synchronized origin and winner fields.</summary>
+    /// <returns>A task that completes after complete loading and comparison publication.</returns>
     [Fact]
-    public async Task StartLoadMoreAndSelectRecord_PreserveWinningPagesContextsAndSynchronizedFields()
+    public async Task StartAndSelectRecord_LoadAllWinningPagesContextsAndSynchronizedFields()
     {
         var workspaceId = Guid.NewGuid();
         var revision = new WorkspaceRevision(Guid.NewGuid(), 9);
         var sourceMod = ModKey.FromNameAndExtension("Source.esm");
         var patchMod = ModKey.FromNameAndExtension("Patch.esm");
         var bookKey = new FormKey(sourceMod, 0x100);
+        var masterOnlyKey = new FormKey(sourceMod, 0x101);
         var keywordKey = new FormKey(patchMod, 0x200);
         var sourcePath = AbsolutePath(sourceMod.FileName);
         var patchPath = AbsolutePath(patchMod.FileName);
@@ -49,7 +50,11 @@ public sealed class MajorRecordBrowserViewModelTests
             {
                 pageRequests.Add(request);
                 var records = request.ContinuationToken is null
-                    ? new[] { Match(bookKey, "Book", "ExampleBook", patchMod, patchPath, 1, PluginRole.LoadOrder) }
+                    ? new[]
+                    {
+                        Match(bookKey, "Book", "ExampleBook", patchMod, patchPath, 1, PluginRole.LoadOrder),
+                        Match(masterOnlyKey, "Weapon", "BaseWeapon", sourceMod, sourcePath, 0, PluginRole.Source)
+                    }
                     : new[] { Match(keywordKey, "Keyword", "ExampleKeyword", patchMod, patchPath, 1, PluginRole.LoadOrder) };
                 return ValueTask.FromResult(EngineResult<MajorRecordListPage>.Success(
                     new MajorRecordListPage(records, request.ContinuationToken is null ? "page-two" : null),
@@ -106,23 +111,27 @@ public sealed class MajorRecordBrowserViewModelTests
             coordinator,
             new RecordJsonTreeProjectionService(),
             new InlineUiDispatcher());
+        var loadingStatuses = new List<string>();
+        viewModel.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(MajorRecordBrowserViewModel.StatusText))
+            {
+                loadingStatuses.Add(viewModel.StatusText);
+            }
+        };
 
         await viewModel.StartAsync();
 
-        pageRequests.Count.ShouldBe(1);
+        pageRequests.Count.ShouldBe(2);
         pageRequests[0].MaximumResults.ShouldBe(MajorRecordBrowserViewModel.PageSize);
         pageRequests[0].Scope.ShouldBe(RecordScope.WinningOverrides);
-        viewModel.Records.ShouldHaveSingleItem().RecordType.ShouldBe("Book");
-        viewModel.RecordGroups.ShouldHaveSingleItem().Label.ShouldBe("Book (1)");
-        viewModel.HasMoreRecords.ShouldBeTrue();
-
-        await viewModel.LoadMoreAsync();
-
-        pageRequests.Count.ShouldBe(2);
         pageRequests[1].ContinuationToken.ShouldBe("page-two");
-        viewModel.Records.Select(record => record.RecordType).ShouldBe(["Book", "Keyword"]);
-        viewModel.RecordGroups.Select(group => group.Label).ShouldBe(["Book (1)", "Keyword (1)"]);
-        viewModel.HasMoreRecords.ShouldBeFalse();
+        viewModel.Records.Select(record => record.RecordType).ShouldBe(["Book", "Weapon", "Keyword"]);
+        viewModel.RecordGroups.Select(group => group.Label).ShouldBe(["Book (1)", "Keyword (1)", "Weapon (1)"]);
+        viewModel.LoadedRecordCountText.ShouldBe("Loaded records: 3");
+        viewModel.IsBusy.ShouldBeFalse();
+        loadingStatuses.ShouldContain(status => status.Contains("Source.esm") && status.Contains("2 records"));
+        viewModel.StatusText.ShouldBe("Loaded all 3 major record(s).");
 
         await viewModel.SelectRecordAsync(viewModel.Records[0]);
 

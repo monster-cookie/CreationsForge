@@ -11,7 +11,7 @@ using CreationsForge.ViewModels;
 
 namespace CreationsForge.Views;
 
-/// <summary>Presents paged major-record families with exact context selection and native field comparison.</summary>
+/// <summary>Presents complete major-record families with exact context selection and native field comparison.</summary>
 public sealed class MajorRecordBrowserView : UserControl
 {
     /// <summary>The navigation-scope read-only browser workflow.</summary>
@@ -71,7 +71,7 @@ public sealed class MajorRecordBrowserView : UserControl
         return content;
     }
 
-    /// <summary>Builds paged family-grouped record discovery.</summary>
+    /// <summary>Builds complete family-grouped record discovery with visible loading progress.</summary>
     /// <returns>The record navigation pane.</returns>
     private Control BuildRecordPane()
     {
@@ -82,14 +82,6 @@ public sealed class MajorRecordBrowserView : UserControl
         };
         refresh.Bind(Button.CommandProperty, new Binding(nameof(MajorRecordBrowserViewModel.RefreshCommand)));
         AutomationProperties.SetAutomationId(refresh, "MajorRecordRefreshButton");
-        var loadMore = new Button
-        {
-            Content = "Load More",
-            Padding = new Thickness(12, 7)
-        };
-        loadMore.Bind(Button.CommandProperty, new Binding(nameof(MajorRecordBrowserViewModel.LoadMoreCommand)));
-        loadMore.Bind(IsVisibleProperty, new Binding(nameof(MajorRecordBrowserViewModel.HasMoreRecords)));
-        AutomationProperties.SetAutomationId(loadMore, "MajorRecordLoadMoreButton");
         var count = CreateBoundText(nameof(MajorRecordBrowserViewModel.LoadedRecordCountText), 12, FontWeight.Normal);
         count.VerticalAlignment = VerticalAlignment.Center;
         AutomationProperties.SetAutomationId(count, "MajorRecordLoadedCountText");
@@ -100,7 +92,6 @@ public sealed class MajorRecordBrowserView : UserControl
             Children =
             {
                 refresh,
-                loadMore,
                 count
             }
         };
@@ -122,8 +113,29 @@ public sealed class MajorRecordBrowserView : UserControl
             }
         };
         AutomationProperties.SetAutomationId(tree, "MajorRecordTree");
+        var progressText = CreateBoundText(nameof(MajorRecordBrowserViewModel.StatusText), 14, FontWeight.SemiBold);
+        progressText.TextWrapping = TextWrapping.Wrap;
+        AutomationProperties.SetAutomationId(progressText, "MajorRecordLoadingStatus");
+        var loading = new Border
+        {
+            Background = App.GetApplicationBrush(App.PanelSurfaceBrushKey),
+            Child = new StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Spacing = 12,
+                Children =
+                {
+                    progressText,
+                    new ProgressBar { IsIndeterminate = true, MinWidth = 280, MinHeight = 4 }
+                }
+            }
+        };
+        loading.Bind(IsVisibleProperty, new Binding(nameof(MajorRecordBrowserViewModel.IsBusy)));
+        AutomationProperties.SetAutomationId(loading, "MajorRecordLoadingScreen");
+        var treeArea = new Grid { Children = { tree, loading } };
         Grid.SetRow(actions, 1);
-        Grid.SetRow(tree, 2);
+        Grid.SetRow(treeArea, 2);
         return new Border
         {
             Background = App.GetApplicationBrush(App.PanelSurfaceBrushKey),
@@ -138,7 +150,7 @@ public sealed class MajorRecordBrowserView : UserControl
                 {
                     CreateText("All Major Records", 18, FontWeight.SemiBold),
                     actions,
-                    tree
+                    treeArea
                 }
             }
         };

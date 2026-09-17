@@ -7,42 +7,28 @@ namespace CreationsForge.ViewModels;
 /// <summary>Supplies browser publication, hierarchy construction, retry, and stale-result checks.</summary>
 public sealed partial class MajorRecordBrowserViewModel
 {
-    /// <summary>Publishes one record page by replacement or append.</summary>
-    /// <param name="page">The exact engine page.</param>
-    /// <param name="records">The projected page rows.</param>
-    /// <param name="revision">The exact page revision.</param>
-    /// <param name="warnings">The page warnings.</param>
-    /// <param name="replace">Whether to replace existing records.</param>
-    private void PublishRecordPage(
-        MajorRecordListPage page,
+    /// <summary>Publishes the complete winning-record collection after all engine pages succeed.</summary>
+    /// <param name="records">The projected records from every admitted source.</param>
+    /// <param name="revision">The revision shared by every page.</param>
+    /// <param name="warnings">The collected page warnings.</param>
+    private void PublishRecords(
         IReadOnlyList<MajorRecordViewModel> records,
         WorkspaceRevision revision,
-        IReadOnlyList<EngineWarning> warnings,
-        bool replace)
+        IReadOnlyList<EngineWarning> warnings)
     {
         RevisionValue = revision;
-        ContinuationTokenValue = page.ContinuationToken;
-        var combined = replace
-            ? records.ToArray()
-            : RecordsValue
-                .Concat(records)
-                .GroupBy(record => record.FormKey)
-                .Select(group => group.First())
-                .ToArray();
-        RecordsValue = Array.AsReadOnly(combined);
+        RecordsValue = Array.AsReadOnly(records
+            .GroupBy(record => record.FormKey)
+            .Select(group => group.First())
+            .ToArray());
         RebuildRecordGroups();
-        PageWarnings = replace ? Array.AsReadOnly(warnings.ToArray()) : CombineWarnings(PageWarnings, warnings);
+        PageWarnings = Array.AsReadOnly(warnings.ToArray());
         SetWarnings(PageWarnings);
         ClearError();
         RetryKindValue = RetryKind.None;
-        SetStatus(HasMoreRecords
-            ? $"Loaded {RecordsValue.Count:N0} major record(s). More records are available."
-            : $"Loaded all {RecordsValue.Count:N0} major record(s)."
-        );
-        OnPropertyChanged(nameof(HasMoreRecords));
+        SetStatus($"Loaded all {RecordsValue.Count:N0} major record(s).");
         OnPropertyChanged(nameof(LoadedRecordCountText));
         RefreshRelayCommand.RaiseCanExecuteChanged();
-        LoadMoreRelayCommand.RaiseCanExecuteChanged();
     }
 
     /// <summary>Groups loaded records by stable record family and rebuilds the hierarchy.</summary>
@@ -91,7 +77,7 @@ public sealed partial class MajorRecordBrowserViewModel
     private void ClearWorkspacePresentation()
     {
         RevisionValue = null;
-        ContinuationTokenValue = null;
+        LoadingRecordCountValue = 0;
         RecordsValue = Array.Empty<MajorRecordViewModel>();
         RecordGroupsValue = Array.Empty<RecordTypeGroupViewModel>();
         RecordTreeSourceValue = CreateRecordTreeSource(RecordGroupsValue);
@@ -105,10 +91,8 @@ public sealed partial class MajorRecordBrowserViewModel
         OnPropertyChanged(nameof(RecordGroups));
         OnPropertyChanged(nameof(RecordTreeSource));
         OnPropertyChanged(nameof(SelectedRecord));
-        OnPropertyChanged(nameof(HasMoreRecords));
         OnPropertyChanged(nameof(LoadedRecordCountText));
         RefreshRelayCommand.RaiseCanExecuteChanged();
-        LoadMoreRelayCommand.RaiseCanExecuteChanged();
     }
 
     /// <summary>Clears exact context options and their comparison.</summary>
@@ -184,7 +168,7 @@ public sealed partial class MajorRecordBrowserViewModel
         if (SetProperty(ref IsBusyValue, isBusy, nameof(IsBusy)))
         {
             RefreshRelayCommand.RaiseCanExecuteChanged();
-            LoadMoreRelayCommand.RaiseCanExecuteChanged();
+            OnPropertyChanged(nameof(LoadedRecordCountText));
         }
     }
 
@@ -230,7 +214,6 @@ public sealed partial class MajorRecordBrowserViewModel
     {
         return RetryKindValue switch
         {
-            RetryKind.Page when RecordsValue.Count > 0 => LoadMoreAsync(),
             RetryKind.Page => RefreshAsync(),
             RetryKind.Contexts => BeginSelectionGenerationAsync(),
             RetryKind.Comparison => BeginComparisonGenerationAsync(),

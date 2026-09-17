@@ -3,11 +3,11 @@ using Mutagen.Bethesda.Plugins;
 
 namespace CreationsForge.ViewModels;
 
-/// <summary>Supplies revision-consistent record paging and exact context discovery.</summary>
+/// <summary>Supplies revision-consistent complete record loading and exact context discovery.</summary>
 public sealed partial class MajorRecordBrowserViewModel
 {
-    /// <summary>Replaces all browser state and starts the first page at a fresh workspace revision.</summary>
-    /// <returns>A task that completes after the first page publishes or the workspace is found closed.</returns>
+    /// <summary>Replaces browser state and loads every admitted record at a fresh workspace revision.</summary>
+    /// <returns>A task that completes after the complete tree publishes or the workspace is found closed.</returns>
     private Task BeginWorkspaceGenerationAsync()
     {
         WorkspaceGeneration++;
@@ -27,64 +27,90 @@ public sealed partial class MajorRecordBrowserViewModel
 
         WorkspaceCancellation = new CancellationTokenSource();
         SetBusy(true);
-        SetStatus("Loading major-record families...");
-        return LoadRecordPageAsync(
+        SetStatus("Loading major records...");
+        return LoadAllRecordsAsync(
             workspace.WorkspaceId,
             WorkspaceGeneration,
-            expectedRevision: null,
-            continuationToken: null,
-            replace: true,
             WorkspaceCancellation.Token);
     }
 
-    /// <summary>Reads one revision-bound record page and publishes it only for the current workspace generation.</summary>
+    /// <summary>Reads all revision-bound engine pages off the UI thread and publishes one complete tree.</summary>
     /// <param name="workspaceId">The captured workspace identity.</param>
     /// <param name="generation">The captured workspace generation.</param>
-    /// <param name="expectedRevision">The accepted revision for an appended page, or <see langword="null"/> for a first page.</param>
-    /// <param name="continuationToken">The engine-issued next-page token, or <see langword="null"/>.</param>
-    /// <param name="replace">Whether this page replaces all loaded records.</param>
     /// <param name="cancellationToken">The workspace generation token.</param>
-    /// <returns>A task that completes after conditional publication.</returns>
-    private async Task LoadRecordPageAsync(
+    /// <returns>A task that completes after conditional publication or cancellation.</returns>
+    private async Task LoadAllRecordsAsync(
         Guid workspaceId,
         long generation,
-        WorkspaceRevision? expectedRevision,
-        string? continuationToken,
-        bool replace,
         CancellationToken cancellationToken)
     {
         try
         {
-            var result = await WorkspaceCoordinator.ExecuteAsync(
-                (workspace, token) => ReadRecordPageAsync(workspace, expectedRevision, continuationToken, token),
-                cancellationToken).ConfigureAwait(false);
-            cancellationToken.ThrowIfCancellationRequested();
-            IReadOnlyList<MajorRecordViewModel>? records = null;
-            if (result.Succeeded && result.Value is not null)
+            await Task.Run(async () =>
             {
-                records = await Task.Run(
-                    () => (IReadOnlyList<MajorRecordViewModel>)Array.AsReadOnly(
-                        result.Value.Records.Select(record => new MajorRecordViewModel(record)).ToArray()),
-                    cancellationToken).ConfigureAwait(false);
-            }
-
-            await UiDispatcher.InvokeAsync(() =>
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (!IsCurrentWorkspaceGeneration(workspaceId, generation, expectedRevision))
+                var records = new List<MajorRecordViewModel>();
+                var warnings = new List<EngineWarning>();
+                var seenTokens = new HashSet<string>(StringComparer.Ordinal);
+                WorkspaceRevision? revision = null;
+                string? continuationToken = null;
+                while (true)
                 {
-                    return;
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var result = await WorkspaceCoordinator.ExecuteAsync(
+                        (workspace, token) => ReadRecordPageAsync(workspace, revision, continuationToken, token),
+                        cancellationToken).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (!result.Succeeded || result.Value is null || !result.ResultRevision.HasValue)
+                    {
+                        await UiDispatcher.InvokeAsync(() =>
+                        {
+                            if (IsCurrentWorkspaceGeneration(workspaceId, generation, null))
+                            {
+                                PublishFailure(result.Error, RetryKind.Page);
+                                SetWarnings(CombineWarnings(warnings, result.Warnings));
+                            }
+                        }).ConfigureAwait(false);
+                        return;
+                    }
+
+                    revision = result.ResultRevision.Value;
+                    warnings.AddRange(result.Warnings);
+                    records.AddRange(result.Value.Records.Select(record => new MajorRecordViewModel(record)));
+                    var currentPlugin = result.Value.Records.LastOrDefault()?.ContainingModKey?.FileName.String;
+                    var loadedCount = records.Count;
+                    await UiDispatcher.InvokeAsync(() =>
+                    {
+                        if (IsCurrentWorkspaceGeneration(workspaceId, generation, null))
+                        {
+                            LoadingRecordCountValue = loadedCount;
+                            OnPropertyChanged(nameof(LoadedRecordCountText));
+                            SetStatus(currentPlugin is null
+                                ? $"Loading major records... {loadedCount:N0} found."
+                                : $"Loading {currentPlugin}... {loadedCount:N0} records found.");
+                        }
+                    }).ConfigureAwait(false);
+
+                    continuationToken = result.Value.ContinuationToken;
+                    if (continuationToken is null)
+                    {
+                        break;
+                    }
+
+                    if (!seenTokens.Add(continuationToken))
+                    {
+                        throw new InvalidOperationException("The major-record listing repeated a continuation token.");
+                    }
                 }
 
-                if (!result.Succeeded || result.Value is null || !result.ResultRevision.HasValue)
+                await UiDispatcher.InvokeAsync(() =>
                 {
-                    PublishFailure(result.Error, RetryKind.Page);
-                    SetWarnings(result.Warnings);
-                    return;
-                }
-
-                PublishRecordPage(result.Value, records!, result.ResultRevision.Value, result.Warnings, replace);
-            }).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (IsCurrentWorkspaceGeneration(workspaceId, generation, null))
+                    {
+                        PublishRecords(records, revision!.Value, warnings);
+                    }
+                }).ConfigureAwait(false);
+            }, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -93,10 +119,10 @@ public sealed partial class MajorRecordBrowserViewModel
         {
             await UiDispatcher.InvokeAsync(() =>
             {
-                if (IsCurrentWorkspaceGeneration(workspaceId, generation, expectedRevision))
+                if (IsCurrentWorkspaceGeneration(workspaceId, generation, null))
                 {
                     PublishFailure(
-                        new EngineError(EngineErrorCode.UnexpectedFailure, $"The major-record page could not be projected: {exception.Message}"),
+                        new EngineError(EngineErrorCode.UnexpectedFailure, $"The major records could not be loaded: {exception.Message}"),
                         RetryKind.Page);
                 }
             }).ConfigureAwait(false);
@@ -105,7 +131,7 @@ public sealed partial class MajorRecordBrowserViewModel
         {
             UiDispatcher.Post(() =>
             {
-                if (IsCurrentWorkspaceGeneration(workspaceId, generation, expectedRevision))
+                if (IsCurrentWorkspaceGeneration(workspaceId, generation, null))
                 {
                     SetBusy(false);
                 }

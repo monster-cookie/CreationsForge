@@ -8,11 +8,11 @@ using CreationsForge.Services.Interfaces;
 
 namespace CreationsForge.ViewModels;
 
-/// <summary>Coordinates paged major-record discovery, exact context selection, and native field comparison.</summary>
+/// <summary>Coordinates complete major-record discovery, exact context selection, and native field comparison.</summary>
 public sealed partial class MajorRecordBrowserViewModel : ViewModelBase, IDisposable
 {
-    /// <summary>The bounded number of winning contexts requested per desktop page.</summary>
-    internal const int PageSize = 100;
+    /// <summary>The bounded number of winning contexts requested per engine page while loading the complete tree.</summary>
+    internal const int PageSize = ReferenceSearchRequest.MaximumPageSize;
 
     /// <summary>Owns and serializes access to the application workspace.</summary>
     private readonly IWorkspaceCoordinator WorkspaceCoordinator;
@@ -23,11 +23,8 @@ public sealed partial class MajorRecordBrowserViewModel : ViewModelBase, IDispos
     /// <summary>Publishes bound state changes on the Avalonia UI thread.</summary>
     private readonly IUiDispatcher UiDispatcher;
 
-    /// <summary>Reloads the first winning-record page.</summary>
+    /// <summary>Reloads the complete winning-record tree.</summary>
     private readonly AsyncRelayCommand RefreshRelayCommand;
-
-    /// <summary>Loads the next engine-issued winning-record page.</summary>
-    private readonly AsyncRelayCommand LoadMoreRelayCommand;
 
     /// <summary>Repeats the most recent failed browser operation.</summary>
     private readonly AsyncRelayCommand RetryRelayCommand;
@@ -46,9 +43,6 @@ public sealed partial class MajorRecordBrowserViewModel : ViewModelBase, IDispos
 
     /// <summary>The currently accepted workspace revision.</summary>
     private WorkspaceRevision? RevisionValue;
-
-    /// <summary>The continuation token for the next winning-record page.</summary>
-    private string? ContinuationTokenValue;
 
     /// <summary>The loaded winning major-record rows.</summary>
     private IReadOnlyList<MajorRecordViewModel> RecordsValue = Array.Empty<MajorRecordViewModel>();
@@ -107,6 +101,9 @@ public sealed partial class MajorRecordBrowserViewModel : ViewModelBase, IDispos
     /// <summary>The current browser operation status.</summary>
     private string StatusTextValue = "No workspace is open.";
 
+    /// <summary>The number of records discovered in the active complete-tree load.</summary>
+    private int LoadingRecordCountValue;
+
     /// <summary>Whether record paging is active.</summary>
     private bool IsBusyValue;
 
@@ -142,10 +139,8 @@ public sealed partial class MajorRecordBrowserViewModel : ViewModelBase, IDispos
         BeforeFieldSourceValue = FormListBrowserViewModel.CreateFieldTreeSource(BeforeFieldsValue);
         AfterFieldSourceValue = FormListBrowserViewModel.CreateFieldTreeSource(AfterFieldsValue);
         RefreshRelayCommand = new AsyncRelayCommand(RefreshAsync, () => HasWorkspace && !IsBusy);
-        LoadMoreRelayCommand = new AsyncRelayCommand(LoadMoreAsync, () => HasWorkspace && HasMoreRecords && !IsBusy);
         RetryRelayCommand = new AsyncRelayCommand(RetryAsync, () => HasError && HasWorkspace && RetryKindValue != RetryKind.None);
         RefreshCommand = RefreshRelayCommand;
-        LoadMoreCommand = LoadMoreRelayCommand;
         RetryCommand = RetryRelayCommand;
         WorkspaceCoordinator.PropertyChanged += OnWorkspaceCoordinatorPropertyChanged;
     }
@@ -216,9 +211,6 @@ public sealed partial class MajorRecordBrowserViewModel : ViewModelBase, IDispos
     /// <summary>Gets whether a workspace is currently active.</summary>
     public bool HasWorkspace => WorkspaceCoordinator.CurrentWorkspace is not null;
 
-    /// <summary>Gets whether another winning-record page is available.</summary>
-    public bool HasMoreRecords => ContinuationTokenValue is not null;
-
     /// <summary>Gets whether record paging is active.</summary>
     public bool IsBusy => IsBusyValue;
 
@@ -231,22 +223,17 @@ public sealed partial class MajorRecordBrowserViewModel : ViewModelBase, IDispos
     /// <summary>Gets whether the browser has a visible operation message.</summary>
     public bool HasStatusText => !string.IsNullOrWhiteSpace(StatusTextValue);
 
-    /// <summary>Gets a concise loaded-page count.</summary>
-    public string LoadedRecordCountText => HasMoreRecords
-        ? $"Loaded records: {RecordsValue.Count:N0}+"
-        : $"Loaded records: {RecordsValue.Count:N0}";
+    /// <summary>Gets the discovered count while loading and the complete count after publication.</summary>
+    public string LoadedRecordCountText => $"Loaded records: {(IsBusy ? LoadingRecordCountValue : RecordsValue.Count):N0}";
 
-    /// <summary>Gets the command that reloads the first record page.</summary>
+    /// <summary>Gets the command that reloads the complete record tree.</summary>
     public ICommand RefreshCommand { get; }
-
-    /// <summary>Gets the command that requests the next record page.</summary>
-    public ICommand LoadMoreCommand { get; }
 
     /// <summary>Gets the command that repeats the most recent failed operation.</summary>
     public ICommand RetryCommand { get; }
 
     /// <summary>Starts the browser once its navigation-owned view is attached.</summary>
-    /// <returns>A task that completes after the initial record page is published.</returns>
+    /// <returns>A task that completes after the entire record tree is published.</returns>
     public Task StartAsync()
     {
         if (IsDisposed || IsStarted)
@@ -258,31 +245,11 @@ public sealed partial class MajorRecordBrowserViewModel : ViewModelBase, IDispos
         return RefreshAsync();
     }
 
-    /// <summary>Reloads the first page from the current workspace revision.</summary>
+    /// <summary>Reloads every admitted record from the current workspace revision.</summary>
     /// <returns>A task that completes after publication or cancellation.</returns>
     public Task RefreshAsync()
     {
         return BeginWorkspaceGenerationAsync();
-    }
-
-    /// <summary>Loads the next engine-issued page when one remains.</summary>
-    /// <returns>A task that completes after append publication or cancellation.</returns>
-    public Task LoadMoreAsync()
-    {
-        if (IsDisposed || IsBusyValue || ContinuationTokenValue is null || !RevisionValue.HasValue || WorkspaceCoordinator.CurrentWorkspace is not { } workspace)
-        {
-            return Task.CompletedTask;
-        }
-
-        SetBusy(true);
-        SetStatus("Loading the next major-record page...");
-        return LoadRecordPageAsync(
-            workspace.WorkspaceId,
-            WorkspaceGeneration,
-            RevisionValue.Value,
-            ContinuationTokenValue,
-            replace: false,
-            WorkspaceCancellation?.Token ?? CancellationToken.None);
     }
 
     /// <summary>Selects one winning record and loads its exact context choices before comparing defaults.</summary>

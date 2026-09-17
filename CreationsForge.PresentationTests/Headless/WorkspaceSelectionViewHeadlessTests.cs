@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Enums;
@@ -65,6 +66,8 @@ public sealed class WorkspaceSelectionViewHeadlessTests
             ControlFinder.FindByAutomationId<TextBlock>(view, "SelectedPluginDescription").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<Button>(view, "RefreshPluginsButton").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<Button>(view, "CreatePluginButton").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<ComboBox>(view, "NewPluginExtensionSelector").ShouldBeNull();
+            ControlFinder.FindByAutomationId<ComboBox>(view, "NewPluginMasterStyleSelector").ShouldBeNull();
             var readOnlyButton = ControlFinder.FindByAutomationId<Button>(view, "OpenPluginReadOnlyButton").ShouldNotBeNull();
             readOnlyButton.Content.ShouldBe("Open Read-Only");
             readOnlyButton.IsDefault.ShouldBeTrue();
@@ -73,6 +76,57 @@ public sealed class WorkspaceSelectionViewHeadlessTests
             ControlFinder.FindByAutomationId<TextBox>(view, "SourcePluginPath").ShouldBeNull();
             ControlFinder.FindByAutomationId<ListBox>(view, "WorkspaceLoadOrderList").ShouldBeNull();
             ControlFinder.FindByAutomationId<TextBox>(view, "OutputPluginPath").ShouldBeNull();
+
+            ControlFinder.FindByAutomationId<Button>(view, "CreatePluginButton")!
+                .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs();
+            var newPluginView = window.Content.ShouldBeOfType<NewPluginView>();
+            window.Title.ShouldBe("New Plugin");
+            ControlFinder.FindByAutomationId<ComboBox>(newPluginView, "NewPluginExtensionSelector").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<Button>(newPluginView, "CancelNewPluginButton")!
+                .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs();
+            window.Content.ShouldBeSameAs(view);
+            window.Title.ShouldBe("Open Plugin");
+        }
+        finally
+        {
+            window.Close();
+            coordinator.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        }
+    }
+
+    /// <summary>Verifies new-plugin choices are presented together in their own creation surface.</summary>
+    [AvaloniaFact]
+    public void NewPluginView_ShowHeadlessly_CollectsGameFileTypeAndMasterSize()
+    {
+        var dispatcher = new InlineUiDispatcher();
+        var factory = new FakeFormListWorkspaceFactory((request, _) =>
+            ValueTask.FromResult(EngineResult<IPluginWorkspace>.Failure(
+                new EngineError(EngineErrorCode.SourceOpenFailed, "Test factory does not open records."),
+                workspaceId: request.WorkspaceId)));
+        var coordinator = new WorkspaceCoordinator(factory, dispatcher, new LoggerConfiguration().CreateLogger());
+        var viewModel = new WorkspaceSelectionViewModel(
+            coordinator,
+            new FakeWorkspacePathPicker(),
+            new FakeGameSelectionService(),
+            dispatcher,
+            new LoggerConfiguration().CreateLogger());
+        var view = new NewPluginView(viewModel, _ => { });
+        var window = new Window { Content = view };
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            ControlFinder.FindByAutomationId<NewPluginView>(view, "NewPluginView").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<ComboBox>(view, "NewPluginGameSelector")!.ItemCount.ShouldBe(3);
+            ControlFinder.FindByAutomationId<ComboBox>(view, "NewPluginExtensionSelector")!.ItemCount.ShouldBe(3);
+            ControlFinder.FindByAutomationId<ComboBox>(view, "NewPluginMasterStyleSelector").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<TextBlock>(view, "NewPluginDataDirectory").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<Button>(view, "ConfirmNewPluginButton").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<Button>(view, "CancelNewPluginButton").ShouldNotBeNull();
         }
         finally
         {
