@@ -13,17 +13,17 @@ namespace CreationsForge.PresentationTests.ViewModels;
 /// <summary>Verifies paged major-record grouping, exact contexts, and native field comparison presentation.</summary>
 public sealed class MajorRecordBrowserViewModelTests
 {
-    /// <summary>Verifies source-plugin pages append by family and a selected record compares synchronized origin and winner fields.</summary>
+    /// <summary>Verifies winning pages include master records and a selected record compares synchronized origin and winner fields.</summary>
     /// <returns>A task that completes after paging and comparison publication.</returns>
     [Fact]
-    public async Task StartLoadMoreAndSelectRecord_PreserveSourcePagesContextsAndSynchronizedFields()
+    public async Task StartLoadMoreAndSelectRecord_PreserveWinningPagesContextsAndSynchronizedFields()
     {
         var workspaceId = Guid.NewGuid();
         var revision = new WorkspaceRevision(Guid.NewGuid(), 9);
         var sourceMod = ModKey.FromNameAndExtension("Source.esm");
         var patchMod = ModKey.FromNameAndExtension("Patch.esm");
         var bookKey = new FormKey(sourceMod, 0x100);
-        var keywordKey = new FormKey(sourceMod, 0x200);
+        var keywordKey = new FormKey(patchMod, 0x200);
         var sourcePath = AbsolutePath(sourceMod.FileName);
         var patchPath = AbsolutePath(patchMod.FileName);
         var pageRequests = new List<MajorRecordListRequest>();
@@ -49,8 +49,8 @@ public sealed class MajorRecordBrowserViewModelTests
             {
                 pageRequests.Add(request);
                 var records = request.ContinuationToken is null
-                    ? new[] { Match(bookKey, "Book", "OriginalBook", sourceMod, sourcePath, 0, PluginRole.Source) }
-                    : new[] { Match(keywordKey, "Keyword", "ExampleKeyword", sourceMod, sourcePath, 0, PluginRole.Source) };
+                    ? new[] { Match(bookKey, "Book", "ExampleBook", patchMod, patchPath, 1, PluginRole.LoadOrder) }
+                    : new[] { Match(keywordKey, "Keyword", "ExampleKeyword", patchMod, patchPath, 1, PluginRole.LoadOrder) };
                 return ValueTask.FromResult(EngineResult<MajorRecordListPage>.Success(
                     new MajorRecordListPage(records, request.ContinuationToken is null ? "page-two" : null),
                     workspaceId,
@@ -111,7 +111,7 @@ public sealed class MajorRecordBrowserViewModelTests
 
         pageRequests.Count.ShouldBe(1);
         pageRequests[0].MaximumResults.ShouldBe(MajorRecordBrowserViewModel.PageSize);
-        pageRequests[0].Scope.ShouldBe(RecordScope.Source);
+        pageRequests[0].Scope.ShouldBe(RecordScope.WinningOverrides);
         viewModel.Records.ShouldHaveSingleItem().RecordType.ShouldBe("Book");
         viewModel.RecordGroups.ShouldHaveSingleItem().Label.ShouldBe("Book (1)");
         viewModel.HasMoreRecords.ShouldBeTrue();

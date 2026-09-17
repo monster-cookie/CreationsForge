@@ -194,6 +194,47 @@ public sealed class ReferenceReaderTests
             match.ContainingModKey == source.ModKey);
     }
 
+    /// <summary>Verifies a winning-record browse includes unmodified records from every admitted master and the output.</summary>
+    [Fact]
+    public void Search_WinningOverridesIncludesMasterOnlyRecordsAndOutputChanges()
+    {
+        var baseMaster = new StarfieldMod("Base.esm", StarfieldRelease.Starfield);
+        var secondMaster = new StarfieldMod("Second.esm", StarfieldRelease.Starfield);
+        var output = new StarfieldMod("Output.esp", StarfieldRelease.Starfield);
+        var overriddenKey = new FormKey(baseMaster.ModKey, 0x800);
+        var masterOnlyKey = new FormKey(secondMaster.ModKey, 0x801);
+        var outputOnlyKey = new FormKey(output.ModKey, 0x802);
+        baseMaster.Books.Add(new Book(overriddenKey, StarfieldRelease.Starfield) { EditorID = "VisibleBase" });
+        secondMaster.Keywords.Add(new Keyword(masterOnlyKey, StarfieldRelease.Starfield) { EditorID = "VisibleMaster" });
+        output.Books.Add(new Book(overriddenKey, StarfieldRelease.Starfield) { EditorID = "VisibleOverride" });
+        output.Books.Add(new Book(outputOnlyKey, StarfieldRelease.Starfield) { EditorID = "VisibleOutput" });
+        var mods = new[] { baseMaster, secondMaster, output };
+        var sources = mods.Select((mod, index) => new ReferenceSource(
+            mod,
+            Path.Combine(Path.GetTempPath(), "CreationsForge.RecordReading", $"{index}-{mod.ModKey.FileName}"),
+            index,
+            index switch
+            {
+                0 => PluginRole.Source,
+                1 => PluginRole.LoadOrder,
+                _ => PluginRole.Output
+            })).ToArray();
+        var reader = new ReferenceReader(sources);
+
+        var result = reader.Search(
+            new ReferenceSearchRequest("Visible", 10, scope: RecordScope.WinningOverrides),
+            Guid.NewGuid(),
+            new WorkspaceRevision(Guid.NewGuid(), 0));
+
+        result.Succeeded.ShouldBeTrue(result.Error?.Message);
+        result.Value!.Matches.Select(match => match.FormKey)
+            .ShouldBe([overriddenKey, outputOnlyKey, masterOnlyKey], ignoreOrder: true);
+        result.Value.Matches.Single(match => match.FormKey == overriddenKey).ContainingModKey
+            .ShouldBe(output.ModKey);
+        result.Value.Matches.Single(match => match.FormKey == masterOnlyKey).ContainingModKey
+            .ShouldBe(secondMaster.ModKey);
+    }
+
     /// <summary>Verifies cursor integrity binds workspace, revision, query, scope, filter, and page size.</summary>
     [Fact]
     public void Search_RejectsContinuationTokenBindingMismatch()

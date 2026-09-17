@@ -143,7 +143,7 @@ public sealed partial class MajorRecordBrowserViewModel
         }
 
         var pageResult = await workspace.ListMajorRecordsAsync(
-            new MajorRecordListRequest(PageSize, continuationToken, RecordScope.Source),
+            new MajorRecordListRequest(PageSize, continuationToken, RecordScope.WinningOverrides),
             cancellationToken).ConfigureAwait(false);
         if (!pageResult.Succeeded || pageResult.Value is null)
         {
@@ -169,7 +169,7 @@ public sealed partial class MajorRecordBrowserViewModel
             warnings: warnings);
     }
 
-    /// <summary>Clears prior selection work and loads exact contexts for the selected source-plugin record.</summary>
+    /// <summary>Clears prior selection work and loads exact contexts for the selected winning record.</summary>
     /// <returns>A task that completes after context options and their default comparison publish.</returns>
     private Task BeginSelectionGenerationAsync()
     {
