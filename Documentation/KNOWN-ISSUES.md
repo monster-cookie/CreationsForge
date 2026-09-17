@@ -1,6 +1,6 @@
-﻿# Known Issues
+# Known Issues
 
-- Plugin authoring is limited to FormLists (FLST) for Starfield, Fallout 4, and Skyrim Special Edition. Finding another record family in reference lookup does not make it editable. General plugin editing, automatic conflict resolution, and asset preview are not provided by this workflow.
+- Major-record browsing and comparison are read-only for Starfield, Fallout 4, and Skyrim Special Edition. Plugin authoring is limited to FormLists (FLST); inspecting another record family does not make it editable. General plugin editing, automatic conflict resolution, and asset preview are not provided by this workflow.
 - An installed Starfield source failed when a prior build eagerly parsed unrelated base-game record groups. The current implementation materializes FormLists separately and uses lazy read-only overlays for general reference discovery, but the correction still requires validation against installed data on the affected machine. If opening or a later reference search fails, retain the complete phase log.
 - Installed Fallout 4 and Skyrim Special Edition validation inputs have not yet been supplied. Their plugin implementations do not establish compatibility with every installed plugin or game version.
 - Desktop and MCP workspaces are independent and do not synchronize live. If source or output files change externally, saving or continuing may be blocked. Read the diagnostic and resolve the conflict; do not assume another workspace's edits are visible.

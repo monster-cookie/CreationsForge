@@ -15,7 +15,7 @@ public sealed class ServerInfoTool : McpToolBase
 
     /// <summary>The closed success and error structured-output alternatives advertised to MCP clients.</summary>
     private static readonly JsonElement OutputSchema = ParseSchema(
-        """{"oneOf":[{"type":"object","properties":{"ok":{"const":true},"result":{"type":"object","properties":{"serverName":{"const":"CreationsForge"},"serverVersion":{"type":"string","minLength":1},"transport":{"const":"stdio"},"lifecycle":{"type":"object","properties":{"state":{"const":"running"},"activeWorkspaceCount":{"type":"integer","minimum":0},"activeWorkspaceIds":{"type":"array","items":{"type":"string","format":"uuid"},"uniqueItems":true}},"required":["state","activeWorkspaceCount","activeWorkspaceIds"],"additionalProperties":false},"capabilities":{"type":"array","items":{"type":"string","enum":["server_info","workspace_registry","workspace_open","workspace_close","plugins_list","formlists_list","references_search","formlist_inspect","formlist_compare","workspace_state","metadata_read","save","save_recover","save_repair","output_recovery_resolve","output_select","formlist_begin_edit","formlist_apply_edit","workspace_preview","workspace_discard","output_reopen","formlist_edit_schemas_list","formlist_edit_schema_read"]},"uniqueItems":true}},"required":["serverName","serverVersion","transport","lifecycle","capabilities"],"additionalProperties":false}},"required":["ok","result"],"additionalProperties":false},{"type":"object","properties":{"ok":{"const":false},"error":{"type":"object","properties":{"code":{"type":"string","minLength":1},"message":{"type":"string","minLength":1}},"required":["code","message"],"additionalProperties":false}},"required":["ok","error"],"additionalProperties":false}]}""");
+        """{"oneOf":[{"type":"object","properties":{"ok":{"const":true},"result":{"type":"object","properties":{"serverName":{"const":"CreationsForge"},"serverVersion":{"type":"string","minLength":1},"transport":{"const":"stdio"},"lifecycle":{"type":"object","properties":{"state":{"const":"running"},"activeWorkspaceCount":{"type":"integer","minimum":0},"activeWorkspaceIds":{"type":"array","items":{"type":"string","format":"uuid"},"uniqueItems":true}},"required":["state","activeWorkspaceCount","activeWorkspaceIds"],"additionalProperties":false},"capabilities":{"type":"array","items":{"type":"string","enum":["server_info","workspace_registry","workspace_open","workspace_close","plugins_list","formlists_list","references_search","records_list","record_inspect","record_compare","formlist_inspect","formlist_compare","workspace_state","metadata_read","save","save_recover","save_repair","output_recovery_resolve","output_select","formlist_begin_edit","formlist_apply_edit","workspace_preview","workspace_discard","output_reopen","formlist_edit_schemas_list","formlist_edit_schema_read"]},"uniqueItems":true}},"required":["serverName","serverVersion","transport","lifecycle","capabilities"],"additionalProperties":false}},"required":["ok","result"],"additionalProperties":false},{"type":"object","properties":{"ok":{"const":false},"error":{"type":"object","properties":{"code":{"type":"string","minLength":1},"message":{"type":"string","minLength":1}},"required":["code","message"],"additionalProperties":false}},"required":["ok","error"],"additionalProperties":false}]}""");
 
     /// <summary>The host-owned registry whose current lifecycle state is projected by this tool.</summary>
     private readonly McpWorkspaceRegistry WorkspaceRegistry;
@@ -128,6 +128,9 @@ public sealed class ServerInfoTool : McpToolBase
                 "plugins_list",
                 "formlists_list",
                 "references_search",
+                "records_list",
+                "record_inspect",
+                "record_compare",
                 "formlist_inspect",
                 "formlist_compare",
             });
@@ -142,6 +145,9 @@ public sealed class ServerInfoTool : McpToolBase
             "plugins_list",
             "formlists_list",
             "references_search",
+            "records_list",
+            "record_inspect",
+            "record_compare",
             "formlist_inspect",
             "formlist_compare",
             "workspace_state",

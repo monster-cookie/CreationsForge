@@ -84,7 +84,7 @@ public sealed class StarfieldFormListEditWireCodec : IFormListEditWireCodec
     /// <summary>The Starfield command that replaces every ordered conditional entry.</summary>
     internal const string SetConditionalEntriesCommand = "starfield.form-list.set-conditional-entries";
 
-    /// <summary>The exact supported bit mask in Mutagen.Bethesda.Starfield 0.55.0-alpha.48.</summary>
+    /// <summary>The exact supported bit mask in Mutagen.Bethesda.Starfield 0.55.0-alpha.53.</summary>
     internal static readonly int SupportedMajorRecordFlagMask = unchecked((int)Enum
         .GetValues<StarfieldMajorRecord.StarfieldMajorRecordFlag>()
         .Aggregate(

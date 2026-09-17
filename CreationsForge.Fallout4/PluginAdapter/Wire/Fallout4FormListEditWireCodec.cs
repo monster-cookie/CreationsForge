@@ -58,7 +58,7 @@ public sealed class Fallout4FormListEditWireCodec : IFormListEditWireCodec
     /// <summary>The Fallout 4 command that sets the complete translated name.</summary>
     internal const string SetNameCommand = "fallout4.form-list.set-name";
 
-    /// <summary>The exact supported bit mask in Mutagen.Bethesda.Fallout4 0.55.0-alpha.48.</summary>
+    /// <summary>The exact supported bit mask in Mutagen.Bethesda.Fallout4 0.55.0-alpha.53.</summary>
     internal const int SupportedMajorRecordFlagMask =
         (int)(Fallout4MajorRecord.Fallout4MajorRecordFlag.ESM
             | Fallout4MajorRecord.Fallout4MajorRecordFlag.NotPlayable

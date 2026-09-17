@@ -11,7 +11,7 @@ namespace CreationsForge.RecordFieldGenerator;
 internal sealed partial class CodecEmitter
 {
     /// <summary>The installed package version represented by the generated source.</summary>
-    private const string PackageVersion = "0.55.0-alpha.48";
+    private const string PackageVersion = "0.55.0-alpha.53";
 
     /// <summary>The maximum concrete visitor count emitted into one generated source file.</summary>
     private const int TypesPerFile = 16;

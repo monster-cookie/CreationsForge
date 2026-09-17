@@ -30,6 +30,9 @@ public sealed class McpPluginStdioProtocolTests
         "creationsforge_plugins_list",
         "creationsforge_formlists_list",
         "creationsforge_references_search",
+        "creationsforge_records_list",
+        "creationsforge_record_inspect",
+        "creationsforge_record_compare",
         "creationsforge_formlist_inspect",
         "creationsforge_formlist_compare",
         "creationsforge_workspace_state",
@@ -71,12 +74,14 @@ public sealed class McpPluginStdioProtocolTests
         var expectedPlugins = GetValue(await directWorkspace.ListPluginsAsync(cancellationToken));
         var expectedLists = GetValue(await directWorkspace.ListFormListsAsync(RecordScope.Source, cancellationToken));
         var expectedMatches = await ReadDirectReferenceMatchesAsync(directWorkspace, cancellationToken);
+        var expectedMajorRecords = await ReadDirectMajorRecordsAsync(directWorkspace, cancellationToken);
         var sourceSelection = new ReferenceRequest(fixture.SourceListFormKey, RecordScope.Source);
         var winningSelection = new ReferenceRequest(fixture.SourceListFormKey, RecordScope.WinningOverrides);
         var deletedSelection = new ReferenceRequest(fixture.DeletedListFormKey, RecordScope.WinningOverrides);
         var expectedSource = GetValue(await directWorkspace.ReadFormListViewAsync(sourceSelection, cancellationToken));
         var expectedWinning = GetValue(await directWorkspace.ReadFormListViewAsync(winningSelection, cancellationToken));
         var expectedDeleted = GetValue(await directWorkspace.ReadFormListViewAsync(deletedSelection, cancellationToken));
+        var expectedMajorSource = GetValue(await directWorkspace.ReadMajorRecordViewAsync(sourceSelection, cancellationToken));
         expectedSource.Context.Status.ShouldBe(ReferenceResolutionStatus.Resolved);
         expectedSource.Context.ContainingModKey.ShouldBe(fixture.SourceModKey);
         expectedWinning.Context.Status.ShouldBe(ReferenceResolutionStatus.Resolved);
@@ -86,6 +91,9 @@ public sealed class McpPluginStdioProtocolTests
         expectedMatches.ShouldNotBeEmpty();
         var expectedComparison = GetValue(await directWorkspace.CompareFormListAsync(
             new CompareFormListRequest(sourceSelection, winningSelection),
+            cancellationToken));
+        var expectedMajorComparison = GetValue(await directWorkspace.CompareMajorRecordAsync(
+            new CompareMajorRecordRequest(sourceSelection, winningSelection),
             cancellationToken));
         expectedComparison.Changes.ShouldNotBeEmpty();
 
@@ -145,10 +153,25 @@ public sealed class McpPluginStdioProtocolTests
             cancellationToken);
         AssertReferenceMatches(expectedMatches, actualMatches);
 
+        var actualMajorRecords = await ReadArrayPagesAsync(
+            client,
+            "creationsforge_records_list",
+            new Dictionary<string, object?>
+            {
+                ["workspaceId"] = workspaceId.ToString("D"),
+                ["scope"] = "source",
+                ["maxResults"] = 1,
+            },
+            "records",
+            cancellationToken);
+        AssertReferenceMatches(expectedMajorRecords, actualMajorRecords);
+
         await AssertInspectionMatchesAsync(client, workspaceId, sourceSelection, expectedSource, cancellationToken);
         await AssertInspectionMatchesAsync(client, workspaceId, winningSelection, expectedWinning, cancellationToken);
         await AssertInspectionMatchesAsync(client, workspaceId, deletedSelection, expectedDeleted, cancellationToken);
         await AssertComparisonMatchesAsync(client, workspaceId, sourceSelection, winningSelection, expectedComparison, cancellationToken);
+        await AssertMajorRecordInspectionMatchesAsync(client, workspaceId, sourceSelection, expectedMajorSource, cancellationToken);
+        await AssertMajorRecordComparisonMatchesAsync(client, workspaceId, sourceSelection, winningSelection, expectedMajorComparison, cancellationToken);
 
         var invalidWorkspace = await client.CallToolAsync(
             "creationsforge_plugins_list",
@@ -222,7 +245,7 @@ public sealed class McpPluginStdioProtocolTests
             var annotations = tool.ProtocolTool.Annotations.ShouldNotBeNull();
             annotations.DestructiveHint.ShouldBe(tool.Name is "creationsforge_save" or "creationsforge_save_repair" or "creationsforge_workspace_discard" or "creationsforge_output_reopen");
             annotations.OpenWorldHint.ShouldBe(false);
-            annotations.ReadOnlyHint.ShouldBe(tool.Name is "creationsforge_server_info" or "creationsforge_plugins_list" or "creationsforge_formlists_list" or "creationsforge_references_search" or "creationsforge_formlist_inspect" or "creationsforge_formlist_compare" or "creationsforge_workspace_state" or "creationsforge_metadata_read" or "creationsforge_save_recover" or "creationsforge_workspace_preview" or "creationsforge_formlist_edit_schemas_list" or "creationsforge_formlist_edit_schema_read");
+            annotations.ReadOnlyHint.ShouldBe(tool.Name is "creationsforge_server_info" or "creationsforge_plugins_list" or "creationsforge_formlists_list" or "creationsforge_references_search" or "creationsforge_records_list" or "creationsforge_record_inspect" or "creationsforge_record_compare" or "creationsforge_formlist_inspect" or "creationsforge_formlist_compare" or "creationsforge_workspace_state" or "creationsforge_metadata_read" or "creationsforge_save_recover" or "creationsforge_workspace_preview" or "creationsforge_formlist_edit_schemas_list" or "creationsforge_formlist_edit_schema_read");
             annotations.IdempotentHint.ShouldBe(tool.Name != "creationsforge_workspace_open");
         }
     }
@@ -326,6 +349,29 @@ public sealed class McpPluginStdioProtocolTests
         return matches;
     }
 
+    /// <summary>Reads every direct source major-record page using the same page size as the protocol request.</summary>
+    /// <param name="workspace">The independently opened real workspace.</param>
+    /// <param name="cancellationToken">The bounded test token.</param>
+    /// <returns>All direct source contexts in deterministic page order.</returns>
+    private static async Task<IReadOnlyList<ReferenceSearchMatch>> ReadDirectMajorRecordsAsync(
+        IFormListWorkspace workspace,
+        CancellationToken cancellationToken)
+    {
+        var records = new List<ReferenceSearchMatch>();
+        string? cursor = null;
+        do
+        {
+            var page = GetValue(await workspace.ListMajorRecordsAsync(
+                new MajorRecordListRequest(1, cursor, RecordScope.Source),
+                cancellationToken));
+            records.AddRange(page.Records);
+            cursor = page.ContinuationToken;
+        }
+        while (cursor is not null);
+
+        return records;
+    }
+
     /// <summary>Checks complete MCP plugin projections against public direct engine results.</summary>
     /// <param name="expected">The direct engine plugin list.</param>
     /// <param name="actual">The recursively paged MCP plugin list.</param>
@@ -419,6 +465,37 @@ public sealed class McpPluginStdioProtocolTests
         JsonNode.DeepEquals(expectedNode, actual).ShouldBeTrue();
     }
 
+    /// <summary>Reconstructs one complete native major-record view through production stdio.</summary>
+    /// <param name="client">The initialized production stdio client.</param>
+    /// <param name="workspaceId">The MCP workspace identity.</param>
+    /// <param name="selection">The exact contextual selection.</param>
+    /// <param name="expected">The corresponding direct native-field view.</param>
+    /// <param name="cancellationToken">The bounded test token.</param>
+    /// <returns>A task that completes after recursive paging and comparison.</returns>
+    private static async Task AssertMajorRecordInspectionMatchesAsync(
+        McpClient client,
+        Guid workspaceId,
+        ReferenceRequest selection,
+        MajorRecordReadView expected,
+        CancellationToken cancellationToken)
+    {
+        var root = GetResult(await client.CallToolAsync(
+            "creationsforge_record_inspect",
+            CreateInspectArguments(workspaceId, selection, string.Empty),
+            cancellationToken: cancellationToken));
+        AssertContextMatches(expected.Context, root.GetProperty("context"));
+        ReadNullableString(root.GetProperty("recordType")).ShouldBe(expected.RecordType);
+        var actual = await ReconstructJsonAsync(
+            path => ReadJsonPagesAsync(
+                client,
+                "creationsforge_record_inspect",
+                CreateInspectArguments(workspaceId, selection, path),
+                cancellationToken),
+            string.Empty);
+        var expectedNode = JsonNode.Parse(expected.Record.ShouldNotBeNull().GetRawText());
+        JsonNode.DeepEquals(expectedNode, actual).ShouldBeTrue();
+    }
+
     /// <summary>Checks source-to-winning comparison contexts and semantic changes against a direct engine comparison.</summary>
     /// <param name="client">The initialized production stdio client.</param>
     /// <param name="workspaceId">The MCP workspace identity.</param>
@@ -472,6 +549,55 @@ public sealed class McpPluginStdioProtocolTests
             ReadNullableInt32(changes[index].GetProperty("afterPosition")).ShouldBe(expected.Changes[index].AfterPosition);
         }
 
+    }
+
+    /// <summary>Checks native semantic changes and reconstructs both complete field views through production stdio.</summary>
+    /// <param name="client">The initialized production stdio client.</param>
+    /// <param name="workspaceId">The MCP workspace identity.</param>
+    /// <param name="before">The prior exact context.</param>
+    /// <param name="after">The resulting exact context.</param>
+    /// <param name="expected">The corresponding direct native comparison.</param>
+    /// <param name="cancellationToken">The bounded test token.</param>
+    /// <returns>A task that completes after all independently paged sections are checked.</returns>
+    private static async Task AssertMajorRecordComparisonMatchesAsync(
+        McpClient client,
+        Guid workspaceId,
+        ReferenceRequest before,
+        ReferenceRequest after,
+        MajorRecordComparison expected,
+        CancellationToken cancellationToken)
+    {
+        var changePages = await ReadJsonPagesAsync(
+            client,
+            "creationsforge_record_compare",
+            CreateCompareArguments(workspaceId, before, after, "changes", string.Empty),
+            cancellationToken);
+        var changes = changePages.SelectMany(page => page.GetProperty("changes").EnumerateArray())
+            .Select(change => change.Clone())
+            .ToArray();
+        changes.Length.ShouldBe(expected.Changes.Count);
+        for (var index = 0; index < expected.Changes.Count; index++)
+        {
+            changes[index].GetProperty("fieldIdentifier").GetString().ShouldBe(expected.Changes[index].FieldIdentifier);
+            changes[index].GetProperty("kind").GetString().ShouldBe(ChangeKindName(expected.Changes[index].Kind));
+        }
+
+        var actualBefore = await ReconstructJsonAsync(
+            path => ReadJsonPagesAsync(
+                client,
+                "creationsforge_record_compare",
+                CreateCompareArguments(workspaceId, before, after, "before", path),
+                cancellationToken),
+            string.Empty);
+        var actualAfter = await ReconstructJsonAsync(
+            path => ReadJsonPagesAsync(
+                client,
+                "creationsforge_record_compare",
+                CreateCompareArguments(workspaceId, before, after, "after", path),
+                cancellationToken),
+            string.Empty);
+        JsonNode.DeepEquals(JsonNode.Parse(expected.Before.ShouldNotBeNull().GetRawText()), actualBefore).ShouldBeTrue();
+        JsonNode.DeepEquals(JsonNode.Parse(expected.After.ShouldNotBeNull().GetRawText()), actualAfter).ShouldBeTrue();
     }
 
     /// <summary>Reads every MCP inspection page for one JSON Pointer.</summary>

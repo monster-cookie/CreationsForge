@@ -19,18 +19,25 @@ public sealed class WorkspaceShellView : UserControl
     /// <summary>The FormList browser hosted for the current navigation scope.</summary>
     private readonly FormListBrowserView FormListBrowserView;
 
+    /// <summary>The read-only major-record browser hosted for the current navigation scope.</summary>
+    private readonly MajorRecordBrowserView MajorRecordBrowserView;
+
     /// <summary>Initializes the workspace shell view.</summary>
     /// <param name="viewModel">The shell state and commands.</param>
     /// <param name="formListBrowserView">The FormList browser for this navigation scope.</param>
+    /// <param name="majorRecordBrowserView">The read-only major-record browser for this navigation scope.</param>
     /// <exception cref="ArgumentNullException">Thrown when a required dependency is <see langword="null"/>.</exception>
     public WorkspaceShellView(
         WorkspaceShellViewModel viewModel,
-        FormListBrowserView formListBrowserView)
+        FormListBrowserView formListBrowserView,
+        MajorRecordBrowserView majorRecordBrowserView)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(formListBrowserView);
+        ArgumentNullException.ThrowIfNull(majorRecordBrowserView);
         ViewModel = viewModel;
         FormListBrowserView = formListBrowserView;
+        MajorRecordBrowserView = majorRecordBrowserView;
         DataContext = ViewModel;
         AutomationProperties.SetAutomationId(this, "WorkspaceShellView");
         Content = BuildContent();
@@ -64,11 +71,29 @@ public sealed class WorkspaceShellView : UserControl
             Child = toolbar
         };
 
+        var recordsTab = new TabItem
+        {
+            Header = "All Records",
+            Content = MajorRecordBrowserView
+        };
+        AutomationProperties.SetAutomationId(recordsTab, "MajorRecordBrowserTab");
+        var formListsTab = new TabItem
+        {
+            Header = "FormList Authoring",
+            Content = FormListBrowserView
+        };
+        AutomationProperties.SetAutomationId(formListsTab, "FormListBrowserTab");
+        var browsers = new TabControl
+        {
+            ItemsSource = new[] { recordsTab, formListsTab },
+            SelectedIndex = 0
+        };
+        AutomationProperties.SetAutomationId(browsers, "WorkspaceBrowserTabs");
         var contentHost = new Border
         {
             Background = App.GetApplicationBrush(App.ApplicationSurfaceBrushKey),
             Padding = new Thickness(24),
-            Child = FormListBrowserView
+            Child = browsers
         };
         AutomationProperties.SetAutomationId(contentHost, "WorkspaceContentHost");
 
@@ -83,10 +108,30 @@ public sealed class WorkspaceShellView : UserControl
 
         var activePluginCount = CreateBrowserStatusText(
             nameof(FormListBrowserViewModel.ActivePluginRecordCountText),
-            "ActivePluginRecordCountText");
+            "ActivePluginRecordCountText",
+            FormListBrowserView.BrowserViewModel);
         var loadedCount = CreateBrowserStatusText(
             nameof(FormListBrowserViewModel.LoadedRecordCountText),
-            "LoadedRecordCountText");
+            "LoadedRecordCountText",
+            FormListBrowserView.BrowserViewModel);
+        var majorLoadedCount = CreateBrowserStatusText(
+            nameof(MajorRecordBrowserViewModel.LoadedRecordCountText),
+            "WorkspaceMajorRecordLoadedCountText",
+            MajorRecordBrowserView.BrowserViewModel);
+        activePluginCount.IsVisible = false;
+        loadedCount.IsVisible = false;
+        browsers.PropertyChanged += (_, args) =>
+        {
+            if (args.Property.Name != nameof(TabControl.SelectedIndex))
+            {
+                return;
+            }
+
+            var formListSelected = browsers.SelectedIndex == 1;
+            activePluginCount.IsVisible = formListSelected;
+            loadedCount.IsVisible = formListSelected;
+            majorLoadedCount.IsVisible = !formListSelected;
+        };
         var statusFields = new StackPanel
         {
             Orientation = Orientation.Horizontal,
@@ -96,7 +141,8 @@ public sealed class WorkspaceShellView : UserControl
             {
                 status,
                 activePluginCount,
-                loadedCount
+                loadedCount,
+                majorLoadedCount
             }
         };
         AutomationProperties.SetAutomationId(statusFields, "WorkspaceStatusFields");
@@ -138,11 +184,12 @@ public sealed class WorkspaceShellView : UserControl
         };
     }
 
-    /// <summary>Creates one footer count bound directly to the hosted browser's unfiltered snapshot.</summary>
+    /// <summary>Creates one footer count bound directly to its hosted browser's unfiltered snapshot.</summary>
     /// <param name="propertyName">The formatted browser property to display.</param>
     /// <param name="automationId">The stable automation identity.</param>
+    /// <param name="source">The browser view model that owns the formatted count.</param>
     /// <returns>The configured footer text.</returns>
-    private TextBlock CreateBrowserStatusText(string propertyName, string automationId)
+    private static TextBlock CreateBrowserStatusText(string propertyName, string automationId, object source)
     {
         var text = new TextBlock
         {
@@ -152,7 +199,7 @@ public sealed class WorkspaceShellView : UserControl
         App.ApplyApplicationTextForeground(text);
         text.Bind(TextBlock.TextProperty, new Binding(propertyName)
         {
-            Source = FormListBrowserView.BrowserViewModel
+            Source = source
         });
         AutomationProperties.SetAutomationId(text, automationId);
         return text;

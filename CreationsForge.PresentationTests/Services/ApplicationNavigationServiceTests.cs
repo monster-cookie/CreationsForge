@@ -33,7 +33,7 @@ public sealed class ApplicationNavigationServiceTests
             navigation.ShowWorkspaceShell();
 
             var firstView = windowService.Content.ShouldBeOfType<WorkspaceShellView>();
-            coordinator.SubscriberCount.ShouldBe(4);
+            coordinator.SubscriberCount.ShouldBe(5);
             arbiters.ShouldHaveSingleItem();
 
             (await navigation.TryShowSettingsAsync()).ShouldBeTrue();
@@ -45,7 +45,7 @@ public sealed class ApplicationNavigationServiceTests
             navigation.ShowWorkspaceShell();
 
             windowService.Content.ShouldBeOfType<WorkspaceShellView>().ShouldNotBeSameAs(firstView);
-            coordinator.SubscriberCount.ShouldBe(4);
+            coordinator.SubscriberCount.ShouldBe(5);
             arbiters.Count.ShouldBe(2);
             arbiters[1].ShouldNotBeSameAs(arbiters[0]);
         }
@@ -130,6 +130,8 @@ public sealed class ApplicationNavigationServiceTests
             .As<IWorkspaceEditParticipant>()
             .InstancePerLifetimeScope();
         builder.RegisterType<FormListBrowserView>().InstancePerLifetimeScope();
+        builder.RegisterType<MajorRecordBrowserViewModel>().InstancePerLifetimeScope();
+        builder.RegisterType<MajorRecordBrowserView>().InstancePerLifetimeScope();
         builder.RegisterType<WorkspaceChangesViewModel>().InstancePerLifetimeScope();
         builder.RegisterType<ApplicationNavigationService>()
             .As<IApplicationNavigationService>()

@@ -176,6 +176,29 @@ public sealed class StarfieldPluginSourceReadTests
             unsupportedRead.RecordType.ShouldBe("Book");
             unsupportedRead.Context.ContainingModKey.ShouldBe(fixture.SourceModKey);
 
+            var book = sources.ReadRecordContext(
+                new ReferenceRequest(fixture.BookFormKey, RecordScope.Source),
+                TestContext.Current.CancellationToken);
+            book.Succeeded.ShouldBeTrue(book.Error?.Message);
+            book.Value!.Context.Status.ShouldBe(ReferenceResolutionStatus.Resolved);
+            book.Value.Context.ContainingModKey.ShouldBe(fixture.SourceModKey);
+            book.Value.RecordType.ShouldBe("Book");
+            var bookRecord = book.Value.Record.ShouldBeOfType<Book>();
+            bookRecord.Name!.String.ShouldBe("Referenced book");
+            bookRecord.Name.TryLookup(Mutagen.Bethesda.Strings.Language.French, out var frenchBookName).ShouldBeTrue();
+            frenchBookName.ShouldBe("Livre référence");
+            using var bookStream = new MemoryStream();
+            using (var writer = new System.Text.Json.Utf8JsonWriter(bookStream))
+            {
+                new CreationsForge.Core.Engine.RecordInspection.MutagenMajorRecordInspector(
+                    typeof(StarfieldMajorRecord),
+                    "Mutagen.Bethesda.Starfield/0.55.0-alpha.53")
+                    .WriteReadView(book.Value.Record!, writer, TestContext.Current.CancellationToken);
+            }
+            using var bookDocument = System.Text.Json.JsonDocument.Parse(bookStream.ToArray());
+            bookDocument.RootElement.GetProperty("$type").GetString().ShouldBe(typeof(Book).FullName);
+            bookDocument.RootElement.GetProperty("Name").GetProperty("value").GetString().ShouldBe("Referenced book");
+
             warning.Succeeded.ShouldBeTrue(warning.Error?.Message);
             warning.Value!.Context.Status.ShouldBe(ReferenceResolutionStatus.Resolved);
             warning.Warnings.Count.ShouldBe(1);

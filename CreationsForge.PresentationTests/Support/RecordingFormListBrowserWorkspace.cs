@@ -21,6 +21,15 @@ internal sealed class RecordingFormListBrowserWorkspace : IFormListWorkspace
     /// <summary>The callback that supplies exact context comparison.</summary>
     private readonly Func<CompareFormListRequest, CancellationToken, ValueTask<EngineResult<FormListComparison>>> CompareAction;
 
+    /// <summary>The optional callback that supplies bounded major-record pages.</summary>
+    private readonly Func<MajorRecordListRequest, CancellationToken, ValueTask<EngineResult<MajorRecordListPage>>>? ListMajorRecordsAction;
+
+    /// <summary>The optional callback that supplies exact context search pages.</summary>
+    private readonly Func<ReferenceSearchRequest, CancellationToken, ValueTask<EngineResult<ReferenceSearchPage>>>? SearchReferencesAction;
+
+    /// <summary>The optional callback that supplies native major-record comparisons.</summary>
+    private readonly Func<CompareMajorRecordRequest, CancellationToken, ValueTask<EngineResult<MajorRecordComparison>>>? CompareMajorRecordAction;
+
     /// <summary>Initializes configurable browser reads for one deterministic workspace.</summary>
     /// <param name="workspaceId">The non-empty workspace identity.</param>
     /// <param name="revision">The current exact workspace revision.</param>
@@ -28,6 +37,9 @@ internal sealed class RecordingFormListBrowserWorkspace : IFormListWorkspace
     /// <param name="listPluginsAction">The callback that supplies participating plugins.</param>
     /// <param name="listFormListsAction">The callback that supplies FormList enumeration.</param>
     /// <param name="compareAction">The callback that supplies exact context comparison.</param>
+    /// <param name="listMajorRecordsAction">An optional callback that supplies bounded major-record pages.</param>
+    /// <param name="searchReferencesAction">An optional callback that supplies exact context search pages.</param>
+    /// <param name="compareMajorRecordAction">An optional callback that supplies native major-record comparisons.</param>
     /// <exception cref="ArgumentException">Thrown when <paramref name="workspaceId"/> is empty.</exception>
     /// <exception cref="ArgumentNullException">Thrown when any callback is <see langword="null"/>.</exception>
     public RecordingFormListBrowserWorkspace(
@@ -36,7 +48,10 @@ internal sealed class RecordingFormListBrowserWorkspace : IFormListWorkspace
         Func<CancellationToken, ValueTask<EngineResult<WorkspaceState>>> readStateAction,
         Func<CancellationToken, ValueTask<EngineResult<IReadOnlyList<PluginSummary>>>> listPluginsAction,
         Func<RecordScope, CancellationToken, ValueTask<EngineResult<IReadOnlyList<FormListSummary>>>> listFormListsAction,
-        Func<CompareFormListRequest, CancellationToken, ValueTask<EngineResult<FormListComparison>>> compareAction)
+        Func<CompareFormListRequest, CancellationToken, ValueTask<EngineResult<FormListComparison>>> compareAction,
+        Func<MajorRecordListRequest, CancellationToken, ValueTask<EngineResult<MajorRecordListPage>>>? listMajorRecordsAction = null,
+        Func<ReferenceSearchRequest, CancellationToken, ValueTask<EngineResult<ReferenceSearchPage>>>? searchReferencesAction = null,
+        Func<CompareMajorRecordRequest, CancellationToken, ValueTask<EngineResult<MajorRecordComparison>>>? compareMajorRecordAction = null)
     {
         if (workspaceId == Guid.Empty)
         {
@@ -53,6 +68,9 @@ internal sealed class RecordingFormListBrowserWorkspace : IFormListWorkspace
         ListPluginsAction = listPluginsAction;
         ListFormListsAction = listFormListsAction;
         CompareAction = compareAction;
+        ListMajorRecordsAction = listMajorRecordsAction;
+        SearchReferencesAction = searchReferencesAction;
+        CompareMajorRecordAction = compareMajorRecordAction;
     }
 
     /// <inheritdoc />
@@ -137,7 +155,29 @@ internal sealed class RecordingFormListBrowserWorkspace : IFormListWorkspace
         ReferenceSearchRequest request,
         CancellationToken cancellationToken = default)
     {
-        throw Unsupported();
+        return SearchReferencesAction is null
+            ? throw Unsupported()
+            : SearchReferencesAction(request, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public ValueTask<EngineResult<MajorRecordListPage>> ListMajorRecordsAsync(
+        MajorRecordListRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return ListMajorRecordsAction is null
+            ? throw Unsupported()
+            : ListMajorRecordsAction(request, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public ValueTask<EngineResult<MajorRecordComparison>> CompareMajorRecordAsync(
+        CompareMajorRecordRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return CompareMajorRecordAction is null
+            ? throw Unsupported()
+            : CompareMajorRecordAction(request, cancellationToken);
     }
 
     /// <inheritdoc />

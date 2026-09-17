@@ -6,6 +6,6 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Mutagen.Bethesda.Starfield" Version="0.55.0-alpha.48" />
+    <PackageReference Include="Mutagen.Bethesda.Starfield" Version="0.55.0-alpha.53" />
   </ItemGroup>
 </Project>

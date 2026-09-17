@@ -2,7 +2,7 @@ using Mutagen.Bethesda.Plugins.Records;
 
 namespace CreationsForge.Core.Engine.Contracts;
 
-/// <summary>Carries one detached record together with its exact selected FormList context.</summary>
+/// <summary>Carries one detached native major record with its exact selected plugin context and provenance.</summary>
 public sealed class RecordRead
 {
     /// <summary>Initializes a contextual record read.</summary>

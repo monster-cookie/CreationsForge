@@ -25,15 +25,18 @@ public sealed class WorkspaceShellViewHeadlessTests
         using var viewModel = CreateViewModel(context);
         var picker = new RecordingReferencePickerService();
         var dispatcher = new InlineUiDispatcher();
+        var projector = new RecordJsonTreeProjectionService();
         using var browserViewModel = new FormListBrowserViewModel(
             context.Coordinator,
             context.Arbiter,
-            new RecordJsonTreeProjectionService(),
+            projector,
             picker,
             dispatcher,
             HeadlessRecordEditorFactory.Create(context.Coordinator, context.Arbiter, picker, dispatcher));
+        using var majorRecordViewModel = new MajorRecordBrowserViewModel(context.Coordinator, projector, dispatcher);
         var browserView = new FormListBrowserView(browserViewModel);
-        var view = new WorkspaceShellView(viewModel, browserView);
+        var majorRecordView = new MajorRecordBrowserView(majorRecordViewModel);
+        var view = new WorkspaceShellView(viewModel, browserView, majorRecordView);
         var window = new Window
         {
             Width = 1200,
@@ -54,7 +57,24 @@ public sealed class WorkspaceShellViewHeadlessTests
             ControlFinder.FindByAutomationId<Button>(view, "WorkspaceDiscardChangesButton").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<Button>(view, "WorkspaceSettingsButton").ShouldNotBeNull();
             var contentHost = ControlFinder.FindByAutomationId<Border>(view, "WorkspaceContentHost").ShouldNotBeNull();
-            contentHost.Child.ShouldBeSameAs(browserView);
+            var tabs = contentHost.Child.ShouldBeOfType<TabControl>();
+            tabs.ItemCount.ShouldBe(2);
+            ControlFinder.FindByAutomationId<TabItem>(view, "MajorRecordBrowserTab").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<TabItem>(view, "FormListBrowserTab").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<MajorRecordBrowserView>(view, "MajorRecordBrowserView").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<ItemsControl>(view, "MajorRecordSemanticChanges").ShouldBeNull();
+            var activePluginCount = ControlFinder.FindByAutomationId<TextBlock>(view, "ActivePluginRecordCountText")!;
+            var loadedFormListCount = ControlFinder.FindByAutomationId<TextBlock>(view, "LoadedRecordCountText")!;
+            var loadedMajorRecordCount = ControlFinder.FindByAutomationId<TextBlock>(view, "WorkspaceMajorRecordLoadedCountText")!;
+            activePluginCount.IsVisible.ShouldBeFalse();
+            loadedFormListCount.IsVisible.ShouldBeFalse();
+            loadedMajorRecordCount.IsVisible.ShouldBeTrue();
+            loadedMajorRecordCount.Text.ShouldBe("Loaded records: 0");
+            tabs.SelectedIndex = 1;
+            Dispatcher.UIThread.RunJobs();
+            activePluginCount.IsVisible.ShouldBeTrue();
+            loadedFormListCount.IsVisible.ShouldBeTrue();
+            loadedMajorRecordCount.IsVisible.ShouldBeFalse();
             ControlFinder.FindByAutomationId<FormListBrowserView>(view, "FormListBrowserView").ShouldNotBeNull();
             var legend = ControlFinder.FindByAutomationId<StackPanel>(
                 view,
@@ -73,10 +93,8 @@ public sealed class WorkspaceShellViewHeadlessTests
                     Color.FromArgb(80, 192, 160, 0)
                 ]);
             ControlFinder.FindByAutomationId<TextBlock>(view, "WorkspaceStatusText")!.Text.ShouldBe("No plugin is open.");
-            ControlFinder.FindByAutomationId<TextBlock>(view, "ActivePluginRecordCountText")!
-                .Text.ShouldBe("Plugin records: 0");
-            ControlFinder.FindByAutomationId<TextBlock>(view, "LoadedRecordCountText")!
-                .Text.ShouldBe("Unique loaded records: 0");
+            activePluginCount.Text.ShouldBe("Plugin records: 0");
+            loadedFormListCount.Text.ShouldBe("Unique loaded records: 0");
         }
         finally
         {

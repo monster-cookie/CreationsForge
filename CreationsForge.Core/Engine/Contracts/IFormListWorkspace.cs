@@ -63,6 +63,70 @@ public interface IFormListWorkspace : IAsyncDisposable
         ReferenceRequest request,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Reads one exact major-record context as a detached native Mutagen getter without restricting its family.</summary>
+    /// <param name="request">The FormKey, source view, and optional containing-plugin selection.</param>
+    /// <param name="cancellationToken">A token that cancels the serialized selection and deep copy.</param>
+    /// <returns>The resolved or deleted detached record and provenance, or an explicit unavailable status, with the unchanged workspace revision.</returns>
+    ValueTask<EngineResult<RecordRead>> ReadRecordContextAsync(
+        ReferenceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+        return ValueTask.FromResult(EngineResult<RecordRead>.Failure(
+            new EngineError(EngineErrorCode.UnsupportedOperation, "This workspace implementation does not support family-neutral record reads."),
+            WorkspaceId,
+            resultRevision: Revision));
+    }
+
+    /// <summary>Reads one exact major-record context as a complete detached native field tree.</summary>
+    /// <param name="request">The FormKey, source view, and optional containing-plugin selection.</param>
+    /// <param name="cancellationToken">A token that cancels the serialized read and native field traversal.</param>
+    /// <returns>The typed field tree and provenance, or an explicit unavailable status, with the unchanged workspace revision.</returns>
+    ValueTask<EngineResult<MajorRecordReadView>> ReadMajorRecordViewAsync(
+        ReferenceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+        return ValueTask.FromResult(EngineResult<MajorRecordReadView>.Failure(
+            new EngineError(EngineErrorCode.UnsupportedOperation, "This workspace implementation does not support major-record field inspection."),
+            WorkspaceId,
+            resultRevision: Revision));
+    }
+
+    /// <summary>Compares two exact contexts of one major record through native typed values.</summary>
+    /// <param name="request">The prior and resulting context selections for one FormKey.</param>
+    /// <param name="cancellationToken">A token that cancels both reads, field traversal, or collection comparison.</param>
+    /// <returns>Detached before-and-after trees and semantic native-value change paths.</returns>
+    ValueTask<EngineResult<MajorRecordComparison>> CompareMajorRecordAsync(
+        CompareMajorRecordRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+        return ValueTask.FromResult(EngineResult<MajorRecordComparison>.Failure(
+            new EngineError(EngineErrorCode.UnsupportedOperation, "This workspace implementation does not support major-record comparison."),
+            WorkspaceId,
+            resultRevision: Revision));
+    }
+
+    /// <summary>Lists lightweight major-record contexts in one bounded deterministic page.</summary>
+    /// <param name="request">The bounded page, context view, containing plugin, and continuation state.</param>
+    /// <param name="cancellationToken">A token that cancels the serialized plugin scan.</param>
+    /// <returns>One revision-bound page without creating a persistent record index.</returns>
+    ValueTask<EngineResult<MajorRecordListPage>> ListMajorRecordsAsync(
+        MajorRecordListRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+        return ValueTask.FromResult(EngineResult<MajorRecordListPage>.Failure(
+            new EngineError(EngineErrorCode.UnsupportedOperation, "This workspace implementation does not support major-record listing."),
+            WorkspaceId,
+            resultRevision: Revision));
+    }
+
     /// <summary>Searches references in bounded deterministic pages.</summary>
     /// <param name="request">The bounded query and optional continuation token.</param>
     /// <param name="cancellationToken">A token that cancels the serialized plugin search.</param>

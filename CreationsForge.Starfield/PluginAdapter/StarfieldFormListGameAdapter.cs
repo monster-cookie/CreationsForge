@@ -1,5 +1,6 @@
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Engine.RecordReading;
+using CreationsForge.Core.Engine.RecordInspection;
 using CreationsForge.Core.Enums;
 using CreationsForge.Starfield.PluginAdapter.Edits;
 using Mutagen.Bethesda;
@@ -51,6 +52,11 @@ public sealed class StarfieldFormListGameAdapter : IFormListGameAdapter
 
     /// <inheritdoc />
     public IFormListInspector Inspector => OutputService.Inspector;
+
+    /// <inheritdoc />
+    public IMajorRecordInspector MajorRecordInspector { get; } = new MutagenMajorRecordInspector(
+        typeof(StarfieldMajorRecord),
+        "Mutagen.Bethesda.Starfield/0.55.0-alpha.53");
 
     /// <inheritdoc />
     public bool SupportsRelease(GameRelease release)
@@ -312,6 +318,30 @@ public sealed class StarfieldFormListGameAdapter : IFormListGameAdapter
             sourceResult.Value!,
             new RecordRead(unsupported, read.RecordType, null),
             readResult.Warnings);
+    }
+
+    /// <inheritdoc />
+    public EngineResult<RecordRead> ReadRecordContext(
+        IPluginSourceSet sources,
+        IPluginOutputState? output,
+        ReferenceRequest request,
+        CancellationToken cancellationToken)
+    {
+        var sourceResult = RequireSources<RecordRead>(sources);
+        if (!sourceResult.Succeeded)
+        {
+            return EngineResult<RecordRead>.Failure(sourceResult.Error!);
+        }
+
+        if (output is null)
+        {
+            return sourceResult.Value!.ReadRecordContext(request, cancellationToken);
+        }
+
+        var readerResult = CreateReader<RecordRead>(sources, output, cancellationToken);
+        return readerResult.Succeeded
+            ? Bind(sourceResult.Value!, readerResult.Value!.Read(request, cancellationToken))
+            : Failure<RecordRead>(sourceResult.Value!, readerResult.Error!);
     }
 
     /// <inheritdoc />

@@ -939,7 +939,7 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
     /// <summary>Creates a hierarchical field source that displays every JSON name, kind, and scalar or container marker.</summary>
     /// <param name="fields">The projected JSON roots.</param>
     /// <returns>The read-only hierarchical source.</returns>
-    private static HierarchicalTreeDataGridSource<RecordJsonFieldNodeViewModel> CreateFieldTreeSource(
+    internal static HierarchicalTreeDataGridSource<RecordJsonFieldNodeViewModel> CreateFieldTreeSource(
         IReadOnlyList<RecordJsonFieldNodeViewModel> fields)
     {
         var source = new HierarchicalTreeDataGridSource<RecordJsonFieldNodeViewModel>(fields)

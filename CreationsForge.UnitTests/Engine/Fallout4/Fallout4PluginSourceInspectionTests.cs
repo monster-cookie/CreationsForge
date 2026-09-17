@@ -169,6 +169,25 @@ public sealed class Fallout4PluginSourceInspectionTests
         unsupported.Value.RecordType.ShouldBe("Book");
         unsupported.Value.Record.ShouldBeNull();
 
+        var book = sources.ReadRecordContext(new ReferenceRequest(
+            fixture.BookFormKey,
+            RecordScope.Source), TestContext.Current.CancellationToken);
+        book.Succeeded.ShouldBeTrue(book.Error?.Message);
+        book.Value!.Context.Status.ShouldBe(ReferenceResolutionStatus.Resolved);
+        book.Value.Context.ContainingModKey.ShouldBe(fixture.SourceModKey);
+        book.Value.RecordType.ShouldBe("Book");
+        book.Value.Record.ShouldBeOfType<Book>();
+        using var bookStream = new MemoryStream();
+        using (var writer = new System.Text.Json.Utf8JsonWriter(bookStream))
+        {
+            new CreationsForge.Core.Engine.RecordInspection.MutagenMajorRecordInspector(
+                typeof(Fallout4MajorRecord),
+                "Mutagen.Bethesda.Fallout4/0.55.0-alpha.53")
+                .WriteReadView(book.Value.Record!, writer, TestContext.Current.CancellationToken);
+        }
+        using var bookDocument = System.Text.Json.JsonDocument.Parse(bookStream.ToArray());
+        bookDocument.RootElement.GetProperty("$type").GetString().ShouldBe(typeof(Book).FullName);
+
         var unresolved = sources.ReadFormListContext(new ReferenceRequest(
             new FormKey(fixture.SourceModKey, 0x0F01),
             RecordScope.Source), TestContext.Current.CancellationToken);

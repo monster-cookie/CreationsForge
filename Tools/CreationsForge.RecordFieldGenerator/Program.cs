@@ -5,11 +5,9 @@ namespace CreationsForge.RecordFieldGenerator;
 /// </summary>
 internal static class Program
 {
-    /// <summary>
-    /// Generates the complete checked-in codec and manifest for one repository root.
-    /// </summary>
+    /// <summary>Generates the complete checked-in codec and manifest for one repository root.</summary>
     /// <param name="args">The <c>generate</c> command followed by the repository root path.</param>
-    /// <returns>Zero after successful generation; otherwise one after writing the complete failure to standard error.</returns>
+    /// <returns>Zero after successful generation; otherwise one after writing the failure to standard error.</returns>
     private static int Main(string[] args)
     {
         try

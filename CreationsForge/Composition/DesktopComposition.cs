@@ -60,6 +60,8 @@ internal static class DesktopComposition
         builder.RegisterType<WorkspaceShellViewModel>().AsSelf().As<IWorkspaceLeaveGuard>().InstancePerLifetimeScope();
         builder.RegisterType<FormListBrowserView>().InstancePerLifetimeScope();
         builder.RegisterType<FormListBrowserViewModel>().AsSelf().As<IWorkspaceEditParticipant>().InstancePerLifetimeScope();
+        builder.RegisterType<MajorRecordBrowserView>().InstancePerLifetimeScope();
+        builder.RegisterType<MajorRecordBrowserViewModel>().InstancePerLifetimeScope();
         builder.RegisterType<FormListEditorViewModelFactory>().As<IFormListEditorViewModelFactory>().InstancePerLifetimeScope();
         builder.RegisterType<WorkspacePresentationOperationArbiter>().As<IWorkspacePresentationOperationArbiter>().InstancePerLifetimeScope();
         builder.RegisterType<WorkspaceChangesViewModel>().InstancePerLifetimeScope();

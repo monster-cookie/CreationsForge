@@ -1,5 +1,6 @@
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Engine.RecordReading;
+using CreationsForge.Core.Engine.RecordInspection;
 using CreationsForge.Core.Enums;
 using Mutagen.Bethesda;
 
@@ -42,6 +43,11 @@ public sealed class SkyrimFormListGameAdapter : IFormListGameAdapter
 
     /// <inheritdoc />
     public IFormListInspector Inspector => _outputService.Inspector;
+
+    /// <inheritdoc />
+    public IMajorRecordInspector MajorRecordInspector { get; } = new MutagenMajorRecordInspector(
+        typeof(Mutagen.Bethesda.Skyrim.SkyrimMajorRecord),
+        "Mutagen.Bethesda.Skyrim/0.55.0-alpha.53");
 
     /// <inheritdoc />
     public bool SupportsRelease(GameRelease release)
@@ -194,6 +200,22 @@ public sealed class SkyrimFormListGameAdapter : IFormListGameAdapter
         }
 
         return skyrimSources.ReadFormListContext(request, skyrimOutput, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public EngineResult<RecordRead> ReadRecordContext(
+        IPluginSourceSet sources,
+        IPluginOutputState? output,
+        ReferenceRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (sources is not SkyrimPluginSourceSet skyrimSources
+            || !TryGetOutput(output, out var skyrimOutput))
+        {
+            return WrongState<RecordRead>("source or output");
+        }
+
+        return skyrimSources.ReadRecordContext(request, skyrimOutput, cancellationToken);
     }
 
     /// <inheritdoc />
