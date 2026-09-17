@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
 using CreationsForge.Core.Engine.Contracts;
-using Mutagen.Bethesda.Plugins;
+using CreationsForge.Core.Enums;
 
 namespace CreationsForge.ViewModels;
 
@@ -221,7 +221,7 @@ public sealed partial class WorkspaceSelectionViewModel
         return await OpenWorkspaceAsync(cancellationToken);
     }
 
-    /// <summary>Prompts for a new plugin name and opens it over the enabled plugins in valid declared-master order.</summary>
+    /// <summary>Prompts for a new plugin name with only the selected game's base plugin as initial context.</summary>
     /// <param name="cancellationToken">A token checked during path selection and workspace acquisition.</param>
     /// <returns><see langword="true"/> when the new plugin workspace became active; otherwise <see langword="false"/>.</returns>
     public async Task<bool> CreateNewPluginAsync(CancellationToken cancellationToken = default)
@@ -232,11 +232,28 @@ public sealed partial class WorkspaceSelectionViewModel
             return false;
         }
 
-        if (!TryBuildNewPluginSources(PluginCatalogValue, out var dependencies, out var sourceError))
+        var basePluginName = PluginCatalogValue.Game switch
         {
-            ErrorText = sourceError;
+            SupportedGame.Starfield => "Starfield.esm",
+            SupportedGame.Fallout4 => "Fallout4.esm",
+            SupportedGame.Skyrim => "Skyrim.esm",
+            _ => null
+        };
+        if (basePluginName is null)
+        {
+            ErrorText = "The selected game has no supported base plugin.";
             return false;
         }
+
+        var basePlugin = PluginCatalogValue.Plugins.FirstOrDefault(entry =>
+            entry.ModKey.FileName.String.Equals(basePluginName, StringComparison.OrdinalIgnoreCase));
+        if (basePlugin is null)
+        {
+            ErrorText = $"The base plugin '{basePluginName}' was not found in the detected game Data directory.";
+            return false;
+        }
+
+        IReadOnlyList<string> dependencies = [basePlugin.PluginPath];
 
         if (!NewPluginExtensionOptions.Contains(NewPluginExtension))
         {
@@ -274,93 +291,6 @@ public sealed partial class WorkspaceSelectionViewModel
             LocalizedOutputMode.Embedded,
             OutputMasterStyle);
         return await OpenWorkspaceAsync(cancellationToken);
-    }
-
-    /// <summary>Orders enabled plugins and every declared master so all masters precede dependents in header order.</summary>
-    /// <param name="catalog">The detected installed plugin catalog for the selected game.</param>
-    /// <param name="pluginPaths">Receives the complete read-only source paths in valid order.</param>
-    /// <param name="error">Receives an actionable reason when the installed plugin graph cannot be admitted.</param>
-    /// <returns><see langword="true"/> when a complete ordered source list is available.</returns>
-    private static bool TryBuildNewPluginSources(
-        PluginCatalog catalog,
-        out IReadOnlyList<string> pluginPaths,
-        out string? error)
-    {
-        pluginPaths = [];
-        error = null;
-        var entriesByKey = catalog.Plugins.ToDictionary(entry => entry.ModKey);
-        var pending = new Stack<ModKey>(catalog.Plugins.Where(entry => entry.Enabled).Select(entry => entry.ModKey));
-        if (pending.Count == 0)
-        {
-            error = "No enabled installed plugins are available as the new plugin's read-only context.";
-            return false;
-        }
-
-        var included = new HashSet<ModKey>();
-        while (pending.TryPop(out var key))
-        {
-            if (!entriesByKey.TryGetValue(key, out var entry))
-            {
-                error = $"Required master '{key.FileName}' is missing from the detected game Data directory.";
-                return false;
-            }
-
-            if (!included.Add(key))
-            {
-                continue;
-            }
-
-            foreach (var master in entry.DeclaredMasters)
-            {
-                pending.Push(master);
-            }
-        }
-
-        var successors = included.ToDictionary(key => key, _ => new HashSet<ModKey>());
-        var predecessorCounts = included.ToDictionary(key => key, _ => 0);
-        foreach (var key in included)
-        {
-            var entry = entriesByKey[key];
-            ModKey? previousMaster = null;
-            foreach (var master in entry.DeclaredMasters)
-            {
-                if (successors[master].Add(key))
-                {
-                    predecessorCounts[key]++;
-                }
-
-                if (previousMaster is { } previous && successors[previous].Add(master))
-                {
-                    predecessorCounts[master]++;
-                }
-
-                previousMaster = master;
-            }
-        }
-
-        var ordered = new List<string>(included.Count);
-        while (included.Count > 0)
-        {
-            var next = catalog.Plugins
-                .Where(entry => included.Contains(entry.ModKey) && predecessorCounts[entry.ModKey] == 0)
-                .OrderBy(entry => entry.LoadOrderIndex)
-                .FirstOrDefault();
-            if (next is null)
-            {
-                error = "The enabled plugin master declarations cannot be ordered consistently. Check the installed load order.";
-                return false;
-            }
-
-            included.Remove(next.ModKey);
-            ordered.Add(next.PluginPath);
-            foreach (var successor in successors[next.ModKey])
-            {
-                predecessorCounts[successor]--;
-            }
-        }
-
-        pluginPaths = ordered;
-        return true;
     }
 
     /// <summary>Clears discovered rows after the selected game changes or discovery fails.</summary>

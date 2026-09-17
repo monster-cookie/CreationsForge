@@ -196,7 +196,7 @@ public sealed class StarfieldPluginOutputService
             }
             else
             {
-                mod = CreateNewMod(inputs.Output);
+                mod = CreateNewMod(sources, inputs.Output);
             }
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -257,10 +257,11 @@ public sealed class StarfieldPluginOutputService
         }
     }
 
-    /// <summary>Creates a new in-memory Starfield plugin with exact requested header flags and no filesystem mutation.</summary>
+    /// <summary>Creates a new in-memory Starfield plugin with its admitted game base master and requested header flags.</summary>
+    /// <param name="sources">The admitted source context from which the game base master may be selected.</param>
     /// <param name="output">The admitted absent output descriptor.</param>
-    /// <returns>An empty complete mutable Starfield plugin.</returns>
-    private static StarfieldMod CreateNewMod(PluginOutputPluginInput output)
+    /// <returns>An empty complete mutable Starfield plugin with no unrelated default masters.</returns>
+    private static StarfieldMod CreateNewMod(StarfieldPluginSourceSet sources, PluginOutputPluginInput output)
     {
         var mod = new StarfieldMod(output.ModKey, StarfieldRelease.Starfield)
         {
@@ -269,6 +270,12 @@ public sealed class StarfieldPluginOutputService
             IsMediumMaster = output.MasterStyle == MasterStyle.Medium,
             UsingLocalization = output.UsesLocalization
         };
+        var baseMaster = ModKey.FromNameAndExtension("Starfield.esm");
+        if (sources.GetMutagenMods().Any(source => source.ModKey == baseMaster))
+        {
+            ((IMod)mod).MasterReferences.Add(new MasterReference { Master = baseMaster });
+        }
+
         return mod;
     }
 

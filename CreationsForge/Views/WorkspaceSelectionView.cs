@@ -164,7 +164,16 @@ public sealed class WorkspaceSelectionView : UserControl
             ColumnSpacing = 12,
             Children = { extensionField, masterSizeField }
         };
-        return choices;
+        var contextHint = CreateCell(
+            "New Plugin loads only the selected game's base plugin. Other installed plugins are not added by default.",
+            fontSize: 11);
+        contextHint.TextWrapping = TextWrapping.Wrap;
+        contextHint.TextTrimming = TextTrimming.None;
+        return new StackPanel
+        {
+            Spacing = 4,
+            Children = { choices, contextHint }
+        };
     }
 
     /// <summary>Builds the installed plugin table.</summary>
