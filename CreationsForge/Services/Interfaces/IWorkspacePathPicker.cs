@@ -29,7 +29,13 @@ public interface IWorkspacePathPicker
 
     /// <summary>Prompts for an absent or existing output plugin according to the requested selection mode.</summary>
     /// <param name="mode">Whether the output must be newly named or already exist.</param>
+    /// <param name="suggestedDirectoryPath">The installed game Data directory to suggest for a new output, or <see langword="null"/> to use the platform default.</param>
+    /// <param name="preferredExtension">The selected new-plugin extension, or <see langword="null"/> for the existing default.</param>
     /// <param name="cancellationToken">A token checked before and after the platform picker.</param>
     /// <returns>The selected local path, or <see langword="null"/> when canceled.</returns>
-    Task<string?> PickOutputPluginAsync(OutputSelectionMode mode, CancellationToken cancellationToken = default);
+    Task<string?> PickOutputPluginAsync(
+        OutputSelectionMode mode,
+        string? suggestedDirectoryPath = null,
+        string? preferredExtension = null,
+        CancellationToken cancellationToken = default);
 }

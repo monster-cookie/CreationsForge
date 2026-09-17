@@ -78,7 +78,7 @@ public sealed class WorkspaceSelectionView : UserControl
         };
     }
 
-    /// <summary>Builds the game, search, and refresh controls.</summary>
+    /// <summary>Builds the game, search, refresh, and new-plugin output choices.</summary>
     /// <returns>The selector toolbar.</returns>
     private Control BuildSelectors()
     {
@@ -105,14 +105,66 @@ public sealed class WorkspaceSelectionView : UserControl
         refresh.Bind(IsEnabledProperty, new Binding(nameof(WorkspaceSelectionViewModel.CanOpen)));
         AutomationProperties.SetAutomationId(refresh, "RefreshPluginsButton");
 
+        var gameField = new StackPanel
+        {
+            Spacing = 3,
+            Children = { CreateCell("Game", FontWeight.SemiBold, 12), game }
+        };
         Grid.SetColumn(search, 1);
         Grid.SetColumn(refresh, 2);
-        return new Grid
+        var toolbar = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"),
             ColumnSpacing = 10,
-            Children = { game, search, refresh }
+            Children = { gameField, search, refresh }
         };
+        return new StackPanel
+        {
+            Spacing = 10,
+            Children = { toolbar, BuildNewPluginOptions() }
+        };
+    }
+
+    /// <summary>Builds explicit file-extension and master-size choices used by the New Plugin action.</summary>
+    /// <returns>The new-plugin options aligned beneath the game selector.</returns>
+    private Control BuildNewPluginOptions()
+    {
+        var extension = new ComboBox { MinWidth = 110 };
+        extension.Bind(ItemsControl.ItemsSourceProperty, new Binding(nameof(WorkspaceSelectionViewModel.NewPluginExtensionOptions)));
+        extension.Bind(SelectingItemsControl.SelectedItemProperty, new Binding(nameof(WorkspaceSelectionViewModel.NewPluginExtension))
+        {
+            Mode = BindingMode.TwoWay
+        });
+        extension.Bind(IsEnabledProperty, new Binding(nameof(WorkspaceSelectionViewModel.CanOpen)));
+        AutomationProperties.SetAutomationId(extension, "NewPluginExtensionSelector");
+
+        var masterSize = new ComboBox { MinWidth = 110 };
+        masterSize.Bind(ItemsControl.ItemsSourceProperty, new Binding(nameof(WorkspaceSelectionViewModel.NewPluginMasterStyleOptions)));
+        masterSize.Bind(SelectingItemsControl.SelectedItemProperty, new Binding(nameof(WorkspaceSelectionViewModel.OutputMasterStyle))
+        {
+            Mode = BindingMode.TwoWay
+        });
+        masterSize.Bind(IsEnabledProperty, new Binding(nameof(WorkspaceSelectionViewModel.CanOpen)));
+        AutomationProperties.SetAutomationId(masterSize, "NewPluginMasterStyleSelector");
+
+        var extensionField = new StackPanel
+        {
+            Spacing = 3,
+            Children = { CreateCell("New plugin file type", FontWeight.SemiBold, 12), extension }
+        };
+        var masterSizeField = new StackPanel
+        {
+            Spacing = 3,
+            Children = { CreateCell("Master size", FontWeight.SemiBold, 12), masterSize }
+        };
+        Grid.SetColumn(masterSizeField, 1);
+        var choices = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("Auto,Auto,*"),
+            ColumnSpacing = 12,
+            Children = { extensionField, masterSizeField }
+        };
+        return choices;
     }
 
     /// <summary>Builds the installed plugin table.</summary>

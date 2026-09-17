@@ -139,7 +139,7 @@ public sealed class WorkspacePluginSelectionViewModelTests
         descriptor.Output.ShouldBeNull();
     }
 
-    /// <summary>Verifies new-plugin creation uses the detected enabled load order and the existing save-file picker.</summary>
+    /// <summary>Verifies new-plugin creation forwards the game Data directory and selected file type to the picker.</summary>
     [Fact]
     public async Task CreateNewPluginAsync_WithDetectedCatalog_UsesEnabledPluginsAsReadOnlySources()
     {
@@ -155,11 +155,14 @@ public sealed class WorkspacePluginSelectionViewModelTests
         };
         var viewModel = CreateViewModel(coordinator, picker, discovery);
         await viewModel.RefreshPluginsAsync();
+        viewModel.NewPluginExtension = ".esl";
 
         var opened = await viewModel.CreateNewPluginAsync();
 
         opened.ShouldBeTrue();
         picker.RequestedOutputMode.ShouldBe(OutputSelectionMode.CreateNew);
+        picker.RequestedOutputDirectory.ShouldBe(root);
+        picker.RequestedOutputExtension.ShouldBe(".esl");
         factory.Requests.Single().SourcePluginPath.ShouldBe(Path.Combine(root, "Editable.esp"));
         factory.Requests.Single().LoadOrderPluginPaths.ShouldBe([
             Path.Combine(root, "Base.esm"),
@@ -168,6 +171,81 @@ public sealed class WorkspacePluginSelectionViewModelTests
         workspace.LastSelectOutputRequest.Mode.ShouldBe(OutputSelectionMode.CreateNew);
         workspace.LastSelectOutputRequest.Output.PluginPath.ShouldBe(outputPath);
         workspace.LastSelectOutputRequest.Output.MasterStyle.ShouldBe(OutputMasterStyle.Small);
+    }
+
+    /// <summary>Verifies an enabled plugin listed before a declared master is ordered after that master for new output.</summary>
+    [Fact]
+    public async Task CreateNewPluginAsync_WithMasterAfterDependent_RepairsExplicitSourceOrder()
+    {
+        var root = CreateTestRoot();
+        var outputPath = Path.Combine(root, "NewMediumMaster.esm");
+        var picker = new FakeWorkspacePathPicker { OutputPluginPath = outputPath };
+        var workspace = CreateSuccessfulWorkspace();
+        var factory = CreateFactory(workspace);
+        await using var coordinator = CreateCoordinator(factory);
+        var discovery = new FakePluginDiscoveryService
+        {
+            Result = EngineResult<PluginCatalog>.Success(CreateMisorderedCatalog(root))
+        };
+        var viewModel = CreateViewModel(coordinator, picker, discovery);
+        await viewModel.RefreshPluginsAsync();
+        viewModel.NewPluginExtension = ".esm";
+        viewModel.OutputMasterStyle = OutputMasterStyle.Medium;
+
+        var opened = await viewModel.CreateNewPluginAsync();
+
+        opened.ShouldBeTrue();
+        factory.Requests.Single().LoadOrderPluginPaths.ShouldBe([
+            Path.Combine(root, "Starfield.esm"),
+            Path.Combine(root, "SFBGS004.esm"),
+            Path.Combine(root, "Unofficial Starfield Patch.esm")]);
+        workspace.LastSelectOutputRequest.ShouldNotBeNull();
+        workspace.LastSelectOutputRequest.Output.MasterStyle.ShouldBe(OutputMasterStyle.Medium);
+    }
+
+    /// <summary>Verifies the requested file type cannot silently disagree with the picked filename.</summary>
+    [Fact]
+    public async Task CreateNewPluginAsync_WithDifferentPickedExtension_RejectsOutput()
+    {
+        var root = CreateTestRoot();
+        var picker = new FakeWorkspacePathPicker { OutputPluginPath = Path.Combine(root, "WrongType.esp") };
+        var factory = CreateFactory(CreateSuccessfulWorkspace());
+        await using var coordinator = CreateCoordinator(factory);
+        var discovery = new FakePluginDiscoveryService
+        {
+            Result = EngineResult<PluginCatalog>.Success(CreateCatalog(root))
+        };
+        var viewModel = CreateViewModel(coordinator, picker, discovery);
+        await viewModel.RefreshPluginsAsync();
+        viewModel.NewPluginExtension = ".esm";
+
+        var opened = await viewModel.CreateNewPluginAsync();
+
+        opened.ShouldBeFalse();
+        viewModel.ErrorText.ShouldBe("The new plugin filename must end in .esm for the selected file type.");
+        factory.Requests.ShouldBeEmpty();
+    }
+
+    /// <summary>Creates an installed catalog where the patch precedes a master it declares.</summary>
+    /// <param name="root">The synthetic game Data directory.</param>
+    /// <returns>The detached catalog containing the reported master-order case.</returns>
+    private static PluginCatalog CreateMisorderedCatalog(string root)
+    {
+        var starfield = ModKey.FromNameAndExtension("Starfield.esm");
+        var sfbgs004 = ModKey.FromNameAndExtension("SFBGS004.esm");
+        var patch = ModKey.FromNameAndExtension("Unofficial Starfield Patch.esm");
+        return new PluginCatalog(
+            SupportedGame.Starfield,
+            GameRelease.Starfield,
+            root,
+            [
+                new PluginCatalogEntry(starfield, Path.Combine(root, "Starfield.esm"), 0, true, [],
+                    LocalizedOutputMode.Embedded, OutputMasterStyle.Full, false, "Bethesda-supplied game plugins are read-only."),
+                new PluginCatalogEntry(patch, Path.Combine(root, "Unofficial Starfield Patch.esm"), 1, true, [],
+                    LocalizedOutputMode.Embedded, OutputMasterStyle.Full, true, null, [starfield, sfbgs004]),
+                new PluginCatalogEntry(sfbgs004, Path.Combine(root, "SFBGS004.esm"), 2, false, [],
+                    LocalizedOutputMode.Embedded, OutputMasterStyle.Full, false, "Bethesda-supplied game plugins are read-only.", [starfield])
+            ]);
     }
 
     /// <summary>Creates a two-plugin detected catalog with one read-only base and one editable plugin.</summary>

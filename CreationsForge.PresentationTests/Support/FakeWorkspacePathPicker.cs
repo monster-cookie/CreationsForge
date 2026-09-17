@@ -26,6 +26,12 @@ internal sealed class FakeWorkspacePathPicker : IWorkspacePathPicker
     /// <summary>Gets the output mode supplied to the most recent output picker.</summary>
     public OutputSelectionMode? RequestedOutputMode { get; private set; }
 
+    /// <summary>Gets the suggested output directory supplied to the most recent output picker.</summary>
+    public string? RequestedOutputDirectory { get; private set; }
+
+    /// <summary>Gets the preferred extension supplied to the most recent output picker.</summary>
+    public string? RequestedOutputExtension { get; private set; }
+
     /// <inheritdoc />
     public Task<string?> PickSourcePluginAsync(CancellationToken cancellationToken = default)
     {
@@ -51,9 +57,15 @@ internal sealed class FakeWorkspacePathPicker : IWorkspacePathPicker
     }
 
     /// <inheritdoc />
-    public Task<string?> PickOutputPluginAsync(OutputSelectionMode mode, CancellationToken cancellationToken = default)
+    public Task<string?> PickOutputPluginAsync(
+        OutputSelectionMode mode,
+        string? suggestedDirectoryPath = null,
+        string? preferredExtension = null,
+        CancellationToken cancellationToken = default)
     {
         RequestedOutputMode = mode;
+        RequestedOutputDirectory = suggestedDirectoryPath;
+        RequestedOutputExtension = preferredExtension;
         return Task.FromResult(OutputPluginPath);
     }
 }

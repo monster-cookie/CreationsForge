@@ -64,6 +64,9 @@ public sealed partial class WorkspaceSelectionViewModel : ViewModelBase
     /// <summary>The selected output master style.</summary>
     private OutputMasterStyle OutputMasterStyleValue = OutputMasterStyle.Full;
 
+    /// <summary>The file extension selected for a newly created plugin.</summary>
+    private string NewPluginExtensionValue = ".esp";
+
     /// <summary>The master styles supported by <see cref="SelectedGame"/>.</summary>
     private IReadOnlyList<OutputMasterStyle> OutputMasterStyleOptionsValue;
 
@@ -145,6 +148,7 @@ public sealed partial class WorkspaceSelectionViewModel : ViewModelBase
             IsBusy = false;
             ResetPluginCatalog();
             OutputMasterStyleOptions = value.SupportedMasterStyles;
+            OnPropertyChanged(nameof(NewPluginMasterStyleOptions));
             if (!OutputMasterStyleOptions.Contains(OutputMasterStyle))
             {
                 OutputMasterStyle = OutputMasterStyle.Full;
@@ -199,6 +203,33 @@ public sealed partial class WorkspaceSelectionViewModel : ViewModelBase
         get => OutputMasterStyleValue;
         set => SetProperty(ref OutputMasterStyleValue, value);
     }
+
+    /// <summary>Gets the file extensions available when creating a new plugin.</summary>
+    public IReadOnlyList<string> NewPluginExtensionOptions { get; } = [".esp", ".esm", ".esl"];
+
+    /// <summary>Gets or sets the extension used for a newly created plugin.</summary>
+    public string NewPluginExtension
+    {
+        get => NewPluginExtensionValue;
+        set
+        {
+            if (!SetProperty(ref NewPluginExtensionValue, value))
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(NewPluginMasterStyleOptions));
+            if (value == ".esl")
+            {
+                OutputMasterStyle = OutputMasterStyle.Small;
+            }
+        }
+    }
+
+    /// <summary>Gets the master sizes valid for the selected game and new-plugin extension.</summary>
+    public IReadOnlyList<OutputMasterStyle> NewPluginMasterStyleOptions => NewPluginExtension == ".esl"
+        ? [OutputMasterStyle.Small]
+        : OutputMasterStyleOptions;
 
     /// <summary>Gets the output master styles supported by the selected game release.</summary>
     public IReadOnlyList<OutputMasterStyle> OutputMasterStyleOptions
