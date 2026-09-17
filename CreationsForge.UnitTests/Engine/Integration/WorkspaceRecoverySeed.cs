@@ -9,7 +9,7 @@ namespace CreationsForge.UnitTests.Engine.Integration;
 internal sealed class WorkspaceRecoverySeed : IAsyncDisposable
 {
     /// <summary>The live original workspace owned by a real interrupted save, cleared when disposal begins.</summary>
-    private IFormListWorkspace? _originalWorkspace;
+    private IPluginWorkspace? _originalWorkspace;
 
     /// <summary>Initializes immutable recovery identities, plugin baselines, expected classification, and optional live ownership.</summary>
     /// <param name="state">The requested journal and physical destination state.</param>
@@ -46,7 +46,7 @@ internal sealed class WorkspaceRecoverySeed : IAsyncDisposable
         SaveResult? originalSaveResult,
         OutputSynchronizationState? originalSynchronization,
         WorkspacePreview? originalPreview,
-        IFormListWorkspace? originalWorkspace)
+        IPluginWorkspace? originalWorkspace)
     {
         State = state;
         OriginalWorkspaceId = originalWorkspaceId;
@@ -116,7 +116,7 @@ internal sealed class WorkspaceRecoverySeed : IAsyncDisposable
     internal WorkspacePreview? OriginalPreview { get; }
 
     /// <summary>Gets the live original workspace after a real interrupted save, or <see langword="null"/> for direct seeding or after disposal.</summary>
-    internal IFormListWorkspace? OriginalWorkspace => _originalWorkspace;
+    internal IPluginWorkspace? OriginalWorkspace => _originalWorkspace;
 
     /// <summary>Captures every expected destination path and every current regular transaction file with exact bytes.</summary>
     /// <returns>A stable path-ordered snapshot whose <see langword="null"/> values represent absent destination artifacts.</returns>

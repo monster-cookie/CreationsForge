@@ -483,7 +483,7 @@ public sealed class ReferencePickerViewModel : ViewModelBase, IAsyncDisposable
     /// <param name="cancellationToken">The operation cancellation token.</param>
     /// <returns>The engine search result or an exact revision conflict.</returns>
     private ValueTask<EngineResult<ReferenceSearchPage>> SearchCurrentWorkspaceAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         ReferenceSearchRequest searchRequest,
         CancellationToken cancellationToken)
     {
@@ -618,7 +618,7 @@ public sealed class ReferencePickerViewModel : ViewModelBase, IAsyncDisposable
     /// <param name="cancellationToken">The operation cancellation token.</param>
     /// <returns>The plugin resolution or an exact revision conflict.</returns>
     private ValueTask<EngineResult<ReferenceResolution>> ResolveCurrentWorkspaceAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         ReferenceRequest referenceRequest,
         CancellationToken cancellationToken)
     {
@@ -773,7 +773,7 @@ public sealed class ReferencePickerViewModel : ViewModelBase, IAsyncDisposable
     /// <typeparam name="T">The unsuccessful result value type.</typeparam>
     /// <param name="workspace">The borrowed workspace whose identity or revision differed.</param>
     /// <returns>The typed revision conflict.</returns>
-    private EngineResult<T> RevisionConflict<T>(IFormListWorkspace workspace)
+    private EngineResult<T> RevisionConflict<T>(IPluginWorkspace workspace)
     {
         return EngineResult<T>.Failure(
             new EngineError(

@@ -5,7 +5,7 @@ using Mutagen.Bethesda.Plugins.Records;
 namespace CreationsForge.PresentationTests.Support;
 
 /// <summary>Provides deterministic workspace state and records change-lifecycle requests.</summary>
-internal sealed class RecordingWorkspaceChangesWorkspace : IFormListWorkspace
+internal sealed class RecordingWorkspaceChangesWorkspace : IPluginWorkspace
 {
     /// <summary>Initializes a recording workspace with a ready state and empty preview.</summary>
     /// <param name="workspaceId">The deterministic workspace identity.</param>

@@ -5,9 +5,9 @@ using Serilog;
 namespace CreationsForge.Core.Engine;
 
 /// <summary>
-/// Opens independently owned FormList workspaces from complete caller-supplied plugin inputs.
+/// Opens independently owned plugin workspaces from complete caller-supplied plugin inputs.
 /// </summary>
-public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
+public sealed class PluginWorkspaceFactory : IPluginWorkspaceFactory
 {
     /// <summary>Compares canonical paths according to the host file system's case semantics.</summary>
     private static readonly StringComparer CanonicalPathComparer = OperatingSystem.IsWindows()
@@ -35,7 +35,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
     /// <param name="logger">The structured logger used for workflow diagnostics.</param>
     /// <exception cref="ArgumentNullException">Thrown when a required dependency is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="adapters"/> contains a <see langword="null"/> entry.</exception>
-    public FormListWorkspaceFactory(
+    public PluginWorkspaceFactory(
         IEnumerable<IFormListGameAdapter> adapters,
         IWorkspaceSaveCoordinator saveCoordinator,
         IOutputDirectoryLeaseProvider outputDirectoryLeaseProvider,
@@ -59,12 +59,12 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
     }
 
     /// <inheritdoc />
-    public async ValueTask<EngineResult<IFormListWorkspace>> OpenAsync(
+    public async ValueTask<EngineResult<IPluginWorkspace>> OpenAsync(
         WorkspaceOpenRequest request,
         CancellationToken cancellationToken = default)
     {
         PluginSourceOpenResult? sourceOpenResult = null;
-        FormListWorkspace? workspace = null;
+        PluginWorkspace? workspace = null;
         var diagnosticProgress = new LoggingWorkspaceOpenProgress(Logger, request?.WorkspaceId, request?.Progress);
 
         try
@@ -77,7 +77,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
             var canonicalRequestResult = ValidateAndCanonicalize(request);
             if (!canonicalRequestResult.Succeeded)
             {
-                return EngineResult<IFormListWorkspace>.Failure(
+                return EngineResult<IPluginWorkspace>.Failure(
                     canonicalRequestResult.Error!,
                     workspaceId: request?.WorkspaceId,
                     warnings: canonicalRequestResult.Warnings);
@@ -92,7 +92,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
             var adapterResult = SelectAdapter(canonicalRequest);
             if (!adapterResult.Succeeded)
             {
-                return EngineResult<IFormListWorkspace>.Failure(
+                return EngineResult<IPluginWorkspace>.Failure(
                     adapterResult.Error!,
                     workspaceId: canonicalRequest.WorkspaceId,
                     warnings: adapterResult.Warnings);
@@ -124,7 +124,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
                     exception,
                     "The game adapter failed while opening plugin sources for workspace {WorkspaceId}.",
                     canonicalRequest.WorkspaceId);
-                return EngineResult<IFormListWorkspace>.Failure(
+                return EngineResult<IPluginWorkspace>.Failure(
                     new EngineError(
                         EngineErrorCode.SourceOpenFailed,
                         "The selected game adapter could not open the explicit plugin sources."),
@@ -144,7 +144,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
                     diagnosticProgress.Elapsed.TotalMilliseconds,
                     openResult.Error?.Code,
                     openResult.Error?.Message ?? "No error description was returned.");
-                return EngineResult<IFormListWorkspace>.Failure(
+                return EngineResult<IPluginWorkspace>.Failure(
                     openResult.Error ?? new EngineError(
                         EngineErrorCode.SourceOpenFailed,
                         "The selected game adapter did not return a source-open failure reason."),
@@ -155,7 +155,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
             sourceOpenResult = openResult.Value;
             if (sourceOpenResult is null)
             {
-                return EngineResult<IFormListWorkspace>.Failure(
+                return EngineResult<IPluginWorkspace>.Failure(
                     new EngineError(
                         EngineErrorCode.UnexpectedFailure,
                         "The selected game adapter returned no plugin source state."),
@@ -164,7 +164,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            workspace = new FormListWorkspace(
+            workspace = new PluginWorkspace(
                 canonicalRequest,
                 adapter,
                 sourceOpenResult,
@@ -180,7 +180,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
 
             var openedWorkspace = workspace;
             workspace = null;
-            return EngineResult<IFormListWorkspace>.Success(
+            return EngineResult<IPluginWorkspace>.Success(
                 openedWorkspace,
                 workspaceId: canonicalRequest.WorkspaceId,
                 warnings: openResult.Warnings);
@@ -196,7 +196,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
                 exception,
                 "An unexpected failure prevented workspace {WorkspaceId} from opening.",
                 request?.WorkspaceId);
-            return EngineResult<IFormListWorkspace>.Failure(
+            return EngineResult<IPluginWorkspace>.Failure(
                 new EngineError(
                     EngineErrorCode.UnexpectedFailure,
                     "An unexpected failure prevented the workspace from opening."),
@@ -486,7 +486,7 @@ public sealed class FormListWorkspaceFactory : IFormListWorkspaceFactory
     /// <param name="workspaceId">The requested workspace identifier for cleanup diagnostics.</param>
     /// <returns>A task that completes after acquired state is released or a cleanup failure is logged.</returns>
     private async ValueTask DisposeFailedOpenStateAsync(
-        FormListWorkspace? workspace,
+        PluginWorkspace? workspace,
         PluginSourceOpenResult? sourceOpenResult,
         Guid? workspaceId)
     {

@@ -179,7 +179,7 @@ public sealed partial class FormListBrowserViewModel
     /// <param name="cancellationToken">The comparison cancellation token.</param>
     /// <returns>The comparison or a typed revision failure without traversing stale records.</returns>
     private static async ValueTask<EngineResult<FormListComparison>> CompareAtRevisionAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         CompareFormListRequest request,
         WorkspaceRevision expectedRevision,
         CancellationToken cancellationToken)

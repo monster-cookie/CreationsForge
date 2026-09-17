@@ -231,7 +231,7 @@ public sealed partial class FormListBrowserViewModelTests
     }
 
     /// <summary>Supplies browser reads and successful new-edit admission for participant lifecycle tests.</summary>
-    private sealed class ParticipantTestWorkspace : IFormListWorkspace
+    private sealed class ParticipantTestWorkspace : IPluginWorkspace
     {
         /// <summary>The source plugin returned by browser enumeration.</summary>
         private readonly ModKey SourceModKey;

@@ -307,14 +307,14 @@ public sealed class WorkspaceRecoveryLifecycleTests
     /// <summary>Creates a production Skyrim workspace factory around a test-controlled recovery coordinator.</summary>
     /// <param name="saveCoordinator">The coordinator used for admission, save, recovery, repair, and adoption validation.</param>
     /// <returns>A workspace factory using the real Skyrim source, output, edit, and lease services.</returns>
-    private static FormListWorkspaceFactory CreateSkyrimWorkspaceFactory(IWorkspaceSaveCoordinator saveCoordinator)
+    private static PluginWorkspaceFactory CreateSkyrimWorkspaceFactory(IWorkspaceSaveCoordinator saveCoordinator)
     {
         var outputService = new SkyrimPluginOutputService(new PluginOutputInputLoader());
         var adapter = new SkyrimFormListGameAdapter(
             new SkyrimPluginSourceLoader(new PluginSourceInputLoader()),
             outputService,
             new SkyrimRecordEditService(outputService.Inspector));
-        return new FormListWorkspaceFactory(
+        return new PluginWorkspaceFactory(
             [adapter],
             saveCoordinator,
             new OutputDirectoryLeaseProvider(),
@@ -526,7 +526,7 @@ public sealed class WorkspaceRecoveryLifecycleTests
     /// <param name="expectedEditorId">The EditorID expected after plugin reopen.</param>
     /// <returns>A task that completes after detached plugin inspection.</returns>
     private static async Task AssertEditorIdAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         OutputAssociation association,
         FormKey formKey,
         string expectedEditorId)

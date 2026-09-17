@@ -331,7 +331,7 @@ public sealed class McpPluginStdioProtocolTests
     /// <param name="cancellationToken">The bounded test token.</param>
     /// <returns>All direct plugin matches in deterministic page order.</returns>
     private static async Task<IReadOnlyList<ReferenceSearchMatch>> ReadDirectReferenceMatchesAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         CancellationToken cancellationToken)
     {
         var matches = new List<ReferenceSearchMatch>();
@@ -354,7 +354,7 @@ public sealed class McpPluginStdioProtocolTests
     /// <param name="cancellationToken">The bounded test token.</param>
     /// <returns>All direct source contexts in deterministic page order.</returns>
     private static async Task<IReadOnlyList<ReferenceSearchMatch>> ReadDirectMajorRecordsAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         CancellationToken cancellationToken)
     {
         var records = new List<ReferenceSearchMatch>();

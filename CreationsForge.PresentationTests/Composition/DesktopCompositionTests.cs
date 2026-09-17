@@ -50,7 +50,7 @@ public sealed class DesktopCompositionTests
             container.Resolve<IAssetPreviewRenderMeshFactory>().ShouldNotBeNull();
             container.Resolve<IAssetPreviewSceneService>().ShouldNotBeNull();
             container.Resolve<IExternalAssetOpenService>().ShouldNotBeNull();
-            container.Resolve<IFormListWorkspaceFactory>().ShouldNotBeNull();
+            container.Resolve<IPluginWorkspaceFactory>().ShouldNotBeNull();
             container.Resolve<IWorkspaceCoordinator>().ShouldNotBeNull();
             container.Resolve<IReferencePickerService>().ShouldNotBeNull();
             container.Resolve<RecordJsonTreeProjectionService>().ShouldNotBeNull();

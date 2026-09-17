@@ -1,5 +1,6 @@
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Engine.PluginOutputs;
+using CreationsForge.Core.Engine.RecordInspection;
 using CreationsForge.Fallout4.PluginAdapter.RecordInspection;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Fallout4;
@@ -26,10 +27,16 @@ public sealed class Fallout4PluginOutputService
         ArgumentNullException.ThrowIfNull(inputLoader);
         _inputLoader = inputLoader;
         Inspector = new Fallout4FormListInspector();
+        MajorRecordInspector = new MutagenMajorRecordInspector(
+            typeof(Fallout4MajorRecord),
+            "Mutagen.Bethesda.Fallout4/0.55.0-alpha.53");
     }
 
     /// <summary>Gets the stateless complete Fallout 4 FormList inspector used for detached snapshots.</summary>
     public Fallout4FormListInspector Inspector { get; }
+
+    /// <summary>Gets the complete native Fallout 4 major-record inspector shared by read and save verification.</summary>
+    public IMajorRecordInspector MajorRecordInspector { get; }
 
     /// <summary>Opens an existing Fallout 4 output or creates a complete in-memory output without writing files.</summary>
     /// <param name="sources">The borrowed Fallout 4 source lifetime.</param>

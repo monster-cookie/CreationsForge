@@ -1,5 +1,6 @@
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Engine.PluginOutputs;
+using CreationsForge.Core.Engine.RecordInspection;
 using CreationsForge.Starfield.PluginAdapter.RecordInspection;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
@@ -27,10 +28,16 @@ public sealed class StarfieldPluginOutputService
         ArgumentNullException.ThrowIfNull(inputLoader);
         InputLoader = inputLoader;
         Inspector = new StarfieldFormListInspector();
+        MajorRecordInspector = new MutagenMajorRecordInspector(
+            typeof(StarfieldMajorRecord),
+            "Mutagen.Bethesda.Starfield/0.55.0-alpha.53");
     }
 
     /// <summary>Gets the stateless complete Starfield FormList inspector used for detached snapshots.</summary>
     public StarfieldFormListInspector Inspector { get; }
+
+    /// <summary>Gets the complete native Starfield major-record inspector shared by read and save verification.</summary>
+    public IMajorRecordInspector MajorRecordInspector { get; }
 
     /// <summary>
     /// Creates or opens a separate complete Starfield output after guarded source and artifact admission.

@@ -27,7 +27,7 @@ public interface IWorkspaceCoordinator : INotifyPropertyChanged, IAsyncDisposabl
     /// <returns>The operation result, or a typed failure when no workspace is active.</returns>
     /// <exception cref="OperationCanceledException">Thrown when the operation is canceled.</exception>
     ValueTask<EngineResult<T>> ExecuteAsync<T>(
-        Func<IFormListWorkspace, CancellationToken, ValueTask<EngineResult<T>>> operation,
+        Func<IPluginWorkspace, CancellationToken, ValueTask<EngineResult<T>>> operation,
         CancellationToken cancellationToken = default);
 
     /// <summary>Closes and disposes the active workspace, if any.</summary>

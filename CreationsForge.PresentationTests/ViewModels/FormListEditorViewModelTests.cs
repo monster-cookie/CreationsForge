@@ -653,7 +653,7 @@ public sealed class FormListEditorViewModelTests
     }
 
     /// <summary>Implements only the workspace operations exercised by the editor lifecycle.</summary>
-    private sealed class EditorTestWorkspace : IFormListWorkspace
+    private sealed class EditorTestWorkspace : IPluginWorkspace
     {
         /// <summary>The selected output identity.</summary>
         private readonly OutputAssociation Output;

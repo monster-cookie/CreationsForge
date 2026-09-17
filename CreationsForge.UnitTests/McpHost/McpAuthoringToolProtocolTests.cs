@@ -436,9 +436,9 @@ public sealed class McpAuthoringToolProtocolTests
     /// <param name="workspaceId">The mock workspace identity.</param>
     /// <param name="revision">The mock opening revision.</param>
     /// <returns>The configured workspace mock.</returns>
-    private static Mock<IFormListWorkspace> CreateWorkspace(Guid workspaceId, WorkspaceRevision revision)
+    private static Mock<IPluginWorkspace> CreateWorkspace(Guid workspaceId, WorkspaceRevision revision)
     {
-        var workspace = new Mock<IFormListWorkspace>();
+        var workspace = new Mock<IPluginWorkspace>();
         workspace.SetupGet(candidate => candidate.WorkspaceId).Returns(workspaceId);
         workspace.SetupGet(candidate => candidate.Revision).Returns(revision);
         workspace.Setup(candidate => candidate.DisposeAsync()).Returns(ValueTask.CompletedTask);
@@ -450,10 +450,10 @@ public sealed class McpAuthoringToolProtocolTests
     /// <param name="workspace">The mock workspace.</param>
     /// <param name="workspaceId">The exact workspace identity.</param>
     /// <returns>A task that completes after registry publication.</returns>
-    private static async Task OpenRegistryAsync(McpWorkspaceRegistry registry, IFormListWorkspace workspace, Guid workspaceId)
+    private static async Task OpenRegistryAsync(McpWorkspaceRegistry registry, IPluginWorkspace workspace, Guid workspaceId)
     {
-        var factory = new Mock<IFormListWorkspaceFactory>();
-        factory.Setup(candidate => candidate.OpenAsync(It.IsAny<WorkspaceOpenRequest>(), It.IsAny<CancellationToken>())).Returns(ValueTask.FromResult(EngineResult<IFormListWorkspace>.Success(workspace)));
+        var factory = new Mock<IPluginWorkspaceFactory>();
+        factory.Setup(candidate => candidate.OpenAsync(It.IsAny<WorkspaceOpenRequest>(), It.IsAny<CancellationToken>())).Returns(ValueTask.FromResult(EngineResult<IPluginWorkspace>.Success(workspace)));
         var request = new WorkspaceOpenRequest(workspaceId, SupportedGame.Starfield, GameRelease.Starfield, Path.GetFullPath("Source.esm"), [], Path.GetFullPath("Data"), []);
         (await registry.OpenAsync(factory.Object, request)).Succeeded.ShouldBeTrue();
     }

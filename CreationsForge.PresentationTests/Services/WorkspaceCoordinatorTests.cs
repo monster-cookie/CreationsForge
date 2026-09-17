@@ -70,9 +70,9 @@ public sealed class WorkspaceCoordinatorTests
     {
         var original = CreateSuccessfulWorkspace();
         var failedCandidate = CreateFailedOutputWorkspace();
-        var results = new Queue<IFormListWorkspace>([original, failedCandidate]);
+        var results = new Queue<IPluginWorkspace>([original, failedCandidate]);
         var factory = new FakeFormListWorkspaceFactory((_, _) =>
-            ValueTask.FromResult(EngineResult<IFormListWorkspace>.Success(results.Dequeue())));
+            ValueTask.FromResult(EngineResult<IPluginWorkspace>.Success(results.Dequeue())));
         await using var coordinator = CreateCoordinator(factory, new InlineUiDispatcher());
         var firstResult = await coordinator.OpenAsync(CreateRequest(SupportedGame.Starfield, GameRelease.Starfield));
 
@@ -101,9 +101,9 @@ public sealed class WorkspaceCoordinatorTests
                 token.ThrowIfCancellationRequested();
                 throw new InvalidOperationException("Cancellation should have been observed.");
             });
-        var results = new Queue<IFormListWorkspace>([original, canceledCandidate]);
+        var results = new Queue<IPluginWorkspace>([original, canceledCandidate]);
         var factory = new FakeFormListWorkspaceFactory((_, _) =>
-            ValueTask.FromResult(EngineResult<IFormListWorkspace>.Success(results.Dequeue())));
+            ValueTask.FromResult(EngineResult<IPluginWorkspace>.Success(results.Dequeue())));
         await using var coordinator = CreateCoordinator(factory, new InlineUiDispatcher());
         var firstResult = await coordinator.OpenAsync(CreateRequest(SupportedGame.Starfield, GameRelease.Starfield));
 
@@ -125,9 +125,9 @@ public sealed class WorkspaceCoordinatorTests
     {
         var original = CreateSuccessfulWorkspace();
         var replacement = CreateSuccessfulWorkspace();
-        var results = new Queue<IFormListWorkspace>([original, replacement]);
+        var results = new Queue<IPluginWorkspace>([original, replacement]);
         var factory = new FakeFormListWorkspaceFactory((_, _) =>
-            ValueTask.FromResult(EngineResult<IFormListWorkspace>.Success(results.Dequeue())));
+            ValueTask.FromResult(EngineResult<IPluginWorkspace>.Success(results.Dequeue())));
         await using var coordinator = CreateCoordinator(factory, new InlineUiDispatcher());
         await coordinator.OpenAsync(CreateRequest(SupportedGame.Starfield, GameRelease.Starfield));
         var borrowStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -159,9 +159,9 @@ public sealed class WorkspaceCoordinatorTests
     {
         var original = CreateSuccessfulWorkspace();
         var candidate = CreateSuccessfulWorkspace();
-        var results = new Queue<IFormListWorkspace>([original, candidate]);
+        var results = new Queue<IPluginWorkspace>([original, candidate]);
         var factory = new FakeFormListWorkspaceFactory((_, _) =>
-            ValueTask.FromResult(EngineResult<IFormListWorkspace>.Success(results.Dequeue())));
+            ValueTask.FromResult(EngineResult<IPluginWorkspace>.Success(results.Dequeue())));
         var dispatcher = new QueuedUiDispatcher();
         var coordinator = new WorkspaceCoordinator(factory, dispatcher, new LoggerConfiguration().CreateLogger());
         try
@@ -274,7 +274,7 @@ public sealed class WorkspaceCoordinatorTests
     private static FakeFormListWorkspaceFactory CreateFactory(FakeFormListWorkspace workspace)
     {
         return new FakeFormListWorkspaceFactory((_, _) =>
-            ValueTask.FromResult(EngineResult<IFormListWorkspace>.Success(workspace)));
+            ValueTask.FromResult(EngineResult<IPluginWorkspace>.Success(workspace)));
     }
 
     /// <summary>Creates a workspace whose output selection succeeds with the requested association.</summary>

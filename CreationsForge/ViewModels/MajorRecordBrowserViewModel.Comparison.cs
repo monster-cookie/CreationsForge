@@ -151,7 +151,7 @@ public sealed partial class MajorRecordBrowserViewModel
     /// <param name="cancellationToken">The comparison token.</param>
     /// <returns>The native comparison or a typed revision failure.</returns>
     private static async ValueTask<EngineResult<MajorRecordComparison>> CompareAtRevisionAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         CompareMajorRecordRequest request,
         WorkspaceRevision expectedRevision,
         CancellationToken cancellationToken)

@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace CreationsForge.Core.Engine;
 
 /// <summary>Exposes family-neutral contextual reads through the workspace's serialized plugin lifetime.</summary>
-public sealed partial class FormListWorkspace
+public sealed partial class PluginWorkspace
 {
     /// <inheritdoc />
     public ValueTask<EngineResult<RecordRead>> ReadRecordContextAsync(

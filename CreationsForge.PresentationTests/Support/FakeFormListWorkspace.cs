@@ -7,7 +7,7 @@ namespace CreationsForge.PresentationTests.Support;
 /// <summary>
 /// Supplies deterministic output selection and disposal while rejecting unrelated engine operations in presentation tests.
 /// </summary>
-internal sealed class FakeFormListWorkspace : IFormListWorkspace
+internal sealed class FakeFormListWorkspace : IPluginWorkspace
 {
     /// <summary>The callback that supplies output-selection behavior.</summary>
     private readonly Func<SelectOutputRequest, CancellationToken, ValueTask<EngineResult<OutputSelectionReceipt>>> SelectOutputAction;

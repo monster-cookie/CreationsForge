@@ -520,7 +520,7 @@ public sealed partial class WorkspaceChangesViewModel
     /// <summary>Reads post-mutation state with a non-user-cancelable drain token and detaches unexpected failure.</summary>
     /// <param name="workspace">The still-borrowed live workspace.</param>
     /// <returns>The exact state result or a typed detached failure.</returns>
-    private static async ValueTask<EngineResult<WorkspaceState>> ReadPostResultStateAsync(IFormListWorkspace workspace)
+    private static async ValueTask<EngineResult<WorkspaceState>> ReadPostResultStateAsync(IPluginWorkspace workspace)
     {
         try
         {

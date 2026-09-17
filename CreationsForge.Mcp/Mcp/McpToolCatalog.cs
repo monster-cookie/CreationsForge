@@ -17,7 +17,7 @@ public sealed class McpToolCatalog
     public IReadOnlyList<McpServerTool> CreateTools(
         McpWorkspaceRegistry workspaceRegistry,
         string serverVersion,
-        IFormListWorkspaceFactory? workspaceFactory = null)
+        IPluginWorkspaceFactory? workspaceFactory = null)
     {
         ArgumentNullException.ThrowIfNull(workspaceRegistry);
         ArgumentException.ThrowIfNullOrWhiteSpace(serverVersion);
@@ -55,7 +55,7 @@ public sealed class McpToolCatalog
     internal IReadOnlyList<McpServerTool> CreateTools(
         McpWorkspaceRegistry workspaceRegistry,
         string serverVersion,
-        IFormListWorkspaceFactory workspaceFactory,
+        IPluginWorkspaceFactory workspaceFactory,
         IWorkspaceSaveCoordinator saveCoordinator,
         IReadOnlyList<IFormListEditWireCodec> codecs,
         IReadOnlyList<IFormListEditWireSchemaCatalog> schemaCatalogs,

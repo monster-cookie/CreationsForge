@@ -392,7 +392,7 @@ public sealed partial class MajorRecordBrowserViewModel
     /// <param name="warnings">Warnings observed before the conflict.</param>
     /// <returns>The typed failed result.</returns>
     private static EngineResult<T> RevisionFailure<T>(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         WorkspaceRevision? expectedRevision,
         WorkspaceRevision? observedRevision,
         string message,

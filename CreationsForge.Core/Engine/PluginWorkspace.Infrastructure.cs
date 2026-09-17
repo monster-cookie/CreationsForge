@@ -6,7 +6,7 @@ namespace CreationsForge.Core.Engine;
 /// <summary>
 /// Contains serialized reads, output publication, replay support, and mutation guards for the workspace.
 /// </summary>
-public sealed partial class FormListWorkspace
+public sealed partial class PluginWorkspace
 {
     /// <summary>Adapts a contextual engine read to the legacy detached-getter workspace response.</summary>
     /// <param name="request">The exact FormList identity and scope to read.</param>

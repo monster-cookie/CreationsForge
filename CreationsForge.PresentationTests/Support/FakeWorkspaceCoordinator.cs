@@ -59,7 +59,7 @@ internal sealed class FakeWorkspaceCoordinator : IWorkspaceCoordinator
 
     /// <inheritdoc />
     public ValueTask<EngineResult<T>> ExecuteAsync<T>(
-        Func<IFormListWorkspace, CancellationToken, ValueTask<EngineResult<T>>> operation,
+        Func<IPluginWorkspace, CancellationToken, ValueTask<EngineResult<T>>> operation,
         CancellationToken cancellationToken = default)
     {
         throw new NotSupportedException("This presentation fake does not borrow records.");

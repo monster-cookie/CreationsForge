@@ -263,7 +263,7 @@ public sealed class FormListRegressionMatrixTests
     /// <param name="mode">Whether the output must be absent or present.</param>
     /// <returns>The successful output-selection receipt.</returns>
     private static async Task<OutputSelectionReceipt> SelectOutputAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         OutputAssociation association,
         OutputSelectionMode mode)
     {
@@ -281,7 +281,7 @@ public sealed class FormListRegressionMatrixTests
     /// <param name="targetFormKey">The output FormList identity for an existing-output edit, otherwise <see langword="null"/>.</param>
     /// <returns>The successful stable edit identity.</returns>
     private static async Task<EditReceipt> BeginEditAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         FormListEditRole role,
         FormKey? originFormKey = null,
         FormKey? targetFormKey = null)
@@ -304,7 +304,7 @@ public sealed class FormListRegressionMatrixTests
     /// <param name="edit">The typed domain edit to apply.</param>
     /// <returns>A task that completes when the candidate is published or the assertion fails.</returns>
     private static async Task ApplyEditAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         Guid editId,
         FormListEdit edit)
     {
@@ -322,7 +322,7 @@ public sealed class FormListRegressionMatrixTests
     /// <param name="expectedStarfieldFormKey">The Starfield FormList identity corresponding to <paramref name="expectedStarfieldRecord"/>.</param>
     /// <returns>The committed save result with its adopted baseline.</returns>
     private static async Task<SaveResult> SaveAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         OutputArtifactSetBaseline expectedBaseline,
         JsonElement? expectedStarfieldRecord = null,
         FormKey? expectedStarfieldFormKey = null)
@@ -358,7 +358,7 @@ public sealed class FormListRegressionMatrixTests
     /// <param name="logSink">The test-owned structured log sink used to expose an underlying plugin reader exception.</param>
     /// <returns>The complete detached record JSON record.</returns>
     private static async Task<JsonElement> ReadRecordAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         OutputAssociation association,
         FormKey formKey,
         CollectingLogSink logSink)
@@ -666,7 +666,7 @@ public sealed class FormListRegressionMatrixTests
     /// <param name="expectedRecord">The complete expected read view captured immediately before save.</param>
     /// <returns>A bounded diagnostic describing exact changed, missing, or added JSON paths.</returns>
     private static string DescribeStarfieldStagedDifference(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         Guid operationId,
         OutputArtifactSetBaseline expectedBaseline,
         FormKey formKey,
@@ -844,7 +844,7 @@ public sealed class FormListRegressionMatrixTests
     /// <param name="result">The guarded save result.</param>
     /// <param name="workspace">The workspace whose synchronization state was updated by the save.</param>
     /// <returns>A diagnostic containing status, typed error, recovery evidence, warnings, and synchronization state.</returns>
-    private static string DescribeSaveFailure(SaveResult result, IFormListWorkspace workspace)
+    private static string DescribeSaveFailure(SaveResult result, IPluginWorkspace workspace)
     {
         var warnings = string.Join(
             " | ",

@@ -31,7 +31,7 @@ public sealed class WorkspaceSelectionViewHeadlessTests
     {
         var dispatcher = new InlineUiDispatcher();
         var factory = new FakeFormListWorkspaceFactory((request, _) =>
-            ValueTask.FromResult(EngineResult<IFormListWorkspace>.Failure(
+            ValueTask.FromResult(EngineResult<IPluginWorkspace>.Failure(
                 new EngineError(EngineErrorCode.SourceOpenFailed, "Test factory does not open records."),
                 workspaceId: request.WorkspaceId)));
         var coordinator = new WorkspaceCoordinator(factory, dispatcher, new LoggerConfiguration().CreateLogger());
@@ -116,10 +116,10 @@ public sealed class WorkspaceSelectionViewHeadlessTests
                     throw;
                 }
             });
-        var workspaces = new Queue<IFormListWorkspace>([original, candidate]);
+        var workspaces = new Queue<IPluginWorkspace>([original, candidate]);
         var coordinator = new WorkspaceCoordinator(
             new FakeFormListWorkspaceFactory((_, _) =>
-                ValueTask.FromResult(EngineResult<IFormListWorkspace>.Success(workspaces.Dequeue()))),
+                ValueTask.FromResult(EngineResult<IPluginWorkspace>.Success(workspaces.Dequeue()))),
             new InlineUiDispatcher(),
             new LoggerConfiguration().CreateLogger());
         var viewModel = new WorkspaceSelectionViewModel(
@@ -182,7 +182,7 @@ public sealed class WorkspaceSelectionViewHeadlessTests
         var dispatcher = new QueuedUiDispatcher();
         var coordinator = new WorkspaceCoordinator(
             new FakeFormListWorkspaceFactory((_, _) =>
-                ValueTask.FromResult(EngineResult<IFormListWorkspace>.Success(candidate))),
+                ValueTask.FromResult(EngineResult<IPluginWorkspace>.Success(candidate))),
             dispatcher,
             new LoggerConfiguration().CreateLogger());
         var viewModel = new WorkspaceSelectionViewModel(

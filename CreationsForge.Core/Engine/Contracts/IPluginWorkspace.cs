@@ -6,7 +6,7 @@ namespace CreationsForge.Core.Engine.Contracts;
 /// <summary>
 /// Owns one isolated plugin source/output lifetime and serializes all operations through that workspace.
 /// </summary>
-public interface IFormListWorkspace : IAsyncDisposable
+public interface IPluginWorkspace : IAsyncDisposable
 {
     /// <summary>Gets the caller-assigned workspace identifier.</summary>
     Guid WorkspaceId { get; }

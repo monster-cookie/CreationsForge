@@ -474,7 +474,7 @@ public sealed class ClientAcceptanceSavedOutputVerifierTests
     /// <param name="formKey">The exact record identity.</param>
     /// <param name="cancellationToken">The propagated read token.</param>
     /// <returns>The detached complete inspector JSON.</returns>
-    private static async Task<JsonElement> ReadEngineRecordAsync(IFormListWorkspace workspace, ModKey outputModKey, FormKey formKey, CancellationToken cancellationToken)
+    private static async Task<JsonElement> ReadEngineRecordAsync(IPluginWorkspace workspace, ModKey outputModKey, FormKey formKey, CancellationToken cancellationToken)
     {
         var read = await workspace.ReadFormListViewAsync(new ReferenceRequest(formKey, RecordScope.StagedOutput, outputModKey), cancellationToken);
         RequireSucceeded(read, $"Fresh engine read for '{formKey}'");

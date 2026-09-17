@@ -483,8 +483,8 @@ public sealed class FormListWorkspaceFactoryTests
             builder.RegisterModule<EngineModule>();
             using var container = builder.Build();
 
-            var firstFactory = container.Resolve<IFormListWorkspaceFactory>();
-            var secondFactory = container.Resolve<IFormListWorkspaceFactory>();
+            var firstFactory = container.Resolve<IPluginWorkspaceFactory>();
+            var secondFactory = container.Resolve<IPluginWorkspaceFactory>();
             var firstResult = await firstFactory.OpenAsync(firstRequest);
             var secondResult = await secondFactory.OpenAsync(secondRequest);
 
@@ -550,11 +550,11 @@ public sealed class FormListWorkspaceFactoryTests
     /// <summary>Creates a factory with externally supplied test infrastructure.</summary>
     /// <param name="adapter">The single adapter available to the factory.</param>
     /// <returns>A workspace factory isolated from legacy Core composition.</returns>
-    private static FormListWorkspaceFactory CreateFactory(IFormListGameAdapter adapter)
+    private static PluginWorkspaceFactory CreateFactory(IFormListGameAdapter adapter)
     {
         var saveCoordinator = Mock.Of<IWorkspaceSaveCoordinator>();
         TestWorkspaceInfrastructure.ConfigureReadyAdmission(saveCoordinator);
-        return new FormListWorkspaceFactory(
+        return new PluginWorkspaceFactory(
             [adapter],
             saveCoordinator,
             TestWorkspaceInfrastructure.CreateLeaseProvider(),

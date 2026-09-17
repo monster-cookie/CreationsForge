@@ -214,7 +214,7 @@ public sealed partial class FormListEditorViewModel
     /// <param name="descriptor">The desktop descriptor captured before borrowing.</param>
     /// <returns>A typed identity or synchronization error, or <see langword="null"/> when exact validation succeeds.</returns>
     private static EngineError? ValidateWorkspaceState(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         WorkspaceState state,
         WorkspaceDescriptor descriptor)
     {
@@ -248,7 +248,7 @@ public sealed partial class FormListEditorViewModel
     /// <param name="session">The captured editor session.</param>
     /// <returns>A typed identity or synchronization error, or <see langword="null"/>.</returns>
     private static EngineError? ValidateSessionState(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         WorkspaceState state,
         WorkspaceDescriptor descriptor,
         FormListEditorSession session)

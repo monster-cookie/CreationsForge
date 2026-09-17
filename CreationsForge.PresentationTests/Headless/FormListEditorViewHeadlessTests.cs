@@ -201,7 +201,7 @@ public sealed class FormListEditorViewHeadlessTests
     }
 
     /// <summary>Implements the exact successful Begin reads needed by the reattachment regression.</summary>
-    private sealed class ReattachEditorWorkspace : IFormListWorkspace
+    private sealed class ReattachEditorWorkspace : IPluginWorkspace
     {
         /// <summary>The selected output identity.</summary>
         private readonly OutputAssociation Output;

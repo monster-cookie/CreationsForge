@@ -252,7 +252,7 @@ public sealed class WorkspacePluginSelectionViewModelTests
     private static FakeFormListWorkspaceFactory CreateFactory(FakeFormListWorkspace workspace)
     {
         return new FakeFormListWorkspaceFactory((_, _) =>
-            ValueTask.FromResult(EngineResult<IFormListWorkspace>.Success(workspace)));
+            ValueTask.FromResult(EngineResult<IPluginWorkspace>.Success(workspace)));
     }
 
     /// <summary>Creates a workspace whose output selection succeeds with the requested association.</summary>

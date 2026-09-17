@@ -449,7 +449,7 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
             Mock<IWorkspaceSaveCoordinator> saveCoordinator,
             Mock<IOutputDirectoryLeaseProvider> leaseProvider,
             List<Mock<IOutputDirectoryLease>> acquiredLeases,
-            IFormListWorkspace workspace,
+            IPluginWorkspace workspace,
             OutputAssociation outputAssociation,
             OutputArtifactSetBaseline? selectedBaseline)
         {
@@ -483,7 +483,7 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
         internal List<Mock<IOutputDirectoryLease>> AcquiredLeases { get; }
 
         /// <summary>Gets the live workspace under test.</summary>
-        internal IFormListWorkspace Workspace { get; }
+        internal IPluginWorkspace Workspace { get; }
 
         /// <summary>Gets the canonical test output association.</summary>
         internal OutputAssociation OutputAssociation { get; }
@@ -556,7 +556,7 @@ public sealed class FormListWorkspacePersistenceRecoveryTests
                 new[] { masterPath, sourcePath },
                 dataDirectory.FullName,
                 new[] { stringsDirectory.FullName });
-            var factory = new Core.Engine.FormListWorkspaceFactory(
+            var factory = new Core.Engine.PluginWorkspaceFactory(
                 new[] { adapter.Object },
                 saveCoordinator.Object,
                 leaseProvider.Object,

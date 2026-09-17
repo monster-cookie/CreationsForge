@@ -25,7 +25,7 @@ public static class McpHostComposition
     internal static HostApplicationBuilder CreateProductionBuilder(
         McpWorkspaceRegistry workspaceRegistry,
         string serverVersion,
-        IFormListWorkspaceFactory workspaceFactory,
+        IPluginWorkspaceFactory workspaceFactory,
         IWorkspaceSaveCoordinator saveCoordinator,
         IReadOnlyList<IFormListEditWireCodec> codecs,
         IReadOnlyList<IFormListEditWireSchemaCatalog> schemaCatalogs,
@@ -58,7 +58,7 @@ public static class McpHostComposition
     public static HostApplicationBuilder CreateBuilder(
         McpWorkspaceRegistry workspaceRegistry,
         string serverVersion,
-        IFormListWorkspaceFactory? workspaceFactory,
+        IPluginWorkspaceFactory? workspaceFactory,
         Action<IServiceCollection>? configureServices = null)
     {
         ArgumentNullException.ThrowIfNull(workspaceRegistry);

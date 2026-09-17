@@ -294,7 +294,7 @@ public sealed class WorkspaceSaveIntegrationTests
     /// <param name="mode">Whether the destination must be absent or present.</param>
     /// <returns>The successful selected-output receipt.</returns>
     private static async Task<OutputSelectionReceipt> SelectOutputAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         OutputAssociation association,
         OutputSelectionMode mode)
     {
@@ -308,7 +308,7 @@ public sealed class WorkspaceSaveIntegrationTests
     /// <summary>Allocates and publishes a new FormList through the public workspace boundary.</summary>
     /// <param name="workspace">The selected workspace.</param>
     /// <returns>The successful edit receipt and stable edit identity.</returns>
-    private static async Task<EditReceipt> BeginNewEditAsync(IFormListWorkspace workspace)
+    private static async Task<EditReceipt> BeginNewEditAsync(IPluginWorkspace workspace)
     {
         var result = await workspace.BeginEditAsync(
             new BeginEditRequest(Guid.NewGuid(), workspace.Revision, FormListEditRole.New),
@@ -322,7 +322,7 @@ public sealed class WorkspaceSaveIntegrationTests
     /// <param name="editId">The staged edit session to mutate.</param>
     /// <param name="edit">The prepared-by-adapter typed mutation.</param>
     /// <returns>A task that completes after the published workspace revision advances.</returns>
-    private static async Task ApplyEditAsync(IFormListWorkspace workspace, Guid editId, FormListEdit edit)
+    private static async Task ApplyEditAsync(IPluginWorkspace workspace, Guid editId, FormListEdit edit)
     {
         var result = await workspace.ApplyFormListEditAsync(
             new FormListEditRequest(Guid.NewGuid(), workspace.Revision, editId, edit),
@@ -338,7 +338,7 @@ public sealed class WorkspaceSaveIntegrationTests
     /// <param name="expectedItem">The expected sole item, or <see langword="null"/> when the list must be empty.</param>
     /// <returns>A task that completes after detached preview evidence is inspected.</returns>
     private static async Task AssertPreviewAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         FormKey formKey,
         string expectedEditorId,
         FormKey? expectedItem = null)
@@ -358,7 +358,7 @@ public sealed class WorkspaceSaveIntegrationTests
     /// <param name="expectedItem">The expected sole item, or <see langword="null"/> when the list must be empty.</param>
     /// <returns>A task that completes after the public read view is inspected.</returns>
     private static async Task AssertRecordAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         OutputAssociation association,
         FormKey formKey,
         string expectedEditorId,
@@ -374,7 +374,7 @@ public sealed class WorkspaceSaveIntegrationTests
     /// <param name="formKey">The exact output FormList identity.</param>
     /// <returns>The detached complete FormList view.</returns>
     private static async Task<JsonElement> ReadRecordAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         OutputAssociation association,
         FormKey formKey)
     {
@@ -445,7 +445,7 @@ public sealed class WorkspaceSaveIntegrationTests
     /// <summary>Asserts a save fully committed, reopened, and published its new exact output baseline.</summary>
     /// <param name="workspace">The workspace that adopted the committed output.</param>
     /// <param name="save">The guarded save result.</param>
-    private static void AssertCommittedSave(IFormListWorkspace workspace, SaveResult save)
+    private static void AssertCommittedSave(IPluginWorkspace workspace, SaveResult save)
     {
         save.Status.ShouldBe(SaveCommitStatus.Committed);
         save.Error.ShouldBeNull();

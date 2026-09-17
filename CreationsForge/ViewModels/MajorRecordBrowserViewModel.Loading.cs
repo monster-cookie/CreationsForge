@@ -120,7 +120,7 @@ public sealed partial class MajorRecordBrowserViewModel
     /// <param name="cancellationToken">The operation token.</param>
     /// <returns>The page with a revision proven against the current workspace state.</returns>
     private static async ValueTask<EngineResult<MajorRecordListPage>> ReadRecordPageAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         WorkspaceRevision? expectedRevision,
         string? continuationToken,
         CancellationToken cancellationToken)
@@ -282,7 +282,7 @@ public sealed partial class MajorRecordBrowserViewModel
     /// <param name="cancellationToken">The operation token.</param>
     /// <returns>Every exact context match in deterministic engine order.</returns>
     private static async ValueTask<EngineResult<IReadOnlyList<ReferenceSearchMatch>>> ReadContextsAtRevisionAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         FormKey formKey,
         WorkspaceRevision expectedRevision,
         CancellationToken cancellationToken)

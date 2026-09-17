@@ -7,7 +7,7 @@ public sealed class RecordEditProvenance
 {
     /// <summary>Initializes immutable staged-edit provenance without retaining a record.</summary>
     /// <param name="editId">The non-empty staged edit-session identifier.</param>
-    /// <param name="targetFormKey">The non-null FormList identity edited in the output.</param>
+    /// <param name="targetFormKey">The non-null major-record identity edited in the output.</param>
     /// <param name="baselineKind">Whether the before-view is absent, from the original output, or from one exact source context.</param>
     /// <param name="baselineContext">The exact resolved or deleted record context for an original-output or source baseline, otherwise <see langword="null"/>.</param>
     /// <param name="sourceBaselineId">The non-empty immutable source-set baseline identifier for a source context, otherwise <see langword="null"/>.</param>
@@ -46,7 +46,7 @@ public sealed class RecordEditProvenance
     /// <summary>Gets the staged edit-session identifier.</summary>
     public Guid EditId { get; }
 
-    /// <summary>Gets the FormList identity edited in the output.</summary>
+    /// <summary>Gets the major-record identity edited in the output.</summary>
     public FormKey TargetFormKey { get; }
 
     /// <summary>Gets how the exact plugin before-view must be reconstructed.</summary>
@@ -59,7 +59,7 @@ public sealed class RecordEditProvenance
     public Guid? SourceBaselineId { get; }
 
     /// <summary>Validates the complete baseline discriminator, context, and source-baseline combination.</summary>
-    /// <param name="targetFormKey">The FormList identity edited in the output.</param>
+    /// <param name="targetFormKey">The major-record identity edited in the output.</param>
     /// <param name="baselineKind">The requested before-view source.</param>
     /// <param name="baselineContext">The optional exact record context.</param>
     /// <param name="sourceBaselineId">The optional immutable source-set baseline identifier.</param>

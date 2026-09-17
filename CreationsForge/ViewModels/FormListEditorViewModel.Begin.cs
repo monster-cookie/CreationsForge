@@ -267,7 +267,7 @@ public sealed partial class FormListEditorViewModel
     /// <param name="cancellationToken">The operation token used only for post-mutation reads.</param>
     /// <returns>A known-success outcome even when seed or preview capture fails.</returns>
     private async ValueTask<FormListEditorBeginOutcome> ReadBeginFollowUpAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         WorkspaceDescriptor descriptor,
         FormListWireCatalogContext catalogContext,
         IReadOnlyList<FormListCommandPresentation> commands,

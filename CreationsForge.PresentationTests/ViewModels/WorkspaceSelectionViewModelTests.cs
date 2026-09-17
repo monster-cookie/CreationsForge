@@ -127,7 +127,7 @@ public sealed class WorkspaceSelectionViewModelTests
         var factory = new FakeFormListWorkspaceFactory((request, _) =>
         {
             request.Progress?.Report(new WorkspaceOpenProgress(WorkspaceOpenStage.OpeningSources, "Opening test sources."));
-            return ValueTask.FromResult(EngineResult<IFormListWorkspace>.Success(workspace));
+            return ValueTask.FromResult(EngineResult<IPluginWorkspace>.Success(workspace));
         });
         var dispatcher = new InlineUiDispatcher();
         var coordinator = CreateCoordinator(factory, dispatcher);
@@ -193,7 +193,7 @@ public sealed class WorkspaceSelectionViewModelTests
     {
         var expectedError = new EngineError(EngineErrorCode.MissingMaster, "The explicit load order is missing Master.esm.");
         var factory = new FakeFormListWorkspaceFactory((request, _) =>
-            ValueTask.FromResult(EngineResult<IFormListWorkspace>.Failure(expectedError, workspaceId: request.WorkspaceId)));
+            ValueTask.FromResult(EngineResult<IPluginWorkspace>.Failure(expectedError, workspaceId: request.WorkspaceId)));
         var dispatcher = new InlineUiDispatcher();
         var gameSelection = new FakeGameSelectionService();
         var logSink = new CollectingLogSink();
@@ -357,7 +357,7 @@ public sealed class WorkspaceSelectionViewModelTests
     private static FakeFormListWorkspaceFactory CreateFactory(FakeFormListWorkspace workspace)
     {
         return new FakeFormListWorkspaceFactory((_, _) =>
-            ValueTask.FromResult(EngineResult<IFormListWorkspace>.Success(workspace)));
+            ValueTask.FromResult(EngineResult<IPluginWorkspace>.Success(workspace)));
     }
 
     /// <summary>Creates a workspace whose output selection succeeds using the requested association.</summary>

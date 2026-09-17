@@ -6,7 +6,7 @@ namespace CreationsForge.Core.Engine;
 /// <summary>
 /// Owns output-directory admission and synchronization helpers for one isolated workspace.
 /// </summary>
-public sealed partial class FormListWorkspace
+public sealed partial class PluginWorkspace
 {
     /// <inheritdoc />
     public async ValueTask<SaveResult> SaveAsync(SaveRequest request, CancellationToken cancellationToken = default)

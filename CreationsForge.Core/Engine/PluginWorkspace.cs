@@ -9,7 +9,7 @@ namespace CreationsForge.Core.Engine;
 /// <summary>
 /// Owns one isolated workspace and serializes reads, mutations, saves, and disposal through one gate.
 /// </summary>
-public sealed partial class FormListWorkspace : IFormListWorkspace
+public sealed partial class PluginWorkspace : IPluginWorkspace
 {
     /// <summary>Stores the canonical explicit inputs used to open this workspace.</summary>
     private readonly WorkspaceOpenRequest Request;
@@ -77,7 +77,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
     /// <param name="outputDirectoryLeaseProvider">The exclusive output-directory lease provider.</param>
     /// <param name="logger">The structured diagnostic logger.</param>
     /// <param name="operationReplayCapacity">The positive maximum number of replayable mutation results retained by this workspace.</param>
-    internal FormListWorkspace(
+    internal PluginWorkspace(
         WorkspaceOpenRequest request,
         IFormListGameAdapter adapter,
         PluginSourceOpenResult sourceOpenResult,
@@ -929,7 +929,7 @@ public sealed partial class FormListWorkspace : IFormListWorkspace
                 }
             }
 
-            Logger.Debug("Disposed FormList workspace {WorkspaceId}", WorkspaceId);
+            Logger.Debug("Disposed plugin workspace {WorkspaceId}", WorkspaceId);
             if (failures is { Count: 1 })
             {
                 throw failures[0];

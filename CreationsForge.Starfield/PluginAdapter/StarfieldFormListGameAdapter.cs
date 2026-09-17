@@ -54,9 +54,7 @@ public sealed class StarfieldFormListGameAdapter : IFormListGameAdapter
     public IFormListInspector Inspector => OutputService.Inspector;
 
     /// <inheritdoc />
-    public IMajorRecordInspector MajorRecordInspector { get; } = new MutagenMajorRecordInspector(
-        typeof(StarfieldMajorRecord),
-        "Mutagen.Bethesda.Starfield/0.55.0-alpha.53");
+    public IMajorRecordInspector MajorRecordInspector => OutputService.MajorRecordInspector;
 
     /// <inheritdoc />
     public bool SupportsRelease(GameRelease release)

@@ -5,7 +5,7 @@ using Module = Autofac.Module;
 namespace CreationsForge.Core.Engine;
 
 /// <summary>
-/// Registers the UI-neutral FormList workspace factory without legacy Core infrastructure.
+/// Registers the UI-neutral plugin workspace factory without legacy Core infrastructure.
 /// </summary>
 public sealed class EngineModule : Module
 {
@@ -13,8 +13,8 @@ public sealed class EngineModule : Module
     /// <param name="builder">The Autofac container builder receiving the engine registration.</param>
     protected override void Load(ContainerBuilder builder)
     {
-        builder.RegisterType<FormListWorkspaceFactory>()
-            .As<IFormListWorkspaceFactory>()
+        builder.RegisterType<PluginWorkspaceFactory>()
+            .As<IPluginWorkspaceFactory>()
             .InstancePerDependency();
     }
 }

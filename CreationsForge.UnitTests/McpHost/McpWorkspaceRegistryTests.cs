@@ -20,7 +20,7 @@ public sealed class McpWorkspaceRegistryTests
         var request = CreateRequest();
         var revision = new WorkspaceRevision(Guid.NewGuid(), 3);
         var workspace = CreateWorkspace(request.WorkspaceId, revision);
-        var factory = CreateFactory(EngineResult<IFormListWorkspace>.Success(workspace.Object));
+        var factory = CreateFactory(EngineResult<IPluginWorkspace>.Success(workspace.Object));
 
         var result = await registry.OpenAsync(factory.Object, request);
 
@@ -43,7 +43,7 @@ public sealed class McpWorkspaceRegistryTests
         await using var registry = new McpWorkspaceRegistry();
         var request = CreateRequest();
         var workspace = CreateWorkspace(request.WorkspaceId, new WorkspaceRevision(Guid.NewGuid(), 0));
-        var factory = CreateFactory(EngineResult<IFormListWorkspace>.Success(workspace.Object));
+        var factory = CreateFactory(EngineResult<IPluginWorkspace>.Success(workspace.Object));
 
         var firstResult = await registry.OpenAsync(factory.Object, request);
         var duplicateResult = await registry.OpenAsync(factory.Object, request);
@@ -67,7 +67,7 @@ public sealed class McpWorkspaceRegistryTests
             EngineErrorCode.UnsupportedGameRelease,
             "No plugin adapter supports the requested release.");
         var factory = CreateFactory(
-            EngineResult<IFormListWorkspace>.Failure(expectedError, workspaceId: request.WorkspaceId));
+            EngineResult<IPluginWorkspace>.Failure(expectedError, workspaceId: request.WorkspaceId));
 
         var result = await registry.OpenAsync(factory.Object, request);
 
@@ -85,13 +85,13 @@ public sealed class McpWorkspaceRegistryTests
         var request = CreateRequest();
         var workspace = CreateWorkspace(request.WorkspaceId, new WorkspaceRevision(Guid.NewGuid(), 0));
         using var cancellationSource = new CancellationTokenSource();
-        var factory = new Mock<IFormListWorkspaceFactory>();
+        var factory = new Mock<IPluginWorkspaceFactory>();
         factory.Setup(candidate => candidate.OpenAsync(request, cancellationSource.Token))
             .Returns(() =>
             {
                 cancellationSource.Cancel();
                 return ValueTask.FromResult(
-                    EngineResult<IFormListWorkspace>.Success(workspace.Object));
+                    EngineResult<IPluginWorkspace>.Success(workspace.Object));
             });
 
         await Should.ThrowAsync<OperationCanceledException>(async () =>
@@ -108,11 +108,11 @@ public sealed class McpWorkspaceRegistryTests
         var registry = new McpWorkspaceRegistry();
         var request = CreateRequest();
         var workspace = CreateWorkspace(request.WorkspaceId, new WorkspaceRevision(Guid.NewGuid(), 0));
-        var openCompletion = new TaskCompletionSource<EngineResult<IFormListWorkspace>>(
+        var openCompletion = new TaskCompletionSource<EngineResult<IPluginWorkspace>>(
             TaskCreationOptions.RunContinuationsAsynchronously);
-        var factory = new Mock<IFormListWorkspaceFactory>();
+        var factory = new Mock<IPluginWorkspaceFactory>();
         factory.Setup(candidate => candidate.OpenAsync(request, It.IsAny<CancellationToken>()))
-            .Returns(new ValueTask<EngineResult<IFormListWorkspace>>(openCompletion.Task));
+            .Returns(new ValueTask<EngineResult<IPluginWorkspace>>(openCompletion.Task));
 
         var openTask = registry.OpenAsync(factory.Object, request).AsTask();
         factory.Verify(
@@ -121,7 +121,7 @@ public sealed class McpWorkspaceRegistryTests
         var disposeTask = registry.DisposeAsync().AsTask();
         disposeTask.IsCompleted.ShouldBeFalse();
 
-        openCompletion.SetResult(EngineResult<IFormListWorkspace>.Success(workspace.Object));
+        openCompletion.SetResult(EngineResult<IPluginWorkspace>.Success(workspace.Object));
 
         await Should.ThrowAsync<ObjectDisposedException>(async () => await openTask);
         await disposeTask;
@@ -139,8 +139,8 @@ public sealed class McpWorkspaceRegistryTests
         firstWorkspace.Setup(candidate => candidate.DisposeAsync())
             .Returns(ValueTask.FromException(new InvalidOperationException("First disposal failed.")));
         var secondWorkspace = CreateWorkspace(secondRequest.WorkspaceId, new WorkspaceRevision(Guid.NewGuid(), 0));
-        var firstFactory = CreateFactory(EngineResult<IFormListWorkspace>.Success(firstWorkspace.Object));
-        var secondFactory = CreateFactory(EngineResult<IFormListWorkspace>.Success(secondWorkspace.Object));
+        var firstFactory = CreateFactory(EngineResult<IPluginWorkspace>.Success(firstWorkspace.Object));
+        var secondFactory = CreateFactory(EngineResult<IPluginWorkspace>.Success(secondWorkspace.Object));
         (await registry.OpenAsync(firstFactory.Object, firstRequest)).Succeeded.ShouldBeTrue();
         (await registry.OpenAsync(secondFactory.Object, secondRequest)).Succeeded.ShouldBeTrue();
 
@@ -162,8 +162,8 @@ public sealed class McpWorkspaceRegistryTests
         var secondRequest = CreateRequest(Guid.NewGuid());
         var firstWorkspace = CreateWorkspace(firstRequest.WorkspaceId, new WorkspaceRevision(Guid.NewGuid(), 0));
         var secondWorkspace = CreateWorkspace(secondRequest.WorkspaceId, new WorkspaceRevision(Guid.NewGuid(), 0));
-        var firstFactory = CreateFactory(EngineResult<IFormListWorkspace>.Success(firstWorkspace.Object));
-        var secondFactory = CreateFactory(EngineResult<IFormListWorkspace>.Success(secondWorkspace.Object));
+        var firstFactory = CreateFactory(EngineResult<IPluginWorkspace>.Success(firstWorkspace.Object));
+        var secondFactory = CreateFactory(EngineResult<IPluginWorkspace>.Success(secondWorkspace.Object));
         (await registry.OpenAsync(firstFactory.Object, firstRequest)).Succeeded.ShouldBeTrue();
         (await registry.OpenAsync(secondFactory.Object, secondRequest)).Succeeded.ShouldBeTrue();
         var operationStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -186,7 +186,7 @@ public sealed class McpWorkspaceRegistryTests
         registry.GetWorkspaceIds().ShouldBe([secondRequest.WorkspaceId]);
         firstWorkspace.Verify(candidate => candidate.DisposeAsync(), Times.Never);
         secondWorkspace.Verify(candidate => candidate.DisposeAsync(), Times.Never);
-        var reopenFactory = CreateFactory(EngineResult<IFormListWorkspace>.Success(firstWorkspace.Object));
+        var reopenFactory = CreateFactory(EngineResult<IPluginWorkspace>.Success(firstWorkspace.Object));
         var reopenResult = await registry.OpenAsync(reopenFactory.Object, firstRequest);
         reopenResult.Succeeded.ShouldBeFalse();
         reopenResult.Error.ShouldNotBeNull();
@@ -218,7 +218,7 @@ public sealed class McpWorkspaceRegistryTests
         var disposalCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         workspace.Setup(candidate => candidate.DisposeAsync())
             .Returns(new ValueTask(disposalCompletion.Task));
-        var factory = CreateFactory(EngineResult<IFormListWorkspace>.Success(workspace.Object));
+        var factory = CreateFactory(EngineResult<IPluginWorkspace>.Success(workspace.Object));
         (await registry.OpenAsync(factory.Object, request)).Succeeded.ShouldBeTrue();
 
         var closeTask = registry.CloseAsync(request.WorkspaceId).AsTask();
@@ -258,11 +258,11 @@ public sealed class McpWorkspaceRegistryTests
     /// <param name="workspaceId">The workspace identifier exposed by the fake.</param>
     /// <param name="revision">The workspace revision exposed by the fake.</param>
     /// <returns>A configured workspace mock.</returns>
-    private static Mock<IFormListWorkspace> CreateWorkspace(
+    private static Mock<IPluginWorkspace> CreateWorkspace(
         Guid workspaceId,
         WorkspaceRevision revision)
     {
-        var workspace = new Mock<IFormListWorkspace>();
+        var workspace = new Mock<IPluginWorkspace>();
         workspace.SetupGet(candidate => candidate.WorkspaceId).Returns(workspaceId);
         workspace.SetupGet(candidate => candidate.Revision).Returns(revision);
         workspace.Setup(candidate => candidate.DisposeAsync()).Returns(ValueTask.CompletedTask);
@@ -272,10 +272,10 @@ public sealed class McpWorkspaceRegistryTests
     /// <summary>Creates a factory that returns one deterministic engine result.</summary>
     /// <param name="result">The result returned by every factory invocation.</param>
     /// <returns>A configured factory mock.</returns>
-    private static Mock<IFormListWorkspaceFactory> CreateFactory(
-        EngineResult<IFormListWorkspace> result)
+    private static Mock<IPluginWorkspaceFactory> CreateFactory(
+        EngineResult<IPluginWorkspace> result)
     {
-        var factory = new Mock<IFormListWorkspaceFactory>();
+        var factory = new Mock<IPluginWorkspaceFactory>();
         factory.Setup(candidate => candidate.OpenAsync(
                 It.IsAny<WorkspaceOpenRequest>(),
                 It.IsAny<CancellationToken>()))

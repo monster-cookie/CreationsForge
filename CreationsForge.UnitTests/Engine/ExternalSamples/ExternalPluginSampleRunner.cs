@@ -374,7 +374,7 @@ internal static class ExternalPluginSampleRunner
     /// <param name="cancellationToken">A token observed throughout bounded candidate reads.</param>
     /// <returns>Selected complete detached record snapshots.</returns>
     private static async Task<IReadOnlyList<ExternalSelectedRecord>> SelectRecordsAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         ExternalPluginSampleManifest manifest,
         LocalizedOutputMode mode,
         ICollection<string> acceptanceGaps,
@@ -441,7 +441,7 @@ internal static class ExternalPluginSampleRunner
     /// <param name="cancellationToken">A token observed by the plugin inspector.</param>
     /// <returns>The resolved nondeleted external record snapshot.</returns>
     private static async Task<ExternalSelectedRecord> ReadSelectionAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         FormKey formKey,
         CancellationToken cancellationToken)
     {
@@ -477,7 +477,7 @@ internal static class ExternalPluginSampleRunner
     /// <param name="cancellationToken">A token observed during reference resolution.</param>
     /// <returns>A task that completes after the selection contract is proven.</returns>
     private static async Task RequireResolvableItemsAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         IReadOnlyList<ExternalSelectedRecord> records,
         CancellationToken cancellationToken)
     {
@@ -501,7 +501,7 @@ internal static class ExternalPluginSampleRunner
     /// <param name="cancellationToken">A token observed between resolutions.</param>
     /// <returns><see langword="true"/> when at least one real item exists and every real item resolves.</returns>
     private static async Task<bool> AllRealItemsResolveAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         IReadOnlyList<FormKey> items,
         CancellationToken cancellationToken)
     {
@@ -533,7 +533,7 @@ internal static class ExternalPluginSampleRunner
     /// <param name="targetFormKey">The output identity for an existing-output edit.</param>
     /// <returns>The successful edit receipt.</returns>
     private static async Task<EditReceipt> BeginEditAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         FormListEditRole role,
         CancellationToken cancellationToken,
         FormKey? originFormKey = null,
@@ -559,7 +559,7 @@ internal static class ExternalPluginSampleRunner
     /// <param name="cancellationToken">A token observed before publication.</param>
     /// <returns>A task that completes when the mutation is published.</returns>
     private static async Task ApplyEditAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         Guid editId,
         FormListEdit edit,
         CancellationToken cancellationToken)
@@ -577,7 +577,7 @@ internal static class ExternalPluginSampleRunner
     /// <param name="cancellationToken">A token honored by the guarded save contract.</param>
     /// <returns>The committed save result.</returns>
     private static async Task<SaveResult> SaveCommittedAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         OutputArtifactSetBaseline baseline,
         CancellationToken cancellationToken)
     {
@@ -599,7 +599,7 @@ internal static class ExternalPluginSampleRunner
     /// <param name="cancellationToken">A token observed during plugin traversal.</param>
     /// <returns>The complete detached inspector JSON text.</returns>
     private static async Task<string> ReadStagedRecordAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         OutputAssociation association,
         FormKey formKey,
         CancellationToken cancellationToken)

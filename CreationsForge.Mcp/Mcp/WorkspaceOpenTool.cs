@@ -37,7 +37,7 @@ public sealed class WorkspaceOpenTool : McpToolBase
         "{\"type\":\"object\",\"properties\":{\"workspaceId\":{\"type\":\"string\",\"format\":\"uuid\"},\"revision\":" + McpToolSchema.Revision + ",\"warnings\":{\"type\":\"array\",\"items\":" + McpToolSchema.Warning + "}},\"required\":[\"workspaceId\",\"revision\",\"warnings\"],\"additionalProperties\":false}");
 
     /// <summary>The real workspace factory supplied by host composition.</summary>
-    private readonly IFormListWorkspaceFactory WorkspaceFactory;
+    private readonly IPluginWorkspaceFactory WorkspaceFactory;
 
     /// <summary>The host-owned registry that receives successful workspace ownership.</summary>
     private readonly McpWorkspaceRegistry WorkspaceRegistry;
@@ -46,7 +46,7 @@ public sealed class WorkspaceOpenTool : McpToolBase
     /// <param name="workspaceFactory">The real engine factory selected by host composition.</param>
     /// <param name="workspaceRegistry">The host-owned workspace registry.</param>
     public WorkspaceOpenTool(
-        IFormListWorkspaceFactory workspaceFactory,
+        IPluginWorkspaceFactory workspaceFactory,
         McpWorkspaceRegistry workspaceRegistry)
     {
         ArgumentNullException.ThrowIfNull(workspaceFactory);

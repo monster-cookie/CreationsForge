@@ -7,7 +7,7 @@ namespace CreationsForge.PresentationTests.Support;
 /// <summary>
 /// Supplies configurable plugin browser reads while rejecting mutation and persistence operations outside browser tests.
 /// </summary>
-internal sealed class RecordingFormListBrowserWorkspace : IFormListWorkspace
+internal sealed class RecordingFormListBrowserWorkspace : IPluginWorkspace
 {
     /// <summary>The callback that supplies atomic workspace state.</summary>
     private readonly Func<CancellationToken, ValueTask<EngineResult<WorkspaceState>>> ReadStateAction;

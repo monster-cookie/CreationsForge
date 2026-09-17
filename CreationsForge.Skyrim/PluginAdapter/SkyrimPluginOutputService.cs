@@ -1,5 +1,6 @@
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Engine.PluginOutputs;
+using CreationsForge.Core.Engine.RecordInspection;
 using CreationsForge.Skyrim.PluginAdapter.RecordInspection;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
@@ -27,10 +28,16 @@ public sealed partial class SkyrimPluginOutputService
         ArgumentNullException.ThrowIfNull(inputLoader);
         _inputLoader = inputLoader;
         Inspector = new SkyrimFormListInspector();
+        MajorRecordInspector = new MutagenMajorRecordInspector(
+            typeof(SkyrimMajorRecord),
+            "Mutagen.Bethesda.Skyrim/0.55.0-alpha.53");
     }
 
     /// <summary>Gets the stateless complete Skyrim FormList inspector used for detached snapshots.</summary>
     public SkyrimFormListInspector Inspector { get; }
+
+    /// <summary>Gets the complete native Skyrim major-record inspector shared by read and save verification.</summary>
+    public IMajorRecordInspector MajorRecordInspector { get; }
 
     /// <summary>
     /// Opens or constructs a complete Skyrim output candidate without changing any destination artifact.

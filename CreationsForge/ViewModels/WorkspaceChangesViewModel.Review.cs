@@ -379,7 +379,7 @@ public sealed partial class WorkspaceChangesViewModel
     /// <param name="cancellationToken">A token that cancels read-only work.</param>
     /// <returns>A detached capture or typed identity, state, or preview failure.</returns>
     private static async ValueTask<EngineResult<WorkspaceReviewCapture>> CaptureReviewWithinBorrowAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         bool allowBlockedSynchronization,
         CancellationToken cancellationToken)
     {
@@ -457,7 +457,7 @@ public sealed partial class WorkspaceChangesViewModel
     /// <param name="requireOutput">Whether a selected output and complete baseline are required.</param>
     /// <returns>A typed validation failure, or <see langword="null"/> when the result is exact.</returns>
     private static EngineError? ValidateStateResult(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         EngineResult<WorkspaceState> result,
         bool requireOutput)
     {
