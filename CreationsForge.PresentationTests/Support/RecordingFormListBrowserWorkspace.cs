@@ -24,6 +24,9 @@ internal sealed class RecordingFormListBrowserWorkspace : IPluginWorkspace
     /// <summary>The optional callback that supplies bounded major-record pages.</summary>
     private readonly Func<MajorRecordListRequest, CancellationToken, ValueTask<EngineResult<MajorRecordListPage>>>? ListMajorRecordsAction;
 
+    /// <summary>The optional callback that visits all winning record summaries once.</summary>
+    private readonly Func<Action<ReferenceSearchMatch>, Action<ModKey, int>?, CancellationToken, ValueTask<EngineResult<int>>>? VisitWinningRecordSummariesAction;
+
     /// <summary>The optional callback that supplies exact context search pages.</summary>
     private readonly Func<ReferenceSearchRequest, CancellationToken, ValueTask<EngineResult<ReferenceSearchPage>>>? SearchReferencesAction;
 
@@ -40,6 +43,7 @@ internal sealed class RecordingFormListBrowserWorkspace : IPluginWorkspace
     /// <param name="listMajorRecordsAction">An optional callback that supplies bounded major-record pages.</param>
     /// <param name="searchReferencesAction">An optional callback that supplies exact context search pages.</param>
     /// <param name="compareMajorRecordAction">An optional callback that supplies native major-record comparisons.</param>
+    /// <param name="visitWinningRecordSummariesAction">An optional callback that visits all winning metadata.</param>
     /// <exception cref="ArgumentException">Thrown when <paramref name="workspaceId"/> is empty.</exception>
     /// <exception cref="ArgumentNullException">Thrown when any callback is <see langword="null"/>.</exception>
     public RecordingFormListBrowserWorkspace(
@@ -51,7 +55,8 @@ internal sealed class RecordingFormListBrowserWorkspace : IPluginWorkspace
         Func<CompareFormListRequest, CancellationToken, ValueTask<EngineResult<FormListComparison>>> compareAction,
         Func<MajorRecordListRequest, CancellationToken, ValueTask<EngineResult<MajorRecordListPage>>>? listMajorRecordsAction = null,
         Func<ReferenceSearchRequest, CancellationToken, ValueTask<EngineResult<ReferenceSearchPage>>>? searchReferencesAction = null,
-        Func<CompareMajorRecordRequest, CancellationToken, ValueTask<EngineResult<MajorRecordComparison>>>? compareMajorRecordAction = null)
+        Func<CompareMajorRecordRequest, CancellationToken, ValueTask<EngineResult<MajorRecordComparison>>>? compareMajorRecordAction = null,
+        Func<Action<ReferenceSearchMatch>, Action<ModKey, int>?, CancellationToken, ValueTask<EngineResult<int>>>? visitWinningRecordSummariesAction = null)
     {
         if (workspaceId == Guid.Empty)
         {
@@ -71,6 +76,7 @@ internal sealed class RecordingFormListBrowserWorkspace : IPluginWorkspace
         ListMajorRecordsAction = listMajorRecordsAction;
         SearchReferencesAction = searchReferencesAction;
         CompareMajorRecordAction = compareMajorRecordAction;
+        VisitWinningRecordSummariesAction = visitWinningRecordSummariesAction;
     }
 
     /// <inheritdoc />
@@ -168,6 +174,17 @@ internal sealed class RecordingFormListBrowserWorkspace : IPluginWorkspace
         return ListMajorRecordsAction is null
             ? throw Unsupported()
             : ListMajorRecordsAction(request, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public ValueTask<EngineResult<int>> VisitWinningRecordSummariesAsync(
+        Action<ReferenceSearchMatch> onRecord,
+        Action<ModKey, int>? onProgress = null,
+        CancellationToken cancellationToken = default)
+    {
+        return VisitWinningRecordSummariesAction is null
+            ? throw Unsupported()
+            : VisitWinningRecordSummariesAction(onRecord, onProgress, cancellationToken);
     }
 
     /// <inheritdoc />

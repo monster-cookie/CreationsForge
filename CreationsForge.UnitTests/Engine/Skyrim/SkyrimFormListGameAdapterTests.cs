@@ -58,6 +58,15 @@ public sealed class SkyrimFormListGameAdapterTests
         outputWinner.ContainingModKey.ShouldBe(fixture.ExistingOutputModKey);
         outputWinner.Role.ShouldBe(PluginRole.Output);
 
+        var summaries = new List<ReferenceSearchMatch>();
+        var visited = adapter.VisitWinningRecordSummaries(
+            sources, output, summaries.Add, null, TestContext.Current.CancellationToken);
+        visited.Succeeded.ShouldBeTrue(visited.Error?.Message);
+        visited.Value.ShouldBe(summaries.Count);
+        summaries.ShouldContain(match => match.FormKey == fixture.OutputOwnListFormKey);
+        summaries.Count(match => match.FormKey == fixture.Sources.SourceListFormKey).ShouldBe(1);
+        summaries.Single(match => match.FormKey == fixture.Sources.SourceListFormKey).ContainingModKey.ShouldBe(fixture.ExistingOutputModKey);
+
         var read = adapter.ReadFormListContext(
             sources,
             output,

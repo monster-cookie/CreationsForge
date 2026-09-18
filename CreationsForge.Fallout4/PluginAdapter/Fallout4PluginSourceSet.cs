@@ -291,6 +291,26 @@ public sealed class Fallout4PluginSourceSet : IPluginSourceSet
         return BindResult(readerResult.Value!.Search(request, WorkspaceId, Revision, cancellationToken));
     }
 
+    /// <summary>Visits the source-only winning record metadata through one retained reader traversal.</summary>
+    /// <param name="onRecord">Receives each winning summary.</param>
+    /// <param name="onProgress">Receives the current plugin and cumulative count.</param>
+    /// <param name="cancellationToken">Cancels the source traversal.</param>
+    /// <returns>The delivered count bound to this source lifetime and revision.</returns>
+    internal EngineResult<int> VisitWinningRecordSummaries(
+        Action<ReferenceSearchMatch> onRecord,
+        Action<Mutagen.Bethesda.Plugins.ModKey, int>? onProgress,
+        CancellationToken cancellationToken)
+    {
+        var readerResult = GetReferenceReader();
+        if (!readerResult.Succeeded)
+        {
+            return EngineResult<int>.Failure(readerResult.Error!, WorkspaceId, resultRevision: Revision);
+        }
+
+        return BindResult(EngineResult<int>.Success(
+            readerResult.Value!.VisitWinningRecordSummaries(onRecord, onProgress, cancellationToken)));
+    }
+
     /// <summary>
     /// Revalidates every source and localized-string artifact against the baseline established during open.
     /// </summary>

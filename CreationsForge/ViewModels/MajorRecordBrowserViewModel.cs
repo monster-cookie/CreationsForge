@@ -11,9 +11,6 @@ namespace CreationsForge.ViewModels;
 /// <summary>Coordinates complete major-record discovery, exact context selection, and native field comparison.</summary>
 public sealed partial class MajorRecordBrowserViewModel : ViewModelBase, IDisposable
 {
-    /// <summary>The bounded number of winning contexts requested per engine page while loading the complete tree.</summary>
-    internal const int PageSize = ReferenceSearchRequest.MaximumPageSize;
-
     /// <summary>Owns and serializes access to the application workspace.</summary>
     private readonly IWorkspaceCoordinator WorkspaceCoordinator;
 

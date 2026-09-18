@@ -63,6 +63,15 @@ public sealed class Fallout4FormListGameAdapterTests
         winning.Value.Context.Role.ShouldBe(PluginRole.Output);
         winning.Value.Record.ShouldBeOfType<FormList>().EditorID.ShouldBe("ExistingSourceOverride");
 
+        var summaries = new List<ReferenceSearchMatch>();
+        var visited = adapter.VisitWinningRecordSummaries(
+            sources, output, summaries.Add, null, TestContext.Current.CancellationToken);
+        visited.Succeeded.ShouldBeTrue(visited.Error?.Message);
+        visited.Value.ShouldBe(summaries.Count);
+        summaries.ShouldContain(match => match.FormKey == existing.OwnListFormKey);
+        summaries.Count(match => match.FormKey == existing.SourceOverrideFormKey).ShouldBe(1);
+        summaries.Single(match => match.FormKey == existing.SourceOverrideFormKey).ContainingModKey.ShouldBe(existing.Association.ModKey);
+
         AssertArtifactsUnchanged(sourceArtifacts);
         File.ReadAllBytes(existing.Association.PluginPath).ShouldBe(destinationBytes);
     }

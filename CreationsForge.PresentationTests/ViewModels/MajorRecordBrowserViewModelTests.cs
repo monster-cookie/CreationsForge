@@ -13,10 +13,10 @@ namespace CreationsForge.PresentationTests.ViewModels;
 /// <summary>Verifies complete major-record grouping, exact contexts, and native field comparison presentation.</summary>
 public sealed class MajorRecordBrowserViewModelTests
 {
-    /// <summary>Verifies automatic loading includes admitted records and a selected record compares synchronized origin and winner fields.</summary>
+    /// <summary>Verifies one-pass summary loading includes admitted records and selection compares synchronized origin and winner fields.</summary>
     /// <returns>A task that completes after complete loading and comparison publication.</returns>
     [Fact]
-    public async Task StartAndSelectRecord_LoadAllWinningPagesContextsAndSynchronizedFields()
+    public async Task StartAndSelectRecord_VisitAllWinningSummariesContextsAndSynchronizedFields()
     {
         var workspaceId = Guid.NewGuid();
         var revision = new WorkspaceRevision(Guid.NewGuid(), 9);
@@ -27,7 +27,7 @@ public sealed class MajorRecordBrowserViewModelTests
         var keywordKey = new FormKey(patchMod, 0x200);
         var sourcePath = AbsolutePath(sourceMod.FileName);
         var patchPath = AbsolutePath(patchMod.FileName);
-        var pageRequests = new List<MajorRecordListRequest>();
+        var visitCount = 0;
         var searchRequests = new List<ReferenceSearchRequest>();
         var comparisonRequests = new List<CompareMajorRecordRequest>();
         var workspace = new RecordingFormListBrowserWorkspace(
@@ -46,21 +46,7 @@ public sealed class MajorRecordBrowserViewModelTests
             _ => ValueTask.FromResult(EngineResult<IReadOnlyList<PluginSummary>>.Success([], workspaceId, resultRevision: revision)),
             (_, _) => ValueTask.FromResult(EngineResult<IReadOnlyList<FormListSummary>>.Success([], workspaceId, resultRevision: revision)),
             (_, _) => throw new NotSupportedException(),
-            (request, _) =>
-            {
-                pageRequests.Add(request);
-                var records = request.ContinuationToken is null
-                    ? new[]
-                    {
-                        Match(bookKey, "Book", "ExampleBook", patchMod, patchPath, 1, PluginRole.LoadOrder),
-                        Match(masterOnlyKey, "Weapon", "BaseWeapon", sourceMod, sourcePath, 0, PluginRole.Source)
-                    }
-                    : new[] { Match(keywordKey, "Keyword", "ExampleKeyword", patchMod, patchPath, 1, PluginRole.LoadOrder) };
-                return ValueTask.FromResult(EngineResult<MajorRecordListPage>.Success(
-                    new MajorRecordListPage(records, request.ContinuationToken is null ? "page-two" : null),
-                    workspaceId,
-                    resultRevision: revision));
-            },
+            null,
             (request, _) =>
             {
                 searchRequests.Add(request);
@@ -104,6 +90,16 @@ public sealed class MajorRecordBrowserViewModelTests
                         []),
                     workspaceId,
                     resultRevision: revision));
+            },
+            (onRecord, onProgress, _) =>
+            {
+                visitCount++;
+                onRecord(Match(bookKey, "Book", "ExampleBook", patchMod, patchPath, 1, PluginRole.LoadOrder));
+                onRecord(Match(masterOnlyKey, "Weapon", "BaseWeapon", sourceMod, sourcePath, 0, PluginRole.Source));
+                onProgress?.Invoke(sourceMod, 2);
+                onRecord(Match(keywordKey, "Keyword", "ExampleKeyword", patchMod, patchPath, 1, PluginRole.LoadOrder));
+                onProgress?.Invoke(patchMod, 3);
+                return ValueTask.FromResult(EngineResult<int>.Success(3, workspaceId, resultRevision: revision));
             });
         var coordinator = new RecordingWorkspaceCoordinator();
         coordinator.Publish(CreateDescriptor(workspaceId, revision, sourcePath), workspace);
@@ -122,10 +118,7 @@ public sealed class MajorRecordBrowserViewModelTests
 
         await viewModel.StartAsync();
 
-        pageRequests.Count.ShouldBe(2);
-        pageRequests[0].MaximumResults.ShouldBe(MajorRecordBrowserViewModel.PageSize);
-        pageRequests[0].Scope.ShouldBe(RecordScope.WinningOverrides);
-        pageRequests[1].ContinuationToken.ShouldBe("page-two");
+        visitCount.ShouldBe(1);
         viewModel.Records.Select(record => record.RecordType).ShouldBe(["Book", "Weapon", "Keyword"]);
         viewModel.RecordGroups.Select(group => group.Label).ShouldBe(["Book (1)", "Keyword (1)", "Weapon (1)"]);
         viewModel.LoadedRecordCountText.ShouldBe("Loaded records: 3");

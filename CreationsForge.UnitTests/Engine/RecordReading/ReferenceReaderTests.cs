@@ -233,6 +233,17 @@ public sealed class ReferenceReaderTests
             .ShouldBe(output.ModKey);
         result.Value.Matches.Single(match => match.FormKey == masterOnlyKey).ContainingModKey
             .ShouldBe(secondMaster.ModKey);
+
+        var summaries = new List<ReferenceSearchMatch>();
+        var progress = new List<(ModKey Plugin, int Count)>();
+        var visitedCount = reader.VisitWinningRecordSummaries(
+            summaries.Add,
+            (plugin, count) => progress.Add((plugin, count)));
+
+        visitedCount.ShouldBe(3);
+        summaries.Select(MatchIdentity).ShouldBe(result.Value.Matches.Select(MatchIdentity));
+        progress.Select(entry => entry.Plugin).ShouldBe(new[] { output.ModKey, secondMaster.ModKey, baseMaster.ModKey });
+        progress[^1].Count.ShouldBe(3);
     }
 
     /// <summary>Verifies cursor integrity binds workspace, revision, query, scope, filter, and page size.</summary>

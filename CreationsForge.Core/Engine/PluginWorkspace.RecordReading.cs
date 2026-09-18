@@ -66,6 +66,18 @@ public sealed partial class PluginWorkspace
             cancellationToken);
     }
 
+    /// <inheritdoc />
+    public ValueTask<EngineResult<int>> VisitWinningRecordSummariesAsync(
+        Action<ReferenceSearchMatch> onRecord,
+        Action<Mutagen.Bethesda.Plugins.ModKey, int>? onProgress = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(onRecord);
+        return ExecuteReadAsync(
+            () => Adapter.VisitWinningRecordSummaries(Sources!, Output, onRecord, onProgress, cancellationToken),
+            cancellationToken);
+    }
+
     /// <summary>Creates one complete detached native field tree inside the workspace operation gate.</summary>
     /// <param name="request">The exact record context selection.</param>
     /// <param name="cancellationToken">A token observed during selection and native traversal.</param>

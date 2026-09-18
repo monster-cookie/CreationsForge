@@ -378,6 +378,28 @@ public sealed class SkyrimPluginSourceSet : IPluginSourceSet
         return BindResult(result, revision);
     }
 
+    /// <summary>Visits source and optional output winners through one borrowed reference reader.</summary>
+    /// <param name="onRecord">Receives each winning identity summary.</param>
+    /// <param name="onProgress">Receives the current plugin and cumulative count.</param>
+    /// <param name="output">The selected output, or <see langword="null"/>.</param>
+    /// <param name="cancellationToken">Cancels the traversal.</param>
+    /// <returns>The delivered count bound to this source lifetime and revision.</returns>
+    internal EngineResult<int> VisitWinningRecordSummaries(
+        Action<ReferenceSearchMatch> onRecord,
+        Action<ModKey, int>? onProgress,
+        SkyrimPluginOutputState? output,
+        CancellationToken cancellationToken)
+    {
+        var readerResult = GetReferenceReader(output);
+        if (!readerResult.Succeeded)
+        {
+            return EngineResult<int>.Failure(readerResult.Error!, WorkspaceId, resultRevision: Revision);
+        }
+
+        return BindResult(EngineResult<int>.Success(
+            readerResult.Value!.VisitWinningRecordSummaries(onRecord, onProgress, cancellationToken)));
+    }
+
     /// <summary>
     /// Rechecks every admitted plugin and selected localized resource against the recorded source baseline.
     /// </summary>

@@ -367,6 +367,31 @@ public sealed class Fallout4FormListGameAdapter : IFormListGameAdapter
     }
 
     /// <inheritdoc />
+    public EngineResult<int> VisitWinningRecordSummaries(
+        IPluginSourceSet sources,
+        IPluginOutputState? output,
+        Action<ReferenceSearchMatch> onRecord,
+        Action<ModKey, int>? onProgress,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetSources(sources, out var falloutSources, out var sourceFailure))
+        {
+            return EngineResult<int>.Failure(sourceFailure!);
+        }
+
+        if (output is null)
+        {
+            return falloutSources!.VisitWinningRecordSummaries(onRecord, onProgress, cancellationToken);
+        }
+
+        var readerResult = CreateReader(falloutSources!, output);
+        return readerResult.Succeeded
+            ? Bind(falloutSources!, EngineResult<int>.Success(
+                readerResult.Value!.VisitWinningRecordSummaries(onRecord, onProgress, cancellationToken)))
+            : Failure<int>(falloutSources!, readerResult.Error!);
+    }
+
+    /// <inheritdoc />
     public EngineResult<ReferenceResolution> ResolveReference(
         IPluginSourceSet sources,
         IPluginOutputState? output,

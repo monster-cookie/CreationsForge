@@ -7,21 +7,24 @@ namespace CreationsForge.ViewModels;
 /// <summary>Supplies browser publication, hierarchy construction, retry, and stale-result checks.</summary>
 public sealed partial class MajorRecordBrowserViewModel
 {
-    /// <summary>Publishes the complete winning-record collection after all engine pages succeed.</summary>
+    /// <summary>Publishes the complete winning-record collection after one successful engine visit.</summary>
     /// <param name="records">The projected records from every admitted source.</param>
-    /// <param name="revision">The revision shared by every page.</param>
-    /// <param name="warnings">The collected page warnings.</param>
+    /// <param name="groups">The prebuilt family hierarchy.</param>
+    /// <param name="revision">The revision of the completed visit.</param>
+    /// <param name="warnings">The visit warnings.</param>
     private void PublishRecords(
         IReadOnlyList<MajorRecordViewModel> records,
+        IReadOnlyList<RecordTypeGroupViewModel> groups,
         WorkspaceRevision revision,
         IReadOnlyList<EngineWarning> warnings)
     {
         RevisionValue = revision;
-        RecordsValue = Array.AsReadOnly(records
-            .GroupBy(record => record.FormKey)
-            .Select(group => group.First())
-            .ToArray());
-        RebuildRecordGroups();
+        RecordsValue = records;
+        RecordGroupsValue = groups;
+        RecordTreeSourceValue = CreateRecordTreeSource(groups);
+        OnPropertyChanged(nameof(Records));
+        OnPropertyChanged(nameof(RecordGroups));
+        OnPropertyChanged(nameof(RecordTreeSource));
         PageWarnings = Array.AsReadOnly(warnings.ToArray());
         SetWarnings(PageWarnings);
         ClearError();
@@ -31,11 +34,15 @@ public sealed partial class MajorRecordBrowserViewModel
         RefreshRelayCommand.RaiseCanExecuteChanged();
     }
 
-    /// <summary>Groups loaded records by stable record family and rebuilds the hierarchy.</summary>
-    private void RebuildRecordGroups()
+    /// <summary>Groups winning records off the UI thread, collapsing families for very large workspaces.</summary>
+    /// <param name="records">The complete winning record summaries.</param>
+    /// <returns>The sorted family hierarchy with every record retained.</returns>
+    private static IReadOnlyList<RecordTypeGroupViewModel> CreateRecordGroups(
+        IReadOnlyList<MajorRecordViewModel> records)
     {
-        RecordGroupsValue = Array.AsReadOnly(
-            RecordsValue
+        var expandGroups = records.Count <= 10_000;
+        return Array.AsReadOnly(
+            records
                 .GroupBy(record => record.RecordType, StringComparer.Ordinal)
                 .OrderBy(group => group.Key, StringComparer.Ordinal)
                 .Select(group => new RecordTypeGroupViewModel(
@@ -44,12 +51,9 @@ public sealed partial class MajorRecordBrowserViewModel
                         group.OrderBy(record => record.FormKey.ModKey.FileName.String, StringComparer.OrdinalIgnoreCase)
                             .ThenBy(record => record.FormKey.ID)
                             .Cast<IRecordTreeNodeViewModel>()
-                            .ToArray())))
+                            .ToArray()),
+                    expandGroups))
                 .ToArray());
-        RecordTreeSourceValue = CreateRecordTreeSource(RecordGroupsValue);
-        OnPropertyChanged(nameof(Records));
-        OnPropertyChanged(nameof(RecordGroups));
-        OnPropertyChanged(nameof(RecordTreeSource));
     }
 
     /// <summary>Publishes exact context options and selects origin-to-winner defaults.</summary>

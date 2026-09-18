@@ -155,6 +155,20 @@ public interface IFormListGameAdapter
         WorkspaceRevision revision,
         CancellationToken cancellationToken);
 
+    /// <summary>Visits every winning major record's identity metadata without restarting a bounded search for each page.</summary>
+    /// <param name="sources">The borrowed plugin source lifetime.</param>
+    /// <param name="output">The optional staged output appended after the source load order.</param>
+    /// <param name="onRecord">Receives each lightweight winning context.</param>
+    /// <param name="onProgress">Receives the current plugin and cumulative record count periodically.</param>
+    /// <param name="cancellationToken">A token that cancels the scan.</param>
+    /// <returns>The number of delivered summaries or a typed source-state failure.</returns>
+    EngineResult<int> VisitWinningRecordSummaries(
+        IPluginSourceSet sources,
+        IPluginOutputState? output,
+        Action<ReferenceSearchMatch> onRecord,
+        Action<ModKey, int>? onProgress,
+        CancellationToken cancellationToken);
+
     /// <summary>Resolves a record identity and returns only a detached plugin deep copy when supported.</summary>
     /// <param name="sources">The borrowed plugin source lifetime.</param>
     /// <param name="output">The borrowed selected output state, or <see langword="null"/> before output selection.</param>

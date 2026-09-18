@@ -127,6 +127,24 @@ public interface IPluginWorkspace : IAsyncDisposable
             resultRevision: Revision));
     }
 
+    /// <summary>Visits the complete winning-record metadata stream under the workspace's serialized source lifetime.</summary>
+    /// <param name="onRecord">Receives each FormKey, family, EditorID, and containing-plugin summary.</param>
+    /// <param name="onProgress">Receives the current plugin and cumulative count periodically.</param>
+    /// <param name="cancellationToken">A token that cancels the scan.</param>
+    /// <returns>The number of delivered summaries at one workspace revision, or a typed failure.</returns>
+    ValueTask<EngineResult<int>> VisitWinningRecordSummariesAsync(
+        Action<ReferenceSearchMatch> onRecord,
+        Action<ModKey, int>? onProgress = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(onRecord);
+        cancellationToken.ThrowIfCancellationRequested();
+        return ValueTask.FromResult(EngineResult<int>.Failure(
+            new EngineError(EngineErrorCode.UnsupportedOperation, "This workspace implementation does not support complete major-record summary visits."),
+            WorkspaceId,
+            resultRevision: Revision));
+    }
+
     /// <summary>Searches references in bounded deterministic pages.</summary>
     /// <param name="request">The bounded query and optional continuation token.</param>
     /// <param name="cancellationToken">A token that cancels the serialized plugin search.</param>

@@ -372,6 +372,27 @@ public sealed class StarfieldFormListGameAdapter : IFormListGameAdapter
     }
 
     /// <inheritdoc />
+    public EngineResult<int> VisitWinningRecordSummaries(
+        IPluginSourceSet sources,
+        IPluginOutputState? output,
+        Action<ReferenceSearchMatch> onRecord,
+        Action<ModKey, int>? onProgress,
+        CancellationToken cancellationToken)
+    {
+        var sourceResult = RequireSources<int>(sources);
+        if (!sourceResult.Succeeded)
+        {
+            return EngineResult<int>.Failure(sourceResult.Error!);
+        }
+
+        var readerResult = CreateReader<int>(sources, output, cancellationToken);
+        return readerResult.Succeeded
+            ? Bind(sourceResult.Value!, EngineResult<int>.Success(
+                readerResult.Value!.VisitWinningRecordSummaries(onRecord, onProgress, cancellationToken)))
+            : Failure<int>(sourceResult.Value!, readerResult.Error!);
+    }
+
+    /// <inheritdoc />
     public EngineResult<ReferenceResolution> ResolveReference(
         IPluginSourceSet sources,
         IPluginOutputState? output,

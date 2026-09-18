@@ -3,6 +3,7 @@ using CreationsForge.Core.Engine.RecordReading;
 using CreationsForge.Core.Engine.RecordInspection;
 using CreationsForge.Core.Enums;
 using Mutagen.Bethesda;
+using Mutagen.Bethesda.Plugins;
 
 namespace CreationsForge.Skyrim.PluginAdapter;
 
@@ -237,6 +238,23 @@ public sealed class SkyrimFormListGameAdapter : IFormListGameAdapter
             workspaceId,
             revision,
             cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public EngineResult<int> VisitWinningRecordSummaries(
+        IPluginSourceSet sources,
+        IPluginOutputState? output,
+        Action<ReferenceSearchMatch> onRecord,
+        Action<ModKey, int>? onProgress,
+        CancellationToken cancellationToken)
+    {
+        if (sources is not SkyrimPluginSourceSet skyrimSources
+            || !TryGetOutput(output, out var skyrimOutput))
+        {
+            return WrongState<int>("source or output");
+        }
+
+        return skyrimSources.VisitWinningRecordSummaries(onRecord, onProgress, skyrimOutput, cancellationToken);
     }
 
     /// <inheritdoc />
