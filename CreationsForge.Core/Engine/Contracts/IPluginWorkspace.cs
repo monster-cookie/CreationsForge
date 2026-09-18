@@ -177,6 +177,14 @@ public interface IPluginWorkspace : IAsyncDisposable
         FormListEditRequest request,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Atomically stages all independent native fields of one GameSettingFloat.</summary>
+    /// <param name="request">The complete typed values and exact edit session guarded by workspace revision.</param>
+    /// <param name="cancellationToken">A token observed before candidate publication.</param>
+    /// <returns>The resulting revision or a typed failure that leaves the current output unchanged.</returns>
+    ValueTask<EngineResult<OperationReceipt>> ApplyGameSettingFloatEditAsync(
+        GameSettingFloatEditRequest request,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Compares detached plugin before-and-after copies for one FormList.</summary>
     /// <param name="request">The explicit prior and resulting context selections for the same FormList identity.</param>
     /// <param name="cancellationToken">A token that cancels the serialized plugin comparison.</param>

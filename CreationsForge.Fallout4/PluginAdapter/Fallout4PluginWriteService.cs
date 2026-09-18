@@ -248,6 +248,14 @@ public sealed class Fallout4PluginWriteService
                     "The Fallout 4 staged-write request does not match the selected output association.");
     }
 
+    /// <summary>Accepts only a staged record whose concrete native family matches its first-edit provenance.</summary>
+    private static bool MatchesEditFamily(IMajorRecordGetter record, string recordType) => recordType switch
+    {
+        "FormList" => record is IFormListGetter,
+        "GameSettingFloat" => record is IGameSettingFloatGetter,
+        _ => false
+    };
+
     /// <summary>Validates complete candidate identity, provenance, and trackable FormList mutation coverage.</summary>
     /// <param name="sources">The immutable source lifetime.</param>
     /// <param name="output">The selected output identity owner.</param>
@@ -303,11 +311,16 @@ public sealed class Fallout4PluginWriteService
             var matches = candidate.EnumerateMajorRecords()
                 .Where(record => record.FormKey == entry.TargetFormKey)
                 .ToArray();
-            if (matches.Length != 1 || matches[0] is not IFormListGetter)
+            if (matches.Length != 1 || !MatchesEditFamily(matches[0], entry.RecordType))
             {
                 return new EngineError(
                     EngineErrorCode.ValidationFailed,
                     $"Fallout 4 edit provenance target '{entry.TargetFormKey}' is missing, duplicated, or belongs to another Mutagen family.");
+            }
+
+            if (matches[0] is IGameSettingFloatGetter setting && setting.EditorID?.StartsWith('f') != true)
+            {
+                return new EngineError(EngineErrorCode.ValidationFailed, $"GameSettingFloat '{entry.TargetFormKey}' needs an EditorID beginning with f before save.");
             }
 
             if (entry.BaselineKind == EditBaselineKind.SourceContext
@@ -364,7 +377,8 @@ public sealed class Fallout4PluginWriteService
         var context = entry.BaselineContext!;
         if (entry.BaselineKind == EditBaselineKind.OriginalOutput)
         {
-            var originalMatches = original.FormLists.Count(record => record.FormKey == entry.TargetFormKey);
+            var originalMatches = original.EnumerateMajorRecords().Count(record =>
+                record.FormKey == entry.TargetFormKey && MatchesEditFamily(record, entry.RecordType));
             if (originalMatches != 1
                 || context.ContainingModKey != output.Association.ModKey
                 || context.LoadOrderIndex != sources.GetMutagenMods().Count
@@ -386,7 +400,8 @@ public sealed class Fallout4PluginWriteService
             && candidate.plugin.LoadOrderIndex == context.LoadOrderIndex
             && candidate.plugin.Role == context.Role
             && PathsEqual(candidate.plugin.Path, context.Path!)
-            && mods[candidate.index].FormLists.Any(record => record.FormKey == entry.TargetFormKey));
+            && mods[candidate.index].EnumerateMajorRecords().Any(record =>
+                record.FormKey == entry.TargetFormKey && MatchesEditFamily(record, entry.RecordType)));
         return matchingSources == 1
             ? null
             : new EngineError(

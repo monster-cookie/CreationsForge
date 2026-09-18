@@ -168,6 +168,20 @@ public sealed class StarfieldFormListGameAdapter : IFormListGameAdapter
     }
 
     /// <inheritdoc />
+    public EngineResult<RecordEditMutationResult> ApplyGameSettingFloatEdit(
+        IPluginSourceSet sources,
+        IPluginOutputState candidate,
+        FormKey target,
+        GameSettingFloatEditRequest request,
+        CancellationToken cancellationToken)
+    {
+        var outputResult = RequireOutput<RecordEditMutationResult>(candidate);
+        return outputResult.Succeeded
+            ? OutputService.ApplyGameSettingFloatEdit(outputResult.Value!, target, request, cancellationToken)
+            : EngineResult<RecordEditMutationResult>.Failure(outputResult.Error!);
+    }
+
+    /// <inheritdoc />
     public EngineResult<IReadOnlyList<PluginSummary>> ListPlugins(
         IPluginSourceSet sources,
         IPluginOutputState? output,
@@ -433,9 +447,35 @@ public sealed class StarfieldFormListGameAdapter : IFormListGameAdapter
             return EngineResult<WorkspacePreview>.Failure(outputResult.Error!);
         }
 
-        return Bind(
-            sourceResult.Value!,
-            EditService.Preview(sourceResult.Value!, outputResult.Value!));
+        var starfieldSources = sourceResult.Value!;
+        var starfieldOutput = outputResult.Value!;
+        var formPreview = EditService.Preview(starfieldSources, starfieldOutput);
+        if (!formPreview.Succeeded || formPreview.Value is null)
+        {
+            return Bind(starfieldSources, formPreview);
+        }
+
+        var nativePreview = MajorRecordEditPreviewBuilder.Build(
+            starfieldOutput.GetEditProvenance(),
+            starfieldSources.Baseline.BaselineId,
+            starfieldOutput.Association,
+            starfieldSources.GetMutagenMods().Count,
+            MajorRecordInspector,
+            key => starfieldOutput.BorrowOriginalMod().GameSettings.SingleOrDefault(record => record.FormKey == key),
+            key => starfieldOutput.BorrowMod().GameSettings.SingleOrDefault(record => record.FormKey == key),
+            request => starfieldSources.ReadRecordContext(request, CancellationToken.None),
+            CancellationToken.None);
+        if (!nativePreview.Succeeded || nativePreview.Value is null)
+        {
+            return Bind(starfieldSources, EngineResult<WorkspacePreview>.Failure(nativePreview.Error!));
+        }
+
+        var preview = formPreview.Value;
+        return Bind(starfieldSources, EngineResult<WorkspacePreview>.Success(new WorkspacePreview(
+            preview.Comparisons,
+            preview.UnresolvedReferenceCount,
+            preview.Warnings,
+            nativePreview.Value), warnings: preview.Warnings));
     }
 
     /// <inheritdoc />

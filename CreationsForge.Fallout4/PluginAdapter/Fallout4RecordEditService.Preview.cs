@@ -50,6 +50,11 @@ public sealed partial class Fallout4RecordEditService
         var unresolvedReferenceCount = 0;
         foreach (var entry in provenance)
         {
+            if (entry.RecordType != "FormList")
+            {
+                continue;
+            }
+
             var beforeResult = ReadBefore(sources, original, entry);
             if (!beforeResult.Succeeded)
             {

@@ -148,6 +148,18 @@ public sealed partial class SkyrimPluginOutputService
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
+        if (string.Equals(request.RecordType, "GameSettingFloat", StringComparison.Ordinal))
+        {
+            return BeginGameSettingFloat(sources, candidate, request, cancellationToken);
+        }
+
+        if (!string.Equals(request.RecordType, "FormList", StringComparison.Ordinal))
+        {
+            return EngineResult<RecordEditIdentity>.Failure(new EngineError(
+                EngineErrorCode.UnsupportedOperation,
+                $"Skyrim record family '{request.RecordType}' does not have a complete native editor."));
+        }
+
         try
         {
             var result = request.Role switch

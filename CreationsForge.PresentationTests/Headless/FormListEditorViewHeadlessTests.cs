@@ -333,6 +333,8 @@ public sealed class FormListEditorViewHeadlessTests
         /// <inheritdoc />
         public ValueTask<EngineResult<ReferenceResolution>> ResolveReferenceAsync(ReferenceRequest request, CancellationToken cancellationToken = default) => throw Unsupported();
         /// <inheritdoc />
+        public ValueTask<EngineResult<OperationReceipt>> ApplyGameSettingFloatEditAsync(GameSettingFloatEditRequest request, CancellationToken cancellationToken = default) => throw Unsupported();
+
         public ValueTask<EngineResult<OperationReceipt>> ApplyFormListEditAsync(FormListEditRequest request, CancellationToken cancellationToken = default) => throw Unsupported();
         /// <inheritdoc />
         public ValueTask<EngineResult<FormListComparison>> CompareFormListAsync(CompareFormListRequest request, CancellationToken cancellationToken = default) => throw Unsupported();

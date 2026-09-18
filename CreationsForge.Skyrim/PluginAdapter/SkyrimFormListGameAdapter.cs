@@ -142,6 +142,22 @@ public sealed class SkyrimFormListGameAdapter : IFormListGameAdapter
     }
 
     /// <inheritdoc />
+    public EngineResult<RecordEditMutationResult> ApplyGameSettingFloatEdit(
+        IPluginSourceSet sources,
+        IPluginOutputState candidate,
+        Mutagen.Bethesda.Plugins.FormKey target,
+        GameSettingFloatEditRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (sources is not SkyrimPluginSourceSet || candidate is not SkyrimPluginOutputState skyrimCandidate)
+        {
+            return WrongState<RecordEditMutationResult>("source or output");
+        }
+
+        return _outputService.ApplyGameSettingFloatEdit(skyrimCandidate, target, request, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public EngineResult<IReadOnlyList<PluginSummary>> ListPlugins(
         IPluginSourceSet sources,
         IPluginOutputState? output,
@@ -284,7 +300,33 @@ public sealed class SkyrimFormListGameAdapter : IFormListGameAdapter
             return WrongState<WorkspacePreview>("source or output");
         }
 
-        return _editService.Preview(skyrimSources, skyrimOutput);
+        var formPreview = _editService.Preview(skyrimSources, skyrimOutput);
+        if (!formPreview.Succeeded || formPreview.Value is null)
+        {
+            return formPreview;
+        }
+
+        var nativePreview = MajorRecordEditPreviewBuilder.Build(
+            skyrimOutput.GetEditProvenance(),
+            skyrimSources.Baseline.BaselineId,
+            skyrimOutput.Association,
+            skyrimSources.GetMutagenMods().Count,
+            MajorRecordInspector,
+            key => skyrimOutput.GetOriginalMod().GameSettings.SingleOrDefault(record => record.FormKey == key),
+            key => skyrimOutput.GetMutableMod().GameSettings.SingleOrDefault(record => record.FormKey == key),
+            request => skyrimSources.ReadRecordContext(request, null, CancellationToken.None),
+            CancellationToken.None);
+        if (!nativePreview.Succeeded || nativePreview.Value is null)
+        {
+            return EngineResult<WorkspacePreview>.Failure(nativePreview.Error!, warnings: formPreview.Warnings);
+        }
+
+        var preview = formPreview.Value;
+        return EngineResult<WorkspacePreview>.Success(new WorkspacePreview(
+            preview.Comparisons,
+            preview.UnresolvedReferenceCount,
+            preview.Warnings,
+            nativePreview.Value), warnings: preview.Warnings);
     }
 
     /// <inheritdoc />

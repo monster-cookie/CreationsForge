@@ -91,6 +91,8 @@ public sealed class McpToolCatalog
             new OutputSelectTool(workspaceRegistry, metadataStore),
             new FormListBeginEditTool(workspaceRegistry, metadataStore),
             new FormListApplyEditTool(workspaceRegistry, codecs, metadataStore),
+            new MajorRecordBeginEditTool(workspaceRegistry, metadataStore),
+            new GameSettingFloatApplyEditTool(workspaceRegistry, metadataStore),
             new WorkspacePreviewTool(workspaceRegistry),
             new OutputResetTool(workspaceRegistry, metadataStore, false),
             new OutputResetTool(workspaceRegistry, metadataStore, true),

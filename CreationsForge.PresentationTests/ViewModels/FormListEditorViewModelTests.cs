@@ -941,6 +941,8 @@ public sealed class FormListEditorViewModelTests
         }
 
         /// <inheritdoc />
+        public ValueTask<EngineResult<OperationReceipt>> ApplyGameSettingFloatEditAsync(GameSettingFloatEditRequest request, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
         public ValueTask<EngineResult<OperationReceipt>> ApplyFormListEditAsync(FormListEditRequest request, CancellationToken cancellationToken = default)
         {
             return ApplyAction(request, cancellationToken);

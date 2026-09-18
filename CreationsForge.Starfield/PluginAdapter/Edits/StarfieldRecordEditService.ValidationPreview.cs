@@ -28,6 +28,11 @@ public sealed partial class StarfieldRecordEditService
 
         foreach (var provenance in provenanceEntries)
         {
+            if (provenance.RecordType != "FormList")
+            {
+                continue;
+            }
+
             var beforeResult = GetBeforeRecord(sources, output, provenance);
             if (!beforeResult.Succeeded || beforeResult.Value is null)
             {

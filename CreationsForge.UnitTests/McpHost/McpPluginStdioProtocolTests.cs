@@ -44,6 +44,8 @@ public sealed class McpPluginStdioProtocolTests
         "creationsforge_output_select",
         "creationsforge_formlist_begin_edit",
         "creationsforge_formlist_apply_edit",
+        "creationsforge_major_record_begin_edit",
+        "creationsforge_game_setting_float_apply_edit",
         "creationsforge_workspace_preview",
         "creationsforge_workspace_discard",
         "creationsforge_output_reopen",

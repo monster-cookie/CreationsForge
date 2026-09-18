@@ -155,6 +155,27 @@ public sealed class Fallout4FormListGameAdapter : IFormListGameAdapter
     }
 
     /// <inheritdoc />
+    public EngineResult<RecordEditMutationResult> ApplyGameSettingFloatEdit(
+        IPluginSourceSet sources,
+        IPluginOutputState candidate,
+        FormKey target,
+        GameSettingFloatEditRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetSources(sources, out var falloutSources, out var sourceFailure))
+        {
+            return EngineResult<RecordEditMutationResult>.Failure(sourceFailure!);
+        }
+
+        if (!TryGetOutput(candidate, out var falloutOutput, out var outputFailure))
+        {
+            return Failure<RecordEditMutationResult>(falloutSources!, outputFailure!);
+        }
+
+        return _outputService.ApplyGameSettingFloatEdit(falloutOutput!, target, request, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public EngineResult<IReadOnlyList<PluginSummary>> ListPlugins(
         IPluginSourceSet sources,
         IPluginOutputState? output,
@@ -430,7 +451,33 @@ public sealed class Fallout4FormListGameAdapter : IFormListGameAdapter
             return Failure<WorkspacePreview>(falloutSources!, outputFailure!);
         }
 
-        return _editService.Preview(falloutSources!, falloutOutput!);
+        var formPreview = _editService.Preview(falloutSources!, falloutOutput!);
+        if (!formPreview.Succeeded || formPreview.Value is null)
+        {
+            return formPreview;
+        }
+
+        var nativePreview = MajorRecordEditPreviewBuilder.Build(
+            falloutOutput!.GetEditProvenance(),
+            falloutSources!.Baseline.BaselineId,
+            falloutOutput.Association,
+            falloutSources.GetMutagenMods().Count,
+            MajorRecordInspector,
+            key => falloutOutput.BorrowOriginalMod().GameSettings.SingleOrDefault(record => record.FormKey == key),
+            key => falloutOutput.BorrowMod().GameSettings.SingleOrDefault(record => record.FormKey == key),
+            request => falloutSources.ReadRecordContext(request, CancellationToken.None),
+            CancellationToken.None);
+        if (!nativePreview.Succeeded || nativePreview.Value is null)
+        {
+            return EngineResult<WorkspacePreview>.Failure(nativePreview.Error!, warnings: formPreview.Warnings);
+        }
+
+        var preview = formPreview.Value;
+        return EngineResult<WorkspacePreview>.Success(new WorkspacePreview(
+            preview.Comparisons,
+            preview.UnresolvedReferenceCount,
+            preview.Warnings,
+            nativePreview.Value), warnings: preview.Warnings);
     }
 
     /// <inheritdoc />

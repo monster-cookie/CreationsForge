@@ -434,7 +434,7 @@ public sealed partial class PluginWorkspace : IPluginWorkspace
             if (Output is null)
             {
                 return Store(request.OperationId, fingerprint, EngineResult<EditReceipt>.Failure(
-                    new EngineError(EngineErrorCode.OutputNotSelected, "Select an output before beginning a FormList edit."),
+                    new EngineError(EngineErrorCode.OutputNotSelected, $"Select an output before beginning a {request.RecordType} edit."),
                     WorkspaceId,
                     request.OperationId,
                     request.ExpectedRevision,
@@ -446,12 +446,23 @@ public sealed partial class PluginWorkspace : IPluginWorkspace
                 var existingEdit = Edits.Values.FirstOrDefault(edit => edit.FormKey == targetFormKey);
                 if (existingEdit is not null)
                 {
+                    if (!string.Equals(existingEdit.RecordType, request.RecordType, StringComparison.Ordinal))
+                    {
+                        return Store(request.OperationId, fingerprint, EngineResult<EditReceipt>.Failure(
+                            new EngineError(EngineErrorCode.ValidationFailed, "The staged record belongs to another record family."),
+                            WorkspaceId,
+                            request.OperationId,
+                            request.ExpectedRevision,
+                            CurrentRevision));
+                    }
+
                     var receipt = new EditReceipt(
                         existingEdit.EditId,
                         existingEdit.FormKey,
                         existingEdit.OriginFormKey,
                         existingEdit.Role,
-                        CurrentRevision);
+                        CurrentRevision,
+                        existingEdit.RecordType);
                     return Store(request.OperationId, fingerprint, EngineResult<EditReceipt>.Success(
                         receipt,
                         WorkspaceId,
@@ -501,7 +512,7 @@ public sealed partial class PluginWorkspace : IPluginWorkspace
                     await candidate.DisposeAsync().ConfigureAwait(false);
                     candidate = null;
                     return Store(request.OperationId, fingerprint, EngineResult<EditReceipt>.Failure(
-                        new EngineError(EngineErrorCode.ValidationFailed, "The FormList already has a staged edit session in this workspace."),
+                        new EngineError(EngineErrorCode.ValidationFailed, "The record already has a staged edit session in this workspace."),
                         WorkspaceId,
                         request.OperationId,
                         request.ExpectedRevision,
@@ -519,7 +530,8 @@ public sealed partial class PluginWorkspace : IPluginWorkspace
                     adapterResult.Value.FormKey,
                     adapterResult.Value.OriginFormKey,
                     adapterResult.Value.Role,
-                    resultRevision);
+                    resultRevision,
+                    adapterResult.Value.RecordType);
                 return Store(request.OperationId, fingerprint, EngineResult<EditReceipt>.Success(
                     receipt,
                     WorkspaceId,
@@ -544,9 +556,9 @@ public sealed partial class PluginWorkspace : IPluginWorkspace
                     await DisposeCandidateAfterFailureAsync(candidate, exception).ConfigureAwait(false);
                 }
 
-                Logger.Error(exception, "Failed to begin FormList edit in workspace {WorkspaceId} for operation {OperationId}", WorkspaceId, request.OperationId);
+                Logger.Error(exception, "Failed to begin {RecordType} edit in workspace {WorkspaceId} for operation {OperationId}", request.RecordType, WorkspaceId, request.OperationId);
                 return Store(request.OperationId, fingerprint, EngineResult<EditReceipt>.Failure(
-                    new EngineError(EngineErrorCode.UnexpectedFailure, "The FormList edit could not be started."),
+                    new EngineError(EngineErrorCode.UnexpectedFailure, $"The {request.RecordType} edit could not be started."),
                     WorkspaceId,
                     request.OperationId,
                     request.ExpectedRevision,
@@ -637,7 +649,8 @@ public sealed partial class PluginWorkspace : IPluginWorkspace
                     CurrentRevision));
             }
 
-            if (!Edits.TryGetValue(request.EditId, out var editIdentity))
+            if (!Edits.TryGetValue(request.EditId, out var editIdentity) ||
+                editIdentity.RecordType != "FormList")
             {
                 return Store(request.OperationId, fingerprint, EngineResult<OperationReceipt>.Failure(
                     new EngineError(EngineErrorCode.EditNotFound, "The staged FormList edit identifier is not part of this workspace."),

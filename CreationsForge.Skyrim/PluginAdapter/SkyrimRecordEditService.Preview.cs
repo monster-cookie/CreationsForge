@@ -29,6 +29,11 @@ public sealed partial class SkyrimRecordEditService
             var unresolvedReferenceCount = 0;
             foreach (var provenance in output.GetEditProvenance())
             {
+                if (provenance.RecordType != "FormList")
+                {
+                    continue;
+                }
+
                 var afterResult = FindRecord(current, provenance.TargetFormKey);
                 if (!afterResult.Succeeded)
                 {

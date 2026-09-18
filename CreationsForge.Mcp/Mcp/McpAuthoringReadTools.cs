@@ -7,7 +7,7 @@ using ModelContextProtocol.Server;
 
 namespace CreationsForge.Mcp;
 
-/// <summary>Reads and pages a fresh complete preview of staged FormList changes.</summary>
+/// <summary>Reads and pages a fresh complete preview of staged record changes.</summary>
 internal sealed class WorkspacePreviewTool : McpToolBase
 {
     /// <summary>The accepted argument names.</summary>
@@ -29,7 +29,7 @@ internal sealed class WorkspacePreviewTool : McpToolBase
     /// <summary>Gets the preview descriptor.</summary>
     public override Tool ProtocolTool { get; } = new()
     {
-        Name = "creationsforge_workspace_preview", Title = "Preview staged FormList changes", Description = "Builds a fresh complete engine preview and pages its comparisons, warnings, and detached before/after views without writing output files.",
+        Name = "creationsforge_workspace_preview", Title = "Preview staged record changes", Description = "Builds a fresh complete engine preview and pages its comparisons, warnings, and detached before/after views without writing output files.",
         InputSchema = InputSchema, OutputSchema = OutputSchema,
         Annotations = new ToolAnnotations { ReadOnlyHint = true, IdempotentHint = true, DestructiveHint = false, OpenWorldHint = false },
     };
@@ -85,6 +85,14 @@ internal sealed class WorkspacePreviewTool : McpToolBase
             {
                 formKey = comparison.FormKey.ToString(), beforeContext = McpProjection.Context(comparison.BeforeContext), afterContext = McpProjection.Context(comparison.AfterContext),
                 before = comparison.Before, after = comparison.After, changes = comparison.Changes.Select(McpProjection.Change).ToArray(), warnings = comparison.Warnings.Select(McpProjection.Warning).ToArray(),
+            }).ToArray(),
+            majorRecordComparisons = preview.MajorRecordComparisons.Select(comparison => new
+            {
+                formKey = comparison.FormKey.ToString(), recordType = comparison.RecordType,
+                beforeContext = McpProjection.Context(comparison.BeforeContext), afterContext = McpProjection.Context(comparison.AfterContext),
+                before = comparison.Before, after = comparison.After,
+                changes = comparison.Changes.Select(McpProjection.Change).ToArray(),
+                warnings = comparison.Warnings.Select(McpProjection.Warning).ToArray(),
             }).ToArray(),
         });
     }

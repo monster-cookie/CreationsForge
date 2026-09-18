@@ -183,6 +183,8 @@ internal sealed class RecordingWorkspaceChangesWorkspace : IPluginWorkspace
         => ValueTask.FromResult(Unsupported<EditReceipt>());
 
     /// <inheritdoc />
+    public ValueTask<EngineResult<OperationReceipt>> ApplyGameSettingFloatEditAsync(GameSettingFloatEditRequest request, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
     public ValueTask<EngineResult<OperationReceipt>> ApplyFormListEditAsync(FormListEditRequest request, CancellationToken cancellationToken = default)
         => ValueTask.FromResult(Unsupported<OperationReceipt>());
 

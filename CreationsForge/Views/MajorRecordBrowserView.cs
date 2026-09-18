@@ -26,6 +26,15 @@ public sealed class MajorRecordBrowserView : UserControl
     /// <summary>The editor surface shown after a supported tree action.</summary>
     private Control? EditorPane;
 
+    /// <summary>The direct native float-setting form hosted beside the record tree.</summary>
+    private GameSettingFloatEditorView? NativeEditor;
+
+    /// <summary>The existing FormList editor hosted in the same record-selection pane.</summary>
+    private Control? FormListEditorPane;
+
+    /// <summary>Remembers which editor was active when comparison was opened.</summary>
+    private bool NativeEditorSelected;
+
     /// <summary>Returns to an active editor after inspecting a comparison.</summary>
     private Button? ReturnToEditorButton;
 
@@ -60,6 +69,7 @@ public sealed class MajorRecordBrowserView : UserControl
                 if (currentWorkspaceId != DisplayedWorkspaceId)
                 {
                     DisplayedWorkspaceId = currentWorkspaceId;
+                    NativeEditor?.Clear();
                     ShowComparison(clearEditorNavigation: true);
                 }
             }
@@ -258,7 +268,8 @@ public sealed class MajorRecordBrowserView : UserControl
             return Array.Empty<MenuItem>();
         }
 
-        var hasTypedEditor = string.Equals(recordType, "FormList", StringComparison.Ordinal);
+        var hasTypedEditor = recordType is "FormList" or "GameSettingFloat";
+        var isNativeEditor = recordType == "GameSettingFloat";
         var canEdit = FormListBrowser.IsEditingWorkspace && hasTypedEditor;
         var unavailableReason = !hasTypedEditor
             ? "Typed authoring for this record type is not available yet."
@@ -266,7 +277,7 @@ public sealed class MajorRecordBrowserView : UserControl
         var newItem = new MenuItem
         {
             Header = $"New {recordType}",
-            IsEnabled = canEdit && FormListBrowser.Editor.CanBeginNew
+            IsEnabled = canEdit && (isNativeEditor || FormListBrowser.Editor.CanBeginNew)
         };
         ToolTip.SetTip(newItem, canEdit ? "Create a new record in the active plugin." : unavailableReason);
         newItem.Click += async (_, _) => await BeginNewAsync(recordType);
@@ -280,9 +291,9 @@ public sealed class MajorRecordBrowserView : UserControl
         var overrideItem = new MenuItem
         {
             Header = isOutput ? "Edit in active plugin" : "Create override",
-            IsEnabled = canEdit && (isOutput
+            IsEnabled = canEdit && (isNativeEditor || (isOutput
                 ? FormListBrowser.Editor.CanBeginExistingOutput || FormListBrowser.Editor.CanBeginNew
-                : FormListBrowser.Editor.CanBeginNew)
+                : FormListBrowser.Editor.CanBeginNew))
         };
         ToolTip.SetTip(overrideItem, canEdit ? "Edit this exact record in the active plugin." : unavailableReason);
         overrideItem.Click += async (_, _) => await BeginOverrideAsync(selected);
@@ -296,13 +307,24 @@ public sealed class MajorRecordBrowserView : UserControl
     private async Task BeginNewAsync(string recordType)
     {
         if (!FormListBrowser.IsEditingWorkspace ||
-            !FormListBrowser.Editor.CanBeginNew ||
-            !string.Equals(recordType, "FormList", StringComparison.Ordinal))
+            recordType is not ("FormList" or "GameSettingFloat"))
         {
             return;
         }
 
-        ShowEditor();
+        if (recordType == "GameSettingFloat")
+        {
+            ShowEditor(native: true);
+            await NativeEditor!.BeginAsync(null);
+            return;
+        }
+
+        if (!FormListBrowser.Editor.CanBeginNew)
+        {
+            return;
+        }
+
+        ShowEditor(native: false);
         try
         {
             await FormListBrowser.StartAsync();
@@ -320,16 +342,26 @@ public sealed class MajorRecordBrowserView : UserControl
     private async Task BeginOverrideAsync(MajorRecordViewModel record)
     {
         if (!FormListBrowser.IsEditingWorkspace ||
-            !FormListBrowser.Editor.CanBeginNew ||
-            !string.Equals(record.RecordType, "FormList", StringComparison.Ordinal))
+            record.RecordType is not ("FormList" or "GameSettingFloat"))
         {
             return;
         }
 
-        ShowEditor();
+        ShowEditor(native: record.RecordType == "GameSettingFloat");
         if (!ViewModel.Records.Any(candidate => ReferenceEquals(candidate, record)))
         {
             ShowActionError("The selected record belongs to an older record tree. Refresh and select it again.");
+            return;
+        }
+
+        if (record.RecordType == "GameSettingFloat")
+        {
+            await NativeEditor!.BeginAsync(record);
+            return;
+        }
+
+        if (!FormListBrowser.Editor.CanBeginNew)
+        {
             return;
         }
 
@@ -364,7 +396,7 @@ public sealed class MajorRecordBrowserView : UserControl
     }
 
     /// <summary>Displays the editor beside the record tree while preserving the current comparison.</summary>
-    internal void ShowEditor()
+    internal void ShowEditor(bool? native = null)
     {
         if (ComparisonPane is null || EditorPane is null)
         {
@@ -373,6 +405,16 @@ public sealed class MajorRecordBrowserView : UserControl
 
         ComparisonPane.IsVisible = false;
         EditorPane.IsVisible = true;
+        NativeEditorSelected = native ?? NativeEditorSelected;
+        if (NativeEditor is not null)
+        {
+            NativeEditor.IsVisible = NativeEditorSelected;
+        }
+
+        if (FormListEditorPane is not null)
+        {
+            FormListEditorPane.IsVisible = !NativeEditorSelected;
+        }
         if (ReturnToEditorButton is not null)
         {
             ReturnToEditorButton.IsVisible = true;
@@ -424,13 +466,15 @@ public sealed class MajorRecordBrowserView : UserControl
             Spacing = 12,
             Children = { compare, ActionErrorText }
         };
-        var editor = new FormListEditorView(FormListBrowser.Editor, showBeginActions: false);
-        Grid.SetRow(editor, 1);
+        FormListEditorPane = new FormListEditorView(FormListBrowser.Editor, showBeginActions: false);
+        NativeEditor = new GameSettingFloatEditorView(ViewModel) { IsVisible = false };
+        var editors = new Grid { Children = { FormListEditorPane, NativeEditor } };
+        Grid.SetRow(editors, 1);
         return new Grid
         {
             RowDefinitions = new RowDefinitions("Auto,*"),
             RowSpacing = 8,
-            Children = { header, editor }
+            Children = { header, editors }
         };
     }
 

@@ -436,6 +436,77 @@ public sealed class McpAuthoringToolProtocolTests
     /// <param name="workspaceId">The mock workspace identity.</param>
     /// <param name="revision">The mock opening revision.</param>
     /// <returns>The configured workspace mock.</returns>
+    /// <summary>Verifies closed native float-setting arguments, exact staged identity, and one complete MCP mutation.</summary>
+    [Fact]
+    public async Task GameSettingFloatTools_ThroughSdkProtocol_ApplyCompleteNativeFields()
+    {
+        var workspaceId = Guid.NewGuid();
+        var beginOperation = Guid.NewGuid();
+        var applyOperation = Guid.NewGuid();
+        var editId = Guid.NewGuid();
+        var revision0 = new WorkspaceRevision(Guid.NewGuid(), 1);
+        var revision1 = revision0.Next();
+        var revision2 = revision1.Next();
+        var currentRevision = revision0;
+        var output = new OutputAssociation(Path.GetFullPath("Output.esm"), ModKey.FromNameAndExtension("Output.esm"), LocalizedOutputMode.Embedded, OutputMasterStyle.Full);
+        var baseline = new OutputArtifactSetBaseline(Guid.NewGuid(), [new PluginArtifactAssociation(output.PluginPath, PluginArtifactRole.Plugin, null, new PluginArtifactFingerprint(false, 0, null))]);
+        var formKey = new FormKey(output.ModKey, 0x800);
+        var workspace = CreateWorkspace(workspaceId, revision0);
+        workspace.Setup(candidate => candidate.ReadStateAsync(It.IsAny<CancellationToken>()))
+            .Returns(() => ValueTask.FromResult(EngineResult<WorkspaceState>.Success(
+                new WorkspaceState(SupportedGame.Starfield, GameRelease.Starfield, output, baseline, new OutputSynchronizationState(OutputSynchronizationStatus.Ready, null), currentRevision),
+                workspaceId: workspaceId, resultRevision: currentRevision)));
+        workspace.Setup(candidate => candidate.BeginEditAsync(It.IsAny<BeginEditRequest>(), It.IsAny<CancellationToken>()))
+            .Returns((BeginEditRequest request, CancellationToken _) =>
+            {
+                request.RecordType.ShouldBe("GameSettingFloat");
+                request.Role.ShouldBe(FormListEditRole.New);
+                currentRevision = revision1;
+                return ValueTask.FromResult(EngineResult<EditReceipt>.Success(
+                    new EditReceipt(editId, formKey, null, FormListEditRole.New, revision1, "GameSettingFloat"),
+                    workspaceId: workspaceId, operationId: beginOperation, baseRevision: revision0, resultRevision: revision1));
+            });
+        workspace.Setup(candidate => candidate.ApplyGameSettingFloatEditAsync(It.IsAny<GameSettingFloatEditRequest>(), It.IsAny<CancellationToken>()))
+            .Returns((GameSettingFloatEditRequest request, CancellationToken _) =>
+            {
+                request.EditId.ShouldBe(editId);
+                request.EditorId.ShouldBe("fProtocolTest");
+                request.Data.ShouldBe(1.25f);
+                request.FormVersion.ShouldBe((ushort)12);
+                request.Xalg.ShouldBe((ulong)7);
+                currentRevision = revision2;
+                return ValueTask.FromResult(EngineResult<OperationReceipt>.Success(
+                    new OperationReceipt(applyOperation, revision2),
+                    workspaceId: workspaceId, operationId: applyOperation, baseRevision: revision1, resultRevision: revision2));
+            });
+
+        await using var registry = new McpWorkspaceRegistry();
+        await OpenRegistryAsync(registry, workspace.Object, workspaceId);
+        using var store = new McpMetadataStore();
+        await using var harness = await ProtocolHarness.CreateAsync([new MajorRecordBeginEditTool(registry, store), new GameSettingFloatApplyEditTool(registry, store)]);
+        var begin = GetResult(await harness.Client.CallToolAsync("creationsforge_major_record_begin_edit", new Dictionary<string, object?>
+        {
+            ["workspaceId"] = workspaceId.ToString("D"), ["operationId"] = beginOperation.ToString("D"),
+            ["expectedRevision"] = Revision(revision0), ["recordType"] = "GameSettingFloat", ["role"] = "new",
+        }));
+        begin.GetProperty("recordType").GetString().ShouldBe("GameSettingFloat");
+
+        var fields = new Dictionary<string, object?>
+        {
+            ["workspaceId"] = workspaceId.ToString("D"), ["operationId"] = applyOperation.ToString("D"),
+            ["expectedRevision"] = Revision(revision1), ["editId"] = editId.ToString("D"),
+            ["editorId"] = "fProtocolTest", ["data"] = 1.25, ["majorRecordFlagsRaw"] = 0,
+            ["formVersion"] = 12, ["version2"] = 0, ["versionControl"] = 0, ["xalg"] = 7,
+        };
+        fields["data"] = "invalid";
+        GetErrorCode(await harness.Client.CallToolAsync("creationsforge_game_setting_float_apply_edit", fields)).ShouldBe("invalid_arguments");
+        workspace.Verify(candidate => candidate.ApplyGameSettingFloatEditAsync(It.IsAny<GameSettingFloatEditRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+        fields["data"] = 1.25;
+        var applied = GetResult(await harness.Client.CallToolAsync("creationsforge_game_setting_float_apply_edit", fields));
+        applied.GetProperty("revision").GetProperty("sequence").GetString().ShouldBe(revision2.Sequence.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        workspace.Verify(candidate => candidate.ApplyGameSettingFloatEditAsync(It.IsAny<GameSettingFloatEditRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     private static Mock<IPluginWorkspace> CreateWorkspace(Guid workspaceId, WorkspaceRevision revision)
     {
         var workspace = new Mock<IPluginWorkspace>();

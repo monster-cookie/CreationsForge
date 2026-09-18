@@ -25,8 +25,8 @@ public sealed class McpHostProtocolTests
 
         var tools = await client.ListToolsAsync(cancellationToken: cancellationToken);
 
-        tools.Count.ShouldBe(25);
-        tools.Select(candidate => candidate.Name).Distinct(StringComparer.Ordinal).Count().ShouldBe(25);
+        tools.Count.ShouldBe(27);
+        tools.Select(candidate => candidate.Name).Distinct(StringComparer.Ordinal).Count().ShouldBe(27);
         var tool = tools.Single(candidate => candidate.Name == "creationsforge_server_info");
         tool.JsonSchema.GetProperty("type").GetString().ShouldBe("object");
         tool.JsonSchema.GetProperty("additionalProperties").GetBoolean().ShouldBeFalse();

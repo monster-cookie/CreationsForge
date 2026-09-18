@@ -13,7 +13,7 @@ namespace CreationsForge.Starfield.PluginAdapter;
 /// <summary>
 /// Admits, clones, and begins transactional edits against complete Starfield plugin output state.
 /// </summary>
-public sealed class StarfieldPluginOutputService
+public sealed partial class StarfieldPluginOutputService
 {
     /// <summary>The shared guarded output admission boundary.</summary>
     private readonly PluginOutputInputLoader InputLoader;
@@ -137,6 +137,18 @@ public sealed class StarfieldPluginOutputService
         ArgumentNullException.ThrowIfNull(candidate);
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
+
+        if (string.Equals(request.RecordType, "GameSettingFloat", StringComparison.Ordinal))
+        {
+            return BeginGameSettingFloat(sources, candidate, request, cancellationToken);
+        }
+
+        if (!string.Equals(request.RecordType, "FormList", StringComparison.Ordinal))
+        {
+            return EngineResult<RecordEditIdentity>.Failure(new EngineError(
+                EngineErrorCode.UnsupportedOperation,
+                $"Starfield record family '{request.RecordType}' does not have a complete native editor."));
+        }
 
         return request.Role switch
         {

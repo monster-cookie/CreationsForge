@@ -248,6 +248,14 @@ public sealed class StarfieldPluginWriter
                     "The Starfield staged-write request does not match the selected output association.");
     }
 
+    /// <summary>Accepts only a staged record whose concrete native family matches its first-edit provenance.</summary>
+    private static bool MatchesEditFamily(IMajorRecordGetter record, string recordType) => recordType switch
+    {
+        "FormList" => record is IFormListGetter,
+        "GameSettingFloat" => record is IGameSettingFloatGetter,
+        _ => false
+    };
+
     /// <summary>Validates complete candidate identity, provenance, and trackable FormList mutation coverage.</summary>
     /// <param name="sources">The immutable source lifetime.</param>
     /// <param name="output">The selected output identity owner.</param>
@@ -305,11 +313,16 @@ public sealed class StarfieldPluginWriter
             var matches = candidate.EnumerateMajorRecords()
                 .Where(record => record.FormKey == entry.TargetFormKey)
                 .ToArray();
-            if (matches.Length != 1 || matches[0] is not IFormListGetter)
+            if (matches.Length != 1 || !MatchesEditFamily(matches[0], entry.RecordType))
             {
                 return new EngineError(
                     EngineErrorCode.ValidationFailed,
                     $"Starfield edit provenance target '{entry.TargetFormKey}' is missing, duplicated, or belongs to another Mutagen family.");
+            }
+
+            if (matches[0] is IGameSettingFloatGetter setting && setting.EditorID?.StartsWith('f') != true)
+            {
+                return new EngineError(EngineErrorCode.ValidationFailed, $"GameSettingFloat '{entry.TargetFormKey}' needs an EditorID beginning with f before save.");
             }
 
             if (entry.BaselineKind == EditBaselineKind.SourceContext
@@ -366,8 +379,8 @@ public sealed class StarfieldPluginWriter
         var context = entry.BaselineContext!;
         if (entry.BaselineKind == EditBaselineKind.OriginalOutput)
         {
-            var originalMatches = original.FormLists
-                .Where(record => record.FormKey == entry.TargetFormKey)
+            var originalMatches = original.EnumerateMajorRecords()
+                .Where(record => record.FormKey == entry.TargetFormKey && MatchesEditFamily(record, entry.RecordType))
                 .ToArray();
             if (originalMatches.Length != 1
                 || context.Status != (originalMatches[0].IsDeleted
@@ -386,19 +399,15 @@ public sealed class StarfieldPluginWriter
             return null;
         }
 
-        var plugins = sources.BorrowInputs().Plugins;
-        var mods = sources.GetMutagenMods();
-        var matchingSources = plugins.Select((plugin, index) => (plugin, index)).Count(candidate =>
-            candidate.plugin.ModKey == context.ContainingModKey
-            && candidate.plugin.LoadOrderIndex == context.LoadOrderIndex
-            && candidate.plugin.Role == context.Role
-            && PathsEqual(candidate.plugin.Path, context.Path!)
-            && mods[candidate.index].FormLists.Any(record =>
-                record.FormKey == entry.TargetFormKey
-                && context.Status == (record.IsDeleted
-                    ? ReferenceResolutionStatus.Deleted
-                    : ReferenceResolutionStatus.Resolved)));
-        return matchingSources == 1
+        var sourceRead = sources.ReadRecordContext(context.Selection, CancellationToken.None);
+        return sourceRead.Succeeded
+            && sourceRead.Value?.Record is { } sourceRecord
+            && MatchesEditFamily(sourceRecord, entry.RecordType)
+            && sourceRead.Value.Context.Status == context.Status
+            && sourceRead.Value.Context.ContainingModKey == context.ContainingModKey
+            && sourceRead.Value.Context.LoadOrderIndex == context.LoadOrderIndex
+            && sourceRead.Value.Context.Role == context.Role
+            && PathsEqual(sourceRead.Value.Context.Path!, context.Path!)
             ? null
             : new EngineError(
                 EngineErrorCode.ValidationFailed,

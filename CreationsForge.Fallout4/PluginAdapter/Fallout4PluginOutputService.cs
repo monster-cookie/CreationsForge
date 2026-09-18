@@ -14,7 +14,7 @@ namespace CreationsForge.Fallout4.PluginAdapter;
 /// <summary>
 /// Opens, clones, and begins transactional edits against complete Fallout 4 plugin output state.
 /// </summary>
-public sealed class Fallout4PluginOutputService
+public sealed partial class Fallout4PluginOutputService
 {
     /// <summary>The shared boundary that admits and baselines explicit output artifacts.</summary>
     private readonly PluginOutputInputLoader _inputLoader;
@@ -162,6 +162,17 @@ public sealed class Fallout4PluginOutputService
                 request,
                 EngineErrorCode.ValidationFailed,
                 $"The Fallout 4 candidate identity {mod.ModKey} does not match selected output {candidate.Association.ModKey}.");
+        }
+
+        if (string.Equals(request.RecordType, "GameSettingFloat", StringComparison.Ordinal))
+        {
+            return BeginGameSettingFloat(sources, candidate, request, cancellationToken);
+        }
+
+        if (!string.Equals(request.RecordType, "FormList", StringComparison.Ordinal))
+        {
+            return EditFailure(sources, request, EngineErrorCode.UnsupportedOperation,
+                $"Fallout 4 record family '{request.RecordType}' does not have a complete native editor.");
         }
 
         return request.Role switch

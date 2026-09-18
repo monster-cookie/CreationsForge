@@ -20,6 +20,9 @@ public sealed partial class MajorRecordBrowserViewModel : ViewModelBase, IDispos
     /// <summary>Publishes bound state changes on the Avalonia UI thread.</summary>
     private readonly IUiDispatcher UiDispatcher;
 
+    /// <summary>Prevents record edits from racing workspace save, replacement, or close.</summary>
+    private readonly IWorkspacePresentationOperationArbiter OperationArbiter;
+
     /// <summary>Reloads the complete winning-record tree.</summary>
     private readonly AsyncRelayCommand RefreshRelayCommand;
 
@@ -125,13 +128,25 @@ public sealed partial class MajorRecordBrowserViewModel : ViewModelBase, IDispos
         IWorkspaceCoordinator workspaceCoordinator,
         RecordJsonTreeProjectionService jsonTreeProjectionService,
         IUiDispatcher uiDispatcher)
+        : this(workspaceCoordinator, jsonTreeProjectionService, uiDispatcher, new WorkspacePresentationOperationArbiter())
+    {
+    }
+
+    /// <summary>Initializes the browser with the navigation scope's shared edit admission boundary.</summary>
+    public MajorRecordBrowserViewModel(
+        IWorkspaceCoordinator workspaceCoordinator,
+        RecordJsonTreeProjectionService jsonTreeProjectionService,
+        IUiDispatcher uiDispatcher,
+        IWorkspacePresentationOperationArbiter operationArbiter)
     {
         ArgumentNullException.ThrowIfNull(workspaceCoordinator);
         ArgumentNullException.ThrowIfNull(jsonTreeProjectionService);
         ArgumentNullException.ThrowIfNull(uiDispatcher);
+        ArgumentNullException.ThrowIfNull(operationArbiter);
         WorkspaceCoordinator = workspaceCoordinator;
         JsonTreeProjectionService = jsonTreeProjectionService;
         UiDispatcher = uiDispatcher;
+        OperationArbiter = operationArbiter;
         RecordTreeSourceValue = CreateRecordTreeSource(RecordGroupsValue);
         BeforeFieldSourceValue = FormListBrowserViewModel.CreateFieldTreeSource(BeforeFieldsValue);
         AfterFieldSourceValue = FormListBrowserViewModel.CreateFieldTreeSource(AfterFieldsValue);

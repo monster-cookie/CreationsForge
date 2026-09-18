@@ -38,6 +38,7 @@ public sealed class WorkspaceShellViewHeadlessTests
         var view = new MajorRecordBrowserView(records, formLists);
         var formListGroup = new RecordTypeGroupViewModel("FormList (1)", [], recordType: "FormList");
         var bookGroup = new RecordTypeGroupViewModel("Book (1)", [], recordType: "Book");
+        var floatGroup = new RecordTypeGroupViewModel("GameSettingFloat (1)", [], recordType: "GameSettingFloat");
         var source = ModKey.FromNameAndExtension("Source.esm");
         var formList = new MajorRecordViewModel(new ReferenceSearchMatch(
             new FormKey(source, 0x100), "FormList", "ExampleList", source, role: PluginRole.Source));
@@ -49,6 +50,7 @@ public sealed class WorkspaceShellViewHeadlessTests
         rowActions.Select(item => item.Header).ShouldBe(["New FormList", "Create override"]);
         rowActions.All(item => item.IsEnabled).ShouldBeTrue();
         view.BuildRecordMenuItems(bookGroup).ShouldHaveSingleItem().IsEnabled.ShouldBeFalse();
+        view.BuildRecordMenuItems(floatGroup).ShouldHaveSingleItem().IsEnabled.ShouldBeTrue();
 
         view.ShowEditor();
         view.IsEditorOpen.ShouldBeTrue();
@@ -99,6 +101,10 @@ public sealed class WorkspaceShellViewHeadlessTests
             contentHost.Child.ShouldBeOfType<MajorRecordBrowserView>();
             ControlFinder.FindByAutomationId<MajorRecordBrowserView>(view, "MajorRecordBrowserView").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<FormListEditorView>(view, "FormListEditorView").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<GameSettingFloatEditorView>(view, "GameSettingFloatEditorView").ShouldNotBeNull();
+            majorRecordView.ShowEditor(native: true);
+            Dispatcher.UIThread.RunJobs();
+            ControlFinder.FindByAutomationId<Button>(view, "GameSettingFloatSaveButton").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<TextBox>(view, "MajorRecordFormIdFilter").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<TextBox>(view, "MajorRecordEditorIdFilter").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<ComboBox>(view, "MajorRecordSortSelector").ShouldNotBeNull();

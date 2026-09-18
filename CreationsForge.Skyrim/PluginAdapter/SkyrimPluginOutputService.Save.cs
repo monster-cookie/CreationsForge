@@ -358,6 +358,14 @@ public sealed partial class SkyrimPluginOutputService
         cancellationToken.ThrowIfCancellationRequested();
     }
 
+    /// <summary>Accepts only a staged record whose concrete native family matches its first-edit provenance.</summary>
+    private static bool MatchesEditFamily(IMajorRecordGetter record, string recordType) => recordType switch
+    {
+        "FormList" => record is IFormListGetter,
+        "GameSettingFloat" => record is IGameSettingFloatGetter,
+        _ => false
+    };
+
     /// <summary>Validates complete candidate identity, provenance, and trackable FormList mutation coverage.</summary>
     /// <param name="sources">The immutable source lifetime.</param>
     /// <param name="output">The selected output identity owner.</param>
@@ -414,11 +422,16 @@ public sealed partial class SkyrimPluginOutputService
             var matches = candidate.EnumerateMajorRecords()
                 .Where(record => record.FormKey == entry.TargetFormKey)
                 .ToArray();
-            if (matches.Length != 1 || matches[0] is not IFormListGetter)
+            if (matches.Length != 1 || !MatchesEditFamily(matches[0], entry.RecordType))
             {
                 return (
                     EngineErrorCode.ValidationFailed,
                     $"Skyrim edit provenance target '{entry.TargetFormKey}' is missing, duplicated, or belongs to another Mutagen family.");
+            }
+
+            if (matches[0] is IGameSettingFloatGetter setting && setting.EditorID?.StartsWith('f') != true)
+            {
+                return (EngineErrorCode.ValidationFailed, $"GameSettingFloat '{entry.TargetFormKey}' needs an EditorID beginning with f before save.");
             }
 
             if (entry.BaselineKind == EditBaselineKind.SourceContext

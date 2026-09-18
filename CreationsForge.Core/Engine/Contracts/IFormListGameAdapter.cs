@@ -93,6 +93,20 @@ public interface IFormListGameAdapter
         FormKey target,
         PreparedFormListEdit edit);
 
+    /// <summary>Applies a complete typed GameSettingFloat edit only inside an unpublished output candidate.</summary>
+    /// <param name="sources">The exact immutable source set used for game validation.</param>
+    /// <param name="candidate">The complete unpublished native output to mutate.</param>
+    /// <param name="target">The exact staged GameSettingFloat identity.</param>
+    /// <param name="request">The immutable replacement values.</param>
+    /// <param name="cancellationToken">A token observed during native record selection.</param>
+    /// <returns>The mutation outcome or a typed rejection without publishing the candidate.</returns>
+    EngineResult<RecordEditMutationResult> ApplyGameSettingFloatEdit(
+        IPluginSourceSet sources,
+        IPluginOutputState candidate,
+        FormKey target,
+        GameSettingFloatEditRequest request,
+        CancellationToken cancellationToken);
+
     /// <summary>Enumerates participating plugins without consulting persistent imported state.</summary>
     /// <param name="sources">The borrowed plugin source lifetime.</param>
     /// <param name="output">The borrowed selected output state, or <see langword="null"/> before output selection.</param>
