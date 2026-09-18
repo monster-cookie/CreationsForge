@@ -13,6 +13,9 @@ internal sealed class InlineUiDispatcher : IUiDispatcher
     /// <summary>Gets the number of awaited state changes.</summary>
     public int InvokeCount { get; private set; }
 
+    /// <summary>Gets whether an awaited state change is currently executing through this dispatcher.</summary>
+    public bool IsInvoking { get; private set; }
+
     /// <summary>Gets or sets an exception thrown instead of running an awaited state change.</summary>
     public Exception? InvokeException { get; set; }
 
@@ -36,7 +39,15 @@ internal sealed class InlineUiDispatcher : IUiDispatcher
             throw InvokeException;
         }
 
-        action();
-        return Task.CompletedTask;
+        IsInvoking = true;
+        try
+        {
+            action();
+            return Task.CompletedTask;
+        }
+        finally
+        {
+            IsInvoking = false;
+        }
     }
 }

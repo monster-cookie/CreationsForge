@@ -59,6 +59,9 @@ public sealed partial class FormListEditorViewModel : ViewModelBase, IDisposable
     /// <summary>The command that applies the validated typed draft.</summary>
     private readonly AsyncRelayCommand ApplyRelayCommand;
 
+    /// <summary>The command that applies changed visible record fields without exposing wire commands.</summary>
+    private readonly AsyncRelayCommand SaveFormRelayCommand;
+
     /// <summary>The command that explicitly discards only the current request-local form changes.</summary>
     private readonly RelayCommand DiscardFormChangesRelayCommand;
 
@@ -94,6 +97,12 @@ public sealed partial class FormListEditorViewModel : ViewModelBase, IDisposable
 
     /// <summary>The current typed command draft.</summary>
     private FormListDraft? DraftValue;
+
+    /// <summary>The current record fields backed by exact existing typed command drafts.</summary>
+    private IReadOnlyList<FormListFieldDraft> FieldDraftsValue = Array.Empty<FormListFieldDraft>();
+
+    /// <summary>Prevents field-form reconstruction between successive typed field applies.</summary>
+    private bool IsSavingFormValue;
 
     /// <summary>The latest immutable validation issues.</summary>
     private IReadOnlyList<RecordWireDraftIssue> ValidationIssuesValue = Array.Empty<RecordWireDraftIssue>();
@@ -172,6 +181,7 @@ public sealed partial class FormListEditorViewModel : ViewModelBase, IDisposable
         OverrideRelayCommand = new AsyncRelayCommand(BeginOverrideAsync, () => CanBeginOverride);
         ExistingOutputRelayCommand = new AsyncRelayCommand(BeginExistingOutputAsync, () => CanBeginExistingOutput);
         ApplyRelayCommand = new AsyncRelayCommand(ApplyAsync, () => CanApply);
+        SaveFormRelayCommand = new AsyncRelayCommand(SaveFormAsync, () => CanSaveForm);
         DiscardFormChangesRelayCommand = new RelayCommand(DiscardFormChanges, () => CanDiscardFormChanges);
         RetryPendingRelayCommand = new AsyncRelayCommand(
             RetryPendingOperationAsync,
@@ -180,6 +190,7 @@ public sealed partial class FormListEditorViewModel : ViewModelBase, IDisposable
         OverrideCommand = OverrideRelayCommand;
         ExistingOutputCommand = ExistingOutputRelayCommand;
         ApplyCommand = ApplyRelayCommand;
+        SaveFormCommand = SaveFormRelayCommand;
         DiscardFormChangesCommand = DiscardFormChangesRelayCommand;
         RetryPendingOperationCommand = RetryPendingRelayCommand;
         WorkspaceCoordinator.PropertyChanged += OnWorkspaceCoordinatorPropertyChanged;
@@ -221,7 +232,16 @@ public sealed partial class FormListEditorViewModel : ViewModelBase, IDisposable
     public IReadOnlyList<RecordWireDraftIssue> ValidationIssues => ValidationIssuesValue;
 
     /// <summary>Gets whether the current typed draft has local input changes.</summary>
-    public bool HasDraftChanges => DraftValue?.HasChanges == true;
+    public bool HasDraftChanges => DraftValue?.HasChanges == true || HasFormChanges;
+
+    /// <summary>Gets the directly editable fields supported by the active game's FormList commands.</summary>
+    public IReadOnlyList<FormListFieldDraft> FieldDrafts => FieldDraftsValue;
+
+    /// <summary>Gets whether any visible field has unsaved local edits.</summary>
+    public bool HasFormChanges => FieldDraftsValue.Any(candidate => candidate.HasChanges);
+
+    /// <summary>Gets whether the visible field form can apply its changed values to staged output.</summary>
+    public bool CanSaveForm => !IsSavingFormValue && CanMutateDraft && HasFormChanges;
 
     /// <summary>Gets whether preview established the current session's staged-dirty state.</summary>
     public bool IsStagedChangesKnown => IsStagedChangesKnownValue;
@@ -280,10 +300,10 @@ public sealed partial class FormListEditorViewModel : ViewModelBase, IDisposable
     public bool CanApply => !IsDisposed && IsSessionActive && DraftValue is not null && IsValid && !IsBusy && !HasPendingOperation && IsEditorAdmissionOpen;
 
     /// <summary>Gets whether views may mutate typed draft nodes and command selection.</summary>
-    public bool CanMutateDraft => !IsDisposed && IsSessionActive && !IsBusy && !HasPendingOperation && IsEditorAdmissionOpen;
+    public bool CanMutateDraft => !IsDisposed && IsSessionActive && !IsSavingFormValue && !IsBusy && !HasPendingOperation && IsEditorAdmissionOpen;
 
     /// <summary>Gets whether the current changed request-local draft may be explicitly discarded without affecting staged plugin work.</summary>
-    public bool CanDiscardFormChanges => !IsDisposed && IsSessionActive && HasDraftChanges && !IsBusy && !HasPendingOperation && IsEditorAdmissionOpen;
+    public bool CanDiscardFormChanges => !IsDisposed && IsSessionActive && !IsSavingFormValue && HasDraftChanges && !IsBusy && !HasPendingOperation && IsEditorAdmissionOpen;
 
     /// <summary>Gets the command that begins a new FormList edit.</summary>
     public ICommand NewCommand { get; }
@@ -296,6 +316,9 @@ public sealed partial class FormListEditorViewModel : ViewModelBase, IDisposable
 
     /// <summary>Gets the command that applies the validated typed draft.</summary>
     public ICommand ApplyCommand { get; }
+
+    /// <summary>Applies changed visible fields to the staged plugin output.</summary>
+    public ICommand SaveFormCommand { get; }
 
     /// <summary>Gets the command that explicitly discards only current request-local form changes while retaining the record edit session and staged work.</summary>
     public ICommand DiscardFormChangesCommand { get; }
@@ -317,10 +340,12 @@ public sealed partial class FormListEditorViewModel : ViewModelBase, IDisposable
         OperationArbiter.PropertyChanged -= OnOperationArbiterPropertyChanged;
         CancelGeneration();
         DetachDraft();
+        ClearFormFields();
     }
 
     /// <summary>Gets whether ordinary begin actions are currently permitted without discarding a locally changed draft.</summary>
     private bool CanBegin => !IsDisposed
+        && !IsSavingFormValue
         && !IsBusy
         && !HasPendingOperation
         && !HasDraftChanges

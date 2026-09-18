@@ -116,6 +116,11 @@ public sealed class FormListEditorView : UserControl
     /// <returns>The complete editor surface.</returns>
     private Control BuildContent()
     {
+        if (!ShowBeginActions)
+        {
+            return BuildRecordFormContent();
+        }
+
         var header = BuildSessionHeader();
         var command = BuildCommandSelector();
         var diagnostics = BuildDiagnostics();
@@ -135,6 +140,31 @@ public sealed class FormListEditorView : UserControl
                 DraftScroller,
                 diagnostics
             }
+        };
+    }
+
+    /// <summary>Shows the existing typed command drafts as direct record fields with one save action.</summary>
+    private Control BuildRecordFormContent()
+    {
+        var header = new StackPanel
+        {
+            Spacing = 5,
+            Children =
+            {
+                CreateText("FormList", 18, FontWeight.SemiBold),
+                CreateBoundText(nameof(FormListEditorViewModel.SessionIdentityText), 12, FontWeight.Normal)
+            }
+        };
+        Grid.SetRow(header, 0);
+        Grid.SetRow(DraftScroller, 1);
+        var diagnostics = BuildDiagnostics();
+        Grid.SetRow(diagnostics, 2);
+        return new Grid
+        {
+            RowDefinitions = new RowDefinitions("Auto,*,Auto"),
+            RowSpacing = 10,
+            Margin = new Thickness(12),
+            Children = { header, DraftScroller, diagnostics }
         };
     }
 
@@ -319,13 +349,19 @@ public sealed class FormListEditorView : UserControl
         };
         progress.Bind(IsVisibleProperty, new Binding(nameof(FormListEditorViewModel.IsBusy)));
         AutomationProperties.SetAutomationId(progress, "FormListEditorProgress");
-        var apply = CreateCommandButton("Apply to staged output", "FormListEditorApplyButton", nameof(FormListEditorViewModel.ApplyCommand));
-        apply.Bind(IsEnabledProperty, new Binding(nameof(FormListEditorViewModel.CanApply)));
+        var apply = ShowBeginActions
+            ? CreateCommandButton("Apply to staged output", "FormListEditorApplyButton", nameof(FormListEditorViewModel.ApplyCommand))
+            : CreateCommandButton("Save record", "FormListEditorSaveRecordButton", nameof(FormListEditorViewModel.SaveFormCommand));
+        apply.Bind(IsEnabledProperty, new Binding(ShowBeginActions
+            ? nameof(FormListEditorViewModel.CanApply)
+            : nameof(FormListEditorViewModel.CanSaveForm)));
         var retry = CreateCommandButton("Retry exact pending operation", "FormListEditorRetryPendingButton", nameof(FormListEditorViewModel.RetryPendingOperationCommand));
         retry.Bind(IsVisibleProperty, new Binding(nameof(FormListEditorViewModel.HasPendingOperation)));
         var discard = CreateCommandButton("Discard form changes", "FormListDiscardFormChangesButton", nameof(FormListEditorViewModel.DiscardFormChangesCommand));
         discard.Bind(IsEnabledProperty, new Binding(nameof(FormListEditorViewModel.CanDiscardFormChanges)));
-        var discardHelp = CreateWrappedText("Discards unapplied form input only; staged changes remain.", 11);
+        var discardHelp = CreateWrappedText(ShowBeginActions
+            ? "Discards unapplied form input only; staged changes remain."
+            : "Save record stages these fields. Use Save Changes to write the plugin file.", 11);
         discardHelp.Opacity = 0.7;
         AutomationProperties.SetAutomationId(discardHelp, "FormListDiscardFormChangesHelp");
         var actions = new StackPanel
@@ -641,9 +677,60 @@ public sealed class FormListEditorView : UserControl
     /// <summary>Rebuilds only the selected typed draft root after editor publication.</summary>
     private void RefreshDraft()
     {
+        if (!ShowBeginActions)
+        {
+            RefreshRecordFields();
+            return;
+        }
+
         DraftScroller.Content = ViewModel.DraftRoot is null
             ? CreateEmptyDraftState()
             : RecordWireDraftControlFactory.Create(ViewModel.DraftRoot, node => ViewModel.PickFormLinkAsync(node));
+    }
+
+    /// <summary>Builds direct field controls from the current typed field drafts without exposing command selection.</summary>
+    private void RefreshRecordFields()
+    {
+        if (ViewModel.FieldDrafts.Count == 0)
+        {
+            DraftScroller.Content = CreateText("Opening record fields...", 12, FontWeight.Normal);
+            return;
+        }
+
+        var fields = new StackPanel { Spacing = 14 };
+        foreach (var field in ViewModel.FieldDrafts)
+        {
+            if (field.Draft.Root is not RecordWireObjectDraftNode root || root.Properties.Count != 1)
+            {
+                fields.Children.Add(CreateText($"{field.Title} cannot be displayed as a direct field.", 12, FontWeight.Normal));
+                continue;
+            }
+
+            var heading = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
+            heading.Children.Add(CreateText(field.Title, 14, FontWeight.SemiBold));
+            if (field.CanClear)
+            {
+                var clear = new CheckBox { Content = "Clear value", DataContext = field };
+                clear.Bind(ToggleButton.IsCheckedProperty, new Binding(nameof(FormListFieldDraft.ClearRequested))
+                {
+                    Mode = BindingMode.TwoWay
+                });
+                heading.Children.Add(clear);
+            }
+
+            var editor = RecordWireDraftControlFactory.CreateFormField(
+                root.Properties[0].Node,
+                node => ViewModel.PickFormLinkAsync(node));
+            var panel = new StackPanel
+            {
+                Spacing = 6,
+                Children = { heading, editor }
+            };
+            AutomationProperties.SetAutomationId(panel, $"FormListField{field.Command.CommandName}");
+            fields.Children.Add(panel);
+        }
+
+        DraftScroller.Content = fields;
     }
 
     /// <summary>Rebuilds manually projected controls and reevaluates bound state from one current editor snapshot.</summary>
@@ -705,7 +792,8 @@ public sealed class FormListEditorView : UserControl
             CommandGroupSelector.SelectedItem = selected.GroupName;
             RefreshCommandsInSelectedGroup(preferViewModelSelection: true);
         }
-        else if (string.Equals(eventArgs.PropertyName, nameof(FormListEditorViewModel.DraftRoot), StringComparison.Ordinal)
+        else if (string.Equals(eventArgs.PropertyName, nameof(FormListEditorViewModel.FieldDrafts), StringComparison.Ordinal)
+            || string.Equals(eventArgs.PropertyName, nameof(FormListEditorViewModel.DraftRoot), StringComparison.Ordinal)
             || string.Equals(eventArgs.PropertyName, nameof(FormListEditorViewModel.Draft), StringComparison.Ordinal))
         {
             RefreshDraft();

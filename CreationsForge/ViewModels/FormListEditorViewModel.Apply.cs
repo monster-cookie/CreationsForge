@@ -345,6 +345,10 @@ public sealed partial class FormListEditorViewModel
             SetWarnings(outcome.Warnings);
             ClearError();
             EngineError? draftRefreshError = null;
+            if (!IsSavingFormValue)
+            {
+                draftRefreshError = RebuildFormFields();
+            }
             if (outcome.Seed is not null &&
                 CatalogContextValue is not null &&
                 SelectedCommandValue is not null)
@@ -386,14 +390,17 @@ public sealed partial class FormListEditorViewModel
             }
         }).ConfigureAwait(false);
 
-        if (!IsCurrentGeneration(generation, session.WorkspaceId))
+        if (!IsCurrentGeneration(generation, session.WorkspaceId) || IsSavingFormValue)
         {
             return;
         }
 
         try
         {
-            await Host.RefreshAsync(session.FormKey, cancellationToken).ConfigureAwait(false);
+            Task refreshTask = Task.CompletedTask;
+            await UiDispatcher.InvokeAsync(() =>
+                refreshTask = Host.RefreshAsync(session.FormKey, cancellationToken)).ConfigureAwait(false);
+            await refreshTask.ConfigureAwait(false);
         }
         catch (Exception exception)
         {

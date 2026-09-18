@@ -163,6 +163,7 @@ public sealed partial class FormListEditorViewModel
         SeedValue = null;
         AvailableCommandsValue = Array.Empty<FormListCommandPresentation>();
         SelectedCommandValue = null;
+        ClearFormFields();
         DetachDraft();
         ValidationIssuesValue = Array.Empty<RecordWireDraftIssue>();
         IsStagedChangesKnownValue = false;
@@ -320,6 +321,7 @@ public sealed partial class FormListEditorViewModel
         OnPropertyChanged(nameof(IsBusy));
         OnPropertyChanged(nameof(CanMutateDraft));
         OnPropertyChanged(nameof(CanApply));
+        OnPropertyChanged(nameof(CanSaveForm));
         OnPropertyChanged(nameof(CanDiscardFormChanges));
         OnPropertyChanged(nameof(CanBeginNew));
         OnPropertyChanged(nameof(CanBeginOverride));
@@ -386,6 +388,7 @@ public sealed partial class FormListEditorViewModel
         OnPropertyChanged(nameof(HasPendingOperation));
         OnPropertyChanged(nameof(CanMutateDraft));
         OnPropertyChanged(nameof(CanApply));
+        OnPropertyChanged(nameof(CanSaveForm));
         OnPropertyChanged(nameof(CanDiscardFormChanges));
         RaiseCommandStates();
     }
@@ -397,6 +400,7 @@ public sealed partial class FormListEditorViewModel
         OverrideRelayCommand.RaiseCanExecuteChanged();
         ExistingOutputRelayCommand.RaiseCanExecuteChanged();
         ApplyRelayCommand.RaiseCanExecuteChanged();
+        SaveFormRelayCommand.RaiseCanExecuteChanged();
         DiscardFormChangesRelayCommand.RaiseCanExecuteChanged();
         RetryPendingRelayCommand.RaiseCanExecuteChanged();
     }

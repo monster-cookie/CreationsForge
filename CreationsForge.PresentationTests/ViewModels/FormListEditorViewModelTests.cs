@@ -1,13 +1,18 @@
 using System.ComponentModel;
 using System.Text.Json;
 using CreationsForge.Core.Engine.Contracts;
+using CreationsForge.Core.Engine.RecordWire;
 using CreationsForge.Core.Enums;
+using CreationsForge.Fallout4.PluginAdapter.RecordInspection;
+using CreationsForge.Fallout4.PluginAdapter.Wire;
 using CreationsForge.RecordEditing;
 using CreationsForge.RecordEditing.Drafts;
 using CreationsForge.PresentationTests.Support;
 using CreationsForge.Services;
 using CreationsForge.Services.Interfaces;
 using CreationsForge.Skyrim.PluginAdapter.Wire;
+using CreationsForge.Starfield.PluginAdapter.RecordInspection;
+using CreationsForge.Starfield.PluginAdapter.Wire;
 using CreationsForge.ViewModels;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
@@ -177,6 +182,140 @@ public sealed class FormListEditorViewModelTests
         staleSeedAttempt.Succeeded.ShouldBeFalse();
         staleSeedAttempt.Error!.Message.ShouldContain("requires a matching revision-bound record seed");
         editor.Draft.ShouldBeSameAs(draft);
+    }
+
+    /// <summary>Verifies Begin and Apply refreshes enter through the presentation dispatcher even when they resume on a worker thread.</summary>
+    /// <returns>A task that completes after both dispatched browser refreshes.</returns>
+    [Fact]
+    public async Task Apply_RefreshesBrowserThroughUiDispatcher()
+    {
+        var fixture = new EditorFixture();
+        using var editor = fixture.CreateEditor();
+        fixture.Host.RequireDispatchedRefresh = true;
+        await Task.Run(editor.BeginNewAsync);
+
+        await Task.Run(editor.ApplyAsync);
+
+        editor.HasError.ShouldBeFalse();
+        fixture.Host.RefreshSelections.Count.ShouldBe(2);
+        fixture.Host.RefreshSelections.Last().ShouldBe(fixture.FormKey);
+    }
+
+    /// <summary>Verifies one Save action stages every changed visible field through ordered typed edits.</summary>
+    /// <returns>A task that completes after the record form is rebuilt from the staged result.</returns>
+    [Fact]
+    public async Task SaveForm_StagesChangedFieldsWithoutChoosingCommands()
+    {
+        var fixture = new EditorFixture();
+        using var editor = fixture.CreateEditor();
+        await editor.BeginNewAsync();
+        var editorIdField = editor.FieldDrafts.Single(candidate => candidate.Title == "Editor ID");
+        var editorId = editorIdField.Draft.Root.ShouldBeOfType<RecordWireObjectDraftNode>()
+            .FindProperty("editorId").ShouldBeOfType<RecordWireStringDraftNode>();
+        var versionField = editor.FieldDrafts.Single(candidate => candidate.Title == "Form Version");
+        var version = versionField.Draft.Root.ShouldBeOfType<RecordWireObjectDraftNode>()
+            .FindProperty("formVersion").ShouldBeOfType<RecordWireIntegerDraftNode>();
+        editorId.Value = "SimpleForm";
+        version.Text = "45";
+
+        editor.HasFormChanges.ShouldBeTrue();
+        editor.CanSaveForm.ShouldBeTrue();
+        await editor.SaveFormAsync();
+
+        fixture.Workspace.ApplyRequests.Select(request => request.Edit.GetType()).ShouldBe(
+            [typeof(SetEditorIdEdit), typeof(SetFormVersionEdit)]);
+        fixture.Workspace.ApplyRequests[1].ExpectedRevision.ShouldBe(
+            fixture.Workspace.ApplyRequests[0].ExpectedRevision.Next());
+        fixture.Host.RefreshSelections.Count.ShouldBe(2);
+        editor.HasFormChanges.ShouldBeFalse();
+        editor.HasError.ShouldBeFalse(editor.ErrorMessage);
+        editor.FieldDrafts.Single(candidate => candidate.Title == "Editor ID")
+            .Draft.Root.ShouldBeOfType<RecordWireObjectDraftNode>()
+            .FindProperty("editorId").ShouldBeOfType<RecordWireStringDraftNode>()
+            .Value.ShouldBe("SimpleForm");
+    }
+
+    /// <summary>Verifies retrying a partly staged form submits only the field that failed.</summary>
+    [Fact]
+    public async Task SaveForm_AfterSecondFieldFailure_DoesNotReplayFirstField()
+    {
+        var fixture = new EditorFixture();
+        using var editor = fixture.CreateEditor();
+        await editor.BeginNewAsync();
+        editor.FieldDrafts.Single(candidate => candidate.Title == "Editor ID")
+            .Draft.Root.ShouldBeOfType<RecordWireObjectDraftNode>()
+            .FindProperty("editorId").ShouldBeOfType<RecordWireStringDraftNode>().Value = "SimpleForm";
+        editor.FieldDrafts.Single(candidate => candidate.Title == "Form Version")
+            .Draft.Root.ShouldBeOfType<RecordWireObjectDraftNode>()
+            .FindProperty("formVersion").ShouldBeOfType<RecordWireIntegerDraftNode>().Text = "45";
+        var rejectSecondField = true;
+        fixture.Workspace.ApplyAction = (request, _) =>
+        {
+            fixture.Workspace.ApplyRequests.Add(request);
+            if (request.Edit is SetFormVersionEdit && rejectSecondField)
+            {
+                return ValueTask.FromResult(EngineResult<OperationReceipt>.Failure(
+                    new EngineError(EngineErrorCode.ValidationFailed, "The second field was rejected."),
+                    fixture.WorkspaceId, request.OperationId, request.ExpectedRevision,
+                    fixture.Workspace.CurrentRevision));
+            }
+
+            fixture.Workspace.AdvanceRevision();
+            return ValueTask.FromResult(EngineResult<OperationReceipt>.Success(
+                new OperationReceipt(request.OperationId, fixture.Workspace.CurrentRevision),
+                fixture.WorkspaceId, request.OperationId, request.ExpectedRevision,
+                fixture.Workspace.CurrentRevision));
+        };
+
+        await editor.SaveFormAsync();
+
+        editor.HasError.ShouldBeTrue();
+        editor.FieldDrafts.Single(candidate => candidate.Title == "Editor ID").HasChanges.ShouldBeFalse();
+        editor.FieldDrafts.Single(candidate => candidate.Title == "Form Version").HasChanges.ShouldBeTrue();
+        fixture.Host.RefreshSelections.Count.ShouldBe(2);
+
+        rejectSecondField = false;
+        await editor.SaveFormAsync();
+
+        fixture.Workspace.ApplyRequests.Select(request => request.Edit.GetType()).ShouldBe(
+            [typeof(SetEditorIdEdit), typeof(SetFormVersionEdit), typeof(SetFormVersionEdit)]);
+        editor.HasError.ShouldBeFalse(editor.ErrorMessage);
+        editor.HasFormChanges.ShouldBeFalse();
+    }
+
+    /// <summary>Verifies a real Starfield FormList read view produces the direct fields needed by the record form.</summary>
+    /// <returns>A task that completes after the new-record session is seeded.</returns>
+    [Fact]
+    public async Task BeginNew_StarfieldFormExposesNativeFieldsDirectly()
+    {
+        var fixture = new EditorFixture(SupportedGame.Starfield);
+        using var editor = fixture.CreateEditor();
+
+        await editor.BeginNewAsync();
+
+        editor.HasError.ShouldBeFalse(editor.ErrorMessage);
+        editor.FieldDrafts.Select(candidate => candidate.Title).ShouldBe(
+        [
+            "Editor ID", "Name", "Items", "Add to List", "Components", "Conditional Entries",
+            "Record Flags", "Compressed", "Deleted", "Form Version", "Secondary Version", "Version Control"
+        ]);
+    }
+
+    /// <summary>Verifies Fallout 4's complete read view opens its direct record fields.</summary>
+    [Fact]
+    public async Task BeginNew_Fallout4FormExposesNativeFieldsDirectly()
+    {
+        var fixture = new EditorFixture(SupportedGame.Fallout4);
+        using var editor = fixture.CreateEditor();
+
+        await editor.BeginNewAsync();
+
+        editor.HasError.ShouldBeFalse(editor.ErrorMessage);
+        editor.FieldDrafts.Select(candidate => candidate.Title).ShouldBe(
+        [
+            "Editor ID", "Name", "Items", "Record Flags", "Compressed", "Deleted",
+            "Form Version", "Secondary Version", "Version Control"
+        ]);
     }
 
     /// <summary>Verifies a locally changed typed draft blocks every Begin action so it cannot be silently discarded.</summary>
@@ -542,9 +681,12 @@ public sealed class FormListEditorViewModelTests
     /// <summary>Owns deterministic editor dependencies for one lifecycle test.</summary>
     private sealed class EditorFixture
     {
+        private readonly SupportedGame Game;
+
         /// <summary>Initializes one Skyrim editor fixture with a selected ready output.</summary>
-        public EditorFixture()
+        public EditorFixture(SupportedGame game = SupportedGame.Skyrim)
         {
+            Game = game;
             WorkspaceId = Guid.NewGuid();
             InitialRevision = new WorkspaceRevision(Guid.NewGuid(), 8);
             SourceModKey = ModKey.FromNameAndExtension("EditorSource.esm");
@@ -555,10 +697,11 @@ public sealed class FormListEditorViewModelTests
                 ModKey.FromNameAndExtension("EditorOutput.esp"),
                 LocalizedOutputMode.Embedded,
                 OutputMasterStyle.Full);
-            Workspace = new EditorTestWorkspace(WorkspaceId, Output, InitialRevision, FormKey, SourceModKey);
+            Workspace = new EditorTestWorkspace(WorkspaceId, Output, InitialRevision, FormKey, SourceModKey, game);
             Coordinator = new RecordingWorkspaceCoordinator();
             Coordinator.Publish(CreateDescriptor(WorkspaceId, InitialRevision), Workspace);
             Host = new EditorTestHost();
+            Host.IsDispatching = () => UiDispatcher.IsInvoking;
             OperationArbiter = new WorkspacePresentationOperationArbiter();
         }
 
@@ -578,6 +721,8 @@ public sealed class FormListEditorViewModelTests
         public RecordingWorkspaceCoordinator Coordinator { get; }
         /// <summary>Gets the recording editor host.</summary>
         public EditorTestHost Host { get; }
+        /// <summary>Gets the deterministic presentation dispatcher shared with the test host.</summary>
+        public InlineUiDispatcher UiDispatcher { get; } = new();
         /// <summary>Gets the shared editor and workspace-transition admission boundary.</summary>
         public WorkspacePresentationOperationArbiter OperationArbiter { get; }
 
@@ -586,18 +731,30 @@ public sealed class FormListEditorViewModelTests
         public FormListEditorViewModel CreateEditor()
         {
             var validator = new FormListDraftValidator();
+            IFormListEditWireCodec codec = Game switch
+            {
+                SupportedGame.Starfield => new StarfieldFormListEditWireCodec(),
+                SupportedGame.Fallout4 => new Fallout4FormListEditWireCodec(),
+                _ => new SkyrimFormListEditWireCodec()
+            };
+            IFormListEditWireSchemaCatalog schema = Game switch
+            {
+                SupportedGame.Starfield => new StarfieldFormListEditWireSchemaCatalog(),
+                SupportedGame.Fallout4 => new Fallout4FormListEditWireSchemaCatalog(),
+                _ => new SkyrimFormListEditWireSchemaCatalog()
+            };
             return new FormListEditorViewModel(
                 Coordinator,
                 Host,
                 OperationArbiter,
                 new FormListWireCatalogResolver(
-                    [new SkyrimFormListEditWireCodec()],
-                    [new SkyrimFormListEditWireSchemaCatalog()]),
+                    [codec],
+                    [schema]),
                 new FormListDraftFactory(),
                 validator,
                 new FormListDraftSerializer(validator),
                 new RecordingReferencePickerService(),
-                new InlineUiDispatcher());
+                UiDispatcher);
         }
 
         /// <summary>Creates a current plugin desktop descriptor for a fixture workspace.</summary>
@@ -609,8 +766,13 @@ public sealed class FormListEditorViewModelTests
             var sourcePath = AbsolutePath(SourceModKey.FileName);
             return new WorkspaceDescriptor(
                 workspaceId,
-                SupportedGame.Skyrim,
-                GameRelease.SkyrimSE,
+                Game,
+                Game switch
+                {
+                    SupportedGame.Starfield => GameRelease.Starfield,
+                    SupportedGame.Fallout4 => GameRelease.Fallout4,
+                    _ => GameRelease.SkyrimSE
+                },
                 sourcePath,
                 [sourcePath],
                 Output,
@@ -633,6 +795,12 @@ public sealed class FormListEditorViewModelTests
         /// <summary>Gets or sets the one-based refresh call that throws a deterministic failure.</summary>
         public int? ThrowOnRefreshCall { get; set; }
 
+        /// <summary>Gets or sets whether refresh must begin within a dispatcher invocation.</summary>
+        public bool RequireDispatchedRefresh { get; set; }
+
+        /// <summary>Checks whether refresh is executing through the fixture's dispatcher.</summary>
+        public Func<bool>? IsDispatching { get; set; }
+
         /// <summary>Publishes one atomic browser selection.</summary>
         /// <param name="selection">The exact selection, or <see langword="null"/>.</param>
         public void PublishSelection(FormListEditorSelection? selection)
@@ -645,6 +813,11 @@ public sealed class FormListEditorViewModelTests
         public Task RefreshAsync(FormKey? reselect = null, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (RequireDispatchedRefresh && IsDispatching?.Invoke() != true)
+            {
+                throw new InvalidOperationException("The browser refresh was started outside the UI dispatcher.");
+            }
+
             RefreshSelections.Add(reselect);
             if (ThrowOnRefreshCall == RefreshSelections.Count)
             {
@@ -658,6 +831,9 @@ public sealed class FormListEditorViewModelTests
     /// <summary>Implements only the workspace operations exercised by the editor lifecycle.</summary>
     private sealed class EditorTestWorkspace : IPluginWorkspace
     {
+        private string? EditorIdValue = "Before";
+        private ushort FormVersionValue = 44;
+        private readonly SupportedGame Game;
         /// <summary>The selected output identity.</summary>
         private readonly OutputAssociation Output;
 
@@ -681,8 +857,10 @@ public sealed class FormListEditorViewModelTests
             OutputAssociation output,
             WorkspaceRevision revision,
             FormKey formKey,
-            ModKey sourceModKey)
+            ModKey sourceModKey,
+            SupportedGame game = SupportedGame.Skyrim)
         {
+            Game = game;
             WorkspaceId = workspaceId;
             Output = output;
             CurrentRevision = revision;
@@ -741,8 +919,13 @@ public sealed class FormListEditorViewModelTests
             cancellationToken.ThrowIfCancellationRequested();
             return ValueTask.FromResult(EngineResult<WorkspaceState>.Success(
                 new WorkspaceState(
-                    SupportedGame.Skyrim,
-                    GameRelease.SkyrimSE,
+                    Game,
+                    Game switch
+                    {
+                        SupportedGame.Starfield => GameRelease.Starfield,
+                        SupportedGame.Fallout4 => GameRelease.Fallout4,
+                        _ => GameRelease.SkyrimSE
+                    },
                     Output,
                     OutputBaseline,
                     OutputSynchronization,
@@ -859,6 +1042,19 @@ public sealed class FormListEditorViewModelTests
         {
             cancellationToken.ThrowIfCancellationRequested();
             ApplyRequests.Add(request);
+            switch (request.Edit)
+            {
+                case SetEditorIdEdit setEditorId:
+                    EditorIdValue = setEditorId.EditorId;
+                    break;
+                case ClearEditorIdEdit:
+                    EditorIdValue = null;
+                    break;
+                case SetFormVersionEdit setFormVersion:
+                    FormVersionValue = setFormVersion.FormVersion;
+                    break;
+            }
+
             AdvanceRevision();
             return ValueTask.FromResult(EngineResult<OperationReceipt>.Success(
                 new OperationReceipt(request.OperationId, CurrentRevision),
@@ -872,7 +1068,52 @@ public sealed class FormListEditorViewModelTests
         /// <returns>A cloned JSON object.</returns>
         private JsonElement RecordJson()
         {
-            using var document = JsonDocument.Parse($"{{\"FormKey\":\"{FormKey}\",\"EditorID\":\"Before\"}}");
+            if (Game == SupportedGame.Starfield)
+            {
+                var starfieldRecord = new Mutagen.Bethesda.Starfield.FormList(FormKey, Mutagen.Bethesda.Starfield.StarfieldRelease.Starfield)
+                {
+                    EditorID = EditorIdValue,
+                    FormVersion = FormVersionValue
+                };
+                using var stream = new MemoryStream();
+                using (var writer = new Utf8JsonWriter(stream))
+                {
+                    new StarfieldFormListInspector().WriteReadView(starfieldRecord, writer, CancellationToken.None);
+                }
+
+                using var starfieldDocument = JsonDocument.Parse(stream.ToArray());
+                return starfieldDocument.RootElement.Clone();
+            }
+
+            if (Game == SupportedGame.Fallout4)
+            {
+                var fallout4Record = new Mutagen.Bethesda.Fallout4.FormList(FormKey, Mutagen.Bethesda.Fallout4.Fallout4Release.Fallout4)
+                {
+                    EditorID = EditorIdValue,
+                    FormVersion = FormVersionValue
+                };
+                using var stream = new MemoryStream();
+                using (var writer = new Utf8JsonWriter(stream))
+                {
+                    new Fallout4FormListInspector().WriteReadView(fallout4Record, writer, CancellationToken.None);
+                }
+
+                using var fallout4Document = JsonDocument.Parse(stream.ToArray());
+                return fallout4Document.RootElement.Clone();
+            }
+
+            var record = new
+            {
+                MajorRecordFlagsRaw = 0,
+                FormKey = FormKey.ToString(),
+                VersionControl = 0,
+                EditorID = EditorIdValue,
+                FormVersion = FormVersionValue,
+                Version2 = 0,
+                SkyrimMajorRecordFlags = 0,
+                Items = Array.Empty<object>()
+            };
+            using var document = JsonDocument.Parse(JsonSerializer.Serialize(record));
             return document.RootElement.Clone();
         }
 
