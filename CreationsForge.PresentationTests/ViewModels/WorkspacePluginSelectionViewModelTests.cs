@@ -139,13 +139,13 @@ public sealed class WorkspacePluginSelectionViewModelTests
         descriptor.Output.ShouldBeNull();
     }
 
-    /// <summary>Verifies new-plugin creation admits only Starfield.esm and forwards its Data directory and file type.</summary>
+    /// <summary>Verifies the selected file type supplies the extension and only Starfield.esm is admitted.</summary>
     [Fact]
     public async Task CreateNewPluginAsync_WithDetectedCatalog_UsesOnlyGameBase()
     {
         var root = CreateTestRoot();
         var outputPath = Path.Combine(root, "NewPatch.esl");
-        var picker = new FakeWorkspacePathPicker { OutputPluginPath = outputPath };
+        var picker = new FakeWorkspacePathPicker();
         var workspace = CreateSuccessfulWorkspace();
         var factory = CreateFactory(workspace);
         await using var coordinator = CreateCoordinator(factory);
@@ -156,13 +156,12 @@ public sealed class WorkspacePluginSelectionViewModelTests
         var viewModel = CreateViewModel(coordinator, picker, discovery);
         await viewModel.RefreshPluginsAsync();
         viewModel.NewPluginExtension = ".esl";
+        viewModel.NewPluginFileName = "NewPatch";
 
         var opened = await viewModel.CreateNewPluginAsync();
 
         opened.ShouldBeTrue();
-        picker.RequestedOutputMode.ShouldBe(OutputSelectionMode.CreateNew);
-        picker.RequestedOutputDirectory.ShouldBe(root);
-        picker.RequestedOutputExtension.ShouldBe(".esl");
+        picker.RequestedOutputMode.ShouldBeNull();
         factory.Requests.Single().SourcePluginPath.ShouldBe(Path.Combine(root, "Starfield.esm"));
         factory.Requests.Single().LoadOrderPluginPaths.ShouldBe([Path.Combine(root, "Starfield.esm")]);
         workspace.LastSelectOutputRequest.ShouldNotBeNull();
@@ -177,7 +176,7 @@ public sealed class WorkspacePluginSelectionViewModelTests
     {
         var root = CreateTestRoot();
         var outputPath = Path.Combine(root, "NewMediumMaster.esm");
-        var picker = new FakeWorkspacePathPicker { OutputPluginPath = outputPath };
+        var picker = new FakeWorkspacePathPicker();
         var workspace = CreateSuccessfulWorkspace();
         var factory = CreateFactory(workspace);
         await using var coordinator = CreateCoordinator(factory);
@@ -190,12 +189,14 @@ public sealed class WorkspacePluginSelectionViewModelTests
         viewModel.SelectedPlugin = viewModel.PluginRows.Single(row => row.FileName == "Unofficial Starfield Patch.esm");
         viewModel.NewPluginExtension = ".esm";
         viewModel.OutputMasterStyle = OutputMasterStyle.Medium;
+        viewModel.NewPluginFileName = "NewMediumMaster";
 
         var opened = await viewModel.CreateNewPluginAsync();
 
         opened.ShouldBeTrue();
         factory.Requests.Single().LoadOrderPluginPaths.ShouldBe([Path.Combine(root, "Starfield.esm")]);
         workspace.LastSelectOutputRequest.ShouldNotBeNull();
+        workspace.LastSelectOutputRequest.Output.PluginPath.ShouldBe(outputPath);
         workspace.LastSelectOutputRequest.Output.MasterStyle.ShouldBe(OutputMasterStyle.Medium);
     }
 
@@ -204,7 +205,7 @@ public sealed class WorkspacePluginSelectionViewModelTests
     public async Task CreateNewPluginAsync_WithUnrelatedConflictingPlugins_OpensBaseContext()
     {
         var root = CreateTestRoot();
-        var picker = new FakeWorkspacePathPicker { OutputPluginPath = Path.Combine(root, "NewPatch.esp") };
+        var picker = new FakeWorkspacePathPicker();
         var factory = CreateFactory(CreateSuccessfulWorkspace());
         await using var coordinator = CreateCoordinator(factory);
         var discovery = new FakePluginDiscoveryService
@@ -213,21 +214,22 @@ public sealed class WorkspacePluginSelectionViewModelTests
         };
         var viewModel = CreateViewModel(coordinator, picker, discovery);
         await viewModel.RefreshPluginsAsync();
+        viewModel.NewPluginFileName = "NewPatch";
 
         var opened = await viewModel.CreateNewPluginAsync();
 
         opened.ShouldBeTrue();
-        picker.RequestedOutputMode.ShouldBe(OutputSelectionMode.CreateNew);
+        picker.RequestedOutputMode.ShouldBeNull();
         factory.Requests.Single().LoadOrderPluginPaths.ShouldBe([Path.Combine(root, "Starfield.esm")]);
         viewModel.ErrorText.ShouldBeNull();
     }
 
-    /// <summary>Verifies the requested file type cannot silently disagree with the picked filename.</summary>
+    /// <summary>Verifies a typed extension is rejected because the selected file type supplies it.</summary>
     [Fact]
-    public async Task CreateNewPluginAsync_WithDifferentPickedExtension_RejectsOutput()
+    public async Task CreateNewPluginAsync_WithTypedExtension_RejectsOutput()
     {
         var root = CreateTestRoot();
-        var picker = new FakeWorkspacePathPicker { OutputPluginPath = Path.Combine(root, "WrongType.esp") };
+        var picker = new FakeWorkspacePathPicker();
         var factory = CreateFactory(CreateSuccessfulWorkspace());
         await using var coordinator = CreateCoordinator(factory);
         var discovery = new FakePluginDiscoveryService
@@ -237,20 +239,92 @@ public sealed class WorkspacePluginSelectionViewModelTests
         var viewModel = CreateViewModel(coordinator, picker, discovery);
         await viewModel.RefreshPluginsAsync();
         viewModel.NewPluginExtension = ".esm";
+        viewModel.NewPluginFileName = "WrongType.esp";
 
         var opened = await viewModel.CreateNewPluginAsync();
 
         opened.ShouldBeFalse();
-        viewModel.ErrorText.ShouldBe("The new plugin filename must end in .esm for the selected file type.");
+        viewModel.ErrorText.ShouldBe("Enter a plugin name without an extension; .esm is added from the selected file type.");
+        picker.RequestedOutputMode.ShouldBeNull();
+        factory.Requests.ShouldBeEmpty();
+    }
+
+    /// <summary>Verifies a missing name cannot start workspace acquisition or invoke a picker.</summary>
+    [Fact]
+    public async Task CreateNewPluginAsync_WithoutName_RejectsBeforeWorkspace()
+    {
+        var root = CreateTestRoot();
+        var picker = new FakeWorkspacePathPicker();
+        var factory = CreateFactory(CreateSuccessfulWorkspace());
+        await using var coordinator = CreateCoordinator(factory);
+        var discovery = new FakePluginDiscoveryService
+        {
+            Result = EngineResult<PluginCatalog>.Success(CreateMisorderedCatalog(root))
+        };
+        var viewModel = CreateViewModel(coordinator, picker, discovery);
+        await viewModel.RefreshPluginsAsync();
+
+        (await viewModel.CreateNewPluginAsync()).ShouldBeFalse();
+
+        viewModel.ErrorText.ShouldBe("Enter a name for the new plugin.");
+        picker.RequestedOutputMode.ShouldBeNull();
+        factory.Requests.ShouldBeEmpty();
+    }
+
+    /// <summary>Verifies typed names cannot escape the Data directory or use a Windows device name.</summary>
+    /// <param name="name">The unsafe filename stem.</param>
+    [Theory]
+    [InlineData("../Escape")]
+    [InlineData("C:\\Outside")]
+    [InlineData("CON")]
+    [InlineData("Trailing.")]
+    public async Task CreateNewPluginAsync_WithUnsafeName_RejectsBeforeWorkspace(string name)
+    {
+        var root = CreateTestRoot();
+        var factory = CreateFactory(CreateSuccessfulWorkspace());
+        await using var coordinator = CreateCoordinator(factory);
+        var discovery = new FakePluginDiscoveryService
+        {
+            Result = EngineResult<PluginCatalog>.Success(CreateMisorderedCatalog(root))
+        };
+        var viewModel = CreateViewModel(coordinator, new FakeWorkspacePathPicker(), discovery);
+        await viewModel.RefreshPluginsAsync();
+        viewModel.NewPluginFileName = name;
+
+        (await viewModel.CreateNewPluginAsync()).ShouldBeFalse();
+
+        viewModel.ErrorText.ShouldNotBeNull().ShouldContain("cannot be used in a filename");
+        factory.Requests.ShouldBeEmpty();
+    }
+
+    /// <summary>Verifies a new filename cannot collide with an installed plugin even in a synthetic catalog.</summary>
+    [Fact]
+    public async Task CreateNewPluginAsync_WithInstalledName_RejectsBeforeWorkspace()
+    {
+        var root = CreateTestRoot();
+        var factory = CreateFactory(CreateSuccessfulWorkspace());
+        await using var coordinator = CreateCoordinator(factory);
+        var discovery = new FakePluginDiscoveryService
+        {
+            Result = EngineResult<PluginCatalog>.Success(CreateMisorderedCatalog(root))
+        };
+        var viewModel = CreateViewModel(coordinator, new FakeWorkspacePathPicker(), discovery);
+        await viewModel.RefreshPluginsAsync();
+        viewModel.NewPluginFileName = "starfield";
+        viewModel.NewPluginExtension = ".esm";
+
+        (await viewModel.CreateNewPluginAsync()).ShouldBeFalse();
+
+        viewModel.ErrorText.ShouldBe("A plugin named 'starfield.esm' already exists in the game Data directory.");
         factory.Requests.ShouldBeEmpty();
     }
 
     /// <summary>Verifies an unrelated root plugin cannot silently replace the selected game's missing base master.</summary>
     [Fact]
-    public async Task CreateNewPluginAsync_WithoutGameBase_RejectsBeforePicker()
+    public async Task CreateNewPluginAsync_WithoutGameBase_RejectsBeforeWorkspace()
     {
         var root = CreateTestRoot();
-        var picker = new FakeWorkspacePathPicker { OutputPluginPath = Path.Combine(root, "NewPatch.esp") };
+        var picker = new FakeWorkspacePathPicker();
         var factory = CreateFactory(CreateSuccessfulWorkspace());
         await using var coordinator = CreateCoordinator(factory);
         var discovery = new FakePluginDiscoveryService
@@ -259,6 +333,7 @@ public sealed class WorkspacePluginSelectionViewModelTests
         };
         var viewModel = CreateViewModel(coordinator, picker, discovery);
         await viewModel.RefreshPluginsAsync();
+        viewModel.NewPluginFileName = "NewPatch";
 
         var opened = await viewModel.CreateNewPluginAsync();
 

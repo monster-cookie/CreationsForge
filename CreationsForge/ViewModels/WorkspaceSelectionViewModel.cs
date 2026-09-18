@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Enums;
 using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Services;
 using CreationsForge.Services.Interfaces;
@@ -66,6 +65,9 @@ public sealed partial class WorkspaceSelectionViewModel : ViewModelBase
 
     /// <summary>The file extension selected for a newly created plugin.</summary>
     private string NewPluginExtensionValue = ".esp";
+
+    /// <summary>The user-entered new-plugin name without its selected extension.</summary>
+    private string NewPluginFileNameValue = string.Empty;
 
     /// <summary>The master styles supported by <see cref="SelectedGame"/>.</summary>
     private IReadOnlyList<OutputMasterStyle> OutputMasterStyleOptionsValue;
@@ -224,6 +226,13 @@ public sealed partial class WorkspaceSelectionViewModel : ViewModelBase
                 OutputMasterStyle = OutputMasterStyle.Small;
             }
         }
+    }
+
+    /// <summary>Gets or sets the new-plugin name entered without an extension or directory path.</summary>
+    public string NewPluginFileName
+    {
+        get => NewPluginFileNameValue;
+        set => SetProperty(ref NewPluginFileNameValue, value ?? string.Empty);
     }
 
     /// <summary>Gets the master sizes valid for the selected game and new-plugin extension.</summary>

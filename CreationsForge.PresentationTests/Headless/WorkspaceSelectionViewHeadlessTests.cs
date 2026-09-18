@@ -68,6 +68,7 @@ public sealed class WorkspaceSelectionViewHeadlessTests
             ControlFinder.FindByAutomationId<Button>(view, "CreatePluginButton").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<ComboBox>(view, "NewPluginExtensionSelector").ShouldBeNull();
             ControlFinder.FindByAutomationId<ComboBox>(view, "NewPluginMasterStyleSelector").ShouldBeNull();
+            ControlFinder.FindByAutomationId<TextBox>(view, "NewPluginNameBox").ShouldBeNull();
             var readOnlyButton = ControlFinder.FindByAutomationId<Button>(view, "OpenPluginReadOnlyButton").ShouldNotBeNull();
             readOnlyButton.Content.ShouldBe("Open Read-Only");
             readOnlyButton.IsDefault.ShouldBeTrue();
@@ -83,6 +84,7 @@ public sealed class WorkspaceSelectionViewHeadlessTests
             var newPluginView = window.Content.ShouldBeOfType<NewPluginView>();
             window.Title.ShouldBe("New Plugin");
             ControlFinder.FindByAutomationId<ComboBox>(newPluginView, "NewPluginExtensionSelector").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<TextBox>(newPluginView, "NewPluginNameBox").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<Button>(newPluginView, "CancelNewPluginButton")!
                 .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Dispatcher.UIThread.RunJobs();
@@ -124,6 +126,13 @@ public sealed class WorkspaceSelectionViewHeadlessTests
             ControlFinder.FindByAutomationId<ComboBox>(view, "NewPluginGameSelector")!.ItemCount.ShouldBe(3);
             ControlFinder.FindByAutomationId<ComboBox>(view, "NewPluginExtensionSelector")!.ItemCount.ShouldBe(3);
             ControlFinder.FindByAutomationId<ComboBox>(view, "NewPluginMasterStyleSelector").ShouldNotBeNull();
+            var name = ControlFinder.FindByAutomationId<TextBox>(view, "NewPluginNameBox").ShouldNotBeNull();
+            var suffix = ControlFinder.FindByAutomationId<TextBlock>(view, "NewPluginExtensionSuffix").ShouldNotBeNull();
+            viewModel.NewPluginFileName = "MyPlugin";
+            viewModel.NewPluginExtension = ".esm";
+            Dispatcher.UIThread.RunJobs();
+            name.Text.ShouldBe("MyPlugin");
+            suffix.Text.ShouldBe(".esm");
             ControlFinder.FindByAutomationId<TextBlock>(view, "NewPluginDataDirectory").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<Button>(view, "ConfirmNewPluginButton").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<Button>(view, "CancelNewPluginButton").ShouldNotBeNull();

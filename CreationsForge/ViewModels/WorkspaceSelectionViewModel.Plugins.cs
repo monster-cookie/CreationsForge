@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Enums;
+using Mutagen.Bethesda.Plugins;
 
 namespace CreationsForge.ViewModels;
 
@@ -221,8 +222,8 @@ public sealed partial class WorkspaceSelectionViewModel
         return await OpenWorkspaceAsync(cancellationToken);
     }
 
-    /// <summary>Prompts for a new plugin name with only the selected game's base plugin as initial context.</summary>
-    /// <param name="cancellationToken">A token checked during path selection and workspace acquisition.</param>
+    /// <summary>Opens a new plugin workspace targeting the detected Data directory with only the game's base plugin as initial context.</summary>
+    /// <param name="cancellationToken">A token checked during workspace acquisition.</param>
     /// <returns><see langword="true"/> when the new plugin workspace became active; otherwise <see langword="false"/>.</returns>
     public async Task<bool> CreateNewPluginAsync(CancellationToken cancellationToken = default)
     {
@@ -267,19 +268,47 @@ public sealed partial class WorkspaceSelectionViewModel
             return false;
         }
 
-        var outputPath = await RunPickerAsync(() => PathPicker.PickOutputPluginAsync(
-            OutputSelectionMode.CreateNew,
-            PluginCatalogValue.DataDirectoryPath,
-            NewPluginExtension,
-            cancellationToken));
-        if (string.IsNullOrWhiteSpace(outputPath))
+        var pluginName = NewPluginFileName.Trim();
+        if (pluginName.Length == 0)
         {
+            ErrorText = "Enter a name for the new plugin.";
             return false;
         }
 
-        if (!Path.GetExtension(outputPath).Equals(NewPluginExtension, StringComparison.OrdinalIgnoreCase))
+        if (NewPluginExtensionOptions.Any(extension => pluginName.EndsWith(extension, StringComparison.OrdinalIgnoreCase)))
         {
-            ErrorText = $"The new plugin filename must end in {NewPluginExtension} for the selected file type.";
+            ErrorText = $"Enter a plugin name without an extension; {NewPluginExtension} is added from the selected file type.";
+            return false;
+        }
+
+        var invalidFileNameCharacters = Path.GetInvalidFileNameChars();
+        if (pluginName.EndsWith('.') || pluginName.Any(character =>
+                char.IsControl(character) || invalidFileNameCharacters.Contains(character) ||
+                "<>:\"/\\|?*".Contains(character)) || IsReservedPluginName(pluginName))
+        {
+            ErrorText = "The plugin name contains characters or a device name that cannot be used in a filename.";
+            return false;
+        }
+
+        var fileName = pluginName + NewPluginExtension;
+        if (!ModKey.TryFromNameAndExtension(fileName, out _, out var modKeyError))
+        {
+            ErrorText = $"The plugin filename is invalid: {modKeyError}";
+            return false;
+        }
+
+        var dataDirectory = PluginCatalogValue.DataDirectoryPath;
+        if (string.IsNullOrWhiteSpace(dataDirectory) || !Path.IsPathFullyQualified(dataDirectory))
+        {
+            ErrorText = "The detected game Data directory is invalid. Refresh the installed plugins and try again.";
+            return false;
+        }
+
+        var outputPath = Path.Combine(dataDirectory, fileName);
+        if (File.Exists(outputPath) || Directory.Exists(outputPath) || PluginCatalogValue.Plugins.Any(entry =>
+                entry.ModKey.FileName.String.Equals(fileName, StringComparison.OrdinalIgnoreCase)))
+        {
+            ErrorText = $"A plugin named '{fileName}' already exists in the game Data directory.";
             return false;
         }
 
@@ -291,6 +320,25 @@ public sealed partial class WorkspaceSelectionViewModel
             LocalizedOutputMode.Embedded,
             OutputMasterStyle);
         return await OpenWorkspaceAsync(cancellationToken);
+    }
+
+    /// <summary>Rejects Windows device names even when the application runs on another platform.</summary>
+    /// <param name="name">The proposed filename stem.</param>
+    /// <returns><see langword="true"/> when the stem would address a reserved device.</returns>
+    private static bool IsReservedPluginName(string name)
+    {
+        var firstPart = name.Split('.')[0];
+        if (firstPart.Equals("CON", StringComparison.OrdinalIgnoreCase) ||
+            firstPart.Equals("PRN", StringComparison.OrdinalIgnoreCase) ||
+            firstPart.Equals("AUX", StringComparison.OrdinalIgnoreCase) ||
+            firstPart.Equals("NUL", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return firstPart.Length == 4 && firstPart[3] is >= '1' and <= '9' &&
+            (firstPart.StartsWith("COM", StringComparison.OrdinalIgnoreCase) ||
+             firstPart.StartsWith("LPT", StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>Clears discovered rows after the selected game changes or discovery fails.</summary>

@@ -65,6 +65,26 @@ public sealed class NewPluginView : UserControl
         masterSize.Bind(IsEnabledProperty, new Binding(nameof(WorkspaceSelectionViewModel.CanOpen)));
         AutomationProperties.SetAutomationId(masterSize, "NewPluginMasterStyleSelector");
 
+        var fileName = new TextBox { PlaceholderText = "MyPlugin", MinHeight = 34 };
+        fileName.Bind(TextBox.TextProperty, new Binding(nameof(WorkspaceSelectionViewModel.NewPluginFileName))
+        {
+            Mode = BindingMode.TwoWay,
+            UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
+        });
+        fileName.Bind(IsEnabledProperty, new Binding(nameof(WorkspaceSelectionViewModel.CanOpen)));
+        AutomationProperties.SetAutomationId(fileName, "NewPluginNameBox");
+        var extensionSuffix = new TextBlock { VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeight.SemiBold };
+        extensionSuffix.Bind(TextBlock.TextProperty, new Binding(nameof(WorkspaceSelectionViewModel.NewPluginExtension)));
+        App.ApplyApplicationTextForeground(extensionSuffix);
+        AutomationProperties.SetAutomationId(extensionSuffix, "NewPluginExtensionSuffix");
+        Grid.SetColumn(extensionSuffix, 1);
+        var fileNameField = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,Auto"),
+            ColumnSpacing = 8,
+            Children = { fileName, extensionSuffix }
+        };
+
         var dataDirectory = new TextBlock { TextWrapping = TextWrapping.Wrap };
         dataDirectory.Bind(TextBlock.TextProperty, new Binding(nameof(WorkspaceSelectionViewModel.DetectedDataDirectoryText)));
         App.ApplyApplicationTextForeground(dataDirectory);
@@ -109,18 +129,22 @@ public sealed class NewPluginView : UserControl
             Spacing = 8,
             Children = { cancel, create }
         };
-        return new StackPanel
+        return new ScrollViewer
         {
-            Margin = new Thickness(24),
-            Spacing = 10,
-            Children =
+            Content = new StackPanel
             {
-                Label("New Plugin", 22),
-                Label("Game"), game,
-                Label("Plugin file type"), extension,
-                Label("Master size"), masterSize,
-                Label("Game Data directory"), dataDirectory,
-                hint, progress, status, error, actions
+                Margin = new Thickness(24),
+                Spacing = 10,
+                Children =
+                {
+                    Label("New Plugin", 22),
+                    Label("Game"), game,
+                    Label("Plugin file type"), extension,
+                    Label("Master size"), masterSize,
+                    Label("Plugin name (without extension)"), fileNameField,
+                    Label("Game Data directory"), dataDirectory,
+                    hint, progress, status, error, actions
+                }
             }
         };
     }
