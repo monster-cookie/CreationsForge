@@ -533,7 +533,7 @@ public sealed class FormListEditorViewModelTests
         editor.Draft.ShouldBeNull();
         editor.HasPendingOperation.ShouldBeFalse();
         editor.IsStagedChangesKnown.ShouldBeFalse();
-        editor.StatusText.ShouldContain("Workspace changed");
+        editor.StatusText.ShouldBe("Select a FormList to edit.");
     }
 
     /// <summary>Owns deterministic editor dependencies for one lifecycle test.</summary>

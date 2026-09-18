@@ -8,7 +8,7 @@ namespace CreationsForge.ViewModels;
 /// </summary>
 public sealed class FormListRecordViewModel : ViewModelBase, IRecordTreeNodeViewModel
 {
-    /// <summary>Tracks the interface expansion value; FormList records expose no navigation children.</summary>
+    /// <summary>Tracks whether an exact-context list is expanded.</summary>
     private bool IsExpandedValue;
 
     /// <summary>Initializes one FormList tree node.</summary>
@@ -83,7 +83,7 @@ public sealed class FormListRecordViewModel : ViewModelBase, IRecordTreeNodeView
     public IReadOnlyList<FormListRecordViewModel> Contexts { get; }
 
     /// <inheritdoc />
-    public IReadOnlyList<IRecordTreeNodeViewModel> TreeChildren => Array.Empty<IRecordTreeNodeViewModel>();
+    public IReadOnlyList<IRecordTreeNodeViewModel> TreeChildren => Contexts;
 
     /// <summary>Gets the winning selector followed by all exact context selectors for this root.</summary>
     public IReadOnlyList<FormListContextOption> ContextOptions { get; }
@@ -95,9 +95,9 @@ public sealed class FormListRecordViewModel : ViewModelBase, IRecordTreeNodeView
     public string ContextText => Context.Label;
 
     /// <summary>Gets whether the record exposes navigation children.</summary>
-    public bool HasChildren => false;
+    public bool HasChildren => Contexts.Count > 0;
 
-    /// <summary>Gets or sets the interface expansion value; records remain navigation leaves.</summary>
+    /// <summary>Gets or sets whether the exact contexts are expanded.</summary>
     public bool IsExpanded
     {
         get => IsExpandedValue;

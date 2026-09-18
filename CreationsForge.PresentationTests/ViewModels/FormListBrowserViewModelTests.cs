@@ -91,8 +91,8 @@ public sealed partial class FormListBrowserViewModelTests
         firstRoot.PrimaryText.ShouldBe("00000123");
         firstRoot.Context.Selection.Scope.ShouldBe(RecordScope.WinningOverrides);
         firstRoot.EditorId.ShouldBe("WinningList");
-        firstRoot.TreeChildren.ShouldBeEmpty();
-        firstRoot.HasChildren.ShouldBeFalse();
+        firstRoot.TreeChildren.Count.ShouldBe(3);
+        firstRoot.HasChildren.ShouldBeTrue();
         firstRoot.Contexts.Select(context => context.Context.ContainingModKey).ShouldBe([sourceMod, otherMod, outputMod]);
         firstRoot.Contexts.Select(context => context.Context.LoadOrderIndex).ShouldBe([0, 1, 2]);
         firstRoot.Contexts.Select(context => context.Context.Role).ShouldBe([PluginRole.Source, PluginRole.LoadOrder, PluginRole.Output]);
@@ -101,7 +101,11 @@ public sealed partial class FormListBrowserViewModelTests
 
         await viewModel.SelectRecordAsync(firstRoot);
 
-        viewModel.Selection.ShouldBeNull();
+        var winningSelection = viewModel.Selection.ShouldNotBeNull();
+        winningSelection.FormKey.ShouldBe(firstFormKey);
+        winningSelection.IsStagedOutput.ShouldBeTrue();
+        winningSelection.ExactReferenceRequest.ShouldBeNull();
+        viewModel.Editor.CanBeginExistingOutput.ShouldBeTrue();
         var request = workspace.ComparisonRequests.ShouldHaveSingleItem();
         request.Before.Scope.ShouldBe(RecordScope.AllContexts);
         request.Before.ContainingModKey.ShouldBe(sourceMod);
@@ -153,6 +157,38 @@ public sealed partial class FormListBrowserViewModelTests
         outputSelection.FormKey.ShouldBe(firstFormKey);
         outputSelection.ExactReferenceRequest.ShouldBeNull();
         outputSelection.IsStagedOutput.ShouldBeTrue();
+    }
+
+    /// <summary>Verifies selecting a visible source-only winning row exposes its exact context for override authoring.</summary>
+    /// <returns>A task that completes after the source row is selected.</returns>
+    [Fact]
+    public async Task SelectWinningSourceRoot_EnablesOverrideWithoutSelectingHiddenContext()
+    {
+        var workspaceId = Guid.NewGuid();
+        var revision = new WorkspaceRevision(Guid.NewGuid(), 1);
+        var sourceMod = ModKey.FromNameAndExtension("SourceOnly.esm");
+        var sourcePath = AbsolutePath(sourceMod.FileName);
+        var formKey = new FormKey(sourceMod, 0x0123);
+        var workspace = CreateWorkspace(
+            workspaceId,
+            revision,
+            [new PluginSummary(sourceMod, sourcePath, 0, PluginRole.Source)],
+            [Summary(formKey, "SourceOnlyList", sourceMod, sourcePath, 0, PluginRole.Source, 0)],
+            request => SuccessfulComparison(workspaceId, revision, request, sourceMod, sourcePath, sourceMod, sourcePath, []));
+        var coordinator = new RecordingWorkspaceCoordinator();
+        coordinator.Publish(CreateDescriptor(workspaceId, revision), workspace);
+        using var viewModel = CreateViewModel(coordinator);
+        await viewModel.StartAsync();
+
+        var root = viewModel.Records.ShouldHaveSingleItem();
+        root.TreeChildren.ShouldHaveSingleItem();
+        await viewModel.SelectRecordAsync(root);
+
+        var selection = viewModel.Selection.ShouldNotBeNull();
+        selection.ExactReferenceRequest.ShouldBeSameAs(root.Contexts[0].Context.Selection);
+        selection.IsStagedOutput.ShouldBeFalse();
+        viewModel.Editor.CanBeginOverride.ShouldBeTrue();
+        viewModel.Editor.CanBeginExistingOutput.ShouldBeFalse();
     }
 
     /// <summary>Verifies all reference resolution outcomes remain explicit and only inspectable outcomes carry JSON.</summary>
@@ -654,7 +690,7 @@ public sealed partial class FormListBrowserViewModelTests
         var filteredRoot = viewModel.Records.ShouldHaveSingleItem();
         filteredRoot.FormKey.ShouldBe(formKey);
         filteredRoot.Contexts.Select(context => context.EditorId).ShouldBe(["SourceNeedle", "WinningName"]);
-        filteredRoot.TreeChildren.ShouldBeEmpty();
+        filteredRoot.TreeChildren.Count.ShouldBe(2);
         filteredRoot.ContextOptions.Count.ShouldBe(3);
         viewModel.PluginGroups[0].Children.ShouldBeEmpty();
         viewModel.PluginGroups[1].Children.Cast<RecordTypeGroupViewModel>().ShouldHaveSingleItem()

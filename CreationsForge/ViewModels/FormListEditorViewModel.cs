@@ -113,7 +113,7 @@ public sealed partial class FormListEditorViewModel : ViewModelBase, IDisposable
     private string? ErrorMessageValue;
 
     /// <summary>The current editor workflow status.</summary>
-    private string StatusTextValue = "Begin a new edit or select an exact FormList context.";
+    private string StatusTextValue = "Select a FormList to edit.";
 
     /// <summary>Non-fatal engine warnings from the most recent successful operation.</summary>
     private IReadOnlyList<EngineWarning> WarningsValue = Array.Empty<EngineWarning>();
@@ -181,10 +181,6 @@ public sealed partial class FormListEditorViewModel : ViewModelBase, IDisposable
         WorkspaceCoordinator.PropertyChanged += OnWorkspaceCoordinatorPropertyChanged;
         Host.PropertyChanged += OnHostPropertyChanged;
         OperationArbiter.PropertyChanged += OnOperationArbiterPropertyChanged;
-        if (WorkspaceCoordinator.CurrentWorkspace is not null)
-        {
-            StatusTextValue = "Begin a new edit or select an exact FormList context.";
-        }
     }
 
     /// <summary>Gets the active detached record edit session.</summary>

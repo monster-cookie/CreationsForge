@@ -220,8 +220,12 @@ public sealed partial class MajorRecordBrowserViewModel : ViewModelBase, IDispos
     /// <summary>Gets whether the browser has a visible operation message.</summary>
     public bool HasStatusText => !string.IsNullOrWhiteSpace(StatusTextValue);
 
-    /// <summary>Gets the discovered count while loading and the complete count after publication.</summary>
-    public string LoadedRecordCountText => $"Loaded records: {(IsBusy ? LoadingRecordCountValue : RecordsValue.Count):N0}";
+    /// <summary>Gets the discovered count while loading or the visible and total counts after filtering.</summary>
+    public string LoadedRecordCountText => IsBusy
+        ? $"Loaded records: {LoadingRecordCountValue:N0}"
+        : HasActiveRecordFilter
+            ? $"Showing {VisibleRecordCountValue:N0} of {RecordsValue.Count:N0} records{(IsFiltering ? " (filtering...)" : string.Empty)}"
+            : $"Loaded records: {RecordsValue.Count:N0}";
 
     /// <summary>Gets the command that reloads the complete record tree.</summary>
     public ICommand RefreshCommand { get; }
@@ -308,6 +312,7 @@ public sealed partial class MajorRecordBrowserViewModel : ViewModelBase, IDispos
         WorkspaceCoordinator.PropertyChanged -= OnWorkspaceCoordinatorPropertyChanged;
         CancelAndDispose(ref WorkspaceCancellation);
         CancelAndDispose(ref SelectionCancellation);
+        CancelAndDispose(ref FilterCancellation);
     }
 
     /// <summary>Starts a new generation when the coordinator publishes replacement or close.</summary>

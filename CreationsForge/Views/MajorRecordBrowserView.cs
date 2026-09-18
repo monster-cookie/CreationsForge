@@ -85,6 +85,19 @@ public sealed class MajorRecordBrowserView : UserControl
         var count = CreateBoundText(nameof(MajorRecordBrowserViewModel.LoadedRecordCountText), 12, FontWeight.Normal);
         count.VerticalAlignment = VerticalAlignment.Center;
         AutomationProperties.SetAutomationId(count, "MajorRecordLoadedCountText");
+        var sortLabel = CreateText("Sort records:", 12, FontWeight.Normal);
+        sortLabel.VerticalAlignment = VerticalAlignment.Center;
+        var sortSelector = new ComboBox
+        {
+            MinWidth = 100,
+            ItemsSource = Enum.GetValues<MajorRecordSortMode>(),
+            ItemTemplate = new FuncDataTemplate<MajorRecordSortMode>(
+                (mode, _) => CreateText(mode == MajorRecordSortMode.FormId ? "FormID" : "EditorID", 12, FontWeight.Normal))
+        };
+        sortSelector.Bind(
+            SelectingItemsControl.SelectedItemProperty,
+            new Binding(nameof(MajorRecordBrowserViewModel.RecordSortMode)) { Mode = BindingMode.TwoWay });
+        AutomationProperties.SetAutomationId(sortSelector, "MajorRecordSortSelector");
         var actions = new StackPanel
         {
             Orientation = Orientation.Horizontal,
@@ -92,7 +105,19 @@ public sealed class MajorRecordBrowserView : UserControl
             Children =
             {
                 refresh,
-                count
+                count,
+                sortLabel,
+                sortSelector
+            }
+        };
+        var filters = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,*"),
+            ColumnSpacing = 8,
+            Children =
+            {
+                CreateFilterTextBox(nameof(MajorRecordBrowserViewModel.FormIdFilter), "FormID", "MajorRecordFormIdFilter", 0),
+                CreateFilterTextBox(nameof(MajorRecordBrowserViewModel.EditorIdFilter), "EditorID", "MajorRecordEditorIdFilter", 1)
             }
         };
 
@@ -135,7 +160,8 @@ public sealed class MajorRecordBrowserView : UserControl
         AutomationProperties.SetAutomationId(loading, "MajorRecordLoadingScreen");
         var treeArea = new Grid { Children = { tree, loading } };
         Grid.SetRow(actions, 1);
-        Grid.SetRow(treeArea, 2);
+        Grid.SetRow(filters, 2);
+        Grid.SetRow(treeArea, 3);
         return new Border
         {
             Background = App.GetApplicationBrush(App.PanelSurfaceBrushKey),
@@ -144,16 +170,32 @@ public sealed class MajorRecordBrowserView : UserControl
             Padding = new Thickness(12),
             Child = new Grid
             {
-                RowDefinitions = new RowDefinitions("Auto,Auto,*"),
+                RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*"),
                 RowSpacing = 10,
                 Children =
                 {
                     CreateText("All Major Records", 18, FontWeight.SemiBold),
                     actions,
+                    filters,
                     treeArea
                 }
             }
         };
+    }
+
+    /// <summary>Creates a two-way metadata filter for the complete major-record tree.</summary>
+    /// <param name="propertyName">The browser filter property.</param>
+    /// <param name="placeholder">The visible filter hint.</param>
+    /// <param name="automationId">The stable control identity.</param>
+    /// <param name="column">The filter grid column.</param>
+    /// <returns>The bound text box.</returns>
+    private static TextBox CreateFilterTextBox(string propertyName, string placeholder, string automationId, int column)
+    {
+        var filter = new TextBox { PlaceholderText = placeholder };
+        filter.Bind(TextBox.TextProperty, new Binding(propertyName) { Mode = BindingMode.TwoWay });
+        AutomationProperties.SetAutomationId(filter, automationId);
+        Grid.SetColumn(filter, column);
+        return filter;
     }
 
     /// <summary>Builds exact context selectors, complete field trees, changes, warnings, and progress.</summary>

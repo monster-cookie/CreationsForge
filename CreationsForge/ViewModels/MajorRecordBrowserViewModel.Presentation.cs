@@ -20,6 +20,8 @@ public sealed partial class MajorRecordBrowserViewModel
     {
         RevisionValue = revision;
         RecordsValue = records;
+        UnfilteredRecordGroupsValue = groups;
+        VisibleRecordCountValue = records.Count;
         RecordGroupsValue = groups;
         RecordTreeSourceValue = CreateRecordTreeSource(groups);
         OnPropertyChanged(nameof(Records));
@@ -32,13 +34,19 @@ public sealed partial class MajorRecordBrowserViewModel
         SetStatus($"Loaded all {RecordsValue.Count:N0} major record(s).");
         OnPropertyChanged(nameof(LoadedRecordCountText));
         RefreshRelayCommand.RaiseCanExecuteChanged();
+        if (HasActiveRecordFilter || RecordSortModeValue != MajorRecordSortMode.FormId)
+        {
+            CurrentFilterTask = BeginFilterGenerationAsync();
+        }
     }
 
     /// <summary>Groups winning records off the UI thread, collapsing families for very large workspaces.</summary>
     /// <param name="records">The complete winning record summaries.</param>
+    /// <param name="sortMode">The ordering applied within each family.</param>
     /// <returns>The sorted family hierarchy with every record retained.</returns>
     private static IReadOnlyList<RecordTypeGroupViewModel> CreateRecordGroups(
-        IReadOnlyList<MajorRecordViewModel> records)
+        IReadOnlyList<MajorRecordViewModel> records,
+        MajorRecordSortMode sortMode = MajorRecordSortMode.FormId)
     {
         var expandGroups = records.Count <= 10_000;
         return Array.AsReadOnly(
@@ -48,8 +56,13 @@ public sealed partial class MajorRecordBrowserViewModel
                 .Select(group => new RecordTypeGroupViewModel(
                     $"{group.Key} ({group.Count():N0})",
                     Array.AsReadOnly<IRecordTreeNodeViewModel>(
-                        group.OrderBy(record => record.FormKey.ModKey.FileName.String, StringComparer.OrdinalIgnoreCase)
-                            .ThenBy(record => record.FormKey.ID)
+                        (sortMode == MajorRecordSortMode.EditorId
+                            ? group.OrderBy(record => string.IsNullOrEmpty(record.EditorId))
+                                .ThenBy(record => record.EditorId, StringComparer.OrdinalIgnoreCase)
+                                .ThenBy(record => record.FormKey.ModKey.FileName.String, StringComparer.OrdinalIgnoreCase)
+                                .ThenBy(record => record.FormKey.ID)
+                            : group.OrderBy(record => record.FormKey.ID)
+                                .ThenBy(record => record.FormKey.ModKey.FileName.String, StringComparer.OrdinalIgnoreCase))
                             .Cast<IRecordTreeNodeViewModel>()
                             .ToArray()),
                     expandGroups))
@@ -80,6 +93,11 @@ public sealed partial class MajorRecordBrowserViewModel
     /// <summary>Clears all revision, page, selection, and comparison presentation.</summary>
     private void ClearWorkspacePresentation()
     {
+        FilterGeneration++;
+        CancelAndDispose(ref FilterCancellation);
+        UnfilteredRecordGroupsValue = Array.Empty<RecordTypeGroupViewModel>();
+        VisibleRecordCountValue = 0;
+        SetFiltering(false);
         RevisionValue = null;
         LoadingRecordCountValue = 0;
         RecordsValue = Array.Empty<MajorRecordViewModel>();

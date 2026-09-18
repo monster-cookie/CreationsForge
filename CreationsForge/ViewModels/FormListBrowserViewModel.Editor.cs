@@ -56,12 +56,13 @@ public sealed partial class FormListBrowserViewModel
         }
     }
 
-    /// <summary>Publishes an atomic editor selection only for an exact context child.</summary>
+    /// <summary>Publishes the exact winning context for a root or the selected exact context child.</summary>
     /// <param name="record">The tree node selected by the user.</param>
     private void PublishEditorSelection(FormListRecordViewModel record)
     {
         var descriptor = WorkspaceCoordinator.CurrentWorkspace;
-        if (record.Context.IsWinningOverride ||
+        var exactRecord = record.Context.IsWinningOverride ? record.Contexts.LastOrDefault() : record;
+        if (exactRecord is null ||
             WorkspaceStateValue is not { } state ||
             descriptor is null ||
             descriptor.WorkspaceId == Guid.Empty)
@@ -70,12 +71,12 @@ public sealed partial class FormListBrowserViewModel
             return;
         }
 
-        var isStagedOutput = record.Context.Role == PluginRole.Output;
+        var isStagedOutput = exactRecord.Context.Role == PluginRole.Output;
         var selection = new FormListEditorSelection(
             descriptor.WorkspaceId,
             state.Revision,
-            record.FormKey,
-            isStagedOutput ? null : record.Context.Selection,
+            exactRecord.FormKey,
+            isStagedOutput ? null : exactRecord.Context.Selection,
             isStagedOutput);
         if (ReferenceEquals(EditorSelectionValue, selection))
         {

@@ -172,7 +172,7 @@ public sealed partial class FormListEditorViewModel
         SetOperationState(FormListEditorOperationState.Idle);
         SetStatus(WorkspaceCoordinator.CurrentWorkspace is null
             ? "No workspace is open."
-            : "Workspace changed. Begin a new edit or select an exact FormList context.");
+            : "Select a FormList to edit.");
         RaiseSessionProperties();
     }
 

@@ -62,6 +62,9 @@ public sealed class WorkspaceShellViewHeadlessTests
             ControlFinder.FindByAutomationId<TabItem>(view, "MajorRecordBrowserTab").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<TabItem>(view, "FormListBrowserTab").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<MajorRecordBrowserView>(view, "MajorRecordBrowserView").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<TextBox>(view, "MajorRecordFormIdFilter").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<TextBox>(view, "MajorRecordEditorIdFilter").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<ComboBox>(view, "MajorRecordSortSelector").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<ItemsControl>(view, "MajorRecordSemanticChanges").ShouldBeNull();
             var activePluginCount = ControlFinder.FindByAutomationId<TextBlock>(view, "ActivePluginRecordCountText")!;
             var loadedFormListCount = ControlFinder.FindByAutomationId<TextBlock>(view, "LoadedRecordCountText")!;

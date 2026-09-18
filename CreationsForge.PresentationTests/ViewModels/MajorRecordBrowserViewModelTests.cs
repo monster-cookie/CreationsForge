@@ -23,6 +23,7 @@ public sealed class MajorRecordBrowserViewModelTests
         var sourceMod = ModKey.FromNameAndExtension("Source.esm");
         var patchMod = ModKey.FromNameAndExtension("Patch.esm");
         var bookKey = new FormKey(sourceMod, 0x100);
+        var secondBookKey = new FormKey(sourceMod, 0x102);
         var masterOnlyKey = new FormKey(sourceMod, 0x101);
         var keywordKey = new FormKey(patchMod, 0x200);
         var sourcePath = AbsolutePath(sourceMod.FileName);
@@ -96,10 +97,11 @@ public sealed class MajorRecordBrowserViewModelTests
                 visitCount++;
                 onRecord(Match(bookKey, "Book", "ExampleBook", patchMod, patchPath, 1, PluginRole.LoadOrder));
                 onRecord(Match(masterOnlyKey, "Weapon", "BaseWeapon", sourceMod, sourcePath, 0, PluginRole.Source));
-                onProgress?.Invoke(sourceMod, 2);
+                onRecord(Match(secondBookKey, "Book", "AardvarkBook", sourceMod, sourcePath, 0, PluginRole.Source));
+                onProgress?.Invoke(sourceMod, 3);
                 onRecord(Match(keywordKey, "Keyword", "ExampleKeyword", patchMod, patchPath, 1, PluginRole.LoadOrder));
-                onProgress?.Invoke(patchMod, 3);
-                return ValueTask.FromResult(EngineResult<int>.Success(3, workspaceId, resultRevision: revision));
+                onProgress?.Invoke(patchMod, 4);
+                return ValueTask.FromResult(EngineResult<int>.Success(4, workspaceId, resultRevision: revision));
             });
         var coordinator = new RecordingWorkspaceCoordinator();
         coordinator.Publish(CreateDescriptor(workspaceId, revision, sourcePath), workspace);
@@ -119,12 +121,31 @@ public sealed class MajorRecordBrowserViewModelTests
         await viewModel.StartAsync();
 
         visitCount.ShouldBe(1);
-        viewModel.Records.Select(record => record.RecordType).ShouldBe(["Book", "Weapon", "Keyword"]);
-        viewModel.RecordGroups.Select(group => group.Label).ShouldBe(["Book (1)", "Keyword (1)", "Weapon (1)"]);
-        viewModel.LoadedRecordCountText.ShouldBe("Loaded records: 3");
+        viewModel.Records.Select(record => record.RecordType).ShouldBe(["Book", "Weapon", "Book", "Keyword"]);
+        viewModel.RecordGroups.Select(group => group.Label).ShouldBe(["Book (2)", "Keyword (1)", "Weapon (1)"]);
+        viewModel.LoadedRecordCountText.ShouldBe("Loaded records: 4");
         viewModel.IsBusy.ShouldBeFalse();
-        loadingStatuses.ShouldContain(status => status.Contains("Source.esm") && status.Contains("2 records"));
-        viewModel.StatusText.ShouldBe("Loaded all 3 major record(s).");
+        loadingStatuses.ShouldContain(status => status.Contains("Source.esm") && status.Contains("3 records"));
+        viewModel.StatusText.ShouldBe("Loaded all 4 major record(s).");
+
+        viewModel.EditorIdFilter = "book";
+        await viewModel.CurrentFilterTask;
+        viewModel.RecordGroups.ShouldHaveSingleItem().Label.ShouldBe("Book (2)");
+        viewModel.LoadedRecordCountText.ShouldBe("Showing 2 of 4 records");
+        viewModel.FormIdFilter = "00000102";
+        await viewModel.CurrentFilterTask;
+        viewModel.RecordGroups.ShouldHaveSingleItem().Children.Cast<MajorRecordViewModel>()
+            .ShouldHaveSingleItem().FormKey.ShouldBe(secondBookKey);
+        viewModel.FormIdFilter = string.Empty;
+        viewModel.EditorIdFilter = string.Empty;
+        viewModel.RecordSortMode = MajorRecordSortMode.EditorId;
+        await viewModel.CurrentFilterTask;
+        viewModel.RecordGroups[0].Children.Cast<MajorRecordViewModel>()
+            .Select(record => record.FormKey).ShouldBe([secondBookKey, bookKey]);
+        viewModel.RecordSortMode = MajorRecordSortMode.FormId;
+        await viewModel.CurrentFilterTask;
+        viewModel.RecordGroups[0].Children.Cast<MajorRecordViewModel>()
+            .Select(record => record.FormKey).ShouldBe([bookKey, secondBookKey]);
 
         await viewModel.SelectRecordAsync(viewModel.Records[0]);
 
