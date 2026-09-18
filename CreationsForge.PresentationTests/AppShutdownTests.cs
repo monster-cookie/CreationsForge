@@ -1,5 +1,8 @@
 using Autofac;
+using Avalonia.Controls;
+using Avalonia.Headless.XUnit;
 using CreationsForge.Core.Services.Interfaces;
+using CreationsForge.PresentationTests.Headless;
 using CreationsForge.PresentationTests.Support;
 using CreationsForge.Services;
 using CreationsForge.Services.Interfaces;
@@ -8,8 +11,75 @@ using Shouldly;
 namespace CreationsForge.PresentationTests;
 
 /// <summary>Verifies guarded application shutdown remains retryable only before irreversible teardown.</summary>
+[Collection(AvaloniaControlTestCollection.Name)]
 public sealed class AppShutdownTests
 {
+    /// <summary>Verifies a canceled window close keeps the dialog owner alive and a later close retries shutdown.</summary>
+    [AvaloniaFact]
+    public async Task MainWindowClose_WhenKeepEditing_KeepsOwnerOpenAndRetries()
+    {
+        var navigation = new FakeApplicationNavigationService();
+        var coordinator = new FakeWorkspaceCoordinator();
+        var diagnostics = new RecordingTerminationDiagnosticsService();
+        var disposeProbe = new ContainerDisposeProbe();
+        var container = CreateContainer(navigation, coordinator, diagnostics, disposeProbe);
+        var app = new App(container);
+        var window = new Window();
+        var firstRequested = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var firstResult = new TaskCompletionSource<ApplicationShutdownLease?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var ownerVisibleOnFirstReservation = false;
+        navigation.ShutdownAction = _ =>
+        {
+            ownerVisibleOnFirstReservation = window.IsVisible;
+            firstRequested.SetResult();
+            return firstResult.Task;
+        };
+        var detachGuard = app.AttachMainWindowCloseGuard(window, desktop: null);
+
+        try
+        {
+            window.Show();
+            window.Close();
+
+            await firstRequested.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var first = app.BeginShutdownAsync(desktop: null);
+            ownerVisibleOnFirstReservation.ShouldBeTrue();
+            window.IsVisible.ShouldBeTrue();
+            firstResult.SetResult(null);
+            await first;
+
+            coordinator.DisposeCount.ShouldBe(0);
+            disposeProbe.DisposeCount.ShouldBe(0);
+            var secondRequested = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var ownerVisibleOnSecondReservation = false;
+            navigation.ShutdownAction = _ =>
+            {
+                ownerVisibleOnSecondReservation = window.IsVisible;
+                secondRequested.SetResult();
+                return Task.FromResult<ApplicationShutdownLease?>(ApplicationShutdownLease.CreateForSettings());
+            };
+
+            window.Close();
+            await secondRequested.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            await app.BeginShutdownAsync(desktop: null);
+
+            ownerVisibleOnSecondReservation.ShouldBeTrue();
+            navigation.ShutdownReservationCount.ShouldBe(2);
+            coordinator.DisposeCount.ShouldBe(1);
+            disposeProbe.DisposeCount.ShouldBe(1);
+            diagnostics.MarkCleanShutdownCount.ShouldBe(1);
+        }
+        finally
+        {
+            detachGuard();
+            window.Close();
+            if (disposeProbe.DisposeCount == 0)
+            {
+                await container.DisposeAsync();
+            }
+        }
+    }
+
     /// <summary>Verifies Keep Editing leaves the live container intact and a later accepted attempt can finish.</summary>
     [Fact]
     public async Task BeginShutdownAsync_AfterKeepEditing_AllowsSuccessfulRetry()
