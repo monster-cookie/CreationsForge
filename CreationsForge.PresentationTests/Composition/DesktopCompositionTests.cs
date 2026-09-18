@@ -65,13 +65,11 @@ public sealed class DesktopCompositionTests
             CreationsForge.PresentationTests.Headless.ControlFinder
                 .FindByAutomationId<MajorRecordBrowserView>(shell, "MajorRecordBrowserView")
                 .ShouldNotBeNull();
-            var tabs = CreationsForge.PresentationTests.Headless.ControlFinder
-                .FindByAutomationId<TabControl>(shell, "WorkspaceBrowserTabs")
-                .ShouldNotBeNull();
-            tabs.SelectedIndex = 1;
-            Dispatcher.UIThread.RunJobs();
             CreationsForge.PresentationTests.Headless.ControlFinder
                 .FindByAutomationId<FormListBrowserView>(shell, "FormListBrowserView")
+                .ShouldBeNull();
+            CreationsForge.PresentationTests.Headless.ControlFinder
+                .FindByAutomationId<FormListEditorView>(shell, "FormListEditorView")
                 .ShouldNotBeNull();
             diagnostics.MarkCleanShutdown("Presentation composition verified");
             mainWindow.Close();

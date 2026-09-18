@@ -11,29 +11,77 @@ using CreationsForge.ViewModels;
 
 namespace CreationsForge.Views;
 
-/// <summary>Presents complete major-record families with exact context selection and native field comparison.</summary>
+/// <summary>Presents complete major-record families, context comparison, and record-tree authoring actions.</summary>
 public sealed class MajorRecordBrowserView : UserControl
 {
-    /// <summary>The navigation-scope read-only browser workflow.</summary>
+    /// <summary>The navigation-scope major-record browser workflow.</summary>
     private readonly MajorRecordBrowserViewModel ViewModel;
+
+    /// <summary>Retains the proven FormList edit lifecycle until typed editing is available for other families.</summary>
+    private readonly FormListBrowserViewModel FormListBrowser;
+
+    /// <summary>The comparison surface shown for record selection.</summary>
+    private Control? ComparisonPane;
+
+    /// <summary>The editor surface shown after a supported tree action.</summary>
+    private Control? EditorPane;
+
+    /// <summary>Returns to an active editor after inspecting a comparison.</summary>
+    private Button? ReturnToEditorButton;
+
+    /// <summary>Reports a tree-action failure without terminating the UI.</summary>
+    private TextBlock? ActionErrorText;
+
+    /// <summary>The workspace whose editor navigation is currently displayed.</summary>
+    private Guid? DisplayedWorkspaceId;
 
     /// <summary>Tracks whether initial loading started for this attached view.</summary>
     private bool Started;
 
     /// <summary>Initializes the major-record browser view.</summary>
     /// <param name="viewModel">The navigation-scope browser workflow.</param>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="viewModel"/> is <see langword="null"/>.</exception>
-    public MajorRecordBrowserView(MajorRecordBrowserViewModel viewModel)
+    /// <param name="formListBrowser">The navigation-scope FormList edit lifecycle.</param>
+    /// <exception cref="ArgumentNullException">Thrown when a required dependency is <see langword="null"/>.</exception>
+    public MajorRecordBrowserView(MajorRecordBrowserViewModel viewModel, FormListBrowserViewModel formListBrowser)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
+        ArgumentNullException.ThrowIfNull(formListBrowser);
         ViewModel = viewModel;
+        FormListBrowser = formListBrowser;
+        DisplayedWorkspaceId = FormListBrowser.CurrentWorkspaceId;
         DataContext = ViewModel;
         AutomationProperties.SetAutomationId(this, "MajorRecordBrowserView");
         Content = BuildContent();
+        FormListBrowser.PropertyChanged += (_, eventArgs) =>
+        {
+            if (eventArgs.PropertyName == nameof(FormListBrowserViewModel.IsEditingWorkspace))
+            {
+                var currentWorkspaceId = FormListBrowser.CurrentWorkspaceId;
+                if (currentWorkspaceId != DisplayedWorkspaceId)
+                {
+                    DisplayedWorkspaceId = currentWorkspaceId;
+                    ShowComparison(clearEditorNavigation: true);
+                }
+            }
+        };
+        FormListBrowser.Editor.StagedRecordChanged += formKey =>
+        {
+            _ = ViewModel.RefreshAsync();
+        };
+        FormListBrowser.PersistenceRefreshed += () =>
+        {
+            if (Started)
+            {
+                _ = ViewModel.RefreshAsync();
+            }
+        };
     }
 
     /// <summary>Gets the browser presentation state hosted by this view for shell-level status bindings.</summary>
     internal MajorRecordBrowserViewModel BrowserViewModel => ViewModel;
+
+    /// <summary>Gets whether the record editor is currently displayed beside the tree.</summary>
+    internal bool IsEditorOpen => EditorPane?.IsVisible == true;
 
     /// <summary>Starts record loading once this navigation-owned view enters the visual tree.</summary>
     /// <param name="eventArgs">The visual-tree attachment event.</param>
@@ -46,7 +94,7 @@ public sealed class MajorRecordBrowserView : UserControl
         }
 
         Started = true;
-        await ViewModel.StartAsync();
+        await Task.WhenAll(ViewModel.StartAsync(), FormListBrowser.StartAsync());
     }
 
     /// <summary>Builds the family list and comparison layout.</summary>
@@ -55,8 +103,11 @@ public sealed class MajorRecordBrowserView : UserControl
     {
         var records = BuildRecordPane();
         Grid.SetColumn(records, 0);
-        var comparison = BuildComparisonPane();
-        Grid.SetColumn(comparison, 1);
+        ComparisonPane = BuildComparisonPane();
+        EditorPane = BuildEditorPane();
+        EditorPane.IsVisible = false;
+        var details = new Grid { Children = { ComparisonPane, EditorPane } };
+        Grid.SetColumn(details, 1);
         var content = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions("3*,7*"),
@@ -64,7 +115,7 @@ public sealed class MajorRecordBrowserView : UserControl
             Children =
             {
                 records,
-                comparison
+                details
             }
         };
         AutomationProperties.SetAutomationId(content, "MajorRecordBrowserLayout");
@@ -137,6 +188,14 @@ public sealed class MajorRecordBrowserView : UserControl
                 await ViewModel.SelectRecordAsync(selected);
             }
         };
+        tree.RowPrepared += (_, eventArgs) =>
+        {
+            var row = eventArgs.Row;
+            var menu = new ContextMenu();
+            menu.ItemsSource = BuildRecordMenuItems(row.Model as IRecordTreeNodeViewModel);
+            menu.Opening += (_, _) => menu.ItemsSource = BuildRecordMenuItems(row.Model as IRecordTreeNodeViewModel);
+            row.ContextMenu = menu;
+        };
         AutomationProperties.SetAutomationId(tree, "MajorRecordTree");
         var progressText = CreateBoundText(nameof(MajorRecordBrowserViewModel.StatusText), 14, FontWeight.SemiBold);
         progressText.TextWrapping = TextWrapping.Wrap;
@@ -180,6 +239,198 @@ public sealed class MajorRecordBrowserView : UserControl
                     treeArea
                 }
             }
+        };
+    }
+
+    /// <summary>Builds actions for the exact family or record under the pointer, including explicit unsupported states.</summary>
+    /// <param name="node">The realized record-tree node.</param>
+    /// <returns>Menu actions whose enabled state reflects the current workspace and editor lifecycle.</returns>
+    internal IReadOnlyList<MenuItem> BuildRecordMenuItems(IRecordTreeNodeViewModel? node)
+    {
+        var recordType = node switch
+        {
+            MajorRecordViewModel record => record.RecordType,
+            RecordTypeGroupViewModel group => group.RecordType,
+            _ => null
+        };
+        if (recordType is null)
+        {
+            return Array.Empty<MenuItem>();
+        }
+
+        var hasTypedEditor = string.Equals(recordType, "FormList", StringComparison.Ordinal);
+        var canEdit = FormListBrowser.IsEditingWorkspace && hasTypedEditor;
+        var unavailableReason = !hasTypedEditor
+            ? "Typed authoring for this record type is not available yet."
+            : "Open a plugin for editing to create or override records.";
+        var newItem = new MenuItem
+        {
+            Header = $"New {recordType}",
+            IsEnabled = canEdit && FormListBrowser.Editor.CanBeginNew
+        };
+        ToolTip.SetTip(newItem, canEdit ? "Create a new record in the active plugin." : unavailableReason);
+        newItem.Click += async (_, _) => await BeginNewAsync(recordType);
+        AutomationProperties.SetAutomationId(newItem, "MajorRecordNewMenuItem");
+        if (node is not MajorRecordViewModel selected)
+        {
+            return new[] { newItem };
+        }
+
+        var isOutput = selected.Role == PluginRole.Output;
+        var overrideItem = new MenuItem
+        {
+            Header = isOutput ? "Edit in active plugin" : "Create override",
+            IsEnabled = canEdit && (isOutput
+                ? FormListBrowser.Editor.CanBeginExistingOutput || FormListBrowser.Editor.CanBeginNew
+                : FormListBrowser.Editor.CanBeginNew)
+        };
+        ToolTip.SetTip(overrideItem, canEdit ? "Edit this exact record in the active plugin." : unavailableReason);
+        overrideItem.Click += async (_, _) => await BeginOverrideAsync(selected);
+        AutomationProperties.SetAutomationId(overrideItem, "MajorRecordOverrideMenuItem");
+        return new[] { newItem, overrideItem };
+    }
+
+    /// <summary>Starts a supported new-record edit from a record-family tree action.</summary>
+    /// <param name="recordType">The canonical family chosen by the user.</param>
+    /// <returns>A task that completes after the editor opens or reports a failure.</returns>
+    private async Task BeginNewAsync(string recordType)
+    {
+        if (!FormListBrowser.IsEditingWorkspace ||
+            !FormListBrowser.Editor.CanBeginNew ||
+            !string.Equals(recordType, "FormList", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        ShowEditor();
+        try
+        {
+            await FormListBrowser.StartAsync();
+            await FormListBrowser.Editor.BeginNewAsync();
+        }
+        catch (Exception exception)
+        {
+            ShowActionError($"Could not start a new {recordType}: {exception.Message}");
+        }
+    }
+
+    /// <summary>Starts an override or output edit for the exact right-clicked FormList row.</summary>
+    /// <param name="record">The row under the pointer when the menu opened.</param>
+    /// <returns>A task that completes after the editor opens or reports a failure.</returns>
+    private async Task BeginOverrideAsync(MajorRecordViewModel record)
+    {
+        if (!FormListBrowser.IsEditingWorkspace ||
+            !FormListBrowser.Editor.CanBeginNew ||
+            !string.Equals(record.RecordType, "FormList", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        ShowEditor();
+        if (!ViewModel.Records.Any(candidate => ReferenceEquals(candidate, record)))
+        {
+            ShowActionError("The selected record belongs to an older record tree. Refresh and select it again.");
+            return;
+        }
+
+        try
+        {
+            await FormListBrowser.StartAsync();
+            await FormListBrowser.RefreshAsync(record.FormKey);
+            var root = FormListBrowser.Records.FirstOrDefault(candidate => candidate.FormKey == record.FormKey);
+            var context = root?.Contexts.LastOrDefault(candidate =>
+                candidate.ContainingModKey == record.ContainingModKey &&
+                candidate.Context.LoadOrderIndex == record.LoadOrderIndex);
+            if (context is null)
+            {
+                ShowActionError("This record is no longer available in the active workspace. Refresh the record tree and try again.");
+                return;
+            }
+
+            await FormListBrowser.SelectRecordAsync(context);
+            if (context.Context.Role == PluginRole.Output)
+            {
+                await FormListBrowser.Editor.BeginExistingOutputAsync();
+            }
+            else
+            {
+                await FormListBrowser.Editor.BeginOverrideAsync();
+            }
+        }
+        catch (Exception exception)
+        {
+            ShowActionError($"Could not edit {record.FormKey}: {exception.Message}");
+        }
+    }
+
+    /// <summary>Displays the editor beside the record tree while preserving the current comparison.</summary>
+    internal void ShowEditor()
+    {
+        if (ComparisonPane is null || EditorPane is null)
+        {
+            return;
+        }
+
+        ComparisonPane.IsVisible = false;
+        EditorPane.IsVisible = true;
+        if (ReturnToEditorButton is not null)
+        {
+            ReturnToEditorButton.IsVisible = true;
+        }
+
+        ShowActionError(string.Empty);
+    }
+
+    /// <summary>Returns to comparison and optionally clears navigation to an editor from a previous workspace.</summary>
+    /// <param name="clearEditorNavigation">Whether the active edit shortcut must be removed.</param>
+    private void ShowComparison(bool clearEditorNavigation = false)
+    {
+        if (ComparisonPane is not null && EditorPane is not null)
+        {
+            EditorPane.IsVisible = false;
+            ComparisonPane.IsVisible = true;
+        }
+
+        if (clearEditorNavigation && ReturnToEditorButton is not null)
+        {
+            ReturnToEditorButton.IsVisible = false;
+        }
+    }
+
+    /// <summary>Displays a context-action error in the editor pane.</summary>
+    /// <param name="message">The user-facing error, or empty text to clear it.</param>
+    private void ShowActionError(string message)
+    {
+        if (ActionErrorText is not null)
+        {
+            ActionErrorText.Text = message;
+            ActionErrorText.IsVisible = !string.IsNullOrEmpty(message);
+        }
+    }
+
+    /// <summary>Builds the editor as a sibling of comparison within the same record-selection screen.</summary>
+    /// <returns>The edit pane and its comparison navigation.</returns>
+    private Control BuildEditorPane()
+    {
+        var compare = new Button { Content = "Back to comparison", Padding = new Thickness(12, 6) };
+        compare.Click += (_, _) => ShowComparison();
+        AutomationProperties.SetAutomationId(compare, "MajorRecordBackToComparisonButton");
+        ActionErrorText = CreateText(string.Empty, 12, FontWeight.Normal);
+        ActionErrorText.Foreground = new SolidColorBrush(Color.FromRgb(204, 73, 73));
+        ActionErrorText.IsVisible = false;
+        var header = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 12,
+            Children = { compare, ActionErrorText }
+        };
+        var editor = new FormListEditorView(FormListBrowser.Editor, showBeginActions: false);
+        Grid.SetRow(editor, 1);
+        return new Grid
+        {
+            RowDefinitions = new RowDefinitions("Auto,*"),
+            RowSpacing = 8,
+            Children = { header, editor }
         };
     }
 
@@ -273,13 +524,29 @@ public sealed class MajorRecordBrowserView : UserControl
         };
         loading.Bind(IsVisibleProperty, new Binding(nameof(MajorRecordBrowserViewModel.IsComparisonBusy)));
         AutomationProperties.SetAutomationId(loading, "MajorRecordComparisonLoadingView");
-        return new Grid
+        var content = new Grid
         {
             Children =
             {
                 body,
                 loading
             }
+        };
+        ReturnToEditorButton = new Button
+        {
+            Content = "Return to edit",
+            Padding = new Thickness(12, 6),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            IsVisible = false
+        };
+        ReturnToEditorButton.Click += (_, _) => ShowEditor();
+        AutomationProperties.SetAutomationId(ReturnToEditorButton, "MajorRecordReturnToEditorButton");
+        Grid.SetRow(content, 1);
+        return new Grid
+        {
+            RowDefinitions = new RowDefinitions("Auto,*"),
+            RowSpacing = 8,
+            Children = { ReturnToEditorButton, content }
         };
     }
 

@@ -24,6 +24,9 @@ public sealed class FormListEditorView : UserControl
     /// <summary>The browser-owned editor workflow.</summary>
     private readonly FormListEditorViewModel ViewModel;
 
+    /// <summary>Whether standalone session actions are shown above the editor.</summary>
+    private readonly bool ShowBeginActions;
+
     /// <summary>The command group selector populated from catalog presentation metadata.</summary>
     private readonly ComboBox CommandGroupSelector;
 
@@ -59,11 +62,13 @@ public sealed class FormListEditorView : UserControl
 
     /// <summary>Initializes the FormList editor view.</summary>
     /// <param name="viewModel">The browser-owned editor workflow.</param>
+    /// <param name="showBeginActions">Whether the view provides standalone New and Override buttons instead of receiving tree actions.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="viewModel"/> is <see langword="null"/>.</exception>
-    public FormListEditorView(FormListEditorViewModel viewModel)
+    public FormListEditorView(FormListEditorViewModel viewModel, bool showBeginActions = true)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ViewModel = viewModel;
+        ShowBeginActions = showBeginActions;
         DataContext = ViewModel;
         AutomationProperties.SetAutomationId(this, "FormListEditorView");
         CommandGroupSelector = CreateCommandGroupSelector();
@@ -151,11 +156,15 @@ public sealed class FormListEditorView : UserControl
                 beginExisting
             }
         };
+        actions.IsVisible = ShowBeginActions;
         var identity = CreateBoundText(nameof(FormListEditorViewModel.SessionIdentityText), 12, FontWeight.SemiBold);
         AutomationProperties.SetAutomationId(identity, "FormListEditorSessionIdentity");
         var revision = CreateBoundText(nameof(FormListEditorViewModel.SessionRevisionText), 11, FontWeight.Normal);
         revision.TextWrapping = TextWrapping.Wrap;
+        revision.IsVisible = ShowBeginActions;
         AutomationProperties.SetAutomationId(revision, "FormListEditorSessionRevision");
+        var indicators = BuildStateIndicators();
+        indicators.IsVisible = ShowBeginActions;
         return new StackPanel
         {
             Spacing = 6,
@@ -164,7 +173,7 @@ public sealed class FormListEditorView : UserControl
                 actions,
                 identity,
                 revision,
-                BuildStateIndicators()
+                indicators
             }
         };
     }
@@ -202,7 +211,7 @@ public sealed class FormListEditorView : UserControl
     {
         var open = new Button
         {
-            Content = "Open action",
+            Content = ShowBeginActions ? "Open action" : "Edit selected field",
             Padding = new Thickness(12, 6),
             HorizontalAlignment = HorizontalAlignment.Left
         };
@@ -219,17 +228,26 @@ public sealed class FormListEditorView : UserControl
                 ClearComponentsButton
             }
         };
-        var selectors = new Grid
+        Control selectors;
+        if (ShowBeginActions)
         {
-            ColumnDefinitions = new ColumnDefinitions("2*,3*"),
-            ColumnSpacing = 8,
-            Children =
+            var groupedSelectors = new Grid
             {
-                CommandGroupSelector,
-                CommandSelector
-            }
-        };
-        Grid.SetColumn(CommandSelector, 1);
+                ColumnDefinitions = new ColumnDefinitions("2*,3*"),
+                ColumnSpacing = 8,
+                Children =
+                {
+                    CommandGroupSelector,
+                    CommandSelector
+                }
+            };
+            Grid.SetColumn(CommandSelector, 1);
+            selectors = groupedSelectors;
+        }
+        else
+        {
+            selectors = CommandSelector;
+        }
         return new Border
         {
             BorderBrush = App.GetApplicationBrush(App.BorderBrushKey),
@@ -240,7 +258,7 @@ public sealed class FormListEditorView : UserControl
                 Spacing = 7,
                 Children =
                 {
-                    CreateText("Edit action", 14, FontWeight.SemiBold),
+                    CreateText(ShowBeginActions ? "Edit action" : "Choose a field or list operation", 14, FontWeight.SemiBold),
                     selectors,
                     CommandDescription,
                     SeedSelectionPanel,
@@ -357,11 +375,14 @@ public sealed class FormListEditorView : UserControl
     {
         var selector = new ComboBox
         {
-            PlaceholderText = "Choose a command",
+            PlaceholderText = ShowBeginActions ? "Choose a command" : "Choose a field or list operation",
             HorizontalAlignment = HorizontalAlignment.Stretch,
             MaxDropDownHeight = 300,
             ItemTemplate = new FuncDataTemplate<FormListCommandPresentation>((command, _) =>
-                CreateText(command is null ? string.Empty : command.DisplayName, 12, FontWeight.Normal))
+                CreateText(command is null ? string.Empty :
+                    ShowBeginActions ? command.DisplayName : $"{command.GroupName}: {command.DisplayName}",
+                    12,
+                    FontWeight.Normal))
         };
         selector.Bind(IsEnabledProperty, new Binding(nameof(FormListEditorViewModel.CanMutateDraft)));
         selector.SelectionChanged += (_, _) => RefreshSeedSelection();
@@ -406,6 +427,14 @@ public sealed class FormListEditorView : UserControl
     /// <param name="preferViewModelSelection">Whether the current editor command overrides a retained visual group selection.</param>
     private void RefreshCommandCatalog(bool preferViewModelSelection = false)
     {
+        if (!ShowBeginActions)
+        {
+            ClearComponentsButton.IsVisible = ViewModel.AvailableCommands.Any(command =>
+                string.Equals(command.CommandName, ReplaceComponentsCommandName, StringComparison.Ordinal));
+            RefreshCommandsInSelectedGroup(preferViewModelSelection);
+            return;
+        }
+
         var currentGroup = CommandGroupSelector.SelectedItem as string;
         var selectedGroup = ViewModel.SelectedCommand?.GroupName;
         var groups = ViewModel.AvailableCommands
@@ -432,8 +461,9 @@ public sealed class FormListEditorView : UserControl
         var group = CommandGroupSelector.SelectedItem as string;
         var prior = CommandSelector.SelectedItem as FormListCommandPresentation;
         var selectedCommand = ViewModel.SelectedCommand;
-        var commands = ViewModel.AvailableCommands
-            .Where(command => string.Equals(command.GroupName, group, StringComparison.Ordinal))
+        var commands = (ShowBeginActions
+                ? ViewModel.AvailableCommands.Where(command => string.Equals(command.GroupName, group, StringComparison.Ordinal))
+                : ViewModel.AvailableCommands)
             .ToArray();
         CommandSelector.ItemsSource = commands;
         CommandSelector.SelectedItem = preferViewModelSelection

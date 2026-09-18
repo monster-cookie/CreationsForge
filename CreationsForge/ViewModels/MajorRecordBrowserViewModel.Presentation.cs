@@ -65,7 +65,8 @@ public sealed partial class MajorRecordBrowserViewModel
                                 .ThenBy(record => record.FormKey.ModKey.FileName.String, StringComparer.OrdinalIgnoreCase))
                             .Cast<IRecordTreeNodeViewModel>()
                             .ToArray()),
-                    expandGroups))
+                    expandGroups,
+                    group.Key))
                 .ToArray());
     }
 

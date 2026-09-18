@@ -7,12 +7,16 @@ using CreationsForge.RecordEditing;
 using CreationsForge.RecordEditing.Drafts;
 using CreationsForge.Services;
 using CreationsForge.Services.Interfaces;
+using Mutagen.Bethesda.Plugins;
 
 namespace CreationsForge.ViewModels;
 
 /// <summary>Coordinates revision-bound FormList edit sessions without owning or retaining a workspace.</summary>
 public sealed partial class FormListEditorViewModel : ViewModelBase, IDisposable
 {
+    /// <summary>Notifies record browsers after a known successful Apply changes one staged FormList.</summary>
+    public event Action<FormKey>? StagedRecordChanged;
+
     /// <summary>The application-wide owner that lends the active workspace for bounded operations.</summary>
     private readonly IWorkspaceCoordinator WorkspaceCoordinator;
 

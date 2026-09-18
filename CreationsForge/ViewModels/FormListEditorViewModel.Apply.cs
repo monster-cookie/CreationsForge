@@ -405,6 +405,16 @@ public sealed partial class FormListEditorViewModel
                 }
             }).ConfigureAwait(false);
         }
+        finally
+        {
+            await UiDispatcher.InvokeAsync(() =>
+            {
+                if (IsCurrentGeneration(generation, session.WorkspaceId))
+                {
+                    StagedRecordChanged?.Invoke(session.FormKey);
+                }
+            }).ConfigureAwait(false);
+        }
     }
 
     /// <summary>Publishes a definitive local, codec, or Core Apply failure while retaining the session and draft.</summary>

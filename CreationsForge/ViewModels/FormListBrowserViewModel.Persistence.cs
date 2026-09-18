@@ -112,6 +112,7 @@ public sealed partial class FormListBrowserViewModel
                     baseRevision: expectedRevision,
                     resultRevision: expectedRevision,
                     warnings: result.Warnings);
+                PersistenceRefreshed?.Invoke();
             }).ConfigureAwait(false);
 
             return publishedResult ?? PersistenceRefreshFailure(

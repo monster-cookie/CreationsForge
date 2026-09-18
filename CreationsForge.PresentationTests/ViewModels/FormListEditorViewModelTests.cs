@@ -151,6 +151,8 @@ public sealed class FormListEditorViewModelTests
         var fixture = new EditorFixture();
         fixture.Host.ThrowOnRefreshCall = 2;
         using var editor = fixture.CreateEditor();
+        var changedRecords = new List<FormKey>();
+        editor.StagedRecordChanged += changedRecords.Add;
         await editor.BeginNewAsync();
         var draft = editor.Draft.ShouldNotBeNull();
         var expectedRevision = editor.Session!.ExpectedRevision;
@@ -168,6 +170,7 @@ public sealed class FormListEditorViewModelTests
         editor.HasError.ShouldBeTrue();
         editor.ErrorMessage.ShouldNotBeNull().ShouldContain("Apply succeeded; refresh failed");
         fixture.Workspace.ApplyRequests.Count.ShouldBe(1);
+        changedRecords.ShouldBe([fixture.FormKey]);
 
         var seededCommand = editor.AvailableCommands.Single(command => command.CommandName == "form-list.replace-items");
         var staleSeedAttempt = editor.CreateDraft(seededCommand, FormListDraftSeedSelection.CurrentValue());
