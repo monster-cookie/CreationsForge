@@ -26,7 +26,7 @@ public sealed partial class FormListEditorViewModel
             return;
         }
 
-        using var operationLease = TryEnterOperation(FormListEditorOperationState.RetryingPendingOperation);
+        using var operationLease = await TryEnterOperationAsync(FormListEditorOperationState.RetryingPendingOperation).ConfigureAwait(false);
         if (operationLease is null)
         {
             return;

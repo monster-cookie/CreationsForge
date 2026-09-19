@@ -26,7 +26,7 @@ public sealed partial class FormListEditorViewModel
             return;
         }
 
-        using var operationLease = TryEnterOperation(FormListEditorOperationState.Applying);
+        using var operationLease = await TryEnterOperationAsync(FormListEditorOperationState.Applying).ConfigureAwait(false);
         if (operationLease is null)
         {
             return;
@@ -44,7 +44,9 @@ public sealed partial class FormListEditorViewModel
                 return;
             }
 
-            var validation = DraftValidator.Validate(draft, ReadLimits, cancellationToken);
+            FormListDraftValidationResult validation = null!;
+            await UiDispatcher.InvokeAsync(() =>
+                validation = DraftValidator.Validate(draft, ReadLimits, cancellationToken)).ConfigureAwait(false);
             await UiDispatcher.InvokeAsync(() =>
             {
                 if (IsCurrentGeneration(generation, session.WorkspaceId) && ReferenceEquals(DraftValue, draft))
@@ -60,7 +62,9 @@ public sealed partial class FormListEditorViewModel
                 return;
             }
 
-            var serialization = DraftSerializer.Serialize(draft, ReadLimits, cancellationToken);
+            FormListDraftSerializationResult serialization = null!;
+            await UiDispatcher.InvokeAsync(() =>
+                serialization = DraftSerializer.Serialize(draft, ReadLimits, cancellationToken)).ConfigureAwait(false);
             if (!serialization.Succeeded)
             {
                 await UiDispatcher.InvokeAsync(() =>

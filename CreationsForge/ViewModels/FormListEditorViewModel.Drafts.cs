@@ -174,7 +174,7 @@ public sealed partial class FormListEditorViewModel
             return;
         }
 
-        using var operationLease = TryEnterOperation(FormListEditorOperationState.PickingReference);
+        using var operationLease = await TryEnterOperationAsync(FormListEditorOperationState.PickingReference).ConfigureAwait(false);
         if (operationLease is null)
         {
             return;

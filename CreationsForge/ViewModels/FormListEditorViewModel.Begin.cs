@@ -63,7 +63,7 @@ public sealed partial class FormListEditorViewModel
             return;
         }
 
-        using var operationLease = TryEnterOperation(FormListEditorOperationState.Beginning);
+        using var operationLease = await TryEnterOperationAsync(FormListEditorOperationState.Beginning).ConfigureAwait(false);
         if (operationLease is null)
         {
             return;

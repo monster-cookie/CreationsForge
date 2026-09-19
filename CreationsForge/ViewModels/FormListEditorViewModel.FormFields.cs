@@ -2,6 +2,7 @@ using System.ComponentModel;
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.RecordEditing;
 using CreationsForge.RecordEditing.Drafts;
+using CreationsForge.Services;
 
 namespace CreationsForge.ViewModels;
 
@@ -130,13 +131,25 @@ public sealed partial class FormListEditorViewModel
     /// <returns>A task that completes after all changed fields are staged or one failure is reported.</returns>
     public async Task SaveFormAsync()
     {
-        if (!CanSaveForm || SessionValue is not { } session || CatalogContextValue is null)
+        FormListEditorSession? session = null;
+        FormListWireCatalogContext? catalogContext = null;
+        await UiDispatcher.InvokeAsync(() =>
+        {
+            if (!CanSaveForm || SessionValue is not { } currentSession || CatalogContextValue is null)
+            {
+                return;
+            }
+
+            session = currentSession;
+            catalogContext = CatalogContextValue;
+            IsSavingFormValue = true;
+            PublishFormFieldState();
+        }).ConfigureAwait(false);
+        if (session is null || catalogContext is null)
         {
             return;
         }
 
-        IsSavingFormValue = true;
-        PublishFormFieldState();
         var generation = Volatile.Read(ref WorkspaceGeneration);
         var completed = true;
         var stagedAny = false;
@@ -165,7 +178,7 @@ public sealed partial class FormListEditorViewModel
                 if (field.ClearRequested)
                 {
                     var clear = DraftFactory.Create(
-                        CatalogContextValue,
+                        catalogContext,
                         command.Key,
                         SeedValue,
                         FormListDraftSeedSelection.CurrentValue(),

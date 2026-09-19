@@ -10,30 +10,44 @@ namespace CreationsForge.ViewModels;
 
 public sealed partial class FormListEditorViewModel
 {
-    /// <summary>Attempts to acquire shared editor admission and publishes the running operation state.</summary>
+    /// <summary>Acquires shared editor admission and publishes the running operation state on the UI dispatcher.</summary>
     /// <param name="state">The running state published when the gate is acquired.</param>
     /// <returns>The exact editor-operation lease, or <see langword="null"/> when admission is unavailable.</returns>
-    private WorkspaceEditorOperationLease? TryEnterOperation(FormListEditorOperationState state)
+    private async Task<WorkspaceEditorOperationLease?> TryEnterOperationAsync(FormListEditorOperationState state)
     {
-        if (IsDisposed)
+        WorkspaceEditorOperationLease? lease = null;
+        await UiDispatcher.InvokeAsync(() =>
         {
-            return null;
-        }
+            if (IsDisposed)
+            {
+                return;
+            }
 
-        var lease = OperationArbiter.TryBeginEditorOperation();
-        if (lease is null)
-        {
-            return null;
-        }
+            lease = OperationArbiter.TryBeginEditorOperation();
+            if (lease is null)
+            {
+                return;
+            }
 
-        if (IsDisposed)
-        {
-            lease.Dispose();
-            return null;
-        }
+            if (IsDisposed)
+            {
+                lease.Dispose();
+                lease = null;
+                return;
+            }
 
-        SetOperationState(state);
-        ClearError();
+            try
+            {
+                SetOperationState(state);
+                ClearError();
+            }
+            catch
+            {
+                lease.Dispose();
+                lease = null;
+                throw;
+            }
+        }).ConfigureAwait(false);
         return lease;
     }
 

@@ -1,5 +1,7 @@
 using System.ComponentModel;
 using System.Text.Json;
+using Avalonia.Controls;
+using Avalonia.Headless.XUnit;
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Engine.RecordWire;
 using CreationsForge.Core.Enums;
@@ -8,6 +10,7 @@ using CreationsForge.Fallout4.PluginAdapter.Wire;
 using CreationsForge.RecordEditing;
 using CreationsForge.RecordEditing.Drafts;
 using CreationsForge.PresentationTests.Support;
+using CreationsForge.PresentationTests.Headless;
 using CreationsForge.Services;
 using CreationsForge.Services.Interfaces;
 using CreationsForge.Skyrim.PluginAdapter.Wire;
@@ -22,6 +25,7 @@ using Shouldly;
 namespace CreationsForge.PresentationTests.ViewModels;
 
 /// <summary>Verifies revision forwarding, receipt-bound seeds, exact uncertain replay, and editor generation safety.</summary>
+[Collection(AvaloniaControlTestCollection.Name)]
 public sealed class FormListEditorViewModelTests
 {
     /// <summary>Verifies Override forwards the browser revision unchanged while using the successful receipt revision for its staged seed and session.</summary>
@@ -233,6 +237,38 @@ public sealed class FormListEditorViewModelTests
             .Draft.Root.ShouldBeOfType<RecordWireObjectDraftNode>()
             .FindProperty("editorId").ShouldBeOfType<RecordWireStringDraftNode>()
             .Value.ShouldBe("SimpleForm");
+    }
+
+    /// <summary>Verifies a bound Avalonia save button remains accessible when record staging resumes on a worker thread.</summary>
+    /// <returns>A task that completes after the staged field and UI command state are published.</returns>
+    [AvaloniaFact]
+    public async Task SaveForm_FromWorker_KeepsBoundButtonOnUiThread()
+    {
+        var fixture = new EditorFixture();
+        using var editor = fixture.CreateEditor(new AvaloniaUiDispatcher());
+        await editor.BeginNewAsync();
+        var editorId = editor.FieldDrafts.Single(candidate => candidate.Title == "Editor ID")
+            .Draft.Root.ShouldBeOfType<RecordWireObjectDraftNode>()
+            .FindProperty("editorId").ShouldBeOfType<RecordWireStringDraftNode>();
+        editorId.Value = "ThreadSafeForm";
+        var window = new Window
+        {
+            Content = new Button { Command = editor.SaveFormCommand }
+        };
+        window.Show();
+
+        try
+        {
+            await Task.Run(editor.SaveFormAsync).WaitAsync(TimeSpan.FromSeconds(10));
+
+            editor.HasError.ShouldBeFalse(editor.ErrorMessage);
+            fixture.Workspace.ApplyRequests.Count.ShouldBe(1);
+            editor.HasFormChanges.ShouldBeFalse();
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     /// <summary>Verifies retrying a partly staged form submits only the field that failed.</summary>
@@ -726,9 +762,10 @@ public sealed class FormListEditorViewModelTests
         /// <summary>Gets the shared editor and workspace-transition admission boundary.</summary>
         public WorkspacePresentationOperationArbiter OperationArbiter { get; }
 
-        /// <summary>Creates the production editor with exact Skyrim wire services and deterministic presentation adapters.</summary>
+        /// <summary>Creates the production editor with exact game wire services and the requested presentation dispatcher.</summary>
+        /// <param name="dispatcher">An optional dispatcher override for headless Avalonia checks.</param>
         /// <returns>The configured editor.</returns>
-        public FormListEditorViewModel CreateEditor()
+        public FormListEditorViewModel CreateEditor(IUiDispatcher? dispatcher = null)
         {
             var validator = new FormListDraftValidator();
             IFormListEditWireCodec codec = Game switch
@@ -754,7 +791,7 @@ public sealed class FormListEditorViewModelTests
                 validator,
                 new FormListDraftSerializer(validator),
                 new RecordingReferencePickerService(),
-                UiDispatcher);
+                dispatcher ?? UiDispatcher);
         }
 
         /// <summary>Creates a current plugin desktop descriptor for a fixture workspace.</summary>
