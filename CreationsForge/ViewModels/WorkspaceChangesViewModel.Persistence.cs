@@ -78,7 +78,7 @@ public sealed partial class WorkspaceChangesViewModel
                             warnings: captureResult.Warnings);
                     }
 
-                    if (captureResult.Value.Preview.Comparisons.Count == 0)
+                    if (!captureResult.Value.Preview.HasStagedChanges)
                     {
                         return EngineResult<WorkspaceSaveBorrowOutcome>.Failure(
                             new EngineError(EngineErrorCode.InvalidRequest, "No staged workspace changes are available to save."),
@@ -191,7 +191,7 @@ public sealed partial class WorkspaceChangesViewModel
                     }
 
                     var capture = captureResult.Value;
-                    if (capture.Preview.Comparisons.Count == 0)
+                    if (!capture.Preview.HasStagedChanges)
                     {
                         return EngineResult<WorkspaceDiscardBorrowOutcome>.Success(
                             new WorkspaceDiscardBorrowOutcome(capture, envelope: null, result: null),
@@ -649,7 +649,8 @@ public sealed partial class WorkspaceChangesViewModel
             capture.Preview.Comparisons,
             Array.Empty<WorkspaceChangeItemViewModel>(),
             capture.Preview.UnresolvedReferenceCount,
-            capture.Warnings);
+            capture.Warnings,
+            capture.Preview.MajorRecordComparisons);
         Interlocked.Increment(ref CompletedPersistenceVersion);
         await UiDispatcher.InvokeAsync(() =>
         {

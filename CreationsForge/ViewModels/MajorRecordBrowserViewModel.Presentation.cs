@@ -33,6 +33,7 @@ public sealed partial class MajorRecordBrowserViewModel
         RetryKindValue = RetryKind.None;
         SetStatus($"Loaded all {RecordsValue.Count:N0} major record(s).");
         OnPropertyChanged(nameof(LoadedRecordCountText));
+        OnPropertyChanged(nameof(SelectedPluginFilterLabel));
         RefreshRelayCommand.RaiseCanExecuteChanged();
         if (HasActiveRecordFilter || RecordSortModeValue != MajorRecordSortMode.FormId)
         {
@@ -115,6 +116,7 @@ public sealed partial class MajorRecordBrowserViewModel
         OnPropertyChanged(nameof(RecordTreeSource));
         OnPropertyChanged(nameof(SelectedRecord));
         OnPropertyChanged(nameof(LoadedRecordCountText));
+        OnPropertyChanged(nameof(SelectedPluginFilterLabel));
         RefreshRelayCommand.RaiseCanExecuteChanged();
     }
 

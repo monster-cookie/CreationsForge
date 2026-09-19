@@ -33,6 +33,9 @@ public sealed class WorkspacePreview
     /// <summary>Gets complete native before-and-after comparisons for edited non-FormList records.</summary>
     public IReadOnlyList<MajorRecordComparison> MajorRecordComparisons { get; }
 
+    /// <summary>Gets whether either supported record preview contains staged changes.</summary>
+    public bool HasStagedChanges => Comparisons.Count > 0 || MajorRecordComparisons.Count > 0;
+
     /// <summary>Gets the number of unresolved references.</summary>
     public int UnresolvedReferenceCount { get; }
 

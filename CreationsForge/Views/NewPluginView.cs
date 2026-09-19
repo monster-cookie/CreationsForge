@@ -63,7 +63,10 @@ public sealed class NewPluginView : UserControl
             Mode = BindingMode.TwoWay
         });
         masterSize.Bind(IsEnabledProperty, new Binding(nameof(WorkspaceSelectionViewModel.CanOpen)));
+        masterSize.Bind(IsVisibleProperty, new Binding(nameof(WorkspaceSelectionViewModel.NewPluginSupportsMasterSize)));
         AutomationProperties.SetAutomationId(masterSize, "NewPluginMasterStyleSelector");
+        var masterSizeLabel = Label("Master size");
+        masterSizeLabel.Bind(IsVisibleProperty, new Binding(nameof(WorkspaceSelectionViewModel.NewPluginSupportsMasterSize)));
 
         var fileName = new TextBox { PlaceholderText = "MyPlugin", MinHeight = 34 };
         fileName.Bind(TextBox.TextProperty, new Binding(nameof(WorkspaceSelectionViewModel.NewPluginFileName))
@@ -140,7 +143,7 @@ public sealed class NewPluginView : UserControl
                     Label("New Plugin", 22),
                     Label("Game"), game,
                     Label("Plugin file type"), extension,
-                    Label("Master size"), masterSize,
+                    masterSizeLabel, masterSize,
                     Label("Plugin name (without extension)"), fileNameField,
                     Label("Game Data directory"), dataDirectory,
                     hint, progress, status, error, actions

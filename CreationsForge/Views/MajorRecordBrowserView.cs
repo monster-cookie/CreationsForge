@@ -159,6 +159,12 @@ public sealed class MajorRecordBrowserView : UserControl
             SelectingItemsControl.SelectedItemProperty,
             new Binding(nameof(MajorRecordBrowserViewModel.RecordSortMode)) { Mode = BindingMode.TwoWay });
         AutomationProperties.SetAutomationId(sortSelector, "MajorRecordSortSelector");
+        var selectedPluginOnly = new CheckBox { VerticalAlignment = VerticalAlignment.Center };
+        selectedPluginOnly.Bind(ToggleButton.IsCheckedProperty,
+            new Binding(nameof(MajorRecordBrowserViewModel.SelectedPluginOnly)) { Mode = BindingMode.TwoWay });
+        selectedPluginOnly.Bind(ContentControl.ContentProperty,
+            new Binding(nameof(MajorRecordBrowserViewModel.SelectedPluginFilterLabel)));
+        AutomationProperties.SetAutomationId(selectedPluginOnly, "MajorRecordSelectedPluginOnlyFilter");
         var actions = new StackPanel
         {
             Orientation = Orientation.Horizontal,
@@ -168,7 +174,8 @@ public sealed class MajorRecordBrowserView : UserControl
                 refresh,
                 count,
                 sortLabel,
-                sortSelector
+                sortSelector,
+                selectedPluginOnly
             }
         };
         var filters = new Grid

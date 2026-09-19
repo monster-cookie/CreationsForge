@@ -4,7 +4,7 @@ using Mutagen.Bethesda;
 
 namespace CreationsForge.ViewModels;
 
-/// <summary>Captures one revision-consistent detached review of every staged FormList change.</summary>
+/// <summary>Captures one revision-consistent detached review of every staged record change.</summary>
 public sealed class WorkspaceChangeReview
 {
     /// <summary>Initializes one immutable accepted workspace review.</summary>
@@ -30,7 +30,8 @@ public sealed class WorkspaceChangeReview
         IReadOnlyList<FormListComparison> comparisons,
         IReadOnlyList<WorkspaceChangeItemViewModel> items,
         int unresolvedReferenceCount,
-        IReadOnlyList<EngineWarning> warnings)
+        IReadOnlyList<EngineWarning> warnings,
+        IReadOnlyList<MajorRecordComparison>? majorRecordComparisons = null)
     {
         if (workspaceId == Guid.Empty)
         {
@@ -42,7 +43,8 @@ public sealed class WorkspaceChangeReview
         ArgumentNullException.ThrowIfNull(comparisons);
         ArgumentNullException.ThrowIfNull(items);
         ArgumentNullException.ThrowIfNull(warnings);
-        if (comparisons.Count != items.Count)
+        majorRecordComparisons ??= Array.Empty<MajorRecordComparison>();
+        if (comparisons.Count + majorRecordComparisons.Count != items.Count)
         {
             throw new ArgumentException("A workspace review requires one projected item per comparison.", nameof(items));
         }
@@ -55,6 +57,7 @@ public sealed class WorkspaceChangeReview
         OutputBaseline = outputBaseline;
         Revision = revision;
         Comparisons = Array.AsReadOnly(comparisons.ToArray());
+        MajorRecordComparisons = Array.AsReadOnly(majorRecordComparisons.ToArray());
         Items = Array.AsReadOnly(items.ToArray());
         UnresolvedReferenceCount = unresolvedReferenceCount;
         Warnings = Array.AsReadOnly(warnings.ToArray());
@@ -81,6 +84,9 @@ public sealed class WorkspaceChangeReview
     /// <summary>Gets every detached engine comparison in engine order.</summary>
     public IReadOnlyList<FormListComparison> Comparisons { get; }
 
+    /// <summary>Gets every detached non-FormList native comparison in engine order.</summary>
+    public IReadOnlyList<MajorRecordComparison> MajorRecordComparisons { get; }
+
     /// <summary>Gets every projected dialog item in comparison order.</summary>
     public IReadOnlyList<WorkspaceChangeItemViewModel> Items { get; }
 
@@ -91,5 +97,5 @@ public sealed class WorkspaceChangeReview
     public IReadOnlyList<EngineWarning> Warnings { get; }
 
     /// <summary>Gets whether the authoritative workspace preview contains staged comparisons.</summary>
-    public bool HasStagedChanges => Comparisons.Count > 0;
+    public bool HasStagedChanges => Comparisons.Count > 0 || MajorRecordComparisons.Count > 0;
 }

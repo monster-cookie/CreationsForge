@@ -324,6 +324,10 @@ public sealed partial class WorkspaceChangesViewModel
                     comparison,
                     JsonTreeProjectionService.Project(comparison.Before, cancellationToken),
                     JsonTreeProjectionService.Project(comparison.After, cancellationToken)))
+                .Concat(capture.Preview.MajorRecordComparisons.Select(comparison => new WorkspaceChangeItemViewModel(
+                    comparison,
+                    JsonTreeProjectionService.Project(comparison.Before, cancellationToken),
+                    JsonTreeProjectionService.Project(comparison.After, cancellationToken))))
                 .ToArray());
         }
         catch (OperationCanceledException)
@@ -342,7 +346,8 @@ public sealed partial class WorkspaceChangesViewModel
 
         var warnings = CombineWarnings(
             capture.Warnings,
-            capture.Preview.Comparisons.SelectMany(comparison => comparison.Warnings));
+            capture.Preview.Comparisons.SelectMany(comparison => comparison.Warnings)
+                .Concat(capture.Preview.MajorRecordComparisons.SelectMany(comparison => comparison.Warnings)));
         var review = new WorkspaceChangeReview(
             capture.WorkspaceId,
             capture.State.Game,
@@ -353,7 +358,8 @@ public sealed partial class WorkspaceChangesViewModel
             capture.Preview.Comparisons,
             items,
             capture.Preview.UnresolvedReferenceCount,
-            warnings);
+            warnings,
+            capture.Preview.MajorRecordComparisons);
 
         await UiDispatcher.InvokeAsync(() =>
         {

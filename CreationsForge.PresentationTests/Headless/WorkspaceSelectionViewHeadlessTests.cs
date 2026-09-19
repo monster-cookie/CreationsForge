@@ -125,7 +125,8 @@ public sealed class WorkspaceSelectionViewHeadlessTests
             ControlFinder.FindByAutomationId<NewPluginView>(view, "NewPluginView").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<ComboBox>(view, "NewPluginGameSelector")!.ItemCount.ShouldBe(3);
             ControlFinder.FindByAutomationId<ComboBox>(view, "NewPluginExtensionSelector")!.ItemCount.ShouldBe(3);
-            ControlFinder.FindByAutomationId<ComboBox>(view, "NewPluginMasterStyleSelector").ShouldNotBeNull();
+            var masterSize = ControlFinder.FindByAutomationId<ComboBox>(view, "NewPluginMasterStyleSelector").ShouldNotBeNull();
+            masterSize.IsVisible.ShouldBeFalse();
             var name = ControlFinder.FindByAutomationId<TextBox>(view, "NewPluginNameBox").ShouldNotBeNull();
             var suffix = ControlFinder.FindByAutomationId<TextBlock>(view, "NewPluginExtensionSuffix").ShouldNotBeNull();
             viewModel.NewPluginFileName = "MyPlugin";
@@ -133,6 +134,14 @@ public sealed class WorkspaceSelectionViewHeadlessTests
             Dispatcher.UIThread.RunJobs();
             name.Text.ShouldBe("MyPlugin");
             suffix.Text.ShouldBe(".esm");
+            masterSize.IsVisible.ShouldBeTrue();
+            viewModel.NewPluginExtension = ".esl";
+            Dispatcher.UIThread.RunJobs();
+            masterSize.IsVisible.ShouldBeFalse();
+            viewModel.OutputMasterStyle.ShouldBe(OutputMasterStyle.Small);
+            viewModel.NewPluginExtension = ".esp";
+            Dispatcher.UIThread.RunJobs();
+            viewModel.OutputMasterStyle.ShouldBe(OutputMasterStyle.Full);
             ControlFinder.FindByAutomationId<TextBlock>(view, "NewPluginDataDirectory").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<Button>(view, "ConfirmNewPluginButton").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<Button>(view, "CancelNewPluginButton").ShouldNotBeNull();

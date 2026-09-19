@@ -14,6 +14,9 @@ public sealed partial class MajorRecordBrowserViewModel
     /// <summary>The case-insensitive EditorID substring.</summary>
     private string EditorIdFilterValue = string.Empty;
 
+    /// <summary>Whether to show only winning records contained by the selected plugin.</summary>
+    private bool SelectedPluginOnlyValue;
+
     /// <summary>The field used to order rows within each record family.</summary>
     private MajorRecordSortMode RecordSortModeValue = MajorRecordSortMode.FormId;
 
@@ -58,6 +61,24 @@ public sealed partial class MajorRecordBrowserViewModel
         }
     }
 
+    /// <summary>Gets or sets whether the tree shows only records contained by the selected plugin.</summary>
+    public bool SelectedPluginOnly
+    {
+        get => SelectedPluginOnlyValue;
+        set
+        {
+            if (SetProperty(ref SelectedPluginOnlyValue, value))
+            {
+                CurrentFilterTask = BeginFilterGenerationAsync();
+            }
+        }
+    }
+
+    /// <summary>Gets the selected-plugin filter label for editing or read-only workspaces.</summary>
+    public string SelectedPluginFilterLabel => WorkspaceCoordinator.CurrentWorkspace?.Output is null
+        ? "Selected plugin only"
+        : "Edited plugin only";
+
     /// <summary>Gets or sets the ordering applied inside each major-record family.</summary>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the requested mode is undefined.</exception>
     public MajorRecordSortMode RecordSortMode
@@ -78,7 +99,7 @@ public sealed partial class MajorRecordBrowserViewModel
     }
 
     /// <summary>Gets whether a FormID or EditorID filter is active.</summary>
-    public bool HasActiveRecordFilter => !string.IsNullOrWhiteSpace(FormIdFilterValue) || !string.IsNullOrWhiteSpace(EditorIdFilterValue);
+    public bool HasActiveRecordFilter => SelectedPluginOnlyValue || !string.IsNullOrWhiteSpace(FormIdFilterValue) || !string.IsNullOrWhiteSpace(EditorIdFilterValue);
 
     /// <summary>Gets whether the already-loaded summaries are being filtered or reordered.</summary>
     public bool IsFiltering => IsFilteringValue;
@@ -106,6 +127,7 @@ public sealed partial class MajorRecordBrowserViewModel
             RevisionValue.Value,
             FormIdFilterValue.Trim(),
             EditorIdFilterValue.Trim(),
+            SelectedPluginOnlyValue ? workspace.Output?.PluginPath ?? workspace.SourcePluginPath : null,
             RecordSortModeValue,
             FilterCancellation.Token);
     }
@@ -117,6 +139,7 @@ public sealed partial class MajorRecordBrowserViewModel
     /// <param name="revision">The accepted record revision.</param>
     /// <param name="formIdFilter">The trimmed hexadecimal identity fragment.</param>
     /// <param name="editorIdFilter">The trimmed EditorID fragment.</param>
+    /// <param name="selectedPluginPath">The exact selected plugin path when its filter is active.</param>
     /// <param name="sortMode">The ordering inside each record family.</param>
     /// <param name="cancellationToken">Cancels the obsolete scan.</param>
     /// <returns>A task that completes after current results publish or the request becomes stale.</returns>
@@ -127,6 +150,7 @@ public sealed partial class MajorRecordBrowserViewModel
         WorkspaceRevision revision,
         string formIdFilter,
         string editorIdFilter,
+        string? selectedPluginPath,
         MajorRecordSortMode sortMode,
         CancellationToken cancellationToken)
     {
@@ -137,7 +161,7 @@ public sealed partial class MajorRecordBrowserViewModel
             var unfilteredGroups = UnfilteredRecordGroupsValue;
             var (groups, visibleCount) = await Task.Run(() =>
             {
-                if (formIdFilter.Length == 0 && editorIdFilter.Length == 0 && sortMode == MajorRecordSortMode.FormId)
+                if (formIdFilter.Length == 0 && editorIdFilter.Length == 0 && selectedPluginPath is null && sortMode == MajorRecordSortMode.FormId)
                 {
                     return (unfilteredGroups, records.Count);
                 }
@@ -146,7 +170,7 @@ public sealed partial class MajorRecordBrowserViewModel
                 foreach (var record in records)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (MatchesRecordFilters(record, formIdFilter, editorIdFilter))
+                    if (MatchesRecordFilters(record, formIdFilter, editorIdFilter, selectedPluginPath))
                     {
                         matches.Add(record);
                     }
@@ -169,7 +193,7 @@ public sealed partial class MajorRecordBrowserViewModel
                 OnPropertyChanged(nameof(RecordGroups));
                 OnPropertyChanged(nameof(RecordTreeSource));
                 OnPropertyChanged(nameof(LoadedRecordCountText));
-                if (SelectedRecordValue is { } selected && !MatchesRecordFilters(selected, formIdFilter, editorIdFilter))
+                if (SelectedRecordValue is { } selected && !MatchesRecordFilters(selected, formIdFilter, editorIdFilter, selectedPluginPath))
                 {
                     SelectionGeneration++;
                     CancelAndDispose(ref SelectionCancellation);
@@ -200,15 +224,21 @@ public sealed partial class MajorRecordBrowserViewModel
     /// <param name="record">The loaded summary row.</param>
     /// <param name="formIdFilter">The trimmed hexadecimal FormID fragment.</param>
     /// <param name="editorIdFilter">The trimmed EditorID fragment.</param>
+    /// <param name="selectedPluginPath">The exact selected plugin path when filtering by its contained records.</param>
     /// <returns>Whether the row matches both supplied filters.</returns>
     private static bool MatchesRecordFilters(
         MajorRecordViewModel record,
         string formIdFilter,
-        string editorIdFilter)
+        string editorIdFilter,
+        string? selectedPluginPath)
     {
         return record.PrimaryText.Contains(formIdFilter, StringComparison.OrdinalIgnoreCase)
             && (editorIdFilter.Length == 0
-                || record.EditorId?.Contains(editorIdFilter, StringComparison.OrdinalIgnoreCase) == true);
+                || record.EditorId?.Contains(editorIdFilter, StringComparison.OrdinalIgnoreCase) == true)
+            && (selectedPluginPath is null || string.Equals(
+                record.SourcePath,
+                selectedPluginPath,
+                OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal));
     }
 
     /// <summary>Checks the workspace and filter generations before publishing a local projection.</summary>

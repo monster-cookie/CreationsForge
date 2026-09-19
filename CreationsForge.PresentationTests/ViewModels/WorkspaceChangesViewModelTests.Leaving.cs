@@ -9,6 +9,20 @@ namespace CreationsForge.PresentationTests.ViewModels;
 /// <content>Verifies final leave proof, lease transfer, and non-fabricable dialog outcomes.</content>
 public sealed partial class WorkspaceChangesViewModelTests
 {
+    /// <summary>Verifies a native-only staged record cannot silently authorize application exit.</summary>
+    [Fact]
+    public async Task ReserveLeaveAsync_NativeOnlyEdit_RequiresDialog()
+    {
+        await using var context = WorkspaceChangesTestContext.CreateReady(hasStagedChanges: true);
+        StageOnlyGameSettingFloat(context);
+        context.DialogService.Result = WorkspaceChangesDialogResult.KeepEditing;
+
+        var reservation = await context.ViewModel.ReserveLeaveAsync(WorkspaceLeaveReason.ExitApplication);
+
+        reservation.ShouldBeNull();
+        context.DialogService.Requests.ShouldHaveSingleItem().LeaveReason.ShouldBe(WorkspaceLeaveReason.ExitApplication);
+    }
+
     /// <summary>Verifies an empty shell transfers a no-workspace permit without borrowing plugin state.</summary>
     /// <returns>A task that completes after the scenario assertions.</returns>
     [Fact]

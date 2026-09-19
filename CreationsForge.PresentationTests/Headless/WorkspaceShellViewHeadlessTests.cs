@@ -107,6 +107,7 @@ public sealed class WorkspaceShellViewHeadlessTests
             ControlFinder.FindByAutomationId<Button>(view, "GameSettingFloatSaveButton").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<TextBox>(view, "MajorRecordFormIdFilter").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<TextBox>(view, "MajorRecordEditorIdFilter").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<CheckBox>(view, "MajorRecordSelectedPluginOnlyFilter").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<ComboBox>(view, "MajorRecordSortSelector").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<ItemsControl>(view, "MajorRecordSemanticChanges").ShouldBeNull();
             var loadedMajorRecordCount = ControlFinder.FindByAutomationId<TextBlock>(view, "WorkspaceMajorRecordLoadedCountText")!;

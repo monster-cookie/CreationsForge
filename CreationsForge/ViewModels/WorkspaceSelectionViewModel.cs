@@ -151,7 +151,11 @@ public sealed partial class WorkspaceSelectionViewModel : ViewModelBase
             ResetPluginCatalog();
             OutputMasterStyleOptions = value.SupportedMasterStyles;
             OnPropertyChanged(nameof(NewPluginMasterStyleOptions));
-            if (!OutputMasterStyleOptions.Contains(OutputMasterStyle))
+            if (NewPluginExtension == ".esl")
+            {
+                OutputMasterStyle = OutputMasterStyle.Small;
+            }
+            else if (NewPluginExtension == ".esp" || !OutputMasterStyleOptions.Contains(OutputMasterStyle))
             {
                 OutputMasterStyle = OutputMasterStyle.Full;
             }
@@ -221,9 +225,14 @@ public sealed partial class WorkspaceSelectionViewModel : ViewModelBase
             }
 
             OnPropertyChanged(nameof(NewPluginMasterStyleOptions));
+            OnPropertyChanged(nameof(NewPluginSupportsMasterSize));
             if (value == ".esl")
             {
                 OutputMasterStyle = OutputMasterStyle.Small;
+            }
+            else if (value == ".esp")
+            {
+                OutputMasterStyle = OutputMasterStyle.Full;
             }
         }
     }
@@ -235,10 +244,16 @@ public sealed partial class WorkspaceSelectionViewModel : ViewModelBase
         set => SetProperty(ref NewPluginFileNameValue, value ?? string.Empty);
     }
 
-    /// <summary>Gets the master sizes valid for the selected game and new-plugin extension.</summary>
-    public IReadOnlyList<OutputMasterStyle> NewPluginMasterStyleOptions => NewPluginExtension == ".esl"
-        ? [OutputMasterStyle.Small]
-        : OutputMasterStyleOptions;
+    /// <summary>Gets whether a new plugin's file type exposes a master-size choice.</summary>
+    public bool NewPluginSupportsMasterSize => NewPluginExtension == ".esm";
+
+    /// <summary>Gets the fixed or selectable master styles valid for the new plugin extension.</summary>
+    public IReadOnlyList<OutputMasterStyle> NewPluginMasterStyleOptions => NewPluginExtension switch
+    {
+        ".esl" => [OutputMasterStyle.Small],
+        ".esp" => [OutputMasterStyle.Full],
+        _ => OutputMasterStyleOptions
+    };
 
     /// <summary>Gets the output master styles supported by the selected game release.</summary>
     public IReadOnlyList<OutputMasterStyle> OutputMasterStyleOptions

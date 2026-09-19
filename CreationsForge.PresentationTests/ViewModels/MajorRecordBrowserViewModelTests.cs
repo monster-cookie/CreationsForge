@@ -128,6 +128,15 @@ public sealed class MajorRecordBrowserViewModelTests
         loadingStatuses.ShouldContain(status => status.Contains("Source.esm") && status.Contains("3 records"));
         viewModel.StatusText.ShouldBe("Loaded all 4 major record(s).");
 
+        viewModel.SelectedPluginOnly = true;
+        await viewModel.CurrentFilterTask;
+        viewModel.RecordGroups.Select(group => group.Label).ShouldBe(["Book (1)", "Keyword (1)"]);
+        viewModel.RecordGroups.SelectMany(group => group.Children).Cast<MajorRecordViewModel>()
+            .All(record => record.SourcePath == patchPath).ShouldBeTrue();
+        viewModel.LoadedRecordCountText.ShouldBe("Showing 2 of 4 records");
+        viewModel.SelectedPluginOnly = false;
+        await viewModel.CurrentFilterTask;
+
         viewModel.EditorIdFilter = "book";
         await viewModel.CurrentFilterTask;
         viewModel.RecordGroups.ShouldHaveSingleItem().Label.ShouldBe("Book (2)");
@@ -216,13 +225,18 @@ public sealed class MajorRecordBrowserViewModelTests
         WorkspaceRevision revision,
         string sourcePath)
     {
+        var outputModKey = ModKey.FromNameAndExtension("Patch.esm");
         return new WorkspaceDescriptor(
             workspaceId,
             SupportedGame.Starfield,
             GameRelease.Starfield,
             sourcePath,
             [sourcePath],
-            null,
+            new OutputAssociation(
+                AbsolutePath(outputModKey.FileName),
+                outputModKey,
+                LocalizedOutputMode.Embedded,
+                OutputMasterStyle.Full),
             revision);
     }
 
