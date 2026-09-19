@@ -63,17 +63,17 @@ public sealed class WorkspaceGameOption
                 SupportedGame.Starfield,
                 "Starfield",
                 GameRelease.Starfield,
-                [OutputMasterStyle.Full, OutputMasterStyle.Small, OutputMasterStyle.Medium]),
+                [OutputMasterStyle.Small, OutputMasterStyle.Medium, OutputMasterStyle.Full]),
             new WorkspaceGameOption(
                 SupportedGame.Fallout4,
                 "Fallout 4",
                 GameRelease.Fallout4,
-                [OutputMasterStyle.Full, OutputMasterStyle.Small]),
+                [OutputMasterStyle.Small, OutputMasterStyle.Full]),
             new WorkspaceGameOption(
                 SupportedGame.Skyrim,
                 "Skyrim Special Edition",
                 GameRelease.SkyrimSE,
-                [OutputMasterStyle.Full, OutputMasterStyle.Small])
+                [OutputMasterStyle.Small, OutputMasterStyle.Full])
         ];
     }
 }

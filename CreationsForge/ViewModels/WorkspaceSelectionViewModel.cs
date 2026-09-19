@@ -155,9 +155,13 @@ public sealed partial class WorkspaceSelectionViewModel : ViewModelBase
             {
                 OutputMasterStyle = OutputMasterStyle.Small;
             }
-            else if (NewPluginExtension == ".esp" || !OutputMasterStyleOptions.Contains(OutputMasterStyle))
+            else if (NewPluginExtension == ".esp")
             {
                 OutputMasterStyle = OutputMasterStyle.Full;
+            }
+            else if (!OutputMasterStyleOptions.Contains(OutputMasterStyle))
+            {
+                OutputMasterStyle = OutputMasterStyle.Small;
             }
         }
     }
@@ -233,6 +237,10 @@ public sealed partial class WorkspaceSelectionViewModel : ViewModelBase
             else if (value == ".esp")
             {
                 OutputMasterStyle = OutputMasterStyle.Full;
+            }
+            else if (value == ".esm")
+            {
+                OutputMasterStyle = OutputMasterStyle.Small;
             }
         }
     }

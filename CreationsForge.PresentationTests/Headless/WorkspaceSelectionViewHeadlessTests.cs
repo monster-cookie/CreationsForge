@@ -135,6 +135,9 @@ public sealed class WorkspaceSelectionViewHeadlessTests
             name.Text.ShouldBe("MyPlugin");
             suffix.Text.ShouldBe(".esm");
             masterSize.IsVisible.ShouldBeTrue();
+            masterSize.Items.OfType<OutputMasterStyle>().ShouldBe(
+                [OutputMasterStyle.Small, OutputMasterStyle.Medium, OutputMasterStyle.Full]);
+            ((OutputMasterStyle)masterSize.SelectedItem!).ShouldBe(OutputMasterStyle.Small);
             viewModel.NewPluginExtension = ".esl";
             Dispatcher.UIThread.RunJobs();
             masterSize.IsVisible.ShouldBeFalse();

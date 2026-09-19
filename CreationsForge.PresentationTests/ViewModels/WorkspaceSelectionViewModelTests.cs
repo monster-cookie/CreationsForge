@@ -40,6 +40,29 @@ public sealed class WorkspaceSelectionViewModelTests
         viewModel.OutputMasterStyleOptions.ShouldContain(OutputMasterStyle.Full);
         viewModel.OutputMasterStyleOptions.ShouldContain(OutputMasterStyle.Small);
         viewModel.OutputMasterStyleOptions.Contains(OutputMasterStyle.Medium).ShouldBe(supportsMedium);
+        viewModel.NewPluginExtension = ".esm";
+        viewModel.NewPluginMasterStyleOptions.ShouldBe(supportsMedium
+            ? [OutputMasterStyle.Small, OutputMasterStyle.Medium, OutputMasterStyle.Full]
+            : [OutputMasterStyle.Small, OutputMasterStyle.Full]);
+        viewModel.OutputMasterStyle.ShouldBe(OutputMasterStyle.Small);
+    }
+
+    /// <summary>Verifies each new ESM selection starts at Small even after another master size was chosen.</summary>
+    [Fact]
+    public void NewPluginExtension_WhenReturningToEsm_DefaultsToSmall()
+    {
+        var viewModel = CreateViewModel(
+            CreateCoordinator(CreateFactory(CreateSuccessfulWorkspace()), new InlineUiDispatcher()),
+            new FakeWorkspacePathPicker(),
+            new FakeGameSelectionService(),
+            new InlineUiDispatcher());
+
+        viewModel.NewPluginExtension = ".esm";
+        viewModel.OutputMasterStyle = OutputMasterStyle.Full;
+        viewModel.NewPluginExtension = ".esp";
+        viewModel.NewPluginExtension = ".esm";
+
+        viewModel.OutputMasterStyle.ShouldBe(OutputMasterStyle.Small);
     }
 
     /// <summary>Verifies picker results preserve the explicit caller order, including masters before the source.</summary>

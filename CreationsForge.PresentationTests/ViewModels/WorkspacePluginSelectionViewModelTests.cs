@@ -200,6 +200,27 @@ public sealed class WorkspacePluginSelectionViewModelTests
         workspace.LastSelectOutputRequest.Output.MasterStyle.ShouldBe(OutputMasterStyle.Medium);
     }
 
+    /// <summary>Verifies the default ESM master size reaches the guarded output selection.</summary>
+    [Fact]
+    public async Task CreateNewPluginAsync_WithEsmDefault_UsesSmallMaster()
+    {
+        var root = CreateTestRoot();
+        var workspace = CreateSuccessfulWorkspace();
+        await using var coordinator = CreateCoordinator(CreateFactory(workspace));
+        var discovery = new FakePluginDiscoveryService
+        {
+            Result = EngineResult<PluginCatalog>.Success(CreateMisorderedCatalog(root))
+        };
+        var viewModel = CreateViewModel(coordinator, new FakeWorkspacePathPicker(), discovery);
+        await viewModel.RefreshPluginsAsync();
+        viewModel.NewPluginExtension = ".esm";
+        viewModel.NewPluginFileName = "NewSmallMaster";
+
+        (await viewModel.CreateNewPluginAsync()).ShouldBeTrue();
+
+        workspace.LastSelectOutputRequest!.Output.MasterStyle.ShouldBe(OutputMasterStyle.Small);
+    }
+
     /// <summary>Verifies unrelated enabled plugins with incompatible master orders cannot block the default new-plugin context.</summary>
     [Fact]
     public async Task CreateNewPluginAsync_WithUnrelatedConflictingPlugins_OpensBaseContext()
