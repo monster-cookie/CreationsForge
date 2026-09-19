@@ -1,4 +1,6 @@
 using System.Text.Json;
+using Avalonia.Controls;
+using Avalonia.Headless.XUnit;
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Enums;
 using CreationsForge.RecordEditing.Drafts;
@@ -16,6 +18,33 @@ namespace CreationsForge.PresentationTests.ViewModels;
 
 public sealed partial class FormListBrowserViewModelTests
 {
+    /// <summary>Verifies a post-discard browser reset raises bound command state on Avalonia's UI thread even when persistence resumes on a worker.</summary>
+    /// <returns>A task that completes after the exact workspace refresh.</returns>
+    [AvaloniaFact]
+    public async Task EditParticipant_PostPersistenceRefresh_FromWorker_UpdatesBoundButtonOnUiThread()
+    {
+        var context = await CreateParticipantContextAsync(new AvaloniaUiDispatcher());
+        using var viewModel = context.ViewModel;
+        var window = new Window { Content = new Button { Command = viewModel.RetryCommand } };
+        window.Show();
+        try
+        {
+            context.Workspace.AdvanceRevision();
+            using var transitionLease = await context.OperationArbiter.ReserveWorkspaceTransitionAsync(
+                WorkspaceTransitionDrainMode.WaitForCurrentOperation);
+            var result = await Task.Run(() => viewModel.RefreshAfterWorkspacePersistenceAsync(
+                context.Workspace.WorkspaceId,
+                context.Workspace.CurrentRevision));
+
+            result.Succeeded.ShouldBeTrue(result.Error?.Message);
+            viewModel.Editor.Session.ShouldBeNull();
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
     /// <summary>Verifies the participant forwards draft state and discards only request-local input under transition admission.</summary>
     /// <returns>A task that completes after the local draft is discarded.</returns>
     [Fact]
@@ -161,7 +190,7 @@ public sealed partial class FormListBrowserViewModelTests
 
     /// <summary>Creates a browser-owned active editor against one deterministic Starfield workspace.</summary>
     /// <returns>The participant context after initial browser load and successful Begin publication.</returns>
-    private static async Task<ParticipantTestContext> CreateParticipantContextAsync()
+    private static async Task<ParticipantTestContext> CreateParticipantContextAsync(IUiDispatcher? dispatcherOverride = null)
     {
         var workspaceId = Guid.NewGuid();
         var initialRevision = new WorkspaceRevision(Guid.NewGuid(), 4);
@@ -176,7 +205,7 @@ public sealed partial class FormListBrowserViewModelTests
             formKey);
         var coordinator = new RecordingWorkspaceCoordinator();
         coordinator.Publish(descriptor, workspace);
-        var dispatcher = new InlineUiDispatcher();
+        var dispatcher = dispatcherOverride ?? new InlineUiDispatcher();
         var operationArbiter = new WorkspacePresentationOperationArbiter();
         var picker = new RecordingReferencePickerService();
         var validator = new FormListDraftValidator();

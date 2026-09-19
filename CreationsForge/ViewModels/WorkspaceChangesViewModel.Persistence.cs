@@ -239,10 +239,13 @@ public sealed partial class WorkspaceChangesViewModel
         var outcome = borrowResult.Value;
         if (outcome.Envelope is null || outcome.Result is null)
         {
-            if (HasDraftChanges)
+            await UiDispatcher.InvokeAsync(() =>
             {
-                EditParticipant.DiscardRequestLocalFormChanges();
-            }
+                if (HasDraftChanges)
+                {
+                    EditParticipant.DiscardRequestLocalFormChanges();
+                }
+            }).ConfigureAwait(false);
 
             await PublishAcceptedReviewCaptureAsync(outcome.Capture, "No unsaved changes").ConfigureAwait(false);
             return;

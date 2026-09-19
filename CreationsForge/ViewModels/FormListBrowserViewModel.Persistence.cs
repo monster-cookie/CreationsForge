@@ -34,10 +34,16 @@ public sealed partial class FormListBrowserViewModel
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        ResetWorkspaceGeneration();
-        var generation = WorkspaceGeneration;
-        using var loadCancellation = CreateWorkspaceLoadCancellation(cancellationToken);
-        SetStatus("Refreshing FormLists after workspace persistence...");
+        long generation = 0;
+        CancellationTokenSource? refreshCancellation = null;
+        await UiDispatcher.InvokeAsync(() =>
+        {
+            ResetWorkspaceGeneration();
+            generation = WorkspaceGeneration;
+            refreshCancellation = CreateWorkspaceLoadCancellation(cancellationToken);
+            SetStatus("Refreshing FormLists after workspace persistence...");
+        }).ConfigureAwait(false);
+        using var loadCancellation = refreshCancellation!;
         try
         {
             var result = await WorkspaceCoordinator.ExecuteAsync(

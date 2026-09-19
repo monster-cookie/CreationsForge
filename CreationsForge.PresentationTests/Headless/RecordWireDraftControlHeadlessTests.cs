@@ -9,6 +9,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using CreationsForge.Core.Engine.Contracts;
+using CreationsForge.Core.Engine.RecordWire;
 using CreationsForge.RecordEditing.Drafts;
 using CreationsForge.RecordEditing.Schema;
 using CreationsForge.Views.RecordEditing;
@@ -27,6 +28,75 @@ public sealed class RecordWireDraftControlHeadlessTests
         foreach (var node in CreateEveryNodeKind())
         {
             RecordWireDraftControlFactory.Create(node).ShouldNotBeNull();
+        }
+    }
+
+    /// <summary>Verifies translated names edit through language rows and maintain the target-language wire value without JSON input.</summary>
+    [AvaloniaFact]
+    public void TranslatedStringControl_EditRows_KeepsTargetValueAndOrderedTranslationsConsistent()
+    {
+        var target = CreateString("$.name.targetLanguage", "English");
+        var selectedText = CreateString("$.name.value", "Old name");
+        var value = new RecordWireNullableDraftNode(
+            "$.name.value", "value",
+            CreateDescriptor(RecordWireSchemaValueKind.Nullable, nonNullDescriptor: selectedText.Descriptor, allowsNull: true),
+            true, false, RecordWireDraftValueState.Seeded, false, selectedText,
+            (path, _) => EngineResult<RecordWireDraftNode>.Success(CreateString(path, string.Empty)));
+        var english = CreateTranslation("$.name.translations[0]", "English", "Old name");
+        var french = CreateTranslation("$.name.translations[1]", "French", "Ancien nom");
+        var translations = new RecordWireArrayDraftNode(
+            "$.name.translations", "translations", CreateDescriptor(RecordWireSchemaValueKind.Array),
+            true, false, RecordWireDraftValueState.Seeded, [english, french],
+            (index, _) => EngineResult<RecordWireDraftNode>.Success(CreateTranslation($"$.name.translations[{index}]", string.Empty, string.Empty)));
+        var name = new RecordWireTranslatedStringDraftNode(
+            "$.name", "Name", CreateDescriptor(RecordWireSchemaValueKind.TranslatedString),
+            true, false, RecordWireDraftValueState.Seeded,
+            [
+                new RecordWireObjectDraftProperty("targetLanguage", target),
+                new RecordWireObjectDraftProperty("value", value),
+                new RecordWireObjectDraftProperty("translations", translations)
+            ]);
+        var view = RecordWireDraftControlFactory.CreateFormField(name);
+        var window = Show(view);
+
+        try
+        {
+            var targetSelector = ControlFinder.FindByAutomationId<ComboBox>(view, "RecordWireTargetLanguage:$.name.targetLanguage").ShouldNotBeNull();
+            targetSelector.ItemsSource!.Cast<string>().ShouldContain("English");
+            targetSelector.ItemsSource!.Cast<string>().ShouldContain("French");
+            targetSelector.SelectedItem = "French";
+            selectedText.Value.ShouldBe("Ancien nom");
+
+            var englishText = ControlFinder.FindByAutomationId<TextBox>(view, "RecordWireTranslationText:$.name.translations[0].value").ShouldNotBeNull();
+            englishText.Text = "New name";
+            Dispatcher.UIThread.RunJobs();
+            english.FindProperty("value").ShouldBeOfType<RecordWireStringDraftNode>().Value.ShouldBe("New name");
+            targetSelector.SelectedItem = "English";
+            selectedText.Value.ShouldBe("New name");
+
+            var newLanguage = RecordWireLanguageOptions.GetNames().First(language => language is not ("English" or "French"));
+            targetSelector.SelectedItem = newLanguage;
+            value.IsNull.ShouldBeTrue();
+            RaiseClick(ControlFinder.FindByAutomationId<Button>(view, "RecordWireAddTranslation:$.name.translations").ShouldNotBeNull());
+            translations.Items.Count.ShouldBe(3);
+            var added = translations.Items[2].ShouldBeOfType<RecordWireObjectDraftNode>();
+            added.FindProperty("language").ShouldBeOfType<RecordWireStringDraftNode>().Value.ShouldBe(newLanguage);
+            ControlFinder.FindByAutomationId<TextBox>(view, "RecordWireTranslationText:$.name.translations[2].value")
+                .ShouldNotBeNull().Text = "Third name";
+            Dispatcher.UIThread.RunJobs();
+
+            var json = RecordWireDraftJsonWriter.WriteDetached(name, CancellationToken.None);
+            json.GetProperty("targetLanguage").GetString().ShouldBe(newLanguage);
+            json.GetProperty("value").GetString().ShouldBe("Third name");
+            json.GetProperty("translations").EnumerateArray().Select(item => item.GetProperty("language").GetString())
+                .ShouldBe(["English", "French", newLanguage]);
+
+            RaiseClick(ControlFinder.FindByAutomationId<Button>(view, "RecordWireTranslationRemove:$.name.translations[2]").ShouldNotBeNull());
+            RecordWireDraftJsonWriter.WriteDetached(name, CancellationToken.None).GetProperty("value").ValueKind.ShouldBe(System.Text.Json.JsonValueKind.Null);
+        }
+        finally
+        {
+            window.Close();
         }
     }
 
@@ -466,6 +536,22 @@ public sealed class RecordWireDraftControlHeadlessTests
             isReadOnly: false,
             RecordWireDraftValueState.Seeded,
             value);
+    }
+
+    /// <summary>Creates one ordered translation row with editable language and text children.</summary>
+    /// <param name="path">The row's current structural path.</param>
+    /// <param name="language">The exact language name, or an unset new-row value.</param>
+    /// <param name="text">The row's current translated text.</param>
+    /// <returns>A closed typed translation entry.</returns>
+    private static RecordWireObjectDraftNode CreateTranslation(string path, string language, string text)
+    {
+        return new RecordWireObjectDraftNode(
+            RecordWireDraftNodeKind.Object, path, "Translation", CreateDescriptor(RecordWireSchemaValueKind.Object),
+            true, false, RecordWireDraftValueState.Seeded,
+            [
+                new RecordWireObjectDraftProperty("language", CreateString($"{path}.language", language)),
+                new RecordWireObjectDraftProperty("value", CreateString($"{path}.value", text))
+            ]);
     }
 
     /// <summary>Creates one exact FormLink draft.</summary>

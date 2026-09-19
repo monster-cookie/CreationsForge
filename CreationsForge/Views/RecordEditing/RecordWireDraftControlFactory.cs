@@ -12,7 +12,7 @@ using CreationsForge.RecordEditing.Schema;
 namespace CreationsForge.Views.RecordEditing;
 
 /// <summary>Builds bounded Avalonia controls for the closed plugin wire draft-node set.</summary>
-internal static class RecordWireDraftControlFactory
+internal static partial class RecordWireDraftControlFactory
 {
     /// <summary>The maximum number of lightweight union choices shown by one search.</summary>
     private const int MaximumUnionSearchResults = 100;
@@ -114,7 +114,7 @@ internal static class RecordWireDraftControlFactory
             RecordWireDraftNodeKind.FormLinkOrIndex => CreateFormLinkOrIndexEditor((RecordWireFormLinkOrIndexDraftNode)node, pickReferenceAsync, forceReadOnly),
             RecordWireDraftNodeKind.FloatBits => CreateSpecializedObjectEditor((RecordWireFloatBitsDraftNode)node, "Exact floating-point bits are authoritative.", pickReferenceAsync, forceReadOnly),
             RecordWireDraftNodeKind.ByteArray => CreateSpecializedObjectEditor((RecordWireByteArrayDraftNode)node, "Base64 bytes and decoded length are validated together.", pickReferenceAsync, forceReadOnly),
-            RecordWireDraftNodeKind.TranslatedString => CreateSpecializedObjectEditor((RecordWireTranslatedStringDraftNode)node, "Translations retain their language keys and ordering.", pickReferenceAsync, forceReadOnly),
+            RecordWireDraftNodeKind.TranslatedString => CreateTranslatedStringEditor((RecordWireTranslatedStringDraftNode)node, pickReferenceAsync, forceReadOnly),
             RecordWireDraftNodeKind.Asset => CreateSpecializedObjectEditor((RecordWireAssetDraftNode)node, "The given path and explicit null state are authoritative.", pickReferenceAsync, forceReadOnly),
             RecordWireDraftNodeKind.Color => CreateSpecializedObjectEditor((RecordWireColorDraftNode)node, "Authoritative and redundant color values must remain consistent.", pickReferenceAsync, forceReadOnly),
             RecordWireDraftNodeKind.Array2D => CreateSpecializedObjectEditor((RecordWireArray2DDraftNode)node, "Dimensions, row boundaries, and cell order are preserved.", pickReferenceAsync, forceReadOnly),

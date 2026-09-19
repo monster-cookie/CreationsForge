@@ -20,6 +20,36 @@ namespace CreationsForge.PresentationTests.RecordEditing;
 /// <summary>Verifies revision-bound seed extraction, required-unset defaults, and exact command serialization.</summary>
 public sealed class FormListDraftFactoryTests
 {
+    /// <summary>Verifies both localized FormList name commands expose the table's typed fields and accept its synchronized wire shape.</summary>
+    [Fact]
+    public void Create_TranslatedName_StarfieldAndFallout4SerializeAndDecode()
+    {
+        foreach (var context in FormListCatalogTests.CreateContexts().Take(2))
+        {
+            var seed = CaptureSeed(context,
+                "\"Name\":{\"targetLanguage\":\"English\",\"value\":\"Original\",\"translations\":[{\"language\":\"English\",\"value\":\"Original\"}]}");
+            var command = context.SchemaCatalog.Nodes.Single(key =>
+                key.Kind == RecordWireSchemaNodeKind.Command && key.Name.EndsWith(".form-list.set-name", StringComparison.Ordinal));
+            var created = new FormListDraftFactory().Create(
+                context, command, seed, FormListDraftSeedSelection.CurrentValue(), RecordWireReadLimits.Default);
+            created.Succeeded.ShouldBeTrue(created.Error?.Message);
+            var name = created.Value!.Root.ShouldBeOfType<RecordWireObjectDraftNode>()
+                .FindProperty("name").ShouldBeOfType<RecordWireTranslatedStringDraftNode>();
+            name.FindProperty("targetLanguage").ShouldBeOfType<RecordWireStringDraftNode>().Value.ShouldBe("English");
+            var value = name.FindProperty("value").ShouldBeOfType<RecordWireNullableDraftNode>();
+            value.Value.ShouldBeOfType<RecordWireStringDraftNode>().Value = "Renamed";
+            var translation = name.FindProperty("translations").ShouldBeOfType<RecordWireArrayDraftNode>()
+                .Items.Single().ShouldBeOfType<RecordWireObjectDraftNode>();
+            translation.FindProperty("value").ShouldBeOfType<RecordWireStringDraftNode>().Value = "Renamed";
+
+            var serialized = new FormListDraftSerializer(new FormListDraftValidator()).Serialize(created.Value, RecordWireReadLimits.Default);
+            serialized.Succeeded.ShouldBeTrue(string.Join(Environment.NewLine, serialized.Issues.Select(issue => issue.Message)));
+            serialized.GetArguments().GetProperty("name").GetProperty("value").GetString().ShouldBe("Renamed");
+            context.Codec.Decode(command.Name, serialized.GetArguments(), RecordWireReadLimits.Default)
+                .Succeeded.ShouldBeTrue();
+        }
+    }
+
     /// <summary>The generated plugin reader used to verify every available default after presentation serialization.</summary>
     private static readonly ReadRecordTypeDelegate ReadRecordType = CreateReadRecordTypeDelegate();
 
