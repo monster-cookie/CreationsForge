@@ -279,6 +279,46 @@ public sealed class ReferenceReader
             resultRevision: revision);
     }
 
+    /// <summary>Visits each winning record's identity metadata in one pass over the participating plugin sources.</summary>
+    /// <param name="onRecord">Receives each lightweight winning context in deterministic load-order traversal order.</param>
+    /// <param name="onProgress">Receives the current plugin and cumulative count periodically and at each plugin boundary.</param>
+    /// <param name="cancellationToken">A token observed for every source and record.</param>
+    /// <returns>The number of winning records delivered to <paramref name="onRecord"/>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="onRecord"/> is <see langword="null"/>.</exception>
+    /// <exception cref="OperationCanceledException">Thrown when cancellation is requested.</exception>
+    public int VisitWinningRecordSummaries(
+        Action<ReferenceSearchMatch> onRecord,
+        Action<ModKey, int>? onProgress = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(onRecord);
+        var count = 0;
+        foreach (var sourceIndex in GetSourceIndices(RecordScope.WinningOverrides, null))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var source = Sources[sourceIndex];
+            foreach (var record in source.Mod.EnumerateMajorRecords())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (HasLaterContext(sourceIndex, record, cancellationToken))
+                {
+                    continue;
+                }
+
+                onRecord(CreateMatch(source, record));
+                count = checked(count + 1);
+                if (count % 4096 == 0)
+                {
+                    onProgress?.Invoke(source.ModKey, count);
+                }
+            }
+
+            onProgress?.Invoke(source.ModKey, count);
+        }
+
+        return count;
+    }
+
     /// <summary>Creates one immutable search match with origin identity and containing-plugin provenance kept separate.</summary>
     /// <param name="source">The plugin containing the context.</param>
     /// <param name="record">The borrowed record context.</param>

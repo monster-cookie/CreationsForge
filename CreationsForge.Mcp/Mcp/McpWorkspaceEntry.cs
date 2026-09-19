@@ -11,7 +11,7 @@ internal sealed class McpWorkspaceEntry : IAsyncDisposable
     private readonly SemaphoreSlim OperationGate = new(1, 1);
 
     /// <summary>The opaque engine workspace owned by this entry.</summary>
-    private readonly IFormListWorkspace Workspace;
+    private readonly IPluginWorkspace Workspace;
 
     /// <summary>Shares the single engine disposal outcome with every close and shutdown waiter.</summary>
     private readonly TaskCompletionSource DisposalCompletion = new(
@@ -29,7 +29,7 @@ internal sealed class McpWorkspaceEntry : IAsyncDisposable
     /// <summary>Initializes an entry that takes ownership of one engine workspace.</summary>
     /// <param name="workspace">The independently owned workspace.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="workspace"/> is <see langword="null"/>.</exception>
-    public McpWorkspaceEntry(IFormListWorkspace workspace)
+    public McpWorkspaceEntry(IPluginWorkspace workspace)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         Workspace = workspace;
@@ -50,7 +50,7 @@ internal sealed class McpWorkspaceEntry : IAsyncDisposable
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="operation"/> is <see langword="null"/>.</exception>
     /// <exception cref="OperationCanceledException">Thrown when cancellation is observed.</exception>
     public async ValueTask<EngineResult<T>> ExecuteAsync<T>(
-        Func<IFormListWorkspace, CancellationToken, ValueTask<EngineResult<T>>> operation,
+        Func<IPluginWorkspace, CancellationToken, ValueTask<EngineResult<T>>> operation,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(operation);

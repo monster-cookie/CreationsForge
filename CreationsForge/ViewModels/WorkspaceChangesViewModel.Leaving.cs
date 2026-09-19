@@ -493,7 +493,7 @@ public sealed partial class WorkspaceChangesViewModel
                     || descriptor.Output is null
                     || capture.State.Output is null
                     || !OutputAssociationsMatch(descriptor.Output, capture.State.Output)
-                    || capture.Preview.Comparisons.Count != 0
+                    || capture.Preview.HasStagedChanges
                     || HasDraftChanges
                     || HasPendingEditorOperation)
                 {

@@ -5,7 +5,7 @@ using Mutagen.Bethesda.Plugins.Records;
 namespace CreationsForge.PresentationTests.Support;
 
 /// <summary>Supplies programmable reference search and resolution behavior to picker presentation tests.</summary>
-internal sealed class ReferencePickerTestWorkspace : IFormListWorkspace
+internal sealed class ReferencePickerTestWorkspace : IPluginWorkspace
 {
     /// <summary>Initializes a reference picker test workspace.</summary>
     /// <param name="workspaceId">The non-empty workspace identity.</param>
@@ -111,6 +111,8 @@ internal sealed class ReferencePickerTestWorkspace : IFormListWorkspace
     }
 
     /// <inheritdoc />
+    public ValueTask<EngineResult<OperationReceipt>> ApplyGameSettingFloatEditAsync(GameSettingFloatEditRequest request, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
     public ValueTask<EngineResult<OperationReceipt>> ApplyFormListEditAsync(
         FormListEditRequest request,
         CancellationToken cancellationToken = default)

@@ -6,7 +6,7 @@ namespace CreationsForge.Core.Engine;
 /// <summary>
 /// Owns explicit evidence-validated output recovery adoption for one isolated workspace.
 /// </summary>
-public sealed partial class FormListWorkspace
+public sealed partial class PluginWorkspace
 {
     /// <inheritdoc />
     public async ValueTask<EngineResult<OutputSelectionReceipt>> ResolveOutputRecoveryAsync(

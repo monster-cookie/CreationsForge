@@ -2,6 +2,7 @@ using System.IO.Abstractions;
 using System.Security.Cryptography;
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Engine.PluginOutputs;
+using CreationsForge.Core.Engine.RecordInspection;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Binary.Parameters;
@@ -20,7 +21,7 @@ namespace CreationsForge.Skyrim.PluginAdapter;
 public sealed partial class SkyrimPluginOutputService
 {
     /// <summary>
-    /// Writes a complete private Skyrim output set, reopens it strictly, and proves Mutagen and FormList semantic equality before destination commit.
+    /// Writes a complete private Skyrim output set, reopens it strictly, and verifies FormLists and edited native major records before destination commit.
     /// </summary>
     /// <param name="sources">The borrowed complete Skyrim source lifetime.</param>
     /// <param name="output">The borrowed complete staged Skyrim output state.</param>
@@ -207,6 +208,7 @@ public sealed partial class SkyrimPluginOutputService
                 expected,
                 reopened,
                 masterResult.Value!,
+                provenance,
                 cancellationToken);
             if (reopenFailure is not null)
             {
@@ -356,6 +358,14 @@ public sealed partial class SkyrimPluginOutputService
         cancellationToken.ThrowIfCancellationRequested();
     }
 
+    /// <summary>Accepts only a staged record whose concrete native family matches its first-edit provenance.</summary>
+    private static bool MatchesEditFamily(IMajorRecordGetter record, string recordType) => recordType switch
+    {
+        "FormList" => record is IFormListGetter,
+        "GameSettingFloat" => record is IGameSettingFloatGetter,
+        _ => false
+    };
+
     /// <summary>Validates complete candidate identity, provenance, and trackable FormList mutation coverage.</summary>
     /// <param name="sources">The immutable source lifetime.</param>
     /// <param name="output">The selected output identity owner.</param>
@@ -412,11 +422,16 @@ public sealed partial class SkyrimPluginOutputService
             var matches = candidate.EnumerateMajorRecords()
                 .Where(record => record.FormKey == entry.TargetFormKey)
                 .ToArray();
-            if (matches.Length != 1 || matches[0] is not IFormListGetter)
+            if (matches.Length != 1 || !MatchesEditFamily(matches[0], entry.RecordType))
             {
                 return (
                     EngineErrorCode.ValidationFailed,
                     $"Skyrim edit provenance target '{entry.TargetFormKey}' is missing, duplicated, or belongs to another Mutagen family.");
+            }
+
+            if (matches[0] is IGameSettingFloatGetter setting && setting.EditorID?.StartsWith('f') != true)
+            {
+                return (EngineErrorCode.ValidationFailed, $"GameSettingFloat '{entry.TargetFormKey}' needs an EditorID beginning with f before save.");
             }
 
             if (entry.BaselineKind == EditBaselineKind.SourceContext
@@ -516,16 +531,18 @@ public sealed partial class SkyrimPluginOutputService
         return EngineResult<IReadOnlyList<ModKey>>.Success(Array.AsReadOnly(retained));
     }
 
-    /// <summary>Validates complete Mutagen equality, exact master retention, and all-field FormList equality after strict reopen.</summary>
+    /// <summary>Validates complete Mutagen equality, exact master retention, FormLists, and edited non-FormList records after strict reopen.</summary>
     /// <param name="expected">The detached normalized output supplied to the writer.</param>
     /// <param name="reopened">The strictly reopened staged output.</param>
     /// <param name="retainedMasters">The exact expected admitted master sequence.</param>
+    /// <param name="provenance">The staged edit identities whose non-FormList records need complete field verification.</param>
     /// <param name="cancellationToken">A token observed throughout Mutagen comparison.</param>
     /// <returns>A typed preservation failure, or <see langword="null"/>.</returns>
     private (EngineErrorCode Code, string Message)? ValidateReopened(
         SkyrimMod expected,
         SkyrimMod reopened,
         IReadOnlyList<ModKey> retainedMasters,
+        IReadOnlyList<RecordEditProvenance> provenance,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -544,11 +561,12 @@ public sealed partial class SkyrimPluginOutputService
                 "The staged Skyrim output changed one or more complete record fields during serialization or strict reopen.");
         }
 
-        if (!FormListsEqual(expected, reopened, cancellationToken))
+        if (!FormListsEqual(expected, reopened, cancellationToken)
+            || !EditedMajorRecordsEqual(expected, reopened, provenance, cancellationToken))
         {
             return (
                 EngineErrorCode.ValidationFailed,
-                "The staged Skyrim output changed one or more FormList fields during serialization or strict reopen.");
+                "The staged Skyrim output changed one or more FormList or edited major-record fields during serialization or strict reopen.");
         }
 
         return null;
@@ -601,6 +619,26 @@ public sealed partial class SkyrimPluginOutputService
         }
 
         return true;
+    }
+
+    /// <summary>Compares only staged non-FormList targets to avoid treating untouched Mutagen normalization as an edit failure.</summary>
+    /// <param name="left">The expected complete output.</param>
+    /// <param name="right">The strictly reopened output.</param>
+    /// <param name="provenance">The staged edit identities that select records for verification.</param>
+    /// <param name="cancellationToken">A token observed during record and field comparison.</param>
+    /// <returns><see langword="true"/> when all edited non-FormList records retain their native fields.</returns>
+    private bool EditedMajorRecordsEqual(
+        ISkyrimModGetter left,
+        ISkyrimModGetter right,
+        IReadOnlyList<RecordEditProvenance> provenance,
+        CancellationToken cancellationToken)
+    {
+        var editedKeys = provenance.Select(entry => entry.TargetFormKey).ToHashSet();
+        return MajorRecordSetComparer.AreEqual(
+            left.EnumerateMajorRecords().Where(record => record is not IFormListGetter && editedKeys.Contains(record.FormKey)),
+            right.EnumerateMajorRecords().Where(record => record is not IFormListGetter && editedKeys.Contains(record.FormKey)),
+            MajorRecordInspector,
+            cancellationToken);
     }
 
     /// <summary>Rejects unrelated records from the bounded new localized-output preservation surface.</summary>

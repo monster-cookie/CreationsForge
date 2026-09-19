@@ -18,7 +18,7 @@ public sealed class EngineServices : IAsyncDisposable
     /// <param name="formListEditWireSchemaCatalogs">The immutable per-game schema catalogs.</param>
     internal EngineServices(
         IContainer container,
-        IFormListWorkspaceFactory workspaceFactory,
+        IPluginWorkspaceFactory workspaceFactory,
         IWorkspaceSaveCoordinator saveCoordinator,
         IReadOnlyList<IFormListEditWireCodec> formListEditWireCodecs,
         IReadOnlyList<IFormListEditWireSchemaCatalog> formListEditWireSchemaCatalogs)
@@ -31,7 +31,7 @@ public sealed class EngineServices : IAsyncDisposable
     }
 
     /// <summary>Gets the factory for independent workspaces, usable while this service lifetime remains open.</summary>
-    public IFormListWorkspaceFactory WorkspaceFactory { get; }
+    public IPluginWorkspaceFactory WorkspaceFactory { get; }
 
     /// <summary>Gets the coordinator for evidence-based save inspection and explicit repair while this lifetime remains open.</summary>
     public IWorkspaceSaveCoordinator SaveCoordinator { get; }

@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using CreationsForge.Core.Engine.Contracts;
-using CreationsForge.Core.Enums;
 using CreationsForge.Core.Services.Interfaces;
 using CreationsForge.Services;
 using CreationsForge.Services.Interfaces;
@@ -63,6 +62,12 @@ public sealed partial class WorkspaceSelectionViewModel : ViewModelBase
 
     /// <summary>The selected output master style.</summary>
     private OutputMasterStyle OutputMasterStyleValue = OutputMasterStyle.Full;
+
+    /// <summary>The file extension selected for a newly created plugin.</summary>
+    private string NewPluginExtensionValue = ".esp";
+
+    /// <summary>The user-entered new-plugin name without its selected extension.</summary>
+    private string NewPluginFileNameValue = string.Empty;
 
     /// <summary>The master styles supported by <see cref="SelectedGame"/>.</summary>
     private IReadOnlyList<OutputMasterStyle> OutputMasterStyleOptionsValue;
@@ -145,7 +150,12 @@ public sealed partial class WorkspaceSelectionViewModel : ViewModelBase
             IsBusy = false;
             ResetPluginCatalog();
             OutputMasterStyleOptions = value.SupportedMasterStyles;
-            if (!OutputMasterStyleOptions.Contains(OutputMasterStyle))
+            OnPropertyChanged(nameof(NewPluginMasterStyleOptions));
+            if (NewPluginExtension == ".esl")
+            {
+                OutputMasterStyle = OutputMasterStyle.Small;
+            }
+            else if (NewPluginExtension == ".esp" || !OutputMasterStyleOptions.Contains(OutputMasterStyle))
             {
                 OutputMasterStyle = OutputMasterStyle.Full;
             }
@@ -199,6 +209,51 @@ public sealed partial class WorkspaceSelectionViewModel : ViewModelBase
         get => OutputMasterStyleValue;
         set => SetProperty(ref OutputMasterStyleValue, value);
     }
+
+    /// <summary>Gets the file extensions available when creating a new plugin.</summary>
+    public IReadOnlyList<string> NewPluginExtensionOptions { get; } = [".esp", ".esm", ".esl"];
+
+    /// <summary>Gets or sets the extension used for a newly created plugin.</summary>
+    public string NewPluginExtension
+    {
+        get => NewPluginExtensionValue;
+        set
+        {
+            if (!SetProperty(ref NewPluginExtensionValue, value))
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(NewPluginMasterStyleOptions));
+            OnPropertyChanged(nameof(NewPluginSupportsMasterSize));
+            if (value == ".esl")
+            {
+                OutputMasterStyle = OutputMasterStyle.Small;
+            }
+            else if (value == ".esp")
+            {
+                OutputMasterStyle = OutputMasterStyle.Full;
+            }
+        }
+    }
+
+    /// <summary>Gets or sets the new-plugin name entered without an extension or directory path.</summary>
+    public string NewPluginFileName
+    {
+        get => NewPluginFileNameValue;
+        set => SetProperty(ref NewPluginFileNameValue, value ?? string.Empty);
+    }
+
+    /// <summary>Gets whether a new plugin's file type exposes a master-size choice.</summary>
+    public bool NewPluginSupportsMasterSize => NewPluginExtension == ".esm";
+
+    /// <summary>Gets the fixed or selectable master styles valid for the new plugin extension.</summary>
+    public IReadOnlyList<OutputMasterStyle> NewPluginMasterStyleOptions => NewPluginExtension switch
+    {
+        ".esl" => [OutputMasterStyle.Small],
+        ".esp" => [OutputMasterStyle.Full],
+        _ => OutputMasterStyleOptions
+    };
 
     /// <summary>Gets the output master styles supported by the selected game release.</summary>
     public IReadOnlyList<OutputMasterStyle> OutputMasterStyleOptions

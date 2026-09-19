@@ -58,7 +58,11 @@ public sealed class WorkspacePathPicker : IWorkspacePathPicker
     }
 
     /// <inheritdoc />
-    public async Task<string?> PickOutputPluginAsync(OutputSelectionMode mode, CancellationToken cancellationToken = default)
+    public async Task<string?> PickOutputPluginAsync(
+        OutputSelectionMode mode,
+        string? suggestedDirectoryPath = null,
+        string? preferredExtension = null,
+        CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (mode == OutputSelectionMode.OpenExisting)
@@ -72,11 +76,22 @@ public sealed class WorkspacePathPicker : IWorkspacePathPicker
             throw new ArgumentOutOfRangeException(nameof(mode));
         }
 
+        var extension = preferredExtension?.TrimStart('.') ?? "esp";
+        var selectedFileType = new FilePickerFileType($"{extension.ToUpperInvariant()} plugin")
+        {
+            Patterns = [$"*.{extension}"]
+        };
+        var startLocation = !string.IsNullOrWhiteSpace(suggestedDirectoryPath) && Directory.Exists(suggestedDirectoryPath)
+            ? await MainWindow.StorageProvider.TryGetFolderFromPathAsync(suggestedDirectoryPath)
+            : null;
+        cancellationToken.ThrowIfCancellationRequested();
         var file = await MainWindow.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
             Title = "Select new output plugin",
-            DefaultExtension = "esp",
-            FileTypeChoices = PluginFileTypes,
+            DefaultExtension = extension,
+            SuggestedFileType = selectedFileType,
+            FileTypeChoices = [selectedFileType],
+            SuggestedStartLocation = startLocation,
             ShowOverwritePrompt = false
         });
         cancellationToken.ThrowIfCancellationRequested();

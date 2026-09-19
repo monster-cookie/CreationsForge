@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace CreationsForge.Core.Engine;
 
 /// <summary>Exposes family-neutral contextual reads through the workspace's serialized plugin lifetime.</summary>
-public sealed partial class FormListWorkspace
+public sealed partial class PluginWorkspace
 {
     /// <inheritdoc />
     public ValueTask<EngineResult<RecordRead>> ReadRecordContextAsync(
@@ -63,6 +63,18 @@ public sealed partial class FormListWorkspace
                         result.Error ?? new EngineError(EngineErrorCode.UnexpectedFailure, "The adapter returned an invalid major-record list page."),
                         warnings: result.Warnings);
             },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public ValueTask<EngineResult<int>> VisitWinningRecordSummariesAsync(
+        Action<ReferenceSearchMatch> onRecord,
+        Action<Mutagen.Bethesda.Plugins.ModKey, int>? onProgress = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(onRecord);
+        return ExecuteReadAsync(
+            () => Adapter.VisitWinningRecordSummaries(Sources!, Output, onRecord, onProgress, cancellationToken),
             cancellationToken);
     }
 

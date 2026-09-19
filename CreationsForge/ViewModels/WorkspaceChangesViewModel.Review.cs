@@ -324,6 +324,10 @@ public sealed partial class WorkspaceChangesViewModel
                     comparison,
                     JsonTreeProjectionService.Project(comparison.Before, cancellationToken),
                     JsonTreeProjectionService.Project(comparison.After, cancellationToken)))
+                .Concat(capture.Preview.MajorRecordComparisons.Select(comparison => new WorkspaceChangeItemViewModel(
+                    comparison,
+                    JsonTreeProjectionService.Project(comparison.Before, cancellationToken),
+                    JsonTreeProjectionService.Project(comparison.After, cancellationToken))))
                 .ToArray());
         }
         catch (OperationCanceledException)
@@ -342,7 +346,8 @@ public sealed partial class WorkspaceChangesViewModel
 
         var warnings = CombineWarnings(
             capture.Warnings,
-            capture.Preview.Comparisons.SelectMany(comparison => comparison.Warnings));
+            capture.Preview.Comparisons.SelectMany(comparison => comparison.Warnings)
+                .Concat(capture.Preview.MajorRecordComparisons.SelectMany(comparison => comparison.Warnings)));
         var review = new WorkspaceChangeReview(
             capture.WorkspaceId,
             capture.State.Game,
@@ -353,7 +358,8 @@ public sealed partial class WorkspaceChangesViewModel
             capture.Preview.Comparisons,
             items,
             capture.Preview.UnresolvedReferenceCount,
-            warnings);
+            warnings,
+            capture.Preview.MajorRecordComparisons);
 
         await UiDispatcher.InvokeAsync(() =>
         {
@@ -379,7 +385,7 @@ public sealed partial class WorkspaceChangesViewModel
     /// <param name="cancellationToken">A token that cancels read-only work.</param>
     /// <returns>A detached capture or typed identity, state, or preview failure.</returns>
     private static async ValueTask<EngineResult<WorkspaceReviewCapture>> CaptureReviewWithinBorrowAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         bool allowBlockedSynchronization,
         CancellationToken cancellationToken)
     {
@@ -457,7 +463,7 @@ public sealed partial class WorkspaceChangesViewModel
     /// <param name="requireOutput">Whether a selected output and complete baseline are required.</param>
     /// <returns>A typed validation failure, or <see langword="null"/> when the result is exact.</returns>
     private static EngineError? ValidateStateResult(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         EngineResult<WorkspaceState> result,
         bool requireOutput)
     {

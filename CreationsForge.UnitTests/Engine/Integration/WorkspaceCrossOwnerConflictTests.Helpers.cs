@@ -139,7 +139,7 @@ public sealed partial class WorkspaceCrossOwnerConflictTests
     /// <param name="editorId">The new staged EditorID.</param>
     /// <returns>The edit identity and final revision.</returns>
     private static async Task<(Guid EditId, WorkspaceRevision Revision)> StageExistingEditAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         FormKey formKey,
         string editorId)
     {
@@ -169,7 +169,7 @@ public sealed partial class WorkspaceCrossOwnerConflictTests
     /// <param name="mode">Whether the output must be absent or present.</param>
     /// <returns>The successful selection receipt.</returns>
     private static async Task<OutputSelectionReceipt> SelectOutputAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         OutputAssociation output,
         OutputSelectionMode mode)
     {
@@ -185,7 +185,7 @@ public sealed partial class WorkspaceCrossOwnerConflictTests
     /// <summary>Reads one complete atomic workspace state.</summary>
     /// <param name="workspace">The live workspace.</param>
     /// <returns>The successful immutable state snapshot.</returns>
-    private static async Task<WorkspaceState> ReadStateAsync(IFormListWorkspace workspace)
+    private static async Task<WorkspaceState> ReadStateAsync(IPluginWorkspace workspace)
     {
         var result = await workspace.ReadStateAsync(TestContext.Current.CancellationToken);
         result.Succeeded.ShouldBeTrue(DescribeError(result.Error));
@@ -195,7 +195,7 @@ public sealed partial class WorkspaceCrossOwnerConflictTests
     /// <summary>Reads one complete detached staged preview.</summary>
     /// <param name="workspace">The live workspace.</param>
     /// <returns>The successful immutable preview snapshot.</returns>
-    private static async Task<WorkspacePreview> ReadPreviewAsync(IFormListWorkspace workspace)
+    private static async Task<WorkspacePreview> ReadPreviewAsync(IPluginWorkspace workspace)
     {
         var result = await workspace.PreviewAsync(TestContext.Current.CancellationToken);
         result.Succeeded.ShouldBeTrue(DescribeError(result.Error));
@@ -208,7 +208,7 @@ public sealed partial class WorkspaceCrossOwnerConflictTests
     /// <param name="formKey">The output FormList identity.</param>
     /// <returns>The detached EditorID value.</returns>
     private static async Task<string?> ReadEditorIdAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         OutputAssociation output,
         FormKey formKey)
     {
@@ -332,7 +332,7 @@ public sealed partial class WorkspaceCrossOwnerConflictTests
     private sealed class OutputOwnerSession : IAsyncDisposable
     {
         /// <summary>The live workspace, cleared when disposal begins.</summary>
-        private IFormListWorkspace? _workspace;
+        private IPluginWorkspace? _workspace;
 
         /// <summary>Initializes a staged owner session.</summary>
         /// <param name="workspace">The live independently owned workspace.</param>
@@ -346,7 +346,7 @@ public sealed partial class WorkspaceCrossOwnerConflictTests
         /// <param name="state">The complete state captured after staging.</param>
         /// <param name="preview">The detached preview captured after staging.</param>
         internal OutputOwnerSession(
-            IFormListWorkspace workspace,
+            IPluginWorkspace workspace,
             OutputSelectionReceipt selection,
             Guid editId,
             string editorId,
@@ -371,7 +371,7 @@ public sealed partial class WorkspaceCrossOwnerConflictTests
         }
 
         /// <summary>Gets the live workspace.</summary>
-        internal IFormListWorkspace Workspace => _workspace ?? throw new ObjectDisposedException(nameof(OutputOwnerSession));
+        internal IPluginWorkspace Workspace => _workspace ?? throw new ObjectDisposedException(nameof(OutputOwnerSession));
 
         /// <summary>Gets the stable workspace identity even after the live owner is disposed.</summary>
         internal Guid WorkspaceId { get; }

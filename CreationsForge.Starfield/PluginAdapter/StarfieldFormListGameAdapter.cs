@@ -54,9 +54,7 @@ public sealed class StarfieldFormListGameAdapter : IFormListGameAdapter
     public IFormListInspector Inspector => OutputService.Inspector;
 
     /// <inheritdoc />
-    public IMajorRecordInspector MajorRecordInspector { get; } = new MutagenMajorRecordInspector(
-        typeof(StarfieldMajorRecord),
-        "Mutagen.Bethesda.Starfield/0.55.0-alpha.53");
+    public IMajorRecordInspector MajorRecordInspector => OutputService.MajorRecordInspector;
 
     /// <inheritdoc />
     public bool SupportsRelease(GameRelease release)
@@ -167,6 +165,20 @@ public sealed class StarfieldFormListGameAdapter : IFormListGameAdapter
         }
 
         return EditService.ApplyEdit(sourceResult.Value!, outputResult.Value!, target, edit);
+    }
+
+    /// <inheritdoc />
+    public EngineResult<RecordEditMutationResult> ApplyGameSettingFloatEdit(
+        IPluginSourceSet sources,
+        IPluginOutputState candidate,
+        FormKey target,
+        GameSettingFloatEditRequest request,
+        CancellationToken cancellationToken)
+    {
+        var outputResult = RequireOutput<RecordEditMutationResult>(candidate);
+        return outputResult.Succeeded
+            ? OutputService.ApplyGameSettingFloatEdit(outputResult.Value!, target, request, cancellationToken)
+            : EngineResult<RecordEditMutationResult>.Failure(outputResult.Error!);
     }
 
     /// <inheritdoc />
@@ -374,6 +386,27 @@ public sealed class StarfieldFormListGameAdapter : IFormListGameAdapter
     }
 
     /// <inheritdoc />
+    public EngineResult<int> VisitWinningRecordSummaries(
+        IPluginSourceSet sources,
+        IPluginOutputState? output,
+        Action<ReferenceSearchMatch> onRecord,
+        Action<ModKey, int>? onProgress,
+        CancellationToken cancellationToken)
+    {
+        var sourceResult = RequireSources<int>(sources);
+        if (!sourceResult.Succeeded)
+        {
+            return EngineResult<int>.Failure(sourceResult.Error!);
+        }
+
+        var readerResult = CreateReader<int>(sources, output, cancellationToken);
+        return readerResult.Succeeded
+            ? Bind(sourceResult.Value!, EngineResult<int>.Success(
+                readerResult.Value!.VisitWinningRecordSummaries(onRecord, onProgress, cancellationToken)))
+            : Failure<int>(sourceResult.Value!, readerResult.Error!);
+    }
+
+    /// <inheritdoc />
     public EngineResult<ReferenceResolution> ResolveReference(
         IPluginSourceSet sources,
         IPluginOutputState? output,
@@ -414,9 +447,35 @@ public sealed class StarfieldFormListGameAdapter : IFormListGameAdapter
             return EngineResult<WorkspacePreview>.Failure(outputResult.Error!);
         }
 
-        return Bind(
-            sourceResult.Value!,
-            EditService.Preview(sourceResult.Value!, outputResult.Value!));
+        var starfieldSources = sourceResult.Value!;
+        var starfieldOutput = outputResult.Value!;
+        var formPreview = EditService.Preview(starfieldSources, starfieldOutput);
+        if (!formPreview.Succeeded || formPreview.Value is null)
+        {
+            return Bind(starfieldSources, formPreview);
+        }
+
+        var nativePreview = MajorRecordEditPreviewBuilder.Build(
+            starfieldOutput.GetEditProvenance(),
+            starfieldSources.Baseline.BaselineId,
+            starfieldOutput.Association,
+            starfieldSources.GetMutagenMods().Count,
+            MajorRecordInspector,
+            key => starfieldOutput.BorrowOriginalMod().GameSettings.SingleOrDefault(record => record.FormKey == key),
+            key => starfieldOutput.BorrowMod().GameSettings.SingleOrDefault(record => record.FormKey == key),
+            request => starfieldSources.ReadRecordContext(request, CancellationToken.None),
+            CancellationToken.None);
+        if (!nativePreview.Succeeded || nativePreview.Value is null)
+        {
+            return Bind(starfieldSources, EngineResult<WorkspacePreview>.Failure(nativePreview.Error!));
+        }
+
+        var preview = formPreview.Value;
+        return Bind(starfieldSources, EngineResult<WorkspacePreview>.Success(new WorkspacePreview(
+            preview.Comparisons,
+            preview.UnresolvedReferenceCount,
+            preview.Warnings,
+            nativePreview.Value), warnings: preview.Warnings));
     }
 
     /// <inheritdoc />

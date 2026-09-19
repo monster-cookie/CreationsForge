@@ -64,7 +64,7 @@ internal sealed class DesktopApplyResultGate : IWorkspaceCoordinator
     /// <returns>The exact production result after any controlled response delay.</returns>
     /// <exception cref="OperationCanceledException">Propagated when the production coordinator cancels before returning a result.</exception>
     public async ValueTask<EngineResult<T>> ExecuteAsync<T>(
-        Func<IFormListWorkspace, CancellationToken, ValueTask<EngineResult<T>>> operation,
+        Func<IPluginWorkspace, CancellationToken, ValueTask<EngineResult<T>>> operation,
         CancellationToken cancellationToken = default)
     {
         var result = await Inner.ExecuteAsync(operation, cancellationToken).ConfigureAwait(false);

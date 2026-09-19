@@ -9,6 +9,24 @@ namespace CreationsForge.PresentationTests.ViewModels;
 /// <content>Verifies save, discard, exact envelope validation, and post-persistence refresh behavior.</content>
 public sealed partial class WorkspaceChangesViewModelTests
 {
+    /// <summary>Verifies a native-only staged record reaches the engine save call.</summary>
+    [Fact]
+    public async Task SaveChangesAsync_NativeOnlyEdit_DispatchesSave()
+    {
+        await using var context = WorkspaceChangesTestContext.CreateReady(hasStagedChanges: true);
+        StageOnlyGameSettingFloat(context);
+        context.DialogService.OnShowAsync = async (viewModel, _) =>
+        {
+            viewModel.CanSaveChanges.ShouldBeTrue();
+            await viewModel.SaveChangesAsync();
+            return WorkspaceChangesDialogResult.KeepEditing;
+        };
+
+        await context.ViewModel.ShowSaveChangesDialogAsync();
+
+        context.Workspace!.SaveRequests.ShouldHaveSingleItem();
+    }
+
     /// <summary>Verifies mutation methods cannot dispatch Core work without an owned dialog transition.</summary>
     /// <returns>A task that completes after the scenario assertions.</returns>
     [Fact]

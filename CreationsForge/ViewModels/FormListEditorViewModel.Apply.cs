@@ -214,7 +214,7 @@ public sealed partial class FormListEditorViewModel
     /// <param name="cancellationToken">The post-mutation read token.</param>
     /// <returns>A known-success outcome even when preview or seed capture fails.</returns>
     private async ValueTask<FormListEditorApplyOutcome> ReadApplyFollowUpAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         WorkspaceDescriptor descriptor,
         FormListWireCatalogContext catalogContext,
         FormListEditorSession session,
@@ -345,6 +345,10 @@ public sealed partial class FormListEditorViewModel
             SetWarnings(outcome.Warnings);
             ClearError();
             EngineError? draftRefreshError = null;
+            if (!IsSavingFormValue)
+            {
+                draftRefreshError = RebuildFormFields();
+            }
             if (outcome.Seed is not null &&
                 CatalogContextValue is not null &&
                 SelectedCommandValue is not null)
@@ -386,14 +390,17 @@ public sealed partial class FormListEditorViewModel
             }
         }).ConfigureAwait(false);
 
-        if (!IsCurrentGeneration(generation, session.WorkspaceId))
+        if (!IsCurrentGeneration(generation, session.WorkspaceId) || IsSavingFormValue)
         {
             return;
         }
 
         try
         {
-            await Host.RefreshAsync(session.FormKey, cancellationToken).ConfigureAwait(false);
+            Task refreshTask = Task.CompletedTask;
+            await UiDispatcher.InvokeAsync(() =>
+                refreshTask = Host.RefreshAsync(session.FormKey, cancellationToken)).ConfigureAwait(false);
+            await refreshTask.ConfigureAwait(false);
         }
         catch (Exception exception)
         {
@@ -402,6 +409,16 @@ public sealed partial class FormListEditorViewModel
                 if (IsCurrentGeneration(generation, session.WorkspaceId))
                 {
                     PublishError(new EngineError(EngineErrorCode.UnexpectedFailure, $"Apply succeeded; refresh failed: {exception.Message}"));
+                }
+            }).ConfigureAwait(false);
+        }
+        finally
+        {
+            await UiDispatcher.InvokeAsync(() =>
+            {
+                if (IsCurrentGeneration(generation, session.WorkspaceId))
+                {
+                    StagedRecordChanged?.Invoke(session.FormKey);
                 }
             }).ConfigureAwait(false);
         }

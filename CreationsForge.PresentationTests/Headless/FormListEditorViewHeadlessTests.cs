@@ -146,6 +146,20 @@ public sealed class FormListEditorViewHeadlessTests
                 bitmap.Save(screenshotPath, PngBitmapEncoderOptions.Default);
                 new FileInfo(screenshotPath).Length.ShouldBeGreaterThan(0L);
             }
+
+            editor.DiscardFormChangesCommand.Execute(null);
+            var recordForm = new FormListEditorView(editor, showBeginActions: false);
+            window.Content = recordForm;
+            Dispatcher.UIThread.RunJobs();
+            ControlFinder.FindByAutomationId<ComboBox>(recordForm, "FormListCommandSelector").ShouldBeNull();
+            ControlFinder.FindByAutomationId<Button>(recordForm, "FormListEditorSaveRecordButton").ShouldNotBeNull();
+            ControlFinder.FindByAutomationId<StackPanel>(recordForm, "FormListFieldform-list.set-editor-id").ShouldNotBeNull();
+            var editorIdField = editor.FieldDrafts.Single(candidate => candidate.Title == "Editor ID");
+            editorIdField.Draft.Root.ShouldBeOfType<RecordWireObjectDraftNode>()
+                .FindProperty("editorId").ShouldBeOfType<RecordWireStringDraftNode>().Value = "DirectFieldValue";
+            Dispatcher.UIThread.RunJobs();
+            ControlFinder.FindByAutomationId<Button>(recordForm, "FormListEditorSaveRecordButton")!
+                .IsEnabled.ShouldBeTrue();
         }
         finally
         {
@@ -201,7 +215,7 @@ public sealed class FormListEditorViewHeadlessTests
     }
 
     /// <summary>Implements the exact successful Begin reads needed by the reattachment regression.</summary>
-    private sealed class ReattachEditorWorkspace : IFormListWorkspace
+    private sealed class ReattachEditorWorkspace : IPluginWorkspace
     {
         /// <summary>The selected output identity.</summary>
         private readonly OutputAssociation Output;
@@ -289,7 +303,7 @@ public sealed class FormListEditorViewHeadlessTests
                 Output.PluginPath,
                 1,
                 PluginRole.Output);
-            using var document = JsonDocument.Parse($"{{\"FormKey\":\"{FormKey}\",\"EditorID\":\"BeforeDetach\",\"FormVersion\":44}}");
+            using var document = JsonDocument.Parse($"{{\"MajorRecordFlagsRaw\":0,\"FormKey\":\"{FormKey}\",\"VersionControl\":0,\"EditorID\":\"BeforeDetach\",\"FormVersion\":44,\"Version2\":0,\"SkyrimMajorRecordFlags\":0,\"Items\":[]}}");
             return ValueTask.FromResult(EngineResult<FormListReadView>.Success(
                 new FormListReadView(context, document.RootElement.Clone()),
                 WorkspaceId,
@@ -319,6 +333,8 @@ public sealed class FormListEditorViewHeadlessTests
         /// <inheritdoc />
         public ValueTask<EngineResult<ReferenceResolution>> ResolveReferenceAsync(ReferenceRequest request, CancellationToken cancellationToken = default) => throw Unsupported();
         /// <inheritdoc />
+        public ValueTask<EngineResult<OperationReceipt>> ApplyGameSettingFloatEditAsync(GameSettingFloatEditRequest request, CancellationToken cancellationToken = default) => throw Unsupported();
+
         public ValueTask<EngineResult<OperationReceipt>> ApplyFormListEditAsync(FormListEditRequest request, CancellationToken cancellationToken = default) => throw Unsupported();
         /// <inheritdoc />
         public ValueTask<EngineResult<FormListComparison>> CompareFormListAsync(CompareFormListRequest request, CancellationToken cancellationToken = default) => throw Unsupported();

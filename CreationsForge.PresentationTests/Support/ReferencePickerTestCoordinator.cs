@@ -10,12 +10,12 @@ namespace CreationsForge.PresentationTests.Support;
 internal sealed class ReferencePickerTestCoordinator : IWorkspaceCoordinator
 {
     /// <summary>The test workspace borrowed by picker operations.</summary>
-    private readonly IFormListWorkspace Workspace;
+    private readonly IPluginWorkspace Workspace;
 
     /// <summary>Initializes a picker test coordinator with one active workspace.</summary>
     /// <param name="workspace">The workspace supplied to borrowed operations.</param>
     /// <param name="descriptor">The initial active workspace descriptor.</param>
-    public ReferencePickerTestCoordinator(IFormListWorkspace workspace, WorkspaceDescriptor descriptor)
+    public ReferencePickerTestCoordinator(IPluginWorkspace workspace, WorkspaceDescriptor descriptor)
     {
         Workspace = workspace;
         CurrentWorkspace = descriptor;
@@ -37,7 +37,7 @@ internal sealed class ReferencePickerTestCoordinator : IWorkspaceCoordinator
 
     /// <inheritdoc />
     public ValueTask<EngineResult<T>> ExecuteAsync<T>(
-        Func<IFormListWorkspace, CancellationToken, ValueTask<EngineResult<T>>> operation,
+        Func<IPluginWorkspace, CancellationToken, ValueTask<EngineResult<T>>> operation,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();

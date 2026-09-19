@@ -267,7 +267,7 @@ public sealed partial class FormListEditorViewModel
     /// <param name="cancellationToken">The operation token used only for post-mutation reads.</param>
     /// <returns>A known-success outcome even when seed or preview capture fails.</returns>
     private async ValueTask<FormListEditorBeginOutcome> ReadBeginFollowUpAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         WorkspaceDescriptor descriptor,
         FormListWireCatalogContext catalogContext,
         IReadOnlyList<FormListCommandPresentation> commands,
@@ -380,6 +380,7 @@ public sealed partial class FormListEditorViewModel
             SeedValue = outcome.Seed;
             AvailableCommandsValue = outcome.Commands;
             SelectedCommandValue = null;
+            ClearFormFields();
             DetachDraft();
             IsStagedChangesKnownValue = outcome.PreviewKnown;
             HasStagedChangesValue = outcome.HasStagedChanges;
@@ -400,6 +401,11 @@ public sealed partial class FormListEditorViewModel
             else
             {
                 draftError = new EngineError(EngineErrorCode.ValidationFailed, "The exact plugin wire catalog contains no editor commands.");
+            }
+
+            if (draftError is null)
+            {
+                draftError = RebuildFormFields();
             }
 
             if (draftError is not null)
@@ -426,7 +432,10 @@ public sealed partial class FormListEditorViewModel
 
         try
         {
-            await Host.RefreshAsync(outcome.Receipt.FormKey, cancellationToken).ConfigureAwait(false);
+            Task refreshTask = Task.CompletedTask;
+            await UiDispatcher.InvokeAsync(() =>
+                refreshTask = Host.RefreshAsync(outcome.Receipt.FormKey, cancellationToken)).ConfigureAwait(false);
+            await refreshTask.ConfigureAwait(false);
         }
         catch (Exception exception)
         {

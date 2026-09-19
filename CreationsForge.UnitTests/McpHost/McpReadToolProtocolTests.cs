@@ -27,7 +27,7 @@ public sealed class McpReadToolProtocolTests
     public async Task ToolErrors_ThroughSdkProtocol_BoundAndSanitizeUntrustedDetails()
     {
         await using var registry = new McpWorkspaceRegistry();
-        var factory = new Mock<IFormListWorkspaceFactory>();
+        var factory = new Mock<IPluginWorkspaceFactory>();
         var tools = new McpToolCatalog().CreateTools(registry, "protocol-test", factory.Object);
         await using var harness = await ProtocolHarness.CreateAsync(tools);
         var hostileName = new string('x', 100_000);
@@ -55,7 +55,7 @@ public sealed class McpReadToolProtocolTests
     public async Task ToolCatalog_RegistersPluginToolsOnlyWhenFactoryIsProvided()
     {
         await using var registry = new McpWorkspaceRegistry();
-        var factory = new Mock<IFormListWorkspaceFactory>();
+        var factory = new Mock<IPluginWorkspaceFactory>();
         var catalog = new McpToolCatalog();
 
         var unavailable = catalog.CreateTools(registry, "test");
@@ -91,7 +91,7 @@ public sealed class McpReadToolProtocolTests
         var stringsPath = Path.GetFullPath("Strings");
         var sourceModKey = ModKey.FromNameAndExtension("Source.esm");
         var formKey = new FormKey(sourceModKey, 0x812);
-        var workspace = new Mock<IFormListWorkspace>();
+        var workspace = new Mock<IPluginWorkspace>();
         workspace.SetupGet(candidate => candidate.WorkspaceId).Returns(workspaceId);
         workspace.SetupGet(candidate => candidate.Revision).Returns(openRevision);
         workspace.Setup(candidate => candidate.DisposeAsync()).Returns(ValueTask.CompletedTask);
@@ -124,12 +124,12 @@ public sealed class McpReadToolProtocolTests
                     workspaceId: workspaceId,
                     resultRevision: readRevision)));
         WorkspaceOpenRequest? capturedOpenRequest = null;
-        var factory = new Mock<IFormListWorkspaceFactory>();
+        var factory = new Mock<IPluginWorkspaceFactory>();
         factory.Setup(candidate => candidate.OpenAsync(
                 It.IsAny<WorkspaceOpenRequest>(),
                 It.IsAny<CancellationToken>()))
             .Callback<WorkspaceOpenRequest, CancellationToken>((request, _) => capturedOpenRequest = request)
-            .Returns(ValueTask.FromResult(EngineResult<IFormListWorkspace>.Success(workspace.Object)));
+            .Returns(ValueTask.FromResult(EngineResult<IPluginWorkspace>.Success(workspace.Object)));
 
         await using var registry = new McpWorkspaceRegistry();
         var tools = new McpToolCatalog().CreateTools(registry, "protocol-test", factory.Object);
@@ -336,7 +336,7 @@ public sealed class McpReadToolProtocolTests
         factory.Setup(candidate => candidate.OpenAsync(
                 It.Is<WorkspaceOpenRequest>(request => request.WorkspaceId == otherWorkspaceId),
                 It.IsAny<CancellationToken>()))
-            .Returns(ValueTask.FromResult(EngineResult<IFormListWorkspace>.Success(otherWorkspace.Object)));
+            .Returns(ValueTask.FromResult(EngineResult<IPluginWorkspace>.Success(otherWorkspace.Object)));
 
         await using var registry = new McpWorkspaceRegistry();
         var tools = new McpToolCatalog().CreateTools(registry, "protocol-test", factory.Object);
@@ -665,9 +665,9 @@ public sealed class McpReadToolProtocolTests
     /// <param name="workspaceId">The workspace identity.</param>
     /// <param name="revision">The open revision.</param>
     /// <returns>The configured workspace mock.</returns>
-    private static Mock<IFormListWorkspace> CreateWorkspace(Guid workspaceId, WorkspaceRevision revision)
+    private static Mock<IPluginWorkspace> CreateWorkspace(Guid workspaceId, WorkspaceRevision revision)
     {
-        var workspace = new Mock<IFormListWorkspace>();
+        var workspace = new Mock<IPluginWorkspace>();
         workspace.SetupGet(candidate => candidate.WorkspaceId).Returns(workspaceId);
         workspace.SetupGet(candidate => candidate.Revision).Returns(() => revision);
         workspace.Setup(candidate => candidate.DisposeAsync()).Returns(ValueTask.CompletedTask);
@@ -677,13 +677,13 @@ public sealed class McpReadToolProtocolTests
     /// <summary>Creates a deterministic plugin factory for one workspace.</summary>
     /// <param name="workspace">The workspace returned after acquisition.</param>
     /// <returns>The configured factory mock.</returns>
-    private static Mock<IFormListWorkspaceFactory> CreateFactory(IFormListWorkspace workspace)
+    private static Mock<IPluginWorkspaceFactory> CreateFactory(IPluginWorkspace workspace)
     {
-        var factory = new Mock<IFormListWorkspaceFactory>();
+        var factory = new Mock<IPluginWorkspaceFactory>();
         factory.Setup(candidate => candidate.OpenAsync(
                 It.IsAny<WorkspaceOpenRequest>(),
                 It.IsAny<CancellationToken>()))
-            .Returns(ValueTask.FromResult(EngineResult<IFormListWorkspace>.Success(workspace)));
+            .Returns(ValueTask.FromResult(EngineResult<IPluginWorkspace>.Success(workspace)));
         return factory;
     }
 

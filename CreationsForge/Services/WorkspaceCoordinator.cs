@@ -15,7 +15,7 @@ public sealed class WorkspaceCoordinator : IWorkspaceCoordinator
     private readonly SemaphoreSlim WorkspaceGate = new(1, 1);
 
     /// <summary>Creates independently owned workspaces.</summary>
-    private readonly IFormListWorkspaceFactory WorkspaceFactory;
+    private readonly IPluginWorkspaceFactory WorkspaceFactory;
 
     /// <summary>Publishes bound state on the Avalonia UI thread.</summary>
     private readonly IUiDispatcher UiDispatcher;
@@ -24,7 +24,7 @@ public sealed class WorkspaceCoordinator : IWorkspaceCoordinator
     private readonly ILogger Logger;
 
     /// <summary>The workspace owned exclusively by this coordinator.</summary>
-    private IFormListWorkspace? OwnedWorkspace;
+    private IPluginWorkspace? OwnedWorkspace;
 
     /// <summary>Immutable bound identity for <see cref="OwnedWorkspace"/>.</summary>
     private WorkspaceDescriptor? CurrentWorkspaceValue;
@@ -38,7 +38,7 @@ public sealed class WorkspaceCoordinator : IWorkspaceCoordinator
     /// <param name="logger">The structured logger for unexpected failures.</param>
     /// <exception cref="ArgumentNullException">Thrown when a required dependency is <see langword="null"/>.</exception>
     public WorkspaceCoordinator(
-        IFormListWorkspaceFactory workspaceFactory,
+        IPluginWorkspaceFactory workspaceFactory,
         IUiDispatcher uiDispatcher,
         ILogger logger)
     {
@@ -63,7 +63,7 @@ public sealed class WorkspaceCoordinator : IWorkspaceCoordinator
     {
         ArgumentNullException.ThrowIfNull(request);
         await WorkspaceGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        IFormListWorkspace? candidate = null;
+        IPluginWorkspace? candidate = null;
         try
         {
             if (IsDisposed)
@@ -172,7 +172,7 @@ public sealed class WorkspaceCoordinator : IWorkspaceCoordinator
 
     /// <inheritdoc />
     public async ValueTask<EngineResult<T>> ExecuteAsync<T>(
-        Func<IFormListWorkspace, CancellationToken, ValueTask<EngineResult<T>>> operation,
+        Func<IPluginWorkspace, CancellationToken, ValueTask<EngineResult<T>>> operation,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(operation);
@@ -288,7 +288,7 @@ public sealed class WorkspaceCoordinator : IWorkspaceCoordinator
     /// <param name="workspace">The workspace to release, or <see langword="null"/> when no ownership was acquired.</param>
     /// <param name="reason">The lifecycle transition responsible for cleanup.</param>
     /// <returns>A task that completes after cleanup was attempted.</returns>
-    private async ValueTask DisposeWorkspaceSafelyAsync(IFormListWorkspace? workspace, string reason)
+    private async ValueTask DisposeWorkspaceSafelyAsync(IPluginWorkspace? workspace, string reason)
     {
         if (workspace is null)
         {

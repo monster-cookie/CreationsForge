@@ -815,14 +815,14 @@ public sealed class FormListWorkspaceTests
     }
 
     /// <summary>Creates and opens a workspace through the production factory with synthetic plugin state.</summary>
-    private static async Task<IFormListWorkspace> OpenWorkspaceAsync(
+    private static async Task<IPluginWorkspace> OpenWorkspaceAsync(
         DirectoryInfo directory,
         Mock<IFormListGameAdapter> adapter,
         IWorkspaceSaveCoordinator saveCoordinator)
     {
         var request = CreateOpenRequest(directory);
         TestWorkspaceInfrastructure.ConfigureReadyAdmission(saveCoordinator);
-        var factory = new Core.Engine.FormListWorkspaceFactory(
+        var factory = new Core.Engine.PluginWorkspaceFactory(
             [adapter.Object],
             saveCoordinator,
             TestWorkspaceInfrastructure.CreateLeaseProvider(),
@@ -890,7 +890,7 @@ public sealed class FormListWorkspaceTests
     /// <returns>The successful output-selection result.</returns>
     private static async Task<EngineResult<OutputSelectionReceipt>> SelectOutputAsync(
         DirectoryInfo directory,
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         Mock<IFormListGameAdapter> adapter,
         IPluginOutputState output)
     {
@@ -907,7 +907,7 @@ public sealed class FormListWorkspaceTests
     /// <param name="baseline">The complete output artifact-set observation to publish.</param>
     /// <returns>The successful output-selection result.</returns>
     private static async Task<EngineResult<OutputSelectionReceipt>> SelectOutputAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         Mock<IFormListGameAdapter> adapter,
         IPluginOutputState output,
         OutputAssociation association,

@@ -15,6 +15,9 @@ namespace CreationsForge.ViewModels;
 /// </summary>
 public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListEditorHost, IWorkspaceEditParticipant, IDisposable
 {
+    /// <summary>Notifies other record views when a save or discard has published its accepted workspace revision.</summary>
+    public event Action? PersistenceRefreshed;
+
     /// <summary>The coordinator that exclusively owns and lends the active workspace.</summary>
     private readonly IWorkspaceCoordinator WorkspaceCoordinator;
 
@@ -240,6 +243,9 @@ public sealed partial class FormListBrowserViewModel : ViewModelBase, IFormListE
 
     /// <summary>Gets whether the active workspace admits a mutable output plugin.</summary>
     public bool IsEditingWorkspace => WorkspaceCoordinator.CurrentWorkspace?.Output is not null;
+
+    /// <summary>Gets the active workspace identity for presentation navigation, or <see langword="null"/> after close.</summary>
+    public Guid? CurrentWorkspaceId => WorkspaceCoordinator.CurrentWorkspace?.WorkspaceId;
 
     /// <summary>Gets whether the selected record's comparison hierarchy is still resolving.</summary>
     public bool IsComparisonBusy => IsComparisonBusyValue;

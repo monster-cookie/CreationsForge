@@ -7,10 +7,11 @@ public sealed class RecordEditProvenance
 {
     /// <summary>Initializes immutable staged-edit provenance without retaining a record.</summary>
     /// <param name="editId">The non-empty staged edit-session identifier.</param>
-    /// <param name="targetFormKey">The non-null FormList identity edited in the output.</param>
+    /// <param name="targetFormKey">The non-null major-record identity edited in the output.</param>
     /// <param name="baselineKind">Whether the before-view is absent, from the original output, or from one exact source context.</param>
     /// <param name="baselineContext">The exact resolved or deleted record context for an original-output or source baseline, otherwise <see langword="null"/>.</param>
     /// <param name="sourceBaselineId">The non-empty immutable source-set baseline identifier for a source context, otherwise <see langword="null"/>.</param>
+    /// <param name="recordType">The exact native record family; omitted legacy entries select FormList.</param>
     /// <exception cref="ArgumentException">Thrown when an identifier is empty, the target is null, or the context does not exactly identify the target and required plugin origin.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="baselineKind"/> is undefined.</exception>
     public RecordEditProvenance(
@@ -18,7 +19,8 @@ public sealed class RecordEditProvenance
         FormKey targetFormKey,
         EditBaselineKind baselineKind,
         FormListContext? baselineContext = null,
-        Guid? sourceBaselineId = null)
+        Guid? sourceBaselineId = null,
+        string recordType = "FormList")
     {
         if (editId == Guid.Empty)
         {
@@ -29,6 +31,8 @@ public sealed class RecordEditProvenance
         {
             throw new ArgumentException("Record edit provenance requires a non-null target FormKey.", nameof(targetFormKey));
         }
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(recordType);
 
         if (!Enum.IsDefined(baselineKind))
         {
@@ -41,12 +45,13 @@ public sealed class RecordEditProvenance
         BaselineKind = baselineKind;
         BaselineContext = baselineContext;
         SourceBaselineId = sourceBaselineId;
+        RecordType = recordType;
     }
 
     /// <summary>Gets the staged edit-session identifier.</summary>
     public Guid EditId { get; }
 
-    /// <summary>Gets the FormList identity edited in the output.</summary>
+    /// <summary>Gets the major-record identity edited in the output.</summary>
     public FormKey TargetFormKey { get; }
 
     /// <summary>Gets how the exact plugin before-view must be reconstructed.</summary>
@@ -58,8 +63,11 @@ public sealed class RecordEditProvenance
     /// <summary>Gets the immutable source-set baseline identifier for a source context, or <see langword="null"/> otherwise.</summary>
     public Guid? SourceBaselineId { get; }
 
+    /// <summary>Gets the exact native major-record family represented by this baseline.</summary>
+    public string RecordType { get; }
+
     /// <summary>Validates the complete baseline discriminator, context, and source-baseline combination.</summary>
-    /// <param name="targetFormKey">The FormList identity edited in the output.</param>
+    /// <param name="targetFormKey">The major-record identity edited in the output.</param>
     /// <param name="baselineKind">The requested before-view source.</param>
     /// <param name="baselineContext">The optional exact record context.</param>
     /// <param name="sourceBaselineId">The optional immutable source-set baseline identifier.</param>

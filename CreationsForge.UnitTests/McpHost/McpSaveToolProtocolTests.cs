@@ -699,9 +699,9 @@ public sealed class McpSaveToolProtocolTests
     /// <param name="workspaceId">The live workspace identifier.</param>
     /// <param name="revision">The revision exposed by the workspace.</param>
     /// <returns>A configured workspace mock.</returns>
-    private static Mock<IFormListWorkspace> CreateWorkspace(Guid workspaceId, WorkspaceRevision revision)
+    private static Mock<IPluginWorkspace> CreateWorkspace(Guid workspaceId, WorkspaceRevision revision)
     {
-        var workspace = new Mock<IFormListWorkspace>();
+        var workspace = new Mock<IPluginWorkspace>();
         workspace.SetupGet(candidate => candidate.WorkspaceId).Returns(workspaceId);
         workspace.SetupGet(candidate => candidate.Revision).Returns(revision);
         workspace.Setup(candidate => candidate.DisposeAsync()).Returns(ValueTask.CompletedTask);
@@ -713,11 +713,11 @@ public sealed class McpSaveToolProtocolTests
     /// <param name="workspace">The workspace to publish.</param>
     /// <param name="workspaceId">The exact workspace identifier.</param>
     /// <returns>A task that completes after registry publication.</returns>
-    private static async Task OpenRegistryAsync(McpWorkspaceRegistry registry, IFormListWorkspace workspace, Guid workspaceId)
+    private static async Task OpenRegistryAsync(McpWorkspaceRegistry registry, IPluginWorkspace workspace, Guid workspaceId)
     {
-        var factory = new Mock<IFormListWorkspaceFactory>();
+        var factory = new Mock<IPluginWorkspaceFactory>();
         factory.Setup(candidate => candidate.OpenAsync(It.IsAny<WorkspaceOpenRequest>(), It.IsAny<CancellationToken>()))
-            .Returns(ValueTask.FromResult(EngineResult<IFormListWorkspace>.Success(workspace)));
+            .Returns(ValueTask.FromResult(EngineResult<IPluginWorkspace>.Success(workspace)));
         var request = new WorkspaceOpenRequest(
             workspaceId,
             SupportedGame.Starfield,

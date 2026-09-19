@@ -73,6 +73,7 @@ internal sealed class OperationFingerprintFactory
         {
             WriteHeader(writer, "begin-edit", workspaceId, request.ExpectedRevision);
             writer.Write((int)request.Role);
+            WriteString(writer, request.RecordType);
             WriteNullableFormKey(writer, request.OriginFormKey);
             WriteNullableReferenceRequest(writer, request.OriginSelection);
             WriteNullableFormKey(writer, request.TargetFormKey);
@@ -95,6 +96,35 @@ internal sealed class OperationFingerprintFactory
             writer.Write(request.EditId.ToByteArray());
             WriteString(writer, request.Edit.CommandName);
             WriteBytes(writer, preparedEdit.Fingerprint.ToArray());
+        });
+    }
+
+    /// <summary>Fingerprints every immutable native GameSettingFloat value and the exact staged edit identity.</summary>
+    /// <param name="workspaceId">The workspace in which the operation executes.</param>
+    /// <param name="request">The complete guarded native field replacement.</param>
+    /// <returns>The deterministic operation fingerprint, including nullable float bits.</returns>
+    internal OperationFingerprint Create(Guid workspaceId, GameSettingFloatEditRequest request)
+    {
+        return Build(writer =>
+        {
+            WriteHeader(writer, "apply-game-setting-float-edit", workspaceId, request.ExpectedRevision);
+            writer.Write(request.EditId.ToByteArray());
+            WriteString(writer, request.EditorId);
+            writer.Write(request.Data.HasValue);
+            if (request.Data.HasValue)
+            {
+                writer.Write(BitConverter.SingleToInt32Bits(request.Data.Value));
+            }
+
+            writer.Write(request.MajorRecordFlagsRaw);
+            writer.Write(request.FormVersion);
+            writer.Write(request.Version2);
+            writer.Write(request.VersionControl);
+            writer.Write(request.Xalg.HasValue);
+            if (request.Xalg.HasValue)
+            {
+                writer.Write(request.Xalg.Value);
+            }
         });
     }
 

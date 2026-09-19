@@ -60,6 +60,8 @@ public sealed partial class FormListBrowserViewModelTests
     {
         var context = await CreateParticipantContextAsync();
         using var viewModel = context.ViewModel;
+        var publishedRefreshes = 0;
+        viewModel.PersistenceRefreshed += () => publishedRefreshes++;
         var editor = viewModel.Editor;
         var session = editor.Session.ShouldNotBeNull();
         var command = editor.AvailableCommands.Single(candidate => candidate.CommandName == "form-list.set-editor-id");
@@ -75,6 +77,7 @@ public sealed partial class FormListBrowserViewModelTests
             persistedRevision);
 
         failed.Succeeded.ShouldBeFalse();
+        publishedRefreshes.ShouldBe(0);
         failed.Error.ShouldNotBeNull().Code.ShouldBe(EngineErrorCode.UnexpectedFailure);
         editor.Session.ShouldBeSameAs(session);
         editor.Draft.ShouldBeSameAs(draft);
@@ -88,6 +91,7 @@ public sealed partial class FormListBrowserViewModelTests
             persistedRevision);
 
         refreshed.Succeeded.ShouldBeTrue();
+        publishedRefreshes.ShouldBe(1);
         refreshed.Value.ShouldNotBeNull().Revision.ShouldBe(persistedRevision);
         refreshed.WorkspaceId.ShouldBe(context.Workspace.WorkspaceId);
         refreshed.ResultRevision.ShouldBe(persistedRevision);
@@ -231,7 +235,7 @@ public sealed partial class FormListBrowserViewModelTests
     }
 
     /// <summary>Supplies browser reads and successful new-edit admission for participant lifecycle tests.</summary>
-    private sealed class ParticipantTestWorkspace : IFormListWorkspace
+    private sealed class ParticipantTestWorkspace : IPluginWorkspace
     {
         /// <summary>The source plugin returned by browser enumeration.</summary>
         private readonly ModKey SourceModKey;
@@ -409,6 +413,8 @@ public sealed partial class FormListBrowserViewModelTests
         public ValueTask<EngineResult<ReferenceResolution>> ResolveReferenceAsync(ReferenceRequest request, CancellationToken cancellationToken = default) => throw Unsupported();
 
         /// <inheritdoc />
+        public ValueTask<EngineResult<OperationReceipt>> ApplyGameSettingFloatEditAsync(GameSettingFloatEditRequest request, CancellationToken cancellationToken = default) => throw Unsupported();
+
         public ValueTask<EngineResult<OperationReceipt>> ApplyFormListEditAsync(FormListEditRequest request, CancellationToken cancellationToken = default) => throw Unsupported();
 
         /// <inheritdoc />

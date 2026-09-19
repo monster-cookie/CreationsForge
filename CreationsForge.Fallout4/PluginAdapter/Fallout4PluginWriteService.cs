@@ -195,6 +195,7 @@ public sealed class Fallout4PluginWriteService
                 expected,
                 reopened,
                 masterResult.Value!,
+                provenance,
                 cancellationToken);
             if (validationError is not null)
             {
@@ -246,6 +247,14 @@ public sealed class Fallout4PluginWriteService
                     EngineErrorCode.InvalidRequest,
                     "The Fallout 4 staged-write request does not match the selected output association.");
     }
+
+    /// <summary>Accepts only a staged record whose concrete native family matches its first-edit provenance.</summary>
+    private static bool MatchesEditFamily(IMajorRecordGetter record, string recordType) => recordType switch
+    {
+        "FormList" => record is IFormListGetter,
+        "GameSettingFloat" => record is IGameSettingFloatGetter,
+        _ => false
+    };
 
     /// <summary>Validates complete candidate identity, provenance, and trackable FormList mutation coverage.</summary>
     /// <param name="sources">The immutable source lifetime.</param>
@@ -302,11 +311,16 @@ public sealed class Fallout4PluginWriteService
             var matches = candidate.EnumerateMajorRecords()
                 .Where(record => record.FormKey == entry.TargetFormKey)
                 .ToArray();
-            if (matches.Length != 1 || matches[0] is not IFormListGetter)
+            if (matches.Length != 1 || !MatchesEditFamily(matches[0], entry.RecordType))
             {
                 return new EngineError(
                     EngineErrorCode.ValidationFailed,
                     $"Fallout 4 edit provenance target '{entry.TargetFormKey}' is missing, duplicated, or belongs to another Mutagen family.");
+            }
+
+            if (matches[0] is IGameSettingFloatGetter setting && setting.EditorID?.StartsWith('f') != true)
+            {
+                return new EngineError(EngineErrorCode.ValidationFailed, $"GameSettingFloat '{entry.TargetFormKey}' needs an EditorID beginning with f before save.");
             }
 
             if (entry.BaselineKind == EditBaselineKind.SourceContext
@@ -363,7 +377,8 @@ public sealed class Fallout4PluginWriteService
         var context = entry.BaselineContext!;
         if (entry.BaselineKind == EditBaselineKind.OriginalOutput)
         {
-            var originalMatches = original.FormLists.Count(record => record.FormKey == entry.TargetFormKey);
+            var originalMatches = original.EnumerateMajorRecords().Count(record =>
+                record.FormKey == entry.TargetFormKey && MatchesEditFamily(record, entry.RecordType));
             if (originalMatches != 1
                 || context.ContainingModKey != output.Association.ModKey
                 || context.LoadOrderIndex != sources.GetMutagenMods().Count
@@ -385,7 +400,8 @@ public sealed class Fallout4PluginWriteService
             && candidate.plugin.LoadOrderIndex == context.LoadOrderIndex
             && candidate.plugin.Role == context.Role
             && PathsEqual(candidate.plugin.Path, context.Path!)
-            && mods[candidate.index].FormLists.Any(record => record.FormKey == entry.TargetFormKey));
+            && mods[candidate.index].EnumerateMajorRecords().Any(record =>
+                record.FormKey == entry.TargetFormKey && MatchesEditFamily(record, entry.RecordType)));
         return matchingSources == 1
             ? null
             : new EngineError(
@@ -571,16 +587,18 @@ public sealed class Fallout4PluginWriteService
         cancellationToken.ThrowIfCancellationRequested();
     }
 
-    /// <summary>Validates complete Mutagen equality, exact master retention, and multilingual FormList equality after strict reopen.</summary>
+    /// <summary>Validates complete Mutagen equality, exact master retention, FormLists, and edited non-FormList records after strict reopen.</summary>
     /// <param name="expected">The detached normalized output supplied to the writer.</param>
     /// <param name="reopened">The strictly reopened staged output.</param>
     /// <param name="retainedMasters">The exact expected master sequence.</param>
+    /// <param name="provenance">The staged edit identities whose non-FormList records need complete field verification.</param>
     /// <param name="cancellationToken">A token observed throughout comparison.</param>
     /// <returns>A typed preservation failure, or <see langword="null"/>.</returns>
     private EngineError? ValidateReopened(
         Fallout4Mod expected,
         Fallout4Mod reopened,
         IReadOnlyList<ModKey> retainedMasters,
+        IReadOnlyList<RecordEditProvenance> provenance,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -599,11 +617,12 @@ public sealed class Fallout4PluginWriteService
                 "The staged Fallout 4 output changed one or more complete record fields during serialization or strict reopen.");
         }
 
-        if (!FormListsEqual(expected, reopened, cancellationToken))
+        if (!FormListsEqual(expected, reopened, cancellationToken)
+            || !EditedMajorRecordsEqual(expected, reopened, provenance, cancellationToken))
         {
             return new EngineError(
                 EngineErrorCode.ValidationFailed,
-                "The staged Fallout 4 output changed one or more FormList fields or nondefault-language translations.");
+                "The staged Fallout 4 output changed one or more FormList fields or nondefault-language translations, or edited major-record fields during serialization or strict reopen.");
         }
 
         return null;
@@ -637,6 +656,26 @@ public sealed class Fallout4PluginWriteService
         }
 
         return true;
+    }
+
+    /// <summary>Compares only staged non-FormList targets to avoid treating untouched Mutagen normalization as an edit failure.</summary>
+    /// <param name="left">The expected complete output.</param>
+    /// <param name="right">The strictly reopened output.</param>
+    /// <param name="provenance">The staged edit identities that select records for verification.</param>
+    /// <param name="cancellationToken">A token observed during record and field comparison.</param>
+    /// <returns><see langword="true"/> when all edited non-FormList records retain their native fields.</returns>
+    private bool EditedMajorRecordsEqual(
+        IFallout4ModGetter left,
+        IFallout4ModGetter right,
+        IReadOnlyList<RecordEditProvenance> provenance,
+        CancellationToken cancellationToken)
+    {
+        var editedKeys = provenance.Select(entry => entry.TargetFormKey).ToHashSet();
+        return MajorRecordSetComparer.AreEqual(
+            left.EnumerateMajorRecords().Where(record => record is not IFormListGetter && editedKeys.Contains(record.FormKey)),
+            right.EnumerateMajorRecords().Where(record => record is not IFormListGetter && editedKeys.Contains(record.FormKey)),
+            _outputService.MajorRecordInspector,
+            cancellationToken);
     }
 
     /// <summary>Maps every verified staged plugin and strings observation to its exact selected destination artifact.</summary>

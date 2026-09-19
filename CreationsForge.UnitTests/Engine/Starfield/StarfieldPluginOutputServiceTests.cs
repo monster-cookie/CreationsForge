@@ -70,6 +70,66 @@ public sealed class StarfieldPluginOutputServiceTests
         existingSnapshot.FormLists.ShouldHaveSingleItem().EditorID.ShouldBe($"Existing{style}List");
     }
 
+    /// <summary>Verifies a new Starfield output declares only the admitted game base master.</summary>
+    /// <returns>A task that completes after the generated source and output lifetimes are released.</returns>
+    [Fact]
+    public async Task OpenAsync_WithStarfieldBaseSource_DeclaresOnlyStarfieldMaster()
+    {
+        using var fixture = StarfieldPluginTestFixture.Create();
+        var basePath = WriteOutput(
+            fixture.DataDirectory,
+            "Starfield.esm",
+            OutputMasterStyle.Full,
+            localized: false,
+            _ => { });
+        var sourceResult = await new StarfieldPluginSourceLoader(new PluginSourceInputLoader()).OpenAsync(
+            fixture.CreateOpenRequest(basePath, [basePath]),
+            TestContext.Current.CancellationToken);
+        sourceResult.Succeeded.ShouldBeTrue(sourceResult.Error?.Message);
+        await using var sources = sourceResult.Value!.Sources.ShouldBeOfType<StarfieldPluginSourceSet>();
+        var outputPath = Path.Combine(fixture.DataDirectory.FullName, "NewPatch.esp");
+        var association = CreateAssociation(outputPath, OutputMasterStyle.Full, LocalizedOutputMode.Embedded);
+        var service = new StarfieldPluginOutputService(new PluginOutputInputLoader());
+
+        var open = await service.OpenAsync(
+            sources,
+            new SelectOutputRequest(Guid.NewGuid(), sources.Revision, OutputSelectionMode.CreateNew, association),
+            TestContext.Current.CancellationToken);
+
+        open.Succeeded.ShouldBeTrue(open.Error?.Message);
+        await using var state = open.Value!.Output.ShouldBeOfType<StarfieldPluginOutputState>();
+        var snapshot = state.CreateSnapshot(TestContext.Current.CancellationToken);
+        ((IModGetter)snapshot).MasterReferences.Select(reference => reference.Master)
+            .ShouldBe([ModKey.FromNameAndExtension("Starfield.esm")]);
+        File.Exists(outputPath).ShouldBeFalse();
+
+        var stagingDirectory = fixture.RootDirectory.CreateSubdirectory("BaseOnlyStage");
+        var writer = new StarfieldPluginWriter(service);
+        var staged = await writer.WriteAndValidateAsync(
+            sources,
+            state,
+            new PluginWriteRequest(stagingDirectory.FullName, open.Value.Association, open.Value.Baseline),
+            TestContext.Current.CancellationToken);
+        staged.Succeeded.ShouldBeTrue(staged.Error?.Message);
+        var stagedPath = staged.Value!.ArtifactMappings.Single(
+            mapping => mapping.StagedArtifact.Role == PluginArtifactRole.Plugin).StagedArtifact.Path;
+        var reopened = await service.OpenAsync(
+            sources,
+            new SelectOutputRequest(
+                Guid.NewGuid(),
+                sources.Revision,
+                OutputSelectionMode.OpenExisting,
+                CreateAssociation(stagedPath, OutputMasterStyle.Full, LocalizedOutputMode.Embedded)),
+            TestContext.Current.CancellationToken);
+        reopened.Succeeded.ShouldBeTrue(reopened.Error?.Message);
+        await using var reopenedState = reopened.Value!.Output.ShouldBeOfType<StarfieldPluginOutputState>();
+        var reopenedSnapshot = reopenedState.CreateSnapshot(TestContext.Current.CancellationToken);
+        ((IModGetter)reopenedSnapshot).MasterReferences.Select(reference => reference.Master)
+            .ShouldBe([ModKey.FromNameAndExtension("Starfield.esm")]);
+        await staged.Value.StagedOutput!.DisposeAsync();
+        File.Exists(outputPath).ShouldBeFalse();
+    }
+
     /// <summary>Verifies complete unrelated output state survives admission, snapshots, cloning, and existing-output edit selection.</summary>
     /// <returns>A task that completes after the output and its clone are released.</returns>
     [Fact]

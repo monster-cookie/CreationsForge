@@ -78,7 +78,7 @@ public sealed class WorkspaceSelectionView : UserControl
         };
     }
 
-    /// <summary>Builds the game, search, and refresh controls.</summary>
+    /// <summary>Builds the game, search, and refresh controls for opening an installed plugin.</summary>
     /// <returns>The selector toolbar.</returns>
     private Control BuildSelectors()
     {
@@ -105,14 +105,20 @@ public sealed class WorkspaceSelectionView : UserControl
         refresh.Bind(IsEnabledProperty, new Binding(nameof(WorkspaceSelectionViewModel.CanOpen)));
         AutomationProperties.SetAutomationId(refresh, "RefreshPluginsButton");
 
+        var gameField = new StackPanel
+        {
+            Spacing = 3,
+            Children = { CreateCell("Game", FontWeight.SemiBold, 12), game }
+        };
         Grid.SetColumn(search, 1);
         Grid.SetColumn(refresh, 2);
-        return new Grid
+        var toolbar = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"),
             ColumnSpacing = 10,
-            Children = { game, search, refresh }
+            Children = { gameField, search, refresh }
         };
+        return toolbar;
     }
 
     /// <summary>Builds the installed plugin table.</summary>
@@ -305,12 +311,37 @@ public sealed class WorkspaceSelectionView : UserControl
 
         var create = new Button { Content = "New Plugin...", MinWidth = 130, Padding = new Thickness(16, 8) };
         create.Bind(IsEnabledProperty, new Binding(nameof(WorkspaceSelectionViewModel.CanOpen)));
-        create.Click += async (_, _) =>
+        create.Click += (_, _) =>
         {
-            if (await ViewModel.CreateNewPluginAsync())
+            if (TopLevel.GetTopLevel(this) is not Window owner)
             {
-                CloseAction(true);
+                return;
             }
+
+            var priorWidth = owner.Width;
+            var priorHeight = owner.Height;
+            var priorMinWidth = owner.MinWidth;
+            var priorMinHeight = owner.MinHeight;
+            owner.Title = "New Plugin";
+            owner.MinWidth = 440;
+            owner.MinHeight = 460;
+            owner.Width = 500;
+            owner.Height = 520;
+            owner.Content = new NewPluginView(ViewModel, created =>
+            {
+                if (created)
+                {
+                    CloseAction(true);
+                    return;
+                }
+
+                owner.Title = "Open Plugin";
+                owner.Width = priorWidth;
+                owner.Height = priorHeight;
+                owner.MinWidth = priorMinWidth;
+                owner.MinHeight = priorMinHeight;
+                owner.Content = this;
+            });
         };
         AutomationProperties.SetAutomationId(create, "CreatePluginButton");
 

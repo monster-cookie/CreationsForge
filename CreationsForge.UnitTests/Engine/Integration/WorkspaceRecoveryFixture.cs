@@ -148,7 +148,7 @@ internal static class WorkspaceRecoveryFixture
     /// <returns>A factory using the production plugin adapter for exactly one game.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="saveCoordinator"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="game"/> is undefined.</exception>
-    internal static FormListWorkspaceFactory CreateWorkspaceFactory(
+    internal static PluginWorkspaceFactory CreateWorkspaceFactory(
         SupportedGame game,
         IWorkspaceSaveCoordinator saveCoordinator)
     {
@@ -162,7 +162,7 @@ internal static class WorkspaceRecoveryFixture
             SupportedGame.Skyrim => CreateSkyrimAdapter(inputLoader, outputInputLoader),
             _ => throw new ArgumentOutOfRangeException(nameof(game), game, "The recovery fixture requires a supported plugin game."),
         };
-        return new FormListWorkspaceFactory(
+        return new PluginWorkspaceFactory(
             [adapter],
             saveCoordinator,
             new OutputDirectoryLeaseProvider(),
@@ -567,7 +567,7 @@ internal static class WorkspaceRecoveryFixture
         SaveResult? originalSaveResult,
         OutputSynchronizationState? originalSynchronization,
         WorkspacePreview? originalPreview,
-        IFormListWorkspace? originalWorkspace)
+        IPluginWorkspace? originalWorkspace)
     {
         return new WorkspaceRecoverySeed(
             state,
@@ -596,7 +596,7 @@ internal static class WorkspaceRecoveryFixture
     /// <param name="cancellationToken">The token checked before state publication.</param>
     /// <returns>The successful selection receipt.</returns>
     private static async Task<OutputSelectionReceipt> SelectOutputAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         OutputAssociation output,
         OutputSelectionMode mode,
         CancellationToken cancellationToken)
@@ -615,7 +615,7 @@ internal static class WorkspaceRecoveryFixture
     /// <param name="cancellationToken">The token checked before edit publication.</param>
     /// <returns>The successful edit receipt.</returns>
     private static async Task<EditReceipt> BeginEditAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         FormListEditRole role,
         FormKey? targetFormKey,
         CancellationToken cancellationToken)
@@ -634,7 +634,7 @@ internal static class WorkspaceRecoveryFixture
     /// <param name="cancellationToken">The token checked before mutation publication.</param>
     /// <returns>A task that completes after the workspace revision advances.</returns>
     private static async Task ApplyEditAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         Guid editId,
         FormListEdit edit,
         CancellationToken cancellationToken)

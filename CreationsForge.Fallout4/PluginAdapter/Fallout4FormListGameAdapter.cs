@@ -53,9 +53,7 @@ public sealed class Fallout4FormListGameAdapter : IFormListGameAdapter
     public IFormListInspector Inspector => _outputService.Inspector;
 
     /// <inheritdoc />
-    public IMajorRecordInspector MajorRecordInspector { get; } = new MutagenMajorRecordInspector(
-        typeof(Fallout4MajorRecord),
-        "Mutagen.Bethesda.Fallout4/0.55.0-alpha.53");
+    public IMajorRecordInspector MajorRecordInspector => _outputService.MajorRecordInspector;
 
     /// <inheritdoc />
     public bool SupportsRelease(GameRelease release)
@@ -154,6 +152,27 @@ public sealed class Fallout4FormListGameAdapter : IFormListGameAdapter
         }
 
         return _editService.ApplyEdit(falloutSources!, falloutOutput!, target, edit);
+    }
+
+    /// <inheritdoc />
+    public EngineResult<RecordEditMutationResult> ApplyGameSettingFloatEdit(
+        IPluginSourceSet sources,
+        IPluginOutputState candidate,
+        FormKey target,
+        GameSettingFloatEditRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetSources(sources, out var falloutSources, out var sourceFailure))
+        {
+            return EngineResult<RecordEditMutationResult>.Failure(sourceFailure!);
+        }
+
+        if (!TryGetOutput(candidate, out var falloutOutput, out var outputFailure))
+        {
+            return Failure<RecordEditMutationResult>(falloutSources!, outputFailure!);
+        }
+
+        return _outputService.ApplyGameSettingFloatEdit(falloutOutput!, target, request, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -369,6 +388,31 @@ public sealed class Fallout4FormListGameAdapter : IFormListGameAdapter
     }
 
     /// <inheritdoc />
+    public EngineResult<int> VisitWinningRecordSummaries(
+        IPluginSourceSet sources,
+        IPluginOutputState? output,
+        Action<ReferenceSearchMatch> onRecord,
+        Action<ModKey, int>? onProgress,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetSources(sources, out var falloutSources, out var sourceFailure))
+        {
+            return EngineResult<int>.Failure(sourceFailure!);
+        }
+
+        if (output is null)
+        {
+            return falloutSources!.VisitWinningRecordSummaries(onRecord, onProgress, cancellationToken);
+        }
+
+        var readerResult = CreateReader(falloutSources!, output);
+        return readerResult.Succeeded
+            ? Bind(falloutSources!, EngineResult<int>.Success(
+                readerResult.Value!.VisitWinningRecordSummaries(onRecord, onProgress, cancellationToken)))
+            : Failure<int>(falloutSources!, readerResult.Error!);
+    }
+
+    /// <inheritdoc />
     public EngineResult<ReferenceResolution> ResolveReference(
         IPluginSourceSet sources,
         IPluginOutputState? output,
@@ -407,7 +451,33 @@ public sealed class Fallout4FormListGameAdapter : IFormListGameAdapter
             return Failure<WorkspacePreview>(falloutSources!, outputFailure!);
         }
 
-        return _editService.Preview(falloutSources!, falloutOutput!);
+        var formPreview = _editService.Preview(falloutSources!, falloutOutput!);
+        if (!formPreview.Succeeded || formPreview.Value is null)
+        {
+            return formPreview;
+        }
+
+        var nativePreview = MajorRecordEditPreviewBuilder.Build(
+            falloutOutput!.GetEditProvenance(),
+            falloutSources!.Baseline.BaselineId,
+            falloutOutput.Association,
+            falloutSources.GetMutagenMods().Count,
+            MajorRecordInspector,
+            key => falloutOutput.BorrowOriginalMod().GameSettings.SingleOrDefault(record => record.FormKey == key),
+            key => falloutOutput.BorrowMod().GameSettings.SingleOrDefault(record => record.FormKey == key),
+            request => falloutSources.ReadRecordContext(request, CancellationToken.None),
+            CancellationToken.None);
+        if (!nativePreview.Succeeded || nativePreview.Value is null)
+        {
+            return EngineResult<WorkspacePreview>.Failure(nativePreview.Error!, warnings: formPreview.Warnings);
+        }
+
+        var preview = formPreview.Value;
+        return EngineResult<WorkspacePreview>.Success(new WorkspacePreview(
+            preview.Comparisons,
+            preview.UnresolvedReferenceCount,
+            preview.Warnings,
+            nativePreview.Value), warnings: preview.Warnings);
     }
 
     /// <inheritdoc />

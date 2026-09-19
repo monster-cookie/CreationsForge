@@ -6,7 +6,7 @@ using Mutagen.Bethesda.Plugins.Records;
 namespace CreationsForge.Core.Engine.Contracts;
 
 /// <summary>
-/// Adapts one game's typed Mutagen records and writers to the shared UI-neutral FormList engine.
+/// Adapts one game's typed Mutagen records and writers to the shared UI-neutral plugin workspace.
 /// </summary>
 public interface IFormListGameAdapter
 {
@@ -93,6 +93,20 @@ public interface IFormListGameAdapter
         FormKey target,
         PreparedFormListEdit edit);
 
+    /// <summary>Applies a complete typed GameSettingFloat edit only inside an unpublished output candidate.</summary>
+    /// <param name="sources">The exact immutable source set used for game validation.</param>
+    /// <param name="candidate">The complete unpublished native output to mutate.</param>
+    /// <param name="target">The exact staged GameSettingFloat identity.</param>
+    /// <param name="request">The immutable replacement values.</param>
+    /// <param name="cancellationToken">A token observed during native record selection.</param>
+    /// <returns>The mutation outcome or a typed rejection without publishing the candidate.</returns>
+    EngineResult<RecordEditMutationResult> ApplyGameSettingFloatEdit(
+        IPluginSourceSet sources,
+        IPluginOutputState candidate,
+        FormKey target,
+        GameSettingFloatEditRequest request,
+        CancellationToken cancellationToken);
+
     /// <summary>Enumerates participating plugins without consulting persistent imported state.</summary>
     /// <param name="sources">The borrowed plugin source lifetime.</param>
     /// <param name="output">The borrowed selected output state, or <see langword="null"/> before output selection.</param>
@@ -155,6 +169,20 @@ public interface IFormListGameAdapter
         WorkspaceRevision revision,
         CancellationToken cancellationToken);
 
+    /// <summary>Visits every winning major record's identity metadata without restarting a bounded search for each page.</summary>
+    /// <param name="sources">The borrowed plugin source lifetime.</param>
+    /// <param name="output">The optional staged output appended after the source load order.</param>
+    /// <param name="onRecord">Receives each lightweight winning context.</param>
+    /// <param name="onProgress">Receives the current plugin and cumulative record count periodically.</param>
+    /// <param name="cancellationToken">A token that cancels the scan.</param>
+    /// <returns>The number of delivered summaries or a typed source-state failure.</returns>
+    EngineResult<int> VisitWinningRecordSummaries(
+        IPluginSourceSet sources,
+        IPluginOutputState? output,
+        Action<ReferenceSearchMatch> onRecord,
+        Action<ModKey, int>? onProgress,
+        CancellationToken cancellationToken);
+
     /// <summary>Resolves a record identity and returns only a detached plugin deep copy when supported.</summary>
     /// <param name="sources">The borrowed plugin source lifetime.</param>
     /// <param name="output">The borrowed selected output state, or <see langword="null"/> before output selection.</param>
@@ -181,7 +209,7 @@ public interface IFormListGameAdapter
     /// <param name="request">The private staging directory and exact output identity.</param>
     /// <param name="cancellationToken">A token that cancels private staging and validation before destination mutation.</param>
     /// <returns>An independently disposable validated changed set with explicit staged-to-destination mappings, an unchanged result with no staged lifetime or mappings, or a typed pre-commit failure.</returns>
-    /// <remarks>An unchanged result is valid only for an existing output after complete plugin and FormList multilingual equality is proved. A new output must produce a changed set. Existing localized material that cannot be rewritten losslessly fails with <see cref="EngineErrorCode.UnsupportedInput"/>.</remarks>
+    /// <remarks>An unchanged result is valid only for an existing output after complete plugin and FormList multilingual equality is proved. Edited non-FormList targets also receive native field verification after reopen. A new output must produce a changed set. Existing localized material that cannot be rewritten losslessly fails with <see cref="EngineErrorCode.UnsupportedInput"/>.</remarks>
     ValueTask<EngineResult<StagedPluginOutputSet>> WriteAndValidateAsync(
         IPluginSourceSet sources,
         IPluginOutputState output,

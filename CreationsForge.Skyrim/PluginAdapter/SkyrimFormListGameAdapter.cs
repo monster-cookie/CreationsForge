@@ -3,6 +3,7 @@ using CreationsForge.Core.Engine.RecordReading;
 using CreationsForge.Core.Engine.RecordInspection;
 using CreationsForge.Core.Enums;
 using Mutagen.Bethesda;
+using Mutagen.Bethesda.Plugins;
 
 namespace CreationsForge.Skyrim.PluginAdapter;
 
@@ -45,9 +46,7 @@ public sealed class SkyrimFormListGameAdapter : IFormListGameAdapter
     public IFormListInspector Inspector => _outputService.Inspector;
 
     /// <inheritdoc />
-    public IMajorRecordInspector MajorRecordInspector { get; } = new MutagenMajorRecordInspector(
-        typeof(Mutagen.Bethesda.Skyrim.SkyrimMajorRecord),
-        "Mutagen.Bethesda.Skyrim/0.55.0-alpha.53");
+    public IMajorRecordInspector MajorRecordInspector => _outputService.MajorRecordInspector;
 
     /// <inheritdoc />
     public bool SupportsRelease(GameRelease release)
@@ -140,6 +139,22 @@ public sealed class SkyrimFormListGameAdapter : IFormListGameAdapter
         }
 
         return _editService.ApplyEdit(skyrimSources, skyrimCandidate, target, edit);
+    }
+
+    /// <inheritdoc />
+    public EngineResult<RecordEditMutationResult> ApplyGameSettingFloatEdit(
+        IPluginSourceSet sources,
+        IPluginOutputState candidate,
+        Mutagen.Bethesda.Plugins.FormKey target,
+        GameSettingFloatEditRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (sources is not SkyrimPluginSourceSet || candidate is not SkyrimPluginOutputState skyrimCandidate)
+        {
+            return WrongState<RecordEditMutationResult>("source or output");
+        }
+
+        return _outputService.ApplyGameSettingFloatEdit(skyrimCandidate, target, request, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -242,6 +257,23 @@ public sealed class SkyrimFormListGameAdapter : IFormListGameAdapter
     }
 
     /// <inheritdoc />
+    public EngineResult<int> VisitWinningRecordSummaries(
+        IPluginSourceSet sources,
+        IPluginOutputState? output,
+        Action<ReferenceSearchMatch> onRecord,
+        Action<ModKey, int>? onProgress,
+        CancellationToken cancellationToken)
+    {
+        if (sources is not SkyrimPluginSourceSet skyrimSources
+            || !TryGetOutput(output, out var skyrimOutput))
+        {
+            return WrongState<int>("source or output");
+        }
+
+        return skyrimSources.VisitWinningRecordSummaries(onRecord, onProgress, skyrimOutput, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public EngineResult<ReferenceResolution> ResolveReference(
         IPluginSourceSet sources,
         IPluginOutputState? output,
@@ -268,7 +300,33 @@ public sealed class SkyrimFormListGameAdapter : IFormListGameAdapter
             return WrongState<WorkspacePreview>("source or output");
         }
 
-        return _editService.Preview(skyrimSources, skyrimOutput);
+        var formPreview = _editService.Preview(skyrimSources, skyrimOutput);
+        if (!formPreview.Succeeded || formPreview.Value is null)
+        {
+            return formPreview;
+        }
+
+        var nativePreview = MajorRecordEditPreviewBuilder.Build(
+            skyrimOutput.GetEditProvenance(),
+            skyrimSources.Baseline.BaselineId,
+            skyrimOutput.Association,
+            skyrimSources.GetMutagenMods().Count,
+            MajorRecordInspector,
+            key => skyrimOutput.GetOriginalMod().GameSettings.SingleOrDefault(record => record.FormKey == key),
+            key => skyrimOutput.GetMutableMod().GameSettings.SingleOrDefault(record => record.FormKey == key),
+            request => skyrimSources.ReadRecordContext(request, null, CancellationToken.None),
+            CancellationToken.None);
+        if (!nativePreview.Succeeded || nativePreview.Value is null)
+        {
+            return EngineResult<WorkspacePreview>.Failure(nativePreview.Error!, warnings: formPreview.Warnings);
+        }
+
+        var preview = formPreview.Value;
+        return EngineResult<WorkspacePreview>.Success(new WorkspacePreview(
+            preview.Comparisons,
+            preview.UnresolvedReferenceCount,
+            preview.Warnings,
+            nativePreview.Value), warnings: preview.Warnings);
     }
 
     /// <inheritdoc />

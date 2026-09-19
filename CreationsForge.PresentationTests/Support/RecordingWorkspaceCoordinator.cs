@@ -11,7 +11,7 @@ namespace CreationsForge.PresentationTests.Support;
 internal sealed class RecordingWorkspaceCoordinator : IWorkspaceCoordinator
 {
     /// <summary>The workspace lent to browser operations while a descriptor is active.</summary>
-    private IFormListWorkspace? WorkspaceValue;
+    private IPluginWorkspace? WorkspaceValue;
 
     /// <summary>The currently published immutable descriptor.</summary>
     private WorkspaceDescriptor? CurrentWorkspaceValue;
@@ -28,7 +28,7 @@ internal sealed class RecordingWorkspaceCoordinator : IWorkspaceCoordinator
     /// <summary>Publishes a new descriptor and associated borrowed test workspace.</summary>
     /// <param name="descriptor">The immutable workspace descriptor.</param>
     /// <param name="workspace">The workspace to lend to browser operations.</param>
-    public void Publish(WorkspaceDescriptor descriptor, IFormListWorkspace workspace)
+    public void Publish(WorkspaceDescriptor descriptor, IPluginWorkspace workspace)
     {
         ArgumentNullException.ThrowIfNull(descriptor);
         ArgumentNullException.ThrowIfNull(workspace);
@@ -55,7 +55,7 @@ internal sealed class RecordingWorkspaceCoordinator : IWorkspaceCoordinator
 
     /// <inheritdoc />
     public ValueTask<EngineResult<T>> ExecuteAsync<T>(
-        Func<IFormListWorkspace, CancellationToken, ValueTask<EngineResult<T>>> operation,
+        Func<IPluginWorkspace, CancellationToken, ValueTask<EngineResult<T>>> operation,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(operation);

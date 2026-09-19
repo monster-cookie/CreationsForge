@@ -73,7 +73,7 @@ internal sealed class RecordingWorkspaceChangesCoordinator : IWorkspaceCoordinat
 
     /// <inheritdoc />
     public async ValueTask<EngineResult<T>> ExecuteAsync<T>(
-        Func<IFormListWorkspace, CancellationToken, ValueTask<EngineResult<T>>> operation,
+        Func<IPluginWorkspace, CancellationToken, ValueTask<EngineResult<T>>> operation,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(operation);

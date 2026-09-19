@@ -27,7 +27,7 @@ public static class EngineComposition
             ValidateRecordWireServices(codecs, schemaCatalogs);
             return new EngineServices(
                 container,
-                container.Resolve<IFormListWorkspaceFactory>(),
+                container.Resolve<IPluginWorkspaceFactory>(),
                 container.Resolve<IWorkspaceSaveCoordinator>(),
                 Array.AsReadOnly(codecs),
                 Array.AsReadOnly(schemaCatalogs));

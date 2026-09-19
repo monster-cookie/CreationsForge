@@ -9,21 +9,29 @@ public sealed class RecordTypeGroupViewModel : ViewModelBase, IRecordTreeNodeVie
     /// <summary>Initializes one record-type group.</summary>
     /// <param name="label">The friendly major-record type and plugin signature displayed in the primary column.</param>
     /// <param name="children">The selectable record rows in display order.</param>
+    /// <param name="isExpanded">Whether the family is initially expanded in the tree.</param>
+    /// <param name="recordType">The canonical major-record type used by tree actions, when available.</param>
     /// <exception cref="ArgumentException">Thrown when <paramref name="label"/> is empty or whitespace.</exception>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="children"/> is <see langword="null"/>.</exception>
     public RecordTypeGroupViewModel(
         string label,
-        IReadOnlyList<IRecordTreeNodeViewModel> children)
+        IReadOnlyList<IRecordTreeNodeViewModel> children,
+        bool isExpanded = true,
+        string? recordType = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(label);
         ArgumentNullException.ThrowIfNull(children);
         Label = label;
+        RecordType = recordType;
         Children = Array.AsReadOnly(children.ToArray());
-        IsExpandedValue = true;
+        IsExpandedValue = isExpanded;
     }
 
     /// <summary>Gets the friendly major-record type and plugin signature.</summary>
     public string Label { get; }
+
+    /// <summary>Gets the canonical major-record family for actions on this group, or <see langword="null"/> for display-only groups.</summary>
+    public string? RecordType { get; }
 
     /// <inheritdoc />
     public string PrimaryText => Label;

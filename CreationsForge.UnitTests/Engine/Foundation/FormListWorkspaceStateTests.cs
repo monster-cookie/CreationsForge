@@ -314,7 +314,7 @@ public sealed class FormListWorkspaceStateTests
             sources.Object,
             baselineId,
             sourceBaseline.Artifacts);
-        var workspace = new FormListWorkspace(
+        var workspace = new PluginWorkspace(
             request,
             adapter.Object,
             sourceOpenResult,
@@ -334,7 +334,7 @@ public sealed class FormListWorkspaceStateTests
         /// <param name="sources">The source lifetime mock.</param>
         /// <param name="saveCoordinator">The save coordinator mock.</param>
         internal WorkspaceFixture(
-            FormListWorkspace workspace,
+            PluginWorkspace workspace,
             Mock<IFormListGameAdapter> adapter,
             Mock<IPluginSourceSet> sources,
             Mock<IWorkspaceSaveCoordinator> saveCoordinator)
@@ -346,7 +346,7 @@ public sealed class FormListWorkspaceStateTests
         }
 
         /// <summary>Gets the directly constructed workspace.</summary>
-        internal FormListWorkspace Workspace { get; }
+        internal PluginWorkspace Workspace { get; }
 
         /// <summary>Gets the game adapter mock.</summary>
         internal Mock<IFormListGameAdapter> Adapter { get; }

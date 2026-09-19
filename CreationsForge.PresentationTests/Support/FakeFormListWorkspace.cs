@@ -7,7 +7,7 @@ namespace CreationsForge.PresentationTests.Support;
 /// <summary>
 /// Supplies deterministic output selection and disposal while rejecting unrelated engine operations in presentation tests.
 /// </summary>
-internal sealed class FakeFormListWorkspace : IFormListWorkspace
+internal sealed class FakeFormListWorkspace : IPluginWorkspace
 {
     /// <summary>The callback that supplies output-selection behavior.</summary>
     private readonly Func<SelectOutputRequest, CancellationToken, ValueTask<EngineResult<OutputSelectionReceipt>>> SelectOutputAction;
@@ -99,6 +99,8 @@ internal sealed class FakeFormListWorkspace : IFormListWorkspace
     }
 
     /// <inheritdoc />
+    public ValueTask<EngineResult<OperationReceipt>> ApplyGameSettingFloatEditAsync(GameSettingFloatEditRequest request, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
     public ValueTask<EngineResult<OperationReceipt>> ApplyFormListEditAsync(FormListEditRequest request, CancellationToken cancellationToken = default)
     {
         throw new NotSupportedException();

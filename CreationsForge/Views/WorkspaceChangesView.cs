@@ -162,7 +162,7 @@ public sealed class WorkspaceChangesView : UserControl
         };
     }
 
-    /// <summary>Builds the scrollable per-FormList comparison collection.</summary>
+    /// <summary>Builds the scrollable staged-record comparison collection.</summary>
     /// <returns>The bound record comparison list.</returns>
     private Control BuildChangeItems()
     {
@@ -176,7 +176,7 @@ public sealed class WorkspaceChangesView : UserControl
         return items;
     }
 
-    /// <summary>Builds one expandable detached before-and-after FormList comparison.</summary>
+    /// <summary>Builds one expandable detached before-and-after record comparison.</summary>
     /// <param name="item">The immutable projected comparison.</param>
     /// <returns>The configured comparison card.</returns>
     private static Control BuildChangeItem(WorkspaceChangeItemViewModel item)
@@ -228,7 +228,7 @@ public sealed class WorkspaceChangesView : UserControl
         };
         var expander = new Expander
         {
-            Header = item.FormKey.ToString(),
+            Header = $"{item.RecordType} {item.FormKey}",
             Content = content,
             IsExpanded = true,
             HorizontalAlignment = HorizontalAlignment.Stretch

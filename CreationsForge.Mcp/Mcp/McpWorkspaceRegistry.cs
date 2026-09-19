@@ -68,7 +68,7 @@ public sealed class McpWorkspaceRegistry : IAsyncDisposable
     /// <exception cref="ObjectDisposedException">Thrown when shutdown begins before the workspace is published.</exception>
     /// <exception cref="OperationCanceledException">Thrown when cancellation is observed before publication.</exception>
     public async ValueTask<EngineResult<WorkspaceRevision>> OpenAsync(
-        IFormListWorkspaceFactory factory,
+        IPluginWorkspaceFactory factory,
         WorkspaceOpenRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -76,7 +76,7 @@ public sealed class McpWorkspaceRegistry : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(request);
 
         var reserved = false;
-        IFormListWorkspace? openedWorkspace = null;
+        IPluginWorkspace? openedWorkspace = null;
         try
         {
             lock (SyncRoot)
@@ -204,7 +204,7 @@ public sealed class McpWorkspaceRegistry : IAsyncDisposable
     /// <exception cref="OperationCanceledException">Thrown when cancellation is observed.</exception>
     public ValueTask<EngineResult<T>> ExecuteAsync<T>(
         Guid workspaceId,
-        Func<IFormListWorkspace, CancellationToken, ValueTask<EngineResult<T>>> operation,
+        Func<IPluginWorkspace, CancellationToken, ValueTask<EngineResult<T>>> operation,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(operation);

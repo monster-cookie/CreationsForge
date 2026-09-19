@@ -323,13 +323,13 @@ public sealed class FormListWorkspaceAllocationTests
     /// <param name="directory">The temporary workspace root.</param>
     /// <param name="adapter">The synthetic game adapter.</param>
     /// <returns>The successfully opened workspace.</returns>
-    private static async Task<IFormListWorkspace> OpenWorkspaceAsync(
+    private static async Task<IPluginWorkspace> OpenWorkspaceAsync(
         DirectoryInfo directory,
         Mock<IFormListGameAdapter> adapter)
     {
         var saveCoordinator = Mock.Of<IWorkspaceSaveCoordinator>();
         TestWorkspaceInfrastructure.ConfigureReadyAdmission(saveCoordinator);
-        var factory = new Core.Engine.FormListWorkspaceFactory(
+        var factory = new Core.Engine.PluginWorkspaceFactory(
             new[] { adapter.Object },
             saveCoordinator,
             TestWorkspaceInfrastructure.CreateLeaseProvider(),
@@ -347,7 +347,7 @@ public sealed class FormListWorkspaceAllocationTests
     /// <returns>The successful selection result.</returns>
     private static async Task<EngineResult<OutputSelectionReceipt>> SelectOutputAsync(
         DirectoryInfo directory,
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         Mock<IFormListGameAdapter> adapter,
         IPluginOutputState output)
     {

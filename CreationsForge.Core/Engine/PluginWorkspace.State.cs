@@ -3,7 +3,7 @@ using CreationsForge.Core.Engine.Contracts;
 namespace CreationsForge.Core.Engine;
 
 /// <content>Provides serialized metadata snapshots that remain available while output recovery blocks record reads.</content>
-public sealed partial class FormListWorkspace
+public sealed partial class PluginWorkspace
 {
     /// <inheritdoc />
     public async ValueTask<EngineResult<WorkspaceState>> ReadStateAsync(

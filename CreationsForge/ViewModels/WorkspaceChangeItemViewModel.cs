@@ -3,7 +3,7 @@ using Mutagen.Bethesda.Plugins;
 
 namespace CreationsForge.ViewModels;
 
-/// <summary>Presents one detached FormList comparison without retaining a workspace or record getter.</summary>
+/// <summary>Presents one detached record comparison without retaining a workspace or record getter.</summary>
 public sealed class WorkspaceChangeItemViewModel
 {
     /// <summary>Initializes one immutable detached FormList change item.</summary>
@@ -26,10 +26,33 @@ public sealed class WorkspaceChangeItemViewModel
         AfterFields = Array.AsReadOnly(afterFields.ToArray());
         SemanticChanges = Array.AsReadOnly(comparison.Changes.ToArray());
         Warnings = Array.AsReadOnly(comparison.Warnings.ToArray());
+        RecordType = "FormList";
+    }
+
+    /// <summary>Initializes one detached native non-FormList change item.</summary>
+    public WorkspaceChangeItemViewModel(
+        MajorRecordComparison comparison,
+        IReadOnlyList<RecordJsonFieldNodeViewModel> beforeFields,
+        IReadOnlyList<RecordJsonFieldNodeViewModel> afterFields)
+    {
+        ArgumentNullException.ThrowIfNull(comparison);
+        ArgumentNullException.ThrowIfNull(beforeFields);
+        ArgumentNullException.ThrowIfNull(afterFields);
+        FormKey = comparison.FormKey;
+        RecordType = comparison.RecordType ?? "Major record";
+        BeforeContext = comparison.BeforeContext;
+        AfterContext = comparison.AfterContext;
+        BeforeFields = Array.AsReadOnly(beforeFields.ToArray());
+        AfterFields = Array.AsReadOnly(afterFields.ToArray());
+        SemanticChanges = Array.AsReadOnly(comparison.Changes.ToArray());
+        Warnings = Array.AsReadOnly(comparison.Warnings.ToArray());
     }
 
     /// <summary>Gets the exact record identity of the changed FormList.</summary>
     public FormKey FormKey { get; }
+
+    /// <summary>Gets the displayed native record family.</summary>
+    public string RecordType { get; }
 
     /// <summary>Gets the exact prior record context and resolution result.</summary>
     public FormListContext BeforeContext { get; }

@@ -1,5 +1,6 @@
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Engine.PluginOutputs;
+using CreationsForge.Core.Engine.RecordInspection;
 using CreationsForge.Starfield.PluginAdapter.RecordInspection;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
@@ -12,7 +13,7 @@ namespace CreationsForge.Starfield.PluginAdapter;
 /// <summary>
 /// Admits, clones, and begins transactional edits against complete Starfield plugin output state.
 /// </summary>
-public sealed class StarfieldPluginOutputService
+public sealed partial class StarfieldPluginOutputService
 {
     /// <summary>The shared guarded output admission boundary.</summary>
     private readonly PluginOutputInputLoader InputLoader;
@@ -27,10 +28,16 @@ public sealed class StarfieldPluginOutputService
         ArgumentNullException.ThrowIfNull(inputLoader);
         InputLoader = inputLoader;
         Inspector = new StarfieldFormListInspector();
+        MajorRecordInspector = new MutagenMajorRecordInspector(
+            typeof(StarfieldMajorRecord),
+            "Mutagen.Bethesda.Starfield/0.55.0-alpha.53");
     }
 
     /// <summary>Gets the stateless complete Starfield FormList inspector used for detached snapshots.</summary>
     public StarfieldFormListInspector Inspector { get; }
+
+    /// <summary>Gets the complete native Starfield major-record inspector shared by read and save verification.</summary>
+    public IMajorRecordInspector MajorRecordInspector { get; }
 
     /// <summary>
     /// Creates or opens a separate complete Starfield output after guarded source and artifact admission.
@@ -131,6 +138,18 @@ public sealed class StarfieldPluginOutputService
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
+        if (string.Equals(request.RecordType, "GameSettingFloat", StringComparison.Ordinal))
+        {
+            return BeginGameSettingFloat(sources, candidate, request, cancellationToken);
+        }
+
+        if (!string.Equals(request.RecordType, "FormList", StringComparison.Ordinal))
+        {
+            return EngineResult<RecordEditIdentity>.Failure(new EngineError(
+                EngineErrorCode.UnsupportedOperation,
+                $"Starfield record family '{request.RecordType}' does not have a complete native editor."));
+        }
+
         return request.Role switch
         {
             FormListEditRole.New => BeginNew(sources, candidate, cancellationToken),
@@ -189,7 +208,7 @@ public sealed class StarfieldPluginOutputService
             }
             else
             {
-                mod = CreateNewMod(inputs.Output);
+                mod = CreateNewMod(sources, inputs.Output);
             }
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -250,10 +269,11 @@ public sealed class StarfieldPluginOutputService
         }
     }
 
-    /// <summary>Creates a new in-memory Starfield plugin with exact requested header flags and no filesystem mutation.</summary>
+    /// <summary>Creates a new in-memory Starfield plugin with its admitted game base master and requested header flags.</summary>
+    /// <param name="sources">The admitted source context from which the game base master may be selected.</param>
     /// <param name="output">The admitted absent output descriptor.</param>
-    /// <returns>An empty complete mutable Starfield plugin.</returns>
-    private static StarfieldMod CreateNewMod(PluginOutputPluginInput output)
+    /// <returns>An empty complete mutable Starfield plugin with no unrelated default masters.</returns>
+    private static StarfieldMod CreateNewMod(StarfieldPluginSourceSet sources, PluginOutputPluginInput output)
     {
         var mod = new StarfieldMod(output.ModKey, StarfieldRelease.Starfield)
         {
@@ -262,6 +282,12 @@ public sealed class StarfieldPluginOutputService
             IsMediumMaster = output.MasterStyle == MasterStyle.Medium,
             UsingLocalization = output.UsesLocalization
         };
+        var baseMaster = ModKey.FromNameAndExtension("Starfield.esm");
+        if (sources.GetMutagenMods().Any(source => source.ModKey == baseMaster))
+        {
+            ((IMod)mod).MasterReferences.Add(new MasterReference { Master = baseMaster });
+        }
+
         return mod;
     }
 

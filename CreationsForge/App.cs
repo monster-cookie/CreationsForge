@@ -52,6 +52,9 @@ public class App : Application
     /// <summary>The shared cleanup task once shutdown begins.</summary>
     private Task? ShutdownTask;
 
+    /// <summary>Removes the main window close guard after shutdown has been accepted.</summary>
+    private Action? DetachMainWindowCloseGuard;
+
     /// <summary>Whether an accepted teardown reached its terminal desktop-exit phase.</summary>
     private bool ShutdownAuthorized;
 
@@ -94,7 +97,9 @@ public class App : Application
                 var mainWindow = Container.Resolve<MainWindow>();
                 Container.Resolve<IApplicationNavigationService>().ShowWorkspaceShell();
                 mainWindow.Opened += OnMainWindowOpened;
+                DetachMainWindowCloseGuard = AttachMainWindowCloseGuard(mainWindow, desktop);
                 desktop.ShutdownRequested += OnDesktopShutdownRequested;
+                Console.CancelKeyPress += OnConsoleCancelKeyPress;
                 desktop.MainWindow = mainWindow;
             }
         }
@@ -272,6 +277,35 @@ public class App : Application
         _ = BeginShutdownAsync(desktop: null);
     }
 
+    /// <summary>Intercepts a main window close before the dialog owner can be destroyed.</summary>
+    /// <param name="mainWindow">The window that owns workspace review dialogs.</param>
+    /// <param name="desktop">The desktop lifetime to close after accepted cleanup, or <see langword="null"/> for isolated tests.</param>
+    /// <returns>An action that removes the close guard.</returns>
+    internal Action AttachMainWindowCloseGuard(Window mainWindow, IClassicDesktopStyleApplicationLifetime? desktop)
+    {
+        EventHandler<WindowClosingEventArgs> handler = (_, eventArgs) =>
+        {
+            if (ShutdownAuthorized)
+            {
+                return;
+            }
+
+            eventArgs.Cancel = true;
+            _ = BeginShutdownAsync(desktop);
+        };
+        mainWindow.Closing += handler;
+        return () => mainWindow.Closing -= handler;
+    }
+
+    /// <summary>Routes console termination requests through the same guarded desktop shutdown path.</summary>
+    /// <param name="sender">The console raising the termination request.</param>
+    /// <param name="eventArgs">The cancelable console termination request.</param>
+    private void OnConsoleCancelKeyPress(object? sender, ConsoleCancelEventArgs eventArgs)
+    {
+        eventArgs.Cancel = true;
+        Dispatcher.UIThread.Post(ShutDown);
+    }
+
     /// <summary>Cancels a desktop shutdown request until the shared asynchronous cleanup task finishes.</summary>
     /// <param name="sender">The desktop lifetime requesting shutdown.</param>
     /// <param name="eventArgs">The cancelable shutdown request.</param>
@@ -390,6 +424,9 @@ public class App : Application
             if (desktop is not null)
             {
                 ShutdownAuthorized = true;
+                Console.CancelKeyPress -= OnConsoleCancelKeyPress;
+                DetachMainWindowCloseGuard?.Invoke();
+                DetachMainWindowCloseGuard = null;
                 desktop.ShutdownRequested -= OnDesktopShutdownRequested;
                 try
                 {

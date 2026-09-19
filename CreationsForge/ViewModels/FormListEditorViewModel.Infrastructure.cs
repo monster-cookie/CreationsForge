@@ -163,6 +163,7 @@ public sealed partial class FormListEditorViewModel
         SeedValue = null;
         AvailableCommandsValue = Array.Empty<FormListCommandPresentation>();
         SelectedCommandValue = null;
+        ClearFormFields();
         DetachDraft();
         ValidationIssuesValue = Array.Empty<RecordWireDraftIssue>();
         IsStagedChangesKnownValue = false;
@@ -172,7 +173,7 @@ public sealed partial class FormListEditorViewModel
         SetOperationState(FormListEditorOperationState.Idle);
         SetStatus(WorkspaceCoordinator.CurrentWorkspace is null
             ? "No workspace is open."
-            : "Workspace changed. Begin a new edit or select an exact FormList context.");
+            : "Select a FormList to edit.");
         RaiseSessionProperties();
     }
 
@@ -214,7 +215,7 @@ public sealed partial class FormListEditorViewModel
     /// <param name="descriptor">The desktop descriptor captured before borrowing.</param>
     /// <returns>A typed identity or synchronization error, or <see langword="null"/> when exact validation succeeds.</returns>
     private static EngineError? ValidateWorkspaceState(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         WorkspaceState state,
         WorkspaceDescriptor descriptor)
     {
@@ -248,7 +249,7 @@ public sealed partial class FormListEditorViewModel
     /// <param name="session">The captured editor session.</param>
     /// <returns>A typed identity or synchronization error, or <see langword="null"/>.</returns>
     private static EngineError? ValidateSessionState(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         WorkspaceState state,
         WorkspaceDescriptor descriptor,
         FormListEditorSession session)
@@ -320,6 +321,7 @@ public sealed partial class FormListEditorViewModel
         OnPropertyChanged(nameof(IsBusy));
         OnPropertyChanged(nameof(CanMutateDraft));
         OnPropertyChanged(nameof(CanApply));
+        OnPropertyChanged(nameof(CanSaveForm));
         OnPropertyChanged(nameof(CanDiscardFormChanges));
         OnPropertyChanged(nameof(CanBeginNew));
         OnPropertyChanged(nameof(CanBeginOverride));
@@ -386,6 +388,7 @@ public sealed partial class FormListEditorViewModel
         OnPropertyChanged(nameof(HasPendingOperation));
         OnPropertyChanged(nameof(CanMutateDraft));
         OnPropertyChanged(nameof(CanApply));
+        OnPropertyChanged(nameof(CanSaveForm));
         OnPropertyChanged(nameof(CanDiscardFormChanges));
         RaiseCommandStates();
     }
@@ -397,6 +400,7 @@ public sealed partial class FormListEditorViewModel
         OverrideRelayCommand.RaiseCanExecuteChanged();
         ExistingOutputRelayCommand.RaiseCanExecuteChanged();
         ApplyRelayCommand.RaiseCanExecuteChanged();
+        SaveFormRelayCommand.RaiseCanExecuteChanged();
         DiscardFormChangesRelayCommand.RaiseCanExecuteChanged();
         RetryPendingRelayCommand.RaiseCanExecuteChanged();
     }

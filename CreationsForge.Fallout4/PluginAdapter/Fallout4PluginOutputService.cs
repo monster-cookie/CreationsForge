@@ -1,5 +1,6 @@
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Engine.PluginOutputs;
+using CreationsForge.Core.Engine.RecordInspection;
 using CreationsForge.Fallout4.PluginAdapter.RecordInspection;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Fallout4;
@@ -13,7 +14,7 @@ namespace CreationsForge.Fallout4.PluginAdapter;
 /// <summary>
 /// Opens, clones, and begins transactional edits against complete Fallout 4 plugin output state.
 /// </summary>
-public sealed class Fallout4PluginOutputService
+public sealed partial class Fallout4PluginOutputService
 {
     /// <summary>The shared boundary that admits and baselines explicit output artifacts.</summary>
     private readonly PluginOutputInputLoader _inputLoader;
@@ -26,10 +27,16 @@ public sealed class Fallout4PluginOutputService
         ArgumentNullException.ThrowIfNull(inputLoader);
         _inputLoader = inputLoader;
         Inspector = new Fallout4FormListInspector();
+        MajorRecordInspector = new MutagenMajorRecordInspector(
+            typeof(Fallout4MajorRecord),
+            "Mutagen.Bethesda.Fallout4/0.55.0-alpha.53");
     }
 
     /// <summary>Gets the stateless complete Fallout 4 FormList inspector used for detached snapshots.</summary>
     public Fallout4FormListInspector Inspector { get; }
+
+    /// <summary>Gets the complete native Fallout 4 major-record inspector shared by read and save verification.</summary>
+    public IMajorRecordInspector MajorRecordInspector { get; }
 
     /// <summary>Opens an existing Fallout 4 output or creates a complete in-memory output without writing files.</summary>
     /// <param name="sources">The borrowed Fallout 4 source lifetime.</param>
@@ -155,6 +162,17 @@ public sealed class Fallout4PluginOutputService
                 request,
                 EngineErrorCode.ValidationFailed,
                 $"The Fallout 4 candidate identity {mod.ModKey} does not match selected output {candidate.Association.ModKey}.");
+        }
+
+        if (string.Equals(request.RecordType, "GameSettingFloat", StringComparison.Ordinal))
+        {
+            return BeginGameSettingFloat(sources, candidate, request, cancellationToken);
+        }
+
+        if (!string.Equals(request.RecordType, "FormList", StringComparison.Ordinal))
+        {
+            return EditFailure(sources, request, EngineErrorCode.UnsupportedOperation,
+                $"Fallout 4 record family '{request.RecordType}' does not have a complete native editor.");
         }
 
         return request.Role switch

@@ -44,6 +44,8 @@ public sealed class McpPluginStdioProtocolTests
         "creationsforge_output_select",
         "creationsforge_formlist_begin_edit",
         "creationsforge_formlist_apply_edit",
+        "creationsforge_major_record_begin_edit",
+        "creationsforge_game_setting_float_apply_edit",
         "creationsforge_workspace_preview",
         "creationsforge_workspace_discard",
         "creationsforge_output_reopen",
@@ -331,7 +333,7 @@ public sealed class McpPluginStdioProtocolTests
     /// <param name="cancellationToken">The bounded test token.</param>
     /// <returns>All direct plugin matches in deterministic page order.</returns>
     private static async Task<IReadOnlyList<ReferenceSearchMatch>> ReadDirectReferenceMatchesAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         CancellationToken cancellationToken)
     {
         var matches = new List<ReferenceSearchMatch>();
@@ -354,7 +356,7 @@ public sealed class McpPluginStdioProtocolTests
     /// <param name="cancellationToken">The bounded test token.</param>
     /// <returns>All direct source contexts in deterministic page order.</returns>
     private static async Task<IReadOnlyList<ReferenceSearchMatch>> ReadDirectMajorRecordsAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         CancellationToken cancellationToken)
     {
         var records = new List<ReferenceSearchMatch>();

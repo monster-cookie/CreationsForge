@@ -134,6 +134,18 @@ public sealed partial class FormListEditorViewModel
         DraftSelectionValue = FormListDraftSeedSelection.CurrentValue();
         DetachDraft();
         ClearError();
+        if (IsCurrentSeed(session, SeedValue))
+        {
+            var formError = RebuildFormFields();
+            if (formError is not null)
+            {
+                PublishError(formError);
+            }
+        }
+        else
+        {
+            ClearFormFields();
+        }
         OnPropertyChanged(nameof(SelectedCommand));
         OnPropertyChanged(nameof(CanBeginNew));
         OnPropertyChanged(nameof(CanBeginOverride));
@@ -156,8 +168,8 @@ public sealed partial class FormListEditorViewModel
         ArgumentNullException.ThrowIfNull(node);
         if (!CanMutateDraft ||
             SessionValue is not { } session ||
-            DraftValue is not { } draft ||
-            !FormListDraft.EnumerateNodes(draft.Root).Any(candidate => ReferenceEquals(candidate, node)))
+            !(DraftValue is { } draft && FormListDraft.EnumerateNodes(draft.Root).Any(candidate => ReferenceEquals(candidate, node)) ||
+                FieldDraftsValue.Any(field => FormListDraft.EnumerateNodes(field.Draft.Root).Any(candidate => ReferenceEquals(candidate, node)))))
         {
             return;
         }

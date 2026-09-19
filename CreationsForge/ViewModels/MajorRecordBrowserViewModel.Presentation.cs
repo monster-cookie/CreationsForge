@@ -7,63 +7,68 @@ namespace CreationsForge.ViewModels;
 /// <summary>Supplies browser publication, hierarchy construction, retry, and stale-result checks.</summary>
 public sealed partial class MajorRecordBrowserViewModel
 {
-    /// <summary>Publishes one record page by replacement or append.</summary>
-    /// <param name="page">The exact engine page.</param>
-    /// <param name="records">The projected page rows.</param>
-    /// <param name="revision">The exact page revision.</param>
-    /// <param name="warnings">The page warnings.</param>
-    /// <param name="replace">Whether to replace existing records.</param>
-    private void PublishRecordPage(
-        MajorRecordListPage page,
+    /// <summary>Publishes the complete winning-record collection after one successful engine visit.</summary>
+    /// <param name="records">The projected records from every admitted source.</param>
+    /// <param name="groups">The prebuilt family hierarchy.</param>
+    /// <param name="revision">The revision of the completed visit.</param>
+    /// <param name="warnings">The visit warnings.</param>
+    private void PublishRecords(
         IReadOnlyList<MajorRecordViewModel> records,
+        IReadOnlyList<RecordTypeGroupViewModel> groups,
         WorkspaceRevision revision,
-        IReadOnlyList<EngineWarning> warnings,
-        bool replace)
+        IReadOnlyList<EngineWarning> warnings)
     {
         RevisionValue = revision;
-        ContinuationTokenValue = page.ContinuationToken;
-        var combined = replace
-            ? records.ToArray()
-            : RecordsValue
-                .Concat(records)
-                .GroupBy(record => record.FormKey)
-                .Select(group => group.First())
-                .ToArray();
-        RecordsValue = Array.AsReadOnly(combined);
-        RebuildRecordGroups();
-        PageWarnings = replace ? Array.AsReadOnly(warnings.ToArray()) : CombineWarnings(PageWarnings, warnings);
+        RecordsValue = records;
+        UnfilteredRecordGroupsValue = groups;
+        VisibleRecordCountValue = records.Count;
+        RecordGroupsValue = groups;
+        RecordTreeSourceValue = CreateRecordTreeSource(groups);
+        OnPropertyChanged(nameof(Records));
+        OnPropertyChanged(nameof(RecordGroups));
+        OnPropertyChanged(nameof(RecordTreeSource));
+        PageWarnings = Array.AsReadOnly(warnings.ToArray());
         SetWarnings(PageWarnings);
         ClearError();
         RetryKindValue = RetryKind.None;
-        SetStatus(HasMoreRecords
-            ? $"Loaded {RecordsValue.Count:N0} major record(s). More records are available."
-            : $"Loaded all {RecordsValue.Count:N0} major record(s)."
-        );
-        OnPropertyChanged(nameof(HasMoreRecords));
+        SetStatus($"Loaded all {RecordsValue.Count:N0} major record(s).");
         OnPropertyChanged(nameof(LoadedRecordCountText));
+        OnPropertyChanged(nameof(SelectedPluginFilterLabel));
         RefreshRelayCommand.RaiseCanExecuteChanged();
-        LoadMoreRelayCommand.RaiseCanExecuteChanged();
+        if (HasActiveRecordFilter || RecordSortModeValue != MajorRecordSortMode.FormId)
+        {
+            CurrentFilterTask = BeginFilterGenerationAsync();
+        }
     }
 
-    /// <summary>Groups loaded records by stable record family and rebuilds the hierarchy.</summary>
-    private void RebuildRecordGroups()
+    /// <summary>Groups winning records off the UI thread, collapsing families for very large workspaces.</summary>
+    /// <param name="records">The complete winning record summaries.</param>
+    /// <param name="sortMode">The ordering applied within each family.</param>
+    /// <returns>The sorted family hierarchy with every record retained.</returns>
+    private static IReadOnlyList<RecordTypeGroupViewModel> CreateRecordGroups(
+        IReadOnlyList<MajorRecordViewModel> records,
+        MajorRecordSortMode sortMode = MajorRecordSortMode.FormId)
     {
-        RecordGroupsValue = Array.AsReadOnly(
-            RecordsValue
+        var expandGroups = records.Count <= 10_000;
+        return Array.AsReadOnly(
+            records
                 .GroupBy(record => record.RecordType, StringComparer.Ordinal)
                 .OrderBy(group => group.Key, StringComparer.Ordinal)
                 .Select(group => new RecordTypeGroupViewModel(
                     $"{group.Key} ({group.Count():N0})",
                     Array.AsReadOnly<IRecordTreeNodeViewModel>(
-                        group.OrderBy(record => record.FormKey.ModKey.FileName.String, StringComparer.OrdinalIgnoreCase)
-                            .ThenBy(record => record.FormKey.ID)
+                        (sortMode == MajorRecordSortMode.EditorId
+                            ? group.OrderBy(record => string.IsNullOrEmpty(record.EditorId))
+                                .ThenBy(record => record.EditorId, StringComparer.OrdinalIgnoreCase)
+                                .ThenBy(record => record.FormKey.ModKey.FileName.String, StringComparer.OrdinalIgnoreCase)
+                                .ThenBy(record => record.FormKey.ID)
+                            : group.OrderBy(record => record.FormKey.ID)
+                                .ThenBy(record => record.FormKey.ModKey.FileName.String, StringComparer.OrdinalIgnoreCase))
                             .Cast<IRecordTreeNodeViewModel>()
-                            .ToArray())))
+                            .ToArray()),
+                    expandGroups,
+                    group.Key))
                 .ToArray());
-        RecordTreeSourceValue = CreateRecordTreeSource(RecordGroupsValue);
-        OnPropertyChanged(nameof(Records));
-        OnPropertyChanged(nameof(RecordGroups));
-        OnPropertyChanged(nameof(RecordTreeSource));
     }
 
     /// <summary>Publishes exact context options and selects origin-to-winner defaults.</summary>
@@ -90,8 +95,13 @@ public sealed partial class MajorRecordBrowserViewModel
     /// <summary>Clears all revision, page, selection, and comparison presentation.</summary>
     private void ClearWorkspacePresentation()
     {
+        FilterGeneration++;
+        CancelAndDispose(ref FilterCancellation);
+        UnfilteredRecordGroupsValue = Array.Empty<RecordTypeGroupViewModel>();
+        VisibleRecordCountValue = 0;
+        SetFiltering(false);
         RevisionValue = null;
-        ContinuationTokenValue = null;
+        LoadingRecordCountValue = 0;
         RecordsValue = Array.Empty<MajorRecordViewModel>();
         RecordGroupsValue = Array.Empty<RecordTypeGroupViewModel>();
         RecordTreeSourceValue = CreateRecordTreeSource(RecordGroupsValue);
@@ -105,10 +115,9 @@ public sealed partial class MajorRecordBrowserViewModel
         OnPropertyChanged(nameof(RecordGroups));
         OnPropertyChanged(nameof(RecordTreeSource));
         OnPropertyChanged(nameof(SelectedRecord));
-        OnPropertyChanged(nameof(HasMoreRecords));
         OnPropertyChanged(nameof(LoadedRecordCountText));
+        OnPropertyChanged(nameof(SelectedPluginFilterLabel));
         RefreshRelayCommand.RaiseCanExecuteChanged();
-        LoadMoreRelayCommand.RaiseCanExecuteChanged();
     }
 
     /// <summary>Clears exact context options and their comparison.</summary>
@@ -184,7 +193,7 @@ public sealed partial class MajorRecordBrowserViewModel
         if (SetProperty(ref IsBusyValue, isBusy, nameof(IsBusy)))
         {
             RefreshRelayCommand.RaiseCanExecuteChanged();
-            LoadMoreRelayCommand.RaiseCanExecuteChanged();
+            OnPropertyChanged(nameof(LoadedRecordCountText));
         }
     }
 
@@ -230,7 +239,6 @@ public sealed partial class MajorRecordBrowserViewModel
     {
         return RetryKindValue switch
         {
-            RetryKind.Page when RecordsValue.Count > 0 => LoadMoreAsync(),
             RetryKind.Page => RefreshAsync(),
             RetryKind.Contexts => BeginSelectionGenerationAsync(),
             RetryKind.Comparison => BeginComparisonGenerationAsync(),
@@ -392,7 +400,7 @@ public sealed partial class MajorRecordBrowserViewModel
     /// <param name="warnings">Warnings observed before the conflict.</param>
     /// <returns>The typed failed result.</returns>
     private static EngineResult<T> RevisionFailure<T>(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         WorkspaceRevision? expectedRevision,
         WorkspaceRevision? observedRevision,
         string message,

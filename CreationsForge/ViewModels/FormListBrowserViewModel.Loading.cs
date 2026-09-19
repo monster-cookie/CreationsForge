@@ -161,7 +161,7 @@ public sealed partial class FormListBrowserViewModel
     /// <param name="cancellationToken">The generation cancellation token.</param>
     /// <returns>A detached revision-consistent browser snapshot or typed engine failure.</returns>
     private static async ValueTask<EngineResult<FormListBrowserSnapshot>> ReadBrowserSnapshotAsync(
-        IFormListWorkspace workspace,
+        IPluginWorkspace workspace,
         CancellationToken cancellationToken)
     {
         var stateResult = await workspace.ReadStateAsync(cancellationToken).ConfigureAwait(false);

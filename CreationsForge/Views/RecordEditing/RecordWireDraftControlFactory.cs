@@ -29,6 +29,23 @@ internal static class RecordWireDraftControlFactory
         return CreateNode(node, pickReferenceAsync, isRoot: true, forceReadOnly: false);
     }
 
+    /// <summary>Creates a directly labeled record field without a command-style root header or JSON path.</summary>
+    internal static Control CreateFormField(
+        RecordWireDraftNode node,
+        Func<RecordWireFormLinkDraftNode, Task>? pickReferenceAsync = null)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+        return new StackPanel
+        {
+            Spacing = 5,
+            Children =
+            {
+                CreateNodeEditor(node, pickReferenceAsync, forceReadOnly: false),
+                CreateIssueList(node)
+            }
+        };
+    }
+
     /// <summary>Creates one typed node and its local issue surface.</summary>
     /// <param name="node">The exact typed node.</param>
     /// <param name="pickReferenceAsync">The optional existing reference-picker bridge.</param>
@@ -41,26 +58,7 @@ internal static class RecordWireDraftControlFactory
         bool isRoot,
         bool forceReadOnly)
     {
-        var editor = node.Kind switch
-        {
-            RecordWireDraftNodeKind.Object => CreateObjectEditor((RecordWireObjectDraftNode)node, pickReferenceAsync, forceReadOnly),
-            RecordWireDraftNodeKind.Array => CreateArrayEditor((RecordWireArrayDraftNode)node, pickReferenceAsync, forceReadOnly),
-            RecordWireDraftNodeKind.Union => CreateUnionEditor((RecordWireUnionDraftNode)node, pickReferenceAsync, forceReadOnly),
-            RecordWireDraftNodeKind.Nullable => CreateNullableEditor((RecordWireNullableDraftNode)node, pickReferenceAsync, forceReadOnly),
-            RecordWireDraftNodeKind.Boolean => CreateBooleanEditor((RecordWireBooleanDraftNode)node, forceReadOnly),
-            RecordWireDraftNodeKind.Integer => CreateIntegerEditor((RecordWireIntegerDraftNode)node, forceReadOnly),
-            RecordWireDraftNodeKind.String => CreateStringEditor((RecordWireStringDraftNode)node, forceReadOnly, acceptsReturn: false),
-            RecordWireDraftNodeKind.Enum => CreateEnumEditor((RecordWireEnumDraftNode)node, forceReadOnly),
-            RecordWireDraftNodeKind.FormLink => CreateFormLinkEditor((RecordWireFormLinkDraftNode)node, pickReferenceAsync, forceReadOnly),
-            RecordWireDraftNodeKind.FormLinkOrIndex => CreateFormLinkOrIndexEditor((RecordWireFormLinkOrIndexDraftNode)node, pickReferenceAsync, forceReadOnly),
-            RecordWireDraftNodeKind.FloatBits => CreateSpecializedObjectEditor((RecordWireFloatBitsDraftNode)node, "Exact floating-point bits are authoritative.", pickReferenceAsync, forceReadOnly),
-            RecordWireDraftNodeKind.ByteArray => CreateSpecializedObjectEditor((RecordWireByteArrayDraftNode)node, "Base64 bytes and decoded length are validated together.", pickReferenceAsync, forceReadOnly),
-            RecordWireDraftNodeKind.TranslatedString => CreateSpecializedObjectEditor((RecordWireTranslatedStringDraftNode)node, "Translations retain their language keys and ordering.", pickReferenceAsync, forceReadOnly),
-            RecordWireDraftNodeKind.Asset => CreateSpecializedObjectEditor((RecordWireAssetDraftNode)node, "The given path and explicit null state are authoritative.", pickReferenceAsync, forceReadOnly),
-            RecordWireDraftNodeKind.Color => CreateSpecializedObjectEditor((RecordWireColorDraftNode)node, "Authoritative and redundant color values must remain consistent.", pickReferenceAsync, forceReadOnly),
-            RecordWireDraftNodeKind.Array2D => CreateSpecializedObjectEditor((RecordWireArray2DDraftNode)node, "Dimensions, row boundaries, and cell order are preserved.", pickReferenceAsync, forceReadOnly),
-            _ => throw new ArgumentOutOfRangeException(nameof(node), node.Kind, "Unsupported plugin wire draft node kind.")
-        };
+        var editor = CreateNodeEditor(node, pickReferenceAsync, forceReadOnly);
 
         if (isRoot)
         {
@@ -93,6 +91,34 @@ internal static class RecordWireDraftControlFactory
                     CreateIssueList(node)
                 }
             }
+        };
+    }
+
+    /// <summary>Builds the typed input control shared by command and direct-field presentations.</summary>
+    private static Control CreateNodeEditor(
+        RecordWireDraftNode node,
+        Func<RecordWireFormLinkDraftNode, Task>? pickReferenceAsync,
+        bool forceReadOnly)
+    {
+        return node.Kind switch
+        {
+            RecordWireDraftNodeKind.Object => CreateObjectEditor((RecordWireObjectDraftNode)node, pickReferenceAsync, forceReadOnly),
+            RecordWireDraftNodeKind.Array => CreateArrayEditor((RecordWireArrayDraftNode)node, pickReferenceAsync, forceReadOnly),
+            RecordWireDraftNodeKind.Union => CreateUnionEditor((RecordWireUnionDraftNode)node, pickReferenceAsync, forceReadOnly),
+            RecordWireDraftNodeKind.Nullable => CreateNullableEditor((RecordWireNullableDraftNode)node, pickReferenceAsync, forceReadOnly),
+            RecordWireDraftNodeKind.Boolean => CreateBooleanEditor((RecordWireBooleanDraftNode)node, forceReadOnly),
+            RecordWireDraftNodeKind.Integer => CreateIntegerEditor((RecordWireIntegerDraftNode)node, forceReadOnly),
+            RecordWireDraftNodeKind.String => CreateStringEditor((RecordWireStringDraftNode)node, forceReadOnly, acceptsReturn: false),
+            RecordWireDraftNodeKind.Enum => CreateEnumEditor((RecordWireEnumDraftNode)node, forceReadOnly),
+            RecordWireDraftNodeKind.FormLink => CreateFormLinkEditor((RecordWireFormLinkDraftNode)node, pickReferenceAsync, forceReadOnly),
+            RecordWireDraftNodeKind.FormLinkOrIndex => CreateFormLinkOrIndexEditor((RecordWireFormLinkOrIndexDraftNode)node, pickReferenceAsync, forceReadOnly),
+            RecordWireDraftNodeKind.FloatBits => CreateSpecializedObjectEditor((RecordWireFloatBitsDraftNode)node, "Exact floating-point bits are authoritative.", pickReferenceAsync, forceReadOnly),
+            RecordWireDraftNodeKind.ByteArray => CreateSpecializedObjectEditor((RecordWireByteArrayDraftNode)node, "Base64 bytes and decoded length are validated together.", pickReferenceAsync, forceReadOnly),
+            RecordWireDraftNodeKind.TranslatedString => CreateSpecializedObjectEditor((RecordWireTranslatedStringDraftNode)node, "Translations retain their language keys and ordering.", pickReferenceAsync, forceReadOnly),
+            RecordWireDraftNodeKind.Asset => CreateSpecializedObjectEditor((RecordWireAssetDraftNode)node, "The given path and explicit null state are authoritative.", pickReferenceAsync, forceReadOnly),
+            RecordWireDraftNodeKind.Color => CreateSpecializedObjectEditor((RecordWireColorDraftNode)node, "Authoritative and redundant color values must remain consistent.", pickReferenceAsync, forceReadOnly),
+            RecordWireDraftNodeKind.Array2D => CreateSpecializedObjectEditor((RecordWireArray2DDraftNode)node, "Dimensions, row boundaries, and cell order are preserved.", pickReferenceAsync, forceReadOnly),
+            _ => throw new ArgumentOutOfRangeException(nameof(node), node.Kind, "Unsupported plugin wire draft node kind.")
         };
     }
 
