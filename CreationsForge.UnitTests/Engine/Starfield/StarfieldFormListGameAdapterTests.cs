@@ -138,6 +138,68 @@ public sealed class StarfieldFormListGameAdapterTests
         File.ReadAllBytes(outputPath).ShouldBe(destinationBytes);
     }
 
+    /// <summary>Verifies a new small embedded master reopens unchanged fields and identifies multilingual Name loss precisely.</summary>
+    /// <param name="nameVariant">Zero for no name, one for English, or two for English and French.</param>
+    /// <returns>A task that completes after private staged output is validated or safely rejected.</returns>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task WriteAndValidateAsync_NewSmallEmbeddedMasterFormList_Reopens(int nameVariant)
+    {
+        using var fixture = StarfieldPluginTestFixture.Create();
+        var outputDirectory = fixture.RootDirectory.CreateSubdirectory("NewSmallEmbeddedOutput");
+        var association = CreateAssociation(
+            Path.Combine(outputDirectory.FullName, "NewSmallEmbeddedOutput.esm"),
+            OutputMasterStyle.Small,
+            LocalizedOutputMode.Embedded);
+        var stagingDirectory = fixture.RootDirectory.CreateSubdirectory("NewSmallEmbeddedStage");
+        var adapter = CreateAdapter(out _);
+        await using var sources = await OpenSourcesAsync(adapter, fixture);
+        var open = await adapter.OpenOutputAsync(
+            sources,
+            new SelectOutputRequest(Guid.NewGuid(), sources.Revision, OutputSelectionMode.CreateNew, association),
+            TestContext.Current.CancellationToken);
+        open.Succeeded.ShouldBeTrue(open.Error?.Message);
+        await using var output = open.Value!.Output;
+        var begin = adapter.BeginEdit(
+            sources,
+            output,
+            new BeginEditRequest(Guid.NewGuid(), sources.Revision, FormListEditRole.New),
+            TestContext.Current.CancellationToken);
+        begin.Succeeded.ShouldBeTrue(begin.Error?.Message);
+        if (nameVariant > 0)
+        {
+            var name = new TranslatedString(Language.English, "New English name");
+            if (nameVariant == 2)
+            {
+                name.Set(Language.French, "Nouveau nom francais");
+            }
+            Apply(adapter, sources, output, begin.Value!.FormKey, new StarfieldSetNameEdit(name));
+        }
+
+        var result = await adapter.WriteAndValidateAsync(
+            sources,
+            output,
+            CreateWriteRequest(stagingDirectory.FullName, open.Value),
+            TestContext.Current.CancellationToken);
+
+        if (nameVariant == 2)
+        {
+            result.Succeeded.ShouldBeFalse();
+            result.Error!.Code.ShouldBe(EngineErrorCode.ValidationFailed);
+            result.Error.Message.ShouldContain("changed field 'Name'");
+            result.Error.Message.ShouldContain("localized string files");
+        }
+        else
+        {
+            result.Succeeded.ShouldBeTrue(result.Error?.Message);
+            result.Value!.Disposition.ShouldBe(PluginWriteDisposition.StagedChanges);
+            await result.Value.StagedOutput!.DisposeAsync();
+        }
+        File.Exists(association.PluginPath).ShouldBeFalse();
+    }
+
     /// <summary>An identical destination restored as another file identity rejects the stale baseline and stages the next edit with a fresh baseline.</summary>
     /// <returns>A task that completes after every independently opened plugin lifetime is released.</returns>
     [Fact]

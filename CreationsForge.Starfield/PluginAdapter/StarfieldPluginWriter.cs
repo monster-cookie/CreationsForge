@@ -196,6 +196,7 @@ public sealed class StarfieldPluginWriter
                 reopened,
                 masterResult.Value!,
                 provenance,
+                output.Association.LocalizedOutputMode,
                 cancellationToken);
             if (validationError is not null)
             {
@@ -600,6 +601,7 @@ public sealed class StarfieldPluginWriter
     /// <param name="reopened">The strictly reopened staged output.</param>
     /// <param name="retainedMasters">The exact expected master sequence.</param>
     /// <param name="provenance">The staged edit identities whose non-FormList records need complete field verification.</param>
+    /// <param name="localizedOutputMode">The selected representation for translated output text.</param>
     /// <param name="cancellationToken">A token observed throughout comparison.</param>
     /// <returns>A typed preservation failure, or <see langword="null"/>.</returns>
     private EngineError? ValidateReopened(
@@ -607,6 +609,7 @@ public sealed class StarfieldPluginWriter
         IStarfieldModGetter reopened,
         IReadOnlyList<ModKey> retainedMasters,
         IReadOnlyList<RecordEditProvenance> provenance,
+        LocalizedOutputMode localizedOutputMode,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -625,12 +628,49 @@ public sealed class StarfieldPluginWriter
                 "The staged Starfield output changed one or more complete record fields during serialization or strict reopen.");
         }
 
-        if (!FormListsEqual(expected, reopened, cancellationToken)
-            || !EditedMajorRecordsEqual(expected, reopened, provenance, cancellationToken))
+        var expectedLists = expected.FormLists.ToArray();
+        var reopenedLists = reopened.FormLists.ToArray();
+        if (expectedLists.Length != reopenedLists.Length)
         {
             return new EngineError(
                 EngineErrorCode.ValidationFailed,
-                "The staged Starfield output changed one or more FormList fields or nondefault-language translations, or edited major-record fields during serialization or strict reopen.");
+                "The staged Starfield output changed its FormList record count during serialization or strict reopen.");
+        }
+
+        for (var index = 0; index < expectedLists.Length; index++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var before = expectedLists[index];
+            var after = reopenedLists[index];
+            if (before.FormKey != after.FormKey)
+            {
+                return new EngineError(
+                    EngineErrorCode.ValidationFailed,
+                    $"The staged Starfield FormList order changed at '{before.FormKey}' during serialization or strict reopen.");
+            }
+
+            var changes = _inspector.Compare(before, after, cancellationToken);
+            if (changes.Count == 0)
+            {
+                continue;
+            }
+
+            var field = changes[0].FieldIdentifier;
+            var guidance = field == nameof(IFormListGetter.Name)
+                && localizedOutputMode == LocalizedOutputMode.Embedded
+                && before.Name?.NumLanguages > 1
+                    ? " Embedded plugins cannot retain multiple Name languages; create a plugin with localized string files to save them."
+                    : string.Empty;
+            return new EngineError(
+                EngineErrorCode.ValidationFailed,
+                $"The staged Starfield FormList '{before.FormKey}' changed field '{field}' during serialization or strict reopen.{guidance}");
+        }
+
+        if (!EditedMajorRecordsEqual(expected, reopened, provenance, cancellationToken))
+        {
+            return new EngineError(
+                EngineErrorCode.ValidationFailed,
+                "The staged Starfield output changed edited major-record fields during serialization or strict reopen.");
         }
 
         return null;

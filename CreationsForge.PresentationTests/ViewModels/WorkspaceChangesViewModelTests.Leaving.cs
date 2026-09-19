@@ -113,6 +113,55 @@ public sealed partial class WorkspaceChangesViewModelTests
         context.Workspace.PreviewCount.ShouldBeGreaterThanOrEqualTo(3);
     }
 
+    /// <summary>Verifies a definitive save validation rejection does not prevent the user from discarding and leaving.</summary>
+    /// <returns>A task that completes after the failed save, successful discard, and clean leave proof.</returns>
+    [Fact]
+    public async Task ReserveLeaveAsync_FailedSaveThenDiscardAndProceed_TransfersCleanPermit()
+    {
+        await using var context = WorkspaceChangesTestContext.CreateReady(hasStagedChanges: true);
+        var initialState = context.Workspace!.State;
+        var resultRevision = initialState.Revision.Next();
+        context.Workspace.OnSaveAsync = (request, _) => ValueTask.FromResult(new SaveResult(
+            context.Workspace.WorkspaceId,
+            request.OperationId,
+            request.ExpectedRevision,
+            request.ExpectedRevision,
+            SaveCommitStatus.NotCommitted,
+            committedBaseline: null,
+            recoveryEvidenceToken: null,
+            resolvedEvidence: null,
+            new EngineError(EngineErrorCode.ValidationFailed, "The staged output changed a translated field."),
+            warnings: []));
+        context.Workspace.OnDiscardAsync = (request, _) =>
+        {
+            context.Workspace.State = ReadyState(initialState, initialState.OutputBaseline!, resultRevision);
+            context.Workspace.Preview = new WorkspacePreview([], 0, []);
+            return ValueTask.FromResult(EngineResult<OperationReceipt>.Success(
+                new OperationReceipt(request.OperationId, resultRevision),
+                context.Workspace.WorkspaceId,
+                request.OperationId,
+                request.ExpectedRevision,
+                resultRevision));
+        };
+        ConfigureSuccessfulParticipantRefresh(context);
+        context.DialogService.OnShowAsync = async (viewModel, _) =>
+        {
+            (await viewModel.ApplyLeaveChoiceAsync(WorkspaceChangesDialogChoice.SaveAndProceed))
+                .ShouldBe(WorkspaceLeaveChoiceOutcome.ContinueDialog);
+            viewModel.CanDiscardAndProceed.ShouldBeTrue();
+            (await viewModel.ApplyLeaveChoiceAsync(WorkspaceChangesDialogChoice.DiscardAndProceed))
+                .ShouldBe(WorkspaceLeaveChoiceOutcome.Proceed);
+            return WorkspaceChangesDialogResult.Proceed;
+        };
+
+        using var reservation = await context.ViewModel.ReserveLeaveAsync(WorkspaceLeaveReason.CloseWorkspace);
+
+        reservation.ShouldNotBeNull();
+        reservation.Disposition.ShouldBe(WorkspaceLeaveDisposition.ReadyAndClean);
+        context.Workspace.SaveRequests.Count.ShouldBe(1);
+        context.Workspace.DiscardRequests.Count.ShouldBe(1);
+    }
+
     /// <summary>Verifies an authentic external discard conflict can authorize abandonment for Open only.</summary>
     /// <returns>A task that completes after the scenario assertions.</returns>
     [Fact]

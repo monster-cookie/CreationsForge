@@ -2,9 +2,11 @@ using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Media;
+using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.ViewModels;
 
 namespace CreationsForge.Views;
@@ -68,6 +70,23 @@ public sealed class NewPluginView : UserControl
         var masterSizeLabel = Label("Master size");
         masterSizeLabel.Bind(IsVisibleProperty, new Binding(nameof(WorkspaceSelectionViewModel.NewPluginSupportsMasterSize)));
 
+        var textStorage = new ComboBox
+        {
+            MinWidth = 220,
+            ItemTemplate = new FuncDataTemplate<LocalizedOutputMode>((mode, _) =>
+                new TextBlock
+                {
+                    Text = mode == LocalizedOutputMode.Embedded ? "Embedded in plugin" : "Localized string files"
+                })
+        };
+        textStorage.Bind(ItemsControl.ItemsSourceProperty, new Binding(nameof(WorkspaceSelectionViewModel.LocalizedOutputModeOptions)));
+        textStorage.Bind(SelectingItemsControl.SelectedItemProperty, new Binding(nameof(WorkspaceSelectionViewModel.NewPluginLocalizedOutputMode))
+        {
+            Mode = BindingMode.TwoWay
+        });
+        textStorage.Bind(IsEnabledProperty, new Binding(nameof(WorkspaceSelectionViewModel.CanOpen)));
+        AutomationProperties.SetAutomationId(textStorage, "NewPluginTextStorageSelector");
+
         var fileName = new TextBox { PlaceholderText = "MyPlugin", MinHeight = 34 };
         fileName.Bind(TextBox.TextProperty, new Binding(nameof(WorkspaceSelectionViewModel.NewPluginFileName))
         {
@@ -95,7 +114,7 @@ public sealed class NewPluginView : UserControl
 
         var hint = new TextBlock
         {
-            Text = "Only the selected game's base plugin is added as an initial master.",
+            Text = "Only the selected game's base plugin is added as an initial master. Choose localized string files to save names in more than one language. Localized output currently supports FormList records only.",
             TextWrapping = TextWrapping.Wrap
         };
         App.ApplyApplicationTextForeground(hint);
@@ -144,6 +163,7 @@ public sealed class NewPluginView : UserControl
                     Label("Game"), game,
                     Label("Plugin file type"), extension,
                     masterSizeLabel, masterSize,
+                    Label("Text storage"), textStorage,
                     Label("Plugin name (without extension)"), fileNameField,
                     Label("Game Data directory"), dataDirectory,
                     hint, progress, status, error, actions

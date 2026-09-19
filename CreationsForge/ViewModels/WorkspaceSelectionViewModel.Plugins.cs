@@ -268,6 +268,12 @@ public sealed partial class WorkspaceSelectionViewModel
             return false;
         }
 
+        if (!Enum.IsDefined(NewPluginLocalizedOutputMode))
+        {
+            ErrorText = "Select a valid text storage mode for the new plugin.";
+            return false;
+        }
+
         var pluginName = NewPluginFileName.Trim();
         if (pluginName.Length == 0)
         {
@@ -317,7 +323,7 @@ public sealed partial class WorkspaceSelectionViewModel
             PluginCatalogValue.DataDirectoryPath,
             outputPath,
             OutputSelectionMode.CreateNew,
-            LocalizedOutputMode.Embedded,
+            NewPluginLocalizedOutputMode,
             OutputMasterStyle);
         return await OpenWorkspaceAsync(cancellationToken);
     }

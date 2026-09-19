@@ -39,6 +39,47 @@ public sealed class FormListRegressionMatrixTests
     /// <summary>The raw plugin compressed-record bit set by every supported game adapter.</summary>
     private const int CompressedRecordFlag = 0x00040000;
 
+    /// <summary>Verifies a rejected small-master save leaves the staged record discardable without creating an output artifact.</summary>
+    /// <returns>A task that completes after the original empty output has been reopened.</returns>
+    [Fact]
+    public async Task StarfieldRejectedEmbeddedTranslationSave_CanDiscardNewOutput()
+    {
+        using var fixture = WorkspaceIntegrationFixture.Create(SupportedGame.Starfield);
+        var outputDirectory = fixture.RootDirectory.CreateSubdirectory("RejectedSmallMaster");
+        var outputPath = Path.Combine(outputDirectory.FullName, "RejectedSmallMaster.esm");
+        var association = new OutputAssociation(
+            outputPath,
+            ModKey.FromNameAndExtension("RejectedSmallMaster.esm"),
+            LocalizedOutputMode.Embedded,
+            OutputMasterStyle.Small);
+        using var logger = new LoggerConfiguration().CreateLogger();
+        await using var services = EngineComposition.Create(logger);
+        var opened = await services.WorkspaceFactory.OpenAsync(fixture.CreateOpenRequest(), TestContext.Current.CancellationToken);
+        opened.Succeeded.ShouldBeTrue(DescribeError(opened.Error));
+        await using var workspace = opened.Value!;
+        var selected = await SelectOutputAsync(workspace, association, OutputSelectionMode.CreateNew);
+        var edit = await BeginEditAsync(workspace, FormListEditRole.New);
+        var name = new TranslatedString(Language.English, "English name");
+        name.Set(Language.French, "Nom francais");
+        await ApplyEditAsync(workspace, edit.EditId, new StarfieldSetNameEdit(name));
+
+        var save = await workspace.SaveAsync(
+            new SaveRequest(Guid.NewGuid(), workspace.Revision, selected.Baseline),
+            TestContext.Current.CancellationToken);
+        save.Status.ShouldBe(SaveCommitStatus.NotCommitted);
+        save.Error!.Message.ShouldContain("changed field 'Name'");
+        File.Exists(outputPath).ShouldBeFalse();
+
+        var discarded = await workspace.DiscardChangesAsync(
+            new DiscardChangesRequest(Guid.NewGuid(), workspace.Revision, selected.Baseline),
+            TestContext.Current.CancellationToken);
+        discarded.Succeeded.ShouldBeTrue(DescribeError(discarded.Error));
+        var preview = await workspace.PreviewAsync(TestContext.Current.CancellationToken);
+        preview.Succeeded.ShouldBeTrue(DescribeError(preview.Error));
+        preview.Value!.HasStagedChanges.ShouldBeFalse();
+        File.Exists(outputPath).ShouldBeFalse();
+    }
+
     /// <summary>Identifies each owner-derived representation exercised for a Starfield link-or-index condition parameter.</summary>
     public enum StarfieldConditionParameterMode
     {

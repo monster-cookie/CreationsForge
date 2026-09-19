@@ -60,6 +60,9 @@ public sealed partial class WorkspaceSelectionViewModel : ViewModelBase
     /// <summary>How localized output strings are represented.</summary>
     private LocalizedOutputMode LocalizedOutputModeValue = LocalizedOutputMode.Embedded;
 
+    /// <summary>The text representation selected for a newly created plugin.</summary>
+    private LocalizedOutputMode NewPluginLocalizedOutputModeValue = LocalizedOutputMode.Embedded;
+
     /// <summary>The selected output master style.</summary>
     private OutputMasterStyle OutputMasterStyleValue = OutputMasterStyle.Full;
 
@@ -206,6 +209,13 @@ public sealed partial class WorkspaceSelectionViewModel : ViewModelBase
 
     /// <summary>Gets all localized-output modes supported by the engine.</summary>
     public IReadOnlyList<LocalizedOutputMode> LocalizedOutputModeOptions { get; } = Enum.GetValues<LocalizedOutputMode>();
+
+    /// <summary>Gets or sets whether a new plugin stores text inside the plugin or in localized string files.</summary>
+    public LocalizedOutputMode NewPluginLocalizedOutputMode
+    {
+        get => NewPluginLocalizedOutputModeValue;
+        set => SetProperty(ref NewPluginLocalizedOutputModeValue, value);
+    }
 
     /// <summary>Gets or sets the requested plugin output master style.</summary>
     public OutputMasterStyle OutputMasterStyle

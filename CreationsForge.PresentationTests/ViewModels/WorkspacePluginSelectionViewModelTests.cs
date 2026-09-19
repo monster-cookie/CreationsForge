@@ -170,6 +170,30 @@ public sealed class WorkspacePluginSelectionViewModelTests
         workspace.LastSelectOutputRequest.Output.MasterStyle.ShouldBe(OutputMasterStyle.Small);
     }
 
+    /// <summary>Verifies a localized new-plugin choice reaches the output association instead of being forced to embedded text.</summary>
+    [Fact]
+    public async Task CreateNewPluginAsync_WithLocalizedText_PreservesSelectedMode()
+    {
+        var root = CreateTestRoot();
+        var workspace = CreateSuccessfulWorkspace();
+        var factory = CreateFactory(workspace);
+        await using var coordinator = CreateCoordinator(factory);
+        var discovery = new FakePluginDiscoveryService
+        {
+            Result = EngineResult<PluginCatalog>.Success(CreateMisorderedCatalog(root))
+        };
+        var viewModel = CreateViewModel(coordinator, new FakeWorkspacePathPicker(), discovery);
+        await viewModel.RefreshPluginsAsync();
+        viewModel.NewPluginExtension = ".esm";
+        viewModel.NewPluginFileName = "LocalizedPatch";
+        viewModel.NewPluginLocalizedOutputMode = LocalizedOutputMode.SeparateStringFiles;
+
+        (await viewModel.CreateNewPluginAsync()).ShouldBeTrue();
+
+        workspace.LastSelectOutputRequest.ShouldNotBeNull();
+        workspace.LastSelectOutputRequest.Output.LocalizedOutputMode.ShouldBe(LocalizedOutputMode.SeparateStringFiles);
+    }
+
     /// <summary>Verifies selecting a patch never adds it or its declared masters to a new plugin by default.</summary>
     [Fact]
     public async Task CreateNewPluginAsync_WithSelectedPatch_StillUsesOnlyGameBase()

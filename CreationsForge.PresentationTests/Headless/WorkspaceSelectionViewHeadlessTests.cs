@@ -125,6 +125,10 @@ public sealed class WorkspaceSelectionViewHeadlessTests
             ControlFinder.FindByAutomationId<NewPluginView>(view, "NewPluginView").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<ComboBox>(view, "NewPluginGameSelector")!.ItemCount.ShouldBe(3);
             ControlFinder.FindByAutomationId<ComboBox>(view, "NewPluginExtensionSelector")!.ItemCount.ShouldBe(3);
+            var textStorage = ControlFinder.FindByAutomationId<ComboBox>(view, "NewPluginTextStorageSelector").ShouldNotBeNull();
+            textStorage.Items.OfType<LocalizedOutputMode>().ShouldBe(
+                [LocalizedOutputMode.Embedded, LocalizedOutputMode.SeparateStringFiles]);
+            textStorage.SelectedItem.ShouldBe(LocalizedOutputMode.Embedded);
             var masterSize = ControlFinder.FindByAutomationId<ComboBox>(view, "NewPluginMasterStyleSelector").ShouldNotBeNull();
             masterSize.IsVisible.ShouldBeFalse();
             var name = ControlFinder.FindByAutomationId<TextBox>(view, "NewPluginNameBox").ShouldNotBeNull();

@@ -98,6 +98,97 @@ public sealed class WorkspaceChangesDialogServiceHeadlessTests
         }
     }
 
+    /// <summary>Verifies the real modal accepts Discard and Proceed after a definitive staged-save validation failure.</summary>
+    /// <returns>A task that completes after the modal closes and a clean leave reservation is transferred.</returns>
+    [AvaloniaFact]
+    public async Task ReserveLeaveAsync_FailedSaveThenDiscardButton_LeavesCleanWorkspace()
+    {
+        var owner = new Window();
+        var windowService = new HeadlessApplicationWindowService(owner);
+        var dialogService = new WorkspaceChangesDialogService(
+            windowService,
+            new LoggerConfiguration().CreateLogger());
+        await using var context = WorkspaceChangesTestContext.CreateReadyWithPresentationServices(
+            dialogService,
+            new AvaloniaUiDispatcher(),
+            hasStagedChanges: true);
+        var workspace = context.Workspace.ShouldNotBeNull();
+        var originalState = workspace.State;
+        var discardedRevision = originalState.Revision.Next();
+        workspace.OnSaveAsync = (request, _) => ValueTask.FromResult(new SaveResult(
+            workspace.WorkspaceId,
+            request.OperationId,
+            request.ExpectedRevision,
+            request.ExpectedRevision,
+            SaveCommitStatus.NotCommitted,
+            committedBaseline: null,
+            recoveryEvidenceToken: null,
+            resolvedEvidence: null,
+            new EngineError(EngineErrorCode.ValidationFailed, "The staged output changed a translated field."),
+            warnings: []));
+        workspace.OnDiscardAsync = (request, _) =>
+        {
+            workspace.State = new WorkspaceState(
+                originalState.Game,
+                originalState.Release,
+                originalState.Output,
+                originalState.OutputBaseline,
+                new OutputSynchronizationState(OutputSynchronizationStatus.Ready, null),
+                discardedRevision);
+            workspace.Preview = new WorkspacePreview([], 0, []);
+            return ValueTask.FromResult(EngineResult<OperationReceipt>.Success(
+                new OperationReceipt(request.OperationId, discardedRevision),
+                workspace.WorkspaceId,
+                request.OperationId,
+                request.ExpectedRevision,
+                discardedRevision));
+        };
+        context.EditParticipant.OnRefreshAsync = (_, _, _) => Task.FromResult(
+            EngineResult<WorkspaceState>.Success(
+                workspace.State,
+                workspace.WorkspaceId,
+                baseRevision: workspace.State.Revision,
+                resultRevision: workspace.State.Revision));
+        var saveRejected = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        context.ViewModel.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(WorkspaceChangesViewModel.ErrorCode)
+                && context.ViewModel.ErrorCode == EngineErrorCode.ValidationFailed)
+            {
+                saveRejected.TrySetResult(true);
+            }
+        };
+        Task<WorkspaceLeaveReservation?>? leaveTask = null;
+        Window? dialog = null;
+
+        try
+        {
+            owner.Show();
+            leaveTask = context.ViewModel.ReserveLeaveAsync(
+                WorkspaceLeaveReason.CloseWorkspace,
+                TestContext.Current.CancellationToken).AsTask();
+            dialog = await windowService.DialogShown.Task.WaitAsync(AsyncDeadline);
+            var view = dialog.Content.ShouldBeOfType<WorkspaceChangesView>();
+            var save = ControlFinder.FindByAutomationId<Button>(view, "WorkspaceSaveAndProceedButton").ShouldNotBeNull();
+            var discard = ControlFinder.FindByAutomationId<Button>(view, "WorkspaceDiscardAndProceedButton").ShouldNotBeNull();
+
+            save.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await saveRejected.Task.WaitAsync(AsyncDeadline);
+            discard.IsEnabled.ShouldBeTrue();
+            discard.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            using var reservation = (await leaveTask.WaitAsync(AsyncDeadline)).ShouldNotBeNull();
+            reservation.Disposition.ShouldBe(WorkspaceLeaveDisposition.ReadyAndClean);
+            workspace.DiscardRequests.Count.ShouldBe(1);
+        }
+        finally
+        {
+            DismissForCleanup(dialog);
+            await DrainForCleanupAsync(leaveTask);
+            owner.Close();
+        }
+    }
+
     /// <summary>Verifies a window close before any drain choice keeps the captured editor active and uncanceled.</summary>
     /// <returns>A task that completes after the real modal abandons its pending transition request.</returns>
     [AvaloniaFact]
