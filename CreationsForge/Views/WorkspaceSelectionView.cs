@@ -323,10 +323,10 @@ public sealed class WorkspaceSelectionView : UserControl
             var priorMinWidth = owner.MinWidth;
             var priorMinHeight = owner.MinHeight;
             owner.Title = "New Plugin";
-            owner.MinWidth = 440;
-            owner.MinHeight = 460;
-            owner.Width = 500;
-            owner.Height = 520;
+            owner.MinWidth = 560;
+            owner.MinHeight = 600;
+            owner.Width = 640;
+            owner.Height = 680;
             owner.Content = new NewPluginView(ViewModel, created =>
             {
                 if (created)

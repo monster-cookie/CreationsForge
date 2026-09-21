@@ -83,6 +83,10 @@ public sealed class WorkspaceSelectionViewHeadlessTests
             Dispatcher.UIThread.RunJobs();
             var newPluginView = window.Content.ShouldBeOfType<NewPluginView>();
             window.Title.ShouldBe("New Plugin");
+            window.Width.ShouldBe(640);
+            window.Height.ShouldBe(680);
+            window.MinWidth.ShouldBe(560);
+            window.MinHeight.ShouldBe(600);
             ControlFinder.FindByAutomationId<ComboBox>(newPluginView, "NewPluginExtensionSelector").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<TextBox>(newPluginView, "NewPluginNameBox").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<Button>(newPluginView, "CancelNewPluginButton")!
@@ -90,6 +94,8 @@ public sealed class WorkspaceSelectionViewHeadlessTests
             Dispatcher.UIThread.RunJobs();
             window.Content.ShouldBeSameAs(view);
             window.Title.ShouldBe("Open Plugin");
+            window.Width.ShouldBe(980);
+            window.Height.ShouldBe(820);
         }
         finally
         {
