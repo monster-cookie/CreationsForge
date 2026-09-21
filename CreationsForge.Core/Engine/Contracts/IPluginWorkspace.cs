@@ -127,6 +127,19 @@ public interface IPluginWorkspace : IAsyncDisposable
             resultRevision: Revision));
     }
 
+    /// <summary>Lists every concrete major-record family supported by the active game's installed Mutagen package.</summary>
+    /// <param name="cancellationToken">A token that cancels the serialized metadata read.</param>
+    /// <returns>Deterministically ordered family names with the unchanged workspace revision.</returns>
+    ValueTask<EngineResult<IReadOnlyList<string>>> ListMajorRecordTypesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return ValueTask.FromResult(EngineResult<IReadOnlyList<string>>.Failure(
+            new EngineError(EngineErrorCode.UnsupportedOperation, "This workspace implementation does not expose major-record family metadata."),
+            WorkspaceId,
+            resultRevision: Revision));
+    }
+
     /// <summary>Visits the complete winning-record metadata stream under the workspace's serialized source lifetime.</summary>
     /// <param name="onRecord">Receives each FormKey, family, EditorID, and containing-plugin summary.</param>
     /// <param name="onProgress">Receives the current plugin and cumulative count periodically.</param>

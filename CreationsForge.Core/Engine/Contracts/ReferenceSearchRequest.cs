@@ -11,49 +11,63 @@ public sealed class ReferenceSearchRequest
     /// <summary>The largest accepted search query length after surrounding whitespace is removed.</summary>
     public const int MaximumQueryLength = 256;
 
+    /// <summary>The largest accepted major-record family name after surrounding whitespace is removed.</summary>
+    public const int MaximumRecordTypeLength = 256;
+
     /// <summary>Initializes a bounded reference search.</summary>
-    /// <param name="query">The non-empty record identity or EditorID search text.</param>
+    /// <param name="query">The record identity or EditorID search text; it may be empty when <paramref name="recordType"/> is selected.</param>
     /// <param name="maximumResults">The positive maximum number of matches to return.</param>
     /// <param name="continuationToken">An optional adapter-issued token for the next deterministic page.</param>
     /// <param name="scope">The record contexts to search.</param>
     /// <param name="containingModKey">An optional containing plugin filter for non-winning scopes.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="query"/> is empty or whitespace.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when the query is too long, the page size is outside the supported bounds, or <paramref name="scope"/> is undefined.</exception>
+    /// <param name="recordType">An optional exact major-record family filter.</param>
+    /// <exception cref="ArgumentException">Thrown when both <paramref name="query"/> and <paramref name="recordType"/> are empty.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when text is too long, the page size is outside the supported bounds, or <paramref name="scope"/> is undefined.</exception>
     public ReferenceSearchRequest(
         string query,
         int maximumResults,
         string? continuationToken = null,
         RecordScope scope = RecordScope.WinningOverrides,
-        ModKey? containingModKey = null)
-        : this(query, maximumResults, continuationToken, scope, containingModKey, allowEmptyQuery: false)
+        ModKey? containingModKey = null,
+        string? recordType = null)
+        : this(query, maximumResults, continuationToken, scope, containingModKey, recordType, allowEmptyQuery: false)
     { }
 
     /// <summary>Initializes a search request, optionally reserving an empty query for internal match-all listing.</summary>
-    /// <param name="query">The search text, or empty text only for an internal listing request.</param>
+    /// <param name="query">The search text, or empty text for a type-filtered search or internal listing request.</param>
     /// <param name="maximumResults">The positive maximum number of matches.</param>
     /// <param name="continuationToken">The optional continuation token.</param>
     /// <param name="scope">The record contexts to search.</param>
     /// <param name="containingModKey">The optional containing plugin filter.</param>
-    /// <param name="allowEmptyQuery">Whether an empty query represents match-all listing.</param>
+    /// <param name="recordType">The optional exact major-record family filter.</param>
+    /// <param name="allowEmptyQuery">Whether an empty query without a type filter represents match-all listing.</param>
     private ReferenceSearchRequest(
         string query,
         int maximumResults,
         string? continuationToken,
         RecordScope scope,
         ModKey? containingModKey,
+        string? recordType,
         bool allowEmptyQuery)
     {
         ArgumentNullException.ThrowIfNull(query);
         var normalizedQuery = query.Trim();
-        if (!allowEmptyQuery && normalizedQuery.Length == 0)
+        var normalizedRecordType = string.IsNullOrWhiteSpace(recordType) ? null : recordType.Trim();
+        if (!allowEmptyQuery && normalizedQuery.Length == 0 && normalizedRecordType is null)
         {
-            throw new ArgumentException("Reference search queries cannot be empty or whitespace.", nameof(query));
+            throw new ArgumentException("A reference search requires search text or a major-record family.", nameof(query));
         }
         if (normalizedQuery.Length > MaximumQueryLength)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(query),
                 $"Reference search queries cannot exceed {MaximumQueryLength} characters.");
+        }
+        if (normalizedRecordType?.Length > MaximumRecordTypeLength)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(recordType),
+                $"Major-record family names cannot exceed {MaximumRecordTypeLength} characters.");
         }
 
         if (maximumResults <= 0 || maximumResults > MaximumPageSize)
@@ -80,6 +94,7 @@ public sealed class ReferenceSearchRequest
         ContinuationToken = continuationToken;
         Scope = scope;
         ContainingModKey = containingModKey;
+        RecordType = normalizedRecordType;
     }
 
     /// <summary>Creates the internal match-all search used by bounded major-record listing.</summary>
@@ -100,6 +115,7 @@ public sealed class ReferenceSearchRequest
             continuationToken,
             scope,
             containingModKey,
+            recordType: null,
             allowEmptyQuery: true);
     }
 
@@ -117,4 +133,7 @@ public sealed class ReferenceSearchRequest
 
     /// <summary>Gets the containing plugin filter, or <see langword="null"/> when all contexts in the scope participate.</summary>
     public ModKey? ContainingModKey { get; }
+
+    /// <summary>Gets the exact major-record family filter, or <see langword="null"/> when every family participates.</summary>
+    public string? RecordType { get; }
 }

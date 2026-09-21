@@ -67,6 +67,15 @@ public sealed partial class PluginWorkspace
     }
 
     /// <inheritdoc />
+    public ValueTask<EngineResult<IReadOnlyList<string>>> ListMajorRecordTypesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return ExecuteReadAsync(
+            () => EngineResult<IReadOnlyList<string>>.Success(Adapter.MajorRecordInspector.SupportedRecordTypes),
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
     public ValueTask<EngineResult<int>> VisitWinningRecordSummariesAsync(
         Action<ReferenceSearchMatch> onRecord,
         Action<Mutagen.Bethesda.Plugins.ModKey, int>? onProgress = null,

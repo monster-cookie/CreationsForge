@@ -216,7 +216,7 @@ public sealed class ReferenceReader
              !sourceIndices.Contains(startSourceIndex)))
         {
             return InvalidSearch(
-                "The continuation token is invalid for the current workspace, revision, query, scope, filter, or page size.",
+                "The continuation token is invalid for the current workspace, revision, query, record type, scope, filter, or page size.",
                 revision);
         }
 
@@ -360,6 +360,12 @@ public sealed class ReferenceReader
         IMajorRecordGetter record,
         CancellationToken cancellationToken)
     {
+        if (request.RecordType is not null
+            && !string.Equals(GetRecordType(record), request.RecordType, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
         var queryMatches = request.Query.Length == 0 ||
             record.FormKey.ToString().Contains(request.Query, StringComparison.OrdinalIgnoreCase) ||
             (record.EditorID?.Contains(request.Query, StringComparison.OrdinalIgnoreCase) ?? false);

@@ -94,10 +94,23 @@ public sealed class ReferencePickerView : UserControl
         };
     }
 
-    /// <summary>Builds the bounded query input and first-page search action.</summary>
+    /// <summary>Builds the major-record type filter, bounded query input, and first-page search action.</summary>
     /// <returns>The search toolbar.</returns>
     private Control BuildSearchBar()
     {
+        var recordType = new ComboBox
+        {
+            MinWidth = 220,
+            MinHeight = 34
+        };
+        recordType.Bind(ItemsControl.ItemsSourceProperty, new Binding(nameof(ReferencePickerViewModel.RecordTypes)));
+        recordType.Bind(SelectingItemsControl.SelectedItemProperty, new Binding(nameof(ReferencePickerViewModel.SelectedRecordType))
+        {
+            Mode = BindingMode.TwoWay
+        });
+        AutomationProperties.SetName(recordType, "Major record type");
+        AutomationProperties.SetAutomationId(recordType, "ReferencePickerRecordTypeFilter");
+
         var query = new TextBox
         {
             PlaceholderText = "FormKey or EditorID fragment",
@@ -122,15 +135,17 @@ public sealed class ReferencePickerView : UserControl
 
         var panel = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("*,Auto"),
+            ColumnDefinitions = new ColumnDefinitions("220,*,Auto"),
             ColumnSpacing = 8,
             Children =
             {
+                recordType,
                 query,
                 search
             }
         };
-        Grid.SetColumn(search, 1);
+        Grid.SetColumn(query, 1);
+        Grid.SetColumn(search, 2);
         return panel;
     }
 

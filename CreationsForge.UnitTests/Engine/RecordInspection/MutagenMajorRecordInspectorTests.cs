@@ -11,6 +11,37 @@ namespace CreationsForge.UnitTests.Engine.RecordInspection;
 /// <summary>Verifies compact native byte leaves and dictionary positions in detached major-record views.</summary>
 public sealed class MutagenMajorRecordInspectorTests
 {
+    /// <summary>Verifies installed concrete major-record families are exposed once in deterministic display order.</summary>
+    [Fact]
+    public void SupportedRecordTypes_ListsInstalledConcreteFamilies()
+    {
+        var inspectors = new[]
+        {
+            new MutagenMajorRecordInspector(
+                typeof(Mutagen.Bethesda.Fallout4.Fallout4MajorRecord),
+                "Mutagen.Bethesda.Fallout4/0.55.0-alpha.53"),
+            new MutagenMajorRecordInspector(
+                typeof(SkyrimMajorRecord),
+                "Mutagen.Bethesda.Skyrim/0.55.0-alpha.53"),
+            new MutagenMajorRecordInspector(
+                typeof(Mutagen.Bethesda.Starfield.StarfieldMajorRecord),
+                "Mutagen.Bethesda.Starfield/0.55.0-alpha.53"),
+        };
+
+        foreach (var inspector in inspectors)
+        {
+            inspector.SupportedRecordTypes.ShouldContain("Book");
+            inspector.SupportedRecordTypes.ShouldContain("FormList");
+            inspector.SupportedRecordTypes.ShouldContain("Keyword");
+            inspector.SupportedRecordTypes.Count.ShouldBeGreaterThan(100);
+            inspector.SupportedRecordTypes.Distinct(StringComparer.Ordinal).Count().ShouldBe(inspector.SupportedRecordTypes.Count);
+            inspector.SupportedRecordTypes.ShouldBe(
+                inspector.SupportedRecordTypes
+                    .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(name => name, StringComparer.Ordinal));
+        }
+    }
+
     /// <summary>Verifies a native memory slice remains one lossless leaf and compares as one changed field.</summary>
     [Fact]
     public void ByteSlice_WritesCompactLeafAndOneSemanticChange()

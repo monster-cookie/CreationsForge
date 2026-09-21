@@ -25,6 +25,20 @@ internal sealed class ReferencePickerTestWorkspace : IPluginWorkspace
     /// <inheritdoc />
     public OutputSynchronizationState OutputSynchronization { get; } = new(OutputSynchronizationStatus.Ready, null);
 
+    /// <summary>Gets or sets the record families returned to the picker.</summary>
+    public IReadOnlyList<string> RecordTypes { get; set; } = ["Book", "FormList", "Keyword"];
+
+    /// <inheritdoc />
+    public ValueTask<EngineResult<IReadOnlyList<string>>> ListMajorRecordTypesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return ValueTask.FromResult(EngineResult<IReadOnlyList<string>>.Success(
+            RecordTypes,
+            workspaceId: WorkspaceId,
+            resultRevision: Revision));
+    }
+
     /// <summary>Gets or sets the callback used for reference searches.</summary>
     public Func<ReferenceSearchRequest, CancellationToken, ValueTask<EngineResult<ReferenceSearchPage>>> SearchAction { get; set; } =
         (_, _) => throw new NotSupportedException("No reference search behavior was configured.");

@@ -43,7 +43,24 @@ public sealed class MutagenMajorRecordInspector : IMajorRecordInspector
 
         MajorRecordType = majorRecordType;
         PackageIdentity = packageIdentity;
+        SupportedRecordTypes = Array.AsReadOnly(majorRecordType.Assembly.GetTypes()
+            .Where(type => type.IsClass
+                && !type.IsAbstract
+                && !type.IsGenericTypeDefinition
+                && majorRecordType.IsAssignableFrom(type))
+            .Select(type => type.Name)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(name => name, StringComparer.Ordinal)
+            .ToArray());
+        if (SupportedRecordTypes.Count == 0)
+        {
+            throw new ArgumentException("The Mutagen inspector could not discover any concrete major-record families.", nameof(majorRecordType));
+        }
     }
+
+    /// <inheritdoc />
+    public IReadOnlyList<string> SupportedRecordTypes { get; }
 
     /// <inheritdoc />
     public void WriteReadView(

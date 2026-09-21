@@ -11,7 +11,7 @@ namespace CreationsForge.Core.Engine.RecordReading;
 internal static class ReferenceCursor
 {
     /// <summary>The binary continuation contract version.</summary>
-    private const byte Version = 1;
+    private const byte Version = 2;
 
     /// <summary>The SHA-256 integrity suffix length.</summary>
     private const int DigestLength = 32;
@@ -19,8 +19,8 @@ internal static class ReferenceCursor
     /// <summary>The largest decoded containing-plugin identity accepted from an untrusted token.</summary>
     private const int MaximumContainingModKeyLength = 512;
 
-    /// <summary>The payload bytes occupied by fixed-size fields and both string-length prefixes.</summary>
-    private const int FixedPayloadLength = 1 + 16 + 16 + 8 + 4 + 4 + 4 + 4 + 4 + 4;
+    /// <summary>The payload bytes occupied by fixed-size fields and all three string-length prefixes.</summary>
+    private const int FixedPayloadLength = 1 + 16 + 16 + 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4;
 
     /// <summary>The largest canonical Base64Url token emitted for all accepted UTF-8 field lengths.</summary>
     private static readonly int MaximumTokenLength = CalculateMaximumTokenLength();
@@ -40,9 +40,10 @@ internal static class ReferenceCursor
         int recordIndex)
     {
         var queryBytes = Encoding.UTF8.GetBytes(request.Query);
+        var recordTypeBytes = Encoding.UTF8.GetBytes(request.RecordType ?? string.Empty);
         var containingModKey = request.ContainingModKey?.ToString() ?? string.Empty;
         var modKeyBytes = Encoding.UTF8.GetBytes(containingModKey);
-        var payloadLength = 1 + 16 + 16 + 8 + 4 + 4 + 4 + 4 + 4 + queryBytes.Length + 4 + modKeyBytes.Length;
+        var payloadLength = 1 + 16 + 16 + 8 + 4 + 4 + 4 + 4 + 4 + queryBytes.Length + 4 + recordTypeBytes.Length + 4 + modKeyBytes.Length;
         var payload = new byte[payloadLength];
         var offset = 0;
 
@@ -62,6 +63,7 @@ internal static class ReferenceCursor
         BinaryPrimitives.WriteInt32LittleEndian(payload.AsSpan(offset, 4), recordIndex);
         offset += 4;
         WriteBytes(payload, ref offset, queryBytes);
+        WriteBytes(payload, ref offset, recordTypeBytes);
         WriteBytes(payload, ref offset, modKeyBytes);
 
         var tokenBytes = new byte[payload.Length + DigestLength];
@@ -200,6 +202,7 @@ internal static class ReferenceCursor
         offset += 4;
 
         if (!TryReadString(payload, ref offset, ReferenceSearchRequest.MaximumQueryLength, out var query) ||
+            !TryReadString(payload, ref offset, ReferenceSearchRequest.MaximumRecordTypeLength, out var recordType) ||
             !TryReadString(payload, ref offset, MaximumContainingModKeyLength, out var containingModKey) ||
             offset != payload.Length)
         {
@@ -214,6 +217,7 @@ internal static class ReferenceCursor
             sourceIndex >= 0 &&
             recordIndex >= 0 &&
             string.Equals(query, request.Query, StringComparison.Ordinal) &&
+            string.Equals(recordType, request.RecordType ?? string.Empty, StringComparison.Ordinal) &&
             string.Equals(containingModKey, request.ContainingModKey?.ToString() ?? string.Empty, StringComparison.Ordinal);
     }
 
@@ -223,6 +227,7 @@ internal static class ReferenceCursor
     {
         var maximumTokenBytes = FixedPayloadLength +
             Encoding.UTF8.GetMaxByteCount(ReferenceSearchRequest.MaximumQueryLength) +
+            Encoding.UTF8.GetMaxByteCount(ReferenceSearchRequest.MaximumRecordTypeLength) +
             Encoding.UTF8.GetMaxByteCount(MaximumContainingModKeyLength) +
             DigestLength;
         return checked(((maximumTokenBytes + 2) / 3) * 4);

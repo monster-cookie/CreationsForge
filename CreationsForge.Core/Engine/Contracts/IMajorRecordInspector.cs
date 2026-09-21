@@ -6,6 +6,9 @@ namespace CreationsForge.Core.Engine.Contracts;
 /// <summary>Writes and compares complete detached Mutagen major-record values for one supported game package.</summary>
 public interface IMajorRecordInspector
 {
+    /// <summary>Gets every concrete major-record family exposed by the installed game package in deterministic display order.</summary>
+    IReadOnlyList<string> SupportedRecordTypes { get; }
+
     /// <summary>Writes one complete detached native record as a typed JSON tree in installed field order.</summary>
     /// <param name="record">The detached Mutagen major record to inspect.</param>
     /// <param name="writer">The caller-owned writer that receives exactly one JSON object.</param>

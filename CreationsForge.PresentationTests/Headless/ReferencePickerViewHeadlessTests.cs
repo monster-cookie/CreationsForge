@@ -46,7 +46,8 @@ public sealed class ReferencePickerViewHeadlessTests
             coordinator,
             dispatcher,
             CreateRequest(workspaceId, revision, allowNull: true),
-            new LoggerConfiguration().CreateLogger());
+            new LoggerConfiguration().CreateLogger(),
+            workspace.RecordTypes);
         var view = new ReferencePickerView(viewModel, _ => { });
         var window = new Window
         {
@@ -63,6 +64,9 @@ public sealed class ReferencePickerViewHeadlessTests
             Dispatcher.UIThread.RunJobs();
 
             ControlFinder.FindByAutomationId<ReferencePickerView>(view, "ReferencePickerView").ShouldNotBeNull();
+            var recordTypeFilter = ControlFinder.FindByAutomationId<ComboBox>(view, "ReferencePickerRecordTypeFilter").ShouldNotBeNull();
+            recordTypeFilter.ItemCount.ShouldBe(4);
+            recordTypeFilter.SelectedItem.ShouldBe(ReferencePickerViewModel.AllRecordTypesLabel);
             ControlFinder.FindByAutomationId<TextBox>(view, "ReferencePickerQuery")!.MaxLength.ShouldBe(ReferenceSearchRequest.MaximumQueryLength);
             ControlFinder.FindByAutomationId<Button>(view, "ReferencePickerSearchButton").ShouldNotBeNull();
             ControlFinder.FindByAutomationId<ListBox>(view, "ReferencePickerResults")!.ItemCount.ShouldBe(1);

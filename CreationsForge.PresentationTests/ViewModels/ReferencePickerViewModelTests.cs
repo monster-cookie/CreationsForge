@@ -61,6 +61,43 @@ public sealed class ReferencePickerViewModelTests
         dispatcher.InvokeCount.ShouldBe(4);
     }
 
+    /// <summary>Verifies an exact family can drive a search without text and changing it invalidates the visible page.</summary>
+    [Fact]
+    public async Task SearchAsync_WithRecordTypeOnly_BindsFilterAndInvalidatesPriorPage()
+    {
+        var workspaceId = Guid.NewGuid();
+        var revision = new WorkspaceRevision(Guid.NewGuid(), 8);
+        var keyword = CreateMatch(0x811, "TypedKeyword", recordType: "Keyword");
+        var workspace = new ReferencePickerTestWorkspace(workspaceId, revision)
+        {
+            SearchAction = (_, _) => ValueTask.FromResult(SuccessfulPage(workspaceId, revision, [keyword], null))
+        };
+        await using var viewModel = CreateViewModel(workspace, new InlineUiDispatcher());
+
+        viewModel.RecordTypes.ShouldBe([
+            ReferencePickerViewModel.AllRecordTypesLabel,
+            "Book",
+            "FormList",
+            "Keyword"]);
+        viewModel.CanSearch.ShouldBeFalse();
+        viewModel.SelectedRecordType = "Keyword";
+        viewModel.CanSearch.ShouldBeTrue();
+
+        await viewModel.SearchAsync();
+
+        workspace.SearchRequests.ShouldHaveSingleItem();
+        workspace.SearchRequests[0].Query.ShouldBeEmpty();
+        workspace.SearchRequests[0].RecordType.ShouldBe("Keyword");
+        viewModel.Matches.ShouldHaveSingleItem().ShouldBeSameAs(keyword);
+        viewModel.PageNumber.ShouldBe(1);
+
+        viewModel.SelectedRecordType = "Book";
+
+        viewModel.Matches.ShouldBeEmpty();
+        viewModel.PageNumber.ShouldBe(0);
+        viewModel.HasNextPage.ShouldBeFalse();
+    }
+
     /// <summary>Verifies a non-FormList record remains selectable only after exact plugin provenance is re-resolved.</summary>
     [Fact]
     public async Task ConfirmSelectionAsync_WithNonFormListMatch_ReturnsExactProvenance()
@@ -369,7 +406,8 @@ public sealed class ReferencePickerViewModelTests
                 containingModKey: null,
                 allowNull: false,
                 "Choose a record for the test."),
-            new LoggerConfiguration().CreateLogger());
+            new LoggerConfiguration().CreateLogger(),
+            workspace.RecordTypes);
         viewModel.Query = "Prior";
         await viewModel.SearchAsync();
 
@@ -409,7 +447,8 @@ public sealed class ReferencePickerViewModelTests
                 containingModKey,
                 allowNull,
                 "Choose a record for the test."),
-            new LoggerConfiguration().CreateLogger());
+            new LoggerConfiguration().CreateLogger(),
+            workspace.RecordTypes);
     }
 
     /// <summary>Creates an immutable active-workspace descriptor without accessing game files.</summary>

@@ -194,6 +194,38 @@ public sealed class ReferenceReaderTests
             match.ContainingModKey == source.ModKey);
     }
 
+    /// <summary>Verifies an exact record-family filter is applied before bounded pages are filled.</summary>
+    [Fact]
+    public void Search_RecordTypeFilterAppliesBeforePagination()
+    {
+        var source = new StarfieldMod("Origin.esm", StarfieldRelease.Starfield);
+        source.Books.Add(new Book(new FormKey(source.ModKey, 0x800), StarfieldRelease.Starfield) { EditorID = "FirstBook" });
+        source.Keywords.Add(new Keyword(new FormKey(source.ModKey, 0x801), StarfieldRelease.Starfield) { EditorID = "FirstKeyword" });
+        source.Books.Add(new Book(new FormKey(source.ModKey, 0x802), StarfieldRelease.Starfield) { EditorID = "SecondBook" });
+        source.Keywords.Add(new Keyword(new FormKey(source.ModKey, 0x803), StarfieldRelease.Starfield) { EditorID = "SecondKeyword" });
+        var reader = CreateReader(source);
+        var workspaceId = Guid.NewGuid();
+        var revision = new WorkspaceRevision(Guid.NewGuid(), 1);
+
+        var first = reader.Search(
+            new ReferenceSearchRequest(string.Empty, 1, recordType: "Keyword"),
+            workspaceId,
+            revision);
+        var token = first.Value!.ContinuationToken.ShouldNotBeNull();
+        var second = reader.Search(
+            new ReferenceSearchRequest(string.Empty, 1, token, recordType: "Keyword"),
+            workspaceId,
+            revision);
+
+        first.Succeeded.ShouldBeTrue(first.Error?.Message);
+        first.Value.Matches.ShouldHaveSingleItem().RecordType.ShouldBe("Keyword");
+        second.Succeeded.ShouldBeTrue(second.Error?.Message);
+        second.Value!.Matches.ShouldHaveSingleItem().RecordType.ShouldBe("Keyword");
+        second.Value.ContinuationToken.ShouldBeNull();
+        new[] { first.Value.Matches[0].EditorId, second.Value.Matches[0].EditorId }
+            .ShouldBe(["FirstKeyword", "SecondKeyword"], ignoreOrder: true);
+    }
+
     /// <summary>Verifies a winning-record browse includes unmodified records from every admitted master and the output.</summary>
     [Fact]
     public void Search_WinningOverridesIncludesMasterOnlyRecordsAndOutputChanges()
@@ -290,6 +322,10 @@ public sealed class ReferenceReaderTests
             new ReferenceSearchRequest("Needle", 2, token, RecordScope.Source),
             workspaceId,
             revision);
+        var changedRecordType = reader.Search(
+            new ReferenceSearchRequest("Needle", 1, token, RecordScope.Source, recordType: "FormList"),
+            workspaceId,
+            revision);
         var tokenCharacters = token.ToCharArray();
         tokenCharacters[^1] = tokenCharacters[^1] == 'A' ? 'B' : 'A';
         var nonCanonical = reader.Search(
@@ -311,6 +347,7 @@ public sealed class ReferenceReaderTests
         changedScope.Error!.Code.ShouldBe(EngineErrorCode.InvalidRequest);
         changedFilter.Error!.Code.ShouldBe(EngineErrorCode.InvalidRequest);
         changedPageSize.Error!.Code.ShouldBe(EngineErrorCode.InvalidRequest);
+        changedRecordType.Error!.Code.ShouldBe(EngineErrorCode.InvalidRequest);
         nonCanonical.Error!.Code.ShouldBe(EngineErrorCode.InvalidRequest);
         corrupted.Error!.Code.ShouldBe(EngineErrorCode.InvalidRequest);
     }
@@ -369,6 +406,8 @@ public sealed class ReferenceReaderTests
         Should.Throw<ArgumentOutOfRangeException>(() => new ReferenceSearchRequest(
             "query",
             ReferenceSearchRequest.MaximumPageSize + 1));
+        Should.Throw<ArgumentException>(() => new ReferenceSearchRequest(string.Empty, 1));
+        new ReferenceSearchRequest(string.Empty, 1, recordType: "Keyword").RecordType.ShouldBe("Keyword");
         Should.Throw<ArgumentException>(() => new ReferenceSearchRequest(
             "query",
             1,

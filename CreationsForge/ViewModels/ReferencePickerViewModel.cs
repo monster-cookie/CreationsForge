@@ -13,6 +13,9 @@ public sealed class ReferencePickerViewModel : ViewModelBase, IAsyncDisposable
     /// <summary>The fixed number of plugin matches requested for each visible page.</summary>
     public const int PageSize = 100;
 
+    /// <summary>The user-facing selection that disables the exact major-record family filter.</summary>
+    public const string AllRecordTypesLabel = "All record types";
+
     /// <summary>Synchronizes cancellation-source, generation, task, and disposal state.</summary>
     private readonly object StateLock = new();
 
@@ -55,6 +58,9 @@ public sealed class ReferencePickerViewModel : ViewModelBase, IAsyncDisposable
     /// <summary>The current raw search text entered by the user.</summary>
     private string QueryValue = string.Empty;
 
+    /// <summary>The selected exact major-record family or the all-family sentinel.</summary>
+    private string SelectedRecordTypeValue = AllRecordTypesLabel;
+
     /// <summary>The currently selected visible search match.</summary>
     private ReferenceSearchMatch? SelectedMatchValue;
 
@@ -71,7 +77,7 @@ public sealed class ReferencePickerViewModel : ViewModelBase, IAsyncDisposable
     private bool RequiresRefreshValue;
 
     /// <summary>The current user-facing status message.</summary>
-    private string StatusTextValue = "Enter a FormKey or EditorID fragment to search records.";
+    private string StatusTextValue = "Enter a FormKey or EditorID fragment, or choose a major record type.";
 
     /// <summary>The current user-facing typed or validation error.</summary>
     private string? ErrorTextValue;
@@ -87,12 +93,14 @@ public sealed class ReferencePickerViewModel : ViewModelBase, IAsyncDisposable
     /// <param name="uiDispatcher">The dispatcher for asynchronous presentation publication.</param>
     /// <param name="request">The exact picker request.</param>
     /// <param name="logger">The structured logger for unexpected failures.</param>
+    /// <param name="recordTypes">The concrete major-record families exposed by the active game package.</param>
     /// <exception cref="ArgumentNullException">Thrown when a required dependency is <see langword="null"/>.</exception>
     public ReferencePickerViewModel(
         IWorkspaceCoordinator workspaceCoordinator,
         IUiDispatcher uiDispatcher,
         ReferencePickerRequest request,
-        ILogger logger)
+        ILogger logger,
+        IReadOnlyList<string>? recordTypes = null)
     {
         ArgumentNullException.ThrowIfNull(workspaceCoordinator);
         ArgumentNullException.ThrowIfNull(uiDispatcher);
@@ -102,6 +110,18 @@ public sealed class ReferencePickerViewModel : ViewModelBase, IAsyncDisposable
         UiDispatcher = uiDispatcher;
         Request = request;
         Logger = logger.ForContext<ReferencePickerViewModel>();
+        RecordTypes.Add(AllRecordTypesLabel);
+        foreach (var recordType in (recordTypes ?? [])
+            .Where(recordType => !string.IsNullOrWhiteSpace(recordType))
+            .Select(recordType => recordType.Trim())
+            .Where(recordType => !string.Equals(recordType, AllRecordTypesLabel, StringComparison.Ordinal))
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(recordType => recordType, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(recordType => recordType, StringComparer.Ordinal))
+        {
+            RecordTypes.Add(recordType);
+        }
+
         WorkspaceCoordinator.PropertyChanged += OnWorkspaceCoordinatorPropertyChanged;
         var current = WorkspaceCoordinator.CurrentWorkspace;
         RequiresRefreshValue = current is null || current.WorkspaceId != Request.WorkspaceId;
@@ -126,8 +146,28 @@ public sealed class ReferencePickerViewModel : ViewModelBase, IAsyncDisposable
     /// <summary>Gets whether an explicit null selection is available.</summary>
     public bool AllowNull => Request.AllowNull;
 
+    /// <summary>Gets the available exact major-record family filters with the all-family sentinel first.</summary>
+    public ObservableCollection<string> RecordTypes { get; } = new();
+
     /// <summary>Gets the visible bounded plugin result page.</summary>
     public ObservableCollection<ReferenceSearchMatch> Matches { get; } = new();
+
+    /// <summary>Gets or sets the selected major-record family and invalidates any earlier page or selection.</summary>
+    public string SelectedRecordType
+    {
+        get => SelectedRecordTypeValue;
+        set
+        {
+            var normalized = string.IsNullOrWhiteSpace(value) ? AllRecordTypesLabel : value;
+            if (!SetProperty(ref SelectedRecordTypeValue, normalized))
+            {
+                return;
+            }
+
+            CancelSearchAndSelection(clearVisiblePage: true);
+            OnPropertyChanged(nameof(CanSearch));
+        }
+    }
 
     /// <summary>Gets or sets the current search query and invalidates any earlier page or selection.</summary>
     public string Query
@@ -238,8 +278,8 @@ public sealed class ReferencePickerViewModel : ViewModelBase, IAsyncDisposable
     /// <summary>Gets whether the current query can start a fresh bounded search.</summary>
     public bool CanSearch => !IsBusy
         && !RequiresRefresh
-        && !string.IsNullOrWhiteSpace(Query)
-        && Query.Trim().Length <= ReferenceSearchRequest.MaximumQueryLength;
+        && Query.Trim().Length <= ReferenceSearchRequest.MaximumQueryLength
+        && (!string.IsNullOrWhiteSpace(Query) || GetSelectedRecordType() is not null);
 
     /// <summary>Gets whether the visible page exposes a next-page continuation.</summary>
     public bool CanLoadNextPage => !IsBusy && !RequiresRefresh && HasNextPage;
@@ -360,11 +400,14 @@ public sealed class ReferencePickerViewModel : ViewModelBase, IAsyncDisposable
     private Task StartSearchAsync(string? continuationToken, int pageNumber)
     {
         var normalizedQuery = Query.Trim();
-        if (normalizedQuery.Length == 0 || normalizedQuery.Length > ReferenceSearchRequest.MaximumQueryLength || RequiresRefresh)
+        var recordType = GetSelectedRecordType();
+        if ((normalizedQuery.Length == 0 && recordType is null)
+            || normalizedQuery.Length > ReferenceSearchRequest.MaximumQueryLength
+            || RequiresRefresh)
         {
             ErrorText = normalizedQuery.Length > ReferenceSearchRequest.MaximumQueryLength
                 ? $"Search text cannot exceed {ReferenceSearchRequest.MaximumQueryLength} characters."
-                : "Enter search text before searching records.";
+                : "Enter search text or choose a major record type before searching records.";
             return Task.CompletedTask;
         }
 
@@ -389,6 +432,7 @@ public sealed class ReferencePickerViewModel : ViewModelBase, IAsyncDisposable
         StatusText = pageNumber == 1 ? "Searching records..." : $"Loading plugin result page {pageNumber}...";
         var task = SearchCoreAsync(
             normalizedQuery,
+            recordType,
             continuationToken,
             pageNumber,
             searchGeneration,
@@ -404,6 +448,7 @@ public sealed class ReferencePickerViewModel : ViewModelBase, IAsyncDisposable
 
     /// <summary>Executes and conditionally publishes one bounded engine search page.</summary>
     /// <param name="query">The normalized query.</param>
+    /// <param name="recordType">The selected exact major-record family, or <see langword="null"/> for all families.</param>
     /// <param name="continuationToken">The optional next-page continuation.</param>
     /// <param name="pageNumber">The requested one-based page number.</param>
     /// <param name="searchGeneration">The operation's search generation.</param>
@@ -412,6 +457,7 @@ public sealed class ReferencePickerViewModel : ViewModelBase, IAsyncDisposable
     /// <returns>A task that completes after current publication or stale-result suppression.</returns>
     private async Task SearchCoreAsync(
         string query,
+        string? recordType,
         string? continuationToken,
         int pageNumber,
         long searchGeneration,
@@ -425,7 +471,8 @@ public sealed class ReferencePickerViewModel : ViewModelBase, IAsyncDisposable
                 PageSize,
                 continuationToken,
                 Request.RecordScope,
-                Request.ContainingModKey);
+                Request.ContainingModKey,
+                recordType);
             var result = await WorkspaceCoordinator.ExecuteAsync(
                 (workspace, token) => SearchCurrentWorkspaceAsync(workspace, searchRequest, token),
                 cancellationToken).ConfigureAwait(false);
@@ -475,6 +522,15 @@ public sealed class ReferencePickerViewModel : ViewModelBase, IAsyncDisposable
         {
             await CompleteSearchAsync(searchGeneration, workspaceGeneration).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>Gets the exact selected family or <see langword="null"/> when all record types participate.</summary>
+    /// <returns>The normalized exact family filter.</returns>
+    private string? GetSelectedRecordType()
+    {
+        return string.Equals(SelectedRecordType, AllRecordTypesLabel, StringComparison.Ordinal)
+            ? null
+            : SelectedRecordType;
     }
 
     /// <summary>Runs search only when the borrowed workspace still matches the picker request.</summary>

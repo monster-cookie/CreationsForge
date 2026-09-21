@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Services.Interfaces;
 using CreationsForge.ViewModels;
 using CreationsForge.Views;
@@ -50,11 +51,34 @@ public sealed class ReferencePickerService : IReferencePickerService
     {
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
+        var recordTypesResult = await WorkspaceCoordinator.ExecuteAsync(
+            (workspace, token) =>
+            {
+                if (workspace.WorkspaceId != request.WorkspaceId || workspace.Revision != request.ExpectedRevision)
+                {
+                    return ValueTask.FromResult(EngineResult<IReadOnlyList<string>>.Failure(
+                        new EngineError(EngineErrorCode.RevisionConflict, "The reference picker workspace changed before its record types could be loaded."),
+                        workspace.WorkspaceId,
+                        resultRevision: workspace.Revision));
+                }
+
+                return workspace.ListMajorRecordTypesAsync(token);
+            },
+            cancellationToken);
+        if (!recordTypesResult.Succeeded || recordTypesResult.Value is null)
+        {
+            Logger.Warning(
+                "Unable to load reference picker record types for workspace {WorkspaceId}: {Error}",
+                request.WorkspaceId,
+                recordTypesResult.Error?.Message ?? "The workspace returned no record types.");
+        }
+
         var viewModel = new ReferencePickerViewModel(
             WorkspaceCoordinator,
             UiDispatcher,
             request,
-            Logger);
+            Logger,
+            recordTypesResult.Value);
         var dialog = new Window
         {
             Title = "Select Plugin Reference",
