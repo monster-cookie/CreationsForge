@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Runtime.InteropServices;
 using CreationsForge.Core.Engine.Contracts;
 
 namespace CreationsForge.Core.Engine.PluginInputs;
@@ -5,7 +7,13 @@ namespace CreationsForge.Core.Engine.PluginInputs;
 /// <summary>Owns read locks for every existing physical artifact in one plugin source lifetime.</summary>
 internal sealed class PluginSourceFileLockSet : IAsyncDisposable
 {
-    /// <summary>The retained source handles. Each permits readers and denies writers and deletion.</summary>
+    /// <summary>The nonblocking shared lock operation used by Linux and macOS.</summary>
+    private const int LockSharedNonBlocking = 0x01 | 0x04;
+
+    /// <summary>The unlock operation used by Linux and macOS.</summary>
+    private const int LockUnlock = 0x08;
+
+    /// <summary>The retained source handles. Windows share modes deny writers and deletion; Unix handles also retain shared advisory locks.</summary>
     private readonly List<FileStream> Streams = [];
 
     /// <summary>Tracks whether the retained handles have been released.</summary>
@@ -32,12 +40,22 @@ internal sealed class PluginSourceFileLockSet : IAsyncDisposable
             language,
             mustExist,
             cancellationToken);
-        if (observation.Stream is not null)
+        if (observation.Stream is null)
         {
-            Streams.Add(observation.Stream);
+            return observation.Artifact;
         }
 
-        return observation.Artifact;
+        try
+        {
+            AcquireUnixSharedLock(observation.Stream, path);
+            Streams.Add(observation.Stream);
+            return observation.Artifact;
+        }
+        catch
+        {
+            observation.Stream.Dispose();
+            throw;
+        }
     }
 
     /// <inheritdoc />
@@ -51,9 +69,19 @@ internal sealed class PluginSourceFileLockSet : IAsyncDisposable
         List<Exception>? failures = null;
         for (var index = Streams.Count - 1; index >= 0; index--)
         {
+            var stream = Streams[index];
             try
             {
-                Streams[index].Dispose();
+                ReleaseUnixSharedLock(stream);
+            }
+            catch (Exception exception)
+            {
+                (failures ??= []).Add(exception);
+            }
+
+            try
+            {
+                stream.Dispose();
             }
             catch (Exception exception)
             {
@@ -66,4 +94,56 @@ internal sealed class PluginSourceFileLockSet : IAsyncDisposable
             ? ValueTask.CompletedTask
             : ValueTask.FromException(new AggregateException("One or more plugin source locks could not be released.", failures));
     }
+
+    /// <summary>Acquires the host's shared advisory source lock when Windows share modes are not available.</summary>
+    /// <param name="stream">The retained source stream.</param>
+    /// <param name="path">The source path used in diagnostics.</param>
+    /// <exception cref="PluginSourceInputException">Thrown when the shared lock cannot be acquired.</exception>
+    private static void AcquireUnixSharedLock(FileStream stream, string path)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
+        {
+            throw new PluginSourceInputException(
+                EngineErrorCode.UnsupportedInput,
+                "Plugin source locking is currently supported only on Windows, Linux, and macOS.");
+        }
+
+        if (Flock(stream.SafeFileHandle.DangerousGetHandle().ToInt32(), LockSharedNonBlocking) != 0)
+        {
+            throw new PluginSourceInputException(
+                EngineErrorCode.SourceOpenFailed,
+                $"The plugin source is already locked for writing: '{path}'.",
+                new Win32Exception(Marshal.GetLastPInvokeError()));
+        }
+    }
+
+    /// <summary>Releases the host's shared advisory source lock before closing its retained handle.</summary>
+    /// <param name="stream">The retained source stream.</param>
+    /// <exception cref="IOException">Thrown when the host cannot release the advisory lock.</exception>
+    private static void ReleaseUnixSharedLock(FileStream stream)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        if (Flock(stream.SafeFileHandle.DangerousGetHandle().ToInt32(), LockUnlock) != 0)
+        {
+            throw new IOException(
+                "The plugin source advisory lock could not be released.",
+                new Win32Exception(Marshal.GetLastPInvokeError()));
+        }
+    }
+
+    /// <summary>Applies or releases a BSD-style whole-file advisory lock on Linux and macOS.</summary>
+    /// <param name="fileDescriptor">The open source file descriptor.</param>
+    /// <param name="operation">The shared, exclusive, nonblocking, or unlock operation flags.</param>
+    /// <returns>Zero on success or minus one on failure.</returns>
+    [DllImport("libc", EntryPoint = "flock", SetLastError = true)]
+    private static extern int Flock(int fileDescriptor, int operation);
 }

@@ -1,4 +1,5 @@
 using CreationsForge.Core.Engine.Contracts;
+using CreationsForge.UnitTests.Engine.PluginInputs;
 using CreationsForge.Core.Engine.PluginInputs;
 using CreationsForge.Fallout4.PluginAdapter;
 using Mutagen.Bethesda.Fallout4;
@@ -232,27 +233,13 @@ public sealed class Fallout4PluginSourceTests
         result.Succeeded.ShouldBeTrue(result.Error?.Message);
         var sources = result.Value!.Sources.ShouldBeOfType<Fallout4PluginSourceSet>();
 
-        Should.Throw<IOException>(() =>
-        {
-            using var ignored = new FileStream(
-                fixture.PatchPluginPath,
-                FileMode.Open,
-                FileAccess.Write,
-                FileShare.Read);
-        });
+        SourceFileLockAssertions.AssertWriteDenied(fixture.PatchPluginPath);
         var verification = await sources.VerifyUnchangedAsync();
         verification.Succeeded.ShouldBeTrue(verification.Error?.Message);
 
         await sources.DisposeAsync();
         await sources.DisposeAsync();
-        using (var writer = new FileStream(
-                   fixture.PatchPluginPath,
-                   FileMode.Open,
-                   FileAccess.Write,
-                   FileShare.Read))
-        {
-            writer.CanWrite.ShouldBeTrue();
-        }
+        SourceFileLockAssertions.AssertWriteAllowed(fixture.PatchPluginPath);
 
         var resolve = sources.Resolve(new ReferenceRequest(fixture.SourceListFormKey, RecordScope.Source));
         var search = sources.Search(new ReferenceSearchRequest("Shared", 2));

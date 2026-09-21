@@ -261,14 +261,7 @@ public sealed class PluginSourceInputLoaderTests
 
         try
         {
-            Should.Throw<IOException>(() =>
-            {
-                using var ignored = new FileStream(
-                    fixture.SourcePluginPath,
-                    FileMode.Open,
-                    FileAccess.Write,
-                    FileShare.Read);
-            });
+            SourceFileLockAssertions.AssertWriteDenied(fixture.SourcePluginPath);
             using (var reader = new FileStream(
                        fixture.SourcePluginPath,
                        FileMode.Open,
@@ -288,12 +281,7 @@ public sealed class PluginSourceInputLoaderTests
             await inputs.DisposeAsync();
         }
 
-        using var writer = new FileStream(
-            fixture.SourcePluginPath,
-            FileMode.Open,
-            FileAccess.Write,
-            FileShare.Read);
-        writer.CanWrite.ShouldBeTrue();
+        SourceFileLockAssertions.AssertWriteAllowed(fixture.SourcePluginPath);
     }
 
     /// <summary>Verifies independent read-only workspaces can retain locks for the same source set concurrently.</summary>
@@ -350,14 +338,7 @@ public sealed class PluginSourceInputLoaderTests
         archive.Fingerprint.Exists.ShouldBeTrue();
         archive.Fingerprint.Length.ShouldBe(archiveBytes.LongLength);
         archive.Fingerprint.Sha256.ShouldBeNull();
-        Should.Throw<IOException>(() =>
-        {
-            using var ignored = new FileStream(
-                archivePath,
-                FileMode.Open,
-                FileAccess.Write,
-                FileShare.Read);
-        });
+        SourceFileLockAssertions.AssertWriteDenied(archivePath);
     }
 
     /// <summary>Verifies source verification trusts retained locks and does not rescan directories for new optional paths.</summary>
@@ -405,6 +386,11 @@ public sealed class PluginSourceInputLoaderTests
         await using var inputs = preparation.Value!;
         var completion = await inputs.CompleteOpenAsync(TestContext.Current.CancellationToken);
         completion.Succeeded.ShouldBeTrue(completion.Error?.Message);
+        if (!OperatingSystem.IsWindows())
+        {
+            Assert.Skip("Mandatory deletion and path-replacement exclusion is provided by Windows share modes; Unix source locks are cooperative advisory locks.");
+        }
+
         var replacementPath = Path.Combine(fixture.DataDirectory.FullName, "replacement.tmp");
         File.Copy(fixture.SourcePluginPath, replacementPath);
 

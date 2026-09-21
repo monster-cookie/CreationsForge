@@ -1,4 +1,5 @@
 using CreationsForge.Core.Engine.Contracts;
+using CreationsForge.UnitTests.Engine.PluginInputs;
 using CreationsForge.Core.Engine.PluginInputs;
 using CreationsForge.Skyrim.PluginAdapter;
 using Mutagen.Bethesda.Plugins.Binary.Streams;
@@ -175,27 +176,13 @@ public sealed class SkyrimPluginSourceLoaderTests
         open.Succeeded.ShouldBeTrue(open.Error?.Message);
         var sources = open.Value!.Sources.ShouldBeOfType<SkyrimPluginSourceSet>();
 
-        Should.Throw<IOException>(() =>
-        {
-            using var ignored = new FileStream(
-                fixture.FullPluginPath,
-                FileMode.Open,
-                FileAccess.Write,
-                FileShare.Read);
-        });
+        SourceFileLockAssertions.AssertWriteDenied(fixture.FullPluginPath);
         var verification = await sources.VerifyUnchangedAsync(TestContext.Current.CancellationToken);
         verification.Succeeded.ShouldBeTrue(verification.Error?.Message);
 
         await sources.DisposeAsync();
         await sources.DisposeAsync();
-        using (var writer = new FileStream(
-                   fixture.FullPluginPath,
-                   FileMode.Open,
-                   FileAccess.Write,
-                   FileShare.Read))
-        {
-            writer.CanWrite.ShouldBeTrue();
-        }
+        SourceFileLockAssertions.AssertWriteAllowed(fixture.FullPluginPath);
 
         var disposedResolution = sources.Resolve(
             new ReferenceRequest(fixture.SourceListFormKey, RecordScope.Source),

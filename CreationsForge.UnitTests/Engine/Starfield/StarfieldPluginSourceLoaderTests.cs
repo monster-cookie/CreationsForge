@@ -1,4 +1,5 @@
 using CreationsForge.Core.Engine.Contracts;
+using CreationsForge.UnitTests.Engine.PluginInputs;
 using CreationsForge.Core.Engine.PluginInputs;
 using CreationsForge.Starfield.PluginAdapter;
 using Mutagen.Bethesda.Starfield;
@@ -183,14 +184,7 @@ public sealed class StarfieldPluginSourceLoaderTests
         var sources = open.Value!.Sources.ShouldBeOfType<StarfieldPluginSourceSet>();
         try
         {
-            Should.Throw<IOException>(() =>
-            {
-                using var ignored = new FileStream(
-                    fixture.PatchPluginPath,
-                    FileMode.Open,
-                    FileAccess.Write,
-                    FileShare.Read);
-            });
+            SourceFileLockAssertions.AssertWriteDenied(fixture.PatchPluginPath);
             var verification = await sources.VerifyUnchangedAsync(TestContext.Current.CancellationToken);
             verification.Succeeded.ShouldBeTrue(verification.Error?.Message);
         }
@@ -200,14 +194,7 @@ public sealed class StarfieldPluginSourceLoaderTests
             await sources.DisposeAsync();
         }
 
-        using (var writer = new FileStream(
-                   fixture.PatchPluginPath,
-                   FileMode.Open,
-                   FileAccess.Write,
-                   FileShare.Read))
-        {
-            writer.CanWrite.ShouldBeTrue();
-        }
+        SourceFileLockAssertions.AssertWriteAllowed(fixture.PatchPluginPath);
 
         var disposedResolution = sources.Resolve(
             new ReferenceRequest(fixture.SourceListFormKey, RecordScope.Source),
