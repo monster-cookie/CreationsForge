@@ -9,7 +9,7 @@ using Noggog;
 namespace CreationsForge.Core.Engine.PluginInputs;
 
 /// <summary>
-/// Owns one prepared explicit plugin source-input lifetime and verifies that its complete physical baseline remains unchanged.
+/// Owns one prepared explicit plugin source-input lifetime and the read locks that keep its physical sources immutable.
 /// </summary>
 public sealed class PluginSourceInputs : IPluginSourceSet
 {
@@ -25,8 +25,8 @@ public sealed class PluginSourceInputs : IPluginSourceSet
     /// <summary>The plugin-specific plugin localized-string lookups.</summary>
     private readonly IReadOnlyDictionary<Mutagen.Bethesda.Plugins.ModKey, PluginStringsFolderLookup> StringsLookups;
 
-    /// <summary>The collector used to recapture the exact physical artifact set.</summary>
-    private readonly PluginSourceArtifactCollector ArtifactCollector;
+    /// <summary>The retained read locks that deny source writers and deletion for this lifetime.</summary>
+    private readonly PluginSourceFileLockSet SourceLocks;
 
     /// <summary>The initial observations captured while preparing the input set.</summary>
     private readonly IReadOnlyList<PluginArtifactAssociation> InitialArtifacts;
@@ -48,7 +48,7 @@ public sealed class PluginSourceInputs : IPluginSourceSet
     /// <param name="recordTextLanguage">The explicit language used for localized record text.</param>
     /// <param name="masterFlagsLookup">The private immutable-surface master-style lookup.</param>
     /// <param name="stringsLookups">The plugin-specific strings lookups.</param>
-    /// <param name="artifactCollector">The collector used for later source verification.</param>
+    /// <param name="sourceLocks">The retained read locks for every existing source artifact.</param>
     /// <param name="initialArtifacts">The complete physical observations captured during preparation.</param>
     internal PluginSourceInputs(
         GameRelease release,
@@ -58,7 +58,7 @@ public sealed class PluginSourceInputs : IPluginSourceSet
         Language recordTextLanguage,
         IReadOnlyCache<IModMasterStyledGetter, Mutagen.Bethesda.Plugins.ModKey> masterFlagsLookup,
         IReadOnlyDictionary<Mutagen.Bethesda.Plugins.ModKey, PluginStringsFolderLookup> stringsLookups,
-        PluginSourceArtifactCollector artifactCollector,
+        PluginSourceFileLockSet sourceLocks,
         IReadOnlyList<PluginArtifactAssociation> initialArtifacts)
     {
         Release = release;
@@ -68,7 +68,7 @@ public sealed class PluginSourceInputs : IPluginSourceSet
         RecordTextLanguage = recordTextLanguage;
         MasterFlagsLookup = masterFlagsLookup;
         StringsLookups = stringsLookups;
-        ArtifactCollector = artifactCollector;
+        SourceLocks = sourceLocks;
         InitialArtifacts = Array.AsReadOnly(initialArtifacts.ToArray());
     }
 
@@ -167,7 +167,7 @@ public sealed class PluginSourceInputs : IPluginSourceSet
         };
     }
 
-    /// <summary>Opens a caller-owned read stream for a lazy overlay while allowing external writers and atomic path replacement.</summary>
+    /// <summary>Opens a caller-owned read stream for a lazy overlay under the workspace's retained source read lock.</summary>
     /// <param name="plugin">A descriptor obtained from <see cref="Plugins"/>.</param>
     /// <returns>A seekable source stream that must remain open for the overlay lifetime.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="plugin"/> is <see langword="null"/>.</exception>
@@ -182,7 +182,7 @@ public sealed class PluginSourceInputs : IPluginSourceSet
             plugin.Path,
             FileMode.Open,
             FileAccess.Read,
-            FileShare.ReadWrite | FileShare.Delete,
+            FileShare.Read,
             131072,
             FileOptions.RandomAccess);
     }
@@ -206,7 +206,7 @@ public sealed class PluginSourceInputs : IPluginSourceSet
             plugin.Path,
             FileMode.Open,
             FileAccess.Read,
-            FileShare.Read | FileShare.Delete,
+            FileShare.Read,
             131072,
             FileOptions.SequentialScan);
         try
@@ -258,9 +258,9 @@ public sealed class PluginSourceInputs : IPluginSourceSet
         return StringsLookups[plugin.ModKey].TryLookup(source, language, key, out value, out sourcePath);
     }
 
-    /// <summary>Confirms that plugin parsing observed the prepared physical source state and establishes its deterministic baseline.</summary>
-    /// <param name="cancellationToken">The token checked during recapture and hashing.</param>
-    /// <returns>The immutable completed baseline, or a typed external-change or source-open failure.</returns>
+    /// <summary>Confirms that plugin parsing completed while the prepared source locks remained held and establishes the deterministic baseline.</summary>
+    /// <param name="cancellationToken">The token checked while entering the source-lifetime gate.</param>
+    /// <returns>The immutable completed baseline.</returns>
     /// <exception cref="OperationCanceledException">Thrown when cancellation is requested.</exception>
     /// <exception cref="ObjectDisposedException">Thrown after this source-input lifetime is disposed.</exception>
     public async Task<EngineResult<PluginSourceInputBaseline>> CompleteOpenAsync(
@@ -271,22 +271,11 @@ public sealed class PluginSourceInputs : IPluginSourceSet
         try
         {
             ThrowIfDisposed();
-            var expected = CompletedBaseline?.Artifacts ?? InitialArtifacts;
-            var currentResult = await CaptureAndCompareAsync(expected, cancellationToken).ConfigureAwait(false);
-            if (!currentResult.Succeeded)
-            {
-                return EngineResult<PluginSourceInputBaseline>.Failure(currentResult.Error!);
-            }
-
-            if (CompletedBaseline is null)
-            {
-                CompletedBaseline = new PluginSourceInputBaseline(
-                    PluginArtifactSetUtilities.CreateBaselineId(
-                        "CreationsForge.PluginSourceInputBaseline/v1",
-                        currentResult.Value!),
-                    currentResult.Value!);
-            }
-
+            CompletedBaseline ??= new PluginSourceInputBaseline(
+                PluginArtifactSetUtilities.CreateBaselineId(
+                    "CreationsForge.PluginSourceInputBaseline/v1",
+                    InitialArtifacts),
+                InitialArtifacts);
             return EngineResult<PluginSourceInputBaseline>.Success(CompletedBaseline);
         }
         finally
@@ -295,9 +284,9 @@ public sealed class PluginSourceInputs : IPluginSourceSet
         }
     }
 
-    /// <summary>Verifies that every prepared plugin input and selected inventory entry still matches the completed baseline.</summary>
-    /// <param name="cancellationToken">The token checked during recapture and hashing.</param>
-    /// <returns>The existing immutable baseline on success, or a typed failure describing why verification could not be completed.</returns>
+    /// <summary>Returns the completed source baseline while the workspace's retained read locks remain owned.</summary>
+    /// <param name="cancellationToken">The token checked while entering the source-lifetime gate.</param>
+    /// <returns>The existing immutable baseline, or a typed failure when opening has not completed.</returns>
     /// <exception cref="OperationCanceledException">Thrown when cancellation is requested.</exception>
     /// <exception cref="ObjectDisposedException">Thrown after this source-input lifetime is disposed.</exception>
     public async Task<EngineResult<PluginSourceInputBaseline>> VerifyUnchangedAsync(
@@ -308,20 +297,11 @@ public sealed class PluginSourceInputs : IPluginSourceSet
         try
         {
             ThrowIfDisposed();
-            if (CompletedBaseline is null)
-            {
-                return EngineResult<PluginSourceInputBaseline>.Failure(new EngineError(
+            return CompletedBaseline is null
+                ? EngineResult<PluginSourceInputBaseline>.Failure(new EngineError(
                     EngineErrorCode.InvalidRequest,
-                    "The plugin source baseline cannot be verified before opening is completed."));
-            }
-
-            var currentResult = await CaptureAndCompareAsync(CompletedBaseline.Artifacts, cancellationToken).ConfigureAwait(false);
-            if (!currentResult.Succeeded)
-            {
-                return EngineResult<PluginSourceInputBaseline>.Failure(currentResult.Error!);
-            }
-
-            return EngineResult<PluginSourceInputBaseline>.Success(CompletedBaseline);
+                    "The plugin source baseline cannot be verified before opening is completed."))
+                : EngineResult<PluginSourceInputBaseline>.Success(CompletedBaseline);
         }
         finally
         {
@@ -329,59 +309,20 @@ public sealed class PluginSourceInputs : IPluginSourceSet
         }
     }
 
-    /// <summary>Releases this independently owned input lifetime and invalidates further parsing or verification.</summary>
-    /// <returns>A completed task because the input set retains no open source handles between operations.</returns>
+    /// <summary>Releases the retained source read locks and invalidates further parsing or verification.</summary>
     public async ValueTask DisposeAsync()
     {
         await VerificationGate.WaitAsync().ConfigureAwait(false);
         try
         {
-            Interlocked.Exchange(ref IsDisposed, 1);
+            if (Interlocked.Exchange(ref IsDisposed, 1) == 0)
+            {
+                await SourceLocks.DisposeAsync().ConfigureAwait(false);
+            }
         }
         finally
         {
             VerificationGate.Release();
-        }
-    }
-
-    /// <summary>Recaptures the physical source set and compares every ordered artifact observation.</summary>
-    /// <param name="expected">The expected complete artifact set.</param>
-    /// <param name="cancellationToken">The token checked during discovery and hashing.</param>
-    /// <returns>The fresh matching artifact set or a typed failure.</returns>
-    private async Task<EngineResult<IReadOnlyList<PluginArtifactAssociation>>> CaptureAndCompareAsync(
-        IReadOnlyList<PluginArtifactAssociation> expected,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var current = await ArtifactCollector.CaptureAsync(cancellationToken).ConfigureAwait(false);
-            if (!PluginArtifactSetUtilities.Match(expected, current))
-            {
-                return EngineResult<IReadOnlyList<PluginArtifactAssociation>>.Failure(new EngineError(
-                    EngineErrorCode.ExternalChangeDetected,
-                    "One or more explicit plugin source files, localized strings sidecars, or applicable archives changed after preparation."));
-            }
-
-            return EngineResult<IReadOnlyList<PluginArtifactAssociation>>.Success(current);
-        }
-        catch (PluginSourceInputException exception)
-        {
-            var code = exception.Code is EngineErrorCode.InvalidRequest or EngineErrorCode.UnsupportedInput
-                ? EngineErrorCode.ExternalChangeDetected
-                : exception.Code;
-            return EngineResult<IReadOnlyList<PluginArtifactAssociation>>.Failure(new EngineError(
-                code,
-                exception.Message));
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception exception)
-        {
-            return EngineResult<IReadOnlyList<PluginArtifactAssociation>>.Failure(new EngineError(
-                EngineErrorCode.SourceOpenFailed,
-                $"The explicit plugin source baseline could not be verified: {exception.Message}"));
         }
     }
 

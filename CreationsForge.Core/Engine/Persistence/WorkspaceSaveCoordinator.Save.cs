@@ -114,7 +114,7 @@ public sealed partial class WorkspaceSaveCoordinator
                     context,
                     request,
                     sourceBefore.Error?.Code ?? EngineErrorCode.ExternalChangeDetected,
-                    sourceBefore.Error?.Message ?? "The plugin source baseline changed before staging.");
+                    sourceBefore.Error?.Message ?? "The plugin source lifetime was unavailable before staging.");
             }
 
             var outputBefore = await PluginSaveArtifactUtilities.CaptureOutputAsync(

@@ -170,11 +170,11 @@ public sealed class StarfieldPluginSourceLoaderTests
     }
 
     /// <summary>
-    /// Verifies input drift is reported and disposed lifetimes reject later source operations.
+    /// Verifies Starfield source locks deny writers and disposed lifetimes reject later source operations.
     /// </summary>
-    /// <returns>A task that completes after drift detection and idempotent disposal.</returns>
+    /// <returns>A task that completes after lock enforcement and idempotent disposal.</returns>
     [Fact]
-    public async Task SourceSet_DetectsChangedInputAndRejectsOperationsAfterDisposal()
+    public async Task SourceSet_BlocksWritersAndRejectsOperationsAfterDisposal()
     {
         using var fixture = StarfieldPluginTestFixture.Create();
         var loader = new StarfieldPluginSourceLoader(new PluginSourceInputLoader());
@@ -183,19 +183,30 @@ public sealed class StarfieldPluginSourceLoaderTests
         var sources = open.Value!.Sources.ShouldBeOfType<StarfieldPluginSourceSet>();
         try
         {
-            var replacementPath = Path.Combine(fixture.DataDirectory.FullName, "replacement.tmp");
-            File.Copy(fixture.PatchPluginPath, replacementPath);
-            File.Delete(fixture.PatchPluginPath);
-            File.Move(replacementPath, fixture.PatchPluginPath);
+            Should.Throw<IOException>(() =>
+            {
+                using var ignored = new FileStream(
+                    fixture.PatchPluginPath,
+                    FileMode.Open,
+                    FileAccess.Write,
+                    FileShare.Read);
+            });
             var verification = await sources.VerifyUnchangedAsync(TestContext.Current.CancellationToken);
-
-            verification.Succeeded.ShouldBeFalse();
-            verification.Error!.Code.ShouldBe(EngineErrorCode.ExternalChangeDetected);
+            verification.Succeeded.ShouldBeTrue(verification.Error?.Message);
         }
         finally
         {
             await sources.DisposeAsync();
             await sources.DisposeAsync();
+        }
+
+        using (var writer = new FileStream(
+                   fixture.PatchPluginPath,
+                   FileMode.Open,
+                   FileAccess.Write,
+                   FileShare.Read))
+        {
+            writer.CanWrite.ShouldBeTrue();
         }
 
         var disposedResolution = sources.Resolve(

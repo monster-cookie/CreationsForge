@@ -5,7 +5,6 @@ using CreationsForge.Core.Enums;
 using Moq;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
-using System.IO.Abstractions;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Engine.Persistence;
@@ -68,9 +67,9 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         File.Exists(journalPath).ShouldBeTrue();
     }
 
-    /// <summary>Verifies Starfield save recovery recaptures strings archives with the same entry-aware fingerprint used at admission.</summary>
+    /// <summary>Verifies recovery classifies a saved output from transaction evidence without reopening historical sources.</summary>
     [Fact]
-    public async Task SaveWithStarfieldStringsArchiveUsesAdmissionFingerprintDuringRecovery()
+    public async Task RecoverCommittedSave_DoesNotReopenSourceArtifacts()
     {
         using var directory = new TestDirectory();
         var output = CreateOutput(directory.FullName);
@@ -79,33 +78,15 @@ public sealed partial class WorkspaceSaveCoordinatorTests
             GameRelease.Starfield,
             output,
             CancellationToken.None);
-        var stringsPath = Path.Combine(directory.FullName, "Strings", "Source_English.strings");
-        var looseStrings = await PluginFileInspector.InspectAsync(
-            stringsPath,
-            PluginArtifactRole.Strings,
-            "English",
-            mustExist: false,
+        var sourcePath = Path.Combine(directory.FullName, "Source.esm");
+        await File.WriteAllBytesAsync(sourcePath, [4, 5, 6]);
+        var sourceArtifact = await PluginFileInspector.InspectAsync(
+            sourcePath,
+            PluginArtifactRole.Plugin,
+            language: null,
+            mustExist: true,
             CancellationToken.None);
-        var archivePath = Path.Combine(directory.FullName, "Source - Main.ba2");
-        await File.WriteAllBytesAsync(
-            archivePath,
-            [
-                0x42, 0x54, 0x44, 0x58,
-                0x01, 0x00, 0x00, 0x00,
-                0x47, 0x4E, 0x52, 0x4C,
-                0x00, 0x00, 0x00, 0x00,
-                0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x10, 0x20, 0x30, 0x40
-            ]);
-        var archive = await PluginFileInspector.InspectArchiveStringsAsync(
-            archivePath,
-            GameRelease.Starfield,
-            new HashSet<string>([Path.GetFileName(stringsPath)], StringComparer.OrdinalIgnoreCase),
-            new FileSystem(),
-            CancellationToken.None);
-        var source = new TestSourceSet(new PluginSourceInputBaseline(
-            Guid.NewGuid(),
-            [looseStrings, archive]));
+        var source = new TestSourceSet(new PluginSourceInputBaseline(Guid.NewGuid(), [sourceArtifact]));
         var adapter = CreateAdapter(
             (_, _) => Task.FromResult(new StagedPluginOutputSet(
                 PluginWriteDisposition.Unchanged,
@@ -120,16 +101,24 @@ public sealed partial class WorkspaceSaveCoordinatorTests
             adapter.Object,
             SupportedGame.Starfield,
             GameRelease.Starfield);
+        var operationId = Guid.NewGuid();
         var coordinator = new WorkspaceSaveCoordinator(new TestLeaseProvider());
 
         var save = await coordinator.SaveAsync(
             context,
-            new SaveRequest(Guid.NewGuid(), context.Revision, outputBaseline));
-
+            new SaveRequest(operationId, context.Revision, outputBaseline));
         save.Status.ShouldBe(SaveCommitStatus.Committed, save.Error?.Message);
-        save.Error.ShouldBeNull();
-        save.ResolvedEvidence.ShouldNotBeNull();
-        save.ResolvedEvidence.SourceBaseline.Artifacts.ShouldBe([looseStrings, archive]);
+        File.Delete(sourcePath);
+
+        var recovery = await coordinator.RecoverAsync(
+            new RecoverSaveRequest(context.WorkspaceId, operationId, output));
+
+        recovery.Status.ShouldBe(RecoverSaveStatus.Committed, recovery.Error?.Message);
+        recovery.Error.ShouldBeNull();
+        recovery.ResolvedEvidence.ShouldNotBeNull();
+        PluginSaveArtifactUtilities.MatchSourceBaseline(
+            recovery.ResolvedEvidence.SourceBaseline,
+            source.Baseline).ShouldBeTrue();
     }
 
     /// <summary>Verifies an interruption between two changed artifacts is recoverable and can explicitly complete.</summary>

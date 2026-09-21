@@ -24,6 +24,11 @@ public sealed class OutputArtifactSetBaseline
             throw new ArgumentException("A complete output baseline requires exactly one plugin artifact.", nameof(artifacts));
         }
 
+        if (snapshot.Any(artifact => artifact.Fingerprint.Exists && artifact.Fingerprint.Sha256 is null))
+        {
+            throw new ArgumentException("Every present output artifact requires a content digest.", nameof(artifacts));
+        }
+
         var pathComparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
         if (snapshot.Select(artifact => artifact.Path).Distinct(pathComparer).Count() != snapshot.Length)
         {

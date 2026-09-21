@@ -33,7 +33,7 @@ public sealed class PluginSourceInputLoader
 
     /// <summary>Validates and prepares an independently disposable plugin source-input lifetime.</summary>
     /// <param name="request">The complete explicit workspace-open request.</param>
-    /// <param name="cancellationToken">The token checked during path discovery, plugin header reads, and file hashing.</param>
+    /// <param name="cancellationToken">The token checked during path discovery, plugin header reads, and source-lock acquisition.</param>
     /// <returns>A prepared plugin input set or a stable typed failure.</returns>
     /// <exception cref="OperationCanceledException">Thrown when cancellation is requested.</exception>
     public async Task<EngineResult<PluginSourceInputs>> PrepareAsync(
@@ -41,6 +41,7 @@ public sealed class PluginSourceInputLoader
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+        PluginSourceFileLockSet? sourceLocks = null;
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -107,13 +108,15 @@ public sealed class PluginSourceInputLoader
                     "A localized plugin requires at least one explicit localized-string directory. Supply an explicit empty directory when only archive lookup is intended.");
             }
 
+            sourceLocks = new PluginSourceFileLockSet();
             var artifactCollector = new PluginSourceArtifactCollector(
                 request.Release,
                 plugins,
                 dataDirectoryPath,
                 stringDirectoryPaths,
-                fileSystem);
-            var initialArtifacts = await artifactCollector.CaptureAsync(cancellationToken).ConfigureAwait(false);
+                fileSystem,
+                sourceLocks);
+            var initialArtifacts = artifactCollector.Capture(cancellationToken);
             ValidateDistinctPluginIdentities(initialArtifacts);
             VerifyHeaderMetadataUnchanged(request.Release, plugins, declaredMasters, fileSystem, cancellationToken);
 
@@ -132,8 +135,9 @@ public sealed class PluginSourceInputLoader
                 request.RecordTextLanguage,
                 masterFlags,
                 lookups,
-                artifactCollector,
+                sourceLocks,
                 initialArtifacts);
+            sourceLocks = null;
             return EngineResult<PluginSourceInputs>.Success(inputs, workspaceId: request.WorkspaceId);
         }
         catch (OperationCanceledException)
@@ -153,6 +157,13 @@ public sealed class PluginSourceInputLoader
                     EngineErrorCode.SourceOpenFailed,
                     $"The explicit plugin source inputs could not be prepared: {exception.Message}"),
                 workspaceId: request.WorkspaceId);
+        }
+        finally
+        {
+            if (sourceLocks is not null)
+            {
+                await sourceLocks.DisposeAsync().ConfigureAwait(false);
+            }
         }
     }
 

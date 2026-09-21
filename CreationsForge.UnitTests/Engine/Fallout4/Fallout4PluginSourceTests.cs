@@ -222,31 +222,38 @@ public sealed class Fallout4PluginSourceTests
         result.Error!.Code.ShouldBe(EngineErrorCode.InvalidRequest);
     }
 
-    /// <summary>Verifies source drift is reported and disposal closes every subsequent source operation.</summary>
-    /// <returns>A task that completes after drift and disposed-state checks finish.</returns>
+    /// <summary>Verifies Fallout 4 source locks deny writers and disposal closes operations and releases the files.</summary>
+    /// <returns>A task that completes after lock and disposed-state checks finish.</returns>
     [Fact]
-    public async Task VerifyAndDispose_DetectsDriftAndReturnsDisposedFailures()
+    public async Task VerifyAndDispose_BlocksWritersAndReturnsDisposedFailures()
     {
         using var fixture = Fallout4PluginTestFixture.Create();
         var result = await CreateLoader().OpenAsync(fixture.CreateOpenRequest());
         result.Succeeded.ShouldBeTrue(result.Error?.Message);
         var sources = result.Value!.Sources.ShouldBeOfType<Fallout4PluginSourceSet>();
 
-        await using (var stream = new FileStream(
-                         fixture.PatchPluginPath,
-                         FileMode.Append,
-                         FileAccess.Write,
-                         FileShare.Read))
+        Should.Throw<IOException>(() =>
         {
-            await stream.WriteAsync(new byte[] { 0x42 });
+            using var ignored = new FileStream(
+                fixture.PatchPluginPath,
+                FileMode.Open,
+                FileAccess.Write,
+                FileShare.Read);
+        });
+        var verification = await sources.VerifyUnchangedAsync();
+        verification.Succeeded.ShouldBeTrue(verification.Error?.Message);
+
+        await sources.DisposeAsync();
+        await sources.DisposeAsync();
+        using (var writer = new FileStream(
+                   fixture.PatchPluginPath,
+                   FileMode.Open,
+                   FileAccess.Write,
+                   FileShare.Read))
+        {
+            writer.CanWrite.ShouldBeTrue();
         }
-        var drift = await sources.VerifyUnchangedAsync();
 
-        drift.Succeeded.ShouldBeFalse();
-        drift.Error!.Code.ShouldBe(EngineErrorCode.ExternalChangeDetected);
-
-        await sources.DisposeAsync();
-        await sources.DisposeAsync();
         var resolve = sources.Resolve(new ReferenceRequest(fixture.SourceListFormKey, RecordScope.Source));
         var search = sources.Search(new ReferenceSearchRequest("Shared", 2));
         var plugins = sources.ListPlugins();

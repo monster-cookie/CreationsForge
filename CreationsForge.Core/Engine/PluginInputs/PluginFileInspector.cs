@@ -1,13 +1,9 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using System.Text;
 using Microsoft.Win32.SafeHandles;
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Engine.Internal;
-using Mutagen.Bethesda;
-using Mutagen.Bethesda.Archives;
-using System.IO.Abstractions;
 
 namespace CreationsForge.Core.Engine.PluginInputs;
 
@@ -158,99 +154,83 @@ internal static class PluginFileInspector
         }
     }
 
-    /// <summary>Fingerprints only localized-string entries from an applicable archive while retaining its physical identity and size.</summary>
-    /// <param name="path">The canonical absolute archive path.</param>
-    /// <param name="release">The plugin game release used to select the archive reader.</param>
-    /// <param name="targetFileNames">The exact localized-string file names that the admitted plugins can request.</param>
-    /// <param name="fileSystem">The filesystem adapter used by Mutagen's archive reader.</param>
-    /// <param name="cancellationToken">The token checked while reading the archive directory and matching localized entries.</param>
-    /// <returns>An archive association whose digest covers matching entry names, sizes, and uncompressed bytes.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when a required argument is <see langword="null"/>.</exception>
+    /// <summary>Opens and retains a read lock for one source artifact without hashing its content.</summary>
+    /// <param name="path">The canonical absolute artifact path.</param>
+    /// <param name="role">The artifact role.</param>
+    /// <param name="language">The loose sidecar language, or <see langword="null"/> for plugins and archives.</param>
+    /// <param name="mustExist">Whether absence is a failure rather than a recorded inventory state.</param>
+    /// <param name="cancellationToken">The token checked before the handle is acquired.</param>
+    /// <returns>The metadata observation and its retained read stream, or an absent observation with no stream.</returns>
     /// <exception cref="OperationCanceledException">Thrown when cancellation is requested.</exception>
-    /// <exception cref="PluginSourceInputException">Thrown when the archive changes, is aliased, or cannot be inspected safely.</exception>
-    internal static async Task<PluginArtifactAssociation> InspectArchiveStringsAsync(
+    /// <exception cref="PluginSourceInputException">Thrown when an expected file is missing, aliased, locked for writing, or cannot be opened safely.</exception>
+    internal static (PluginArtifactAssociation Artifact, FileStream? Stream) OpenReadLock(
         string path,
-        GameRelease release,
-        IReadOnlySet<string> targetFileNames,
-        IFileSystem fileSystem,
+        PluginArtifactRole role,
+        string? language,
+        bool mustExist,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(targetFileNames);
-        ArgumentNullException.ThrowIfNull(fileSystem);
         cancellationToken.ThrowIfCancellationRequested();
-        VerifyPathComponents(path, DescribeRole(PluginArtifactRole.StringsArchive));
+        VerifyPathComponents(path, DescribeRole(role));
+        if (!File.Exists(path))
+        {
+            if (Directory.Exists(path))
+            {
+                throw new PluginSourceInputException(
+                    EngineErrorCode.InvalidRequest,
+                    $"The plugin {DescribeRole(role)} path identifies a directory instead of a file: '{path}'.");
+            }
 
+            if (mustExist)
+            {
+                throw new PluginSourceInputException(
+                    EngineErrorCode.SourceOpenFailed,
+                    $"The required plugin {DescribeRole(role)} does not exist: '{path}'.");
+            }
+
+            return (new PluginArtifactAssociation(
+                path,
+                role,
+                language,
+                new PluginArtifactFingerprint(false, 0, null)), null);
+        }
+
+        FileStream? stream = null;
         try
         {
-            await using var identityStream = new FileStream(
+            stream = new FileStream(
                 path,
                 FileMode.Open,
                 FileAccess.Read,
-                FileShare.Read | FileShare.Delete,
+                FileShare.Read,
                 1,
-                FileOptions.Asynchronous);
-            VerifyResolvedFilePath(path, identityStream.SafeFileHandle);
-            var initialIdentity = ReadIdentity(identityStream.SafeFileHandle);
-            var initialLength = identityStream.Length;
-            var archive = Archive.CreateReader(release, path, fileSystem);
-            using var combinedHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-            foreach (var file in archive.Files
-                         .Where(file => targetFileNames.Contains(Path.GetFileName(file.Path)))
-                         .OrderBy(file => file.Path, StringComparer.OrdinalIgnoreCase))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                await using var entryStream = file.AsStream();
-                var entryDigest = await SHA256.HashDataAsync(entryStream, cancellationToken).ConfigureAwait(false);
-                var descriptor = Encoding.UTF8.GetBytes(
-                    $"{file.Path.Replace('\\', '/').ToUpperInvariant()}\0{file.Size}\0{Convert.ToHexString(entryDigest)}\n");
-                combinedHash.AppendData(descriptor);
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-            var finalHandleIdentity = ReadIdentity(identityStream.SafeFileHandle);
-            if (!initialIdentity.Equals(finalHandleIdentity) || initialLength != identityStream.Length)
-            {
-                throw new PluginSourceInputException(
-                    EngineErrorCode.ExternalChangeDetected,
-                    $"The record strings archive changed while it was being inspected: '{path}'.");
-            }
-
-            await using var currentPathStream = new FileStream(
+                FileOptions.RandomAccess);
+            VerifyResolvedFilePath(path, stream.SafeFileHandle);
+            var identity = ReadIdentity(stream.SafeFileHandle);
+            var artifact = new PluginArtifactAssociation(
                 path,
-                FileMode.Open,
-                FileAccess.Read,
-                FileShare.Read | FileShare.Delete,
-                1,
-                FileOptions.Asynchronous);
-            VerifyResolvedFilePath(path, currentPathStream.SafeFileHandle);
-            if (!initialIdentity.Equals(ReadIdentity(currentPathStream.SafeFileHandle)))
-            {
-                throw new PluginSourceInputException(
-                    EngineErrorCode.ExternalChangeDetected,
-                    $"The record strings archive path was replaced while it was being inspected: '{path}'.");
-            }
-
-            return new PluginArtifactAssociation(
-                path,
-                PluginArtifactRole.StringsArchive,
-                null,
-                new PluginArtifactFingerprint(true, initialLength, Convert.ToHexString(combinedHash.GetHashAndReset())),
-                initialIdentity);
+                role,
+                language,
+                new PluginArtifactFingerprint(true, stream.Length, null),
+                identity);
+            return (artifact, stream);
         }
         catch (PluginSourceInputException)
         {
+            stream?.Dispose();
             throw;
         }
         catch (OperationCanceledException)
         {
+            stream?.Dispose();
             throw;
         }
-        catch (Exception exception) when (
-            exception is IOException or UnauthorizedAccessException or InvalidDataException or OverflowException or ArgumentException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or Win32Exception)
         {
+            stream?.Dispose();
             throw new PluginSourceInputException(
                 EngineErrorCode.SourceOpenFailed,
-                $"The record strings archive could not be inspected safely: '{path}'.",
+                $"The plugin {DescribeRole(role)} could not be locked for read-only workspace use: '{path}'.",
                 exception);
         }
     }

@@ -153,7 +153,7 @@ public sealed partial class WorkspaceSaveCoordinator
             {
                 return EngineResult<ResolvedOutputEvidence>.Failure(recovery.Error ?? new EngineError(
                     EngineErrorCode.ExternalChangeDetected,
-                    "The reviewed recovery evidence is stale or its current source or output observations changed."));
+                    "The reviewed recovery evidence is stale or its current output observations changed."));
             }
 
             if (journal.Phase is not SaveTransactionPhase.Committed and not SaveTransactionPhase.NotCommitted)
@@ -188,15 +188,8 @@ public sealed partial class WorkspaceSaveCoordinator
                 journal.Release,
                 journal.Output,
                 cancellationToken).ConfigureAwait(false);
-            var sourceArtifacts = await PluginSaveArtifactUtilities.RecaptureSourceAsync(
-                journal.Release,
-                journal.SourceBaseline.Artifacts,
-                cancellationToken).ConfigureAwait(false);
-            var sourceMatches = PluginSaveArtifactUtilities.MatchExact(
-                journal.SourceBaseline.Artifacts,
-                sourceArtifacts);
             var ownedArtifacts = await ObserveOwnedArtifactsAsync(journal, cancellationToken).ConfigureAwait(false);
-            var tokenObservations = sourceArtifacts.Concat(output.Artifacts).Concat(ownedArtifacts).ToArray();
+            var tokenObservations = output.Artifacts.Concat(ownedArtifacts).ToArray();
 
             if (journal.Phase is SaveTransactionPhase.Committed or SaveTransactionPhase.NotCommitted)
             {
@@ -206,13 +199,8 @@ public sealed partial class WorkspaceSaveCoordinator
                     : RecoverSaveStatus.NotCommitted;
                 var terminal = journal.TerminalBaseline!;
                 var outputMatches = PluginSaveArtifactUtilities.MatchBaseline(terminal, output);
-                if (!sourceMatches || !outputMatches)
+                if (!outputMatches)
                 {
-                    var changedEvidence = !sourceMatches && !outputMatches
-                        ? "source and output baselines"
-                        : !sourceMatches
-                            ? "source baseline"
-                            : "output baseline";
                     return new RecoverSaveResult(
                         journal.WorkspaceId,
                         journal.SaveOperationId,
@@ -223,7 +211,7 @@ public sealed partial class WorkspaceSaveCoordinator
                         null,
                         new EngineError(
                             EngineErrorCode.ExternalChangeDetected,
-                            $"The original save outcome is known, but its {changedEvidence} is no longer currently adoptable."));
+                            "The original save outcome is known, but its output baseline is no longer currently adoptable."));
                 }
 
                 var evidence = CreateResolvedEvidence(journal, status, output, token);
@@ -250,11 +238,6 @@ public sealed partial class WorkspaceSaveCoordinator
                     RecoverSaveStatus.NotCommitted,
                     output,
                     tokenObservations);
-                if (!sourceMatches)
-                {
-                    return TerminalConflict(journal, RecoverSaveStatus.NotCommitted, token);
-                }
-
                 var evidence = CreateResolvedEvidence(journal, RecoverSaveStatus.NotCommitted, output, token);
                 return new RecoverSaveResult(
                     journal.WorkspaceId,
@@ -280,11 +263,6 @@ public sealed partial class WorkspaceSaveCoordinator
                     RecoverSaveStatus.Committed,
                     output,
                     tokenObservations);
-                if (!sourceMatches)
-                {
-                    return TerminalConflict(journal, RecoverSaveStatus.Committed, token);
-                }
-
                 var evidence = CreateResolvedEvidence(journal, RecoverSaveStatus.Committed, output, token);
                 return new RecoverSaveResult(
                     journal.WorkspaceId,
@@ -305,11 +283,6 @@ public sealed partial class WorkspaceSaveCoordinator
                     RecoverSaveStatus.NotCommitted,
                     output,
                     tokenObservations);
-                if (!sourceMatches)
-                {
-                    return TerminalConflict(journal, RecoverSaveStatus.NotCommitted, token);
-                }
-
                 var evidence = CreateResolvedEvidence(journal, RecoverSaveStatus.NotCommitted, output, token);
                 return new RecoverSaveResult(
                     journal.WorkspaceId,
@@ -329,11 +302,6 @@ public sealed partial class WorkspaceSaveCoordinator
                     RecoverSaveStatus.Committed,
                     output,
                     tokenObservations);
-                if (!sourceMatches)
-                {
-                    return TerminalConflict(journal, RecoverSaveStatus.Committed, token);
-                }
-
                 var evidence = CreateResolvedEvidence(journal, RecoverSaveStatus.Committed, output, token);
                 return new RecoverSaveResult(
                     journal.WorkspaceId,
@@ -385,7 +353,7 @@ public sealed partial class WorkspaceSaveCoordinator
                     null,
                     new EngineError(
                         EngineErrorCode.ExternalChangeDetected,
-                        $"The original save outcome is known, but its current source or output evidence could not be verified: {exception.Message}"));
+                        $"The original save outcome is known, but its current output evidence could not be verified: {exception.Message}"));
             }
 
             return new RecoverSaveResult(
@@ -582,7 +550,7 @@ public sealed partial class WorkspaceSaveCoordinator
     /// <param name="journal">The recognized current journal.</param>
     /// <param name="status">The physically established terminal status.</param>
     /// <param name="terminalBaseline">The fresh exact terminal output baseline.</param>
-    /// <param name="observations">The complete current source, output, and transaction-owned artifact observations.</param>
+    /// <param name="observations">The complete current output and transaction-owned artifact observations.</param>
     /// <returns>The evidence token bound to the deterministic terminal projection and current observations.</returns>
     private static RecoveryEvidenceToken CreateProjectedTerminalEvidenceToken(
         SaveTransactionJournal journal,
@@ -738,29 +706,6 @@ public sealed partial class WorkspaceSaveCoordinator
             journal.Output,
             output,
             status);
-    }
-
-    /// <summary>Creates a terminal historical result whose current sources prevent adoption.</summary>
-    /// <param name="journal">The recognized save journal.</param>
-    /// <param name="status">The physically established terminal status.</param>
-    /// <param name="token">The reviewed evidence token.</param>
-    /// <returns>The terminal result with a typed current conflict.</returns>
-    private static RecoverSaveResult TerminalConflict(
-        SaveTransactionJournal journal,
-        RecoverSaveStatus status,
-        RecoveryEvidenceToken token)
-    {
-        return new RecoverSaveResult(
-            journal.WorkspaceId,
-            journal.SaveOperationId,
-            status,
-            journal.SaveBaseRevision,
-            repairRequired: false,
-            token,
-            null,
-            new EngineError(
-                EngineErrorCode.ExternalChangeDetected,
-                "The destination outcome is physically established, but the original source baseline is no longer currently adoptable."));
     }
 
     /// <summary>Checks every caller-supplied evidence claim against the recognized journal.</summary>

@@ -8,7 +8,7 @@ using Noggog;
 
 namespace CreationsForge.Core.Engine.PluginInputs;
 
-/// <summary>Captures the complete deterministic physical artifact set considered by one explicit plugin source request.</summary>
+/// <summary>Captures the deterministic physical inventory and read locks for one explicit plugin source request.</summary>
 internal sealed class PluginSourceArtifactCollector
 {
     /// <summary>The selected plugin game release.</summary>
@@ -26,32 +26,38 @@ internal sealed class PluginSourceArtifactCollector
     /// <summary>The file-system adapter supplied to supported Mutagen discovery APIs.</summary>
     private readonly IFileSystem FileSystem;
 
+    /// <summary>The lifetime owner for every existing source artifact.</summary>
+    private readonly PluginSourceFileLockSet SourceLocks;
+
     /// <summary>Initializes a deterministic source artifact collector.</summary>
     /// <param name="release">The selected plugin game release.</param>
     /// <param name="plugins">The explicit plugins in load-order order.</param>
     /// <param name="dataDirectoryPath">The explicit archive discovery directory.</param>
     /// <param name="stringDirectoryPaths">The explicit loose strings directories in priority order.</param>
     /// <param name="fileSystem">The file-system adapter used by Mutagen archive discovery.</param>
+    /// <param name="sourceLocks">The lifetime owner receiving each existing source handle.</param>
     internal PluginSourceArtifactCollector(
         GameRelease release,
         IReadOnlyList<PluginSourcePluginInput> plugins,
         string dataDirectoryPath,
         IReadOnlyList<string> stringDirectoryPaths,
-        IFileSystem fileSystem)
+        IFileSystem fileSystem,
+        PluginSourceFileLockSet sourceLocks)
     {
         Release = release;
         Plugins = plugins;
         DataDirectoryPath = dataDirectoryPath;
         StringDirectoryPaths = stringDirectoryPaths;
         FileSystem = fileSystem;
+        SourceLocks = sourceLocks;
     }
 
-    /// <summary>Captures plugin content, every possible release language sidecar state, and each currently applicable archive.</summary>
-    /// <param name="cancellationToken">The token checked during discovery and hashing.</param>
-    /// <returns>The complete artifact set in stable plugin, directory, sidecar, language, and archive order.</returns>
+    /// <summary>Captures plugin metadata, every possible release-language sidecar state, and each currently applicable archive while retaining read locks.</summary>
+    /// <param name="cancellationToken">The token checked during discovery and lock acquisition.</param>
+    /// <returns>The complete artifact inventory in stable plugin, directory, sidecar, language, and archive order.</returns>
     /// <exception cref="OperationCanceledException">Thrown when cancellation is requested.</exception>
-    /// <exception cref="PluginSourceInputException">Thrown when an artifact cannot be observed safely.</exception>
-    internal async Task<IReadOnlyList<PluginArtifactAssociation>> CaptureAsync(CancellationToken cancellationToken)
+    /// <exception cref="PluginSourceInputException">Thrown when an artifact cannot be locked or observed safely.</exception>
+    internal IReadOnlyList<PluginArtifactAssociation> Capture(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         PluginFileInspector.VerifyDirectory(DataDirectoryPath, "data directory");
@@ -65,12 +71,12 @@ internal sealed class PluginSourceArtifactCollector
         foreach (var plugin in Plugins)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            artifacts.Add(await PluginFileInspector.InspectAsync(
+            artifacts.Add(SourceLocks.ObserveAndLock(
                 plugin.Path,
                 PluginArtifactRole.Plugin,
                 null,
                 mustExist: true,
-                cancellationToken).ConfigureAwait(false));
+                cancellationToken));
         }
 
         var constants = GameConstants.Get(Release);
@@ -94,18 +100,18 @@ internal sealed class PluginSourceArtifactCollector
                         cancellationToken.ThrowIfCancellationRequested();
                         var fileName = StringsUtility.GetFileName(languageFormat, plugin.ModKey, language, source);
                         var path = Path.GetFullPath(Path.Combine(directoryPath, fileName));
-                        artifacts.Add(await PluginFileInspector.InspectAsync(
+                        artifacts.Add(SourceLocks.ObserveAndLock(
                             path,
                             MapRole(source),
                             language.ToString(),
                             mustExist: false,
-                            cancellationToken).ConfigureAwait(false));
+                            cancellationToken));
                     }
                 }
             }
         }
 
-        var archiveTargets = new Dictionary<string, HashSet<string>>(PathComparer);
+        var archivePaths = new HashSet<string>(PathComparer);
         foreach (var plugin in Plugins)
         {
             if (!plugin.UsesLocalization)
@@ -114,44 +120,27 @@ internal sealed class PluginSourceArtifactCollector
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            var applicablePaths = FileSystem.Directory
-                .EnumerateFiles(DataDirectoryPath)
-                .Where(path => Archive.IsApplicable(
-                    Release,
-                    plugin.ModKey,
-                    new FileName(Path.GetFileName(path))))
-                .Select(path => Path.GetFullPath(path.ToString()))
-                .OrderBy(path => path, PathComparer)
-                .ToArray();
-            foreach (var path in applicablePaths)
+            foreach (var path in FileSystem.Directory
+                         .EnumerateFiles(DataDirectoryPath)
+                         .Where(path => Archive.IsApplicable(
+                             Release,
+                             plugin.ModKey,
+                             new FileName(Path.GetFileName(path))))
+                         .Select(path => Path.GetFullPath(path.ToString())))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (!archiveTargets.TryGetValue(path, out var targetFileNames))
-                {
-                    targetFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    archiveTargets.Add(path, targetFileNames);
-                }
-
-                foreach (var source in OrderedStringsSources)
-                {
-                    foreach (var language in constants.Languages.OrderBy(language => language))
-                    {
-                        targetFileNames.Add(StringsUtility
-                            .GetFileName(languageFormat, plugin.ModKey, language, source)
-                            .ToString());
-                    }
-                }
+                archivePaths.Add(path);
             }
         }
 
-        foreach (var archiveTarget in archiveTargets.OrderBy(pair => pair.Key, PathComparer))
+        foreach (var archivePath in archivePaths.OrderBy(path => path, PathComparer))
         {
-            artifacts.Add(await PluginFileInspector.InspectArchiveStringsAsync(
-                archiveTarget.Key,
-                Release,
-                archiveTarget.Value,
-                FileSystem,
-                cancellationToken).ConfigureAwait(false));
+            cancellationToken.ThrowIfCancellationRequested();
+            artifacts.Add(SourceLocks.ObserveAndLock(
+                archivePath,
+                PluginArtifactRole.StringsArchive,
+                null,
+                mustExist: true,
+                cancellationToken));
         }
 
         return Array.AsReadOnly(artifacts.ToArray());

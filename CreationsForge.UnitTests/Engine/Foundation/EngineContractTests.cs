@@ -9,17 +9,33 @@ namespace CreationsForge.UnitTests.Engine.Foundation;
 /// </summary>
 public sealed class EngineContractTests
 {
-    /// <summary>Verifies content digests are validated as SHA-256 hexadecimal values and stored canonically.</summary>
+    /// <summary>Verifies optional content digests are validated as SHA-256 hexadecimal values and stored canonically.</summary>
     [Fact]
     public void PluginArtifactFingerprint_WithDigest_ValidatesAndNormalizesHexadecimalValue()
     {
         var fingerprint = new PluginArtifactFingerprint(true, 12, new string('a', 64));
 
         fingerprint.Sha256.ShouldBe(new string('A', 64));
+        new PluginArtifactFingerprint(true, 12, null).Sha256.ShouldBeNull();
         Should.Throw<ArgumentException>(() =>
             new PluginArtifactFingerprint(true, 12, new string('Z', 64)));
     }
 
+
+    /// <summary>Verifies metadata-only fingerprints remain restricted to source observations.</summary>
+    [Fact]
+    public void OutputArtifactSetBaseline_WithPresentMetadataOnlyArtifact_RejectsValue()
+    {
+        var artifact = new PluginArtifactAssociation(
+            Path.GetFullPath("Output.esp"),
+            PluginArtifactRole.Plugin,
+            null,
+            new PluginArtifactFingerprint(true, 12, null),
+            new ArtifactFileIdentity("test", "volume", "file", 1));
+
+        Should.Throw<ArgumentException>(() =>
+            new OutputArtifactSetBaseline(Guid.NewGuid(), [artifact]));
+    }
     /// <summary>Verifies role, language, existence, and platform identity cannot describe an incoherent artifact.</summary>
     [Fact]
     public void PluginArtifactAssociation_WithIncoherentMetadata_RejectsValue()

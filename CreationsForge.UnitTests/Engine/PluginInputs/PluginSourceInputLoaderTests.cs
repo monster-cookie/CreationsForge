@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using CreationsForge.Core.Engine.Contracts;
 using CreationsForge.Core.Engine.PluginInputs;
 using CreationsForge.Core.Enums;
@@ -249,60 +248,81 @@ public sealed class PluginSourceInputLoaderTests
         await nonlocalizedResult.Value!.DisposeAsync();
     }
 
-    /// <summary>Verifies plugin content drift between preparation and completed parsing rejects baseline establishment.</summary>
+    /// <summary>Verifies source locks deny writers throughout the input lifetime and release on disposal.</summary>
     [Fact]
-    public async Task CompleteOpenAsync_AfterPluginContentChange_ReturnsExternalChange()
+    public async Task SourceReadLock_BlocksWritersUntilDisposal()
     {
         using var fixture = StarfieldPluginTestFixture.Create();
         var preparation = await new PluginSourceInputLoader().PrepareAsync(
             fixture.CreateOpenRequest(),
             TestContext.Current.CancellationToken);
         preparation.Succeeded.ShouldBeTrue(preparation.Error?.Message);
-        await using var inputs = preparation.Value!;
-        await File.AppendAllTextAsync(
+        var inputs = preparation.Value!;
+
+        try
+        {
+            Should.Throw<IOException>(() =>
+            {
+                using var ignored = new FileStream(
+                    fixture.SourcePluginPath,
+                    FileMode.Open,
+                    FileAccess.Write,
+                    FileShare.Read);
+            });
+            using (var reader = new FileStream(
+                       fixture.SourcePluginPath,
+                       FileMode.Open,
+                       FileAccess.Read,
+                       FileShare.Read))
+            {
+                reader.Length.ShouldBeGreaterThan(0);
+            }
+
+            var completion = await inputs.CompleteOpenAsync(TestContext.Current.CancellationToken);
+            completion.Succeeded.ShouldBeTrue(completion.Error?.Message);
+            var verification = await inputs.VerifyUnchangedAsync(TestContext.Current.CancellationToken);
+            verification.Succeeded.ShouldBeTrue(verification.Error?.Message);
+        }
+        finally
+        {
+            await inputs.DisposeAsync();
+        }
+
+        using var writer = new FileStream(
             fixture.SourcePluginPath,
-            "changed",
-            TestContext.Current.CancellationToken);
-
-        var completion = await inputs.CompleteOpenAsync(TestContext.Current.CancellationToken);
-
-        completion.Succeeded.ShouldBeFalse();
-        completion.Error!.Code.ShouldBe(EngineErrorCode.ExternalChangeDetected);
+            FileMode.Open,
+            FileAccess.Write,
+            FileShare.Read);
+        writer.CanWrite.ShouldBeTrue();
     }
 
-    /// <summary>Verifies applicable archive inventory additions are detected after a completed source baseline.</summary>
+    /// <summary>Verifies independent read-only workspaces can retain locks for the same source set concurrently.</summary>
     [Fact]
-    public async Task VerifyUnchangedAsync_AfterApplicableArchiveAppears_ReturnsExternalChange()
+    public async Task PrepareAsync_WithSameSources_AllowsConcurrentReadOnlyLifetimes()
     {
         using var fixture = StarfieldPluginTestFixture.Create();
-        var preparation = await new PluginSourceInputLoader().PrepareAsync(
+        var loader = new PluginSourceInputLoader();
+        var firstPreparation = await loader.PrepareAsync(
             fixture.CreateOpenRequest(),
             TestContext.Current.CancellationToken);
-        preparation.Succeeded.ShouldBeTrue(preparation.Error?.Message);
-        await using var inputs = preparation.Value!;
-        var completion = await inputs.CompleteOpenAsync(TestContext.Current.CancellationToken);
-        completion.Succeeded.ShouldBeTrue(completion.Error?.Message);
-        var archivePath = Path.Combine(fixture.DataDirectory.FullName, "PluginSmall - Main.ba2");
-        await File.WriteAllBytesAsync(
-            archivePath,
-            [
-                0x42, 0x54, 0x44, 0x58,
-                0x01, 0x00, 0x00, 0x00,
-                0x47, 0x4E, 0x52, 0x4C,
-                0x00, 0x00, 0x00, 0x00,
-                0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            ],
+        firstPreparation.Succeeded.ShouldBeTrue(firstPreparation.Error?.Message);
+        await using var first = firstPreparation.Value!;
+
+        var secondPreparation = await loader.PrepareAsync(
+            fixture.CreateOpenRequest(),
             TestContext.Current.CancellationToken);
+        secondPreparation.Succeeded.ShouldBeTrue(secondPreparation.Error?.Message);
+        await using var second = secondPreparation.Value!;
 
-        var verification = await inputs.VerifyUnchangedAsync(TestContext.Current.CancellationToken);
-
-        verification.Succeeded.ShouldBeFalse();
-        verification.Error!.Code.ShouldBe(EngineErrorCode.ExternalChangeDetected, verification.Error.Message);
+        (await first.CompleteOpenAsync(TestContext.Current.CancellationToken))
+            .Succeeded.ShouldBeTrue();
+        (await second.CompleteOpenAsync(TestContext.Current.CancellationToken))
+            .Succeeded.ShouldBeTrue();
     }
 
-    /// <summary>Verifies an applicable archive fingerprints only localized entries rather than unrelated payload bytes.</summary>
+    /// <summary>Verifies applicable archives are retained under read locks without content digests.</summary>
     [Fact]
-    public async Task PrepareAsync_WithApplicableArchiveWithoutStrings_DoesNotHashUnrelatedPayload()
+    public async Task PrepareAsync_WithApplicableArchive_LocksWithoutHashingContent()
     {
         using var fixture = StarfieldPluginTestFixture.Create();
         var archivePath = Path.Combine(fixture.DataDirectory.FullName, "PluginSmall - Main.ba2");
@@ -327,13 +347,22 @@ public sealed class PluginSourceInputLoaderTests
         completion.Succeeded.ShouldBeTrue(completion.Error?.Message);
         var archive = completion.Value!.Artifacts
             .Single(artifact => string.Equals(artifact.Path, archivePath, StringComparison.OrdinalIgnoreCase));
-        archive.Fingerprint.Sha256.ShouldBe(Convert.ToHexString(SHA256.HashData([])));
-        archive.Fingerprint.Sha256.ShouldNotBe(Convert.ToHexString(SHA256.HashData(archiveBytes)));
+        archive.Fingerprint.Exists.ShouldBeTrue();
+        archive.Fingerprint.Length.ShouldBe(archiveBytes.LongLength);
+        archive.Fingerprint.Sha256.ShouldBeNull();
+        Should.Throw<IOException>(() =>
+        {
+            using var ignored = new FileStream(
+                archivePath,
+                FileMode.Open,
+                FileAccess.Write,
+                FileShare.Read);
+        });
     }
 
-    /// <summary>Verifies removal of an explicit empty strings directory changes the source set even when every candidate sidecar was absent.</summary>
+    /// <summary>Verifies source verification trusts retained locks and does not rescan directories for new optional paths.</summary>
     [Fact]
-    public async Task VerifyUnchangedAsync_AfterExplicitEmptyStringsDirectoryIsRemoved_ReturnsExternalChange()
+    public async Task VerifyUnchangedAsync_DoesNotRescanSourceInventory()
     {
         using var fixture = StarfieldPluginTestFixture.Create();
         var emptyDirectory = fixture.RootDirectory.CreateSubdirectory("Strings-Explicit-Empty");
@@ -353,16 +382,20 @@ public sealed class PluginSourceInputLoaderTests
         var completion = await inputs.CompleteOpenAsync(TestContext.Current.CancellationToken);
         completion.Succeeded.ShouldBeTrue(completion.Error?.Message);
         emptyDirectory.Delete();
+        await File.WriteAllBytesAsync(
+            Path.Combine(fixture.DataDirectory.FullName, "PluginSmall - Main.ba2"),
+            [0x42],
+            TestContext.Current.CancellationToken);
 
         var verification = await inputs.VerifyUnchangedAsync(TestContext.Current.CancellationToken);
 
-        verification.Succeeded.ShouldBeFalse();
-        verification.Error!.Code.ShouldBe(EngineErrorCode.ExternalChangeDetected);
+        verification.Succeeded.ShouldBeTrue(verification.Error?.Message);
+        verification.Value.ShouldBeSameAs(completion.Value);
     }
 
-    /// <summary>Verifies same-byte path replacement is detected independently of content hashes.</summary>
+    /// <summary>Verifies a retained source lock blocks same-path replacement while the workspace is open.</summary>
     [Fact]
-    public async Task VerifyUnchangedAsync_AfterSameContentPathReplacement_ReturnsExternalChange()
+    public async Task SourceReadLock_BlocksPathReplacement()
     {
         using var fixture = StarfieldPluginTestFixture.Create();
         var preparation = await new PluginSourceInputLoader().PrepareAsync(
@@ -374,13 +407,11 @@ public sealed class PluginSourceInputLoaderTests
         completion.Succeeded.ShouldBeTrue(completion.Error?.Message);
         var replacementPath = Path.Combine(fixture.DataDirectory.FullName, "replacement.tmp");
         File.Copy(fixture.SourcePluginPath, replacementPath);
-        File.Delete(fixture.SourcePluginPath);
-        File.Move(replacementPath, fixture.SourcePluginPath);
 
+        Should.Throw<IOException>(() => File.Delete(fixture.SourcePluginPath));
+        File.Exists(fixture.SourcePluginPath).ShouldBeTrue();
         var verification = await inputs.VerifyUnchangedAsync(TestContext.Current.CancellationToken);
-
-        verification.Succeeded.ShouldBeFalse();
-        verification.Error!.Code.ShouldBe(EngineErrorCode.ExternalChangeDetected);
+        verification.Succeeded.ShouldBeTrue(verification.Error?.Message);
     }
 
     /// <summary>Verifies cancellation remains scoped to one open operation and disposal invalidates later input use.</summary>

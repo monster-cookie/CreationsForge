@@ -256,9 +256,9 @@ public sealed partial class WorkspaceSaveCoordinatorTests
         (await File.ReadAllBytesAsync(strings.Path)).ShouldBe(destinationBeforeRepair);
     }
 
-    /// <summary>Verifies an incomplete repair replay cannot mutate more output after its plugin source baseline changes.</summary>
+    /// <summary>Verifies an incomplete repair replay uses transaction evidence and does not reopen its historical source baseline.</summary>
     [Fact]
-    public async Task InterruptedRepairReplayWithChangedSourceDoesNotMutateDestination()
+    public async Task InterruptedRepairReplay_WithChangedHistoricalSource_CompletesDestination()
     {
         using var directory = new TestDirectory();
         var sourcePath = Path.Combine(directory.FullName, "Source.esm");
@@ -309,21 +309,17 @@ public sealed partial class WorkspaceSaveCoordinatorTests
             new SaveTransactionStore(),
             new ThrowAfterFirstMutationFileOperations());
         (await interruptedRepair.RepairAsync(repairRequest)).Status.ShouldBe(RepairSaveStatus.StillUnknown);
-        var beforeReplay = await PluginSaveArtifactUtilities.CaptureOutputAsync(
-            GameRelease.SkyrimSE,
-            output,
-            CancellationToken.None);
         await File.WriteAllBytesAsync(sourcePath, [6]);
 
         var replay = await normal.RepairAsync(repairRequest);
 
-        replay.Status.ShouldBe(RepairSaveStatus.BlockedByExternalChange);
-        replay.Error!.Code.ShouldBe(EngineErrorCode.ExternalChangeDetected);
-        var afterReplay = await PluginSaveArtifactUtilities.CaptureOutputAsync(
-            GameRelease.SkyrimSE,
-            output,
-            CancellationToken.None);
-        PluginSaveArtifactUtilities.MatchBaseline(beforeReplay, afterReplay).ShouldBeTrue();
+        replay.Status.ShouldBe(RepairSaveStatus.PreparedSetCompleted, replay.Error?.Message);
+        replay.Error.ShouldBeNull();
+        replay.ResolvedEvidence.ShouldNotBeNull();
+        foreach (var artifact in desired)
+        {
+            (await File.ReadAllBytesAsync(artifact.Key)).ShouldBe(artifact.Value);
+        }
     }
 
     /// <summary>Verifies destination replacement at the final save seam is detected before transaction bytes publish.</summary>

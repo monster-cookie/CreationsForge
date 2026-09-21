@@ -116,36 +116,6 @@ public sealed partial class WorkspaceSaveCoordinator
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
-            IReadOnlyList<PluginArtifactAssociation> currentSources;
-            try
-            {
-                currentSources = await PluginSaveArtifactUtilities.RecaptureSourceAsync(
-                    journal.Release,
-                    journal.SourceBaseline.Artifacts,
-                    cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception exception)
-            {
-                return RepairFailure(
-                    request,
-                    RepairSaveStatus.BlockedByExternalChange,
-                    EngineErrorCode.ExternalChangeDetected,
-                    $"The plugin source baseline could not be verified immediately before repair publication: {exception.Message}");
-            }
-
-            if (!PluginSaveArtifactUtilities.MatchExact(journal.SourceBaseline.Artifacts, currentSources))
-            {
-                return RepairFailure(
-                    request,
-                    RepairSaveStatus.BlockedByExternalChange,
-                    EngineErrorCode.ExternalChangeDetected,
-                    "The plugin source baseline changed before repair publication.");
-            }
-
             var targetStatus = request.Direction == RepairSaveDirection.CompletePrepared
                 ? RecoverSaveStatus.Committed
                 : RecoverSaveStatus.NotCommitted;

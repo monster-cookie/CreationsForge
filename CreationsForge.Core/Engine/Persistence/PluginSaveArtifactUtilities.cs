@@ -7,7 +7,6 @@ using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Masters;
 using Mutagen.Bethesda.Plugins.Records;
-using System.IO.Abstractions;
 
 namespace CreationsForge.Core.Engine.Persistence;
 
@@ -60,46 +59,6 @@ internal static class PluginSaveArtifactUtilities
                 artifact.Language,
                 mustExist: false,
                 cancellationToken).ConfigureAwait(false);
-        }
-
-        return Array.AsReadOnly(observations);
-    }
-
-    /// <summary>Recaptures a source artifact set with the same localized-entry archive fingerprint used during workspace admission.</summary>
-    /// <param name="release">The exact game release used to read applicable strings archives.</param>
-    /// <param name="expected">The admitted source artifact shape whose paths, roles, and languages are recaptured.</param>
-    /// <param name="cancellationToken">The token checked while reading and hashing artifacts.</param>
-    /// <returns>The fresh observations in the same order and representation as the admitted source baseline.</returns>
-    internal static async Task<IReadOnlyList<PluginArtifactAssociation>> RecaptureSourceAsync(
-        GameRelease release,
-        IReadOnlyList<PluginArtifactAssociation> expected,
-        CancellationToken cancellationToken)
-    {
-        var targetFileNames = expected
-            .Where(artifact => artifact.Role is
-                PluginArtifactRole.Strings or
-                PluginArtifactRole.DlStrings or
-                PluginArtifactRole.IlStrings)
-            .Select(artifact => Path.GetFileName(artifact.Path))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var fileSystem = new FileSystem();
-        var observations = new PluginArtifactAssociation[expected.Count];
-        for (var index = 0; index < expected.Count; index++)
-        {
-            var artifact = expected[index];
-            observations[index] = artifact.Role == PluginArtifactRole.StringsArchive
-                ? await PluginFileInspector.InspectArchiveStringsAsync(
-                    artifact.Path,
-                    release,
-                    targetFileNames,
-                    fileSystem,
-                    cancellationToken).ConfigureAwait(false)
-                : await PluginFileInspector.InspectAsync(
-                    artifact.Path,
-                    artifact.Role,
-                    artifact.Language,
-                    mustExist: false,
-                    cancellationToken).ConfigureAwait(false);
         }
 
         return Array.AsReadOnly(observations);

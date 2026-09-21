@@ -225,9 +225,9 @@ public sealed partial class PluginWorkspace
         }
     }
 
-    /// <summary>Recaptures the complete source baseline and converts unexpected verification failure to a typed result.</summary>
-    /// <param name="cancellationToken">A token that cancels source recapture and hashing.</param>
-    /// <returns>The recaptured unchanged baseline or a typed verification failure.</returns>
+    /// <summary>Confirms source-lifetime ownership and converts unexpected failures to a typed result.</summary>
+    /// <param name="cancellationToken">A token that cancels entry to the source-lifetime gate.</param>
+    /// <returns>The retained source baseline or a typed lifetime failure.</returns>
     private async ValueTask<EngineResult<PluginSourceInputBaseline>> VerifySourcesUnchangedAsync(
         CancellationToken cancellationToken)
     {
@@ -410,7 +410,7 @@ public sealed partial class PluginWorkspace
                 request,
                 pendingSave,
                 coordinatorResult,
-                sourceVerification.Error ?? new EngineError(EngineErrorCode.ExternalChangeDetected, "The plugin source baseline changed before the committed output could be reopened."),
+                sourceVerification.Error ?? new EngineError(EngineErrorCode.SourceOpenFailed, "The plugin source lifetime was unavailable before the committed output could be reopened."),
                 warnings);
         }
 

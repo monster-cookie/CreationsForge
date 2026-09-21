@@ -10,9 +10,9 @@ public interface IPluginSourceSet : IAsyncDisposable
     /// <summary>Gets the completed immutable baseline for every physical source artifact.</summary>
     PluginSourceInputBaseline Baseline { get; }
 
-    /// <summary>Verifies that every source artifact still matches the completed baseline.</summary>
-    /// <param name="cancellationToken">A token that cancels recapture and hashing.</param>
-    /// <returns>The unchanged baseline, or a typed external-change or source verification failure.</returns>
+    /// <summary>Confirms ownership of the completed source lifetime and its retained read locks.</summary>
+    /// <param name="cancellationToken">A token that cancels entry to the source-lifetime gate.</param>
+    /// <returns>The completed baseline, or a typed source-lifetime failure.</returns>
     /// <exception cref="OperationCanceledException">Thrown when cancellation is requested.</exception>
     Task<EngineResult<PluginSourceInputBaseline>> VerifyUnchangedAsync(
         CancellationToken cancellationToken = default);
