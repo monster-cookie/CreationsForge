@@ -5,6 +5,7 @@ using CreationsForge.Core.Enums;
 using Moq;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
+using System.IO.Abstractions;
 using Shouldly;
 
 namespace CreationsForge.UnitTests.Engine.Persistence;
@@ -65,6 +66,70 @@ public sealed partial class WorkspaceSaveCoordinatorTests
             operationId.ToString("N"),
             SaveTransactionStore.JournalFileName);
         File.Exists(journalPath).ShouldBeTrue();
+    }
+
+    /// <summary>Verifies Starfield save recovery recaptures strings archives with the same entry-aware fingerprint used at admission.</summary>
+    [Fact]
+    public async Task SaveWithStarfieldStringsArchiveUsesAdmissionFingerprintDuringRecovery()
+    {
+        using var directory = new TestDirectory();
+        var output = CreateOutput(directory.FullName);
+        await File.WriteAllBytesAsync(output.PluginPath, [1, 2, 3]);
+        var outputBaseline = await PluginSaveArtifactUtilities.CaptureOutputAsync(
+            GameRelease.Starfield,
+            output,
+            CancellationToken.None);
+        var stringsPath = Path.Combine(directory.FullName, "Strings", "Source_English.strings");
+        var looseStrings = await PluginFileInspector.InspectAsync(
+            stringsPath,
+            PluginArtifactRole.Strings,
+            "English",
+            mustExist: false,
+            CancellationToken.None);
+        var archivePath = Path.Combine(directory.FullName, "Source - Main.ba2");
+        await File.WriteAllBytesAsync(
+            archivePath,
+            [
+                0x42, 0x54, 0x44, 0x58,
+                0x01, 0x00, 0x00, 0x00,
+                0x47, 0x4E, 0x52, 0x4C,
+                0x00, 0x00, 0x00, 0x00,
+                0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x10, 0x20, 0x30, 0x40
+            ]);
+        var archive = await PluginFileInspector.InspectArchiveStringsAsync(
+            archivePath,
+            GameRelease.Starfield,
+            new HashSet<string>([Path.GetFileName(stringsPath)], StringComparer.OrdinalIgnoreCase),
+            new FileSystem(),
+            CancellationToken.None);
+        var source = new TestSourceSet(new PluginSourceInputBaseline(
+            Guid.NewGuid(),
+            [looseStrings, archive]));
+        var adapter = CreateAdapter(
+            (_, _) => Task.FromResult(new StagedPluginOutputSet(
+                PluginWriteDisposition.Unchanged,
+                null,
+                Array.Empty<StagedPluginArtifactMapping>())),
+            SupportedGame.Starfield,
+            GameRelease.Starfield);
+        var context = CreateContext(
+            output,
+            outputBaseline,
+            source,
+            adapter.Object,
+            SupportedGame.Starfield,
+            GameRelease.Starfield);
+        var coordinator = new WorkspaceSaveCoordinator(new TestLeaseProvider());
+
+        var save = await coordinator.SaveAsync(
+            context,
+            new SaveRequest(Guid.NewGuid(), context.Revision, outputBaseline));
+
+        save.Status.ShouldBe(SaveCommitStatus.Committed, save.Error?.Message);
+        save.Error.ShouldBeNull();
+        save.ResolvedEvidence.ShouldNotBeNull();
+        save.ResolvedEvidence.SourceBaseline.Artifacts.ShouldBe([looseStrings, archive]);
     }
 
     /// <summary>Verifies an interruption between two changed artifacts is recoverable and can explicitly complete.</summary>
@@ -585,18 +650,22 @@ public sealed partial class WorkspaceSaveCoordinatorTests
     /// <param name="baseline">The exact current output baseline.</param>
     /// <param name="source">The source-set test double.</param>
     /// <param name="adapter">The configured game adapter.</param>
+    /// <param name="game">The exact test game selected by the adapter.</param>
+    /// <param name="release">The exact test release supported by the adapter.</param>
     /// <returns>The workspace save context.</returns>
     private static WorkspaceSaveContext CreateContext(
         OutputAssociation output,
         OutputArtifactSetBaseline baseline,
         TestSourceSet source,
-        IFormListGameAdapter adapter)
+        IFormListGameAdapter adapter,
+        SupportedGame game = SupportedGame.Skyrim,
+        GameRelease release = GameRelease.SkyrimSE)
     {
         return new WorkspaceSaveContext(
             Guid.NewGuid(),
             new WorkspaceRevision(Guid.NewGuid(), 7),
-            SupportedGame.Skyrim,
-            GameRelease.SkyrimSE,
+            game,
+            release,
             adapter,
             source,
             new TestOutputState(),
@@ -606,13 +675,17 @@ public sealed partial class WorkspaceSaveCoordinatorTests
 
     /// <summary>Creates a strict-enough adapter mock for plugin staging and final reopen behavior.</summary>
     /// <param name="stage">The staged-write implementation.</param>
+    /// <param name="game">The exact game exposed by the mock.</param>
+    /// <param name="release">The exact release accepted by the mock.</param>
     /// <returns>The configured adapter mock.</returns>
     private static Mock<IFormListGameAdapter> CreateAdapter(
-        Func<PluginWriteRequest, CancellationToken, Task<StagedPluginOutputSet>> stage)
+        Func<PluginWriteRequest, CancellationToken, Task<StagedPluginOutputSet>> stage,
+        SupportedGame game = SupportedGame.Skyrim,
+        GameRelease release = GameRelease.SkyrimSE)
     {
         var adapter = new Mock<IFormListGameAdapter>();
-        adapter.SetupGet(value => value.Game).Returns(SupportedGame.Skyrim);
-        adapter.Setup(value => value.SupportsRelease(GameRelease.SkyrimSE)).Returns(true);
+        adapter.SetupGet(value => value.Game).Returns(game);
+        adapter.Setup(value => value.SupportsRelease(release)).Returns(true);
         adapter.Setup(value => value.WriteAndValidateAsync(
                 It.IsAny<IPluginSourceSet>(),
                 It.IsAny<IPluginOutputState>(),
