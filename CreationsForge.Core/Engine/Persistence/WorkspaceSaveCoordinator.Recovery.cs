@@ -188,7 +188,8 @@ public sealed partial class WorkspaceSaveCoordinator
                 journal.Release,
                 journal.Output,
                 cancellationToken).ConfigureAwait(false);
-            var sourceArtifacts = await PluginSaveArtifactUtilities.RecaptureAsync(
+            var sourceArtifacts = await PluginSaveArtifactUtilities.RecaptureSourceAsync(
+                journal.Release,
                 journal.SourceBaseline.Artifacts,
                 cancellationToken).ConfigureAwait(false);
             var sourceMatches = PluginSaveArtifactUtilities.MatchExact(
@@ -204,8 +205,14 @@ public sealed partial class WorkspaceSaveCoordinator
                     ? RecoverSaveStatus.Committed
                     : RecoverSaveStatus.NotCommitted;
                 var terminal = journal.TerminalBaseline!;
-                if (!sourceMatches || !PluginSaveArtifactUtilities.MatchBaseline(terminal, output))
+                var outputMatches = PluginSaveArtifactUtilities.MatchBaseline(terminal, output);
+                if (!sourceMatches || !outputMatches)
                 {
+                    var changedEvidence = !sourceMatches && !outputMatches
+                        ? "source and output baselines"
+                        : !sourceMatches
+                            ? "source baseline"
+                            : "output baseline";
                     return new RecoverSaveResult(
                         journal.WorkspaceId,
                         journal.SaveOperationId,
@@ -216,7 +223,7 @@ public sealed partial class WorkspaceSaveCoordinator
                         null,
                         new EngineError(
                             EngineErrorCode.ExternalChangeDetected,
-                            "The original save outcome is known, but its source or output baseline is no longer currently adoptable."));
+                            $"The original save outcome is known, but its {changedEvidence} is no longer currently adoptable."));
                 }
 
                 var evidence = CreateResolvedEvidence(journal, status, output, token);

@@ -119,7 +119,8 @@ public sealed partial class WorkspaceSaveCoordinator
             IReadOnlyList<PluginArtifactAssociation> currentSources;
             try
             {
-                currentSources = await PluginSaveArtifactUtilities.RecaptureAsync(
+                currentSources = await PluginSaveArtifactUtilities.RecaptureSourceAsync(
+                    journal.Release,
                     journal.SourceBaseline.Artifacts,
                     cancellationToken).ConfigureAwait(false);
             }

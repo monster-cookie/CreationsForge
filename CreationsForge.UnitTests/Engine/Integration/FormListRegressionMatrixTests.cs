@@ -106,6 +106,21 @@ public sealed class FormListRegressionMatrixTests
     public async Task EmbeddedOutput_SourceOverridePreservesAllocatedEmptyRecordAndFreshlyReopens(SupportedGame game)
     {
         using var fixture = WorkspaceIntegrationFixture.Create(game);
+        if (game == SupportedGame.Starfield)
+        {
+            var request = fixture.CreateOpenRequest();
+            await File.WriteAllBytesAsync(
+                Path.Combine(request.DataDirectoryPath, $"{fixture.SourceModKey.Name} - Main.ba2"),
+                [
+                    0x42, 0x54, 0x44, 0x58,
+                    0x01, 0x00, 0x00, 0x00,
+                    0x47, 0x4E, 0x52, 0x4C,
+                    0x00, 0x00, 0x00, 0x00,
+                    0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x10, 0x20, 0x30, 0x40
+                ],
+                TestContext.Current.CancellationToken);
+        }
         var sourceArtifacts = fixture.SnapshotArtifacts();
         var association = CreateAssociation(fixture, $"{game}RegressionMatrix.esm");
         var logSink = new CollectingLogSink();
