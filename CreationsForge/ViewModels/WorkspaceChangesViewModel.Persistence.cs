@@ -5,7 +5,7 @@ namespace CreationsForge.ViewModels;
 /// <content>Owns exact save and discard requests, persistence-result mapping, and resumable post-success presentation refresh.</content>
 public sealed partial class WorkspaceChangesViewModel
 {
-    /// <summary>Saves every freshly previewed staged workspace change under the active owned dialog transition.</summary>
+    /// <summary>Saves every freshly previewed staged workspace change or materializes a selected new output under the active owned dialog transition.</summary>
     /// <param name="cancellationToken">A token honored before destination mutation; terminal result mapping always drains.</param>
     /// <returns>A task that completes after the exact save result and required presentation refresh are mapped.</returns>
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -78,10 +78,10 @@ public sealed partial class WorkspaceChangesViewModel
                             warnings: captureResult.Warnings);
                     }
 
-                    if (!captureResult.Value.Preview.HasStagedChanges)
+                    if (!HasSaveableChanges(captureResult.Value))
                     {
                         return EngineResult<WorkspaceSaveBorrowOutcome>.Failure(
-                            new EngineError(EngineErrorCode.InvalidRequest, "No staged workspace changes are available to save."),
+                            new EngineError(EngineErrorCode.InvalidRequest, "No staged workspace changes or new output are available to save."),
                             workspace.WorkspaceId,
                             baseRevision: captureResult.Value.State.Revision,
                             resultRevision: captureResult.Value.State.Revision,
@@ -163,6 +163,17 @@ public sealed partial class WorkspaceChangesViewModel
                     warnings).ConfigureAwait(false);
                 break;
         }
+    }
+
+    /// <summary>Gets whether a fresh capture contains record changes or a selected plugin that has not been materialized.</summary>
+    /// <param name="capture">The exact state and preview captured at one revision.</param>
+    /// <returns><see langword="true"/> when save has work to perform.</returns>
+    private static bool HasSaveableChanges(WorkspaceReviewCapture capture)
+    {
+        return capture.Preview.HasStagedChanges
+            || !capture.State.OutputBaseline!.Artifacts
+                .Single(artifact => artifact.Role == PluginArtifactRole.Plugin)
+                .Fingerprint.Exists;
     }
 
     /// <summary>Performs a fresh preview and either discards local-only input or calls Core with one exact discard request.</summary>

@@ -44,6 +44,81 @@ public sealed class WorkspaceChangesDialogServiceHeadlessTests
             "Keep Editing");
     }
 
+    /// <summary>Verifies the real save button dispatches a new-output save with no record edits and releases the owner-bound modal.</summary>
+    /// <returns>A task that completes after the save button closes the modal and releases transition admission.</returns>
+    [AvaloniaFact]
+    public async Task ShowSaveChangesDialogAsync_NewOutputWithoutRecordChanges_SaveButtonClosesAndReleasesTransition()
+    {
+        var owner = new Window();
+        var windowService = new HeadlessApplicationWindowService(owner);
+        var dialogService = new WorkspaceChangesDialogService(
+            windowService,
+            new LoggerConfiguration().CreateLogger());
+        await using var context = WorkspaceChangesTestContext.CreateReadyWithPresentationServices(
+            dialogService,
+            new AvaloniaUiDispatcher(),
+            outputExists: false);
+        var workspace = context.Workspace.ShouldNotBeNull();
+        var initialState = workspace.State;
+        var committedBaseline = PresentBaseline(initialState.Output!);
+        var committedRevision = initialState.Revision.Next();
+        workspace.OnSaveAsync = (request, _) =>
+        {
+            workspace.State = new WorkspaceState(
+                initialState.Game,
+                initialState.Release,
+                initialState.Output,
+                committedBaseline,
+                new OutputSynchronizationState(OutputSynchronizationStatus.Ready, null),
+                committedRevision);
+            return ValueTask.FromResult(new SaveResult(
+                workspace.WorkspaceId,
+                request.OperationId,
+                request.ExpectedRevision,
+                committedRevision,
+                SaveCommitStatus.Committed,
+                committedBaseline,
+                recoveryEvidenceToken: null,
+                resolvedEvidence: null,
+                error: null,
+                warnings: []));
+        };
+        context.EditParticipant.OnRefreshAsync = (_, _, _) => Task.FromResult(
+            EngineResult<WorkspaceState>.Success(
+                workspace.State,
+                workspace.WorkspaceId,
+                baseRevision: committedRevision,
+                resultRevision: committedRevision));
+        Task? showTask = null;
+        Window? dialog = null;
+
+        try
+        {
+            owner.Show();
+            showTask = context.ViewModel.ShowSaveChangesDialogAsync(TestContext.Current.CancellationToken);
+            dialog = await windowService.DialogShown.Task.WaitAsync(AsyncDeadline);
+            var view = AssertProductionDialog(dialog, context.ViewModel, Environment.CurrentManagedThreadId, windowService);
+            context.ViewModel.CurrentReview!.RequiresOutputCreation.ShouldBeTrue();
+            var save = ControlFinder.FindByAutomationId<Button>(
+                view,
+                "WorkspaceSaveAndProceedButton").ShouldNotBeNull();
+            save.IsEnabled.ShouldBeTrue();
+
+            save.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            await showTask.WaitAsync(AsyncDeadline);
+            workspace.SaveRequests.ShouldHaveSingleItem();
+            dialog.IsVisible.ShouldBeFalse();
+            AssertTransitionReleased(context);
+        }
+        finally
+        {
+            DismissForCleanup(dialog);
+            await DrainForCleanupAsync(showTask);
+            owner.Close();
+        }
+    }
+
     /// <summary>Verifies Discard opens and dismisses the real modal after preview resumes on a worker thread.</summary>
     /// <returns>A task that completes after the real modal and transition have drained.</returns>
     [AvaloniaFact]
@@ -386,6 +461,20 @@ public sealed class WorkspaceChangesDialogServiceHeadlessTests
     {
         context.Arbiter.IsWorkspaceTransitionPendingOrReserved.ShouldBeFalse();
         using var nextEditorOperation = context.Arbiter.TryBeginEditorOperation().ShouldNotBeNull();
+    }
+
+    /// <summary>Creates a present plugin baseline after a successful new-output save.</summary>
+    /// <param name="output">The selected output association.</param>
+    /// <returns>The complete present plugin baseline.</returns>
+    private static OutputArtifactSetBaseline PresentBaseline(OutputAssociation output)
+    {
+        return new OutputArtifactSetBaseline(
+            Guid.NewGuid(),
+            [new PluginArtifactAssociation(
+                output.PluginPath,
+                PluginArtifactRole.Plugin,
+                language: null,
+                new PluginArtifactFingerprint(true, 1, new string('B', 64)))]);
     }
 
     /// <summary>Gets the user-visible text belonging to one toolbar dialog purpose.</summary>

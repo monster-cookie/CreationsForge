@@ -98,4 +98,12 @@ public sealed class WorkspaceChangeReview
 
     /// <summary>Gets whether the authoritative workspace preview contains staged comparisons.</summary>
     public bool HasStagedChanges => Comparisons.Count > 0 || MajorRecordComparisons.Count > 0;
+
+    /// <summary>Gets whether saving must materialize the selected plugin because it did not exist at output selection time.</summary>
+    public bool RequiresOutputCreation => !OutputBaseline.Artifacts
+        .Single(artifact => artifact.Role == PluginArtifactRole.Plugin)
+        .Fingerprint.Exists;
+
+    /// <summary>Gets whether the workspace has record changes or an unmaterialized selected output to save.</summary>
+    public bool HasSaveableChanges => HasStagedChanges || RequiresOutputCreation;
 }

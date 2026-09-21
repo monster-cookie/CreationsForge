@@ -27,6 +27,46 @@ public sealed partial class WorkspaceChangesViewModelTests
         context.Workspace!.SaveRequests.ShouldHaveSingleItem();
     }
 
+    /// <summary>Verifies a selected new plugin can be saved before any records are added.</summary>
+    /// <returns>A task that completes after the new output is committed and the dialog session drains.</returns>
+    [Fact]
+    public async Task SaveChangesAsync_NewOutputWithoutRecordChanges_DispatchesSave()
+    {
+        await using var context = WorkspaceChangesTestContext.CreateReady(outputExists: false);
+        var workspace = context.Workspace.ShouldNotBeNull();
+        var initialState = workspace.State;
+        var committedBaseline = ReplacementBaseline(initialState.Output!);
+        var committedRevision = initialState.Revision.Next();
+        workspace.OnSaveAsync = (request, _) =>
+        {
+            workspace.State = ReadyState(initialState, committedBaseline, committedRevision);
+            return ValueTask.FromResult(Committed(
+                workspace.WorkspaceId,
+                request,
+                committedRevision,
+                committedBaseline));
+        };
+        ConfigureSuccessfulParticipantRefresh(context);
+        context.DialogService.OnShowAsync = async (viewModel, _) =>
+        {
+            var review = viewModel.CurrentReview.ShouldNotBeNull();
+            review.HasStagedChanges.ShouldBeFalse();
+            review.RequiresOutputCreation.ShouldBeTrue();
+            review.HasSaveableChanges.ShouldBeTrue();
+            viewModel.StatusText.ShouldBe("New plugin ready to save");
+            viewModel.CanSaveChanges.ShouldBeTrue();
+
+            await viewModel.SaveChangesAsync();
+            return WorkspaceChangesDialogResult.KeepEditing;
+        };
+
+        await context.ViewModel.ShowSaveChangesDialogAsync();
+
+        workspace.SaveRequests.ShouldHaveSingleItem();
+        workspace.SaveRequests[0].ExpectedOutputBaseline.ShouldBeSameAs(initialState.OutputBaseline);
+        context.ViewModel.StatusText.ShouldBe("Saved and reopened.");
+    }
+
     /// <summary>Verifies mutation methods cannot dispatch Core work without an owned dialog transition.</summary>
     /// <returns>A task that completes after the scenario assertions.</returns>
     [Fact]

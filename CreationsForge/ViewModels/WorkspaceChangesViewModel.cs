@@ -306,7 +306,7 @@ public sealed partial class WorkspaceChangesViewModel : ViewModelBase, IDisposab
         && PendingRefreshEnvelopeValue is null
         && LastSaveResultValue?.Status != SaveCommitStatus.Committed
         && OutputSynchronizationStatus == global::CreationsForge.Core.Engine.Contracts.OutputSynchronizationStatus.Ready
-        && CurrentReview?.HasStagedChanges == true;
+        && CurrentReview?.HasSaveableChanges == true;
 
     /// <summary>Gets whether the active owned dialog transition can explicitly discard local or staged changes.</summary>
     public bool CanDiscardChanges => HasActiveOwnedTransition
@@ -777,7 +777,7 @@ public sealed partial class WorkspaceChangesViewModel : ViewModelBase, IDisposab
             return "Resolve the pending save outcome before editing, saving, discarding, or closing.";
         }
 
-        if (CurrentReview?.HasStagedChanges != true)
+        if (CurrentReview?.HasSaveableChanges != true)
         {
             return "No unsaved changes";
         }

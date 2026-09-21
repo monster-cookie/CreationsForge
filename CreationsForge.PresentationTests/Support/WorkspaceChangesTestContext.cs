@@ -77,14 +77,17 @@ internal sealed class WorkspaceChangesTestContext : IDisposable, IAsyncDisposabl
     /// <summary>Creates a ready Starfield workspace with optional staged and request-local changes.</summary>
     /// <param name="hasStagedChanges">Whether preview returns one detached FormList comparison.</param>
     /// <param name="hasDraftChanges">Whether request-local editor controls are changed.</param>
+    /// <param name="outputExists">Whether the selected output baseline represents an existing plugin.</param>
     /// <returns>The configured ready-workspace test context.</returns>
     internal static WorkspaceChangesTestContext CreateReady(
         bool hasStagedChanges = false,
-        bool hasDraftChanges = false)
+        bool hasDraftChanges = false,
+        bool outputExists = true)
     {
         return CreateReadyCore(
             hasStagedChanges,
             hasDraftChanges,
+            outputExists,
             dialogService: null,
             uiDispatcher: null);
     }
@@ -126,27 +129,31 @@ internal sealed class WorkspaceChangesTestContext : IDisposable, IAsyncDisposabl
     /// <param name="uiDispatcher">The dispatcher used for bound presentation state.</param>
     /// <param name="hasStagedChanges">Whether preview returns one detached FormList comparison.</param>
     /// <param name="hasDraftChanges">Whether request-local editor controls are changed.</param>
+    /// <param name="outputExists">Whether the selected output baseline represents an existing plugin.</param>
     /// <returns>The configured ready-workspace test context.</returns>
     internal static WorkspaceChangesTestContext CreateReadyWithPresentationServices(
         IWorkspaceChangesDialogService dialogService,
         IUiDispatcher uiDispatcher,
         bool hasStagedChanges = false,
-        bool hasDraftChanges = false)
+        bool hasDraftChanges = false,
+        bool outputExists = true)
     {
         ArgumentNullException.ThrowIfNull(dialogService);
         ArgumentNullException.ThrowIfNull(uiDispatcher);
-        return CreateReadyCore(hasStagedChanges, hasDraftChanges, dialogService, uiDispatcher);
+        return CreateReadyCore(hasStagedChanges, hasDraftChanges, outputExists, dialogService, uiDispatcher);
     }
 
     /// <summary>Creates the shared ready-workspace graph around optional presentation-service overrides.</summary>
     /// <param name="hasStagedChanges">Whether preview returns one detached FormList comparison.</param>
     /// <param name="hasDraftChanges">Whether request-local editor controls are changed.</param>
+    /// <param name="outputExists">Whether the selected output baseline represents an existing plugin.</param>
     /// <param name="dialogService">The optional dialog service override.</param>
     /// <param name="uiDispatcher">The optional presentation dispatcher override.</param>
     /// <returns>The configured ready-workspace test context.</returns>
     private static WorkspaceChangesTestContext CreateReadyCore(
         bool hasStagedChanges,
         bool hasDraftChanges,
+        bool outputExists,
         IWorkspaceChangesDialogService? dialogService,
         IUiDispatcher? uiDispatcher)
     {
@@ -166,7 +173,9 @@ internal sealed class WorkspaceChangesTestContext : IDisposable, IAsyncDisposabl
                 outputPath,
                 PluginArtifactRole.Plugin,
                 language: null,
-                new PluginArtifactFingerprint(false, 0, null))]);
+                outputExists
+                    ? new PluginArtifactFingerprint(true, 1, new string('A', 64))
+                    : new PluginArtifactFingerprint(false, 0, null))]);
         var revision = new WorkspaceRevision(Guid.NewGuid(), 3);
         var state = new WorkspaceState(
             SupportedGame.Starfield,

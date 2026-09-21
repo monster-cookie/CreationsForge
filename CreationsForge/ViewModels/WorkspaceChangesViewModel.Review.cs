@@ -369,7 +369,11 @@ public sealed partial class WorkspaceChangesViewModel
             ErrorCodeValue = null;
             ErrorMessageValue = null;
             WarningsValue = review.Warnings;
-            StatusTextValue = review.HasStagedChanges ? "Workspace changes staged" : "No unsaved changes";
+            StatusTextValue = review.HasStagedChanges
+                ? "Workspace changes staged"
+                : review.RequiresOutputCreation
+                    ? "New plugin ready to save"
+                    : "No unsaved changes";
             RecoveryEnvelopeValue = null;
             PendingRepairEnvelopeValue = null;
             AbandonmentEnvelopeValue = null;
