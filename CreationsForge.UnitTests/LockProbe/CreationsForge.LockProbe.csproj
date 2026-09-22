@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\CreationsForge.Engine\CreationsForge.Engine.csproj" />
+    <ProjectReference Include="..\..\CreationsForge.Fallout4\CreationsForge.Fallout4.csproj" />
+  </ItemGroup>
+</Project>

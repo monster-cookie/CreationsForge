@@ -37,8 +37,11 @@ public static class McpHostComposition
 
         foreach (var integration in integrations)
         {
-            builder.Services.AddSingleton(integration);
+            builder.Services.AddSingleton<IGameIntegration>(integration);
         }
+
+        builder.Services.AddSingleton(serviceProvider =>
+            new NativeWorkspaceFactory(serviceProvider.GetServices<IGameIntegration>()));
 
         builder.Services
             .AddMcpServer(options =>
@@ -48,7 +51,7 @@ public static class McpHostComposition
                     Name = "CreationsForge",
                     Version = serverVersion,
                 };
-                options.ServerInstructions = "CreationsForge is at its Mutagen rebuild baseline. Workspace, editing, and save tools are not available yet.";
+                options.ServerInstructions = "CreationsForge provides its native Mutagen workspace backend. Authoring and save MCP tools are not available yet.";
             })
             .WithStdioServerTransport();
 

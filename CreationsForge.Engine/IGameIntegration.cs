@@ -1,5 +1,8 @@
 using System.Reflection;
 using Mutagen.Bethesda;
+using Mutagen.Bethesda.Plugins;
+using Mutagen.Bethesda.Plugins.Cache;
+using Mutagen.Bethesda.Plugins.Records;
 
 namespace CreationsForge.Engine;
 
@@ -16,4 +19,52 @@ public interface IGameIntegration
 
     /// <summary>Gets the loaded game-specific Mutagen assembly used by the integration.</summary>
     Assembly MutagenAssembly { get; }
+
+    /// <summary>Validates that an output style is legal for this game and extension.</summary>
+    /// <param name="modKey">The output identity, including its extension.</param>
+    /// <param name="masterStyle">The requested native master style.</param>
+    void ValidateOutputStyle(ModKey modKey, MasterStyle masterStyle);
+
+    /// <summary>Gets required masters for a newly created output.</summary>
+    /// <returns>Required masters in native order.</returns>
+    IReadOnlyList<ModKey> GetNewOutputMasters();
+
+    /// <summary>Opens a native immutable source with already discovered masters.</summary>
+    /// <param name="path">The exact plugin path and expected identity.</param>
+    /// <param name="knownMasters">Previously opened native masters in masters-first order.</param>
+    /// <returns>An owned native immutable source.</returns>
+    IModDisposeGetter OpenSource(ModPath path, IReadOnlyList<IModMasterStyledGetter> knownMasters);
+
+    /// <summary>Opens a complete mutable native output.</summary>
+    /// <param name="path">The exact output path and expected identity.</param>
+    /// <param name="knownMasters">Previously opened native masters in masters-first order.</param>
+    /// <returns>The complete mutable output.</returns>
+    IMod OpenExistingOutput(ModPath path, IReadOnlyList<IModMasterStyledGetter> knownMasters);
+
+    /// <summary>Creates the game's typed mutable link cache over immutable sources and one mutable output.</summary>
+    /// <param name="sources">Immutable source plugins in low-to-high priority order.</param>
+    /// <param name="output">The mutable native output.</param>
+    /// <returns>A native typed link cache exposed through the shared interface.</returns>
+    ILinkCache CreateLinkCache(IReadOnlyList<IModGetter> sources, IMod output);
+
+    /// <summary>Resolves a record context from an exact containing plugin.</summary>
+    /// <param name="cache">The integration's typed link cache.</param>
+    /// <param name="formKey">The record origin identity.</param>
+    /// <param name="recordType">The native record getter type.</param>
+    /// <param name="containingModKey">The exact plugin containing the requested record version.</param>
+    /// <returns>The native record context with its parent chain.</returns>
+    IModContext ResolveContextFromMod(ILinkCache cache, FormKey formKey, Type recordType, ModKey containingModKey);
+
+    /// <summary>Resolves the winning record context for an origin identity.</summary>
+    /// <param name="cache">The integration's typed link cache.</param>
+    /// <param name="formKey">The record origin identity.</param>
+    /// <param name="recordType">The native record getter type.</param>
+    /// <returns>The winning native record context with its parent chain.</returns>
+    IModContext ResolveWinningContext(ILinkCache cache, FormKey formKey, Type recordType);
+
+    /// <summary>Enumerates winning native contexts from only the workspace's admitted source graph and output.</summary>
+    /// <param name="cache">The integration's typed link cache.</param>
+    /// <param name="recordType">The native record getter type to browse.</param>
+    /// <returns>Winning native contexts with parent chains.</returns>
+    IEnumerable<IModContext> EnumerateWinningContexts(ILinkCache cache, Type recordType);
 }

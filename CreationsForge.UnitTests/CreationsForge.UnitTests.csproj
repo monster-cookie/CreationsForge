@@ -10,11 +10,15 @@
   <ItemGroup>
     <ProjectReference Include="..\CreationsForge.Engine\CreationsForge.Engine.csproj" />
     <ProjectReference Include="..\CreationsForge.Fallout4\CreationsForge.Fallout4.csproj" />
+    <ProjectReference Include="LockProbe\CreationsForge.LockProbe.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\CreationsForge.Mcp\CreationsForge.Mcp.csproj" />
     <ProjectReference Include="..\CreationsForge.Skyrim\CreationsForge.Skyrim.csproj" />
     <ProjectReference Include="..\CreationsForge.Starfield\CreationsForge.Starfield.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="LockProbe\**\*.cs" />
   </ItemGroup>
 </Project>

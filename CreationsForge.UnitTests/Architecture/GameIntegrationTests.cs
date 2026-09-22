@@ -1,8 +1,10 @@
 using System.Reflection;
 using CreationsForge.Engine;
 using CreationsForge.Fallout4;
+using CreationsForge.Mcp;
 using CreationsForge.Skyrim;
 using CreationsForge.Starfield;
+using Microsoft.Extensions.DependencyInjection;
 using Mutagen.Bethesda;
 
 namespace CreationsForge.UnitTests.Architecture;
@@ -38,6 +40,20 @@ public sealed class GameIntegrationTests
         // Mutagen.Bethesda.Core exposes its shared runtime types from Mutagen.Bethesda.Kernel.
         Assert.Equal("Mutagen.Bethesda.Kernel", typeof(GameRelease).Assembly.GetName().Name);
         AssertApprovedPackageVersion(typeof(GameRelease).Assembly);
+    }
+
+    /// <summary>Requires production composition to expose the native workspace factory backed by all supported games.</summary>
+    [Fact]
+    public void ProductionHostRegistersNativeWorkspaceFactory()
+    {
+        var builder = McpHostComposition.CreateProductionBuilder("test");
+        using var host = builder.Build();
+
+        var workspaceFactory = host.Services.GetRequiredService<NativeWorkspaceFactory>();
+        var integrations = host.Services.GetServices<IGameIntegration>().ToArray();
+
+        Assert.NotNull(workspaceFactory);
+        Assert.Equal(3, integrations.Length);
     }
 
     /// <summary>Requires a loaded Mutagen assembly to report the exact approved prerelease version.</summary>
