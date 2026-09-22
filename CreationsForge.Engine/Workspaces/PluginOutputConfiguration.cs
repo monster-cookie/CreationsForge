@@ -1,9 +1,9 @@
 using Mutagen.Bethesda.Plugins;
 
-namespace CreationsForge.Engine;
+namespace CreationsForge.Engine.Workspaces;
 
 /// <summary>Describes how a plugin stores localized text.</summary>
-public enum NativeTextStorageMode
+public enum PluginTextStorageMode
 {
     /// <summary>Strings are stored directly in plugin records.</summary>
     Embedded,
@@ -12,20 +12,20 @@ public enum NativeTextStorageMode
     Localized,
 }
 
-/// <summary>Defines the mutable native output owned by a workspace.</summary>
-public sealed class NativeOutputDefinition
+/// <summary>Defines the mutable Mutagen plugin output owned by a workspace.</summary>
+public sealed class PluginOutputDefinition
 {
     /// <summary>Initializes an output definition.</summary>
     /// <param name="path">The output plugin path.</param>
     /// <param name="modKey">The output identity, including its explicit plugin extension.</param>
-    /// <param name="masterStyle">The requested native master style.</param>
+    /// <param name="masterStyle">The requested plugin master style.</param>
     /// <param name="textStorageMode">The requested text storage mode.</param>
     /// <param name="createNew">Whether the workspace must create an empty output instead of opening an existing plugin.</param>
-    public NativeOutputDefinition(
+    public PluginOutputDefinition(
         string path,
         ModKey modKey,
         MasterStyle masterStyle,
-        NativeTextStorageMode textStorageMode,
+        PluginTextStorageMode textStorageMode,
         bool createNew)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -43,11 +43,11 @@ public sealed class NativeOutputDefinition
     /// <summary>Gets the output identity, including its plugin extension.</summary>
     public ModKey ModKey { get; }
 
-    /// <summary>Gets the native master style.</summary>
+    /// <summary>Gets the plugin master style.</summary>
     public MasterStyle MasterStyle { get; }
 
     /// <summary>Gets the text storage mode.</summary>
-    public NativeTextStorageMode TextStorageMode { get; }
+    public PluginTextStorageMode TextStorageMode { get; }
 
     /// <summary>Gets whether the workspace must create an empty output.</summary>
     public bool CreateNew { get; }

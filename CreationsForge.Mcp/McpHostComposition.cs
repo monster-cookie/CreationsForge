@@ -1,4 +1,5 @@
-using CreationsForge.Engine;
+using CreationsForge.Engine.Interfaces;
+using CreationsForge.Engine.Workspaces;
 using CreationsForge.Fallout4;
 using CreationsForge.Skyrim;
 using CreationsForge.Starfield;
@@ -41,7 +42,7 @@ public static class McpHostComposition
         }
 
         builder.Services.AddSingleton(serviceProvider =>
-            new NativeWorkspaceFactory(serviceProvider.GetServices<IGameIntegration>()));
+            new PluginWorkspaceFactory(serviceProvider.GetServices<IGameIntegration>()));
 
         builder.Services
             .AddMcpServer(options =>
@@ -51,7 +52,7 @@ public static class McpHostComposition
                     Name = "CreationsForge",
                     Version = serverVersion,
                 };
-                options.ServerInstructions = "CreationsForge provides its native Mutagen workspace backend. Authoring and save MCP tools are not available yet.";
+                options.ServerInstructions = "CreationsForge provides its Mutagen-backed plugin workspace. Authoring and save MCP tools are not available yet.";
             })
             .WithStdioServerTransport();
 

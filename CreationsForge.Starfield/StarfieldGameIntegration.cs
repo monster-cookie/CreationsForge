@@ -1,5 +1,6 @@
 using System.Reflection;
-using CreationsForge.Engine;
+using CreationsForge.Engine.Interfaces;
+using CreationsForge.Engine.Workspaces;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Cache;
@@ -27,7 +28,7 @@ public sealed class StarfieldGameIntegration : IGameIntegration
     {
         if (modKey.Type == ModType.Light && masterStyle != MasterStyle.Small)
         {
-            throw new NativeWorkspaceException($"The .esl output '{modKey}' must use the Small master style.");
+            throw new PluginWorkspaceException($"The .esl output '{modKey}' must use the Small master style.");
         }
     }
 

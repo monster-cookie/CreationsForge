@@ -2,18 +2,18 @@ using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Cache;
 using Mutagen.Bethesda.Plugins.Records;
 
-namespace CreationsForge.Engine;
+namespace CreationsForge.Engine.Workspaces;
 
-/// <summary>Preserves both an exact containing-plugin context and the winning native context for a record.</summary>
-public sealed class NativeRecordResolution
+/// <summary>Preserves both an exact containing-plugin context and the winning Mutagen context for a record.</summary>
+public sealed class PluginRecordResolution
 {
-    internal NativeRecordResolution(IModContext exactContext, IModContext winningContext)
+    internal PluginRecordResolution(IModContext exactContext, IModContext winningContext)
     {
         ExactContext = exactContext;
         WinningContext = winningContext;
         if (exactContext.Record is not IMajorRecordGetter exactRecord)
         {
-            throw new NativeWorkspaceException("The resolved native context did not contain a major record.");
+            throw new PluginWorkspaceException("The resolved Mutagen context did not contain a major record.");
         }
 
         OriginFormKey = exactRecord.FormKey;
@@ -30,9 +30,9 @@ public sealed class NativeRecordResolution
     /// <summary>Gets the plugin containing the winning record version.</summary>
     public ModKey WinningModKey { get; }
 
-    /// <summary>Gets the exact native Mutagen context, including its unflattened parent chain.</summary>
+    /// <summary>Gets the exact Mutagen context, including its unflattened parent chain.</summary>
     public IModContext ExactContext { get; }
 
-    /// <summary>Gets the winning native Mutagen context, including its unflattened parent chain.</summary>
+    /// <summary>Gets the winning Mutagen context, including its unflattened parent chain.</summary>
     public IModContext WinningContext { get; }
 }

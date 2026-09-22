@@ -1,17 +1,17 @@
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 
-namespace CreationsForge.Engine;
+namespace CreationsForge.Engine.Workspaces;
 
-/// <summary>Reports constant-time native workspace and output state.</summary>
-public sealed class NativeWorkspaceState
+/// <summary>Reports constant-time plugin workspace and output state.</summary>
+public sealed class PluginWorkspaceState
 {
-    internal NativeWorkspaceState(
+    internal PluginWorkspaceState(
         GameRelease release,
         ModKey outputModKey,
         string outputPath,
         MasterStyle masterStyle,
-        NativeTextStorageMode textStorageMode,
+        PluginTextStorageMode textStorageMode,
         bool isNewOutput,
         bool isDirty,
         ulong revision)
@@ -39,7 +39,7 @@ public sealed class NativeWorkspaceState
     public MasterStyle MasterStyle { get; }
 
     /// <summary>Gets the output text storage mode.</summary>
-    public NativeTextStorageMode TextStorageMode { get; }
+    public PluginTextStorageMode TextStorageMode { get; }
 
     /// <summary>Gets whether the output was created empty for this workspace.</summary>
     public bool IsNewOutput { get; }

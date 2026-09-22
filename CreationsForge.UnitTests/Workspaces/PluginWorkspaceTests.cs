@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using CreationsForge.Engine;
+using CreationsForge.Engine.Workspaces;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Records;
@@ -14,10 +14,10 @@ using SkyrimPlacedObject = Mutagen.Bethesda.Skyrim.PlacedObject;
 using SkyrimPlacedObjectGetter = Mutagen.Bethesda.Skyrim.IPlacedObjectGetter;
 using SkyrimRelease = Mutagen.Bethesda.Skyrim.SkyrimRelease;
 
-namespace CreationsForge.UnitTests.Engine;
+namespace CreationsForge.UnitTests.Workspaces;
 
-/// <summary>Verifies native source resolution, output ownership, and cleanup for every supported game.</summary>
-public sealed partial class NativeWorkspaceTests
+/// <summary>Verifies plugin source resolution, output ownership, and cleanup for every supported game.</summary>
+public sealed partial class PluginWorkspaceTests
 {
     /// <summary>Opens selected plugins with only their recursive masters and resolves exact and winning contexts.</summary>
     [Theory]
@@ -85,7 +85,7 @@ public sealed partial class NativeWorkspaceTests
         Assert.Equal(0UL, workspace.State.Revision);
         Assert.Equal(outputModKey, workspace.State.OutputModKey);
         Assert.Equal(MasterStyle.Full, workspace.State.MasterStyle);
-        Assert.Equal(NativeTextStorageMode.Embedded, workspace.State.TextStorageMode);
+        Assert.Equal(PluginTextStorageMode.Embedded, workspace.State.TextStorageMode);
         Assert.Equal(
             release == GameRelease.Starfield ? [ModKey.FromNameAndExtension("Starfield.esm")] : [],
             workspace.Output.MasterReferences.Select(reference => reference.Master));
@@ -103,13 +103,13 @@ public sealed partial class NativeWorkspaceTests
         var fixture = CreateFixture(directory.Path, release);
         var outputModKey = fixture.SelectedModKey;
         var outputPath = Path.Combine(directory.Path, outputModKey.ToString());
-        var definition = new NativeOutputDefinition(
+        var definition = new PluginOutputDefinition(
             outputPath,
             outputModKey,
             MasterStyle.Full,
-            NativeTextStorageMode.Embedded,
+            PluginTextStorageMode.Embedded,
             createNew: false);
-        var request = new NativeWorkspaceOpenRequest(release, directory.Path, [], definition);
+        var request = new PluginWorkspaceOpenRequest(release, directory.Path, [], definition);
 
         using var workspace = CreateFactory().Open(request);
 
@@ -133,7 +133,7 @@ public sealed partial class NativeWorkspaceTests
         WritePlugin(selected, Path.Combine(directory.Path, selectedModKey.ToString()));
 
         var outputModKey = ModKey.FromNameAndExtension("Output.esp");
-        var exception = Assert.Throws<NativeWorkspaceException>(() =>
+        var exception = Assert.Throws<PluginWorkspaceException>(() =>
             CreateFactory().Open(CreateNewRequest(directory.Path, GameRelease.Fallout4, [selectedModKey], outputModKey)));
 
         Assert.Contains(missingModKey.ToString(), exception.Message, StringComparison.Ordinal);
@@ -155,7 +155,7 @@ public sealed partial class NativeWorkspaceTests
         WritePlugin(second, Path.Combine(directory.Path, secondModKey.ToString()));
 
         var outputModKey = ModKey.FromNameAndExtension("Output.esp");
-        var exception = Assert.Throws<NativeWorkspaceException>(() =>
+        var exception = Assert.Throws<PluginWorkspaceException>(() =>
             CreateFactory().Open(CreateNewRequest(directory.Path, GameRelease.Fallout4, [firstModKey], outputModKey)));
 
         Assert.Contains($"{firstModKey} -> {secondModKey} -> {firstModKey}", exception.Message, StringComparison.Ordinal);
@@ -172,7 +172,7 @@ public sealed partial class NativeWorkspaceTests
         using var firstWorkspace = factory.Open(request);
 
         var started = DateTime.UtcNow;
-        var exception = Assert.Throws<NativeWorkspaceLockException>(() => factory.Open(request));
+        var exception = Assert.Throws<PluginWorkspaceLockException>(() => factory.Open(request));
         Assert.True(DateTime.UtcNow - started < TimeSpan.FromSeconds(2));
         Assert.Contains("output identity", exception.Message, StringComparison.OrdinalIgnoreCase);
 
@@ -192,15 +192,15 @@ public sealed partial class NativeWorkspaceTests
         var factory = CreateFactory();
         using var browsingWorkspace = factory.Open(
             CreateNewRequest(directory.Path, GameRelease.Fallout4, [sourceModKey], browsingOutputModKey));
-        var writerDefinition = new NativeOutputDefinition(
+        var writerDefinition = new PluginOutputDefinition(
             Path.Combine(directory.Path, sourceModKey.ToString()),
             sourceModKey,
             MasterStyle.Full,
-            NativeTextStorageMode.Embedded,
+            PluginTextStorageMode.Embedded,
             createNew: false);
-        var writerRequest = new NativeWorkspaceOpenRequest(GameRelease.Fallout4, directory.Path, [], writerDefinition);
+        var writerRequest = new PluginWorkspaceOpenRequest(GameRelease.Fallout4, directory.Path, [], writerDefinition);
 
-        var exception = Assert.Throws<NativeWorkspaceLockException>(() => factory.Open(writerRequest));
+        var exception = Assert.Throws<PluginWorkspaceLockException>(() => factory.Open(writerRequest));
         Assert.Contains("output plugin", exception.Message, StringComparison.OrdinalIgnoreCase);
 
         browsingWorkspace.Dispose();
@@ -255,7 +255,7 @@ public sealed partial class NativeWorkspaceTests
             }
 
             var outputModKey = ModKey.FromNameAndExtension("CrossProcess.esp");
-            var exception = Assert.Throws<NativeWorkspaceLockException>(() =>
+            var exception = Assert.Throws<PluginWorkspaceLockException>(() =>
                 CreateFactory().Open(CreateNewRequest(directory.Path, GameRelease.Fallout4, [], outputModKey)));
             Assert.Contains("output identity", exception.Message, StringComparison.OrdinalIgnoreCase);
         }
@@ -291,20 +291,20 @@ public sealed partial class NativeWorkspaceTests
     {
         using var directory = new TemporaryDirectory();
         var outputModKey = ModKey.FromNameAndExtension("Output.esl");
-        var output = new NativeOutputDefinition(
+        var output = new PluginOutputDefinition(
             Path.Combine(directory.Path, outputModKey.ToString()),
             outputModKey,
             MasterStyle.Full,
-            NativeTextStorageMode.Embedded,
+            PluginTextStorageMode.Embedded,
             createNew: true);
-        var request = new NativeWorkspaceOpenRequest(GameRelease.Fallout4, directory.Path, [], output);
+        var request = new PluginWorkspaceOpenRequest(GameRelease.Fallout4, directory.Path, [], output);
 
-        var exception = Assert.Throws<NativeWorkspaceException>(() => CreateFactory().Open(request));
+        var exception = Assert.Throws<PluginWorkspaceException>(() => CreateFactory().Open(request));
 
         Assert.Contains("Small", exception.Message, StringComparison.Ordinal);
     }
 
-    /// <summary>Requires an existing output's native text mode to match the explicit request.</summary>
+    /// <summary>Requires an existing output's text-storage mode to match the explicit request.</summary>
     [Fact]
     public void ExistingOutputTextStorageMustMatchRequest()
     {
@@ -316,20 +316,20 @@ public sealed partial class NativeWorkspaceTests
             UsingLocalization = true,
         };
         WritePlugin(output, outputPath);
-        var definition = new NativeOutputDefinition(
+        var definition = new PluginOutputDefinition(
             outputPath,
             outputModKey,
             MasterStyle.Full,
-            NativeTextStorageMode.Embedded,
+            PluginTextStorageMode.Embedded,
             createNew: false);
-        var request = new NativeWorkspaceOpenRequest(GameRelease.Fallout4, directory.Path, [], definition);
+        var request = new PluginWorkspaceOpenRequest(GameRelease.Fallout4, directory.Path, [], definition);
 
-        var exception = Assert.Throws<NativeWorkspaceException>(() => CreateFactory().Open(request));
+        var exception = Assert.Throws<PluginWorkspaceException>(() => CreateFactory().Open(request));
 
         Assert.Contains("Localized text storage", exception.Message, StringComparison.Ordinal);
     }
 
-    /// <summary>Applies legal small and medium styles through native game flags.</summary>
+    /// <summary>Applies legal small and medium styles through Mutagen game flags.</summary>
     [Theory]
     [InlineData(GameRelease.Starfield, "Output.esm", MasterStyle.Medium)]
     [InlineData(GameRelease.Starfield, "Output.esl", MasterStyle.Small)]
@@ -345,13 +345,13 @@ public sealed partial class NativeWorkspaceTests
         }
 
         var outputModKey = ModKey.FromNameAndExtension(outputName);
-        var output = new NativeOutputDefinition(
+        var output = new PluginOutputDefinition(
             Path.Combine(directory.Path, outputModKey.ToString()),
             outputModKey,
             masterStyle,
-            NativeTextStorageMode.Embedded,
+            PluginTextStorageMode.Embedded,
             createNew: true);
-        var request = new NativeWorkspaceOpenRequest(release, directory.Path, [], output);
+        var request = new PluginWorkspaceOpenRequest(release, directory.Path, [], output);
 
         using var workspace = CreateFactory().Open(request);
 
@@ -359,9 +359,9 @@ public sealed partial class NativeWorkspaceTests
         Assert.Equal(masterStyle, ((IModMasterStyledGetter)workspace.Output).MasterStyle);
     }
 
-    /// <summary>Preserves Mutagen's native parent chain for records nested beneath a cell group.</summary>
+    /// <summary>Preserves Mutagen's parent chain for records nested beneath a cell group.</summary>
     [Fact]
-    public void NestedRecordResolutionPreservesNativeParentContext()
+    public void NestedRecordResolutionPreservesMutagenParentContext()
     {
         using var directory = new TemporaryDirectory();
         var sourceModKey = ModKey.FromNameAndExtension("Base.esm");

@@ -98,7 +98,7 @@ For authorized setup or recovery, consult the installed CLI's help and current p
 
 ## Application context and project layout
 
-The current checkout is the clean .NET 10 Mutagen rebuild foundation. It contains a UI-neutral headless engine, game-specific Mutagen integrations for Starfield, Fallout 4, and Skyrim Special Edition, a dedicated local stdio MCP server, and focused unit tests. No presentation project is currently in the solution. Avalonia remains the planned presentation technology for either a restored full desktop GUI or the MCP Workbench; both must consume the shared engine or MCP boundary without owning native record state.
+The current checkout is the clean .NET 10 Mutagen rebuild foundation. It contains a UI-neutral headless engine, game-specific Mutagen integrations for Starfield, Fallout 4, and Skyrim Special Edition, a dedicated local stdio MCP server, and focused unit tests. No presentation project is currently in the solution. Avalonia remains the planned presentation technology for either a restored full desktop GUI or the MCP Workbench; both must consume the shared engine or MCP boundary without owning Mutagen plugin record state.
 
 The current architecture is recorded in [Mutagen Rebuild — Architecture, Record Editing, and Save](https://linear.app/venworks/document/mutagen-rebuild-architecture-record-editing-and-save-e0df672d926f). The former SQLite/import backend, its repository and DTO layers, and the Console import harness were intentionally retired rather than carried into the rebuild. Keep implementation claims scoped to completed and recorded validation; generated-fixture evidence does not establish installed-game, packaged, mod-manager, gameplay, or live presentation-plus-MCP conflict acceptance.
 
@@ -106,13 +106,13 @@ Use `CreationsForge` consistently in code, comments, documentation, examples, pa
 
 | Project or directory | Current or planned responsibility |
 | --- | --- |
-| `CreationsForge.Engine` | UI-neutral native workspace contracts, lifecycle, record state, lookup, editing, validation, and persistence coordination shared by hosts. |
+| `CreationsForge.Engine` | UI-neutral plugin workspace contracts, lifecycle, record state, lookup, editing, validation, and persistence coordination shared by hosts. |
 | `CreationsForge.Mcp` | Local stdio MCP transport, closed protocol schemas, domain tools, workspace registry, metadata paging, and protocol lifecycle and exit behavior. |
 | `CreationsForge.Starfield` | Starfield-specific Mutagen integration and record mapping. |
 | `CreationsForge.Fallout4` | Fallout 4-specific Mutagen integration and record mapping. |
 | `CreationsForge.Skyrim` | Skyrim-specific Mutagen integration and record mapping. |
 | `CreationsForge.UnitTests` | Unit tests for testable non-UI behavior. |
-| `CreationsForge` (planned) | Avalonia presentation for the restored full GUI or MCP Workbench; it may own views and interaction state but not native record state. |
+| `CreationsForge` (planned) | Avalonia presentation for the restored full GUI or MCP Workbench; it may own views and interaction state but not Mutagen plugin record state. |
 | `CreationsForge.PresentationTests` (planned) | Avalonia/headless tests, view-model workflows, and presentation harnesses when a presentation project returns. |
 | `.github` | CI, release packaging, and repository automation. |
 
@@ -132,16 +132,16 @@ The root `AGENTS.md` is the only directory-level `AGENTS.md` file and governs re
 - Keep backend contracts and result objects UI-neutral. Game-specific behavior belongs in the relevant game adapter unless the behavior is truly shared.
 - When the GUI or Workbench returns, preserve approved interactions and rendering while adapting them to the rebuilt engine rather than restoring legacy backend coupling.
 - Long-running presentation work must not block the UI thread. Update bound collections on the UI thread and use asynchronous command and dispatcher patterns appropriate to the restored Avalonia project.
-- If asset preview behavior returns, keep its failures isolated from the rest of the application and dispose graphics resources, streams, native handles, and preview lifetimes deterministically.
+- If asset preview behavior returns, keep its failures isolated from the rest of the application and dispose graphics resources, streams, operating-system handles, and preview lifetimes deterministically.
 - Use the current `Microsoft.Extensions.Hosting` composition root and constructor injection. Keep service registration centralized, make dependency lifetimes explicit, and do not introduce another container without approval.
 - Use the current `Microsoft.Extensions.Logging` abstractions with structured message templates. Keep MCP protocol frames on standard output and diagnostics on standard error; do not introduce another logging framework without approval.
 - Do not log full binary payloads or large serialized records. The shared rules also prohibit logging secrets and credentials.
 
 ## Consolidated project boundaries
 
-- `CreationsForge.Engine` owns UI-neutral native workspace contracts, lifecycle, record authority, lookup, editing, validation, and persistence coordination. It may expose UI-neutral result objects, progress callbacks, events, asynchronous methods, and collection interfaces, but must not reference Avalonia, MCP protocol types, console entry-point concerns, or game-specific Mutagen packages. Do not recreate the retired repository/DTO backend under new names.
+- `CreationsForge.Engine` owns UI-neutral plugin workspace contracts, lifecycle, record authority, lookup, editing, validation, and persistence coordination. It may expose UI-neutral result objects, progress callbacks, events, asynchronous methods, and collection interfaces, but must not reference Avalonia, MCP protocol types, console entry-point concerns, or game-specific Mutagen packages. Do not recreate the retired repository/DTO backend under new names.
 - `CreationsForge.Mcp` owns local stdio transport, closed MCP input and output schemas, domain-tool adapters, MCP workspace ownership, metadata paging, protocol diagnostics, and process exit behavior. It calls the shared headless engine through UI-neutral contracts, keeps protocol frames on standard output and diagnostics on standard error, and must not contain game-specific record mutation or persistence rules. MCP behavior changes require protocol-level tests and copyable client launch examples in the validation plan.
-- A restored `CreationsForge` presentation project may own Avalonia views, view models, commands, dialogs, navigation, and presentation-only services for either the full GUI or MCP Workbench. Keep code-behind minimal, keep UI-bound updates on the UI thread, and keep long-running operations asynchronous. Presentation code must not call Mutagen directly or own native record state.
+- A restored `CreationsForge` presentation project may own Avalonia views, view models, commands, dialogs, navigation, and presentation-only services for either the full GUI or MCP Workbench. Keep code-behind minimal, keep UI-bound updates on the UI thread, and keep long-running operations asynchronous. Presentation code must not call Mutagen directly or own Mutagen plugin record state.
 - `CreationsForge.Starfield`, `CreationsForge.Fallout4`, and `CreationsForge.Skyrim` own game-specific Mutagen APIs, record quirks, and record mapping. Before using a property or collection, inspect the installed package, current repository usage, and authoritative Mutagen sources; do not infer APIs from record type names. Preserve game-specific differences and plan equivalent plugin support or an explicit approved exclusion when a record exists across games.
 - A restored `CreationsForge.PresentationTests` project owns headless Avalonia and UI-facing validation helpers. Use deterministic dispatcher synchronization, avoid arbitrary sleeps and machine-specific paths, clean up temporary UI resources, and keep test-only helpers out of `CreationsForge.Engine`.
 
@@ -156,7 +156,7 @@ Use these primary references when working with record shapes:
 - Inspect the installed Mutagen packages, actual APIs, existing code, and source references before using a property or record collection. Do not infer record fields from names alone.
 - Use canonical Mutagen, Spriggit, xEdit, and Creation Kit field names. Explain source-name conflicts in the plan before selecting a CreationsForge-specific alternative.
 - Keep game-specific fields game-specific and handle Starfield, Fallout 4, and Skyrim consistently where a record family exists. Identify game-specific behavior and proposed exclusions explicitly in the approved scope.
-- Use typed fields, collections, references, and serialization paths for readable record data. Use Mutagen's native link-cache and context facilities where appropriate; do not introduce a custom record model, shadow DTO store, cache, index, or competing record authority.
+- Use typed fields, collections, references, and serialization paths for readable record data. Use Mutagen's link-cache and context facilities where appropriate; do not introduce a custom record model, shadow DTO store, cache, index, or competing record authority.
 
 ## Record completeness
 
@@ -171,6 +171,6 @@ A record change must cover the applicable Mutagen source read, typed plugin muta
 - When `CreationsForge.PresentationTests` returns, use it for Avalonia/headless behavior and UI-facing workflows. Keep UI test helpers out of `CreationsForge.Engine`.
 - Unit tests must not depend on local game installations, user-profile paths, ProgramData state, or private data. Identify external-data and disposable-game-fixture prerequisites separately for plugin integration or manual acceptance checks, and skip or clearly mark those checks when the applicable harness permits it.
 - Explain when tests are not added, and identify the appropriate manual or integration validation.
-- Native authoring acceptance must cover the applicable Mutagen-backed contract across Starfield, Fallout 4, and Skyrim, including guarded output save, reopen verification, preservation of source plugins and unedited output data, and evidence appropriate to the actual implementation. Build, packaging, documentation, or startup smoke checks alone do not prove plugin serialization or game-runtime acceptance.
+- Plugin authoring acceptance must cover the applicable Mutagen-backed contract across Starfield, Fallout 4, and Skyrim, including guarded output save, reopen verification, preservation of source plugins and unedited output data, and evidence appropriate to the actual implementation. Build, packaging, documentation, or startup smoke checks alone do not prove plugin serialization or game-runtime acceptance.
 
 Use check-only formatting where available for verification. Scope any approved formatting fixes to touched files; do not run solution-wide formatting as an automatic cleanup step. Instruction-only or documentation-only changes need proportional content, link, and diff checks rather than an unrelated application build.

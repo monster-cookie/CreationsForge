@@ -1,26 +1,27 @@
+using CreationsForge.Engine.Interfaces;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Cache;
 using Mutagen.Bethesda.Plugins.Records;
 
-namespace CreationsForge.Engine;
+namespace CreationsForge.Engine.Workspaces;
 
-/// <summary>Owns one complete native Mutagen source graph, mutable output, cache, and lifetime lock set.</summary>
-public sealed class NativeWorkspace : IDisposable
+/// <summary>Owns one complete Mutagen plugin source graph, mutable output, link cache, and lifetime lock set.</summary>
+public sealed class PluginWorkspace : IDisposable
 {
     private readonly IGameIntegration _integration;
     private readonly IReadOnlyList<IModDisposeGetter> _ownedSources;
     private readonly WorkspaceFileLockSet _fileLocks;
     private readonly IMod _output;
-    private NativeWorkspaceState _state;
+    private PluginWorkspaceState _state;
     private bool _disposed;
 
-    internal NativeWorkspace(
+    internal PluginWorkspace(
         IGameIntegration integration,
         IReadOnlyList<IModDisposeGetter> sources,
         IMod output,
         ILinkCache linkCache,
         WorkspaceFileLockSet fileLocks,
-        NativeWorkspaceState state)
+        PluginWorkspaceState state)
     {
         _integration = integration;
         _ownedSources = sources;
@@ -33,47 +34,47 @@ public sealed class NativeWorkspace : IDisposable
     /// <summary>Gets immutable source plugins in masters-first, low-to-high priority order.</summary>
     public IReadOnlyList<IModGetter> Sources => _ownedSources;
 
-    /// <summary>Gets a read-only view of the complete native output.</summary>
+    /// <summary>Gets a read-only view of the complete Mutagen plugin output.</summary>
     public IModGetter Output => _output;
 
-    /// <summary>Gets the mutable native output for engine-owned editing operations.</summary>
+    /// <summary>Gets the mutable Mutagen plugin output for engine-owned editing operations.</summary>
     internal IMod MutableOutput => _output;
 
-    /// <summary>Gets the native cache whose immutable base is <see cref="Sources"/> and whose mutable layer is <see cref="Output"/>.</summary>
+    /// <summary>Gets the Mutagen link cache whose immutable base is <see cref="Sources"/> and whose mutable layer is <see cref="Output"/>.</summary>
     public ILinkCache LinkCache { get; }
 
     /// <summary>Gets constant-time workspace and output state.</summary>
-    public NativeWorkspaceState State => _state;
+    public PluginWorkspaceState State => _state;
 
     /// <summary>Resolves both an exact containing-plugin record context and its winning context.</summary>
     /// <param name="formKey">The record's origin identity.</param>
-    /// <param name="recordType">The native Mutagen record getter type.</param>
+    /// <param name="recordType">The Mutagen record getter type.</param>
     /// <param name="containingModKey">The plugin containing the exact requested record version.</param>
-    /// <returns>Both native contexts without flattening their parent chains.</returns>
-    public NativeRecordResolution ResolveRecord(FormKey formKey, Type recordType, ModKey containingModKey)
+    /// <returns>Both Mutagen contexts without flattening their parent chains.</returns>
+    public PluginRecordResolution ResolveRecord(FormKey formKey, Type recordType, ModKey containingModKey)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentNullException.ThrowIfNull(recordType);
         if (!typeof(IMajorRecordGetter).IsAssignableFrom(recordType))
         {
-            throw new ArgumentException($"'{recordType}' is not a native Mutagen major-record getter type.", nameof(recordType));
+            throw new ArgumentException($"'{recordType}' is not a Mutagen major-record getter type.", nameof(recordType));
         }
 
         var exactContext = _integration.ResolveContextFromMod(LinkCache, formKey, recordType, containingModKey);
         var winningContext = _integration.ResolveWinningContext(LinkCache, formKey, recordType);
-        return new NativeRecordResolution(exactContext, winningContext);
+        return new PluginRecordResolution(exactContext, winningContext);
     }
 
-    /// <summary>Browses winning native contexts from only this workspace's explicit source closure and output.</summary>
-    /// <param name="recordType">The native Mutagen record getter type.</param>
-    /// <returns>A materialized snapshot of winning contexts with native parent chains.</returns>
+    /// <summary>Browses winning Mutagen contexts from only this workspace's explicit source closure and output.</summary>
+    /// <param name="recordType">The Mutagen record getter type.</param>
+    /// <returns>A materialized snapshot of winning contexts with Mutagen parent chains.</returns>
     public IReadOnlyList<IModContext> BrowseWinningRecords(Type recordType)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentNullException.ThrowIfNull(recordType);
         if (!typeof(IMajorRecordGetter).IsAssignableFrom(recordType))
         {
-            throw new ArgumentException($"'{recordType}' is not a native Mutagen major-record getter type.", nameof(recordType));
+            throw new ArgumentException($"'{recordType}' is not a Mutagen major-record getter type.", nameof(recordType));
         }
 
         return _integration
@@ -85,7 +86,7 @@ public sealed class NativeWorkspace : IDisposable
     internal void MarkOutputChanged()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        _state = new NativeWorkspaceState(
+        _state = new PluginWorkspaceState(
             _state.Release,
             _state.OutputModKey,
             _state.OutputPath,
@@ -117,7 +118,7 @@ public sealed class NativeWorkspace : IDisposable
         TryDispose(_fileLocks, exceptions);
         if (exceptions.Count > 0)
         {
-            throw new AggregateException("One or more native workspace resources failed to close.", exceptions);
+            throw new AggregateException("One or more plugin workspace resources failed to close.", exceptions);
         }
     }
 

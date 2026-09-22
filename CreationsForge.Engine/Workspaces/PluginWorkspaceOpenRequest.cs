@@ -1,10 +1,10 @@
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 
-namespace CreationsForge.Engine;
+namespace CreationsForge.Engine.Workspaces;
 
-/// <summary>Supplies the complete native inputs needed to open one workspace.</summary>
-public sealed class NativeWorkspaceOpenRequest
+/// <summary>Supplies the complete plugin inputs needed to open one workspace.</summary>
+public sealed class PluginWorkspaceOpenRequest
 {
     private readonly IReadOnlyList<ModKey> _selectedPlugins;
 
@@ -13,11 +13,11 @@ public sealed class NativeWorkspaceOpenRequest
     /// <param name="dataDirectory">The game data directory containing selected plugins and their masters.</param>
     /// <param name="selectedPlugins">Plugins selected for browsing, in low-to-high priority order.</param>
     /// <param name="output">The mutable output definition.</param>
-    public NativeWorkspaceOpenRequest(
+    public PluginWorkspaceOpenRequest(
         GameRelease release,
         string dataDirectory,
         IEnumerable<ModKey> selectedPlugins,
-        NativeOutputDefinition output)
+        PluginOutputDefinition output)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(dataDirectory);
         ArgumentNullException.ThrowIfNull(selectedPlugins);
@@ -39,5 +39,5 @@ public sealed class NativeWorkspaceOpenRequest
     public IReadOnlyList<ModKey> SelectedPlugins => _selectedPlugins;
 
     /// <summary>Gets the mutable output definition.</summary>
-    public NativeOutputDefinition Output { get; }
+    public PluginOutputDefinition Output { get; }
 }

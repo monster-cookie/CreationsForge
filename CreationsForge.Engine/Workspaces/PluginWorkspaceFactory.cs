@@ -1,19 +1,20 @@
+using CreationsForge.Engine.Interfaces;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Binary.Headers;
 using Mutagen.Bethesda.Plugins.Cache;
 using Mutagen.Bethesda.Plugins.Records;
 
-namespace CreationsForge.Engine;
+namespace CreationsForge.Engine.Workspaces;
 
-/// <summary>Opens native workspaces from explicit selections without consulting an enabled-plugin list.</summary>
-public sealed class NativeWorkspaceFactory
+/// <summary>Opens plugin workspaces from explicit selections without consulting an enabled-plugin list.</summary>
+public sealed class PluginWorkspaceFactory
 {
     private const string OutputLockSuffix = ".creationsforge.lock";
     private readonly IReadOnlyDictionary<Mutagen.Bethesda.GameRelease, IGameIntegration> _integrations;
 
     /// <summary>Initializes a workspace factory with one integration per supported release.</summary>
     /// <param name="integrations">The admitted game integrations.</param>
-    public NativeWorkspaceFactory(IEnumerable<IGameIntegration> integrations)
+    public PluginWorkspaceFactory(IEnumerable<IGameIntegration> integrations)
     {
         ArgumentNullException.ThrowIfNull(integrations);
         try
@@ -26,15 +27,15 @@ public sealed class NativeWorkspaceFactory
         }
     }
 
-    /// <summary>Opens one complete native workspace and acquires ownership until it is disposed.</summary>
+    /// <summary>Opens one complete plugin workspace and acquires ownership until it is disposed.</summary>
     /// <param name="request">The explicit game, source selection, and output definition.</param>
-    /// <returns>The opened native workspace.</returns>
-    public NativeWorkspace Open(NativeWorkspaceOpenRequest request)
+    /// <returns>The opened plugin workspace.</returns>
+    public PluginWorkspace Open(PluginWorkspaceOpenRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (!_integrations.TryGetValue(request.Release, out var integration))
         {
-            throw new NativeWorkspaceException($"No native game integration is registered for '{request.Release}'.");
+            throw new PluginWorkspaceException($"No Mutagen game integration is registered for '{request.Release}'.");
         }
 
         var dataDirectory = ValidateDataDirectory(request.DataDirectory);
@@ -105,14 +106,14 @@ public sealed class NativeWorkspaceFactory
                 ]);
                 if (outputStampBeforeOpen != FileStamp.Capture(outputPath))
                 {
-                    throw new NativeWorkspaceException($"Output plugin '{request.Output.ModKey}' changed while the workspace was opening. Retry after writes have stopped.");
+                    throw new PluginWorkspaceException($"Output plugin '{request.Output.ModKey}' changed while the workspace was opening. Retry after writes have stopped.");
                 }
             }
 
             ValidateOpenedOutput(output, request.Output, outputInspection);
             linkCache = integration.CreateLinkCache(openedSources, output);
 
-            var state = new NativeWorkspaceState(
+            var state = new PluginWorkspaceState(
                 request.Release,
                 request.Output.ModKey,
                 outputPath,
@@ -121,20 +122,20 @@ public sealed class NativeWorkspaceFactory
                 request.Output.CreateNew,
                 isDirty: request.Output.CreateNew,
                 revision: 0);
-            var workspace = new NativeWorkspace(integration, openedSources, output, linkCache, fileLocks, state);
+            var workspace = new PluginWorkspace(integration, openedSources, output, linkCache, fileLocks, state);
             openedSources = [];
             output = null;
             linkCache = null;
             fileLocks = null;
             return workspace;
         }
-        catch (NativeWorkspaceException)
+        catch (PluginWorkspaceException)
         {
             throw;
         }
         catch (Exception exception)
         {
-            throw new NativeWorkspaceException(
+            throw new PluginWorkspaceException(
                 $"Could not open the {request.Release} workspace for output '{request.Output.ModKey}': {exception.Message}",
                 exception);
         }
@@ -157,45 +158,45 @@ public sealed class NativeWorkspaceFactory
         var fullPath = Path.GetFullPath(path);
         if (!Directory.Exists(fullPath))
         {
-            throw new NativeWorkspaceException($"The data directory '{fullPath}' does not exist.");
+            throw new PluginWorkspaceException($"The data directory '{fullPath}' does not exist.");
         }
 
         return fullPath;
     }
 
-    private static string ValidateOutputDefinition(NativeOutputDefinition output, IGameIntegration integration)
+    private static string ValidateOutputDefinition(PluginOutputDefinition output, IGameIntegration integration)
     {
         if (!Enum.IsDefined(output.MasterStyle))
         {
-            throw new NativeWorkspaceException($"Output '{output.ModKey}' specifies unknown master style value '{output.MasterStyle}'.");
+            throw new PluginWorkspaceException($"Output '{output.ModKey}' specifies unknown master style value '{output.MasterStyle}'.");
         }
 
         if (!Enum.IsDefined(output.TextStorageMode))
         {
-            throw new NativeWorkspaceException($"Output '{output.ModKey}' specifies unknown text storage value '{output.TextStorageMode}'.");
+            throw new PluginWorkspaceException($"Output '{output.ModKey}' specifies unknown text storage value '{output.TextStorageMode}'.");
         }
 
         var fullPath = Path.GetFullPath(output.Path);
         var parentDirectory = Path.GetDirectoryName(fullPath);
         if (string.IsNullOrEmpty(parentDirectory) || !Directory.Exists(parentDirectory))
         {
-            throw new NativeWorkspaceException($"The output directory for '{fullPath}' does not exist.");
+            throw new PluginWorkspaceException($"The output directory for '{fullPath}' does not exist.");
         }
 
         if (!string.Equals(Path.GetFileName(fullPath), output.ModKey.ToString(), StringComparison.OrdinalIgnoreCase))
         {
-            throw new NativeWorkspaceException($"Output path '{fullPath}' does not match the explicit plugin identity '{output.ModKey}'.");
+            throw new PluginWorkspaceException($"Output path '{fullPath}' does not match the explicit plugin identity '{output.ModKey}'.");
         }
 
         integration.ValidateOutputStyle(output.ModKey, output.MasterStyle);
         if (output.CreateNew && File.Exists(fullPath))
         {
-            throw new NativeWorkspaceException($"Cannot create new output '{output.ModKey}' because '{fullPath}' already exists.");
+            throw new PluginWorkspaceException($"Cannot create new output '{output.ModKey}' because '{fullPath}' already exists.");
         }
 
         if (!output.CreateNew && !File.Exists(fullPath))
         {
-            throw new NativeWorkspaceException($"Cannot open existing output '{output.ModKey}' because '{fullPath}' does not exist.");
+            throw new PluginWorkspaceException($"Cannot open existing output '{output.ModKey}' because '{fullPath}' does not exist.");
         }
 
         return fullPath;
@@ -221,7 +222,7 @@ public sealed class NativeWorkspaceFactory
         {
             if (modKey == outputModKey)
             {
-                throw new NativeWorkspaceException($"Output '{outputModKey}' cannot also be loaded as an immutable source.");
+                throw new PluginWorkspaceException($"Output '{outputModKey}' cannot also be loaded as an immutable source.");
             }
 
             if (states.TryGetValue(modKey, out var existingState))
@@ -229,7 +230,7 @@ public sealed class NativeWorkspaceFactory
                 if (existingState == VisitState.Visiting)
                 {
                     var cycle = string.Join(" -> ", ancestry.Append(modKey));
-                    throw new NativeWorkspaceException($"Plugin master cycle detected: {cycle}.");
+                    throw new PluginWorkspaceException($"Plugin master cycle detected: {cycle}.");
                 }
 
                 return;
@@ -256,12 +257,12 @@ public sealed class NativeWorkspaceFactory
         var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         if (!path.StartsWith(directoryPrefix, comparison))
         {
-            throw new NativeWorkspaceException($"Source plugin '{modKey}' resolves outside data directory '{dataDirectory}'.");
+            throw new PluginWorkspaceException($"Source plugin '{modKey}' resolves outside data directory '{dataDirectory}'.");
         }
 
         if (!File.Exists(path))
         {
-            throw new NativeWorkspaceException($"Required source plugin '{modKey}' is missing from '{dataDirectory}'.");
+            throw new PluginWorkspaceException($"Required source plugin '{modKey}' is missing from '{dataDirectory}'.");
         }
 
         return path;
@@ -290,7 +291,7 @@ public sealed class NativeWorkspaceFactory
                     .TrimEnd('\0');
                 if (string.IsNullOrWhiteSpace(masterName))
                 {
-                    throw new NativeWorkspaceException($"The {purpose} '{expectedModKey}' contains an empty master reference.");
+                    throw new PluginWorkspaceException($"The {purpose} '{expectedModKey}' contains an empty master reference.");
                 }
 
                 masters.Add(ModKey.FromNameAndExtension(masterName));
@@ -302,13 +303,13 @@ public sealed class NativeWorkspaceFactory
                 masters,
                 header.MasterStyle);
         }
-        catch (NativeWorkspaceException)
+        catch (PluginWorkspaceException)
         {
             throw;
         }
         catch (Exception exception)
         {
-            throw new NativeWorkspaceException($"Could not read {purpose} '{expectedModKey}' at '{path}': {exception.Message}", exception);
+            throw new PluginWorkspaceException($"Could not read {purpose} '{expectedModKey}' at '{path}': {exception.Message}", exception);
         }
     }
 
@@ -319,26 +320,26 @@ public sealed class NativeWorkspaceFactory
             || !actualMasters.SequenceEqual(inspection.Masters)
             || ((IModMasterStyledGetter)plugin).MasterStyle != inspection.MasterStyle)
         {
-            throw new NativeWorkspaceException($"Source plugin '{inspection.ModKey}' changed while the workspace was opening. Retry after writes have stopped.");
+            throw new PluginWorkspaceException($"Source plugin '{inspection.ModKey}' changed while the workspace was opening. Retry after writes have stopped.");
         }
     }
 
-    private static IMod CreateNewOutput(NativeOutputDefinition definition, IGameIntegration integration)
+    private static IMod CreateNewOutput(PluginOutputDefinition definition, IGameIntegration integration)
     {
         var output = ModFactory.Activator(definition.ModKey, integration.Release);
         if (definition.MasterStyle == MasterStyle.Small && !output.CanBeSmallMaster)
         {
-            throw new NativeWorkspaceException($"{integration.Release} cannot create '{definition.ModKey}' with the Small master style.");
+            throw new PluginWorkspaceException($"{integration.Release} cannot create '{definition.ModKey}' with the Small master style.");
         }
 
         if (definition.MasterStyle == MasterStyle.Medium && !output.CanBeMediumMaster)
         {
-            throw new NativeWorkspaceException($"{integration.Release} cannot create '{definition.ModKey}' with the Medium master style.");
+            throw new PluginWorkspaceException($"{integration.Release} cannot create '{definition.ModKey}' with the Medium master style.");
         }
 
-        if (definition.TextStorageMode == NativeTextStorageMode.Localized && !output.CanUseLocalization)
+        if (definition.TextStorageMode == PluginTextStorageMode.Localized && !output.CanUseLocalization)
         {
-            throw new NativeWorkspaceException($"{integration.Release} cannot create '{definition.ModKey}' with localized text storage.");
+            throw new PluginWorkspaceException($"{integration.Release} cannot create '{definition.ModKey}' with localized text storage.");
         }
 
         output.IsMaster = definition.ModKey.Type is ModType.Master or ModType.Light;
@@ -352,7 +353,7 @@ public sealed class NativeWorkspaceFactory
             output.IsMediumMaster = true;
         }
 
-        output.UsingLocalization = definition.TextStorageMode == NativeTextStorageMode.Localized;
+        output.UsingLocalization = definition.TextStorageMode == PluginTextStorageMode.Localized;
         foreach (var master in integration.GetNewOutputMasters())
         {
             output.MasterReferences.Add(new MasterReference { Master = master });
@@ -361,22 +362,22 @@ public sealed class NativeWorkspaceFactory
         return output;
     }
 
-    private static void ValidateExistingOutputConfiguration(DiscoveredPlugin output, NativeOutputDefinition definition)
+    private static void ValidateExistingOutputConfiguration(DiscoveredPlugin output, PluginOutputDefinition definition)
     {
         if (output.MasterStyle != definition.MasterStyle)
         {
-            throw new NativeWorkspaceException($"Existing output '{definition.ModKey}' uses {output.MasterStyle} master style instead of requested {definition.MasterStyle}.");
+            throw new PluginWorkspaceException($"Existing output '{definition.ModKey}' uses {output.MasterStyle} master style instead of requested {definition.MasterStyle}.");
         }
     }
 
     private static void ValidateOpenedOutput(
         IMod output,
-        NativeOutputDefinition definition,
+        PluginOutputDefinition definition,
         DiscoveredPlugin? originalInspection)
     {
         if (output.ModKey != definition.ModKey)
         {
-            throw new NativeWorkspaceException($"Opened output reports identity '{output.ModKey}' instead of '{definition.ModKey}'.");
+            throw new PluginWorkspaceException($"Opened output reports identity '{output.ModKey}' instead of '{definition.ModKey}'.");
         }
 
         var inspection = new DiscoveredPlugin(
@@ -386,14 +387,14 @@ public sealed class NativeWorkspaceFactory
             ((IModMasterStyledGetter)output).MasterStyle);
         if (originalInspection is not null && !inspection.Masters.SequenceEqual(originalInspection.Masters))
         {
-            throw new NativeWorkspaceException($"Output plugin '{definition.ModKey}' changed while the workspace was opening. Retry after writes have stopped.");
+            throw new PluginWorkspaceException($"Output plugin '{definition.ModKey}' changed while the workspace was opening. Retry after writes have stopped.");
         }
 
         ValidateExistingOutputConfiguration(inspection, definition);
-        var actualTextStorage = output.UsingLocalization ? NativeTextStorageMode.Localized : NativeTextStorageMode.Embedded;
+        var actualTextStorage = output.UsingLocalization ? PluginTextStorageMode.Localized : PluginTextStorageMode.Embedded;
         if (actualTextStorage != definition.TextStorageMode)
         {
-            throw new NativeWorkspaceException($"Existing output '{definition.ModKey}' uses {actualTextStorage} text storage instead of requested {definition.TextStorageMode}.");
+            throw new PluginWorkspaceException($"Existing output '{definition.ModKey}' uses {actualTextStorage} text storage instead of requested {definition.TextStorageMode}.");
         }
     }
 

@@ -1,4 +1,4 @@
-using CreationsForge.Engine;
+using CreationsForge.Engine.Workspaces;
 using CreationsForge.Fallout4;
 using CreationsForge.Skyrim;
 using CreationsForge.Starfield;
@@ -20,13 +20,13 @@ using StarfieldFormListGetter = Mutagen.Bethesda.Starfield.IFormListGetter;
 using StarfieldMod = Mutagen.Bethesda.Starfield.StarfieldMod;
 using StarfieldRelease = Mutagen.Bethesda.Starfield.StarfieldRelease;
 
-namespace CreationsForge.UnitTests.Engine;
+namespace CreationsForge.UnitTests.Workspaces;
 
-public sealed partial class NativeWorkspaceTests
+public sealed partial class PluginWorkspaceTests
 {
-    private static NativeWorkspaceFactory CreateFactory()
+    private static PluginWorkspaceFactory CreateFactory()
     {
-        return new NativeWorkspaceFactory(
+        return new PluginWorkspaceFactory(
         [
             new StarfieldGameIntegration(),
             new Fallout4GameIntegration(),
@@ -34,19 +34,19 @@ public sealed partial class NativeWorkspaceTests
         ]);
     }
 
-    private static NativeWorkspaceOpenRequest CreateNewRequest(
+    private static PluginWorkspaceOpenRequest CreateNewRequest(
         string dataDirectory,
         GameRelease release,
         IEnumerable<ModKey> selectedPlugins,
         ModKey outputModKey)
     {
-        var output = new NativeOutputDefinition(
+        var output = new PluginOutputDefinition(
             Path.Combine(dataDirectory, outputModKey.ToString()),
             outputModKey,
             MasterStyle.Full,
-            NativeTextStorageMode.Embedded,
+            PluginTextStorageMode.Embedded,
             createNew: true);
-        return new NativeWorkspaceOpenRequest(release, dataDirectory, selectedPlugins, output);
+        return new PluginWorkspaceOpenRequest(release, dataDirectory, selectedPlugins, output);
     }
 
     private static Fixture CreateFixture(string directory, GameRelease release)

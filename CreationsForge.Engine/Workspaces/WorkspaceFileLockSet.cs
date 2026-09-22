@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 
-namespace CreationsForge.Engine;
+namespace CreationsForge.Engine.Workspaces;
 
 /// <summary>Owns the operating-system file handles and advisory locks held for one workspace lifetime.</summary>
 internal sealed class WorkspaceFileLockSet : IDisposable
@@ -40,7 +40,7 @@ internal sealed class WorkspaceFileLockSet : IDisposable
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
-                throw new NativeWorkspaceLockException(
+                throw new PluginWorkspaceLockException(
                     $"Could not prepare {request.Purpose} ownership for '{request.Path}'. Close the other process using this plugin and try again.",
                     exception);
             }
@@ -178,7 +178,7 @@ internal sealed class WorkspaceFileLock : IDisposable
             if (!OperatingSystem.IsWindows())
             {
                 var operation = (request.IsShared ? LockShared : LockExclusive) | LockNonBlocking;
-                if (NativeMethods.Flock(stream.SafeFileHandle.DangerousGetHandle().ToInt32(), operation) != 0)
+                if (UnixFileLockApi.Flock(stream.SafeFileHandle.DangerousGetHandle().ToInt32(), operation) != 0)
                 {
                     throw new IOException(new Win32Exception(Marshal.GetLastPInvokeError()).Message);
                 }
@@ -189,7 +189,7 @@ internal sealed class WorkspaceFileLock : IDisposable
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             stream?.Dispose();
-            throw new NativeWorkspaceLockException(
+            throw new PluginWorkspaceLockException(
                 $"Could not acquire {request.Purpose} ownership for '{request.Path}'. Close the other process using this plugin and try again.",
                 exception);
         }
@@ -206,13 +206,13 @@ internal sealed class WorkspaceFileLock : IDisposable
         _disposed = true;
         if (_hasUnixLock)
         {
-            _ = NativeMethods.Flock(_stream.SafeFileHandle.DangerousGetHandle().ToInt32(), LockUnlock);
+            _ = UnixFileLockApi.Flock(_stream.SafeFileHandle.DangerousGetHandle().ToInt32(), LockUnlock);
         }
 
         _stream.Dispose();
     }
 
-    private static class NativeMethods
+    private static class UnixFileLockApi
     {
         [DllImport("libc", EntryPoint = "flock", SetLastError = true)]
         internal static extern int Flock(int fileDescriptor, int operation);

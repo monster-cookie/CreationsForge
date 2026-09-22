@@ -1,5 +1,6 @@
 using System.Reflection;
-using CreationsForge.Engine;
+using CreationsForge.Engine.Interfaces;
+using CreationsForge.Engine.Workspaces;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Fallout4;
 using Mutagen.Bethesda.Plugins;
@@ -28,12 +29,12 @@ public sealed class Fallout4GameIntegration : IGameIntegration
     {
         if (masterStyle == MasterStyle.Medium)
         {
-            throw new NativeWorkspaceException("Fallout 4 does not support the Medium master style.");
+            throw new PluginWorkspaceException("Fallout 4 does not support the Medium master style.");
         }
 
         if (modKey.Type == ModType.Light && masterStyle != MasterStyle.Small)
         {
-            throw new NativeWorkspaceException($"The .esl output '{modKey}' must use the Small master style.");
+            throw new PluginWorkspaceException($"The .esl output '{modKey}' must use the Small master style.");
         }
     }
 
