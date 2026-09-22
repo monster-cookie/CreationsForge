@@ -1,18 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-    <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\CreationsForge.Core\CreationsForge.Core.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Include="Autofac" Version="9.3.2" />
-        <PackageReference Include="Mutagen.Bethesda.Skyrim" Version="0.55.0-alpha.53" />
-    </ItemGroup>
-
+  <ItemGroup>
+    <ProjectReference Include="..\CreationsForge.Engine\CreationsForge.Engine.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Mutagen.Bethesda.Skyrim" />
+  </ItemGroup>
 </Project>
