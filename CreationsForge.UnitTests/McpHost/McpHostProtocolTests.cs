@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using CreationsForge.Mcp;
 
 namespace CreationsForge.UnitTests.McpHost;
 
@@ -8,6 +9,34 @@ namespace CreationsForge.UnitTests.McpHost;
 /// </summary>
 public sealed class McpHostProtocolTests
 {
+    /// <summary>Requires graceful host shutdown after cancellation to report the documented cancelled-process exit code.</summary>
+    [Fact]
+    public async Task HostRunReturns130WhenCancellationCompletesGracefully()
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        using var shutdown = new CancellationTokenSource();
+        var started = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var runTask = McpHostRunner.RunHostAsync(
+            async cancellationToken =>
+            {
+                started.SetResult(true);
+                try
+                {
+                    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                }
+            },
+            shutdown.Token);
+        await started.Task.WaitAsync(timeout.Token);
+        await shutdown.CancelAsync();
+
+        var exitCode = await runTask.WaitAsync(timeout.Token);
+        Assert.Equal(130, exitCode);
+    }
+
     /// <summary>Initializes the real stdio process, verifies its server identity, and requires clean EOF shutdown without non-protocol stdout.</summary>
     [Fact]
     public async Task ProductionHostInitializesWithProtocolOnlyStandardOutput()

@@ -25,10 +25,22 @@ public static class McpHostRunner
 
         var builder = McpHostComposition.CreateProductionBuilder(GetServerVersion());
         using var host = builder.Build();
+        return await RunHostAsync(token => host.RunAsync(token), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Runs a host and maps cancellation-requested shutdown to the documented process exit code.</summary>
+    /// <param name="runHostAsync">Starts the host and completes after it stops.</param>
+    /// <param name="cancellationToken">A token that requests graceful host shutdown.</param>
+    /// <returns>Zero after clean shutdown or 130 after token cancellation.</returns>
+    internal static async Task<int> RunHostAsync(
+        Func<CancellationToken, Task> runHostAsync,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(runHostAsync);
         try
         {
-            await host.RunAsync(cancellationToken).ConfigureAwait(false);
-            return 0;
+            await runHostAsync(cancellationToken).ConfigureAwait(false);
+            return cancellationToken.IsCancellationRequested ? 130 : 0;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
