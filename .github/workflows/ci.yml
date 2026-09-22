@@ -29,6 +29,7 @@ permissions:
 
 env:
   DOTNET_VERSION: ${{ inputs.dotnet-version || '10.0.x' }}
+  AVALONIA_UI_LICENSE_KEY: ${{ secrets.AVALONIA_UI_LICENSE_KEY }}
 
 jobs:
   lint-powershell:
@@ -77,8 +78,8 @@ jobs:
             throw "PSScriptAnalyzer reported $($findings.Count) finding(s)."
           }
 
-  baseline:
-    name: Baseline Build and Tests
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
 
     steps:
