@@ -1,5 +1,6 @@
 using System.Reflection;
 using CreationsForge.Engine.Interfaces;
+using CreationsForge.Engine.Records;
 using CreationsForge.Engine.Workspaces;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
@@ -14,6 +15,9 @@ namespace CreationsForge.Starfield;
 /// </summary>
 public sealed class StarfieldGameIntegration : IGameIntegration
 {
+    /// <inheritdoc />
+    public IReadOnlyList<RecordFamily> RecordFamilies => StarfieldRecordFamilies.All;
+
     /// <inheritdoc />
     public GameRelease Release => GameRelease.Starfield;
 

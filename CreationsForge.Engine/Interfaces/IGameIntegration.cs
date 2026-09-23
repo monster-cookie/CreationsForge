@@ -1,4 +1,5 @@
 using System.Reflection;
+using CreationsForge.Engine.Records;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Cache;
@@ -11,6 +12,9 @@ namespace CreationsForge.Engine.Interfaces;
 /// </summary>
 public interface IGameIntegration
 {
+    /// <summary>Gets the concrete first-tranche record family registrations for this game.</summary>
+    IReadOnlyList<RecordFamily> RecordFamilies { get; }
+
     /// <summary>Gets the exact Mutagen game release supported by this integration.</summary>
     GameRelease Release { get; }
 
