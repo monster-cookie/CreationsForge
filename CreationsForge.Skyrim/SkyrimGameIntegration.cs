@@ -1,5 +1,6 @@
 using System.Reflection;
 using CreationsForge.Engine.Interfaces;
+using CreationsForge.Engine.Records;
 using CreationsForge.Engine.Workspaces;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
@@ -15,6 +16,9 @@ namespace CreationsForge.Skyrim;
 /// </summary>
 public sealed class SkyrimGameIntegration : IGameIntegration
 {
+    /// <inheritdoc />
+    public IReadOnlyList<RecordFamily> RecordFamilies => SkyrimRecordFamilies.All;
+
     /// <inheritdoc />
     public GameRelease Release => GameRelease.SkyrimSE;
 

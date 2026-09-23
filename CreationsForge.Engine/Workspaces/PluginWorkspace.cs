@@ -1,4 +1,5 @@
 using CreationsForge.Engine.Interfaces;
+using CreationsForge.Engine.Records;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Cache;
 using Mutagen.Bethesda.Plugins.Records;
@@ -29,6 +30,7 @@ public sealed class PluginWorkspace : IDisposable
         LinkCache = linkCache;
         _fileLocks = fileLocks;
         _state = state;
+        Records = new RecordEditor(this, integration.RecordFamilies);
     }
 
     /// <summary>Gets immutable source plugins in masters-first, low-to-high priority order.</summary>
@@ -40,8 +42,17 @@ public sealed class PluginWorkspace : IDisposable
     /// <summary>Gets the mutable Mutagen plugin output for engine-owned editing operations.</summary>
     internal IMod MutableOutput => _output;
 
+    /// <summary>Throws when an engine-owned operation is attempted after the workspace has closed.</summary>
+    internal void ThrowIfDisposed()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+    }
+
     /// <summary>Gets the Mutagen link cache whose immutable base is <see cref="Sources"/> and whose mutable layer is <see cref="Output"/>.</summary>
     public ILinkCache LinkCache { get; }
+
+    /// <summary>Gets the family-independent record editing boundary owned by this workspace.</summary>
+    public RecordEditor Records { get; }
 
     /// <summary>Gets constant-time workspace and output state.</summary>
     public PluginWorkspaceState State => _state;
