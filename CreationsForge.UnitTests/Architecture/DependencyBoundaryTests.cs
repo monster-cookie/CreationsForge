@@ -1,4 +1,4 @@
-using CreationsForge.Engine;
+using CreationsForge.Engine.Interfaces;
 
 namespace CreationsForge.UnitTests.Architecture;
 

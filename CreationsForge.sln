@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationsForge.Mcp", "Creat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationsForge.UnitTests", "CreationsForge.UnitTests\CreationsForge.UnitTests.csproj", "{D9EB9427-B7B2-498D-A55C-5FBF8BE20780}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationsForge.LockProbe", "CreationsForge.UnitTests\LockProbe\CreationsForge.LockProbe.csproj", "{7B6DCD6E-8A58-49AC-91E8-F0256255A574}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,5 +46,9 @@ Global
 		{D9EB9427-B7B2-498D-A55C-5FBF8BE20780}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D9EB9427-B7B2-498D-A55C-5FBF8BE20780}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D9EB9427-B7B2-498D-A55C-5FBF8BE20780}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7B6DCD6E-8A58-49AC-91E8-F0256255A574}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7B6DCD6E-8A58-49AC-91E8-F0256255A574}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7B6DCD6E-8A58-49AC-91E8-F0256255A574}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7B6DCD6E-8A58-49AC-91E8-F0256255A574}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

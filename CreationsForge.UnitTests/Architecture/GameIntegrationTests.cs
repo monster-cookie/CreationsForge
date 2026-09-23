@@ -1,8 +1,11 @@
 using System.Reflection;
-using CreationsForge.Engine;
+using CreationsForge.Engine.Interfaces;
+using CreationsForge.Engine.Workspaces;
 using CreationsForge.Fallout4;
+using CreationsForge.Mcp;
 using CreationsForge.Skyrim;
 using CreationsForge.Starfield;
+using Microsoft.Extensions.DependencyInjection;
 using Mutagen.Bethesda;
 
 namespace CreationsForge.UnitTests.Architecture;
@@ -12,10 +15,10 @@ namespace CreationsForge.UnitTests.Architecture;
 /// </summary>
 public sealed class GameIntegrationTests
 {
-    /// <summary>The exact Mutagen release approved for the clean rebuild baseline.</summary>
+    /// <summary>The exact Mutagen package version approved for the rebuild.</summary>
     private const string ApprovedMutagenVersion = "0.55.0-alpha.54";
 
-    /// <summary>Loads the exact Starfield, Fallout 4, and Skyrim assemblies selected for the rebuild baseline.</summary>
+    /// <summary>Loads the Starfield, Fallout 4, and Skyrim assemblies at the approved Mutagen package version.</summary>
     [Fact]
     public void ApprovedMutagenGameAssembliesLoadTogether()
     {
@@ -40,6 +43,20 @@ public sealed class GameIntegrationTests
         AssertApprovedPackageVersion(typeof(GameRelease).Assembly);
     }
 
+    /// <summary>Requires MCP host composition to expose the shared plugin workspace factory backed by all supported games.</summary>
+    [Fact]
+    public void McpHostRegistersPluginWorkspaceFactory()
+    {
+        var builder = McpHostComposition.CreateProductionBuilder("test");
+        using var host = builder.Build();
+
+        var workspaceFactory = host.Services.GetRequiredService<PluginWorkspaceFactory>();
+        var integrations = host.Services.GetServices<IGameIntegration>().ToArray();
+
+        Assert.NotNull(workspaceFactory);
+        Assert.Equal(3, integrations.Length);
+    }
+
     /// <summary>Requires a loaded Mutagen assembly to report the exact approved prerelease version.</summary>
     /// <param name="assembly">The loaded Mutagen assembly to inspect.</param>
     private static void AssertApprovedPackageVersion(Assembly assembly)
@@ -50,6 +67,6 @@ public sealed class GameIntegrationTests
         Assert.False(string.IsNullOrWhiteSpace(informationalVersion));
         Assert.True(
             informationalVersion.StartsWith(ApprovedMutagenVersion, StringComparison.Ordinal),
-            $"Assembly '{assembly.GetName().Name}' reported '{informationalVersion}' instead of the approved '{ApprovedMutagenVersion}' package baseline.");
+            $"Assembly '{assembly.GetName().Name}' reported '{informationalVersion}' instead of the approved '{ApprovedMutagenVersion}' package version.");
     }
 }
