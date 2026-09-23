@@ -42,7 +42,7 @@ internal static class Fallout4RecordFamilies
             RecordFields.TranslatedString<Armor, IArmorGetter>("Description", false, getter => getter.Description, (record, value) => record.Description = value!),
             RecordFields.Int32<Armor, IArmorGetter>("Value", getter => getter.Value, (record, value) => record.Value = value),
             RecordFields.Single<Armor, IArmorGetter>("Weight", getter => getter.Weight, (record, value) => record.Weight = value),
-            RecordFields.Object<Armor, IArmorGetter>("ObjectBounds", true, ["ObjectBounds"], ReadObjectBounds, ValidateObjectBounds, WriteObjectBounds),
+            RecordFields.Object<Armor, IArmorGetter>("ObjectBounds", false, ["ObjectBounds"], ReadObjectBounds, ValidateObjectBounds, WriteObjectBounds),
             RecordFields.FormLinkList<Armor, IArmorGetter>("Keywords", [typeof(IKeywordGetter)], getter => getter.Keywords?.Select(item => item.FormKey).ToArray() ?? [], ReplaceArmorKeywords)),
         Family<Book, IBookGetter>("Book", key => new Book(key, Fallout4Release.Fallout4), getter => getter.DeepCopy(), mod => mod.Books,
             RecordFields.TranslatedString<Book, IBookGetter>("Name", false, getter => getter.Name, (record, value) => record.Name = value!),
@@ -133,12 +133,6 @@ internal static class Fallout4RecordFamilies
 
     private static void WriteObjectBounds(Armor record, RecordValue value)
     {
-        if (value is RecordValue.NullRecordValue)
-        {
-            record.ObjectBounds = null!;
-            return;
-        }
-
         var fields = ((RecordValue.ObjectRecordValue)value).Fields;
         record.ObjectBounds = new ObjectBounds
         {

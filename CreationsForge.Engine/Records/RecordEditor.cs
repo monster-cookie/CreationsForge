@@ -104,6 +104,7 @@ public sealed class RecordEditor
 
             var initialNextFormId = _workspace.MutableOutput.NextFormID;
             PreparedMutation[] prepared;
+            RecordSnapshot[] snapshots;
             try
             {
                 prepared = resolved.Select(Prepare).ToArray();
@@ -119,6 +120,10 @@ public sealed class RecordEditor
                 {
                     item.Family.ApplyChanges(item.Candidate, item.Mutation.Changes);
                 }
+
+                snapshots = prepared
+                    .Select(item => CreateSnapshot(item.Family, item.Candidate, _workspace.Output.ModKey))
+                    .ToArray();
             }
             catch
             {
@@ -128,9 +133,6 @@ public sealed class RecordEditor
 
             PublishWithRollback(prepared, initialNextFormId);
             _workspace.MarkOutputChanged();
-            var snapshots = prepared
-                .Select(item => CreateSnapshot(item.Family, item.Candidate, _workspace.Output.ModKey))
-                .ToArray();
             return new RecordApplyResult(_workspace.State.Revision, snapshots);
         }
     }

@@ -218,6 +218,57 @@ public sealed partial class PluginWorkspaceTests
         Assert.Single(workspace.Output.EnumerateMajorRecords());
     }
 
+    /// <summary>Rejects a candidate whose registered projection fails without publishing it or consuming its FormID.</summary>
+    [Fact]
+    public void ProjectionFailurePreservesOutputAllocationAndRevision()
+    {
+        using var directory = new TemporaryDirectory();
+        PrepareRequiredStarfieldMaster(directory.Path, GameRelease.Starfield);
+        var outputModKey = ModKey.FromNameAndExtension("Output.esp");
+        using var workspace = CreateFactory().Open(CreateNewRequest(directory.Path, GameRelease.Starfield, [], outputModKey));
+        var initialNextFormId = workspace.Output.NextFormID;
+        var changeSet = new RecordChangeSet(0,
+        [
+            RecordMutation.Create("Book", []),
+        ]);
+
+        var exception = Assert.Throws<RecordEditingException>(() => workspace.Records.Apply(changeSet));
+
+        Assert.Contains("Book.Teaches", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(initialNextFormId, workspace.Output.NextFormID);
+        Assert.Equal(0UL, workspace.State.Revision);
+        Assert.Empty(workspace.Output.EnumerateMajorRecords());
+    }
+
+    /// <summary>Rejects explicit null object bounds for Armor in every supported game.</summary>
+    [Theory]
+    [InlineData(GameRelease.Starfield)]
+    [InlineData(GameRelease.Fallout4)]
+    [InlineData(GameRelease.SkyrimSE)]
+    public void RejectsNullArmorObjectBounds(GameRelease release)
+    {
+        using var directory = new TemporaryDirectory();
+        PrepareRequiredStarfieldMaster(directory.Path, release);
+        var outputModKey = ModKey.FromNameAndExtension("Output.esp");
+        using var workspace = CreateFactory().Open(CreateNewRequest(directory.Path, release, [], outputModKey));
+        var objectBounds = workspace.Records.Families
+            .Single(family => family.FamilyId == "Armor")
+            .Fields
+            .Single(field => field.Path == "ObjectBounds");
+        var initialNextFormId = workspace.Output.NextFormID;
+        var changeSet = new RecordChangeSet(0,
+        [
+            RecordMutation.Create("Armor", [Set("ObjectBounds", RecordValue.Null)]),
+        ]);
+
+        Assert.False(objectBounds.IsNullable);
+        var exception = Assert.Throws<RecordEditingException>(() => workspace.Records.Apply(changeSet));
+        Assert.Contains("does not accept a null", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(initialNextFormId, workspace.Output.NextFormID);
+        Assert.Equal(0UL, workspace.State.Revision);
+        Assert.Empty(workspace.Output.EnumerateMajorRecords());
+    }
+
     /// <summary>Applies bounded list operations in order without collapsing duplicate FormLinks.</summary>
     [Fact]
     public void AppliesDeclaredOrderedListOperations()
