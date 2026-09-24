@@ -100,7 +100,8 @@ internal sealed class PluginSaveService
                 workspace.Output,
                 stagedPluginPath,
                 workspace.DataDirectory,
-                workspace.SourceMasters).ConfigureAwait(false);
+                workspace.SourceMasters,
+                workspace.TargetLanguage).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
 
             phase = PluginSavePhase.StagedReopen;
@@ -108,7 +109,8 @@ internal sealed class PluginSaveService
             stagedOutput = _backend.OpenOutput(
                 workspace.Integration,
                 new ModPath(workspace.State.OutputModKey, stagedPluginPath),
-                workspace.SourceMasters);
+                workspace.SourceMasters,
+                workspace.TargetLanguage);
             VerifyOutput(workspace, stagedOutput, expectedRecordCounts, expectedMasters, expectedSnapshots);
             if (!TryDisposeResource(stagedOutput))
             {
@@ -186,7 +188,8 @@ internal sealed class PluginSaveService
                 publishedOutput = _backend.OpenOutput(
                     workspace.Integration,
                     new ModPath(workspace.State.OutputModKey, destinationPath),
-                    workspace.SourceMasters);
+                    workspace.SourceMasters,
+                    workspace.TargetLanguage);
                 VerifyOutput(workspace, publishedOutput, expectedRecordCounts, expectedMasters, expectedSnapshots);
                 var publishedStamp = _backend.CaptureStamp(workspace.State.OutputModKey, destinationPath)
                     ?? throw new PluginWorkspaceException($"Published output '{destinationPath}' is missing after publication.");

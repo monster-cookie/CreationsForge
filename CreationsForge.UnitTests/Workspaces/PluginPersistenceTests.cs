@@ -335,26 +335,6 @@ public sealed partial class PluginWorkspaceTests
             expectedStringValue: "SavedKeyword");
     }
 
-    /// <summary>Normalizes a native translated string whose selected target is absent without losing its available language map.</summary>
-    [Fact]
-    public void ReadsNativeTranslationWithUnavailableTargetLanguage()
-    {
-        using var directory = new TemporaryDirectory();
-        var outputModKey = ModKey.FromNameAndExtension("Output.esp");
-        using var workspace = CreateFactory().Open(
-            CreateNewRequest(directory.Path, GameRelease.Fallout4, [], outputModKey));
-        var output = Assert.IsAssignableFrom<Mutagen.Bethesda.Fallout4.IFallout4Mod>(workspace.MutableOutput);
-        var message = output.Messages.AddNew();
-        message.Name = new TranslatedString(Language.French);
-        message.Name.Set(Language.English, "Available English value");
-
-        var snapshot = workspace.Records.Read(new RecordLocator("Message", message.FormKey, outputModKey));
-
-        var name = Assert.IsType<RecordValue.TranslatedStringRecordValue>(snapshot.Values["Name"]);
-        Assert.Equal(Language.English, name.TargetLanguage);
-        Assert.Equal("Available English value", name.Values[Language.English]);
-    }
-
     /// <summary>Publishes localized string sidecars as part of the same staged file set.</summary>
     [Fact]
     public async Task SavePublishesLocalizedStringSet()

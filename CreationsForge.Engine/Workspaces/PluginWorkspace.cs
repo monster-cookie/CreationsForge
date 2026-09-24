@@ -5,6 +5,7 @@ using CreationsForge.Engine.Records;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Cache;
 using Mutagen.Bethesda.Plugins.Records;
+using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Engine.Workspaces;
 
@@ -36,6 +37,7 @@ public sealed class PluginWorkspace : IDisposable
         WorkspaceFileLockSet fileLocks,
         PluginWorkspaceState state,
         string dataDirectory,
+        Language targetLanguage,
         PluginDestinationStamp? expectedDestinationStamp,
         IPluginPersistenceBackend persistenceBackend)
     {
@@ -47,6 +49,7 @@ public sealed class PluginWorkspace : IDisposable
         _fileLocks = fileLocks;
         _state = state;
         DataDirectory = dataDirectory;
+        TargetLanguage = targetLanguage;
         _expectedDestinationStamp = expectedDestinationStamp;
         _saveService = new PluginSaveService(persistenceBackend);
         _savedRevision = state.Revision;
@@ -64,6 +67,9 @@ public sealed class PluginWorkspace : IDisposable
 
     /// <summary>Gets the exact data-directory context admitted when this workspace opened.</summary>
     internal string DataDirectory { get; }
+
+    /// <summary>Gets the active translated-string language admitted when this workspace opened.</summary>
+    internal Language TargetLanguage { get; }
 
     /// <summary>Gets the game-specific native integration that owns this output.</summary>
     internal IGameIntegration Integration => _integration;

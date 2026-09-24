@@ -403,14 +403,15 @@ public sealed partial class PluginWorkspaceTests
             IModGetter output,
             string path,
             string dataDirectory,
-            IReadOnlyList<IModMasterStyledGetter> loadOrder)
+            IReadOnlyList<IModMasterStyledGetter> loadOrder,
+            Language targetLanguage)
         {
             if (FailExport)
             {
                 throw new IOException("Injected native export failure.");
             }
 
-            await _inner.ExportAsync(output, path, dataDirectory, loadOrder);
+            await _inner.ExportAsync(output, path, dataDirectory, loadOrder, targetLanguage);
             if (AfterExportAsync is not null)
             {
                 await AfterExportAsync();
@@ -420,14 +421,15 @@ public sealed partial class PluginWorkspaceTests
         public IMod OpenOutput(
             IGameIntegration integration,
             ModPath path,
-            IReadOnlyList<IModMasterStyledGetter> knownMasters)
+            IReadOnlyList<IModMasterStyledGetter> knownMasters,
+            Language targetLanguage)
         {
             if (Interlocked.Increment(ref _openCalls) == FailOpenCall)
             {
                 throw new IOException("Injected reopen failure.");
             }
 
-            return _inner.OpenOutput(integration, path, knownMasters);
+            return _inner.OpenOutput(integration, path, knownMasters, targetLanguage);
         }
 
         public PluginDestinationStamp? CaptureStamp(ModKey modKey, string pluginPath) =>

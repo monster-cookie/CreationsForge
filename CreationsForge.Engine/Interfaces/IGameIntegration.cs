@@ -4,6 +4,7 @@ using Mutagen.Bethesda;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Cache;
 using Mutagen.Bethesda.Plugins.Records;
+using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Engine.Interfaces;
 
@@ -36,14 +37,22 @@ public interface IGameIntegration
     /// <summary>Opens an immutable Mutagen plugin source with already discovered masters.</summary>
     /// <param name="path">The exact plugin path and expected identity.</param>
     /// <param name="knownMasters">Previously opened Mutagen master plugins in masters-first order.</param>
+    /// <param name="targetLanguage">The active translated-string language to load.</param>
     /// <returns>An owned immutable Mutagen plugin source.</returns>
-    IModDisposeGetter OpenSource(ModPath path, IReadOnlyList<IModMasterStyledGetter> knownMasters);
+    IModDisposeGetter OpenSource(
+        ModPath path,
+        IReadOnlyList<IModMasterStyledGetter> knownMasters,
+        Language targetLanguage);
 
     /// <summary>Opens a complete mutable Mutagen plugin output.</summary>
     /// <param name="path">The exact output path and expected identity.</param>
     /// <param name="knownMasters">Previously opened Mutagen master plugins in masters-first order.</param>
+    /// <param name="targetLanguage">The active translated-string language to load.</param>
     /// <returns>The complete mutable output.</returns>
-    IMod OpenExistingOutput(ModPath path, IReadOnlyList<IModMasterStyledGetter> knownMasters);
+    IMod OpenExistingOutput(
+        ModPath path,
+        IReadOnlyList<IModMasterStyledGetter> knownMasters,
+        Language targetLanguage);
 
     /// <summary>Creates a complete mutable clone of an output through the game's generated Mutagen translation.</summary>
     /// <param name="output">The output to clone.</param>

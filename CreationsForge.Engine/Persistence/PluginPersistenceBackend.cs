@@ -2,6 +2,7 @@ using CreationsForge.Engine.Interfaces;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.IO;
 using Mutagen.Bethesda.Plugins.Records;
+using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Engine.Persistence;
 
@@ -16,7 +17,8 @@ internal sealed class PluginPersistenceBackend : IPluginPersistenceBackend
         IModGetter output,
         string path,
         string dataDirectory,
-        IReadOnlyList<IModMasterStyledGetter> loadOrder)
+        IReadOnlyList<IModMasterStyledGetter> loadOrder,
+        Language targetLanguage)
     {
         ArgumentNullException.ThrowIfNull(output);
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -27,6 +29,7 @@ internal sealed class PluginPersistenceBackend : IPluginPersistenceBackend
             .ToPath(path)
             .WithLoadOrder(loadOrder)
             .WithDataFolder(dataDirectory)
+            .WithTargetLanguage(targetLanguage)
             .WithExtraIncludedMasters(output.MasterReferences.Select(reference => reference.Master))
             .WriteAsync();
     }
@@ -35,11 +38,12 @@ internal sealed class PluginPersistenceBackend : IPluginPersistenceBackend
     public IMod OpenOutput(
         IGameIntegration integration,
         ModPath path,
-        IReadOnlyList<IModMasterStyledGetter> knownMasters)
+        IReadOnlyList<IModMasterStyledGetter> knownMasters,
+        Language targetLanguage)
     {
         ArgumentNullException.ThrowIfNull(integration);
         ArgumentNullException.ThrowIfNull(knownMasters);
-        return integration.OpenExistingOutput(path, knownMasters);
+        return integration.OpenExistingOutput(path, knownMasters, targetLanguage);
     }
 
     /// <inheritdoc />

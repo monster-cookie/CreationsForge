@@ -5,9 +5,9 @@ using CreationsForge.Engine.Workspaces;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Fallout4;
 using Mutagen.Bethesda.Plugins;
-using Mutagen.Bethesda.Plugins.Binary.Parameters;
 using Mutagen.Bethesda.Plugins.Cache;
 using Mutagen.Bethesda.Plugins.Records;
+using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Fallout4;
 
@@ -49,15 +49,28 @@ public sealed class Fallout4GameIntegration : IGameIntegration
     }
 
     /// <inheritdoc />
-    public IModDisposeGetter OpenSource(ModPath path, IReadOnlyList<IModMasterStyledGetter> knownMasters)
+    public IModDisposeGetter OpenSource(
+        ModPath path,
+        IReadOnlyList<IModMasterStyledGetter> knownMasters,
+        Language targetLanguage)
     {
-        return ModFactory.ImportGetter(path, Release, new BinaryReadParameters());
+        return Fallout4Mod.Create(Fallout4Release.Fallout4)
+            .FromPath(path)
+            .WithTargetLanguage(targetLanguage)
+            .Construct();
     }
 
     /// <inheritdoc />
-    public IMod OpenExistingOutput(ModPath path, IReadOnlyList<IModMasterStyledGetter> knownMasters)
+    public IMod OpenExistingOutput(
+        ModPath path,
+        IReadOnlyList<IModMasterStyledGetter> knownMasters,
+        Language targetLanguage)
     {
-        return ModFactory.ImportSetter(path, Release, new BinaryReadParameters());
+        return Fallout4Mod.Create(Fallout4Release.Fallout4)
+            .FromPath(path)
+            .WithTargetLanguage(targetLanguage)
+            .Mutable()
+            .Construct();
     }
 
     /// <inheritdoc />

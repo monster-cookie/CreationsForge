@@ -1,6 +1,7 @@
 using CreationsForge.Engine.Interfaces;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Records;
+using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Engine.Persistence;
 
@@ -12,13 +13,15 @@ internal interface IPluginPersistenceBackend
         IModGetter output,
         string path,
         string dataDirectory,
-        IReadOnlyList<IModMasterStyledGetter> loadOrder);
+        IReadOnlyList<IModMasterStyledGetter> loadOrder,
+        Language targetLanguage);
 
     /// <summary>Opens a complete mutable output through the selected game integration.</summary>
     IMod OpenOutput(
         IGameIntegration integration,
         ModPath path,
-        IReadOnlyList<IModMasterStyledGetter> knownMasters);
+        IReadOnlyList<IModMasterStyledGetter> knownMasters,
+        Language targetLanguage);
 
     /// <summary>Captures the existing plugin and raw-string file-set identity, or <see langword="null"/> when none exists.</summary>
     PluginDestinationStamp? CaptureStamp(ModKey modKey, string pluginPath);

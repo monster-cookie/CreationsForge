@@ -7,6 +7,7 @@ using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Cache;
 using Mutagen.Bethesda.Plugins.Records;
 using Mutagen.Bethesda.Starfield;
+using Mutagen.Bethesda.Strings;
 
 namespace CreationsForge.Starfield;
 
@@ -43,20 +44,28 @@ public sealed class StarfieldGameIntegration : IGameIntegration
     }
 
     /// <inheritdoc />
-    public IModDisposeGetter OpenSource(ModPath path, IReadOnlyList<IModMasterStyledGetter> knownMasters)
+    public IModDisposeGetter OpenSource(
+        ModPath path,
+        IReadOnlyList<IModMasterStyledGetter> knownMasters,
+        Language targetLanguage)
     {
         return StarfieldMod.Create(StarfieldRelease.Starfield)
             .FromPath(path.Path)
             .WithKnownMasters(knownMasters.ToArray())
+            .WithTargetLanguage(targetLanguage)
             .Construct();
     }
 
     /// <inheritdoc />
-    public IMod OpenExistingOutput(ModPath path, IReadOnlyList<IModMasterStyledGetter> knownMasters)
+    public IMod OpenExistingOutput(
+        ModPath path,
+        IReadOnlyList<IModMasterStyledGetter> knownMasters,
+        Language targetLanguage)
     {
         return StarfieldMod.Create(StarfieldRelease.Starfield)
             .FromPath(path.Path)
             .WithKnownMasters(knownMasters.ToArray())
+            .WithTargetLanguage(targetLanguage)
             .Mutable()
             .Construct();
     }

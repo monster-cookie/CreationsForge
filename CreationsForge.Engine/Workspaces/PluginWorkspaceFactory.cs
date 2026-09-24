@@ -102,7 +102,10 @@ public sealed class PluginWorkspaceFactory
             foreach (var plugin in sourceClosure)
             {
                 var knownMasters = openedSources.Cast<IModMasterStyledGetter>().ToArray();
-                var source = integration.OpenSource(new ModPath(plugin.ModKey, plugin.Path), knownMasters);
+                var source = integration.OpenSource(
+                    new ModPath(plugin.ModKey, plugin.Path),
+                    knownMasters,
+                    request.Output.TargetLanguage);
                 ValidateStableInspection(source, plugin);
                 openedSources.Add(source);
             }
@@ -111,7 +114,8 @@ public sealed class PluginWorkspaceFactory
                 ? CreateNewOutput(request.Output, integration)
                 : integration.OpenExistingOutput(
                     new ModPath(request.Output.ModKey, outputPath),
-                    openedSources.Cast<IModMasterStyledGetter>().ToArray());
+                    openedSources.Cast<IModMasterStyledGetter>().ToArray(),
+                    request.Output.TargetLanguage);
             if (!request.Output.CreateNew)
             {
                 if (!Equals(outputStampBeforeOpen, _persistenceBackend.CaptureStamp(request.Output.ModKey, outputPath)))
@@ -142,6 +146,7 @@ public sealed class PluginWorkspaceFactory
                 fileLocks,
                 state,
                 dataDirectory,
+                request.Output.TargetLanguage,
                 outputStampBeforeOpen,
                 _persistenceBackend);
             openedSources = [];
