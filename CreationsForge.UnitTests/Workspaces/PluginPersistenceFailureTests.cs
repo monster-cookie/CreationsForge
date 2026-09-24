@@ -333,7 +333,9 @@ public sealed partial class PluginWorkspaceTests
             RecordMutation.Create("Keyword", [Set("EditorID", RecordValue.FromString("ExistingKeyword"))]),
         ]));
         var result = await workspace.SaveAsync(cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Equal(PluginSaveStatus.Succeeded, result.Status);
+        Assert.True(
+            result.Status == PluginSaveStatus.Succeeded,
+            result.Diagnostic);
     }
 
     private static async Task<FormKey> CreateSavedLocalizedFalloutOutputAsync(
@@ -361,7 +363,9 @@ public sealed partial class PluginWorkspaceTests
             ]),
         ])).Records.Single();
         var result = await workspace.SaveAsync(cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Equal(PluginSaveStatus.Succeeded, result.Status);
+        Assert.True(
+            result.Status == PluginSaveStatus.Succeeded,
+            result.Diagnostic);
         return created.FormKey;
     }
 

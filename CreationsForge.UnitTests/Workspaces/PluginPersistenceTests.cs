@@ -25,7 +25,9 @@ public sealed partial class PluginWorkspaceTests
         {
             var result = await workspace.SaveAsync(cancellationToken: TestContext.Current.CancellationToken);
 
-            Assert.Equal(PluginSaveStatus.Succeeded, result.Status);
+            Assert.True(
+                result.Status == PluginSaveStatus.Succeeded,
+                result.Diagnostic);
             Assert.True(File.Exists(outputPath));
             Assert.False(workspace.State.IsDirty);
             Assert.Empty(workspace.Output.EnumerateMajorRecords());
@@ -67,7 +69,9 @@ public sealed partial class PluginWorkspaceTests
 
             var result = await workspace.SaveAsync(progress, TestContext.Current.CancellationToken);
 
-            Assert.Equal(PluginSaveStatus.Succeeded, result.Status);
+            Assert.True(
+                result.Status == PluginSaveStatus.Succeeded,
+                result.Diagnostic);
             Assert.Equal(PluginPublicationState.Published, result.PublicationState);
             Assert.Equal(1UL, result.Revision);
             Assert.False(result.RequiresWorkspaceReopen);
@@ -198,7 +202,9 @@ public sealed partial class PluginWorkspaceTests
                 ]),
             ]));
             var result = await workspace.SaveAsync(cancellationToken: TestContext.Current.CancellationToken);
-            Assert.Equal(PluginSaveStatus.Succeeded, result.Status);
+            Assert.True(
+                result.Status == PluginSaveStatus.Succeeded,
+                result.Diagnostic);
         }
 
         using var reopened = CreateFactory().Open(
@@ -241,7 +247,9 @@ public sealed partial class PluginWorkspaceTests
                 ]),
             ]));
             var result = await workspace.SaveAsync(cancellationToken: TestContext.Current.CancellationToken);
-            Assert.Equal(PluginSaveStatus.Succeeded, result.Status);
+            Assert.True(
+                result.Status == PluginSaveStatus.Succeeded,
+                result.Diagnostic);
         }
 
         using var reopened = CreateFactory().Open(
@@ -359,7 +367,9 @@ public sealed partial class PluginWorkspaceTests
 
             var result = await workspace.SaveAsync(cancellationToken: TestContext.Current.CancellationToken);
 
-            Assert.Equal(PluginSaveStatus.Succeeded, result.Status);
+            Assert.True(
+                result.Status == PluginSaveStatus.Succeeded,
+                result.Diagnostic);
             Assert.True(result.PublishedPaths.Count > 1);
             Assert.All(result.PublishedPaths, path => Assert.True(File.Exists(path), path));
             Assert.Contains(result.PublishedPaths, path =>
@@ -432,7 +442,9 @@ public sealed partial class PluginWorkspaceTests
             ]),
         ])).Records.Single();
         var firstSave = await workspace.SaveAsync(cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Equal(PluginSaveStatus.Succeeded, firstSave.Status);
+        Assert.True(
+            firstSave.Status == PluginSaveStatus.Succeeded,
+            firstSave.Diagnostic);
         var englishOnly = RecordValue.FromTranslatedString(
             Language.English,
             new Dictionary<Language, string> { [Language.English] = "Updated English value" });
@@ -447,7 +459,9 @@ public sealed partial class PluginWorkspaceTests
 
         var secondSave = await workspace.SaveAsync(cancellationToken: TestContext.Current.CancellationToken);
 
-        Assert.Equal(PluginSaveStatus.Succeeded, secondSave.Status);
+        Assert.True(
+            secondSave.Status == PluginSaveStatus.Succeeded,
+            secondSave.Diagnostic);
         var obsoletePaths = firstSave.PublishedPaths.Except(secondSave.PublishedPaths, PathComparer).ToArray();
         Assert.NotEmpty(obsoletePaths);
         Assert.All(obsoletePaths, path => Assert.False(File.Exists(path), path));

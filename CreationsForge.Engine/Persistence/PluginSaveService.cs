@@ -133,7 +133,6 @@ internal sealed class PluginSaveService
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            using var destinationPublicationLock = AcquireDestinationPublicationLock(workspace);
             var publication = _publisher.Publish(
                 workspace.State.OutputModKey,
                 stagingRoot,
@@ -293,23 +292,6 @@ internal sealed class PluginSaveService
             result.Duration,
             result.Diagnostic);
         return result;
-    }
-
-    private static WorkspaceFileLockSet? AcquireDestinationPublicationLock(PluginWorkspace workspace)
-    {
-        if (OperatingSystem.IsWindows() || !File.Exists(workspace.State.OutputPath))
-        {
-            return null;
-        }
-
-        return WorkspaceFileLockSet.Acquire(
-        [
-            new WorkspaceFileLockRequest(
-                workspace.State.OutputPath,
-                $"output plugin '{workspace.State.OutputModKey}' during publication",
-                isShared: false,
-                createIfMissing: false),
-        ]);
     }
 
     private bool DestinationMatches(PluginWorkspace workspace)
