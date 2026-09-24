@@ -20,7 +20,8 @@ internal sealed class PluginDestinationStamp : IEquatable<PluginDestinationStamp
             && _files.Zip(other._files).All(pair =>
                 PathComparer.Equals(pair.First.RelativePath, pair.Second.RelativePath)
                 && pair.First.Length == pair.Second.Length
-                && pair.First.LastWriteTimeUtc == pair.Second.LastWriteTimeUtc);
+                && pair.First.LastWriteTimeUtc == pair.Second.LastWriteTimeUtc
+                && StringComparer.Ordinal.Equals(pair.First.ContentSha256, pair.Second.ContentSha256));
     }
 
     /// <inheritdoc />
@@ -35,6 +36,7 @@ internal sealed class PluginDestinationStamp : IEquatable<PluginDestinationStamp
             hash.Add(file.RelativePath, PathComparer);
             hash.Add(file.Length);
             hash.Add(file.LastWriteTimeUtc);
+            hash.Add(file.ContentSha256, StringComparer.Ordinal);
         }
 
         return hash.ToHashCode();

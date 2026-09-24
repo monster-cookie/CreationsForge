@@ -128,7 +128,7 @@ public sealed class PluginWorkspace : IDisposable
     }
 
     /// <summary>Exports, verifies, publishes, and reopens the complete native output file set.</summary>
-    /// <param name="progress">Optional UI-neutral lifecycle diagnostics.</param>
+    /// <param name="progress">Optional UI-neutral lifecycle diagnostics whose report calls are serialized outside the workspace operation gate and completed before this method returns.</param>
     /// <param name="cancellationToken">Cancellation honored before destination publication begins.</param>
     /// <returns>The bounded save and publication result.</returns>
     public async Task<PluginSaveResult> SaveAsync(
@@ -136,15 +136,23 @@ public sealed class PluginWorkspace : IDisposable
         CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
+        var progressDispatcher = new PluginSaveProgressDispatcher(progress);
         try
         {
-            return await ExecuteExclusiveAsync(
-                token => _saveService.SaveAsync(this, progress, token),
-                cancellationToken).ConfigureAwait(false);
+            try
+            {
+                return await ExecuteExclusiveAsync(
+                    token => _saveService.SaveAsync(this, progressDispatcher, token),
+                    cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested || _closeCancellation.IsCancellationRequested)
+            {
+                return _saveService.CanceledBeforeStart(this, stopwatch.Elapsed, progressDispatcher);
+            }
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested || _closeCancellation.IsCancellationRequested)
+        finally
         {
-            return _saveService.CanceledBeforeStart(this, stopwatch.Elapsed, progress);
+            await progressDispatcher.CompleteAsync().ConfigureAwait(false);
         }
     }
 

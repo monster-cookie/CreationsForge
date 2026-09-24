@@ -47,7 +47,27 @@ internal sealed class PluginSaveService
                 progress);
         }
 
-        if (!DestinationMatches(workspace))
+        bool destinationMatches;
+        try
+        {
+            destinationMatches = DestinationMatches(workspace);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return Result(
+                PluginSaveStatus.Failed,
+                PluginPublicationState.Unchanged,
+                phase,
+                workspace,
+                [],
+                [],
+                stopwatch,
+                $"Destination '{destinationPath}' could not be inspected before saving: {exception.Message}",
+                requiresWorkspaceReopen: false,
+                progress);
+        }
+
+        if (!destinationMatches)
         {
             return Result(
                 PluginSaveStatus.Failed,

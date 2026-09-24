@@ -4,6 +4,11 @@ namespace CreationsForge.Engine.Persistence;
 public sealed class PluginSaveProgress
 {
     /// <summary>Initializes a save progress event.</summary>
+    /// <param name="phase">The save lifecycle phase active when the event was created.</param>
+    /// <param name="destinationPath">The absolute output plugin path targeted by the save.</param>
+    /// <param name="revision">The exact workspace revision captured for the save.</param>
+    /// <param name="elapsed">The elapsed duration from the start of the save through this event.</param>
+    /// <param name="diagnostic">A bounded human-readable description of the phase or terminal outcome.</param>
     public PluginSaveProgress(
         PluginSavePhase phase,
         string destinationPath,

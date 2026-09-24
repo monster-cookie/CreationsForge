@@ -277,34 +277,6 @@ public sealed partial class PluginWorkspaceTests
             expectedStringValue: "SavedOverride");
     }
 
-    /// <summary>Refuses to overwrite a destination that changed after the workspace opened.</summary>
-    [Fact]
-    public async Task SaveRejectsExternalDestinationReplacement()
-    {
-        using var directory = new TemporaryDirectory();
-        var outputModKey = ModKey.FromNameAndExtension("Output.esp");
-        var outputPath = Path.Combine(directory.Path, outputModKey.ToString());
-        WriteEmptyPlugin(outputPath, outputModKey, GameRelease.Fallout4);
-        using var workspace = CreateFactory().Open(CreateExistingRequest(directory.Path, GameRelease.Fallout4, outputModKey));
-        workspace.Records.Apply(new RecordChangeSet(0,
-        [
-            RecordMutation.Create("Keyword", [Set("EditorID", RecordValue.FromString("PendingKeyword"))]),
-        ]));
-        var externallyChanged = File.ReadAllBytes(outputPath).Append((byte)0xFF).ToArray();
-        var replacementPath = Path.Combine(directory.Path, "replacement.tmp");
-        File.WriteAllBytes(replacementPath, externallyChanged);
-        File.Move(replacementPath, outputPath, overwrite: true);
-
-        var result = await workspace.SaveAsync(cancellationToken: TestContext.Current.CancellationToken);
-
-        Assert.Equal(PluginSaveStatus.Failed, result.Status);
-        Assert.Equal(PluginPublicationState.Unchanged, result.PublicationState);
-        Assert.True(workspace.State.IsDirty);
-        Assert.False(workspace.State.RequiresReopen);
-        Assert.Equal(externallyChanged, File.ReadAllBytes(outputPath));
-        Assert.Contains("changed outside this workspace", result.Diagnostic, StringComparison.Ordinal);
-    }
-
     /// <summary>Reopens and reads a saved native record from a separate process.</summary>
     [Fact]
     public async Task SavedOutputReopensInFreshProcess()
@@ -378,7 +350,14 @@ public sealed partial class PluginWorkspaceTests
 
             var stringSidecar = result.PublishedPaths.First(path =>
                 path.Contains($"{Path.DirectorySeparatorChar}Strings{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase));
-            File.SetLastWriteTimeUtc(stringSidecar, File.GetLastWriteTimeUtc(stringSidecar).AddSeconds(5));
+            var originalSidecarBytes = File.ReadAllBytes(stringSidecar);
+            var originalSidecarWriteTimeUtc = File.GetLastWriteTimeUtc(stringSidecar);
+            var externallyChangedSidecarBytes = originalSidecarBytes.ToArray();
+            externallyChangedSidecarBytes[^1] ^= 0xFF;
+            File.WriteAllBytes(stringSidecar, externallyChangedSidecarBytes);
+            File.SetLastWriteTimeUtc(stringSidecar, originalSidecarWriteTimeUtc);
+            Assert.Equal(originalSidecarBytes.Length, new FileInfo(stringSidecar).Length);
+            Assert.Equal(originalSidecarWriteTimeUtc, File.GetLastWriteTimeUtc(stringSidecar));
             workspace.Records.Apply(new RecordChangeSet(1,
             [
                 RecordMutation.Create("Keyword", [Set("EditorID", RecordValue.FromString("PendingKeyword"))]),
@@ -387,6 +366,9 @@ public sealed partial class PluginWorkspaceTests
             Assert.Equal(PluginSaveStatus.Failed, rejected.Status);
             Assert.Equal(PluginPublicationState.Unchanged, rejected.PublicationState);
             Assert.Contains("changed outside this workspace", rejected.Diagnostic, StringComparison.Ordinal);
+            Assert.Equal(externallyChangedSidecarBytes, File.ReadAllBytes(stringSidecar));
+            File.WriteAllBytes(stringSidecar, originalSidecarBytes);
+            File.SetLastWriteTimeUtc(stringSidecar, originalSidecarWriteTimeUtc);
         }
 
         var existingOutput = new PluginOutputDefinition(

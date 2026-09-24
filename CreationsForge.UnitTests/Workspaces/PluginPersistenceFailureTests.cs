@@ -385,11 +385,15 @@ public sealed partial class PluginWorkspaceTests
     private sealed class InstrumentedPersistenceBackend : IPluginPersistenceBackend
     {
         private readonly PluginPersistenceBackend _inner = new();
+        private int _captureStampCalls;
         private int _openCalls;
         private int _copyCalls;
         private int _moveCalls;
 
         public bool FailExport { get; init; }
+
+        /// <summary>Gets the destination-stamp call that should throw an injected I/O failure.</summary>
+        public int? FailCaptureStampCall { get; init; }
 
         public int? FailOpenCall { get; init; }
 
@@ -432,8 +436,15 @@ public sealed partial class PluginWorkspaceTests
             return _inner.OpenOutput(integration, path, knownMasters, targetLanguage);
         }
 
-        public PluginDestinationStamp? CaptureStamp(ModKey modKey, string pluginPath) =>
-            _inner.CaptureStamp(modKey, pluginPath);
+        public PluginDestinationStamp? CaptureStamp(ModKey modKey, string pluginPath)
+        {
+            if (Interlocked.Increment(ref _captureStampCalls) == FailCaptureStampCall)
+            {
+                throw new IOException("Injected destination stamp failure.");
+            }
+
+            return _inner.CaptureStamp(modKey, pluginPath);
+        }
 
         public IReadOnlyList<string> GetAssociatedFiles(ModKey modKey, string pluginPath) =>
             _inner.GetAssociatedFiles(modKey, pluginPath);

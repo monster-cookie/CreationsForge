@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using CreationsForge.Engine.Interfaces;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.IO;
@@ -53,15 +54,7 @@ internal sealed class PluginPersistenceBackend : IPluginPersistenceBackend
             ?? throw new InvalidOperationException($"Plugin path '{pluginPath}' does not have a parent directory.");
         var entries = GetAssociatedFiles(modKey, pluginPath)
             .Where(File.Exists)
-            .Select(path =>
-            {
-                var file = new FileInfo(path);
-                file.Refresh();
-                return new PluginFileStamp(
-                    Path.GetRelativePath(root, file.FullName),
-                    file.Length,
-                    file.LastWriteTimeUtc);
-            })
+            .Select(path => CaptureFileStamp(root, path))
             .ToArray();
         if (entries.Length == 0)
         {
@@ -122,4 +115,45 @@ internal sealed class PluginPersistenceBackend : IPluginPersistenceBackend
 
     /// <inheritdoc />
     public bool DirectoryExists(string path) => Directory.Exists(path);
+
+    /// <summary>Captures stable metadata and a SHA-256 digest from one associated output file.</summary>
+    /// <param name="root">The absolute output plugin directory used to normalize the stored relative path.</param>
+    /// <param name="path">The associated output file to inspect.</param>
+    /// <returns>The captured path, metadata, and content identity.</returns>
+    /// <exception cref="IOException">Thrown when the file changes or cannot be read during capture.</exception>
+    /// <exception cref="UnauthorizedAccessException">Thrown when the file cannot be read with the current access.</exception>
+    private static PluginFileStamp CaptureFileStamp(string root, string path)
+    {
+        var file = new FileInfo(path);
+        file.Refresh();
+        var length = file.Length;
+        var lastWriteTimeUtc = file.LastWriteTimeUtc;
+        using var stream = new FileStream(
+            file.FullName,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read,
+            131072,
+            FileOptions.SequentialScan);
+        if (stream.Length != length)
+        {
+            throw new IOException($"Output file '{file.FullName}' changed while its destination identity was being captured.");
+        }
+
+        var contentSha256 = Convert.ToHexString(SHA256.HashData(stream));
+        file.Refresh();
+        if (!file.Exists
+            || file.Length != length
+            || file.LastWriteTimeUtc != lastWriteTimeUtc
+            || stream.Length != length)
+        {
+            throw new IOException($"Output file '{file.FullName}' changed while its destination identity was being captured.");
+        }
+
+        return new PluginFileStamp(
+            Path.GetRelativePath(root, file.FullName),
+            length,
+            lastWriteTimeUtc,
+            contentSha256);
+    }
 }
